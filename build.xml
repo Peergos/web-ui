@@ -1,0 +1,60 @@
+<project name="Peergos web UI" default="server" basedir=".">
+  <description>
+    Building Peergos and the web UI
+  </description>
+
+  <property name="src" location="../Peergos"/>
+  <property name="dist" location="server"/>
+  <property name="ui" location="dist"/>
+
+  <path id="dep.runtime">
+    <fileset dir="./lib">
+        <include name="**/*.jar" />
+    </fileset>
+  </path>
+
+  <target name="init">
+    <mkdir dir="${build}"/>
+  </target>
+
+  <target name="compile_server" depends="init"
+        description="compile and build the server">
+    <exec executable="ant" dir="${src}" outputproperty="ant.result" failifexecutionfails="true" errorproperty="ant.err">
+      <arg value="dist"/>
+    </exec>
+  </target>
+
+  <target name="update_server" depends="compile_server" description="regenerate the server">
+    <mkdir dir="${dist}/lib"/>
+    <copy todir="${dist}/lib">
+      <fileset dir="${src}/lib"/>
+    </copy>
+    <copy todir="${dist}">
+      <fileset file="${src}/PeergosServer.jar"/>
+    </copy>
+    <copy todir="${ui}">
+      <fileset file="${src}/PeergosClient.jar"/>
+    </copy>
+  </target>
+
+
+  <target name="run" depends="">
+    <exec executable="java" dir="${dist}" failifexecutionfails="true">
+      <arg value="-jar"/>
+      <arg value="PeergosServer.jar"/>
+      <arg value="-local"/>
+      <arg value="-useIPFS"/>
+      <arg value="false"/>
+      <arg value="-webroot"/>
+      <arg value="../dist"/>
+    </exec>
+  </target> 
+
+  <target name="test" depends="">
+  </target> 
+
+  <target name="clean" description="clean up">
+    <delete dir="${build}"/>
+    <delete dir="${dist}"/>
+  </target>
+</project>

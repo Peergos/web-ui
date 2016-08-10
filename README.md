@@ -15,4 +15,11 @@ gulp build:vendor
 
 # This builds our files
 gulp #builds less, scripts etc. by default
+
+# To update the local server deployment (assumes Peergos is in ../Peergos)
+ant update_server
+
+# To run the server (after updating)
+ant run
+
 </pre>
