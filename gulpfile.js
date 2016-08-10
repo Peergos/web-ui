@@ -17,7 +17,7 @@ gulp.task('build:semantic', build);
 gulp.task('scripts:vendor', function() {
     return gulp.src('vendor/semantic/dist/semantic.min.js')
         .pipe(concat('vendor.js'))
-        .pipe(gulp.dest('public/js'));
+        .pipe(gulp.dest('dist/public/js'));
 });
 
 gulp.task('scripts', function () {
@@ -27,7 +27,7 @@ gulp.task('scripts', function () {
         })
         .transform('vueify')
         .bundle()
-        .pipe(fs.createWriteStream('public/js/peergos.js'));
+        .pipe(fs.createWriteStream('dist/public/js/peergos.js'));
 });
 
 
@@ -39,19 +39,23 @@ gulp.task('less:vendor', function () {
     return gulp.src('vendor/semantic/dist/semantic.min.css')
         .pipe(concat('vendor.css'))
         .pipe(less())
-        .pipe(gulp.dest('public/css'));
+        .pipe(gulp.dest('dist/public/css'));
 });
 
 gulp.task('less', function () {
     return gulp.src('styles/peergos.less')
         .pipe(less())
-        .pipe(gulp.dest('public/css'));
+        .pipe(gulp.dest('dist/public/css'));
 });
 
+gulp.task('html', function () {
+    return gulp.src('index.html')
+        .pipe(gulp.dest('dist/'));
+});
 
 
 gulp.task('build:vendor', ['build:semantic', 'less:vendor', 'scripts:vendor']);
 
 // Default Task
-gulp.task('default', ['less', 'scripts']);
+gulp.task('default', ['less', 'scripts', 'html']);
 
