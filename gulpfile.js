@@ -62,5 +62,5 @@ gulp.task('assets', function () {
 gulp.task('build:vendor', ['build:semantic', 'less:vendor', 'scripts:vendor']);
 
 // Default Task
-gulp.task('default', ['less', 'scripts', 'html']);
+gulp.task('default', ['less', 'scripts', 'html', 'assets']);
 

@@ -31,11 +31,20 @@
     <copy todir="${dist}">
       <fileset file="${src}/PeergosServer.jar"/>
     </copy>
-    <copy todir="${ui}">
-      <fileset file="${src}/PeergosClient.jar"/>
+    <copy todir="${ui}/public/java">
+      <fileset file="${src}/ui/PeergosClient.jar"/>
+      <fileset file="${src}/lib/IPFS.jar"/>
+    </copy>
+    <copy todir="${ui}/public/java/javapoly">
+      <fileset dir="${src}/ui/javapoly"/>
+    </copy>
+    <copy todir="${ui}/doppio">
+      <fileset dir="${src}/ui/doppio"/>
+    </copy>
+    <copy todir="${ui}/browserfs">
+      <fileset dir="${src}/ui/browserfs"/>
     </copy>
   </target>
-
 
   <target name="run" depends="">
     <exec executable="java" dir="${dist}" failifexecutionfails="true">
@@ -48,6 +57,9 @@
       <arg value="../dist"/>
     </exec>
   </target> 
+
+  <target name="update_and_run" depends="update_server,run">
+  </target>
 
   <target name="test" depends="">
   </target> 
