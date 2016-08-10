@@ -22,4 +22,7 @@ ant update_server
 # To run the server (after updating)
 ant run
 
+# or in a single command
+ant update_and_run
+
 </pre>
