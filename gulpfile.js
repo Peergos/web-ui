@@ -53,6 +53,11 @@ gulp.task('html', function () {
         .pipe(gulp.dest('dist/'));
 });
 
+gulp.task('assets', function () {
+    return gulp.src('assets/*/*')
+        .pipe(gulp.dest('dist/public/'));
+});
+
 
 gulp.task('build:vendor', ['build:semantic', 'less:vendor', 'scripts:vendor']);
 
