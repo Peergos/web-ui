@@ -14,7 +14,6 @@
   </path>
 
   <target name="init">
-    <mkdir dir="${build}"/>
   </target>
 
   <target name="compile_server" depends="init"
