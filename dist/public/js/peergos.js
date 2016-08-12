@@ -11624,9 +11624,15 @@ module.exports = {
         },
 
         getFiles: function() {
-            this.$http.get('https://api.github.com/repos/' + this.fullRepoUrl + '/contents' + this.getPath(),
+//            this.$http.get('https://api.github.com/repos/' + this.fullRepoUrl + '/contents' + this.getPath(),
+//                function(data) {
+//                    this.files = data;
+//                }
+//            );
+	    const that = this;
+	    window.context.getByPath(this.getPath()).then(
                 function(data) {
-                    this.files = data;
+                    that.files = data;
                 }
             );
         },
@@ -11664,6 +11670,7 @@ module.exports = {
         }
     }
 };
+
 },{"../../../views/filesystem.html":7}],5:[function(require,module,exports){
 module.exports = {
     template: require('../../../views/login.html'),
@@ -11688,7 +11695,7 @@ module.exports = {
             }).then(function(context) {
                 that.$parent.currentView = 'filesystem';
                 console.log(context);
-                window.context = context;
+                window.context = new UserContextWrapper(context);
                 console.log("Signing in/up took " + (Date.now()-window.pageStart)+" mS from page start");
                 console.log("Signing in/up took " + (Date.now()-creationStart)+" mS from function call");
             });

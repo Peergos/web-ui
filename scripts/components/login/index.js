@@ -21,7 +21,7 @@ module.exports = {
             }).then(function(context) {
                 that.$parent.currentView = 'filesystem';
                 console.log(context);
-                window.context = context;
+                window.context = new UserContextWrapper(context);
                 console.log("Signing in/up took " + (Date.now()-window.pageStart)+" mS from page start");
                 console.log("Signing in/up took " + (Date.now()-creationStart)+" mS from function call");
             });

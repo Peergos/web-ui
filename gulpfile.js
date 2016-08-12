@@ -54,6 +54,8 @@ gulp.task('html', function () {
 });
 
 gulp.task('assets', function () {
+    gulp.src('scripts/wrapper.js')
+        .pipe(gulp.dest('dist/public/js/'));
     gulp.src('favicon.ico')
         .pipe(gulp.dest('dist/'));
     return gulp.src('assets/*/*')

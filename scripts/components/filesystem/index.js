@@ -35,9 +35,15 @@ module.exports = {
         },
 
         getFiles: function() {
-            this.$http.get('https://api.github.com/repos/' + this.fullRepoUrl + '/contents' + this.getPath(),
+//            this.$http.get('https://api.github.com/repos/' + this.fullRepoUrl + '/contents' + this.getPath(),
+//                function(data) {
+//                    this.files = data;
+//                }
+//            );
+	    const that = this;
+	    window.context.getByPath(this.getPath()).then(
                 function(data) {
-                    this.files = data;
+                    that.files = data;
                 }
             );
         },
