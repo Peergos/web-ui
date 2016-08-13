@@ -1,11 +1,11 @@
 function UserContextWrapper(context) {
-    this.context = context;
+    this.jcontext = context;
 
     // String path
     // return array of FileTreeNodeWrapper
     this.getByPath = function(path) {
 	const that = this;
-	return context.getByPath(path).then(
+	return this.jcontext.getByPath(path).then(
 	    function(fileOpt) {
 		return fileOpt.isPresent().then(
 		    function(present) {
@@ -25,14 +25,20 @@ function FileTreeNodeWrapper(javaNode) {
     this.javaNode = javaNode;
 
     this.isDirectory = function() {
-	
+	return javaNode.isDirectory();
     }
 
     this.getName = function() {
-	
+	return javaNode.getName();
     }
 
+    this.getSize = function() {
+	return javaNode.getSize();
+    }
+
+    // return FileTreeNodeWrapper[]
     this.getChildren = function() {
-	return javaNode.getChildren(window.context);
+	console.log("Getting directory's children");
+	return javaNode.getChildren(window.context.context);
     }
 }

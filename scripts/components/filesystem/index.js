@@ -39,7 +39,7 @@ module.exports = {
 	    window.context.getByPath(this.getPath()).then(
                 function(dir) {
 		    dir.getChildren().then(function(children){
-			that.files = data;
+			that.files = children;
 		    });
                 }
             );
