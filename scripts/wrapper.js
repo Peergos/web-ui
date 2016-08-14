@@ -38,7 +38,9 @@ function FileTreeNodeWrapper(javaNode) {
 
     // return FileTreeNodeWrapper[]
     this.getChildren = function() {
-	console.log("Getting directory's children");
+	this.getName().then(function(name){
+	    console.log("Getting children of " + name + " from: " + window.context.jcontext);
+	});
 	return javaNode.getChildren(window.context.context);
     }
 }
