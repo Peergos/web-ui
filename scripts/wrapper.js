@@ -23,6 +23,7 @@ function UserContextWrapper(context) {
 
 function FileTreeNodeWrapper(node) {
     this.node = node;
+    this.type = node.isDirectory ? "dir" : "file";
 
     this.isDirectory = function() {
 	return javaNode.isDirectory();
