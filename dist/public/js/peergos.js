@@ -11631,13 +11631,10 @@ module.exports = {
 			children.toArray().then(function(arr) {
 			    var futures = [];
 			    for (var i=0; i < arr.length; i++) {
-				futures[i] = arr[i].getFileProperties();
+				futures[i] = convertToJSFile(arr[i]);
 			    }
-			    Promise.all(futures).then(function(props) {
-				var res = [];
-				for (var j=0; j < props.length; j++)
-				    res[j] = new FileTreeNodeWrapper(arr[j], props[j]);
-				that.files = res;
+			    Promise.all(futures).then(function(wrappedChildren) {
+				that.files = wrappedChildren;
 			    });
 			});
 		    });
@@ -11734,7 +11731,7 @@ var peergos = new Vue({
 });
 
 },{"./components/filesystem":4,"./components/login":5,"vue":3,"vue-resource":2}],7:[function(require,module,exports){
-module.exports = "<div class=\"ui stackable menu\">\n    <div class=\"item\" @click=\"goBackToLevel()\">\n        <img src=\"public/images/logo.png\">\n    </div>\n    <div class=\"ui item breadcrumb\">\n        <div v-for=\"dir in path\" track-by=\"$index\">\n            <a @click=\"goBackToLevel($index+1)\" class=\"section\">{{dir}}</a>\n            <div class=\"divider\"> / </div>\n        </div>\n    </div>\n</div>\n<div class=\"ui stackable six column grid container\">\n    <div class=\"column\" v-for=\"file in sortedFiles\">\n        <div class=\"ui segment\">\n            <i class=\"icon\" v-bind:class=\"file.type\"></i>\n            <div class=\"content\">\n                <div class=\"header\" v-if=\"file.isDirtype === 'file'\">{{ file.properties.name }}</div>\n                <a @click=\"changePath(file.path)\" v-if=\"file.type === 'dir'\">{{ file.properties.name }}</a>\n                <div class=\"description\">Description</div>\n            </div>\n        </div>\n    </div>\n</div>\n";
+module.exports = "<div class=\"ui stackable menu\">\n    <div class=\"item\" @click=\"goBackToLevel()\">\n        <img src=\"public/images/logo.png\">\n    </div>\n    <div class=\"ui item breadcrumb\">\n        <div v-for=\"dir in path\" track-by=\"$index\">\n            <a @click=\"goBackToLevel($index+1)\" class=\"section\">{{dir}}</a>\n            <div class=\"divider\"> / </div>\n        </div>\n    </div>\n</div>\n<div class=\"ui stackable six column grid container\">\n    <div class=\"column\" v-for=\"file in sortedFiles\">\n        <div class=\"ui segment\">\n            <i class=\"icon\" v-bind:class=\"file.type\"></i>\n            <div class=\"content\">\n                <div class=\"header\" v-if=\"!file.node.isDirectory\">{{ file.node.name }}</div>\n                <a @click=\"changePath(file.path)\" v-if=\"file.node.isDirectory\">{{ file.node.name }}</a>\n                <div class=\"description\">Description</div>\n            </div>\n        </div>\n    </div>\n</div>\n";
 
 },{}],8:[function(require,module,exports){
 module.exports = "<!-- LOGIN PAGE -->\n<div class=\"ui middle aligned center aligned grid login\">\n    <div class=\"column\">\n        <h2 class=\"ui teal image header\">\n            <img src=\"public/images/logo.png\" class=\"image\">\n            <div class=\"content\">\n                Log-in to your account\n            </div>\n        </h2>\n        <form class=\"ui large form\">\n            <div class=\"ui stacked segment\">\n                <div class=\"field\">\n                    <div class=\"ui left icon input\">\n                        <i class=\"user icon\"></i>\n                        <input type=\"text\" name=\"username\" v-model=\"username\" placeholder=\"Username\">\n                    </div>\n                </div>\n                <div class=\"field\">\n                    <div class=\"ui left icon input\">\n                        <i class=\"lock icon\"></i>\n                        <input type=\"password\" name=\"password\" v-model=\"password\" placeholder=\"Password\">\n                    </div>\n                </div>\n                <div @click=\"login()\" class=\"ui fluid large teal submit button\">Login</div>\n            </div>\n            <div class=\"ui error message\"></div>\n        </form>\n        <div class=\"ui message\">\n            New to us? <a href=\"#\">Sign Up</a>\n        </div>\n    </div>\n</div>\n<!-- EOF LOGIN PAGE -->";

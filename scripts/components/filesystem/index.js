@@ -42,13 +42,10 @@ module.exports = {
 			children.toArray().then(function(arr) {
 			    var futures = [];
 			    for (var i=0; i < arr.length; i++) {
-				futures[i] = arr[i].getFileProperties();
+				futures[i] = convertToJSFile(arr[i]);
 			    }
-			    Promise.all(futures).then(function(props) {
-				var res = [];
-				for (var j=0; j < props.length; j++)
-				    res[j] = new FileTreeNodeWrapper(arr[j], props[j]);
-				that.files = res;
+			    Promise.all(futures).then(function(wrappedChildren) {
+				that.files = wrappedChildren;
 			    });
 			});
 		    });

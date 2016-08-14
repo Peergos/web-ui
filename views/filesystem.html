@@ -14,8 +14,8 @@
         <div class="ui segment">
             <i class="icon" v-bind:class="file.type"></i>
             <div class="content">
-                <div class="header" v-if="file.isDirtype === 'file'">{{ file.properties.name }}</div>
-                <a @click="changePath(file.path)" v-if="file.type === 'dir'">{{ file.properties.name }}</a>
+                <div class="header" v-if="!file.node.isDirectory">{{ file.node.name }}</div>
+                <a @click="changePath(file.path)" v-if="file.node.isDirectory">{{ file.node.name }}</a>
                 <div class="description">Description</div>
             </div>
         </div>
