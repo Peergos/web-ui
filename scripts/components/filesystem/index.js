@@ -39,7 +39,9 @@ module.exports = {
 	    window.context.getByPath(this.getPath()).then(
                 function(dir) {
 		    dir.getChildren().then(function(children){
-			that.files = children;
+			children.toArray().then(function(arr) {
+			    that.files = arr;
+			});
 		    });
                 }
             );
@@ -60,6 +62,7 @@ module.exports = {
             return this.username + '/' + this.repo;
         },
         sortedFiles: function() {
+	    console.log(this.files);
             return this.files.slice(0).sort(function(a, b) {
                 if (a.type !== b.type) {
                     if (a.type === 'dir') {
