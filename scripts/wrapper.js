@@ -12,7 +12,9 @@ function UserContextWrapper(context) {
 			if (!present)
 			    return Promise.resolve({});
 			return fileOpt.get().then(function(file){
-			    return Promise.resolve(new FileTreeNodeWrapper(file));
+			    return file.getFileProperties().then(function(properties) {
+				return Promise.resolve(new FileTreeNodeWrapper(file, properties));
+			    });
 			})
 		    }
 		);
@@ -21,26 +23,17 @@ function UserContextWrapper(context) {
     }
 }
 
-function FileTreeNodeWrapper(javaNode) {
+function FileTreeNodeWrapper(javaNode, properties) {
     this.javaNode = javaNode;
+    this.properties = properties;
 
     this.isDirectory = function() {
 	return javaNode.isDirectory();
     }
 
-    this.getName = function() {
-	return javaNode.getName();
-    }
-
-    this.getSize = function() {
-	return javaNode.getSize();
-    }
-
     // return FileTreeNodeWrapper[]
     this.getChildren = function() {
-	this.getName().then(function(name){
-	    console.log("Getting children of " + name);
-	});
+	console.log("Getting children of " + this.properties.name);
 	return javaNode.getChildren(window.context.jcontext);
     }
 }

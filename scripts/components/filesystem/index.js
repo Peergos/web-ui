@@ -40,7 +40,16 @@ module.exports = {
                 function(dir) {
 		    dir.getChildren().then(function(children){
 			children.toArray().then(function(arr) {
-			    that.files = arr;
+			    var futures = [];
+			    for (var i=0; i < arr.length; i++) {
+				futures[i] = arr[i].getFileProperties();
+			    }
+			    Promise.all(futures).then(function(props) {
+				var res = [];
+				for (var j=0; j < props.length; j++)
+				    res[j] = new FileTreeNodeWrapper(arr[j], props[j]);
+				that.files = res;
+			    });
 			});
 		    });
                 }
