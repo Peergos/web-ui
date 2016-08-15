@@ -37,7 +37,11 @@ function FileTreeNodeWrapper(node) {
 }
 
 function convertToJSFile(javaFileTreeNode) {
-    const members = [["name", ftn => ftn.getFileProperties().then(props => props.name)]];
+    const members = [
+	["name", ftn => ftn.getFileProperties().then(props => props.name)],
+	["size", ftn => ftn.getFileProperties().then(props => props.size)],
+	["isHidden", ftn => ftn.getFileProperties().then(props => props.isHidden)]
+    ];
     const functions = [["isDirectory", ftn => ftn.isDirectory()]];
     return calculateProps(javaFileTreeNode, members, functions).then(function(fileWithProps) {
 	return Promise.resolve(new FileTreeNodeWrapper(fileWithProps));
