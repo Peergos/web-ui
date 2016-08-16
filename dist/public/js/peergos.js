@@ -133,6 +133,136 @@ process.chdir = function (dir) {
 process.umask = function() { return 0; };
 
 },{}],2:[function(require,module,exports){
+(function (process){
+'use strict';
+
+var Vue = require('vue');
+var Vue__default = 'default' in Vue ? Vue['default'] : Vue;
+
+// @NOTE: We have to use Vue.nextTick because the element might not be
+//        present at the time model changes, but will be in the next batch.
+//        But because we use Vue.nextTick, the directive may already be unbound
+//        by the time the callback executes, so we have to make sure it was not.
+
+var focus = {
+  priority: 1000,
+
+  bind: function() {
+    var self = this;
+    this.bound = true;
+
+    this.focus = function() {
+      if (self.bound === true) {
+        self.el.focus();
+      }
+    };
+
+    this.blur = function() {
+      if (self.bound === true) {
+        self.el.blur();
+      }
+    };
+  },
+
+  update: function(value) {
+    if (value) {
+      Vue__default.nextTick(this.focus);
+    } else {
+      Vue__default.nextTick(this.blur);
+    }
+  },
+
+  unbind: function() {
+    this.bound = false;
+  },
+};
+
+var focusModel = {
+  twoWay: true,
+  priority: 1000,
+
+  bind: function() {
+    var self = this;
+    this.bound = true;
+
+    this.focus = function() {
+      if (self.bound === true) {
+        self.el.focus();
+      }
+    };
+
+    this.blur = function() {
+      if (self.bound === true) {
+        self.el.blur();
+      }
+    };
+
+    this.focusHandler = function() {
+      self.set(true);
+    };
+
+    this.blurHandler = function() {
+      self.set(false);
+    };
+
+    Vue.util.on(this.el, 'focus', this.focusHandler);
+    Vue.util.on(this.el, 'blur', this.blurHandler);
+  },
+
+  update: function(value) {
+    if (value === true) {
+      Vue__default.nextTick(this.focus);
+    } else if (value === false) {
+      Vue__default.nextTick(this.blur);
+    } else {
+      if (process.env.NODE_ENV !== 'production') {
+        Vue.util.warn(
+          this.name + '="' +
+          this.expression + '" expects a boolean value, ' +
+          'got ' + JSON.stringify(value)
+        );
+      }
+    }
+  },
+
+  unbind: function() {
+    Vue.util.off(this.el, 'focus', this.focusHandler);
+    Vue.util.off(this.el, 'blur', this.blurHandler);
+    this.bound = false;
+  },
+};
+
+var focusAuto = {
+  priority: 100,
+  bind: function() {
+    var self = this;
+    this.bound = true;
+
+    Vue__default.nextTick(function() {
+      if (self.bound === true) {
+        self.el.focus();
+      }
+    });
+  },
+  unbind: function(){
+    this.bound = false;
+  },
+};
+
+var mixin = {
+  directives: {
+    focus: focus,
+    focusModel: focusModel,
+    focusAuto: focusAuto,
+  },
+};
+
+exports.focus = focus;
+exports.focusModel = focusModel;
+exports.focusAuto = focusAuto;
+exports.mixin = mixin;
+}).call(this,require('_process'))
+},{"_process":1,"vue":4}],3:[function(require,module,exports){
 /*!
  * vue-resource v0.7.4
  * https://github.com/vuejs/vue-resource
@@ -1509,7 +1639,7 @@ if (typeof window !== 'undefined' && window.Vue) {
 }
 
 module.exports = plugin;
-},{}],3:[function(require,module,exports){
+},{}],4:[function(require,module,exports){
 (function (process,global){
 /*!
  * Vue.js v1.0.26
@@ -11586,11 +11716,12 @@ setTimeout(function () {
 
 module.exports = Vue;
 }).call(this,require('_process'),typeof global !== "undefined" ? global : typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {})
-},{"_process":1}],4:[function(require,module,exports){
+},{"_process":1}],5:[function(require,module,exports){
 module.exports = {
     template: require('../../../views/filesystem.html'),
     data: function() {
         return {
+	    grid: true,
             path: [],
             files: []
         };
@@ -11677,7 +11808,7 @@ module.exports = {
     }
 };
 
-},{"../../../views/filesystem.html":8}],5:[function(require,module,exports){
+},{"../../../views/filesystem.html":9}],6:[function(require,module,exports){
 module.exports = {
     template: require('../../../views/login.html'),
     data: function() {
@@ -11715,7 +11846,7 @@ module.exports = {
     }
 };
 
-},{"../../../views/login.html":9}],6:[function(require,module,exports){
+},{"../../../views/login.html":10}],7:[function(require,module,exports){
 module.exports = {
     template: require('../../../views/signup.html'),
     data: function() {
@@ -11752,11 +11883,12 @@ module.exports = {
     }
 };
 
-},{"../../../views/signup.html":10}],7:[function(require,module,exports){
+},{"../../../views/signup.html":11}],8:[function(require,module,exports){
 var Vue         = require('vue').use(require('vue-resource')),
     Filesystem  = require('./components/filesystem'),
     Login       = require('./components/login');
     Signup      = require('./components/signup');
+var VueFocus = require('vue-focus');
 
 // Loading components
 Vue.component('filesystem', Vue.extend(Filesystem));
@@ -11766,19 +11898,20 @@ Vue.component('signup', Vue.extend(Signup));
 // Initializing Vue
 var peergos = new Vue({
     el: 'body',
+    mixins: [ VueFocus.mixin ],
     data: {
         currentView: 'login',
         serverPort: 8000
     }
 });
 
-},{"./components/filesystem":4,"./components/login":5,"./components/signup":6,"vue":3,"vue-resource":2}],8:[function(require,module,exports){
-module.exports = "<div class=\"ui stackable menu\">\n    <div class=\"item\" @click=\"goBackToLevel()\">\n        <img src=\"public/images/logo.png\">\n    </div>\n    <div class=\"ui item breadcrumb\">\n        <div v-for=\"dir in path\" track-by=\"$index\">\n            <a @click=\"goBackToLevel($index+1)\" class=\"section\">{{dir}}</a>\n            <div class=\"divider\"> / </div>\n        </div>\n    </div>\n</div>\n<div class=\"ui stackable six column grid container\">\n    <div class=\"column\" v-for=\"file in sortedFiles\">\n        <div class=\"ui segment\">\n            <i class=\"icon\" v-bind:class=\"file.type\"></i>\n            <div class=\"content\">\n                <div class=\"header\" v-if=\"!file.node.isDirectory\">{{ file.node.name }}</div>\n                <a @click=\"changePath(file.path)\" v-if=\"file.node.isDirectory\">{{ file.node.name }}</a>\n                <div class=\"description\">Description</div>\n            </div>\n        </div>\n    </div>\n</div>\n";
-
-},{}],9:[function(require,module,exports){
-module.exports = "<!-- LOGIN PAGE -->\n<div class=\"ui middle aligned center aligned grid login\">\n    <div class=\"column\">\n        <h2 class=\"ui teal image header\">\n            <img src=\"public/images/logo.png\" class=\"image\">\n            <div class=\"content\">\n                Peergos\n            </div>\n        </h2>\n        <form class=\"ui large form\">\n            <div class=\"ui stacked segment\">\n                <div class=\"field\">\n                    <div class=\"ui left icon input\">\n                        <i class=\"user icon\"></i>\n                        <input type=\"text\" name=\"username\" v-model=\"username\" placeholder=\"Username\">\n                    </div>\n                </div>\n                <div class=\"field\">\n                    <div class=\"ui left icon input\">\n                        <i class=\"lock icon\"></i>\n                        <input type=\"password\" name=\"password\" v-model=\"password\" placeholder=\"Password\">\n                    </div>\n                </div>\n                <div @click=\"login()\" class=\"ui fluid large teal submit button\">Login</div>\n            </div>\n            <div class=\"ui error message\"></div>\n        </form>\n        <div class=\"ui message\">\n            <div @click=\"showSignup()\" class=\"ui fluid large teal submit button\">Sign Up</div>\n        </div>\n    </div>\n</div>\n<!-- EOF LOGIN PAGE -->\n";
+},{"./components/filesystem":5,"./components/login":6,"./components/signup":7,"vue":4,"vue-focus":2,"vue-resource":3}],9:[function(require,module,exports){
+module.exports = "<div class=\"ui stackable menu\">\n    <div class=\"item\" @click=\"goBackToLevel()\">\n        <img src=\"public/images/logo.png\">\n    </div>\n    <div class=\"ui item breadcrumb\">\n        <div v-for=\"dir in path\" track-by=\"$index\">\n            <a @click=\"goBackToLevel($index+1)\" class=\"section\">{{dir}}</a>\n            <div class=\"divider\"> / </div>\n        </div>\n    </div>\n    <i @click=\"switchView($currentView)\" v-bind:class=\"glyphicon glyphicon-th-large tour-view\"></i>\n</div>\n<div class=\"ui stackable six column grid container\">\n    <div class=\"column\" v-for=\"file in sortedFiles\">\n        <div class=\"ui segment\">\n            <i class=\"icon\" v-bind:class=\"file.type\"></i>\n            <div class=\"content\">\n                <div class=\"header\" v-if=\"!file.node.isDirectory\">{{ file.node.name }}</div>\n                <a @click=\"changePath(file.path)\" v-if=\"file.node.isDirectory\">{{ file.node.name }}</a>\n                <div class=\"description\">Description</div>\n            </div>\n        </div>\n    </div>\n</div>\n";
 
 },{}],10:[function(require,module,exports){
+module.exports = "<!-- LOGIN PAGE -->\n<div class=\"ui middle aligned center aligned grid login\">\n    <div class=\"column\">\n        <h2 class=\"ui teal image header\">\n            <img src=\"public/images/logo.png\" class=\"image\">\n            <div class=\"content\">\n                Peergos\n            </div>\n        </h2>\n        <form class=\"ui large form\">\n            <div class=\"ui stacked segment\">\n                <div class=\"field\">\n                    <div class=\"ui left icon input\">\n                        <i class=\"user icon\"></i>\n                        <input type=\"text\" name=\"username\" v-model=\"username\" placeholder=\"Username\" v-focus-auto>\n                    </div>\n                </div>\n                <div class=\"field\">\n                    <div class=\"ui left icon input\">\n                        <i class=\"lock icon\"></i>\n                        <input type=\"password\" name=\"password\" v-model=\"password\" placeholder=\"Password\">\n                    </div>\n                </div>\n                <div @click=\"login()\" class=\"ui fluid large teal submit button\">Login</div>\n            </div>\n            <div class=\"ui error message\"></div>\n        </form>\n        <div class=\"ui message\">\n            <div @click=\"showSignup()\" class=\"ui fluid large teal submit button\">Sign Up</div>\n        </div>\n    </div>\n</div>\n<!-- EOF LOGIN PAGE -->\n";
+
+},{}],11:[function(require,module,exports){
 module.exports = "<!-- LOGIN PAGE -->\n<div class=\"ui middle aligned center aligned grid login\">\n    <div class=\"column\">\n        <h2 class=\"ui teal image header\">\n            <img src=\"public/images/logo.png\" class=\"image\">\n            <div class=\"content\">\n                Peergos Signup\n            </div>\n        </h2>\n        <form class=\"ui large form\">\n            <div class=\"ui stacked segment\">\n                <div class=\"field\">\n                    <div class=\"ui left icon input\">\n                        <i class=\"user icon\"></i>\n                        <input type=\"text\" name=\"username\" v-model=\"username\" placeholder=\"Username\">\n                    </div>\n                </div>\n                <div class=\"field\">\n                    <div class=\"ui left icon input\">\n                        <i class=\"lock icon\"></i>\n                        <input type=\"password\" name=\"password1\" v-model=\"password1\" placeholder=\"Password\">\n                    </div>\n                </div>\n\t\t<div class=\"field\">\n                    <div class=\"ui left icon input\">\n                        <i class=\"lock icon\"></i>\n                        <input type=\"password\" name=\"password2\" v-model=\"password2\" placeholder=\"Re-enter password\">\n                    </div>\n                </div>\n\t\t<div class=\"field\">\n                    <div class=\"ui left icon input\">\n                        <i class=\"user icon\"></i>\n                        <input type=\"text\" name=\"email\" v-model=\"email\" placeholder=\"Optional email\">\n                    </div>\n                </div>\n                <div @click=\"signup()\" class=\"ui fluid large teal submit button\">Signup</div>\n            </div>\n            <div class=\"ui error message\"></div>\n        </form>\n    </div>\n</div>\n<!-- EOF LOGIN PAGE -->\n";
 
-},{}]},{},[7]);
+},{}]},{},[8]);

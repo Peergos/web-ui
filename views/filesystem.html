@@ -8,6 +8,7 @@
             <div class="divider"> / </div>
         </div>
     </div>
+    <i @click="switchView($currentView)" v-bind:class="glyphicon glyphicon-th-large tour-view"></i>
 </div>
 <div class="ui stackable six column grid container">
     <div class="column" v-for="file in sortedFiles">

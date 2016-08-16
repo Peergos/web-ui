@@ -2,6 +2,7 @@ module.exports = {
     template: require('../../../views/filesystem.html'),
     data: function() {
         return {
+	    grid: true,
             path: [],
             files: []
         };
