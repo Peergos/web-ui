@@ -11697,7 +11697,7 @@ module.exports = {
             const creationStart = Date.now();
 	    const that = this;
             JavaPoly.type("peergos.user.UserContext").then(function(UserContext) {
-                return UserContext.ensureSignedUp('this01', 'thispassword', 8000, true);
+                return UserContext.ensureSignedUp(that.username, that.password, 8000, true);
             }).then(function(context) {
                 that.$parent.currentView = 'filesystem';
                 console.log(context);
