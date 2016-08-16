@@ -4,7 +4,7 @@
         <h2 class="ui teal image header">
             <img src="public/images/logo.png" class="image">
             <div class="content">
-                Peergos
+                Peergos Signup
             </div>
         </h2>
         <form class="ui large form">
@@ -18,16 +18,25 @@
                 <div class="field">
                     <div class="ui left icon input">
                         <i class="lock icon"></i>
-                        <input type="password" name="password" v-model="password" placeholder="Password">
+                        <input type="password" name="password1" v-model="password1" placeholder="Password">
                     </div>
                 </div>
-                <div @click="login()" class="ui fluid large teal submit button">Login</div>
+		<div class="field">
+                    <div class="ui left icon input">
+                        <i class="lock icon"></i>
+                        <input type="password" name="password2" v-model="password2" placeholder="Re-enter password">
+                    </div>
+                </div>
+		<div class="field">
+                    <div class="ui left icon input">
+                        <i class="user icon"></i>
+                        <input type="text" name="email" v-model="email" placeholder="Optional email">
+                    </div>
+                </div>
+                <div @click="signup()" class="ui fluid large teal submit button">Signup</div>
             </div>
             <div class="ui error message"></div>
         </form>
-        <div class="ui message">
-            <div @click="showSignup()" class="ui fluid large teal submit button">Sign Up</div>
-        </div>
     </div>
 </div>
 <!-- EOF LOGIN PAGE -->
