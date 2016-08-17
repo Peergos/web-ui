@@ -1,6 +1,6 @@
-dist
-server
+dist/***
+server/**
 *~
-.idea
+.idea/**
 
 
