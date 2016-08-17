@@ -4,17 +4,13 @@ The Web interface for Peergos
 ### building on linux
 
 <pre>
-sudo apt-get install nodejs npm
-cd project_root
-sudo npm rm --global gulp
-sudo npm install --global gulp-cli
-npm install
+install Java 8
 
 # This builds our dependencies
-gulp build:vendor
+ant vendor
 
 # This builds our files
-gulp #builds less, scripts etc. by default
+ant ui
 
 # To update the local server deployment (assumes Peergos is in ../Peergos)
 ant update_server
