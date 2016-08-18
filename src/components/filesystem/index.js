@@ -1,5 +1,5 @@
 module.exports = {
-    template: require('../../../views/filesystem.html'),
+    template: require('filesystem.html'),
     data: function() {
         return {
 	    grid: true,

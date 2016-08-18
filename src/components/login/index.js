@@ -1,5 +1,5 @@
 module.exports = {
-    template: require('../../../views/login.html'),
+    template: require('login.html'),
     data: function() {
         return {
             username: [],

@@ -11,7 +11,7 @@
 
   <target name="init"></target>
 
-  <!-- web ui building -->
+  <!-- web ui building vendor and assets -->
 
   <target name="assets" description="copy static unminified assets">
     <mkdir dir="${ui}"/>
@@ -62,6 +62,10 @@
 
   <target name="ui_prod_vendor" depends="assets,js_vendor_prod,css_vendor" description="build the ui vendor dependencies in production mode">
   </target>
+
+  <!-- web ui building our stuff -->
+
+  
 
   <!-- server building and running -->
 
