@@ -1,5 +1,4 @@
-var Vue         = require('vue'),
-    Filesystem  = require('./components/filesystem'),
+var Filesystem  = require('./components/filesystem'),
     Login       = require('./components/login');
     Signup      = require('./components/signup');
 
