@@ -4,7 +4,7 @@
   </description>
 
   <property name="server_src" location="../Peergos"/>
-  <property name="dist" location="server"/>
+  <property name="server" location="server"/>
   <property name="ui" location="dist"/>
   <property name="assets" location="assets"/>
   <property name="vendor" location="vendor"/>
@@ -98,11 +98,11 @@
   </target>
 
   <target name="update_server" depends="compile_server" description="regenerate the server">
-    <mkdir dir="${dist}/lib"/>
-    <copy todir="${dist}/lib">
+    <mkdir dir="${server}/lib"/>
+    <copy todir="${server}/lib">
       <fileset dir="${server_src}/lib"/>
     </copy>
-    <copy todir="${dist}">
+    <copy todir="${server}">
       <fileset file="${server_src}/PeergosServer.jar"/>
     </copy>
     <copy todir="${ui}/java">
@@ -121,7 +121,7 @@
   </target>
 
   <target name="run" depends="">
-    <exec executable="java" dir="${dist}" failifexecutionfails="true">
+    <exec executable="java" dir="${server}" failifexecutionfails="true">
       <arg value="-jar"/>
       <arg value="PeergosServer.jar"/>
       <arg value="-local"/>
@@ -140,6 +140,7 @@
 
   <target name="clean" description="clean up">
     <delete dir="${build}"/>
-    <delete dir="${dist}"/>
+    <delete dir="${server}"/>
+    <delete dir="${ui}"/>
   </target>
 </project>
