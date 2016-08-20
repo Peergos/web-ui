@@ -1,6 +1,6 @@
-var Filesystem  = require('./components/filesystem'),
-    Login       = require('./components/login');
-    Signup      = require('./components/signup');
+var Filesystem  = require('./components/filesystem');
+var Login       = require('./components/login');
+var Signup      = require('./components/signup');
 
 // Loading components
 Vue.component('filesystem', Vue.extend(Filesystem));
