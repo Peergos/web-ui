@@ -3,12 +3,12 @@
     Building Peergos and the web UI
   </description>
 
-  <property name="src" location="../Peergos"/>
+  <property name="server_src" location="../Peergos"/>
   <property name="dist" location="server"/>
   <property name="ui" location="dist"/>
   <property name="assets" location="assets"/>
   <property name="vendor" location="vendor"/>
-  <property name="ui_src" location="src/peergos.js"/>
+  <property name="ui_src" location="src"/>
 
   <target name="init"></target>
 
@@ -70,16 +70,29 @@
       <arg value="-jar"/>
       <arg value="JPack.jar"/>
       <arg value="-root"/>
-      <arg value="${ui_src}"/>
+      <arg value="${ui_src}/peergos.js"/>
       <arg value="-out"/>
       <arg value="${ui}/js/peergos.js"/>
     </exec>
   </target>
 
+  <taskdef name="watch"
+           classname="org.apache.tools.ant.taskdefs.optional.watch.WatchTask"
+           classpath="lib/watch-task-1.0.jar" />
+
+  <target name="watch_ui">
+    <watch>
+      <when>
+        <target name="ui"/>
+        <fileset dir="${ui_src}" includes="**/*"/>
+      </when>
+    </watch>
+  </target>
+
   <!-- server building and running -->
 
   <target name="compile_server" depends="init" description="compile and build the server">
-    <exec executable="ant" dir="${src}" failifexecutionfails="true">
+    <exec executable="ant" dir="${server_src}" failifexecutionfails="true">
       <arg value="dist"/>
     </exec>
   </target>
@@ -87,23 +100,23 @@
   <target name="update_server" depends="compile_server" description="regenerate the server">
     <mkdir dir="${dist}/lib"/>
     <copy todir="${dist}/lib">
-      <fileset dir="${src}/lib"/>
+      <fileset dir="${server_src}/lib"/>
     </copy>
     <copy todir="${dist}">
-      <fileset file="${src}/PeergosServer.jar"/>
+      <fileset file="${server_src}/PeergosServer.jar"/>
     </copy>
     <copy todir="${ui}/java">
-      <fileset file="${src}/ui/PeergosClient.jar"/>
-      <fileset file="${src}/lib/IPFS.jar"/>
+      <fileset file="${server_src}/ui/PeergosClient.jar"/>
+      <fileset file="${server_src}/lib/IPFS.jar"/>
     </copy>
     <copy todir="${ui}/java/javapoly">
-      <fileset dir="${src}/ui/javapoly"/>
+      <fileset dir="${server_src}/ui/javapoly"/>
     </copy>
     <copy todir="${ui}/doppio">
-      <fileset dir="${src}/ui/doppio"/>
+      <fileset dir="${server_src}/ui/doppio"/>
     </copy>
     <copy todir="${ui}/browserfs">
-      <fileset dir="${src}/ui/browserfs"/>
+      <fileset dir="${server_src}/ui/browserfs"/>
     </copy>
   </target>
 
