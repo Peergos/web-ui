@@ -1,9 +1,11 @@
+var isDemo = window.location.hostname == "demo.peergos.net";
 module.exports = {
     template: require('login.html'),
     data: function() {
         return {
             username: [],
-            password: []
+            password: [],
+	    demo: isDemo
         };
     },
     props: {
