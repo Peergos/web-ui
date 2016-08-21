@@ -52,7 +52,7 @@
       <arg value="-jar"/>
       <arg value="yuicompressor-2.4.8.jar"/>
       <arg value="-o"/>
-      <arg value="${ui}/js/vendor.css"/>
+      <arg value="${ui}/css/vendor.css"/>
       <arg value="tmp.css"/>
     </exec>
     <delete file="tmp.css"/>
@@ -80,7 +80,7 @@
            classname="org.apache.tools.ant.taskdefs.optional.watch.WatchTask"
            classpath="lib/watch-task-1.0.jar" />
 
-  <target name="watch_ui">
+  <target name="watch_ui" depends="ui_dev_vendor,ui">
     <watch>
       <when>
         <target name="ui"/>
@@ -139,8 +139,10 @@
   </target> 
 
   <target name="clean" description="clean up">
-    <delete dir="${build}"/>
-    <delete dir="${server}"/>
     <delete dir="${ui}"/>
+  </target>
+
+  <target name="clean_server" description="clean up">
+    <delete dir="${server}"/>
   </target>
 </project>
