@@ -1,42 +1,23 @@
 <!-- LOGIN PAGE -->
-<div class="ui middle aligned center aligned grid login">
-    <div class="column">
-        <h2 class="ui teal image header">
-            <img src="public/images/logo.png" class="image">
-            <div class="content">
-                Peergos Signup
-            </div>
-        </h2>
-        <form class="ui large form">
-            <div class="ui stacked segment">
-                <div class="field">
-                    <div class="ui left icon input">
-                        <i class="user icon"></i>
-                        <input type="text" name="username" v-model="username" placeholder="Username">
-                    </div>
-                </div>
-                <div class="field">
-                    <div class="ui left icon input">
-                        <i class="lock icon"></i>
-                        <input type="password" name="password1" v-model="password1" placeholder="Password">
-                    </div>
-                </div>
-		<div class="field">
-                    <div class="ui left icon input">
-                        <i class="lock icon"></i>
-                        <input type="password" name="password2" v-model="password2" placeholder="Re-enter password">
-                    </div>
-                </div>
-		<div class="field">
-                    <div class="ui left icon input">
-                        <i class="user icon"></i>
-                        <input type="text" name="email" v-model="email" placeholder="Optional email">
-                    </div>
-                </div>
-                <div @click="signup()" class="ui fluid large teal submit button">Signup</div>
-            </div>
-            <div class="ui error message"></div>
-        </form>
-    </div>
+<div class="container form-signin">
+  <h2>Peergos</h2>
+  <center>
+    <img src="images/logo.png" class="image">
+  </center>
+  <h2>Please log in</h2>
+  <div class="form-group">
+    <input type="text" name="username" class="form-control" v-model="username" placeholder="Username">
+  </div>
+  <div class="form-group">
+    <input type="password" name="password1" class="form-control" v-model="password1" placeholder="Password">
+  </div>
+  <div class="form-group">
+    <input type="password" name="password2" class="form-control" v-model="password2" placeholder="Re-enter password">
+  </div>
+  <div class="form-group">
+    <input type="text" name="email" class="form-control" v-model="email" placeholder="Email (Optional)">
+  </div>
+  <button @click="signup()" class="btn btn-large btn-block btn-success">Sign up</button>
+  
 </div>
 <!-- EOF LOGIN PAGE -->
