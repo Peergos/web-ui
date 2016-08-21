@@ -58,6 +58,20 @@
     <delete file="tmp.css"/>
   </target>
 
+  <target name="css" description="concat and minify the vendor CSS">
+    <concat destfile="tmp.css">
+      <fileset dir="${ui_src}/" includes="*.css"/>
+    </concat>
+    <exec executable="java" dir="." outputproperty="ant.result" failifexecutionfails="true" errorproperty="ant.err">
+      <arg value="-jar"/>
+      <arg value="yuicompressor-2.4.8.jar"/>
+      <arg value="-o"/>
+      <arg value="${ui}/css/peergos.css"/>
+      <arg value="tmp.css"/>
+    </exec>
+    <delete file="tmp.css"/>
+  </target>
+
   <target name="ui_dev_vendor" depends="assets,js_vendor_dev,css_vendor" description="build the ui vendor dependencies in development mode">
   </target>
 
@@ -65,7 +79,7 @@
   </target>
 
   <!-- web ui building our stuff -->
-  <target name="ui" description="bundle all our vuejs components into js">
+  <target name="js" description="bundle all our vuejs components into js">
     <exec executable="java" dir="." failifexecutionfails="true" >
       <arg value="-jar"/>
       <arg value="JPack.jar"/>
@@ -74,6 +88,9 @@
       <arg value="-out"/>
       <arg value="${ui}/js/peergos.js"/>
     </exec>
+  </target>
+
+  <target name="ui" depends="css,js" description="build our part of the ui">
   </target>
 
   <taskdef name="watch"
