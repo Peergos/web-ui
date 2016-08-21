@@ -29,7 +29,7 @@ module.exports = {
             });
         },
 	showSignup : function() {
-	    this.$parent.currentView = 'signup';
+	    this.$parent.currentView = "signup";
 	}
     },
     computed: {
