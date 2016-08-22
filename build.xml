@@ -23,6 +23,7 @@
 
   <target name="js_vendor_dev" description="concat (don't minify) the vendor JS for development">
     <concat destfile="${ui}/js/vendor.js">
+      <fileset dir="${vendor}/priors" includes="*.js"/>
       <fileset dir="${vendor}/dev" includes="*.js"/>
       <fileset dir="${vendor}/common" includes="*.js"/>
     </concat>
@@ -30,10 +31,11 @@
 
   <target name="js_vendor_prod" description="concat and minify the vendor JS for production">
     <concat destfile="tmp.js">
+      <fileset dir="${vendor}/priors" includes="*.js"/>
       <fileset dir="${vendor}/min" includes="*.js"/>
       <fileset dir="${vendor}/common" includes="*.js"/>
     </concat>
-    <exec executable="java" dir="." outputproperty="ant.result" failifexecutionfails="true" errorproperty="ant.err">
+    <exec executable="java" dir="." failifexecutionfails="true">
       <arg value="-jar"/>
       <arg value="yuicompressor-2.4.8.jar"/>
       <arg value="-o"/>
@@ -48,7 +50,7 @@
       <fileset dir="${vendor}/min" includes="*.css"/>
       <fileset dir="${vendor}/common" includes="*.css"/>
     </concat>
-    <exec executable="java" dir="." outputproperty="ant.result" failifexecutionfails="true" errorproperty="ant.err">
+    <exec executable="java" dir="." failifexecutionfails="true">
       <arg value="-jar"/>
       <arg value="yuicompressor-2.4.8.jar"/>
       <arg value="-o"/>
@@ -62,7 +64,7 @@
     <concat destfile="tmp.css">
       <fileset dir="${ui_src}/" includes="*.css"/>
     </concat>
-    <exec executable="java" dir="." outputproperty="ant.result" failifexecutionfails="true" errorproperty="ant.err">
+    <exec executable="java" dir="." failifexecutionfails="true">
       <arg value="-jar"/>
       <arg value="yuicompressor-2.4.8.jar"/>
       <arg value="-o"/>
