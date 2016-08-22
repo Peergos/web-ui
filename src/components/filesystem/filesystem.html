@@ -1,6 +1,6 @@
 <div class="ui stackable menu">
     <div class="item" @click="goBackToLevel()">
-        <img src="public/images/logo.png">
+        <img src="images/logo.png">
     </div>
     <div class="ui item breadcrumb">
         <div v-for="dir in path" track-by="$index">
@@ -13,7 +13,7 @@
 <div class="ui stackable six column grid container">
     <div class="column" v-for="file in sortedFiles">
         <div class="ui segment">
-            <span class="icon" v-bind:class="[glyphicon, file.node.isDirectory ? 'glyphicon-folder-open' : 'glyphicon-file']"/>
+            <span v-bind:class="['glyphicon', file.node.isDirectory ? 'glyphicon-folder-open' : 'glyphicon-file', 'picon']"/>
             <div class="content">
                 <div class="header" v-if="!file.node.isDirectory">{{ file.node.name }}</div>
                 <a @click="changePath(file.path)" v-if="file.node.isDirectory">{{ file.node.name }}</a>

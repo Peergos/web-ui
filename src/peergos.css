@@ -4,3 +4,6 @@ body {
 body .grid {
   height: 100%;
 }
+span.picon {
+  font-size: 3.5em;
+}
