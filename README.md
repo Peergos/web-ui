@@ -1,12 +1,14 @@
 # peergos-ui-web
 The Web interface for Peergos
 
-### building on any platform
+## building on any platform
 
 <pre>
 install Java 8
+</pre>
 
-#### Server
+### Server
+<pre>
 # To update the local server deployment (assumes Peergos is in ../Peergos)
 ant update_server
 
@@ -15,8 +17,10 @@ ant run
 
 # or in a single command
 ant update_and_run
+</pre>
 
 ### Web Interface
+<pre>
 # This builds our dependencies
 ant vendor
 
@@ -25,7 +29,5 @@ ant ui
 
 # This continuously builds our files whenever a file changes or is added
 ant watch_ui
-
-
 
 </pre>
