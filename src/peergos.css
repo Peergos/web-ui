@@ -15,9 +15,14 @@ body .grid {
   margin-top:0.4em;
   margin-bottom:0.4em;
 }
-.pnavbar_right {
+.pnavbar_top_right {
+  margin-top:0;
   margin-left:0.4em;
   margin-right:0.4em;
+  position:absolute;
+  float:right;
+  top:0;
+  right:0;
 }
 .file_icon {
   cursor:pointer;
