@@ -4,15 +4,26 @@ body {
 body .grid {
   height: 100%;
 }
-span.picon {
-  font-size: 3.5em;
+.picon {
+  font-size: 3em;
 }
-span.pnavbar {
-  font-size: 2em;
+.pnavbar {
+  font-size: 1.7em;
 }
-span.file_icon {
+.btn_pnavbar {
+  font-size: 1.7em;
+  margin-top:0.4em;
+  margin-bottom:0.4em;
+}
+.btn_pnavbar_right {
+  font-size: 1.7em;
+  margin-top:0.4em;
+  margin-right:0.4em;
+  margin-bottom:0.4em;
+}
+.file_icon {
     cursor:pointer;
 }
-div.grid_icon_wrapper {
+.grid_icon_wrapper {
 
 }

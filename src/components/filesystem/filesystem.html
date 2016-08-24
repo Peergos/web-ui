@@ -15,12 +15,14 @@
 	<a id="pathSpan"><span data-toggle="tooltip" data-placement="bottom" title="Current location" class="pnavbar glyphicon glyphicon-chevron-right tour-path"/></a>
       </li>
     </ul>
-    <span v-for="dir in path" track-by="$index">
-      <button @click="goBackToLevel($index+1)" class="btn tour-path">{{dir}}</button>
+    <span class="tour-path" v-for="dir in path" track-by="$index">
+      <button @click="goBackToLevel($index+1)" class="btn_pnavbar btn tour-path">{{dir}}</button>
       <span class="divider"> </span>
     </span>
-    <ul class="nav navbar-nav">
-      <span class="pnavbar navbar-form navbar-right glyphicon glyphicon-off">
+    <ul class="nav navbar-nav navbar-right">
+      <button @click="showUserMenu()" class="btn btn_pnavbar_right tour-logout">
+	<span class="glyphicon glyphicon-off">
+      </button>
       </span>
     </ul>
   </div>
