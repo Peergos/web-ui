@@ -10,7 +10,9 @@
   <property name="assets" location="assets"/>
   <property name="vendor" location="vendor"/>
 
-  <target name="init"></target>
+  <target name="init">
+    <mkdir dir="${ui}/css/"/>
+  </target>
 
   <!-- web ui building vendor and assets -->
 
