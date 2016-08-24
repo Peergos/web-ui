@@ -1,7 +1,8 @@
 <nav class="navbar navbar-inverse navbar-static-top" role="navigation">
-  <div class="collapse navbar-collapse" id="example-navbar-collapse">
+  <div>
     <ul class="nav navbar-nav">
       <li id="homeButton"><a><span data-toggle="tooltip" data-placement="bottom" title="Home" class="pnavbar glyphicon glyphicon-home tour-home" style="cursor: pointer;"/></a></li>
+      </ul><ul class="nav navbar-nav">
       <li id="uploadButton"><a><span data-toggle="tooltip" data-placement="bottom" title="Upload file" class="pnavbar glyphicon glyphicon-upload tour-upload"  style="cursor: pointer;"/></a></li>
       <li id="mkdirButton"><a><span data-toggle="tooltip" data-placement="bottom" title="Create new directory" class="pnavbar glyphicon glyphicon-folder-open tour-mkdir"  style="cursor: pointer;"/></a></li>
       <li id="alternateViewButton"><a><span data-toggle="tooltip" data-placement="bottom" title="Switch view" id="altViewSpan" class="pnavbar glyphicon glyphicon-th-large tour-view"  style="cursor: pointer;"/></a></li>
@@ -11,21 +12,23 @@
           <span id="pendingSpan"></span>
 	</a>
       </li>
-      <li>
-	<a id="pathSpan"><span data-toggle="tooltip" data-placement="bottom" title="Current location" class="pnavbar glyphicon glyphicon-chevron-right tour-path"/></a>
-      </li>
-    </ul>
-    <span class="tour-path" v-for="dir in path" track-by="$index">
-      <button @click="goBackToLevel($index+1)" class="btn_pnavbar btn tour-path">{{dir}}</button>
-      <span class="divider"> </span>
-    </span>
-    <ul class="nav navbar-nav navbar-right">
-      <button @click="showUserMenu()" class="btn btn_pnavbar_right tour-logout">
-	<span class="glyphicon glyphicon-off">
-      </button>
-      </span>
     </ul>
   </div>
+  <ul class="nav navbar-nav">
+    <li>
+      <a id="pathSpan"><span data-toggle="tooltip" data-placement="bottom" title="Current location" class="pnavbar glyphicon glyphicon-chevron-right tour-path"/></a>
+    </li>
+  </ul>
+  <span class="tour-path" v-for="dir in path" track-by="$index">
+    <button @click="goBackToLevel($index+1)" class="btn_pnavbar btn tour-path">{{dir}}</button>
+    <span class="divider"> </span>
+  </span>
+  <ul class="nav navbar-nav navbar-right pnavbar_right">
+    <button @click="showUserMenu()" class="btn btn_pnavbar tour-logout">
+      <span class="glyphicon glyphicon-off"></span>
+    </button>
+  </ul>
+  
 </nav>
 
 <div class="ui stackable six column grid container">
