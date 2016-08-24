@@ -16,11 +16,14 @@ body .grid {
   margin-bottom:0.4em;
 }
 .pnavbar_right {
+  margin-left:0.4em;
   margin-right:0.4em;
 }
 .file_icon {
-    cursor:pointer;
+  cursor:pointer;
 }
 .grid_icon_wrapper {
-
+}
+.nopad {
+  padding:0;
 }
