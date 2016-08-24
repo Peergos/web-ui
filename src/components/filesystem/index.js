@@ -49,12 +49,18 @@ module.exports = {
 
         changePath: function(path) {
             console.debug('Changing to path:'+ path);
-            this.path = path? path.split('/') : [];
+	    if (path.startsWith("/"))
+		path = path.substring(1);
+            this.path = path ? path.split('/') : [];
             this.getFiles();
         },
 
+	navigateToSubdir: function(name) {
+	    this.changePath(this.getPath() + name);
+	},
+
         getPath: function() {
-            return '/'+this.path.join('/');
+            return '/'+this.path.join('/') + (this.path.length > 0 ? "/" : "");
         }
     },
     computed: {

@@ -10,3 +10,9 @@ span.picon {
 span.pnavbar {
   font-size: 2em;
 }
+span.file_icon {
+    cursor:pointer;
+}
+div.grid_icon_wrapper {
+
+}
