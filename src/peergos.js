@@ -13,5 +13,17 @@ var peergos = new Vue({
     data: {
         currentView: 'login',
         serverPort: 8000
+    },
+    events: {
+	'child-msg': function (msg) {
+	    // `this` in event callbacks are automatically bound
+	    // to the instance that registered it
+	    this.currentView = msg.view;
+
+	    // this sends the received props to the new child component
+	    this.$nextTick(function() {
+		this.$broadcast('parent-msg', msg.props);
+	    });
+	}
     }
 });

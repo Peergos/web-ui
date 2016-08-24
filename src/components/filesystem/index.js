@@ -4,24 +4,15 @@ module.exports = {
         return {
 	    grid: true,
             path: [],
-            files: []
+            files: [],
+	    context: null
         };
     },
     props: {
-        username: {
-            type: String
-        },
-        repo: {
-            type: String
-        }
     },
     created: function() {
         console.debug('Filesystem module created!');
-        // Is the user logged in?
-        if (!this.username || !this.repo) {
-            this.username = 'Peergos';
-            this.repo = 'Peergos';
-        }
+        
         this.getFiles();
     },
     methods: {
@@ -37,9 +28,11 @@ module.exports = {
 
         getFiles: function() {
 	    const that = this;
-	    window.context.getByPath(this.getPath()).then(
+	    if (this.context == null)
+		return;
+	    this.context.getByPath(this.getPath()).then(
                 function(dir) {
-		    dir.getChildren().then(function(children){
+		    dir.getChildren(that.context).then(function(children){
 			children.toArray().then(function(arr) {
 			    var futures = [];
 			    for (var i=0; i < arr.length; i++) {
@@ -86,5 +79,13 @@ module.exports = {
                 }
             });
         }
+    },
+    events: {
+	'parent-msg': function (msg) {
+	    // `this` in event callbacks are automatically bound
+	    // to the instance that registered it
+	    this.context = msg.context;
+	    this.getFiles();
+	}
     }
 };

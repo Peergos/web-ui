@@ -30,9 +30,9 @@ function FileTreeNodeWrapper(node) {
     }
 
     // return FileTreeNodeWrapper[]
-    this.getChildren = function() {
+    this.getChildren = function(context) {
 	console.log("Getting children of " + this.node.name);
-	return node.java.getChildren(window.context.jcontext);
+	return node.java.getChildren(context.jcontext);
     }
 }
 

@@ -21,15 +21,16 @@ module.exports = {
             JavaPoly.type("peergos.user.UserContext").then(function(UserContext) {
                 return UserContext.ensureSignedUp(that.username, that.password, 8000, true);
             }).then(function(context) {
-                that.$parent.currentView = 'filesystem';
-                console.log(context);
-                window.context = new UserContextWrapper(context);
+                that.$dispatch('child-msg', {
+		    view:'filesystem', 
+		    props:{context:new UserContextWrapper(context)}
+		});
                 console.log("Signing in/up took " + (Date.now()-window.pageStart)+" mS from page start");
                 console.log("Signing in/up took " + (Date.now()-creationStart)+" mS from function call");
             });
         },
 	showSignup : function() {
-	    this.$parent.currentView = "signup";
+	    this.$dispatch('child-msg', {view:"signup", props:{username:this.username, password:this.password}})
 	}
     },
     computed: {
