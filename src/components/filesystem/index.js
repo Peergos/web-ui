@@ -83,7 +83,14 @@ module.exports = {
                     }
                 }
             });
-        }
+        },
+	isWritable: function() {
+	    if (this.currentDir == null)
+		return false;
+	    console.log("WRITE");
+	    console.log(this.currentDir.props);
+	    return this.currentDir.props.isWritable;
+	}
     },
     asyncComputed: {
 	currentDir: function() {

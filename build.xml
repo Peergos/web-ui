@@ -106,6 +106,7 @@
       <when>
         <target name="ui"/>
         <fileset dir="${ui_src}" includes="**/*"/>
+	<fileset dir="${assets}" includes="**/*"/>
       </when>
     </watch>
   </target>
