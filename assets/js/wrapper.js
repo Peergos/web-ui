@@ -21,18 +21,14 @@ function UserContextWrapper(context) {
     }
 }
 
-function FileTreeNodeWrapper(node) {
-    this.node = node;
-    this.type = node.isDirectory ? "dir" : "file";
-
-    this.isDirectory = function() {
-	return javaNode.isDirectory();
-    }
+function FileTreeNodeWrapper(props) {
+    this.props = props;
+    this.type = props.isDirectory ? "dir" : "file";
 
     // return FileTreeNodeWrapper[]
     this.getChildren = function(context) {
-	console.log("Getting children of " + this.node.name);
-	return node.java.getChildren(context.jcontext);
+	console.log("Getting children of " + this.props.name);
+	return props.java.getChildren(context.jcontext);
     }
 }
 

@@ -3,7 +3,7 @@
     <ul class="nav navbar-nav">
       <li id="homeButton" @click="goHome()" class="navbar-brand nopad"><a><span data-toggle="tooltip" data-placement="bottom" title="Home" class="pnavbar glyphicon glyphicon-home tour-home" style="cursor: pointer;"/></a></li>
       <li id="uploadButton" class="navbar-brand nopad"><a><span data-toggle="tooltip" data-placement="bottom" title="Upload file" class="pnavbar glyphicon glyphicon-upload tour-upload"  style="cursor: pointer;"/></a></li>
-      <li id="mkdirButton" class="navbar-brand nopad"><a><span data-toggle="tooltip" data-placement="bottom" title="Create new directory" class="pnavbar glyphicon glyphicon-folder-open tour-mkdir"  style="cursor: pointer;"/></a></li>
+      <li id="mkdirButton" @click="askMkdir()" class="navbar-brand nopad"><a><span data-toggle="tooltip" data-placement="bottom" title="Create new directory" class="pnavbar glyphicon glyphicon-folder-open tour-mkdir"  style="cursor: pointer;"/></a></li>
       <li id="alternateViewButton" class="navbar-brand nopad"><a><span data-toggle="tooltip" data-placement="bottom" title="Switch view" id="altViewSpan" class="pnavbar glyphicon glyphicon-th-large tour-view"  style="cursor: pointer;"/></a></li>
       <li id="userOptionsButton" class="navbar-brand nopad">
 	<a>
@@ -30,9 +30,9 @@
 <div class="ui stackable six column grid container">
   <div class="column" v-for="file in sortedFiles">
     <div class="grid_icon_wrapper">
-      <span @click="navigateToSubdir(file.node.name)" v-bind:class="['glyphicon', 'file_icon', file.node.isDirectory ? 'glyphicon-folder-open' : 'glyphicon-file', 'picon']"/>
+      <span @click="navigateToSubdir(file.props.name)" v-bind:class="['glyphicon', 'file_icon', file.props.isDirectory ? 'glyphicon-folder-open' : 'glyphicon-file', 'picon']"/>
       <div class="content">
-        <div  v-if="file.node.isDirectory">{{ file.node.name }}</div>
+        <div  v-if="file.props.isDirectory">{{ file.props.name }}</div>
       </div>
     </div>
   </div>

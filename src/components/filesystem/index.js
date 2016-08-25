@@ -4,7 +4,8 @@ module.exports = {
         return {
 	    context: null,
             path: [],
-	    grid: true
+	    grid: true,
+	    forceUpdate:0
         };
     },
     props: {
@@ -26,6 +27,25 @@ module.exports = {
 
 	goHome: function() {
 	    this.changePath("/" + this.username);
+	},
+
+	askMkdir: function() {
+	    const newFolderName = prompt("Enter new folder name");
+            if (newFolderName == null)
+                return;
+            
+            console.log("creating new sub-dir "+ newFolderName);
+            this.mkdir(newFolderName);
+	},
+
+	currentDirChanged: function() {
+	    // force reload of computed properties
+	    this.forceUpdate++;
+	},
+
+	mkdir: function(name) {
+	    this.currentDir.props.java.mkdir(name, this.context.jcontext, false)
+                .then(x => this.currentDirChanged());
 	},
 
         changePath: function(path) {
@@ -69,6 +89,7 @@ module.exports = {
 	currentDir: function() {
 	    if (this.context == null)
 		return Promise.resolve(null);
+	    var x = this.forceUpdate;
 	    return this.context.getByPath(this.getPath());
 	},
 	files: function() {
