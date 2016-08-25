@@ -38,6 +38,10 @@ module.exports = {
             this.mkdir(newFolderName);
 	},
 
+	switchView: function() {
+	    this.grid = !this.grid;
+	},
+
 	currentDirChanged: function() {
 	    // force reload of computed properties
 	    this.forceUpdate++;

@@ -4,7 +4,7 @@
       <li id="homeButton" @click="goHome()" class="navbar-brand nopad"><a><span data-toggle="tooltip" data-placement="bottom" title="Home" class="pnavbar glyphicon glyphicon-home tour-home" style="cursor: pointer;"/></a></li>
       <li id="uploadButton" v-if="isWritable" class="navbar-brand nopad"><a><span data-toggle="tooltip" data-placement="bottom" title="Upload file" class="pnavbar glyphicon glyphicon-upload tour-upload"  style="cursor: pointer;"/></a></li>
       <li id="mkdirButton" @click="askMkdir()" v-if="isWritable" class="navbar-brand nopad"><a><span data-toggle="tooltip" data-placement="bottom" title="Create new directory" class="pnavbar glyphicon glyphicon-folder-open tour-mkdir"  style="cursor: pointer;"/></a></li>
-      <li id="alternateViewButton" class="navbar-brand nopad"><a><span data-toggle="tooltip" data-placement="bottom" title="Switch view" id="altViewSpan" class="pnavbar glyphicon glyphicon-th-large tour-view"  style="cursor: pointer;"/></a></li>
+      <li id="alternateViewButton" @click="switchView()" class="navbar-brand nopad"><a><span data-toggle="tooltip" data-placement="bottom" title="Switch view" id="altViewSpan" v-bind:class="['pnavbar', 'glyphicon', 'tour-view', grid ? 'glyphicon-list' : 'glyphicon-th-large']"  style="cursor: pointer;"/></a></li>
       <li id="userOptionsButton" class="navbar-brand nopad">
 	<a>
           <span data-toggle="tooltip" data-placement="bottom" title="Sharing options" id="sharingOptionsSpan" class="pnavbar glyphicon glyphicon-user tour-social"  style="cursor: pointer;"/>
