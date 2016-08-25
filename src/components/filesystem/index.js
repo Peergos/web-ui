@@ -24,6 +24,10 @@ module.exports = {
             }
         },
 
+	goHome: function() {
+	    this.changePath("/" + this.username);
+	},
+
         changePath: function(path) {
             console.debug('Changing to path:'+ path);
 	    if (path.startsWith("/"))
@@ -80,7 +84,13 @@ module.exports = {
 		    return Promise.all(futures);
 		});
 	    });
-        }
+        },
+	username: function() {
+	    var context = this.context;
+	    if (context == null)
+		return Promise.resolve("");
+	    return context.jcontext.username;
+	}
     },
     events: {
 	'parent-msg': function (msg) {
