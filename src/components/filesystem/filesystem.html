@@ -27,13 +27,13 @@
   
 </nav>
 
-<div class="ui stackable six column grid container">
-  <div class="column" v-for="file in sortedFiles">
-    <div class="grid_icon_wrapper">
+<div class="grid">
+  <span class="column" v-for="file in sortedFiles">
+    <span class="grid_icon_wrapper">
       <span @click="navigateToSubdir(file.props.name)" v-bind:class="['glyphicon', 'file_icon', file.props.isDirectory ? 'glyphicon-folder-open' : 'glyphicon-file', 'picon']"/>
       <div class="content">
         <div  v-if="file.props.isDirectory">{{ file.props.name }}</div>
       </div>
-    </div>
-  </div>
+    </span>
+  </span>
 </div>
