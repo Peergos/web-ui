@@ -52,6 +52,19 @@ module.exports = {
                 .then(x => this.currentDirChanged());
 	},
 
+	askForFile: function() {
+
+	},
+
+        uploadFile: function(name, fileStream, length, monitor) {
+	    this.currentDir.props.java.uploadFile(name, fileStream, length, this.context.jcontext, monitor)
+                .then(x => this.currentDirChanged());
+	},
+
+        showSocial: function(name) {
+	    
+	},
+
         changePath: function(path) {
             console.debug('Changing to path:'+ path);
 	    if (path.startsWith("/"))
