@@ -2,6 +2,9 @@ var Filesystem  = require('./components/filesystem');
 var Login       = require('./components/login');
 var Signup      = require('./components/signup');
 
+var VueAsyncComputed = require('./plugins/vue-async-computed');
+Vue.use(VueAsyncComputed);
+
 // Loading components
 Vue.component('filesystem', Vue.extend(Filesystem));
 Vue.component('login', Vue.extend(Login));

@@ -9,20 +9,26 @@ body .grid {
 }
 .pnavbar {
   font-size: 1.7em;
+  margin-top: 0.1em;
+  margin-bottom: 0.1em;
 }
 .btn_pnavbar {
   font-size: 1.7em;
-  margin-top:0.4em;
+  margin-top:-0.8em;
   margin-bottom:0.4em;
 }
 .pnavbar_top_right {
-  margin-top:0;
+  font-size: 1.7em;
+  margin-top:0.4em;
   margin-left:0.4em;
   margin-right:0.4em;
   position:absolute;
   float:right;
   top:0;
   right:0;
+}
+.top_right_icon {
+  font-size: 1em;
 }
 .file_icon {
   cursor:pointer;

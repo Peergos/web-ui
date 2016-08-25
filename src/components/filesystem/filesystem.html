@@ -13,14 +13,14 @@
       </li>
     </ul>
   </div>
-  <a id="pathSpan"><span data-toggle="tooltip" data-placement="bottom" title="Current location" class="pnavbar glyphicon glyphicon-chevron-right tour-path"/></a>
+  <a id="pathSpan" style="font-size:28px;"><span data-toggle="tooltip" data-placement="bottom" title="Current location" class="pnavbar glyphicon glyphicon-chevron-right tour-path" style="vertical-align:'middle';"/></a>
   <span class="tour-path" v-for="dir in path" track-by="$index">
     <button @click="goBackToLevel($index+1)" class="btn_pnavbar btn tour-path">{{dir}}</button>
     <span class="divider"> </span>
   </span>
 
   <ul class="nav navbar-nav navbar-right pnavbar_top_right">
-    <button @click="showUserMenu()" class="btn btn_pnavbar tour-logout">
+    <button @click="showUserMenu()" class="btn top_right_icon tour-logout">
       <span class="glyphicon glyphicon-off"></span>
     </button>
   </ul>
