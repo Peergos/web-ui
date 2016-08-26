@@ -24,8 +24,6 @@ function UserContextWrapper(context) {
 function FileTreeNodeWrapper(props) {
     this.props = props;
     this.type = props.isDirectory ? "dir" : "file";
-    console.log("Modified: ");
-    console.log(props.modified);
 
     // return FileTreeNodeWrapper[]
     this.getChildren = function(context) {

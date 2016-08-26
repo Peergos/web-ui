@@ -82,7 +82,6 @@ module.exports = {
     },
     computed: {
         sortedFiles: function() {
-	    console.log(this.files);
 	    if (this.files == null)
 		return [];
             return this.files.slice(0).sort(function(a, b) {
@@ -104,8 +103,6 @@ module.exports = {
 	isWritable: function() {
 	    if (this.currentDir == null)
 		return false;
-	    console.log("WRITE");
-	    console.log(this.currentDir.props);
 	    return this.currentDir.props.isWritable;
 	}
     },
