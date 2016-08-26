@@ -27,7 +27,7 @@
   
 </nav>
 
-<div class="grid">
+<div class="grid" v-if="grid">
   <span class="column" v-for="file in sortedFiles">
     <span class="grid_icon_wrapper">
       <span @click="navigateToSubdir(file.props.name)" v-bind:class="['glyphicon', 'file_icon', file.props.isDirectory ? 'glyphicon-folder-open' : 'glyphicon-file', 'picon']"/>
@@ -36,4 +36,22 @@
       </div>
     </span>
   </span>
+</div>
+<div class="table-responsive" v-if="!grid">
+  <table class="table">
+    <thead>
+      <tr>
+        <th>Name</th>
+	<th>Size</th>
+	<th>Type</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr v-for="file in sortedFiles">
+        <td>{{ file.props.name }}</td>
+	<td>{{ file.props.size }}</td>
+	<td>{{ file.type }}</td>
+      </tr>
+    </tbody>
+  </table>
 </div>
