@@ -3,6 +3,8 @@ body {
 }
 body .grid {
   height: 100%;
+  padding: 2em;
+  padding-left: 4em;
 }
 .picon {
   font-size: 3em;
@@ -38,4 +40,11 @@ body .grid {
 }
 .nopad {
   padding:0;
+}
+table {
+  font-size: 1.5em;
+}
+.table-responsive {
+  padding: 2em;
+  padding-left: 4em;
 }
