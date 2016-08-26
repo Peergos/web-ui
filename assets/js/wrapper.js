@@ -24,6 +24,8 @@ function UserContextWrapper(context) {
 function FileTreeNodeWrapper(props) {
     this.props = props;
     this.type = props.isDirectory ? "dir" : "file";
+    console.log("Modified: ");
+    console.log(props.modified);
 
     // return FileTreeNodeWrapper[]
     this.getChildren = function(context) {
@@ -36,7 +38,8 @@ function convertToJSFile(javaFileTreeNode) {
     const members = [
 	["name", ftn => ftn.getFileProperties().then(props => props.name)],
 	["size", ftn => ftn.getFileProperties().then(props => props.size)],
-	["isHidden", ftn => ftn.getFileProperties().then(props => props.isHidden)]
+	["isHidden", ftn => ftn.getFileProperties().then(props => props.isHidden)],
+	["modified", ftn => ftn.getFileProperties().then(props => props.modified).then(m => m.toString())]
     ];
     const functions = [
 	["isDirectory", ftn => ftn.isDirectory()],
