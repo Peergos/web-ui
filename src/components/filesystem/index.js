@@ -92,7 +92,7 @@ module.exports = {
                         return 1;
                     }
                 } else {
-                    if (a.name < b.name) {
+                    if (a.props.name < b.props.name) {
                         return -1;
                     } else {
                         return 1;
