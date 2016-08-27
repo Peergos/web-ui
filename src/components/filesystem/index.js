@@ -169,7 +169,11 @@ module.exports = {
 		    for (var i=0; i < arr.length; i++) {
 			futures[i] = convertToJSFile(arr[i]);
 		    }
-		    return Promise.all(futures);
+		    return Promise.all(futures).then(function(jsarr){
+			return Promise.resolve(jsarr.filter(function(f){
+			    return !f.props.isHidden;
+			}));
+		    });
 		});
 	    });
         },
