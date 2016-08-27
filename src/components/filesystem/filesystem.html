@@ -33,7 +33,7 @@
     <span class="grid_icon_wrapper">
       <span v-on:dblclick="navigateOrDownload(file.props.name)" v-bind:class="['glyphicon', 'file_icon', file.props.isDirectory ? 'glyphicon-folder-open' : 'glyphicon-file', 'picon']"/>
       <div class="content">
-        <div  v-if="file.props.isDirectory">{{ file.props.name }}</div>
+        <div  v-if="file.props.isDirectory" class="noselect">{{ file.props.name }}</div>
       </div>
     </span>
   </span>
