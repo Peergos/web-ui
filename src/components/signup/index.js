@@ -13,6 +13,15 @@ module.exports = {
     },
     created: function() {
         console.debug('Signup module created!');
+	var that = this;
+	Vue.nextTick(function() {
+	    if (that.username.length == 0)
+		document.getElementById("username").focus();
+	    else if (that.password1.length == 0)
+		document.getElementById("password1").focus();
+	    else
+		document.getElementById("password2").focus();
+	});
     },
     methods: {
         signup : function() {

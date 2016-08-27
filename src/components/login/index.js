@@ -13,6 +13,10 @@ module.exports = {
     },
     created: function() {
         console.debug('Login module created!');
+	var that = this;
+	Vue.nextTick(function() {
+	    document.getElementById("username").focus();
+	});
     },
     methods: {
         login : function() {
