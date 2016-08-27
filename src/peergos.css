@@ -48,3 +48,11 @@ table {
   padding: 2em;
   padding-left: 4em;
 }
+.navbar-nav {
+  margin-left: 0.1em;
+}
+@media (min-width: 768px) {
+   .navbar-collapse.collapse {
+       display: inline-block !important;
+   }
+}
