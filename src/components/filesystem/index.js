@@ -55,7 +55,7 @@ module.exports = {
 	},
 
 	askForFile: function() {
-
+	    //TODO
 	},
 
         uploadFile: function(name, fileStream, length, monitor) {
@@ -64,7 +64,7 @@ module.exports = {
 	},
 
         showSocial: function(name) {
-	    
+	    //TODO
 	},
 
 	setSortBy: function(prop) {
@@ -80,8 +80,24 @@ module.exports = {
             this.path = path ? path.split('/') : [];
         },
 
-	navigateToSubdir: function(name) {
+	navigateOrDownload: function(name) {
+	    var files = this.files;
+	    var file;
+	    for (var i=0; i < files.length; i++)
+		if (files[i].props.name == name)
+		    file = files[i];
+	    if (file.type == 'file') 
+		this.downloadFile(file);
+	    else
+		this.navigateToSubdir(name);
+	},
+
+        navigateToSubdir: function(name) {
 	    this.changePath(this.getPath() + name);
+	},
+
+        downloadFile: function(file) {
+	    //TODO
 	},
 
         getPath: function() {

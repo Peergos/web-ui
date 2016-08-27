@@ -31,7 +31,7 @@
 <div class="grid" v-if="grid">
   <span class="column" v-for="file in sortedFiles">
     <span class="grid_icon_wrapper">
-      <span v-on:dblclick="navigateToSubdir(file.props.name)" v-bind:class="['glyphicon', 'file_icon', file.props.isDirectory ? 'glyphicon-folder-open' : 'glyphicon-file', 'picon']"/>
+      <span v-on:dblclick="navigateOrDownload(file.props.name)" v-bind:class="['glyphicon', 'file_icon', file.props.isDirectory ? 'glyphicon-folder-open' : 'glyphicon-file', 'picon']"/>
       <div class="content">
         <div  v-if="file.props.isDirectory">{{ file.props.name }}</div>
       </div>
