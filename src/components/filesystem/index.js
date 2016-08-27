@@ -5,6 +5,8 @@ module.exports = {
 	    context: null,
             path: [],
 	    grid: true,
+	    sortBy: "name",
+	    normalSortOrder: true,
 	    forceUpdate:0
         };
     },
@@ -65,6 +67,12 @@ module.exports = {
 	    
 	},
 
+	setSortBy: function(prop) {
+	    if (this.sortBy == prop)
+		this.normalSortOrder = !this.normalSortOrder;
+	    this.sortBy = prop;
+	},
+
         changePath: function(path) {
             console.debug('Changing to path:'+ path);
 	    if (path.startsWith("/"))
@@ -84,18 +92,40 @@ module.exports = {
         sortedFiles: function() {
 	    if (this.files == null)
 		return [];
+	    var sortBy = this.sortBy;
+	    var reverseOrder = ! this.normalSortOrder;
             return this.files.slice(0).sort(function(a, b) {
+		var aVal, bVal;
+		if (sortBy == null)
+		    return 0;
+		if (sortBy == "name") {
+		    aVal = a.props.name;
+		    bVal = b.props.name;
+		} else if (sortBy == "size") {
+		    aVal = a.props.size;
+		    bVal = b.props.size;
+		} else if (sortBy == "modified") {
+		    aVal = a.props.modified;
+		    bVal = b.props.modified;
+		} else if (sortBy == "type") {
+		    aVal = a.type;
+		    bVal = b.type;
+		} else
+		    throw "Unknown sort type " + sortBy;
+		    
                 if (a.type !== b.type) {
                     if (a.type === 'dir') {
-                        return -1;
+                        return reverseOrder ? 1 : -1;
                     } else {
-                        return 1;
+                        return reverseOrder ? -1 : 1;
                     }
                 } else {
-                    if (a.props.name < b.props.name) {
-                        return -1;
+                    if (aVal < bVal) {
+                        return reverseOrder ? 1 : -1;
+                    } else if (aVal == bVal) {
+                        return 0;
                     } else {
-                        return 1;
+                        return reverseOrder ? -1 : 1;
                     }
                 }
             });

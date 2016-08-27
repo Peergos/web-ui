@@ -40,11 +40,11 @@
 <div class="table-responsive" v-if="!grid">
   <table class="table">
     <thead>
-      <tr>
-        <th>Name</th>
-	<th>Size</th>
-	<th>Type</th>
-	<th>Modified</th>
+      <tr style="cursor:pointer;">
+        <th @click="setSortBy('name')">Name <span v-if="sortBy=='name'" v-bind:class="['glyphicon', normalSortOrder ? 'glyphicon-chevron-down' : 'glyphicon-chevron-up']"/></th>
+	<th @click="setSortBy('size')">Size <span v-if="sortBy=='size'" v-bind:class="['glyphicon', normalSortOrder ? 'glyphicon-chevron-down' : 'glyphicon-chevron-up']"/></th>
+	<th @click="setSortBy('type')">Type <span v-if="sortBy=='type'" v-bind:class="['glyphicon', normalSortOrder ? 'glyphicon-chevron-down' : 'glyphicon-chevron-up']"/></th>
+	<th @click="setSortBy('modified')">Modified <span v-if="sortBy=='modified'" v-bind:class="['glyphicon', normalSortOrder ? 'glyphicon-chevron-down' : 'glyphicon-chevron-up']"/></th>
       </tr>
     </thead>
     <tbody>
