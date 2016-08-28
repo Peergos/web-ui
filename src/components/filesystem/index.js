@@ -7,6 +7,7 @@ module.exports = {
 	    grid: true,
 	    sortBy: "name",
 	    normalSortOrder: true,
+	    clipboard:{},
 	    forceUpdate:0
         };
     },
@@ -102,7 +103,50 @@ module.exports = {
 
         getPath: function() {
             return '/'+this.path.join('/') + (this.path.length > 0 ? "/" : "");
-        }
+        },
+
+	dragStart: function(ev, treeNode) {
+	    console.log("dragstart");
+	    
+	    ev.dataTransfer.effectAllowed='move';
+            var id = ev.target.id;
+            ev.dataTransfer.setData("text/plain", id);
+            var owner = treeNode.props.owner;
+            var me = this.username;
+            if (owner === me) {
+                this.clipboard = {
+		    parent: this.currentDir,
+                    fileTreeNode: treeNode,
+                    op: "cut"
+                };
+            } else {
+                ev.dataTransfer.effectAllowed='copy';
+                this.clipboard = {
+                    fileTreeNode: treeNode,
+                    op: "copy"
+                };
+            }
+	},
+
+	// DragEvent, FileTreeNode => boolean
+	drop: function(ev, target) {
+	    ev.preventDefault();
+            var moveId = ev.dataTransfer.getData("text");
+            var id = ev.target.id;
+	    var that = this;
+            if(id != moveId && target.props.isDirectory) {
+                const clipboard = this.clipboard;
+                if (typeof(clipboard) ==  undefined || typeof(clipboard.op) == "undefined")
+                    return;
+                if (clipboard.op == "cut") {
+                    clipboard.fileTreeNode.props.java.copyTo(target.props.java, this.context.jcontext).then(function() {
+                        return clipboard.fileTreeNode.props.java.remove(that.context.jcontext, clipboard.parent.props.java);
+                    }).then(function() {
+                        that.forceUpdate++;
+                    });
+                }
+            }
+	},
     },
     computed: {
         sortedFiles: function() {

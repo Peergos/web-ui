@@ -41,7 +41,8 @@ function convertToJSFile(javaFileTreeNode) {
     ];
     const functions = [
 	["isDirectory", ftn => ftn.isDirectory()],
-	["isWritable", ftn => ftn.isWritable()]
+	["isWritable", ftn => ftn.isWritable()],
+	["owner", ftn => ftn.getOwner()]
     ];
     return calculateProps(javaFileTreeNode, members, functions).then(function(fileWithProps) {
 	return Promise.resolve(new FileTreeNodeWrapper(fileWithProps));
