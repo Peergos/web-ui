@@ -56,7 +56,7 @@ function postProm(url, data, unzip) {
             reject(Error("Network Error"));
 	};
 	
-	req.send(data);
+	req.send(new Uint8Array(data));
     }).then(function(result, err) {
         if (err != null)
             future.completeExceptionally(err);
