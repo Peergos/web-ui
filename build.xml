@@ -94,7 +94,7 @@
     </exec>
   </target>
 
-  <target name="ui" depends="assets,css,js" description="build our part of the ui">
+  <target name="ui" depends="ui_dev_vendor,assets,css,js" description="build our part of the ui">
   </target>
 
   <taskdef name="watch"

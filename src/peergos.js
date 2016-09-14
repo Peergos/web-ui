@@ -11,7 +11,7 @@ Vue.component('login', Vue.extend(Login));
 Vue.component('signup', Vue.extend(Signup));
 
 // Initializing Vue
-var peergos = new Vue({
+var vueRoot = new Vue({
     el: 'body',
     data: {
         currentView: 'login',
