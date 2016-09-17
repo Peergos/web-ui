@@ -41,7 +41,7 @@ function postProm(url, data, unzip) {
 	req.responseType = 'arraybuffer';
 	
 	req.onload = function() {
-	    console.log("http post returned");
+	    console.log("http post returned retrieving " + url);
             // This is called even on 404 etc
             // so check the status
             if (req.status == 200) {
@@ -61,7 +61,7 @@ function postProm(url, data, unzip) {
         if (err != null)
             future.completeExceptionally(err);
         else
-            future.complete(result);
+            future.complete(peergos.shared.user.JavaScriptPoster.convertToBytes(result));
     });
     return future;
 }
