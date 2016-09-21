@@ -22,12 +22,10 @@ module.exports = {
         login : function() {
             const creationStart = Date.now();
 	    const that = this;
-            JavaPoly.type("peergos.user.UserContext").then(function(UserContext) {
-                return UserContext.ensureSignedUp(that.username, that.password, 8000, true);
-            }).then(function(context) {
+            return peergos.shared.user.UserContext.ensureSignedUp(that.username, that.password, 8000, true).thenApply(function(context) {
                 that.$dispatch('child-msg', {
 		    view:'filesystem', 
-		    props:{context:new UserContextWrapper(context)}
+		    props:{context: context}
 		});
                 console.log("Signing in/up took " + (Date.now()-window.pageStart)+" mS from page start");
                 console.log("Signing in/up took " + (Date.now()-creationStart)+" mS from function call");
