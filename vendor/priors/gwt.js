@@ -26,7 +26,7 @@ function getProm(url) {
         if (err != null)
             future.completeExceptionally(err);
         else
-            future.complete(result);
+            future.complete(peergos.shared.user.JavaScriptPoster.convertToBytes(result));
     });
     return future;
 }
