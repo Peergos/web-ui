@@ -201,7 +201,10 @@ module.exports = {
 	    if (this.context == null)
 		return Promise.resolve(null);
 	    var x = this.forceUpdate;
-	    return this.context.getByPath(this.getPath());
+	    var that = this;
+	    return new Promise(function(resolve, reject) {
+		that.context.getByPath(that.getPath()).thenApply(file => resolve(file));
+	    });
 	},
 	files: function() {
             var current = this.currentDir;
@@ -225,7 +228,7 @@ module.exports = {
 	    var context = this.context;
 	    if (context == null)
 		return Promise.resolve("");
-	    return context.jcontext.username;
+	    return Promise.resolve(context.username);
 	}
     },
     events: {
