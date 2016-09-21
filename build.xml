@@ -117,6 +117,9 @@
     <exec executable="ant" dir="${server_src}" failifexecutionfails="true">
       <arg value="dist"/>
     </exec>
+    <exec executable="ant" dir="${server_src}" failifexecutionfails="true">
+      <arg value="gwtc"/>
+    </exec>
   </target>
 
   <target name="update_server" depends="compile_server" description="regenerate the server">
@@ -127,18 +130,8 @@
     <copy todir="${server}">
       <fileset file="${server_src}/PeergosServer.jar"/>
     </copy>
-    <copy todir="${ui}/java">
-      <fileset file="${server_src}/ui/PeergosClient.jar"/>
-      <fileset file="${server_src}/lib/IPFS.jar"/>
-    </copy>
-    <copy todir="${ui}/java/javapoly">
-      <fileset dir="${server_src}/ui/javapoly"/>
-    </copy>
-    <copy todir="${ui}/doppio">
-      <fileset dir="${server_src}/ui/doppio"/>
-    </copy>
-    <copy todir="${ui}/browserfs">
-      <fileset dir="${server_src}/ui/browserfs"/>
+    <copy todir="${ui}/js">
+      <fileset file="${server_src}/war/peergos/*cache.js"/>
     </copy>
   </target>
 
