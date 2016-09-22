@@ -85,7 +85,7 @@ module.exports = {
 	    var files = this.files;
 	    var file;
 	    for (var i=0; i < files.length; i++)
-		if (files[i].props.name == name)
+		if (files[i].getFileProperties().name == name)
 		    file = files[i];
 	    if (file.type == 'file') 
 		this.downloadFile(file);
@@ -111,7 +111,7 @@ module.exports = {
 	    ev.dataTransfer.effectAllowed='move';
             var id = ev.target.id;
             ev.dataTransfer.setData("text/plain", id);
-            var owner = treeNode.props.owner;
+            var owner = treeNode.getOwner();
             var me = this.username;
             if (owner === me) {
                 this.clipboard = {
@@ -134,13 +134,13 @@ module.exports = {
             var moveId = ev.dataTransfer.getData("text");
             var id = ev.target.id;
 	    var that = this;
-            if(id != moveId && target.props.isDirectory) {
+            if(id != moveId && target.isDirectory()) {
                 const clipboard = this.clipboard;
                 if (typeof(clipboard) ==  undefined || typeof(clipboard.op) == "undefined")
                     return;
                 if (clipboard.op == "cut") {
-                    clipboard.fileTreeNode.copyTo(target.props.java, this.context.jcontext).thenApply(function() {
-                        return clipboard.fileTreeNode.props.java.remove(that.context.jcontext, clipboard.parent.props.java);
+                    clipboard.fileTreeNode.copyTo(target, this.context).thenApply(function() {
+                        return clipboard.fileTreeNode.remove(that.context, clipboard.parent);
                     }).thenApply(function() {
                         that.forceUpdate++;
                     });
@@ -159,14 +159,14 @@ module.exports = {
 		if (sortBy == null)
 		    return 0;
 		if (sortBy == "name") {
-		    aVal = a.props.name;
-		    bVal = b.props.name;
+		    aVal = a.getFileProperties().name;
+		    bVal = b.getFileProperties().name;
 		} else if (sortBy == "size") {
-		    aVal = a.props.size;
-		    bVal = b.props.size;
+		    aVal = a.getFileProperties().sizeLow();
+		    bVal = b.getFileProperties().sizeLow();
 		} else if (sortBy == "modified") {
-		    aVal = a.props.modified;
-		    bVal = b.props.modified;
+		    aVal = a.getFileProperties().modified;
+		    bVal = b.getFileProperties().modified;
 		} else if (sortBy == "type") {
 		    aVal = a.type;
 		    bVal = b.type;
@@ -193,7 +193,6 @@ module.exports = {
 	isWritable: function() {
 	    if (this.currentDir == null)
 		return false;
-	    console.log(this.currentDir);
 	    return this.currentDir.isWritable();
 	}
     },
@@ -211,15 +210,12 @@ module.exports = {
             var current = this.currentDir;
 	    if (current == null)
 		return Promise.resolve([]);
-	    return current.getChildren(this.context).thenApply(function(children){
-		var arr = children.toArray();
-		var futures = [];
-		for (var i=0; i < arr.length; i++) {
-		    futures[i] = convertToJSFile(arr[i]);
-		}
-		return Promise.all(futures).then(function(jsarr){
-		    return Promise.resolve(jsarr.filter(function(f){
-			return !f.props.isHidden;
+	    var that = this;
+	    return new Promise(function(resolve, reject) {
+		current.getChildren(that.context).thenApply(function(children){
+		    var arr = children.toArray();
+		    resolve(arr.filter(function(f){
+			return !f.getFileProperties().isHidden;
 		    }));
 		});
 	    });
