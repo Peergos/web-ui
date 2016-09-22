@@ -51,8 +51,8 @@ module.exports = {
 	},
 
 	mkdir: function(name) {
-	    this.currentDir.props.java.mkdir(name, this.context.jcontext, false)
-                .then(x => this.currentDirChanged());
+	    this.currentDir.mkdir(name, this.context, false)
+                .thenApply(x => this.currentDirChanged());
 	},
 
 	askForFile: function() {
@@ -60,8 +60,8 @@ module.exports = {
 	},
 
         uploadFile: function(name, fileStream, length, monitor) {
-	    this.currentDir.props.java.uploadFile(name, fileStream, length, this.context.jcontext, monitor)
-                .then(x => this.currentDirChanged());
+	    this.currentDir.uploadFile(name, fileStream, length, this.context, monitor)
+                .thenApply(x => this.currentDirChanged());
 	},
 
         showSocial: function(name) {
@@ -139,9 +139,9 @@ module.exports = {
                 if (typeof(clipboard) ==  undefined || typeof(clipboard.op) == "undefined")
                     return;
                 if (clipboard.op == "cut") {
-                    clipboard.fileTreeNode.props.java.copyTo(target.props.java, this.context.jcontext).then(function() {
+                    clipboard.fileTreeNode.copyTo(target.props.java, this.context.jcontext).thenApply(function() {
                         return clipboard.fileTreeNode.props.java.remove(that.context.jcontext, clipboard.parent.props.java);
-                    }).then(function() {
+                    }).thenApply(function() {
                         that.forceUpdate++;
                     });
                 }
@@ -193,7 +193,8 @@ module.exports = {
 	isWritable: function() {
 	    if (this.currentDir == null)
 		return false;
-	    return this.currentDir.props.isWritable;
+	    console.log(this.currentDir);
+	    return this.currentDir.isWritable();
 	}
     },
     asyncComputed: {
@@ -203,24 +204,23 @@ module.exports = {
 	    var x = this.forceUpdate;
 	    var that = this;
 	    return new Promise(function(resolve, reject) {
-		that.context.getByPath(that.getPath()).thenApply(file => resolve(file));
+		that.context.getByPath(that.getPath()).thenApply(file => resolve(file.get()));
 	    });
 	},
 	files: function() {
             var current = this.currentDir;
 	    if (current == null)
 		return Promise.resolve([]);
-	    return current.getChildren(this.context).then(function(children){
-		return children.toArray().then(function(arr) {
-		    var futures = [];
-		    for (var i=0; i < arr.length; i++) {
-			futures[i] = convertToJSFile(arr[i]);
-		    }
-		    return Promise.all(futures).then(function(jsarr){
-			return Promise.resolve(jsarr.filter(function(f){
-			    return !f.props.isHidden;
-			}));
-		    });
+	    return current.getChildren(this.context).thenApply(function(children){
+		var arr = children.toArray();
+		var futures = [];
+		for (var i=0; i < arr.length; i++) {
+		    futures[i] = convertToJSFile(arr[i]);
+		}
+		return Promise.all(futures).then(function(jsarr){
+		    return Promise.resolve(jsarr.filter(function(f){
+			return !f.props.isHidden;
+		    }));
 		});
 	    });
         },
