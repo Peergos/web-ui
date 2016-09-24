@@ -114,12 +114,14 @@ module.exports = {
             var owner = treeNode.getOwner();
             var me = this.username;
             if (owner === me) {
+		console.log("cut");
                 this.clipboard = {
 		    parent: this.currentDir,
                     fileTreeNode: treeNode,
                     op: "cut"
                 };
             } else {
+		console.log("copy");
                 ev.dataTransfer.effectAllowed='copy';
                 this.clipboard = {
                     fileTreeNode: treeNode,
@@ -140,12 +142,16 @@ module.exports = {
                 if (typeof(clipboard) ==  undefined || typeof(clipboard.op) == "undefined")
                     return;
                 if (clipboard.op == "cut") {
+		    console.log("drop-cut");
                     clipboard.fileTreeNode.copyTo(target, this.context).thenApply(function() {
                         return clipboard.fileTreeNode.remove(that.context, clipboard.parent);
                     }).thenApply(function() {
                         that.forceUpdate++;
                     });
-                }
+                } else if (clipboard.op == "copy") {
+		    console.log("drop-copy");
+                    clipboard.fileTreeNode.copyTo(target, this.context);
+		}
             }
 	},
     },
