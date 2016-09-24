@@ -27,7 +27,6 @@ module.exports = {
 		    view:'filesystem', 
 		    props:{context: context}
 		});
-                console.log("Signing in/up took " + (Date.now()-window.pageStart)+" mS from page start");
                 console.log("Signing in/up took " + (Date.now()-creationStart)+" mS from function call");
             });
         },

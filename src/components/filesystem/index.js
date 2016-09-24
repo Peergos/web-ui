@@ -130,6 +130,7 @@ module.exports = {
 
 	// DragEvent, FileTreeNode => boolean
 	drop: function(ev, target) {
+	    console.log("drop");
 	    ev.preventDefault();
             var moveId = ev.dataTransfer.getData("text");
             var id = ev.target.id;

@@ -1,5 +1,5 @@
 function getProm(url) {
-    console.log("getProm");
+    console.log("getProm " + url);
     var future = peergos.shared.util.FutureUtils.incomplete();
     new Promise(function(resolve, reject) {
 	var req = new XMLHttpRequest();
@@ -7,6 +7,7 @@ function getProm(url) {
 	req.responseType = 'arraybuffer';
 	
 	req.onload = function() {
+	    console.log("http get returned retrieving " + url);
             // This is called even on 404 etc
             // so check the status
             if (req.status == 200) {
@@ -32,7 +33,7 @@ function getProm(url) {
 }
 
 function postProm(url, data, unzip) {
-    console.log("postProm");
+    console.log("postProm " + url);
     var future = peergos.shared.util.FutureUtils.incomplete();
     new Promise(function(resolve, reject) {
 	console.log("making http post request");
