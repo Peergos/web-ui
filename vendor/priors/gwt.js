@@ -73,3 +73,32 @@ var http = {
 	this.post = postProm;
     }
 };
+
+function hashToKeyBytesProm(username, password) {
+    console.log("hashToKeyBytesProm " + username);
+    var future = peergos.shared.util.FutureUtils.incomplete();
+    new Promise(function(resolve, reject) {
+        console.log("making scrypt request");
+        
+        var t1 = Date.now();
+        var hash = sha256($wnd.nacl.util.decodeUTF8(password));
+        var salt = nacl.util.decodeUTF8(username)
+        scrypt(hash, salt, 17, 8, 96, 1000, function(keyBytes) {
+            console.log("JS Scrypt complete in: "+ (Date.now()-t1)+"mS");
+            var hashedBytes = $wnd.nacl.util.decodeBase64(keyBytes);
+            resolve(hashedBytes);
+        }, 'base64');  
+    }).then(function(result, err) {
+        if (err != null)
+            future.completeExceptionally(err);
+        else
+            future.complete(result);
+    });
+    return future;
+}
+
+var scriptJS = {
+    NativeScryptJS: function() {
+    this.hashToKeyBytes = hashToKeyBytesProm;
+    }
+};
