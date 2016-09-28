@@ -5,6 +5,10 @@ module.exports = {
             username: [],
             password1: [],
 	    password2: [],
+	    isError: false,
+	    errorClass: "",
+	    error:"",
+	    passwordWarningThreshold: 12,
 	    email: []
         };
     },
@@ -27,14 +31,44 @@ module.exports = {
         signup : function() {
             const creationStart = Date.now();
 	    const that = this;
-	    return peergos.shared.user.UserContext.ensureSignedUp(that.username, that.password1, 8000, true).thenApply(function(context) {
-                that.$dispatch('child-msg', {
-		    view:'filesystem', 
-		    props:{context: context}
+	    if (that.password1 != that.password2) {
+		this.isError = true;
+		this.error = "Passwords do not match!";
+	    } else
+		return peergos.shared.user.UserContext.ensureSignedUp(that.username, that.password1, 8000, true).thenApply(function(context) {
+                    that.$dispatch('child-msg', {
+			view:'filesystem', 
+			props:{context: context}
+		    });
+                    console.log("Signing in/up took " + (Date.now()-creationStart)+" mS from function call");
 		});
-                console.log("Signing in/up took " + (Date.now()-creationStart)+" mS from function call");
-            });
-        }
+        },
+	validatePassword: function(inFirstField) {
+	    console.log("validate");
+	    if (inFirstField && !this.checkPassword)
+		return;
+	    // after one failed attempt update the status after each keystroke
+	    var passwd = this.password1;
+	    var index = -1;//commonPasswords.indexOf(passwd);
+	    var suffix = ["th", "st", "nd", "rd", "th", "th", "th", "th", "th", "th"][(index+1) % 10];
+	    if (index != -1) {
+		this.checkPassword = true;
+		this.isError = true;
+                this.errorClass = "has-error has-feedback alert alert-danger";
+                this.error = "Warning: your password is the " + (index+1) + suffix + " most common password!";
+		//document.getElementById("signup-password-input").onkeyup = document.getElementById("signup-verify-password-input").onfocus;
+            } else if (passwd.length < this.passwordWarningThreshold) {
+		this.checkPassword = true;
+		this.isError = true;
+                this.errorClass = "has-error has-feedback alert alert-danger";
+                this.error = "Warning: passwords less than "+ this.passwordWarningThreshold +" characters are considered unsafe.";
+		//document.getElementById("signup-password-input").onkeyup = document.getElementById("signup-verify-password-input").onfocus;
+            }
+	    else {
+                this.errorClass = this.checkPassword ? "alert alert-success" : "";
+		this.error = this.checkPassword ? "That's a better password." : "";
+	    }
+	}
     },
     computed: {
 
