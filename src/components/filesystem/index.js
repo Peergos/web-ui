@@ -142,7 +142,7 @@ module.exports = {
                 if (typeof(clipboard) ==  undefined || typeof(clipboard.op) == "undefined")
                     return;
                 if (clipboard.op == "cut") {
-		    console.log("drop-cut");
+		    console.log("drop-cut "+clipboard.fileTreeNode.getFileProperties().name + " -> "+target.getFileProperties().name);
                     clipboard.fileTreeNode.copyTo(target, this.context).thenCompose(function() {
                         return clipboard.fileTreeNode.remove(that.context, clipboard.parent);
                     }).thenApply(function() {
