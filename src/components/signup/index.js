@@ -44,7 +44,6 @@ module.exports = {
 		});
         },
 	validatePassword: function(inFirstField) {
-	    console.log("validate");
 	    if (inFirstField && !this.checkPassword)
 		return;
 	    // after one failed attempt update the status after each keystroke
@@ -56,13 +55,11 @@ module.exports = {
 		this.isError = true;
                 this.errorClass = "has-error has-feedback alert alert-danger";
                 this.error = "Warning: your password is the " + (index+1) + suffix + " most common password!";
-		//document.getElementById("signup-password-input").onkeyup = document.getElementById("signup-verify-password-input").onfocus;
             } else if (passwd.length < this.passwordWarningThreshold) {
 		this.checkPassword = true;
 		this.isError = true;
                 this.errorClass = "has-error has-feedback alert alert-danger";
                 this.error = "Warning: passwords less than "+ this.passwordWarningThreshold +" characters are considered unsafe.";
-		//document.getElementById("signup-password-input").onkeyup = document.getElementById("signup-verify-password-input").onfocus;
             }
 	    else {
                 this.errorClass = this.checkPassword ? "alert alert-success" : "";
