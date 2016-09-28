@@ -1,3 +1,5 @@
+var commonPasswords = require('passwords.json');
+
 module.exports = {
     template: require('signup.html'),
     data: function() {
@@ -5,10 +7,12 @@ module.exports = {
             username: [],
             password1: [],
 	    password2: [],
+	    checkPassword: false,
 	    isError: false,
 	    errorClass: "",
 	    error:"",
 	    passwordWarningThreshold: 12,
+	    commonPasswords: commonPasswords,
 	    email: []
         };
     },
@@ -48,7 +52,7 @@ module.exports = {
 		return;
 	    // after one failed attempt update the status after each keystroke
 	    var passwd = this.password1;
-	    var index = -1;//commonPasswords.indexOf(passwd);
+	    var index = this.commonPasswords.indexOf(passwd);
 	    var suffix = ["th", "st", "nd", "rd", "th", "th", "th", "th", "th", "th"][(index+1) % 10];
 	    if (index != -1) {
 		this.checkPassword = true;
