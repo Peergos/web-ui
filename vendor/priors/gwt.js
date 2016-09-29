@@ -36,7 +36,6 @@ function postProm(url, data, unzip) {
     console.log("postProm " + url);
     var future = peergos.shared.util.FutureUtils.incomplete();
     new Promise(function(resolve, reject) {
-	console.log("making http post request");
 	var req = new XMLHttpRequest();
 	req.open('POST', window.location.origin + "/" + url);
 	req.responseType = 'arraybuffer';
