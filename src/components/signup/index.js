@@ -39,7 +39,7 @@ module.exports = {
 		this.isError = true;
 		this.error = "Passwords do not match!";
 	    } else
-		return peergos.shared.user.UserContext.ensureSignedUp(that.username, that.password1, 8000, true).thenApply(function(context) {
+		return peergos.shared.user.UserContext.ensureSignedUp(that.username, that.password1).thenApply(function(context) {
                     that.$dispatch('child-msg', {
 			view:'filesystem', 
 			props:{context: context}

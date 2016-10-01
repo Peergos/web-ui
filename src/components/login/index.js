@@ -22,7 +22,7 @@ module.exports = {
         login : function() {
             const creationStart = Date.now();
 	    const that = this;
-            return peergos.shared.user.UserContext.ensureSignedUp(that.username, that.password, 8000, true).thenApply(function(context) {
+            return peergos.shared.user.UserContext.ensureSignedUp(that.username, that.password).thenApply(function(context) {
                 that.$dispatch('child-msg', {
 		    view:'filesystem', 
 		    props:{context: context}
