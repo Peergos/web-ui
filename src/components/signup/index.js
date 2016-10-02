@@ -4,6 +4,8 @@ module.exports = {
     template: require('signup.html'),
     data: function() {
         return {
+	    crypto: null,
+	    network: null,
             username: [],
             password1: [],
 	    password2: [],
@@ -39,7 +41,7 @@ module.exports = {
 		this.isError = true;
 		this.error = "Passwords do not match!";
 	    } else
-		return peergos.shared.user.UserContext.ensureSignedUp(that.username, that.password1).thenApply(function(context) {
+		return peergos.shared.user.UserContext.signUp(that.username, that.password1, that.network, that.crypto).thenApply(function(context) {
                     that.$dispatch('child-msg', {
 			view:'filesystem', 
 			props:{context: context}
@@ -80,6 +82,8 @@ module.exports = {
 	    // to the instance that registered it
 	    this.username = msg.username;
 	    this.password1 = msg.password;
+	    this.crypto = msg.crypto;
+	    this.network = msg.network;
 	}
     }
 };

@@ -5,6 +5,7 @@ module.exports = {
         return {
             username: [],
             password: [],
+	    network: null,
 	    demo: isDemo
         };
     },
@@ -22,19 +23,36 @@ module.exports = {
         login : function() {
             const creationStart = Date.now();
 	    const that = this;
-            return peergos.shared.user.UserContext.ensureSignedUp(that.username, that.password).thenApply(function(context) {
+            return peergos.shared.user.UserContext.signIn(that.username, that.password, that.network, that.crypto).thenApply(function(context) {
                 that.$dispatch('child-msg', {
 		    view:'filesystem', 
-		    props:{context: context}
+		    props:{
+			context: context
+		    }
 		});
                 console.log("Signing in/up took " + (Date.now()-creationStart)+" mS from function call");
             });
         },
 	showSignup : function() {
-	    this.$dispatch('child-msg', {view:"signup", props:{username:this.username, password:this.password}})
+	    this.$dispatch('child-msg', {view:"signup", props:{
+		username:this.username,
+		password:this.password,
+		crypto: this.crypto,
+		network: this.network
+	    }})
 	}
     },
     computed: {
-
+	crypto: function() {
+	    return peergos.shared.Crypto.initJS();
+	}
+    },
+    asyncComputed: {
+	network: function() {
+	    return new Promise(function(resolve, reject) {
+		peergos.shared.NetworkAccess.buildJS()
+		    .thenApply(network => resolve(network));
+	    });
+	}
     }
 };
