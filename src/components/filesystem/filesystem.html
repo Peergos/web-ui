@@ -28,6 +28,8 @@
   
 </nav>
 
+<input type="file" id="uploadInput" @change="uploadFiles" style="display:none;" multiple="" />
+
 <div class="grid" v-if="grid">
   <span class="column" v-for="file in sortedFiles">
     <span class="grid_icon_wrapper" id="grid$index" draggable="true" @dragStart="dragStart($event, file)" @dragover.prevent @drop="drop($event, file)">

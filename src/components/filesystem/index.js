@@ -56,12 +56,22 @@ module.exports = {
 	},
 
 	askForFile: function() {
-	    //TODO
+	    console.log("ask for file");
+	    $('#uploadInput').click();
 	},
 
-        uploadFile: function(name, fileStream, length, monitor) {
-	    this.currentDir.uploadFile(name, fileStream, length, this.context, monitor)
-                .thenApply(x => this.currentDirChanged());
+        uploadFiles: function(evt) {
+	    console.log("upload files");
+	    var files = evt.target.files || evt.dataTransfer.files;
+            //for(var j = 0; j < files.length; j++) {
+            //    uploadFragmentTotal = uploadFragmentTotal + 60 * Math.ceil(files[j].size/Chunk.MAX_SIZE);
+            //}
+            for (var i = 0; i < files.length; i++) {
+                var file = files[i];
+		console.log("uploading " + name);
+		this.currentDir.uploadFile(file.name, file, file.size, this.context, l => {})
+                    .thenApply(x => this.currentDirChanged());
+	    }
 	},
 
         showSocial: function(name) {
