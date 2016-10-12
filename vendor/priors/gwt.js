@@ -100,3 +100,41 @@ var scryptJS = {
     this.hashToKeyBytes = hashToKeyBytesProm;
     }
 };
+
+var browserio = {
+    BrowserFileReader: function(file) {
+	this.name = file.name;
+	this.file = file;
+	this.size = file.size;
+	this.offset = 0;
+	
+	this.seek = function(hi, low) {
+	    this.offset = low;
+	    return java.util.concurrent.CompletableFuture.completedFuture(true);
+	}
+
+	this.readIntoArray = function(res, offset, length) {
+	    var future = peergos.shared.util.FutureUtils.incomplete();
+
+	    var filereader = new FileReader();
+	    filereader.file_name = file.name;
+	    filereader.onload = function(){
+		const data = new Uint8Array(this.result);
+		future.complete(data);
+	    };
+	    
+	    filereader.readAsArrayBuffer(file.slice(this.offset, this.offset + length));
+	    this.offset += length;
+	    return future;
+	}
+
+	this.reset = function() {
+	    this.offset = 0;
+	    return java.util.concurrent.CompletableFuture.completedFuture(true);
+	}
+
+	this.close = function() {
+	    
+	}
+    }
+};
