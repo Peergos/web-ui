@@ -69,8 +69,9 @@ module.exports = {
             for (var i = 0; i < files.length; i++) {
                 var file = files[i];
 		console.log("uploading " + name);
-		var reader = new browserio.BrowserFileReader(file);
-		this.currentDir.uploadFile(file.name, reader, 0, file.size, this.context, l => {})
+		var reader = new browserio.JSFileReader(file);
+		var java_reader = new peergos.shared.user.fs.BrowserFileReader(reader);
+		this.currentDir.uploadFile(file.name, java_reader, 0, file.size, this.context, l => {})
                     .thenApply(x => this.currentDirChanged());
 	    }
 	},

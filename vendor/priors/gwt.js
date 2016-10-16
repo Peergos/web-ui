@@ -102,7 +102,7 @@ var scryptJS = {
 };
 
 var browserio = {
-    BrowserFileReader: function(file) {
+    JSFileReader: function(file) {
 	this.name = file.name;
 	this.file = file;
 	this.size = file.size;
@@ -110,7 +110,9 @@ var browserio = {
 	
 	this.seek = function(hi, low) {
 	    this.offset = low;
-	    return java.util.concurrent.CompletableFuture.completedFuture(true);
+	    var fut = peergos.shared.util.FutureUtils.incomplete();
+	    fut.complete(true);
+	    return fut;
 	}
 
 	this.readIntoArray = function(res, offset, length) {
@@ -130,7 +132,9 @@ var browserio = {
 
 	this.reset = function() {
 	    this.offset = 0;
-	    return java.util.concurrent.CompletableFuture.completedFuture(true);
+	    var fut = peergos.shared.util.FutureUtils.incomplete();
+	    fut.complete(true);
+	    return fut;
 	}
 
 	this.close = function() {
