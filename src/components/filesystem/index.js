@@ -93,16 +93,11 @@ module.exports = {
             this.path = path ? path.split('/') : [];
         },
 
-	navigateOrDownload: function(name) {
-	    var files = this.files;
-	    var file;
-	    for (var i=0; i < files.length; i++)
-		if (files[i].getFileProperties().name == name)
-		    file = files[i];
-	    if (file.type == 'file') 
-		this.downloadFile(file);
+	navigateOrDownload: function(file) {
+	    if (file.isDirectory())
+		this.navigateToSubdir(file.getFileProperties().name);
 	    else
-		this.navigateToSubdir(name);
+		this.downloadFile(file);
 	},
 
         navigateToSubdir: function(name) {
@@ -110,7 +105,8 @@ module.exports = {
 	},
 
         downloadFile: function(file) {
-	    //TODO
+	    console.log("downloading " + file.getFileProperties().name);
+	    
 	},
 
         getPath: function() {

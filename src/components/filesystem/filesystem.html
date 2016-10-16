@@ -33,7 +33,7 @@
 <div class="grid" v-if="grid">
   <span class="column" v-for="file in sortedFiles">
     <span class="grid_icon_wrapper" id="grid$index" draggable="true" @dragStart="dragStart($event, file)" @dragover.prevent @drop="drop($event, file)">
-      <span v-on:dblclick="navigateOrDownload(file.getFileProperties().name)" v-bind:class="['glyphicon', 'file_icon', file.isDirectory() ? 'glyphicon-folder-open' : 'glyphicon-file', 'picon']"/>
+      <span v-on:dblclick="navigateOrDownload(file)" v-bind:class="['glyphicon', 'file_icon', file.isDirectory() ? 'glyphicon-folder-open' : 'glyphicon-file', 'picon']"/>
       <div class="content">
         <div class="noselect">{{ file.getFileProperties().name }}</div>
       </div>
