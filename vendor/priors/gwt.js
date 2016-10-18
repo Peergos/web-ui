@@ -122,7 +122,9 @@ var browserio = {
 	    filereader.file_name = file.name;
 	    filereader.onload = function(){
 		const data = new Uint8Array(this.result);
-		future.complete(data);
+		for (var i=0; i < length; i++)
+		    res[offset + i] = data[i];
+		future.complete(length);
 	    };
 	    
 	    filereader.readAsArrayBuffer(file.slice(this.offset, this.offset + length));
