@@ -8,6 +8,7 @@ module.exports = {
 	    sortBy: "name",
 	    normalSortOrder: true,
 	    clipboard:{},
+	    url:null,
 	    forceUpdate:0
         };
     },
@@ -57,7 +58,7 @@ module.exports = {
 
 	askForFile: function() {
 	    console.log("ask for file");
-	    $('#uploadInput').click();
+	    document.getElementById('uploadInput').click();
 	},
 
         uploadFiles: function(evt) {
@@ -106,9 +107,29 @@ module.exports = {
 
         downloadFile: function(file) {
 	    console.log("downloading " + file.getFileProperties().name);
-	    
+	    var props = file.getFileProperties();
+	    var that = this;
+	    file.getInputStream(this.context, props.sizeHigh(), props.sizeLow(), read => {})
+		.thenCompose(reader => {
+		    var data = peergos.shared.util.Serialize.newByteArray(props.sizeLow());
+		    return reader.readIntoArray(data, 0, data.length)
+			.thenApply(read => that.openItem(props.name, data));
+		});
 	},
 
+	openItem: function(name, data) {
+	    if(this.url != null){
+		window.URL.revokeObjectURL(this.url);
+	    }
+	    
+	    var blob =  new Blob([data], {type: "octet/stream"});		
+	    this.url = window.URL.createObjectURL(blob);
+	    var link = document.getElementById("downloadAnchor");
+	    link.href = this.url;
+	    link.download = name;
+	    link.click();
+	},
+	
         getPath: function() {
             return '/'+this.path.join('/') + (this.path.length > 0 ? "/" : "");
         },

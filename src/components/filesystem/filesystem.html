@@ -29,6 +29,7 @@
 </nav>
 
 <input type="file" id="uploadInput" @change="uploadFiles" style="display:none;" multiple="" />
+<a id="downloadAnchor" style="display:none"></a>
 
 <div class="grid" v-if="grid">
   <span class="column" v-for="file in sortedFiles">
