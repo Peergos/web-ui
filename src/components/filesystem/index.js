@@ -9,6 +9,9 @@ module.exports = {
 	    normalSortOrder: true,
 	    clipboard:{},
 	    url:null,
+	    viewMenu:false,
+	    top:"0px",
+	    left:"0px",
 	    forceUpdate:0
         };
     },
@@ -184,6 +187,35 @@ module.exports = {
 		}
             }
 	},
+
+	openMenu: function(e, file) {
+	    console.log("right clicked: " + file.getFileProperties().name);
+	    this.viewMenu = true;
+
+            Vue.nextTick(function() {
+                document.getElementById("right-click-menu").focus();
+                this.setMenu(e.y, e.x)
+            }.bind(this));
+            e.preventDefault();
+	},
+
+	setMenu: function(top, left) {
+	    console.log("open menu");
+	    var menu = document.getElementById("right-click-menu");
+	    var largestHeight = window.innerHeight - menu.offsetHeight - 25;
+            var largestWidth = window.innerWidth - menu.offsetWidth - 25;
+
+            if (top > largestHeight) top = largestHeight;
+
+            if (left > largestWidth) left = largestWidth;
+
+            this.top = top + 'px';
+            this.left = left + 'px';
+	},
+	
+	closeMenu: function() {
+	    this.viewMenu = false;
+	}
     },
     computed: {
         sortedFiles: function() {

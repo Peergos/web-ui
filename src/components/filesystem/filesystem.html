@@ -28,13 +28,24 @@
   
 </nav>
 
+<div >
 <input type="file" id="uploadInput" @change="uploadFiles" style="display:none;" multiple="" />
 <a id="downloadAnchor" style="display:none"></a>
+<ul id="right-click-menu" tabindex="-1" v-el="right" v-if="viewMenu" v-on:blur="closeMenu"  v-bind:style="{top:top, left:left}">
+  <li>Rename</li>
+  <li>Delete</li>
+  <li>Open</li>
+  <li>Copy</li>
+  <li>Cut</li>
+  <li>Create public link</li>
+  <li>Share</li>
+  <li>Readers</li>
+</ul>
 
 <div class="grid" v-if="grid">
   <span class="column" v-for="file in sortedFiles">
     <span class="grid_icon_wrapper" id="grid$index" draggable="true" @dragStart="dragStart($event, file)" @dragover.prevent @drop="drop($event, file)">
-      <span v-on:dblclick="navigateOrDownload(file)" v-bind:class="['glyphicon', 'file_icon', file.isDirectory() ? 'glyphicon-folder-open' : 'glyphicon-file', 'picon']"/>
+      <span v-on:dblclick="navigateOrDownload(file)" v-on:contextmenu="openMenu($event, file)" v-bind:class="['glyphicon', 'file_icon', file.isDirectory() ? 'glyphicon-folder-open' : 'glyphicon-file', 'picon']"/>
       <div class="content">
         <div class="noselect">{{ file.getFileProperties().name }}</div>
       </div>
@@ -60,4 +71,5 @@
       </tr>
     </tbody>
   </table>
+</div>
 </div>
