@@ -98,6 +98,16 @@ module.exports = {
             this.path = path ? path.split('/') : [];
         },
 
+	downloadAll: function() {
+	    if (this.selectedFiles.length == 0)
+		return;
+	    this.closeMenu();
+	    for (var i=0; i < this.selectedFiles.length; i++) {
+		var file = this.selectedFiles[i];
+		this.downloadFile(file);
+	    }    
+	},
+	
 	navigateOrDownload: function(file) {
 	    if (file.isDirectory())
 		this.navigateToSubdir(file.getFileProperties().name);

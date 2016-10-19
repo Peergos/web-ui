@@ -34,7 +34,7 @@
 <ul id="right-click-menu" tabindex="-1" v-el="right" v-if="viewMenu" v-on:blur="closeMenu"  v-bind:style="{top:top, left:left}">
   <li v-on:click="rename">Rename</li>
   <li v-on:click="delete">Delete</li>
-  <li>Open</li>
+  <li v-on:click="downloadAll">Open</li>
   <li>Copy</li>
   <li>Cut</li>
   <li>Create public link</li>
