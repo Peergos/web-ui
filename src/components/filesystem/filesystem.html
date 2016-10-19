@@ -32,7 +32,7 @@
 <input type="file" id="uploadInput" @change="uploadFiles" style="display:none;" multiple="" />
 <a id="downloadAnchor" style="display:none"></a>
 <ul id="right-click-menu" tabindex="-1" v-el="right" v-if="viewMenu" v-on:blur="closeMenu"  v-bind:style="{top:top, left:left}">
-  <li>Rename</li>
+  <li v-on:click="rename">Rename</li>
   <li>Delete</li>
   <li>Open</li>
   <li>Copy</li>

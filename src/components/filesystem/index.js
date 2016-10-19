@@ -8,6 +8,7 @@ module.exports = {
 	    sortBy: "name",
 	    normalSortOrder: true,
 	    clipboard:{},
+	    selectedFiles:[],
 	    url:null,
 	    viewMenu:false,
 	    top:"0px",
@@ -197,8 +198,23 @@ module.exports = {
                 this.setMenu(e.y, e.x)
             }.bind(this));
             e.preventDefault();
+	    this.selectedFiles = [file];
 	},
 
+	rename: function() {
+	    if (this.selectedFiles.length == 0)
+		return;
+	    if (this.selectedFiles.length > 1)
+		throw "Can't rename more than one file at once!";
+	    var file = this.selectedFiles[0];
+	    console.log("renaming: " + file.getFileProperties().name);
+	    var newname = "anewname";
+	    var that = this;
+	    file.rename(newname, this.context, this.currentDir)
+		.thenApply(b => that.forceUpdate++); 
+	    this.closeMenu();
+	},
+	
 	setMenu: function(top, left) {
 	    console.log("open menu");
 	    var menu = document.getElementById("right-click-menu");
