@@ -13,6 +13,9 @@ module.exports = {
 	    viewMenu:false,
 	    top:"0px",
 	    left:"0px",
+	    showModal:false,
+	    modalTitle:"",
+	    modalBody:"",
 	    forceUpdate:0
         };
     },
@@ -20,7 +23,9 @@ module.exports = {
     },
     created: function() {
         console.debug('Filesystem module created!');
-        
+        Vue.component('modal', {
+	    template: '#modal-template'
+	});
     },
     methods: {
         goBackToLevel: function(level) {
@@ -98,6 +103,32 @@ module.exports = {
             this.path = path ? path.split('/') : [];
         },
 
+	createPublicLink: function() {
+	    if (this.selectedFiles.length == 0)
+		return;
+	    
+	    this.closeMenu();
+	    var links = [];
+	    for (var i=0; i < this.selectedFiles.length; i++) {
+		var file = this.selectedFiles[i];
+		links.push(file.toLink());
+	    }
+	    
+            var content = '<div class="container">'
+	    for (var i=0; i < links.length; i++) {
+		var publicUrl =  window.location.origin + links[i];	
+		content = content + '<p style="word-wrap;break-all;"><a href="'+ publicUrl+'">public-link</a></p>';
+	    }
+	    content = content + '</div>';
+            this.populateModalAndShow("Public link to file(s): "+  this.selectedFiles.map(f => f.getFileProperties().name), content);
+	},
+
+	populateModalAndShow: function(title, content) {
+	    this.showModal = true;
+	    this.modalTitle = title;
+	    this.modalBody = content;
+	},
+	
 	downloadAll: function() {
 	    if (this.selectedFiles.length == 0)
 		return;
