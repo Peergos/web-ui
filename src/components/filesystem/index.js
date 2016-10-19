@@ -215,6 +215,19 @@ module.exports = {
 		.thenApply(b => that.forceUpdate++); 
 	},
 	
+	delete: function() {
+	    if (this.selectedFiles.length == 0)
+		return;
+	    this.closeMenu();
+	    for (var i=0; i < this.selectedFiles.length; i++) {
+		var file = this.selectedFiles[i];
+		console.log("deleting: " + file.getFileProperties().name);
+		var that = this;
+		file.remove(this.context, this.currentDir)
+		    .thenApply(b => that.forceUpdate++);
+	    }
+	},
+	
 	setMenu: function(top, left) {
 	    console.log("open menu");
 	    var menu = document.getElementById("right-click-menu");
