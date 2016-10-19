@@ -208,11 +208,11 @@ module.exports = {
 		throw "Can't rename more than one file at once!";
 	    var file = this.selectedFiles[0];
 	    console.log("renaming: " + file.getFileProperties().name);
-	    var newname = "anewname";
+	    this.closeMenu();
+	    var newname = prompt("Specify a new name for " + file.getFileProperties().name);
 	    var that = this;
 	    file.rename(newname, this.context, this.currentDir)
 		.thenApply(b => that.forceUpdate++); 
-	    this.closeMenu();
 	},
 	
 	setMenu: function(top, left) {
