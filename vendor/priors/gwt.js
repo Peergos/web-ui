@@ -97,8 +97,14 @@ function hashToKeyBytesProm(username, password) {
 
 var scryptJS = {
     NativeScryptJS: function() {
-    this.hashToKeyBytes = hashToKeyBytesProm;
+        this.hashToKeyBytes = hashToKeyBytesProm;
     }
+};
+
+var thumbnail = {
+    NativeJSThumbnail: function() {
+        this.generateThumbnail = generateThumbnailProm;
+    }   
 };
 
 var browserio = {
@@ -144,3 +150,25 @@ var browserio = {
 	}
     }
 };
+
+function generateThumbnailProm(asyncReader, fileSize, fileName) {
+    var future = peergos.shared.util.FutureUtils.incomplete();
+    var bytes = peergos.shared.util.Serialize.newByteArray(fileSize);
+    asyncReader.readIntoArray(bytes, 0, fileSize).thenApply(bytesRead => {
+        var canvas = document.createElement('canvas');
+        var ctx = canvas.getContext('2d');
+        var img = new Image();
+        img.onload = function(){
+            var w = 100, h = 100;
+            canvas.width = w;
+            canvas.height = h;
+            ctx.drawImage(img,0,0,img.width, img.height, 0, 0, w, h);
+            var b64Thumb = canvas.toDataURL().substring("data:image/png;base64,".length);
+            future.complete(nacl.util.decodeBase64(b64Thumb));
+        }
+        var blob = new Blob([new Uint8Array(bytes)], {type: "octet/stream"});
+        var url = window.URL.createObjectURL(blob);
+        img.src = url;
+    });
+    return future;
+}
