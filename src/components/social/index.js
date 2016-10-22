@@ -38,6 +38,20 @@ module.exports = {
 		    alert("Follow request rejected!");
 		});
 	},
+
+	removeFollower: function(username) {
+	    this.data.context.removeFollower(username)
+		.thenApply(success => {
+		    alert("Removed follower " + username);
+		});
+	},
+	
+        unfollow: function(username) {
+	    this.data.context.unfollow(username)
+		.thenApply(success => {
+		    alert("Stopped following " + username);
+		});
+	},
 	
         close: function () {
             this.show = false;

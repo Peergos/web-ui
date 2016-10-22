@@ -36,7 +36,7 @@
 	  <tr v-if="data.followers.length==0"><th></th><th style="text-align:right"></th></tr>
           <tr v-for="username in data.followers">
 	    <td>{{ username }}</td>
-	    <td><button class="btn btn-danger" @click="removeFollower(username)">Remove</button></td>
+	    <td style="text-align:right"><button class="btn btn-danger" @click="removeFollower(username)">Remove</button></td>
 	  </tr>
         </table>
       </div>
