@@ -119,11 +119,12 @@ module.exports = {
 	    var file = this.selectedFiles[0];
 	    this.context.sharedWith(file)
 		.thenApply(usernames => {
-		    var unames = [];
-		    console.log(usernames);
-		    //TODO show list in a modal
-		    usernames.stream().map(name => unames.push(name)).collect(java.util.stream.Collectors.toList());
+            var unames = usernames.toArray([]);
 		    console.log(unames);
+		    //TODO show list in a modal
+            var title = "This file is shared with";
+            var links = []
+            this.populateModalAndShow(title, links);
 		})
 	},
 	
