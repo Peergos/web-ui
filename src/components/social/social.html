@@ -23,9 +23,9 @@
 	  <tr v-if="data.pending.length==0"><th></th><th></th><th></th><th></th></tr>
           <tr v-for="req in data.pending">
 	    <td>{{ req.entry.get().owner }}</td>
-	    <td style="text-align:right"><button class="btn btn-success" @click="reciprocateFollower(username)">Allow and follow back</button></td>
-	    <td style="text-align:right"><button class="btn btn-info" @click="acceptFollower(username)">Allow</button></td>
-	    <td style="text-align:right"><button class="btn btn-danger" @click="rejectFollower(username)">Deny</button></td>
+	    <td style="text-align:right"><button class="btn btn-success" @click="acceptAndReciprocate(req)">Allow and follow back</button></td>
+	    <td style="text-align:right"><button class="btn btn-info" @click="accept(req)">Allow</button></td>
+	    <td style="text-align:right"><button class="btn btn-danger" @click="reject(req)">Deny</button></td>
 	  </tr>
         </table>
       </div>

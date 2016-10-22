@@ -17,6 +17,27 @@ module.exports = {
 		    this.targetUsername = "";
 		});
 	},
+
+	acceptAndReciprocate: function(req) {
+	    this.data.context.sendReplyFollowRequest(req, true, true)
+		.thenApply(success => {
+		    alert("Follow request reciprocated!");
+		});
+	},
+	
+        accept: function(req) {
+	    this.data.context.sendReplyFollowRequest(req, true, false)
+		.thenApply(success => {
+		    alert("Follow request accepted!");
+		});
+	},
+	
+        reject: function(req) {
+	    this.data.context.sendReplyFollowRequest(req, false, false)
+		.thenApply(success => {
+		    alert("Follow request rejected!");
+		});
+	},
 	
         close: function () {
             this.show = false;
