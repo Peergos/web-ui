@@ -20,8 +20,8 @@ setTimeout(function() {
     var vueRoot = new Vue({
 	el: 'body',
 	data: {
-            currentView: 'login',
-            serverPort: 8000
+	    currentView: 'login',
+	    serverPort: 8000
 	},
 	events: {
 	    'child-msg': function (msg) {

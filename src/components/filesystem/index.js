@@ -112,6 +112,10 @@ module.exports = {
 	    // TODO
 	},
 
+	shareWith: function(file, username) {
+	    
+	},
+
 	sharedWith: function() {
 	    if (this.selectedFiles.length == 0)
 		return;

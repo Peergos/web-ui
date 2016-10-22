@@ -5,7 +5,6 @@ module.exports = {
         return {
             username: [],
             password: [],
-	    network: null,
 	    demo: isDemo
         };
     },
@@ -15,11 +14,34 @@ module.exports = {
     created: function() {
         console.debug('Login module created!');
 	var that = this;
-	Vue.nextTick(function() {
-	    document.getElementById("username").focus();
-	});
+	var href = window.location.href;
+	const fragment = href.includes("#") ? href.substring(href.indexOf("#") + 1) : "";
+	if (fragment.length > 0) {
+	    // this is a public link
+	    Vue.nextTick(function() {
+		that.gotoPublicLink(fragment);
+	    });
+	} else
+	    Vue.nextTick(function() {
+		document.getElementById("username").focus();
+	    });
     },
     methods: {
+	gotoPublicLink: function(link) {
+	    var that = this;
+	    peergos.shared.NetworkAccess.buildJS()
+		.thenApply(network => {
+		    peergos.shared.user.UserContext.fromPublicLink(link, network, that.crypto).thenApply(function(context) {
+			that.$dispatch('child-msg', {
+			    view:'filesystem', 
+			    props:{
+				context: context
+			    }
+			});
+		    });
+		});
+	},
+	
         login : function() {
             const creationStart = Date.now();
 	    const that = this;
