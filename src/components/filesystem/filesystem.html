@@ -5,7 +5,7 @@
       <li id="uploadButton" @click="askForFile()" v-if="isWritable" class="navbar-brand nopad"><a><span data-toggle="tooltip" data-placement="bottom" title="Upload file" class="pnavbar glyphicon glyphicon-upload tour-upload"  style="cursor: pointer;"/></a></li>
       <li id="mkdirButton" @click="askMkdir()" v-if="isWritable" class="navbar-brand nopad"><a><span data-toggle="tooltip" data-placement="bottom" title="Create new directory" class="pnavbar glyphicon glyphicon-folder-open tour-mkdir"  style="cursor: pointer;"/></a></li>
       <li id="alternateViewButton" @click="switchView()" class="navbar-brand nopad"><a><span data-toggle="tooltip" data-placement="bottom" title="Switch view" id="altViewSpan" v-bind:class="['pnavbar', 'glyphicon', 'tour-view', grid ? 'glyphicon-list' : 'glyphicon-th-large']"  style="cursor: pointer;"/></a></li>
-      <li id="userOptionsButton" @click="showSocial()" class="navbar-brand nopad">
+      <li id="userOptionsButton" @click="showSocialView()" class="navbar-brand nopad">
 	<a>
           <span data-toggle="tooltip" data-placement="bottom" title="Sharing options" id="sharingOptionsSpan" class="pnavbar glyphicon glyphicon-user tour-social"  style="cursor: pointer;"/>
           <span id="pendingSpan"></span>
@@ -45,6 +45,8 @@
 <modal :show.sync="showModal" :title.sync="modalTitle" :links.sync="modalLinks"></modal>
 
 <shared-with-modal :show.sync="showSharedWith" :data.sync="sharedWithData"></shared-with-modal>
+
+<social :show.sync="showSocial" :data.sync="social"></social>
 
 <div class="grid" v-if="grid">
   <span class="column" v-for="file in sortedFiles">

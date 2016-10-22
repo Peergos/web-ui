@@ -3,6 +3,7 @@ var Login       = require('./components/login');
 var Signup      = require('./components/signup');
 var Modal       = require('./components/modal');
 var SharedWithModal = require('./components/shared-with-modal');
+var Social       = require('./components/social');
 
 var VueAsyncComputed = require('./plugins/vue-async-computed');
 Vue.use(VueAsyncComputed);
@@ -13,6 +14,7 @@ Vue.component('login', Vue.extend(Login));
 Vue.component('signup', Vue.extend(Signup));
 Vue.component('modal', Vue.extend(Modal));
 Vue.component('shared-with-modal', Vue.extend(SharedWithModal));
+Vue.component('social', Vue.extend(Social));
 
 // Initializing Vue after GWT has finished
 // TODO figure out a way to ensure GWT has loaded

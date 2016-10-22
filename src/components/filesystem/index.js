@@ -18,6 +18,8 @@ module.exports = {
 	    modalLinks:[],
 	    showSharedWith:false,
 	    sharedWithData:{},
+	    showSocial:false,
+	    social:{pending:[],followers:[],following:[]},
 	    clipboardAction:"",
 	    forceUpdate:0
         };
@@ -86,8 +88,9 @@ module.exports = {
 	    }
 	},
 
-        showSocial: function(name) {
-	    //TODO
+        showSocialView: function(name) {
+	    this.showSocial = true;
+	    //TODO get social data
 	},
 
 	copy: function() {

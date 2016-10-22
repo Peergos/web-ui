@@ -1,0 +1,52 @@
+<div class="modal-mask" @click="close" v-show="show" transition="modal">
+  <div style="height:30%"></div>
+  <div class="modal-container" @click.stop>
+    
+    <div class="modal-header">
+      <h2>Social</h2>
+    </div>
+    
+    <div class="modal-body">
+      <div class="container">
+	<label>Send follow request</label>
+	<input type="text"></input>
+	<button class="btn btn-success" @click="sendFollowRequest">
+          Send
+        </button>
+      </div>
+      
+      <div class="container">
+	<label>Pending follow requests</label>
+        <table>
+          <tr v-for="username in data.pending">
+	    <td>{{ username }}</td>
+	    <td><button class="btn btn-success" @click="reciprocateFollower(username)">Reciprocate</button></td>
+	    <td><button class="btn btn-danger" @click="acceptFollower(username)">Accept</button></td>
+	    <td><button class="btn btn-danger" @click="rejectFollower(username)">Reject</button></td>
+	  </tr>
+        </table>
+      </div>
+      <hrule>
+	
+      <div class="container">
+	<label>Followers</label>
+	<table>
+          <tr v-for="username in data.followers">
+	    <td>{{ username }}</td>
+	    <td><button class="btn btn-danger" @click="removeFollower(username)">Remove</button></td>
+	  </tr>
+        </table>
+      </div>
+      
+      <div class="container">
+	<label>Following</label>
+	<table>
+          <tr v-for="user in data.following">
+	    <td>{{ user }}</td>
+	    <td><button class="btn btn-danger" @click="unfollow(username)">Unfollow</button></td>
+	  </tr>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
