@@ -32,14 +32,14 @@
 <input type="file" id="uploadInput" @change="uploadFiles" style="display:none;" multiple="" />
 <a id="downloadAnchor" style="display:none"></a>
 <ul id="right-click-menu" tabindex="-1" v-el="right" v-if="viewMenu" v-on:blur="closeMenu"  v-bind:style="{top:top, left:left}">
-  <li v-on:click="rename">Rename</li>
-  <li v-on:click="delete">Delete</li>
+  <li v-if="isWritable" v-on:click="rename">Rename</li>
+  <li v-if="isWritable" v-on:click="delete">Delete</li>
   <li v-on:click="downloadAll">Open</li>
   <li v-on:click="copy">Copy</li>
-  <li v-on:click="cut">Cut</li>
+  <li v-if="isWritable" v-on:click="cut">Cut</li>
   <li v-on:click="createPublicLink">Create public link</li>
   <li v-on:click="showShareWith">Share</li>
-  <li v-on:click="sharedWith">Shared with</li>
+  <li v-if="isWritable" v-on:click="sharedWith">Shared with</li>
 </ul>
 
 <modal :show.sync="showModal" :title.sync="modalTitle" :links.sync="modalLinks"></modal>
