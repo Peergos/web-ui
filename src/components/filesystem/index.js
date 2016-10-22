@@ -16,6 +16,7 @@ module.exports = {
 	    showModal:false,
 	    modalTitle:"",
 	    modalLinks:[],
+	    clipboardAction:"",
 	    forceUpdate:0
         };
     },
@@ -87,6 +88,45 @@ module.exports = {
 	    //TODO
 	},
 
+	copy: function() {
+	    if (this.selectedFiles.length == 0)
+		return;
+	    this.clipboardAction = "copy";
+	    this.closeMenu();
+	},
+	
+	cut: function() {
+	    if (this.selectedFiles.length == 0)
+		return;
+	    this.clipboardAction = "cut";
+	    this.closeMenu();
+	},
+	
+	showShareWith: function() {
+	    if (this.selectedFiles.length == 0)
+		return;
+
+	    this.closeMenu();
+	    // TODO
+	},
+
+	sharedWith: function() {
+	    if (this.selectedFiles.length == 0)
+		return;
+	    if (this.selectedFiles.length != 1)
+		return;
+	    this.closeMenu();
+	    var file = this.selectedFiles[0];
+	    this.context.sharedWith(file)
+		.thenApply(usernames => {
+		    var unames = [];
+		    console.log(usernames);
+		    //TODO show list in a modal
+		    usernames.stream().map(name => unames.push(name)).collect(java.util.stream.Collectors.toList());
+		    console.log(unames);
+		})
+	},
+	
 	setSortBy: function(prop) {
 	    if (this.sortBy == prop)
 		this.normalSortOrder = !this.normalSortOrder;

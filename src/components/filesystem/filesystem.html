@@ -35,11 +35,11 @@
   <li v-on:click="rename">Rename</li>
   <li v-on:click="delete">Delete</li>
   <li v-on:click="downloadAll">Open</li>
-  <li>Copy</li>
-  <li>Cut</li>
+  <li v-on:click="copy">Copy</li>
+  <li v-on:click="cut">Cut</li>
   <li v-on:click="createPublicLink">Create public link</li>
-  <li>Share</li>
-  <li>Readers</li>
+  <li v-on:click="showShareWith">Share</li>
+  <li v-on:click="sharedWith">Shared with</li>
 </ul>
 
 <modal :show.sync="showModal" :title.sync="modalTitle" :links.sync="modalLinks"></modal>
