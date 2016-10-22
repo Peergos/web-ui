@@ -11,8 +11,8 @@
 	<table style="width:100%">
 	  <tr>
 	    <td><h3>Send follow request:</h3></td>
-	    <td><input type="text" placeholder="Friend name" class="form-control" style="width:200px"></input></td>
-	    <td><button class="btn btn-success" @click="sendFollowRequest">Send</button></td>
+	    <td><input v-model="targetUsername" type="text" placeholder="Friend name" class="form-control" style="width:200px"></input></td>
+	    <td><button class="btn btn-success" @click="sendInitialFollowRequest(this.targetUsername)">Send</button></td>
 	  </tr>
 	</table>
       </div>
