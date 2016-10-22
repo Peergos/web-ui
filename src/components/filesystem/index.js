@@ -16,6 +16,8 @@ module.exports = {
 	    showModal:false,
 	    modalTitle:"",
 	    modalLinks:[],
+	    showSharedWith:false,
+	    sharedWithData:{},
 	    clipboardAction:"",
 	    forceUpdate:0
         };
@@ -119,13 +121,12 @@ module.exports = {
 	    var file = this.selectedFiles[0];
 	    this.context.sharedWith(file)
 		.thenApply(usernames => {
-            var unames = usernames.toArray([]);
-		    console.log(unames);
-		    //TODO show list in a modal
-            var title = "This file is shared with";
-            var links = []
-            this.populateModalAndShow(title, links);
-		})
+		    var unames = usernames.toArray([]);
+		    var filename = file.getFileProperties().name;
+		    var title = filename + " is shared with:";
+		    this.sharedWithData = {title:title, shared_with_users:unames};
+		    this.showSharedWith = true;
+		});
 	},
 	
 	setSortBy: function(prop) {
