@@ -7,30 +7,33 @@
     </div>
     
     <div class="modal-body">
-      <div class="container">
-	<label>Send follow request</label>
-	<input type="text"></input>
-	<button class="btn btn-success" @click="sendFollowRequest">
-          Send
-        </button>
+      <div>
+	<table style="width:100%">
+	  <tr>
+	    <td><h3>Send follow request:</h3></td>
+	    <td><input type="text" placeholder="Friend name" class="form-control" style="width:200px"></input></td>
+	    <td><button class="btn btn-success" @click="sendFollowRequest">Send</button></td>
+	  </tr>
+	</table>
       </div>
       
-      <div class="container">
-	<label>Pending follow requests</label>
-        <table>
+      <div>
+	<h3>Pending follow requests</h3>
+        <table class="table table-responsive table-striped table-hover">
+	  <tr><th></th><th></th><th></th><th></th></tr>
           <tr v-for="username in data.pending">
 	    <td>{{ username }}</td>
-	    <td><button class="btn btn-success" @click="reciprocateFollower(username)">Reciprocate</button></td>
-	    <td><button class="btn btn-danger" @click="acceptFollower(username)">Accept</button></td>
-	    <td><button class="btn btn-danger" @click="rejectFollower(username)">Reject</button></td>
+	    <td><button class="btn btn-success" @click="reciprocateFollower(username)">Allow and follow back</button></td>
+	    <td><button class="btn btn-info" @click="acceptFollower(username)">Allow</button></td>
+	    <td><button class="btn btn-danger" @click="rejectFollower(username)">Deny</button></td>
 	  </tr>
         </table>
       </div>
-      <hrule>
 	
-      <div class="container">
-	<label>Followers</label>
-	<table>
+      <div>
+	<h3>Followers</h3>
+	<table class="table table-responsive table-striped table-hover">
+	  <tr><th></th><th style="text-align:right"></th></tr>
           <tr v-for="username in data.followers">
 	    <td>{{ username }}</td>
 	    <td><button class="btn btn-danger" @click="removeFollower(username)">Remove</button></td>
@@ -38,9 +41,10 @@
         </table>
       </div>
       
-      <div class="container">
-	<label>Following</label>
-	<table>
+      <div>
+	<h3>Following</h3>
+	<table class="table table-responsive table-striped table-hover">
+	  <tr><th></th><th style="text-align:right"></th></tr>
           <tr v-for="user in data.following">
 	    <td>{{ user }}</td>
 	    <td><button class="btn btn-danger" @click="unfollow(username)">Unfollow</button></td>

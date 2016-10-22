@@ -89,8 +89,14 @@ module.exports = {
 	},
 
         showSocialView: function(name) {
-	    this.showSocial = true;
-	    //TODO get social data
+	    this.context.getSocialState().thenApply(social => {
+		this.showSocial = true;
+		this.social = {
+		    pending: social.pending.toArray([]),
+		    followers: social.followerRoots.keySet().toArray([]),
+		    following: social.followingRoots.toArray([]).map(f => f.getFileProperties().name)
+		};
+	    });
 	},
 
 	copy: function() {
