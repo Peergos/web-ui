@@ -33,6 +33,8 @@ module.exports = {
 		};
             };
 	    var usernames = this.usernames;
+	    // remove our username
+	    usernames.splice(usernames.indexOf(this.context.username), 1);
 	    console.log("TYPEAHEAD:");
 	    console.log(usernames);
 	    $('#friend-name-input')
