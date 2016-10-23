@@ -46,7 +46,7 @@
 
 <shared-with-modal :show.sync="showSharedWith" :data.sync="sharedWithData"></shared-with-modal>
 
-<social :show.sync="showSocial" :data.sync="social"></social>
+<social v-if="showSocial" :show.sync="showSocial" :data.sync="social" :context.sync="context"></social>
 
 <div class="grid" v-if="grid">
   <span class="column" v-for="file in sortedFiles">

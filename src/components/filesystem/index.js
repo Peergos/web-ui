@@ -94,9 +94,7 @@ module.exports = {
 		this.social = {
 		    pending: social.pending.toArray([]),
 		    followers: social.followerRoots.keySet().toArray([]),
-		    following: social.followingRoots.toArray([]).map(f => f.getFileProperties().name),
-		    network: this.context.network,
-		    context: this.context
+		    following: social.followingRoots.toArray([]).map(f => f.getFileProperties().name)
 		};
 	    });
 	},

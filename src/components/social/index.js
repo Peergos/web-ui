@@ -2,12 +2,12 @@ module.exports = {
     template: require('social.html'),
     data: function() {
         return {
-	    targetUsername: "",
-	    initialized: false
+	    targetUsername: ""
 	}
     },
-    props: ['show', 'data'],
+    props: ['show', 'data', 'context'],
     created: function() {
+	Vue.nextTick(this.setTypeAhead);
     },
     methods: {
 	setTypeAhead: function() {
@@ -32,7 +32,9 @@ module.exports = {
                     cb(matches);
 		};
             };
-            const usernames =  this.usernames;
+	    var usernames = this.usernames;
+	    console.log("TYPEAHEAD:");
+	    console.log(usernames);
 	    $('#friend-name-input')
 		.typeahead(
 		    {
@@ -44,13 +46,6 @@ module.exports = {
 			name: 'usernames',
 			source: substringMatcher(usernames)
 		    });
-	},
-	
-	keypress: function() {
-	    if (!this.initialized) {
-		this.setTypeAhead();
-		this.initialized = true;
-	    }
 	},
 	
 	sendInitialFollowRequest: function(name) {
@@ -103,9 +98,7 @@ module.exports = {
     },
     computed: {
 	usernames: function() {
-	    if (this.data.network == null)
-		return [];
-	    return this.data.network.usernames.toArray([]);
+	    return this.context.network.usernames.toArray([]);
 	}
     }
 }
