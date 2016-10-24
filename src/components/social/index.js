@@ -52,7 +52,7 @@ module.exports = {
 	
 	sendInitialFollowRequest: function(name) {
 	    console.log("sending follow request to " + name);
-	    this.data.context.sendInitialFollowRequest(name)
+	    this.context.sendInitialFollowRequest(name)
 		.thenApply(success => {
 		    alert("Follow request sent!");
 		    this.targetUsername = "";
@@ -60,35 +60,35 @@ module.exports = {
 	},
 
 	acceptAndReciprocate: function(req) {
-	    this.data.context.sendReplyFollowRequest(req, true, true)
+	    this.context.sendReplyFollowRequest(req, true, true)
 		.thenApply(success => {
 		    alert("Follow request reciprocated!");
 		});
 	},
 	
         accept: function(req) {
-	    this.data.context.sendReplyFollowRequest(req, true, false)
+	    this.context.sendReplyFollowRequest(req, true, false)
 		.thenApply(success => {
 		    alert("Follow request accepted!");
 		});
 	},
 	
         reject: function(req) {
-	    this.data.context.sendReplyFollowRequest(req, false, false)
+	    this.context.sendReplyFollowRequest(req, false, false)
 		.thenApply(success => {
 		    alert("Follow request rejected!");
 		});
 	},
 
 	removeFollower: function(username) {
-	    this.data.context.removeFollower(username)
+	    this.context.removeFollower(username)
 		.thenApply(success => {
 		    alert("Removed follower " + username);
 		});
 	},
 	
         unfollow: function(username) {
-	    this.data.context.unfollow(username)
+	    this.context.unfollow(username)
 		.thenApply(success => {
 		    alert("Stopped following " + username);
 		});
