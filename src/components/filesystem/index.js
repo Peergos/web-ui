@@ -16,6 +16,7 @@ module.exports = {
 	    showModal:false,
 	    modalTitle:"",
 	    modalLinks:[],
+	    showShare:false,
 	    showSharedWith:false,
 	    sharedWithData:{},
 	    showSocial:false,
@@ -118,11 +119,7 @@ module.exports = {
 		return;
 
 	    this.closeMenu();
-	    // TODO
-	},
-
-	shareWith: function(file, username) {
-	    
+	    this.showShare = true;
 	},
 
 	sharedWith: function() {
@@ -410,6 +407,12 @@ module.exports = {
 	    if (context == null)
 		return Promise.resolve("");
 	    return Promise.resolve(context.username);
+	},
+	followerNames: function() {
+	    var that = this;
+	    return new Promise(function(resolve, reject) {
+		that.context.getFollowerNames().thenApply(usernames => resolve(usernames.toArray([])));
+	    });
 	}
     },
     events: {

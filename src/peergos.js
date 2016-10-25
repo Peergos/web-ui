@@ -3,6 +3,7 @@ var Login       = require('./components/login');
 var Signup      = require('./components/signup');
 var Modal       = require('./components/modal');
 var SharedWithModal = require('./components/shared-with-modal');
+var Share = require('./components/share');
 var Social       = require('./components/social');
 
 var VueAsyncComputed = require('./plugins/vue-async-computed');
@@ -13,6 +14,7 @@ Vue.component('filesystem', Vue.extend(Filesystem));
 Vue.component('login', Vue.extend(Login));
 Vue.component('signup', Vue.extend(Signup));
 Vue.component('modal', Vue.extend(Modal));
+Vue.component('share-with', Vue.extend(Share));
 Vue.component('shared-with-modal', Vue.extend(SharedWithModal));
 Vue.component('social', Vue.extend(Social));
 
