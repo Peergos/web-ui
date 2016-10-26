@@ -21,7 +21,7 @@ module.exports = {
 		throw "Unimplemented multiple file share call";
 
 	    this.context.shareWith(this.files[0], targetUsername)
-		.thenApply(b => console.log("shared " + this.files[0].getName() + " with " + targetUsername));
+		.thenApply(b => console.log("shared " + this.files[0].getFileProperties().name + " with " + targetUsername));
 	},
 	
 	setTypeAhead: function() {
