@@ -42,7 +42,7 @@ module.exports = {
         },
 
 	goHome: function() {
-	    this.changePath("/" + this.username);
+	    this.changePath("/");
 	},
 
 	askMkdir: function() {
@@ -274,6 +274,10 @@ module.exports = {
 	},
 
 	openMenu: function(e, file) {
+	    if (this.getPath() == "/") {
+		e.preventDefault();
+		return; // disable sharing your root directory
+	    }
 	    console.log("right clicked: " + file.getFileProperties().name);
 	    this.viewMenu = true;
 
