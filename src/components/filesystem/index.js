@@ -20,10 +20,10 @@ module.exports = {
 	    showSharedWith:false,
 	    sharedWithData:{},
 	    showSocial:false,
-	    social:{pending:[],followers:[],following:[]},
 	    messages: [],
 	    clipboardAction:"",
-	    forceUpdate:0
+	    forceUpdate:0,
+	    externalChange:0
         };
     },
     props: {
@@ -91,18 +91,15 @@ module.exports = {
 	},
 
 	showMessage: function(title, message) {
-	    
+	    this.messages.push({
+		title: title,
+		body: message,
+		show: true
+	    });
 	},
 	
         showSocialView: function(name) {
-	    this.context.getSocialState().thenApply(social => {
-		this.showSocial = true;
-		this.social = {
-		    pending: social.pending.toArray([]),
-		    followers: social.followerRoots.keySet().toArray([]),
-		    following: social.followingRoots.toArray([]).map(f => f.getFileProperties().name)
-		};
-	    });
+	    this.showSocial = true;
 	},
 
 	copy: function() {
@@ -168,10 +165,10 @@ module.exports = {
 		links.push({href:window.location.origin + file.toLink(), name:file.getFileProperties().name});
 	    }
 	    var title = links.length > 1 ? "Public links to files: " : "Public link to file: ";
-            this.populateModalAndShow(title, links);
+            this.showLinkModal(title, links);
 	},
 
-	populateModalAndShow: function(title, links) {
+	showLinkModal: function(title, links) {
 	    this.showModal = true;
 	    this.modalTitle = title;
 	    this.modalLinks = links;
@@ -397,6 +394,7 @@ module.exports = {
 		that.context.getByPath(that.getPath()).thenApply(file => resolve(file.get()));
 	    });
 	},
+	
 	files: function() {
             var current = this.currentDir;
 	    if (current == null)
@@ -411,16 +409,32 @@ module.exports = {
 		});
 	    });
         },
+	
 	username: function() {
 	    var context = this.context;
 	    if (context == null)
 		return Promise.resolve("");
 	    return Promise.resolve(context.username);
 	},
+	
 	followerNames: function() {
 	    var that = this;
 	    return new Promise(function(resolve, reject) {
 		that.context.getFollowerNames().thenApply(usernames => resolve(usernames.toArray([])));
+	    });
+	},
+
+	social: function() {
+	    var that = this;
+	    var triggerUpdate = this.externalChange;
+	    return new Promise(function(resolve, reject) {
+		that.context.getSocialState().thenApply(social => {
+		    resolve({
+			pending: social.pending.toArray([]),
+			followers: social.followerRoots.keySet().toArray([]),
+			following: social.followingRoots.toArray([]).map(f => f.getFileProperties().name)
+		    });
+		});
 	    });
 	}
     },

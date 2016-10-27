@@ -5,7 +5,7 @@ module.exports = {
 	    targetUsername: ""
 	}
     },
-    props: ['show', 'data', 'context'],
+    props: ['show', 'data', 'context', 'external-change', 'messages'],
     created: function() {
 	Vue.nextTick(this.setTypeAhead);
     },
@@ -50,47 +50,61 @@ module.exports = {
 		    });
 	},
 	
+	showMessage: function(title, body) {
+	    this.messages.push({
+		title: title,
+		body: body,
+		show: true
+	    });
+	},
+	
 	sendInitialFollowRequest: function(name) {
 	    console.log("sending follow request to " + name);
 	    this.context.sendInitialFollowRequest(name)
 		.thenApply(success => {
-		    alert("Follow request sent!");
 		    this.targetUsername = "";
+		    this.showMessage("Follow request sent!", "");
+		    this.externalChange++;
 		});
 	},
 
 	acceptAndReciprocate: function(req) {
 	    this.context.sendReplyFollowRequest(req, true, true)
 		.thenApply(success => {
-		    alert("Follow request reciprocated!");
+		    this.showMessage("Follow request reciprocated!", "");
+		    this.externalChange++;
 		});
 	},
 	
         accept: function(req) {
 	    this.context.sendReplyFollowRequest(req, true, false)
 		.thenApply(success => {
-		    alert("Follow request accepted!");
+		    this.showMessage("Follow request accepted!", "");
+		    this.externalChange++;
 		});
 	},
 	
         reject: function(req) {
 	    this.context.sendReplyFollowRequest(req, false, false)
 		.thenApply(success => {
-		    alert("Follow request rejected!");
+		    this.showMessage("Follow request rejected!", "");
+		    this.externalChange++;
 		});
 	},
 
 	removeFollower: function(username) {
 	    this.context.removeFollower(username)
 		.thenApply(success => {
-		    alert("Removed follower " + username);
+		    this.showMessage("Removed follower " + username, "");
+		    this.externalChange++;
 		});
 	},
 	
         unfollow: function(username) {
 	    this.context.unfollow(username)
 		.thenApply(success => {
-		    alert("Stopped following " + username);
+		    this.showMessage("Stopped following " + username, "");
+		    this.externalChange++;
 		});
 	},
 	
