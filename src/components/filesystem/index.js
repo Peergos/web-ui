@@ -21,6 +21,7 @@ module.exports = {
 	    sharedWithData:{},
 	    showSocial:false,
 	    social:{pending:[],followers:[],following:[]},
+	    messages: [],
 	    clipboardAction:"",
 	    forceUpdate:0
         };
@@ -89,6 +90,10 @@ module.exports = {
 	    }
 	},
 
+	showMessage: function(title, message) {
+	    
+	},
+	
         showSocialView: function(name) {
 	    this.context.getSocialState().thenApply(social => {
 		this.showSocial = true;

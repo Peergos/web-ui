@@ -5,7 +5,7 @@ module.exports = {
 	    targetUsername: ""
 	}
     },
-    props: ['show', 'files', 'context', 'usernames'],
+    props: ['show', 'files', 'context', 'usernames', 'messages'],
     created: function() {
 	this.setTypeAhead();
     },
@@ -20,8 +20,17 @@ module.exports = {
 	    if (this.files.length != 1)
 		throw "Unimplemented multiple file share call";
 
+	    var that = this;
 	    this.context.shareWith(this.files[0], targetUsername)
-		.thenApply(b => console.log("shared " + this.files[0].getFileProperties().name + " with " + targetUsername));
+		.thenApply(b => {
+		    that.messages.push({
+			title: "Success!",
+			body: "Sharing complete",
+			show: true
+		    });
+		    that.close();
+		    console.log("shared " + this.files[0].getFileProperties().name + " with " + targetUsername);
+		});
 	},
 	
 	setTypeAhead: function() {
