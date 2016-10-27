@@ -354,13 +354,13 @@ module.exports = {
 		    aVal = a.getFileProperties().modified;
 		    bVal = b.getFileProperties().modified;
 		} else if (sortBy == "type") {
-		    aVal = a.type;
-		    bVal = b.type;
+		    aVal = a.isDirectory();
+		    bVal = b.isDirectory();
 		} else
 		    throw "Unknown sort type " + sortBy;
 		    
-                if (a.type !== b.type) {
-                    if (a.type === 'dir') {
+                if (a.isDirectory() !== b.isDirectory()) {
+                    if (a.isDirectory()) {
                         return reverseOrder ? 1 : -1;
                     } else {
                         return reverseOrder ? -1 : 1;
