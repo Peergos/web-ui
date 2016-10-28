@@ -5,7 +5,7 @@
       <li id="uploadButton" @click="askForFile()" v-if="isWritable" class="navbar-brand nopad"><a><span data-toggle="tooltip" data-placement="bottom" title="Upload file" class="pnavbar glyphicon glyphicon-upload tour-upload"  style="cursor: pointer;"/></a></li>
       <li id="mkdirButton" @click="askMkdir()" v-if="isWritable" class="navbar-brand nopad"><a><span data-toggle="tooltip" data-placement="bottom" title="Create new directory" class="pnavbar glyphicon glyphicon-folder-open tour-mkdir"  style="cursor: pointer;"/></a></li>
       <li id="alternateViewButton" @click="switchView()" class="navbar-brand nopad"><a><span data-toggle="tooltip" data-placement="bottom" title="Switch view" id="altViewSpan" v-bind:class="['pnavbar', 'glyphicon', 'tour-view', grid ? 'glyphicon-list' : 'glyphicon-th-large']"  style="cursor: pointer;"/></a></li>
-      <li id="userOptionsButton" @click="showSocial()" class="navbar-brand nopad">
+      <li id="userOptionsButton" @click="showSocialView()" class="navbar-brand nopad">
 	<a>
           <span data-toggle="tooltip" data-placement="bottom" title="Sharing options" id="sharingOptionsSpan" class="pnavbar glyphicon glyphicon-user tour-social"  style="cursor: pointer;"/>
           <span id="pendingSpan"></span>
@@ -28,12 +28,33 @@
   
 </nav>
 
+<div >
+<input type="file" id="uploadInput" @change="uploadFiles" style="display:none;" multiple="" />
+<a id="downloadAnchor" style="display:none"></a>
+<ul id="right-click-menu" tabindex="-1" v-el="right" v-if="viewMenu" v-on:blur="closeMenu"  v-bind:style="{top:top, left:left}">
+  <li v-if="isWritable" v-on:click="rename">Rename</li>
+  <li v-if="isWritable" v-on:click="delete">Delete</li>
+  <li v-on:click="downloadAll">Open</li>
+  <li v-on:click="copy">Copy</li>
+  <li v-if="isWritable" v-on:click="cut">Cut</li>
+  <li v-on:click="createPublicLink">Create public link</li>
+  <li v-on:click="showShareWith">Share</li>
+  <li v-if="isWritable" v-on:click="sharedWith">Shared with</li>
+</ul>
+
+<modal :show.sync="showModal" :title.sync="modalTitle" :links.sync="modalLinks"></modal>
+<share-with v-if="showShare" :show.sync="showShare" :files.sync="selectedFiles" :context.sync="context" :usernames.sync="followerNames" :messages.sync="messages"></share-with>
+<shared-with-modal :show.sync="showSharedWith" :data.sync="sharedWithData"></shared-with-modal>
+<social v-if="showSocial" :show.sync="showSocial" :data.sync="social" :context.sync="context" :externalchange.sync="externalchange" :messages.sync="messages"></social>
+
+<message v-for="message in messages" :show.sync="message.show" :title.sync="message.title" :message.sync="message.body"></message>
+
 <div class="grid" v-if="grid">
   <span class="column" v-for="file in sortedFiles">
     <span class="grid_icon_wrapper" id="grid$index" draggable="true" @dragStart="dragStart($event, file)" @dragover.prevent @drop="drop($event, file)">
-      <span v-on:dblclick="navigateOrDownload(file.props.name)" v-bind:class="['glyphicon', 'file_icon', file.props.isDirectory ? 'glyphicon-folder-open' : 'glyphicon-file', 'picon']"/>
+      <span v-on:dblclick="navigateOrDownload(file)" v-on:contextmenu="openMenu($event, file)" v-bind:class="['glyphicon', 'file_icon', file.isDirectory() ? 'glyphicon-folder-open' : 'glyphicon-file', 'picon']"/>
       <div class="content">
-        <div  v-if="file.props.isDirectory" class="noselect">{{ file.props.name }}</div>
+        <div class="noselect">{{ file.getFileProperties().name }}</div>
       </div>
     </span>
   </span>
@@ -50,11 +71,12 @@
     </thead>
     <tbody>
       <tr v-for="file in sortedFiles">
-        <td v-on:dblclick="navigateToSubdir(file.props.name)" style="cursor:pointer">{{ file.props.name }}</td>
-	<td>{{ file.props.size }}</td>
-	<td>{{ file.type }}</td>
-	<td>{{ file.props.modified }}</td>
+        <td v-on:dblclick="navigateToSubdir(file.getFileProperties().name)" style="cursor:pointer">{{ file.getFileProperties().name }}</td>
+	<td>{{ file.getFileProperties().sizeLow() }}</td>
+	<td>{{ file.isDirectory() ? "dir" : "file" }}</td>
+	<td>{{ file.getFileProperties().modified }}</td>
       </tr>
     </tbody>
   </table>
+</div>
 </div>

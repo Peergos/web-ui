@@ -14,30 +14,67 @@ module.exports = {
     created: function() {
         console.debug('Login module created!');
 	var that = this;
-	Vue.nextTick(function() {
-	    document.getElementById("username").focus();
-	});
+	var href = window.location.href;
+	const fragment = href.includes("#") ? href.substring(href.indexOf("#") + 1) : "";
+	if (fragment.length > 0) {
+	    // this is a public link
+	    Vue.nextTick(function() {
+		that.gotoPublicLink(fragment);
+	    });
+	} else
+	    Vue.nextTick(function() {
+		document.getElementById("username").focus();
+	    });
     },
     methods: {
+	gotoPublicLink: function(link) {
+	    var that = this;
+	    peergos.shared.NetworkAccess.buildJS()
+		.thenApply(network => {
+		    peergos.shared.user.UserContext.fromPublicLink(link, network, that.crypto).thenApply(function(context) {
+			that.$dispatch('child-msg', {
+			    view:'filesystem', 
+			    props:{
+				context: context
+			    }
+			});
+		    });
+		});
+	},
+	
         login : function() {
             const creationStart = Date.now();
 	    const that = this;
-            JavaPoly.type("peergos.user.UserContext").then(function(UserContext) {
-                return UserContext.ensureSignedUp(that.username, that.password, 8000, true);
-            }).then(function(context) {
+            return peergos.shared.user.UserContext.signIn(that.username, that.password, that.network, that.crypto).thenApply(function(context) {
                 that.$dispatch('child-msg', {
 		    view:'filesystem', 
-		    props:{context:new UserContextWrapper(context)}
+		    props:{
+			context: context
+		    }
 		});
-                console.log("Signing in/up took " + (Date.now()-window.pageStart)+" mS from page start");
                 console.log("Signing in/up took " + (Date.now()-creationStart)+" mS from function call");
             });
         },
 	showSignup : function() {
-	    this.$dispatch('child-msg', {view:"signup", props:{username:this.username, password:this.password}})
+	    this.$dispatch('child-msg', {view:"signup", props:{
+		username:this.username,
+		password:this.password,
+		crypto: this.crypto,
+		network: this.network
+	    }})
 	}
     },
     computed: {
-
+	crypto: function() {
+	    return peergos.shared.Crypto.initJS();
+	}
+    },
+    asyncComputed: {
+	network: function() {
+	    return new Promise(function(resolve, reject) {
+		peergos.shared.NetworkAccess.buildJS()
+		    .thenApply(network => resolve(network));
+	    });
+	}
     }
 };

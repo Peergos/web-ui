@@ -37,7 +37,7 @@
       <fileset dir="${vendor}/min" includes="*.js"/>
       <fileset dir="${vendor}/common" includes="*.js"/>
     </concat>
-    <exec executable="java" dir="." failifexecutionfails="true">
+    <exec executable="java" dir="." failonerror="true">
       <arg value="-jar"/>
       <arg value="yuicompressor-2.4.8.jar"/>
       <arg value="-o"/>
@@ -52,7 +52,7 @@
       <fileset dir="${vendor}/min" includes="*.css"/>
       <fileset dir="${vendor}/common" includes="*.css"/>
     </concat>
-    <exec executable="java" dir="." failifexecutionfails="true">
+    <exec executable="java" dir="." failonerror="true">
       <arg value="-jar"/>
       <arg value="yuicompressor-2.4.8.jar"/>
       <arg value="-o"/>
@@ -66,7 +66,7 @@
     <concat destfile="tmp.css">
       <fileset dir="${ui_src}/" includes="*.css"/>
     </concat>
-    <exec executable="java" dir="." failifexecutionfails="true">
+    <exec executable="java" dir="." failonerror="true">
       <arg value="-jar"/>
       <arg value="yuicompressor-2.4.8.jar"/>
       <arg value="-o"/>
@@ -84,7 +84,7 @@
 
   <!-- web ui building our stuff -->
   <target name="js" description="bundle all our vuejs components into js">
-    <exec executable="java" dir="." failifexecutionfails="true" >
+    <exec executable="java" dir="." failonerror="true" >
       <arg value="-jar"/>
       <arg value="JPack.jar"/>
       <arg value="-root"/>
@@ -94,7 +94,7 @@
     </exec>
   </target>
 
-  <target name="ui" depends="assets,css,js" description="build our part of the ui">
+  <target name="ui" depends="ui_dev_vendor,assets,css,js" description="build our part of the ui">
   </target>
 
   <taskdef name="watch"
@@ -114,8 +114,11 @@
   <!-- server building and running -->
 
   <target name="compile_server" depends="init" description="compile and build the server">
-    <exec executable="ant" dir="${server_src}" failifexecutionfails="true">
+    <exec executable="ant" dir="${server_src}" failonerror="true">
       <arg value="dist"/>
+    </exec>
+    <exec executable="ant" dir="${server_src}" failonerror="true">
+      <arg value="gwtc"/>
     </exec>
   </target>
 
@@ -127,23 +130,13 @@
     <copy todir="${server}">
       <fileset file="${server_src}/PeergosServer.jar"/>
     </copy>
-    <copy todir="${ui}/java">
-      <fileset file="${server_src}/ui/PeergosClient.jar"/>
-      <fileset file="${server_src}/lib/IPFS.jar"/>
-    </copy>
-    <copy todir="${ui}/java/javapoly">
-      <fileset dir="${server_src}/ui/javapoly"/>
-    </copy>
-    <copy todir="${ui}/doppio">
-      <fileset dir="${server_src}/ui/doppio"/>
-    </copy>
-    <copy todir="${ui}/browserfs">
-      <fileset dir="${server_src}/ui/browserfs"/>
+    <copy todir="${ui}/js">
+      <fileset file="${server_src}/war/peergos/*cache.js"/>
     </copy>
   </target>
 
   <target name="run" depends="">
-    <exec executable="java" dir="${server}" failifexecutionfails="true">
+    <exec executable="java" dir="${server}" failonerror="true">
       <arg value="-jar"/>
       <arg value="PeergosServer.jar"/>
       <arg value="-local"/>
