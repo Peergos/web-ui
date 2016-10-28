@@ -5,7 +5,7 @@ module.exports = {
 	    targetUsername: ""
 	}
     },
-    props: ['show', 'data', 'context', 'external-change', 'messages'],
+    props: ['show', 'data', 'context', 'externalchange', 'messages'],
     created: function() {
 	Vue.nextTick(this.setTypeAhead);
     },
@@ -64,7 +64,7 @@ module.exports = {
 		.thenApply(success => {
 		    this.targetUsername = "";
 		    this.showMessage("Follow request sent!", "");
-		    this.externalChange++;
+		    this.externalchange++;
 		});
 	},
 
@@ -72,7 +72,7 @@ module.exports = {
 	    this.context.sendReplyFollowRequest(req, true, true)
 		.thenApply(success => {
 		    this.showMessage("Follow request reciprocated!", "");
-		    this.externalChange++;
+		    this.externalchange++;
 		});
 	},
 	
@@ -80,7 +80,7 @@ module.exports = {
 	    this.context.sendReplyFollowRequest(req, true, false)
 		.thenApply(success => {
 		    this.showMessage("Follow request accepted!", "");
-		    this.externalChange++;
+		    this.externalchange++;
 		});
 	},
 	
@@ -88,7 +88,7 @@ module.exports = {
 	    this.context.sendReplyFollowRequest(req, false, false)
 		.thenApply(success => {
 		    this.showMessage("Follow request rejected!", "");
-		    this.externalChange++;
+		    this.externalchange++;
 		});
 	},
 
@@ -96,7 +96,7 @@ module.exports = {
 	    this.context.removeFollower(username)
 		.thenApply(success => {
 		    this.showMessage("Removed follower " + username, "");
-		    this.externalChange++;
+		    this.externalchange++;
 		});
 	},
 	
@@ -104,7 +104,7 @@ module.exports = {
 	    this.context.unfollow(username)
 		.thenApply(success => {
 		    this.showMessage("Stopped following " + username, "");
-		    this.externalChange++;
+		    this.externalchange++;
 		});
 	},
 	

@@ -100,6 +100,7 @@ module.exports = {
 	
         showSocialView: function(name) {
 	    this.showSocial = true;
+	    this.externalChange++;
 	},
 
 	copy: function() {
