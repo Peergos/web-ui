@@ -419,6 +419,8 @@ module.exports = {
 	},
 	
 	followerNames: function() {
+	    if (this.context == null || this.context.username == null)
+		return Promise.resolve([]);
 	    var that = this;
 	    return new Promise(function(resolve, reject) {
 		that.context.getFollowerNames().thenApply(usernames => resolve(usernames.toArray([])));
@@ -426,6 +428,12 @@ module.exports = {
 	},
 
 	social: function() {
+	    if (this.context == null || this.context.username == null)
+		return Promise.resolve({
+		    pending: [],
+		    followers: [],
+		    following: []
+		});
 	    var that = this;
 	    var triggerUpdate = this.externalChange;
 	    return new Promise(function(resolve, reject) {
@@ -444,6 +452,10 @@ module.exports = {
 	    // `this` in event callbacks are automatically bound
 	    // to the instance that registered it
 	    this.context = msg.context;
+	    if (this.context.username == null) {
+		// from a public link
+		this.context.getEntryPath().thenApply(linkPath => this.changePath(linkPath));
+	    }
 	}
     }
 };
