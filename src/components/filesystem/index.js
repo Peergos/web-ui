@@ -20,6 +20,7 @@ module.exports = {
 	    showSharedWith:false,
 	    sharedWithData:{},
 	    showSocial:false,
+	    showSettingsMenu:false,
 	    messages: [],
 	    clipboardAction:"",
 	    forceUpdate:0,
@@ -90,6 +91,20 @@ module.exports = {
 	    }
 	},
 
+	toggleUserMenu: function() {
+	    this.showSettingsMenu = !this.showSettingsMenu;
+	},
+
+	showChangePassword: function() {
+	    this.toggleUserMenu();
+	    //TODO
+	},
+
+	logout: function() {
+	    this.toggleUserMenu();
+	    //TODO
+	},
+	
 	showMessage: function(title, message) {
 	    this.messages.push({
 		title: title,
