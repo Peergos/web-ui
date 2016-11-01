@@ -164,6 +164,10 @@ module.exports = {
 	    this.sortBy = prop;
 	},
 
+	changePassword: function(newPassword) {
+	    this.context.changePassword(newPassword).thenApply(newContext => this.context = newContext);
+	},
+	
         changePath: function(path) {
             console.debug('Changing to path:'+ path);
 	    if (path.startsWith("/"))
