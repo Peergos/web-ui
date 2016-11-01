@@ -102,7 +102,8 @@ module.exports = {
 
 	logout: function() {
 	    this.toggleUserMenu();
-	    //TODO
+	    this.context = null;
+	    window.location.reload();
 	},
 	
 	showMessage: function(title, message) {
