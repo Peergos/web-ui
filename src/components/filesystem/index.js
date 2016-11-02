@@ -33,8 +33,6 @@ module.exports = {
     },
     created: function() {
         console.debug('Filesystem module created!');
-	//this.progressMonitors.push({show:true, title:"Downloading file", done:200, max:1000});
-	//this.progressMonitors.push({show:true, title:"downloading file", done:200, max:1000});
     },
     methods: {
         getThumbnailURL: function(file) {
@@ -237,12 +235,20 @@ module.exports = {
 	    console.log("downloading " + file.getFileProperties().name);
 	    var props = file.getFileProperties();
 	    var that = this;
-	    file.getInputStream(this.context, props.sizeHigh(), props.sizeLow(), read => {})
-		.thenCompose(reader => {
-		    var data = peergos.shared.util.Serialize.newByteArray(props.sizeLow());
-		    return reader.readIntoArray(data, 0, data.length)
-			.thenApply(read => that.openItem(props.name, data));
-		});
+	    var progress = {
+		show:true,
+		title:"Downloading " + props.name,
+		done:0,
+		max:60/40*props.sizeLow()
+	    };
+	    this.progressMonitors.push(progress);
+	    file.getInputStream(this.context, props.sizeHigh(), props.sizeLow(), read => {
+		progress.done += read.value_0;
+	    }).thenCompose(reader => {
+		var data = peergos.shared.util.Serialize.newByteArray(props.sizeLow());
+		return reader.readIntoArray(data, 0, data.length)
+		    .thenApply(read => that.openItem(props.name, data));
+	    });
 	},
 
 	openItem: function(name, data) {
