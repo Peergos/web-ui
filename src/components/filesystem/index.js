@@ -33,6 +33,9 @@ module.exports = {
         console.debug('Filesystem module created!');
     },
     methods: {
+        getThumbnailURL: function(file) {
+            return file.getBase64Thumbnail();
+        },
         goBackToLevel: function(level) {
             // By default let's jump to the root.
             var newLevel = level || 0,

@@ -164,7 +164,7 @@ function generateThumbnailProm(asyncReader, fileSize, fileName) {
             canvas.height = h;
             ctx.drawImage(img,0,0,img.width, img.height, 0, 0, w, h);
             var b64Thumb = canvas.toDataURL().substring("data:image/png;base64,".length);
-            future.complete(nacl.util.decodeBase64(b64Thumb));
+            future.complete(b64Thumb);
         }
         var blob = new Blob([new Uint8Array(bytes)], {type: "octet/stream"});
         var url = window.URL.createObjectURL(blob);
