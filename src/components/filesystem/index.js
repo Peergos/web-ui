@@ -23,6 +23,7 @@ module.exports = {
 	    showPassword:false,
 	    showSettingsMenu:false,
 	    messages: [],
+	    progressMonitors: [],
 	    clipboardAction:"",
 	    forceUpdate:0,
 	    externalChange:0
@@ -32,6 +33,8 @@ module.exports = {
     },
     created: function() {
         console.debug('Filesystem module created!');
+	//this.progressMonitors.push({show:true, title:"Downloading file", done:200, max:1000});
+	//this.progressMonitors.push({show:true, title:"downloading file", done:200, max:1000});
     },
     methods: {
         getThumbnailURL: function(file) {
