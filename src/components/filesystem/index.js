@@ -100,7 +100,6 @@ module.exports = {
 		var java_reader = new peergos.shared.user.fs.BrowserFileReader(reader);
 		this.currentDir.uploadFile(file.name, java_reader, 0, file.size, this.context, len => {
 		    progress.done += len.value_0;
-		    console.log("uploaded: " + len + ", done: " + progress.done);
 		}).thenApply(x => this.currentDirChanged());
 	    }
 	},
