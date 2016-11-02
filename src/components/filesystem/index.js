@@ -90,11 +90,20 @@ module.exports = {
             //}
             for (var i = 0; i < files.length; i++) {
                 var file = files[i];
-		console.log("uploading " + name);
+		console.log("uploading " + file.name);
+		var progress = {
+		    show:true,
+		    title:"Uploading " + file.name,
+		    done:0,
+		    max:60/40*file.size
+		};
+		this.progressMonitors.push(progress);
 		var reader = new browserio.JSFileReader(file);
 		var java_reader = new peergos.shared.user.fs.BrowserFileReader(reader);
-		this.currentDir.uploadFile(file.name, java_reader, 0, file.size, this.context, l => {})
-                    .thenApply(x => this.currentDirChanged());
+		this.currentDir.uploadFile(file.name, java_reader, 0, file.size, this.context, len => {
+		    progress.done += len.value_0;
+		    console.log("uploaded: " + len + ", done: " + progress.done);
+		}).thenApply(x => this.currentDirChanged());
 	    }
 	},
 
