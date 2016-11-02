@@ -54,7 +54,9 @@
 <password v-if="showPassword" :show.sync="showPassword" :changepassword.sync="changePassword"></password>
 
 <message v-for="message in messages" :show.sync="message.show" :title.sync="message.title" :message.sync="message.body"></message>
-<progressbar v-for="progress in progressMonitors" :show.sync="progress.show" :title.sync="progress.title" :done.sync="progress.done":max.sync="progress.max"></progressbar>
+<div class="progressholder">
+  <progressbar v-for="progress in progressMonitors" :show.sync="progress.show" :title.sync="progress.title" :done.sync="progress.done":max.sync="progress.max"></progressbar>
+</div>
 
 <div class="grid" v-if="grid">
   <span class="column" v-for="file in sortedFiles">

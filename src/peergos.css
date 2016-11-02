@@ -94,11 +94,14 @@ table {
     color: #FAFAFA;
 }
 
-.progressbar {
-  padding: 10px;
+.progressholder {
   position: fixed;
   z-index: 9998;
   right: 0;
+}
+
+.progressbar {
+  padding: 10px;
   background-color: #fff;
   transition: opacity .3s ease;
   border-radius: 2px;
