@@ -20,6 +20,7 @@ module.exports = {
 	    showSharedWith:false,
 	    sharedWithData:{},
 	    showSocial:false,
+	    showPassword:false,
 	    showSettingsMenu:false,
 	    messages: [],
 	    clipboardAction:"",
@@ -100,7 +101,7 @@ module.exports = {
 
 	showChangePassword: function() {
 	    this.toggleUserMenu();
-	    //TODO
+	    this.showPassword = true;
 	},
 
 	logout: function() {
@@ -167,8 +168,9 @@ module.exports = {
 	    this.sortBy = prop;
 	},
 
-	changePassword: function(newPassword) {
-	    this.context.changePassword(newPassword).thenApply(newContext => this.context = newContext);
+	changePassword: function(oldPassword, newPassword) {
+	    console.log("Changing password");
+	    this.context.changePassword(oldPassword, newPassword).thenApply(newContext => this.context = newContext);
 	},
 	
         changePath: function(path) {
