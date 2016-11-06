@@ -215,7 +215,7 @@ module.exports = {
 	    this.closeMenu();
 	    for (var i=0; i < this.selectedFiles.length; i++) {
 		var file = this.selectedFiles[i];
-		this.downloadFile(file);
+		this.navigateOrDownload(file);
 	    }    
 	},
 	
