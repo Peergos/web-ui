@@ -11,6 +11,12 @@ var ProgressBar     = require('./components/progressbar');
 
 var VueAsyncComputed = require('./plugins/vue-async-computed');
 Vue.use(VueAsyncComputed);
+var VueTouch = require('./plugins/vue-touch')
+VueTouch.registerCustomEvent('doubletap', {
+    type: 'tap',
+    taps: 2
+})
+Vue.use(VueTouch)
 
 // Loading components
 Vue.component('filesystem', Vue.extend(Filesystem));
