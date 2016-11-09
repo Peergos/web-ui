@@ -89,17 +89,22 @@ module.exports = {
             for (var i = 0; i < files.length; i++) {
                 var file = files[i];
 		console.log("uploading " + file.name);
+		var resultingSize = ( ((file.size/40 + 3)/4)|0 )*4*60;
 		var progress = {
 		    show:true,
 		    title:"Uploading " + file.name,
 		    done:0,
-		    max:60/40*file.size
+		    max:resultingSize
 		};
 		this.progressMonitors.push(progress);
 		var reader = new browserio.JSFileReader(file);
 		var java_reader = new peergos.shared.user.fs.BrowserFileReader(reader);
 		this.currentDir.uploadFile(file.name, java_reader, 0, file.size, this.context, len => {
 		    progress.done += len.value_0;
+		    if (progress.done >= progress.max)
+			setTimeout(() => progress.show = false, 2000);
+		    console.log(progress.done);
+		    console.log(progress.max);
 		}).thenApply(x => this.currentDirChanged());
 	    }
 	},
@@ -234,15 +239,18 @@ module.exports = {
 	    console.log("downloading " + file.getFileProperties().name);
 	    var props = file.getFileProperties();
 	    var that = this;
+	    var resultingSize = ( ((props.sizeLow()/40 + 3)/4)|0 )*4*60;
 	    var progress = {
 		show:true,
 		title:"Downloading " + props.name,
 		done:0,
-		max:60/40*props.sizeLow()
+		max:resultingSize
 	    };
 	    this.progressMonitors.push(progress);
 	    file.getInputStream(this.context, props.sizeHigh(), props.sizeLow(), read => {
 		progress.done += read.value_0;
+		if (progress.done >= progress.max)
+		    setTimeout(() => progress.show = false, 2000);
 	    }).thenCompose(reader => {
 		var data = peergos.shared.util.Serialize.newByteArray(props.sizeLow());
 		return reader.readIntoArray(data, 0, data.length)
