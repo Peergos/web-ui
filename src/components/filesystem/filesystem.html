@@ -84,7 +84,7 @@
     </thead>
     <tbody>
       <tr v-for="file in sortedFiles">
-        <td v-on:dblclick="navigateToSubdir(file.getFileProperties().name)" style="cursor:pointer">{{ file.getFileProperties().name }}</td>
+        <td v-on:dblclick="navigateOrDownload(file)" style="cursor:pointer">{{ file.getFileProperties().name }}</td>
 	<td>{{ file.getFileProperties().sizeLow() }}</td>
 	<td>{{ file.isDirectory() ? "dir" : "file" }}</td>
 	<td>{{ file.getFileProperties().modified }}</td>
