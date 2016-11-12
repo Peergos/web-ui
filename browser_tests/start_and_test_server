@@ -1,0 +1,24 @@
+#!/usr/bin/env python
+import time
+import sys
+import os
+import os.path
+import pytest
+from subprocess import Popen, call
+
+#add geckodriver to path for FF selenium driver
+os.environ["PATH"] += os.pathsep + os.path.join(os.getcwd(), 'geckodriver')
+
+RUN_SERVER_CMD = "ant  -buildfile ../build.xml run"
+# start server via ant target  in parent
+p = Popen(RUN_SERVER_CMD.split(), stdout=sys.stdout)
+
+# wait for setup 
+time.sleep(5)
+
+try:
+    # run tests
+    call(["py.test", "tests"], stdout=sys.stdout) 
+finally:
+    # kill server
+    p.terminate()
