@@ -18,7 +18,8 @@ time.sleep(5)
 
 try:
     # run tests
-    call(["py.test", "tests"], stdout=sys.stdout) 
+    test_rc = call(["py.test", "tests"], stdout=sys.stdout) 
+    sys.exit(test_rc)
 finally:
     # kill server
     p.terminate()
