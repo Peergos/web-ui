@@ -140,6 +140,9 @@ class LoginPage(Page):
 
     def _is_valid(self):
         self.get_unique_xpath("//h2[text()='Please log in']")
+        self.get_unique_xpath("//input[@id='username']")
+        self.get_unique_xpath("//input[@name='password']")
+        self.get_unique_xpath("//button[text()='Login']")
         return True
 
     def to_signup_page(self):
@@ -152,6 +155,20 @@ class LoginPage(Page):
         signup = self.get_unique_xpath("//button[text()='Sign Up']")
         signup.click()
         return SignupPage(self.d)
+
+    def login(self, username, password):
+        """
+        Login with user credentials.
+
+        Returns
+        -------
+        FileSystemPage
+            The filesystem page logged in with user credentials.
+        """
+        self.get_unique_xpath("//input[@id='username']").send_keys(username)
+        self.get_unique_xpath("//input[@name='password']").send_keys(password)
+        self.get_unique_xpath("//button[text()='Login']").click()
+        return FileSystemPage(self.d, username, password)
 
 
 class SignupPage(Page):

@@ -3,6 +3,7 @@
 ### requirements
 * Python 2.7
 * Firefox web browser
+> sudo apt-get install python-setuptools
 
 ### install dependencies 
 > python setup.py install

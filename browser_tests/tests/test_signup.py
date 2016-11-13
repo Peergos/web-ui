@@ -23,6 +23,23 @@ def test_logout():
         filesystem_page.logout()
 
 
+def test_signup_and_login():
+    # sign up in one browser session
+    with driver_context() as driver:
+        landing_page = LoginPage(driver)
+        signup_page = landing_page.to_signup_page()
+        filesystem_page = signup_page.signup()
+
+        logout = filesystem_page.get_unique_xpath("//button[@id='logoutButton']")
+        assert filesystem_page.username in logout.text
+
+    #  login as same user
+    with driver_context() as driver:
+        username = filesystem_page.username
+        password = filesystem_page.password
+        landing_page = LoginPage(driver)
+        landing_page.login(username, password)
+
 
 
 
