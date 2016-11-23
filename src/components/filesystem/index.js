@@ -26,7 +26,11 @@ module.exports = {
 	    progressMonitors: [],
 	    clipboardAction:"",
 	    forceUpdate:0,
-	    externalChange:0
+	    externalChange:0,
+        prompt_message: '',
+        prompt_result: '',
+        prompt_placeholder: '',
+        showPrompt: false
         };
     },
     props: {
@@ -53,12 +57,15 @@ module.exports = {
 	},
 
 	askMkdir: function() {
-	    const newFolderName = prompt("Enter new folder name");
-            if (newFolderName == null)
-                return;
-            
-            console.log("creating new sub-dir "+ newFolderName);
-            this.mkdir(newFolderName);
+        this.prompt_placeholder='Folder name';
+        this.prompt_result = '';
+        this.prompt_consumer_func = function() {
+                if (this.prompt_result === '')
+                        return;
+            console.log("creating new sub-dir "+ this.prompt_result);
+            this.mkdir(this.prompt_result);
+        };
+        this.showPrompt =  true;
 	},
 
 	switchView: function() {

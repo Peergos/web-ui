@@ -3,11 +3,12 @@ import abc
 import time
 import sys
 import uuid
+from contextlib import contextmanager
+import os
 
 from selenium import webdriver
 from selenium.webdriver.common.keys import Keys
-from contextlib import contextmanager
-import os
+from selenium.webdriver.common.action_chains import ActionChains
 
 # get url from environment, default to localhost:8000
 PEERGOS_URL = os.environ.get("peergos_url", "http://localhost:8000")
@@ -17,14 +18,14 @@ class PeergosError(Exception):
     pass
 
 
-def _guid():
+def guid():
     """Generate a random guid string."""
     return str(uuid.uuid4())
 
 
 def get_driver():
     """Returns a webdriver."""
-    return webdriver.Firefox()
+    return webdriver.Chrome()
 
 
 def get_driver_on_page(url):
@@ -134,6 +135,31 @@ class Page(object):
             raise PeergosError("non unique path {} : {}".format(xpath, str(elems)))
         return elems[0]
 
+    def double_click(self, elem):
+        """
+        Double click action on elem.
+
+        Parameters
+        ----------
+        elem: `WebElement`
+            The WebElement to be double clicked on.
+        """
+        a_chain = ActionChains(self.d)
+        a_chain.double_click(elem).perform()
+        return FileSystemPage(self.d)
+
+    def context_click(self, elem):
+        """
+        Context  click action on elem.
+
+        Parameters
+        ----------
+        elem: `WebElement`
+            The WebElement to be double clicked on.
+        """
+        a_chain = ActionChains(self.d)
+        a_chain.context_click(elem).perform()
+        return FileSystemPage(self.d)
 
 class LoginPage(Page):
     """The landing page."""
@@ -199,9 +225,9 @@ class SignupPage(Page):
         password2_input = self.get_unique_xpath("//input[@id='password2']")
 
         if username is None:
-            username = _guid()
+            username = guid()
         if password is None:
-            password = _guid()
+            password = guid()
 
         username_input.send_keys(username)
         password1_input.send_keys(password)
@@ -239,6 +265,62 @@ class FileSystemPage(Page):
         self.get_unique_xpath("//button[@id='logoutButton']").click()
         self.get_unique_xpath("//a[text()='Log out']").click()
         return LoginPage(self.d)
+
+    def click_on_file(self, filename):
+        self.d.find_element_by_id(filename).click()
+        return FileSystemPage(self.d, self.username,  self.password)
+
+    def double_click_on_file(self, filename):
+        """
+        Double click the file/folder by name.
+
+        Returns
+        -------
+        FileSystemPage
+            The filesystem after  clicking on filename.
+        """
+        elem = self.d.find_element_by_id(filename)
+        self.double_click(elem)
+        return FileSystemPage(self.d)
+
+    def context_click_on_file(self, filename):
+        elem = self.d.find_element_by_id(filename)
+        self.context_click(elem)
+        return FileSystemPage(self.d)
+
+    def mkdir(self, folder_name):
+        """
+        Click mkdir button.
+
+        Parameters
+        ----------
+        folder_name: str
+            Send keys  after  clicking mkdir.
+
+        Returns
+        -------
+        FileSystemPage
+            After  confirming mkdir.
+        """
+        self.get_unique_xpath("//li[@id='mkdirButton']").click()
+        alert = self.d.switch_to_alert()
+        alert.send_keys(folder_name)
+        alert.send_keys(Keys.RETURN)
+        return FileSystemPage(self.d, self.username, self.password)
+
+    def upload_file(self, file_path):
+        """
+        Upload local file to Peergos by clicking upload button.
+        """
+        # elem = self.get_unique_xpath("//li[@id='uploadButton']")
+        elem = self.get_unique_xpath("//li[@id='uploadInput']")
+        # print("elem", elem)
+        # elem.click()
+        # dialog = self.d.switch_to_alert()
+        dialog = elem
+        dialog.send_keys(file_path)
+        dialog.send_keys(Keys.RETURN)
+        return FileSystemPage(self.d, self.username, self.password)
 
     @classmethod
     def _init_sleep(cls):
