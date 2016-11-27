@@ -54,7 +54,7 @@
 <password v-if="showPassword" :show.sync="showPassword" :changepassword.sync="changePassword"></password>
 
 <message v-for="message in messages" :show.sync="message.show" :title.sync="message.title" :message.sync="message.body"></message>
-<prompt v-if="showPrompt" :show.sync="showPrompt" :prompt_result.sync="prompt_result" :placeholder.sync="prompt_placeholder" :consumer_func.sync="prompt_consumer_func"></prompt>
+<prompt v-if="showPrompt" :prompt_message.sync='prompt_message' :show.sync="showPrompt" :placeholder.sync="prompt_placeholder" :consumer_func.sync="prompt_consumer_func"></prompt>
 
 
 <div class="progressholder">

@@ -303,9 +303,8 @@ class FileSystemPage(Page):
             After  confirming mkdir.
         """
         self.get_unique_xpath("//li[@id='mkdirButton']").click()
-        alert = self.d.switch_to_alert()
-        alert.send_keys(folder_name)
-        alert.send_keys(Keys.RETURN)
+        self.d.find_element_by_id('prompt-input').send_keys(folder_name)
+        self.d.find_element_by_id('prompt-button-id').click()
         return FileSystemPage(self.d, self.username, self.password)
 
     def upload_file(self, file_path):

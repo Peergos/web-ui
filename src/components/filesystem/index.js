@@ -28,7 +28,6 @@ module.exports = {
 	    forceUpdate:0,
 	    externalChange:0,
         prompt_message: '',
-        prompt_result: '',
         prompt_placeholder: '',
         showPrompt: false
         };
@@ -58,13 +57,13 @@ module.exports = {
 
 	askMkdir: function() {
         this.prompt_placeholder='Folder name';
-        this.prompt_result = '';
-        this.prompt_consumer_func = function() {
-                if (this.prompt_result === '')
-                        return;
-            console.log("creating new sub-dir "+ this.prompt_result);
-            this.mkdir(this.prompt_result);
-        };
+        this.prompt_message='Enter a new folder name';
+        this.prompt_consumer_func = function(prompt_result) {
+            console.log("creating new sub-dir "+ prompt_result);
+            if (prompt_result === '')
+                return;
+            this.mkdir(prompt_result);
+        }.bind(this);
         this.showPrompt =  true;
 	},
 
