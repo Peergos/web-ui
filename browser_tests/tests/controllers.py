@@ -34,6 +34,26 @@ def get_driver_on_page(url):
     driver.get(url)
     return driver
 
+@contextmanager
+def signup_to_homedir(username=None, password=None):
+    """Signs up a new user, clicks on user directory.
+    Parameters
+    ----------
+    username: `str`
+        Username to  signup with.
+    password: `str`
+        Password to signup with.
+    Returns
+    -------
+    FileSystemPage
+        On user home directory.
+    """
+    with driver_context() as driver:
+        landing_page = LoginPage(driver)
+        signup_page = landing_page.to_signup_page()
+        filesystem_page = signup_page.signup(username, password)
+        filesystem_page.click_on_file(filesystem_page.username)
+        yield filesystem_page
 
 @contextmanager
 def driver_context(url=PEERGOS_URL, screenshot_file="screenshot.png"):
@@ -159,7 +179,6 @@ class Page(object):
         """
         a_chain = ActionChains(self.d)
         a_chain.context_click(elem).perform()
-        return FileSystemPage(self.d)
 
 class LoginPage(Page):
     """The landing page."""
@@ -286,7 +305,13 @@ class FileSystemPage(Page):
     def context_click_on_file(self, filename):
         elem = self.d.find_element_by_id(filename)
         self.context_click(elem)
-        return FileSystemPage(self.d)
+        return FileSystemPage(self.d, self.username, self.password)
+
+    def delete_file(self, filename):
+        """delete file in current directory."""
+        self.context_click_on_file(filename)
+        self.d.find_element_by_id('delete-file').click()
+        return FileSystemPage(self.d, self.username, self.password)
 
     def mkdir(self, folder_name):
         """
