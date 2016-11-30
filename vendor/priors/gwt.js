@@ -95,6 +95,45 @@ function hashToKeyBytesProm(username, password) {
     return future;
 }
 
+function generateRandomBytes(len) {    
+    var bytes = nacl.randomBytes(len);
+    return peergos.shared.user.JavaScriptPoster.convertToBytes(bytes);
+}
+
+function generateSecretbox(data, nonce, key) {    
+    var bytes = nacl.secretbox(new Uint8Array(data), new Uint8Array(nonce), new Uint8Array(key));
+    return peergos.shared.user.JavaScriptPoster.convertToBytes(bytes);
+}
+
+function generateSecretbox_open(cipher, nonce, key) {    
+    var bytes = nacl.secretbox.open(new Uint8Array(cipher), new Uint8Array(nonce), new Uint8Array(key));
+    return peergos.shared.user.JavaScriptPoster.convertToBytes(bytes);
+}
+
+function generateCrypto_sign_open(signed, publicSigningKey) {    
+    var bytes = nacl.sign.open(new Uint8Array(signed), new Uint8Array(publicSigningKey));
+    return peergos.shared.user.JavaScriptPoster.convertToBytes(bytes);
+}
+
+function generateCrypto_sign(message, secretSigningKey) {    
+    var bytes = nacl.sign(new Uint8Array(message), new Uint8Array(secretSigningKey));
+    return peergos.shared.user.JavaScriptPoster.convertToBytes(bytes);
+}
+
+function generateCrypto_sign_keypair(publicKey, secretKey) {    
+    var signSeed = new Uint8Array(secretKey.array).slice(0, 32);
+    var signPair = nacl.sign.keyPair.fromSeed(signSeed);
+    for (var i=0; i < signPair.secretKey.length; i++)
+        secretKey.array[i] = signPair.secretKey[i];
+    for (var i=0; i < signPair.publicKey.length; i++)
+        publicKey.array[i] = signPair.publicKey[i];
+    /*
+     (secretSigningKey)
+    var keyPair = nacl.sign.keyPair.fromSecretKey(new Uint8Array(secretSigningKey));
+    return peergos.shared.user.JavaScriptPoster.convertToBytes(keyPair.publicKey);
+     */
+}
+
 var scryptJS = {
     NativeScryptJS: function() {
         this.hashToKeyBytes = hashToKeyBytesProm;
@@ -104,6 +143,17 @@ var scryptJS = {
 var thumbnail = {
     NativeJSThumbnail: function() {
         this.generateThumbnail = generateThumbnailProm;
+    }   
+};
+
+var tweetNaCl = {
+    JSNaCl: function() {
+        this.randombytes = generateRandomBytes;
+        this.secretbox = generateSecretbox;
+        this.secretbox_open = generateSecretbox_open;
+        this.crypto_sign_open = generateCrypto_sign_open;
+        this.crypto_sign = generateCrypto_sign;
+        this.crypto_sign_keypair = generateCrypto_sign_keypair;
     }   
 };
 
