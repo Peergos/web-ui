@@ -313,6 +313,12 @@ class FileSystemPage(Page):
         self.d.find_element_by_id('delete-file').click()
         return FileSystemPage(self.d, self.username, self.password)
 
+    def public_link(self, filename):
+        """open the context menu for filename and click the public-link option."""
+        self.context_click_on_file(filename)
+        self.d.find_element_by_id('public-link-file').click()
+        return FileSystemPage(self.d,  self.username, self.password)
+
     def mkdir(self, folder_name):
         """
         Click mkdir button.
