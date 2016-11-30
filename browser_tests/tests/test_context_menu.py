@@ -33,3 +33,13 @@ def test_public_link_to_folder():
         #
         #
         # # filesystem.find_element_by_xpath("//span[class='btn_pnavbar btn tour path'")
+
+
+def test_rename():
+    with signup_to_homedir() as filesystem:
+        dir_name = guid()
+        filesystem.mkdir(dir_name)
+        new_name = guid()
+        filesystem.rename(dir_name, new_name)
+        assert len(filesystem.d.find_elements_by_id(dir_name)) == 0
+        assert filesystem.d.find_elements_by_id(new_name)

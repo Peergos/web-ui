@@ -331,10 +331,30 @@ class FileSystemPage(Page):
         Returns
         -------
         FileSystemPage
-            After  confirming mkdir.
+            After confirming mkdir.
         """
         self.get_unique_xpath("//li[@id='mkdirButton']").click()
         self.d.find_element_by_id('prompt-input').send_keys(folder_name)
+        self.d.find_element_by_id('prompt-button-id').click()
+        return FileSystemPage(self.d, self.username, self.password)
+
+    def rename(self, current_name, new_name):
+        """
+        Rename a file/folder.
+
+        Parameters
+        ----------
+        current_name: `str`
+        new_name: `str`
+
+        Returns
+        -------
+        FileSystemPage
+            After confirming rename.
+        """
+        self.context_click_on_file(current_name)
+        self.d.find_element_by_id('rename-file').click()
+        self.d.find_element_by_id('prompt-input').send_keys(new_name)
         self.d.find_element_by_id('prompt-button-id').click()
         return FileSystemPage(self.d, self.username, self.password)
 
