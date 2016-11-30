@@ -375,3 +375,23 @@ class FileSystemPage(Page):
     @classmethod
     def _init_sleep(cls):
         return 5
+
+    def _open_social(self):
+        self.d.find_element_by_id('sharingOptionsSpan').click()
+
+    def send_follow_request(self, to_friend):
+        """Send a friend request to another user."""
+        self._open_social()
+        self.d.find_element_by_id('friend-name-input').send_keys(to_friend)
+        self.d.find_element_by_id('send-follow-request-id').click()
+    def get_pending_follow_request(self):
+        """Get a list of the  usernames for which you have pending users-follow-requests."""
+        self._open_social()
+        table = self.d.find_element_by_id('follow-request-table-id')
+        request_elems = table.find_elements_by_xpath("//td[contains(@id,'follow-request-id')]")
+        return [e.get_attribute('id') for e  in request_elems]
+
+    def accept_follow_request(self, from_user):
+        """Accept a pending follow request from a user."""
+        pass
+
