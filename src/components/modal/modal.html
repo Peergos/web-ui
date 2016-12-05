@@ -3,7 +3,7 @@
   <div class="modal-container" @click.stop>
     
     <div class="modal-header">
-      <h3>{{ title }}</h3>
+      <h3 id="modal-header-id">{{ title }}</h3>
     </div>
     
     <div class="modal-body">
@@ -15,7 +15,7 @@
     
     <div class="modal-footer">
       <slot name="footer">
-        <button class="modal-default-button" @click="close">
+        <button id='modal-button-id' class="modal-default-button" @click="close">
           OK
         </button>
       </slot>
