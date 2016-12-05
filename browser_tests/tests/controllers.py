@@ -13,6 +13,7 @@ from selenium.webdriver.common.action_chains import ActionChains
 # get url from environment, default to localhost:8000
 PEERGOS_URL = os.environ.get("peergos_url", "http://localhost:8000")
 
+
 class PeergosError(Exception):
     """Package root exception."""
     pass
@@ -34,6 +35,7 @@ def get_driver_on_page(url):
     driver.get(url)
     return driver
 
+
 @contextmanager
 def signup_to_homedir(username=None, password=None):
     """Signs up a new user, clicks on user directory.
@@ -54,6 +56,7 @@ def signup_to_homedir(username=None, password=None):
         filesystem_page = signup_page.signup(username, password)
         filesystem_page.click_on_file(filesystem_page.username)
         yield filesystem_page
+
 
 @contextmanager
 def driver_context(url=PEERGOS_URL, screenshot_file="screenshot.png"):
@@ -180,6 +183,7 @@ class Page(object):
         a_chain = ActionChains(self.d)
         a_chain.context_click(elem).perform()
 
+
 class LoginPage(Page):
     """The landing page."""
 
@@ -218,6 +222,7 @@ class LoginPage(Page):
 
 class SignupPage(Page):
     """Page with signup inputs."""
+
     def _is_valid(self):
         self.get_unique_xpath("//input[@id='password2']")
         return True
@@ -259,6 +264,7 @@ class SignupPage(Page):
 
 class FileSystemPage(Page):
     """Filesystem view page in grid mode."""
+
     def __init__(self, driver, username, password):
         super(FileSystemPage, self).__init__(driver)
         self.username = username
@@ -287,7 +293,7 @@ class FileSystemPage(Page):
 
     def click_on_file(self, filename):
         self.d.find_element_by_id(filename).click()
-        return FileSystemPage(self.d, self.username,  self.password)
+        return FileSystemPage(self.d, self.username, self.password)
 
     def double_click_on_file(self, filename):
         """
@@ -317,7 +323,7 @@ class FileSystemPage(Page):
         """open the context menu for filename and click the public-link option."""
         self.context_click_on_file(filename)
         self.d.find_element_by_id('public-link-file').click()
-        return FileSystemPage(self.d,  self.username, self.password)
+        return FileSystemPage(self.d, self.username, self.password)
 
     def mkdir(self, folder_name):
         """
@@ -379,19 +385,28 @@ class FileSystemPage(Page):
     def _open_social(self):
         self.d.find_element_by_id('sharingOptionsSpan').click()
 
+    def _close_social(self):
+        raise PeergosError('Not implemented')
+
     def send_follow_request(self, to_friend):
         """Send a friend request to another user."""
         self._open_social()
         self.d.find_element_by_id('friend-name-input').send_keys(to_friend)
         self.d.find_element_by_id('send-follow-request-id').click()
+        return FileSystemPage(self.d, self.username, self.password)
+
     def get_pending_follow_request(self):
         """Get a list of the  usernames for which you have pending users-follow-requests."""
         self._open_social()
         table = self.d.find_element_by_id('follow-request-table-id')
-        request_elems = table.find_elements_by_xpath("//td[contains(@id,'follow-request-id')]")
-        return [e.get_attribute('id') for e  in request_elems]
+        # request_elems = table.find_elements_by_xpath("//td[contains(@id,'follow-request')]")
+        request_elems = table.find_elements_by_xpath("//td[@id='follow-request-id']")
+        user_names = [e.text for e in request_elems]
+        self._open_social()
 
     def accept_follow_request(self, from_user):
         """Accept a pending follow request from a user."""
-        pass
-
+        self._open_social()
+        row_elem = self.d.find_elements_by_xpath("//[@id='follow-request-table-id' and text()='{}'".format(from_user))
+        allow_button = row_elem.find_element_by_id("..//[@id='{}'".format('allow-follow-request-id'))
+        allow_button.click()
