@@ -131,7 +131,7 @@
       <fileset file="${server_src}/PeergosServer.jar"/>
     </copy>
     <copy todir="${ui}/js">
-      <fileset file="${server_src}/war/peergos/*cache.js"/>
+      <fileset file="${server_src}/war/peergoslib/*cache.js"/>
     </copy>
   </target>
 
