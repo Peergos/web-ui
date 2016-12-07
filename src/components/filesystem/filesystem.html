@@ -37,14 +37,14 @@
 <input type="file" id="uploadInput" @change="uploadFiles" style="display:none;" multiple="" />
 <a id="downloadAnchor" style="display:none"></a>
 <ul id="right-click-menu" tabindex="-1" v-el="right" v-if="viewMenu" v-on:blur="closeMenu"  v-bind:style="{top:top, left:left}">
-  <li v-if="isWritable" v-on:click="rename">Rename</li>
-  <li v-if="isWritable" v-on:click="delete">Delete</li>
-  <li v-on:click="downloadAll">Open</li>
-  <li v-on:click="copy">Copy</li>
-  <li v-if="isWritable" v-on:click="cut">Cut</li>
-  <li v-on:click="createPublicLink">Create public link</li>
-  <li v-on:click="showShareWith">Share</li>
-  <li v-if="isWritable" v-on:click="sharedWith">Shared with</li>
+  <li id='rename-file' v-if="isWritable" v-on:click="rename">Rename</li>
+  <li id='delete-file' v-if="isWritable" v-on:click="delete">Delete</li>
+  <li id='open-file' v-on:click="downloadAll">Open</li>
+  <li id='copy-file' v-on:click="copy">Copy</li>
+  <li id='cut-file' v-if="isWritable" v-on:click="cut">Cut</li>
+  <li id='public-link-file' v-on:click="createPublicLink">Create public link</li>
+  <li id='share-file' v-on:click="showShareWith">Share</li>
+  <li id='shared-with-file' v-if="isWritable" v-on:click="sharedWith">Shared with</li>
 </ul>
 
 <modal :show.sync="showModal" :title.sync="modalTitle" :links.sync="modalLinks"></modal>
@@ -54,6 +54,9 @@
 <password v-if="showPassword" :show.sync="showPassword" :changepassword.sync="changePassword"></password>
 
 <message v-for="message in messages" :show.sync="message.show" :title.sync="message.title" :message.sync="message.body"></message>
+<prompt v-if="showPrompt" :prompt_message.sync='prompt_message' :show.sync="showPrompt" :placeholder.sync="prompt_placeholder" :consumer_func.sync="prompt_consumer_func"></prompt>
+
+
 <div class="progressholder">
   <progressbar v-for="progress in progressMonitors" :show.sync="progress.show" :title.sync="progress.title" :done.sync="progress.done":max.sync="progress.max"></progressbar>
 </div>
@@ -61,9 +64,9 @@
 <div class="grid" v-if="grid">
   <span class="column" v-for="file in sortedFiles">
     <span class="grid_icon_wrapper glyphicon" id="grid$index" draggable="true" @dragStart="dragStart($event, file)" @dragover.prevent @drop="drop($event, file)">
-      <a>
-	<span v-if="!file.getFileProperties().thumbnail.isPresent()" v-touch:doubletap="navigateOrDownload(file)" v-on:longpress="openMenu($event, file)" v-on:contextmenu="openMenu($event, file)" v-bind:class="['file_icon', file.isDirectory() ? 'glyphicon-folder-open' : 'glyphicon-file', 'picon']"> </span>
-	<img v-if="file.getFileProperties().thumbnail.isPresent()" v-touch:doubletap="navigateOrDownload(file)" v-on:longpress="openMenu($event, file)" v-on:contextmenu="openMenu($event, file)" v-bind:src="getThumbnailURL(file)"/>
+            <a v-bind:id="file.getFileProperties().name" v-on:contextmenu="openMenu($event, file)">
+	<span v-if="!file.getFileProperties().thumbnail.isPresent()" v-touch:tap="navigateOrDownload(file)" v-on:longpress="openMenu($event, file)"  v-bind:class="['file_icon', file.isDirectory() ? 'glyphicon-folder-open' : 'glyphicon-file', 'picon']"> </span>
+	<img v-if="file.getFileProperties().thumbnail.isPresent()" v-touch:tap="navigateOrDownload(file)" v-on:longpress="openMenu($event, file)" v-on:contextmenu="openMenu($event, file)" v-bind:src="getThumbnailURL(file)"/>
       </a>
 	
       <div class="content picon">
@@ -84,7 +87,7 @@
     </thead>
     <tbody>
       <tr v-for="file in sortedFiles">
-        <td v-on:dblclick="navigateOrDownload(file)" style="cursor:pointer">{{ file.getFileProperties().name }}</td>
+              <td v-bind:id="file.getFileProperties().name" v-on:click="navigateOrDownload(file)" style="cursor:pointer">{{ file.getFileProperties().name }}</td>
 	<td>{{ file.getFileProperties().sizeLow() }}</td>
 	<td>{{ file.isDirectory() ? "dir" : "file" }}</td>
 	<td>{{ file.getFileProperties().modified }}</td>

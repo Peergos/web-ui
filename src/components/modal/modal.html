@@ -8,7 +8,7 @@
     
     <div class="modal-body">
       <div class="container"><p style="word-wrap;break-all;">
-	  <a v-for="link in links" href="{{ link.href }}">{{ link.name }}</a>
+	  <a v-for="link in links" id="{{ link.id }}" href="{{ link.href }}">{{ link.name }}</a>
 	</p>
       </div>
     </div>

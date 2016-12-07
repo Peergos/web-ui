@@ -26,7 +26,10 @@ module.exports = {
 	    progressMonitors: [],
 	    clipboardAction:"",
 	    forceUpdate:0,
-	    externalChange:0
+	    externalChange:0,
+        prompt_message: '',
+        prompt_placeholder: '',
+        showPrompt: false
         };
     },
     props: {
@@ -53,12 +56,15 @@ module.exports = {
 	},
 
 	askMkdir: function() {
-	    const newFolderName = prompt("Enter new folder name");
-            if (newFolderName == null)
+        this.prompt_placeholder='Folder name';
+        this.prompt_message='Enter a new folder name';
+        this.prompt_consumer_func = function(prompt_result) {
+            console.log("creating new sub-dir "+ prompt_result);
+            if (prompt_result === '')
                 return;
-            
-            console.log("creating new sub-dir "+ newFolderName);
-            this.mkdir(newFolderName);
+            this.mkdir(prompt_result);
+        }.bind(this);
+        this.showPrompt =  true;
 	},
 
 	switchView: function() {
@@ -202,7 +208,10 @@ module.exports = {
 	    var links = [];
 	    for (var i=0; i < this.selectedFiles.length; i++) {
 		var file = this.selectedFiles[i];
-		links.push({href:window.location.origin + file.toLink(), name:file.getFileProperties().name});
+        var name = file.getFileProperties().name;
+		links.push({href:window.location.origin + file.toLink(), 
+                    name:name, 
+                    id:'public_link_'+name});
 	    }
 	    var title = links.length > 1 ? "Public links to files: " : "Public link to file: ";
             this.showLinkModal(title, links);
@@ -344,16 +353,24 @@ module.exports = {
 
 	rename: function() {
 	    if (this.selectedFiles.length == 0)
-		return;
+		    return;
 	    if (this.selectedFiles.length > 1)
-		throw "Can't rename more than one file at once!";
+		    throw "Can't rename more than one file at once!";
+
 	    var file = this.selectedFiles[0];
-	    console.log("renaming: " + file.getFileProperties().name);
+        var old_name =  file.getFileProperties().name
 	    this.closeMenu();
-	    var newname = prompt("Specify a new name for " + file.getFileProperties().name);
-	    var that = this;
-	    file.rename(newname, this.context, this.currentDir)
-		.thenApply(b => that.forceUpdate++); 
+
+        this.prompt_placeholder='New name';
+        this.prompt_message='Enter a new name';
+        this.prompt_consumer_func = function(prompt_result) {
+            if (prompt_result === '')
+                return;
+            console.log("Renaming " + old_name + "to "+ prompt_result);
+	        file.rename(prompt_result, this.context, this.currentDir)
+    		    .thenApply(b => this.forceUpdate++); 
+        }.bind(this);
+        this.showPrompt =  true;
 	},
 	
 	delete: function() {
