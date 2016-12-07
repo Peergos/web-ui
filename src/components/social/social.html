@@ -14,9 +14,7 @@
 	    <td style="text-align:right; padding:20px">
 	      <input id="friend-name-input" v-model="targetUsername" type="text" placeholder="Friend name" class="form-control" style="width:200px"></input>
 	    </td>
-	    <td style="text-align:right">
-                <button id='send-follow-request-id' class="btn btn-success" @click="sendInitialFollowRequest(this.targetUsername)">Send</button>
-        </td>
+	    <td style="text-align:right"><button id='send-follow-request-id' class="btn btn-success" @click="sendInitialFollowRequest(this.targetUsername)">Send</button></td>
 	  </tr>
 	</table>
       </div>
@@ -24,22 +22,28 @@
       <div>
 	<h3>Pending follow requests</h3>
         <table id='follow-request-table-id' class="table table-responsive table-striped table-hover">
-	  <tr id=v-if="data.pending.length==0"><th></th><th></th><th></th><th></th></tr>
+	  <tr v-if="data.pending.length==0"><th></th><th></th><th></th><th></th></tr>
           <tr v-for="req in data.pending">
 	    <td id='follow-request-id'>{{ req.entry.get().owner }}</td>
-	    <td style="text-align:right"><button id='accept-and-follow-back-id' class="btn btn-success" @click="acceptAndReciprocate(req)">Allow and follow back</button></td>
-	    <td style="text-align:right"><button id='allow-follow-request-id' class="btn btn-info" @click="accept(req)">Allow</button></td>
-	    <td style="text-align:right"><button id='deny-follow-request-id' class="btn btn-danger" @click="reject(req)">Deny</button></td>
+	    <td style="text-align:right">
+                <button id='{{req.entry.get().owner + "_allow-and-follow-back-id"}}' class="btn btn-success" @click="acceptAndReciprocate(req)">Allow and follow back</button>
+        </td>
+	    <td style="text-align:right">
+                <button id='{{req.entry.get().owner + "_allow-follow-request-id"}}' class="btn btn-info" @click="accept(req)">Allow</button>
+        </td>
+	    <td style="text-align:right">
+                <button id='{{req.entry.get().owner + "_deny-follow-request-id"}}' class="btn btn-danger" @click="reject(req)">Deny</button>
+        </td>
 	  </tr>
         </table>
       </div>
 	
       <div>
 	<h3>Followers</h3>
-	<table class="table table-responsive table-striped table-hover">
+	<table id='follower-table-id' class="table table-responsive table-striped table-hover">
 	  <tr v-if="data.followers.length==0"><th></th><th style="text-align:right"></th></tr>
           <tr v-for="username in data.followers">
-	    <td>{{ username }}</td>
+	    <td id='follower-id'>{{ username }}</td>
 	    <td style="text-align:right"><button class="btn btn-danger" @click="removeFollower(username)">Remove</button></td>
 	  </tr>
         </table>

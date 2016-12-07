@@ -45,9 +45,9 @@ def signup_to_homedir(username=None, password=None):
         Username to  signup with.
     password: `str`
         Password to signup with.
-    Returns
-    -------
-    FileSystemPage
+
+    Yields
+    ------
         On user home directory.
     """
     with driver_context() as driver:
@@ -56,6 +56,22 @@ def signup_to_homedir(username=None, password=None):
         filesystem_page = signup_page.signup(username, password)
         filesystem_page.click_on_file(filesystem_page.username)
         yield filesystem_page
+
+@contextmanager
+def login_to_homedir(username, password):
+    """
+    Login as an existing user.
+
+    Yields
+    ------
+    FileSystemPage
+        On user home directory.
+    """
+    with driver_context() as driver:
+        landing_page = LoginPage(driver)
+        filesystem = landing_page.login(username, password)
+        yield filesystem.go_home()
+
 
 
 @contextmanager
@@ -118,7 +134,7 @@ class Page(object):
     @abc.abstractmethod
     def _is_valid(self):
         """Called in the constructor to check if the page has the correct content.
-        
+
         Returns
         -------
         bool
@@ -196,7 +212,7 @@ class LoginPage(Page):
 
     def to_signup_page(self):
         """Navigate to the signup page.
-        
+
         Returns
         -------
         SignupPage
@@ -238,7 +254,7 @@ class SignupPage(Page):
         password: `str`
             Password to signup with.
             Defaults to a random guid when None.
-            
+
         Returns
         -------
         FileSystemPage
@@ -380,13 +396,14 @@ class FileSystemPage(Page):
 
     @classmethod
     def _init_sleep(cls):
-        return 5
+        return 4
 
     def _open_social(self):
         self.d.find_element_by_id('sharingOptionsSpan').click()
 
     def _close_social(self):
-        raise PeergosError('Not implemented')
+        #todo
+        pass
 
     def send_follow_request(self, to_friend):
         """Send a friend request to another user."""
@@ -396,17 +413,38 @@ class FileSystemPage(Page):
         return FileSystemPage(self.d, self.username, self.password)
 
     def get_pending_follow_request(self):
-        """Get a list of the  usernames for which you have pending users-follow-requests."""
+        """Get a list of the  usernames for which this user has a pending users-follow-requests."""
         self._open_social()
         table = self.d.find_element_by_id('follow-request-table-id')
         # request_elems = table.find_elements_by_xpath("//td[contains(@id,'follow-request')]")
         request_elems = table.find_elements_by_xpath("//td[@id='follow-request-id']")
-        user_names = [e.text for e in request_elems]
+        self._close_social()
+        return [e.text for e in request_elems]
+
+    def get_followers(self):
+        """Get a list of the usernames in the followers table."""
         self._open_social()
+        table = self.d.find_element_by_id('follower-table-id')
+        follower_user_names = [elem.text for elem in table.find_elements_by_id('follower-id')]
+        self._close_social()
+        return follower_user_names
+
+    def _mutate_follow_requet(self, from_user, suffix):
+        self._open_social()
+        button_id = "_".join([from_user, suffix])
+        button = self.d.find_element_by_id(button_id)
+        button.click()
+        self._close_social()
+        return FileSystemPage(self.d, self.username, self.password)
 
     def accept_follow_request(self, from_user):
         """Accept a pending follow request from a user."""
-        self._open_social()
-        row_elem = self.d.find_elements_by_xpath("//[@id='follow-request-table-id' and text()='{}'".format(from_user))
-        allow_button = row_elem.find_element_by_id("..//[@id='{}'".format('allow-follow-request-id'))
-        allow_button.click()
+        return self._mutate_follow_requet(from_user, 'allow-follow-request-id')
+
+    def accept_follow_request_and_follow_back(self, from_user):
+        """Accept a pending follow request from a user and follow them back."""
+        return self._mutate_follow_requet(from_user, 'allow-and-follow-back-id')
+
+    def deny_follow_request(self, from_user):
+        """Accept a pending follow request from a user."""
+        return self._mutate_follow_requet(from_user, 'deny-follow-request-id')
