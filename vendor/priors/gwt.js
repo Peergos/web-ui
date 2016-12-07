@@ -71,9 +71,10 @@ function postMultipartProm(url, dataArrays) {
     var future = peergos.shared.util.FutureUtils.incomplete();
     new Promise(function(resolve, reject) {
 	var req = new XMLHttpRequest();
+
 	req.open('POST', window.location.origin + "/" + url);
 	req.responseType = 'arraybuffer';
-	
+
 	req.onload = function() {
 	    console.log("http post returned retrieving " + url);
             // This is called even on 404 etc
@@ -86,14 +87,17 @@ function postMultipartProm(url, dataArrays) {
             }
 	};
 	
-	req.onerror = function() {
+	req.onerror = function(e) {
+	    console.log(e);
             reject(Error("Network Error"));
 	};
 
-	var boundary = "---------------------------" + Date.now().toString(16);
-        req.setRequestHeader("Content-Type", "multipart\/form-data; boundary=" + boundary);
-	console.log(dataArrays);
-        req.send("--" + boundary + "\r\n" + dataArrays.array.join("--" + boundary + "\r\n") + "--" + boundary + "--\r\n");
+	var form = new FormData();
+
+	for (var i=0; i < dataArrays.array.length; i++)
+	    form.append(i, new Blob([new Int8Array(dataArrays.array[i])]));
+
+        req.send(form);
     }).then(function(result, err) {
         if (err != null)
             future.completeExceptionally(err);
