@@ -95,6 +95,65 @@ function hashToKeyBytesProm(username, password) {
     return future;
 }
 
+function generateRandomBytes(len) {    
+    var bytes = nacl.randomBytes(len);
+    return peergos.shared.user.JavaScriptPoster.convertToBytes(bytes);
+}
+
+function generateSecretbox(data, nonce, key) {    
+    var bytes = nacl.secretbox(new Uint8Array(data), new Uint8Array(nonce), new Uint8Array(key));
+    return peergos.shared.user.JavaScriptPoster.convertToBytes(bytes);
+}
+
+function generateSecretbox_open(cipher, nonce, key) {    
+    var bytes = nacl.secretbox.open(new Uint8Array(cipher), new Uint8Array(nonce), new Uint8Array(key));
+    return peergos.shared.user.JavaScriptPoster.convertToBytes(bytes);
+}
+
+function generateCrypto_sign_open(signed, publicSigningKey) {    
+    var bytes = nacl.sign.open(new Uint8Array(signed), new Uint8Array(publicSigningKey));
+    return peergos.shared.user.JavaScriptPoster.convertToBytes(bytes);
+}
+
+function generateCrypto_sign(message, secretSigningKey) {    
+    var bytes = nacl.sign(new Uint8Array(message), new Uint8Array(secretSigningKey));
+    return peergos.shared.user.JavaScriptPoster.convertToBytes(bytes);
+}
+
+function generateCrypto_sign_keypair(publicKey, secretKey) {    
+    var signSeed = new Uint8Array(secretKey.slice(0, 32));
+    var signPair = nacl.sign.keyPair.fromSeed(signSeed);
+    for (var i=0; i < signPair.secretKey.length; i++)
+        secretKey[i] = signPair.secretKey[i];
+    for (var i=0; i < signPair.publicKey.length; i++)
+        publicKey[i] = signPair.publicKey[i];
+    
+    var returnArrays = [];
+    returnArrays.push(publicKey);
+    returnArrays.push(secretKey);
+    return returnArrays;
+}
+
+function generateCrypto_box_open(cipher, nonce, theirPublicBoxingKey, secretBoxingKey) {    
+    var res = nacl.box.open(new Uint8Array(cipher), new Uint8Array(nonce), new Uint8Array(theirPublicKey), new Uint8Array(ourSecretKey));
+    var i8Array = new Int8Array(res.buffer, res.byteOffset, res.byteLength);
+    return peergos.shared.user.JavaScriptPoster.convertToBytes(i8Array);
+}
+
+function generateCrypto_box(message, nonce, theirPublicBoxingKey, ourSecretBoxingKey) {    
+    var res = nacl.box(new Uint8Array(message), new Uint8Array(nonce), new Uint8Array(theirPublicKey), new Uint8Array(ourSecretKey));
+    var i8Array = new Int8Array(res.buffer, res.byteOffset, res.byteLength);
+    return peergos.shared.user.JavaScriptPoster.convertToBytes(i8Array);
+}
+
+function generateCrypto_box_keypair(publicKey, secretKey) {    
+    var boxPair = nacl.box.keyPair.fromSecretKey(new Uint8Array(secretKey));
+    for (var i=0; i < boxPair.publicKey.length; i++)
+        publicKey[i] = boxPair.publicKey[i];
+    
+    return publicKey;
+}
+
 var scryptJS = {
     NativeScryptJS: function() {
         this.hashToKeyBytes = hashToKeyBytesProm;
@@ -104,6 +163,20 @@ var scryptJS = {
 var thumbnail = {
     NativeJSThumbnail: function() {
         this.generateThumbnail = generateThumbnailProm;
+    }   
+};
+
+var tweetNaCl = {
+    JSNaCl: function() {
+        this.randombytes = generateRandomBytes;
+        this.secretbox = generateSecretbox;
+        this.secretbox_open = generateSecretbox_open;
+        this.crypto_sign_open = generateCrypto_sign_open;
+        this.crypto_sign = generateCrypto_sign;
+        this.crypto_sign_keypair = generateCrypto_sign_keypair;
+        this.crypto_box_open = generateCrypto_box_open;
+        this.crypto_box = generateCrypto_box;
+        this.crypto_box_keypair = generateCrypto_box_keypair;
     }   
 };
 
