@@ -121,17 +121,37 @@ function generateCrypto_sign(message, secretSigningKey) {
 }
 
 function generateCrypto_sign_keypair(publicKey, secretKey) {    
-    var signSeed = new Uint8Array(secretKey.array).slice(0, 32);
+    var signSeed = new Uint8Array(secretKey.slice(0, 32));
     var signPair = nacl.sign.keyPair.fromSeed(signSeed);
     for (var i=0; i < signPair.secretKey.length; i++)
-        secretKey.array[i] = signPair.secretKey[i];
+        secretKey[i] = signPair.secretKey[i];
     for (var i=0; i < signPair.publicKey.length; i++)
-        publicKey.array[i] = signPair.publicKey[i];
-    /*
-     (secretSigningKey)
-    var keyPair = nacl.sign.keyPair.fromSecretKey(new Uint8Array(secretSigningKey));
-    return peergos.shared.user.JavaScriptPoster.convertToBytes(keyPair.publicKey);
-     */
+        publicKey[i] = signPair.publicKey[i];
+    
+    var returnArrays = [];
+    returnArrays.push(publicKey);
+    returnArrays.push(secretKey);
+    return returnArrays;
+}
+
+function generateCrypto_box_open(cipher, nonce, theirPublicBoxingKey, secretBoxingKey) {    
+    var res = nacl.box.open(new Uint8Array(cipher), new Uint8Array(nonce), new Uint8Array(theirPublicKey), new Uint8Array(ourSecretKey));
+    var i8Array = new Int8Array(res.buffer, res.byteOffset, res.byteLength);
+    return peergos.shared.user.JavaScriptPoster.convertToBytes(i8Array);
+}
+
+function generateCrypto_box(message, nonce, theirPublicBoxingKey, ourSecretBoxingKey) {    
+    var res = nacl.box(new Uint8Array(message), new Uint8Array(nonce), new Uint8Array(theirPublicKey), new Uint8Array(ourSecretKey));
+    var i8Array = new Int8Array(res.buffer, res.byteOffset, res.byteLength);
+    return peergos.shared.user.JavaScriptPoster.convertToBytes(i8Array);
+}
+
+function generateCrypto_box_keypair(publicKey, secretKey) {    
+    var boxPair = nacl.box.keyPair.fromSecretKey(new Uint8Array(secretKey));
+    for (var i=0; i < boxPair.publicKey.length; i++)
+        publicKey[i] = boxPair.publicKey[i];
+    
+    return publicKey;
 }
 
 var scryptJS = {
@@ -154,6 +174,9 @@ var tweetNaCl = {
         this.crypto_sign_open = generateCrypto_sign_open;
         this.crypto_sign = generateCrypto_sign;
         this.crypto_sign_keypair = generateCrypto_sign_keypair;
+        this.crypto_box_open = generateCrypto_box_open;
+        this.crypto_box = generateCrypto_box;
+        this.crypto_box_keypair = generateCrypto_box_keypair;
     }   
 };
 
