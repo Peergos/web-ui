@@ -32,7 +32,7 @@ function getProm(url) {
     return future;
 }
 
-function postProm(url, data, unzip) {
+function postProm(url, data) {
     console.log("postProm " + url);
     var future = peergos.shared.util.FutureUtils.incomplete();
     new Promise(function(resolve, reject) {
@@ -66,10 +66,48 @@ function postProm(url, data, unzip) {
     return future;
 }
 
+function postMultipartProm(url, dataArrays) {
+    console.log("postMultipartProm " + url);
+    var future = peergos.shared.util.FutureUtils.incomplete();
+    new Promise(function(resolve, reject) {
+	var req = new XMLHttpRequest();
+	req.open('POST', window.location.origin + "/" + url);
+	req.responseType = 'arraybuffer';
+	
+	req.onload = function() {
+	    console.log("http post returned retrieving " + url);
+            // This is called even on 404 etc
+            // so check the status
+            if (req.status == 200) {
+		resolve(new Uint8Array(req.response));
+            }
+            else {
+		reject(Error(req.statusText));
+            }
+	};
+	
+	req.onerror = function() {
+            reject(Error("Network Error"));
+	};
+
+	var boundary = "---------------------------" + Date.now().toString(16);
+        req.setRequestHeader("Content-Type", "multipart\/form-data; boundary=" + boundary);
+	console.log(dataArrays);
+        req.send("--" + boundary + "\r\n" + dataArrays.array.join("--" + boundary + "\r\n") + "--" + boundary + "--\r\n");
+    }).then(function(result, err) {
+        if (err != null)
+            future.completeExceptionally(err);
+        else
+            future.complete(peergos.shared.user.JavaScriptPoster.convertToBytes(result));
+    });
+    return future;
+}
+
 var http = {
     NativeJSHttp: function() {
 	this.get = getProm;
 	this.post = postProm;
+	this.postMultipart = postMultipartProm;
     }
 };
 
