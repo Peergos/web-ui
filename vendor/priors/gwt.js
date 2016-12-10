@@ -11,7 +11,7 @@ function getProm(url) {
             // This is called even on 404 etc
             // so check the status
             if (req.status == 200) {
-		resolve(new Uint8Array(req.response));
+		resolve(new Int8Array(req.response));
             }
             else {
 		reject(Error(req.statusText));
@@ -32,7 +32,7 @@ function getProm(url) {
     return future;
 }
 
-function postProm(url, data, unzip) {
+function postProm(url, data) {
     console.log("postProm " + url);
     var future = peergos.shared.util.FutureUtils.incomplete();
     new Promise(function(resolve, reject) {
@@ -66,10 +66,52 @@ function postProm(url, data, unzip) {
     return future;
 }
 
+function postMultipartProm(url, dataArrays) {
+    console.log("postMultipartProm " + url);
+    var future = peergos.shared.util.FutureUtils.incomplete();
+    new Promise(function(resolve, reject) {
+	var req = new XMLHttpRequest();
+
+	req.open('POST', window.location.origin + "/" + url);
+	req.responseType = 'arraybuffer';
+
+	req.onload = function() {
+	    console.log("http post returned retrieving " + url);
+            // This is called even on 404 etc
+            // so check the status
+            if (req.status == 200) {
+		resolve(new Uint8Array(req.response));
+            }
+            else {
+		reject(Error(req.statusText));
+            }
+	};
+	
+	req.onerror = function(e) {
+	    console.log(e);
+            reject(Error("Network Error"));
+	};
+
+	var form = new FormData();
+
+	for (var i=0; i < dataArrays.array.length; i++)
+	    form.append(i, new Blob([new Int8Array(dataArrays.array[i])]));
+
+        req.send(form);
+    }).then(function(result, err) {
+        if (err != null)
+            future.completeExceptionally(err);
+        else
+            future.complete(peergos.shared.user.JavaScriptPoster.convertToBytes(result));
+    });
+    return future;
+}
+
 var http = {
     NativeJSHttp: function() {
 	this.get = getProm;
 	this.post = postProm;
+	this.postMultipart = postMultipartProm;
     }
 };
 
