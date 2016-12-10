@@ -11,7 +11,7 @@ function getProm(url) {
             // This is called even on 404 etc
             // so check the status
             if (req.status == 200) {
-		resolve(new Uint8Array(req.response));
+		resolve(new Int8Array(req.response));
             }
             else {
 		reject(Error(req.statusText));
