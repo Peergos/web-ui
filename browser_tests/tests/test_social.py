@@ -52,7 +52,7 @@ def test_send_and_accept_follow_request():
         assert root_dir_page.d.find_element_by_id(receiver)
 
     followers = driver.get_followers()
-        assert followers == []
+    assert followers == []
 
 
 def test_send_and_deny_follow_request():
