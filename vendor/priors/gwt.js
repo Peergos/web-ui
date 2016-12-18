@@ -45,7 +45,7 @@ function postProm(url, data) {
             // This is called even on 404 etc
             // so check the status
             if (req.status == 200) {
-		resolve(new Uint8Array(req.response));
+		resolve(new Int8Array(req.response));
             }
             else {
 		reject(Error(req.statusText));
@@ -80,7 +80,7 @@ function postMultipartProm(url, dataArrays) {
             // This is called even on 404 etc
             // so check the status
             if (req.status == 200) {
-		resolve(new Uint8Array(req.response));
+		resolve(new Int8Array(req.response));
             }
             else {
 		reject(Error(req.statusText));
@@ -139,7 +139,7 @@ function hashToKeyBytesProm(username, password) {
 
 function generateRandomBytes(len) {    
     var bytes = nacl.randomBytes(len);
-    return peergos.shared.user.JavaScriptPoster.convertToBytes(bytes);
+    return peergos.shared.user.JavaScriptPoster.convertToBytes(new Int8Array(bytes));
 }
 
 function generateSecretbox(data, nonce, key) {    
@@ -149,12 +149,12 @@ function generateSecretbox(data, nonce, key) {
 
 function generateSecretbox_open(cipher, nonce, key) {    
     var bytes = nacl.secretbox.open(new Uint8Array(cipher), new Uint8Array(nonce), new Uint8Array(key));
-    return peergos.shared.user.JavaScriptPoster.convertToBytes(bytes);
+    return peergos.shared.user.JavaScriptPoster.convertToBytes(new Int8Array(bytes));
 }
 
 function generateCrypto_sign_open(signed, publicSigningKey) {    
     var bytes = nacl.sign.open(new Uint8Array(signed), new Uint8Array(publicSigningKey));
-    return peergos.shared.user.JavaScriptPoster.convertToBytes(bytes);
+    return peergos.shared.user.JavaScriptPoster.convertToBytes(new Int8Array(bytes));
 }
 
 function generateCrypto_sign(message, secretSigningKey) {    
@@ -178,13 +178,13 @@ function generateCrypto_sign_keypair(publicKey, secretKey) {
 
 function generateCrypto_box_open(cipher, nonce, theirPublicBoxingKey, secretBoxingKey) {    
     var res = nacl.box.open(new Uint8Array(cipher), new Uint8Array(nonce), new Uint8Array(theirPublicKey), new Uint8Array(ourSecretKey));
-    var i8Array = new Int8Array(res.buffer, res.byteOffset, res.byteLength);
+    var i8Array = new Int8Array(res);
     return peergos.shared.user.JavaScriptPoster.convertToBytes(i8Array);
 }
 
 function generateCrypto_box(message, nonce, theirPublicBoxingKey, ourSecretBoxingKey) {    
     var res = nacl.box(new Uint8Array(message), new Uint8Array(nonce), new Uint8Array(theirPublicKey), new Uint8Array(ourSecretKey));
-    var i8Array = new Int8Array(res.buffer, res.byteOffset, res.byteLength);
+    var i8Array = new Int8Array(res);
     return peergos.shared.user.JavaScriptPoster.convertToBytes(i8Array);
 }
 
