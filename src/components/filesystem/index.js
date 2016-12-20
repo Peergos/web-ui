@@ -85,7 +85,7 @@ module.exports = {
 	    console.log("ask for file");
 	    document.getElementById('uploadInput').click();
 	},
-	dragover: function(ev) {
+	dragOver: function(ev) {
 		console.log("dragover");
 		ev.preventDefault();
 	},
@@ -95,7 +95,7 @@ module.exports = {
 		let items = evt.dataTransfer.items;
 		for(let i =0; i < items.length; i++){
 			console.log("calling getEntriesAsPromise");
-			getEntriesAsPromise(items[i].webkitGetAsEntry());
+			this.getEntriesAsPromise(items[i].webkitGetAsEntry());
 
 		}
 	},
@@ -127,7 +127,7 @@ module.exports = {
 	    var files = evt.target.files || evt.dataTransfer.files;
 		for (var i = 0; i < files.length; i++) {
 			var file = files[i];
-			uploadFile(file);
+			this.uploadFile(file);
 		}
 	},
     uploadFile: function(file) {
