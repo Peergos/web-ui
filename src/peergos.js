@@ -33,7 +33,6 @@ Vue.component('progressbar', Vue.extend(ProgressBar));
 Vue.component('prompt', Vue.extend(Prompt));
 
 // Initializing Vue after GWT has finished
-// TODO figure out a way to ensure GWT has loaded
 setTimeout(function() {
     var vueRoot = new Vue({
 	el: 'body',

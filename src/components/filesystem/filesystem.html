@@ -60,39 +60,40 @@
 <div class="progressholder">
   <progressbar v-for="progress in progressMonitors" :show.sync="progress.show" :title.sync="progress.title" :done.sync="progress.done":max.sync="progress.max"></progressbar>
 </div>
+<div @drop="dndDrop($event)" @dragover="dragover($event)">
+  <div class="grid" v-if="grid">
+    <span class="column" v-for="file in sortedFiles">
+      <span class="grid_icon_wrapper glyphicon" id="grid$index" draggable="true" @dragStart="dragStart($event, file)" @dragover.prevent @drop="drop($event, file)">
+              <a v-bind:id="file.getFileProperties().name" v-on:contextmenu="openMenu($event, file)">
+      <span v-if="!file.getFileProperties().thumbnail.isPresent()" v-touch:tap="navigateOrDownload(file)" v-on:longpress="openMenu($event, file)"  v-bind:class="['file_icon', file.isDirectory() ? 'glyphicon-folder-open' : 'glyphicon-file', 'picon']"> </span>
+      <img v-if="file.getFileProperties().thumbnail.isPresent()" v-touch:tap="navigateOrDownload(file)" v-on:longpress="openMenu($event, file)" v-on:contextmenu="openMenu($event, file)" v-bind:src="getThumbnailURL(file)"/>
+        </a>
 
-<div class="grid" v-if="grid">
-  <span class="column" v-for="file in sortedFiles">
-    <span class="grid_icon_wrapper glyphicon" id="grid$index" draggable="true" @dragStart="dragStart($event, file)" @dragover.prevent @drop="drop($event, file)">
-            <a v-bind:id="file.getFileProperties().name" v-on:contextmenu="openMenu($event, file)">
-	<span v-if="!file.getFileProperties().thumbnail.isPresent()" v-touch:tap="navigateOrDownload(file)" v-on:longpress="openMenu($event, file)"  v-bind:class="['file_icon', file.isDirectory() ? 'glyphicon-folder-open' : 'glyphicon-file', 'picon']"> </span>
-	<img v-if="file.getFileProperties().thumbnail.isPresent()" v-touch:tap="navigateOrDownload(file)" v-on:longpress="openMenu($event, file)" v-on:contextmenu="openMenu($event, file)" v-bind:src="getThumbnailURL(file)"/>
-      </a>
-	
-      <div class="content picon">
-        <div class="noselect">{{ file.getFileProperties().name }}</div>
-      </div>
+        <div class="content picon">
+          <div class="noselect">{{ file.getFileProperties().name }}</div>
+        </div>
+      </span>
     </span>
-  </span>
-</div>
-<div class="table-responsive" v-if="!grid">
-  <table class="table">
-    <thead>
-      <tr style="cursor:pointer;">
-        <th @click="setSortBy('name')">Name <span v-if="sortBy=='name'" v-bind:class="['glyphicon', normalSortOrder ? 'glyphicon-chevron-down' : 'glyphicon-chevron-up']"/></th>
-	<th @click="setSortBy('size')">Size <span v-if="sortBy=='size'" v-bind:class="['glyphicon', normalSortOrder ? 'glyphicon-chevron-down' : 'glyphicon-chevron-up']"/></th>
-	<th @click="setSortBy('type')">Type <span v-if="sortBy=='type'" v-bind:class="['glyphicon', normalSortOrder ? 'glyphicon-chevron-down' : 'glyphicon-chevron-up']"/></th>
-	<th @click="setSortBy('modified')">Modified <span v-if="sortBy=='modified'" v-bind:class="['glyphicon', normalSortOrder ? 'glyphicon-chevron-down' : 'glyphicon-chevron-up']"/></th>
-      </tr>
-    </thead>
-    <tbody>
-      <tr v-for="file in sortedFiles">
-              <td v-bind:id="file.getFileProperties().name" v-on:click="navigateOrDownload(file)" style="cursor:pointer">{{ file.getFileProperties().name }}</td>
-	<td>{{ file.getFileProperties().sizeLow() }}</td>
-	<td>{{ file.isDirectory() ? "dir" : "file" }}</td>
-	<td>{{ file.getFileProperties().modified }}</td>
-      </tr>
-    </tbody>
-  </table>
+  </div>
+  <div class="table-responsive" v-if="!grid">
+    <table class="table">
+      <thead>
+        <tr style="cursor:pointer;">
+          <th @click="setSortBy('name')">Name <span v-if="sortBy=='name'" v-bind:class="['glyphicon', normalSortOrder ? 'glyphicon-chevron-down' : 'glyphicon-chevron-up']"/></th>
+      <th @click="setSortBy('size')">Size <span v-if="sortBy=='size'" v-bind:class="['glyphicon', normalSortOrder ? 'glyphicon-chevron-down' : 'glyphicon-chevron-up']"/></th>
+      <th @click="setSortBy('type')">Type <span v-if="sortBy=='type'" v-bind:class="['glyphicon', normalSortOrder ? 'glyphicon-chevron-down' : 'glyphicon-chevron-up']"/></th>
+      <th @click="setSortBy('modified')">Modified <span v-if="sortBy=='modified'" v-bind:class="['glyphicon', normalSortOrder ? 'glyphicon-chevron-down' : 'glyphicon-chevron-up']"/></th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr v-for="file in sortedFiles">
+                <td v-bind:id="file.getFileProperties().name" v-on:click="navigateOrDownload(file)" style="cursor:pointer">{{ file.getFileProperties().name }}</td>
+      <td>{{ file.getFileProperties().sizeLow() }}</td>
+      <td>{{ file.isDirectory() ? "dir" : "file" }}</td>
+      <td>{{ file.getFileProperties().modified }}</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
 </div>
 </div>
