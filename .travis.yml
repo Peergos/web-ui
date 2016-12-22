@@ -21,7 +21,7 @@ before_install:
   - sudo apt-get install chromium-browser 
   - sudo apt-get install python-setuptools
   - cd ..
-  - git clone https://github.com/Peergos/peergos
+  - git clone https://github.com/Peergos/Peergos
   - cd Peergos  && ant run && cd ../
   - ant run &
 
