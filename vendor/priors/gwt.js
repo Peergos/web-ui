@@ -115,7 +115,7 @@ var http = {
     }
 };
 
-function hashToKeyBytesProm(username, password) {
+function hashToKeyBytesProm(username, password, algorithm) {
     var future = peergos.shared.util.FutureUtils.incomplete();
     new Promise(function(resolve, reject) {
         console.log("making scrypt request");
@@ -123,7 +123,16 @@ function hashToKeyBytesProm(username, password) {
         var t1 = Date.now();
         var hash = sha256(nacl.util.decodeUTF8(password));
         var salt = nacl.util.decodeUTF8(username)
-        scrypt(hash, salt, 17, 8, 96, 1000, function(keyBytes) {
+	if (algorithm.getType().value != 1)
+	    throw "Unknown UserGenerationAlgorithm type: " + algorithm.getType();
+	var memCost = algorithm.memoryCost;
+	var cpuCost = algorithm.cpuCost;
+	var outputBytes = algorithm.outputBytes;
+	var parallelism = algorithm.parallelism;
+	if (parallelism != 1)
+	    throw "Unimplemented scrypt parallelism: " + parallelism;
+	
+        scrypt(hash, salt, memCost, cpuCost, outputBytes, 1000, function(keyBytes) {
             console.log("JS Scrypt complete in: "+ (Date.now()-t1)+"mS");
             var hashedBytes = nacl.util.decodeBase64(keyBytes);
             resolve(hashedBytes);
