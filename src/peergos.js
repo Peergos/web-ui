@@ -9,6 +9,7 @@ var Social          = require('./components/social');
 var Password        = require('./components/password');
 var ProgressBar     = require('./components/progressbar');
 var Prompt          = require('./components/prompt');
+var Spinner          = require('./components/spinner');
 
 var VueAsyncComputed = require('./plugins/vue-async-computed');
 Vue.use(VueAsyncComputed);
@@ -31,6 +32,7 @@ Vue.component('social', Vue.extend(Social));
 Vue.component('password', Vue.extend(Password));
 Vue.component('progressbar', Vue.extend(ProgressBar));
 Vue.component('prompt', Vue.extend(Prompt));
+Vue.component('spinner', Vue.extend(Spinner));
 
 // Initializing Vue after GWT has finished
 // TODO figure out a way to ensure GWT has loaded
