@@ -185,14 +185,14 @@ function generateCrypto_sign_keypair(publicKey, secretKey) {
     return returnArrays;
 }
 
-function generateCrypto_box_open(cipher, nonce, theirPublicBoxingKey, secretBoxingKey) {    
-    var res = nacl.box.open(new Uint8Array(cipher), new Uint8Array(nonce), new Uint8Array(theirPublicKey), new Uint8Array(ourSecretKey));
+function generateCrypto_box_open(cipher, nonce, theirPublicBoxingKey, ourSecretBoxingKey) {    
+    var res = nacl.box.open(new Uint8Array(cipher), new Uint8Array(nonce), new Uint8Array(theirPublicBoxingKey), new Uint8Array(ourSecretBoxingKey));
     var i8Array = new Int8Array(res);
     return peergos.shared.user.JavaScriptPoster.convertToBytes(i8Array);
 }
 
 function generateCrypto_box(message, nonce, theirPublicBoxingKey, ourSecretBoxingKey) {    
-    var res = nacl.box(new Uint8Array(message), new Uint8Array(nonce), new Uint8Array(theirPublicKey), new Uint8Array(ourSecretKey));
+    var res = nacl.box(new Uint8Array(message), new Uint8Array(nonce), new Uint8Array(theirPublicBoxingKey), new Uint8Array(ourSecretBoxingKey));
     var i8Array = new Int8Array(res);
     return peergos.shared.user.JavaScriptPoster.convertToBytes(i8Array);
 }
