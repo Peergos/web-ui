@@ -30,7 +30,7 @@ module.exports = {
             prompt_message: '',
             prompt_placeholder: '',
             showPrompt: false,
-	    showSpinner: false
+	    showSpinner: true
         };
     },
     props: {
