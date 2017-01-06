@@ -16,6 +16,7 @@
 
   <!-- web ui building vendor and assets -->
 
+
   <target name="assets" description="copy static unminified assets">
     <mkdir dir="${ui}"/>
     <copy todir="${ui}">
@@ -159,5 +160,10 @@
 
   <target name="clean_server" description="clean up">
     <delete dir="${server}"/>
+  </target>
+  
+  <target name="print-version"> 
+   <echo>Java/JVM version: ${ant.java.version}</echo> 
+   <echo>Java/JVM detail version: ${java.version}</echo> 
   </target>
 </project>
