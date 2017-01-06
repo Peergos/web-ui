@@ -510,9 +510,10 @@ module.exports = {
 	    return new Promise(function(resolve, reject) {
 		that.context.getSocialState().thenApply(social => {
 		    resolve({
-			pending: social.pending.toArray([]),
+			pending: social.pendingIncoming.toArray([]),
 			followers: social.followerRoots.keySet().toArray([]),
-			following: social.followingRoots.toArray([]).map(f => f.getFileProperties().name)
+			following: social.followingRoots.toArray([]).map(f => f.getFileProperties().name),
+			pendingOutgoing: social.pendingOutgoingFollowRequests.keySet().toArray([])
 		    });
 		});
 	    });
