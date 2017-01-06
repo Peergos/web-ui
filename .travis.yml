@@ -28,6 +28,7 @@ before_install:
   - ant print-version
   - export PATH=$PATH:$PWD/browser_tests
   - echo $PATH
+  - chromium-browser --versison
   - ls browser_tests
   - cd ..
   - git clone https://github.com/Peergos/Peergos
