@@ -18,8 +18,7 @@ notifications:
     - kevodwyer@gmail.com
 
 before_install:
-  - sudo add-apt-repository ppa:chromium-daily/stable
-  - sudo apt-get update 
+  - sudo apt-get update -q 
   - sudo apt-get install chromium-browser -y
   - sudo apt-get install python-setuptools -y
   - sudo apt-get install oracle-java8-set-default -y
