@@ -17,7 +17,7 @@
   <!-- web ui building vendor and assets -->
 
 
-  <target name="assets" description="copy static unminified assets">
+  <target name="assets" depends="init" description="copy static unminified assets">
     <mkdir dir="${ui}"/>
     <copy todir="${ui}">
       <fileset dir="${assets}"/>
