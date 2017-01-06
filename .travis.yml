@@ -17,13 +17,11 @@ notifications:
     - ianopolous@gmail.com
     - kevodwyer@gmail.com
 
-sudo: required
-
 before_install:
-  - apt-get update -q
-  - apt-get install chromium-browser -y
-  - apt-get install python-setuptools -y
-  - apt-get install oracle-java8-set-default -y
+  - sudo apt-get update -q
+  - sudo apt-get install chromium-browser -y
+  - sudo apt-get install python-setuptools -y
+  - sudo apt-get install oracle-java8-set-default -y
   - export PATH=$PATH:$PWD
   - cd ..
   - git clone https://github.com/Peergos/Peergos
