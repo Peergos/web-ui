@@ -2,8 +2,10 @@ language: python
 
 python:
     - '2.7'
-jdk:
-  - oraclejdk8
+addons:
+  apt:
+    packages:
+      - oracle-java8-set-default
 
 after_failure:
 
@@ -17,9 +19,9 @@ sudo: required
 
 before_install:
   - export PATH=$PATH:$PWD
-  - sudo apt-get update 
-  - sudo apt-get install chromium-browser 
-  - sudo apt-get install python-setuptools
+  - apt-get update 
+  - apt-get install chromium-browser 
+  - apt-get install python-setuptools
   - cd ..
   - git clone https://github.com/Peergos/Peergos
   - cd -
