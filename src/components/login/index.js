@@ -5,8 +5,11 @@ module.exports = {
         return {
             username: [],
             password: [],
-	    demo: isDemo,
-	    showSpinner: false
+	        demo: isDemo,
+    	    showSpinner: false,
+            showError:false,
+            errorTitle:'',
+            errorBody:''
         };
     },
     props: {
@@ -47,17 +50,25 @@ module.exports = {
             const creationStart = Date.now();
 	    const that = this;
 	    this.showSpinner = true;
-            return peergos.shared.user.UserContext.signIn(that.username, that.password, that.network, that.crypto).thenApply(function(context) {
+        return peergos.shared.user.UserContext.signIn(that.username, that.password, that.network, that.crypto).thenApply(function(context) {
                 that.$dispatch('child-msg', {
 		    view:'filesystem', 
 		    props:{
 			context: context
 		    }
-		});
-                console.log("Signing in/up took " + (Date.now()-creationStart)+" mS from function call");
+		})
+        console.log("Signing in/up took " + (Date.now()-creationStart)+" mS from function call");
 		that.showSpinner = false;
-            });
+        }).exceptionally(function(throwable) {
+            var msg = throwable.getMessage();
+            that.errorTitle = 'Error logging-in'
+            //todo fix GTV  throwable.getMessage
+            that.errorBody = 'Bad luck old chum';
+       		that.showSpinner = false;
+            that.showError = true;
+        });
         },
+
 	showSignup : function() {
 	    this.$dispatch('child-msg', {view:"signup", props:{
 		username:this.username,

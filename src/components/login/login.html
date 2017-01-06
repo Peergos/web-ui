@@ -20,5 +20,6 @@
   <div>
     <button @click="showSignup()" class="btn btn-large btn-block btn-primary">Sign Up</button>
   </div>
+  <error :show.sync="showError" :title.sync="errorTitle" :body.sync="errorBody"></error>
 </div>
 <!-- EOF LOGIN PAGE -->
