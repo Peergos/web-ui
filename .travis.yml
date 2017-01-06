@@ -33,7 +33,8 @@ before_install:
   - ant ui
   - ant update_server 
   - ant run &
+  - cd browser_tests
 
-install: 'cd browser_tests && python setup.py install'
+install: 'python setup.py install'
 
-script: 'pytest -sv'
+script: 'py.test -sv  tests'
