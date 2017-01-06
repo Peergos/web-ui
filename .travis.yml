@@ -17,6 +17,12 @@ notifications:
     - ianopolous@gmail.com
     - kevodwyer@gmail.com
 
+matrix:
+  include:
+    - os: linux
+      dist: trusty
+      sudo: required
+
 before_install:
   - sudo apt-get update -q
   - sudo apt-get install chromium-browser -y
