@@ -23,7 +23,7 @@ before_install:
   - sudo apt-get install python-setuptools -y
   - sudo apt-get install oracle-java8-set-default -y
   - java -version
-  - JAVACMD=`which java`
+  - export JAVACMD=`which java`
   - ant print-version
   - export PATH=$PATH:$PWD
   - cd ..
