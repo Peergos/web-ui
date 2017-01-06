@@ -27,6 +27,8 @@ before_install:
   - export JAVACMD=`which java`
   - ant print-version
   - export PATH=$PATH:$PWD/browser_tests
+  - echo $PATH
+  - ls browser_tests
   - cd ..
   - git clone https://github.com/Peergos/Peergos
   - cd -
@@ -37,4 +39,4 @@ before_install:
 
 install: 'python setup.py install'
 
-script: 'py.test -sv  tests'
+script: 'py.test -sv tests'
