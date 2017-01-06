@@ -31,8 +31,8 @@ before_install:
   - git clone https://github.com/Peergos/Peergos
   - cd -
   - ant ui
-  - ant update_and_run 
+  - ant update_and_run & 
 
 install: 'cd browser_tests && python setup.py install'
 
-script: 'cd browser_tests && pytest'
+script: 'cd browser_tests && pytest -sv'
