@@ -6,6 +6,8 @@ addons:
   apt:
     packages:
       - oracle-java8-set-default
+      - chromium-browser
+      - python-setuptools
 
 after_failure:
 
@@ -19,9 +21,6 @@ sudo: required
 
 before_install:
   - export PATH=$PATH:$PWD
-  - apt-get update 
-  - apt-get install chromium-browser 
-  - apt-get install python-setuptools
   - cd ..
   - git clone https://github.com/Peergos/Peergos
   - cd -
