@@ -60,10 +60,10 @@ module.exports = {
         console.log("Signing in/up took " + (Date.now()-creationStart)+" mS from function call");
 		that.showSpinner = false;
         }).exceptionally(function(throwable) {
+            console.log('Error logging in: '+throwable);
             var msg = throwable.getMessage();
             that.errorTitle = 'Error logging-in'
-            //todo fix GTV  throwable.getMessage
-            that.errorBody = 'Bad luck old chum';
+            that.errorBody = throwable.getMessage();
        		that.showSpinner = false;
             that.showError = true;
         });
