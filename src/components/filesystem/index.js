@@ -118,7 +118,7 @@ module.exports = {
 				};
 				doBatch();
 			}else{
-				item.file(function(item){that.uploadFile(item);}, null);
+				item.file(function(item){that.uploadFile(item);}, function(e){console.log(e);});
 			}
 		});
 	},
