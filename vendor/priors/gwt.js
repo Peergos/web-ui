@@ -115,7 +115,7 @@ var http = {
     }
 };
 
-function hashToKeyBytesProm(username, password) {
+function hashToKeyBytesProm(username, password, algorithm) {
     var future = peergos.shared.util.FutureUtils.incomplete();
     new Promise(function(resolve, reject) {
         console.log("making scrypt request");
@@ -123,7 +123,16 @@ function hashToKeyBytesProm(username, password) {
         var t1 = Date.now();
         var hash = sha256(nacl.util.decodeUTF8(password));
         var salt = nacl.util.decodeUTF8(username)
-        scrypt(hash, salt, 17, 8, 96, 1000, function(keyBytes) {
+	if (algorithm.getType().value != 1)
+	    throw "Unknown UserGenerationAlgorithm type: " + algorithm.getType();
+	var memCost = algorithm.memoryCost;
+	var cpuCost = algorithm.cpuCost;
+	var outputBytes = algorithm.outputBytes;
+	var parallelism = algorithm.parallelism;
+	if (parallelism != 1)
+	    throw "Unimplemented scrypt parallelism: " + parallelism;
+	
+        scrypt(hash, salt, memCost, cpuCost, outputBytes, 1000, function(keyBytes) {
             console.log("JS Scrypt complete in: "+ (Date.now()-t1)+"mS");
             var hashedBytes = nacl.util.decodeBase64(keyBytes);
             resolve(hashedBytes);
@@ -176,14 +185,14 @@ function generateCrypto_sign_keypair(publicKey, secretKey) {
     return returnArrays;
 }
 
-function generateCrypto_box_open(cipher, nonce, theirPublicBoxingKey, secretBoxingKey) {    
-    var res = nacl.box.open(new Uint8Array(cipher), new Uint8Array(nonce), new Uint8Array(theirPublicKey), new Uint8Array(ourSecretKey));
+function generateCrypto_box_open(cipher, nonce, theirPublicBoxingKey, ourSecretBoxingKey) {    
+    var res = nacl.box.open(new Uint8Array(cipher), new Uint8Array(nonce), new Uint8Array(theirPublicBoxingKey), new Uint8Array(ourSecretBoxingKey));
     var i8Array = new Int8Array(res);
     return peergos.shared.user.JavaScriptPoster.convertToBytes(i8Array);
 }
 
 function generateCrypto_box(message, nonce, theirPublicBoxingKey, ourSecretBoxingKey) {    
-    var res = nacl.box(new Uint8Array(message), new Uint8Array(nonce), new Uint8Array(theirPublicKey), new Uint8Array(ourSecretKey));
+    var res = nacl.box(new Uint8Array(message), new Uint8Array(nonce), new Uint8Array(theirPublicBoxingKey), new Uint8Array(ourSecretBoxingKey));
     var i8Array = new Int8Array(res);
     return peergos.shared.user.JavaScriptPoster.convertToBytes(i8Array);
 }

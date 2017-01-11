@@ -27,9 +27,10 @@ module.exports = {
 	    clipboardAction:"",
 	    forceUpdate:0,
 	    externalChange:0,
-        prompt_message: '',
-        prompt_placeholder: '',
-        showPrompt: false
+            prompt_message: '',
+            prompt_placeholder: '',
+            showPrompt: false,
+	    showSpinner: true
         };
     },
     props: {
@@ -233,6 +234,7 @@ module.exports = {
 	    if (path.startsWith("/"))
 		path = path.substring(1);
             this.path = path ? path.split('/') : [];
+	    this.showSpinner = true;
         },
 
 	createPublicLink: function() {
@@ -494,7 +496,8 @@ module.exports = {
 	    var x = this.forceUpdate;
 	    var that = this;
 	    return new Promise(function(resolve, reject) {
-		that.context.getByPath(that.getPath()).thenApply(file => resolve(file.get()));
+		that.context.getByPath(that.getPath())
+		    .thenApply(file => resolve(file.get()));
 	    });
 	},
 	
@@ -506,6 +509,7 @@ module.exports = {
 	    return new Promise(function(resolve, reject) {
 		current.getChildren(that.context).thenApply(function(children){
 		    var arr = children.toArray();
+		    that.showSpinner = false;
 		    resolve(arr.filter(function(f){
 			return !f.getFileProperties().isHidden;
 		    }));
@@ -541,9 +545,10 @@ module.exports = {
 	    return new Promise(function(resolve, reject) {
 		that.context.getSocialState().thenApply(social => {
 		    resolve({
-			pending: social.pending.toArray([]),
+			pending: social.pendingIncoming.toArray([]),
 			followers: social.followerRoots.keySet().toArray([]),
-			following: social.followingRoots.toArray([]).map(f => f.getFileProperties().name)
+			following: social.followingRoots.toArray([]).map(f => f.getFileProperties().name),
+			pendingOutgoing: social.pendingOutgoingFollowRequests.keySet().toArray([])
 		    });
 		});
 	    });

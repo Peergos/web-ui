@@ -15,7 +15,8 @@ module.exports = {
 	    error:"",
 	    passwordWarningThreshold: 12,
 	    commonPasswords: commonPasswords,
-	    email: []
+	    email: [],
+	    showSpinner: false
         };
     },
     props: {
@@ -40,14 +41,17 @@ module.exports = {
 	    if (that.password1 != that.password2) {
 		this.isError = true;
 		this.error = "Passwords do not match!";
-	    } else
+	    } else {
+		this.showSpinner = true;
 		return peergos.shared.user.UserContext.signUp(that.username, that.password1, that.network, that.crypto).thenApply(function(context) {
                     that.$dispatch('child-msg', {
 			view:'filesystem', 
 			props:{context: context}
 		    });
                     console.log("Signing in/up took " + (Date.now()-creationStart)+" mS from function call");
+		    this.showSpinner = false;
 		});
+	    }
         },
 	validatePassword: function(inFirstField) {
 	    if (inFirstField && !this.checkPassword)
@@ -74,7 +78,6 @@ module.exports = {
 	}
     },
     computed: {
-
     },
     events: {
 	'parent-msg': function (msg) {
