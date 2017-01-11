@@ -37,7 +37,6 @@ Vue.component('spinner', Vue.extend(Spinner));
 Vue.component('error', Vue.extend(Error));
 
 // Initializing Vue after GWT has finished
-// TODO figure out a way to ensure GWT has loaded
 setTimeout(function() {
     var vueRoot = new Vue({
 	el: 'body',

@@ -86,34 +86,69 @@ module.exports = {
 	    console.log("ask for file");
 	    document.getElementById('uploadInput').click();
 	},
-
-        uploadFiles: function(evt) {
+	dndDrop: function(evt) {
+		evt.preventDefault();
+		console.log("upload files from DnD");
+		let items = evt.dataTransfer.items;
+		let that = this;
+		for(let i =0; i < items.length; i++){
+			console.log("calling getEntriesAsPromise");
+			let entry = items[i].webkitGetAsEntry();
+			if(entry != null) {
+				this.getEntriesAsPromise(entry, that);
+			}
+		}
+	},
+	getEntriesAsPromise: function(item, that) {
+		return new Promise((resolve, reject) => {
+			console.log("in getEntriesAsPromise path=" + item.fullPath);
+			if(item.isDirectory){
+				let reader = item.createReader();
+				let doBatch = () => {
+					reader.readEntries(entries => {
+						if (entries.length > 0) {
+							entries.forEach(function(entry){
+								that.getEntriesAsPromise(entry, that);
+							});
+							doBatch();
+						} else {
+							resolve();
+						}
+					}, reject);
+				};
+				doBatch();
+			}else{
+				item.file(function(item){that.uploadFile(item);}, function(e){console.log(e);});
+			}
+		});
+	},
+    uploadFiles: function(evt) {
 	    console.log("upload files");
 	    var files = evt.target.files || evt.dataTransfer.files;
-            //for(var j = 0; j < files.length; j++) {
-            //    uploadFragmentTotal = uploadFragmentTotal + 60 * Math.ceil(files[j].size/Chunk.MAX_SIZE);
-            //}
-            for (var i = 0; i < files.length; i++) {
-                var file = files[i];
+		for (var i = 0; i < files.length; i++) {
+			var file = files[i];
+			this.uploadFile(file);
+		}
+	},
+    uploadFile: function(file) {
 		console.log("uploading " + file.name);
 		var resultingSize = ( ((file.size/40 + 3)/4)|0 )*4*60;
 		var progress = {
-		    show:true,
-		    title:"Uploading " + file.name,
-		    done:0,
-		    max:resultingSize
+			show:true,
+			title:"Uploading " + file.name,
+			done:0,
+			max:resultingSize
 		};
 		this.progressMonitors.push(progress);
 		var reader = new browserio.JSFileReader(file);
 		var java_reader = new peergos.shared.user.fs.BrowserFileReader(reader);
 		this.currentDir.uploadFile(file.name, java_reader, 0, file.size, this.context, len => {
-		    progress.done += len.value_0;
-		    if (progress.done >= progress.max)
+			progress.done += len.value_0;
+			if (progress.done >= progress.max)
 			setTimeout(() => progress.show = false, 2000);
-		    console.log(progress.done);
-		    console.log(progress.max);
+			console.log(progress.done);
+			console.log(progress.max);
 		}).thenApply(x => this.currentDirChanged());
-	    }
 	},
 
 	toggleUserMenu: function() {
