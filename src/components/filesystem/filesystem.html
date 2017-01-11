@@ -60,7 +60,7 @@
 <div class="progressholder">
   <progressbar v-for="progress in progressMonitors" :show.sync="progress.show" :title.sync="progress.title" :done.sync="progress.done":max.sync="progress.max"></progressbar>
 </div>
-<div id="dnd" @drop="dndDrop($event)" @dragover="dragOver($event)">
+<div id="dnd" @drop="dndDrop($event)" @dragover.prevent>
   <div class="grid" v-if="grid">
     <span class="column" v-for="file in sortedFiles">
       <span class="grid_icon_wrapper glyphicon" id="grid$index" draggable="true" @dragStart="dragStart($event, file)" @dragover.prevent @drop="drop($event, file)">

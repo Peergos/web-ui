@@ -85,21 +85,20 @@ module.exports = {
 	    console.log("ask for file");
 	    document.getElementById('uploadInput').click();
 	},
-	dragOver: function(ev) {
-		console.log("dragover");
-		ev.preventDefault();
-	},
 	dndDrop: function(evt) {
 		evt.preventDefault();
 		console.log("upload files from DnD");
 		let items = evt.dataTransfer.items;
+		let that = this;
 		for(let i =0; i < items.length; i++){
 			console.log("calling getEntriesAsPromise");
-			this.getEntriesAsPromise(items[i].webkitGetAsEntry());
-
+			let entry = items[i].webkitGetAsEntry();
+			if(entry != null) {
+				this.getEntriesAsPromise(entry, that);
+			}
 		}
 	},
-	getEntriesAsPromise: function(item) {
+	getEntriesAsPromise: function(item, that) {
 		return new Promise((resolve, reject) => {
 			console.log("in getEntriesAsPromise path=" + item.fullPath);
 			if(item.isDirectory){
@@ -108,7 +107,7 @@ module.exports = {
 					reader.readEntries(entries => {
 						if (entries.length > 0) {
 							entries.forEach(function(entry){
-								getEntriesAsPromise(entry);
+								that.getEntriesAsPromise(entry, that);
 							});
 							doBatch();
 						} else {
@@ -118,7 +117,7 @@ module.exports = {
 				};
 				doBatch();
 			}else{
-				item.file(function(item){uploadFile(item);}, null);
+				item.file(function(item){that.uploadFile(item);}, null);
 			}
 		});
 	},
