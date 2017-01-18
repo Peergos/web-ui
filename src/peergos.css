@@ -165,3 +165,6 @@ table {
     -webkit-transform: scale(1.1);
     transform: scale(1.1);
 }
+
+.fillspace { position: absolute; top: 64px; bottom: 0px; left: 0; right: 0; }
+

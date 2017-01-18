@@ -33,7 +33,6 @@
   
 </nav>
 
-<div >
 <input type="file" id="uploadInput" @change="uploadFiles" style="display:none;" multiple="" />
 <a id="downloadAnchor" style="display:none"></a>
 <ul id="right-click-menu" tabindex="-1" v-el="right" v-if="viewMenu" v-on:blur="closeMenu"  v-bind:style="{top:top, left:left}">
@@ -60,20 +59,21 @@
 <div class="progressholder">
   <progressbar v-for="progress in progressMonitors" :show.sync="progress.show" :title.sync="progress.title" :done.sync="progress.done":max.sync="progress.max"></progressbar>
 </div>
-<div id="dnd" @drop="dndDrop($event)" @dragover.prevent>
-<spinner v-if="showSpinner"></spinner>
+<div id="dnd" @drop="dndDrop($event)" @dragover.prevent class="fillspace">
+  <spinner v-if="showSpinner"></spinner>
 
-<div class="grid" v-if="grid">
-  <span class="column" v-for="file in sortedFiles">
-    <span class="grid_icon_wrapper glyphicon" id="grid$index" draggable="true" @dragStart="dragStart($event, file)" @dragover.prevent @drop="drop($event, file)">
-            <a v-bind:id="file.getFileProperties().name" v-on:contextmenu="openMenu($event, file)">
-	<span v-if="!file.getFileProperties().thumbnail.isPresent()" v-touch:tap="navigateOrDownload(file)" v-on:longpress="openMenu($event, file)"  v-bind:class="['file_icon', file.isDirectory() ? 'glyphicon-folder-open' : 'glyphicon-file', 'picon']"> </span>
-	<img v-if="file.getFileProperties().thumbnail.isPresent()" v-touch:tap="navigateOrDownload(file)" v-on:longpress="openMenu($event, file)" v-on:contextmenu="openMenu($event, file)" v-bind:src="getThumbnailURL(file)"/>
-      </a>
-	
-      <div class="content picon">
-        <div class="noselect">{{ file.getFileProperties().name }}</div>
-      </div>
+  <div class="grid" v-if="grid">
+    <span class="column" v-for="file in sortedFiles">
+      <span class="grid_icon_wrapper glyphicon" id="grid$index" draggable="true" @dragStart="dragStart($event, file)" @dragover.prevent @drop="drop($event, file)">
+              <a v-bind:id="file.getFileProperties().name" v-on:contextmenu="openMenu($event, file)">
+      <span v-if="!file.getFileProperties().thumbnail.isPresent()" v-touch:tap="navigateOrDownload(file)" v-on:longpress="openMenu($event, file)"  v-bind:class="['file_icon', file.isDirectory() ? 'glyphicon-folder-open' : 'glyphicon-file', 'picon']"> </span>
+        <img v-if="file.getFileProperties().thumbnail.isPresent()" v-touch:tap="navigateOrDownload(file)" v-on:longpress="openMenu($event, file)" v-on:contextmenu="openMenu($event, file)" v-bind:src="getThumbnailURL(file)"/>
+        </a>
+
+        <div class="content picon">
+          <div class="noselect">{{ file.getFileProperties().name }}</div>
+        </div>
+      </span>
     </span>
   </div>
   <div class="table-responsive" v-if="!grid">
@@ -96,5 +96,4 @@
       </tbody>
     </table>
   </div>
-</div>
 </div>
