@@ -145,10 +145,14 @@ module.exports = {
 		this.currentDir.uploadFile(file.name, java_reader, 0, file.size, this.context, len => {
 			progress.done += len.value_0;
 			if (progress.done >= progress.max)
-			setTimeout(() => progress.show = false, 2000);
+    			setTimeout(() => progress.show = false, 2000);
 			console.log(progress.done);
 			console.log(progress.max);
-		}).thenApply(x => this.currentDirChanged());
+		}).thenApply(x => {
+                this.showSpinner = true;
+                this.currentDirChanged();
+		    }
+		);
 	},
 
 	toggleUserMenu: function() {
