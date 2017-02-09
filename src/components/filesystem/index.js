@@ -132,7 +132,7 @@ module.exports = {
 	},
     uploadFile: function(file) {
 		console.log("uploading " + file.name);
-		var resultingSize = ( ((file.size/40 + 3)/4)|0 )*4*60;
+	var resultingSize = file.size;// or with erasure codes: ( ((file.size/40 + 3)/4)|0 )*4*60;
 		var progress = {
 			show:true,
 			title:"Uploading " + file.name,
