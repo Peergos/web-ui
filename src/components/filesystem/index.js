@@ -289,7 +289,7 @@ module.exports = {
 	    console.log("downloading " + file.getFileProperties().name);
 	    var props = file.getFileProperties();
 	    var that = this;
-	    var resultingSize = ( ((props.sizeLow()/40 + 3)/4)|0 )*4*60;
+	    var resultingSize = props.sizeLow();// for erasure codes: ( ((props.sizeLow()/40 + 3)/4)|0 )*4*60;
 	    var progress = {
 		show:true,
 		title:"Downloading " + props.name,
