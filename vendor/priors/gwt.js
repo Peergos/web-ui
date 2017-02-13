@@ -1,3 +1,15 @@
+function convertToByteArray(target) {
+    var source = peergos.shared.user.JavaScriptPoster.emptyArray();
+    // This relies on internal implementation details of GWT's byte[] emulation
+    target.___clazz = source.___clazz;
+    target.castableTypeMap = source.castableTypeMap;
+    target.typeMarker = source.typeMarker;
+    target.__elementTypeCategory$ = source.__elementTypeCategory$;
+    target.__elementTypeId$ = source.__elementTypeId$;
+    target.__proto__ = source.__proto__;
+    return target;
+}
+
 function getProm(url) {
     console.log("getProm " + url);
     var future = peergos.shared.util.FutureUtils.incomplete();
@@ -26,8 +38,9 @@ function getProm(url) {
     }).then(function(result, err) {
         if (err != null)
             future.completeExceptionally(err);
-        else
-            future.complete(peergos.shared.user.JavaScriptPoster.convertToBytes(result));
+        else {
+            future.complete(convertToByteArray(Array.from(result)));
+	}
     });
     return future;
 }
@@ -156,9 +169,9 @@ function generateSecretbox(data, nonce, key) {
     return peergos.shared.user.JavaScriptPoster.convertToBytes(bytes);
 }
 
-function generateSecretbox_open(cipher, nonce, key) {    
+function generateSecretbox_open(cipher, nonce, key) {
     var bytes = nacl.secretbox.open(new Uint8Array(cipher), new Uint8Array(nonce), new Uint8Array(key));
-    return peergos.shared.user.JavaScriptPoster.convertToBytes(new Int8Array(bytes));
+    return peergos.shared.user.JavaScriptPoster.convertToBytes(new Int8Array(bytes.buffer, bytes.byteOffset, bytes.byteLength));
 }
 
 function generateCrypto_sign_open(signed, publicSigningKey) {    

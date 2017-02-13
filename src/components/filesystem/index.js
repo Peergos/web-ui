@@ -132,7 +132,7 @@ module.exports = {
 	},
     uploadFile: function(file) {
 		console.log("uploading " + file.name);
-	var resultingSize = file.size;// or with erasure codes: ( ((file.size/40 + 3)/4)|0 )*4*60;
+	var resultingSize = file.size;
 		var progress = {
 			show:true,
 			title:"Uploading " + file.name,
@@ -289,7 +289,7 @@ module.exports = {
 	    console.log("downloading " + file.getFileProperties().name);
 	    var props = file.getFileProperties();
 	    var that = this;
-	    var resultingSize = props.sizeLow();// for erasure codes: ( ((props.sizeLow()/40 + 3)/4)|0 )*4*60;
+	    var resultingSize = props.sizeLow();
 	    var progress = {
 		show:true,
 		title:"Downloading " + props.name,
@@ -302,7 +302,8 @@ module.exports = {
 		if (progress.done >= progress.max)
 		    setTimeout(() => progress.show = false, 2000);
 	    }).thenCompose(reader => {
-		var data = peergos.shared.util.Serialize.newByteArray(props.sizeLow());
+		var data = convertToByteArray(new Int8Array(props.sizeLow()));
+		data.length = props.sizeLow();
 		return reader.readIntoArray(data, 0, data.length)
 		    .thenApply(read => that.openItem(props.name, data));
 	    });
