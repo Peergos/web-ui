@@ -315,7 +315,7 @@ module.exports = {
 		window.URL.revokeObjectURL(this.url);
 	    }
 	    
-	    var blob =  new Blob([new Uint8Array(data)], {type: "octet/stream"});		
+	    var blob =  new Blob([data], {type: "octet/stream"});		
 	    this.url = window.URL.createObjectURL(blob);
 	    var link = document.getElementById("downloadAnchor");
 	    link.href = this.url;
