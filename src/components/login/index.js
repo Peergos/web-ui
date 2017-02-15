@@ -50,15 +50,16 @@ module.exports = {
             const creationStart = Date.now();
 	    const that = this;
 	    this.showSpinner = true;
-        return peergos.shared.user.UserContext.signIn(that.username, that.password, that.network, that.crypto).thenApply(function(context) {
+        return peergos.shared.user.UserContext.signIn(
+            that.username, that.password, that.network, that.crypto).thenApply(function(context) {
                 that.$dispatch('child-msg', {
-		    view:'filesystem', 
-		    props:{
-			context: context
-		    }
-		})
-        console.log("Signing in/up took " + (Date.now()-creationStart)+" mS from function call");
-		that.showSpinner = false;
+                view:'filesystem',
+                props:{
+                context: context
+                }
+            })
+            console.log("Signing in/up took " + (Date.now()-creationStart)+" mS from function call");
+            that.showSpinner = false;
         }).exceptionally(function(throwable) {
             console.log('Error logging in: '+throwable);
             var msg = throwable.getMessage();

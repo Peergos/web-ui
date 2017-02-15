@@ -171,6 +171,9 @@ function generateSecretbox(data, nonce, key) {
 
 function generateSecretbox_open(cipher, nonce, key) {
     var bytes = nacl.secretbox.open(new Uint8Array(cipher), new Uint8Array(nonce), new Uint8Array(key));
+    if(bytes === false) {
+        throw "Invalid encryption!";
+    }
     return peergos.shared.user.JavaScriptPoster.convertToBytes(new Int8Array(bytes.buffer, bytes.byteOffset, bytes.byteLength));
 }
 
