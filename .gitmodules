@@ -1,0 +1,3 @@
+[submodule "peergos"]
+	path = peergos
+	url = https://github.com/Peergos/Peergos
