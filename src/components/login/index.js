@@ -35,13 +35,20 @@ module.exports = {
     methods: {
 	gotoPublicLink: function(link) {
 	    var that = this;
+	    var query = link.indexOf("?");
+	    var download = false;
+	    if (query > 0) {
+		download = true;
+		link = link.substring(0, query);
+	    }
 	    peergos.shared.NetworkAccess.buildJS()
 		.thenApply(network => {
 		    peergos.shared.user.UserContext.fromPublicLink(link, network, that.crypto).thenApply(function(context) {
 			that.$dispatch('child-msg', {
 			    view:'filesystem', 
 			    props:{
-				context: context
+				context: context,
+				download: download
 			    }
 			});
 		    });

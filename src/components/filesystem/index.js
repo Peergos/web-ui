@@ -30,7 +30,8 @@ module.exports = {
             prompt_message: '',
             prompt_placeholder: '',
             showPrompt: false,
-	    showSpinner: true
+	        showSpinner: true,
+	        initiateDownload: false // used to trigger a download for a public link to a file
         };
     },
     props: {
@@ -488,11 +489,12 @@ module.exports = {
                 }
             });
         },
-	isWritable: function() {
-	    if (this.currentDir == null)
-		return false;
-	    return this.currentDir.isWritable();
-	}
+	
+	    isWritable: function() {
+	        if (this.currentDir == null)
+		    return false;
+	        return this.currentDir.isWritable();
+	    }
     },
     asyncComputed: {
 	currentDir: function() {
@@ -561,13 +563,25 @@ module.exports = {
     },
     events: {
 	'parent-msg': function (msg) {
-	    // `this` in event callbacks are automatically bound
-	    // to the instance that registered it
-	    this.context = msg.context;
-	    if (this.context.username == null) {
-		// from a public link
-		this.context.getEntryPath().thenApply(linkPath => this.changePath(linkPath));
-	    }
-	}
+    	    // `this` in event callbacks are automatically bound
+    	    // to the instance that registered it
+    	    this.context = msg.context;
+    	    this.initiateDownload = msg.download;
+    	    const that = this;
+    	    if (this.context.username == null) {
+    		// from a public link
+    		this.context.getEntryPath().thenApply(linkPath => {
+    		    that.changePath(linkPath);
+    		    if (that.initiateDownload) {
+    			that.context.getByPath(that.getPath())
+    			    .thenApply(file => file.get().getChildren(that.context).thenApply(function(children){
+    				var arr = children.toArray();
+    				if (arr.length == 1)
+    				    that.downloadFile(arr[0]);
+    			    }));
+    		    }
+    		});
+    	    }
+    	}
     }
 };
