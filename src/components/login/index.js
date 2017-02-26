@@ -5,7 +5,8 @@ module.exports = {
         return {
             username: [],
             password: [],
-	        demo: isDemo,
+	    demo: isDemo,
+	    isFirefox: false,
     	    showSpinner: false,
             showError:false,
             errorTitle:'',
@@ -17,6 +18,7 @@ module.exports = {
     },
     created: function() {
         console.debug('Login module created!');
+	this.isFirefox = navigator.userAgent.toLowerCase().indexOf('firefox') > -1;
 	var that = this;
 	var href = window.location.href;
 	const fragment = href.includes("#") ? href.substring(href.indexOf("#") + 1) : "";

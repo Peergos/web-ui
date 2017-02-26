@@ -2,6 +2,7 @@
 <div class="container form-signin">
   <spinner v-if="showSpinner"></spinner>
   <div class="alert alert-danger" v-if="demo"><strong>WARNING:</strong>This is a demo server and all data will be occasionally cleared.</div>
+  <div class="alert alert-danger" v-if="isFirefox"><strong>WARNING:</strong>We recommend Chrome, as it is about 4 times faster than Firefox for Peergos.</div>
   <h2>Peergos</h2>
   <center>
     <img src="images/logo.png" class="image">
