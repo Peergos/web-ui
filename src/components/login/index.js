@@ -42,7 +42,7 @@ module.exports = {
 		link = link.substring(0, query);
 	    }
 	    peergos.shared.NetworkAccess.buildJS()
-		.thenApply(network => {
+		.thenApply(function(network){
 		    peergos.shared.user.UserContext.fromPublicLink(link, network, that.crypto).thenApply(function(context) {
 			that.$dispatch('child-msg', {
 			    view:'filesystem', 
@@ -97,7 +97,7 @@ module.exports = {
 	network: function() {
 	    return new Promise(function(resolve, reject) {
 		peergos.shared.NetworkAccess.buildJS()
-		    .thenApply(network => resolve(network));
+		    .thenApply(function(network){resolve(network)});
 	    });
 	}
     }

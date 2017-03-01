@@ -37,21 +37,28 @@ module.exports = {
     methods: {
         signup : function() {
             const creationStart = Date.now();
-	    const that = this;
-	    if (that.password1 != that.password2) {
-		this.isError = true;
-		this.error = "Passwords do not match!";
-	    } else {
-		this.showSpinner = true;
-		return peergos.shared.user.UserContext.signUp(that.username, that.password1, that.network, that.crypto).thenApply(function(context) {
+            const that = this;
+            if (that.password1 != that.password2) {
+                this.isError = true;
+                this.error = "Passwords do not match!";
+            } else {
+                this.showSpinner = true;
+                return peergos.shared.user.UserContext.signUp(that.username, that.password1, that.network, that.crypto)
+                .thenApply(function(context) {
                     that.$dispatch('child-msg', {
-			view:'filesystem', 
-			props:{context: context}
-		    });
+                    view:'filesystem',
+                    props:{context: context}
+                    });
                     console.log("Signing in/up took " + (Date.now()-creationStart)+" mS from function call");
-		    this.showSpinner = false;
-		});
-	    }
+                    this.showSpinner = false;
+                }).exceptionally(function(throwable) {
+                  console.log('Error signing up: ' + throwable);
+                  that.isError = true;
+                  that.errorClass = "has-error has-feedback alert alert-danger";
+                  that.error = throwable.getMessage();
+                  that.showSpinner = false;
+                });
+            }
         },
 	validatePassword: function(inFirstField) {
 	    if (inFirstField && !this.checkPassword)

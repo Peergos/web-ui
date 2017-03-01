@@ -61,7 +61,7 @@ module.exports = {
 	sendInitialFollowRequest: function(name) {
 	    console.log("sending follow request to " + name);
 	    this.context.sendInitialFollowRequest(name)
-		.thenApply(success => {
+		.thenApply(function(success) {
 		    this.targetUsername = "";
 		    this.showMessage("Follow request sent!", "");
 		    this.externalchange++;
@@ -70,7 +70,7 @@ module.exports = {
 
 	acceptAndReciprocate: function(req) {
 	    this.context.sendReplyFollowRequest(req, true, true)
-		.thenApply(success => {
+		.thenApply(function(success) {
 		    this.showMessage("Follow request reciprocated!", "");
 		    this.externalchange++;
 		});
@@ -78,7 +78,7 @@ module.exports = {
 	
         accept: function(req) {
 	    this.context.sendReplyFollowRequest(req, true, false)
-		.thenApply(success => {
+		.thenApply(function(success) {
 		    this.showMessage("Follow request accepted!", "");
 		    this.externalchange++;
 		});
@@ -86,7 +86,7 @@ module.exports = {
 	
         reject: function(req) {
 	    this.context.sendReplyFollowRequest(req, false, false)
-		.thenApply(success => {
+		.thenApply(function(success) {
 		    this.showMessage("Follow request rejected!", "");
 		    this.externalchange++;
 		});
@@ -94,7 +94,7 @@ module.exports = {
 
 	removeFollower: function(username) {
 	    this.context.removeFollower(username)
-		.thenApply(success => {
+		.thenApply(function(success) {
 		    this.showMessage("Removed follower " + username, "");
 		    this.externalchange++;
 		});
@@ -102,7 +102,7 @@ module.exports = {
 	
         unfollow: function(username) {
 	    this.context.unfollow(username)
-		.thenApply(success => {
+		.thenApply(function(success) {
 		    this.showMessage("Stopped following " + username, "");
 		    this.externalchange++;
 		});
