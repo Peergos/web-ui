@@ -144,16 +144,14 @@ module.exports = {
 		var reader = new browserio.JSFileReader(file);
 		var java_reader = new peergos.shared.user.fs.BrowserFileReader(reader);
 		this.currentDir.uploadFile(file.name, java_reader, 0, file.size, this.context, function(len){
-			progress.done += len.value_0;
-			if (progress.done >= progress.max)
+		    progress.done += len.value_0;
+		    if (progress.done >= progress.max) {
     			setTimeout(function(){progress.show = false}, 2000);
-			console.log(progress.done);
-			console.log(progress.max);
-		}).thenApply(function(x) {
-                this.showSpinner = true;
-                this.currentDirChanged();
+			this.showSpinner = true;	
 		    }
-		);
+		}).thenApply(function(x) {
+                    this.currentDirChanged();
+		});
 	},
 
 	toggleUserMenu: function() {
@@ -276,6 +274,8 @@ module.exports = {
 	},
 	
 	navigateOrDownload: function(file) {
+	    if (this.showSpinner) // disable user input whilst refreshing
+		return;
 	    if (file.isDirectory())
 		this.navigateToSubdir(file.getFileProperties().name);
 	    else
@@ -379,6 +379,8 @@ module.exports = {
 	},
 
 	openMenu: function(e, file) {
+	    if (this.showSpinner) // disable user input whilst refreshing
+		return;
 	    if (this.getPath() == "/") {
 		e.preventDefault();
 		return; // disable sharing your root directory
