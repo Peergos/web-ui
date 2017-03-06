@@ -20,6 +20,13 @@
                   <arg value="submodule"/>
                   <arg value="update"/>
           </exec>
+	  <exec executable="git" dir="." failonerror="true">
+                  <arg value="submodule"/>
+                  <arg value="foreach"/>
+		  <arg value="git"/>
+		  <arg value="pull"/>
+		  <arg value="--rebase"/>
+          </exec>
   </target>
 
   <target name="init">
