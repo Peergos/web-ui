@@ -22,7 +22,7 @@ module.exports = {
 
 	    var that = this;
 	    this.context.shareWith(this.files[0], targetUsername)
-		.thenApply(b => {
+		.thenApply(function(b) {
 		    that.messages.push({
 			title: "Success!",
 			body: "Sharing complete",

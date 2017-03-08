@@ -34,15 +34,15 @@ function FileTreeNodeWrapper(props) {
 
 function convertToJSFile(javaFileTreeNode) {
     const members = [
-	["name", ftn => ftn.getFileProperties().then(props => props.name)],
-	["size", ftn => ftn.getFileProperties().then(props => props.size)],
-	["isHidden", ftn => ftn.getFileProperties().then(props => props.isHidden)],
-	["modified", ftn => ftn.getFileProperties().then(props => props.modified).then(m => m.toString())]
+	["name", function(ftn){ftn.getFileProperties().then(function(props){props.name})}],
+	["size", function(ftn){ftn.getFileProperties().then(function(props){props.size})}],
+	["isHidden", function(ftn){ftn.getFileProperties().then(function(props){props.isHidden})}],
+	["modified", function(ftn){ftn.getFileProperties().then(function(props){props.modified}).then(function(m){m.toString()})}]
     ];
     const functions = [
-	["isDirectory", ftn => ftn.isDirectory()],
-	["isWritable", ftn => ftn.isWritable()],
-	["owner", ftn => ftn.getOwner()]
+	["isDirectory", function(ftn){ftn.isDirectory()}],
+	["isWritable", function(ftn){ftn.isWritable()}],
+	["owner", function(ftn){ftn.getOwner()}]
     ];
     return calculateProps(javaFileTreeNode, members, functions).then(function(fileWithProps) {
 	return Promise.resolve(new FileTreeNodeWrapper(fileWithProps));

@@ -80,7 +80,7 @@ module.exports = {
 
 	mkdir: function(name) {
 	    this.currentDir.mkdir(name, this.context, false)
-                .thenApply(x => this.currentDirChanged());
+                .thenApply(function(x){this.currentDirChanged()});
 	},
 
 	askForFile: function() {
@@ -101,12 +101,12 @@ module.exports = {
 		}
 	},
 	getEntriesAsPromise: function(item, that) {
-		return new Promise((resolve, reject) => {
+		return new Promise(function(resolve, reject){
 			console.log("in getEntriesAsPromise path=" + item.fullPath);
 			if(item.isDirectory){
 				let reader = item.createReader();
-				let doBatch = () => {
-					reader.readEntries(entries => {
+				let doBatch = function() {
+					reader.readEntries(function(entries) {
 						if (entries.length > 0) {
 							entries.forEach(function(entry){
 								that.getEntriesAsPromise(entry, that);
@@ -143,17 +143,15 @@ module.exports = {
 		this.progressMonitors.push(progress);
 		var reader = new browserio.JSFileReader(file);
 		var java_reader = new peergos.shared.user.fs.BrowserFileReader(reader);
-		this.currentDir.uploadFile(file.name, java_reader, 0, file.size, this.context, len => {
-			progress.done += len.value_0;
-			if (progress.done >= progress.max)
-    			setTimeout(() => progress.show = false, 2000);
-			console.log(progress.done);
-			console.log(progress.max);
-		}).thenApply(x => {
-                this.showSpinner = true;
-                this.currentDirChanged();
+		this.currentDir.uploadFile(file.name, java_reader, 0, file.size, this.context, function(len){
+		    progress.done += len.value_0;
+		    if (progress.done >= progress.max) {
+    			setTimeout(function(){progress.show = false}, 2000);
+			this.showSpinner = true;	
 		    }
-		);
+		}).thenApply(function(x) {
+                    this.currentDirChanged();
+		});
 	},
 
 	toggleUserMenu: function() {
@@ -214,7 +212,7 @@ module.exports = {
 	    this.closeMenu();
 	    var file = this.selectedFiles[0];
 	    this.context.sharedWith(file)
-		.thenApply(usernames => {
+		.thenApply(function(usernames) {
 		    var unames = usernames.toArray([]);
 		    var filename = file.getFileProperties().name;
 		    var title = filename + " is shared with:";
@@ -231,7 +229,7 @@ module.exports = {
 
 	changePassword: function(oldPassword, newPassword) {
 	    console.log("Changing password");
-	    this.context.changePassword(oldPassword, newPassword).thenApply(newContext => this.context = newContext);
+	    this.context.changePassword(oldPassword, newPassword).thenApply(function(newContext){this.context = newContext});
 	},
 	
         changePath: function(path) {
@@ -276,6 +274,8 @@ module.exports = {
 	},
 	
 	navigateOrDownload: function(file) {
+	    if (this.showSpinner) // disable user input whilst refreshing
+		return;
 	    if (file.isDirectory())
 		this.navigateToSubdir(file.getFileProperties().name);
 	    else
@@ -298,15 +298,15 @@ module.exports = {
 		max:resultingSize
 	    };
 	    this.progressMonitors.push(progress);
-	    file.getInputStream(this.context, props.sizeHigh(), props.sizeLow(), read => {
+	    file.getInputStream(this.context, props.sizeHigh(), props.sizeLow(), function(read) {
 		progress.done += read.value_0;
 		if (progress.done >= progress.max)
-		    setTimeout(() => progress.show = false, 2000);
-	    }).thenCompose(reader => {
+		    setTimeout(function(){progress.show = false}, 2000);
+	    }).thenCompose(function(reader) {
 		var data = convertToByteArray(new Int8Array(props.sizeLow()));
 		data.length = props.sizeLow();
 		return reader.readIntoArray(data, 0, data.length)
-		    .thenApply(read => that.openItem(props.name, data));
+		    .thenApply(function(read){that.openItem(props.name, data)});
 	    });
 	},
 
@@ -379,6 +379,8 @@ module.exports = {
 	},
 
 	openMenu: function(e, file) {
+	    if (this.showSpinner) // disable user input whilst refreshing
+		return;
 	    if (this.getPath() == "/") {
 		e.preventDefault();
 		return; // disable sharing your root directory
@@ -411,7 +413,7 @@ module.exports = {
                 return;
             console.log("Renaming " + old_name + "to "+ prompt_result);
 	        file.rename(prompt_result, this.context, this.currentDir)
-    		    .thenApply(b => this.forceUpdate++); 
+    		    .thenApply(function(b){this.forceUpdate++});
         }.bind(this);
         this.showPrompt =  true;
 	},
@@ -425,7 +427,7 @@ module.exports = {
 		console.log("deleting: " + file.getFileProperties().name);
 		var that = this;
 		file.remove(this.context, this.currentDir)
-		    .thenApply(b => that.forceUpdate++);
+		    .thenApply(function(b){that.forceUpdate++});
 	    }
 	},
 	
@@ -504,7 +506,7 @@ module.exports = {
 	    var that = this;
 	    return new Promise(function(resolve, reject) {
 		that.context.getByPath(that.getPath())
-		    .thenApply(file => resolve(file.get()));
+		    .thenApply(function(file){resolve(file.get())});
 	    });
 	},
 	
@@ -536,7 +538,7 @@ module.exports = {
 		return Promise.resolve([]);
 	    var that = this;
 	    return new Promise(function(resolve, reject) {
-		that.context.getFollowerNames().thenApply(usernames => resolve(usernames.toArray([])));
+		that.context.getFollowerNames().thenApply(function(usernames){resolve(usernames.toArray([]))});
 	    });
 	},
 
@@ -550,11 +552,11 @@ module.exports = {
 	    var that = this;
 	    var triggerUpdate = this.externalChange;
 	    return new Promise(function(resolve, reject) {
-		that.context.getSocialState().thenApply(social => {
+		that.context.getSocialState().thenApply(function(social){
 		    resolve({
 			pending: social.pendingIncoming.toArray([]),
 			followers: social.followerRoots.keySet().toArray([]),
-			following: social.followingRoots.toArray([]).map(f => f.getFileProperties().name),
+			following: social.followingRoots.toArray([]).map(function(f){f.getFileProperties().name}),
 			pendingOutgoing: social.pendingOutgoingFollowRequests.keySet().toArray([])
 		    });
 		});
@@ -570,15 +572,15 @@ module.exports = {
     	    const that = this;
     	    if (this.context.username == null) {
     		// from a public link
-    		this.context.getEntryPath().thenApply(linkPath => {
+    		this.context.getEntryPath().thenApply(function(linkPath) {
     		    that.changePath(linkPath);
     		    if (that.initiateDownload) {
     			that.context.getByPath(that.getPath())
-    			    .thenApply(file => file.get().getChildren(that.context).thenApply(function(children){
+    			    .thenApply(function(file){file.get().getChildren(that.context).thenApply(function(children){
     				var arr = children.toArray();
     				if (arr.length == 1)
     				    that.downloadFile(arr[0]);
-    			    }));
+    			    })});
     		    }
     		});
     	    }

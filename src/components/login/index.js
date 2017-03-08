@@ -7,6 +7,7 @@ module.exports = {
             password: [],
 	    demo: isDemo,
 	    isFirefox: false,
+	    isSafari: false,
     	    showSpinner: false,
             showError:false,
             errorTitle:'',
@@ -17,8 +18,9 @@ module.exports = {
 
     },
     created: function() {
-        console.debug('Login module created!');
-	this.isFirefox = navigator.userAgent.toLowerCase().indexOf('firefox') > -1;
+    console.debug('Login module created!');
+    this.isFirefox = navigator.userAgent.toLowerCase().indexOf('firefox') > -1;
+    this.isSafari = /constructor/i.test(window.HTMLElement) || (function (p) { return p.toString() === "[object SafariRemoteNotification]"; })(!window['safari'] || safari.pushNotification);
 	var that = this;
 	var href = window.location.href;
 	const fragment = href.includes("#") ? href.substring(href.indexOf("#") + 1) : "";
@@ -42,7 +44,7 @@ module.exports = {
 		link = link.substring(0, query);
 	    }
 	    peergos.shared.NetworkAccess.buildJS()
-		.thenApply(network => {
+		.thenApply(function(network){
 		    peergos.shared.user.UserContext.fromPublicLink(link, network, that.crypto).thenApply(function(context) {
 			that.$dispatch('child-msg', {
 			    view:'filesystem', 
@@ -97,7 +99,7 @@ module.exports = {
 	network: function() {
 	    return new Promise(function(resolve, reject) {
 		peergos.shared.NetworkAccess.buildJS()
-		    .thenApply(network => resolve(network));
+		    .thenApply(function(network){resolve(network)});
 	    });
 	}
     }

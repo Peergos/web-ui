@@ -294,7 +294,7 @@ var browserio = {
 function generateThumbnailProm(asyncReader, fileSize, fileName) {
     var future = peergos.shared.util.FutureUtils.incomplete();
     var bytes = peergos.shared.util.Serialize.newByteArray(fileSize);
-    asyncReader.readIntoArray(bytes, 0, fileSize).thenApply(bytesRead => {
+    asyncReader.readIntoArray(bytes, 0, fileSize).thenApply(function(bytesRead) {
         var canvas = document.createElement('canvas');
         var ctx = canvas.getContext('2d');
         var img = new Image();
