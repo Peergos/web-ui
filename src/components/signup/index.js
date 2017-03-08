@@ -16,7 +16,10 @@ module.exports = {
 	    passwordWarningThreshold: 12,
 	    commonPasswords: commonPasswords,
 	    email: [],
-	    showSpinner: false
+	    showSpinner: false,
+        errorTitle:'',
+        errorBody:'',
+        showError:false,
         };
     },
     props: {
@@ -53,9 +56,9 @@ module.exports = {
                     this.showSpinner = false;
                 }).exceptionally(function(throwable) {
                   console.log('Error signing up: ' + throwable);
-                  that.isError = true;
-                  that.errorClass = "has-error has-feedback alert alert-danger";
-                  that.error = throwable.getMessage();
+                  that.errorTitle = 'Error signing up'
+                  that.errorBody = throwable.getMessage();
+                  that.showError = true;
                   that.showSpinner = false;
                 });
             }
