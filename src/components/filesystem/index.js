@@ -58,15 +58,16 @@ module.exports = {
 	},
 
 	askMkdir: function() {
-        this.prompt_placeholder='Folder name';
-        this.prompt_message='Enter a new folder name';
-        this.prompt_consumer_func = function(prompt_result) {
-            console.log("creating new sub-dir "+ prompt_result);
-            if (prompt_result === '')
-                return;
-            this.mkdir(prompt_result);
-        }.bind(this);
-        this.showPrompt =  true;
+            this.prompt_placeholder='Folder name';
+            this.prompt_message='Enter a new folder name';
+	    
+            this.prompt_consumer_func = function(prompt_result) {
+		console.log("creating new sub-dir "+ prompt_result);
+		if (prompt_result === '')
+                    return;
+		this.mkdir(prompt_result);
+            }.bind(this);
+            this.showPrompt =  true;
 	},
 
 	switchView: function() {
@@ -80,7 +81,7 @@ module.exports = {
 
 	mkdir: function(name) {
 	    this.currentDir.mkdir(name, this.context, false)
-                .thenApply(function(x){this.currentDirChanged()});
+                .thenApply(function(x){this.currentDirChanged()}.bind(this));
 	},
 
 	askForFile: function() {
@@ -131,27 +132,28 @@ module.exports = {
 			this.uploadFile(file);
 		}
 	},
-    uploadFile: function(file) {
-		console.log("uploading " + file.name);
-	var resultingSize = file.size;
-		var progress = {
-			show:true,
-			title:"Uploading " + file.name,
-			done:0,
-			max:resultingSize
-		};
-		this.progressMonitors.push(progress);
-		var reader = new browserio.JSFileReader(file);
-		var java_reader = new peergos.shared.user.fs.BrowserFileReader(reader);
-		this.currentDir.uploadFile(file.name, java_reader, 0, file.size, this.context, function(len){
-		    progress.done += len.value_0;
-		    if (progress.done >= progress.max) {
-    			setTimeout(function(){progress.show = false}, 2000);
-			this.showSpinner = true;	
-		    }
-		}).thenApply(function(x) {
-                    this.currentDirChanged();
-		});
+	uploadFile: function(file) {
+	    console.log("uploading " + file.name);
+	    var resultingSize = file.size;
+	    var progress = {
+		show:true,
+		title:"Uploading " + file.name,
+		done:0,
+		max:resultingSize
+	    };
+	    this.progressMonitors.push(progress);
+	    var reader = new browserio.JSFileReader(file);
+	    var java_reader = new peergos.shared.user.fs.BrowserFileReader(reader);
+	    var that = this;
+	    this.currentDir.uploadFile(file.name, java_reader, 0, file.size, this.context, function(len){
+		progress.done += len.value_0;
+		if (progress.done >= progress.max) {
+    		    setTimeout(function(){progress.show = false}, 2000);
+		    that.showSpinner = true;	
+		}
+	    }).thenApply(function(x) {
+                that.currentDirChanged();
+	    });
 	},
 
 	toggleUserMenu: function() {
@@ -211,13 +213,14 @@ module.exports = {
 		return;
 	    this.closeMenu();
 	    var file = this.selectedFiles[0];
+	    var that = this;
 	    this.context.sharedWith(file)
 		.thenApply(function(usernames) {
 		    var unames = usernames.toArray([]);
 		    var filename = file.getFileProperties().name;
 		    var title = filename + " is shared with:";
-		    this.sharedWithData = {title:title, shared_with_users:unames};
-		    this.showSharedWith = true;
+		    that.sharedWithData = {title:title, shared_with_users:unames};
+		    that.showSharedWith = true;
 		});
 	},
 	
@@ -229,7 +232,7 @@ module.exports = {
 
 	changePassword: function(oldPassword, newPassword) {
 	    console.log("Changing password");
-	    this.context.changePassword(oldPassword, newPassword).thenApply(function(newContext){this.context = newContext});
+	    this.context.changePassword(oldPassword, newPassword).thenApply(function(newContext){this.context = newContext}.bind(this));
 	},
 	
         changePath: function(path) {
@@ -403,19 +406,20 @@ module.exports = {
 		    throw "Can't rename more than one file at once!";
 
 	    var file = this.selectedFiles[0];
-        var old_name =  file.getFileProperties().name
+            var old_name =  file.getFileProperties().name
 	    this.closeMenu();
-
-        this.prompt_placeholder='New name';
-        this.prompt_message='Enter a new name';
-        this.prompt_consumer_func = function(prompt_result) {
-            if (prompt_result === '')
-                return;
-            console.log("Renaming " + old_name + "to "+ prompt_result);
-	        file.rename(prompt_result, this.context, this.currentDir)
-    		    .thenApply(function(b){this.forceUpdate++});
-        }.bind(this);
-        this.showPrompt =  true;
+	    
+            this.prompt_placeholder='New name';
+            this.prompt_message='Enter a new name';
+	    var that = this;
+            this.prompt_consumer_func = function(prompt_result) {
+		if (prompt_result === '')
+                    return;
+		console.log("Renaming " + old_name + "to "+ prompt_result);
+	        file.rename(prompt_result, that.context, that.currentDir)
+    		    .thenApply(function(b){that.forceUpdate++});
+            };
+            this.showPrompt =  true;
 	},
 	
 	delete: function() {
@@ -492,11 +496,11 @@ module.exports = {
             });
         },
 	
-	    isWritable: function() {
-	        if (this.currentDir == null)
-		    return false;
-	        return this.currentDir.isWritable();
-	    }
+	isWritable: function() {
+	    if (this.currentDir == null)
+		return false;
+	    return this.currentDir.isWritable();
+	}
     },
     asyncComputed: {
 	currentDir: function() {
@@ -556,7 +560,7 @@ module.exports = {
 		    resolve({
 			pending: social.pendingIncoming.toArray([]),
 			followers: social.followerRoots.keySet().toArray([]),
-			following: social.followingRoots.toArray([]).map(function(f){f.getFileProperties().name}),
+			following: social.followingRoots.toArray([]).map(function(f){return f.getFileProperties().name}),
 			pendingOutgoing: social.pendingOutgoingFollowRequests.keySet().toArray([])
 		    });
 		});
