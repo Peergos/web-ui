@@ -113,7 +113,7 @@
     </exec>
   </target>
 
-  <target name="ui" depends="ui_dev_vendor,assets,css,js" description="build our part of the ui">
+  <target name="ui" depends="init,ui_dev_vendor,assets,css,js" description="build our part of the ui">
   </target>
 
   <taskdef name="watch"
@@ -141,17 +141,28 @@
     </exec>
   </target>
 
-  <target name="update_server" depends="compile_server" description="regenerate the server">
-    <mkdir dir="${server}/lib"/>
-    <copy todir="${server}/lib">
-      <fileset dir="${peergos_project_root}/lib"/>
+  <target name="update_server" depends="compile_server, ui" description="regenerate the server">
+    <mkdir dir="${server}"/>
+    <mkdir dir="${server}/webroot"/>
+
+    <copy todir="${server}" overwrite="true">
+        <fileset file="${peergos_project_root}/PeergosServer.jar"/>
     </copy>
-    <copy todir="${server}">
-      <fileset file="${peergos_project_root}/PeergosServer.jar"/>
+    <copy todir="${server}/webroot" overwrite="true"> 
+            <fileset dir="${ui}"/>
     </copy>
-    <copy todir="${ui}/js">
-      <fileset file="${peergos_project_root}/war/peergoslib/*cache.js"/>
-    </copy>
+
+    <!--flatten Peergos dependencies into a  fat-jar -->
+    <zip destfile="${server}/PeergosServer.jar" update="true">
+        <zipgroupfileset dir="${peergos_project_root}/lib" includes="*.jar"/>
+    </zip>        
+    <!-- add web resouces to fat-jar under webroot -->
+    <zip destfile="${server}/PeergosServer.jar" update="true">
+            <fileset dir="${server}">
+                    <include name="**/webroot/**"/>
+            </fileset>
+    </zip>        
+
   </target>
 
   <target name="run" depends="">
@@ -162,7 +173,7 @@
       <arg value="-useIPFS"/>
       <arg value="false"/>
       <arg value="-webroot"/>
-      <arg value="../dist"/>
+      <arg value="../webroot"/>
     </exec>
   </target> 
 
