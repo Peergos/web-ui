@@ -20,12 +20,14 @@
                   <arg value="submodule"/>
                   <arg value="update"/>
           </exec>
-	  <exec executable="git" dir="." failonerror="true">
+	      <exec executable="git" dir="." failonerror="true">
                   <arg value="submodule"/>
                   <arg value="foreach"/>
-		  <arg value="git"/>
-		  <arg value="pull"/>
-		  <arg value="--rebase"/>
+		          <arg value="git"/>
+		          <arg value="pull"/>
+		          <arg value="origin"/>
+		          <arg value="master"/>
+        		  <arg value="--rebase"/>
           </exec>
   </target>
 
