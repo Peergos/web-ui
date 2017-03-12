@@ -6,7 +6,7 @@
   <property name="peergos_project_root" location="peergos"/>
   <property name="server" location="server"/>
   <property name="ui_src" location="src"/>
-  <property name="ui" location="dist"/>
+  <property name="ui" location="${server}/webroot"/>
   <property name="assets" location="assets"/>
   <property name="vendor" location="vendor"/>
 
@@ -150,9 +150,6 @@
     <copy todir="${server}" overwrite="true">
         <fileset file="${peergos_project_root}/PeergosServer.jar"/>
     </copy>
-    <copy todir="${server}/webroot" overwrite="true"> 
-            <fileset dir="${ui}"/>
-    </copy>
 
     <!--flatten Peergos dependencies into a  fat-jar -->
     <zip destfile="${server}/PeergosServer.jar" update="true">
@@ -175,7 +172,9 @@
       <arg value="-useIPFS"/>
       <arg value="false"/>
       <arg value="-webroot"/>
-      <arg value="../webroot"/>
+      <arg value="webroot"/>
+      <arg value="-webcache"/>
+      <arg value="false"/>
     </exec>
   </target> 
 
