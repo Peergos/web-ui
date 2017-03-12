@@ -150,6 +150,9 @@
     <copy todir="${server}" overwrite="true">
         <fileset file="${peergos_project_root}/PeergosServer.jar"/>
     </copy>
+    <copy todir="${ui}/js">
+      <fileset file="${peergos_project_root}/war/peergoslib/*cache.js"/>
+    </copy>
 
     <!--flatten Peergos dependencies into a  fat-jar -->
     <zip destfile="${server}/PeergosServer.jar" update="true">
