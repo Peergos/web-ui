@@ -60,31 +60,35 @@ module.exports = {
 	
 	sendInitialFollowRequest: function(name) {
 	    console.log("sending follow request to " + name);
+	    var that = this;
 	    this.context.sendInitialFollowRequest(name)
 		.thenApply(function(success) {
-		    this.targetUsername = "";
-		    this.showMessage("Follow request sent!", "");
-		    this.externalchange++;
+		    that.targetUsername = "";
+		    that.showMessage("Follow request sent!", "");
+		    that.externalchange++;
 		});
 	},
 
 	acceptAndReciprocate: function(req) {
+	    var that = this;
 	    this.context.sendReplyFollowRequest(req, true, true)
 		.thenApply(function(success) {
-		    this.showMessage("Follow request reciprocated!", "");
-		    this.externalchange++;
+		    that.showMessage("Follow request reciprocated!", "");
+		    that.externalchange++;
 		});
 	},
 	
         accept: function(req) {
+	    var that = this;
 	    this.context.sendReplyFollowRequest(req, true, false)
 		.thenApply(function(success) {
-		    this.showMessage("Follow request accepted!", "");
-		    this.externalchange++;
+		    that.showMessage("Follow request accepted!", "");
+		    that.externalchange++;
 		});
 	},
 	
         reject: function(req) {
+	    var that = this;
 	    this.context.sendReplyFollowRequest(req, false, false)
 		.thenApply(function(success) {
 		    this.showMessage("Follow request rejected!", "");
@@ -93,18 +97,20 @@ module.exports = {
 	},
 
 	removeFollower: function(username) {
+	    var that = this;
 	    this.context.removeFollower(username)
 		.thenApply(function(success) {
-		    this.showMessage("Removed follower " + username, "");
-		    this.externalchange++;
+		    that.showMessage("Removed follower " + username, "");
+		    that.externalchange++;
 		});
 	},
 	
         unfollow: function(username) {
+	    var that = this;
 	    this.context.unfollow(username)
 		.thenApply(function(success) {
-		    this.showMessage("Stopped following " + username, "");
-		    this.externalchange++;
+		    that.showMessage("Stopped following " + username, "");
+		    that.externalchange++;
 		});
 	},
 	
