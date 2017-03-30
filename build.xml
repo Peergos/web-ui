@@ -11,11 +11,17 @@
   <property name="vendor" location="vendor"/>
 
 
-  <target name="peergos_submodule" description="sync. peergos dependency">
+  <target name="peergos_submodule_sync" description="sync. peergos dependency">
           <exec executable="git" dir="." failonerror="true">
                   <arg value="submodule"/>
                   <arg value="init"/>
           </exec>
+          <exec executable="git" dir="." failonerror="true">
+                  <arg value="submodule"/>
+                  <arg value="update"/>
+          </exec>
+  </target>
+  <target name="peergos_submodule_update" description="sync. peergos dependency">
           <exec executable="git" dir="." failonerror="true">
                   <arg value="submodule"/>
                   <arg value="update"/>
@@ -174,7 +180,7 @@
     </exec>
   </target> 
 
-  <target name="update_and_run" depends="peergos_submodule,update_server,run">
+  <target name="update_and_run" depends="peergos_submodule_sync,update_server,run">
   </target>
 
   <target name="test" depends="">
