@@ -19,15 +19,8 @@
           <exec executable="git" dir="." failonerror="true">
                   <arg value="submodule"/>
                   <arg value="update"/>
-          </exec>
-	      <exec executable="git" dir="." failonerror="true">
-                  <arg value="submodule"/>
-                  <arg value="foreach"/>
-		          <arg value="git"/>
-		          <arg value="pull"/>
-		          <arg value="origin"/>
-		          <arg value="master"/>
-        		  <arg value="--rebase"/>
+		          <arg value="--remote"/>
+		          <arg value="--merge"/>
           </exec>
   </target>
 
