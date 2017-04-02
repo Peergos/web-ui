@@ -55,7 +55,7 @@
 	  <tr v-if="data.following.length==0"><th></th><th style="text-align:right"></th></tr>
           <tr v-for="user in data.following">
 	    <td>{{ user }}</td>
-	    <td style="text-align:right"><button class="btn btn-danger" @click="unfollow(username)">Unfollow</button></td>
+	    <td style="text-align:right"><button class="btn btn-danger" @click="unfollow(user)">Unfollow</button></td>
 	  </tr>
         </table>
       </div>
