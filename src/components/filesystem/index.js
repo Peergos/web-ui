@@ -3,6 +3,7 @@ module.exports = {
     data: function() {
         return {
 	    context: null,
+	    contextUpdates: 0,
             path: [],
 	    grid: true,
 	    sortBy: "name",
@@ -30,8 +31,8 @@ module.exports = {
             prompt_message: '',
             prompt_placeholder: '',
             showPrompt: false,
-	        showSpinner: true,
-	        initiateDownload: false // used to trigger a download for a public link to a file
+	    showSpinner: true,
+	    initiateDownload: false // used to trigger a download for a public link to a file
         };
     },
     props: {
@@ -40,6 +41,11 @@ module.exports = {
         console.debug('Filesystem module created!');
     },
     methods: {
+	getContext: function() {
+	    var x = this.contextUpdates;
+	    return this.context;
+	},
+	
         getThumbnailURL: function(file) {
             return file.getBase64Thumbnail();
         },
@@ -80,7 +86,7 @@ module.exports = {
 	},
 
 	mkdir: function(name) {
-	    this.currentDir.mkdir(name, this.context, false)
+	    this.currentDir.mkdir(name, this.getContext(), false)
                 .thenApply(function(x){this.currentDirChanged()}.bind(this));
 	},
 
@@ -145,7 +151,7 @@ module.exports = {
 	    var reader = new browserio.JSFileReader(file);
 	    var java_reader = new peergos.shared.user.fs.BrowserFileReader(reader);
 	    var that = this;
-	    this.currentDir.uploadFile(file.name, java_reader, 0, file.size, this.context, function(len){
+	    this.currentDir.uploadFile(file.name, java_reader, 0, file.size, this.getContext(), function(len){
 		progress.done += len.value_0;
 		if (progress.done >= progress.max) {
     		    setTimeout(function(){progress.show = false}, 2000);
@@ -214,7 +220,7 @@ module.exports = {
 	    this.closeMenu();
 	    var file = this.selectedFiles[0];
 	    var that = this;
-	    this.context.sharedWith(file)
+	    this.getContext().sharedWith(file)
 		.thenApply(function(usernames) {
 		    var unames = usernames.toArray([]);
 		    var filename = file.getFileProperties().name;
@@ -232,7 +238,10 @@ module.exports = {
 
 	changePassword: function(oldPassword, newPassword) {
 	    console.log("Changing password");
-	    this.context.changePassword(oldPassword, newPassword).thenApply(function(newContext){this.context = newContext}.bind(this));
+	    this.getContext().changePassword(oldPassword, newPassword).thenApply(function(newContext){
+		this.contextUpdates++;
+		this.context = newContext;
+	    }.bind(this));
 	},
 	
         changePath: function(path) {
@@ -301,7 +310,7 @@ module.exports = {
 		max:resultingSize
 	    };
 	    this.progressMonitors.push(progress);
-	    file.getInputStream(this.context, props.sizeHigh(), props.sizeLow(), function(read) {
+	    file.getInputStream(this.getContext(), props.sizeHigh(), props.sizeLow(), function(read) {
 		progress.done += read.value_0;
 		if (progress.done >= progress.max)
 		    setTimeout(function(){progress.show = false}, 2000);
@@ -369,14 +378,14 @@ module.exports = {
                     return;
                 if (clipboard.op == "cut") {
 		    console.log("drop-cut "+clipboard.fileTreeNode.getFileProperties().name + " -> "+target.getFileProperties().name);
-                    clipboard.fileTreeNode.copyTo(target, this.context).thenCompose(function() {
-                        return clipboard.fileTreeNode.remove(that.context, clipboard.parent);
+                    clipboard.fileTreeNode.copyTo(target, this.getContext()).thenCompose(function() {
+                        return clipboard.fileTreeNode.remove(that.getContext(), clipboard.parent);
                     }).thenApply(function() {
-                        that.forceUpdate++;
+                        that.currentDirChanged();
                     });
                 } else if (clipboard.op == "copy") {
 		    console.log("drop-copy");
-                    clipboard.fileTreeNode.copyTo(target, this.context);
+                    clipboard.fileTreeNode.copyTo(target, this.getContext());
 		}
             }
 	},
@@ -416,8 +425,8 @@ module.exports = {
 		if (prompt_result === '')
                     return;
 		console.log("Renaming " + old_name + "to "+ prompt_result);
-	        file.rename(prompt_result, that.context, that.currentDir)
-    		    .thenApply(function(b){that.forceUpdate++});
+	        file.rename(prompt_result, that.getContext(), that.currentDir)
+    		    .thenApply(function(b){that.currentDirChanged()});
             };
             this.showPrompt =  true;
 	},
@@ -430,8 +439,8 @@ module.exports = {
 		var file = this.selectedFiles[i];
 		console.log("deleting: " + file.getFileProperties().name);
 		var that = this;
-		file.remove(this.context, this.currentDir)
-		    .thenApply(function(b){that.forceUpdate++});
+		file.remove(this.getContext(), this.currentDir)
+		    .thenApply(function(b){that.currentDirChanged()});
 	    }
 	},
 	
@@ -504,13 +513,15 @@ module.exports = {
     },
     asyncComputed: {
 	currentDir: function() {
-	    if (this.context == null)
+	    var context = this.getContext();
+	    if (context == null)
 		return Promise.resolve(null);
 	    var x = this.forceUpdate;
-	    var that = this;
+	    var path = this.getPath();
 	    return new Promise(function(resolve, reject) {
-		that.context.getByPath(that.getPath())
-		    .thenApply(function(file){resolve(file.get())});
+		context.getByPath(path).thenApply(function(file){
+		    resolve(file.get())
+		});
 	    });
 	},
 	
@@ -520,7 +531,7 @@ module.exports = {
 		return Promise.resolve([]);
 	    var that = this;
 	    return new Promise(function(resolve, reject) {
-		current.getChildren(that.context).thenApply(function(children){
+		current.getChildren(that.getContext()).thenApply(function(children){
 		    var arr = children.toArray();
 		    that.showSpinner = false;
 		    resolve(arr.filter(function(f){
@@ -531,32 +542,32 @@ module.exports = {
         },
 	
 	username: function() {
-	    var context = this.context;
+	    var context = this.getContext();
 	    if (context == null)
 		return Promise.resolve("");
 	    return Promise.resolve(context.username);
 	},
 	
 	followerNames: function() {
-	    if (this.context == null || this.context.username == null)
+	    var context = this.getContext();
+	    if (context == null || context.username == null)
 		return Promise.resolve([]);
-	    var that = this;
 	    return new Promise(function(resolve, reject) {
-		that.context.getFollowerNames().thenApply(function(usernames){resolve(usernames.toArray([]))});
+		context.getFollowerNames().thenApply(function(usernames){resolve(usernames.toArray([]))});
 	    });
 	},
 
 	social: function() {
-	    if (this.context == null || this.context.username == null)
+	    var context = this.getContext();
+	    if (context == null || context.username == null)
 		return Promise.resolve({
 		    pending: [],
 		    followers: [],
 		    following: []
 		});
-	    var that = this;
 	    var triggerUpdate = this.externalChange;
 	    return new Promise(function(resolve, reject) {
-		that.context.getSocialState().thenApply(function(social){
+		context.getSocialState().thenApply(function(social){
 		    resolve({
 			pending: social.pendingIncoming.toArray([]),
 			followers: social.followerRoots.keySet().toArray([]),
@@ -572,6 +583,7 @@ module.exports = {
     	    // `this` in event callbacks are automatically bound
     	    // to the instance that registered it
     	    this.context = msg.context;
+	    this.contextUpdates++;
     	    this.initiateDownload = msg.download;
     	    const that = this;
     	    if (this.context.username == null) {
