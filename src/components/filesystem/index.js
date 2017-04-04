@@ -5,6 +5,8 @@ module.exports = {
 	    context: null,
 	    contextUpdates: 0,
             path: [],
+	    currentDir: null,
+	    followerNames: [],
 	    grid: true,
 	    sortBy: "name",
 	    normalSortOrder: true,
@@ -40,7 +42,45 @@ module.exports = {
     created: function() {
         console.debug('Filesystem module created!');
     },
+    watch: {
+	// manually encode currentDir dependencies to get around infinite dependency chain issues with async-computed methods
+	context: function(newContext) {
+	    this.contextUpdates++;
+	    this.updateCurrentDir();
+	    this.updateFollowerNames();
+	},
+
+	path: function(newPath) {
+	    this.updateCurrentDir();
+	},
+
+	forceUpdate: function(newUpdateCounter) {
+	    this.updateCurrentDir();
+	}
+    },
     methods: {
+	updateCurrentDir: function() {
+	    var context = this.getContext();
+	    if (context == null)
+		return Promise.resolve(null);
+	    var x = this.forceUpdate;
+	    var path = this.getPath();
+	    var that = this;
+	    context.getByPath(path).thenApply(function(file){
+		that.currentDir = file.get();
+	    });
+	},
+
+	updateFollowerNames: function() {
+	    var context = this.getContext();
+	    if (context == null || context.username == null)
+		return Promise.resolve([]);
+	    var that = this;
+	    context.getFollowerNames().thenApply(function(usernames){
+		that.followerNames = usernames.toArray([]);
+	    });
+	},
+	
 	getContext: function() {
 	    var x = this.contextUpdates;
 	    return this.context;
@@ -130,7 +170,7 @@ module.exports = {
 			}
 		});
 	},
-    uploadFiles: function(evt) {
+	uploadFiles: function(evt) {
 	    console.log("upload files");
 	    var files = evt.target.files || evt.dataTransfer.files;
 		for (var i = 0; i < files.length; i++) {
@@ -509,22 +549,16 @@ module.exports = {
 	    if (this.currentDir == null)
 		return false;
 	    return this.currentDir.isWritable();
+	},
+
+	username: function() {
+	    var context = this.getContext();
+	    if (context == null)
+		return "";
+	    return context.username;
 	}
     },
     asyncComputed: {
-	currentDir: function() {
-	    var context = this.getContext();
-	    if (context == null)
-		return Promise.resolve(null);
-	    var x = this.forceUpdate;
-	    var path = this.getPath();
-	    return new Promise(function(resolve, reject) {
-		context.getByPath(path).thenApply(function(file){
-		    resolve(file.get())
-		});
-	    });
-	},
-	
 	files: function() {
             var current = this.currentDir;
 	    if (current == null)
@@ -541,22 +575,6 @@ module.exports = {
 	    });
         },
 	
-	username: function() {
-	    var context = this.getContext();
-	    if (context == null)
-		return Promise.resolve("");
-	    return Promise.resolve(context.username);
-	},
-	
-	followerNames: function() {
-	    var context = this.getContext();
-	    if (context == null || context.username == null)
-		return Promise.resolve([]);
-	    return new Promise(function(resolve, reject) {
-		context.getFollowerNames().thenApply(function(usernames){resolve(usernames.toArray([]))});
-	    });
-	},
-
 	social: function() {
 	    var context = this.getContext();
 	    if (context == null || context.username == null)
