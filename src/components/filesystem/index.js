@@ -86,34 +86,34 @@ module.exports = {
 	    return this.context;
 	},
 	
-        getThumbnailURL: function(file) {
-            return file.getBase64Thumbnail();
-        },
-        goBackToLevel: function(level) {
-            // By default let's jump to the root.
-            var newLevel = level || 0,
-                path = this.path.slice(0, newLevel).join('/');
+    getThumbnailURL: function(file) {
+        return file.getBase64Thumbnail();
+    },
+    goBackToLevel: function(level) {
+        // By default let's jump to the root.
+        var newLevel = level || 0,
+            path = this.path.slice(0, newLevel).join('/');
 
-            if (newLevel < this.path.length) {
-                this.changePath(path);
-            }
-        },
+        if (newLevel < this.path.length) {
+            this.changePath(path);
+        }
+    },
 
 	goHome: function() {
 	    this.changePath("/");
 	},
 
 	askMkdir: function() {
-            this.prompt_placeholder='Folder name';
-            this.prompt_message='Enter a new folder name';
-	    
-            this.prompt_consumer_func = function(prompt_result) {
-		console.log("creating new sub-dir "+ prompt_result);
-		if (prompt_result === '')
-                    return;
-		this.mkdir(prompt_result);
-            }.bind(this);
-            this.showPrompt =  true;
+        this.prompt_placeholder='Folder name';
+        this.prompt_message='Enter a new folder name';
+
+        this.prompt_consumer_func = function(prompt_result) {
+            console.log("creating new sub-dir "+ prompt_result);
+            if (prompt_result === '')
+                        return;
+            this.mkdir(prompt_result);
+        }.bind(this);
+        this.showPrompt =  true;
 	},
 
 	switchView: function() {
@@ -140,7 +140,6 @@ module.exports = {
 		let items = evt.dataTransfer.items;
 		let that = this;
 		for(let i =0; i < items.length; i++){
-			console.log("calling getEntriesAsPromise");
 			let entry = items[i].webkitGetAsEntry();
 			if(entry != null) {
 				this.getEntriesAsPromise(entry, that);
@@ -149,8 +148,8 @@ module.exports = {
 	},
 	getEntriesAsPromise: function(item, that) {
 		return new Promise(function(resolve, reject){
-			console.log("in getEntriesAsPromise path=" + item.fullPath);
 			if(item.isDirectory){
+			    /* disabled until fix for uploading into a directory structure is done
 				let reader = item.createReader();
 				let doBatch = function() {
 					reader.readEntries(function(entries) {
@@ -164,7 +163,7 @@ module.exports = {
 						}
 					}, reject);
 				};
-				doBatch();
+				doBatch();*/
 			}else{
 				item.file(function(item){that.uploadFile(item);}, function(e){console.log(e);});
 			}
@@ -225,28 +224,70 @@ module.exports = {
 	    });
 	},
 	
-        showSocialView: function(name) {
+    showSocialView: function(name) {
 	    this.showSocial = true;
 	    this.externalChange++;
 	},
 
 	copy: function() {
-	    if (this.selectedFiles.length == 0)
-		return;
-	    this.clipboardAction = "copy";
+	    if (this.selectedFiles.length != 1)
+		    return;
+        var file = this.selectedFiles[0];
+
+	    this.clipboard = {
+            fileTreeNode: file,
+            op: "copy"
+        };
 	    this.closeMenu();
 	},
 	
 	cut: function() {
-	    if (this.selectedFiles.length == 0)
-		return;
-	    this.clipboardAction = "cut";
+	    if (this.selectedFiles.length != 1)
+		    return;
+        var file = this.selectedFiles[0];
+
+	    this.clipboard = {
+            parent: this.currentDir,
+            fileTreeNode: file,
+            op: "cut"
+        };
 	    this.closeMenu();
 	},
-	
+
+	paste: function() {
+        if (this.selectedFiles.length != 1)
+            return;
+        var target = this.selectedFiles[0];
+	    var that = this;
+
+        if(target.isDirectory()) {
+            let clipboard = this.clipboard;
+            if (typeof(clipboard) ==  undefined || typeof(clipboard.op) == "undefined")
+                return;
+
+            if(clipboard.fileTreeNode.equals(target)) {
+                return;
+            }
+            if (clipboard.op == "cut") {
+                console.log("paste-cut "+clipboard.fileTreeNode.getFileProperties().name + " -> "+target.getFileProperties().name);
+                clipboard.fileTreeNode.copyTo(target, this.getContext()).thenCompose(function() {
+                    return clipboard.fileTreeNode.remove(that.getContext(), clipboard.parent);
+                }).thenApply(function() {
+                    that.currentDirChanged();
+                });
+            } else if (clipboard.op == "copy") {
+                console.log("paste-copy");
+                clipboard.fileTreeNode.copyTo(target, this.getContext());
+            }
+            this.clipboard.op = null;
+        }
+
+        this.closeMenu();
+    },
+
 	showShareWith: function() {
 	    if (this.selectedFiles.length == 0)
-		return;
+		    return;
 
 	    this.closeMenu();
 	    this.showShare = true;
@@ -284,13 +325,13 @@ module.exports = {
 	    }.bind(this));
 	},
 	
-        changePath: function(path) {
-            console.debug('Changing to path:'+ path);
-	    if (path.startsWith("/"))
-		path = path.substring(1);
+    changePath: function(path) {
+        console.debug('Changing to path:'+ path);
+        if (path.startsWith("/"))
+        path = path.substring(1);
             this.path = path ? path.split('/') : [];
-	    this.showSpinner = true;
-        },
+        this.showSpinner = true;
+    },
 
 	createPublicLink: function() {
 	    if (this.selectedFiles.length == 0)
@@ -317,55 +358,55 @@ module.exports = {
 	
 	downloadAll: function() {
 	    if (this.selectedFiles.length == 0)
-		return;
+		    return;
 	    this.closeMenu();
 	    for (var i=0; i < this.selectedFiles.length; i++) {
-		var file = this.selectedFiles[i];
-		this.navigateOrDownload(file);
+		    var file = this.selectedFiles[i];
+		    this.navigateOrDownload(file);
 	    }    
 	},
 	
 	navigateOrDownload: function(file) {
 	    if (this.showSpinner) // disable user input whilst refreshing
-		return;
+		    return;
 	    if (file.isDirectory())
-		this.navigateToSubdir(file.getFileProperties().name);
+		    this.navigateToSubdir(file.getFileProperties().name);
 	    else
-		this.downloadFile(file);
+		    this.downloadFile(file);
 	},
 
-        navigateToSubdir: function(name) {
+    navigateToSubdir: function(name) {
 	    this.changePath(this.getPath() + name);
 	},
 
-        downloadFile: function(file) {
+    downloadFile: function(file) {
 	    console.log("downloading " + file.getFileProperties().name);
 	    var props = file.getFileProperties();
 	    var that = this;
 	    var resultingSize = props.sizeLow();
 	    var progress = {
-		show:true,
-		title:"Downloading " + props.name,
-		done:0,
-		max:resultingSize
+            show:true,
+            title:"Downloading " + props.name,
+            done:0,
+            max:resultingSize
 	    };
 	    this.progressMonitors.push(progress);
 	    file.getInputStream(this.getContext(), props.sizeHigh(), props.sizeLow(), function(read) {
-		progress.done += read.value_0;
-		if (progress.done >= progress.max)
-		    setTimeout(function(){progress.show = false}, 2000);
-	    }).thenCompose(function(reader) {
-		var data = convertToByteArray(new Int8Array(props.sizeLow()));
-		data.length = props.sizeLow();
-		return reader.readIntoArray(data, 0, data.length)
-		    .thenApply(function(read){that.openItem(props.name, data)});
-	    });
+            progress.done += read.value_0;
+            if (progress.done >= progress.max)
+                setTimeout(function(){progress.show = false}, 2000);
+        }).thenCompose(function(reader) {
+            var data = convertToByteArray(new Int8Array(props.sizeLow()));
+            data.length = props.sizeLow();
+            return reader.readIntoArray(data, 0, data.length)
+                .thenApply(function(read){that.openItem(props.name, data)});
+        });
 	},
 
 	openItem: function(name, data) {
 	    console.log("saving data of length " + data.length + " to " + name);
 	    if(this.url != null){
-		window.URL.revokeObjectURL(this.url);
+		    window.URL.revokeObjectURL(this.url);
 	    }
 	    
 	    var blob =  new Blob([data], {type: "octet/stream"});		
@@ -376,75 +417,75 @@ module.exports = {
 	    link.click();
 	},
 	
-        getPath: function() {
-            return '/'+this.path.join('/') + (this.path.length > 0 ? "/" : "");
-        },
+    getPath: function() {
+        return '/'+this.path.join('/') + (this.path.length > 0 ? "/" : "");
+    },
 
 	dragStart: function(ev, treeNode) {
 	    console.log("dragstart");
-	    
+
 	    ev.dataTransfer.effectAllowed='move';
-            var id = ev.target.id;
-            ev.dataTransfer.setData("text/plain", id);
-            var owner = treeNode.getOwner();
-            var me = this.username;
-            if (owner === me) {
-		console.log("cut");
-                this.clipboard = {
-		    parent: this.currentDir,
-                    fileTreeNode: treeNode,
-                    op: "cut"
-                };
-            } else {
-		console.log("copy");
-                ev.dataTransfer.effectAllowed='copy';
-                this.clipboard = {
-                    fileTreeNode: treeNode,
-                    op: "copy"
-                };
-            }
+        var id = ev.target.id;
+        ev.dataTransfer.setData("text/plain", id);
+        var owner = treeNode.getOwner();
+        var me = this.username;
+        if (owner === me) {
+            console.log("cut");
+            this.clipboard = {
+                parent: this.currentDir,
+                fileTreeNode: treeNode,
+                op: "cut"
+            };
+        } else {
+		    console.log("copy");
+            ev.dataTransfer.effectAllowed='copy';
+            this.clipboard = {
+                fileTreeNode: treeNode,
+                op: "copy"
+            };
+        }
 	},
 
 	// DragEvent, FileTreeNode => boolean
 	drop: function(ev, target) {
 	    console.log("drop");
 	    ev.preventDefault();
-            var moveId = ev.dataTransfer.getData("text");
-            var id = ev.target.id;
+        var moveId = ev.dataTransfer.getData("text");
+        var id = ev.target.id;
 	    var that = this;
-            if(id != moveId && target.isDirectory()) {
-                const clipboard = this.clipboard;
-                if (typeof(clipboard) ==  undefined || typeof(clipboard.op) == "undefined")
-                    return;
-                if (clipboard.op == "cut") {
-		    console.log("drop-cut "+clipboard.fileTreeNode.getFileProperties().name + " -> "+target.getFileProperties().name);
-                    clipboard.fileTreeNode.copyTo(target, this.getContext()).thenCompose(function() {
-                        return clipboard.fileTreeNode.remove(that.getContext(), clipboard.parent);
-                    }).thenApply(function() {
-                        that.currentDirChanged();
-                    });
-                } else if (clipboard.op == "copy") {
-		    console.log("drop-copy");
-                    clipboard.fileTreeNode.copyTo(target, this.getContext());
-		}
-            }
+        if(id != moveId && target.isDirectory()) {
+            const clipboard = this.clipboard;
+            if (typeof(clipboard) ==  undefined || typeof(clipboard.op) == "undefined")
+                return;
+            if (clipboard.op == "cut") {
+                console.log("drop-cut "+clipboard.fileTreeNode.getFileProperties().name + " -> "+target.getFileProperties().name);
+                clipboard.fileTreeNode.copyTo(target, this.getContext()).thenCompose(function() {
+                    return clipboard.fileTreeNode.remove(that.getContext(), clipboard.parent);
+                }).thenApply(function() {
+                    that.currentDirChanged();
+                });
+            } else if (clipboard.op == "copy") {
+		        console.log("drop-copy");
+                clipboard.fileTreeNode.copyTo(target, this.getContext());
+		    }
+        }
 	},
 
 	openMenu: function(e, file) {
 	    if (this.showSpinner) // disable user input whilst refreshing
-		return;
+		    return;
 	    if (this.getPath() == "/") {
-		e.preventDefault();
-		return; // disable sharing your root directory
+		    e.preventDefault();
+		    return; // disable sharing your root directory
 	    }
 	    console.log("right clicked: " + file.getFileProperties().name);
 	    this.viewMenu = true;
 
-            Vue.nextTick(function() {
-                document.getElementById("right-click-menu").focus();
-                this.setMenu(e.y, e.x)
-            }.bind(this));
-            e.preventDefault();
+        Vue.nextTick(function() {
+            document.getElementById("right-click-menu").focus();
+            this.setMenu(e.y, e.x)
+        }.bind(this));
+        e.preventDefault();
 	    this.selectedFiles = [file];
 	},
 
@@ -455,32 +496,32 @@ module.exports = {
 		    throw "Can't rename more than one file at once!";
 
 	    var file = this.selectedFiles[0];
-            var old_name =  file.getFileProperties().name
+        var old_name =  file.getFileProperties().name
 	    this.closeMenu();
 	    
-            this.prompt_placeholder='New name';
-            this.prompt_message='Enter a new name';
+        this.prompt_placeholder='New name';
+        this.prompt_message='Enter a new name';
 	    var that = this;
-            this.prompt_consumer_func = function(prompt_result) {
-		if (prompt_result === '')
+        this.prompt_consumer_func = function(prompt_result) {
+            if (prompt_result === '')
                     return;
-		console.log("Renaming " + old_name + "to "+ prompt_result);
+		    console.log("Renaming " + old_name + "to "+ prompt_result);
 	        file.rename(prompt_result, that.getContext(), that.currentDir)
     		    .thenApply(function(b){that.currentDirChanged()});
-            };
-            this.showPrompt =  true;
+        };
+        this.showPrompt =  true;
 	},
 	
 	delete: function() {
 	    if (this.selectedFiles.length == 0)
-		return;
+		    return;
 	    this.closeMenu();
 	    for (var i=0; i < this.selectedFiles.length; i++) {
-		var file = this.selectedFiles[i];
-		console.log("deleting: " + file.getFileProperties().name);
-		var that = this;
-		file.remove(this.getContext(), this.currentDir)
-		    .thenApply(function(b){that.currentDirChanged()});
+            var file = this.selectedFiles[i];
+            console.log("deleting: " + file.getFileProperties().name);
+            var that = this;
+            file.remove(this.getContext(), this.currentDir)
+                .thenApply(function(b){that.currentDirChanged()});
 	    }
 	},
 	
@@ -488,14 +529,14 @@ module.exports = {
 	    console.log("open menu");
 	    var menu = document.getElementById("right-click-menu");
 	    var largestHeight = window.innerHeight - menu.offsetHeight - 25;
-            var largestWidth = window.innerWidth - menu.offsetWidth - 25;
+        var largestWidth = window.innerWidth - menu.offsetWidth - 25;
 
-            if (top > largestHeight) top = largestHeight;
+        if (top > largestHeight) top = largestHeight;
 
-            if (left > largestWidth) left = largestWidth;
+        if (left > largestWidth) left = largestWidth;
 
-            this.top = top + 'px';
-            this.left = left + 'px';
+        this.top = top + 'px';
+        this.left = left + 'px';
 	},
 	
 	closeMenu: function() {
@@ -547,8 +588,29 @@ module.exports = {
 	
 	isWritable: function() {
 	    if (this.currentDir == null)
-		return false;
+		    return false;
 	    return this.currentDir.isWritable();
+	},
+
+	isPasteAvailable: function() {
+	    if (this.currentDir == null)
+		    return false;
+
+        //if (this.clipboard.op == null)
+        //    return;
+
+        if (typeof(this.clipboard) ==  undefined || this.clipboard.op == null || typeof(this.clipboard.op) == "undefined")
+                return;
+
+        if (this.selectedFiles.length != 1)
+            return;
+        var target = this.selectedFiles[0];
+
+        if(this.clipboard.fileTreeNode.equals(target)) {
+            return;
+        }
+
+	    return this.currentDir.isWritable() && target.isDirectory();
 	},
 
 	username: function() {
