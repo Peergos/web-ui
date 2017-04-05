@@ -41,6 +41,7 @@
   <li id='open-file' v-on:click="downloadAll">Open</li>
   <li id='copy-file' v-on:click="copy">Copy</li>
   <li id='cut-file' v-if="isWritable" v-on:click="cut">Cut</li>
+  <li id='paste-file' v-if="isPasteAvailable" v-on:click="paste">Paste</li>
   <li id='public-link-file' v-on:click="createPublicLink">Create public link</li>
   <li id='share-file' v-on:click="showShareWith">Share</li>
   <li id='shared-with-file' v-if="isWritable" v-on:click="sharedWith">Shared with</li>
