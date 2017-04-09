@@ -14,23 +14,22 @@
                     <script src="js/wrapper.js"></script>
                     
     </head>
-    <script type="text/javascript">
-      function initStart() {
-      var script = document.createElement('script');
-      script.type = 'text/javascript';
-      script.src = 'js/peergos.js';
-      document.body.appendChild(script);
-      }
-      
-      var initJS = {
-      NativeInit: function() {
-      this.init = initStart;
-      }
-      };		
-    </script>
-
     <body>
-        <component :is="currentView"></component>
+      <script type="text/javascript">
+	function initStart() {
+	var script = document.createElement('script');
+	script.type = 'text/javascript';
+	script.src = 'js/peergos.js';
+	document.body.appendChild(script);
+	}
+	
+	var initJS = {
+	NativeInit: function() {
+	this.init = initStart;
+	}
+	};		
+      </script>
+      
+      <component :is="currentView"></component>
     </body>
-
 </html>
