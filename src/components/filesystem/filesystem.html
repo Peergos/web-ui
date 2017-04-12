@@ -60,7 +60,7 @@
 <div class="progressholder">
   <progressbar v-for="progress in progressMonitors" :show.sync="progress.show" :title.sync="progress.title" :done.sync="progress.done":max.sync="progress.max"></progressbar>
 </div>
-<div id="dnd" @drop="dndDrop($event)" @dragover.prevent class="fillspace">
+<div id="dnd" @drop="dndDrop($event)" @dragover.prevent class="fillspace" v-on:contextmenu="openMenu($event)">
   <spinner v-if="showSpinner"></spinner>
 
   <div class="grid" v-if="grid">
