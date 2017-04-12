@@ -14,6 +14,7 @@ module.exports = {
 	    selectedFiles:[],
 	    url:null,
 	    viewMenu:false,
+	    ignoreEvent:false,
 	    top:"0px",
 	    left:"0px",
 	    showModal:false,
@@ -347,7 +348,7 @@ module.exports = {
                     id:'public_link_'+name});
 	    }
 	    var title = links.length > 1 ? "Public links to files: " : "Public link to file: ";
-            this.showLinkModal(title, links);
+        this.showLinkModal(title, links);
 	},
 
 	showLinkModal: function(title, links) {
@@ -369,6 +370,7 @@ module.exports = {
 	navigateOrDownload: function(file) {
 	    if (this.showSpinner) // disable user input whilst refreshing
 		    return;
+        this.closeMenu();
 	    if (file.isDirectory())
 		    this.navigateToSubdir(file.getFileProperties().name);
 	    else
@@ -472,13 +474,25 @@ module.exports = {
 	},
 
 	openMenu: function(e, file) {
-	    if (this.showSpinner) // disable user input whilst refreshing
+	    if (this.ignoreEvent) {
+		    this.ignoreEvent = false;
+		    e.preventDefault();
 		    return;
+        }
+
+	    if (this.showSpinner) {// disable user input whilst refreshing
+		    e.preventDefault();
+		    return;
+        }
 	    if (this.getPath() == "/") {
 		    e.preventDefault();
 		    return; // disable sharing your root directory
 	    }
-	    console.log("right clicked: " + file.getFileProperties().name);
+	    if(file) {
+    	    this.selectedFiles = [file];
+        } else {
+    	    this.selectedFiles = [];
+        }
 	    this.viewMenu = true;
 
         Vue.nextTick(function() {
@@ -486,7 +500,6 @@ module.exports = {
             this.setMenu(e.y, e.x)
         }.bind(this));
         e.preventDefault();
-	    this.selectedFiles = [file];
 	},
 
 	rename: function() {
@@ -524,10 +537,39 @@ module.exports = {
                 .thenApply(function(b){that.currentDirChanged()});
 	    }
 	},
-	
+    setStyle: function(id, style) {
+        var el = document.getElementById(id);
+        if (el) {
+            el.style.display = style;
+        }
+    },
 	setMenu: function(top, left) {
 	    console.log("open menu");
 	    var menu = document.getElementById("right-click-menu");
+
+        if (this.selectedFiles.length == 1) {
+    	    this.ignoreEvent = true;
+            this.setStyle("rename-file", 'block');
+            this.setStyle("delete-file", 'block');
+            this.setStyle("open-file", 'block');
+            this.setStyle("copy-file", 'block');
+            this.setStyle("cut-file", 'block');
+            this.setStyle("paste-file", 'block');
+        } else {
+            this.setStyle("rename-file", 'none');
+            this.setStyle("delete-file", 'none');
+            this.setStyle("open-file", 'none');
+            this.setStyle("copy-file", 'none');
+            this.setStyle("cut-file", 'none');
+            this.setStyle("paste-file", 'none');
+            if (this.path.length > 1) {
+                this.selectedFiles = [this.currentDir];
+            } else {
+                this.selectedFiles = [];
+                this.closeMenu();
+            }
+        }
+
 	    var largestHeight = window.innerHeight - menu.offsetHeight - 25;
         var largestWidth = window.innerWidth - menu.offsetWidth - 25;
 
@@ -595,9 +637,6 @@ module.exports = {
 	isPasteAvailable: function() {
 	    if (this.currentDir == null)
 		    return false;
-
-        //if (this.clipboard.op == null)
-        //    return;
 
         if (typeof(this.clipboard) ==  undefined || this.clipboard.op == null || typeof(this.clipboard.op) == "undefined")
                 return;
