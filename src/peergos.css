@@ -3,8 +3,13 @@ body {
 }
 body .grid {
   height: 100%;
-  padding: 2em;
+  padding-top: 60px;
   padding-left: 4em;
+}
+@media (max-width: 980px) {
+  body {
+    padding-top: 0px;
+  }
 }
 .picon {
   font-size: 3em;
