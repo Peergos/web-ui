@@ -3,12 +3,14 @@ module.exports = {
     data: function() {
         return {
 	    showSpinner: false,
-	    fileIndex: 0
+	    fileIndex: -1,
+	    imageData: null
         };
     },
-    props: ['show', 'files'],
+    props: ['show', 'files', 'context'],
     created: function() {
 	console.debug('Gallery module created!');
+	this.updateImageData();
     },
     
     methods: {
@@ -18,6 +20,7 @@ module.exports = {
 	
 	start: function() {
 	    this.fileIndex = 0;
+	    this.updateImageData();
 	},
 
 	end: function() {
@@ -25,6 +28,7 @@ module.exports = {
 		this.fileIndex = 0;
 	    else
 		this.fileIndex = this.files.length - 1;
+	    this.updateImageData();
 	},
 
 	next: function() {
@@ -32,14 +36,46 @@ module.exports = {
 		this.fileIndex = 0;
 	    else
 		this.fileIndex++;
+	    this.updateImageData();
 	},
 
-	next: function() {
+	previous: function() {
 	    if (this.files == null || this.files.length == 0 || this.fileIndex == 0)
 		this.fileIndex = 0;
 	    else
 		this.fileIndex--;
+	    this.updateImageData();
 	},
+
+	imageURL: function() {
+	    if (this.imageData == null)
+		return null;
+	    var blob =  new Blob([this.imageData], {type: "octet/stream"});		
+	    var imageUrl = window.URL.createObjectURL(blob);
+	    console.log("Setting image url to " + imageUrl);
+	    return imageUrl;
+	},
+
+	updateImageData: function() {
+	    var file = this.current;
+	    if (file == null)
+		return;
+	    console.log("downloading " + file.getFileProperties().name);
+	    var props = file.getFileProperties();
+	    var that = this;
+	    var resultingSize = props.sizeLow();
+	    
+	    file.getInputStream(this.context, props.sizeHigh(), props.sizeLow(), function(read) {})
+		.thenCompose(function(reader) {
+		    var data = convertToByteArray(new Int8Array(props.sizeLow()));
+		    data.length = props.sizeLow();
+		    return reader.readIntoArray(data, 0, data.length)
+			.thenApply(function(read){
+			    that.imageData = data;
+			    console.log("Finished retrieving image of size " + data.length);
+			});
+		});
+	}
     },
     computed: {
 	current: function() {
@@ -47,17 +83,5 @@ module.exports = {
 		return null;
 	    return this.files[this.fileIndex];
 	},
-
-	getImageURL: function(file) {
-	    console.log("Getting image");
-	}
-    },
-    asyncComputed: {
-	network: function() {
-	    return new Promise(function(resolve, reject) {
-		peergos.shared.NetworkAccess.buildJS()
-		    .thenApply(function(network){resolve(network)});
-	    });
-	}
     }
 };
