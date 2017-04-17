@@ -2,8 +2,11 @@
   <div class="modal-container" @click.stop style="height:90%;width:90%;overflow-y:auto" @keyup.right="next" @keyup.left="previous">
     <spinner v-if="showSpinner"></spinner>
     <center style="height:100%" @keyup.right="next" @keyup.left="previous">
-      <img style="height:90%;max-width:100%;max-height:90%;" v-touch:tap="next()" v-on:longpress="openMenu($event, current)" v-on:contextmenu="openMenu($event, current)" v-bind:src="imageURL" alt="View not supported for this file type" @keyup.right="next" @keyup.left="previous"/>
+      <img style="height:90%;max-width:100%;max-height:85%;text-align:center;line-height:200px" v-touch:tap="next()" v-on:longpress="openMenu($event, current)" v-on:contextmenu="openMenu($event, current)" v-bind:src="imageURL" alt="View not supported for this file type" @keyup.right="next" @keyup.left="previous"/>
 
+      <center>
+	<h2>{{ current.getFileProperties().name }}</h2>
+      </center>
       <center>
 	<div class="btn-group" style="padding:10px;">
 	  <button @click="start()" class="btn btn-large center-block btn-primary">First</button>

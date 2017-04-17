@@ -42,7 +42,7 @@ module.exports = {
 	next: function() {
 	    if (this.files == null || this.files.length == 0)
 		this.fileIndex = 0;
-	    else
+	    else if (this.fileIndex < this.files.length - 1)
 		this.fileIndex++;
 	    this.updateImageData();
 	},
@@ -58,6 +58,8 @@ module.exports = {
 	updateImageData: function() {
 	    var file = this.current;
 	    if (file == null)
+		return;
+	    if (file.isDirectory())
 		return;
 	    console.log("downloading " + file.getFileProperties().name);
 	    var props = file.getFileProperties();
