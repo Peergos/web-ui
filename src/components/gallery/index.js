@@ -47,15 +47,6 @@ module.exports = {
 	    this.updateImageData();
 	},
 
-	imageURL: function() {
-	    if (this.imageData == null)
-		return null;
-	    var blob =  new Blob([this.imageData], {type: "octet/stream"});		
-	    var imageUrl = window.URL.createObjectURL(blob);
-	    console.log("Setting image url to " + imageUrl);
-	    return imageUrl;
-	},
-
 	updateImageData: function() {
 	    var file = this.current;
 	    if (file == null)
@@ -83,5 +74,15 @@ module.exports = {
 		return null;
 	    return this.files[this.fileIndex];
 	},
+	
+	imageURL: function() {
+	    console.log("Getting image url");
+	    if (this.imageData == null)
+		return null;
+	    var blob =  new Blob([this.imageData], {type: "octet/stream"});		
+	    var imageUrl = window.URL.createObjectURL(blob);
+	    console.log("Setting image url to " + imageUrl);
+	    return imageUrl;
+	}
     }
 };
