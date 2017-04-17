@@ -39,6 +39,7 @@
   <li id='rename-file' v-if="isWritable" v-on:click="rename">Rename</li>
   <li id='delete-file' v-if="isWritable" v-on:click="delete">Delete</li>
   <li id='open-file' v-on:click="downloadAll">Open</li>
+  <li id='gallery' v-on:click="gallery">Slideshow</li>
   <li id='copy-file' v-on:click="copy">Copy</li>
   <li id='cut-file' v-if="isWritable" v-on:click="cut">Cut</li>
   <li id='paste-file' v-if="isPasteAvailable" v-on:click="paste">Paste</li>
@@ -52,6 +53,8 @@
 <shared-with-modal :show.sync="showSharedWith" :data.sync="sharedWithData"></shared-with-modal>
 <social v-if="showSocial" :show.sync="showSocial" :data.sync="social" :context.sync="context" :externalchange.sync="externalChange" :messages.sync="messages"></social>
 <password v-if="showPassword" :show.sync="showPassword" :changepassword.sync="changePassword"></password>
+
+<gallery v-if="showGallery" :show.sync="showGallery" :files.sync="sortedFiles"></gallery>
 
 <message v-for="message in messages" :show.sync="message.show" :title.sync="message.title" :message.sync="message.body"></message>
 <prompt v-if="showPrompt" :prompt_message.sync='prompt_message' :show.sync="showPrompt" :placeholder.sync="prompt_placeholder" :consumer_func.sync="prompt_consumer_func"></prompt>

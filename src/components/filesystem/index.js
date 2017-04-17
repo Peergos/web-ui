@@ -24,6 +24,7 @@ module.exports = {
 	    showSharedWith:false,
 	    sharedWithData:{},
 	    showSocial:false,
+	    showGallery:false,
 	    showPassword:false,
 	    showSettingsMenu:false,
 	    messages: [],
@@ -365,6 +366,14 @@ module.exports = {
 		    var file = this.selectedFiles[i];
 		    this.navigateOrDownload(file);
 	    }    
+	},
+	
+	gallery: function() {
+	    // TODO: once we support selecting files re-enable this
+	    //if (this.selectedFiles.length == 0)
+	    //    return;
+	    this.closeMenu();
+	    this.showGallery = true;
 	},
 	
 	navigateOrDownload: function(file) {
