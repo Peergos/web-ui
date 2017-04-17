@@ -3,7 +3,7 @@ module.exports = {
     data: function() {
         return {
 	    showSpinner: false,
-	    fileIndex: -1,
+	    fileIndex: 0,
 	    imageData: null
         };
     },
