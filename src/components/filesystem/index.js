@@ -475,7 +475,6 @@ module.exports = {
 
 	openMenu: function(e, file) {
 	    if (this.ignoreEvent) {
-		    this.ignoreEvent = false;
 		    e.preventDefault();
 		    return;
         }
@@ -583,6 +582,7 @@ module.exports = {
 	
 	closeMenu: function() {
 	    this.viewMenu = false;
+        this.ignoreEvent = false;
 	}
     },
     computed: {
