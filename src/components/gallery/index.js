@@ -63,7 +63,7 @@ module.exports = {
 	    var props = file.getFileProperties();
 	    var that = this;
 	    var resultingSize = props.sizeLow();
-	    
+	    this.showSpinner = true;
 	    file.getInputStream(this.context, props.sizeHigh(), props.sizeLow(), function(read) {})
 		.thenCompose(function(reader) {
 		    var data = convertToByteArray(new Int8Array(props.sizeLow()));
@@ -71,6 +71,7 @@ module.exports = {
 		    return reader.readIntoArray(data, 0, data.length)
 			.thenApply(function(read){
 			    that.imageData = data;
+			    that.showSpinner = false;
 			    console.log("Finished retrieving image of size " + data.length);
 			});
 		});
