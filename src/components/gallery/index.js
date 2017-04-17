@@ -32,23 +32,23 @@ module.exports = {
 	},
 
 	end: function() {
-	    if (this.files == null || this.files.length == 0)
+	    if (this.imageFiles == null || this.imageFiles.length == 0)
 		this.fileIndex = 0;
 	    else
-		this.fileIndex = this.files.length - 1;
+		this.fileIndex = this.imageFiles.length - 1;
 	    this.updateImageData();
 	},
 
 	next: function() {
-	    if (this.files == null || this.files.length == 0)
+	    if (this.imageFiles == null || this.imageFiles.length == 0)
 		this.fileIndex = 0;
-	    else if (this.fileIndex < this.files.length - 1)
+	    else if (this.fileIndex < this.imageFiles.length - 1)
 		this.fileIndex++;
 	    this.updateImageData();
 	},
 
 	previous: function() {
-	    if (this.files == null || this.files.length == 0 || this.fileIndex == 0)
+	    if (this.imageFiles == null || this.imageFiles.length == 0 || this.fileIndex == 0)
 		this.fileIndex = 0;
 	    else
 		this.fileIndex--;
@@ -81,9 +81,15 @@ module.exports = {
     },
     computed: {
 	current: function() {
-	    if (this.files == null || this.files.length == 0)
+	    if (this.imageFiles == null || this.imageFiles.length == 0)
 		return null;
-	    return this.files[this.fileIndex];
+	    return this.imageFiles[this.fileIndex];
+	},
+
+	imageFiles: function() {
+	    if (this.files == null)
+		return null;
+	    return this.files.filter(function(file){return file.getFileProperties().thumbnail.isPresent();});
 	},
 	
 	imageURL: function() {
