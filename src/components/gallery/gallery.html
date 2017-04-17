@@ -1,8 +1,8 @@
 <div class="modal-mask" @click="close" v-show="show" transition="modal">
-  <div class="modal-container" @click.stop style="height:90%;width:90%;overflow-y:auto">
+  <div class="modal-container" @click.stop style="height:90%;width:90%;overflow-y:auto" @keyup.right="next" @keyup.left="previous">
     <spinner v-if="showSpinner"></spinner>
-    <center style="height:100%">
-      <img style="max-width:100%;max-height:90%;" v-touch:tap="next()" v-on:longpress="openMenu($event, current)" v-on:contextmenu="openMenu($event, current)" v-bind:src="imageURL" alt="View not supported for this file type"/>
+    <center style="height:100%" @keyup.right="next" @keyup.left="previous">
+      <img style="max-width:100%;max-height:90%;" v-touch:tap="next()" v-on:longpress="openMenu($event, current)" v-on:contextmenu="openMenu($event, current)" v-bind:src="imageURL" alt="View not supported for this file type" @keyup.right="next" @keyup.left="previous"/>
 
       <center>
 	<div class="btn-group" style="padding:10px;">

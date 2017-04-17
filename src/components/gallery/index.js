@@ -10,12 +10,20 @@ module.exports = {
     props: ['show', 'files', 'context'],
     created: function() {
 	console.debug('Gallery module created!');
+	window.addEventListener('keyup', this.keyup)
 	this.updateImageData();
     },
     
     methods: {
 	close: function() {
 	    this.show = false;
+	},
+
+	keyup: function(e) {
+	    if (e.keyCode == 37)
+		this.previous();
+	    else if (e.keyCode == 39)
+		this.next();
 	},
 	
 	start: function() {
