@@ -713,6 +713,7 @@ module.exports = {
     	    this.context = msg.context;
 	    this.contextUpdates++;
     	    this.initiateDownload = msg.download;
+	    this.showGallery = msg.slideshow;
     	    const that = this;
     	    if (this.context.username == null) {
     		// from a public link

@@ -13,6 +13,13 @@ module.exports = {
 	window.addEventListener('keyup', this.keyup)
 	this.updateImageData();
     },
+
+    watch: {
+	files: function(newFiles) {
+	    this.files = newFiles;
+	    this.updateImageData();
+	}
+    },
     
     methods: {
 	close: function() {

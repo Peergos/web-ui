@@ -39,8 +39,12 @@ module.exports = {
 	    var that = this;
 	    var query = link.indexOf("?");
 	    var download = false;
+	    var slideshow = false;
 	    if (query > 0) {
-		download = true;
+		if (link.indexOf("download=true") > 0)
+		    download = true;
+		if (link.indexOf("slideshow=true") > 0)
+		    slideshow = true;
 		link = link.substring(0, query);
 	    }
 	    peergos.shared.NetworkAccess.buildJS()
@@ -50,7 +54,8 @@ module.exports = {
 			    view:'filesystem', 
 			    props:{
 				context: context,
-				download: download
+				download: download,
+				slideshow: slideshow
 			    }
 			});
 		    });
