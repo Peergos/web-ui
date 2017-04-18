@@ -713,12 +713,14 @@ module.exports = {
     	    this.context = msg.context;
 	    this.contextUpdates++;
     	    this.initiateDownload = msg.download;
-	    this.showGallery = msg.slideshow;
     	    const that = this;
     	    if (this.context.username == null) {
     		// from a public link
     		this.context.getEntryPath().thenApply(function(linkPath) {
     		    that.changePath(linkPath);
+		    Vue.nextTick(function() {
+			that.showGallery = msg.slideshow;
+		    });
     		    if (that.initiateDownload) {
     			that.context.getByPath(that.getPath())
     			    .thenApply(function(file){file.get().getChildren(that.context).thenApply(function(children){
