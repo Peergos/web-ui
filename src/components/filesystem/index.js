@@ -24,6 +24,7 @@ module.exports = {
 	    showSharedWith:false,
 	    sharedWithData:{},
 	    showSocial:false,
+	    showGallery:false,
 	    showPassword:false,
 	    showSettingsMenu:false,
 	    messages: [],
@@ -372,6 +373,14 @@ module.exports = {
 		    var file = this.selectedFiles[i];
 		    this.navigateOrDownload(file);
 	    }    
+	},
+	
+	gallery: function() {
+	    // TODO: once we support selecting files re-enable this
+	    //if (this.selectedFiles.length == 0)
+	    //    return;
+	    this.closeMenu();
+	    this.showGallery = true;
 	},
 	
 	navigateOrDownload: function(file) {
@@ -726,6 +735,9 @@ module.exports = {
     		// from a public link
     		this.context.getEntryPath().thenApply(function(linkPath) {
     		    that.changePath(linkPath);
+		    Vue.nextTick(function() {
+			that.showGallery = msg.slideshow;
+		    });
     		    if (that.initiateDownload) {
     			that.context.getByPath(that.getPath())
     			    .thenApply(function(file){file.get().getChildren(that.context).thenApply(function(children){
