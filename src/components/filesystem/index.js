@@ -269,16 +269,23 @@ module.exports = {
             if(clipboard.fileTreeNode.equals(target)) {
                 return;
             }
+            that.showSpinner = true;
+
             if (clipboard.op == "cut") {
                 console.log("paste-cut "+clipboard.fileTreeNode.getFileProperties().name + " -> "+target.getFileProperties().name);
                 clipboard.fileTreeNode.copyTo(target, this.getContext()).thenCompose(function() {
                     return clipboard.fileTreeNode.remove(that.getContext(), clipboard.parent);
                 }).thenApply(function() {
                     that.currentDirChanged();
+                    that.showSpinner = false;
                 });
             } else if (clipboard.op == "copy") {
                 console.log("paste-copy");
-                clipboard.fileTreeNode.copyTo(target, this.getContext());
+                clipboard.fileTreeNode.copyTo(target, this.getContext())
+                    .thenApply(function() {
+                        that.currentDirChanged();
+                        that.showSpinner = false;
+                    });
             }
             this.clipboard.op = null;
         }
@@ -459,16 +466,22 @@ module.exports = {
             const clipboard = this.clipboard;
             if (typeof(clipboard) ==  undefined || typeof(clipboard.op) == "undefined")
                 return;
+            that.showSpinner = true;
             if (clipboard.op == "cut") {
                 console.log("drop-cut "+clipboard.fileTreeNode.getFileProperties().name + " -> "+target.getFileProperties().name);
                 clipboard.fileTreeNode.copyTo(target, this.getContext()).thenCompose(function() {
                     return clipboard.fileTreeNode.remove(that.getContext(), clipboard.parent);
                 }).thenApply(function() {
                     that.currentDirChanged();
+                    that.showSpinner = false;
                 });
             } else if (clipboard.op == "copy") {
 		        console.log("drop-copy");
-                clipboard.fileTreeNode.copyTo(target, this.getContext());
+                clipboard.fileTreeNode.copyTo(target, this.getContext())
+                    .thenApply(function() {
+                       that.currentDirChanged();
+                       that.showSpinner = false;
+                });
 		    }
         }
 	},
@@ -517,9 +530,13 @@ module.exports = {
         this.prompt_consumer_func = function(prompt_result) {
             if (prompt_result === '')
                     return;
+            this.showSpinner = true;
 		    console.log("Renaming " + old_name + "to "+ prompt_result);
 	        file.rename(prompt_result, that.getContext(), that.currentDir)
-    		    .thenApply(function(b){that.currentDirChanged()});
+    		    .thenApply(function(b){
+    		        that.currentDirChanged();
+                    that.showSpinner = false;
+    		    });
         };
         this.showPrompt =  true;
 	},
