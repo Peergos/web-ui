@@ -69,10 +69,9 @@ module.exports = {
 	    var path = this.getPath();
 	    var that = this;
 	    context.getByPath(path).thenApply(function(file){
-		that.currentDir = file.get();
+		    that.currentDir = file.get();
 	    });
 	},
-
 	updateFollowerNames: function() {
 	    var context = this.getContext();
 	    if (context == null || context.username == null)
@@ -653,7 +652,7 @@ module.exports = {
                 }
             });
         },
-	
+
 	isWritable: function() {
 	    if (this.currentDir == null)
 		    return false;
