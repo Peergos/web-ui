@@ -59,14 +59,16 @@ module.exports = {
 	},
 	
 	sendInitialFollowRequest: function(name) {
-	    console.log("sending follow request to " + name);
-	    var that = this;
-	    this.context.sendInitialFollowRequest(name)
-		.thenApply(function(success) {
-		    that.targetUsername = "";
-		    that.showMessage("Follow request sent!", "");
-		    that.externalchange++;
-		});
+	    if(name !== this.context.username) {
+            console.log("sending follow request to " + name);
+            var that = this;
+            this.context.sendInitialFollowRequest(name)
+            .thenApply(function(success) {
+                that.targetUsername = "";
+                that.showMessage("Follow request sent!", "");
+                that.externalchange++;
+            });
+        }
 	},
 
 	acceptAndReciprocate: function(req) {
