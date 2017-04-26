@@ -7,9 +7,10 @@
       <li id="alternateViewButton" @click="switchView()" class="navbar-brand nopad"><a><span data-toggle="tooltip" data-placement="bottom" title="Switch view" id="altViewSpan" v-bind:class="['pnavbar', 'glyphicon', 'tour-view', grid ? 'glyphicon-list' : 'glyphicon-th-large']"  style="cursor: pointer;"/></a></li>
       <li id="userOptionsButton" @click="showSocialView()" class="navbar-brand nopad">
 	<a>
-          <span data-toggle="tooltip" data-placement="bottom" title="Sharing options" id="sharingOptionsSpan" class="pnavbar glyphicon glyphicon-user tour-social"  style="cursor: pointer;"/>
-          <span id="pendingSpan"></span>
-	</a>
+          <span data-toggle="tooltip" data-placement="bottom" title="Sharing options" id="sharingOptionsSpan" class="pnavbar glyphicon glyphicon-user tour-social"  style="cursor: pointer;">
+          </span>
+        <span id="pendingSpan" class="pending-badge" v-if="social.pending.length > 0">{{ social.pending.length }}</span>
+    </a>
       </li>
     </ul>
   </div>
