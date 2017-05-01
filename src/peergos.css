@@ -13,6 +13,8 @@ body .grid {
 }
 .picon {
   font-size: 3em;
+  word-wrap: break-word;
+  max-width:5em;
 }
 .pnavbar {
   font-size: 1.7em;
