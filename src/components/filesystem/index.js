@@ -127,7 +127,8 @@ module.exports = {
 	},
 
 	mkdir: function(name) {
-	    this.currentDir.mkdir(name, this.getContext(), false)
+	    var context = this.getContext();
+	    this.currentDir.mkdir(name, context.network, false, context.crypto.random)
                 .thenApply(function(x){this.currentDirChanged()}.bind(this));
 	},
 
@@ -191,13 +192,14 @@ module.exports = {
 	    var reader = new browserio.JSFileReader(file);
 	    var java_reader = new peergos.shared.user.fs.BrowserFileReader(reader);
 	    var that = this;
-	    this.currentDir.uploadFile(file.name, java_reader, 0, file.size, this.getContext(), function(len){
+	    var context = this.getContext();
+	    this.currentDir.uploadFileJS(file.name, java_reader, 0, file.size, context.network, context.crypto.random, function(len){
 		progress.done += len.value_0;
 		if (progress.done >= progress.max) {
     		    setTimeout(function(){progress.show = false}, 2000);
 		    that.showSpinner = true;	
 		}
-	    }).thenApply(function(x) {
+	    }, context.fragmenter()).thenApply(function(x) {
                 that.currentDirChanged();
 	    });
 	},
@@ -271,9 +273,10 @@ module.exports = {
             }
             that.showSpinner = true;
 
+	    var context = this.getContext();
             if (clipboard.op == "cut") {
                 console.log("paste-cut "+clipboard.fileTreeNode.getFileProperties().name + " -> "+target.getFileProperties().name);
-                clipboard.fileTreeNode.copyTo(target, this.getContext()).thenCompose(function() {
+                clipboard.fileTreeNode.copyTo(target, context.network, context.crypto.random).thenCompose(function() {
                     return clipboard.fileTreeNode.remove(that.getContext(), clipboard.parent);
                 }).thenApply(function() {
                     that.currentDirChanged();
@@ -281,7 +284,7 @@ module.exports = {
                 });
             } else if (clipboard.op == "copy") {
                 console.log("paste-copy");
-                clipboard.fileTreeNode.copyTo(target, this.getContext())
+                clipboard.fileTreeNode.copyTo(target, context.network, context.crypto.random)
                     .thenApply(function() {
                         that.currentDirChanged();
                         that.showSpinner = false;
@@ -407,8 +410,9 @@ module.exports = {
             done:0,
             max:resultingSize
 	    };
-	    this.progressMonitors.push(progress);
-	    file.getInputStream(this.getContext(), props.sizeHigh(), props.sizeLow(), function(read) {
+	this.progressMonitors.push(progress);
+	var context = this.getContext();
+	    file.getInputStream(context.network, context.crypto.random, props.sizeHigh(), props.sizeLow(), function(read) {
             progress.done += read.value_0;
             if (progress.done >= progress.max)
                 setTimeout(function(){progress.show = false}, 2000);
@@ -475,17 +479,18 @@ module.exports = {
             if (typeof(clipboard) ==  undefined || typeof(clipboard.op) == "undefined")
                 return;
             that.showSpinner = true;
+	    var context = this.getContext();
             if (clipboard.op == "cut") {
                 console.log("drop-cut "+clipboard.fileTreeNode.getFileProperties().name + " -> "+target.getFileProperties().name);
-                clipboard.fileTreeNode.copyTo(target, this.getContext()).thenCompose(function() {
-                    return clipboard.fileTreeNode.remove(that.getContext(), clipboard.parent);
+                clipboard.fileTreeNode.copyTo(target, context.network, context.crypto.random).thenCompose(function() {
+                    return clipboard.fileTreeNode.remove(context.network, clipboard.parent);
                 }).thenApply(function() {
                     that.currentDirChanged();
                     that.showSpinner = false;
                 });
             } else if (clipboard.op == "copy") {
 		        console.log("drop-copy");
-                clipboard.fileTreeNode.copyTo(target, this.getContext())
+                clipboard.fileTreeNode.copyTo(target, context.network, context.crypto.random)
                     .thenApply(function() {
                        that.currentDirChanged();
                        that.showSpinner = false;
@@ -540,7 +545,7 @@ module.exports = {
                     return;
             this.showSpinner = true;
 		    console.log("Renaming " + old_name + "to "+ prompt_result);
-	        file.rename(prompt_result, that.getContext(), that.currentDir)
+	        file.rename(prompt_result, that.getContext().network, that.currentDir)
     		    .thenApply(function(b){
     		        that.currentDirChanged();
                     that.showSpinner = false;
@@ -557,7 +562,7 @@ module.exports = {
             var file = this.selectedFiles[i];
             console.log("deleting: " + file.getFileProperties().name);
             var that = this;
-            file.remove(this.getContext(), this.currentDir)
+            file.remove(this.getContext().network, this.currentDir)
                 .thenApply(function(b){that.currentDirChanged()});
 	    }
 	},
@@ -691,7 +696,7 @@ module.exports = {
 		return Promise.resolve([]);
 	    var that = this;
 	    return new Promise(function(resolve, reject) {
-		current.getChildren(that.getContext()).thenApply(function(children){
+		current.getChildren(that.getContext().network).thenApply(function(children){
 		    var arr = children.toArray();
 		    that.showSpinner = false;
 		    resolve(arr.filter(function(f){
@@ -739,7 +744,7 @@ module.exports = {
 		    });
     		    if (that.initiateDownload) {
     			that.context.getByPath(that.getPath())
-    			    .thenApply(function(file){file.get().getChildren(that.context).thenApply(function(children){
+    			    .thenApply(function(file){file.get().getChildren(that.context.network).thenApply(function(children){
     				var arr = children.toArray();
     				if (arr.length == 1)
     				    that.downloadFile(arr[0]);
