@@ -9,7 +9,7 @@
 	<a>
           <span data-toggle="tooltip" data-placement="bottom" title="Sharing options" id="sharingOptionsSpan" class="pnavbar glyphicon glyphicon-user tour-social"  style="cursor: pointer;">
           </span>
-        <span id="pendingSpan" class="pending-badge" v-if="social.pending.length > 0">{{ social.pending.length }}</span>
+        <span id="pendingSpan" class="pending-badge" v-if="social != null && social.pending.length > 0">{{ social.pending.length }}</span>
     </a>
       </li>
     </ul>
