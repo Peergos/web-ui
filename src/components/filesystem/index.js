@@ -128,8 +128,14 @@ module.exports = {
 
 	mkdir: function(name) {
 	    var context = this.getContext();
+        this.showSpinner = true;
+        var that = this;
+
 	    this.currentDir.mkdir(name, context.network, false, context.crypto.random)
-                .thenApply(function(x){this.currentDirChanged()}.bind(this));
+                .thenApply(function(x){
+                        this.currentDirChanged();
+                        that.showSpinner = false;
+                }.bind(this));
 	},
 
 	askForFile: function() {
@@ -543,7 +549,7 @@ module.exports = {
         this.prompt_consumer_func = function(prompt_result) {
             if (prompt_result === '')
                     return;
-            this.showSpinner = true;
+            that.showSpinner = true;
 		    console.log("Renaming " + old_name + "to "+ prompt_result);
 	        file.rename(prompt_result, that.getContext().network, that.currentDir)
     		    .thenApply(function(b){
@@ -555,15 +561,27 @@ module.exports = {
 	},
 	
 	delete: function() {
-	    if (this.selectedFiles.length == 0)
+        var selectedCount = this.selectedFiles.length;
+	    if (selectedCount == 0)
 		    return;
 	    this.closeMenu();
-	    for (var i=0; i < this.selectedFiles.length; i++) {
+
+        var delete_countdown = {
+                value: selectedCount
+        };
+
+	    for (var i=0; i < selectedCount; i++) {
             var file = this.selectedFiles[i];
             console.log("deleting: " + file.getFileProperties().name);
+            this.showSpinner = true;
             var that = this;
             file.remove(this.getContext().network, this.currentDir)
-                .thenApply(function(b){that.currentDirChanged()});
+                .thenApply(function(b){
+                        that.currentDirChanged();
+                        delete_countdown.value -=1;
+                        if (delete_countdown.value == 0)
+                            that.showSpinner = false;
+                });
 	    }
 	},
     setStyle: function(id, style) {
