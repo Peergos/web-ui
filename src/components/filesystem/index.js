@@ -128,8 +128,13 @@ module.exports = {
 
 	mkdir: function(name) {
 	    var context = this.getContext();
+        this.showSpinner = true;
+        var that = this;
+
 	    this.currentDir.mkdir(name, context.network, false, context.crypto.random)
-                .thenApply(function(x){this.currentDirChanged()}.bind(this));
+                .thenApply(function(x){
+                        this.currentDirChanged()}.bind(this));
+                        that.showSpinner = false;
 	},
 
 	askForFile: function() {
@@ -543,7 +548,7 @@ module.exports = {
         this.prompt_consumer_func = function(prompt_result) {
             if (prompt_result === '')
                     return;
-            this.showSpinner = true;
+            that.showSpinner = true;
 		    console.log("Renaming " + old_name + "to "+ prompt_result);
 	        file.rename(prompt_result, that.getContext().network, that.currentDir)
     		    .thenApply(function(b){
@@ -561,9 +566,13 @@ module.exports = {
 	    for (var i=0; i < this.selectedFiles.length; i++) {
             var file = this.selectedFiles[i];
             console.log("deleting: " + file.getFileProperties().name);
+            this.showSpinner = true;
             var that = this;
             file.remove(this.getContext().network, this.currentDir)
-                .thenApply(function(b){that.currentDirChanged()});
+                .thenApply(function(b){
+                        that.currentDirChanged();
+                        that.showSpinner = false;
+                });
 	    }
 	},
     setStyle: function(id, style) {
