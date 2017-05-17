@@ -11,7 +11,7 @@
 	<table>
 	  <tr>
 	    <td style="text-align:right; padding:20px">
-                <input id="prompt-input" v-model="prompt_result" type="text" placeholder="{{placeholder}}" class="form-control" style="width:200px" autofocus="autofocus" v-on:keyup.enter="getPrompt(this.prompt_result)"></input>
+                <input id="prompt-input" v-model="prompt_result" type="text" placeholder="{{placeholder}}" class="form-control" style="width:200px" v-on:keyup.enter="getPrompt(this.prompt_result)" autofocus></input>
 	    </td>
         <td style="text-align:right"><button id='prompt-button-id' class="btn btn-success" @click="getPrompt(this.prompt_result)">OK</button></td>
 	  </tr>

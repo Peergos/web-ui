@@ -133,8 +133,9 @@ module.exports = {
 
 	    this.currentDir.mkdir(name, context.network, false, context.crypto.random)
                 .thenApply(function(x){
-                        this.currentDirChanged()}.bind(this));
+                        this.currentDirChanged();
                         that.showSpinner = false;
+                }.bind(this));
 	},
 
 	askForFile: function() {
@@ -560,10 +561,16 @@ module.exports = {
 	},
 	
 	delete: function() {
-	    if (this.selectedFiles.length == 0)
+        var selectedCount = this.selectedFiles.length;
+	    if (selectedCount == 0)
 		    return;
 	    this.closeMenu();
-	    for (var i=0; i < this.selectedFiles.length; i++) {
+
+        var delete_countdown = {
+                value: selectedCount
+        };
+
+	    for (var i=0; i < selectedCount; i++) {
             var file = this.selectedFiles[i];
             console.log("deleting: " + file.getFileProperties().name);
             this.showSpinner = true;
@@ -571,7 +578,9 @@ module.exports = {
             file.remove(this.getContext().network, this.currentDir)
                 .thenApply(function(b){
                         that.currentDirChanged();
-                        that.showSpinner = false;
+                        delete_countdown.value -=1;
+                        if (delete_countdown.value == 0)
+                            that.showSpinner = false;
                 });
 	    }
 	},
