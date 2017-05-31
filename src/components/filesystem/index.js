@@ -7,6 +7,7 @@ module.exports = {
             path: [],
 	    currentDir: null,
 	    followerNames: [],
+	    shared: [],
 	    grid: true,
 	    sortBy: "name",
 	    normalSortOrder: true,
@@ -627,7 +628,43 @@ module.exports = {
         this.top = top + 'px';
         this.left = left + 'px';
 	},
-	
+
+    isShared: function(file) {
+
+	    if (this.currentDir == null)
+		    return false;
+
+        var owner = this.currentDir.getOwner();
+        var me = this.username;
+        var pointer = file.pointer.filePointer.toString();
+        console.log("file:" + file.props.name + " " + pointer);
+        if (owner === me) {
+            if(this.shared[pointer] != null) {
+                return this.shared[pointer];
+            } else {
+                this.shared[pointer] = false;
+            }
+            var that = this;
+            if(this.getContext() == null) {
+                return false;
+            }
+            return new Promise(function(resolve, reject) {
+                that.getContext().sharedWith(file)
+                .thenApply(function(usernames) {
+                    if(usernames.size() > 0) {
+                        that.shared[pointer] = true;
+                        resolve(true);
+                    } else {
+                        that.shared[pointer] = false;
+                        resolve(false);
+                    }
+                });
+            });
+        } else {
+            return false;
+        }
+    },
+
 	closeMenu: function() {
 	    this.viewMenu = false;
         this.ignoreEvent = false;
@@ -682,6 +719,17 @@ module.exports = {
 	    return this.currentDir.isWritable();
 	},
 
+	isNotMe: function() {
+	    if (this.currentDir == null)
+		    return true;
+
+        var owner = this.currentDir.getOwner();
+        var me = this.username;
+        if (owner === me) {
+            return false;
+        }
+        return true;
+	},
 	isPasteAvailable: function() {
 	    if (this.currentDir == null)
 		    return false;
