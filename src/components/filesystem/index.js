@@ -7,7 +7,6 @@ module.exports = {
             path: [],
 	    currentDir: null,
 	    followerNames: [],
-	    shared: [],
 	    grid: true,
 	    sortBy: "name",
 	    normalSortOrder: true,
@@ -638,32 +637,7 @@ module.exports = {
         var pointer = file.pointer.filePointer.toString();
         console.log("file:" + file.props.name + " " + pointer);
         if (owner === me) {
-            // null = re-calc
-            // 0 = false, waiting for response
-            // 1 = false, not shared
-            // 2 = true, shared
-            if(this.shared[pointer] != null) {
-                if(this.shared[pointer] == 1)
-                    return false
-                if(this.shared[pointer] == 2)
-                    return true
-                return false;
-            } else {
-                this.shared[pointer] = 0;
-                var that = this;
-                if(this.getContext() == null) {
-                    return false;
-                }
-                this.getContext().sharedWith(file)
-                .thenApply(function(usernames) {
-                    if(usernames.size() > 0) {
-                        that.shared[pointer] = 2;
-                    } else {
-                        that.shared[pointer] = 1;
-                    }
-                });
-                return false;
-            }
+            return this.getContext().isShared(file);
         } else {
             return false;
         }

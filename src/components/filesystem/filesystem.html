@@ -50,7 +50,7 @@
 </ul>
 
 <modal :show.sync="showModal" :title.sync="modalTitle" :links.sync="modalLinks"></modal>
-<share-with v-if="showShare" :show.sync="showShare" :files.sync="selectedFiles" :context.sync="context" :usernames.sync="followerNames" :messages.sync="messages" :shared.sync="shared"></share-with>
+<share-with v-if="showShare" :show.sync="showShare" :files.sync="selectedFiles" :context.sync="context" :usernames.sync="followerNames" :messages.sync="messages"></share-with>
 <shared-with-modal :show.sync="showSharedWith" :data.sync="sharedWithData"></shared-with-modal>
 <social v-if="showSocial" :show.sync="showSocial" :data.sync="social" :context.sync="context" :externalchange.sync="externalChange" :messages.sync="messages"></social>
 <password v-if="showPassword" :show.sync="showPassword" :changepassword.sync="changePassword"></password>

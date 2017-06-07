@@ -20,10 +20,6 @@ module.exports = {
 	    if (this.files.length != 1)
 		throw "Unimplemented multiple file share call";
 
-        var pointer = this.files[0].pointer.filePointer.toString();
-        this.shared[pointer] = null;
-        console.log("file:" + this.files[0].getFileProperties().name + " " + pointer);
-
 	    var that = this;
 	    this.context.shareWith(this.files[0], targetUsername)
 		.thenApply(function(b) {
