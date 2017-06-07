@@ -628,7 +628,6 @@ module.exports = {
         this.top = top + 'px';
         this.left = left + 'px';
 	},
-
     isShared: function(file) {
 
 	    if (this.currentDir == null)
@@ -639,27 +638,32 @@ module.exports = {
         var pointer = file.pointer.filePointer.toString();
         console.log("file:" + file.props.name + " " + pointer);
         if (owner === me) {
+            // null = re-calc
+            // 0 = false, waiting for response
+            // 1 = false, not shared
+            // 2 = true, shared
             if(this.shared[pointer] != null) {
-                return this.shared[pointer];
-            } else {
-                this.shared[pointer] = false;
-            }
-            var that = this;
-            if(this.getContext() == null) {
+                if(this.shared[pointer] == 1)
+                    return false
+                if(this.shared[pointer] == 2)
+                    return true
                 return false;
-            }
-            return new Promise(function(resolve, reject) {
-                that.getContext().sharedWith(file)
+            } else {
+                this.shared[pointer] = 0;
+                var that = this;
+                if(this.getContext() == null) {
+                    return false;
+                }
+                this.getContext().sharedWith(file)
                 .thenApply(function(usernames) {
                     if(usernames.size() > 0) {
-                        that.shared[pointer] = true;
-                        resolve(true);
+                        that.shared[pointer] = 2;
                     } else {
-                        that.shared[pointer] = false;
-                        resolve(false);
+                        that.shared[pointer] = 1;
                     }
                 });
-            });
+                return false;
+            }
         } else {
             return false;
         }
