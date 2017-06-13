@@ -1,52 +1,51 @@
 <nav class="navbar navbar-inverse navbar-static-top" role="navigation">
-  <div>
-    <ul class="nav navbar-nav">
-      <li id="homeButton" @click="goHome()" class="navbar-brand nopad"><a><span data-toggle="tooltip" data-placement="bottom" title="Home" class="pnavbar glyphicon glyphicon-home tour-home" style="cursor: pointer;"/></a></li>
-      <li id="uploadButton" @click="askForFile()" v-if="isWritable" class="navbar-brand nopad"><a><span data-toggle="tooltip" data-placement="bottom" title="Upload file" class="pnavbar glyphicon glyphicon-upload tour-upload"  style="cursor: pointer;"/></a></li>
-      <li id="mkdirButton" @click="askMkdir()" v-if="isWritable" class="navbar-brand nopad"><a><span data-toggle="tooltip" data-placement="bottom" title="Create new directory" class="pnavbar glyphicon glyphicon-folder-open tour-mkdir"  style="cursor: pointer;"/></a></li>
-      <li id="alternateViewButton" @click="switchView()" class="navbar-brand nopad"><a><span data-toggle="tooltip" data-placement="bottom" title="Switch view" id="altViewSpan" v-bind:class="['pnavbar', 'glyphicon', 'tour-view', grid ? 'glyphicon-list' : 'glyphicon-th-large']"  style="cursor: pointer;"/></a></li>
-      <li id="userOptionsButton" @click="showSocialView()" class="navbar-brand nopad">
-	<a>
-          <span data-toggle="tooltip" data-placement="bottom" title="Sharing options" id="sharingOptionsSpan" class="pnavbar glyphicon glyphicon-user tour-social"  style="cursor: pointer;">
-          </span>
-        <span id="pendingSpan" class="pending-badge" v-if="social != null && social.pending.length > 0">{{ social.pending.length }}</span>
-    </a>
-      </li>
-    </ul>
-  </div>
-  <a id="pathSpan" style="font-size:28px;"><span data-toggle="tooltip" data-placement="bottom" title="Current location" class="pnavbar glyphicon glyphicon-chevron-right tour-path" style="vertical-align:'middle';"/></a>
-  <span class="tour-path" v-for="dir in path" track-by="$index">
-    <button @click="goBackToLevel($index+1)" class="btn_pnavbar btn tour-path">{{dir}}</button>
-    <span class="divider"> </span>
-  </span>
+    <div>
+        <ul class="nav navbar-nav">
+            <li id="homeButton" @click="goHome()" class="navbar-brand nopad"><a><span data-toggle="tooltip" data-placement="bottom" title="Home" class="pnavbar glyphicon glyphicon-home tour-home" style="cursor: pointer;"/></a></li>
+            <li id="uploadButton" @click="askForFile()" v-if="isWritable" class="navbar-brand nopad"><a><span data-toggle="tooltip" data-placement="bottom" title="Upload file" class="pnavbar glyphicon glyphicon-upload tour-upload" style="cursor: pointer;"/></a></li>
+            <li id="mkdirButton" @click="askMkdir()" v-if="isWritable" class="navbar-brand nopad"><a><span data-toggle="tooltip" data-placement="bottom" title="Create new directory" class="pnavbar glyphicon glyphicon-folder-open tour-mkdir" style="cursor: pointer;"/></a></li>
+            <li id="alternateViewButton" @click="switchView()" class="navbar-brand nopad"><a><span data-toggle="tooltip" data-placement="bottom" title="Switch view" id="altViewSpan" v-bind:class="['pnavbar', 'glyphicon', 'tour-view', grid ? 'glyphicon-list' : 'glyphicon-th-large']" style="cursor: pointer;"/></a></li>
+            <li id="userOptionsButton" @click="showSocialView()" class="navbar-brand nopad">
+                <a>
+                    <span data-toggle="tooltip" data-placement="bottom" title="Sharing options" id="sharingOptionsSpan" class="pnavbar glyphicon glyphicon-user tour-social" style="cursor: pointer;"/>
+                        <span id="pendingSpan" class="pending-badge" v-if="social != null && social.pending.length > 0">{{ social.pending.length }}</span>
+                </a>
+            </li>
+        </ul>
+    </div>
+    <a id="pathSpan" style="font-size:28px;"><span data-toggle="tooltip" data-placement="bottom" title="Current location" class="pnavbar glyphicon glyphicon-chevron-right tour-path" style="vertical-align:'middle';"/></a>
+    <span class="tour-path" v-for="dir in path" track-by="$index">
+        <button @click="goBackToLevel($index+1)" class="btn_pnavbar btn tour-path">{{dir}}</button>
+        <span class="divider"> </span>
+    </span>
 
-  <ul class="nav navbar-nav navbar-right pnavbar_top_right">
-    <button id="logoutButton" @click="toggleUserMenu()" class="btn top_right_icon tour-logout dropdown-toggle" data-toggle="dropdown" aria-haspopup="true" aria-expanded="true">
-      <span class="glyphicon glyphicon-off"></span>
-      <span class="collapse navbar-collapse">{{username}}</span>
-    </button>
-    <ul id="settingsMenu" v-if="showSettingsMenu" class="dropdown-menu" aria-labelledby="logoutButton" style="cursor:pointer;display:block">
-      <li><a @click="showChangePassword">Change Password</a></li>
-      <li role="separator" class="divider"></li>
-      <li><a @click="logout">Log out</a></li>
+    <ul class="nav navbar-nav navbar-right pnavbar_top_right">
+        <button id="logoutButton" @click="toggleUserMenu()" class="btn top_right_icon tour-logout dropdown-toggle" data-toggle="dropdown" aria-haspopup="true" aria-expanded="true">
+            <span class="glyphicon glyphicon-off"></span>
+            <span class="collapse navbar-collapse">{{username}}</span>
+        </button>
+        <ul id="settingsMenu" v-if="showSettingsMenu" class="dropdown-menu" aria-labelledby="logoutButton" style="cursor:pointer;display:block">
+            <li><a @click="showChangePassword">Change Password</a></li>
+            <li role="separator" class="divider"></li>
+            <li><a @click="logout">Log out</a></li>
+        </ul>
     </ul>
-  </ul>
-  
+
 </nav>
 
 <input type="file" id="uploadInput" @change="uploadFiles" style="display:none;" multiple="" />
 <a id="downloadAnchor" style="display:none"></a>
-<ul id="right-click-menu" tabindex="-1" v-el="right" v-if="viewMenu" v-on:blur="closeMenu"  v-bind:style="{top:top, left:left}">
-  <li id='rename-file' v-if="isWritable" v-on:click="rename">Rename</li>
-  <li id='delete-file' v-if="isWritable" v-on:click="delete">Delete</li>
-  <li id='open-file' v-on:click="downloadAll">Open</li>
-  <li id='gallery' v-on:click="gallery">Slideshow</li>
-  <li id='copy-file' v-on:click="copy">Copy</li>
-  <li id='cut-file' v-if="isWritable" v-on:click="cut">Cut</li>
-  <li id='paste-file' v-if="isPasteAvailable" v-on:click="paste">Paste</li>
-  <li id='public-link-file' v-on:click="createPublicLink">Create public link</li>
-  <li id='share-file' v-on:click="showShareWith">Share</li>
-  <li id='shared-with-file' v-if="isWritable" v-on:click="sharedWith">Shared with</li>
+<ul id="right-click-menu" tabindex="-1" v-el="right" v-if="viewMenu" v-on:blur="closeMenu" v-bind:style="{top:top, left:left}">
+    <li id='rename-file' v-if="isWritable" v-on:click="rename">Rename</li>
+    <li id='delete-file' v-if="isWritable" v-on:click="delete">Delete</li>
+    <li id='open-file' v-on:click="downloadAll">Open</li>
+    <li id='gallery' v-on:click="gallery">Slideshow</li>
+    <li id='copy-file' v-on:click="copy">Copy</li>
+    <li id='cut-file' v-if="isWritable" v-on:click="cut">Cut</li>
+    <li id='paste-file' v-if="isPasteAvailable" v-on:click="paste">Paste</li>
+    <li id='public-link-file' v-on:click="createPublicLink">Create public link</li>
+    <li id='share-file' v-on:click="showShareWith">Share</li>
+    <li id='shared-with-file' v-if="isWritable" v-on:click="sharedWith">Shared with</li>
 </ul>
 
 <modal :show.sync="showModal" :title.sync="modalTitle" :links.sync="modalLinks"></modal>
@@ -62,43 +61,42 @@
 
 
 <div class="progressholder">
-  <progressbar v-for="progress in progressMonitors" :show.sync="progress.show" :title.sync="progress.title" :done.sync="progress.done":max.sync="progress.max"></progressbar>
+    <progressbar v-for="progress in progressMonitors" :show.sync="progress.show" :title.sync="progress.title" :done.sync="progress.done":max.sync="progress.max"></progressbar>
 </div>
 <div id="dnd" @drop="dndDrop($event)" @dragover.prevent class="fillspace" v-on:contextmenu="openMenu($event)">
-  <spinner v-if="showSpinner"></spinner>
+    <spinner v-if="showSpinner"></spinner>
 
-  <div class="grid" v-if="grid">
-    <span class="column" v-for="file in sortedFiles">
-      <span class="grid_icon_wrapper glyphicon" id="grid$index" draggable="true" @dragStart="dragStart($event, file)" @dragover.prevent @drop="drop($event, file)">
-              <a v-bind:id="file.getFileProperties().name" v-on:contextmenu="openMenu($event, file)">
-      <span v-if="!file.getFileProperties().thumbnail.isPresent()" v-touch:tap="navigateOrDownload(file)" v-on:longpress="openMenu($event, file)"  v-bind:class="['file_icon', file.isDirectory() ? 'glyphicon-folder-open' : 'glyphicon-file', 'picon']"> </span>
-        <img v-if="file.getFileProperties().thumbnail.isPresent()" v-touch:tap="navigateOrDownload(file)" v-on:longpress="openMenu($event, file)" v-on:contextmenu="openMenu($event, file)" v-bind:src="getThumbnailURL(file)"/>
-        </a>
-
-        <div class="content picon">
-          <div class="noselect">{{ file.getFileProperties().name }}</div>
-        </div>
-      </span>
-    </span>
-  </div>
-  <div class="table-responsive" v-if="!grid">
-    <table class="table">
-      <thead>
-        <tr style="cursor:pointer;">
-          <th @click="setSortBy('name')">Name <span v-if="sortBy=='name'" v-bind:class="['glyphicon', normalSortOrder ? 'glyphicon-chevron-down' : 'glyphicon-chevron-up']"/></th>
-      <th @click="setSortBy('size')">Size <span v-if="sortBy=='size'" v-bind:class="['glyphicon', normalSortOrder ? 'glyphicon-chevron-down' : 'glyphicon-chevron-up']"/></th>
-      <th @click="setSortBy('type')">Type <span v-if="sortBy=='type'" v-bind:class="['glyphicon', normalSortOrder ? 'glyphicon-chevron-down' : 'glyphicon-chevron-up']"/></th>
-      <th @click="setSortBy('modified')">Modified <span v-if="sortBy=='modified'" v-bind:class="['glyphicon', normalSortOrder ? 'glyphicon-chevron-down' : 'glyphicon-chevron-up']"/></th>
-        </tr>
-      </thead>
-      <tbody>
-        <tr v-for="file in sortedFiles">
-          <td v-bind:id="file.getFileProperties().name" v-on:click="navigateOrDownload(file)" v-on:contextmenu="openMenu($event, file)" style="cursor:pointer">{{ file.getFileProperties().name }}</td>
-      <td>{{ file.getFileProperties().sizeLow() }}</td>
-      <td>{{ file.isDirectory() ? "dir" : "file" }}</td>
-      <td>{{ file.getFileProperties().modified }}</td>
-        </tr>
-      </tbody>
-    </table>
-  </div>
+    <div class="grid" v-if="grid">
+        <span class="column" v-for="file in sortedFiles">
+            <span class="grid_icon_wrapper glyphicon" id="grid$index" draggable="true" @dragStart="dragStart($event, file)" @dragover.prevent @drop="drop($event, file)">
+                <a v-bind:id="file.getFileProperties().name" v-on:contextmenu="openMenu($event, file)">
+                    <span v-if="!file.getFileProperties().thumbnail.isPresent()" v-touch:tap="navigateOrDownload(file)" v-on:longpress="openMenu($event, file)" v-bind:class="['file_icon', file.isDirectory() ? 'glyphicon-folder-open' : 'glyphicon-file', 'picon']"> </span>
+                    <img v-if="file.getFileProperties().thumbnail.isPresent()" v-touch:tap="navigateOrDownload(file)" v-on:longpress="openMenu($event, file)" v-on:contextmenu="openMenu($event, file)" v-bind:src="getThumbnailURL(file)"/>
+                </a>
+                <div class="content picon" >
+                    <div class="noselect">{{ file.getFileProperties().name }}</div>
+                </div>
+            </span>
+        </span>
+    </div>
+    <div class="table-responsive" v-if="!grid">
+        <table class="table">
+            <thead>
+                <tr style="cursor:pointer;">
+                    <th @click="setSortBy('name')">Name <span v-if="sortBy=='name'" v-bind:class="['glyphicon', normalSortOrder ? 'glyphicon-chevron-down' : 'glyphicon-chevron-up']"/></th>
+                    <th @click="setSortBy('size')">Size <span v-if="sortBy=='size'" v-bind:class="['glyphicon', normalSortOrder ? 'glyphicon-chevron-down' : 'glyphicon-chevron-up']"/></th>
+                    <th @click="setSortBy('type')">Type <span v-if="sortBy=='type'" v-bind:class="['glyphicon', normalSortOrder ? 'glyphicon-chevron-down' : 'glyphicon-chevron-up']"/></th>
+                    <th @click="setSortBy('modified')">Modified <span v-if="sortBy=='modified'" v-bind:class="['glyphicon', normalSortOrder ? 'glyphicon-chevron-down' : 'glyphicon-chevron-up']"/></th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr v-for="file in sortedFiles">
+                        <td v-bind:id="file.getFileProperties().name" v-on:click="navigateOrDownload(file)" v-on:contextmenu="openMenu($event, file)" style="cursor:pointer"><a>{{ file.getFileProperties().name }}</a></td>
+                    <td>{{ file.getFileProperties().sizeLow() }}</td>
+                    <td>{{ file.isDirectory() ? "dir" : "file" }}</td>
+                    <td>{{ file.getFileProperties().modified }}</td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
 </div>
