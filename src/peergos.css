@@ -175,6 +175,7 @@ table {
 
 .fillspace { position: absolute; top: 64px; bottom: 0px; left: 0; right: 0; }
 
+
 .pending-badge {
     display: inline-block;
     min-width: 10px;
@@ -189,3 +190,9 @@ table {
     color: black;
     border-radius: 10px;
 }
+
+.column {
+    display: inline-block;
+    vertical-align: top;
+}
+
