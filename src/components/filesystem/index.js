@@ -625,7 +625,6 @@ module.exports = {
         var owner = this.currentDir.getOwner();
         var me = this.username;
         var pointer = file.pointer.filePointer.toString();
-        console.log("file:" + file.props.name + " " + pointer);
         if (owner === me) {
             var result = this.getContext().isShared(file);
             return result;
