@@ -2,8 +2,9 @@ module.exports = {
     template: require('social.html'),
     data: function() {
         return {
-	    targetUsername: ""
-	}
+        targetUsername: "",
+        showSpinner: false 
+	   }
     },
     props: ['show', 'data', 'context', 'externalchange', 'messages'],
     created: function() {
@@ -62,10 +63,12 @@ module.exports = {
 	    if(name !== this.context.username) {
             console.log("sending follow request to " + name);
             var that = this;
+            this.showSpinner = true;
             this.context.sendInitialFollowRequest(name)
             .thenApply(function(success) {
                 that.targetUsername = "";
                 that.showMessage("Follow request sent!", "");
+                that.showSpinner = false;
                 that.externalchange++;
             });
         }
@@ -73,45 +76,55 @@ module.exports = {
 
 	acceptAndReciprocate: function(req) {
 	    var that = this;
+        this.showSpinner = true;
 	    this.context.sendReplyFollowRequest(req, true, true)
 		.thenApply(function(success) {
 		    that.showMessage("Follow request reciprocated!", "");
+            that.showSpinner = false;
 		    that.externalchange++;
 		});
 	},
 	
         accept: function(req) {
 	    var that = this;
+        this.showSpinner = true;
 	    this.context.sendReplyFollowRequest(req, true, false)
 		.thenApply(function(success) {
 		    that.showMessage("Follow request accepted!", "");
+            that.showSpinner = false;
 		    that.externalchange++;
 		});
 	},
 	
         reject: function(req) {
 	    var that = this;
+        this.showSpinner = true;
 	    this.context.sendReplyFollowRequest(req, false, false)
 		.thenApply(function(success) {
-		    this.showMessage("Follow request rejected!", "");
-		    this.externalchange++;
+		    that.showMessage("Follow request rejected!", "");
+            that.showSpinner = false;
+		    that.externalchange++;
 		});
 	},
 
 	removeFollower: function(username) {
 	    var that = this;
+        this.showSpinner = true;
 	    this.context.removeFollower(username)
 		.thenApply(function(success) {
 		    that.showMessage("Removed follower " + username, "");
+            that.showSpinner = false;
 		    that.externalchange++;
 		});
 	},
 	
         unfollow: function(username) {
 	    var that = this;
+        this.showSpinner = true;
 	    this.context.unfollow(username)
 		.thenApply(function(success) {
 		    that.showMessage("Stopped following " + username, "");
+            that.showSpinner = false;
 		    that.externalchange++;
 		});
 	},
