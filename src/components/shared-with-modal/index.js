@@ -1,6 +1,6 @@
 module.exports = {
     template: require('shared-with-modal.html'),
-    props: ['show', 'data', 'files', 'context'],
+    props: ['show', 'data', 'files', 'context', 'externalchange'],
     created: function() {
     },
     methods: {
@@ -17,7 +17,7 @@ module.exports = {
             this.context.unShare(this.files[0], targetUsername)
             .thenApply(function(b) {
                 console.log("unshared " + that.files[0].getFileProperties().name + " with " + targetUsername);
-                //remove from list
+                that.externalchange++;
             });
 
         }

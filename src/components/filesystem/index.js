@@ -22,7 +22,6 @@ module.exports = {
 	    modalLinks:[],
 	    showShare:false,
 	    showSharedWith:false,
-	    sharedWithData:{},
 	    showSocial:false,
 	    showGallery:false,
 	    showPassword:false,
@@ -316,16 +315,7 @@ module.exports = {
 	    if (this.selectedFiles.length != 1)
 		return;
 	    this.closeMenu();
-	    var file = this.selectedFiles[0];
-	    var that = this;
-	    this.getContext().sharedWith(file)
-		.thenApply(function(usernames) {
-		    var unames = usernames.toArray([]);
-		    var filename = file.getFileProperties().name;
-		    var title = filename + " is shared with:";
-		    that.sharedWithData = {title:title, shared_with_users:unames};
-		    that.showSharedWith = true;
-		});
+	    this.showSharedWith = true;
 	},
 	
 	setSortBy: function(prop) {
@@ -637,7 +627,8 @@ module.exports = {
         var pointer = file.pointer.filePointer.toString();
         console.log("file:" + file.props.name + " " + pointer);
         if (owner === me) {
-            return this.getContext().isShared(file);
+            var result = this.getContext().isShared(file);
+            return result;
         } else {
             return false;
         }
@@ -770,6 +761,24 @@ module.exports = {
 		});
 	    });
 	}
+		,sharedWithData: function() {
+    	    var context = this.getContext();
+    	    if (this.selectedFiles.length != 1 || context == null || context.username == null)
+        		return Promise.resolve({title:'', shared_with_users:[] });
+
+    	    var triggerUpdate = this.externalChange;
+    	    var file = this.selectedFiles[0];
+    	    return new Promise(function(resolve, reject) {
+    		context.sharedWith(file).thenApply(function(usernames){
+                var unames = usernames.toArray([]);
+                var filename = file.getFileProperties().name;
+                var title = filename + " is shared with:";
+    		    resolve({
+                    title:title, shared_with_users:unames
+    		    });
+    		});
+    	    });
+    	}
     },
     events: {
 	'parent-msg': function (msg) {
