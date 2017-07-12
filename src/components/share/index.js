@@ -29,17 +29,29 @@ module.exports = {
                     body: "Please add as a friend first",
                     show: true
                 });
+                that.close();
 	        } else {
-                that.context.shareWith(that.files[0], targetUsername)
-                    .thenApply(function(b) {
+                that.context.sharedWith(that.files[0]).thenApply(function(usernames){
+                    var unames = usernames.toArray([]);
+	                if(unames.indexOf(targetUsername) > -1) {
                         that.messages.push({
-                        title: "Success!",
-                        body: "Sharing complete",
-                        show: true
+                            title: "Already shared!",
+                            body: "",
+                            show: true
                         });
-                        that.close();
-                        console.log("shared " + that.files[0].getFileProperties().name + " with " + targetUsername);
-                    });
+	                } else {
+                        that.context.shareWith(that.files[0], targetUsername)
+                            .thenApply(function(b) {
+                                that.messages.push({
+                                title: "Success!",
+                                body: "Sharing complete",
+                                show: true
+                                });
+                                that.close();
+                                console.log("shared " + that.files[0].getFileProperties().name + " with " + targetUsername);
+                            });
+                    }
+                });
             }
         });
 	},
