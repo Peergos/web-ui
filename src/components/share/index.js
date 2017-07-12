@@ -21,16 +21,27 @@ module.exports = {
 		throw "Unimplemented multiple file share call";
 
 	    var that = this;
-	    this.context.shareWith(this.files[0], targetUsername)
-		.thenApply(function(b) {
-		    that.messages.push({
-			title: "Success!",
-			body: "Sharing complete",
-			show: true
-		    });
-		    that.close();
-		    console.log("shared " + this.files[0].getFileProperties().name + " with " + targetUsername);
-		});
+	    this.context.getSocialState().thenApply(function(social){
+	        var followers = social.followerRoots.keySet().toArray([]);
+	        if(followers.indexOf(targetUsername) == -1) {
+	            that.messages.push({
+                    title: "Sharing not possible!",
+                    body: "Please add as a friend first",
+                    show: true
+                });
+	        } else {
+                that.context.shareWith(that.files[0], targetUsername)
+                    .thenApply(function(b) {
+                        that.messages.push({
+                        title: "Success!",
+                        body: "Sharing complete",
+                        show: true
+                        });
+                        that.close();
+                        console.log("shared " + that.files[0].getFileProperties().name + " with " + targetUsername);
+                    });
+            }
+        });
 	},
 	
 	setTypeAhead: function() {
