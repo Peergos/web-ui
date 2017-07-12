@@ -22,6 +22,8 @@ module.exports = {
 	    modalLinks:[],
 	    showShare:false,
 	    showSharedWith:false,
+	    forceSharedWithUpdate:0,
+	    sharedWithData:{},
 	    showSocial:false,
 	    showGallery:false,
 	    showPassword:false,
@@ -57,7 +59,13 @@ module.exports = {
 
 	forceUpdate: function(newUpdateCounter) {
 	    this.updateCurrentDir();
+	},
+
+	forceSharedWithUpdate: function(newCounter) {
+	    this.sharedWithDataUpdate();
+	    this.updateCurrentDir();
 	}
+
     },
     methods: {
 	updateCurrentDir: function() {
@@ -80,7 +88,20 @@ module.exports = {
 		that.followerNames = usernames.toArray([]);
 	    });
 	},
-	
+    sharedWithDataUpdate: function() {
+        var context = this.getContext();
+        if (this.selectedFiles.length != 1 || context == null) {
+            that.sharedWithData = {title:'', shared_with_users:[] };
+        }
+        var file = this.selectedFiles[0];
+        var that = this;
+        context.sharedWith(file).thenApply(function(usernames){
+            var unames = usernames.toArray([]);
+            var filename = file.getFileProperties().name;
+            var title = filename + " is shared with:";
+            that.sharedWithData = {title:title, shared_with_users:unames};
+        });
+    },
 	getContext: function() {
 	    var x = this.contextUpdates;
 	    return this.context;
@@ -315,8 +336,17 @@ module.exports = {
 	    if (this.selectedFiles.length != 1)
 		return;
 	    this.closeMenu();
-	    this.showSharedWith = true;
-	},
+	    var file = this.selectedFiles[0];
+	    var that = this;
+	    this.getContext().sharedWith(file)
+		.thenApply(function(usernames) {
+		    var unames = usernames.toArray([]);
+		    var filename = file.getFileProperties().name;
+		    var title = filename + " is shared with:";
+		    that.sharedWithData = {title:title, shared_with_users:unames};
+		    that.showSharedWith = true;
+		});
+    },
 	
 	setSortBy: function(prop) {
 	    if (this.sortBy == prop)
@@ -760,25 +790,7 @@ module.exports = {
 		});
 	    });
 	}
-		,sharedWithData: function() {
-    	    var context = this.getContext();
-    	    if (this.selectedFiles.length != 1 || context == null || context.username == null)
-        		return Promise.resolve({title:'', shared_with_users:[] });
-
-    	    var triggerUpdate = this.externalChange;
-    	    var file = this.selectedFiles[0];
-    	    return new Promise(function(resolve, reject) {
-    		context.sharedWith(file).thenApply(function(usernames){
-                var unames = usernames.toArray([]);
-                var filename = file.getFileProperties().name;
-                var title = filename + " is shared with:";
-    		    resolve({
-                    title:title, shared_with_users:unames
-    		    });
-    		});
-    	    });
-    	}
-    },
+	},
     events: {
 	'parent-msg': function (msg) {
     	    // `this` in event callbacks are automatically bound
