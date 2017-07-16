@@ -759,16 +759,20 @@ module.exports = {
 	    if (current == null)
 		return Promise.resolve([]);
 	    var that = this;
+	    var path = this.getPath();
 	    return new Promise(function(resolve, reject) {
-		current.getChildren(that.getContext().network).thenApply(function(children){
-		    var arr = children.toArray();
-		    that.showSpinner = false;
-		    resolve(arr.filter(function(f){
-			return !f.getFileProperties().isHidden;
-		    }));
-		});
+	        var context = that.getContext();
+	        if(context != null) {
+                context.getChildren(path).thenApply(function(children){
+                    var arr = children.toArray();
+                    that.showSpinner = false;
+                    resolve(arr.filter(function(f){
+                    return !f.getFileProperties().isHidden;
+                    }));
+                });
+	        }
 	    });
-        },
+    },
 	
 	social: function() {
 	    var context = this.getContext();
