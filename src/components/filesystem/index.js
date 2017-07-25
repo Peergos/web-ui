@@ -755,15 +755,14 @@ module.exports = {
     },
     asyncComputed: {
 	files: function() {
-            var current = this.currentDir;
+        var current = this.currentDir;
 	    if (current == null)
-		return Promise.resolve([]);
+    		return Promise.resolve([]);
 	    var that = this;
-	    var path = this.getPath();
 	    return new Promise(function(resolve, reject) {
 	        var context = that.getContext();
 	        if(context != null) {
-                context.getChildren(path).thenApply(function(children){
+                context.getChildren(current).thenApply(function(children){
                     var arr = children.toArray();
                     that.showSpinner = false;
                     resolve(arr.filter(function(f){
