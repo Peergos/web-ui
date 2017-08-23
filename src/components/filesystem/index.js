@@ -336,9 +336,12 @@ module.exports = {
 
 	changePassword: function(oldPassword, newPassword) {
 	    console.log("Changing password");
+        this.showSpinner = true;
 	    this.getContext().changePassword(oldPassword, newPassword).thenApply(function(newContext){
 		this.contextUpdates++;
 		this.context = newContext;
+        this.showSpinner = false;
+        this.showMessage("Password changed!");
 	    }.bind(this));
 	},
 	
