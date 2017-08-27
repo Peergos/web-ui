@@ -39,12 +39,12 @@ module.exports = {
 	    var that = this;
 	    var query = link.indexOf("?");
 	    var download = false;
-	    var slideshow = false;
+	    var open = false;
 	    if (query > 0) {
 		if (link.indexOf("download=true") > 0)
 		    download = true;
-		if (link.indexOf("slideshow=true") > 0)
-		    slideshow = true;
+		if (link.indexOf("open=true") > 0)
+		    open = true;
 		link = link.substring(0, query);
 	    }
 	    peergos.shared.NetworkAccess.buildJS()
@@ -55,7 +55,7 @@ module.exports = {
 			    props:{
 				context: context,
 				download: download,
-				slideshow: slideshow
+				open: open
 			    }
 			});
 		    });
