@@ -638,8 +638,9 @@ module.exports = {
     },
     computed: {
         sortedFiles: function() {
-	    if (this.files == null)
-		return [];
+	    if (this.files == null) {
+    		return [];
+        }
 	    var sortBy = this.sortBy;
 	    var reverseOrder = ! this.normalSortOrder;
             return this.files.slice(0).sort(function(a, b) {
@@ -761,7 +762,7 @@ module.exports = {
     		this.context.getEntryPath().thenApply(function(linkPath) {
     		    that.changePath(linkPath);
 		    Vue.nextTick(function() {
-			that.showGallery = msg.slideshow;
+			that.showGallery = msg.open;
 		    });
     		    if (that.initiateDownload) {
     			that.context.getByPath(that.getPath())
