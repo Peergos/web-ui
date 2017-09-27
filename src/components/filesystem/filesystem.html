@@ -91,7 +91,7 @@
             </thead>
             <tbody>
                 <tr v-for="file in sortedFiles">
-                        <td v-bind:id="file.getFileProperties().name" v-on:click="navigateOrDownload(file)" v-on:contextmenu="openMenu($event, file)" style="cursor:pointer"><a>{{ file.getFileProperties().name }}</a></td>
+                    <td v-bind:id="file.getFileProperties().name" v-on:click="navigateOrDownload(file)" v-on:contextmenu="openMenu($event, file)" style="cursor:pointer"><a>{{ file.getFileProperties().name }}</a></td>
                     <td>{{ file.getFileProperties().sizeLow() }}</td>
                     <td>{{ file.isDirectory() ? "dir" : "file" }}</td>
                     <td>{{ file.getFileProperties().modified }}</td>
@@ -100,5 +100,5 @@
         </table>
     </div>
     <audio id="hidden_audio"/>
-    <video id="hidden_video"/>
+        <video id="hidden_video"/>
 </div>

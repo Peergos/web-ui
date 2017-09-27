@@ -3,34 +3,34 @@
     <head>
         <meta charset="UTF-8">
         <meta name="viewport" content="width=device-width, initial-scale=1">
-            <title>Peergos</title>
-            <link rel="stylesheet" type="text/css" href="css/vendor.css">
-                <link rel="stylesheet" type="text/css" href="css/peergos.css">
-                    <script src="js/sha256.min.js"></script>
-                    <script src="js/nacl-fast.min.js"></script>
-                    <script src="js/scrypt.js"></script>
-                    <script src="js/vendor.js"></script>
-                    <script src="js/peergoslib.nocache.js"></script>
-                    <script src="js/wrapper.js"></script>
-                    <script src="js/StreamSaver.js"></script>
-                    
+        <title>Peergos</title>
+        <link rel="stylesheet" type="text/css" href="css/vendor.css">
+        <link rel="stylesheet" type="text/css" href="css/peergos.css">
+        <script src="js/sha256.min.js"></script>
+        <script src="js/nacl-fast.min.js"></script>
+        <script src="js/scrypt.js"></script>
+        <script src="js/vendor.js"></script>
+        <script src="js/peergoslib.nocache.js"></script>
+        <script src="js/wrapper.js"></script>
+        <script src="js/StreamSaver.js"></script>
+
     </head>
     <body>
-      <script type="text/javascript">
-	function initStart() {
-	var script = document.createElement('script');
-	script.type = 'text/javascript';
-	script.src = 'js/peergos.js';
-	document.body.appendChild(script);
-	}
-	
-	var initJS = {
-	NativeInit: function() {
-	this.init = initStart;
-	}
-	};		
-      </script>
-      
-      <component :is="currentView"></component>
+        <script type="text/javascript">
+function initStart() {
+    var script = document.createElement('script');
+    script.type = 'text/javascript';
+    script.src = 'js/peergos.js';
+    document.body.appendChild(script);
+}
+
+var initJS = {
+    NativeInit: function() {
+        this.init = initStart;
+    }
+};		
+        </script>
+
+        <component :is="currentView"></component>
     </body>
 </html>

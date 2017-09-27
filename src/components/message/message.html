@@ -1,16 +1,16 @@
 <div class="modal-mask" @click="closeMessage" v-show="show" transition="modal">
-  <div class="modal-container" @click.stop>
-    
-    <div class="modal-header">
-      <h3>{{ title }}</h3>
+    <div class="modal-container" @click.stop>
+
+        <div class="modal-header">
+            <h3>{{ title }}</h3>
+        </div>
+
+        <div class="modal-body">
+            <div class="container">
+                <div>{{ message }}</div>
+                <p/>
+                <button class="btn btn-success" @click="closeMessage">Ok</button>
+            </div>
+        </div>
     </div>
-    
-    <div class="modal-body">
-      <div class="container">
-	<div>{{ message }}</div>
-	<p/>
-	<button class="btn btn-success" @click="closeMessage">Ok</button>
-      </div>
-    </div>
-  </div>
 </div>
