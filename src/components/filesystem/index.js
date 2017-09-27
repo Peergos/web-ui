@@ -419,6 +419,7 @@ module.exports = {
             done:0,
             max:resultingSize
 	    };
+	    var that = this;
 	this.progressMonitors.push(progress);
 	var context = this.getContext();
 	    file.getInputStream(context.network, context.crypto.random, props.sizeHigh(), props.sizeLow(), function(read) {
@@ -426,27 +427,58 @@ module.exports = {
             if (progress.done >= progress.max)
                 setTimeout(function(){progress.show = false}, 2000);
         }).thenCompose(function(reader) {
-            var data = convertToByteArray(new Int8Array(props.sizeLow()));
-            data.length = props.sizeLow();
-            return reader.readIntoArray(data, 0, data.length)
-                .thenApply(function(read){that.openItem(props.name, data)});
+            if(that.supportsStreaming()) {
+                var size = props.sizeLow();
+                var maxBlockSize = 1024 * 1024 * 5;
+                var blockSize = size > maxBlockSize ? maxBlockSize : size;
+
+                console.log("saving data of length " + size + " to " + props.name);
+                let fileStream = streamSaver.createWriteStream(props.name)
+                let writer = fileStream.getWriter()
+                let pump = () => {
+                    if(blockSize == 0) {
+                        writer.close()
+                    } else {
+                        var data = convertToByteArray(new Uint8Array(blockSize));
+                        data.length = blockSize;
+                        reader.readIntoArray(data, 0, blockSize)
+                                .thenApply(function(read){
+                                    size = size - read;
+                                    blockSize = size > maxBlockSize ? maxBlockSize : size;
+                                    writer.write(data).then(()=>{setTimeout(pump)})
+                                });
+                    }
+                }
+                pump()
+            } else {
+                var data = convertToByteArray(new Int8Array(props.sizeLow()));
+                data.length = props.sizeLow();
+                return reader.readIntoArray(data, 0, data.length)
+                    .thenApply(function(read){that.openItem(props.name, data)});
+            }
         });
 	},
-
-	openItem: function(name, data) {
+    supportsStreaming: function() {
+    	try {
+		    return 'serviceWorker' in navigator && !!new ReadableStream() && !!new WritableStream()
+	    } catch(err) {
+	        return false;
+        }
+    },
+    openItem: function(name, data) {
 	    console.log("saving data of length " + data.length + " to " + name);
 	    if(this.url != null){
 		    window.URL.revokeObjectURL(this.url);
 	    }
-	    
-	    var blob =  new Blob([data], {type: "octet/stream"});		
+
+	    var blob =  new Blob([data], {type: "octet/stream"});
 	    this.url = window.URL.createObjectURL(blob);
 	    var link = document.getElementById("downloadAnchor");
 	    link.href = this.url;
 	    link.download = name;
 	    link.click();
 	},
-	
+
     getPath: function() {
         return '/'+this.path.join('/') + (this.path.length > 0 ? "/" : "");
     },
