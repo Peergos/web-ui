@@ -17,7 +17,7 @@
 		}
 	}
    
-	streamSaver.mitm = '/mitm.html?version=' +
+	streamSaver.worker = '/worker.html?version=' +
 		streamSaver.version.full
 
 	try {
@@ -51,7 +51,7 @@
 
 			if(secure && !iframe) {
 				iframe = document.createElement('iframe')
-				iframe.src = streamSaver.mitm
+				iframe.src = streamSaver.worker
 				iframe.hidden = true
 				document.body.appendChild(iframe)
 			}
@@ -71,7 +71,7 @@
 			}
 
 			if(!secure) {
-				popup = window.open(streamSaver.mitm, Math.random())
+				popup = window.open(streamSaver.worker, Math.random())
 				let onready = evt => {
 					if(evt.source === popup){
 						popup.postMessage({filename, size}, '*', [channel.port2])
