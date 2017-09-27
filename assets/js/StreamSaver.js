@@ -16,8 +16,8 @@
 			major: 1, minor: 0, dot: 0
 		}
 	}
-
-	streamSaver.mitm = 'http://localhost:8000/mitm.html?version=' +
+   
+	streamSaver.mitm = '/mitm.html?version=' +
 		streamSaver.version.full
 
 	try {
