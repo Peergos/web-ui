@@ -96,15 +96,23 @@ module.exports = {
             if (file == null)
                 return false;
             var fileName = file.getFileProperties().name;
-            return this.isPlayable(fileName);
+            return this.isPlayable(fileName, "hidden_video");
         },
-        isPlayable: function(filename) {
-            var player = document.createElement("video");
+        isAudio: function(file) {
+            if (file == null)
+                return false;
+            var fileName = file.getFileProperties().name;
+            return this.isPlayable(fileName, "hidden_audio");
+        },
+        isPlayable: function(filename, player_id) {
+            console.log("Looking for element id '"+player_id+"'");
+            var player = document.getElementById(player_id);
             //this will return empty string if the file can definitely not be played
             var ext = this.getExtension(filename);
             if (ext == null)
                 return false;
-            return player.canPlayType('video/' + ext) !== '';
+            var media = player_id.split("_")[1];
+            return player.canPlayType(media + '/' + ext) !== '';
         },
         getExtension: function(filename) {
             var split = filename.split(".");
@@ -138,12 +146,19 @@ module.exports = {
         currentIsImage: function() {
             return this.isImage(this.current);
         },
+        currentIsAudio: function() {
+            return this.isAudio(this.current);
+        },
         showableFiles: function() {
             if (this.files == null)
                 return null;
             var that = this; 
             return this.files.filter(function(file) {
-                return that.isImage(file) || that.isVideo(file);
+                var is_image = that.isImage(file);
+                var is_video = that.isVideo(file);
+                var is_audio = that.isAudio(file); 
+                console.log("is_image "+ is_image+ ", is_video "+ is_video +", is_audio " + is_audio);
+                return is_image || is_video || is_audio; 
             });
         }
     }
