@@ -419,6 +419,7 @@ module.exports = {
             done:0,
             max:resultingSize
 	    };
+	    var that = this;
 	this.progressMonitors.push(progress);
 	var context = this.getContext();
 	    file.getInputStream(context.network, context.crypto.random, props.sizeHigh(), props.sizeLow(), function(read) {
@@ -426,7 +427,7 @@ module.exports = {
             if (progress.done >= progress.max)
                 setTimeout(function(){progress.show = false}, 2000);
         }).thenCompose(function(reader) {
-            if(true) {
+            if(that.supportsStreaming()) {
                 var size = props.sizeLow();
                 var maxBlockSize = 1024 * 1024;
                 var blockSize = size > maxBlockSize ? maxBlockSize : size;
@@ -457,7 +458,13 @@ module.exports = {
             }
         });
 	},
-
+    supportsStreaming: function() {
+    	try {
+		    return 'serviceWorker' in navigator && !!new ReadableStream() && !!new WritableStream()
+	    } catch(err) {
+	        return false;
+        }
+    },
     openItem: function(name, data) {
 	    console.log("saving data of length " + data.length + " to " + name);
 	    if(this.url != null){
