@@ -4,8 +4,8 @@ module.exports = {
     created: function() {
     },
     methods: {
-	close: function () {
-	    this.show = false;
-	}
+        close: function () {
+            this.show = false;
+        }
     }
 }
