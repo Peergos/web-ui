@@ -17,7 +17,6 @@ module.exports = {
     watch: {
         files: function(newFiles) {
             this.files = newFiles;
-            this.updateCurrentFileData();
         }
     },
 
@@ -89,36 +88,20 @@ module.exports = {
         isImage: function(file) {
             if (file == null)
                 return false;
-            var hasThumbnail = file.getFileProperties().thumbnail.isPresent();
-            return hasThumbnail;
+            var mimeType = file.getFileProperties().mimeType;
+            return mimeType.startsWith("image");
         },
         isVideo: function(file) {
             if (file == null)
                 return false;
-            var fileName = file.getFileProperties().name;
-            return this.isPlayable(fileName, "hidden_video");
+            var mimeType = file.getFileProperties().mimeType;
+            return mimeType.startsWith("video");
         },
         isAudio: function(file) {
             if (file == null)
                 return false;
-            var fileName = file.getFileProperties().name;
-            return this.isPlayable(fileName, "hidden_audio");
-        },
-        isPlayable: function(filename, player_id) {
-            console.log("Looking for element id '"+player_id+"'");
-            var player = document.getElementById(player_id);
-            //this will return empty string if the file can definitely not be played
-            var ext = this.getExtension(filename);
-            if (ext == null)
-                return false;
-            var media = player_id.split("_")[1];
-            return player.canPlayType(media + '/' + ext) !== '';
-        },
-        getExtension: function(filename) {
-            var split = filename.split(".");
-            if (split.length == 0)
-                return null;
-            return split.slice(-1)[0];
+            var mimeType = file.getFileProperties().mimeType;
+            return mimeType.startsWith("audio");
         }
     },
     computed: {
