@@ -1,5 +1,5 @@
 <div class="modal-mask" @click="close" v-show="show" transition="modal">
-    <div class="modal-container" @click.stop style="height:90%;width:90%;overflow-y:auto" @keyup.right="next" @keyup.left="previous">
+    <div class="modal-container" @click.stop style="height:95%;width:95%;overflow-y:auto" @keyup.right="next" @keyup.left="previous">
         <spinner v-if="showSpinner"></spinner>
         <center>
             <h2 v-if="current != null" >{{ current.getFileProperties().name }}</h2>
@@ -12,11 +12,10 @@
                 <button @click="end()" class="btn btn-large center-block btn-primary">Last</button>
             </div>
         </center>
-        <center style="height:100%" @keyup.right="next" @keyup.left="previous">
+        <center style="height:75%" @keyup.right="next" @keyup.left="previous">
 
-            <img v-if="currentIsImage" style="height:90%;max-width:100%;max-height:85%;text-align:center;line-height:200px" v-touch:tap="next()" v-on:longpress="openMenu($event, current)" v-on:contextmenu="openMenu($event, current)" v-bind:src="dataURL" alt="Image loading..." @keyup.right="next" @keyup.left="previous"/>
-            <video v-else-if="currentIsVideo" style="height:90%;max-width:100%;max-height:85%;text-align:center;line-height:200px" v-bind:src="dataURL" alt="Video loading..." controls/>
-                <audio v-else-if="currentIsAudio" v-bind:src="dataURL" alt="Audio loading..." controls/>
+            <img v-if="currentIsImage" style="height:100%;max-width:100%;max-height:100%;text-align:center;line-height:200px" v-touch:tap="next()" v-on:longpress="openMenu($event, current)" v-on:contextmenu="openMenu($event, current)" v-bind:src="dataURL" alt="Image loading..." @keyup.right="next" @keyup.left="previous"/>
+            <video v-if="currentIsVideoOrAudio" style="height:100%;max-width:100%;max-height:100%;text-align:center;line-height:200px" v-bind:src="dataURL" alt="Video loading..." controls/>
         </center>
     </div>
 </div>

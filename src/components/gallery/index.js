@@ -81,7 +81,7 @@ module.exports = {
                         .thenApply(function(read){
                             that.imageData = data;
                             that.showSpinner = false;
-                            console.log("Finished retrieving image of size " + data.length);
+                            console.log("Finished retrieving media of size " + data.length);
                         });
                 });
         },
@@ -132,6 +132,9 @@ module.exports = {
         currentIsAudio: function() {
             return this.isAudio(this.current);
         },
+	currentIsVideoOrAudio: function() {
+	    return this.isVideo(this.current) || this.isAudio(this.current);
+	},
         showableFiles: function() {
             if (this.files == null)
                 return null;
