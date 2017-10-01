@@ -306,6 +306,10 @@ function generateThumbnailProm(asyncReader, fileSize, fileName) {
             var b64Thumb = canvas.toDataURL().substring("data:image/png;base64,".length);
             future.complete(b64Thumb);
         }
+	img.onerror = function(e) {
+	    console.log(e);
+	    future.complete("");
+	}
         var blob = new Blob([new Uint8Array(bytes)], {type: "octet/stream"});
         var url = window.URL.createObjectURL(blob);
         img.src = url;
