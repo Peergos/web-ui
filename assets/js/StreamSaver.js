@@ -28,7 +28,7 @@
 		// `chrome://flags/#enable-experimental-web-platform-features`
 	}
 
-	function createWriteStream(filename, queuingStrategy, size) {
+	function createWriteStream(filename, callback, queuingStrategy, size) {
 
 		// normalize arguments
 		if (Number.isFinite(queuingStrategy))
@@ -41,11 +41,7 @@
 				if(evt.data.download) {
 					resolve()
 					if(!secure) popup.close() // don't need the popup any longer
-					let link = document.createElement('a')
-					let click = new MouseEvent('click')
-
-					link.href = evt.data.download
-					link.dispatchEvent(click)
+                    callback(evt.data.download);
 				}
 			}
 

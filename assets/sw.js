@@ -10,7 +10,23 @@ self.onmessage = event => {
 
     let p = new Promise((resolve, reject) => {
         let stream = createStream(resolve, reject, port)
-		map.set(uniqLink, [stream, event.data])
+        var filename = event.data.filename         
+        var headers
+        if(filename.startsWith("media")){
+            headers = {
+                'Content-Type': 'video/mp4'
+            }
+        } else {   
+            // Make filename RFC5987 compatible
+            filename = encodeURIComponent(filename).replace(/['()]/g, escape)
+                .replace(/\*/g, '%2A')
+            headers = {
+                'Content-Type': 'application/octet-stream; charset=utf-8',
+                'Content-Disposition': "attachment; filename*=UTF-8''" + filename
+                }
+                if(event.data.size) headers['Content-Length'] = event.data.size
+            }
+		map.set(uniqLink, [stream, headers])
 		port.postMessage({download: uniqLink})
 
 		// Mistage adding this and have streamsaver.js rely on it
@@ -59,33 +75,23 @@ function createStream(resolve, reject, port){
 	})
 }
 
-
+self.addEventListener('install', event =>  {                                                                                  self.skipWaiting();
+});
+self.addEventListener('activate', event => {
+    clients.claim();
+});
+                                                              
 self.onfetch = event => {
 	let url = event.request.url
 	let hijacke = map.get(url)
-	let listener, filename, headers
 
-	console.log("Handleing ", url)
+	console.log("Handling ", url)
 
 	if(!hijacke) return null
 
-	let [stream, data] = hijacke
-
 	map.delete(url)
 
-	filename = typeof data === 'string' ? data : data.filename
-
-	// Make filename RFC5987 compatible
-	filename = encodeURIComponent(filename)
-		.replace(/['()]/g, escape)
-		.replace(/\*/g, '%2A')
-
-	headers = {
-		'Content-Type': 'application/octet-stream; charset=utf-8',
-		'Content-Disposition': "attachment; filename*=UTF-8''" + filename
-	}
-
-	if(data.size) headers['Content-Length'] = data.size
+    let [stream, headers] = hijacke
 
 	event.respondWith(new Response(stream, { headers }))
 }
