@@ -11,7 +11,8 @@ module.exports = {
             showSpinner: false,
             showError:false,
             errorTitle:'',
-            errorBody:''
+            errorBody:'',
+	    isPublicLink: false
         };
     },
     props: {
@@ -26,6 +27,8 @@ module.exports = {
         const fragment = href.includes("#") ? href.substring(href.indexOf("#") + 1) : "";
         if (fragment.length > 0) {
             // this is a public link
+	    this.isPublicLink = true;
+	    console.log("Navigating to public link...");
             Vue.nextTick(function() {
                 that.gotoPublicLink(fragment);
             });
