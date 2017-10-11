@@ -7,9 +7,14 @@ module.exports = {
             imageData: null
         };
     },
-    props: ['show', 'files', 'context'],
+    props: ['show', 'files', 'context', 'initialFileName'],
     created: function() {
         console.debug('Gallery module created!');
+	var showable = this.showableFiles;
+	for (var i=0; i < showable.length; i++)
+	    if (showable[i].getFileProperties().name == this.initialFileName)
+		this.fileIndex = i;
+	console.log("Set initial gallery index to " + this.fileIndex);
         window.addEventListener('keyup', this.keyup)
             this.updateCurrentFileData();
     },
