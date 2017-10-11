@@ -86,7 +86,8 @@ module.exports = {
                 
                 console.log("streaming data of length " + size);
                 let fileStream = streamSaver.createWriteStream("media-" + props.name, function(url){
-                    that.videoUrl = url;                                        
+                    that.videoUrl = url;
+                    that.showSpinner = false;
                 })
                 let writer = fileStream.getWriter()
                 let pump = () => {
