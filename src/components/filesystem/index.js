@@ -434,7 +434,14 @@ module.exports = {
                     var blockSize = size > maxBlockSize ? maxBlockSize : size;
 
                     console.log("saving data of length " + size + " to " + props.name);
-                    let fileStream = streamSaver.createWriteStream(props.name)
+                           let fileStream = streamSaver.createWriteStream(props.name
+                                , function(url){
+                                    let link = document.createElement('a')
+                                    let click = new MouseEvent('click')
+                                            
+                                    link.href = url
+                                    link.dispatchEvent(click)                                          
+                            })
                         let writer = fileStream.getWriter()
                         let pump = () => {
                             if(blockSize == 0) {

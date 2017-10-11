@@ -4,7 +4,8 @@ module.exports = {
         return {
             showSpinner: false,
             fileIndex: 0,
-            imageData: null
+            imageData: null,
+            videoUrl: null
         };
     },
     props: ['show', 'files', 'context', 'initialFileName'],
@@ -74,8 +75,37 @@ module.exports = {
                 return;
             var props = file.getFileProperties();
             var that = this;
-            var resultingSize = props.sizeLow();
             this.showSpinner = true;
+            if(that.supportsStreaming()) {
+                
+                file.getInputStream(this.context.network, this.context.crypto.random, props.sizeHigh(), props.sizeLow(), function(read) {}).thenCompose(function(reader) {
+                                                   
+                var size = props.sizeLow();
+                var maxBlockSize = 1024 * 1024;
+                var blockSize = size > maxBlockSize ? maxBlockSize : size;
+                
+                console.log("streaming data of length " + size);
+                let fileStream = streamSaver.createWriteStream("media-" + props.name, function(url){
+                    that.videoUrl = url;                                        
+                })
+                let writer = fileStream.getWriter()
+                let pump = () => {
+                    if(blockSize == 0) {
+                        writer.close()
+                    } else {
+                        var data = convertToByteArray(new Uint8Array(blockSize));
+                        data.length = blockSize;
+                        reader.readIntoArray(data, 0, blockSize)
+                        .thenApply(function(read){
+                                   size = size - read;
+                                   blockSize = size > maxBlockSize ? maxBlockSize : size;
+                                   writer.write(data).then(()=>{setTimeout(pump)})
+                                   });
+                    }
+                }
+                pump()
+                });
+            } else {
             file.getInputStream(this.context.network, this.context.crypto.random, 
                     props.sizeHigh(), props.sizeLow(), 
                     function(read) {})
@@ -89,6 +119,14 @@ module.exports = {
                             console.log("Finished retrieving media of size " + data.length);
                         });
                 });
+            }
+        },
+        supportsStreaming: function() {
+            try {
+                return 'serviceWorker' in navigator && !!new ReadableStream() && !!new WritableStream()
+            } catch(err) {
+                return false;
+            }
         },
         isImage: function(file) {
             if (file == null)
@@ -119,6 +157,12 @@ module.exports = {
         },
         dataURL: function() {
             console.log("Getting data url");
+            
+            if (this.videoUrl != null) {
+                var url = this.videoUrl;
+                this.videoUrl = null;
+                return url;
+            }
             if (this.imageData == null) {
                 console.log("No URL for null imageData");
                 return null;
