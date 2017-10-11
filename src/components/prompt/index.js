@@ -3,7 +3,7 @@ module.exports = {
     data: function() {
         return {'prompt_result': ''}
     },
-    props: ['show', 'prompt_message', 'placeholder', 'consumer_func'],
+    props: ['show', 'prompt_message', 'placeholder', 'value', 'consumer_func'],
     created: function() {
     },
     methods: {

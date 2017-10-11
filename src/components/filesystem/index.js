@@ -34,6 +34,7 @@ module.exports = {
             externalChange:0,
             prompt_message: '',
             prompt_placeholder: '',
+	    prompt_value: '',
             showPrompt: false,
             showSpinner: true,
             initiateDownload: false // used to trigger a download for a public link to a file
@@ -578,8 +579,9 @@ module.exports = {
             var old_name =  file.getFileProperties().name
                 this.closeMenu();
 
-            this.prompt_placeholder='New name';
-            this.prompt_message='Enter a new name';
+            this.prompt_placeholder = 'New name';
+	    this.prompt_value = old_name;
+            this.prompt_message = 'Enter a new name';
             var that = this;
             this.prompt_consumer_func = function(prompt_result) {
                 if (prompt_result === '')
