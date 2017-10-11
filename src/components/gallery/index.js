@@ -76,7 +76,7 @@ module.exports = {
                 file.getInputStream(this.context.network, this.context.crypto.random, props.sizeHigh(), props.sizeLow(), function(read) {}).thenCompose(function(reader) {
                                                    
                 var size = props.sizeLow();
-                var maxBlockSize = 1024 * 1024 * 5;
+                var maxBlockSize = 1024 * 1024;
                 var blockSize = size > maxBlockSize ? maxBlockSize : size;
                 
                 console.log("streaming data of length " + size);
