@@ -4,7 +4,7 @@
         <center>
             <h2 v-if="current != null" >{{ current.getFileProperties().name }}</h2>
         </center>
-        <center>
+        <center v-if="showableFiles.length > 1">
             <div class="btn-group" style="padding:10px;">
                 <button @click="start()" class="btn btn-large center-block btn-primary">First</button>
                 <button @click="previous()" class="btn btn-large center-block btn-primary">Previous</button>
