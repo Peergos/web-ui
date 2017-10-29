@@ -37,7 +37,8 @@ module.exports = {
 	    prompt_value: '',
             showPrompt: false,
             showSpinner: true,
-            initiateDownload: false // used to trigger a download for a public link to a file
+            initiateDownload: false, // used to trigger a download for a public link to a file
+	    onUpdateCompletion: [] // methods to invoke when current dir is next refreshed
         };
     },
     props: {
@@ -62,6 +63,13 @@ module.exports = {
         }
     },
     methods: {
+	processPending: function() {
+	    for (var i=0; i < this.onUpdateCompletion.length; i++) {
+		this.onUpdateCompletion[i].call();
+	    }
+	    this.onUpdateCompletion = [];
+	},
+	
         updateCurrentDir: function() {
             var context = this.getContext();
             if (context == null)
@@ -73,6 +81,7 @@ module.exports = {
                 that.currentDir = file.get();
             });
         },
+	
         updateFollowerNames: function() {
             var context = this.getContext();
             if (context == null || context.username == null)
@@ -135,7 +144,9 @@ module.exports = {
             this.currentDir.mkdir(name, context.network, false, context.crypto.random)
                 .thenApply(function(x){
                     this.currentDirChanged();
-                    that.showSpinner = false;
+		    that.onUpdateCompletion.push(function() {
+                        that.showSpinner = false;
+		    });
                 }.bind(this));
         },
 
@@ -287,14 +298,18 @@ module.exports = {
                         return clipboard.fileTreeNode.remove(that.getContext(), clipboard.parent);
                     }).thenApply(function() {
                         that.currentDirChanged();
-                        that.showSpinner = false;
+			that.onUpdateCompletion.push(function() {
+                            that.showSpinner = false;
+			});
                     });
                 } else if (clipboard.op == "copy") {
                     console.log("paste-copy");
                     clipboard.fileTreeNode.copyTo(target, context.network, context.crypto.random)
                         .thenApply(function() {
                             that.currentDirChanged();
-                            that.showSpinner = false;
+			    that.onUpdateCompletion.push(function() {
+				that.showSpinner = false;
+			    });
                         });
                 }
                 this.clipboard.op = null;
@@ -341,7 +356,9 @@ module.exports = {
             this.getContext().changePassword(oldPassword, newPassword).thenApply(function(newContext){
                 this.contextUpdates++;
                 this.context = newContext;
-                this.showSpinner = false;
+		that.onUpdateCompletion.push(function() {
+                    that.showSpinner = false;
+		});
                 this.showMessage("Password changed!");
             }.bind(this));
         },
@@ -538,14 +555,18 @@ module.exports = {
                         return clipboard.fileTreeNode.remove(context.network, clipboard.parent);
                     }).thenApply(function() {
                         that.currentDirChanged();
-                        that.showSpinner = false;
+			that.onUpdateCompletion.push(function() {
+                            that.showSpinner = false;
+			});
                     });
                 } else if (clipboard.op == "copy") {
                     console.log("drop-copy");
                     clipboard.fileTreeNode.copyTo(target, context.network, context.crypto.random)
                         .thenApply(function() {
                             that.currentDirChanged();
-                            that.showSpinner = false;
+			    that.onUpdateCompletion.push(function() {
+				that.showSpinner = false;
+			    });
                         });
                 }
             }
@@ -601,7 +622,9 @@ module.exports = {
                 file.rename(prompt_result, that.getContext().network, that.currentDir)
                     .thenApply(function(b){
                         that.currentDirChanged();
-                        that.showSpinner = false;
+			that.onUpdateCompletion.push(function() {
+                            that.showSpinner = false;
+			});
                     });
             };
             this.showPrompt =  true;
@@ -627,7 +650,9 @@ module.exports = {
                         that.currentDirChanged();
                         delete_countdown.value -=1;
                         if (delete_countdown.value == 0)
-                            that.showSpinner = false;
+			    that.onUpdateCompletion.push(function() {
+				that.showSpinner = false;
+			    });
                     });
             }
         },
@@ -768,6 +793,7 @@ module.exports = {
                     resolve(arr.filter(function(f){
                         return !f.getFileProperties().isHidden;
                     }));
+		    Vue.nextTick(that.processPending);
                 });
             });
         },
