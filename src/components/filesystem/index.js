@@ -71,6 +71,8 @@ module.exports = {
 	    if (this.files == null && newFiles != null)
 		return this.processPending();
 
+	    console.log(this.files.map(function(f){return f.getFileProperties().name}))
+	    console.log(newFiles.map(function(f){return f.getFileProperties().name}))
 	    if (this.files.length != newFiles.length) {
 		this.processPending();
 	    } else {
@@ -96,7 +98,7 @@ module.exports = {
             var path = this.getPath();
             var that = this;
             context.getByPath(path).thenApply(function(file){
-                that.currentDir = file.get();
+                that.currentDir = Object.freeze(file.get());
             });
         },
 	
@@ -812,9 +814,9 @@ module.exports = {
                 current.getChildren(that.getContext().network).thenApply(function(children){
                     var arr = children.toArray();
                     that.showSpinner = false;
-                    resolve(arr.filter(function(f){
+                    resolve(Object.freeze(arr.filter(function(f){
                         return !f.getFileProperties().isHidden;
-                    }));
+                    })));
                 });
             });
         },
@@ -844,7 +846,7 @@ module.exports = {
         'parent-msg': function (msg) {
             // `this` in event callbacks are automatically bound
             // to the instance that registered it
-            this.context = msg.context;
+            this.context = Object.freeze(msg.context);
             this.contextUpdates++;
             this.initiateDownload = msg.download;
             const that = this;
