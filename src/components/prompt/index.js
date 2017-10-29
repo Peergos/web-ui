@@ -12,8 +12,7 @@ module.exports = {
         },
 
         getPrompt: function(prompt_result) {
-            console.log("getPrompt " + prompt_result + this.consumer_func)
-                this.close();
+            this.close();
             this.prompt_result='';
             this.consumer_func(prompt_result);
         }

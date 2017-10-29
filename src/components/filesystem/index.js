@@ -60,7 +60,25 @@ module.exports = {
 
         forceUpdate: function(newUpdateCounter) {
             this.updateCurrentDir();
-        }
+        },
+
+	files: function(newFiles) {
+	    console.log("files")
+	    
+	    if (newFiles == null)
+		return;
+	    
+	    if (this.files == null && newFiles != null)
+		return this.processPending();
+
+	    if (this.files.length != newFiles.length) {
+		this.processPending();
+	    } else {
+		for (var i=0; i < this.files.length; i++)
+		    if (! this.files[i].equals(newFiles[i]))
+			return this.processPending();
+	    }
+	}
     },
     methods: {
 	processPending: function() {
@@ -750,9 +768,13 @@ module.exports = {
         },
 
         isWritable: function() {
-            if (this.currentDir == null)
-                return false;
-            return this.currentDir.isWritable();
+	    try {
+		if (this.currentDir == null)
+                    return false;
+		return this.currentDir.isWritable();
+	    } catch (err) {
+		return false;
+	    }
         },
 
         isPasteAvailable: function() {
@@ -793,7 +815,6 @@ module.exports = {
                     resolve(arr.filter(function(f){
                         return !f.getFileProperties().isHidden;
                     }));
-		    Vue.nextTick(that.processPending);
                 });
             });
         },
