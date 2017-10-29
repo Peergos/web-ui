@@ -6,6 +6,7 @@ module.exports = {
             contextUpdates: 0,
             path: [],
             currentDir: null,
+	    files: [],
             followerNames: [],
             grid: true,
             sortBy: "name",
@@ -71,8 +72,6 @@ module.exports = {
 	    if (this.files == null && newFiles != null)
 		return this.processPending();
 
-	    console.log(this.files.map(function(f){return f.getFileProperties().name}))
-	    console.log(newFiles.map(function(f){return f.getFileProperties().name}))
 	    if (this.files.length != newFiles.length) {
 		this.processPending();
 	    } else {
@@ -99,9 +98,24 @@ module.exports = {
             var that = this;
             context.getByPath(path).thenApply(function(file){
                 that.currentDir = Object.freeze(file.get());
+		that.updateFiles();
             });
         },
 	
+        updateFiles: function() {
+            var current = this.currentDir;
+            if (current == null)
+                return Promise.resolve([]);
+            var that = this;
+            current.getChildren(that.getContext().network).thenApply(function(children){
+                var arr = children.toArray();
+                that.showSpinner = false;
+                that.files = Object.freeze(arr.filter(function(f){
+                    return !f.getFileProperties().isHidden;
+                }));
+            });
+        },
+
         updateFollowerNames: function() {
             var context = this.getContext();
             if (context == null || context.username == null)
@@ -112,7 +126,7 @@ module.exports = {
             });
         },
 
-        getContext: function() {
+	getContext: function() {
             var x = this.contextUpdates;
             return this.context;
         },
@@ -732,7 +746,7 @@ module.exports = {
             }
             var sortBy = this.sortBy;
             var reverseOrder = ! this.normalSortOrder;
-            return this.files.slice(0).sort(function(a, b) {
+            return Object.freeze(this.files.slice(0).sort(function(a, b) {
                 var aVal, bVal;
                 if (sortBy == null)
                     return 0;
@@ -766,7 +780,7 @@ module.exports = {
                         return reverseOrder ? -1 : 1;
                     }
                 }
-            });
+            }));
         },
 
         isWritable: function() {
@@ -805,22 +819,6 @@ module.exports = {
         }
     },
     asyncComputed: {
-        files: function() {
-            var current = this.currentDir;
-            if (current == null)
-                return Promise.resolve([]);
-            var that = this;
-            return new Promise(function(resolve, reject) {
-                current.getChildren(that.getContext().network).thenApply(function(children){
-                    var arr = children.toArray();
-                    that.showSpinner = false;
-                    resolve(Object.freeze(arr.filter(function(f){
-                        return !f.getFileProperties().isHidden;
-                    })));
-                });
-            });
-        },
-
         social: function() {
             var context = this.getContext();
             if (context == null || context.username == null)
