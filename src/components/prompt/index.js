@@ -3,7 +3,7 @@ module.exports = {
     data: function() {
         return {'prompt_result': ''}
     },
-    props: ['show', 'prompt_message', 'placeholder', 'consumer_func'],
+    props: ['show', 'prompt_message', 'placeholder', 'value', 'consumer_func'],
     created: function() {
     },
     methods: {
@@ -11,11 +11,11 @@ module.exports = {
             this.show = false;
         },
 
-	getPrompt: function(prompt_result) {
+        getPrompt: function(prompt_result) {
             console.log("getPrompt " + prompt_result + this.consumer_func)
-		    this.close();
+                this.close();
             this.prompt_result='';
             this.consumer_func(prompt_result);
         }
-	}
+    }
 }
