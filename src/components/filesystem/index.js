@@ -6,6 +6,7 @@ module.exports = {
             contextUpdates: 0,
             path: [],
             currentDir: null,
+	    files: [],
             followerNames: [],
             grid: true,
             sortBy: "name",
@@ -38,7 +39,8 @@ module.exports = {
 	        prompt_value: '',
             showPrompt: false,
             showSpinner: true,
-            initiateDownload: false // used to trigger a download for a public link to a file
+            initiateDownload: false, // used to trigger a download for a public link to a file
+	    onUpdateCompletion: [] // methods to invoke when current dir is next refreshed
         };
     },
     props: {
@@ -64,9 +66,34 @@ module.exports = {
         },
         forceUpdate: function(newUpdateCounter) {
             this.updateCurrentDir();
-        }
+        },
+
+	files: function(newFiles) {
+	    console.log("files")
+	    
+	    if (newFiles == null)
+		return;
+	    
+	    if (this.files == null && newFiles != null)
+		return this.processPending();
+
+	    if (this.files.length != newFiles.length) {
+		this.processPending();
+	    } else {
+		for (var i=0; i < this.files.length; i++)
+		    if (! this.files[i].equals(newFiles[i]))
+			return this.processPending();
+	    }
+	}
     },
     methods: {
+	processPending: function() {
+	    for (var i=0; i < this.onUpdateCompletion.length; i++) {
+		this.onUpdateCompletion[i].call();
+	    }
+	    this.onUpdateCompletion = [];
+	},
+	
         updateCurrentDir: function() {
             var context = this.getContext();
             if (context == null)
@@ -75,9 +102,25 @@ module.exports = {
             var path = this.getPath();
             var that = this;
             context.getByPath(path).thenApply(function(file){
-                that.currentDir = file.get();
+                that.currentDir = Object.freeze(file.get());
+		that.updateFiles();
             });
         },
+	
+        updateFiles: function() {
+            var current = this.currentDir;
+            if (current == null)
+                return Promise.resolve([]);
+            var that = this;
+            current.getChildren(that.getContext().network).thenApply(function(children){
+                var arr = children.toArray();
+                that.showSpinner = false;
+                that.files = Object.freeze(arr.filter(function(f){
+                    return !f.getFileProperties().isHidden;
+                }));
+            });
+        },
+
         updateFollowerNames: function() {
             var context = this.getContext();
             if (context == null || context.username == null)
@@ -153,7 +196,9 @@ module.exports = {
             this.currentDir.mkdir(name, context.network, false, context.crypto.random)
                 .thenApply(function(x){
                     this.currentDirChanged();
-                    that.showSpinner = false;
+		    that.onUpdateCompletion.push(function() {
+                        that.showSpinner = false;
+		    });
                 }.bind(this));
         },
 
@@ -305,14 +350,18 @@ module.exports = {
                         return clipboard.fileTreeNode.remove(that.getContext(), clipboard.parent);
                     }).thenApply(function() {
                         that.currentDirChanged();
-                        that.showSpinner = false;
+			that.onUpdateCompletion.push(function() {
+                            that.showSpinner = false;
+			});
                     });
                 } else if (clipboard.op == "copy") {
                     console.log("paste-copy");
                     clipboard.fileTreeNode.copyTo(target, context.network, context.crypto.random)
                         .thenApply(function() {
                             that.currentDirChanged();
-                            that.showSpinner = false;
+			    that.onUpdateCompletion.push(function() {
+				that.showSpinner = false;
+			    });
                         });
                 }
                 this.clipboard.op = null;
@@ -358,7 +407,9 @@ module.exports = {
             this.getContext().changePassword(oldPassword, newPassword).thenApply(function(newContext){
                 this.contextUpdates++;
                 this.context = newContext;
-                this.showSpinner = false;
+		that.onUpdateCompletion.push(function() {
+                    that.showSpinner = false;
+		});
                 this.showMessage("Password changed!");
             }.bind(this));
         },
@@ -555,14 +606,18 @@ module.exports = {
                         return clipboard.fileTreeNode.remove(context.network, clipboard.parent);
                     }).thenApply(function() {
                         that.currentDirChanged();
-                        that.showSpinner = false;
+			that.onUpdateCompletion.push(function() {
+                            that.showSpinner = false;
+			});
                     });
                 } else if (clipboard.op == "copy") {
                     console.log("drop-copy");
                     clipboard.fileTreeNode.copyTo(target, context.network, context.crypto.random)
                         .thenApply(function() {
                             that.currentDirChanged();
-                            that.showSpinner = false;
+			    that.onUpdateCompletion.push(function() {
+				that.showSpinner = false;
+			    });
                         });
                 }
             }
@@ -618,7 +673,9 @@ module.exports = {
                 file.rename(prompt_result, that.getContext().network, that.currentDir)
                     .thenApply(function(b){
                         that.currentDirChanged();
-                        that.showSpinner = false;
+			that.onUpdateCompletion.push(function() {
+                            that.showSpinner = false;
+			});
                     });
             };
             this.showPrompt =  true;
@@ -644,7 +701,9 @@ module.exports = {
                         that.currentDirChanged();
                         delete_countdown.value -=1;
                         if (delete_countdown.value == 0)
-                            that.showSpinner = false;
+			    that.onUpdateCompletion.push(function() {
+				that.showSpinner = false;
+			    });
                     });
             }
         },
@@ -719,7 +778,7 @@ module.exports = {
             }
             var sortBy = this.sortBy;
             var reverseOrder = ! this.normalSortOrder;
-            return this.files.slice(0).sort(function(a, b) {
+            return Object.freeze(this.files.slice(0).sort(function(a, b) {
                 var aVal, bVal;
                 if (sortBy == null)
                     return 0;
@@ -753,13 +812,17 @@ module.exports = {
                         return reverseOrder ? -1 : 1;
                     }
                 }
-            });
+            }));
         },
 
         isWritable: function() {
-            if (this.currentDir == null)
-                return false;
-            return this.currentDir.isWritable();
+	    try {
+		if (this.currentDir == null)
+                    return false;
+		return this.currentDir.isWritable();
+	    } catch (err) {
+		return false;
+	    }
         },
 
         isNotMe: function() {
@@ -799,22 +862,6 @@ module.exports = {
         }
     },
     asyncComputed: {
-        files: function() {
-            var current = this.currentDir;
-            if (current == null)
-                return Promise.resolve([]);
-            var that = this;
-            return new Promise(function(resolve, reject) {
-                current.getChildren(that.getContext().network).thenApply(function(children){
-                    var arr = children.toArray();
-                    that.showSpinner = false;
-                    resolve(arr.filter(function(f){
-                        return !f.getFileProperties().isHidden;
-                    }));
-                });
-            });
-        },
-
         social: function() {
             var context = this.getContext();
             if (context == null || context.username == null)
@@ -840,7 +887,7 @@ module.exports = {
         'parent-msg': function (msg) {
             // `this` in event callbacks are automatically bound
             // to the instance that registered it
-            this.context = msg.context;
+            this.context = Object.freeze(msg.context);
             this.contextUpdates++;
             this.initiateDownload = msg.download;
             const that = this;
