@@ -119,9 +119,9 @@ module.exports = {
             current.getChildren(that.getContext().network).thenApply(function(children){
                 var arr = children.toArray();
                 that.showSpinner = false;
-                that.files = Object.freeze(arr.filter(function(f){
+                that.files = arr.filter(function(f){
                     return !f.getFileProperties().isHidden;
-                }));
+                });
             });
         },
 
