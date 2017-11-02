@@ -28,6 +28,11 @@ module.exports = {
             showGallery:false,
             showPassword:false,
             showSettingsMenu:false,
+	    social:{
+		pending: [],
+                followers: [],
+                following: []
+	    },
             messages: [],
             progressMonitors: [],
             clipboardAction:"",
@@ -62,6 +67,10 @@ module.exports = {
         forceUpdate: function(newUpdateCounter) {
             this.updateCurrentDir();
         },
+
+	externalChange: function(newExternalChange) {
+	    this.updateSocial();
+	},
 
 	files: function(newFiles) {
 	    console.log("files")
@@ -115,6 +124,27 @@ module.exports = {
                 }));
             });
         },
+
+	updateSocial: function() {
+	    var context = this.getContext();
+            if (context == null || context.username == null)
+                this.social = {
+                    pending: [],
+                    followers: [],
+                    following: []
+                };
+	    else {
+		var that = this;
+                context.getSocialState().thenApply(function(social){
+		    that.social = {
+                        pending: social.pendingIncoming.toArray([]),
+                        followers: social.followerRoots.keySet().toArray([]),
+                        following: social.followingRoots.toArray([]).map(function(f){return f.getFileProperties().name}),
+                        pendingOutgoing: social.pendingOutgoingFollowRequests.keySet().toArray([])
+		    };
+                });
+	    }
+	},
 
         updateFollowerNames: function() {
             var context = this.getContext();
@@ -816,28 +846,6 @@ module.exports = {
             if (context == null)
                 return "";
             return context.username;
-        }
-    },
-    asyncComputed: {
-        social: function() {
-            var context = this.getContext();
-            if (context == null || context.username == null)
-                return Promise.resolve({
-                    pending: [],
-                    followers: [],
-                    following: []
-                });
-            var triggerUpdate = this.externalChange;
-            return new Promise(function(resolve, reject) {
-                context.getSocialState().thenApply(function(social){
-                    resolve({
-                        pending: social.pendingIncoming.toArray([]),
-                        followers: social.followerRoots.keySet().toArray([]),
-                        following: social.followingRoots.toArray([]).map(function(f){return f.getFileProperties().name}),
-                        pendingOutgoing: social.pendingOutgoingFollowRequests.keySet().toArray([])
-                    });
-                });
-            });
         }
     },
     events: {
