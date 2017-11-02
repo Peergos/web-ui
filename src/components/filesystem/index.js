@@ -106,7 +106,7 @@ module.exports = {
             var path = this.getPath();
             var that = this;
             context.getByPath(path).thenApply(function(file){
-                that.currentDir = Object.freeze(file.get());
+                that.currentDir = file.get();
 		that.updateFiles();
             });
         },
@@ -776,7 +776,7 @@ module.exports = {
             }
             var sortBy = this.sortBy;
             var reverseOrder = ! this.normalSortOrder;
-            return Object.freeze(this.files.slice(0).sort(function(a, b) {
+            return this.files.slice(0).sort(function(a, b) {
                 var aVal, bVal;
                 if (sortBy == null)
                     return 0;
@@ -810,7 +810,7 @@ module.exports = {
                         return reverseOrder ? -1 : 1;
                     }
                 }
-            }));
+            });
         },
 
         isWritable: function() {
@@ -852,7 +852,7 @@ module.exports = {
         'parent-msg': function (msg) {
             // `this` in event callbacks are automatically bound
             // to the instance that registered it
-            this.context = Object.freeze(msg.context);
+            this.context = msg.context;
             this.contextUpdates++;
             this.initiateDownload = msg.download;
             const that = this;
