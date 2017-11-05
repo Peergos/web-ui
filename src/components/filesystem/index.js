@@ -29,6 +29,11 @@ module.exports = {
             showGallery:false,
             showPassword:false,
             showSettingsMenu:false,
+	    social:{
+		pending: [],
+                followers: [],
+                following: []
+	    },
             messages: [],
             progressMonitors: [],
             clipboardAction:"",
@@ -68,6 +73,10 @@ module.exports = {
             this.updateCurrentDir();
         },
 
+	externalChange: function(newExternalChange) {
+	    this.updateSocial();
+	},
+
 	files: function(newFiles) {
 	    console.log("files")
 	    
@@ -102,7 +111,7 @@ module.exports = {
             var path = this.getPath();
             var that = this;
             context.getByPath(path).thenApply(function(file){
-                that.currentDir = Object.freeze(file.get());
+                that.currentDir = file.get();
 		that.updateFiles();
             });
         },
@@ -115,11 +124,32 @@ module.exports = {
             current.getChildren(that.getContext().network).thenApply(function(children){
                 var arr = children.toArray();
                 that.showSpinner = false;
-                that.files = Object.freeze(arr.filter(function(f){
+                that.files = arr.filter(function(f){
                     return !f.getFileProperties().isHidden;
-                }));
+                });
             });
         },
+
+	updateSocial: function() {
+	    var context = this.getContext();
+            if (context == null || context.username == null)
+                this.social = {
+                    pending: [],
+                    followers: [],
+                    following: []
+                };
+	    else {
+		var that = this;
+                context.getSocialState().thenApply(function(social){
+		    that.social = {
+                        pending: social.pendingIncoming.toArray([]),
+                        followers: social.followerRoots.keySet().toArray([]),
+                        following: social.followingRoots.toArray([]).map(function(f){return f.getFileProperties().name}),
+                        pendingOutgoing: social.pendingOutgoingFollowRequests.keySet().toArray([])
+		    };
+                });
+	    }
+	},
 
         updateFollowerNames: function() {
             var context = this.getContext();
@@ -778,7 +808,7 @@ module.exports = {
             }
             var sortBy = this.sortBy;
             var reverseOrder = ! this.normalSortOrder;
-            return Object.freeze(this.files.slice(0).sort(function(a, b) {
+            return this.files.slice(0).sort(function(a, b) {
                 var aVal, bVal;
                 if (sortBy == null)
                     return 0;
@@ -812,7 +842,7 @@ module.exports = {
                         return reverseOrder ? -1 : 1;
                     }
                 }
-            }));
+            });
         },
 
         isWritable: function() {
@@ -861,33 +891,11 @@ module.exports = {
             return context.username;
         }
     },
-    asyncComputed: {
-        social: function() {
-            var context = this.getContext();
-            if (context == null || context.username == null)
-                return Promise.resolve({
-                    pending: [],
-                    followers: [],
-                    following: []
-                });
-            var triggerUpdate = this.externalChange;
-            return new Promise(function(resolve, reject) {
-                context.getSocialState().thenApply(function(social){
-                    resolve({
-                        pending: social.pendingIncoming.toArray([]),
-                        followers: social.followerRoots.keySet().toArray([]),
-                        following: social.followingRoots.toArray([]).map(function(f){return f.getFileProperties().name}),
-                        pendingOutgoing: social.pendingOutgoingFollowRequests.keySet().toArray([])
-                    });
-                });
-            });
-        }
-    },
     events: {
         'parent-msg': function (msg) {
             // `this` in event callbacks are automatically bound
             // to the instance that registered it
-            this.context = Object.freeze(msg.context);
+            this.context = msg.context;
             this.contextUpdates++;
             this.initiateDownload = msg.download;
             const that = this;
