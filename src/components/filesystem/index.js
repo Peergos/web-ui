@@ -6,7 +6,7 @@ module.exports = {
             contextUpdates: 0,
             path: [],
             currentDir: null,
-	    files: [],
+	        files: [],
             followerNames: [],
             grid: true,
             sortBy: "name",
@@ -788,7 +788,6 @@ module.exports = {
 
             var owner = this.currentDir.getOwner();
             var me = this.username;
-            var pointer = file.pointer.filePointer.toString();
             if (owner === me) {
                 var result = this.getContext().isShared(file);
                 return result;
