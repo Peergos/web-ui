@@ -50,7 +50,7 @@
 
 <modal :show.sync="showModal" :title.sync="modalTitle" :links.sync="modalLinks"></modal>
 <share-with v-if="showShare" :show.sync="showShare" :files.sync="selectedFiles" :context.sync="context" :usernames.sync="followerNames" :messages.sync="messages"></share-with>
-<shared-with-modal :show.sync="showSharedWith" :data.sync="sharedWithData"></shared-with-modal>
+<shared-with-modal :forceshared.sync="forceSharedWithUpdate" :show.sync="showSharedWith" :data.sync="sharedWithData" :files.sync="selectedFiles" :context.sync="context"></shared-with-modal>
 <social v-if="showSocial" :show.sync="showSocial" :data.sync="social" :context.sync="context" :externalchange.sync="externalChange" :messages.sync="messages"></social>
 <password v-if="showPassword" :show.sync="showPassword" :changepassword.sync="changePassword"></password>
 
@@ -63,7 +63,7 @@
 <div class="progressholder">
     <progressbar v-for="progress in progressMonitors" :show.sync="progress.show" :title.sync="progress.title" :done.sync="progress.done":max.sync="progress.max"></progressbar>
 </div>
-<div id="dnd" @drop="dndDrop($event)" @dragover.prevent class="fillspace" v-on:contextmenu="openMenu($event)">
+<div id="dnd" @drop="dndDrop($event)" @dragover.prevent v-bind:class="{ fillspace: true, not_owner: isNotMe }" v-on:contextmenu="openMenu($event)">
     <spinner v-if="showSpinner"></spinner>
 
     <div class="grid" v-if="grid">
@@ -74,7 +74,7 @@
                     <img v-if="file.getFileProperties().thumbnail.isPresent()" v-touch:tap="navigateOrDownload(file)" v-on:longpress="openMenu($event, file)" v-on:contextmenu="openMenu($event, file)" v-bind:src="getThumbnailURL(file)"/>
                 </a>
                 <div class="content picon" >
-                    <div class="noselect">{{ file.getFileProperties().name }}</div>
+                    <div v-bind:class="{ noselect: true, shared: isShared(file) }">{{ file.getFileProperties().name }}</div>
                 </div>
             </span>
         </span>
@@ -91,7 +91,7 @@
             </thead>
             <tbody>
                 <tr v-for="file in sortedFiles">
-                    <td v-bind:id="file.getFileProperties().name" v-on:click="navigateOrDownload(file)" v-on:contextmenu="openMenu($event, file)" style="cursor:pointer"><a>{{ file.getFileProperties().name }}</a></td>
+                    <td v-bind:id="file.getFileProperties().name" v-on:click="navigateOrDownload(file)" v-on:contextmenu="openMenu($event, file)" style="cursor:pointer" v-bind:class="{ shared: isShared(file) }">{{ file.getFileProperties().name }}</td>
                     <td>{{ file.getFileProperties().sizeLow() }}</td>
                     <td>{{ file.isDirectory() ? "dir" : "file" }}</td>
                     <td>{{ file.getFileProperties().modified }}</td>

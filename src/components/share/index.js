@@ -5,7 +5,7 @@ module.exports = {
             targetUsername: ""
         }
     },
-    props: ['show', 'files', 'context', 'usernames', 'messages'],
+    props: ['show', 'files', 'context', 'usernames', 'messages', 'shared'],
     created: function() {
         this.setTypeAhead();
     },
@@ -21,21 +21,44 @@ module.exports = {
                 throw "Unimplemented multiple file share call";
 
             var that = this;
-            this.context.shareWith(this.files[0], targetUsername)
-                .thenApply(function(b) {
+            this.context.getSocialState().thenApply(function(social){
+                var followers = social.followerRoots.keySet().toArray([]);
+                if(followers.indexOf(targetUsername) == -1) {
                     that.messages.push({
-                        title: "Success!",
-                        body: "Sharing complete",
+                        title: "Sharing not possible!",
+                        body: "Please add as a friend first",
                         show: true
                     });
                     that.close();
-                    console.log("shared " + this.files[0].getFileProperties().name + " with " + targetUsername);
-                });
+                } else {
+                    that.context.sharedWith(that.files[0]).thenApply(function(usernames){
+                        var unames = usernames.toArray([]);
+                        if(unames.indexOf(targetUsername) > -1) {
+                            that.messages.push({
+                                title: "Already shared!",
+                                body: "",
+                                show: true
+                            });
+                        } else {
+                            that.context.shareWith(that.files[0], targetUsername)
+                                .thenApply(function(b) {
+                                    that.messages.push({
+                                    title: "Success!",
+                                    body: "Sharing complete",
+                                    show: true
+                                    });
+                                    that.close();
+                                    console.log("shared " + that.files[0].getFileProperties().name + " with " + targetUsername);
+                                });
+                        }
+                    });
+                }
+            });
         },
 
         setTypeAhead: function() {
             var substringMatcher = function(strs) {
-                return function findMatches(q, cb) {
+            return function findMatches(q, cb) {
                     var matches, substringRegex;
 
                     //an array that will be populated with substring matches

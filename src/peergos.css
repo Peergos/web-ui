@@ -1,6 +1,15 @@
 body {
   background-color: #FFFFFF;
 }
+
+.shared {
+  color: #009900;
+}
+
+.not_owner {
+  background-color: #DDDDDD;
+}
+
 body .grid {
   height: 100%;
   padding-top: 60px;

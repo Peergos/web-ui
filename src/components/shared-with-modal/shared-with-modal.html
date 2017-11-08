@@ -9,7 +9,7 @@
         <div class="modal-body">
             <div class="container"><p style="word-wrap;break-all;">
                 <ul>
-                    <li v-for="user in data.shared_with_users">{{ user }}</li>
+                <li v-for="user in data.shared_with_users">{{ user }} <button v-on:click="unshare(user)">X</button></li>
                 </ul>
             </div>
         </div>

@@ -6,7 +6,7 @@ module.exports = {
             contextUpdates: 0,
             path: [],
             currentDir: null,
-	    files: [],
+	        files: [],
             followerNames: [],
             grid: true,
             sortBy: "name",
@@ -24,6 +24,7 @@ module.exports = {
             showShare:false,
             showSharedWith:false,
             sharedWithData:{},
+	        forceSharedWithUpdate:0,
             showSocial:false,
             showGallery:false,
             showPassword:false,
@@ -40,7 +41,7 @@ module.exports = {
             externalChange:0,
             prompt_message: '',
             prompt_placeholder: '',
-	    prompt_value: '',
+	        prompt_value: '',
             showPrompt: false,
             showSpinner: true,
             initiateDownload: false, // used to trigger a download for a public link to a file
@@ -64,6 +65,10 @@ module.exports = {
             this.updateCurrentDir();
         },
 
+        forceSharedWithUpdate: function(newCounter) {
+            this.sharedWithDataUpdate();
+            this.updateCurrentDir();
+        },
         forceUpdate: function(newUpdateCounter) {
             this.updateCurrentDir();
         },
@@ -155,8 +160,21 @@ module.exports = {
                 that.followerNames = usernames.toArray([]);
             });
         },
-
-	getContext: function() {
+        sharedWithDataUpdate: function() {
+            var context = this.getContext();
+            if (this.selectedFiles.length != 1 || context == null) {
+                that.sharedWithData = {title:'', shared_with_users:[] };
+            }
+            var file = this.selectedFiles[0];
+            var that = this;
+            context.sharedWith(file).thenApply(function(usernames){
+                var unames = usernames.toArray([]);
+                var filename = file.getFileProperties().name;
+                var title = filename + " is shared with:";
+                that.sharedWithData = {title:title, shared_with_users:unames};
+            });
+        },
+        getContext: function() {
             var x = this.contextUpdates;
             return this.context;
         },
@@ -385,7 +403,6 @@ module.exports = {
         showShareWith: function() {
             if (this.selectedFiles.length == 0)
                 return;
-
             this.closeMenu();
             this.showShare = true;
         },
@@ -764,6 +781,20 @@ module.exports = {
             this.left = left + 'px';
         },
 
+        isShared: function(file) {
+
+            if (this.currentDir == null)
+                return false;
+
+            var owner = this.currentDir.getOwner();
+            var me = this.username;
+            if (owner === me) {
+                var result = this.getContext().isShared(file);
+                return result;
+            } else {
+                return false;
+            }
+        },
         closeMenu: function() {
             this.viewMenu = false;
             this.ignoreEvent = false;
@@ -823,6 +854,17 @@ module.exports = {
 	    }
         },
 
+        isNotMe: function() {
+            if (this.currentDir == null)
+                return true;
+
+            var owner = this.currentDir.getOwner();
+            var me = this.username;
+            if (owner === me) {
+                return false;
+            }
+            return true;
+        },
         isPasteAvailable: function() {
             if (this.currentDir == null)
                 return false;
