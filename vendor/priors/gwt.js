@@ -164,7 +164,7 @@ function generateRandomBytes(len) {
     return peergos.shared.user.JavaScriptPoster.convertToBytes(new Int8Array(bytes));
 }
 
-function generateSecretbox(data, nonce, key) {    
+function generateSecretbox(data, nonce, key) {
     var bytes = nacl.secretbox(new Uint8Array(data), new Uint8Array(nonce), new Uint8Array(key));
     return peergos.shared.user.JavaScriptPoster.convertToBytes(bytes);
 }
@@ -238,6 +238,9 @@ var tweetNaCl = {
         this.randombytes = generateRandomBytes;
         this.secretbox = generateSecretbox;
         this.secretbox_open = generateSecretbox_open;
+        this.secretboxAsync = generateSecretboxAsync;
+        this.secretbox_openAsync = generateSecretbox_openAsync;
+
         this.crypto_sign_open = generateCrypto_sign_open;
         this.crypto_sign = generateCrypto_sign;
         this.crypto_sign_keypair = generateCrypto_sign_keypair;
@@ -246,6 +249,26 @@ var tweetNaCl = {
         this.crypto_box_keypair = generateCrypto_box_keypair;
     }   
 };
+
+function generateSecretboxAsync(data, nonce, key) {
+    var bytes = nacl.secretbox(new Uint8Array(data), new Uint8Array(nonce), new Uint8Array(key));
+    var future = peergos.shared.util.FutureUtils.incomplete();
+    future.complete(peergos.shared.user.JavaScriptPoster.convertToBytes(bytes));
+    console.log("generateSecretboxAsync");
+    return future;
+}
+
+function generateSecretbox_openAsync(cipher, nonce, key) {
+    var bytes = nacl.secretbox.open(new Uint8Array(cipher), new Uint8Array(nonce), new Uint8Array(key));
+    if(bytes === false) {
+        throw "Invalid encryption!";
+    }
+    var future = peergos.shared.util.FutureUtils.incomplete();
+    var decrypted = peergos.shared.user.JavaScriptPoster.convertToBytes(new Int8Array(bytes.buffer, bytes.byteOffset, bytes.byteLength));
+    future.complete(decrypted);
+    console.log("generateSecretbox_openAsync");
+    return future;
+}
 
 var browserio = {
     JSFileReader: function(file) {
