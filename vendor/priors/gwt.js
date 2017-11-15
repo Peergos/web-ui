@@ -128,14 +128,30 @@ var http = {
     }
 };
 
+function decodeUTF8(s) {
+  var i, d = unescape(encodeURIComponent(s)), b = new Uint8Array(d.length);
+  for (i = 0; i < d.length; i++) b[i] = d.charCodeAt(i);
+  return b;
+}
+
+function decodeBase64(s) {
+  if (typeof atob === 'undefined') {
+    return new Uint8Array(Array.prototype.slice.call(new Buffer(s, 'base64'), 0));
+  } else {
+    var i, d = atob(s), b = new Uint8Array(d.length);
+    for (i = 0; i < d.length; i++) b[i] = d.charCodeAt(i);
+    return b;
+  }
+}
+
 function hashToKeyBytesProm(username, password, algorithm) {
     var future = peergos.shared.util.FutureUtils.incomplete();
     new Promise(function(resolve, reject) {
         console.log("making scrypt request");
         
         var t1 = Date.now();
-        var hash = sha256(nacl.util.decodeUTF8(password));
-        var salt = nacl.util.decodeUTF8(username)
+        var hash = sha256(decodeUTF8(password));
+        var salt = decodeUTF8(username)
 	if (algorithm.getType().value != 1)
 	    throw "Unknown UserGenerationAlgorithm type: " + algorithm.getType();
 	var memCost = algorithm.memoryCost;
@@ -147,7 +163,7 @@ function hashToKeyBytesProm(username, password, algorithm) {
 	
         scrypt(hash, salt, memCost, cpuCost, outputBytes, 1000, function(keyBytes) {
             console.log("JS Scrypt complete in: "+ (Date.now()-t1)+"mS");
-            var hashedBytes = nacl.util.decodeBase64(keyBytes);
+            var hashedBytes = decodeBase64(keyBytes);
             resolve(hashedBytes);
         }, 'base64');  
     }).then(function(result, err) {
@@ -164,7 +180,7 @@ function generateRandomBytes(len) {
     return peergos.shared.user.JavaScriptPoster.convertToBytes(new Int8Array(bytes));
 }
 
-function generateSecretbox(data, nonce, key) {    
+function generateSecretbox(data, nonce, key) {
     var bytes = nacl.secretbox(new Uint8Array(data), new Uint8Array(nonce), new Uint8Array(key));
     return peergos.shared.user.JavaScriptPoster.convertToBytes(bytes);
 }
@@ -238,6 +254,9 @@ var tweetNaCl = {
         this.randombytes = generateRandomBytes;
         this.secretbox = generateSecretbox;
         this.secretbox_open = generateSecretbox_open;
+        this.secretboxAsync = generateSecretboxAsync;
+        this.secretbox_openAsync = generateSecretbox_openAsync;
+
         this.crypto_sign_open = generateCrypto_sign_open;
         this.crypto_sign = generateCrypto_sign;
         this.crypto_sign_keypair = generateCrypto_sign_keypair;
@@ -246,6 +265,55 @@ var tweetNaCl = {
         this.crypto_box_keypair = generateCrypto_box_keypair;
     }   
 };
+
+var inflightEncryptFutures = new Object();
+var inflightDecryptFutures = new Object();
+
+document.encryptworker = new Worker('js/encrypt.js');
+document.encryptworker.onmessage = function(oEvent) {
+    let uInt8IdView = new Uint8Array(oEvent.data.id, oEvent.data.id.byteOffset, oEvent.data.id.byteLength);
+    let taskId = uInt8IdView.toString();
+    let future = inflightEncryptFutures[taskId];
+    delete inflightEncryptFutures[taskId];
+    var uInt8DataView = new Uint8Array(oEvent.data.data, oEvent.data.data.byteOffset, oEvent.data.data.byteLength);
+    future.complete(peergos.shared.user.JavaScriptPoster.convertToBytes(uInt8DataView));
+};
+
+document.decryptworker = new Worker('js/decrypt.js');
+document.decryptworker.onmessage = function(oEvent) {
+    let uInt8IdView = new Uint8Array(oEvent.data.id, oEvent.data.id.byteOffset, oEvent.data.id.byteLength);
+    let taskId = uInt8IdView.toString();
+    let future = inflightDecryptFutures[taskId];
+    delete inflightDecryptFutures[taskId];
+    let uInt8DataView = new Uint8Array(oEvent.data.data, oEvent.data.data.byteOffset, oEvent.data.data.byteLength);
+    future.complete(peergos.shared.user.JavaScriptPoster.convertToBytes(uInt8DataView));
+};
+
+function generateSecretboxAsync(data, nonce, key) {
+    let uInt8DataView = new Uint8Array(data);
+    let uInt8NonceView = new Uint8Array(nonce);
+    let uInt8KeyView = new Uint8Array(key);
+
+    let uInt8IdView = new Uint8Array(nacl.randomBytes(6));
+    let taskId = uInt8IdView.toString();
+    var future = peergos.shared.util.FutureUtils.incomplete();
+    inflightEncryptFutures[taskId] = future
+    document.encryptworker.postMessage({id: uInt8IdView.buffer, data: uInt8DataView.buffer, nonce: uInt8NonceView.buffer, key: uInt8KeyView.buffer}, [uInt8IdView.buffer, uInt8DataView.buffer, uInt8NonceView.buffer, uInt8KeyView.buffer]);
+    return future;
+}
+
+function generateSecretbox_openAsync(cipher, nonce, key) {
+    let uInt8CipherView = new Uint8Array(cipher);
+    let uInt8NonceView = new Uint8Array(nonce);
+    let uInt8KeyView = new Uint8Array(key);
+
+    let uInt8IdView = new Uint8Array(nacl.randomBytes(6));
+    let taskId = uInt8IdView.toString();
+    var future = peergos.shared.util.FutureUtils.incomplete();
+    inflightDecryptFutures[taskId] = future
+    document.decryptworker.postMessage({id: uInt8IdView.buffer, cipher: uInt8CipherView.buffer, nonce: uInt8NonceView.buffer, key: uInt8KeyView.buffer}, [uInt8IdView.buffer, uInt8CipherView.buffer, uInt8NonceView.buffer, uInt8KeyView.buffer]);
+    return future;
+}
 
 var browserio = {
     JSFileReader: function(file) {
