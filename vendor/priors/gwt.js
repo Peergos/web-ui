@@ -271,7 +271,6 @@ var inflightDecryptFutures = new Object();
 
 document.encryptworker = new Worker('js/encrypt.js');
 document.encryptworker.onmessage = function(oEvent) {
-    console.log('kev Received encryptworker');
     let uInt8IdView = new Uint8Array(oEvent.data.id);
     let taskId = uInt8IdView.toString();
     let future = inflightEncryptFutures[taskId];
@@ -282,7 +281,6 @@ document.encryptworker.onmessage = function(oEvent) {
 
 document.decryptworker = new Worker('js/decrypt.js');
 document.decryptworker.onmessage = function(oEvent) {
-    console.log('kev Received decryptworker');
     let uInt8IdView = new Uint8Array(oEvent.data.id);
     let taskId = uInt8IdView.toString();
     let future = inflightDecryptFutures[taskId];
