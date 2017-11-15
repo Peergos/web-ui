@@ -285,8 +285,8 @@ document.decryptworker.onmessage = function(oEvent) {
     let taskId = uInt8IdView.toString();
     let future = inflightDecryptFutures[taskId];
     delete inflightDecryptFutures[taskId];
-    let uInt8DataView = new Uint8Array(oEvent.data.data, oEvent.data.data.byteOffset, oEvent.data.data.byteLength);
-    future.complete(peergos.shared.user.JavaScriptPoster.convertToBytes(uInt8DataView));
+    let int8DataView = new Int8Array(oEvent.data.data, oEvent.data.data.byteOffset, oEvent.data.data.byteLength);
+    future.complete(peergos.shared.user.JavaScriptPoster.convertToBytes(int8DataView));
 };
 
 function generateSecretboxAsync(data, nonce, key) {
