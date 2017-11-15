@@ -271,21 +271,21 @@ var inflightDecryptFutures = new Object();
 
 document.encryptworker = new Worker('js/encrypt.js');
 document.encryptworker.onmessage = function(oEvent) {
-    let uInt8IdView = new Uint8Array(oEvent.data.id);
+    let uInt8IdView = new Uint8Array(oEvent.data.id, oEvent.data.id.byteOffset, oEvent.data.id.byteLength);
     let taskId = uInt8IdView.toString();
     let future = inflightEncryptFutures[taskId];
     delete inflightEncryptFutures[taskId];
-    var uInt8DataView = new Uint8Array(oEvent.data.data);
+    var uInt8DataView = new Uint8Array(oEvent.data.data, oEvent.data.data.byteOffset, oEvent.data.data.byteLength);
     future.complete(peergos.shared.user.JavaScriptPoster.convertToBytes(uInt8DataView));
 };
 
 document.decryptworker = new Worker('js/decrypt.js');
 document.decryptworker.onmessage = function(oEvent) {
-    let uInt8IdView = new Uint8Array(oEvent.data.id);
+    let uInt8IdView = new Uint8Array(oEvent.data.id, oEvent.data.id.byteOffset, oEvent.data.id.byteLength);
     let taskId = uInt8IdView.toString();
     let future = inflightDecryptFutures[taskId];
     delete inflightDecryptFutures[taskId];
-    let uInt8DataView = new Uint8Array(oEvent.data.data);
+    let uInt8DataView = new Uint8Array(oEvent.data.data, oEvent.data.data.byteOffset, oEvent.data.data.byteLength);
     future.complete(peergos.shared.user.JavaScriptPoster.convertToBytes(uInt8DataView));
 };
 
