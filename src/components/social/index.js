@@ -61,16 +61,26 @@ module.exports = {
 
         sendInitialFollowRequest: function(name) {
             if(name !== this.context.username) {
-                console.log("sending follow request to " + name);
                 var that = this;
-                this.showSpinner = true;
-                this.context.sendInitialFollowRequest(name)
-                    .thenApply(function(success) {
+                this.context.getSocialState().thenApply(function(social){
+                    if(social.pendingOutgoingFollowRequests.keySet().toArray([]).indexOf(name) != -1) {
                         that.targetUsername = "";
-                        that.showMessage("Follow request sent!", "");
-                        that.showSpinner = false;
-                        that.externalchange++;
-                    });
+                        that.showMessage("Follow request already sent to " + name + "!", "");
+                    }else if(social.followerRoots.keySet().toArray([]).indexOf(name) != -1) {
+                        that.targetUsername = "";
+                        that.showMessage(name + " already a follower!", "");
+                    }else{
+                        console.log("sending follow request to " + name);
+                        that.showSpinner = true;
+                        that.context.sendInitialFollowRequest(name)
+                            .thenApply(function(success) {
+                                that.targetUsername = "";
+                                that.showMessage("Follow request sent!", "");
+                                that.showSpinner = false;
+                                that.externalchange++;
+                            });
+                    }
+                });
             }
         },
 
