@@ -45,22 +45,29 @@ module.exports = {
                 this.isError = true;
                 this.error = "Passwords do not match!";
             } else {
-                this.showSpinner = true;
-                return peergos.shared.user.UserContext.signUp(that.username, that.password1, that.network, that.crypto)
-                    .thenApply(function(context) {
-                        that.$dispatch('child-msg', {
-                            view:'filesystem',
-                            props:{context: context}
+                let usernameRegEx = /^(?=.{1,32}$)(?![_-])(?!.*[_-]{2})[a-z0-9_-]+(?<![_-])$/;
+                if(!usernameRegEx.test(that.username)) {
+                    that.errorTitle = 'Invalid username';
+                    that.errorBody = "Username rules: Up to 32 characters, mixture of numbers and lowercase letters plus underscore and hyphen";
+                    that.showError = true;
+                }else{
+                    this.showSpinner = true;
+                    return peergos.shared.user.UserContext.signUp(that.username, that.password1, that.network, that.crypto)
+                        .thenApply(function(context) {
+                            that.$dispatch('child-msg', {
+                                view:'filesystem',
+                                props:{context: context}
+                            });
+                            console.log("Signing in/up took " + (Date.now()-creationStart)+" mS from function call");
+                            this.showSpinner = false;
+                        }).exceptionally(function(throwable) {
+                            console.log('Error signing up: ' + throwable);
+                            that.errorTitle = 'Error signing up'
+                                that.errorBody = throwable.getMessage();
+                            that.showError = true;
+                            that.showSpinner = false;
                         });
-                        console.log("Signing in/up took " + (Date.now()-creationStart)+" mS from function call");
-                        this.showSpinner = false;
-                    }).exceptionally(function(throwable) {
-                        console.log('Error signing up: ' + throwable);
-                        that.errorTitle = 'Error signing up'
-                            that.errorBody = throwable.getMessage();
-                        that.showError = true;
-                        that.showSpinner = false;
-                    });
+                }
             }
         },
         validatePassword: function(inFirstField) {
