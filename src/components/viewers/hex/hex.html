@@ -6,11 +6,25 @@
         </center>
         
         <center style="height:75%;max-width:100%;font-family: monospace;" >
-	  <span v-for="line in lines" style="width:100%">
-	    <span v-for="i in 16">{{line.hex[i] != null ? line.hex[i] : ""}}</span>
-	    <span v-for="i in 16">{{line.ascii[i] != null ? line.ascii[i] : ""}}</span>
-	    <br/>
-	  </span>  
+	  <table>
+	    <tr v-for="line in lines">
+	      <td>
+		<span v-for="i in 4">{{line.hex[i] != null ? line.hex[i] : ""}}</span>
+	      </td>
+	      <td style="padding-left:10px">
+		<span v-for="i in 4">{{line.hex[i+4] != null ? line.hex[i+4] : ""}}</span>
+	      </td>
+	      <td style="padding-left:10px">
+		<span v-for="i in 4">{{line.hex[i+8] != null ? line.hex[i+8] : ""}}</span>
+	      </td>
+	      <td style="padding-left:10px">
+		<span v-for="i in 4">{{line.hex[i+12] != null ? line.hex[i+12] : ""}}</span>
+	      </td>
+	      <td style="padding-left:25px">
+		<span v-for="i in 16">{{line.ascii[i] != null ? line.ascii[i] : ""}}</span>
+	      </td>
+	    <tr/>
+	  </table>
         </center>
     </div>
 </div>
