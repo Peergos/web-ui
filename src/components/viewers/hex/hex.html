@@ -1,0 +1,16 @@
+<div class="modal-mask" @click="close" v-show="show" transition="modal">
+    <div class="modal-container" @click.stop style="height:95%;width:95%;overflow-y:auto" >
+        <spinner v-if="showSpinner"></spinner>
+        <center>
+            <h2 v-if="file != null" >{{ file.getFileProperties().name }}</h2>
+        </center>
+        
+        <center style="height:75%;max-width:100%;font-family: monospace;" >
+	  <span v-for="line in lines" style="width:100%">
+	    <span v-for="i in 16">{{line.hex[i] != null ? line.hex[i] : ""}}</span>
+	    <span v-for="i in 16">{{line.ascii[i] != null ? line.ascii[i] : ""}}</span>
+	    <br/>
+	  </span>  
+        </center>
+    </div>
+</div>

@@ -56,6 +56,8 @@
 
 <gallery v-if="showGallery" :show.sync="showGallery" :files.sync="sortedFiles" :context.sync="context" :initial-file-name="selectedFiles[0] == null ? '' : selectedFiles[0].getFileProperties().name"></gallery>
 
+<hex v-if="showHexViewer" :show.sync="showHexViewer" :file.sync="selectedFiles[0]" :context.sync="context"></hex>
+
 <message v-for="message in messages" :show.sync="message.show" :title.sync="message.title" :message.sync="message.body"></message>
 <prompt v-if="showPrompt" :prompt_message.sync='prompt_message' :show.sync="showPrompt" :placeholder.sync="prompt_placeholder" :value.sync="prompt_value" :consumer_func.sync="prompt_consumer_func"></prompt>
 

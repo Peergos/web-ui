@@ -27,6 +27,7 @@ module.exports = {
 	        forceSharedWithUpdate:0,
             showSocial:false,
             showGallery:false,
+            showHexViewer:false,
             showPassword:false,
             showSettingsMenu:false,
 	    social:{
@@ -490,7 +491,17 @@ module.exports = {
             //if (this.selectedFiles.length == 0)
             //    return;
             this.closeMenu();
-            this.showGallery = true;
+	    if (this.selectedFiles.length == 0)
+		return;
+	    var mimeType = this.selectedFiles[0].getFileProperties().mimeType;
+	    console.log("Opening " + mimeType);
+	    if (mimeType.startsWith("audio") ||
+		mimeType.startsWith("video") ||
+		mimeType.startsWith("image"))
+		this.showGallery = true;
+	    else if (mimeType === "application/octet-stream") {
+		this.showHexViewer = true;
+	    }
         },
 
         navigateOrDownload: function(file) {
