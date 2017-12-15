@@ -9,20 +9,12 @@ module.exports = {
     props: ['show', 'file', 'context'],
     created: function() {
         console.debug('Hex viewer created!');
-        window.addEventListener('keyup', this.keyup)
         this.updateCurrentFileData();
     },
 
     methods: {
         close: function() {
             this.show = false;
-        },
-
-        keyup: function(e) {
-            if (e.keyCode == 37)
-                this.previous();
-            else if (e.keyCode == 39)
-                this.next();
         },
 
         updateCurrentFileData: function() {
