@@ -48,14 +48,19 @@ module.exports = {
 	}
     },
     computed: {
-	text: function() {
+	lines: function() {
 	    var data = this.fileData;
 	    if (data == null)
 		return [];
 	    var res = "";
 	    for (var i=0; i < data.length; i += 64*1024)
 		res += this.bytesToString(data, i, Math.min(i + 64*1024, data.length))
-	    return res;
+
+	    var lines = res.split("\n");
+	    // split on space to allow them to be rendered, and replace tabs with spaces
+	    for (var i=0; i < lines.length; i++)
+		lines[i] = lines[i].split("\t").join("   ").split(" ");
+	    return lines;
 	}
     }
 };

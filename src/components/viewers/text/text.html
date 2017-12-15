@@ -6,7 +6,11 @@
         </center>
         
         <center style="height:75%;max-width:100%;font-family: monospace;" >
-	  {{text}}
+	  <table>
+	    <tr v-for="line in lines" track-by="$index">
+	      <td><span v-for="word in line">{{word}}&nbsp;</span></td>
+	    </tr>
+	  </table>
         </center>
     </div>
 </div>
