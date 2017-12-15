@@ -52,6 +52,10 @@ module.exports = {
 	byteToHex: function(b) {
 	    var lookup = ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'A', 'B', 'C', 'D', 'E', 'F'];
 	    return lookup[b & 0xf] + lookup[(b >> 4) & 0xf];
+	},
+
+	intToHex: function(i) {
+	    return this.byteToHex(i >> 24) + this.byteToHex(i >> 16) + this.byteToHex(i >> 8) + this.byteToHex(i);
 	}
     },
     computed: {
@@ -69,7 +73,8 @@ module.exports = {
 		    hex[x] = this.byteToHex(data[16*i + x]);
 		    ascii[x] = String.fromCharCode(data[16*i + x]);
 		}
-		res[i] = {hex:hex,ascii:ascii};
+		res[i] = {hex:hex, ascii:ascii, start:this.intToHex(i)};
+		console.log(res[i]);
 	    }
 	    return res;
 	}

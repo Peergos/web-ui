@@ -2,13 +2,16 @@
     <div class="modal-container" @click.stop style="height:95%;width:95%;overflow-y:auto" >
         <spinner v-if="showSpinner"></spinner>
         <center>
-            <h2 v-if="file != null" >{{ file.getFileProperties().name }}</h2>
+            <h2 v-if="file != null" >{{ file.getFileProperties().name }} (hex view)</h2>
         </center>
         
         <center style="height:75%;max-width:100%;font-family: monospace;" >
 	  <table>
 	    <tr v-for="line in lines">
-	      <td>
+	      <td style="color:#990012">
+		{{line.start}}:
+	      </td>
+	      <td style="padding-left:10px">
 		<span v-for="i in 4">{{line.hex[i] != null ? line.hex[i] : ""}}</span>
 	      </td>
 	      <td style="padding-left:10px">
