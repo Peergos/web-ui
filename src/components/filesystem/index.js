@@ -28,6 +28,7 @@ module.exports = {
             showSocial:false,
             showGallery:false,
             showHexViewer:false,
+            showTextViewer:false,
             showPassword:false,
             showSettingsMenu:false,
 	    social:{
@@ -501,6 +502,8 @@ module.exports = {
 		this.showGallery = true;
 	    else if (mimeType === "application/octet-stream") {
 		this.showHexViewer = true;
+	    } else if (mimeType === "text/plain") {
+		this.showTextViewer = true;
 	    }
         },
 
