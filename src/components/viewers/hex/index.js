@@ -51,7 +51,7 @@ module.exports = {
 
 	byteToHex: function(b) {
 	    var lookup = ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'A', 'B', 'C', 'D', 'E', 'F'];
-	    return lookup[b & 0xf] + lookup[(b >> 4) & 0xf];
+	    return  lookup[(b >> 4) & 0xf] + lookup[b & 0xf];
 	},
 
 	intToHex: function(i) {
