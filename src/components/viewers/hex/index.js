@@ -65,7 +65,7 @@ module.exports = {
 		    hex[x] = this.byteToHex(data[16*i + x]);
 		    ascii[x] = String.fromCharCode(data[16*i + x]);
 		}
-		res[i] = {hex:hex, ascii:ascii, start:this.intToHex(i)};
+		res[i] = {hex:hex, ascii:ascii, start:this.intToHex(i*16)};
 		console.log(res[i]);
 	    }
 	    return res;
