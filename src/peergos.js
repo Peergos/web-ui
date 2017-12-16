@@ -7,6 +7,8 @@ var Share           = require('./components/share');
 var Message         = require('./components/message');
 var Social          = require('./components/social');
 var Gallery          = require('./components/gallery');
+var Hex             = require('./components/viewers/hex');
+var Text             = require('./components/viewers/text');
 var Password        = require('./components/password');
 var ProgressBar     = require('./components/progressbar');
 var Prompt          = require('./components/prompt');
@@ -32,6 +34,8 @@ Vue.use(VueTouch)
     Vue.component('shared-with-modal', Vue.extend(SharedWithModal));
     Vue.component('social', Vue.extend(Social));
     Vue.component('gallery', Vue.extend(Gallery));
+    Vue.component('hex', Vue.extend(Hex));
+    Vue.component('text', Vue.extend(Text));
     Vue.component('password', Vue.extend(Password));
     Vue.component('progressbar', Vue.extend(ProgressBar));
     Vue.component('prompt', Vue.extend(Prompt));
