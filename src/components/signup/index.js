@@ -45,12 +45,12 @@ module.exports = {
                 this.isError = true;
                 this.error = "Passwords do not match!";
             } else {
-                let usernameRegEx = /^(?=.{1,32}$)(?![_-])(?!.*[_-]{2})[a-z0-9_-]+(?<![_-])$/;
+                /*let usernameRegEx = /^(?=.{1,32}$)(?![_-])(?!.*[_-]{2})[a-z0-9_-]+(?<![_-])$/;
                 if(!usernameRegEx.test(that.username)) {
                     that.errorTitle = 'Invalid username';
                     that.errorBody = "Username rules: Up to 32 characters, mixture of numbers and lowercase letters plus underscore and hyphen";
                     that.showError = true;
-                }else{
+                }else*/{
                     this.showSpinner = true;
                     return peergos.shared.user.UserContext.signUp(that.username, that.password1, that.network, that.crypto)
                         .thenApply(function(context) {
