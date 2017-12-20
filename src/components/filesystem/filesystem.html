@@ -40,11 +40,11 @@
     <li id='open-file' v-on:click="downloadAll">Download</li>
     <li id='rename-file' v-if="isWritable" v-on:click="rename">Rename</li>
     <li id='delete-file' v-if="isWritable" v-on:click="delete">Delete</li>
-    <li id='copy-file' v-on:click="copy">Copy</li>
+    <li id='copy-file' v-if="hasWriteAccess" v-on:click="copy">Copy</li>
     <li id='cut-file' v-if="isWritable" v-on:click="cut">Cut</li>
     <li id='paste-file' v-if="isPasteAvailable" v-on:click="paste">Paste</li>
-    <li id='public-link-file' v-on:click="createPublicLink">Create public link</li>
-    <li id='share-file' v-on:click="showShareWith">Share</li>
+    <li id='public-link-file' v-if="isWritable" v-on:click="createPublicLink">Create public link</li>
+    <li id='share-file' v-if="isWritable" v-on:click="showShareWith">Share</li>
     <li id='shared-with-file' v-if="isWritable" v-on:click="sharedWith">Shared with</li>
 </ul>
 
