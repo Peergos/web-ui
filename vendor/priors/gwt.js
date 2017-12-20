@@ -26,7 +26,7 @@ function getProm(url) {
 		resolve(new Int8Array(req.response));
             }
             else {
-		reject(Error(req.statusText));
+		reject(Error(req.getResponseHeader("Trailer")));
             }
 	};
 	
@@ -37,10 +37,12 @@ function getProm(url) {
 	req.send();
     }).then(function(result, err) {
         if (err != null)
-            future.completeExceptionally(err);
+            future.completeExceptionally(java.lang.Throwable.of(err));
         else {
             future.complete(convertToByteArray(Array.from(result)));
 	}
+    }, function(err) {
+	future.completeExceptionally(java.lang.Throwable.of(err)); 
     });
     return future;
 }
@@ -61,7 +63,7 @@ function postProm(url, data) {
 		resolve(new Int8Array(req.response));
             }
             else {
-		reject(Error(req.statusText));
+		reject(req.getResponseHeader("Trailer"));
             }
 	};
 	
@@ -72,9 +74,11 @@ function postProm(url, data) {
 	req.send(new Uint8Array(data));
     }).then(function(result, err) {
         if (err != null)
-            future.completeExceptionally(err);
+            future.completeExceptionally(java.lang.Throwable.of(err));
         else
             future.complete(peergos.shared.user.JavaScriptPoster.convertToBytes(result));
+    }, function(err) {
+	future.completeExceptionally(java.lang.Throwable.of(err)); 
     });
     return future;
 }
