@@ -388,12 +388,15 @@ module.exports = {
                     });
                 } else if (clipboard.op == "copy") {
                     console.log("paste-copy");
-                    clipboard.fileTreeNode.copyTo(target, context.network, context.crypto.random)
+                    clipboard.fileTreeNode.copyTo(target, context.network, context.crypto.random, context.fragmenter())
                         .thenApply(function() {
                             that.currentDirChanged();
 			    that.onUpdateCompletion.push(function() {
 				that.showSpinner = false;
 			    });
+                        }).exceptionally(function(e){
+                        console.log(e.getMessage())
+                        console.log(e);
                         });
                 }
                 this.clipboard.op = null;
@@ -857,15 +860,20 @@ module.exports = {
                 }
             });
         },
-
+        hasWriteAccess: function() {
+            var context = this.getContext();
+            if (context == null)
+                return false;
+            return context.hasWriteAccess();
+        },
         isWritable: function() {
-	    try {
-		if (this.currentDir == null)
+            try {
+                if (this.currentDir == null)
                     return false;
-		return this.currentDir.isWritable();
-	    } catch (err) {
-		return false;
-	    }
+                return this.currentDir.isWritable();
+            } catch (err) {
+                return false;
+            }
         },
 
         isNotMe: function() {
