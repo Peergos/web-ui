@@ -585,6 +585,12 @@ module.exports = {
                     return reader.readIntoArray(data, 0, data.length)
                         .thenApply(function(read){that.openItem(props.name, data)});
                 }
+            }).exceptionally(function(throwable) {
+		progress.show = false;
+                that.errorTitle = 'Error downloading file: ' + props.name;
+                that.errorBody = throwable.getMessage();
+                that.showError = true;
+                that.showSpinner = false;
             });
         },
         supportsStreaming: function() {
