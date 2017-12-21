@@ -307,7 +307,7 @@ module.exports = {
             }, context.fragmenter()).thenApply(function(x) {
                 that.currentDirChanged();
             }).exceptionally(function(throwable) {
-                console.log('Error signing up: ' + throwable);
+		progress.show = false;
                 that.errorTitle = 'Error uploading file: ' + file.name;
                 that.errorBody = throwable.getMessage();
                 that.showError = true;
