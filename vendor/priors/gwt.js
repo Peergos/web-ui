@@ -100,7 +100,7 @@ function postMultipartProm(url, dataArrays) {
 		resolve(new Int8Array(req.response));
             }
             else {
-		reject(Error(req.statusText));
+		reject(req.getResponseHeader("Trailer"));
             }
 	};
 	
@@ -117,9 +117,11 @@ function postMultipartProm(url, dataArrays) {
         req.send(form);
     }).then(function(result, err) {
         if (err != null)
-            future.completeExceptionally(err);
+            future.completeExceptionally(java.lang.Throwable.of(err));
         else
             future.complete(peergos.shared.user.JavaScriptPoster.convertToBytes(result));
+    }, function(err) {
+	future.completeExceptionally(java.lang.Throwable.of(err)); 
     });
     return future;
 }

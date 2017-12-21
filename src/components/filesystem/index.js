@@ -45,6 +45,9 @@ module.exports = {
             prompt_placeholder: '',
 	        prompt_value: '',
             showPrompt: false,
+            errorTitle:'',
+            errorBody:'',
+            showError:false,
             showSpinner: true,
             initiateDownload: false, // used to trigger a download for a public link to a file
 	    onUpdateCompletion: [] // methods to invoke when current dir is next refreshed
@@ -303,6 +306,12 @@ module.exports = {
                 }
             }, context.fragmenter()).thenApply(function(x) {
                 that.currentDirChanged();
+            }).exceptionally(function(throwable) {
+                console.log('Error signing up: ' + throwable);
+                that.errorTitle = 'Error uploading file: ' + file.name;
+                that.errorBody = throwable.getMessage();
+                that.showError = true;
+                that.showSpinner = false;
             });
         },
 
