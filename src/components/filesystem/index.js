@@ -234,7 +234,12 @@ module.exports = {
 		    that.onUpdateCompletion.push(function() {
                         that.showSpinner = false;
 		    });
-                }.bind(this));
+                }.bind(this)).exceptionally(function(throwable) {
+		    that.errorTitle = 'Error creating directory: ' + name;
+		    that.errorBody = throwable.getMessage();
+		    that.showError = true;
+		    that.showSpinner = false;
+		});
         },
 
         askForFile: function() {
@@ -394,7 +399,13 @@ module.exports = {
 			that.onUpdateCompletion.push(function() {
                             that.showSpinner = false;
 			});
-                    });
+                    }).exceptionally(function(throwable) {
+			progress.show = false;
+			that.errorTitle = 'Error moving file: ' + name;
+			that.errorBody = throwable.getMessage();
+			that.showError = true;
+			that.showSpinner = false;
+		    });
                 } else if (clipboard.op == "copy") {
                     console.log("paste-copy");
                     clipboard.fileTreeNode.copyTo(target, context.network, context.crypto.random)
@@ -403,7 +414,13 @@ module.exports = {
 			    that.onUpdateCompletion.push(function() {
 				that.showSpinner = false;
 			    });
-                        });
+                        }).exceptionally(function(throwable) {
+			    progress.show = false;
+			    that.errorTitle = 'Error copying file: ' + props.name;
+			    that.errorBody = throwable.getMessage();
+			    that.showError = true;
+			    that.showSpinner = false;
+			});
                 }
                 this.clipboard.op = null;
             }
@@ -660,7 +677,8 @@ module.exports = {
                 that.showSpinner = true;
                 var context = this.getContext();
                 if (clipboard.op == "cut") {
-                    console.log("drop-cut "+clipboard.fileTreeNode.getFileProperties().name + " -> "+target.getFileProperties().name);
+		    var name = clipboard.fileTreeNode.getFileProperties().name;
+                    console.log("drop-cut " + name + " -> "+target.getFileProperties().name);
                     clipboard.fileTreeNode.copyTo(target, context.network, context.crypto.random).thenCompose(function() {
                         return clipboard.fileTreeNode.remove(context.network, clipboard.parent);
                     }).thenApply(function() {
@@ -668,16 +686,28 @@ module.exports = {
 			that.onUpdateCompletion.push(function() {
                             that.showSpinner = false;
 			});
-                    });
+                    }).exceptionally(function(throwable) {
+			that.errorTitle = 'Error moving file: ' + name;
+			that.errorBody = throwable.getMessage();
+			that.showError = true;
+			that.showSpinner = false;
+		    });
                 } else if (clipboard.op == "copy") {
                     console.log("drop-copy");
-                    clipboard.fileTreeNode.copyTo(target, context.network, context.crypto.random)
+		    var file = clipboard.fileTreeNode;
+		    var props = file.getFileProperties();
+                    file.copyTo(target, context.network, context.crypto.random)
                         .thenApply(function() {
                             that.currentDirChanged();
 			    that.onUpdateCompletion.push(function() {
 				that.showSpinner = false;
 			    });
-                        });
+                        }).exceptionally(function(throwable) {
+			    that.errorTitle = 'Error copying file: ' + props.name;
+			    that.errorBody = throwable.getMessage();
+			    that.showError = true;
+			    that.showSpinner = false;
+			});
                 }
             }
         },
@@ -735,7 +765,12 @@ module.exports = {
 			that.onUpdateCompletion.push(function() {
                             that.showSpinner = false;
 			});
-                    });
+                    }).exceptionally(function(throwable) {
+			that.errorTitle = 'Error renaming file: ' + old_name;
+			that.errorBody = throwable.getMessage();
+			that.showError = true;
+			that.showSpinner = false;
+		    });
             };
             this.showPrompt =  true;
         },
@@ -763,7 +798,12 @@ module.exports = {
 			    that.onUpdateCompletion.push(function() {
 				that.showSpinner = false;
 			    });
-                    });
+                    }).exceptionally(function(throwable) {
+			that.errorTitle = 'Error deleting file: ' + file.getFileProperties().name;
+			that.errorBody = throwable.getMessage();
+			that.showError = true;
+			that.showSpinner = false;
+		    });
             }
         },
         setStyle: function(id, style) {
