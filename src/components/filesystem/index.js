@@ -533,7 +533,7 @@ module.exports = {
 	    }
         },
 
-        navigateOrDownload: function(file) {
+	navigateOrDownload: function(file) {
             if (this.showSpinner) // disable user input whilst refreshing
                 return;
             this.closeMenu();

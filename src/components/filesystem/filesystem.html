@@ -73,8 +73,8 @@
         <span class="column" v-for="file in sortedFiles">
             <span class="grid_icon_wrapper glyphicon" id="grid$index" draggable="true" @dragStart="dragStart($event, file)" @dragover.prevent @drop="drop($event, file)">
                 <a v-bind:id="file.getFileProperties().name" v-on:contextmenu="openMenu($event, file)">
-                    <span v-if="!file.getFileProperties().thumbnail.isPresent()" v-touch:tap="navigateOrDownload(file)" v-on:longpress="openMenu($event, file)" v-on:contextmenu="openMenu($event, file)" v-bind:class="['file_icon', file.isDirectory() ? 'glyphicon-folder-open' : 'glyphicon-file', 'picon']"> </span>
-                    <img v-if="file.getFileProperties().thumbnail.isPresent()" v-touch:tap="navigateOrDownload(file)" v-on:longpress="openMenu($event, file)" v-on:contextmenu="openMenu($event, file)" v-bind:src="getThumbnailURL(file)"/>
+                    <span v-if="!file.getFileProperties().thumbnail.isPresent()" v-on:click="navigateOrDownload(file)" v-on:contextmenu="openMenu($event, file)" v-bind:class="['file_icon', file.isDirectory() ? 'glyphicon-folder-open' : 'glyphicon-file', 'picon']"> </span>
+                    <img v-if="file.getFileProperties().thumbnail.isPresent()" v-on:click="navigateOrDownload(file)" v-on:contextmenu="openMenu($event, file)" v-bind:src="getThumbnailURL(file)"/>
                 </a>
                 <div class="content picon" >
                     <div v-bind:class="{ noselect: true, shared: isShared(file) }">{{ file.getFileProperties().name }}</div>
