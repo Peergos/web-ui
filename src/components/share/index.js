@@ -2,7 +2,10 @@ module.exports = {
     template: require('share.html'),
     data: function() {
         return {
-            targetUsername: ""
+            targetUsername: "",
+	    errorTitle:'',
+            errorBody:'',
+            showError:false
         }
     },
     props: ['show', 'files', 'context', 'usernames', 'messages', 'shared'],
@@ -40,6 +43,7 @@ module.exports = {
                                 show: true
                             });
                         } else {
+			    var filename = that.files[0].getFileProperties().name;
                             that.context.shareWith(that.files[0], targetUsername)
                                 .thenApply(function(b) {
                                     that.messages.push({
@@ -48,8 +52,12 @@ module.exports = {
                                     show: true
                                     });
                                     that.close();
-                                    console.log("shared " + that.files[0].getFileProperties().name + " with " + targetUsername);
-                                });
+                                    console.log("shared " + filename + " with " + targetUsername);
+                                }).exceptionally(function(throwable) {
+				    that.errorTitle = 'Error sharing file: ' + filename;
+				    that.errorBody = throwable.getMessage();
+				    that.showError = true;
+				});;
                         }
                     });
                 }
