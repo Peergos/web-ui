@@ -303,7 +303,7 @@ module.exports = {
             var java_reader = new peergos.shared.user.fs.BrowserFileReader(reader);
             var that = this;
             var context = this.getContext();
-            this.currentDir.uploadFileJS(file.name, java_reader, 0, file.size, context.network, context.crypto.random, function(len){
+            this.currentDir.uploadFileJS(file.name, java_reader, 0, file.size, false, context.network, context.crypto.random, function(len){
                 progress.done += len.value_0;
                 if (progress.done >= progress.max) {
                     setTimeout(function(){progress.show = false}, 2000);
