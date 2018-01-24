@@ -983,6 +983,8 @@ module.exports = {
                             })});
                     }
                 });
+            } else {
+                this.updateSocial();
             }
         }
     }
