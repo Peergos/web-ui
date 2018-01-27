@@ -9,7 +9,7 @@
   <property name="ui" location="${server}/webroot"/>
   <property name="assets" location="assets"/>
   <property name="vendor" location="vendor"/>
-
+  <property name="timestamp.millis" value="1489731900000"/>
 
   <target name="peergos_submodule_sync" description="sync. peergos dependency">
           <exec executable="git" dir="." failonerror="true">
@@ -152,6 +152,9 @@
     <copy todir="${ui}/js">
       <fileset file="${peergos_project_root}/war/peergoslib/*cache.js"/>
     </copy>
+    <touch millis="${timestamp.millis}">
+      <fileset dir="${server}"/>
+    </touch>
 
     <!--flatten Peergos dependencies into a  fat-jar -->
     <zip destfile="${server}/PeergosServer.jar" update="true">
@@ -162,7 +165,16 @@
             <fileset dir="${server}">
                     <include name="**/webroot/**"/>
             </fileset>
-    </zip>        
+    </zip>
+    <!-- Add a manifest -->
+    <mkdir dir="META-INF"/>
+    <echo file="META-INF/MANIFEST.MF">Main-Class: peergos.server.Start
+Class-Path: .</echo>
+    <touch millis="0">
+      <fileset dir="META-INF"/>
+    </touch>
+    <zip destfile="${server}/PeergosServer.jar" basedir="." includes="META-INF/MANIFEST.MF" update="true"></zip>
+    <delete dir="META-INF"/>
 
   </target>
 
