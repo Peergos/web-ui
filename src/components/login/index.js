@@ -38,6 +38,16 @@ module.exports = {
             });
     },
     methods: {
+        displayDemoWarning: function() {
+            if (this.demo == true) {
+                if(this.isPublicLink == true) {
+                    return false;
+                }
+                return true;
+            } else {
+                return false;
+            }
+        },
         gotoPublicLink: function(link) {
             var that = this;
             var query = link.indexOf("?");
@@ -50,6 +60,7 @@ module.exports = {
                     open = true;
                 link = link.substring(0, query);
             }
+            var that = this;
             peergos.shared.NetworkAccess.buildJS()
                 .thenApply(function(network){
                     peergos.shared.user.UserContext.fromPublicLink(link, network, that.crypto).thenApply(function(context) {
@@ -61,6 +72,12 @@ module.exports = {
                                 open: open
                             }
                         });
+                    }).exceptionally(function(throwable) {
+                        that.errorTitle = 'Public link not found!'
+                        that.errorBody = 'Url copy/paste error?'
+                        that.showSpinner = false;
+                        that.showError = true;
+
                     });
                 });
         },
@@ -83,7 +100,7 @@ module.exports = {
                         console.log('Error logging in: '+throwable);
                         var msg = throwable.getMessage();
                         that.errorTitle = 'Error logging-in'
-                            that.errorBody = throwable.getMessage();
+                        that.errorBody = throwable.getMessage();
                         that.showSpinner = false;
                         that.showError = true;
                     });
