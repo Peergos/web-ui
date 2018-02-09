@@ -8,9 +8,9 @@ module.exports = {
             showError:false
         }
     },
-    props: ['show', 'files', 'context', 'usernames', 'messages', 'shared'],
+    props: ['show', 'files', 'context', 'messages', 'shared'],
     created: function() {
-        this.setTypeAhead();
+        Vue.nextTick(this.setTypeAhead);
     },
     methods: {
         close: function () {
@@ -103,5 +103,10 @@ module.exports = {
                             source: substringMatcher(usernames)
                         });
         },
+    },
+    computed: {
+        usernames: function() {
+            return this.context.network.usernames.toArray([]);
+        }
     }
 }
