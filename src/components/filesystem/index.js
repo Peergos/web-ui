@@ -204,7 +204,7 @@ module.exports = {
         askMkdir: function() {
             this.prompt_placeholder='Folder name';
             this.prompt_message='Enter a new folder name';
-
+            this.prompt_value='';
             this.prompt_consumer_func = function(prompt_result) {
                 console.log("creating new sub-dir "+ prompt_result);
                 if (prompt_result === '')
@@ -751,7 +751,7 @@ module.exports = {
                 this.closeMenu();
 
             this.prompt_placeholder = 'New name';
-	    this.prompt_value = old_name;
+	        this.prompt_value = old_name;
             this.prompt_message = 'Enter a new name';
             var that = this;
             this.prompt_consumer_func = function(prompt_result) {
