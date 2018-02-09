@@ -912,15 +912,25 @@ module.exports = {
                 }
             });
         },
-
+        canOpen: function() {
+           try {
+               if (this.currentDir == null)
+                   return false;
+               if (this.selectedFiles.length != 1)
+                   return false;
+               return !this.selectedFiles[0].isDirectory()
+           } catch (err) {
+               return false;
+           }
+        },
         isWritable: function() {
-	    try {
-		if (this.currentDir == null)
+            try {
+                if (this.currentDir == null)
                     return false;
-		return this.currentDir.isWritable();
-	    } catch (err) {
-		return false;
-	    }
+                return this.currentDir.isWritable();
+            } catch (err) {
+                return false;
+            }
         },
 
         isNotMe: function() {
