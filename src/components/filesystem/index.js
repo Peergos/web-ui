@@ -463,13 +463,14 @@ module.exports = {
         changePassword: function(oldPassword, newPassword) {
             console.log("Changing password");
             this.showSpinner = true;
+            var that = this;
             this.getContext().changePassword(oldPassword, newPassword).thenApply(function(newContext){
                 this.contextUpdates++;
                 this.context = newContext;
-		that.onUpdateCompletion.push(function() {
-                    that.showSpinner = false;
-		});
                 this.showMessage("Password changed!");
+                that.onUpdateCompletion.push(function() {
+                    that.showSpinner = false;
+                });
             }.bind(this));
         },
 
