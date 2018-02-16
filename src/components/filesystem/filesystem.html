@@ -35,17 +35,17 @@
 
 <input type="file" id="uploadInput" @change="uploadFiles" style="display:none;" multiple="" />
 <a id="downloadAnchor" style="display:none"></a>
-<ul id="right-click-menu" tabindex="-1" v-el="right" v-if="viewMenu" v-on:blur="closeMenu" v-bind:style="{top:top, left:left}">
+<ul id="right-click-menu" tabindex="-1" v-el="right" v-if="viewMenu && (isNotHome || isPasteAvailable || isNotBackground)" v-on:blur="closeMenu" v-bind:style="{top:top, left:left}">
     <li id='gallery' v-if="canOpen" v-on:click="gallery">Open</li>
     <li id='open-file' v-if="canOpen" v-on:click="downloadAll">Download</li>
-    <li id='rename-file' v-if="isWritable" v-on:click="rename">Rename</li>
-    <li id='delete-file' v-if="isWritable" v-on:click="delete">Delete</li>
-    <li id='copy-file' v-on:click="copy">Copy</li>
-    <li id='cut-file' v-if="isWritable" v-on:click="cut">Cut</li>
+    <li id='rename-file' v-if="isNotBackground && isWritable" v-on:click="rename">Rename</li>
+    <li id='delete-file' v-if="isNotBackground && isWritable" v-on:click="delete">Delete</li>
+    <li id='copy-file' v-if="isNotBackground" v-on:click="copy">Copy</li>
+    <li id='cut-file' v-if="isNotBackground && isWritable" v-on:click="cut">Cut</li>
     <li id='paste-file' v-if="isPasteAvailable" v-on:click="paste">Paste</li>
-    <li id='public-link-file' v-on:click="createPublicLink">Create public link</li>
-    <li id='share-file' v-on:click="showShareWith">Share</li>
-    <li id='shared-with-file' v-if="isWritable" v-on:click="sharedWith">Shared with</li>
+    <li id='public-link-file' v-if="(isNotHome || isNotBackground)" v-on:click="createPublicLink">Create public link</li>
+    <li id='share-file' v-if="(isNotHome || isNotBackground)" v-on:click="showShareWith">Share</li>
+    <li id='shared-with-file' v-if="(isNotHome || isNotBackground) && isWritable" v-on:click="sharedWith">Shared with</li>
 </ul>
 
 <modal :show.sync="showModal" :title.sync="modalTitle" :links.sync="modalLinks"></modal>

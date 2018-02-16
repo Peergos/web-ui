@@ -24,7 +24,8 @@ module.exports = {
             showShare:false,
             showSharedWith:false,
             sharedWithData:{},
-	        forceSharedWithUpdate:0,
+	    forceSharedWithUpdate:0,
+	    isNotBackground: true,
             showSocial:false,
             showGallery:false,
             showHexViewer:false,
@@ -727,14 +728,18 @@ module.exports = {
                 return; // disable sharing your root directory
             }
             if(file) {
+		this.isNotBackground = true;
                 this.selectedFiles = [file];
             } else {
-                this.selectedFiles = [];
+		this.isNotBackground = false;
+                this.selectedFiles = [this.currentDir];
             }
             this.viewMenu = true;
 
             Vue.nextTick(function() {
-                document.getElementById("right-click-menu").focus();
+                var menu = document.getElementById("right-click-menu");
+		if (menu != null)
+		    menu.focus();
                 this.setMenu(e.y, e.x)
             }.bind(this));
             e.preventDefault();
@@ -814,40 +819,23 @@ module.exports = {
         },
         setMenu: function(top, left) {
             console.log("open menu");
-            var menu = document.getElementById("right-click-menu");
 
-            if (this.selectedFiles.length == 1) {
+            if (this.isNotBackground) {
                 this.ignoreEvent = true;
-                this.setStyle("rename-file", 'block');
-                this.setStyle("delete-file", 'block');
-                this.setStyle("open-file", 'block');
-                this.setStyle("copy-file", 'block');
-                this.setStyle("cut-file", 'block');
-                this.setStyle("paste-file", 'block');
-            } else {
-                this.setStyle("rename-file", 'none');
-                this.setStyle("delete-file", 'none');
-                this.setStyle("open-file", 'none');
-                this.setStyle("copy-file", 'none');
-                this.setStyle("cut-file", 'none');
-                this.setStyle("paste-file", 'none');
-                if (this.path.length > 1) {
-                    this.selectedFiles = [this.currentDir];
-                } else {
-                    this.selectedFiles = [];
-                    this.closeMenu();
-                }
             }
 
-            var largestHeight = window.innerHeight - menu.offsetHeight - 25;
-            var largestWidth = window.innerWidth - menu.offsetWidth - 25;
-
-            if (top > largestHeight) top = largestHeight;
-
-            if (left > largestWidth) left = largestWidth;
-
-            this.top = top + 'px';
-            this.left = left + 'px';
+	    var menu = document.getElementById("right-click-menu");
+	    if (menu != null) {
+		var largestHeight = window.innerHeight - menu.offsetHeight - 25;
+		var largestWidth = window.innerWidth - menu.offsetWidth - 25;
+		
+		if (top > largestHeight) top = largestHeight;
+		
+		if (left > largestWidth) left = largestWidth;
+		
+		this.top = top + 'px';
+		this.left = left + 'px';
+	    }
         },
 
         isShared: function(file) {
@@ -933,6 +921,10 @@ module.exports = {
             }
         },
 
+        isNotHome: function() {
+            return this.path.length > 1;
+        },
+
         isNotMe: function() {
             if (this.currentDir == null)
                 return true;
@@ -949,14 +941,14 @@ module.exports = {
                 return false;
 
             if (typeof(this.clipboard) ==  undefined || this.clipboard.op == null || typeof(this.clipboard.op) == "undefined")
-                return;
+                return false;
 
             if (this.selectedFiles.length != 1)
-                return;
+                return false;
             var target = this.selectedFiles[0];
 
             if(this.clipboard.fileTreeNode.equals(target)) {
-                return;
+                return false;
             }
 
             return this.currentDir.isWritable() && target.isDirectory();
