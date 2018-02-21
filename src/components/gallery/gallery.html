@@ -1,5 +1,6 @@
 <div class="modal-mask" @click="close" v-show="show" transition="modal">
     <div class="modal-container" @click.stop style="height:95%;width:95%;overflow-y:auto" @keyup.right="next" @keyup.left="previous">
+        <button @click="close" class="x">X</button>
         <spinner v-if="showSpinner"></spinner>
         <center>
             <h2 v-if="current != null" >{{ current.getFileProperties().name }}</h2>
