@@ -401,8 +401,7 @@ module.exports = {
                             that.showSpinner = false;
 			});
                     }).exceptionally(function(throwable) {
-			progress.show = false;
-			that.errorTitle = 'Error moving file: ' + name;
+			that.errorTitle = 'Error moving file';
 			that.errorBody = throwable.getMessage();
 			that.showError = true;
 			that.showSpinner = false;
@@ -416,8 +415,7 @@ module.exports = {
 				that.showSpinner = false;
 			    });
                         }).exceptionally(function(throwable) {
-			    progress.show = false;
-			    that.errorTitle = 'Error copying file: ' + props.name;
+			    that.errorTitle = 'Error copying file';
 			    that.errorBody = throwable.getMessage();
 			    that.showError = true;
 			    that.showSpinner = false;
