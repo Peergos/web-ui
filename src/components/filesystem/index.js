@@ -394,7 +394,7 @@ module.exports = {
                 if (clipboard.op == "cut") {
                     console.log("paste-cut "+clipboard.fileTreeNode.getFileProperties().name + " -> "+target.getFileProperties().name);
                     clipboard.fileTreeNode.copyTo(target, context.network, context.crypto.random, context.fragmenter()).thenCompose(function() {
-                        return clipboard.fileTreeNode.remove(that.getContext(), clipboard.parent);
+                        return clipboard.fileTreeNode.remove(that.getContext().network, clipboard.parent);
                     }).thenApply(function() {
                         that.currentDirChanged();
 			that.onUpdateCompletion.push(function() {
@@ -680,14 +680,14 @@ module.exports = {
 		    var name = clipboard.fileTreeNode.getFileProperties().name;
                     console.log("drop-cut " + name + " -> "+target.getFileProperties().name);
                     clipboard.fileTreeNode.copyTo(target, context.network, context.crypto.random, context.fragmenter()).thenCompose(function() {
-                        return clipboard.fileTreeNode.remove(context.network, clipboard.parent);
+                        return clipboard.fileTreeNode.remove(that.getContext().network, clipboard.parent);
                     }).thenApply(function() {
                         that.currentDirChanged();
 			that.onUpdateCompletion.push(function() {
                             that.showSpinner = false;
 			});
                     }).exceptionally(function(throwable) {
-			that.errorTitle = 'Error moving file: ' + name;
+			that.errorTitle = 'Error moving file';
 			that.errorBody = throwable.getMessage();
 			that.showError = true;
 			that.showSpinner = false;
@@ -703,7 +703,7 @@ module.exports = {
 				that.showSpinner = false;
 			    });
                         }).exceptionally(function(throwable) {
-			    that.errorTitle = 'Error copying file: ' + props.name;
+			    that.errorTitle = 'Error copying file';
 			    that.errorBody = throwable.getMessage();
 			    that.showError = true;
 			    that.showSpinner = false;
