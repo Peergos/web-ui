@@ -393,7 +393,7 @@ module.exports = {
                 var context = this.getContext();
                 if (clipboard.op == "cut") {
                     console.log("paste-cut "+clipboard.fileTreeNode.getFileProperties().name + " -> "+target.getFileProperties().name);
-                    clipboard.fileTreeNode.copyTo(target, context.network, context.crypto.random).thenCompose(function() {
+                    clipboard.fileTreeNode.copyTo(target, context.network, context.crypto.random, context.fragmenter()).thenCompose(function() {
                         return clipboard.fileTreeNode.remove(that.getContext(), clipboard.parent);
                     }).thenApply(function() {
                         that.currentDirChanged();
@@ -408,7 +408,7 @@ module.exports = {
 		    });
                 } else if (clipboard.op == "copy") {
                     console.log("paste-copy");
-                    clipboard.fileTreeNode.copyTo(target, context.network, context.crypto.random)
+                    clipboard.fileTreeNode.copyTo(target, context.network, context.crypto.random, context.fragmenter())
                         .thenApply(function() {
                             that.currentDirChanged();
 			    that.onUpdateCompletion.push(function() {
@@ -679,7 +679,7 @@ module.exports = {
                 if (clipboard.op == "cut") {
 		    var name = clipboard.fileTreeNode.getFileProperties().name;
                     console.log("drop-cut " + name + " -> "+target.getFileProperties().name);
-                    clipboard.fileTreeNode.copyTo(target, context.network, context.crypto.random).thenCompose(function() {
+                    clipboard.fileTreeNode.copyTo(target, context.network, context.crypto.random, context.fragmenter()).thenCompose(function() {
                         return clipboard.fileTreeNode.remove(context.network, clipboard.parent);
                     }).thenApply(function() {
                         that.currentDirChanged();
@@ -696,7 +696,7 @@ module.exports = {
                     console.log("drop-copy");
 		    var file = clipboard.fileTreeNode;
 		    var props = file.getFileProperties();
-                    file.copyTo(target, context.network, context.crypto.random)
+                    file.copyTo(target, context.network, context.crypto.random, context.fragmenter())
                         .thenApply(function() {
                             that.currentDirChanged();
 			    that.onUpdateCompletion.push(function() {
