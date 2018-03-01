@@ -2,18 +2,19 @@ body {
   background-color: #FFFFFF;
 }
 
-.x {
-  display: inline-block;
-  position: absolute;
-  right: 40px;
-  top: 0px;
-  color: #333333;
-  font-size: 20px;
-  background-color: #ffffff;
-  border-top-color: rgba(255, 255, 255, 1);
-  border-right-color: rgba(255, 255, 255, 1);
-  border-bottom-color: rgba(255, 255, 255, 1);
-  border-left-color: rgba(255, 255, 255, 1);
+
+.close {
+    color: #aaaaaa;
+    float: right;
+    font-size: 28px;
+    font-weight: bold;
+}
+
+.close:hover,
+.close:focus {
+    color: #000;
+    text-decoration: none;
+    cursor: pointer;
 }
 
 .shared {
