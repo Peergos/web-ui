@@ -392,140 +392,165 @@ function generateThumbnailProm(asyncReader, fileSize, fileName) {
     return future;
 }
 
-function generateVideoThumbnailProm(asyncReader, fileSize, fileName) {
-    var future = peergos.shared.util.FutureUtils.incomplete();
-
-    var size = fileSize;
-    if(false) {//size > SOME_LIMIT && streamingAvailable)
-        return createVideoThumbnailStreamingProm(asyncReader, fileSize, fileName);
-    }else{
-        return createVideoThumbnailProm(asyncReader, fileSize, fileName);
+function supportsStreaming() {
+    var href = window.location.href;
+    if (href.indexOf("streaming=true") == -1)
+        return false;
+    try {
+        return 'serviceWorker' in navigator && !!new ReadableStream() && !!new WritableStream()
+    } catch(err) {
+        return false;
     }
 }
 
-function createVideoThumbnailProm(asyncReader, fileSize, fileName) {
+function generateVideoThumbnailProm(asyncReader, fileSize, fileName) {
     var future = peergos.shared.util.FutureUtils.incomplete();
-    var bytesToRead = fileSize; //read whole file
-    var bytes = peergos.shared.util.Serialize.newByteArray(bytesToRead);
-    asyncReader.readIntoArray(bytes, 0, bytesToRead).thenApply(function(bytesRead) {
-        var video = document.createElement('video');
-        var canvas = document.createElement('canvas');
-        var gotThumbnail = false;
-        video.oncanplay = function(){
-            var increment = video.duration / 10;
-            var width = 100, height = 100;
-            canvas.width = width;
-            canvas.height = height;
-            var currentIncrement = increment; //todo loop
-            video.currentTime = currentIncrement;
-            if(gotThumbnail) {
-            return;
-            }
-            setTimeout(() => {
-                if(gotThumbnail) {
-                    return;
+    if(supportsStreaming() && fileSize > 300000000) {
+        return createVideoThumbnailStreamingProm(future, asyncReader, fileSize, fileName);
+    }else{
+        return createVideoThumbnailProm(future, asyncReader, fileSize, fileName);
+    }
+}
+
+function createVideoThumbnailProm(future, asyncReader, fileSize, fileName) {
+    let bytes = peergos.shared.util.Serialize.newByteArray(fileSize);
+    asyncReader.readIntoArray(bytes, 0, fileSize).thenApply(function(bytesRead) {
+        var increment = 0;
+        var currentIncrement = 0;                                                   
+        let width = 100, height = 100;   
+        let video = document.createElement('video');
+        video.onloadedmetadata = function(){
+            let thumbnailGenerator = () => {
+                let duration = video.duration;
+                if(increment == 0) {
+                    increment = duration / 10;
+                    currentIncrement = increment; //skip over intro                                          
                 }
-                var context = canvas.getContext('2d');
-                context.drawImage(video, 0, 0, width, height);
-                var imgd = context.getImageData(0, 0, width, height);
-                var pix = imgd.data;
-                var threshold = width * height / 10 * 8;
-                var blackCount = 0;
-                var whiteCount = 0;
-                var isOk = true;
-                for (var i = 0, n = pix.length; i < n; i += 4) {
-                    var total = pix[i] + pix[i+1] + pix[i+2];
-                    if(total < 10) {
-                       if(++blackCount > threshold) {
-                            isOk = false;
-                            break;
-                       }
-                    }else if(total > 760) {
-                       if(++whiteCount > threshold) {
-                            isOk = false;
-                            break;
-                       }
-                    }
-                }
-                if(isOk) {
-                   var b64Thumb = canvas.toDataURL().substring("data:image/png;base64,".length);
-                   gotThumbnail = true;
-                   future.complete(b64Thumb);
-                }else {
+                currentIncrement = currentIncrement + increment;
+                if(currentIncrement < duration){
+                    captureThumbnail(width, height, currentIncrement, video).thenApply((thumbnail)=>{
+                        if(thumbnail.length == 0){
+                            setTimeout(thumbnailGenerator, 1000)
+                        } else {
+                            future.complete(thumbnail);
+                        }
+                    })
+                } else {
                     future.complete("");
                 }
-                video.oncanplay = function(){};
-           }, 1000);
-        }
+            };
+            thumbnailGenerator();
+       };
         video.onerror = function(e) {
             console.log(e);
             future.complete("");
         }
-        var blob = new Blob([new Uint8Array(bytes)], {type: "octet/stream"});
-        var url = window.URL.createObjectURL(blob);
+        let blob = new Blob([new Uint8Array(bytes)], {type: "octet/stream"});
+        let url = window.URL.createObjectURL(blob);
         video.src = url;
     });
     return future;
 }
+function captureThumbnail(width, height, currentIncrement, video){
+    let capturingFuture = peergos.shared.util.FutureUtils.incomplete();   
+    video.currentTime = currentIncrement;
 
-function createVideoThumbnailStreamingProm(asyncReader, fileSize, fileName) {
-    var maxBlockSize = 1024 * 10;
+    let canvas = document.createElement('canvas');
+    canvas.width = width;
+    canvas.height = height;
+    setTimeout(() => {
+            let context = canvas.getContext('2d');
+            context.drawImage(video, 0, 0, width, height);
+            let imgd = context.getImageData(0, 0, width, height);
+            let pix = imgd.data;
+            let threshold = width * height / 10 * 8;
+            var blackCount = 0;
+            var whiteCount = 0;
+            var isOk = true;
+            for (var i = 0, n = pix.length; i < n; i += 4) {
+                var total = pix[i] + pix[i+1] + pix[i+2];
+                if(total < 20) {
+                   if(++blackCount > threshold) {
+                       isOk = false;
+                       break;
+                   }
+                }else if(total > 760) {
+                   if(++whiteCount > threshold) {
+                       isOk = false;
+                       break;
+                   }
+                }
+            }
+            if(isOk) {
+                let b64Thumb = canvas.toDataURL().substring("data:image/png;base64,".length);
+                capturingFuture.complete(b64Thumb);
+            }else {
+                capturingFuture.complete("");
+            }
+    }, 1000);
+    return capturingFuture;
+}
+
+function createVideoThumbnailStreamingProm(future, asyncReader, size, fileName) {
+    let maxBlockSize = 1024 * 10;
     var blockSize = size > maxBlockSize ? maxBlockSize : size;
     let fileStream = streamSaver.createWriteStream("media-" + fileName, function(url){
-        var video = document.createElement('video');
-        var canvas = document.createElement('canvas');
+        let width = 100, height = 100;
+        let video = document.createElement('video');
+        let canvas = document.createElement('canvas');
+        canvas.width = width;
+        canvas.height = height;
         var gotThumbnail = false;
-        var width = 100, height = 100;
-        var threshold = width * height / 10 * 8;
-        video.autoplay = true;
+        let threshold = width * height / 10 * 8;
         video.muted = true;
         video.onerror = function(e) {
             console.log(e);
             future.complete("");
         }
-        video.onprogress = function(){
-            try {
-                if(gotThumbnail || video.currentTime == 0) {
-                    return;
-                }
-                if(video.currentTime == video.duration || video.currentTime > 60) {
-                    future.complete("");
-                }
-                canvas.width = width;
-                canvas.height = height;
-                var context = canvas.getContext('2d');
-                context.drawImage(video, 0, 0, width, height);
-                var imgd = context.getImageData(0, 0, width, height);
-                var pix = imgd.data;
-                var blackCount = 0;
-                var whiteCount = 0;
-                var isOk = true;
-                for (var i = 0, n = pix.length; i < n && isOk; i += 4) {
-                    var total = pix[i] + pix[i+1] + pix[i+2];
-                    if(total < 10) {
-                       if(++blackCount > threshold) {
-                            isOk = false;
-                       }
-                    }else if(total > 760) {
-                       if(++whiteCount > threshold) {
-                            isOk = false;
-                       }
-                    }
-                }
-                if(isOk) {
-                   var b64Thumb = canvas.toDataURL().substring("data:image/png;base64,".length);
-                   gotThumbnail = true;
-                   future.complete(b64Thumb);
-                   video.onprogress = function(){};
-                }
-            }catch(e) {
-                console.log("unable to create video thumbnail: " + e);
-                future.complete("");
-            }
+        video.oncanplay = function(){
+               video.play();                                         
+                var thumbnailGenerator = () => {
+                        try {
+                            //console.log("time= " + video.currentTime);
+                            if(video.currentTime >= video.duration || video.currentTime > 120) {
+                                future.complete("");
+                            }
+                            var context = canvas.getContext('2d');
+                            context.drawImage(video, 0, 0, width, height);
+                            var imgd = context.getImageData(0, 0, width, height);
+                            var pix = imgd.data;
+                            var blackCount = 0;
+                            var whiteCount = 0;
+                            var isOk = true;
+                            for (var i = 0, n = pix.length; i < n && isOk; i += 4) {
+                                var total = pix[i] + pix[i+1] + pix[i+2];
+                                if(total < 20) {
+                                    if(++blackCount > threshold) {
+                                        isOk = false;
+                                    }
+                                }else if(total > 760) {
+                                    if(++whiteCount > threshold) {
+                                        isOk = false;
+                                    }
+                                }
+                            }
+                            if(isOk) {
+                                var b64Thumb = canvas.toDataURL().substring("data:image/png;base64,".length);
+                                gotThumbnail = true;
+                                future.complete(b64Thumb);
+                            }else{
+                                setTimeout(thumbnailGenerator, 2000)
+                            }
+                        }catch(e) {
+                            console.log("unable to create video thumbnail: " + e);
+                            future.complete("");
+                        }
+                };
+                thumbnailGenerator();
         }
         video.src = url;
     })
-    let writer = fileStream.getWriter()
+    let writer = fileStream.getWriter();
     let pump = () => {
         if(blockSize == 0) {
             writer.close()
@@ -533,11 +558,10 @@ function createVideoThumbnailStreamingProm(asyncReader, fileSize, fileName) {
         } else {
             var data = convertToByteArray(new Uint8Array(blockSize));
             data.length = blockSize;
-            asyncReader.readIntoArray(data, 0, blockSize)
-            .thenApply(function(read){
+            asyncReader.readIntoArray(data, 0, blockSize).thenApply(function(read){
                size = size - read;
                blockSize = size > maxBlockSize ? maxBlockSize : size;
-               writer.write(data).then(()=>{setTimeout(pump, 100)})
+               writer.write(data).then(()=>{setTimeout(pump, 100)});
             });
         }
     }
