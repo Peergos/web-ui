@@ -405,7 +405,7 @@ function supportsStreaming() {
 
 function generateVideoThumbnailProm(asyncReader, fileSize, fileName) {
     var future = peergos.shared.util.FutureUtils.incomplete();
-    if(supportsStreaming() && fileSize > 300000000) {
+    if(supportsStreaming() && fileSize > 300 * 1000 * 1000) {
         return createVideoThumbnailStreamingProm(future, asyncReader, fileSize, fileName);
     }else{
         return createVideoThumbnailProm(future, asyncReader, fileSize, fileName);
@@ -458,30 +458,12 @@ function captureThumbnail(width, height, currentIncrement, video){
     let canvas = document.createElement('canvas');
     canvas.width = width;
     canvas.height = height;
+    let blackWhiteThreshold = width * height / 10 * 8; //80%
     setTimeout(() => {
             let context = canvas.getContext('2d');
             context.drawImage(video, 0, 0, width, height);
-            let imgd = context.getImageData(0, 0, width, height);
-            let pix = imgd.data;
-            let threshold = width * height / 10 * 8;
-            var blackCount = 0;
-            var whiteCount = 0;
-            var isOk = true;
-            for (var i = 0, n = pix.length; i < n; i += 4) {
-                var total = pix[i] + pix[i+1] + pix[i+2];
-                if(total < 20) {
-                   if(++blackCount > threshold) {
-                       isOk = false;
-                       break;
-                   }
-                }else if(total > 760) {
-                   if(++whiteCount > threshold) {
-                       isOk = false;
-                       break;
-                   }
-                }
-            }
-            if(isOk) {
+            let imageData = context.getImageData(0, 0, width, height);
+            if(isLikelyValidImage(imageData, blackWhiteThreshold)) {
                 let b64Thumb = canvas.toDataURL().substring("data:image/png;base64,".length);
                 capturingFuture.complete(b64Thumb);
             }else {
@@ -491,70 +473,79 @@ function captureThumbnail(width, height, currentIncrement, video){
     return capturingFuture;
 }
 
+//Make sure image is not all black or all white
+function isLikelyValidImage(imageData, blackWhiteThreshold) {
+    let pix = imageData.data;
+    var blackCount = 0;
+    var whiteCount = 0;
+    var isValidImage = true;
+    for (var i = 0, n = pix.length; i < n; i += 4) {
+        let total = pix[i] + pix[i+1] + pix[i+2];
+        if(total < 20) {
+            if(++blackCount > blackWhiteThreshold) {
+                isValidImage = false;
+                break;
+            }
+        }else if(total > 760) {
+            if(++whiteCount > blackWhiteThreshold) {
+                isValidImage = false;
+                break;
+            }
+        }
+    }
+    return isValidImage;
+}
+
 function createVideoThumbnailStreamingProm(future, asyncReader, size, fileName) {
-    let maxBlockSize = 1024 * 10;
+    let maxBlockSize = 1024 * 1024 * 5;
     var blockSize = size > maxBlockSize ? maxBlockSize : size;
+    var gotThumbnail = false;
     let fileStream = streamSaver.createWriteStream("media-" + fileName, function(url){
         let width = 100, height = 100;
         let video = document.createElement('video');
         let canvas = document.createElement('canvas');
         canvas.width = width;
         canvas.height = height;
-        var gotThumbnail = false;
-        let threshold = width * height / 10 * 8;
+        let blackWhiteThreshold = width * height / 10 * 8; //80%
         video.muted = true;
         video.onerror = function(e) {
             console.log(e);
             future.complete("");
         }
         video.oncanplay = function(){
-               video.play();                                         
-                var thumbnailGenerator = () => {
-                        try {
-                            //console.log("time= " + video.currentTime);
-                            if(video.currentTime >= video.duration || video.currentTime > 120) {
-                                future.complete("");
-                            }
-                            var context = canvas.getContext('2d');
-                            context.drawImage(video, 0, 0, width, height);
-                            var imgd = context.getImageData(0, 0, width, height);
-                            var pix = imgd.data;
-                            var blackCount = 0;
-                            var whiteCount = 0;
-                            var isOk = true;
-                            for (var i = 0, n = pix.length; i < n && isOk; i += 4) {
-                                var total = pix[i] + pix[i+1] + pix[i+2];
-                                if(total < 20) {
-                                    if(++blackCount > threshold) {
-                                        isOk = false;
-                                    }
-                                }else if(total > 760) {
-                                    if(++whiteCount > threshold) {
-                                        isOk = false;
-                                    }
-                                }
-                            }
-                            if(isOk) {
-                                var b64Thumb = canvas.toDataURL().substring("data:image/png;base64,".length);
-                                gotThumbnail = true;
-                                future.complete(b64Thumb);
-                            }else{
-                                setTimeout(thumbnailGenerator, 2000)
-                            }
-                        }catch(e) {
-                            console.log("unable to create video thumbnail: " + e);
-                            future.complete("");
-                        }
-                };
-                thumbnailGenerator();
+            let thumbnailGenerator = () => {
+                try {
+                    //console.log("time= " + video.currentTime);
+                    if(video.currentTime >= video.duration || video.currentTime > 120) {
+                        future.complete("");
+                    }
+                    let context = canvas.getContext('2d');
+                    context.drawImage(video, 0, 0, width, height);
+                    let imageData = context.getImageData(0, 0, width, height);                         
+                    if(isLikelyValidImage(imageData, blackWhiteThreshold)) {
+                        gotThumbnail = true;
+                        let b64Thumb = canvas.toDataURL().substring("data:image/png;base64,".length);
+                        future.complete(b64Thumb);
+                    }else{
+                        setTimeout(thumbnailGenerator, 2000)
+                    }
+                }catch(e) {
+                    console.log("unable to create video thumbnail: " + e);
+                    future.complete("");
+                }
+            };
+            thumbnailGenerator();
         }
         video.src = url;
+        video.play();
     })
     let writer = fileStream.getWriter();
     let pump = () => {
-        if(blockSize == 0) {
-            writer.close()
-            future.complete("")
+        if(gotThumbnail) {
+            writer.close();
+        } else if(blockSize == 0) {
+            writer.close();
+            future.complete("");
         } else {
             var data = convertToByteArray(new Uint8Array(blockSize));
             data.length = blockSize;
@@ -564,7 +555,7 @@ function createVideoThumbnailStreamingProm(future, asyncReader, size, fileName) 
                writer.write(data).then(()=>{setTimeout(pump, 100)});
             });
         }
-    }
+    };
     pump();
     return future;
 }
