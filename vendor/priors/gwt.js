@@ -252,6 +252,7 @@ var scryptJS = {
 var thumbnail = {
     NativeJSThumbnail: function() {
         this.generateThumbnail = generateThumbnailProm;
+        this.generateVideoThumbnail = generateVideoThumbnailProm;
     }   
 };
 
@@ -388,5 +389,173 @@ function generateThumbnailProm(asyncReader, fileSize, fileName) {
         var url = window.URL.createObjectURL(blob);
         img.src = url;
     });
+    return future;
+}
+
+function supportsStreaming() {
+    var href = window.location.href;
+    if (href.indexOf("streaming=true") == -1)
+        return false;
+    try {
+        return 'serviceWorker' in navigator && !!new ReadableStream() && !!new WritableStream()
+    } catch(err) {
+        return false;
+    }
+}
+
+function generateVideoThumbnailProm(asyncReader, fileSize, fileName) {
+    var future = peergos.shared.util.FutureUtils.incomplete();
+    if(supportsStreaming() && fileSize > 300 * 1000 * 1000) {
+        return createVideoThumbnailStreamingProm(future, asyncReader, fileSize, fileName);
+    }else{
+        return createVideoThumbnailProm(future, asyncReader, fileSize, fileName);
+    }
+}
+
+function createVideoThumbnailProm(future, asyncReader, fileSize, fileName) {
+    let bytes = peergos.shared.util.Serialize.newByteArray(fileSize);
+    asyncReader.readIntoArray(bytes, 0, fileSize).thenApply(function(bytesRead) {
+        var increment = 0;
+        var currentIncrement = 0;                                                   
+        let width = 100, height = 100;   
+        let video = document.createElement('video');
+        video.onloadedmetadata = function(){
+            let thumbnailGenerator = () => {
+                let duration = video.duration;
+                if(increment == 0) {
+                    increment = duration / 10;
+                    currentIncrement = increment; //skip over intro                                          
+                }
+                currentIncrement = currentIncrement + increment;
+                if(currentIncrement < duration){
+                    captureThumbnail(width, height, currentIncrement, video).thenApply((thumbnail)=>{
+                        if(thumbnail.length == 0){
+                            setTimeout(thumbnailGenerator, 1000)
+                        } else {
+                            future.complete(thumbnail);
+                        }
+                    })
+                } else {
+                    future.complete("");
+                }
+            };
+            thumbnailGenerator();
+       };
+        video.onerror = function(e) {
+            console.log(e);
+            future.complete("");
+        }
+        let blob = new Blob([new Uint8Array(bytes)], {type: "octet/stream"});
+        let url = window.URL.createObjectURL(blob);
+        video.src = url;
+    });
+    return future;
+}
+function captureThumbnail(width, height, currentIncrement, video){
+    let capturingFuture = peergos.shared.util.FutureUtils.incomplete();   
+    video.currentTime = currentIncrement;
+
+    let canvas = document.createElement('canvas');
+    canvas.width = width;
+    canvas.height = height;
+    let blackWhiteThreshold = width * height / 10 * 8; //80%
+    setTimeout(() => {
+            let context = canvas.getContext('2d');
+            context.drawImage(video, 0, 0, width, height);
+            let imageData = context.getImageData(0, 0, width, height);
+            if(isLikelyValidImage(imageData, blackWhiteThreshold)) {
+                let b64Thumb = canvas.toDataURL().substring("data:image/png;base64,".length);
+                capturingFuture.complete(b64Thumb);
+            }else {
+                capturingFuture.complete("");
+            }
+    }, 1000);
+    return capturingFuture;
+}
+
+//Make sure image is not all black or all white
+function isLikelyValidImage(imageData, blackWhiteThreshold) {
+    let pix = imageData.data;
+    var blackCount = 0;
+    var whiteCount = 0;
+    var isValidImage = true;
+    for (var i = 0, n = pix.length; i < n; i += 4) {
+        let total = pix[i] + pix[i+1] + pix[i+2];
+        if(total < 20) {
+            if(++blackCount > blackWhiteThreshold) {
+                isValidImage = false;
+                break;
+            }
+        }else if(total > 760) {
+            if(++whiteCount > blackWhiteThreshold) {
+                isValidImage = false;
+                break;
+            }
+        }
+    }
+    return isValidImage;
+}
+
+function createVideoThumbnailStreamingProm(future, asyncReader, size, fileName) {
+    let maxBlockSize = 1024 * 1024 * 5;
+    var blockSize = size > maxBlockSize ? maxBlockSize : size;
+    var gotThumbnail = false;
+    let fileStream = streamSaver.createWriteStream("media-" + fileName, function(url){
+        let width = 100, height = 100;
+        let video = document.createElement('video');
+        let canvas = document.createElement('canvas');
+        canvas.width = width;
+        canvas.height = height;
+        let blackWhiteThreshold = width * height / 10 * 8; //80%
+        video.muted = true;
+        video.onerror = function(e) {
+            console.log(e);
+            future.complete("");
+        }
+        video.oncanplay = function(){
+            let thumbnailGenerator = () => {
+                try {
+                    //console.log("time= " + video.currentTime);
+                    if(video.currentTime >= video.duration || video.currentTime > 120) {
+                        future.complete("");
+                    }
+                    let context = canvas.getContext('2d');
+                    context.drawImage(video, 0, 0, width, height);
+                    let imageData = context.getImageData(0, 0, width, height);                         
+                    if(isLikelyValidImage(imageData, blackWhiteThreshold)) {
+                        gotThumbnail = true;
+                        let b64Thumb = canvas.toDataURL().substring("data:image/png;base64,".length);
+                        future.complete(b64Thumb);
+                    }else{
+                        setTimeout(thumbnailGenerator, 2000)
+                    }
+                }catch(e) {
+                    console.log("unable to create video thumbnail: " + e);
+                    future.complete("");
+                }
+            };
+            thumbnailGenerator();
+        }
+        video.src = url;
+        video.play();
+    })
+    let writer = fileStream.getWriter();
+    let pump = () => {
+        if(gotThumbnail) {
+            writer.close();
+        } else if(blockSize == 0) {
+            writer.close();
+            future.complete("");
+        } else {
+            var data = convertToByteArray(new Uint8Array(blockSize));
+            data.length = blockSize;
+            asyncReader.readIntoArray(data, 0, blockSize).thenApply(function(read){
+               size = size - read;
+               blockSize = size > maxBlockSize ? maxBlockSize : size;
+               writer.write(data).then(()=>{setTimeout(pump, 100)});
+            });
+        }
+    };
+    pump();
     return future;
 }
