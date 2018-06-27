@@ -4,9 +4,7 @@ module.exports = {
         return {
         };
     },
-    props: {
-
-    },
+    props: ['message'],
     created: function() {
         console.debug('Spinner module created!');
         var that = this;

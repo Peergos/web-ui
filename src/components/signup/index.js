@@ -17,9 +17,10 @@ module.exports = {
             commonPasswords: commonPasswords,
             email: [],
             showSpinner: false,
+            spinnerMessage:'',
             errorTitle:'',
             errorBody:'',
-            showError:false,
+            showError:false
         };
     },
     props: {
@@ -52,7 +53,9 @@ module.exports = {
                     that.showError = true;
                 }else{
                     this.showSpinner = true;
-                    return peergos.shared.user.UserContext.signUp(that.username, that.password1, that.network, that.crypto)
+                    this.spinnerMessage = "signing up!";
+                    return peergos.shared.user.UserContext.signUp(that.username, that.password1, that.network, that.crypto
+                    , {"accept_0" : x => that.spinnerMessage = x})
                         .thenApply(function(context) {
                             that.$dispatch('child-msg', {
                                 view:'filesystem',

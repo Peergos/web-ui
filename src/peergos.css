@@ -220,3 +220,11 @@ table {
     vertical-align: top;
 }
 
+#spinner-text {
+    color: black;
+    position: fixed;
+    top: 50%;
+    left: 45%;
+    font-size: 25px;
+    z-index: 99;
+}
