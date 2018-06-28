@@ -220,3 +220,14 @@ table {
     vertical-align: top;
 }
 
+#spinner-text {
+    border-radius: 10px;
+    padding: 10px 10px 10px 10px;
+    background-color: lightblue;
+    color: black;
+    position: fixed;
+    top: 63%;
+    left: 42%;
+    font-size: 18px;
+    z-index: 999;
+}
