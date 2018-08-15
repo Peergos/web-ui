@@ -88,7 +88,7 @@ module.exports = {
             const that = this;
             this.showSpinner = true;
             return peergos.shared.user.UserContext.signIn(
-                    that.username, that.password, that.network, that.crypto, {"accept_0" : x => that.spinnerMessage = x}).thenApply(function(context) {
+                    that.username, that.password, that.network, that.crypto, {"accept" : x => that.spinnerMessage = x}).thenApply(function(context) {
                 that.$dispatch('child-msg', {
                     view:'filesystem',
                     props:{
