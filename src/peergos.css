@@ -220,7 +220,7 @@ table {
     vertical-align: top;
 }
 
-#spinner-text {
+.spinner-text {
     border-radius: 10px;
     padding: 10px 10px 10px 10px;
     background-color: lightblue;

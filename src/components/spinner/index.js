@@ -13,6 +13,9 @@ module.exports = {
         });
     },
     methods: {
+        isMessageSet: function () {
+            return this.message != null && this.message.length > 0;
+        }
     },
     computed: {
         spinner: function() {

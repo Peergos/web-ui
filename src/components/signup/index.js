@@ -55,7 +55,7 @@ module.exports = {
                     this.showSpinner = true;
                     this.spinnerMessage = "signing up!";
                     return peergos.shared.user.UserContext.signUp(that.username, that.password1, that.network, that.crypto
-                    , {"accept_0" : x => that.spinnerMessage = x})
+                    , {"accept" : x => that.spinnerMessage = x})
                         .thenApply(function(context) {
                             that.$dispatch('child-msg', {
                                 view:'filesystem',

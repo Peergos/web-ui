@@ -1,5 +1,5 @@
 <div>
     <div id="spinner">
-        <div id="spinner-text">{{ message }}</div>
+        <div v-if="isMessageSet()" class="spinner-text">{{ message }}</div>
     </div>
 </div>
