@@ -1,5 +1,5 @@
 <div>
     <div id="spinner">
-        <div id="spinner-text">{{ message }}</div>
+        <div v-bind:class="[isMessageSet() ? 'spinner-text' : 'spinner-no-text']">{{ message }}</div>
     </div>
 </div>
