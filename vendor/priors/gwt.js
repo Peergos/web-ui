@@ -91,7 +91,8 @@ function postMultipartProm(url, dataArrays) {
 
 	req.open('POST', window.location.origin + "/" + url);
 	req.responseType = 'arraybuffer';
-
+	req.setRequestHeader("Expect", "100-continue");
+	
 	req.onload = function() {
 	    console.log("http post returned retrieving " + url);
             // This is called even on 404 etc
