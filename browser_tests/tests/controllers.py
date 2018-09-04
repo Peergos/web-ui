@@ -11,7 +11,8 @@ from selenium.webdriver.common.keys import Keys
 from selenium.webdriver.common.action_chains import ActionChains
 
 # get url from environment, default to localhost:8000
-PEERGOS_URL = os.environ.get("peergos_url", "http://localhost:8000")
+PEERGOS_URL = os.environ.get("PEERGOS_URL", "http://localhost:8000")
+RUN_HEADLESS = os.environ.get("RUN_HEADLESS") in ('true', 'True', '1')
 
 
 class PeergosError(Exception):
@@ -26,7 +27,10 @@ def guid():
 
 def get_driver():
     """Returns a webdriver."""
-    return webdriver.Chrome()
+    options = webdriver.ChromeOptions()
+    if RUN_HEADLESS:
+        options.add_argument('headless')
+    return webdriver.Chrome("./chromedriver", chrome_options=options)
 
 
 def get_driver_on_page(url):

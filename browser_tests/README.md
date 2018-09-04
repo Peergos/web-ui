@@ -4,12 +4,14 @@
 * Python 2.7
 * Chrome (or Chromium) web browser
 > sudo apt-get install python-setuptools
+#####  chromedriver
+taken from https://sites.google.com/a/chromium.org/chromedriver/downloads
 
 ### install dependencies 
 > sudo python setup.py install
 
 ### start server and run tests
-> ./start_and_test_server 
+> ./start_and_test_server.sh 
 
 
 #### todo
