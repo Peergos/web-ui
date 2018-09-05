@@ -35,11 +35,11 @@ def get_driver():
         options.add_argument('headless')
     if BINARY_LOCATION:
         options.binary_location = BINARY_LOCATION
-        options.add_argument('no-sandbox')
-        options.add_argument('disable-dev-shm-usage')
-        options.add_argument('headless')
-        options.add_argument('disable-gpu')
-        options.add_argument('window-size=1280,800')
+        options.add_argument('--no-sandbox')
+        options.add_argument('--disable-dev-shm-usage')
+        options.add_argument('--headless')
+        options.add_argument('--disable-gpu')
+        options.add_argument('--window-size=1280,800')
     return webdriver.Chrome("./chromedriver", chrome_options=options)
 
 
