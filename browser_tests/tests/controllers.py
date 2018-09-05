@@ -16,7 +16,7 @@ RUN_HEADLESS = os.environ.get("RUN_HEADLESS") in ('true', 'True', '1')
 BINARY_LOCATION = os.environ.get("BINARY_LOCATION")
 
 
-print("ENV: ",os.environ)
+print("ENV: ", os.environ)
 
 class PeergosError(Exception):
     """Package root exception."""
@@ -35,6 +35,9 @@ def get_driver():
         options.add_argument('headless')
     if BINARY_LOCATION:
         options.binary_location = BINARY_LOCATION
+        options.add_argument('--no-sandbox')
+        options.add_argument('--disable-dev-shm-usage')
+        options.add_argument('headless')
     return webdriver.Chrome("./chromedriver", chrome_options=options)
 
 
