@@ -26,3 +26,4 @@ trap kill_peergos_server EXIT INT
 
 # run  tests
 pytest -sv tests -x 
+

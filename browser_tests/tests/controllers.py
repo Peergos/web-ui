@@ -13,7 +13,10 @@ from selenium.webdriver.common.action_chains import ActionChains
 # get url from environment, default to localhost:8000
 PEERGOS_URL = os.environ.get("PEERGOS_URL", "http://localhost:8000")
 RUN_HEADLESS = os.environ.get("RUN_HEADLESS") in ('true', 'True', '1')
+BINARY_LOCATION = os.environ.get("BINARY_LOCATION")
 
+
+print("ENV: ",os.environ)
 
 class PeergosError(Exception):
     """Package root exception."""
@@ -30,6 +33,8 @@ def get_driver():
     options = webdriver.ChromeOptions()
     if RUN_HEADLESS:
         options.add_argument('headless')
+    if BINARY_LOCATION:
+        options.binary_location = BINARY_LOCATION
     return webdriver.Chrome("./chromedriver", chrome_options=options)
 
 

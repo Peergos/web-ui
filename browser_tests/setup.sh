@@ -8,4 +8,4 @@ curl -o chrome.zip -L  https://download-chromium.appspot.com/dl/Linux_x64?type=s
 unzip chrome.zip
 
 # add to path
-export PATH=$PATH:$PWD/chrome-linux
+export BINARY_LOCATION=$PWD/chrome-linux/chrome
