@@ -40,6 +40,16 @@ def get_driver():
         options.add_argument('--headless')
         options.add_argument('--disable-gpu')
         options.add_argument('--window-size=1280,800')
+        options.add_argument('--user-data-dir='+os.getcwd())
+        options.add_argument('allow-insecure-localhost')
+        options.add_argument('--enable-logging')
+        options.add_argument('--log-level=0')
+        options.add_argument('--v=99')
+        options.add_argument('--single-process')
+        options.add_argument('--data-path='+ os.getcwd())
+        options.add_argument('--ignore-certificate-errors')
+        options.add_argument('--homedir='+ os.getcwd())
+        options.add_argument('--disk-cache-dir='+ os.getcwd())
     return webdriver.Chrome("./chromedriver", chrome_options=options)
 
 
