@@ -16,7 +16,7 @@ function kill_peergos_server() {
     get_peergos_pid | xargs kill -9;
 }
 
-kill_peergos_server
+kill_peergos_server || true;
 
 # start peergos server in bkg
 start_peergos
