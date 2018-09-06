@@ -5,7 +5,9 @@ export PEERGOS_URL=${PEERGOS_URL:-http://localhost:8000}
 export RUN_HEADLESS=${RUN_HEADLESS:-1} # change to 0 run show window
 
 function start_peergos() {
-    ant  -buildfile ../build.xml run &
+    pushd ..
+    ant  -buildfile build.xml run &
+    popd
 }
 
 function get_peergos_pid() {
