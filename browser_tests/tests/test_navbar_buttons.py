@@ -31,7 +31,7 @@ def test_mkdir():
         filesystem_page = signup_page.signup()
         filesystem_page.click_on_file(filesystem_page.username)
 
-        folder_name = guid()
+        folder_name = randomUsername()
         filesystem_page.mkdir(folder_name)
         assert filesystem_page.d.find_element_by_id(folder_name) is not None
 

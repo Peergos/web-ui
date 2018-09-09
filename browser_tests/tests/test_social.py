@@ -3,7 +3,7 @@ from controllers import *
 
 
 def test_send_follow_request_to_nonexistent_user_fails():
-    users = [guid(), guid()]
+    users = [randomUsername(), randomUsername()]
     sender, receiver = users
 
     with signup_to_homedir(username=sender, password=sender) as filesystem:
@@ -15,7 +15,7 @@ def test_send_follow_request_to_nonexistent_user_fails():
 
 def _send_follow_request():
     # signup two users
-    sender, receiver = guid(), guid()
+    sender, receiver = randomUsername(), randomUsername()
 
     for user in [sender, receiver]:
         with signup_to_homedir(username=user, password=user):

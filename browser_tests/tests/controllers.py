@@ -23,9 +23,9 @@ class PeergosError(Exception):
     pass
 
 
-def guid():
+def randomUsername():
     """Generate a random guid string."""
-    return str(uuid.uuid4())
+    return str(uuid.uuid4())[0:32]
 
 
 def get_driver():
@@ -257,7 +257,6 @@ class LoginPage(Page):
         self.get_unique_xpath("//button[text()='Login']").click()
         return FileSystemPage(self.d, username, password)
 
-
 class SignupPage(Page):
     """Page with signup inputs."""
 
@@ -272,10 +271,10 @@ class SignupPage(Page):
         ----------
         username: `str`
             Username to signup with.
-            Defaults to a random guid when None.
+            Defaults to a random username when None.
         password: `str`
             Password to signup with.
-            Defaults to a random guid when None.
+            Defaults to a random username when None.
 
         Returns
         -------
@@ -287,9 +286,9 @@ class SignupPage(Page):
         password2_input = self.get_unique_xpath("//input[@id='password2']")
 
         if username is None:
-            username = guid()
+            username = randomUsername()
         if password is None:
-            password = guid()
+            password = randomUsername()
 
         username_input.send_keys(username)
         password1_input.send_keys(password)
