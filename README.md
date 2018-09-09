@@ -1,6 +1,8 @@
 # peergos-ui-web
 The Web interface for Peergos
 
+![Build Status](https://ci.boddy.im/buildStatus/icon?job=peergos-web-ui)
+
 ## building on any platform
 
 <pre>
