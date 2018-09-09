@@ -33,15 +33,13 @@ def get_driver():
     options = webdriver.ChromeOptions()
     if RUN_HEADLESS:
         options.add_argument('headless')
-    if BINARY_LOCATION:
-        options.binary_location = BINARY_LOCATION
         options.add_argument('--no-sandbox')
         options.add_argument('--disable-dev-shm-usage')
         options.add_argument('--headless')
         options.add_argument('--disable-gpu')
         options.add_argument('--window-size=1280,800')
         options.add_argument('--user-data-dir='+os.getcwd())
-        options.add_argument('allow-insecure-localhost')
+        options.add_argument('--allow-insecure-localhost')
         options.add_argument('--enable-logging')
         options.add_argument('--log-level=0')
         options.add_argument('--v=99')
