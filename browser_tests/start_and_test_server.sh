@@ -25,5 +25,5 @@ start_peergos
 trap kill_peergos_server EXIT INT
 
 # run  tests
-pytest -sv tests -x 
+pytest -sv tests --junit-xml=$PWD/test_report.xml 
 
