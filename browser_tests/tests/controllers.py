@@ -255,6 +255,8 @@ class LoginPage(Page):
         self.get_unique_xpath("//input[@id='username']").send_keys(username)
         self.get_unique_xpath("//input[@name='password']").send_keys(password)
         self.get_unique_xpath("//button[text()='Login']").click()
+        self.d.implicitly_wait(20) # seconds
+        logout = self.d.find_element_by_id("logoutButton")
         return FileSystemPage(self.d, username, password)
 
 class SignupPage(Page):
@@ -295,6 +297,8 @@ class SignupPage(Page):
         password2_input.send_keys(password)
 
         self.get_unique_xpath("//button[text()='Sign up']").click()
+        self.d.implicitly_wait(20) # seconds
+        logout = self.d.find_element_by_id("logoutButton")
 
         return FileSystemPage(self.d, username, password)
 
