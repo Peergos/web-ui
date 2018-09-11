@@ -16,7 +16,7 @@ RUN_HEADLESS = os.environ.get("RUN_HEADLESS") in ('true', 'True', '1')
 BINARY_LOCATION = os.environ.get("BINARY_LOCATION")
 
 
-print("ENV: ", os.environ)
+#print("ENV: ", os.environ)
 
 class PeergosError(Exception):
     """Package root exception."""
@@ -133,8 +133,10 @@ def require_unique(driver, *xpaths):
     for xpath in xpaths:
         elems = driver.find_elements_by_xpath(xpath)
         count = len(elems)
-        if not count == 1:
-            raise PeergosError("non unique xpath {} has {} entries".format(xpath, str(count)))
+        if not count:
+            raise PeergosError("Could not find xpath {}.".format(xpath))
+        elif 1 < count:
+            raise PeergosError("xpath {} has {} entries, should have 1.".format(xpath, str(count)))
 
 
 class Page(object):

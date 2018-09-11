@@ -25,15 +25,11 @@ def test_public_link_to_folder():
         filesystem.public_link(dir_name)
         public_link = filesystem.d.find_element_by_id('public_link_'+dir_name)
         assert public_link
-        # click it
-        # public_link.click()
-        # time.sleep(3)
-        # assert filesystem.d.find_element_by_xpath(
-        #     "//button[class='btn_pnavbar btn tour-path text()={}]'".format(dir_name))
-        #
-        #
-        # # filesystem.find_element_by_xpath("//span[class='btn_pnavbar btn tour path'")
-
+        url = public_link.get_attribute('href')
+        
+    page = FileSystemPage(get_driver_on_page(url), None, None)
+    assert page.d.find_element_by_xpath("//button[text()='{}']".format(dir_name))
+        
 
 def test_rename():
     with signup_to_homedir() as filesystem:
