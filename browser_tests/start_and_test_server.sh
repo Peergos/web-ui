@@ -1,4 +1,8 @@
 #!/bin/bash
+#
+# to specify one test case do
+# ./start_and_test_server.sh "-k test_name"
+#
 set -e
 
 export PEERGOS_URL=${PEERGOS_URL:-http://localhost:8000}
@@ -25,5 +29,5 @@ start_peergos
 trap kill_peergos_server EXIT INT
 
 # run  tests
-pytest -sv tests --junit-xml=$PWD/test_report.xml 
+pytest -sv "$@" tests --junit-xml=$PWD/test_report.xml  
 
