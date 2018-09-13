@@ -1,4 +1,5 @@
 <nav class="navbar navbar-inverse navbar-static-top" role="navigation">
+    <input type="file" id="uploadInput" @change="uploadFiles" style="display:none;" multiple="" />
     <div>
         <ul class="nav navbar-nav">
             <li id="homeButton" @click="goHome()" class="navbar-brand nopad"><a><span data-toggle="tooltip" data-placement="bottom" title="Home" class="pnavbar glyphicon glyphicon-home tour-home" style="cursor: pointer;"/></a></li>
@@ -33,7 +34,6 @@
 
 </nav>
 
-<input type="file" id="uploadInput" @change="uploadFiles" style="display:none;" multiple="" />
 <a id="downloadAnchor" style="display:none"></a>
 <ul id="right-click-menu" tabindex="-1" v-el="right" v-if="viewMenu && (isNotHome || isPasteAvailable || isNotBackground)" v-on:blur="closeMenu" v-bind:style="{top:top, left:left}">
     <li id='gallery' v-if="canOpen" v-on:click="gallery">Open</li>

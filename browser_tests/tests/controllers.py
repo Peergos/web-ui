@@ -5,6 +5,7 @@ import sys
 import uuid
 from contextlib import contextmanager
 import os
+import random
 
 from selenium import webdriver
 from selenium.webdriver.common.keys import Keys
@@ -16,12 +17,16 @@ RUN_HEADLESS = os.environ.get("RUN_HEADLESS") in ('true', 'True', '1')
 BINARY_LOCATION = os.environ.get("BINARY_LOCATION")
 
 
-#print("ENV: ", os.environ)
 
 class PeergosError(Exception):
     """Package root exception."""
     pass
 
+def randomData(length, seed=None):
+    """generate random data string"""
+    if seed is not None:
+        random.seed(seed)
+    return ''.join(chr(random.randint(0, 255)) for _ in xrange(length))
 
 def randomUsername():
     """Generate a random guid string."""
@@ -387,6 +392,17 @@ class FileSystemPage(Page):
         self.d.find_element_by_id('prompt-button-id').click()
         return FileSystemPage(self.d, self.username, self.password)
 
+    def download(self, file_name):
+        """Download a file in the current view.
+        
+        Parameters
+        ----------
+        file_name: `str`
+            Name of file to download.
+        """
+        self.d.find_element_by_id(file_name).click()
+
+
     def rename(self, current_name, new_name):
         """
         Rename a file/folder.
@@ -411,14 +427,15 @@ class FileSystemPage(Page):
         """
         Upload local file to Peergos by clicking upload button.
         """
-        # elem = self.get_unique_xpath("//li[@id='uploadButton']")
-        elem = self.get_unique_xpath("//li[@id='uploadInput']")
-        # print("elem", elem)
-        # elem.click()
-        # dialog = self.d.switch_to_alert()
-        dialog = elem
-        dialog.send_keys(file_path)
-        dialog.send_keys(Keys.RETURN)
+        elem = self.get_unique_xpath("//span[@title='Upload file']")
+        elem.click()
+
+        try:
+            elem = self.get_unique_xpath('//input[@id="uploadInput"]')
+            elem.send_keys(file_path)
+            elem.send_keys(Keys.RETURN)
+        except Exception as e: 
+            pass
         return FileSystemPage(self.d, self.username, self.password)
 
     @classmethod
