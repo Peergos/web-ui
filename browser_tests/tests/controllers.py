@@ -17,16 +17,17 @@ RUN_HEADLESS = os.environ.get("RUN_HEADLESS") in ('true', 'True', '1')
 BINARY_LOCATION = os.environ.get("BINARY_LOCATION")
 
 
-
 class PeergosError(Exception):
     """Package root exception."""
     pass
+
 
 def randomData(length, seed=None):
     """generate random data string"""
     if seed is not None:
         random.seed(seed)
     return ''.join(chr(random.randint(0, 255)) for _ in xrange(length))
+
 
 def randomUsername():
     """Generate a random guid string."""
@@ -37,22 +38,21 @@ def get_driver():
     """Returns a webdriver."""
     options = webdriver.ChromeOptions()
     if RUN_HEADLESS:
-        options.add_argument('headless')
         options.add_argument('--no-sandbox')
         options.add_argument('--disable-dev-shm-usage')
         options.add_argument('--headless')
         options.add_argument('--disable-gpu')
         options.add_argument('--window-size=1280,800')
-        options.add_argument('--user-data-dir='+os.getcwd())
+        options.add_argument('--user-data-dir=' + os.getcwd())
         options.add_argument('--allow-insecure-localhost')
         options.add_argument('--enable-logging')
         options.add_argument('--log-level=0')
         options.add_argument('--v=99')
         options.add_argument('--single-process')
-        options.add_argument('--data-path='+ os.getcwd())
+        options.add_argument('--data-path=' + os.getcwd())
         options.add_argument('--ignore-certificate-errors')
-        options.add_argument('--homedir='+ os.getcwd())
-        options.add_argument('--disk-cache-dir='+ os.getcwd())
+        options.add_argument('--homedir=' + os.getcwd())
+        options.add_argument('--disk-cache-dir=' + os.getcwd())
     return webdriver.Chrome("./chromedriver", chrome_options=options)
 
 
@@ -84,6 +84,7 @@ def signup_to_homedir(username=None, password=None):
         filesystem_page.click_on_file(filesystem_page.username)
         yield filesystem_page
 
+
 @contextmanager
 def login_to_homedir(username, password):
     """
@@ -98,7 +99,6 @@ def login_to_homedir(username, password):
         landing_page = LoginPage(driver)
         filesystem = landing_page.login(username, password)
         yield filesystem.go_home()
-
 
 
 @contextmanager
@@ -141,7 +141,8 @@ def require_unique(driver, *xpaths):
         if not count:
             raise PeergosError("Could not find xpath {}.".format(xpath))
         elif 1 < count:
-            raise PeergosError("xpath {} has {} entries, should have 1.".format(xpath, str(count)))
+            raise PeergosError(
+                "xpath {} has {} entries, should have 1.".format(xpath, str(count)))
 
 
 class Page(object):
@@ -200,7 +201,8 @@ class Page(object):
         """
         elems = self.d.find_elements_by_xpath(xpath)
         if not len(elems) == 1:
-            raise PeergosError("non unique path {} : {}".format(xpath, str(elems)))
+            raise PeergosError(
+                "non unique path {} : {}".format(xpath, str(elems)))
         return elems[0]
 
     def double_click(self, elem):
@@ -262,9 +264,10 @@ class LoginPage(Page):
         self.get_unique_xpath("//input[@id='username']").send_keys(username)
         self.get_unique_xpath("//input[@name='password']").send_keys(password)
         self.get_unique_xpath("//button[text()='Login']").click()
-        self.d.implicitly_wait(20) # seconds
+        self.d.implicitly_wait(20)  # seconds
         logout = self.d.find_element_by_id("logoutButton")
         return FileSystemPage(self.d, username, password)
+
 
 class SignupPage(Page):
     """Page with signup inputs."""
@@ -304,7 +307,7 @@ class SignupPage(Page):
         password2_input.send_keys(password)
 
         self.get_unique_xpath("//button[text()='Sign up']").click()
-        self.d.implicitly_wait(20) # seconds
+        self.d.implicitly_wait(20)  # seconds
         logout = self.d.find_element_by_id("logoutButton")
 
         return FileSystemPage(self.d, username, password)
@@ -394,14 +397,13 @@ class FileSystemPage(Page):
 
     def download(self, file_name):
         """Download a file in the current view.
-        
+
         Parameters
         ----------
         file_name: `str`
             Name of file to download.
         """
         self.d.find_element_by_id(file_name).click()
-
 
     def rename(self, current_name, new_name):
         """
@@ -434,7 +436,7 @@ class FileSystemPage(Page):
             elem = self.get_unique_xpath('//input[@id="uploadInput"]')
             elem.send_keys(file_path)
             elem.send_keys(Keys.RETURN)
-        except Exception as e: 
+        except Exception as e:
             pass
         return FileSystemPage(self.d, self.username, self.password)
 
@@ -446,7 +448,7 @@ class FileSystemPage(Page):
         self.d.find_element_by_id('sharingOptionsSpan').click()
 
     def _close_social(self):
-        #todo
+        # todo
         pass
 
     def send_follow_request(self, to_friend):
@@ -461,7 +463,8 @@ class FileSystemPage(Page):
         self._open_social()
         table = self.d.find_element_by_id('follow-request-table-id')
         # request_elems = table.find_elements_by_xpath("//td[contains(@id,'follow-request')]")
-        request_elems = table.find_elements_by_xpath("//td[@id='follow-request-id']")
+        request_elems = table.find_elements_by_xpath(
+            "//td[@id='follow-request-id']")
         self._close_social()
         return [e.text for e in request_elems]
 
@@ -469,7 +472,8 @@ class FileSystemPage(Page):
         """Get a list of the usernames in the followers table."""
         self._open_social()
         table = self.d.find_element_by_id('follower-table-id')
-        follower_user_names = [elem.text for elem in table.find_elements_by_id('follower-id')]
+        follower_user_names = [
+            elem.text for elem in table.find_elements_by_id('follower-id')]
         self._close_social()
         return follower_user_names
 

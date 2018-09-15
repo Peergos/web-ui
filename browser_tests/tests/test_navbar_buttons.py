@@ -62,20 +62,20 @@ def test_binary_file_upload_and_download(file_size):
         pass
 
     with signup_to_homedir() as fs_page:
-        assert 'File not in UI before upload', fs_page.d.find_element_by_id(f_name) is None
+        assert fs_page.d.find_element_by_id(f_name) is None, 'File not in UI before upload'
         fs_page.upload_file(tmp_path)
 
         time.sleep(5)
-        assert 'Uploaded file in UI', fs_page.d.find_element_by_id(f_name) is not None
+        assert fs_page.d.find_element_by_id(f_name) is not None, 'Uploaded file in UI'
         fs_page.download(f_name)
         time.sleep(5)
     
-    assert 'File is downloaded', os.path.exists(download_path) 
+    assert os.path.exists(download_path), 'File is downloaded'
     
     with open(download_path, 'rb') as f:
         downloaded_data = f.read()
 
-    assert 'Downloaded data is identical to uploaded data', data == downloaded_data 
+    assert data == downloaded_data, 'Downloaded data is identical to uploaded data' 
 
     os.remove(download_path)
 
