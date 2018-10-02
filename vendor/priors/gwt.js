@@ -52,7 +52,7 @@ function postProm(url, data) {
     var future = peergos.shared.util.FutureUtils.incomplete();
     new Promise(function(resolve, reject) {
 	var req = new XMLHttpRequest();
-	req.open('POST', window.location.origin + "/" + url);
+	req.open('POST', window.location.pathname + url);
 	req.responseType = 'arraybuffer';
 	
 	req.onload = function() {
@@ -89,7 +89,7 @@ function postMultipartProm(url, dataArrays) {
     new Promise(function(resolve, reject) {
 	var req = new XMLHttpRequest();
 
-	req.open('POST', window.location.origin + "/" + url);
+	req.open('POST', window.location.pathname + url);
 	req.responseType = 'arraybuffer';
 	req.setRequestHeader("Expect", "100-continue");
 	
