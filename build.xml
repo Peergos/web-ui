@@ -179,6 +179,15 @@ Class-Path: .</echo>
   </target>
 
   <target name="run" depends="">
+    <echo>
+***********************************
+***********************************
+***********************************
+      Starting Peergos Server
+***********************************
+***********************************
+***********************************
+    </echo>     
     <exec executable="java" dir="${server}" failonerror="true">
       <arg value="-jar"/>
       <arg value="PeergosServer.jar"/>

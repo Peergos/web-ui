@@ -1,5 +1,6 @@
-# Peergos web-ui  browser tests
+# Peergos web-ui browser tests
 
+Runs selenium-based tests against a local Peergos web-server.
 
 ### requirements
 * Python 2.7
