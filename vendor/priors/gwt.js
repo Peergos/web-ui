@@ -15,7 +15,6 @@ function getProm(url) {
     var future = peergos.shared.util.FutureUtils.incomplete();
     new Promise(function(resolve, reject) {
 	var req = new XMLHttpRequest();
-	var prefix = url.startsWith("/p2p") ? "" : url.startsWith("api/v0") ? "/" : window.location.pathname;
 	req.open('GET', url);
 	req.responseType = 'arraybuffer';
 	
@@ -53,8 +52,7 @@ function postProm(url, data) {
     var future = peergos.shared.util.FutureUtils.incomplete();
     new Promise(function(resolve, reject) {
 	var req = new XMLHttpRequest();
-	var prefix = url.startsWith("/p2p") ? "" : url.startsWith("api/v0") ? "/" : window.location.pathname;
-	req.open('POST', prefix + url);
+	req.open('POST', url);
 	req.responseType = 'arraybuffer';
 	
 	req.onload = function() {
@@ -90,8 +88,7 @@ function postMultipartProm(url, dataArrays) {
     var future = peergos.shared.util.FutureUtils.incomplete();
     new Promise(function(resolve, reject) {
 	var req = new XMLHttpRequest();
-	var prefix = url.startsWith("/p2p") ? "" : url.startsWith("api/v0") ? "/" : window.location.pathname;
-	req.open('POST', prefix + url);
+	req.open('POST', url);
 	req.responseType = 'arraybuffer';
 	req.setRequestHeader("Expect", "100-continue");
 	
