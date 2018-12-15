@@ -62,7 +62,7 @@ module.exports = {
                 link = link.substring(0, query);
             }
             var that = this;
-            peergos.shared.NetworkAccess.buildJS("QmbRMsWJL2FAsGAco5mmTbieNMMgKHzQNejDULNTyQxSLg")
+            peergos.shared.NetworkAccess.buildJS("QmXZXGXsNhxh2LiWFsa7CLHeRWJS5wb8RHxcTvQhvCzAeu")
                 .thenApply(function(network){
                     peergos.shared.user.UserContext.fromPublicLink(link, network, that.crypto).thenApply(function(context) {
                         that.$dispatch('child-msg', {
@@ -124,7 +124,7 @@ module.exports = {
     asyncComputed: {
         network: function() {
             return new Promise(function(resolve, reject) {
-                peergos.shared.NetworkAccess.buildJS("QmbRMsWJL2FAsGAco5mmTbieNMMgKHzQNejDULNTyQxSLg")
+                peergos.shared.NetworkAccess.buildJS("QmXZXGXsNhxh2LiWFsa7CLHeRWJS5wb8RHxcTvQhvCzAeu")
                     .thenApply(function(network){resolve(network)});
             });
         }
