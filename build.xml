@@ -191,7 +191,7 @@ Class-Path: .</echo>
     <exec executable="java" dir="${server}" failonerror="true">
       <arg value="-jar"/>
       <arg value="PeergosServer.jar"/>
-      <arg value="-local"/>
+      <arg value="-pki"/>
       <arg value="-useIPFS"/>
       <arg value="false"/>
       <arg value="-webroot"/>
