@@ -198,6 +198,12 @@ Class-Path: .</echo>
       <arg value="webroot"/>
       <arg value="-webcache"/>
       <arg value="false"/>
+      <arg value="peergos.password"/>
+      <arg value="testpassword"/>
+      <arg value="pki.keygen.password"/>
+      <arg value="testpkipassword"/>
+      <arg value="pki.keyfile.password"/>
+      <arg value="testpkifilepassword"/>
     </exec>
   </target> 
 
