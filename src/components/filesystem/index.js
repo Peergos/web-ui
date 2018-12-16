@@ -489,7 +489,7 @@ module.exports = {
             for (var i=0; i < this.selectedFiles.length; i++) {
                 var file = this.selectedFiles[i];
                 var name = file.getFileProperties().name;
-                links.push({href:window.location.origin + file.toLink(), 
+                links.push({href:window.location.origin + window.location.pathname + file.toLink(), 
                     name:name, 
                     id:'public_link_'+name});
             }
