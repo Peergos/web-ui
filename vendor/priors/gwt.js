@@ -90,7 +90,6 @@ function postMultipartProm(url, dataArrays) {
 	var req = new XMLHttpRequest();
 	req.open('POST', url);
 	req.responseType = 'arraybuffer';
-	req.setRequestHeader("Expect", "100-continue");
 	
 	req.onload = function() {
 	    console.log("http post returned retrieving " + url);
