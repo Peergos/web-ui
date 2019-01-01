@@ -25,7 +25,7 @@
                 <table id='follow-request-table-id' class="table table-responsive table-striped table-hover">
                     <tr v-if="data.pending.length==0"><th></th><th></th><th></th><th></th></tr>
                     <tr v-for="req in data.pending">
-                        <td id='follow-request-id'>{{ req.entry.get().owner }}</td>
+                        <td id='follow-request-id'>{{ req.entry.get().ownerName }}</td>
                         <td style="text-align:right">
                             <button id='{{req.entry.get().owner + "_allow-and-follow-back-id"}}' class="btn btn-success" @click="acceptAndReciprocate(req)">Allow and follow back</button>
                         </td>
