@@ -25,15 +25,15 @@
                 <table id='follow-request-table-id' class="table table-responsive table-striped table-hover">
                     <tr v-if="data.pending.length==0"><th></th><th></th><th></th><th></th></tr>
                     <tr v-for="req in data.pending">
-                        <td id='follow-request-id'>{{ req.entry.get().ownerName }}</td>
+                        <td id='follow-request-id'>{{ req.getEntry().ownerName }}</td>
                         <td style="text-align:right">
-                            <button id='{{req.entry.get().owner + "_allow-and-follow-back-id"}}' class="btn btn-success" @click="acceptAndReciprocate(req)">Allow and follow back</button>
+                            <button id='{{req.getEntry().owner + "_allow-and-follow-back-id"}}' class="btn btn-success" @click="acceptAndReciprocate(req)">Allow and follow back</button>
                         </td>
                         <td style="text-align:right">
-                            <button id='{{req.entry.get().owner + "_allow-follow-request-id"}}' class="btn btn-info" @click="accept(req)">Allow</button>
+                            <button id='{{req.getEntry().owner + "_allow-follow-request-id"}}' class="btn btn-info" @click="accept(req)">Allow</button>
                         </td>
                         <td style="text-align:right">
-                            <button id='{{req.entry.get().owner + "_deny-follow-request-id"}}' class="btn btn-danger" @click="reject(req)">Deny</button>
+                            <button id='{{req.getEntry().owner + "_deny-follow-request-id"}}' class="btn btn-danger" @click="reject(req)">Deny</button>
                         </td>
                     </tr>
                 </table>
