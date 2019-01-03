@@ -12,7 +12,7 @@ function convertToByteArray(target) {
 
 function getProm(url) {
     console.log("getProm " + url);
-    var future = peergos.shared.util.FutureUtils.incomplete();
+    var future = peergos.shared.util.Futures.incomplete();
     new Promise(function(resolve, reject) {
 	var req = new XMLHttpRequest();
 	req.open('GET', url);
@@ -49,7 +49,7 @@ function getProm(url) {
 
 function postProm(url, data) {
     console.log("postProm " + url);
-    var future = peergos.shared.util.FutureUtils.incomplete();
+    var future = peergos.shared.util.Futures.incomplete();
     new Promise(function(resolve, reject) {
 	var req = new XMLHttpRequest();
 	req.open('POST', url);
@@ -85,7 +85,7 @@ function postProm(url, data) {
 
 function postMultipartProm(url, dataArrays) {
     console.log("postMultipartProm " + url);
-    var future = peergos.shared.util.FutureUtils.incomplete();
+    var future = peergos.shared.util.Futures.incomplete();
     new Promise(function(resolve, reject) {
 	var req = new XMLHttpRequest();
 	req.open('POST', url);
@@ -150,7 +150,7 @@ function decodeBase64(s) {
 }
 
 function hashToKeyBytesProm(username, password, algorithm) {
-    var future = peergos.shared.util.FutureUtils.incomplete();
+    var future = peergos.shared.util.Futures.incomplete();
     new Promise(function(resolve, reject) {
         console.log("making scrypt request");
         
@@ -302,7 +302,7 @@ function generateSecretboxAsync(data, nonce, key) {
 
     let uInt8IdView = new Uint8Array(nacl.randomBytes(6));
     let taskId = uInt8IdView.toString();
-    var future = peergos.shared.util.FutureUtils.incomplete();
+    var future = peergos.shared.util.Futures.incomplete();
     inflightEncryptFutures[taskId] = future
     document.encryptworker.postMessage({id: uInt8IdView.buffer, data: uInt8DataView.buffer, nonce: uInt8NonceView.buffer, key: uInt8KeyView.buffer}, [uInt8IdView.buffer, uInt8DataView.buffer, uInt8NonceView.buffer, uInt8KeyView.buffer]);
     return future;
@@ -315,7 +315,7 @@ function generateSecretbox_openAsync(cipher, nonce, key) {
 
     let uInt8IdView = new Uint8Array(nacl.randomBytes(6));
     let taskId = uInt8IdView.toString();
-    var future = peergos.shared.util.FutureUtils.incomplete();
+    var future = peergos.shared.util.Futures.incomplete();
     inflightDecryptFutures[taskId] = future
     document.decryptworker.postMessage({id: uInt8IdView.buffer, cipher: uInt8CipherView.buffer, nonce: uInt8NonceView.buffer, key: uInt8KeyView.buffer}, [uInt8IdView.buffer, uInt8CipherView.buffer, uInt8NonceView.buffer, uInt8KeyView.buffer]);
     return future;
@@ -330,13 +330,13 @@ var browserio = {
 	
 	this.seek = function(hi, low) {
 	    this.offset = low;
-	    var fut = peergos.shared.util.FutureUtils.incomplete();
+	    var fut = peergos.shared.util.Futures.incomplete();
 	    fut.complete(true);
 	    return fut;
 	}
 
 	this.readIntoArray = function(res, offset, length) {
-	    var future = peergos.shared.util.FutureUtils.incomplete();
+	    var future = peergos.shared.util.Futures.incomplete();
 
 	    var filereader = new FileReader();
 	    filereader.file_name = file.name;
@@ -354,7 +354,7 @@ var browserio = {
 
 	this.reset = function() {
 	    this.offset = 0;
-	    var fut = peergos.shared.util.FutureUtils.incomplete();
+	    var fut = peergos.shared.util.Futures.incomplete();
 	    fut.complete(true);
 	    return fut;
 	}
@@ -366,7 +366,7 @@ var browserio = {
 };
 
 function generateThumbnailProm(asyncReader, fileSize, fileName) {
-    var future = peergos.shared.util.FutureUtils.incomplete();
+    var future = peergos.shared.util.Futures.incomplete();
     var bytes = peergos.shared.util.Serialize.newByteArray(fileSize);
     asyncReader.readIntoArray(bytes, 0, fileSize).thenApply(function(bytesRead) {
         var canvas = document.createElement('canvas');
@@ -403,7 +403,7 @@ function supportsStreaming() {
 }
 
 function generateVideoThumbnailProm(asyncReader, fileSize, fileName) {
-    var future = peergos.shared.util.FutureUtils.incomplete();
+    var future = peergos.shared.util.Futures.incomplete();
     if(supportsStreaming() && fileSize > 300 * 1000 * 1000) {
         return createVideoThumbnailStreamingProm(future, asyncReader, fileSize, fileName);
     }else{
@@ -451,7 +451,7 @@ function createVideoThumbnailProm(future, asyncReader, fileSize, fileName) {
     return future;
 }
 function captureThumbnail(width, height, currentIncrement, video){
-    let capturingFuture = peergos.shared.util.FutureUtils.incomplete();   
+    let capturingFuture = peergos.shared.util.Futures.incomplete();   
     video.currentTime = currentIncrement;
 
     let canvas = document.createElement('canvas');
