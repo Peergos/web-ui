@@ -644,7 +644,7 @@ module.exports = {
             ev.dataTransfer.effectAllowed='move';
             var id = ev.target.id;
             ev.dataTransfer.setData("text/plain", id);
-            var owner = treeNode.getOwner();
+            var owner = treeNode.getOwnerName();
             var me = this.username;
             if (owner === me) {
                 console.log("cut");
@@ -842,7 +842,7 @@ module.exports = {
             if (this.currentDir == null)
                 return false;
 
-            var owner = this.currentDir.getOwner();
+            var owner = this.currentDir.getOwnerName();
             var me = this.username;
             if (owner === me) {
                 var result = this.getContext().isShared(file);
@@ -928,7 +928,7 @@ module.exports = {
             if (this.currentDir == null)
                 return true;
 
-            var owner = this.currentDir.getOwner();
+            var owner = this.currentDir.getOwnerName();
             var me = this.username;
             if (owner === me) {
                 return false;
