@@ -5,15 +5,28 @@
         <div class="modal-header">
             <h3>{{ data.title }}</h3>
         </div>
-
         <div class="modal-body">
-            <div class="container"><p style="word-wrap;break-all;">
+            <div class="container" v-if="data.edit_shared_with_users.length > 0"><p style="word-wrap;break-all;">
+                Edit Access:
                 <ul>
-                <li v-for="user in data.shared_with_users">{{ user }} <button v-on:click="unshare(user)">X</button></li>
+                <li v-for="user in data.edit_shared_with_users">{{ user }} <button v-on:click="unshare(user, 'Edit')"><span class="glyphicon glyphicon-trash"></span></button></li>
                 </ul>
             </div>
+            <div class="container" v-if="data.edit_shared_with_users.length == 0"><p style="word-wrap;break-all;">
+                Edit Access:    None
+            </div>
         </div>
-
+        <div class="modal-body">
+            <div class="container" v-if="data.read_shared_with_users.length > 0"><p style="word-wrap;break-all;">
+                Read Access:
+                <ul>
+                <li v-for="user in data.read_shared_with_users">{{ user }} <button v-on:click="unshare(user, 'Read')"><span class="glyphicon glyphicon-trash"></span></button></li>
+                </ul>
+            </div>
+            <div class="container" v-if="data.read_shared_with_users.length == 0"><p style="word-wrap;break-all;">
+                Read Access:    None
+            </div>
+        </div>
         <div class="modal-footer">
             <slot name="footer">
             <button class="modal-default-button" @click="close">
