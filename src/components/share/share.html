@@ -10,12 +10,12 @@
             <div class="container">
                 <table>
                     <tr>
-                        <td style="text-align:right; padding:20px; font-size: 1.0em; font-weight: normal;">
+                        <td style="text-align:right; padding:30px; font-size: 0.8em; ">
                             <input id="friend-name-input" v-model="targetUsername" type="text" placeholder="Friend name" class="form-control" style="width:200px"></input>
-                            &nbsp;Access:&nbsp;<input type="radio" id="read-access" value="Read" v-model="sharedWithAccess">
-                            <label for="read-access">Read</label>
+                            &nbsp;<input type="radio" id="read-access" value="Read" v-model="sharedWithAccess">
+                            <label for="read-access" style="font-weight: normal;">Read</label>
                             <input type="radio" id="edit-access" value="Edit" v-model="sharedWithAccess">
-                            <label for="edit-access">Edit</label>
+                            <label for="edit-access" style="font-weight: normal;">Edit</label>
                         </td>
                         <td style="text-align:right"><button class="btn btn-success" @click="shareWith(this.targetUsername, this.sharedWithAccess)">Send</button></td>
                     </tr>

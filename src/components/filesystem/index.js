@@ -174,8 +174,8 @@ module.exports = {
             var file = this.selectedFiles[0];
             var that = this;
             context.sharedWith(file).thenApply(function(allSharedWithUsernames){
-                var read_usernames = allSharedWithUsernames.left.toArray([]);
-                var edit_usernames = allSharedWithUsernames.right.toArray([]);
+                var read_usernames = allSharedWithUsernames.size() ==0 ? [] : allSharedWithUsernames.left.toArray([]);
+                var edit_usernames = allSharedWithUsernames.size() ==0 ? [] : allSharedWithUsernames.right.toArray([]);
                 var filename = file.getFileProperties().name;
                 var title = filename + " is shared with:";
                 that.sharedWithData = {title:title, read_shared_with_users:read_usernames, edit_shared_with_users:edit_usernames};
@@ -445,8 +445,8 @@ module.exports = {
             var that = this;
             this.getContext().sharedWith(file)
                 .thenApply(function(allSharedWithUsernames) {
-                    var read_usernames = allSharedWithUsernames.left.toArray([]);
-                    var edit_usernames = allSharedWithUsernames.right.toArray([]);
+                    var read_usernames = allSharedWithUsernames.size() ==0 ? [] : allSharedWithUsernames.left.toArray([]);
+                    var edit_usernames = allSharedWithUsernames.size() ==0 ? [] : allSharedWithUsernames.right.toArray([]);
                     var filename = file.getFileProperties().name;
                     var title = filename + " is shared with:";
                     that.sharedWithData = {title:title, read_shared_with_users:read_usernames, edit_shared_with_users:edit_usernames};
