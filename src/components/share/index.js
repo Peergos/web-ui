@@ -36,8 +36,8 @@ module.exports = {
                     that.close();
                 } else {
                     that.context.sharedWith(that.files[0]).thenApply(function(allSharedWithUsernames){
-                        var read_usernames = allSharedWithUsernames.size() ==0 ? [] : allSharedWithUsernames.left.toArray([]);
-                        var edit_usernames = allSharedWithUsernames.size() ==0 ? [] : allSharedWithUsernames.right.toArray([]);
+                        var read_usernames = allSharedWithUsernames.left.toArray([]);
+                        var edit_usernames = allSharedWithUsernames.right.toArray([]);
                         if(read_usernames.indexOf(targetUsername) > -1 || edit_usernames.indexOf(targetUsername) > -1) {
                             that.messages.push({
                                 title: "Already shared!",
@@ -47,7 +47,7 @@ module.exports = {
                         } else {
 			                var filename = that.files[0].getFileProperties().name;
 			                if(sharedWithAccess == "Read") {
-                                that.context.shareReadOnlyAccessWith(that.files[0], targetUsername)
+                                that.context.shareReadAccessWith(that.files[0], targetUsername)
                                     .thenApply(function(b) {
                                         that.messages.push({
                                         title: "Success!",
