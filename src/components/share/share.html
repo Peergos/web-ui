@@ -15,7 +15,7 @@
                             &nbsp;<input type="radio" id="read-access" value="Read" v-model="sharedWithAccess">
                             <label for="read-access" style="font-weight: normal;">Read</label>
                             <input type="radio" id="edit-access" value="Edit" v-model="sharedWithAccess">
-                            <label for="edit-access" style="font-weight: normal;">Edit</label>
+                            <label for="edit-access" style="font-weight: normal;">Write</label>
                         </td>
                         <td style="text-align:right"><button class="btn btn-success" @click="shareWith(this.targetUsername, this.sharedWithAccess)">Send</button></td>
                     </tr>

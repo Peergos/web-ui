@@ -70,7 +70,7 @@ module.exports = {
                                         show: true
                                         });
                                         that.close();
-                                        console.log("shared edit access to " + filename + " with " + targetUsername);
+                                        console.log("shared write access to " + filename + " with " + targetUsername);
                                     }).exceptionally(function(throwable) {
                                         that.errorTitle = 'Error sharing file: ' + filename;
                                         that.errorBody = throwable.getMessage();

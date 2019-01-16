@@ -7,13 +7,13 @@
         </div>
         <div class="modal-body">
             <div class="container" v-if="data.edit_shared_with_users.length > 0"><p style="word-wrap;break-all;">
-                Edit Access:
+                Write Access:
                 <ul>
                 <li v-for="user in data.edit_shared_with_users">{{ user }} <button v-on:click="unshare(user, 'Edit')"><span class="glyphicon glyphicon-trash"></span></button></li>
                 </ul>
             </div>
             <div class="container" v-if="data.edit_shared_with_users.length == 0"><p style="word-wrap;break-all;">
-                Edit Access:    None
+                Write Access:    None
             </div>
         </div>
         <div class="modal-body">

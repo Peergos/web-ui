@@ -23,7 +23,7 @@ module.exports = {
             } else {
                 this.context.unShareWriteAccess(this.files[0], targetUsername)
                     .thenApply(function(b) {
-                        console.log("unshared edit access to " + that.files[0].getFileProperties().name + " with " + targetUsername);
+                        console.log("unshared write access to " + that.files[0].getFileProperties().name + " with " + targetUsername);
                         that.forceshared++;
                     });
             }
