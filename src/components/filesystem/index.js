@@ -395,7 +395,7 @@ module.exports = {
                 if (clipboard.op == "cut") {
                     console.log("paste-cut "+clipboard.fileTreeNode.getFileProperties().name + " -> "+target.getFileProperties().name);
                     clipboard.fileTreeNode.copyTo(target, context.network, context.crypto.random, context.fragmenter()).thenCompose(function() {
-                        return that.getContext().remove(clipboard.fileTreeNode, clipboard.parent);
+                        return clipboard.fileTreeNode.remove(clipboard.parent, that.getContext().network);
                     }).thenApply(function() {
                         that.currentDirChanged();
 			that.onUpdateCompletion.push(function() {
@@ -682,7 +682,7 @@ module.exports = {
 		    var name = clipboard.fileTreeNode.getFileProperties().name;
                     console.log("drop-cut " + name + " -> "+target.getFileProperties().name);
                     clipboard.fileTreeNode.copyTo(target, context.network, context.crypto.random, context.fragmenter()).thenCompose(function() {
-                        return that.getContext().remove(clipboard.fileTreeNode, clipboard.parent);
+                        return clipboard.fileTreeNode.remove(clipboard.parent, that.getContext().network);
                     }).thenApply(function() {
                         that.currentDirChanged();
 			that.onUpdateCompletion.push(function() {
@@ -765,7 +765,7 @@ module.exports = {
                     return;
                 that.showSpinner = true;
                 console.log("Renaming " + old_name + "to "+ prompt_result);
-                that.getContext().rename(prompt_result, file, that.currentDir)
+                file.rename(prompt_result, that.getContext().network, that.currentDir)
                     .thenApply(function(b){
                         that.currentDirChanged();
 			that.onUpdateCompletion.push(function() {
@@ -796,7 +796,7 @@ module.exports = {
                 console.log("deleting: " + file.getFileProperties().name);
                 this.showSpinner = true;
                 var that = this;
-                this.getContext().remove(file, this.currentDir)
+                file.remove(this.currentDir, this.getContext().network)
                     .thenApply(function(b){
                         that.currentDirChanged();
                         delete_countdown.value -=1;
