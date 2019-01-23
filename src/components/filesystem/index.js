@@ -765,7 +765,7 @@ module.exports = {
                     return;
                 that.showSpinner = true;
                 console.log("Renaming " + old_name + "to "+ prompt_result);
-                file.rename(prompt_result, that.getContext().network, that.currentDir)
+                that.getContext().rename(prompt_result, file, that.currentDir)
                     .thenApply(function(b){
                         that.currentDirChanged();
 			that.onUpdateCompletion.push(function() {
