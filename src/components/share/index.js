@@ -9,7 +9,7 @@ module.exports = {
             showError:false
         }
     },
-    props: ['show', 'files', 'context', 'messages', 'shared'],
+    props: ['show', 'files', 'context', 'messages', 'shared', 'forceshared'],
     created: function() {
         Vue.nextTick(this.setTypeAhead);
     },
@@ -56,6 +56,7 @@ module.exports = {
                                         });
                                         that.close();
                                         console.log("shared read access to " + filename + " with " + targetUsername);
+                                        that.forceshared++;
                                     }).exceptionally(function(throwable) {
                                         that.errorTitle = 'Error sharing file: ' + filename;
                                         that.errorBody = throwable.getMessage();
@@ -71,6 +72,7 @@ module.exports = {
                                         });
                                         that.close();
                                         console.log("shared write access to " + filename + " with " + targetUsername);
+                                        that.forceshared++;
                                     }).exceptionally(function(throwable) {
                                         that.errorTitle = 'Error sharing file: ' + filename;
                                         that.errorBody = throwable.getMessage();
