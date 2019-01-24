@@ -169,15 +169,16 @@ module.exports = {
         sharedWithDataUpdate: function() {
             var context = this.getContext();
             if (this.selectedFiles.length != 1 || context == null) {
-                that.sharedWithData = {title:'', shared_with_users:[] };
+                that.sharedWithData = {title:'', read_shared_with_users:[], edit_shared_with_users:[] };
             }
             var file = this.selectedFiles[0];
             var that = this;
-            context.sharedWith(file).thenApply(function(usernames){
-                var unames = usernames.toArray([]);
+            context.sharedWith(file).thenApply(function(allSharedWithUsernames){
+                var read_usernames = allSharedWithUsernames.left.toArray([]);
+                var edit_usernames = allSharedWithUsernames.right.toArray([]);
                 var filename = file.getFileProperties().name;
                 var title = filename + " is shared with:";
-                that.sharedWithData = {title:title, shared_with_users:unames};
+                that.sharedWithData = {title:title, read_shared_with_users:read_usernames, edit_shared_with_users:edit_usernames};
             });
         },
         getContext: function() {
@@ -394,7 +395,7 @@ module.exports = {
                 if (clipboard.op == "cut") {
                     console.log("paste-cut "+clipboard.fileTreeNode.getFileProperties().name + " -> "+target.getFileProperties().name);
                     clipboard.fileTreeNode.copyTo(target, context.network, context.crypto.random, context.fragmenter()).thenCompose(function() {
-                        return clipboard.fileTreeNode.remove(that.getContext().network, clipboard.parent);
+                        return clipboard.fileTreeNode.remove(clipboard.parent, that.getContext().network);
                     }).thenApply(function() {
                         that.currentDirChanged();
 			that.onUpdateCompletion.push(function() {
@@ -443,11 +444,12 @@ module.exports = {
             var file = this.selectedFiles[0];
             var that = this;
             this.getContext().sharedWith(file)
-                .thenApply(function(usernames) {
-                    var unames = usernames.toArray([]);
+                .thenApply(function(allSharedWithUsernames) {
+                    var read_usernames = allSharedWithUsernames.left.toArray([]);
+                    var edit_usernames = allSharedWithUsernames.right.toArray([]);
                     var filename = file.getFileProperties().name;
                     var title = filename + " is shared with:";
-                    that.sharedWithData = {title:title, shared_with_users:unames};
+                    that.sharedWithData = {title:title, read_shared_with_users:read_usernames, edit_shared_with_users:edit_usernames};
                     that.showSharedWith = true;
                 });
         },
@@ -680,7 +682,7 @@ module.exports = {
 		    var name = clipboard.fileTreeNode.getFileProperties().name;
                     console.log("drop-cut " + name + " -> "+target.getFileProperties().name);
                     clipboard.fileTreeNode.copyTo(target, context.network, context.crypto.random, context.fragmenter()).thenCompose(function() {
-                        return clipboard.fileTreeNode.remove(that.getContext().network, clipboard.parent);
+                        return clipboard.fileTreeNode.remove(clipboard.parent, that.getContext().network);
                     }).thenApply(function() {
                         that.currentDirChanged();
 			that.onUpdateCompletion.push(function() {
@@ -794,7 +796,7 @@ module.exports = {
                 console.log("deleting: " + file.getFileProperties().name);
                 this.showSpinner = true;
                 var that = this;
-                file.remove(this.getContext().network, this.currentDir)
+                file.remove(this.currentDir, this.getContext().network)
                     .thenApply(function(b){
                         that.currentDirChanged();
                         delete_countdown.value -=1;

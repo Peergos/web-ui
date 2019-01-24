@@ -3,12 +3,13 @@ module.exports = {
     data: function() {
         return {
             targetUsername: "",
+            sharedWithAccess: "Read",
 	    errorTitle:'',
             errorBody:'',
             showError:false
         }
     },
-    props: ['show', 'files', 'context', 'messages', 'shared'],
+    props: ['show', 'files', 'context', 'messages', 'shared', 'forceshared'],
     created: function() {
         Vue.nextTick(this.setTypeAhead);
     },
@@ -17,7 +18,7 @@ module.exports = {
             this.show = false;
         },
 
-        shareWith: function(targetUsername) {
+        shareWith: function(targetUsername, sharedWithAccess) {
             if (this.files.length == 0)
                 return this.close();
             if (this.files.length != 1)
@@ -34,30 +35,50 @@ module.exports = {
                     });
                     that.close();
                 } else {
-                    that.context.sharedWith(that.files[0]).thenApply(function(usernames){
-                        var unames = usernames.toArray([]);
-                        if(unames.indexOf(targetUsername) > -1) {
+                    that.context.sharedWith(that.files[0]).thenApply(function(allSharedWithUsernames){
+                        var read_usernames = allSharedWithUsernames.left.toArray([]);
+                        var edit_usernames = allSharedWithUsernames.right.toArray([]);
+                        if(read_usernames.indexOf(targetUsername) > -1 || edit_usernames.indexOf(targetUsername) > -1) {
                             that.messages.push({
                                 title: "Already shared!",
                                 body: "",
                                 show: true
                             });
                         } else {
-			    var filename = that.files[0].getFileProperties().name;
-                            that.context.shareWith(that.files[0], targetUsername)
-                                .thenApply(function(b) {
-                                    that.messages.push({
-                                    title: "Success!",
-                                    body: "Sharing complete",
-                                    show: true
+			                var filename = that.files[0].getFileProperties().name;
+			                if(sharedWithAccess == "Read") {
+                                that.context.shareReadAccessWith(that.files[0], targetUsername)
+                                    .thenApply(function(b) {
+                                        that.messages.push({
+                                        title: "Success!",
+                                        body: "Sharing complete",
+                                        show: true
+                                        });
+                                        that.close();
+                                        console.log("shared read access to " + filename + " with " + targetUsername);
+                                        that.forceshared++;
+                                    }).exceptionally(function(throwable) {
+                                        that.errorTitle = 'Error sharing file: ' + filename;
+                                        that.errorBody = throwable.getMessage();
+                                        that.showError = true;
                                     });
-                                    that.close();
-                                    console.log("shared " + filename + " with " + targetUsername);
-                                }).exceptionally(function(throwable) {
-				    that.errorTitle = 'Error sharing file: ' + filename;
-				    that.errorBody = throwable.getMessage();
-				    that.showError = true;
-				});;
+                            } else {
+                                that.context.shareWriteAccessWith(that.files[0], targetUsername)
+                                    .thenApply(function(b) {
+                                        that.messages.push({
+                                        title: "Success!",
+                                        body: "Sharing complete",
+                                        show: true
+                                        });
+                                        that.close();
+                                        console.log("shared write access to " + filename + " with " + targetUsername);
+                                        that.forceshared++;
+                                    }).exceptionally(function(throwable) {
+                                        that.errorTitle = 'Error sharing file: ' + filename;
+                                        that.errorBody = throwable.getMessage();
+                                        that.showError = true;
+                                    });
+                            }
                         }
                     });
                 }
