@@ -9,7 +9,7 @@ module.exports = {
             showError:false
         }
     },
-    props: ['show', 'files', 'context', 'messages', 'shared', 'forceshared'],
+    props: ['show', 'files', 'parent', 'context', 'messages', 'shared', 'forceshared'],
     created: function() {
         Vue.nextTick(this.setTypeAhead);
     },
@@ -63,7 +63,7 @@ module.exports = {
                                         that.showError = true;
                                     });
                             } else {
-                                that.context.shareWriteAccessWith(that.files[0], targetUsername)
+                                that.context.shareWriteAccessWith(that.files[0], that.parent, targetUsername)
                                     .thenApply(function(b) {
                                         that.messages.push({
                                         title: "Success!",
