@@ -311,7 +311,7 @@ module.exports = {
                     setTimeout(function(){progress.show = false}, 2000);
                     that.showSpinner = true;	
                 }
-            }, context.fragmenter()).thenApply(function(x) {
+            }, context.fragmenter(), context.getTransactionService()).thenApply(function(x) {
                 that.currentDirChanged();
             }).exceptionally(function(throwable) {
 		progress.show = false;
@@ -319,6 +319,7 @@ module.exports = {
                 that.errorBody = throwable.getMessage();
                 that.showError = true;
                 that.showSpinner = false;
+		throwable.printStackTrace();
             });
         },
 

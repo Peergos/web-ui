@@ -344,7 +344,7 @@ var browserio = {
 		const data = new Uint8Array(this.result);
 		for (var i=0; i < length; i++)
 		    res[offset + i] = data[i];
-		future.complete(length);
+		future.complete({value_0:length});
 	    };
 	    
 	    filereader.readAsArrayBuffer(file.slice(this.offset, this.offset + length));

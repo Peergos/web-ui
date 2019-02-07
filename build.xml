@@ -184,6 +184,7 @@ Class-Path: .</echo>
 ***********************************
 ***********************************
       Starting Peergos Server
+           Please wait...
 ***********************************
 ***********************************
 ***********************************
@@ -192,6 +193,8 @@ Class-Path: .</echo>
       <arg value="-jar"/>
       <arg value="PeergosServer.jar"/>
       <arg value="-pki"/>
+      <arg value="-logToConsole"/>
+      <arg value="true"/>
       <arg value="-useIPFS"/>
       <arg value="false"/>
       <arg value="-webroot"/>
