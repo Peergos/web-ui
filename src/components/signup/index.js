@@ -20,7 +20,8 @@ module.exports = {
             spinnerMessage:'',
             errorTitle:'',
             errorBody:'',
-            showError:false
+            showError:false,
+	    bannedUsernames:["ipfs", "ipns", "root", "http", "https"]
         };
     },
     props: {
@@ -51,7 +52,11 @@ module.exports = {
                     that.errorTitle = 'Invalid username';
                     that.errorBody = "Usernames must consist of between 1 and 32 characters, containing only digits, lowercase letters, underscore and hyphen. They also cannot have two consecutive hyphens or underscores, or start or end with a hyphen or underscore.";
                     that.showError = true;
-                }else{
+                } else if (this.bannedUsernames.includes(that.username)) {
+		    that.errorTitle = 'Banned username';
+                    that.errorBody = "A few usernames are not allowed: " + that.bannedUsernames;
+                    that.showError = true;
+		} else {
                     this.showSpinner = true;
                     this.spinnerMessage = "signing up!";
                     return peergos.shared.user.UserContext.signUp(that.username, that.password1, that.network, that.crypto
