@@ -1,78 +1,68 @@
-'use strict'
-const map = new Map
+/* global self ReadableStream Response */
+
+const map = new Map()
 
 // This should be called once per download
 // Each event has a dataChannel that the data will be piped through
 self.onmessage = event => {
-    // Create a uniq link for the download
-    let uniqLink = self.registration.scope + 'intercept-me-nr' + Math.random()
-	let port = event.ports[0]
+  // We send a heartbeat every x secound to keep the
+  // service worker alive
+  if (event.data === 'ping') {
+    return
+  }
 
-    let p = new Promise((resolve, reject) => {
-        let stream = createStream(resolve, reject, port)
-        var filename = event.data.filename         
-        var headers
-        if(filename.startsWith("media")){
-            headers = {
-                'Content-Type': 'video/mp4'
-            }
-        } else {   
-            // Make filename RFC5987 compatible
-            filename = encodeURIComponent(filename).replace(/['()]/g, escape)
-                .replace(/\*/g, '%2A')
-            headers = {
-                'Content-Type': 'application/octet-stream; charset=utf-8',
-                'Content-Disposition': "attachment; filename*=UTF-8''" + filename
-                }
-                if(event.data.size) headers['Content-Length'] = event.data.size
-            }
-		map.set(uniqLink, [stream, headers])
-		port.postMessage({download: uniqLink})
+  // Create a uniq link for the download
+  const uniqLink = self.registration.scope + 'intercept-me-nr' + Math.random()
+  const port = event.ports[0]
 
-		// Mistage adding this and have streamsaver.js rely on it
-		// depricated as from 0.2.1
-		port.postMessage({debug: 'Mocking a download request'})
-    })
+  const stream = event.data.readableStream || createStream(port)
+  var filename = event.data.filename         
+  var headers
+  if(filename.startsWith("media")){
+      headers = {
+          'Content-Type': 'video/mp4'
+      }
+  } else {   
+      // Make filename RFC5987 compatible
+      filename = encodeURIComponent(filename).replace(/['()]/g, escape)
+          .replace(/\*/g, '%2A')
+      headers = {
+          'Content-Type': 'application/octet-stream; charset=utf-8',
+          'Content-Disposition': "attachment; filename*=UTF-8''" + filename
+      }
+      if(event.data.size) headers['Content-Length'] = event.data.size
+  }
+  map.set(uniqLink, [stream, headers])
+    
+  port.postMessage({ download: uniqLink, ping: self.registration.scope + 'ping' })
 
-    // Beginning in Chrome 51, event is an ExtendableMessageEvent, which supports
-    // the waitUntil() method for extending the lifetime of the event handler
-    // until the promise is resolved.
-    if ('waitUntil' in event) {
-        event.waitUntil(p)
-    }
-
-    // Without support for waitUntil(), there's a chance that if the promise chain
-    // takes "too long" to execute, the service worker might be automatically
-    // stopped before it's complete.
+  // Mistage adding this and have streamsaver.js rely on it
+  // depricated as from 0.2.1
+  port.postMessage({ debug: 'Mocking a download request' })
 }
 
-function createStream(resolve, reject, port){
-    // ReadableStream is only supported by chrome 52
-    var bytesWritten = 0
-    return new ReadableStream({
-		start(controller) {
-			// When we receive data on the messageChannel, we write
-			port.onmessage = ({data}) => {
-				if (data === 'end') {
-                    resolve()
-                    return controller.close()
-                }
+function createStream (port) {
+  // ReadableStream is only supported by chrome 52
+  return new ReadableStream({
+    start (controller) {
+      // When we receive data on the messageChannel, we write
+      port.onmessage = ({ data }) => {
+        if (data === 'end') {
+          return controller.close()
+        }
 
-				if (data === 'abort') {
-					resolve()
-					controller.error('Aborted the download')
-					return
-                }
+        if (data === 'abort') {
+          controller.error('Aborted the download')
+          return
+        }
 
-				controller.enqueue(data)
-                bytesWritten += data.byteLength
-                port.postMessage({ bytesWritten })
-			}
-		},
-		cancel() {
-			console.log("user aborted")
-		}
-	})
+        controller.enqueue(data)
+      }
+    },
+    cancel () {
+      console.log('user aborted')
+    }
+  })
 }
 
 self.addEventListener('install', event =>  {                                                                                  self.skipWaiting();
@@ -80,18 +70,24 @@ self.addEventListener('install', event =>  {                                    
 self.addEventListener('activate', event => {
     clients.claim();
 });
-                                                              
+
 self.onfetch = event => {
-	let url = event.request.url
-	let hijacke = map.get(url)
+  const url = event.request.url
 
-	console.log("Handling ", url)
+  if (url.endsWith('/ping')) {
+    return event.respondWith(new Response('pong', {
+      headers: { 'Access-Control-Allow-Origin': '*' }
+    }))
+  }
 
-	if(!hijacke) return null
+  const hijacke = map.get(url)
 
-	map.delete(url)
+  if (!hijacke) return null
+  console.log("*** SW Handling ", url)
 
-    let [stream, headers] = hijacke
+  const [stream, headers] = hijacke
 
-	event.respondWith(new Response(stream, { headers }))
+  map.delete(url)
+
+  return event.respondWith(new Response(stream, { headers }))
 }
