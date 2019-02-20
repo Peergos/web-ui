@@ -248,6 +248,14 @@ var scryptJS = {
     }
 };
 
+var ForkJoinJS = {
+    JSForkJoinPool: function() {
+	this.execute = function(task) {
+	    setTimeout(() => task.run(), 0);
+	}
+    }
+}
+
 var thumbnail = {
     NativeJSThumbnail: function() {
         this.generateThumbnail = generateThumbnailProm;
