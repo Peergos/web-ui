@@ -17,6 +17,14 @@ let host = window.location.hostname
 if (window.location.host == host && window.location.protocol != "https:")
     window.location.protocol = "https:"
 
+// This will prevent the sw from restarting
+let keepAlive = sw => {
+  keepAlive = () => {}
+  setInterval(() => {
+    sw.postMessage('ping', [new MessageChannel().port2])
+  }, 27E4) // 4.5min
+}
+
 // message event is the first thing we need to setup a listner for
 // don't want the opener to do a random timeout - instead they can listen for
 // the ready event
@@ -40,17 +48,22 @@ window.onmessage = event => {
 		// will in turn trigger the onmessage handler on messageChannel.port1.
 		let swRegTmp = swReg.installing || swReg.waiting
 
-		if (swReg.active)
-			return swReg.active.postMessage(data, [ports[0]])
+                if (swReg.active) {
+                    keepAlive(swReg.active)
+                    return swReg.active.postMessage(data, [ports[0]])
+                }
 
 		swRegTmp.onstatechange = () => {
-			if (swRegTmp.state === 'activated')
-				swReg.active.postMessage(data, [ports[0]])
-		}
+                    if (swRegTmp.state === 'activated') {
+                        swRegTmp.onstatechange = null
+                        swReg.active.postMessage(data, [ports[0]])
+                        keepAlive(swReg.active)
+                }
+            }
     })
 }
 
 // The opener can't listen to onload event, so we need to help em out!
 // (telling them that we are ready to accept postMessage's)
-opener && opener.postMessage('StreamSaver::loadedPopup', '*')
+window.opener && window.opener.postMessage('StreamSaver::loadedPopup', '*')
 </script>
