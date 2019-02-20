@@ -569,36 +569,39 @@ module.exports = {
                 if (progress.done >= progress.max)
                     setTimeout(function(){progress.show = false}, 2000);
             }).thenCompose(function(reader) {
-                if(that.supportsStreaming()) {
+                if (that.supportsStreaming()) {
                     var size = props.sizeLow();
                     var maxBlockSize = 1024 * 1024 * 5;
                     var blockSize = size > maxBlockSize ? maxBlockSize : size;
 
                     console.log("saving data of length " + size + " to " + props.name);
-                           let fileStream = streamSaver.createWriteStream(props.name
-                                , function(url){
-                                    let link = document.createElement('a')
-                                    let click = new MouseEvent('click')
-                                            
-                                    link.href = url
-                                    link.dispatchEvent(click)                                          
-                            })
-                        let writer = fileStream.getWriter()
-                        let pump = () => {
-                            if(blockSize == 0) {
-                                writer.close()
-                            } else {
-                                var data = convertToByteArray(new Uint8Array(blockSize));
-                                data.length = blockSize;
-                                reader.readIntoArray(data, 0, blockSize)
-                                    .thenApply(function(read){
-                                        size = size - read;
-                                        blockSize = size > maxBlockSize ? maxBlockSize : size;
-                                        writer.write(data).then(()=>{setTimeout(pump)})
-                                    });
-                            }
+		    let result = peergos.shared.util.Futures.incomplete();
+                    let fileStream = streamSaver.createWriteStream(props.name,
+			function(url) {
+			    let link = document.createElement('a')
+			    let click = new MouseEvent('click')
+			    
+			    link.href = url
+			    link.dispatchEvent(click) 
+			})
+                    let writer = fileStream.getWriter()
+                    let pump = () => {
+                        if (blockSize == 0) {
+                            writer.close()
+			    result.complete(true);
+                        } else {
+                            var data = convertToByteArray(new Uint8Array(blockSize));
+                            data.length = blockSize;
+                            reader.readIntoArray(data, 0, blockSize)
+                                .thenApply(function(read){
+                                    size = size - read;
+                                    blockSize = size > maxBlockSize ? maxBlockSize : size;
+                                    writer.write(data).then(()=>{setTimeout(pump)})
+                                });
                         }
+                    }
                     pump()
+		    return result;
                 } else {
                     var data = convertToByteArray(new Int8Array(props.sizeLow()));
                     data.length = props.sizeLow();
