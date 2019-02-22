@@ -256,6 +256,13 @@ var ForkJoinJS = {
     }
 }
 
+var arrayutils = {
+    arraycopy: function(src, srcOffset, dest, destOffset, len) {
+	for (var i = 0; i < len; i++)
+	    dest[destOffset + i] = src[srcOffset + i];
+    }
+}
+
 var thumbnail = {
     NativeJSThumbnail: function() {
         this.generateThumbnail = generateThumbnailProm;
