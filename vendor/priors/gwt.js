@@ -245,6 +245,12 @@ function generateCrypto_box_keypair(publicKey, secretKey) {
 var scryptJS = {
     NativeScryptJS: function() {
         this.hashToKeyBytes = hashToKeyBytesProm;
+
+	this.sha256 = function(input) {
+	    var res = peergos.shared.user.JavaScriptPoster.convertToBytes(sha256(input));
+	    res.length = 32;
+	    return res;
+	}
     }
 };
 
