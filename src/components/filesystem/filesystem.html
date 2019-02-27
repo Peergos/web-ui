@@ -95,7 +95,7 @@
             <tbody>
                 <tr v-for="file in sortedFiles">
                     <td v-bind:id="file.getFileProperties().name" v-on:click="navigateOrDownload(file)" v-on:contextmenu="openMenu($event, file)" style="cursor:pointer" v-bind:class="{ shared: isShared(file) }">{{ file.getFileProperties().name }}</td>
-                    <td>{{ file.getFileProperties().sizeLow() }}</td>
+                    <td>{{ getFileSize(file.getFileProperties()) }}</td>
                     <td>{{ file.isDirectory() ? "dir" : "file" }}</td>
                     <td>{{ file.getFileProperties().modified }}</td>
                 </tr>

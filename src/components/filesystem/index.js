@@ -550,11 +550,19 @@ module.exports = {
             this.changePath(this.getPath() + name);
         },
 
+	// This will only work up to a file size of 2^52 bytes (the biggest integer you can fit in a double)
+	// But who ever needed a filesize > 4 PB ? ;-)
+	getFileSize: function(props) {
+	    var low = props.sizeLow();
+	    if (low < 0) low = low + Math.pow(2, 32);
+	    return low + (props.sizeHigh() * Math.pow(2, 32));
+	},
+	
         downloadFile: function(file) {
             console.log("downloading " + file.getFileProperties().name);
             var props = file.getFileProperties();
             var that = this;
-            var resultingSize = props.sizeLow();
+            var resultingSize = this.getFileSize(props);
             var progress = {
                 show:true,
                 title:"Downloading " + props.name,
@@ -570,7 +578,7 @@ module.exports = {
                     setTimeout(function(){progress.show = false}, 2000);
             }).thenCompose(function(reader) {
                 if (that.supportsStreaming()) {
-                    var size = props.sizeLow();
+                    var size = that.getFileSize(props);
                     var maxBlockSize = 1024 * 1024 * 5;
                     var blockSize = size > maxBlockSize ? maxBlockSize : size;
 
@@ -869,6 +877,7 @@ module.exports = {
             }
             var sortBy = this.sortBy;
             var reverseOrder = ! this.normalSortOrder;
+	    var that = this;
             return this.files.slice(0).sort(function(a, b) {
                 var aVal, bVal;
                 if (sortBy == null)
@@ -877,8 +886,8 @@ module.exports = {
                     aVal = a.getFileProperties().name;
                     bVal = b.getFileProperties().name;
                 } else if (sortBy == "size") {
-                    aVal = a.getFileProperties().sizeLow();
-                    bVal = b.getFileProperties().sizeLow();
+                    aVal = that.getFileSize(a.getFileProperties());
+                    bVal = that.getFileSize(b.getFileProperties());
                 } else if (sortBy == "modified") {
                     aVal = a.getFileProperties().modified;
                     bVal = b.getFileProperties().modified;
