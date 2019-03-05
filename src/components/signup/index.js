@@ -9,8 +9,7 @@ module.exports = {
             network: null,
             username: [],
 	    passwordFieldType: "password",
-	    passwordRows: 1,
-            password1: [],
+	    password1: [],
             password2: [],
             checkPassword: false,
             isError: false,
@@ -88,7 +87,6 @@ module.exports = {
 		wordIndices[i] = bytes[2*i]*8 + (bytes[2*i + 1] & 7);
 	    var password = wordIndices.map(j => bip39[j]).join(" ");
 	    this.passwordFieldType = "text";
-	    this.passwordRows = 2;
 	    this.password1 = password;
 	},
         validatePassword: function(inFirstField) {
