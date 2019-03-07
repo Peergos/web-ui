@@ -207,6 +207,12 @@ Class-Path: .</echo>
       <arg value="testpkipassword"/>
       <arg value="pki.keyfile.password"/>
       <arg value="testpkifilepassword"/>
+      <arg value="mutable-pointers-file"/>
+      <arg value="mutable.sql"/>
+      <arg value="social-sql-file"/>
+      <arg value="social.sql"/>
+      <arg value="PEERGOS_PATH"/>
+      <arg value="${server}/.peergos"/>
     </exec>
   </target> 
 
