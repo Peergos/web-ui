@@ -16,7 +16,7 @@
         <center style="height:75%" @keyup.right="next" @keyup.left="previous">
 
             <img v-if="currentIsImage" style="height:100%;max-width:100%;max-height:100%;text-align:center;line-height:200px" v-touch:tap="next()" v-on:longpress="openMenu($event, current)" v-on:contextmenu="openMenu($event, current)" v-bind:src="dataURL" alt="Image loading..." @keyup.right="next" @keyup.left="previous"/>
-            <video v-if="currentIsVideoOrAudio" style="height:100%;max-width:100%;max-height:100%;text-align:center;line-height:200px" v-bind:src="dataURL" alt="Video loading..." controls/>
+            <video v-if="currentIsVideoOrAudio" style="height:100%;max-width:100%;max-height:100%;text-align:center;line-height:200px" v-bind:src="dataURL" autoplay=true alt="Video loading..." controls/>
         </center>
     </div>
 </div>

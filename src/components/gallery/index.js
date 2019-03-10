@@ -77,49 +77,63 @@ module.exports = {
             var that = this;
             this.showSpinner = true;
             if(that.supportsStreaming()) {
-                
                 file.getInputStream(this.context.network, this.context.crypto.random, props.sizeHigh(), props.sizeLow(), function(read) {}).thenCompose(function(reader) {
-                                                   
-                var size = props.sizeLow();
-                var maxBlockSize = 1024 * 1024;
-                var blockSize = size > maxBlockSize ? maxBlockSize : size;
-                
-                console.log("streaming data of length " + size);
-                let fileStream = streamSaver.createWriteStream("media-" + props.name, function(url){
-                    that.videoUrl = url;
-                    that.showSpinner = false;
-                })
-                let writer = fileStream.getWriter()
-                let pump = () => {
-                    if(blockSize == 0) {
-                        writer.close()
-                    } else {
-                        var data = convertToByteArray(new Uint8Array(blockSize));
-                        data.length = blockSize;
-                        reader.readIntoArray(data, 0, blockSize)
-                        .thenApply(function(read){
-                                   size = size - read;
-                                   blockSize = size > maxBlockSize ? maxBlockSize : size;
-                                   writer.write(data).then(()=>{setTimeout(pump)})
-                                   });
+                    var size = props.sizeLow();
+                    function Context(reader) {
+                        this.maxBlockSize = 1024 * 1024 * 5;
+                        this.reader = reader;
+                        this.writer = null;
+                        this.stream = function(seekIndex, length) {
+                            var empty = convertToByteArray(new Uint8Array(0));
+                            empty.length = 0;
+                            this.writer.write(empty).then(()=>{
+                                var currentSize = length;
+                                var blockSize = currentSize > this.maxBlockSize ? this.maxBlockSize : currentSize;
+                                var thatRef = this;
+                                this.reader.seek(0, seekIndex).thenCompose(function(seekReader){
+                                    let pump = () => {
+                                        if(blockSize > 0) {
+                                            var data = convertToByteArray(new Uint8Array(blockSize));
+                                            data.length = blockSize;
+                                            seekReader.readIntoArray(data, 0, blockSize).thenApply(function(read){
+                                                   currentSize = currentSize - read;
+                                                   blockSize = currentSize > thatRef.maxBlockSize ? thatRef.maxBlockSize : currentSize;
+                                                   thatRef.writer.write(data).then(()=>{
+                                                        setTimeout(pump)
+                                                    })
+                                            });
+                                        }
+                                    }
+                                    pump()
+                                })
+                            })
+                        }
                     }
-                }
-                pump()
+                    const context = new Context(reader);
+                    console.log("streaming data of length " + size);
+                    let fileStream = streamSaver.createWriteStream("media-" + props.name, function(url){
+                        that.videoUrl = url;
+                        that.showSpinner = false;
+                    }, function(seekIndex, seekLength){
+                        context.stream(seekIndex, seekLength);
+                    }, undefined, size)
+                    context.writer = fileStream.getWriter()
+                    context.stream(0, Math.min(size, context.maxBlockSize))
                 });
             } else {
-            file.getInputStream(this.context.network, this.context.crypto.random, 
-                    props.sizeHigh(), props.sizeLow(), 
-                    function(read) {})
-                .thenCompose(function(reader) {
-                    var data = convertToByteArray(new Int8Array(props.sizeLow()));
-                    data.length = props.sizeLow();
-                    return reader.readIntoArray(data, 0, data.length)
-                        .thenApply(function(read){
-                            that.imageData = data;
-                            that.showSpinner = false;
-                            console.log("Finished retrieving media of size " + data.length);
-                        });
-                });
+                file.getInputStream(this.context.network, this.context.crypto.random,
+                        props.sizeHigh(), props.sizeLow(),
+                        function(read) {})
+                    .thenCompose(function(reader) {
+                        var data = convertToByteArray(new Int8Array(props.sizeLow()));
+                        data.length = props.sizeLow();
+                        return reader.readIntoArray(data, 0, data.length)
+                            .thenApply(function(read){
+                                that.imageData = data;
+                                that.showSpinner = false;
+                                console.log("Finished retrieving media of size " + data.length);
+                            });
+                    });
             }
         },
         supportsStreaming: function() {
