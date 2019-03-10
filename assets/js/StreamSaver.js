@@ -42,7 +42,7 @@
     // Was first enabled in chrome v73
   }
 
-  function createWriteStream (filename, callback, queuingStrategy, size) {
+  function createWriteStream (filename, urlCallback, seekCallback, queuingStrategy, size) {
     // normalize arguments
     if (Number.isFinite(queuingStrategy)) {
       [size, queuingStrategy] = [queuingStrategy, size]
@@ -65,8 +65,9 @@
         if (evt.data.download) {
           resolve() // Signal that the writestream are ready to recive data
           if (!secure) popup.close() // don't need the popup any longer
-            callback(evt.data.download)
+            urlCallback(evt.data.download)
 
+            /*
           // Cleanup
           if (readableStream) {
             // We don't need postMessages now when stream are transferable
@@ -75,6 +76,9 @@
           }
 
           channel.port1.onmessage = null
+          */
+        } else if (evt.data.seek) {
+            seekCallback(evt.data.seek, evt.data.seekLength)
         }
       }
 
