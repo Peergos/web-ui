@@ -140,7 +140,8 @@ self.onfetch = event => {
             event.request.headers.get('range')
         );
         const start = Number(bytes[1]);
-        var end = Math.min(Number(bytes[2]) || start + maxBlockSize - 1, start + maxBlockSize - 1);
+        const blockSize = cacheEntry.firstRun ? 1024 * 1024 : maxBlockSize;
+        var end = Math.min(Number(bytes[2]) || start + blockSize - 1, start + blockSize - 1);
         if(end > cacheEntry.fileSize - 1) {
             end = cacheEntry.fileSize - 1;
         }

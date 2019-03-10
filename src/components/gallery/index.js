@@ -118,7 +118,7 @@ module.exports = {
                         context.stream(seekIndex, seekLength);
                     }, undefined, size)
                     context.writer = fileStream.getWriter()
-                    context.stream(0, Math.min(size, context.maxBlockSize))
+                    context.stream(0, Math.min(size, 1024 * 1024))
                 });
             } else {
                 file.getInputStream(this.context.network, this.context.crypto.random,
