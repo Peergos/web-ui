@@ -66,7 +66,13 @@ module.exports = {
                 this.fileIndex--;
             this.updateCurrentFileData();
         },
-
+        // This will only work up to a file size of 2^52 bytes (the biggest integer you can fit in a double)
+        // But who ever needed a filesize > 4 PB ? ;-)
+        getFileSize: function(props) {
+            var low = props.sizeLow();
+            if (low < 0) low = low + Math.pow(2, 32);
+            return low + (props.sizeHigh() * Math.pow(2, 32));
+        },
         updateCurrentFileData: function() {
             var file = this.current;
             if (file == null)
@@ -85,7 +91,6 @@ module.exports = {
                         this.writer = null;
                         this.stream = function(seekIndex, length) {
                             var empty = convertToByteArray(new Uint8Array(0));
-                            empty.length = 0;
                             this.writer.write(empty).then(()=>{
                                 var currentSize = length;
                                 var blockSize = currentSize > this.maxBlockSize ? this.maxBlockSize : currentSize;
@@ -94,7 +99,6 @@ module.exports = {
                                     let pump = () => {
                                         if(blockSize > 0) {
                                             var data = convertToByteArray(new Uint8Array(blockSize));
-                                            data.length = blockSize;
                                             seekReader.readIntoArray(data, 0, blockSize).thenApply(function(read){
                                                    currentSize = currentSize - read;
                                                    blockSize = currentSize > thatRef.maxBlockSize ? thatRef.maxBlockSize : currentSize;
@@ -125,8 +129,8 @@ module.exports = {
                         props.sizeHigh(), props.sizeLow(),
                         function(read) {})
                     .thenCompose(function(reader) {
-                        var data = convertToByteArray(new Int8Array(props.sizeLow()));
-                        data.length = props.sizeLow();
+                        var size = that.getFileSize(props);
+                        var data = convertToByteArray(new Int8Array(size));
                         return reader.readIntoArray(data, 0, data.length)
                             .thenApply(function(read){
                                 that.imageData = data;

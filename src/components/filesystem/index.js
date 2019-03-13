@@ -583,23 +583,22 @@ module.exports = {
                     var blockSize = size > maxBlockSize ? maxBlockSize : size;
 
                     console.log("saving data of length " + size + " to " + props.name);
-		    let result = peergos.shared.util.Futures.incomplete();
+		            let result = peergos.shared.util.Futures.incomplete();
                     let fileStream = streamSaver.createWriteStream(props.name,
-			function(url) {
-			    let link = document.createElement('a')
-			    let click = new MouseEvent('click')
-			    
-			    link.href = url
-			    link.dispatchEvent(click) 
-			})
+                    function(url) {
+                        let link = document.createElement('a')
+                        let click = new MouseEvent('click')
+
+                        link.href = url
+                        link.dispatchEvent(click)
+                    })
                     let writer = fileStream.getWriter()
                     let pump = () => {
                         if (blockSize == 0) {
                             writer.close()
-			    result.complete(true);
+                            result.complete(true);
                         } else {
                             var data = convertToByteArray(new Uint8Array(blockSize));
-                            data.length = blockSize;
                             reader.readIntoArray(data, 0, blockSize)
                                 .thenApply(function(read){
                                     size = size - read;
@@ -609,10 +608,10 @@ module.exports = {
                         }
                     }
                     pump()
-		    return result;
+                    return result;
                 } else {
-                    var data = convertToByteArray(new Int8Array(props.sizeLow()));
-                    data.length = props.sizeLow();
+                    var size = this.getFileSize(props);
+                    var data = convertToByteArray(new Int8Array(size));
                     return reader.readIntoArray(data, 0, data.length)
                         .thenApply(function(read){that.openItem(props.name, data)});
                 }
