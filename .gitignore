@@ -3,5 +3,5 @@ server/**
 *~
 .idea/**
 *.pyc
-
+.DS_Store
 
