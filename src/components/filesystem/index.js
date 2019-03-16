@@ -230,7 +230,7 @@ module.exports = {
             this.showSpinner = true;
             var that = this;
 
-            this.currentDir.mkdir(name, context.network, false, context.crypto.random)
+            this.currentDir.mkdir(name, context.network, false, context.crypto.random, context.crypto.hasher)
                 .thenApply(function(x){
                     this.currentDirChanged();
 		    that.onUpdateCompletion.push(function() {
@@ -305,13 +305,13 @@ module.exports = {
             var java_reader = new peergos.shared.user.fs.BrowserFileReader(reader);
             var that = this;
             var context = this.getContext();
-            this.currentDir.uploadFileJS(file.name, java_reader, (file.size - (file.size % Math.pow(2, 32)))/Math.pow(2, 32), file.size, false, context.network, context.crypto.random, function(len){
+            this.currentDir.uploadFileJS(file.name, java_reader, (file.size - (file.size % Math.pow(2, 32)))/Math.pow(2, 32), file.size, false, context.network, context.crypto.random, context.crypto.hasher, function(len){
                 progress.done += len.value_0;
                 if (progress.done >= progress.max) {
                     setTimeout(function(){progress.show = false}, 2000);
                     that.showSpinner = true;	
                 }
-            }, context.fragmenter(), context.getTransactionService()).thenApply(function(x) {
+            }, context.getTransactionService()).thenApply(function(x) {
                 that.currentDirChanged();
             }).exceptionally(function(throwable) {
 		progress.show = false;
@@ -395,8 +395,8 @@ module.exports = {
                 var context = this.getContext();
                 if (clipboard.op == "cut") {
                     console.log("paste-cut "+clipboard.fileTreeNode.getFileProperties().name + " -> "+target.getFileProperties().name);
-                    clipboard.fileTreeNode.copyTo(target, context.network, context.crypto.random, context.fragmenter()).thenCompose(function() {
-                        return clipboard.fileTreeNode.remove(clipboard.parent, that.getContext().network);
+                    clipboard.fileTreeNode.copyTo(target, context.network, context.crypto.random, context.crypto.hasher).thenCompose(function() {
+                        return clipboard.fileTreeNode.remove(clipboard.parent, that.getContext().network, that.getContext().crypto.hasher);
                     }).thenApply(function() {
                         that.currentDirChanged();
 			that.onUpdateCompletion.push(function() {
@@ -410,7 +410,7 @@ module.exports = {
 		    });
                 } else if (clipboard.op == "copy") {
                     console.log("paste-copy");
-                    clipboard.fileTreeNode.copyTo(target, context.network, context.crypto.random, context.fragmenter())
+                    clipboard.fileTreeNode.copyTo(target, context.network, context.crypto.random, context.crypto.hasher)
                         .thenApply(function() {
                             that.currentDirChanged();
 			    that.onUpdateCompletion.push(function() {
@@ -693,7 +693,7 @@ module.exports = {
                 if (clipboard.op == "cut") {
 		    var name = clipboard.fileTreeNode.getFileProperties().name;
                     console.log("drop-cut " + name + " -> "+target.getFileProperties().name);
-                    clipboard.fileTreeNode.copyTo(target, context.network, context.crypto.random, context.fragmenter()).thenCompose(function() {
+                    clipboard.fileTreeNode.copyTo(target, context.network, context.crypto.random, context.crypto.hasher).thenCompose(function() {
                         return clipboard.fileTreeNode.remove(clipboard.parent, that.getContext().network);
                     }).thenApply(function() {
                         that.currentDirChanged();
@@ -710,7 +710,7 @@ module.exports = {
                     console.log("drop-copy");
 		    var file = clipboard.fileTreeNode;
 		    var props = file.getFileProperties();
-                    file.copyTo(target, context.network, context.crypto.random, context.fragmenter())
+                    file.copyTo(target, context.network, context.crypto.random, context.crypto.hasher)
                         .thenApply(function() {
                             that.currentDirChanged();
 			    that.onUpdateCompletion.push(function() {
@@ -777,7 +777,7 @@ module.exports = {
                     return;
                 that.showSpinner = true;
                 console.log("Renaming " + old_name + "to "+ prompt_result);
-                file.rename(prompt_result, that.getContext().network, that.currentDir)
+                file.rename(prompt_result, that.getContext().network, that.currentDir, that.getContext().crypto.hasher)
                     .thenApply(function(b){
                         that.currentDirChanged();
 			that.onUpdateCompletion.push(function() {
