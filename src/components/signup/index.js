@@ -23,7 +23,7 @@ module.exports = {
             errorTitle:'',
             errorBody:'',
             showError:false,
-	    bannedUsernames:["ipfs", "ipns", "root", "http", "https"]
+	    bannedUsernames:["ipfs", "ipns", "root", "http", "https", "admin", "administrator", "support", "mail", "www", "web", "onion", "i2p", "ftp", "sftp", "file", "mailto", "wss", "xmpp", "ssh", "smtp", "imap", "irc"]
         };
     },
     props: {

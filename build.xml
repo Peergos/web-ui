@@ -3,7 +3,7 @@
     Building Peergos and the web UI
   </description>
 
-  <property name="peergos_project_root" location="../Peergos"/>
+  <property name="peergos_project_root" location="peergos"/>
   <property name="server" location="server"/>
   <property name="ui_src" location="src"/>
   <property name="ui" location="${server}/webroot"/>
