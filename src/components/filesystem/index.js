@@ -694,7 +694,7 @@ module.exports = {
 		    var name = clipboard.fileTreeNode.getFileProperties().name;
                     console.log("drop-cut " + name + " -> "+target.getFileProperties().name);
                     clipboard.fileTreeNode.copyTo(target, context.network, context.crypto.random, context.crypto.hasher).thenCompose(function() {
-                        return clipboard.fileTreeNode.remove(clipboard.parent, that.getContext().network);
+                        return clipboard.fileTreeNode.remove(clipboard.parent, that.getContext().network, that.getContext().crypto.hasher);
                     }).thenApply(function() {
                         that.currentDirChanged();
 			that.onUpdateCompletion.push(function() {
@@ -808,7 +808,7 @@ module.exports = {
                 console.log("deleting: " + file.getFileProperties().name);
                 this.showSpinner = true;
                 var that = this;
-                file.remove(this.currentDir, this.getContext().network)
+                file.remove(this.currentDir, this.getContext().network, this.getContext().crypto.hasher)
                     .thenApply(function(b){
                         that.currentDirChanged();
                         delete_countdown.value -=1;
