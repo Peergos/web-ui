@@ -97,6 +97,29 @@ table {
                                   not supported by any browser */
 }
 
+@import url(https://fonts.googleapis.com/css?family=Roboto:400,500,700,300,100);
+
+.feedback-button{
+    height:40px; 
+    border:solid 3px #CCCCCC; 
+    background:#333;
+    width:100px; 
+    line-height:32px; 
+    -webkit-transform:rotate(-90deg);
+    font-weight:600; 
+    color:white; 
+    transform:rotate(-90deg);
+    -ms-transform:rotate(-90deg);
+    -moz-transform:rotate(-90deg);
+    text-align:center; 
+    font-size:17px; 
+    position:fixed; 
+    right:-40px; 
+    top:45%;
+    font-family: "Roboto", helvetica, arial, sans-serif; 
+    z-index:999; 
+}
+
 #right-click-menu{
     background: #FAFAFA;
     border: 1px solid #BDBDBD;

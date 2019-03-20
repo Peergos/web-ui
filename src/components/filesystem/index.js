@@ -32,6 +32,7 @@ module.exports = {
             showTextViewer:false,
             showPassword:false,
             showSettingsMenu:false,
+            showFeedbackForm: false,
 	    social:{
 		pending: [],
                 followers: [],
@@ -102,13 +103,13 @@ module.exports = {
 	}
     },
     methods: {
-	processPending: function() {
-	    for (var i=0; i < this.onUpdateCompletion.length; i++) {
-		this.onUpdateCompletion[i].call();
-	    }
-	    this.onUpdateCompletion = [];
-	},
-	
+        processPending: function() {
+            for (var i=0; i < this.onUpdateCompletion.length; i++) {
+                this.onUpdateCompletion[i].call();
+            }
+            this.onUpdateCompletion = [];
+        },
+
         updateCurrentDir: function() {
             var context = this.getContext();
             if (context == null)
@@ -118,7 +119,7 @@ module.exports = {
             var that = this;
             context.getByPath(path).thenApply(function(file){
                 that.currentDir = file.get();
-		that.updateFiles();
+                that.updateFiles();
             });
         },
 	
@@ -325,6 +326,11 @@ module.exports = {
 
         toggleUserMenu: function() {
             this.showSettingsMenu = !this.showSettingsMenu;
+        },
+
+        toggleFeedbackForm: function() { 
+            this.showFeedbackForm = !this.showFeedbackForm;
+            console.log("Show me the feedback!")
         },
 
         showChangePassword: function() {
