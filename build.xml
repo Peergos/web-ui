@@ -192,7 +192,7 @@ Class-Path: .</echo>
     <exec executable="java" dir="${server}" failonerror="true">
       <arg value="-jar"/>
       <arg value="PeergosServer.jar"/>
-      <arg value="-pki"/>
+      <arg value="-pki-init"/>
       <arg value="-logToConsole"/>
       <arg value="true"/>
       <arg value="-useIPFS"/>
