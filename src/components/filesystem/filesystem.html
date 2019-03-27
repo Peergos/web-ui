@@ -53,7 +53,10 @@
 <shared-with-modal :forceshared.sync="forceSharedWithUpdate" :show.sync="showSharedWith" :data.sync="sharedWithData" :files.sync="selectedFiles" :context.sync="context"></shared-with-modal>
 <social v-if="showSocial" :show.sync="showSocial" :data.sync="social" :context.sync="context" :externalchange.sync="externalChange" :messages.sync="messages"></social>
 <password v-if="showPassword" :show.sync="showPassword" :changepassword.sync="changePassword"></password>
-
+<feedback v-if="showFeedbackForm" :show.sync="showFeedbackForm"
+          :data.sync="feedback" :context.sync="context"
+          :externalchange.sync="externalChange"
+          :messages.sync="messages"></feedback>
 <gallery v-if="showGallery" :show.sync="showGallery" :files.sync="sortedFiles" :context.sync="context" :initial-file-name="selectedFiles[0] == null ? '' : selectedFiles[0].getFileProperties().name"></gallery>
 
 <hex v-if="showHexViewer" :show.sync="showHexViewer" :file.sync="selectedFiles[0]" :context.sync="context"></hex>
@@ -62,10 +65,6 @@
 <message v-for="message in messages" :show.sync="message.show" :title.sync="message.title" :message.sync="message.body"></message>
 <prompt v-if="showPrompt" :prompt_message.sync='prompt_message' :show.sync="showPrompt" :placeholder.sync="prompt_placeholder" :value.sync="prompt_value" :consumer_func.sync="prompt_consumer_func"></prompt>
 
-<feedback v-if="showFeedbackForm" :show.sync="showFeedbackForm"
-          :data.sync="feedback" :context.sync="context"
-          :externalchange.sync="externalChange"
-          :messages.sync="messages"></feedback>
 
 <div class="progressholder">
     <progressbar v-for="progress in progressMonitors" :show.sync="progress.show" :title.sync="progress.title" :done.sync="progress.done":max.sync="progress.max"></progressbar>

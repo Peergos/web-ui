@@ -10,12 +10,14 @@
             <div id="feedback-main">
                 <p>
                 <textarea id="feedback-text"
-                     rows="8" 
-                     cols="40" 
+                          style="width:100%"
+                          rows=10
                      placeholder="Let us know what we can improve."></textarea>
                 </p>
                 <p>
-                <button class="btn btn-success" @click="submitFeedback()">
+                <button class="btn btn-success" 
+                        style = "width:100%"
+                    @click="submitFeedback()">
                     Submit
                 </button>
                 </p>
