@@ -330,7 +330,6 @@ module.exports = {
 
         toggleFeedbackForm: function() { 
             this.showFeedbackForm = !this.showFeedbackForm;
-            console.log("Show me the feedback!")
         },
 
         showChangePassword: function() {
