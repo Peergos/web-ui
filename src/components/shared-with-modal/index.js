@@ -27,12 +27,18 @@ module.exports = {
                         that.showSpinner = false;
                         console.log("unshared read access to " + that.files[0].getFileProperties().name + " with " + targetUsername);
                         that.forceshared++;
+                    }).exceptionally(function(throwable) {
+                        that.showSpinner = false;
+                        that.forceshared++;
                     });
             } else {
                 this.context.unShareWriteAccess(this.files[0], targetUsername)
                     .thenApply(function(b) {
                         that.showSpinner = false;
                         console.log("unshared write access to " + that.files[0].getFileProperties().name + " with " + targetUsername);
+                        that.forceshared++;
+                    }).exceptionally(function(throwable) {
+                        that.showSpinner = false;
                         that.forceshared++;
                     });
             }
