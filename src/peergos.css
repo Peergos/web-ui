@@ -97,8 +97,6 @@ table {
                                   not supported by any browser */
 }
 
-@import url(https://fonts.googleapis.com/css?family=Roboto:400,500,700,300,100);
-
 .feedback-button{
     height:40px; 
     border:solid 3px #CCCCCC; 
@@ -116,7 +114,7 @@ table {
     position:fixed; 
     right:-40px; 
     top:45%;
-    font-family: "Roboto", helvetica, arial, sans-serif; 
+    font-family: Helvetica, Arial, sans-serif; 
     z-index:999; 
 }
 
