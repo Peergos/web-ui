@@ -6,7 +6,9 @@ function convertToByteArray(target) {
     target.typeMarker = source.typeMarker;
     target.__elementTypeCategory$ = source.__elementTypeCategory$;
     target.__elementTypeId$ = source.__elementTypeId$;
+    var len = target.length;
     target.__proto__ = source.__proto__;
+    target.length = len;
     return target;
 }
 
@@ -568,7 +570,6 @@ function createVideoThumbnailStreamingProm(future, asyncReader, size, fileName) 
             future.complete("");
         } else {
             var data = convertToByteArray(new Uint8Array(blockSize));
-            data.length = blockSize;
             asyncReader.readIntoArray(data, 0, blockSize).thenApply(function(read){
                size = size - read;
                blockSize = size > maxBlockSize ? maxBlockSize : size;

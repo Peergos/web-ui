@@ -43,13 +43,9 @@ self.onmessage = event => {
   port.postMessage({ debug: 'Mocking a download request' })
 }
 
-function Window(bytes, offset) {
-    this.bytes = bytes;
-}
-
 function CacheEntry(fileSize) {
     this.fileSize = fileSize;
-    this.window = new Window(new Uint8Array(0));
+    this.bytes = new Uint8Array(0);
     this.skip = false;
     this.firstRun = true;
     this.getFileSize = function() {
@@ -66,16 +62,16 @@ function CacheEntry(fileSize) {
         return this.skip;
     }
     this.reset = function() {
-        this.window = new Window(new Uint8Array(0));
+        this.bytes = new Uint8Array(0);
         this.skip = false;
     }
     this.enqueue = function(moreData) {
-        const currentWindow = this.window;
-        const combinedSize = currentWindow.bytes.byteLength + moreData.byteLength;
+        const currentBytes = this.bytes;
+        const combinedSize = currentBytes.byteLength + moreData.byteLength;
         var newStore = new Uint8Array(combinedSize);
-        newStore.set(currentWindow.bytes);
-        newStore.set(moreData, currentWindow.bytes.byteLength);
-        this.window = new Window(newStore, currentWindow.offsetIndex);
+        newStore.set(currentBytes);
+        newStore.set(moreData, currentBytes.byteLength);
+        this.bytes = newStore;
     }
 }
 
@@ -163,7 +159,7 @@ function returnRangeRequest(start, end, cacheEntry) {
     const fileSize = cacheEntry.getFileSize();
     return new Promise(function(resolve, reject) {
         let pump = () => {
-            const store = cacheEntry.window.bytes;
+            const store = cacheEntry.bytes;
             if (cacheEntry.getSkip() || store.byteLength != end-start + 1) {
                 setTimeout(pump, 500)
             } else {
