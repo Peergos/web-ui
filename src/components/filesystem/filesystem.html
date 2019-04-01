@@ -53,7 +53,10 @@
 <shared-with-modal :forceshared.sync="forceSharedWithUpdate" :show.sync="showSharedWith" :data.sync="sharedWithData" :files.sync="selectedFiles" :context.sync="context"></shared-with-modal>
 <social v-if="showSocial" :show.sync="showSocial" :data.sync="social" :context.sync="context" :externalchange.sync="externalChange" :messages.sync="messages"></social>
 <password v-if="showPassword" :show.sync="showPassword" :changepassword.sync="changePassword"></password>
-
+<feedback v-if="showFeedbackForm" :show.sync="showFeedbackForm"
+          :data.sync="feedback" :context.sync="context"
+          :externalchange.sync="externalChange"
+          :messages.sync="messages"></feedback>
 <gallery v-if="showGallery" :show.sync="showGallery" :files.sync="sortedFiles" :context.sync="context" :initial-file-name="selectedFiles[0] == null ? '' : selectedFiles[0].getFileProperties().name"></gallery>
 
 <hex v-if="showHexViewer" :show.sync="showHexViewer" :file.sync="selectedFiles[0]" :context.sync="context"></hex>
@@ -102,6 +105,9 @@
             </tbody>
         </table>
     </div>
+    <button id="popup" class="feedback-button" @click="toggleFeedbackForm()"> 
+        Feedback
+    </button>
     <audio id="hidden_audio"></audio>
     <video id="hidden_video"></video>
     <error :show.sync="showError" :title.sync="errorTitle" :body.sync="errorBody"></error>

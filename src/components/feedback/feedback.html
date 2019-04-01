@@ -1,0 +1,27 @@
+<div class="modal-mask" @click="close" v-show="show" transition="modal">
+    <meta http-equiv="content-type" content="text/html; charset=utf-8" />
+    <div style="height:30%"></div>
+    <div class="modal-container" @click.stop style="height:70%;overflow-y:auto">
+        <div class="modal-header">
+            <h2>Feedback</h2>
+        </div>
+        <div class="modal-body">
+            <spinner v-if="showSpinner"></spinner>
+            <div id="feedback-main">
+                <p>
+                <textarea id="feedback-text"
+                          style="width:100%"
+                          rows=10
+                     placeholder="Let us know what we can improve."></textarea>
+                </p>
+                <p>
+                <button class="btn btn-success" 
+                        style = "width:100%"
+                    @click="submitFeedback()">
+                    Submit
+                </button>
+                </p>
+            </div>
+        </div>
+    </div>
+</div>

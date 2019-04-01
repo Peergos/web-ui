@@ -14,6 +14,7 @@ var ProgressBar     = require('./components/progressbar');
 var Prompt          = require('./components/prompt');
 var Spinner          = require('./components/spinner');
 var Error          = require('./components/error');
+var Feedback        = require('./components/feedback');
 
 var VueAsyncComputed = require('./plugins/vue-async-computed');
 Vue.use(VueAsyncComputed);
@@ -41,6 +42,7 @@ Vue.use(VueTouch)
     Vue.component('prompt', Vue.extend(Prompt));
     Vue.component('spinner', Vue.extend(Spinner));
     Vue.component('error', Vue.extend(Error));
+    Vue.component('feedback', Vue.extend(Feedback));
 
     // Initializing Vue after GWT has finished
     setTimeout(function() {
