@@ -154,7 +154,12 @@ module.exports = {
                         following: social.followingRoots.toArray([]).map(function(f){return f.getFileProperties().name}),
                         pendingOutgoing: social.pendingOutgoingFollowRequests.keySet().toArray([])
 		    };
-                });
+                }).exceptionally(function(throwable) {
+		    that.errorTitle = 'Error retrieving social state';
+		    that.errorBody = throwable.getMessage();
+		    that.showError = true;
+		    that.showSpinner = false;
+		});
 	    }
 	},
 
