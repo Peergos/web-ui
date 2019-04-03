@@ -146,10 +146,7 @@ module.exports = {
             }
         },
         supportsStreaming: function() {
-	    var href = window.location.href;
-	    if (href.indexOf("streaming=true") == -1)
-		return false;
-            try {
+	    try {
                 return 'serviceWorker' in navigator && !!new ReadableStream() && !!new WritableStream()
             } catch(err) {
                 return false;
