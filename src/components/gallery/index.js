@@ -89,7 +89,7 @@ module.exports = {
                         this.maxBlockSize = 1024 * 1024 * 5;
                         this.reader = reader;
                         this.writer = null;
-                        this.stream = function(seekIndex, length) {
+                        this.stream = function(seekHi, seekLo, length) {
                             var empty = convertToByteArray(new Uint8Array(0));
                             var work = function(thatRef){
                                 var currentSize = length;
@@ -110,7 +110,7 @@ module.exports = {
                                         return future;
                                     }
                                 }
-                                return thatRef.reader.seekJS(0, seekIndex).thenApply(function(seekReader){
+                                return thatRef.reader.seekJS(seekHi, seekLo).thenApply(function(seekReader){
                                     return pump(seekReader);
                                 })
                             }
@@ -123,11 +123,11 @@ module.exports = {
                     let fileStream = streamSaver.createWriteStream("media-" + props.name, function(url){
                         that.videoUrl = url;
                         that.showSpinner = false;
-                    }, function(seekIndex, seekLength){
-                        context.stream(seekIndex, seekLength);
+                    }, function(seekHi, seekLo, seekLength){
+                        context.stream(seekHi, seekLo, seekLength);
                     }, undefined, size)
                     context.writer = fileStream.getWriter()
-                    return context.stream(0, Math.min(size, 1024 * 1024))
+                    return context.stream(0, 0, Math.min(size, 1024 * 1024))
                 });
             } else {
                 file.getInputStream(this.context.network, this.context.crypto.random,

@@ -141,9 +141,10 @@ self.onfetch = event => {
         if(end > cacheEntry.fileSize - 1) {
             end = cacheEntry.fileSize - 1;
         }
+        const seekHi = (start - (start % Math.pow(2, 32)))/Math.pow(2, 32);
         const seekLength = end-start + 1;
         cacheEntry.setSkip();
-        port.postMessage({ seek: start, seekLength: seekLength })
+        port.postMessage({ seekHi: seekHi, seekLo: start, seekLength: seekLength })
         return event.respondWith(returnRangeRequest(start, end, cacheEntry))
     } else {
         const downloadEntry = downloadMap.get(url)
