@@ -89,28 +89,33 @@ module.exports = {
                         this.maxBlockSize = 1024 * 1024 * 5;
                         this.reader = reader;
                         this.writer = null;
-                        this.stream = function(seekIndex, length) {
+                        this.stream = function(seekHi, seekLo, length) {
                             var empty = convertToByteArray(new Uint8Array(0));
-                            this.writer.write(empty).then(()=>{
+                            var work = function(thatRef){
                                 var currentSize = length;
                                 var blockSize = currentSize > this.maxBlockSize ? this.maxBlockSize : currentSize;
-                                var thatRef = this;
-                                this.reader.seek(0, seekIndex).thenCompose(function(seekReader){
-                                    let pump = () => {
-                                        if(blockSize > 0) {
-                                            var data = convertToByteArray(new Uint8Array(blockSize));
-                                            seekReader.readIntoArray(data, 0, blockSize).thenApply(function(read){
-                                                   currentSize = currentSize - read;
-                                                   blockSize = currentSize > thatRef.maxBlockSize ? thatRef.maxBlockSize : currentSize;
-                                                   thatRef.writer.write(data).then(()=>{
-                                                        setTimeout(pump)
-                                                    })
-                                            });
-                                        }
+                                var pump = function(seekReader) {
+                                    if(blockSize > 0) {
+                                        var data = convertToByteArray(new Uint8Array(blockSize));
+                                        data.length = blockSize;
+                                        return seekReader.readIntoArray(data, 0, blockSize).thenApply(function(read){
+                                               currentSize = currentSize - read;
+                                               blockSize = currentSize > thatRef.maxBlockSize ? thatRef.maxBlockSize : currentSize;
+                                               thatRef.writer.write(data);
+                                               return pump(seekReader);
+                                        });
+                                    } else {
+                                        var future = peergos.shared.util.Futures.incomplete();
+                                        future.complete(true);
+                                        return future;
                                     }
-                                    pump()
+                                }
+                                return thatRef.reader.seekJS(seekHi, seekLo).thenApply(function(seekReader){
+                                    return pump(seekReader);
                                 })
-                            })
+                            }
+                            this.writer.write(empty);
+                            return work(this);
                         }
                     }
                     const context = new Context(reader);
@@ -118,11 +123,11 @@ module.exports = {
                     let fileStream = streamSaver.createWriteStream("media-" + props.name, function(url){
                         that.videoUrl = url;
                         that.showSpinner = false;
-                    }, function(seekIndex, seekLength){
-                        context.stream(seekIndex, seekLength);
+                    }, function(seekHi, seekLo, seekLength){
+                        context.stream(seekHi, seekLo, seekLength);
                     }, undefined, size)
                     context.writer = fileStream.getWriter()
-                    context.stream(0, Math.min(size, 1024 * 1024))
+                    return context.stream(0, 0, Math.min(size, 1024 * 1024))
                 });
             } else {
                 file.getInputStream(this.context.network, this.context.crypto.random,
