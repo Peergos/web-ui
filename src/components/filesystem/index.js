@@ -620,7 +620,7 @@ module.exports = {
                     pump()
                     return result;
                 } else {
-                    var size = this.getFileSize(props);
+                    var size = that.getFileSize(props);
                     var data = convertToByteArray(new Int8Array(size));
                     return reader.readIntoArray(data, 0, data.length)
                         .thenApply(function(read){that.openItem(props.name, data)});
