@@ -111,6 +111,7 @@ module.exports = {
                                     }
                                 }
                                 return thatRef.reader.seekJS(seekHi, seekLo).thenApply(function(seekReader){
+				    thatRef.reader = seekReader;
                                     return pump(seekReader);
                                 })
                             }
