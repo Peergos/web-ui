@@ -83,53 +83,56 @@ module.exports = {
             var that = this;
             this.showSpinner = true;
             if(that.supportsStreaming()) {
-                file.getInputStream(this.context.network, this.context.crypto.random, props.sizeHigh(), props.sizeLow(), function(read) {}).thenCompose(function(reader) {
-                    var size = props.sizeLow();
-                    function Context(reader) {
-                        this.maxBlockSize = 1024 * 1024 * 5;
-                        this.reader = reader;
-                        this.writer = null;
-                        this.stream = function(seekHi, seekLo, length) {
-                            var empty = convertToByteArray(new Uint8Array(0));
-                            var work = function(thatRef){
-                                var currentSize = length;
-                                var blockSize = currentSize > this.maxBlockSize ? this.maxBlockSize : currentSize;
-                                var pump = function(seekReader) {
-                                    if(blockSize > 0) {
-                                        var data = convertToByteArray(new Uint8Array(blockSize));
-                                        data.length = blockSize;
-                                        return seekReader.readIntoArray(data, 0, blockSize).thenApply(function(read){
-                                               currentSize = currentSize - read;
-                                               blockSize = currentSize > thatRef.maxBlockSize ? thatRef.maxBlockSize : currentSize;
-                                               thatRef.writer.write(data);
-                                               return pump(seekReader);
-                                        });
-                                    } else {
-                                        var future = peergos.shared.util.Futures.incomplete();
-                                        future.complete(true);
-                                        return future;
-                                    }
+                var size = props.sizeLow();
+                function Context(file, network, random, sizeHigh, sizeLow) {
+                    this.maxBlockSize = 1024 * 1024 * 5;
+                    this.writer = null;
+                    this.file = file;
+                    this.network = network;
+                    this.random = random;
+                    this.sizeHigh = sizeHigh,
+                    this.sizeLow = sizeLow;
+                    this.stream = function(seekHi, seekLo, length) {
+                        var empty = convertToByteArray(new Uint8Array(0));
+                        var work = function(thatRef) {
+                            var currentSize = length;
+                            var blockSize = currentSize > this.maxBlockSize ? this.maxBlockSize : currentSize;
+                            var pump = function(reader) {
+                                if(blockSize > 0) {
+                                    var data = convertToByteArray(new Uint8Array(blockSize));
+                                    data.length = blockSize;
+                                    return reader.readIntoArray(data, 0, blockSize).thenApply(function(read){
+                                           currentSize = currentSize - read;
+                                           blockSize = currentSize > thatRef.maxBlockSize ? thatRef.maxBlockSize : currentSize;
+                                           thatRef.writer.write(data);
+                                           return pump(reader);
+                                    });
+                                } else {
+                                    var future = peergos.shared.util.Futures.incomplete();
+                                    future.complete(true);
+                                    return future;
                                 }
-                                return thatRef.reader.seekJS(seekHi, seekLo).thenApply(function(seekReader){
-				    thatRef.reader = seekReader;
+                            }
+                            file.getInputStream(network, random, sizeHigh, sizeLow, function(read) {}).thenCompose(function(reader) {
+                                return reader.seekJS(seekHi, seekLo).thenApply(function(seekReader){
                                     return pump(seekReader);
                                 })
-                            }
-                            this.writer.write(empty);
-                            return work(this);
+                            });
                         }
+                        this.writer.write(empty);
+                        return work(this);
                     }
-                    const context = new Context(reader);
-                    console.log("streaming data of length " + size);
-                    let fileStream = streamSaver.createWriteStream("media-" + props.name, function(url){
-                        that.videoUrl = url;
-                        that.showSpinner = false;
-                    }, function(seekHi, seekLo, seekLength){
-                        context.stream(seekHi, seekLo, seekLength);
-                    }, undefined, size)
-                    context.writer = fileStream.getWriter()
-                    return context.stream(0, 0, Math.min(size, 1024 * 1024))
-                });
+                }
+                const context = new Context(file, this.context.network, this.context.crypto.random, props.sizeHigh(), props.sizeLow());
+                console.log("streaming data of length " + size);
+                let fileStream = streamSaver.createWriteStream("media-" + props.name, function(url){
+                    that.videoUrl = url;
+                    that.showSpinner = false;
+                }, function(seekHi, seekLo, seekLength){
+                    context.stream(seekHi, seekLo, seekLength);
+                }, undefined, size)
+                context.writer = fileStream.getWriter()
+                return context.stream(0, 0, Math.min(size, 1024 * 1024))
             } else {
                 file.getInputStream(this.context.network, this.context.crypto.random,
                         props.sizeHigh(), props.sizeLow(),
