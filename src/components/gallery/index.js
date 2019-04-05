@@ -92,13 +92,14 @@ module.exports = {
                     this.random = random;
                     this.sizeHigh = sizeHigh,
                     this.sizeLow = sizeLow;
-                    this.stream = function(seekHi, seekLo, length) {
-                        var empty = convertToByteArray(new Uint8Array(0));
-                        var work = function(thatRef) {
+                    this.counter = 0;
+                    this.stream = function(seekHi, seekLo, length, currentCount) {
+                        this.counter++;
+                        var work = function(thatRef, currentCount) {
                             var currentSize = length;
                             var blockSize = currentSize > this.maxBlockSize ? this.maxBlockSize : currentSize;
                             var pump = function(reader) {
-                                if(blockSize > 0) {
+                                if(blockSize > 0 && thatRef.counter == currentCount) {
                                     var data = convertToByteArray(new Uint8Array(blockSize));
                                     data.length = blockSize;
                                     return reader.readIntoArray(data, 0, blockSize).thenApply(function(read){
@@ -119,8 +120,9 @@ module.exports = {
                                 })
                             });
                         }
+                        var empty = convertToByteArray(new Uint8Array(0));
                         this.writer.write(empty);
-                        return work(this);
+                        return work(this, this.counter);
                     }
                 }
                 const context = new Context(file, this.context.network, this.context.crypto.random, props.sizeHigh(), props.sizeLow());
