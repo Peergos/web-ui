@@ -863,8 +863,7 @@ module.exports = {
             var owner = this.currentDir.getOwnerName();
             var me = this.username;
             if (owner === me) {
-                var result = this.getContext().isShared(file);
-                return result;
+                return file.isShared(this.context.network);
             } else {
                 return false;
             }
