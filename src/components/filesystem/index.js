@@ -405,7 +405,7 @@ module.exports = {
                 var context = this.getContext();
                 if (clipboard.op == "cut") {
                     console.log("paste-cut "+clipboard.fileTreeNode.getFileProperties().name + " -> "+target.getFileProperties().name);
-                    clipboard.fileTreeNode.moveTo(target, clipboard.parent, context.network, context.crypto.random, context.crypto.hasher)
+                    clipboard.fileTreeNode.moveTo(target, clipboard.parent, context)
                         .thenApply(function() {
                             that.currentDirChanged();
 			                that.onUpdateCompletion.push(function() {
@@ -419,7 +419,7 @@ module.exports = {
                     });
                 } else if (clipboard.op == "copy") {
                     console.log("paste-copy");
-                    clipboard.fileTreeNode.copyTo(target, context.network, context.crypto.random, context.crypto.hasher)
+                    clipboard.fileTreeNode.copyTo(target, context)
                         .thenApply(function() {
                             that.currentDirChanged();
             			    that.onUpdateCompletion.push(function() {
@@ -698,7 +698,7 @@ module.exports = {
                 if (clipboard.op == "cut") {
         		    var name = clipboard.fileTreeNode.getFileProperties().name;
                     console.log("drop-cut " + name + " -> "+target.getFileProperties().name);
-                    clipboard.fileTreeNode.moveTo(target, clipboard.parent, context.network, context.crypto.random, context.crypto.hasher)
+                    clipboard.fileTreeNode.moveTo(target, clipboard.parent, context)
                     .thenApply(function() {
                         that.currentDirChanged();
 			            that.onUpdateCompletion.push(function() {
@@ -714,7 +714,7 @@ module.exports = {
                     console.log("drop-copy");
                     var file = clipboard.fileTreeNode;
                     var props = file.getFileProperties();
-                    file.copyTo(target, context.network, context.crypto.random, context.crypto.hasher)
+                    file.copyTo(target, context)
                     .thenApply(function() {
                         that.currentDirChanged();
                         that.onUpdateCompletion.push(function() {
@@ -781,7 +781,7 @@ module.exports = {
                     return;
                 that.showSpinner = true;
                 console.log("Renaming " + old_name + "to "+ prompt_result);
-                file.rename(prompt_result, that.getContext().network, that.currentDir, that.getContext().crypto.hasher)
+                file.rename(prompt_result, that.currentDir, that.getContext())
                     .thenApply(function(b){
                         that.currentDirChanged();
 			that.onUpdateCompletion.push(function() {
@@ -812,7 +812,7 @@ module.exports = {
                 console.log("deleting: " + file.getFileProperties().name);
                 this.showSpinner = true;
                 var that = this;
-                file.remove(this.currentDir, this.getContext().network, this.getContext().crypto.hasher)
+                file.remove(this.currentDir, this.getContext())
                     .thenApply(function(b){
                         that.currentDirChanged();
                         delete_countdown.value -=1;
@@ -863,7 +863,7 @@ module.exports = {
             var owner = this.currentDir.getOwnerName();
             var me = this.username;
             if (owner === me) {
-                return file.isShared(this.context.network);
+                return file.isShared(this.context);
             } else {
                 return false;
             }
