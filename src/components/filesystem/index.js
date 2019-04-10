@@ -405,33 +405,32 @@ module.exports = {
                 var context = this.getContext();
                 if (clipboard.op == "cut") {
                     console.log("paste-cut "+clipboard.fileTreeNode.getFileProperties().name + " -> "+target.getFileProperties().name);
-                    clipboard.fileTreeNode.copyTo(target, context.network, context.crypto.random, context.crypto.hasher).thenCompose(function() {
-                        return clipboard.fileTreeNode.remove(clipboard.parent, that.getContext().network, that.getContext().crypto.hasher);
-                    }).thenApply(function() {
-                        that.currentDirChanged();
-			that.onUpdateCompletion.push(function() {
-                            that.showSpinner = false;
-			});
-                    }).exceptionally(function(throwable) {
-			that.errorTitle = 'Error moving file';
-			that.errorBody = throwable.getMessage();
-			that.showError = true;
-			that.showSpinner = false;
-		    });
-                } else if (clipboard.op == "copy") {
-                    console.log("paste-copy");
-                    clipboard.fileTreeNode.copyTo(target, context.network, context.crypto.random, context.crypto.hasher)
+                    clipboard.fileTreeNode.moveTo(target, clipboard.parent, context)
                         .thenApply(function() {
                             that.currentDirChanged();
-			    that.onUpdateCompletion.push(function() {
-				that.showSpinner = false;
-			    });
-                        }).exceptionally(function(throwable) {
-			    that.errorTitle = 'Error copying file';
-			    that.errorBody = throwable.getMessage();
-			    that.showError = true;
-			    that.showSpinner = false;
-			});
+			                that.onUpdateCompletion.push(function() {
+                            that.showSpinner = false;
+			            });
+                    }).exceptionally(function(throwable) {
+                        that.errorTitle = 'Error moving file';
+                        that.errorBody = throwable.getMessage();
+                        that.showError = true;
+                        that.showSpinner = false;
+                    });
+                } else if (clipboard.op == "copy") {
+                    console.log("paste-copy");
+                    clipboard.fileTreeNode.copyTo(target, context)
+                        .thenApply(function() {
+                            that.currentDirChanged();
+            			    that.onUpdateCompletion.push(function() {
+			                	that.showSpinner = false;
+                        });
+                    }).exceptionally(function(throwable) {
+                        that.errorTitle = 'Error copying file';
+                        that.errorBody = throwable.getMessage();
+                        that.showError = true;
+                        that.showSpinner = false;
+                    });
                 }
                 this.clipboard.op = null;
             }
@@ -697,37 +696,36 @@ module.exports = {
                 that.showSpinner = true;
                 var context = this.getContext();
                 if (clipboard.op == "cut") {
-		    var name = clipboard.fileTreeNode.getFileProperties().name;
+        		    var name = clipboard.fileTreeNode.getFileProperties().name;
                     console.log("drop-cut " + name + " -> "+target.getFileProperties().name);
-                    clipboard.fileTreeNode.copyTo(target, context.network, context.crypto.random, context.crypto.hasher).thenCompose(function() {
-                        return clipboard.fileTreeNode.remove(clipboard.parent, that.getContext().network, that.getContext().crypto.hasher);
-                    }).thenApply(function() {
+                    clipboard.fileTreeNode.moveTo(target, clipboard.parent, context)
+                    .thenApply(function() {
                         that.currentDirChanged();
-			that.onUpdateCompletion.push(function() {
+			            that.onUpdateCompletion.push(function() {
                             that.showSpinner = false;
-			});
+			            });
                     }).exceptionally(function(throwable) {
-			that.errorTitle = 'Error moving file';
-			that.errorBody = throwable.getMessage();
-			that.showError = true;
-			that.showSpinner = false;
-		    });
+                        that.errorTitle = 'Error moving file';
+                        that.errorBody = throwable.getMessage();
+                        that.showError = true;
+                        that.showSpinner = false;
+                    });
                 } else if (clipboard.op == "copy") {
                     console.log("drop-copy");
-		    var file = clipboard.fileTreeNode;
-		    var props = file.getFileProperties();
-                    file.copyTo(target, context.network, context.crypto.random, context.crypto.hasher)
-                        .thenApply(function() {
-                            that.currentDirChanged();
-			    that.onUpdateCompletion.push(function() {
-				that.showSpinner = false;
-			    });
-                        }).exceptionally(function(throwable) {
-			    that.errorTitle = 'Error copying file';
-			    that.errorBody = throwable.getMessage();
-			    that.showError = true;
-			    that.showSpinner = false;
-			});
+                    var file = clipboard.fileTreeNode;
+                    var props = file.getFileProperties();
+                    file.copyTo(target, context)
+                    .thenApply(function() {
+                        that.currentDirChanged();
+                        that.onUpdateCompletion.push(function() {
+                            that.showSpinner = false;
+                        });
+                    }).exceptionally(function(throwable) {
+                        that.errorTitle = 'Error copying file';
+                        that.errorBody = throwable.getMessage();
+                        that.showError = true;
+                        that.showSpinner = false;
+                    });
                 }
             }
         },
@@ -783,7 +781,7 @@ module.exports = {
                     return;
                 that.showSpinner = true;
                 console.log("Renaming " + old_name + "to "+ prompt_result);
-                file.rename(prompt_result, that.getContext().network, that.currentDir, that.getContext().crypto.hasher)
+                file.rename(prompt_result, that.currentDir, that.getContext())
                     .thenApply(function(b){
                         that.currentDirChanged();
 			that.onUpdateCompletion.push(function() {
@@ -814,7 +812,7 @@ module.exports = {
                 console.log("deleting: " + file.getFileProperties().name);
                 this.showSpinner = true;
                 var that = this;
-                file.remove(this.currentDir, this.getContext().network, this.getContext().crypto.hasher)
+                file.remove(this.currentDir, this.getContext())
                     .thenApply(function(b){
                         that.currentDirChanged();
                         delete_countdown.value -=1;
@@ -865,8 +863,7 @@ module.exports = {
             var owner = this.currentDir.getOwnerName();
             var me = this.username;
             if (owner === me) {
-                var result = this.getContext().isShared(file);
-                return result;
+                return file.isShared(this.context);
             } else {
                 return false;
             }
