@@ -82,7 +82,8 @@ module.exports = {
             var props = file.getFileProperties();
             var that = this;
             this.showSpinner = true;
-            if(that.supportsStreaming() && that.isVideo(file)) {
+            var isLargeAudioFile = that.isAudio(file) && that.getFileSize(props) > 1024 * 1024 * 5;
+            if(that.supportsStreaming() && ( that.isVideo(file) || isLargeAudioFile )) {
                 var size = props.sizeLow();
                 function Context(file, network, random, sizeHigh, sizeLow) {
                     this.maxBlockSize = 1024 * 1024 * 5;
