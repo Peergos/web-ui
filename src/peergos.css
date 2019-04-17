@@ -197,6 +197,12 @@ table {
 
 .modal-default-button {
   float: right;
+  color: #fff;
+  background-color: #5cb85c;
+  border-color: 34cae4c;
+  padding: 6px 12px;
+  border:1px solid transparent;
+  border-radius:4px
 }
 
 /*
@@ -253,4 +259,12 @@ table {
     text-align: center;
     font-size: 18px;
     z-index: 999;
+}
+
+.modal-prominent {
+  font-size: 1.2em;
+}
+
+.btn-shared-with {
+  padding: 0px 0px 0px 0px;
 }
