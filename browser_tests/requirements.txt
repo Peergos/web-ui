@@ -2,4 +2,4 @@ attrs==16.2.0
 py==1.4.31
 pytest==3.0.4
 selenium==3.14.0
-urllib3==1.23
+urllib3
