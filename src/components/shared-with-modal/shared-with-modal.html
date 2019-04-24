@@ -5,34 +5,23 @@
         <div class="modal-header">
             <h3>{{ data.title }}</h3>
         </div>
-        <div class="modal-body">
+        <div class="modal-body modal-prominent">
             <div class="container" v-if="data.edit_shared_with_users.length > 0"><p style="word-wrap;break-all;">
                 Write Access:
-                <ul>
-                <li v-for="user in data.edit_shared_with_users">{{ user }} <button v-on:click="unshare(user, 'Edit')"><span class="glyphicon glyphicon-trash"></span></button></li>
-                </ul>
+                <div v-for="user in data.edit_shared_with_users"><button v-on:click="unshare(user, 'Edit')"><span class="glyphicon glyphicon-trash btn btn-shared-with"></span></button> {{ user }} </div>
             </div>
             <div class="container" v-if="data.edit_shared_with_users.length == 0"><p style="word-wrap;break-all;">
                 Write Access:    None
             </div>
         </div>
-        <div class="modal-body">
+        <div class="modal-body modal-prominent">
             <div class="container" v-if="data.read_shared_with_users.length > 0"><p style="word-wrap;break-all;">
                 Read Access:
-                <ul>
-                <li v-for="user in data.read_shared_with_users">{{ user }} <button v-on:click="unshare(user, 'Read')"><span class="glyphicon glyphicon-trash"></span></button></li>
-                </ul>
+                <div v-for="user in data.read_shared_with_users"><button v-on:click="unshare(user, 'Read')"><span class="glyphicon glyphicon-trash btn btn-shared-with"></span></button> {{ user }} </div>
             </div>
             <div class="container" v-if="data.read_shared_with_users.length == 0"><p style="word-wrap;break-all;">
                 Read Access:    None
             </div>
-        </div>
-        <div class="modal-footer">
-            <slot name="footer">
-            <button class="modal-default-button" @click="close">
-                OK
-            </button>
-            </slot>
         </div>
     </div>
 </div>

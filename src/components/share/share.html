@@ -10,14 +10,14 @@
             <div class="container">
                 <table>
                     <tr>
-                        <td style="text-align:right; padding:30px; font-size: 0.8em; ">
+                        <td style="padding:10px; font-size: 0.8em; ">
                             <input id="friend-name-input" v-model="targetUsername" type="text" placeholder="Friend name" class="form-control" style="width:200px"></input>
                             &nbsp;<input type="radio" id="read-access" value="Read" v-model="sharedWithAccess">
                             <label for="read-access" style="font-weight: normal;">Read Only</label>
                             <input v-if="this.files[0].getOwnerName() == this.context.username" type="radio" id="edit-access" value="Edit" v-model="sharedWithAccess">
-                            <label v-if="this.files[0].getOwnerName() == this.context.username" for="edit-access" style="font-weight: normal;">Read and Write</label>
+                            <label v-if="this.files[0].getOwnerName() == this.context.username" for="edit-access" style="font-weight: normal;">Read &amp; Write</label>
+                            <button class="btn btn-success" @click="shareWith(this.targetUsername, this.sharedWithAccess)">Send</button>
                         </td>
-                        <td style="text-align:right"><button class="btn btn-success" @click="shareWith(this.targetUsername, this.sharedWithAccess)">Send</button></td>
                     </tr>
                 </table>
             </div>
