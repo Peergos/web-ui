@@ -313,6 +313,9 @@ module.exports = {
             var context = this.getContext();
             this.currentDir.uploadFileJS(file.name, java_reader, (file.size - (file.size % Math.pow(2, 32)))/Math.pow(2, 32), file.size, false, context.network, context.crypto.random, context.crypto.hasher, function(len){
                 progress.done += len.value_0;
+                that.progressMonitors.sort(function(a, b) {
+                  return Math.floor(b.done / b.max) - Math.floor(a.done / a.max);
+                });
                 if (progress.done >= progress.max) {
                     setTimeout(function(){progress.show = false}, 2000);
                     that.showSpinner = true;	
@@ -583,6 +586,9 @@ module.exports = {
             var context = this.getContext();
             file.getInputStream(context.network, context.crypto.random, props.sizeHigh(), props.sizeLow(), function(read) {
                 progress.done += read.value_0;
+                that.progressMonitors.sort(function(a, b) {
+                  return Math.floor(b.done / b.max) - Math.floor(a.done / a.max);
+                });
                 if (progress.done >= progress.max)
                     setTimeout(function(){progress.show = false}, 2000);
             }).thenCompose(function(reader) {
