@@ -59,7 +59,7 @@ module.exports = {
                     function(read) {})
                 .thenCompose(function(startReader) {
 		    return startReader
-			.seek(section.offsetHigh, seekOffset).thenCompose(function(reader) {
+			.seekJS(section.offsetHigh, seekOffset).thenCompose(function(reader) {
 
 			    var sizeToRead = Math.min(5*1024*1024, props.sizeLow() - seekOffset);
 			    var data = convertToByteArray(new Int8Array(sizeToRead));
