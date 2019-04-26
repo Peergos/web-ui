@@ -150,6 +150,9 @@ table {
   position: fixed;
   z-index: 9998;
   right: 0;
+  overflow-y: auto;
+  height: 80%;
+  width: 400px
 }
 
 .progressbar {
@@ -157,7 +160,7 @@ table {
   background-color: #fff;
   transition: opacity .3s ease;
   border-radius: 2px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, .33);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, .33) inset;
 }
 
 .progresscontainer {
