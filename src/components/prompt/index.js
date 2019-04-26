@@ -5,6 +5,9 @@ module.exports = {
     },
     props: ['show', 'prompt_message', 'placeholder', 'value', 'consumer_func'],
     created: function() {
+	Vue.nextTick(function() {
+            document.getElementById("prompt-input").focus();
+        });
     },
     methods: {
         close: function () {
