@@ -47,9 +47,11 @@ module.exports = {
             const creationStart = Date.now();
             const that = this;
             if(!that.tosAccepted) {
+                this.errorClass = "has-error has-feedback alert alert-danger";
                 this.isError = true;
                 this.error = "You must accept the Terms of Service";
             } else if (that.password1 != that.password2) {
+                this.errorClass = "has-error has-feedback alert alert-danger";
                 this.isError = true;
                 this.error = "Passwords do not match!";
             } else {
