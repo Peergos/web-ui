@@ -236,7 +236,7 @@ module.exports = {
             this.showSpinner = true;
             var that = this;
 
-            this.currentDir.mkdir(name, context.network, false, context.crypto.random, context.crypto.hasher)
+            this.currentDir.mkdir(name, context.network, false, context.crypto)
                 .thenApply(function(x){
                     this.currentDirChanged();
 		    that.onUpdateCompletion.push(function() {
@@ -311,7 +311,7 @@ module.exports = {
             var java_reader = new peergos.shared.user.fs.BrowserFileReader(reader);
             var that = this;
             var context = this.getContext();
-            this.currentDir.uploadFileJS(file.name, java_reader, (file.size - (file.size % Math.pow(2, 32)))/Math.pow(2, 32), file.size, false, context.network, context.crypto.random, context.crypto.hasher, function(len){
+            this.currentDir.uploadFileJS(file.name, java_reader, (file.size - (file.size % Math.pow(2, 32)))/Math.pow(2, 32), file.size, false, context.network, context.crypto, function(len){
                 progress.done += len.value_0;
                 that.progressMonitors.sort(function(a, b) {
                   return Math.floor(b.done / b.max) - Math.floor(a.done / a.max);
