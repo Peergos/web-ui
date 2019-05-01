@@ -320,8 +320,9 @@ module.exports = {
                     setTimeout(function(){progress.show = false}, 2000);
                     that.showSpinner = true;	
                 }
-            }, context.getTransactionService()).thenApply(function(x) {
-                that.currentDirChanged();
+            }, context.getTransactionService()).thenApply(function(res) {
+                that.currentDir = res;
+		that.updateFiles();
             }).exceptionally(function(throwable) {
 		progress.show = false;
                 that.errorTitle = 'Error uploading file: ' + file.name;
