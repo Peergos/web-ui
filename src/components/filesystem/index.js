@@ -887,7 +887,7 @@ module.exports = {
             }
             var sortBy = this.sortBy;
             var reverseOrder = ! this.normalSortOrder;
-	    var that = this;
+	        var that = this;
             return this.files.slice(0).sort(function(a, b) {
                 var aVal, bVal;
                 if (sortBy == null)
@@ -906,26 +906,30 @@ module.exports = {
                     bVal = b.isDirectory();
                 } else
                     throw "Unknown sort type " + sortBy;
-		if (reverseOrder) {
-		    var tmp = aVal;
-		    aVal = bVal;
-		    bVal = tmp;
-		    tmp = a;
-		    a = b;
-		    b = tmp;
-		}
+                if (reverseOrder) {
+                    var tmp = aVal;
+                    aVal = bVal;
+                    bVal = tmp;
+                    tmp = a;
+                    a = b;
+                    b = tmp;
+                }
 
                 if (a.isDirectory() !== b.isDirectory()) {
                     return  a.isDirectory() ? -1 : 1;
                 } else {
-		    if (sortBy == "name")
-			return aVal.localeCompare(bVal, undefined, {numeric:true});
-                    if (aVal < bVal) {
-                        return -1;
-                    } else if (aVal == bVal) {
-                        return 0;
+                    if (sortBy == "name") {
+                        return aVal.localeCompare(bVal, undefined, {numeric:true});
+                    }else if (sortBy == "modified") {
+                        return aVal.compareTo(bVal);
                     } else {
-                        return 1;
+                        if (aVal < bVal) {
+                            return -1;
+                        } else if (aVal == bVal) {
+                            return 0;
+                        } else {
+                            return 1;
+                        }
                     }
                 }
             });
