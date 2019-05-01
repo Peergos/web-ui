@@ -16,8 +16,11 @@
             <label v-if="isError">{{ error }}</label>
             <input :type="passwordFieldType" name="password1" id="password1" v-on:keyup="validatePassword(true)" class="form-control" v-model="password1" placeholder="Password">
         </div>
-        <div class="form-group">
+        <div class="form-group" >
             <input type="password" name="password2" id="password2" v-on:focus="validatePassword(false)" class="form-control" v-model="password2" placeholder="Re-enter password">
+        </div>
+        <div class="form-group" style="font-weight: bold;">
+            <input type="checkbox" name="tosAccepted" id="tosAccepted" v-model="tosAccepted" placeholder="Accept Terms of Service">&nbsp;I accept the <a href="/terms.html" target="_blank" rel="noopener noreferrer">Terms of Service</a>
         </div>
     </div>
     <button @click="signup()" class="btn btn-large btn-block btn-success">Sign up</button>

@@ -8,8 +8,8 @@ module.exports = {
             crypto: null,
             network: null,
             username: [],
-	    passwordFieldType: "password",
-	    password1: [],
+	        passwordFieldType: "password",
+	        password1: [],
             password2: [],
             checkPassword: false,
             isError: false,
@@ -23,7 +23,8 @@ module.exports = {
             errorTitle:'',
             errorBody:'',
             showError:false,
-	    bannedUsernames:["ipfs", "ipns", "root", "http", "https", "admin", "administrator", "support", "mail", "www", "web", "onion", "i2p", "ftp", "sftp", "file", "mailto", "wss", "xmpp", "ssh", "smtp", "imap", "irc"]
+	        bannedUsernames:["ipfs", "ipns", "root", "http", "https", "admin", "administrator", "support", "mail", "www", "web", "onion", "i2p", "ftp", "sftp", "file", "mailto", "wss", "xmpp", "ssh", "smtp", "imap", "irc"],
+	        tosAccepted:false
         };
     },
     props: {
@@ -45,7 +46,10 @@ module.exports = {
         signup : function() {
             const creationStart = Date.now();
             const that = this;
-            if (that.password1 != that.password2) {
+            if(!that.tosAccepted) {
+                this.isError = true;
+                this.error = "You must accept the Terms of Service";
+            } else if (that.password1 != that.password2) {
                 this.isError = true;
                 this.error = "Passwords do not match!";
             } else {
@@ -55,10 +59,10 @@ module.exports = {
                     that.errorBody = "Usernames must consist of between 1 and 32 characters, containing only digits, lowercase letters, underscore and hyphen. They also cannot have two consecutive hyphens or underscores, or start or end with a hyphen or underscore.";
                     that.showError = true;
                 } else if (this.bannedUsernames.includes(that.username)) {
-		    that.errorTitle = 'Banned username';
+                    that.errorTitle = 'Banned username';
                     that.errorBody = "A few usernames are not allowed: " + that.bannedUsernames;
                     that.showError = true;
-		} else {
+                } else {
                     this.showSpinner = true;
                     this.spinnerMessage = "signing up!";
                     return peergos.shared.user.UserContext.signUp(that.username, that.password1, that.network, that.crypto
@@ -80,15 +84,15 @@ module.exports = {
                 }
             }
         },
-	generatePassword() {
-	    var bytes = nacl.randomBytes(16);
-	    var wordIndices = [];
-	    for (var i=0; i < 7; i++)
-		wordIndices[i] = bytes[2*i]*8 + (bytes[2*i + 1] & 7);
-	    var password = wordIndices.map(j => bip39[j]).join(" ");
-	    this.passwordFieldType = "text";
-	    this.password1 = password;
-	},
+        generatePassword() {
+            var bytes = nacl.randomBytes(16);
+            var wordIndices = [];
+            for (var i=0; i < 7; i++)
+            wordIndices[i] = bytes[2*i]*8 + (bytes[2*i + 1] & 7);
+            var password = wordIndices.map(j => bip39[j]).join(" ");
+            this.passwordFieldType = "text";
+            this.password1 = password;
+        },
         validatePassword: function(inFirstField) {
             if (inFirstField && !this.checkPassword)
                 return;
