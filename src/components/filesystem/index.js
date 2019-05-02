@@ -237,8 +237,9 @@ module.exports = {
             var that = this;
 
             this.currentDir.mkdir(name, context.network, false, context.crypto)
-                .thenApply(function(x){
-                    this.currentDirChanged();
+                .thenApply(function(updatedDir){
+		    that.currentDir = updatedDir;
+		    that.updateFiles();
 		    that.onUpdateCompletion.push(function() {
                         that.showSpinner = false;
 		    });
