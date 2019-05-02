@@ -789,8 +789,9 @@ module.exports = {
                 that.showSpinner = true;
                 console.log("Renaming " + old_name + "to "+ prompt_result);
                 file.rename(prompt_result, that.currentDir, that.getContext())
-                    .thenApply(function(b){
-                        that.currentDirChanged();
+                    .thenApply(function(parent){
+			that.currentDir = parent;
+			that.updateFiles();
 			that.onUpdateCompletion.push(function() {
                             that.showSpinner = false;
 			});
