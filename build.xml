@@ -213,6 +213,8 @@ Class-Path: .</echo>
       <arg value="mutable.sql"/>
       <arg value="social-sql-file"/>
       <arg value="social.sql"/>
+      <arg value="default-quota"/>
+      <arg value="157286400"/>
       <arg value="PEERGOS_PATH"/>
       <arg value="${server}/.peergos"/>
     </exec>
