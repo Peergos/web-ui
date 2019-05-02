@@ -62,24 +62,22 @@ module.exports = {
         sendInitialFollowRequest: function(name) {
             if(name !== this.context.username) {
                 var that = this;
-                this.context.getSocialState().thenApply(function(social){
-                    if(social.pendingOutgoingFollowRequests.keySet().toArray([]).indexOf(name) != -1) {
+                console.log("sending follow request to " + name);
+                that.showSpinner = true;
+                that.context.sendInitialFollowRequest(name)
+                    .thenApply(function(success) {
+                        if(success) {
+                            that.showMessage("Follow request sent!", "");
+                            that.targetUsername = "";
+                            that.externalchange++;
+                        } else {
+                            that.showMessage("Follow request failed!", "");
+                        }
+                        that.showSpinner = false;
+                }).exceptionally(function(throwable) {
+                        that.showMessage(throwable.getMessage());
                         that.targetUsername = "";
-                        that.showMessage("Follow request already sent to " + name + "!", "");
-                    }else if(social.followerRoots.keySet().toArray([]).indexOf(name) != -1) {
-                        that.targetUsername = "";
-                        that.showMessage(name + " already a follower!", "");
-                    }else{
-                        console.log("sending follow request to " + name);
-                        that.showSpinner = true;
-                        that.context.sendInitialFollowRequest(name)
-                            .thenApply(function(success) {
-                                that.targetUsername = "";
-                                that.showMessage("Follow request sent!", "");
-                                that.showSpinner = false;
-                                that.externalchange++;
-                            });
-                    }
+                        that.showSpinner = false;
                 });
             }
         },
