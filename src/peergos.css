@@ -97,6 +97,14 @@ table {
                                   not supported by any browser */
 }
 
+.instruction {
+    font-size: 2em;
+    color: #999;
+    text-align: center;
+    width: 100%;
+    padding-top: 5%;
+}
+
 .feedback-button{
     height:40px; 
     border:solid 3px #CCCCCC; 

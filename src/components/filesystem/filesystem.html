@@ -84,6 +84,9 @@
                 </div>
             </span>
         </span>
+	<div v-if="sortedFiles.length==0" class="instruction">
+	  Upload a file by dragging and dropping here or clicking the <span class="glyphicon glyphicon-upload"/> icon
+	</div>
     </div>
     <div class="table-responsive" v-if="!grid">
         <table class="table">
