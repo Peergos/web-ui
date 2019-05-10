@@ -84,7 +84,7 @@
                 </div>
             </span>
         </span>
-	<div v-if="sortedFiles.length==0" class="instruction">
+	<div v-if="sortedFiles.length==0 && currentDir.isWritable()" class="instruction">
 	  Upload a file by dragging and dropping here or clicking the <span class="glyphicon glyphicon-upload"/> icon
 	</div>
     </div>
