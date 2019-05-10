@@ -1022,6 +1022,7 @@ module.exports = {
                     }
                 });
             } else {
+		this.path = [this.context.username];
                 this.updateSocial();
             }
         }
