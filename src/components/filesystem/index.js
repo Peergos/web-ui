@@ -560,6 +560,16 @@ module.exports = {
                 this.downloadFile(file);
         },
 
+        navigateOrMenu: function(event, file) {
+            if (this.showSpinner) // disable user input whilst refreshing
+                return;
+            this.closeMenu();
+            if (file.isDirectory())
+                this.navigateToSubdir(file.getFileProperties().name);
+            else
+                this.openMenu(event, file);
+        },
+
         navigateToSubdir: function(name) {
             this.changePath(this.getPath() + name);
         },
