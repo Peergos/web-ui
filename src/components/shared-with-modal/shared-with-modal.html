@@ -7,20 +7,20 @@
         </div>
         <div class="modal-body modal-prominent">
             <div class="container" v-if="data.edit_shared_with_users.length > 0"><p style="word-wrap;break-all;">
-                Write Access:
+                Read and Write Access:
                 <div v-for="user in data.edit_shared_with_users"><button v-on:click="unshare(user, 'Edit')"><span class="glyphicon glyphicon-trash btn btn-shared-with"></span></button> {{ user }} </div>
             </div>
             <div class="container" v-if="data.edit_shared_with_users.length == 0"><p style="word-wrap;break-all;">
-                Write Access:    None
+                Read and Write Write Access:    None
             </div>
         </div>
         <div class="modal-body modal-prominent">
             <div class="container" v-if="data.read_shared_with_users.length > 0"><p style="word-wrap;break-all;">
-                Read Access:
+                Read only Access:
                 <div v-for="user in data.read_shared_with_users"><button v-on:click="unshare(user, 'Read')"><span class="glyphicon glyphicon-trash btn btn-shared-with"></span></button> {{ user }} </div>
             </div>
             <div class="container" v-if="data.read_shared_with_users.length == 0"><p style="word-wrap;break-all;">
-                Read Access:    None
+                Read only Access:    None
             </div>
         </div>
     </div>
