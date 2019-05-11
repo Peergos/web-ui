@@ -2,7 +2,7 @@
     <input type="file" id="uploadInput" @change="uploadFiles" style="display:none;" multiple="" />
     <div>
         <ul class="nav navbar-nav">
-            <li id="homeButton" @click="goHome()" class="navbar-brand nopad"><a><span data-toggle="tooltip" data-placement="bottom" title="Home" class="pnavbar glyphicon glyphicon-globe tour-home" style="cursor: pointer;"/></a></li>
+            <li id="homeButton" @click="goHome()" class="navbar-brand nopad"><a><span data-toggle="tooltip" data-placement="bottom" title="Global root" class="pnavbar glyphicon glyphicon-globe tour-home" style="cursor: pointer;"/></a></li>
             <li id="uploadButton" @click="askForFile()" v-if="isWritable" class="navbar-brand nopad"><a><span data-toggle="tooltip" data-placement="bottom" title="Upload file" class="pnavbar glyphicon glyphicon-upload tour-upload" style="cursor: pointer;"/></a></li>
             <li id="mkdirButton" @click="askMkdir()" v-if="isWritable" class="navbar-brand nopad"><a><span data-toggle="tooltip" data-placement="bottom" title="Create new directory" class="pnavbar glyphicon glyphicon-folder-open tour-mkdir" style="cursor: pointer;"/></a></li>
             <li id="alternateViewButton" @click="switchView()" class="navbar-brand nopad"><a><span data-toggle="tooltip" data-placement="bottom" title="Switch view" id="altViewSpan" v-bind:class="['pnavbar', 'glyphicon', 'tour-view', grid ? 'glyphicon-list' : 'glyphicon-th-large']" style="cursor: pointer;"/></a></li>
