@@ -599,6 +599,14 @@ module.exports = {
 		return 'fa-file-image';
 	    if (type == 'text')
 		return 'fa-file-alt';
+	    if (type == 'zip')
+		return 'fa-file-archive';
+	    if (type == 'powerpoint presentation' || type == 'presentation')
+		return 'fa-file-powerpoint';
+	    if (type == 'word document' || type == 'text document')
+		return 'fa-file-word';
+	    if (type == 'excel spreadsheet' || type == 'spreadsheet')
+		return 'fa-file-excel';
 	    return 'fa-file';
 	},
 	
