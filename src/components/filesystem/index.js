@@ -7,7 +7,6 @@ module.exports = {
             path: [],
             currentDir: null,
 	        files: [],
-            followerNames: [],
             grid: true,
             sortBy: "name",
             normalSortOrder: true,
@@ -891,10 +890,6 @@ module.exports = {
             this.viewMenu = false;
             this.ignoreEvent = false;
         }
-	,
-	isPublicLink: function() {
-	    return this.context.username == null;
-	}
     },
     computed: {
         sortedFiles: function() {
@@ -970,6 +965,14 @@ module.exports = {
                 return false;
             }
         },
+	
+	isPublicLink: function() {
+	    return this.context != null && this.context.username == null;
+	},
+	
+	isLoggedIn: function() {
+	    return ! this.isPublicLink;
+	},
 
         isNotHome: function() {
             return this.path.length > 1;
@@ -1003,6 +1006,10 @@ module.exports = {
 
             return this.currentDir.isWritable() && target.isDirectory();
         },
+
+	followernames: function() {
+	    return this.social.followers;
+	},
 
         username: function() {
             var context = this.getContext();

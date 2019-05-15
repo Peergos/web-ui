@@ -5,12 +5,12 @@ module.exports = {
 	    showSpinner: false,
             targetUsername: "",
             sharedWithAccess: "Read",
-	        errorTitle:'',
+	    errorTitle:'',
             errorBody:'',
             showError:false
         }
     },
-    props: ['show', 'files', 'parent', 'context', 'messages', 'shared', 'forceshared'],
+    props: ['show', 'followernames', 'files', 'parent', 'context', 'messages', 'shared', 'forceshared'],
     created: function() {
         Vue.nextTick(this.setTypeAhead);
     },
@@ -136,24 +136,19 @@ module.exports = {
 		};
             };
 
-	    var that = this;
-	    this.context.getSocialState().thenApply(function(social){
-		var friendNames = social.followerRoots.keySet().toArray([]);
-		
-		console.log("Share TYPEAHEAD:");
-		console.log(friendNames);
-		$('#friend-name-input')
-		    .typeahead(
-			{
-                            hint: true,
-                            highlight: true,
-                            minLength: 1
-			},
-			{
-                            name: 'usernames',
-                            source: substringMatcher(friendNames)
-			});
-            })
+	    console.log("Share TYPEAHEAD:");
+	    console.log(this.followernames);
+	    $('#friend-name-input')
+		.typeahead(
+		    {
+                        hint: true,
+                        highlight: true,
+                        minLength: 1
+		    },
+		    {
+                        name: 'usernames',
+                        source: substringMatcher(this.followernames)
+		    });
 	}
     }
 }
