@@ -648,6 +648,7 @@ module.exports = {
                         let link = document.createElement('a')
                         let click = new MouseEvent('click')
 
+			link.type = props.mimeType;
                         link.href = url
                         link.dispatchEvent(click)
                     })
@@ -672,7 +673,7 @@ module.exports = {
                     var size = that.getFileSize(props);
                     var data = convertToByteArray(new Int8Array(size));
                     return reader.readIntoArray(data, 0, data.length)
-                        .thenApply(function(read){that.openItem(props.name, data)});
+                        .thenApply(function(read){that.openItem(props.name, data, props.mimeType)});
                 }
             }).exceptionally(function(throwable) {
                 progress.show = false;
@@ -688,7 +689,7 @@ module.exports = {
                 return false;
             }
         },
-        openItem: function(name, data) {
+        openItem: function(name, data, mimeType) {
             console.log("saving data of length " + data.length + " to " + name);
             if(this.url != null){
                 window.URL.revokeObjectURL(this.url);
@@ -698,6 +699,7 @@ module.exports = {
             this.url = window.URL.createObjectURL(blob);
             var link = document.getElementById("downloadAnchor");
             link.href = this.url;
+	    link.type = mimeType;
             link.download = name;
             link.click();
         },
