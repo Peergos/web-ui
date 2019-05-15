@@ -324,7 +324,7 @@ module.exports = {
                 }
             }, context.getTransactionService()).thenApply(function(res) {
                 that.currentDir = res;
-		        that.updateFiles();
+                that.updateFiles();
             }).exceptionally(function(throwable) {
                 progress.show = false;
                 that.errorTitle = 'Error uploading file: ' + file.name;
