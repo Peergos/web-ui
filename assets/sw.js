@@ -28,7 +28,7 @@ self.onmessage = event => {
       filename = encodeURIComponent(filename).replace(/['()]/g, escape)
           .replace(/\*/g, '%2A')
       headers = {
-          'Content-Type': 'application/octet-stream; charset=utf-8',
+          'Content-Type': event.data.mimeType,
           'Content-Disposition': "attachment; filename*=UTF-8''" + filename
       }
       const stream = event.data.readableStream || createStream(port)

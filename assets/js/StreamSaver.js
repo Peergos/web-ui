@@ -42,7 +42,7 @@
     // Was first enabled in chrome v73
   }
 
-  function createWriteStream (filename, urlCallback, seekCallback, queuingStrategy, size) {
+  function createWriteStream (filename, mimeType, urlCallback, seekCallback, queuingStrategy, size) {
     // normalize arguments
     if (Number.isFinite(queuingStrategy)) {
       [size, queuingStrategy] = [queuingStrategy, size]
@@ -51,7 +51,7 @@
     let channel = new MessageChannel()
     let popup
     let setupChannel = readableStream => new Promise(resolve => {
-      const args = [ { filename, size }, '*', [ channel.port2 ] ]
+	const args = [ { filename, size, mimeType }, '*', [ channel.port2 ] ]
 
       // Pass along transfarable stream
       if (readableStream) {

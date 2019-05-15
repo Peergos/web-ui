@@ -643,7 +643,7 @@ module.exports = {
 
                     console.log("saving data of length " + size + " to " + props.name);
 		            let result = peergos.shared.util.Futures.incomplete();
-                    let fileStream = streamSaver.createWriteStream(props.name,
+                    let fileStream = streamSaver.createWriteStream(props.name, props.mimeType, 
                     function(url) {
                         let link = document.createElement('a')
                         let click = new MouseEvent('click')
