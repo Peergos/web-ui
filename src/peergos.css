@@ -49,6 +49,7 @@ body .grid {
   font-size: 1.2em;
   word-wrap: break-word;
   max-width: 5em;
+  margin: 0.5em;
 }
 .btn_pnavbar {
   font-size: 1.7em;

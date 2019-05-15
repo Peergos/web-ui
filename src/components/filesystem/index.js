@@ -581,6 +581,26 @@ module.exports = {
 	    if (low < 0) low = low + Math.pow(2, 32);
 	    return low + (props.sizeHigh() * Math.pow(2, 32));
 	},
+
+	getFileIcon: function(file) {
+	    if (file.isDirectory()) {
+		if (file.isUserRoot() && file.getName() == username)
+		    return 'fa-home';
+		return 'fa-folder-open';
+	    }
+	    var type = file.getFileProperties().getType();
+	    if (type == 'pdf')
+		return 'fa-file-pdf';
+	    if (type == 'audio')
+		return 'fa-file-audio';
+	    if (type == 'video')
+		return 'fa-file-video';
+	    if (type == 'image')
+		return 'fa-file-image';
+	    if (type == 'text')
+		return 'fa-file-alt';
+	    return 'fa-file';
+	},
 	
         downloadFile: function(file) {
             console.log("downloading " + file.getFileProperties().name);

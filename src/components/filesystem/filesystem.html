@@ -76,7 +76,8 @@
         <span class="column" v-for="file in sortedFiles">
             <span class="grid_icon_wrapper fa" id="grid$index" draggable="true" @dragStart="dragStart($event, file)" @dragover.prevent @drop="drop($event, file)">
                 <a class="picon" v-bind:id="file.getFileProperties().name" v-on:contextmenu="openMenu($event, file)">
-                    <span v-if="!file.getFileProperties().thumbnail.isPresent()" v-on:click="navigateOrMenu($event, file)" v-on:contextmenu="openMenu($event, file)" v-bind:class="['file_icon', file.isDirectory() ? ((file.isUserRoot() && file.getName()==username) ? 'fa-home' : 'fa-folder-open') : 'fa-file', 'picon']"> </span>
+                  <span v-if="!file.getFileProperties().thumbnail.isPresent()" v-on:click="navigateOrMenu($event, file)" v-on:contextmenu="openMenu($event, file)"
+			v-bind:class="['file_icon', getFileIcon(file), 'picon']"> </span>
                     <img v-if="file.getFileProperties().thumbnail.isPresent()" v-on:click="navigateOrMenu($event, file)" v-on:contextmenu="openMenu($event, file)" v-bind:src="getThumbnailURL(file)"/>
                 </a>
                 <div class="content filename" >
@@ -102,7 +103,7 @@
                 <tr v-for="file in sortedFiles">
                     <td v-bind:id="file.getFileProperties().name" v-on:click="navigateOrMenu($event, file)" v-on:contextmenu="openMenu($event, file)" style="cursor:pointer" v-bind:class="{ shared: isShared(file) }">{{ file.getFileProperties().name }}</td>
                     <td>{{ getFileSize(file.getFileProperties()) }}</td>
-                    <td>{{ file.isDirectory() ? "dir" : "file" }}</td>
+                    <td>{{ file.getFileProperties().getType() }}</td>
                     <td>{{ file.getFileProperties().modified }}</td>
                 </tr>
             </tbody>
