@@ -8,7 +8,7 @@ module.exports = {
             this.show = false;
         },
         copyUrlToClipboard: function (clickEvent) {
-            var text = clickEvent.toElement.previousElementSibling.value.toString();
+            var text = clickEvent.srcElement.previousElementSibling.value.toString();
             navigator.clipboard.writeText(text).then(function() {}, function() {
               console.error("Unable to write to clipboard.");
             });
