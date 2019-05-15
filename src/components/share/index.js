@@ -2,10 +2,10 @@ module.exports = {
     template: require('share.html'),
     data: function() {
         return {
-	        showSpinner: false,
+            showSpinner: false,
             targetUsername: "",
             sharedWithAccess: "Read",
-	        errorTitle:'',
+            errorTitle:'',
             errorBody:'',
             showError:false
         }
@@ -21,29 +21,29 @@ module.exports = {
         },
 
 	allowedToShare: function(file) {
-	    if (file.isUserRoot()) {
+        if (file.isUserRoot()) {
             this.errorTitle = 'You cannot share your home directory!';
             this.errorBody = "";
             this.showError = true;
             return false;
-	    }
-	    if (this.sharedWithAccess == "Edit" && file.getOwnerName() != this.context.username) {
+        }
+        if (this.sharedWithAccess == "Edit" && file.getOwnerName() != this.context.username) {
             this.errorTitle = 'Only the owner of a file can grant write access!';
             this.errorBody = "";
             this.showError = true;
             return false;
-	    }
-	    return true;
+        }
+        return true;
 	},
 	
 	shareWith: function(targetUsername, sharedWithAccess) {
         if (this.files.length == 0)
-		    return this.close();
+            return this.close();
         if (this.files.length != 1)
-		    throw "Unimplemented multiple file share call";
+            throw "Unimplemented multiple file share call";
 	    
-	    if (! this.allowedToShare(this.files[0]))
-		    return;
+        if (! this.allowedToShare(this.files[0]))
+            return;
 	    
         var that = this;
         this.showSpinner = true;
