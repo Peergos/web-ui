@@ -1,6 +1,6 @@
 <nav class="navbar navbar-inverse navbar-static-top" role="navigation">
     <input type="file" id="uploadInput" @change="uploadFiles" style="display:none;" multiple="" />
-    <div>
+    <div style="display:block;">
         <ul class="nav navbar-nav">
             <li id="homeButton" @click="goHome()" class="navbar-brand nopad"><a><span data-toggle="tooltip" data-placement="bottom" title="Global root" class="pnavbar fas fa-globe-asia" style="cursor: pointer;"/></a></li>
             <li id="uploadButton" @click="askForFile()" v-if="isWritable" class="navbar-brand nopad"><a><span data-toggle="tooltip" data-placement="bottom" title="Upload file" class="pnavbar fa fa-upload" style="cursor: pointer;"/></a></li>
@@ -14,9 +14,9 @@
             </li>
         </ul>
     </div>
-    <a id="pathSpan" style="font-size:28px;"><span data-toggle="tooltip" data-placement="bottom" title="Current location" class="pnavbar fa fa-chevron-right" style="vertical-align:'middle';"/></a>
-    <span class="tour-path" v-for="dir in path" track-by="$index">
-        <button @click="goBackToLevel($index+1)" class="btn_pnavbar btn tour-path">{{dir}}</button>
+    <span data-toggle="tooltip" data-placement="bottom" title="Current location" class="pnavbar" style="vertical-align:'middle';font-size:3.5em;color:#9d9d9d">/</span>
+    <span v-for="dir in path" track-by="$index">
+        <button @click="goBackToLevel($index+1)" class="btn_pnavbar btn">{{dir}}</button>
         <span class="divider"> </span>
     </span>
 
