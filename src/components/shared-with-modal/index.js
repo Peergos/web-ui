@@ -2,7 +2,10 @@ module.exports = {
     template: require('shared-with-modal.html'),
     data: function() {
         return {
-            showSpinner: false
+            showSpinner: false,
+            errorTitle:'',
+            errorBody:'',
+            showError:false
         }
     },
     props: ['show', 'data', 'files', 'context', 'forceshared'],
@@ -21,6 +24,7 @@ module.exports = {
 
             var that = this;
             this.showSpinner = true;
+            var filename = that.files[0].getFileProperties().name;
             if(sharedWithAccess == "Read") {
                 this.context.unShareReadAccess(this.files[0], targetUsername)
                     .thenApply(function(b) {
@@ -29,8 +33,11 @@ module.exports = {
                         that.forceshared++;
                     }).exceptionally(function(throwable) {
                         that.showSpinner = false;
-                        that.forceshared++;
+                        that.errorTitle = 'Error unsharing file: ' + filename;
+                        that.errorBody = throwable.getMessage();
+                        that.showError = true;
                     });
+
             } else {
                 this.context.unShareWriteAccess(this.files[0], targetUsername)
                     .thenApply(function(b) {
@@ -39,7 +46,9 @@ module.exports = {
                         that.forceshared++;
                     }).exceptionally(function(throwable) {
                         that.showSpinner = false;
-                        that.forceshared++;
+                        that.errorTitle = 'Error unsharing file: ' + filename;
+                        that.errorBody = throwable.getMessage();
+                        that.showError = true;
                     });
             }
         }
