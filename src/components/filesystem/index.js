@@ -326,11 +326,11 @@ module.exports = {
                 that.currentDir = res;
 		        that.updateFiles();
             }).exceptionally(function(throwable) {
-		        progress.show = false;
+                progress.show = false;
                 that.errorTitle = 'Error uploading file: ' + file.name;
                 that.errorBody = throwable.getMessage();
                 that.showError = true;
-		        throwable.printStackTrace();
+                throwable.printStackTrace();
             });
         },
 
@@ -647,7 +647,7 @@ module.exports = {
                         .thenApply(function(read){that.openItem(props.name, data)});
                 }
             }).exceptionally(function(throwable) {
-		        progress.show = false;
+                progress.show = false;
                 that.errorTitle = 'Error downloading file: ' + props.name;
                 that.errorBody = throwable.getMessage();
                 that.showError = true;
