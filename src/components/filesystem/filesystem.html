@@ -6,7 +6,7 @@
             <li id="uploadButton" @click="askForFile()" v-if="isWritable" class="navbar-brand nopad"><a><span data-toggle="tooltip" data-placement="bottom" title="Upload file" class="pnavbar fa fa-upload" style="cursor: pointer;"/></a></li>
             <li id="mkdirButton" @click="askMkdir()" v-if="isWritable" class="navbar-brand nopad"><a><span data-toggle="tooltip" data-placement="bottom" title="Create new directory" class="pnavbar fas fa-folder-plus" style="cursor: pointer;"/></a></li>
             <li id="alternateViewButton" @click="switchView()" class="navbar-brand nopad"><a><span data-toggle="tooltip" data-placement="bottom" title="Switch view" id="altViewSpan" v-bind:class="['pnavbar', 'fa', 'tour-view', grid ? 'fa-list' : 'fa-th-large']" style="cursor: pointer;"/></a></li>
-            <li id="userOptionsButton" @click="showSocialView()" class="navbar-brand nopad">
+            <li id="userOptionsButton" v-if="!isPublicLink" @click="showSocialView()" class="navbar-brand nopad">
                 <a>
                     <span data-toggle="tooltip" data-placement="bottom" title="Sharing options" id="sharingOptionsSpan" class="pnavbar fa fa-user-plus" style="cursor: pointer;"/>
                         <span id="pendingSpan" class="pending-badge" v-if="social != null && social.pending.length > 0">{{ social.pending.length }}</span>
@@ -20,7 +20,7 @@
         <span class="divider"> </span>
     </span>
 
-    <ul class="nav navbar-nav navbar-right pnavbar_top_right">
+    <ul v-if="!isPublicLink" class="nav navbar-nav navbar-right pnavbar_top_right">
         <button id="logoutButton" @click="toggleUserMenu()" class="btn top_right_icon dropdown-toggle" data-toggle="dropdown" aria-haspopup="true" aria-expanded="true">
             <span class="fa fa-cog"></span>
             <span class="collapse navbar-collapse">{{username}}</span>
@@ -108,7 +108,7 @@
             </tbody>
         </table>
     </div>
-    <button id="popup" class="feedback-button" @click="toggleFeedbackForm()"> 
+    <button id="popup" v-if="!isPublicLink" class="feedback-button" @click="toggleFeedbackForm()"> 
         Feedback
     </button>
     <audio id="hidden_audio"></audio>
