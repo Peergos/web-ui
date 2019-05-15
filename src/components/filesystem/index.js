@@ -891,6 +891,10 @@ module.exports = {
             this.viewMenu = false;
             this.ignoreEvent = false;
         }
+	,
+	isPublicLink: function() {
+	    return this.context.username == null;
+	}
     },
     computed: {
         sortedFiles: function() {
