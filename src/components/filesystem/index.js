@@ -317,19 +317,20 @@ module.exports = {
                   return Math.floor(b.done / b.max) - Math.floor(a.done / a.max);
                 });
                 if (progress.done >= progress.max) {
-                    setTimeout(function(){progress.show = false}, 2000);
-                    that.showSpinner = true;	
+                    setTimeout(function(){
+                        progress.show = false;
+                        that.progressMonitors.pop(progress);
+                    }, 2000);
                 }
             }, context.getTransactionService()).thenApply(function(res) {
                 that.currentDir = res;
-		that.updateFiles();
+		        that.updateFiles();
             }).exceptionally(function(throwable) {
-		progress.show = false;
+		        progress.show = false;
                 that.errorTitle = 'Error uploading file: ' + file.name;
                 that.errorBody = throwable.getMessage();
                 that.showError = true;
-                that.showSpinner = false;
-		throwable.printStackTrace();
+		        throwable.printStackTrace();
             });
         },
 
@@ -600,8 +601,12 @@ module.exports = {
                 that.progressMonitors.sort(function(a, b) {
                   return Math.floor(b.done / b.max) - Math.floor(a.done / a.max);
                 });
-                if (progress.done >= progress.max)
-                    setTimeout(function(){progress.show = false}, 2000);
+                if (progress.done >= progress.max) {
+                    setTimeout(function(){
+                        progress.show = false;
+                        that.progressMonitors.pop(progress);
+                    }, 2000);
+                }
             }).thenCompose(function(reader) {
                 if (that.supportsStreaming()) {
                     var size = that.getFileSize(props);
@@ -642,11 +647,10 @@ module.exports = {
                         .thenApply(function(read){that.openItem(props.name, data)});
                 }
             }).exceptionally(function(throwable) {
-		progress.show = false;
+		        progress.show = false;
                 that.errorTitle = 'Error downloading file: ' + props.name;
                 that.errorBody = throwable.getMessage();
                 that.showError = true;
-                that.showSpinner = false;
             });
         },
         supportsStreaming: function() {
