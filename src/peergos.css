@@ -86,7 +86,7 @@ table {
   padding-left: 4em;
 }
 .navbar-nav {
-  margin-left: 0.1em;
+  margin: 0em;
 }
 @media (min-width: 768px) {
    .navbar-collapse.collapse {
@@ -109,6 +109,7 @@ table {
     text-align: center;
     width: 100%;
     padding-top: 5%;
+    padding-right:5%;
 }
 
 .feedback-button{
