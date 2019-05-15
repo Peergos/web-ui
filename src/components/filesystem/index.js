@@ -584,7 +584,7 @@ module.exports = {
 
 	getFileIcon: function(file) {
 	    if (file.isDirectory()) {
-		if (file.isUserRoot() && file.getName() == username)
+		if (file.isUserRoot() && file.getName() == this.username)
 		    return 'fa-home';
 		return 'fa-folder-open';
 	    }
