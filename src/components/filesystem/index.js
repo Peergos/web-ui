@@ -317,6 +317,7 @@ module.exports = {
                   return Math.floor(b.done / b.max) - Math.floor(a.done / a.max);
                 });
                 if (progress.done >= progress.max) {
+                that.showSpinner = true;
                     setTimeout(function(){
                         progress.show = false;
                         that.progressMonitors.pop(progress);

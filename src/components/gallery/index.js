@@ -128,7 +128,7 @@ module.exports = {
                 }
                 const context = new Context(file, this.context.network, this.context.crypto.random, props.sizeHigh(), props.sizeLow());
                 console.log("streaming data of length " + size);
-                let fileStream = streamSaver.createWriteStream("media-" + props.name, function(url){
+                let fileStream = streamSaver.createWriteStream("media-" + props.name, props.mimeType, function(url){
                     that.videoUrl = url;
                     that.showSpinner = false;
                 }, function(seekHi, seekLo, seekLength){
