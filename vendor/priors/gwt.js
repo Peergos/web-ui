@@ -425,10 +425,12 @@ function supportsStreaming() {
     }
 }
 
-function generateVideoThumbnailProm(asyncReader, fileSize, fileName) {
+function generateVideoThumbnailProm(asyncReader, fileSize, fileName, mimeType) {
     var future = peergos.shared.util.Futures.incomplete();
-    if(supportsStreaming() && fileSize > 300 * 1000 * 1000) {
-        return createVideoThumbnailStreamingProm(future, asyncReader, fileSize, fileName);
+    //if(supportsStreaming() && fileSize > 300 * 1000 * 1000) {
+    if(fileSize > 300 * 1000 * 1000) {
+        //return createVideoThumbnailStreamingProm(future, asyncReader, fileSize, fileName, mimeType);
+        future.complete("");
     }else{
         return createVideoThumbnailProm(future, asyncReader, fileSize, fileName);
     }
@@ -518,11 +520,12 @@ function isLikelyValidImage(imageData, blackWhiteThreshold) {
     return isValidImage;
 }
 
-function createVideoThumbnailStreamingProm(future, asyncReader, size, fileName) {
+function createVideoThumbnailStreamingProm(future, asyncReader, size, fileName, mimeType) {
     let maxBlockSize = 1024 * 1024 * 5;
     var blockSize = size > maxBlockSize ? maxBlockSize : size;
     var gotThumbnail = false;
-    let fileStream = streamSaver.createWriteStream("media-" + fileName, function(url){
+
+    let fileStream = streamSaver.createWriteStream("media-" + fileName, mimeType, function(url){
         let width = 100, height = 100;
         let video = document.createElement('video');
         let canvas = document.createElement('canvas');
@@ -560,7 +563,8 @@ function createVideoThumbnailStreamingProm(future, asyncReader, size, fileName) 
         }
         video.src = url;
         video.play();
-    })
+    }, function(seekHi, seekLo, seekLength){
+    }, undefined, size)
     let writer = fileStream.getWriter();
     let pump = () => {
         if(gotThumbnail) {
@@ -571,7 +575,7 @@ function createVideoThumbnailStreamingProm(future, asyncReader, size, fileName) 
         } else {
             var data = convertToByteArray(new Uint8Array(blockSize));
             asyncReader.readIntoArray(data, 0, blockSize).thenApply(function(read){
-               size = size - read;
+               size = size - read.value_0;
                blockSize = size > maxBlockSize ? maxBlockSize : size;
                writer.write(data).then(()=>{setTimeout(pump, 100)});
             });
