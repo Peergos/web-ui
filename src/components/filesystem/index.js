@@ -574,34 +574,33 @@ module.exports = {
         navigateToSubdir: function(name) {
             this.changePath(this.getPath() + name);
         },
-
-    getFileIcon: function(file) {
-        if (file.isDirectory()) {
-            if (file.isUserRoot() && file.getName() == this.username)
-                return 'fa-home';
-            return 'fa-folder-open';
-        }
-        var type = file.getFileProperties().getType();
-        if (type == 'pdf')
-            return 'fa-file-pdf';
-        if (type == 'audio')
-            return 'fa-file-audio';
-        if (type == 'video')
-            return 'fa-file-video';
-        if (type == 'image')
-            return 'fa-file-image';
-        if (type == 'text')
-            return 'fa-file-alt';
-        if (type == 'zip')
-            return 'fa-file-archive';
-        if (type == 'powerpoint presentation' || type == 'presentation')
-            return 'fa-file-powerpoint';
-        if (type == 'word document' || type == 'text document')
-            return 'fa-file-word';
-        if (type == 'excel spreadsheet' || type == 'spreadsheet')
-            return 'fa-file-excel';
-        return 'fa-file';
-    },
+        getFileIcon: function(file) {
+            if (file.isDirectory()) {
+                if (file.isUserRoot() && file.getName() == this.username)
+                    return 'fa-home';
+                return 'fa-folder-open';
+            }
+            var type = file.getFileProperties().getType();
+            if (type == 'pdf')
+                return 'fa-file-pdf';
+            if (type == 'audio')
+                return 'fa-file-audio';
+            if (type == 'video')
+                return 'fa-file-video';
+            if (type == 'image')
+                return 'fa-file-image';
+            if (type == 'text')
+                return 'fa-file-alt';
+            if (type == 'zip')
+                return 'fa-file-archive';
+            if (type == 'powerpoint presentation' || type == 'presentation')
+                return 'fa-file-powerpoint';
+            if (type == 'word document' || type == 'text document')
+                return 'fa-file-word';
+            if (type == 'excel spreadsheet' || type == 'spreadsheet')
+                return 'fa-file-excel';
+            return 'fa-file';
+        },
         openItem: function(name, data, mimeType) {
             console.log("saving data of length " + data.length + " to " + name);
             if(this.url != null){
