@@ -230,6 +230,16 @@ module.exports = {
             this.forceUpdate++;
         },
 
+	gotoSignup: function() {
+	    var url = window.location.origin + window.location.pathname;
+	    let link = document.createElement('a')
+            let click = new MouseEvent('click')
+
+	    link.target = "_blank"
+            link.href = url
+            link.dispatchEvent(click)
+	},
+
         mkdir: function(name) {
             var context = this.getContext();
             this.showSpinner = true;
