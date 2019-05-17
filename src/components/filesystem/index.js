@@ -235,6 +235,7 @@ module.exports = {
 	    let link = document.createElement('a')
             let click = new MouseEvent('click')
 
+	    link.rel = "noopener noreferrer";
 	    link.target = "_blank"
             link.href = url
             link.dispatchEvent(click)
