@@ -577,29 +577,29 @@ module.exports = {
 
     getFileIcon: function(file) {
         if (file.isDirectory()) {
-        if (file.isUserRoot() && file.getName() == this.username)
-            return 'fa-home';
-        return 'fa-folder-open';
+            if (file.isUserRoot() && file.getName() == this.username)
+                return 'fa-home';
+            return 'fa-folder-open';
         }
         var type = file.getFileProperties().getType();
         if (type == 'pdf')
-        return 'fa-file-pdf';
+            return 'fa-file-pdf';
         if (type == 'audio')
-        return 'fa-file-audio';
+            return 'fa-file-audio';
         if (type == 'video')
-        return 'fa-file-video';
+            return 'fa-file-video';
         if (type == 'image')
-        return 'fa-file-image';
+            return 'fa-file-image';
         if (type == 'text')
-        return 'fa-file-alt';
+            return 'fa-file-alt';
         if (type == 'zip')
-        return 'fa-file-archive';
+            return 'fa-file-archive';
         if (type == 'powerpoint presentation' || type == 'presentation')
-        return 'fa-file-powerpoint';
+            return 'fa-file-powerpoint';
         if (type == 'word document' || type == 'text document')
-        return 'fa-file-word';
+            return 'fa-file-word';
         if (type == 'excel spreadsheet' || type == 'spreadsheet')
-        return 'fa-file-excel';
+            return 'fa-file-excel';
         return 'fa-file';
     },
         openItem: function(name, data, mimeType) {
