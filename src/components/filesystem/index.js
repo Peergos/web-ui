@@ -22,9 +22,9 @@ module.exports = {
             modalLinks:[],
             showShare:false,
             showSharedWith:false,
-            sharedWithData:{"edit_shared_with_users":[],"read_shared_with_users":[]},
-	    forceSharedWithUpdate:0,
-	    isNotBackground: true,
+            sharedWithData:{},
+            forceSharedWithUpdate:0,
+            isNotBackground: true,
             showSocial:false,
             showGallery:false,
             showHexViewer:false,
@@ -218,7 +218,20 @@ module.exports = {
                     return;
                 this.mkdir(prompt_result);
             }.bind(this);
-            this.showPrompt =  true;
+            this.showPrompt = true;
+        },
+
+        askRmDir: function() {
+            this.warning_placeholder='Folder deletion requested';
+            this.warning_message='Are you sure you want to delete this folder?'; 
+            this.warning_value='';
+            this.warning_consumer_func = function(warning_result) {
+                console.log("deleting directory and contents " + warning_result);
+                if (warning_result === '')
+                    return;
+                this.delete(warning_result);
+            }.bind(this);
+            this.showWarning = true;
         },
 
         switchView: function() {
@@ -784,6 +797,7 @@ module.exports = {
 
             for (var i=0; i < selectedCount; i++) {
                 var file = this.selectedFiles[i];
+                if (!file.isDirectory()) {
                 console.log("deleting: " + file.getFileProperties().name);
                 this.showSpinner = true;
                 var that = this;
@@ -792,23 +806,29 @@ module.exports = {
                         that.currentDirChanged();
                         delete_countdown.value -=1;
                         if (delete_countdown.value == 0)
-			    that.onUpdateCompletion.push(function() {
-				that.showSpinner = false;
-			    });
+                            that.onUpdateCompletion.push(function() {
+                                that.showSpinner = false;
+                            });
                     }).exceptionally(function(throwable) {
-			that.errorTitle = 'Error deleting file: ' + file.getFileProperties().name;
-			that.errorBody = throwable.getMessage();
-			that.showError = true;
-			that.showSpinner = false;
-		    });
+                        that.errorTitle = 'Error deleting file: ' + file.getFileProperties().name;
+                        that.errorBody = throwable.getMessage();
+                        that.showError = true;
+                        that.showSpinner = false;
+                    });
+                } else {
+                    console.log("attempted to delete a directory.")
+                    that.askRmDir(file)
+                }
             }
         },
+
         setStyle: function(id, style) {
             var el = document.getElementById(id);
             if (el) {
                 el.style.display = style;
             }
         },
+
         setMenu: function(top, left) {
             console.log("open menu");
 
@@ -816,18 +836,18 @@ module.exports = {
                 this.ignoreEvent = true;
             }
 
-	    var menu = document.getElementById("right-click-menu");
-	    if (menu != null) {
-		var largestHeight = window.innerHeight - menu.offsetHeight - 25;
-		var largestWidth = window.innerWidth - menu.offsetWidth - 25;
-		
-		if (top > largestHeight) top = largestHeight;
-		
-		if (left > largestWidth) left = largestWidth;
-		
-		this.top = top + 'px';
-		this.left = left + 'px';
-	    }
+            var menu = document.getElementById("right-click-menu");
+            if (menu != null) {
+                var largestHeight = window.innerHeight - menu.offsetHeight - 25;
+                var largestWidth = window.innerWidth - menu.offsetWidth - 25;
+
+                if (top > largestHeight) top = largestHeight;
+
+                if (left > largestWidth) left = largestWidth;
+
+                this.top = top + 'px';
+                this.left = left + 'px';
+            }
         },
 
         isShared: function(file) {
