@@ -249,7 +249,12 @@ table {
     transform: scale(1.1);
 }
 
-.fillspace { position: absolute; top: 64px; bottom: 0px; left: 0; right: 0; }
+.fillspace {
+    position: absolute;
+    top: 64px;
+    min-height: 100%;
+    left: 0;
+    right: 0; }
 
 
 .pending-badge {
