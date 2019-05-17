@@ -88,6 +88,10 @@
 	<div v-if="sortedFiles.length==0 && currentDir != null && currentDir.isWritable()" class="instruction">
 	  Upload a file by dragging and dropping here or clicking the <span class="fa fa-upload"/> icon
 	</div>
+	<center v-if="isPublicLink" class="bottom-message">
+	  Join the revolution!<br/>
+	  <button class="btn btn-lg btn-success" @click="gotoSignup()">Sign up to Peergos</button>
+	</center>
     </div>
     <div class="table-responsive" v-if="!grid">
         <table class="table">
@@ -112,7 +116,5 @@
     <button id="popup" v-if="!isPublicLink" class="feedback-button" @click="toggleFeedbackForm()"> 
         Feedback
     </button>
-    <audio id="hidden_audio"></audio>
-    <video id="hidden_video"></video>
     <error :show.sync="showError" :title.sync="errorTitle" :body.sync="errorBody"></error>
 </div>
