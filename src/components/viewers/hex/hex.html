@@ -1,37 +1,42 @@
 <div class="modal-mask" @click="close" v-show="show" transition="modal">
-    <div class="modal-container" @click.stop style="height:95%;width:95%;overflow-y:auto" >
+    <div class="modal-container" @click.stop style="height:95%;width:95%;overflow-y:auto">
         <spinner v-if="showSpinner"></spinner>
         <center>
-			<h2 v-if="file != null" ><p>{{ file.getFileProperties().name }} (hex view)&nbsp; <button class="btn btn-large btn-primary" @click="downloadCurrentFile()">Download File</button></p></h2>
+            <h2 v-if="file != null">
+                <p>{{ file.getFileProperties().name }} (hex view)&nbsp;
+                    <button class="btn btn-large btn-primary" @click="downloadCurrentFile()">Download File</button>
+                </p>
+            </h2>
         </center>
-        
-        <center style="height:75%;max-width:100%;font-family: monospace;" >
-	  <table>
-	    <tr v-for="line in lines">
-	      <td style="color:#990012">
-		{{line.start}}:
-	      </td>
-	      <td style="padding-left:10px">
-		<span v-for="i in 4">{{line.hex[i] != null ? line.hex[i] : ""}}</span>
-	      </td>
-	      <td style="padding-left:10px">
-		<span v-for="i in 4">{{line.hex[i+4] != null ? line.hex[i+4] : ""}}</span>
-	      </td>
-	      <td style="padding-left:10px">
-		<span v-for="i in 4">{{line.hex[i+8] != null ? line.hex[i+8] : ""}}</span>
-	      </td>
-	      <td style="padding-left:10px">
-		<span v-for="i in 4">{{line.hex[i+12] != null ? line.hex[i+12] : ""}}</span>
-	      </td>
-	      <td style="padding-left:25px">
-		<span v-for="i in 16">{{line.ascii[i] != null ? line.ascii[i] : ""}}</span>
-	      </td>
-	    <tr/>
-	  </table>
+
+        <center style="height:75%;max-width:100%;font-family: monospace;">
+            <table>
+                <tr v-for="line in lines">
+                    <td style="color:#990012">
+                        {{line.start}}:
+                    </td>
+                    <td style="padding-left:10px">
+                        <span v-for="i in 4">{{line.hex[i] != null ? line.hex[i] : ""}}</span>
+                    </td>
+                    <td style="padding-left:10px">
+                        <span v-for="i in 4">{{line.hex[i+4] != null ? line.hex[i+4] : ""}}</span>
+                    </td>
+                    <td style="padding-left:10px">
+                        <span v-for="i in 4">{{line.hex[i+8] != null ? line.hex[i+8] : ""}}</span>
+                    </td>
+                    <td style="padding-left:10px">
+                        <span v-for="i in 4">{{line.hex[i+12] != null ? line.hex[i+12] : ""}}</span>
+                    </td>
+                    <td style="padding-left:25px">
+                        <span v-for="i in 16">{{line.ascii[i] != null ? line.ascii[i] : ""}}</span>
+                    </td>
+                <tr/>
+            </table>
         </center>
-		<div v-if="progressMonitors.length>0" class="progressholder">
-			<progressbar v-for="progress in progressMonitors" :show.sync="progress.show" :title.sync="progress.title" :done.sync="progress.done":max.sync="progress.max"></progressbar>
-		</div>
-		<error :show.sync="showError" :title.sync="errorTitle" :body.sync="errorBody"></error>
-	</div>
+        <div v-if="progressMonitors.length>0" class="progressholder">
+            <progressbar v-for="progress in progressMonitors" :show.sync="progress.show" :title.sync="progress.title"
+                         :done.sync="progress.done" :max.sync="progress.max"></progressbar>
+        </div>
+        <error :show.sync="showError" :title.sync="errorTitle" :body.sync="errorBody"></error>
+    </div>
 </div>
