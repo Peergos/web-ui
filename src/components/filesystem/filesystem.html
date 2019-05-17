@@ -88,9 +88,9 @@
 	<div v-if="sortedFiles.length==0 && currentDir != null && currentDir.isWritable()" class="instruction">
 	  Upload a file by dragging and dropping here or clicking the <span class="fa fa-upload"/> icon
 	</div>
-	<center style="position:absolute;bottom:10%;width:100%;font-size:2em;">
+	<center v-if="isPublicLink" style="position:absolute;bottom:10%;width:100%;font-size:2em;">
 	  Join the revolution!<br/>
-	  <button v-if="isPublicLink" class="btn btn-lg btn-success" @click="gotoSignup()">Sign up to Peergos</button>
+	  <button class="btn btn-lg btn-success" @click="gotoSignup()">Sign up to Peergos</button>
 	</center>
     </div>
     <div class="table-responsive" v-if="!grid">
