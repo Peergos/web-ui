@@ -4,14 +4,18 @@ module.exports = {
         return {
             showSpinner: false,
             fileData: { // immutable
-		data: null, // a 5 MiB chunk or less
-		offsetHigh: 0,
-		offsetLow: 0 // must be multiple of 16
-	    },
-	    offsetLow: 0, // must be multiple of 16
-	    offsetHigh:0,
-	    maxOffsetLow: 0,
-	    bytesPerPage: 16 * 32
+                data: null, // a 5 MiB chunk or less
+                offsetHigh: 0,
+                offsetLow: 0 // must be multiple of 16
+            },
+            offsetLow: 0, // must be multiple of 16
+            offsetHigh:0,
+            maxOffsetLow: 0,
+            bytesPerPage: 16 * 32,
+            progressMonitors: [],
+            errorTitle:'',
+            errorBody:'',
+            showError:false
         };
     },
     props: ['show', 'file', 'context'],
@@ -22,6 +26,16 @@ module.exports = {
     },
 
     methods: {
+        getContext: function() {
+            return this.context;
+        },
+        downloadCurrentFile: function() {
+            let currentFile = this.file;
+            let that = this;
+            setTimeout(function(){
+                that.downloadFile(currentFile);
+            }, 100);
+        },
         close: function() {
             this.show = false;
         },

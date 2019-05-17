@@ -2,7 +2,7 @@
     <div class="modal-container" @click.stop style="height:95%;width:95%;overflow-y:auto" >
         <spinner v-if="showSpinner"></spinner>
         <center>
-            <h2 v-if="file != null" >{{ file.getFileProperties().name }} (hex view)</h2>
+			<h2 v-if="file != null" ><p>{{ file.getFileProperties().name }} (hex view)&nbsp; <button class="btn btn-large btn-primary" @click="downloadCurrentFile()">Download File</button></p></h2>
         </center>
         
         <center style="height:75%;max-width:100%;font-family: monospace;" >
@@ -29,5 +29,9 @@
 	    <tr/>
 	  </table>
         </center>
-    </div>
+		<div v-if="progressMonitors.length>0" class="progressholder">
+			<progressbar v-for="progress in progressMonitors" :show.sync="progress.show" :title.sync="progress.title" :done.sync="progress.done":max.sync="progress.max"></progressbar>
+		</div>
+		<error :show.sync="showError" :title.sync="errorTitle" :body.sync="errorBody"></error>
+	</div>
 </div>
