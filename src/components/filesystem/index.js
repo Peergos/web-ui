@@ -544,11 +544,11 @@ module.exports = {
 		mimeType.startsWith("video") ||
 		mimeType.startsWith("image"))
 		this.showGallery = true;
-	    else if (mimeType === "application/octet-stream") {
-		this.showHexViewer = true;
-	    } else if (mimeType === "text/plain") {
+	    else if (mimeType === "text/plain") {
 		this.showTextViewer = true;
-	    }
+	    } else {
+		this.showHexViewer = true;
+	    } 
         },
 
 	navigateOrDownload: function(file) {
