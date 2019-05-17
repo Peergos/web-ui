@@ -66,13 +66,6 @@ module.exports = {
                 this.fileIndex--;
             this.updateCurrentFileData();
         },
-        // This will only work up to a file size of 2^52 bytes (the biggest integer you can fit in a double)
-        // But who ever needed a filesize > 4 PB ? ;-)
-        getFileSize: function(props) {
-            var low = props.sizeLow();
-            if (low < 0) low = low + Math.pow(2, 32);
-            return low + (props.sizeHigh() * Math.pow(2, 32));
-        },
         updateCurrentFileData: function() {
             var file = this.current;
             if (file == null)
@@ -150,13 +143,6 @@ module.exports = {
                                 console.log("Finished retrieving media of size " + data.length);
                             });
                     });
-            }
-        },
-        supportsStreaming: function() {
-	    try {
-                return 'serviceWorker' in navigator && !!new ReadableStream() && !!new WritableStream()
-            } catch(err) {
-                return false;
             }
         },
         isImage: function(file) {
