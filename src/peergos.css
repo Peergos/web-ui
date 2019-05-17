@@ -5,7 +5,8 @@ body {
 .bottom-message {
     position:absolute;
     bottom:10%;
-    width:100%;
+    left:10%;
+    width:80%;
     font-size:2em;
 }
 
