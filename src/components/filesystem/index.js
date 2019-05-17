@@ -231,7 +231,7 @@ module.exports = {
         },
 
 	gotoSignup: function() {
-	    var url = window.location.origin + window.location.pathname;
+	    var url = window.location.origin + window.location.pathname + "?signup=true";
 	    let link = document.createElement('a')
             let click = new MouseEvent('click')
 

@@ -2,6 +2,12 @@ body {
   background-color: #FFFFFF;
 }
 
+.bottom-message {
+    position:absolute;
+    bottom:10%;
+    width:100%;
+    font-size:2em;
+}
 
 .close {
     color: #aaaaaa;

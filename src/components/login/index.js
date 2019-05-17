@@ -25,8 +25,11 @@ module.exports = {
         this.isSafari = /constructor/i.test(window.HTMLElement) || (function (p) { return p.toString() === "[object SafariRemoteNotification]"; })(!window['safari'] || safari.pushNotification);
         var that = this;
         var href = window.location.href;
+	
         const fragment = href.includes("#") ? href.substring(href.indexOf("#") + 1) : "";
-        if (fragment.length > 0) {
+	if (href.includes("?signup=true"))
+	    this.showSignup();
+	else if (fragment.length > 0) {
             // this is a public link
 	    this.isPublicLink = true;
 	    console.log("Navigating to public link...");
