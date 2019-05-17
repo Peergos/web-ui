@@ -427,10 +427,8 @@ function supportsStreaming() {
 
 function generateVideoThumbnailProm(asyncReader, fileSize, fileName, mimeType) {
     var future = peergos.shared.util.Futures.incomplete();
-    //if(supportsStreaming() && fileSize > 300 * 1000 * 1000) {
-    if(fileSize > 300 * 1000 * 1000) {
-        //return createVideoThumbnailStreamingProm(future, asyncReader, fileSize, fileName, mimeType);
-        future.complete("");
+    if(supportsStreaming() && fileSize > 100 * 1000 * 1000) {
+        return createVideoThumbnailStreamingProm(future, asyncReader, fileSize, fileName, mimeType);
     }else{
         return createVideoThumbnailProm(future, asyncReader, fileSize, fileName);
     }
@@ -520,12 +518,45 @@ function isLikelyValidImage(imageData, blackWhiteThreshold) {
     return isValidImage;
 }
 
-function createVideoThumbnailStreamingProm(future, asyncReader, size, fileName, mimeType) {
+function createVideoThumbnailStreamingProm(future, asyncReader, size, filename, mimeType) {
     let maxBlockSize = 1024 * 1024 * 5;
     var blockSize = size > maxBlockSize ? maxBlockSize : size;
     var gotThumbnail = false;
-
-    let fileStream = streamSaver.createWriteStream("media-" + fileName, mimeType, function(url){
+    function Context(asyncReader, sizeHigh, sizeLow) {
+        this.maxBlockSize = 1024 * 1024 * 5;
+        this.writer = null;
+        this.asyncReader = asyncReader;
+        this.sizeHigh = sizeHigh,
+        this.sizeLow = sizeLow;
+        this.counter = 0;
+        this.stream = function(seekHi, seekLo, length) {
+            this.counter++;
+            var work = function(thatRef, currentCount) {
+                var currentSize = length;
+                var blockSize = currentSize > this.maxBlockSize ? this.maxBlockSize : currentSize;
+                var pump = function(reader) {
+                    if(! gotThumbnail && blockSize > 0 && thatRef.counter == currentCount) {
+                        var data = convertToByteArray(new Uint8Array(blockSize));
+                        data.length = blockSize;
+                        reader.readIntoArray(data, 0, blockSize).thenApply(function(read){
+                               currentSize = currentSize - read;
+                               blockSize = currentSize > thatRef.maxBlockSize ? thatRef.maxBlockSize : currentSize;
+                               thatRef.writer.write(data);
+                               pump(reader);
+                        });
+                    }
+                }
+                asyncReader.seekJS(seekHi, seekLo).thenApply(function(seekReader){
+                    pump(seekReader);
+                })
+            }
+            var empty = convertToByteArray(new Uint8Array(0));
+            this.writer.write(empty);
+            work(this, this.counter);
+        }
+    }
+    const context = new Context(asyncReader, 0, size);
+    let fileStream = streamSaver.createWriteStream("media-" + filename, mimeType, function(url){
         let width = 100, height = 100;
         let video = document.createElement('video');
         let canvas = document.createElement('canvas');
@@ -533,54 +564,55 @@ function createVideoThumbnailStreamingProm(future, asyncReader, size, fileName, 
         canvas.height = height;
         let blackWhiteThreshold = width * height / 10 * 8; //80%
         video.muted = true;
+
         video.onerror = function(e) {
             console.log(e);
-            future.complete("");
+            if(! gotThumbnail) {
+                future.complete("");
+            }
         }
         video.oncanplay = function(){
             let thumbnailGenerator = () => {
                 try {
-                    //console.log("time= " + video.currentTime);
-                    if(video.currentTime >= video.duration || video.currentTime > 120) {
-                        future.complete("");
-                    }
-                    let context = canvas.getContext('2d');
-                    context.drawImage(video, 0, 0, width, height);
-                    let imageData = context.getImageData(0, 0, width, height);                         
-                    if(isLikelyValidImage(imageData, blackWhiteThreshold)) {
-                        gotThumbnail = true;
-                        let b64Thumb = canvas.toDataURL().substring("data:image/png;base64,".length);
-                        future.complete(b64Thumb);
-                    }else{
-                        setTimeout(thumbnailGenerator, 2000)
+                    console.log("time= " + video.currentTime);
+                    if(video.currentTime >= 2) {
+                        if(video.currentTime >= video.duration || video.currentTime > 20) {
+                            future.complete("");
+                        }
+                        let context = canvas.getContext('2d');
+                        context.drawImage(video, 0, 0, width, height);
+                        let imageData = context.getImageData(0, 0, width, height);
+                        if(isLikelyValidImage(imageData, blackWhiteThreshold)) {
+                            gotThumbnail = true;
+                            let b64Thumb = canvas.toDataURL().substring("data:image/png;base64,".length);
+                            future.complete(b64Thumb);
+                        }else{
+                            if(! gotThumbnail) {
+                                setTimeout(thumbnailGenerator, 2000)
+                            }
+                        }
+                    } else {
+                        if(! gotThumbnail) {
+                            setTimeout(thumbnailGenerator, 2000)
+                        }
                     }
                 }catch(e) {
                     console.log("unable to create video thumbnail: " + e);
                     future.complete("");
                 }
             };
-            thumbnailGenerator();
+            if(! gotThumbnail) {
+                thumbnailGenerator();
+            }
         }
         video.src = url;
         video.play();
     }, function(seekHi, seekLo, seekLength){
-    }, undefined, size)
-    let writer = fileStream.getWriter();
-    let pump = () => {
-        if(gotThumbnail) {
-            writer.close();
-        } else if(blockSize == 0) {
-            writer.close();
-            future.complete("");
-        } else {
-            var data = convertToByteArray(new Uint8Array(blockSize));
-            asyncReader.readIntoArray(data, 0, blockSize).thenApply(function(read){
-               size = size - read.value_0;
-               blockSize = size > maxBlockSize ? maxBlockSize : size;
-               writer.write(data).then(()=>{setTimeout(pump, 100)});
-            });
+        if(! gotThumbnail) {
+            context.stream(seekHi, seekLo, seekLength);
         }
-    };
-    pump();
+    }, undefined, size)
+    context.writer = fileStream.getWriter()
+    context.stream(0, 0, Math.min(size, 1024 * 1024))
     return future;
 }
