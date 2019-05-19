@@ -521,7 +521,7 @@ function isLikelyValidImage(imageData, blackWhiteThreshold) {
 function createVideoThumbnailStreamingProm(future, asyncReader, size, filename, mimeType) {
     let maxBlockSize = 1024 * 1024 * 5;
     var blockSize = size > maxBlockSize ? maxBlockSize : size;
-    var gotThumbnail = false;
+    var result = { done: false};
     function Context(asyncReader, sizeHigh, sizeLow) {
         this.maxBlockSize = 1024 * 1024 * 5;
         this.writer = null;
@@ -535,7 +535,7 @@ function createVideoThumbnailStreamingProm(future, asyncReader, size, filename, 
                 var currentSize = length;
                 var blockSize = currentSize > this.maxBlockSize ? this.maxBlockSize : currentSize;
                 var pump = function(reader) {
-                    if(! gotThumbnail && blockSize > 0 && thatRef.counter == currentCount) {
+                    if(! result.done && blockSize > 0 && thatRef.counter == currentCount) {
                         var data = convertToByteArray(new Uint8Array(blockSize));
                         data.length = blockSize;
                         reader.readIntoArray(data, 0, blockSize).thenApply(function(read){
@@ -566,49 +566,57 @@ function createVideoThumbnailStreamingProm(future, asyncReader, size, filename, 
         video.muted = true;
 
         video.onerror = function(e) {
-            console.log(e);
-            if(! gotThumbnail) {
+            console.log("unable to create video thumbnail onerror: " + e);
+            if(! result.done) {
+                result.done = true;
                 future.complete("");
             }
+        }
+
+        video.onloadedmetadata = function(){
+            video.currentTime = 10;
         }
         video.oncanplay = function(){
             let thumbnailGenerator = () => {
                 try {
-                    console.log("time= " + video.currentTime);
-                    if(video.currentTime >= 2) {
-                        if(video.currentTime >= video.duration || video.currentTime > 20) {
-                            future.complete("");
-                        }
-                        let context = canvas.getContext('2d');
-                        context.drawImage(video, 0, 0, width, height);
-                        let imageData = context.getImageData(0, 0, width, height);
-                        if(isLikelyValidImage(imageData, blackWhiteThreshold)) {
-                            gotThumbnail = true;
-                            let b64Thumb = canvas.toDataURL().substring("data:image/png;base64,".length);
-                            future.complete(b64Thumb);
-                        }else{
-                            if(! gotThumbnail) {
-                                setTimeout(thumbnailGenerator, 2000)
+                    //console.log("in oncanplay time= " + video.currentTime);
+                    if(! result.done) {
+                        if(video.currentTime >= 10) {
+                            if(video.currentTime >= video.duration || video.currentTime > 30) {
+                                console.log("unable to create video thumbnail within time");
+                                result.done = true;
+                                future.complete("");
                             }
-                        }
-                    } else {
-                        if(! gotThumbnail) {
-                            setTimeout(thumbnailGenerator, 2000)
+                            let context = canvas.getContext('2d');
+                            context.drawImage(video, 0, 0, width, height);
+                            let imageData = context.getImageData(0, 0, width, height);
+                            if(isLikelyValidImage(imageData, blackWhiteThreshold)) {
+                                result.done = true;
+                                let b64Thumb = canvas.toDataURL().substring("data:image/png;base64,".length);
+                                future.complete(b64Thumb);
+                            }else{
+                                if(! result.done) {
+                                    setTimeout(thumbnailGenerator, 1000)
+                                }
+                            }
+                        } else {
+                            setTimeout(thumbnailGenerator, 1000)
                         }
                     }
                 }catch(e) {
                     console.log("unable to create video thumbnail: " + e);
+                    result.done = true;
                     future.complete("");
                 }
             };
-            if(! gotThumbnail) {
+            if(! result.done) {
                 thumbnailGenerator();
             }
         }
         video.src = url;
         video.play();
     }, function(seekHi, seekLo, seekLength){
-        if(! gotThumbnail) {
+        if(! result.done) {
             context.stream(seekHi, seekLo, seekLength);
         }
     }, undefined, size)
