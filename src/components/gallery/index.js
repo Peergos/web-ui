@@ -87,7 +87,7 @@ module.exports = {
                     this.sizeHigh = sizeHigh,
                     this.sizeLow = sizeLow;
                     this.counter = 0;
-                    this.stream = function(seekHi, seekLo, length, currentCount) {
+                    this.stream = function(seekHi, seekLo, length) {
                         this.counter++;
                         var work = function(thatRef, currentCount) {
                             var currentSize = length;
