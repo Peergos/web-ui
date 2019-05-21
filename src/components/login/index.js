@@ -4,7 +4,8 @@ module.exports = {
     data: function() {
         return {
             username: [],
-            password: [],
+            passwordFieldType: "password",
+	    password: [],
             demo: isDemo,
             isFirefox: false,
             isSafari: false,
@@ -42,6 +43,10 @@ module.exports = {
             });
     },
     methods: {
+        togglePassword: function() {
+	    this.passwordFieldType = this.passwordFieldType == "text" ? "password" : "text";
+	},
+	
         lowercaseUsername: function() {
 	    this.username = this.username.toLocaleLowerCase();
 	},

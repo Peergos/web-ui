@@ -14,10 +14,8 @@
     <div class="{{ errorClass }}">
         <div class="form-group">
           <label v-if="isError">{{ error }}</label>
-	  <div >
-            <input :type="passwordFieldType" name="password1" id="password1" v-on:keyup="validatePassword(true)" class="form-control password" v-model="password1" placeholder="Password">
-	    <span v-bind:class="['fa', 'password' == passwordFieldType ? 'fa-eye password-eye' : 'fa-eye-slash password-eye-slash']" @click="togglePassword1()"></span>
-	  </div>
+          <input :type="passwordFieldType" name="password1" id="password1" v-on:keyup="validatePassword(true)" class="form-control password" v-model="password1" placeholder="Password">
+	  <span v-bind:class="['fa', 'password' == passwordFieldType ? 'fa-eye password-eye' : 'fa-eye-slash password-eye-slash']" @click="togglePassword1()"></span>
         </div>
         <div class="form-group" >
           <input :type="password2FieldType" name="password2" id="password2" v-on:focus="validatePassword(false)" class="form-control password" v-model="password2" placeholder="Re-enter password">
