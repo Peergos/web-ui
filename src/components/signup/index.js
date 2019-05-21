@@ -8,9 +8,10 @@ module.exports = {
             crypto: null,
             network: null,
             username: [],
-	        passwordFieldType: "password",
-	        password1: [],
-            password2: [],
+	    passwordFieldType: "password",
+	    password1: [],
+            password2FieldType: "password",
+	    password2: [],
             checkPassword: false,
             isError: false,
             errorClass: "",
@@ -45,6 +46,14 @@ module.exports = {
     methods: {
 	lowercaseUsername: function() {
 	    this.username = this.username.toLocaleLowerCase();
+	},
+
+	togglePassword1: function() {
+	    this.passwordFieldType = this.passwordFieldType == "text" ? "password" : "text";
+	},
+	
+        togglePassword2: function() {
+	    this.password2FieldType = this.password2FieldType == "text" ? "password" : "text";
 	},
 	
         signup : function() {

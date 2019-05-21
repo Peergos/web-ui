@@ -10,6 +10,22 @@ body {
     font-size:2em;
 }
 
+.password-eye {
+    font-size: 1.5em;
+    float:right;
+    margin-top:-2em;
+}
+
+.password-eye-slash {
+    font-size: 1.5em;
+    float:right;
+    margin-top:-1.5em;
+}
+
+.password {
+    width: 93%;
+}
+
 .close {
     color: #aaaaaa;
     float: right;
