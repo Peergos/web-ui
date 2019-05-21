@@ -7,7 +7,7 @@
     </center>
     <h2>Choose a username and password</h2>
     <div class="form-group">
-        <input type="text" name="username" id="username" class="form-control" v-model="username" placeholder="Username">
+        <input type="text" name="username" id="username" class="form-control" v-on:keyup="lowercaseUsername()" v-model="username" placeholder="Username">
     </div>
     <button @click="generatePassword()" class="btn btn-large btn-block btn-success">Generate password</button>
     <br/>

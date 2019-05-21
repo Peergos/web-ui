@@ -43,6 +43,10 @@ module.exports = {
         });
     },
     methods: {
+	lowercaseUsername: function() {
+	    this.username = this.username.toLocaleLowerCase();
+	},
+	
         signup : function() {
             const creationStart = Date.now();
             const that = this;

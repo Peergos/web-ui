@@ -42,6 +42,10 @@ module.exports = {
             });
     },
     methods: {
+        lowercaseUsername: function() {
+	    this.username = this.username.toLocaleLowerCase();
+	},
+	
         displayDemoWarning: function() {
             if (this.demo == true) {
                 if(this.isPublicLink == true) {
