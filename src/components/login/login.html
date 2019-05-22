@@ -8,7 +8,7 @@
     </center>
     <h2 v-if="isPublicLink">Loading public link...</h2>
     <div v-if="!isPublicLink">
-        <h2>Please log in</h2>
+        <h4>Please log in</h4>
         <div class="form-group">
             <input type="text" name="username" id="username" class="form-control" v-on:keyup="lowercaseUsername()" v-model="username" placeholder="Username">
         </div>

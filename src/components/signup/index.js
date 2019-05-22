@@ -7,11 +7,11 @@ module.exports = {
         return {
             crypto: null,
             network: null,
-            username: [],
+            username: "",
 	    passwordFieldType: "password",
-	    password1: [],
+	    password1: "",
             password2FieldType: "password",
-	    password2: [],
+	    password2: "",
             checkPassword: false,
             isError: false,
             errorClass: "",
@@ -25,7 +25,8 @@ module.exports = {
             errorBody:'',
             showError:false,
 	        bannedUsernames:["ipfs", "ipns", "root", "http", "https", "admin", "administrator", "support", "mail", "www", "web", "onion", "i2p", "ftp", "sftp", "file", "mailto", "wss", "xmpp", "ssh", "smtp", "imap", "irc"],
-	        tosAccepted:false
+	    tosAccepted:false,
+	    safePassword:false
         };
     },
     props: {

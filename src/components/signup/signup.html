@@ -5,7 +5,7 @@
     <center>
         <img src="images/logo.png" class="image">
     </center>
-    <h2>Choose a username and password</h2>
+    <h4>Choose a username and password</h4>
     <div class="form-group">
         <input type="text" name="username" id="username" class="form-control" v-on:keyup="lowercaseUsername()" v-model="username" placeholder="Username">
     </div>
@@ -20,6 +20,9 @@
         <div class="form-group" >
           <input :type="password2FieldType" name="password2" id="password2" v-on:focus="validatePassword(false)" class="form-control password" v-model="password2" placeholder="Re-enter password">
 	  <span v-bind:class="['fa', 'password' == password2FieldType ? 'fa-eye password-eye' : 'fa-eye-slash password-eye-slash']" @click="togglePassword2()"></span>
+        </div>
+	<div class="form-group" style="font-weight: bold;">
+            <input type="checkbox" name="safePassword" id="safePassword" v-model="safePassword" placeholder="Safely store your password"> I understand that passwords cannot be reset or recovered - if I forget my password, then I will lose access to my account and all my data
         </div>
         <div class="form-group" style="font-weight: bold;">
             <input type="checkbox" name="tosAccepted" id="tosAccepted" v-model="tosAccepted" placeholder="Accept Terms of Service">&nbsp;I accept the <a href="/terms.html" target="_blank" rel="noopener noreferrer">Terms of Service</a>
