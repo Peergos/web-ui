@@ -68,7 +68,7 @@
         :value.sync="prompt_value" :consumer_func.sync="prompt_consumer_func"></prompt>
 <warning v-if="showWarning" :warning_message.sync='warning_message'
          :warning_body.sync="warning_body"
-         :show.sync="showWarning" consumer_func.sync="warning_consumer_func"></warning>
+         :show.sync="showWarning" :consumer_func.sync="warning_consumer_func"></warning>
 
 <div v-if="progressMonitors.length>0" class="progressholder">
     <progressbar v-for="progress in progressMonitors" :show.sync="progress.show" :title.sync="progress.title" :done.sync="progress.done":max.sync="progress.max"></progressbar>

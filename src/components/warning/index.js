@@ -1,7 +1,7 @@
 module.exports = {
     template: require('warning.html'),
     data: function() {
-        return {'warning_result': ''}
+        return {}
     },
     props: ['show', 'warning_message', 'warning_body', 'consumer_func'],
     created: function() {
@@ -11,10 +11,9 @@ module.exports = {
             this.show = false;
         },
 
-        getWarning: function(warning_result) {
+        complete: function() {
             this.close();
-            this.warning_result='';
-            this.consumer_func(warning_result);
+            this.consumer_func();
         }
     }
 }

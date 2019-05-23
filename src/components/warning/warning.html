@@ -10,23 +10,12 @@
       <div class="container" style="word-wrap:break-word;width:auto">
         <p id='warning-body-id' >{{warning_body}}</p>
       </div>
-    </div>
-
-    <div class="modal-footer">
-      <slot name="footer">
-      <button 
-        id='model-button-cancel' 
-        class="modal-default-button"
-        @click="close">
+      <button class="btn btn-success btn-lg" @click="close()" style="margin:10%;">
         Cancel
       </button>
-      <button 
-        id='modal-button-id' 
-        class="modal-default-button" 
-        @click="close">
+      <button class="btn btn-success btn-lg" @click="complete()" style="margin:10%">
         OK
       </button>
-      </slot>
     </div>
   </div>
 </div>

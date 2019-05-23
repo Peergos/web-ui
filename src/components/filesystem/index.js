@@ -47,6 +47,9 @@ module.exports = {
             prompt_value: '',
             showPrompt: false,
             showWarning: false,
+	    warning_message: "",
+	    warning_body: "",
+	    warning_consumer_func: () => {},
             errorTitle:'',
             errorBody:'',
             showError:false,
@@ -222,15 +225,11 @@ module.exports = {
             this.showPrompt = true;
         },
 
-        askRmDir: function() {
-            this.warning_message='Are you sure you want to delete this folder?'; 
-            this.warning_body='Deleting the folder will also delete its contents, including any subdirectories.';
-            this.warning_consumer_func = function(warning_result) {
-                console.log("deleting directory and contents " + warning_result);
-                if (warning_result === '')
-                    return;
-                this.delete(warning_result);
-            }.bind(this);
+        confirmDelete: function(file, deleteFn) {
+	    var extra = file.isDirectory() ? " and all its contents" : "";
+            this.warning_message='Are you sure you want to delete ' + file.getName() + extra +'?'; 
+            this.warning_body='';
+            this.warning_consumer_func = deleteFn;
             this.showWarning = true;
         },
 
@@ -791,36 +790,30 @@ module.exports = {
                 return;
             this.closeMenu();
 
-            var delete_countdown = {
-                value: selectedCount
-            };
-
             for (var i=0; i < selectedCount; i++) {
                 var file = this.selectedFiles[i];
-                if (!file.isDirectory()) {
-                console.log("deleting: " + file.getFileProperties().name);
-                this.showSpinner = true;
-                var that = this;
-                file.remove(this.currentDir, this.getContext())
-                    .thenApply(function(b){
-                        that.currentDirChanged();
-                        delete_countdown.value -=1;
-                        if (delete_countdown.value == 0)
-                            that.onUpdateCompletion.push(function() {
-                                that.showSpinner = false;
-                            });
-                    }).exceptionally(function(throwable) {
-                        that.errorTitle = 'Error deleting file: ' + file.getFileProperties().name;
-                        that.errorBody = throwable.getMessage();
-                        that.showError = true;
-                        that.showSpinner = false;
-                    });
-                } else {
-                    var that = this;
-                    that.askRmDir(file);
-                }
+		var that = this;
+		var parent = this.currentDir;
+		var context = this.getContext();
+                this.confirmDelete(file, () => that.deleteOne(file, parent, context));
             }
         },
+
+	deleteOne: function(file, parent, context) {
+	    console.log("deleting: " + file.getFileProperties().name);
+            this.showSpinner = true;
+            var that = this;
+            file.remove(parent, context)
+                .thenApply(function(b){
+                    that.currentDirChanged();
+                    that.showSpinner = false;
+                }).exceptionally(function(throwable) {
+                    that.errorTitle = 'Error deleting file: ' + file.getFileProperties().name;
+                    that.errorBody = throwable.getMessage();
+                    that.showError = true;
+                    that.showSpinner = false;
+                });
+	},
 
         setStyle: function(id, style) {
             var el = document.getElementById(id);
