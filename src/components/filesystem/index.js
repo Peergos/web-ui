@@ -214,7 +214,7 @@ module.exports = {
             this.prompt_message='Enter a new folder name';
             this.prompt_value='';
             this.prompt_consumer_func = function(prompt_result) {
-                console.log("creating new sub-dir "+ prompt_result);
+                console.log("creating new sub-dir " + prompt_result);
                 if (prompt_result === '')
                     return;
                 this.mkdir(prompt_result);
@@ -224,6 +224,7 @@ module.exports = {
 
         askRmDir: function() {
             this.warning_message='Are you sure you want to delete this folder?'; 
+            this.warning_body='Deleting the folder will also delete its contents, including any subdirectories.';
             this.warning_consumer_func = function(warning_result) {
                 console.log("deleting directory and contents " + warning_result);
                 if (warning_result === '')
@@ -815,7 +816,6 @@ module.exports = {
                         that.showSpinner = false;
                     });
                 } else {
-                    console.log("attempting to delete a directory.")
                     var that = this;
                     that.askRmDir(file);
                 }

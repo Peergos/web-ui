@@ -8,22 +8,23 @@
 
     <div class="modal-body">
       <div class="container" style="word-wrap:break-word;width:auto">
-        <p id='warning-body-id' >{{ body }}</p>
+        <p id='warning-body-id' >{{warning_body}}</p>
       </div>
     </div>
 
     <div class="modal-footer">
       <slot name="footer">
       <button 
+        id='model-button-cancel' 
+        class="modal-default-button"
+        @click="close">
+        Cancel
+      </button>
+      <button 
         id='modal-button-id' 
         class="modal-default-button" 
         @click="close">
         OK
-      </button>
-      <button 
-        id='model-button-cancel' 
-        class="modal-default-button">
-        Cancel
       </button>
       </slot>
     </div>

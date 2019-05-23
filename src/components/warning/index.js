@@ -3,7 +3,7 @@ module.exports = {
     data: function() {
         return {'warning_result': ''}
     },
-    props: ['show', 'warning_message', 'consumer_func'],
+    props: ['show', 'warning_message', 'warning_body', 'consumer_func'],
     created: function() {
     },
     methods: {
@@ -11,10 +11,10 @@ module.exports = {
             this.show = false;
         },
 
-        getPrompt: function(prompt_result) {
+        getWarning: function(warning_result) {
             this.close();
-            this.prompt_result='';
-            this.consumer_func(prompt_result);
+            this.warning_result='';
+            this.consumer_func(warning_result);
         }
     }
 }
