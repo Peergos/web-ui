@@ -6,7 +6,7 @@ module.exports = {
             contextUpdates: 0,
             path: [],
             currentDir: null,
-	        files: [],
+            files: [],
             grid: true,
             sortBy: "name",
             normalSortOrder: true,
@@ -32,11 +32,11 @@ module.exports = {
             showPassword:false,
             showSettingsMenu:false,
             showFeedbackForm: false,
-	    social:{
-		pending: [],
+            social:{
+                pending: [],
                 followers: [],
                 following: []
-	    },
+            },
             messages: [],
             progressMonitors: [],
             clipboardAction:"",
@@ -44,14 +44,15 @@ module.exports = {
             externalChange:0,
             prompt_message: '',
             prompt_placeholder: '',
-	        prompt_value: '',
+            prompt_value: '',
             showPrompt: false,
+            showWarning: false,
             errorTitle:'',
             errorBody:'',
             showError:false,
             showSpinner: true,
             initiateDownload: false, // used to trigger a download for a public link to a file
-	    onUpdateCompletion: [] // methods to invoke when current dir is next refreshed
+            onUpdateCompletion: [] // methods to invoke when current dir is next refreshed
         };
     },
     props: {
@@ -222,9 +223,7 @@ module.exports = {
         },
 
         askRmDir: function() {
-            this.warning_placeholder='Folder deletion requested';
             this.warning_message='Are you sure you want to delete this folder?'; 
-            this.warning_value='';
             this.warning_consumer_func = function(warning_result) {
                 console.log("deleting directory and contents " + warning_result);
                 if (warning_result === '')
@@ -816,8 +815,9 @@ module.exports = {
                         that.showSpinner = false;
                     });
                 } else {
-                    console.log("attempted to delete a directory.")
-                    that.askRmDir(file)
+                    console.log("attempting to delete a directory.")
+                    var that = this;
+                    that.askRmDir(file);
                 }
             }
         },
