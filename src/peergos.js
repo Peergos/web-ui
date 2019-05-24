@@ -1,20 +1,21 @@
+var Error           = require('./components/error');
+var Feedback        = require('./components/feedback');
 var Filesystem      = require('./components/filesystem');
-var Login           = require('./components/login');
-var Signup          = require('./components/signup');
-var Modal           = require('./components/modal');
-var SharedWithModal = require('./components/shared-with-modal');
-var Share           = require('./components/share');
-var Message         = require('./components/message');
-var Social          = require('./components/social');
-var Gallery          = require('./components/gallery');
+var Gallery         = require('./components/gallery');
 var Hex             = require('./components/viewers/hex');
-var Text             = require('./components/viewers/text');
+var Login           = require('./components/login');
+var Message         = require('./components/message');
+var Modal           = require('./components/modal');
 var Password        = require('./components/password');
 var ProgressBar     = require('./components/progressbar');
 var Prompt          = require('./components/prompt');
-var Spinner          = require('./components/spinner');
-var Error          = require('./components/error');
-var Feedback        = require('./components/feedback');
+var Share           = require('./components/share');
+var SharedWithModal = require('./components/shared-with-modal');
+var Signup          = require('./components/signup');
+var Social          = require('./components/social');
+var Spinner         = require('./components/spinner');
+var Text            = require('./components/viewers/text');
+var Warning         = require('./components/warning');
 
 var VueAsyncComputed = require('./plugins/vue-async-computed');
 Vue.use(VueAsyncComputed);
@@ -116,23 +117,24 @@ Vue.mixin({
 })
 
     // Loading components
+    Vue.component('error', Vue.extend(Error));
+    Vue.component('feedback', Vue.extend(Feedback));
     Vue.component('filesystem', Vue.extend(Filesystem));
-    Vue.component('login', Vue.extend(Login));
-    Vue.component('signup', Vue.extend(Signup));
-    Vue.component('modal', Vue.extend(Modal));
-    Vue.component('message', Vue.extend(Message));
-    Vue.component('share-with', Vue.extend(Share));
-    Vue.component('shared-with-modal', Vue.extend(SharedWithModal));
-    Vue.component('social', Vue.extend(Social));
     Vue.component('gallery', Vue.extend(Gallery));
     Vue.component('hex', Vue.extend(Hex));
-    Vue.component('text', Vue.extend(Text));
+    Vue.component('login', Vue.extend(Login));
+    Vue.component('message', Vue.extend(Message));
+    Vue.component('modal', Vue.extend(Modal));
     Vue.component('password', Vue.extend(Password));
     Vue.component('progressbar', Vue.extend(ProgressBar));
     Vue.component('prompt', Vue.extend(Prompt));
+    Vue.component('signup', Vue.extend(Signup));
+    Vue.component('share-with', Vue.extend(Share));
+    Vue.component('shared-with-modal', Vue.extend(SharedWithModal));
+    Vue.component('social', Vue.extend(Social));
     Vue.component('spinner', Vue.extend(Spinner));
-    Vue.component('error', Vue.extend(Error));
-    Vue.component('feedback', Vue.extend(Feedback));
+    Vue.component('text', Vue.extend(Text));
+    Vue.component('warning', Vue.extend(Warning));
 
     // Initializing Vue after GWT has finished
     setTimeout(function() {

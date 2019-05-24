@@ -1,0 +1,21 @@
+<div class="modal-mask" @click="close" v-show="show" transition="modal">
+  <div style="height:30%"></div>
+  <div class="modal-container" @click.stop>
+
+    <div class="modal-header">
+      <h3 id="warning-header-id">{{warning_message}}</h3>
+    </div>
+
+    <div class="modal-body">
+      <div class="container" style="word-wrap:break-word;width:auto">
+        <p id='warning-body-id' >{{warning_body}}</p>
+      </div>
+      <button class="btn btn-success btn-lg" @click="close()" style="margin:10%;">
+        Cancel
+      </button>
+      <button class="btn btn-success btn-lg" @click="complete()" style="margin:10%">
+        OK
+      </button>
+    </div>
+  </div>
+</div>

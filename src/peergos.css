@@ -227,6 +227,12 @@ table {
   font-family: Helvetica, Arial, sans-serif;
 }
 
+@media (max-width: 600px) {
+    .modal-container {
+	width: 100%;
+    }
+}
+
 .modal-header h3 {
   margin-top: 0;
   color: #42b983;

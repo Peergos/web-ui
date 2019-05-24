@@ -6,7 +6,7 @@ module.exports = {
             contextUpdates: 0,
             path: [],
             currentDir: null,
-	        files: [],
+            files: [],
             grid: true,
             sortBy: "name",
             normalSortOrder: true,
@@ -23,8 +23,8 @@ module.exports = {
             showShare:false,
             showSharedWith:false,
             sharedWithData:{"edit_shared_with_users":[],"read_shared_with_users":[]},
-	    forceSharedWithUpdate:0,
-	    isNotBackground: true,
+            forceSharedWithUpdate:0,
+            isNotBackground: true,
             showSocial:false,
             showGallery:false,
             showHexViewer:false,
@@ -32,11 +32,11 @@ module.exports = {
             showPassword:false,
             showSettingsMenu:false,
             showFeedbackForm: false,
-	    social:{
-		pending: [],
+            social:{
+                pending: [],
                 followers: [],
                 following: []
-	    },
+            },
             messages: [],
             progressMonitors: [],
             clipboardAction:"",
@@ -44,14 +44,18 @@ module.exports = {
             externalChange:0,
             prompt_message: '',
             prompt_placeholder: '',
-	        prompt_value: '',
+            prompt_value: '',
             showPrompt: false,
+            showWarning: false,
+	    warning_message: "",
+	    warning_body: "",
+	    warning_consumer_func: () => {},
             errorTitle:'',
             errorBody:'',
             showError:false,
             showSpinner: true,
             initiateDownload: false, // used to trigger a download for a public link to a file
-	    onUpdateCompletion: [] // methods to invoke when current dir is next refreshed
+            onUpdateCompletion: [] // methods to invoke when current dir is next refreshed
         };
     },
     props: {
@@ -213,12 +217,20 @@ module.exports = {
             this.prompt_message='Enter a new folder name';
             this.prompt_value='';
             this.prompt_consumer_func = function(prompt_result) {
-                console.log("creating new sub-dir "+ prompt_result);
+                console.log("creating new sub-dir " + prompt_result);
                 if (prompt_result === '')
                     return;
                 this.mkdir(prompt_result);
             }.bind(this);
-            this.showPrompt =  true;
+            this.showPrompt = true;
+        },
+
+        confirmDelete: function(file, deleteFn) {
+	    var extra = file.isDirectory() ? " and all its contents" : "";
+            this.warning_message='Are you sure you want to delete ' + file.getName() + extra +'?'; 
+            this.warning_body='';
+            this.warning_consumer_func = deleteFn;
+            this.showWarning = true;
         },
 
         switchView: function() {
@@ -778,37 +790,38 @@ module.exports = {
                 return;
             this.closeMenu();
 
-            var delete_countdown = {
-                value: selectedCount
-            };
-
             for (var i=0; i < selectedCount; i++) {
                 var file = this.selectedFiles[i];
-                console.log("deleting: " + file.getFileProperties().name);
-                this.showSpinner = true;
-                var that = this;
-                file.remove(this.currentDir, this.getContext())
-                    .thenApply(function(b){
-                        that.currentDirChanged();
-                        delete_countdown.value -=1;
-                        if (delete_countdown.value == 0)
-			    that.onUpdateCompletion.push(function() {
-				that.showSpinner = false;
-			    });
-                    }).exceptionally(function(throwable) {
-			that.errorTitle = 'Error deleting file: ' + file.getFileProperties().name;
-			that.errorBody = throwable.getMessage();
-			that.showError = true;
-			that.showSpinner = false;
-		    });
+		var that = this;
+		var parent = this.currentDir;
+		var context = this.getContext();
+                this.confirmDelete(file, () => that.deleteOne(file, parent, context));
             }
         },
+
+	deleteOne: function(file, parent, context) {
+	    console.log("deleting: " + file.getFileProperties().name);
+            this.showSpinner = true;
+            var that = this;
+            file.remove(parent, context)
+                .thenApply(function(b){
+                    that.currentDirChanged();
+                    that.showSpinner = false;
+                }).exceptionally(function(throwable) {
+                    that.errorTitle = 'Error deleting file: ' + file.getFileProperties().name;
+                    that.errorBody = throwable.getMessage();
+                    that.showError = true;
+                    that.showSpinner = false;
+                });
+	},
+
         setStyle: function(id, style) {
             var el = document.getElementById(id);
             if (el) {
                 el.style.display = style;
             }
         },
+
         setMenu: function(top, left) {
             console.log("open menu");
 
@@ -816,18 +829,18 @@ module.exports = {
                 this.ignoreEvent = true;
             }
 
-	    var menu = document.getElementById("right-click-menu");
-	    if (menu != null) {
-		var largestHeight = window.innerHeight - menu.offsetHeight - 25;
-		var largestWidth = window.innerWidth - menu.offsetWidth - 25;
-		
-		if (top > largestHeight) top = largestHeight;
-		
-		if (left > largestWidth) left = largestWidth;
-		
-		this.top = top + 'px';
-		this.left = left + 'px';
-	    }
+            var menu = document.getElementById("right-click-menu");
+            if (menu != null) {
+                var largestHeight = window.innerHeight - menu.offsetHeight - 25;
+                var largestWidth = window.innerWidth - menu.offsetWidth - 25;
+
+                if (top > largestHeight) top = largestHeight;
+
+                if (left > largestWidth) left = largestWidth;
+
+                this.top = top + 'px';
+                this.left = left + 'px';
+            }
         },
 
         isShared: function(file) {
