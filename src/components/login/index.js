@@ -120,12 +120,16 @@ module.exports = {
         },
 
         showSignup : function() {
-            this.$dispatch('child-msg', {view:"signup", props:{
-                username:this.username,
-                password:this.password,
-                crypto: this.crypto,
-                network: this.network
-            }})
+	    var that = this;
+	    peergos.shared.NetworkAccess.buildJS("QmVdFZgHnEgcedCS2G2ZNiEN59LuVrnRm7z3yXtEBv2XiF")
+                .thenApply(function(network) {
+		    that.$dispatch('child-msg', {view:"signup", props:{
+			username:that.username,
+			password:that.password,
+			crypto: that.crypto,
+			network: network
+		    }})
+		});
         }
     },
     computed: {
@@ -136,7 +140,7 @@ module.exports = {
     asyncComputed: {
         network: function() {
             return new Promise(function(resolve, reject) {
-                peergos.shared.NetworkAccess.buildJS("QmXZXGXsNhxh2LiWFsa7CLHeRWJS5wb8RHxcTvQhvCzAeu")
+                peergos.shared.NetworkAccess.buildJS("QmVdFZgHnEgcedCS2G2ZNiEN59LuVrnRm7z3yXtEBv2XiF")
                     .thenApply(function(network){resolve(network)});
             });
         }
