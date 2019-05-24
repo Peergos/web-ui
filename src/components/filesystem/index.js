@@ -22,7 +22,7 @@ module.exports = {
             modalLinks:[],
             showShare:false,
             showSharedWith:false,
-            sharedWithData:{},
+            sharedWithData:{"edit_shared_with_users":[],"read_shared_with_users":[]},
             forceSharedWithUpdate:0,
             isNotBackground: true,
             showSocial:false,
