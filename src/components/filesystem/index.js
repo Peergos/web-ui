@@ -233,6 +233,28 @@ module.exports = {
             this.showWarning = true;
         },
 
+        confirmDownload: function(file, downloadFn) {
+	    var size = this.getFileSize(file.getFileProperties());
+	    if (this.supportsStreaming() || size < 50*1024*1024)
+		return downloadFn();
+	    var sizeMb = (size/1024/1024) | 0;
+            this.warning_message='Are you sure you want to download ' + file.getName() + " of size " + sizeMb +'MB?'; 
+            this.warning_body="We recommend Chrome for downloads of large files. Your browser doesn't support it and may crash or be very slow";
+            this.warning_consumer_func = downloadFn;
+            this.showWarning = true;
+        },
+
+        confirmView: function(file, viewFn) {
+	    var size = this.getFileSize(file.getFileProperties());
+	    if (this.supportsStreaming() || size < 50*1024*1024)
+		return viewFn();
+	    var sizeMb = (size/1024/1024) | 0;
+            this.warning_message='Are you sure you want to view ' + file.getName() + " of size " + sizeMb +'MB?'; 
+            this.warning_body="We recommend Chrome for viewing large files. Your browser doesn't support it and may crash or be very slow to start";
+            this.warning_consumer_func = viewFn;
+            this.showWarning = true;
+        },
+
         switchView: function() {
             this.grid = !this.grid;
         },
@@ -561,13 +583,15 @@ module.exports = {
             this.closeMenu();
 	    if (this.selectedFiles.length == 0)
 		return;
-	    var mimeType = this.selectedFiles[0].getFileProperties().mimeType;
+	    var file = this.selectedFiles[0];
+	    var mimeType = file.getFileProperties().mimeType;
 	    console.log("Opening " + mimeType);
 	    if (mimeType.startsWith("audio") ||
 		mimeType.startsWith("video") ||
-		mimeType.startsWith("image"))
-		this.showGallery = true;
-	    else if (mimeType === "text/plain") {
+		mimeType.startsWith("image")) {
+		var that = this;
+		this.confirmView(file, () => {that.showGallery = true;});
+	    } else if (mimeType === "text/plain") {
 		this.showTextViewer = true;
 	    } else {
 		this.showHexViewer = true;
@@ -580,8 +604,10 @@ module.exports = {
             this.closeMenu();
             if (file.isDirectory())
                 this.navigateToSubdir(file.getFileProperties().name);
-            else
-                this.downloadFile(file);
+            else {
+		var that = this;
+		this.confirmDownload(file, () => {that.downloadFile(file);});
+	    }
         },
 
         navigateOrMenu: function(event, file) {
