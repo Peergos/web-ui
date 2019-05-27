@@ -30,11 +30,7 @@ module.exports = {
             return this.context;
         },
         downloadCurrentFile: function() {
-            let currentFile = this.file;
-            let that = this;
-            setTimeout(function(){
-                that.downloadFile(currentFile);
-            }, 100);
+            this.downloadFile(this.file);
         },
         close: function() {
             this.show = false;
