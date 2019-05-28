@@ -134,6 +134,9 @@ module.exports = {
         }
     },
     computed: {
+	host: function() {
+	    return window.location.origin;
+	}
     },
     events: {
         'parent-msg': function (msg) {

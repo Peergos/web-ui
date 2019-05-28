@@ -29,6 +29,7 @@
         </div>
     </div>
     <button @click="signup()" class="btn btn-large btn-block btn-success">Sign up</button>
+    <a v-bind:href="host">Already signed up? Log in instead</a>
     <error :show.sync="showError" :title.sync="errorTitle" :body.sync="errorBody"></error>
 </div>
 <!-- EOF LOGIN PAGE -->
