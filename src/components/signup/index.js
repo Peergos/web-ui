@@ -1,6 +1,3 @@
-var commonPasswords = require('passwords.json');
-var bip39 = require('bip-0039-english.json');
-
 module.exports = {
     template: require('signup.html'),
     data: function() {
@@ -17,7 +14,6 @@ module.exports = {
             errorClass: "",
             error:"",
             passwordWarningThreshold: 12,
-            commonPasswords: commonPasswords,
             email: [],
             showSpinner: false,
             spinnerMessage:'',
@@ -99,15 +95,6 @@ module.exports = {
                         });
                 }
             }
-        },
-        generatePassword() {
-            var bytes = nacl.randomBytes(16);
-            var wordIndices = [];
-            for (var i=0; i < 7; i++)
-            wordIndices[i] = bytes[2*i]*8 + (bytes[2*i + 1] & 7);
-            var password = wordIndices.map(j => bip39[j]).join(" ");
-            this.passwordFieldType = "text";
-            this.password1 = password;
         },
         validatePassword: function(inFirstField) {
             if (inFirstField && !this.checkPassword)
