@@ -1,3 +1,4 @@
+var PasswordUtil    = require('./components/passwordutil');
 var Error           = require('./components/error');
 var Feedback        = require('./components/feedback');
 var Filesystem      = require('./components/filesystem');
@@ -125,10 +126,10 @@ Vue.mixin({
     Vue.component('login', Vue.extend(Login));
     Vue.component('message', Vue.extend(Message));
     Vue.component('modal', Vue.extend(Modal));
-    Vue.component('password', Vue.extend(Password));
+    Vue.component('password', Vue.extend(PasswordUtil).extend(Password));
     Vue.component('progressbar', Vue.extend(ProgressBar));
     Vue.component('prompt', Vue.extend(Prompt));
-    Vue.component('signup', Vue.extend(Signup));
+    Vue.component('signup', Vue.extend(PasswordUtil).extend(Signup));
     Vue.component('share-with', Vue.extend(Share));
     Vue.component('shared-with-modal', Vue.extend(SharedWithModal));
     Vue.component('social', Vue.extend(Social));
