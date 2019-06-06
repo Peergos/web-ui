@@ -14,7 +14,7 @@ module.exports = {
             errorClass: ""
         };
     },
-    props: ['show', 'changepassword'],
+    props: ['show', 'changepassword', 'username'],
     created: function() {
     },
     methods: {
@@ -33,7 +33,13 @@ module.exports = {
             var passwd = this.password1;
             var index = this.commonPasswords.indexOf(passwd);
             var suffix = ["th", "st", "nd", "rd", "th", "th", "th", "th", "th", "th"][(index+1) % 10];
-            if (index != -1) {
+	    console.log(this.username);
+            if (passwd === this.username) {
+                this.checkPassword = true;
+                this.isError = true;
+                this.errorClass = "has-error has-feedback alert alert-danger";
+                this.error = "Warning: password cannot be the same as your username.";
+            } else if (index != -1) {
                 this.checkPassword = true;
                 this.isError = true;
                 this.errorClass = "has-error has-feedback alert alert-danger";
@@ -43,8 +49,7 @@ module.exports = {
                 this.isError = true;
                 this.errorClass = "has-error has-feedback alert alert-danger";
                 this.error = "Warning: passwords less than "+ this.passwordWarningThreshold +" characters are considered unsafe.";
-            }
-            else {
+            } else {
                 this.errorClass = this.checkPassword ? "alert alert-success" : "";
                 this.error = this.checkPassword ? "That's a better password." : "";
             }

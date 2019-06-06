@@ -52,7 +52,7 @@
 <share-with v-if="showShare" :forceshared.sync="forceSharedWithUpdate" :show.sync="showShare" :files.sync="selectedFiles" :parent.sync="currentDir" :context.sync="context" :followernames.sync="followernames" :messages.sync="messages"></share-with>
 <shared-with-modal :forceshared.sync="forceSharedWithUpdate" :show.sync="showSharedWith" :data.sync="sharedWithData" :files.sync="selectedFiles" :context.sync="context"></shared-with-modal>
 <social v-if="showSocial" :show.sync="showSocial" :data.sync="social" :context.sync="context" :externalchange.sync="externalChange" :messages.sync="messages"></social>
-<password v-if="showPassword" :show.sync="showPassword" :changepassword.sync="changePassword"></password>
+<password v-if="showPassword" :show.sync="showPassword" :changepassword.sync="changePassword" :username.sync="this.getContext().username"></password>
 <feedback v-if="showFeedbackForm" :show.sync="showFeedbackForm"
           :data.sync="feedback" :context.sync="context"
           :externalchange.sync="externalChange"
