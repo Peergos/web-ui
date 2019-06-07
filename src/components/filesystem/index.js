@@ -344,7 +344,8 @@ module.exports = {
         },
         uploadFile: function(file) {
             console.log("uploading " + file.name);
-            var resultingSize = file.size;
+            var thumbnailAllocation = Math.min(100000, file.size / 10);
+            var resultingSize = file.size + thumbnailAllocation;
             var progress = {
                 show:true,
                 title:"Uploading " + file.name,
@@ -356,19 +357,24 @@ module.exports = {
             var java_reader = new peergos.shared.user.fs.BrowserFileReader(reader);
             var that = this;
             var context = this.getContext();
-            this.currentDir.uploadFileJS(file.name, java_reader, (file.size - (file.size % Math.pow(2, 32)))/Math.pow(2, 32), file.size, false, context.network, context.crypto, function(len){
+
+            var updateProgressBar = function(len){
                 progress.done += len.value_0;
                 that.progressMonitors.sort(function(a, b) {
                   return Math.floor(b.done / b.max) - Math.floor(a.done / a.max);
                 });
                 if (progress.done >= progress.max) {
-                that.showSpinner = true;
+                    that.showSpinner = true;
                     setTimeout(function(){
                         progress.show = false;
                         that.progressMonitors.pop(progress);
                     }, 2000);
                 }
-            }, context.getTransactionService()).thenApply(function(res) {
+            }
+
+            this.currentDir.uploadFileJS(file.name, java_reader, (file.size - (file.size % Math.pow(2, 32)))/Math.pow(2, 32), file.size,
+                false, context.network, context.crypto, updateProgressBar, context.getTransactionService()).thenApply(function(res) {
+                updateProgressBar({ value_0: thumbnailAllocation});
                 that.currentDir = res;
                 that.updateFiles();
             }).exceptionally(function(throwable) {
