@@ -344,8 +344,8 @@ module.exports = {
         },
         uploadFile: function(file) {
             console.log("uploading " + file.name);
-            var tenPercent = file.size / 10;
-            var resultingSize = file.size + tenPercent; //110% we allocate some time to generate thumbnail
+            var thumbnailAllocation = Math.min(100000, file.size / 10);
+            var resultingSize = file.size + thumbnailAllocation;
             var progress = {
                 show:true,
                 title:"Uploading " + file.name,
@@ -374,7 +374,7 @@ module.exports = {
 
             this.currentDir.uploadFileJS(file.name, java_reader, (file.size - (file.size % Math.pow(2, 32)))/Math.pow(2, 32), file.size,
                 false, context.network, context.crypto, updateProgressBar, context.getTransactionService()).thenApply(function(res) {
-                updateProgressBar({ value_0: tenPercent});
+                updateProgressBar({ value_0: thumbnailAllocation});
                 that.currentDir = res;
                 that.updateFiles();
             }).exceptionally(function(throwable) {
