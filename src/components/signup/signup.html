@@ -22,7 +22,7 @@
 	  <span v-bind:class="['fa', 'password' == password2FieldType ? 'fa-eye password-eye' : 'fa-eye-slash password-eye-slash']" @click="togglePassword2()"></span>
         </div>
 	<div class="form-group" style="font-weight: bold;">
-            <input type="checkbox" name="safePassword" id="safePassword" v-model="safePassword" placeholder="Safely store your password"> I understand that passwords cannot be reset or recovered - if I forget my password, then I will lose access to my account and all my data
+            <input type="checkbox" name="safePassword" id="safePassword" v-model="safePassword" placeholder="Safely store your password"> I understand that passwords cannot be reset or recovered - if I forget my password, then I will lose access to my account and data. If I enter my password into a malicious website then I will lose control of my account. 
         </div>
         <div class="form-group" style="font-weight: bold;">
             <input type="checkbox" name="tosAccepted" id="tosAccepted" v-model="tosAccepted" placeholder="Accept Terms of Service">&nbsp;I accept the <a href="/terms.html" target="_blank" rel="noopener noreferrer">Terms of Service</a>
