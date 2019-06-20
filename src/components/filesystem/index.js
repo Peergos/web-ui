@@ -25,13 +25,14 @@ module.exports = {
             sharedWithData:{"edit_shared_with_users":[],"read_shared_with_users":[]},
             forceSharedWithUpdate:0,
             isNotBackground: true,
-	    usage: "N/A",
 	    quota: "N/A",
+	    usageBytes: 0,
             showSocial:false,
             showGallery:false,
             showHexViewer:false,
             showTextViewer:false,
             showPassword:false,
+            showRequestSpace:false,
             showSettingsMenu:false,
             showFeedbackForm: false,
             social:{
@@ -136,7 +137,7 @@ module.exports = {
             if (context == null)
 		return;
 	    var that = this;
-	    this.context.getSpaceUsage().thenApply(u => that.usage = that.convertBytesToHumanReadable(u));
+	    this.context.getSpaceUsage().thenApply(u => that.usageBytes = u);
 	},
 
 	updateQuota: function() {
@@ -435,6 +436,11 @@ module.exports = {
         showChangePassword: function() {
             this.toggleUserMenu();
             this.showPassword = true;
+        },
+
+        showRequestStorage: function() {
+            this.toggleUserMenu();
+            this.showRequestSpace = true;
         },
 
         logout: function() {
@@ -934,6 +940,12 @@ module.exports = {
         }
     },
     computed: {
+	usage: function() {
+	    if (this.usageBytes == 0)
+		return "N/A";
+	    return this.convertBytesToHumanReadable(this.usageBytes);
+	},
+	
 	sortedFiles: function() {
             if (this.files == null) {
                 return [];
