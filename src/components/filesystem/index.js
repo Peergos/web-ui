@@ -117,12 +117,26 @@ module.exports = {
             this.onUpdateCompletion = [];
         },
 
-        updateUsage: function() {
+	roundToDisplay: function(x) {
+	    return Math.round(x * 100)/100;
+	},
+
+        convertBytesToHumanReadable: function(bytes) {
+	    if (bytes < 1024)
+		return bytes;
+	    if (bytes < 1024*1024)
+		return this.roundToDisplay(bytes/1024) + " KiB";
+	    if (bytes < 1024*1024*1024)
+		return this.roundToDisplay(bytes/1024/1024) + " MiB";
+	    return this.roundToDisplay(bytes/1024/1024/1024) + " GiB";
+	},
+
+	updateUsage: function() {
 	    var context = this.getContext();
             if (context == null)
 		return;
 	    var that = this;
-	    this.context.getSpaceUsage().thenApply(u => that.usage = u);
+	    this.context.getSpaceUsage().thenApply(u => that.usage = that.convertBytesToHumanReadable(u));
 	},
 
 	updateQuota: function() {
@@ -130,7 +144,7 @@ module.exports = {
             if (context == null)
 		return;
 	    var that = this;
-	    this.context.getQuota().thenApply(q => that.quota = q);
+	    this.context.getQuota().thenApply(q => that.quota = that.convertBytesToHumanReadable(q));
 	},
 
 	updateCurrentDir: function() {
