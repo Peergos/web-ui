@@ -217,6 +217,8 @@ Class-Path: .</echo>
       <arg value="157286400"/>
       <arg value="PEERGOS_PATH"/>
       <arg value="${server}/.peergos"/>
+      <arg value="admin-usernames"/>
+      <arg value="peergos"/>
     </exec>
   </target> 
 

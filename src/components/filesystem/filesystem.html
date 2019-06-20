@@ -96,6 +96,7 @@
 	  Join the revolution!<br/>
 	  <button class="btn btn-lg btn-success" @click="gotoSignup()">Sign up to Peergos</button>
 	</center>
+	<div style="position:absolute;bottom:5px;right:5%;font-size:1.4em"> Usage: {{ usage }} / {{ quota }}</div>
     </div>
     <div class="table-responsive" v-if="!grid">
         <table class="table">

@@ -25,6 +25,8 @@ module.exports = {
             sharedWithData:{"edit_shared_with_users":[],"read_shared_with_users":[]},
             forceSharedWithUpdate:0,
             isNotBackground: true,
+	    usage: "N/A",
+	    quota: "N/A",
             showSocial:false,
             showGallery:false,
             showHexViewer:false,
@@ -69,6 +71,8 @@ module.exports = {
             this.contextUpdates++;
             this.updateCurrentDir();
             this.updateFollowerNames();
+	    this.updateUsage();
+	    this.updateQuota();
         },
 
         path: function(newPath) {
@@ -113,7 +117,37 @@ module.exports = {
             this.onUpdateCompletion = [];
         },
 
-        updateCurrentDir: function() {
+	roundToDisplay: function(x) {
+	    return Math.round(x * 100)/100;
+	},
+
+        convertBytesToHumanReadable: function(bytes) {
+	    if (bytes < 1024)
+		return bytes;
+	    if (bytes < 1024*1024)
+		return this.roundToDisplay(bytes/1024) + " KiB";
+	    if (bytes < 1024*1024*1024)
+		return this.roundToDisplay(bytes/1024/1024) + " MiB";
+	    return this.roundToDisplay(bytes/1024/1024/1024) + " GiB";
+	},
+
+	updateUsage: function() {
+	    var context = this.getContext();
+            if (context == null)
+		return;
+	    var that = this;
+	    this.context.getSpaceUsage().thenApply(u => that.usage = that.convertBytesToHumanReadable(u));
+	},
+
+	updateQuota: function() {
+	    var context = this.getContext();
+            if (context == null)
+		return;
+	    var that = this;
+	    this.context.getQuota().thenApply(q => that.quota = that.convertBytesToHumanReadable(q));
+	},
+
+	updateCurrentDir: function() {
             var context = this.getContext();
             if (context == null)
                 return Promise.resolve(null);
@@ -287,11 +321,13 @@ module.exports = {
 		    that.onUpdateCompletion.push(function() {
                         that.showSpinner = false;
 		    });
+		    that.updateUsage();
                 }.bind(this)).exceptionally(function(throwable) {
 		    that.errorTitle = 'Error creating directory: ' + name;
 		    that.errorBody = throwable.getMessage();
 		    that.showError = true;
 		    that.showSpinner = false;
+		    that.updateUsage();
 		});
         },
 
@@ -377,12 +413,14 @@ module.exports = {
                 updateProgressBar({ value_0: thumbnailAllocation});
                 that.currentDir = res;
                 that.updateFiles();
+		that.updateUsage();
             }).exceptionally(function(throwable) {
                 progress.show = false;
                 that.errorTitle = 'Error uploading file: ' + file.name;
                 that.errorBody = throwable.getMessage();
                 that.showError = true;
                 throwable.printStackTrace();
+		that.updateUsage();
             });
         },
 
@@ -839,11 +877,13 @@ module.exports = {
                 .thenApply(function(b){
                     that.currentDirChanged();
                     that.showSpinner = false;
+		    that.updateUsage();
                 }).exceptionally(function(throwable) {
                     that.errorTitle = 'Error deleting file: ' + file.getFileProperties().name;
                     that.errorBody = throwable.getMessage();
                     that.showError = true;
                     that.showSpinner = false;
+		    that.updateUsage();
                 });
 	},
 
@@ -894,7 +934,7 @@ module.exports = {
         }
     },
     computed: {
-        sortedFiles: function() {
+	sortedFiles: function() {
             if (this.files == null) {
                 return [];
             }
