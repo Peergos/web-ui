@@ -26,6 +26,7 @@
             <span class="collapse navbar-collapse">{{username}}</span>
         </button>
         <ul id="settingsMenu" v-if="showSettingsMenu" class="dropdown-menu" aria-labelledby="logoutButton" style="cursor:pointer;display:block">
+            <li><a @click="showRequestStorage">Request more storage</a></li>
             <li><a @click="showChangePassword">Change Password</a></li>
             <li role="separator" class="divider"></li>
             <li><a @click="logout">Log out</a></li>
@@ -53,6 +54,7 @@
 <shared-with-modal :forceshared.sync="forceSharedWithUpdate" :show.sync="showSharedWith" :data.sync="sharedWithData" :files.sync="selectedFiles" :context.sync="context"></shared-with-modal>
 <social v-if="showSocial" :show.sync="showSocial" :data.sync="social" :context.sync="context" :externalchange.sync="externalChange" :messages.sync="messages"></social>
 <password v-if="showPassword" :show.sync="showPassword" :changepassword.sync="changePassword" :username.sync="this.getContext().username"></password>
+<space v-if="showRequestSpace" :show.sync="showRequestSpace" :context.sync="context" :quota.sync="quota" :usage.sync="usageBytes"></space>
 <feedback v-if="showFeedbackForm" :show.sync="showFeedbackForm"
           :data.sync="feedback" :context.sync="context"
           :externalchange.sync="externalChange"

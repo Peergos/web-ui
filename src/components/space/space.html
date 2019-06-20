@@ -1,0 +1,32 @@
+<div class="modal-mask" @click="close" v-show="show" transition="modal">
+    <div style="height:30%"></div>
+    <div class="modal-container" @click.stop>
+
+      <div class="modal-header">
+        <h3> Request space</h3>
+      </div>
+
+      <div class="modal-body">
+        <div class="{{ errorClass }}">
+          <label v-if="isError">{{ error }}</label>
+	  <br/>
+	  <label> Current space: {{ getQuota() }}</label>
+          <div class="form-group">
+            <input :type="text" name="space" v-on:keyup="validateSpace()" class="form-control" v-model="space" placeholder="New total space amount" style="width:15em;display:inline;">
+	    <select v-model="unit">
+               <option value = "MiB">MiB</option>
+               <option value = "GiB">GiB</option>
+             </select>
+          </div>
+        </div>
+      </div>
+      
+      <div class="modal-footer">
+        <slot name="footer">
+        <button class="btn btn-success" @click="requestStorage">
+          Send request
+        </button>
+        </slot>
+      </div>
+    </div>
+</div>
