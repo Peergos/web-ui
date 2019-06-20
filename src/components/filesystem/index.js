@@ -321,13 +321,13 @@ module.exports = {
 		    that.onUpdateCompletion.push(function() {
                         that.showSpinner = false;
 		    });
-		    this.updateUsage();
+		    that.updateUsage();
                 }.bind(this)).exceptionally(function(throwable) {
 		    that.errorTitle = 'Error creating directory: ' + name;
 		    that.errorBody = throwable.getMessage();
 		    that.showError = true;
 		    that.showSpinner = false;
-		    this.updateUsage();
+		    that.updateUsage();
 		});
         },
 
@@ -877,13 +877,13 @@ module.exports = {
                 .thenApply(function(b){
                     that.currentDirChanged();
                     that.showSpinner = false;
-		    this.updateUsage();
+		    that.updateUsage();
                 }).exceptionally(function(throwable) {
                     that.errorTitle = 'Error deleting file: ' + file.getFileProperties().name;
                     that.errorBody = throwable.getMessage();
                     that.showError = true;
                     that.showSpinner = false;
-		    this.updateUsage();
+		    that.updateUsage();
                 });
 	},
 
