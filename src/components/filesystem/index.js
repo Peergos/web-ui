@@ -27,6 +27,8 @@ module.exports = {
             isNotBackground: true,
 	    quota: "N/A",
 	    usageBytes: 0,
+	    isAdmin: false,
+            showAdmin:false,
             showSocial:false,
             showGallery:false,
             showHexViewer:false,
@@ -35,6 +37,7 @@ module.exports = {
             showRequestSpace:false,
             showSettingsMenu:false,
             showFeedbackForm: false,
+	    admindata: {pending:[]},
             social:{
                 pending: [],
                 followers: [],
@@ -74,6 +77,10 @@ module.exports = {
             this.updateFollowerNames();
 	    this.updateUsage();
 	    this.updateQuota();
+	    const that = this;
+	    newContext.getPendingSpaceRequests().thenApply(reqs => {
+		that.isAdmin = true;
+	    });
         },
 
         path: function(newPath) {
@@ -455,6 +462,17 @@ module.exports = {
                 body: message,
                 show: true
             });
+        },
+
+        showAdminPanel: function(name) {
+	    const context = this.getContext()
+	    if (context == null)
+		return;
+	    const that = this;
+	    context.getAndDecodePendingSpaceRequests().thenApply(reqs => {
+		that.admindata.pending = reqs.toArray([]);
+		that.showAdmin = true;
+	    });
         },
 
         showSocialView: function(name) {

@@ -1,4 +1,5 @@
 var PasswordUtil    = require('./components/passwordutil');
+var Admin           = require('./components/admin');
 var Error           = require('./components/error');
 var Feedback        = require('./components/feedback');
 var Filesystem      = require('./components/filesystem');
@@ -119,6 +120,7 @@ Vue.mixin({
 })
 
     // Loading components
+    Vue.component('admin', Vue.extend(Admin));
     Vue.component('error', Vue.extend(Error));
     Vue.component('feedback', Vue.extend(Feedback));
     Vue.component('filesystem', Vue.extend(Filesystem));
