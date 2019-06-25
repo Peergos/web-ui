@@ -75,12 +75,14 @@ module.exports = {
             this.contextUpdates++;
             this.updateCurrentDir();
             this.updateFollowerNames();
-	    this.updateUsage();
-	    this.updateQuota();
-	    const that = this;
-	    newContext.getPendingSpaceRequests().thenApply(reqs => {
-		that.isAdmin = true;
-	    });
+	    if (newContext != null && newContext.username != null) {
+		this.updateUsage();
+		this.updateQuota();
+		const that = this;
+		newContext.getPendingSpaceRequests().thenApply(reqs => {
+		    that.isAdmin = true;
+		});
+	    }
         },
 
         path: function(newPath) {
