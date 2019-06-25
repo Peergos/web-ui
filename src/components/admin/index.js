@@ -22,8 +22,8 @@ module.exports = {
             this.showSpinner = true;
             this.context.approveSpaceRequest(req)
                 .thenApply(function(success) {
+		    that.showSpinner = false;
                     that.showMessage("Space request approved!", "");
-                    that.showSpinner = false;
                     that.externalchange++;
                 });
         },
