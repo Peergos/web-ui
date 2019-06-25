@@ -45,7 +45,8 @@ module.exports = {
 	requestStorage: function () {
 	    if (! this.validateSpace())
 		return;
-            this.context.requestSpace(this.getRequestedBytes()).thenApply(x => close())
+	    const that = this;
+            this.context.requestSpace(this.getRequestedBytes()).thenApply(x => that.close())
         },
         close: function () {
             this.show = false;
