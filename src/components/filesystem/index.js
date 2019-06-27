@@ -143,7 +143,8 @@ module.exports = {
 
 	updateUsage: function() {
 	    var context = this.getContext();
-            if (context == null)
+	    console.log(this);
+            if (this.isPublicLink)
 		return;
 	    var that = this;
 	    this.context.getSpaceUsage().thenApply(u => that.usageBytes = u);
@@ -151,7 +152,7 @@ module.exports = {
 
 	updateQuota: function() {
 	    var context = this.getContext();
-            if (context == null)
+            if (this.isPublicLink)
 		return;
 	    var that = this;
 	    this.context.getQuota().thenApply(q => that.quota = that.convertBytesToHumanReadable(q));
