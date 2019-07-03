@@ -45,7 +45,7 @@
     <li id='copy-file' v-if="isNotBackground && isWritable" v-on:click="copy">Copy</li>
     <li id='cut-file' v-if="isNotBackground && isWritable" v-on:click="cut">Cut</li>
     <li id='paste-file' v-if="isPasteAvailable" v-on:click="paste">Paste</li>
-    <li id='public-link-file' v-if="(isNotHome || isNotBackground)" v-on:click="createPublicLink">Create public link</li>
+    <li id='secret-link-file' v-if="(isNotHome || isNotBackground)" v-on:click="createSecretLink">Create secret link</li>
     <li id='share-file' v-if="(isNotHome || isNotBackground) && isLoggedIn" v-on:click="showShareWith">Share</li>
     <li id='shared-with-file' v-if="(isNotHome || isNotBackground) && isWritable" v-on:click="sharedWith">Shared with</li>
 </ul>
@@ -96,11 +96,11 @@
 	<div v-if="sortedFiles.length==0 && currentDir != null && currentDir.isWritable()" class="instruction">
 	  Upload a file by dragging and dropping here or clicking the <span class="fa fa-upload"/> icon
 	</div>
-	<center v-if="isPublicLink" class="bottom-message">
+	<center v-if="isSecretLink" class="bottom-message">
 	  Join the revolution!<br/>
 	  <button class="btn btn-lg btn-success" @click="gotoSignup()">Sign up to Peergos</button>
 	</center>
-	<div v-if="!isPublicLink" style="position:absolute;bottom:5px;right:5%;font-size:1.4em"> Usage: {{ usage }} / {{ quota }}</div>
+	<div v-if="!isSecretLink" style="position:absolute;bottom:5px;right:5%;font-size:1.4em"> Usage: {{ usage }} / {{ quota }}</div>
     </div>
     <div class="table-responsive" v-if="!grid">
         <table class="table">
@@ -122,7 +122,7 @@
             </tbody>
         </table>
     </div>
-    <button id="popup" v-if="!isPublicLink" class="feedback-button" @click="toggleFeedbackForm()"> 
+    <button id="popup" v-if="!isSecretLink" class="feedback-button" @click="toggleFeedbackForm()"> 
         Feedback
     </button>
     <error :show.sync="showError" :title.sync="errorTitle" :body.sync="errorBody"></error>

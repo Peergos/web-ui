@@ -60,7 +60,7 @@ module.exports = {
             errorBody:'',
             showError:false,
             showSpinner: true,
-            initiateDownload: false, // used to trigger a download for a public link to a file
+            initiateDownload: false, // used to trigger a download for a secret link to a file
             onUpdateCompletion: [] // methods to invoke when current dir is next refreshed
         };
     },
@@ -144,7 +144,7 @@ module.exports = {
 	updateUsage: function() {
 	    var context = this.getContext();
 	    console.log(this);
-            if (this.isPublicLink)
+            if (this.isSecretLink)
 		return;
 	    var that = this;
 	    this.context.getSpaceUsage().thenApply(u => that.usageBytes = u);
@@ -152,7 +152,7 @@ module.exports = {
 
 	updateQuota: function() {
 	    var context = this.getContext();
-            if (this.isPublicLink)
+            if (this.isSecretLink)
 		return;
 	    var that = this;
 	    this.context.getQuota().thenApply(q => that.quota = that.convertBytesToHumanReadable(q));
@@ -614,7 +614,7 @@ module.exports = {
             this.showSpinner = true;
         },
 
-        createPublicLink: function() {
+        createSecretLink: function() {
             if (this.selectedFiles.length == 0)
                 return;
 
@@ -625,9 +625,9 @@ module.exports = {
                 var name = file.getFileProperties().name;
                 links.push({href:window.location.origin + window.location.pathname + file.toLink(), 
                     name:name, 
-                    id:'public_link_'+name});
+                    id:'secret_link_'+name});
             }
-            var title = links.length > 1 ? "Public links to files: " : "Public link to file: ";
+            var title = links.length > 1 ? "Secret links to files: " : "Secret link to file: ";
             this.showLinkModal(title, links);
         },
 
@@ -1041,12 +1041,12 @@ module.exports = {
             }
         },
 	
-	isPublicLink: function() {
+	isSecretLink: function() {
 	    return this.context != null && this.context.username == null;
 	},
 	
 	isLoggedIn: function() {
-	    return ! this.isPublicLink;
+	    return ! this.isSecretLink;
 	},
 
         isNotHome: function() {
@@ -1102,7 +1102,7 @@ module.exports = {
             this.initiateDownload = msg.download;
             const that = this;
             if (this.context.username == null) {
-                // from a public link
+                // from a secret link
                 this.context.getEntryPath().thenApply(function(linkPath) {
                     that.changePath(linkPath);
                     Vue.nextTick(function() {

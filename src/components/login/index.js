@@ -14,7 +14,7 @@ module.exports = {
             errorTitle:'',
             errorBody:'',
             spinnerMessage:'',
-	    isPublicLink: false
+	    isSecretLink: false
         };
     },
     props: {
@@ -31,11 +31,11 @@ module.exports = {
 	if (href.includes("?signup=true"))
 	    this.showSignup();
 	else if (fragment.length > 0) {
-            // this is a public link
-	    this.isPublicLink = true;
-	    console.log("Navigating to public link...");
+            // this is a secret link
+	    this.isSecretLink = true;
+	    console.log("Navigating to secret link...");
             Vue.nextTick(function() {
-                that.gotoPublicLink(fragment);
+                that.gotoSecretLink(fragment);
             });
         } else
             Vue.nextTick(function() {
@@ -53,7 +53,7 @@ module.exports = {
 	
         displayDemoWarning: function() {
             if (this.demo == true) {
-                if(this.isPublicLink == true) {
+                if(this.isSecretLink == true) {
                     return false;
                 }
                 return true;
@@ -61,7 +61,7 @@ module.exports = {
                 return false;
             }
         },
-        gotoPublicLink: function(link) {
+        gotoSecretLink: function(link) {
             var that = this;
             var query = link.indexOf("?");
             var download = false;
@@ -76,7 +76,7 @@ module.exports = {
             var that = this;
             peergos.shared.NetworkAccess.buildJS("QmXZXGXsNhxh2LiWFsa7CLHeRWJS5wb8RHxcTvQhvCzAeu")
                 .thenApply(function(network){
-                    peergos.shared.user.UserContext.fromPublicLink(link, network, that.crypto).thenApply(function(context) {
+                    peergos.shared.user.UserContext.fromSecretLink(link, network, that.crypto).thenApply(function(context) {
                         that.$dispatch('child-msg', {
                             view:'filesystem', 
                             props:{
@@ -86,7 +86,7 @@ module.exports = {
                             }
                         });
                     }).exceptionally(function(throwable) {
-                        that.errorTitle = 'Public link not found!'
+                        that.errorTitle = 'Secret link not found!'
                         that.errorBody = 'Url copy/paste error?'
                         that.showSpinner = false;
                         that.showError = true;
