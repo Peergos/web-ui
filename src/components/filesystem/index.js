@@ -348,47 +348,139 @@ module.exports = {
         dndDrop: function(evt) {
             evt.preventDefault();
             console.log("upload files from DnD");
-            let items = evt.dataTransfer.items;
-            let that = this;
-            for(let i =0; i < items.length; i++){
-                let entry = items[i].webkitGetAsEntry();
-                if(entry != null) {
-                    this.getEntriesAsPromise(entry, that);
-                }
+            let entries = evt.dataTransfer.items;
+            let entries2 = evt.dataTransfer;
+            var entries3 = evt.target.files || evt.dataTransfer.files;
+
+            let allItems = [];
+            for(i=0; i < entries.length; i ++) {
+                allItems.push(entries[i].webkitGetAsEntry());
             }
+            let allFiles = [];
+            this.getEntries(allItems, 0, this, allFiles);
         },
-        getEntriesAsPromise: function(item, that) {
-            return new Promise(function(resolve, reject){
-                if(item.isDirectory){
-                    /* disabled until fix for uploading into a directory structure is done
-                       let reader = item.createReader();
-                       let doBatch = function() {
-                       reader.readEntries(function(entries) {
-                       if (entries.length > 0) {
-                       entries.forEach(function(entry){
-                       that.getEntriesAsPromise(entry, that);
-                       });
-                       doBatch();
-                       } else {
-                       resolve();
-                       }
-                       }, reject);
-                       };
-                       doBatch();*/
-                }else{
-                    item.file(function(item){that.uploadFile(item);}, function(e){console.log(e);});
+        getEntries: function(items, itemIndex, that, allFiles) {
+                if (itemIndex < items.length) {
+                    let item = items[itemIndex];
+                    if (item.isDirectory){
+                           let reader = item.createReader();
+                           let doBatch = function() {
+                                reader.readEntries(function(entries) {
+                                    if (entries.length > 0) {
+                                        for(i=0; i < entries.length; i ++) {
+                                            items.push(entries[i]);
+                                        }
+                                        doBatch();
+                                    } else {
+                                        that.getEntries(items, ++itemIndex, that, allFiles);
+                                    }
+                                });
+                           };
+                           doBatch();
+                    }else{
+                        allFiles.push(item);
+                        that.getEntries(items, ++itemIndex, that, allFiles);
+                    }
+                } else {
+                    let uploadPath = that.getPath();
+                    that.traverseDirectories(uploadPath, uploadPath, null, 0, allFiles, 0, true);
                 }
-            });
         },
         uploadFiles: function(evt) {
             console.log("upload files");
+            let uploadPath = this.getPath();
             var files = evt.target.files || evt.dataTransfer.files;
-            for (var i = 0; i < files.length; i++) {
-                var file = files[i];
-                this.uploadFile(file);
+            this.traverseDirectories(uploadPath, uploadPath, null, 0, files, 0, false);
+        },
+        splitDirectory: function (dir, fromDnd) {
+            if (fromDnd) {
+                return dir.fullPath.substring(1).split('/');
+            } else {
+                return dir.webkitRelativePath.split('/');
             }
         },
+        traverseDirectories: function(origDir, currentDir, dirs, dirIndex, items, itemIndex, fromDnd) {
+            if (dirs == null) {
+                if (itemIndex < items.length) {
+                    dirs = this.splitDirectory(items[itemIndex], fromDnd);
+                } else {
+                    return;
+                }
+            }
+            var that = this;
+            this.context.getByPath(currentDir).thenApply(function(updatedDirOpt){
+                let updatedDir = updatedDirOpt.get();
+                if (dirIndex < dirs.length - 1) {
+                    let dirName = dirs[dirIndex];
+                    let path = currentDir + dirName + "/" ;
+
+                    updatedDir.exists(dirName, that.context.network)
+                        .thenApply(function(alreadyExists){
+                            if (alreadyExists) {
+                                that.traverseDirectories(origDir, path, dirs, ++dirIndex, items, itemIndex, fromDnd);
+                            } else {
+                                updatedDir.mkdir(dirName, that.context.network, false, that.context.crypto)
+                                    .thenApply(function(updated){
+                                        if (dirIndex == 0) {
+                                            that.currentDir = updated;
+                                            that.updateFiles();
+                                        }
+                                        that.traverseDirectories(origDir, path, dirs, ++dirIndex, items, itemIndex, fromDnd);
+                                });
+                            }
+                        });
+                } else {
+                    let file = items[itemIndex];
+                    if (file.name != '.DS_Store') { //FU OSX
+                        that.uploadFileToDirectory(file, updatedDir, false, fromDnd);
+                    }
+                    if(itemIndex < items.length -1) {
+                        //optimisation - Next entry will likely be in the same directory
+                        var nextIndex = itemIndex + 1;
+                        var isMore = false;
+                        for(; nextIndex < items.length; nextIndex++) {
+                            let nextFile = items[nextIndex];
+                            let nextDirs = that.splitDirectory(nextFile, fromDnd);
+                            let sameDirectory = dirs.length == nextDirs.length;
+                             if (sameDirectory) {
+                                for(var i = 0 ; i < dirs.length -1; i++) {
+                                    if(dirs[i] != nextDirs[i]) {
+                                        sameDirectory = false;
+                                        break;
+                                    }
+                                }
+                             }
+                            if (sameDirectory) {
+                                if (nextFile.name != '.DS_Store') { //FU OSX
+                                    that.uploadFileToDirectory(nextFile, updatedDir, false, fromDnd);
+                                }
+                            } else {
+                                nextIndex++;
+                                isMore = true;
+                                break;
+                            }
+                        }
+                        if(isMore) {
+                            that.traverseDirectories(origDir, origDir, null, 0, items, nextIndex -1, fromDnd);
+                        }
+                    }
+                }
+            });
+        },
         uploadFile: function(file) {
+            this.uploadAFile(file, this.currentDir, true);
+        },
+        uploadFileToDirectory: function(file, directory, refreshDirectory, fromDnd) {
+            if(fromDnd) {
+                let that = this;
+                file.file(function(fileEntry) {
+                    that.uploadAFile(fileEntry, directory, refreshDirectory);
+                });
+            } else {
+                this.uploadAFile(file, directory, refreshDirectory);
+            }
+        },
+        uploadAFile: function(file, directory, refreshDirectory) {
             console.log("uploading " + file.name);
             var thumbnailAllocation = Math.min(100000, file.size / 10);
             var resultingSize = file.size + thumbnailAllocation;
@@ -410,7 +502,6 @@ module.exports = {
                   return Math.floor(b.done / b.max) - Math.floor(a.done / a.max);
                 });
                 if (progress.done >= progress.max) {
-                    that.showSpinner = true;
                     setTimeout(function(){
                         progress.show = false;
                         that.progressMonitors.pop(progress);
@@ -418,11 +509,14 @@ module.exports = {
                 }
             }
 
-            this.currentDir.uploadFileJS(file.name, java_reader, (file.size - (file.size % Math.pow(2, 32)))/Math.pow(2, 32), file.size,
+            directory.uploadFileJS(file.name, java_reader, (file.size - (file.size % Math.pow(2, 32)))/Math.pow(2, 32), file.size,
                 false, context.network, context.crypto, updateProgressBar, context.getTransactionService()).thenApply(function(res) {
                 updateProgressBar({ value_0: thumbnailAllocation});
-                that.currentDir = res;
-                that.updateFiles();
+                if (refreshDirectory) {
+                    that.showSpinner = true;
+                    that.currentDir = res;
+                    that.updateFiles();
+                }
 		that.updateUsage();
             }).exceptionally(function(throwable) {
                 progress.show = false;
