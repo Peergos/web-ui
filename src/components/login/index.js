@@ -131,7 +131,7 @@ module.exports = {
                 .thenApply(function(network) {
                     that.$emit("signup", {
                         username:that.username,
-                        password:that.password,
+                        password1:that.password,
                         crypto: that.crypto,
                         network: network
                     })

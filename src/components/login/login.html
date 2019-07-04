@@ -24,7 +24,8 @@
             <button @click="showSignup()" class="btn btn-large btn-block btn-primary">Sign Up</button>
         </div>
     </div>
-    <error 
+    <error
+        v-if="showError"
         v-on:hide-error="showError = false"
         :title="errorTitle" 
         :body="errorBody">
