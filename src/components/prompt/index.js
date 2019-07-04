@@ -14,10 +14,11 @@ module.exports = {
             this.$emit("hide-prompt");
         },
 
-        getPrompt: function(prompt_result) {
+        getPrompt: function() {
+	    var res = this.prompt_result;
             this.close();
             this.prompt_result='';
-            this.consumer_func(prompt_result);
+            this.consumer_func(res);
         }
     }
 }

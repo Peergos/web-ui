@@ -49,6 +49,7 @@ module.exports = {
             prompt_message: '',
             prompt_placeholder: '',
             prompt_value: '',
+            prompt_consumer_func: () => {},
             showPrompt: false,
             showWarning: false,
 	    warning_message: "",
@@ -281,7 +282,7 @@ module.exports = {
             this.prompt_value='';
             this.prompt_consumer_func = function(prompt_result) {
                 console.log("creating new sub-dir " + prompt_result);
-                if (prompt_result === '')
+                if (prompt_result === '' || prompt_result === null)
                     return;
                 this.mkdir(prompt_result);
             }.bind(this);
