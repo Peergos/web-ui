@@ -349,9 +349,6 @@ module.exports = {
             evt.preventDefault();
             console.log("upload files from DnD");
             let entries = evt.dataTransfer.items;
-            let entries2 = evt.dataTransfer;
-            var entries3 = evt.target.files || evt.dataTransfer.files;
-
             let allItems = [];
             for(i=0; i < entries.length; i ++) {
                 allItems.push(entries[i].webkitGetAsEntry());
