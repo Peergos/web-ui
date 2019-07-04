@@ -7,7 +7,7 @@
 
         <div class="">
             <div class="progresscontainer">
-                <progress v-bind:value="done" max="{{ max }}"></progress>
+                <progress v-bind:value="done" v-bind:max="max"></progress>
                 <button class="btn btn-success" @click="closeMessage">Dismiss</button>
             </div>
         </div>

@@ -10,8 +10,8 @@
         <div class="modal-body">
             <div class="container"><p style="word-wrap;break-all;">
                 <div v-for="link in links" style="font-size: 1.2em;">
-                    <a vbind:href="link.href">{{ link.name }}</a>
-                    <input vbind:id="link.id" type="text" value="{{ link.href }}" style="display: none">
+                    <a v-bind:href="link.href">{{ link.name }}</a>
+                    <input v-bind:id="link.id" type="text" v-bind:value="link.href" style="display: none">
                     <button class="fa fa-clipboard" style="padding: 6px 12px;" @click="copyUrlToClipboard($event)">&nbsp;Copy to clipboard</button>
                 </p>
                 </div>

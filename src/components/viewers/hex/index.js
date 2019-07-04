@@ -12,7 +12,6 @@ module.exports = {
             offsetHigh:0,
             maxOffsetLow: 0,
             bytesPerPage: 16 * 32,
-            progressMonitors: [],
             errorTitle:'',
             errorBody:'',
             showError:false

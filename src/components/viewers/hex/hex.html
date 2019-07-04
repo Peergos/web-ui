@@ -34,10 +34,6 @@
                 <tr/>
             </table>
         </center>
-        <div v-if="progressMonitors.length>0" class="progressholder">
-            <progressbar v-for="progress in progressMonitors" :show.sync="progress.show" :title.sync="progress.title"
-                         :done.sync="progress.done" :max.sync="progress.max"></progressbar>
-        </div>
         <error 
             v-if="showError"
             v-on:hide-error="showError = false"
