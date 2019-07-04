@@ -137,7 +137,7 @@ Vue.component('warning', Vue.extend(Warning));
 // Initializing Vue after GWT has finished
 setTimeout(function() {
     var vueRoot = new Vue({
-        el: 'body',
+        el: '#app',
         data: {
             currentView: 'app',
         }
