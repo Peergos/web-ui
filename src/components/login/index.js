@@ -26,26 +26,26 @@ module.exports = {
     watch: {
 	network: function(newNetwork) {
 	    this.isFirefox = navigator.userAgent.toLowerCase().indexOf('firefox') > -1;
-        this.isSafari = /constructor/i.test(window.HTMLElement) || (function (p) { return p.toString() === "[object SafariRemoteNotification]"; })(!window['safari'] || safari.pushNotification);
-        var that = this;
-        var href = window.location.href;
-
-        const fragment = href.includes("#") ? href.substring(href.indexOf("#") + 1) : "";
-        if (href.includes("?signup=true"))
-            this.showSignup();
-        else if (fragment.length > 0) {
-            // this is a secret link
-            this.isSecretLink = true;
-            console.log("Navigating to secret link...");
-            Vue.nextTick(function() {
-                that.gotoSecretLink(fragment);
-            });
-        } else
-            Vue.nextTick(function() {
-                document.getElementById("username").focus();
-            });	
+            this.isSafari = /constructor/i.test(window.HTMLElement) || (function (p) { return p.toString() === "[object SafariRemoteNotification]"; })(!window['safari'] || safari.pushNotification);
+            var that = this;
+            var href = window.location.href;
+	    
+            const fragment = href.includes("#") ? href.substring(href.indexOf("#") + 1) : "";
+            if (href.includes("?signup=true"))
+		this.showSignup();
+            else if (fragment.length > 0) {
+		// this is a secret link
+		this.isSecretLink = true;
+		console.log("Navigating to secret link...");
+		Vue.nextTick(function() {
+                    that.gotoSecretLink(fragment);
+		});
+            } else
+		Vue.nextTick(function() {
+                    document.getElementById("username").focus();
+		});	
 	}
-    }
+    },
     methods: {
 	updateNetwork: function() {
 	    var that = this;

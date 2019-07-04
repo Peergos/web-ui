@@ -21,14 +21,6 @@ var Spinner         = require('./components/spinner');
 var Text            = require('./components/viewers/text');
 var Warning         = require('./components/warning');
 
-var VueTouch = require('./plugins/vue-touch')
-VueTouch.registerCustomEvent('doubletap', {
-    type: 'tap',
-    taps: 2
-})
-
-Vue.use(VueTouch)
-
 Vue.mixin({
   methods: {
       // This will only work up to a file size of 2^52 bytes (the biggest integer you can fit in a double)
@@ -144,7 +136,6 @@ Vue.component('warning', Vue.extend(Warning));
 
 // Initializing Vue after GWT has finished
 setTimeout(function() {
-    vueRoot.$emit("app", {})
     var vueRoot = new Vue({
         el: 'body',
         data: {
