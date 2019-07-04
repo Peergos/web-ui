@@ -112,7 +112,7 @@
   </feedback>
   <gallery 
     v-if="showGallery" 
-    v-on:hide-gallery:"showGallery = false"
+    v-on:hide-gallery="showGallery = false"
     :files="sortedFiles" 
     :context="context" 
     :initial-file-name="selectedFiles[0] == null ? '' : selectedFiles[0].getFileProperties().name">
