@@ -133,9 +133,15 @@ module.exports = {
                             })});
                     }
                 });
+		
             } else {
 		this.path = [this.context.username];
                 this.updateSocial();
+		this.updateUsage();
+		this.updateQuota();
+		this.context.getPendingSpaceRequests().thenApply(reqs => {
+		    that.isAdmin = true;
+		});
             }
 	},
 	
