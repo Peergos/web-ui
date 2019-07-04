@@ -66,14 +66,14 @@ module.exports = {
     props: ["context"],
     created: function() {
         console.debug('Filesystem module created!');
+	this.init();
     },
     watch: {
         // manually encode currentDir dependencies to get around infinite dependency chain issues with async-computed methods
         context: function(newContext) {
+	    console.log("got new user context!", newContext)
             this.contextUpdates++;
-            this.updateCurrentDir();
-            this.updateFollowerNames();
-	    if (newContext != null && newContext.username != null) {
+            if (newContext != null && newContext.username != null) {
 		this.updateUsage();
 		this.updateQuota();
 		const that = this;
@@ -81,27 +81,9 @@ module.exports = {
 		    that.isAdmin = true;
 		});
 	    }
-	    const that = this;
-            if (newContext != null && newContext.username == null) {
-                // from a secret link
-                newContext.getEntryPath().thenApply(function(linkPath) {
-                    that.changePath(linkPath);
-                    Vue.nextTick(function() {
-                        that.showGallery = msg.open;
-                    });
-                    if (that.initiateDownload) {
-                        that.context.getByPath(that.getPath())
-                            .thenApply(function(file){file.get().getChildren(that.context.network).thenApply(function(children){
-                                var arr = children.toArray();
-                                if (arr.length == 1)
-                                    that.downloadFile(arr[0]);
-                            })});
-                    }
-                });
-            } else {
-		this.path = [newContext.username];
-                this.updateSocial();
-            }
+	    
+	    this.updateCurrentDir();
+            this.updateFollowerNames();
         },
 
         path: function(newPath) {
@@ -139,6 +121,30 @@ module.exports = {
 	}
     },
     methods: {
+	init: function() {
+	    const that = this;
+            if (this.context != null && this.context.username == null) {
+                // from a secret link
+                this.context.getEntryPath().thenApply(function(linkPath) {
+                    that.changePath(linkPath);
+                    Vue.nextTick(function() {
+                        that.showGallery = msg.open;
+                    });
+                    if (that.initiateDownload) {
+                        that.context.getByPath(that.getPath())
+                            .thenApply(function(file){file.get().getChildren(that.context.network).thenApply(function(children){
+                                var arr = children.toArray();
+                                if (arr.length == 1)
+                                    that.downloadFile(arr[0]);
+                            })});
+                    }
+                });
+            } else {
+		this.path = [this.context.username];
+                this.updateSocial();
+            }
+	},
+	
         processPending: function() {
             for (var i=0; i < this.onUpdateCompletion.length; i++) {
                 this.onUpdateCompletion[i].call();
