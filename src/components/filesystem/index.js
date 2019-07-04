@@ -82,7 +82,7 @@ module.exports = {
 		});
 	    }
 	    const that = this;
-            if (newContext.username == null) {
+            if (newContext != null && newContext.username == null) {
                 // from a secret link
                 newContext.getEntryPath().thenApply(function(linkPath) {
                     that.changePath(linkPath);
