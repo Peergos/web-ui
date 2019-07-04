@@ -902,7 +902,7 @@ module.exports = {
             this.showPrompt =  true;
         },
 
-        delete: function() {
+        deleteFiles: function() {
             var selectedCount = this.selectedFiles.length;
             if (selectedCount == 0)
                 return;
