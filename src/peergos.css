@@ -284,7 +284,9 @@ table {
 }
 
 .fillspace {
+    display: flex;
     position: relative;
+    flex-direction: column;
     flex-grow: 1;
     left: 0;
     right: 0; }
