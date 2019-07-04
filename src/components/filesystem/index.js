@@ -71,9 +71,10 @@ module.exports = {
     watch: {
         // manually encode currentDir dependencies to get around infinite dependency chain issues with async-computed methods
         context: function(newContext) {
-	    console.log("got new user context!", newContext)
-            this.contextUpdates++;
-            if (newContext != null && newContext.username != null) {
+	    this.contextUpdates++;
+            this.updateCurrentDir();
+            this.updateFollowerNames();
+	    if (newContext != null && newContext.username != null) {
 		this.updateUsage();
 		this.updateQuota();
 		const that = this;
@@ -81,9 +82,6 @@ module.exports = {
 		    that.isAdmin = true;
 		});
 	    }
-	    
-	    this.updateCurrentDir();
-            this.updateFollowerNames();
         },
 
         path: function(newPath) {
