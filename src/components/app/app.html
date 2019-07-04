@@ -1,0 +1,21 @@
+<div>
+  <login
+    v-if="view=='login'"
+    v-on:signup="signup"
+    v-on:filesystem="filesystem">
+  </login>
+  <signup
+    v-if="view=='signup'"
+    v-on:filesystem="filesystem"
+    :username="data.username"
+    :password1="data.password1"
+    :crypto="data.crypto"
+    :network="data.network">
+  </signup>
+  <filesystem
+    v-if="view=='filesystem'"
+    :context="data.context"
+    :initiateDownload="data.download"
+    :showGallery="data.open">
+  </filesystem>
+</div>
