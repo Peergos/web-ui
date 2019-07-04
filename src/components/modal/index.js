@@ -1,12 +1,9 @@
 module.exports = {
     template: require('modal.html'),
-    props: ['show', 'title', 'links'],
+    props: ['title', 'links'],
     created: function() {
     },
     methods: {
-        close: function () {
-            this.show = false;
-        },
         copyUrlToClipboard: function (clickEvent) {
             var text = clickEvent.srcElement.previousElementSibling.value.toString();
             navigator.clipboard.writeText(text).then(function() {}, function() {

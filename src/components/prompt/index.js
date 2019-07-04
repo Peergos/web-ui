@@ -3,7 +3,7 @@ module.exports = {
     data: function() {
         return {'prompt_result': ''}
     },
-    props: ['show', 'prompt_message', 'placeholder', 'value', 'consumer_func'],
+    props: ['prompt_message', 'placeholder', 'value', 'consumer_func'],
     created: function() {
 	Vue.nextTick(function() {
             document.getElementById("prompt-input").focus();
@@ -11,7 +11,7 @@ module.exports = {
     },
     methods: {
         close: function () {
-            this.show = false;
+            this.$emit("hide-prompt");
         },
 
         getPrompt: function(prompt_result) {

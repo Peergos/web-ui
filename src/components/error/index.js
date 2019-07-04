@@ -1,6 +1,6 @@
 module.exports = {
     template: require('error.html'),
-    props: ['show', 'title', 'body'],
+    props: ['title', 'body'],
     created: function() {
     },
     methods: {
@@ -17,7 +17,7 @@ module.exports = {
             return str.startsWith(token) ? str.substring(token.length) : str;
         },
         close: function () {
-            this.show = false;
+            this.$emit("hide-error");
         }
     }
 }

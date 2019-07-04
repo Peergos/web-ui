@@ -80,10 +80,7 @@ module.exports = {
                     return peergos.shared.user.UserContext.signUp(that.username, that.password1, that.network, that.crypto
                     , {"accept" : x => that.spinnerMessage = x})
                         .thenApply(function(context) {
-                            that.$dispatch('child-msg', {
-                                view:'filesystem',
-                                props:{context: context}
-                            });
+                            that.$emit("filesystem", {context: context});
                             console.log("Signing in/up took " + (Date.now()-creationStart)+" mS from function call");
                             this.showSpinner = false;
                         }).exceptionally(function(throwable) {

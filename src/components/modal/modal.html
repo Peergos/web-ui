@@ -1,4 +1,5 @@
-<div class="modal-mask" @click="close" v-show="show" transition="modal">
+<transition name="modal">
+<div class="modal-mask" @click="close">
     <div style="height:30%"></div>
     <div class="modal-container" @click.stop>
 
@@ -9,20 +10,24 @@
         <div class="modal-body">
             <div class="container"><p style="word-wrap;break-all;">
                 <div v-for="link in links" style="font-size: 1.2em;">
-                    <a  href="{{ link.href }}">{{ link.name }}</a>
-                    <input id="{{ link.id }}" type="text" value="{{ link.href }}" style="display: none">
+                    <a vbind:href="link.href">{{ link.name }}</a>
+                    <input vbind:id="link.id" type="text" value="{{ link.href }}" style="display: none">
                     <button class="fa fa-clipboard" style="padding: 6px 12px;" @click="copyUrlToClipboard($event)">&nbsp;Copy to clipboard</button>
-                    </p>
+                </p>
                 </div>
             </div>
         </div>
 
         <div class="modal-footer">
             <slot name="footer">
-            <button id='modal-button-id' class="modal-default-button" @click="close">
+            <button 
+                  id='modal-button-id' 
+                  class="modal-default-button"
+                  @click="$emit('hide-modal')">
                 OK
             </button>
             </slot>
         </div>
     </div>
 </div>
+</transition>

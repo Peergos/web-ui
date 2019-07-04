@@ -10,14 +10,14 @@ module.exports = {
             showError:false
         }
     },
-    props: ['show', 'followernames', 'files', 'parent', 'context', 'messages', 'shared', 'forceshared'],
+    props: ['followernames', 'files', 'parent', 'context', 'messages', 'shared'],
     created: function() {
         Vue.nextTick(this.setTypeAhead);
     },
     methods: {
         close: function () {
-            this.show = false;
             this.showSpinner = false;
+            $emit("hide-share-with");
         },
 
 	allowedToShare: function(file) {
@@ -34,7 +34,7 @@ module.exports = {
             return false;
         }
         return true;
-	},
+    },
 	
 	shareWith: function(targetUsername, sharedWithAccess) {
         if (this.files.length == 0)
@@ -81,7 +81,7 @@ module.exports = {
                                 });
                                 that.close();
                                 console.log("shared read access to " + filename + " with " + targetUsername);
-                                that.forceshared++;
+                                that.$emit("update-shared");
                             }).exceptionally(function(throwable) {
                                 that.showSpinner = false;
                                 that.errorTitle = 'Error sharing file: ' + filename;
@@ -99,7 +99,7 @@ module.exports = {
                                 });
                                 that.close();
                                 console.log("shared write access to " + filename + " with " + targetUsername);
-                                that.forceshared++;
+                                that.$emit("update-shared");
                             }).exceptionally(function(throwable) {
                                 that.showSpinner = false;
                                 that.errorTitle = 'Error sharing file: ' + filename;

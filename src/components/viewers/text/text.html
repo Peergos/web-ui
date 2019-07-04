@@ -1,4 +1,5 @@
-<div class="modal-mask" @click="close" v-show="show" transition="modal">
+<transition name="modal">
+<div class="modal-mask" @click="close">
     <div class="modal-container" @click.stop style="height:95%;width:95%;overflow-y:auto" >
         <spinner v-if="showSpinner"></spinner>
         <center>
@@ -6,11 +7,12 @@
         </center>
         
         <center style="height:75%;max-width:100%;font-family: monospace;" >
-	  <table>
-	    <tr v-for="line in lines" track-by="$index">
-	      <td><span v-for="word in line" track-by="$index">{{word}}&nbsp;</span></td>
-	    </tr>
-	  </table>
+            <table>
+                <tr v-for="line in lines">
+                    <td><span v-for="word in line">{{word}}&nbsp;</span></td>
+                </tr>
+            </table>
         </center>
     </div>
 </div>
+</transition>

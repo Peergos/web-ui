@@ -5,10 +5,10 @@ module.exports = {
         showSpinner: false
         }
     },
-    props: ['show', 'context', 'messages', 'externalchange'],
+    props: ['context', 'messages'],
     methods: {
         close: function () {
-            this.show = false;
+            this.$emit("hide-feedback");
         },
         showMessage: function(title, body) {
             this.messages.push({
@@ -27,7 +27,7 @@ module.exports = {
                     that.showMessage("Feedback submitted!", "Your feedback has been added to a folder shared with Peergos developers.");
                     that.showSpinner = false;
                     console.log("Feedback submitted!");
-                    that.externalchange++;
+                    that.$emit("external-change");
                 });
         },
         getContext: function(){

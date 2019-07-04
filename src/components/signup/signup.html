@@ -1,6 +1,6 @@
 <!-- LOGIN PAGE -->
 <div id="signup" class="container form-signin">
-    <spinner v-if="showSpinner" :message.sync="spinnerMessage"></spinner>
+    <spinner v-if="showSpinner" :message="spinnerMessage"></spinner>
     <h2>Peergos signup</h2>
     <center>
         <img src="images/logo.png" class="image">
@@ -11,7 +11,7 @@
     </div>
     <button @click="generatePassword()" class="btn btn-large btn-block btn-success">Generate password</button>
     <br/>
-    <div class="{{ errorClass }}">
+    <div v-bind:class="errorClass">
         <div class="form-group">
           <label v-if="isError">{{ error }}</label>
           <input :type="passwordFieldType" name="password1" id="password1" v-on:keyup="validatePassword(true)" class="form-control password" v-model="password1" placeholder="Password">
@@ -30,6 +30,11 @@
     </div>
     <button @click="signup()" class="btn btn-large btn-block btn-success">Sign up</button>
     <a v-bind:href="host">Already signed up? Log in instead</a>
-    <error :show.sync="showError" :title.sync="errorTitle" :body.sync="errorBody"></error>
+    <error 
+        v-if="showError"
+        v-on:hide-error="showError = false"
+        :title="errorTitle" 
+        :body="errorBody">
+    </error>
 </div>
 <!-- EOF LOGIN PAGE -->

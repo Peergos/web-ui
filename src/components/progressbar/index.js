@@ -4,12 +4,12 @@ module.exports = {
         return {
         }
     },
-    props: ['show', 'title', 'done', 'max'],
+    props: ['title', 'done', 'max'],
     created: function() {
     },
     methods: {
-        closeMessage: function () {
-            this.show = false;
+        closeMessage: function() {
+            this.$emit("hide-progress");
         }
     }
 }

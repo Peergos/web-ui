@@ -4,12 +4,12 @@ module.exports = {
         return {
         }
     },
-    props: ['show', 'title', 'message'],
+    props: ['title', 'message'],
     created: function() {
     },
     methods: {
         closeMessage: function () {
-            this.show = false;
+            this.$emit("remove-message");
         }
     }
 }

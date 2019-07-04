@@ -1,4 +1,5 @@
-<div class="modal-mask" @click="close" v-show="show" transition="modal">
+<transition name="modal">
+<div class="modal-mask" @click="close">
     <div style="height:10%"></div>
     <div class="modal-container" @click.stop style="height:90%;overflow-y:auto">
 
@@ -14,17 +15,18 @@
                 <table class="table table-responsive table-striped table-hover">
                     <tr v-if="data.pending.length>0"><th>Username</th><th>Requested size (MiB)</th><th></th><th></th></tr>
                     <tr v-if="data.pending.length>0" v-for="req in data.pending">
-                      <td>{{ req.getUsername() }}</td>
-		      <td>{{ req.getSizeInMiB() }}</td>
-                      <td style="text-align:right">
-                        <button class="btn btn-info" @click="approve(req)">Approve</button>
-                      </td>
-                      <td style="text-align:right">
-                        <button class="btn btn-danger" @click="reject(req)">Deny</button>
-                      </td>
+                        <td>{{ req.getUsername() }}</td>
+                        <td>{{ req.getSizeInMiB() }}</td>
+                        <td style="text-align:right">
+                            <button class="btn btn-info" @click="approve(req)">Approve</button>
+                        </td>
+                        <td style="text-align:right">
+                            <button class="btn btn-danger" @click="reject(req)">Deny</button>
+                        </td>
                     </tr>
                 </table>
             </div>
         </div>
     </div>
 </div>
+</transition>

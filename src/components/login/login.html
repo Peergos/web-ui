@@ -1,6 +1,6 @@
 <!-- LOGIN PAGE -->
 <div class="container form-signin">
-    <spinner v-if="showSpinner" :message.sync="spinnerMessage"></spinner>
+    <spinner v-if="showSpinner" :message="spinnerMessage"></spinner>
     <div class="alert alert-danger" v-if="displayDemoWarning()"><strong>WARNING:</strong>This is a demo server and all data will be occasionally cleared.</div>
     <h2>Peergos</h2>
     <center>
@@ -24,6 +24,10 @@
             <button @click="showSignup()" class="btn btn-large btn-block btn-primary">Sign Up</button>
         </div>
     </div>
-    <error :show.sync="showError" :title.sync="errorTitle" :body.sync="errorBody"></error>
+    <error 
+        v-on:hide-error="showError = false"
+        :title="errorTitle" 
+        :body="errorBody">
+    </error>
 </div>
 <!-- EOF LOGIN PAGE -->

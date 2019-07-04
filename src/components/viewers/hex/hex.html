@@ -1,4 +1,5 @@
-<div class="modal-mask" @click="close" v-show="show" transition="modal">
+<transition name="modal">
+<div class="modal-mask" @click="close">
     <div class="modal-container" @click.stop style="height:95%;width:95%;overflow-y:auto">
         <spinner v-if="showSpinner"></spinner>
         <center>
@@ -37,6 +38,12 @@
             <progressbar v-for="progress in progressMonitors" :show.sync="progress.show" :title.sync="progress.title"
                          :done.sync="progress.done" :max.sync="progress.max"></progressbar>
         </div>
-        <error :show.sync="showError" :title.sync="errorTitle" :body.sync="errorBody"></error>
+        <error 
+            v-if="showError"
+            v-on:hide-error="showError = false"
+            :title="errorTitle" 
+            :body="errorBody">
+        </error>
     </div>
 </div>
+</transition>

@@ -1,4 +1,3 @@
-var PasswordUtil    = require('./components/passwordutil');
 var Admin           = require('./components/admin');
 var Error           = require('./components/error');
 var Feedback        = require('./components/feedback');
@@ -9,6 +8,7 @@ var Login           = require('./components/login');
 var Message         = require('./components/message');
 var Modal           = require('./components/modal');
 var Password        = require('./components/password');
+var PasswordUtil    = require('./components/passwordutil');
 var ProgressBar     = require('./components/progressbar');
 var Prompt          = require('./components/prompt');
 var Share           = require('./components/share');
@@ -22,24 +22,26 @@ var Warning         = require('./components/warning');
 
 var VueAsyncComputed = require('./plugins/vue-async-computed');
 Vue.use(VueAsyncComputed);
+
 var VueTouch = require('./plugins/vue-touch')
 VueTouch.registerCustomEvent('doubletap', {
     type: 'tap',
     taps: 2
 })
+
 Vue.use(VueTouch)
 
 Vue.mixin({
   methods: {
-  	// This will only work up to a file size of 2^52 bytes (the biggest integer you can fit in a double)
-  	// But who ever needed a filesize > 4 PB ? ;-)
-  	getFileSize(props) {
-  	    var low = props.sizeLow();
-  	    if (low < 0) low = low + Math.pow(2, 32);
-  	    return low + (props.sizeHigh() * Math.pow(2, 32));
-  	},
-    supportsStreaming() {
-        try {
+      // This will only work up to a file size of 2^52 bytes (the biggest integer you can fit in a double)
+      // But who ever needed a filesize > 4 PB ? ;-)
+      getFileSize(props) {
+          var low = props.sizeLow();
+          if (low < 0) low = low + Math.pow(2, 32);
+          return low + (props.sizeHigh() * Math.pow(2, 32));
+      },
+      supportsStreaming() {
+          try {
             return 'serviceWorker' in navigator && !!new ReadableStream() && !!new WritableStream()
         } catch(err) {
             return false;
@@ -119,47 +121,68 @@ Vue.mixin({
   }
 })
 
-    // Loading components
-    Vue.component('admin', Vue.extend(Admin));
-    Vue.component('error', Vue.extend(Error));
-    Vue.component('feedback', Vue.extend(Feedback));
-    Vue.component('filesystem', Vue.extend(Filesystem));
-    Vue.component('gallery', Vue.extend(Gallery));
-    Vue.component('hex', Vue.extend(Hex));
-    Vue.component('login', Vue.extend(Login));
-    Vue.component('message', Vue.extend(Message));
-    Vue.component('modal', Vue.extend(Modal));
-    Vue.component('password', Vue.extend(PasswordUtil).extend(Password));
-    Vue.component('progressbar', Vue.extend(ProgressBar));
-    Vue.component('prompt', Vue.extend(Prompt));
-    Vue.component('signup', Vue.extend(PasswordUtil).extend(Signup));
-    Vue.component('share-with', Vue.extend(Share));
-    Vue.component('shared-with-modal', Vue.extend(SharedWithModal));
-    Vue.component('social', Vue.extend(Social));
-    Vue.component('spinner', Vue.extend(Spinner));
-    Vue.component('space', Vue.extend(Space));
-    Vue.component('text', Vue.extend(Text));
-    Vue.component('warning', Vue.extend(Warning));
+// Loading components
+Vue.component('admin', Vue.extend(Admin));
+Vue.component('error', Vue.extend(Error));
+Vue.component('feedback', Vue.extend(Feedback));
+Vue.component('filesystem', Vue.extend(Filesystem));
+Vue.component('gallery', Vue.extend(Gallery));
+Vue.component('hex', Vue.extend(Hex));
+Vue.component('login', Vue.extend(Login));
+Vue.component('message', Vue.extend(Message));
+Vue.component('modal', Vue.extend(Modal));
+Vue.component('password', Vue.extend(PasswordUtil).extend(Password));
+Vue.component('progressbar', Vue.extend(ProgressBar));
+Vue.component('prompt', Vue.extend(Prompt));
+Vue.component('signup', Vue.extend(PasswordUtil).extend(Signup));
+Vue.component('share', Vue.extend(Share));
+Vue.component('shared-with-modal', Vue.extend(SharedWithModal));
+Vue.component('social', Vue.extend(Social));
+Vue.component('spinner', Vue.extend(Spinner));
+Vue.component('space', Vue.extend(Space));
+Vue.component('text', Vue.extend(Text));
+Vue.component('warning', Vue.extend(Warning));
 
-    // Initializing Vue after GWT has finished
-    setTimeout(function() {
-        var vueRoot = new Vue({
-            el: 'body',
-            data: {
-                currentView: 'login',
-                serverPort: 8000
-            },
-            events: {
-                'child-msg': function (msg) {
-                    // `this` in event callbacks are automatically bound
-                    // to the instance that registered it
-                    this.currentView = msg.view;
+const vueRoot = new Vue({
+    el: "body"
+})
 
-                    // this sends the received props to the new child component
-                    this.$nextTick(function() {
-                        this.$broadcast('parent-msg', msg.props);
-                    });
-                }
+function login(props) {
+    vueRoot.currentView = "login";
+}
+
+function signup(props) {
+    vueRoot.currentView = "signup";
+}
+
+function filesystem(props) {
+    vueRoot.currentView = "filesystem";
+}
+
+vueRoot.$on("login", login)
+vueRoot.$on("signup", signup)
+vueRoot.$on("filesystem", filesystem) 
+
+// Initializing Vue after GWT has finished
+setTimeout(function() {
+    vueRoot.$emit("login", {})
+    var vueRoot = new Vue({
+        el: 'body',
+        data: {
+            currentView: 'login',
+            serverPort: 8000
+        },
+        events: {
+            'child-msg': function (msg) {
+                // `this` in event callbacks are automatically bound
+                // to the instance that registered it
+                this.currentView = msg.view;
+
+                // this sends the received props to the new child component
+                this.$nextTick(function() {
+                    this.$broadcast('parent-msg', msg.props);
+                });
             }
-        });
-    }, 500);
+        }
+    });
+}, 500);

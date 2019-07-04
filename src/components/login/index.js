@@ -5,7 +5,7 @@ module.exports = {
         return {
             username: [],
             passwordFieldType: "password",
-	    password: [],
+            password: [],
             demo: isDemo,
             isFirefox: false,
             isSafari: false,
@@ -14,26 +14,24 @@ module.exports = {
             errorTitle:'',
             errorBody:'',
             spinnerMessage:'',
-	    isSecretLink: false
+            isSecretLink: false
         };
     },
-    props: {
-
-    },
+    props: {},
     created: function() {
         console.debug('Login module created!');
         this.isFirefox = navigator.userAgent.toLowerCase().indexOf('firefox') > -1;
         this.isSafari = /constructor/i.test(window.HTMLElement) || (function (p) { return p.toString() === "[object SafariRemoteNotification]"; })(!window['safari'] || safari.pushNotification);
         var that = this;
         var href = window.location.href;
-	
+
         const fragment = href.includes("#") ? href.substring(href.indexOf("#") + 1) : "";
-	if (href.includes("?signup=true"))
-	    this.showSignup();
-	else if (fragment.length > 0) {
+        if (href.includes("?signup=true"))
+            this.showSignup();
+        else if (fragment.length > 0) {
             // this is a secret link
-	    this.isSecretLink = true;
-	    console.log("Navigating to secret link...");
+            this.isSecretLink = true;
+            console.log("Navigating to secret link...");
             Vue.nextTick(function() {
                 that.gotoSecretLink(fragment);
             });
@@ -44,13 +42,13 @@ module.exports = {
     },
     methods: {
         togglePassword: function() {
-	    this.passwordFieldType = this.passwordFieldType == "text" ? "password" : "text";
-	},
-	
+            this.passwordFieldType = this.passwordFieldType == "text" ? "password" : "text";
+        },
+
         lowercaseUsername: function() {
-	    this.username = this.username.toLocaleLowerCase();
-	},
-	
+            this.username = this.username.toLocaleLowerCase();
+        },
+
         displayDemoWarning: function() {
             if (this.demo == true) {
                 if(this.isSecretLink == true) {
@@ -101,12 +99,7 @@ module.exports = {
             this.showSpinner = true;
             return peergos.shared.user.UserContext.signIn(
                     that.username, that.password, that.network, that.crypto, {"accept" : x => that.spinnerMessage = x}).thenApply(function(context) {
-                that.$dispatch('child-msg', {
-                    view:'filesystem',
-                    props:{
-                        context: context
-                    }
-                })
+                that.$emit("filesystem", {context: context})
                 console.log("Signing in/up took " + (Date.now()-creationStart)+" mS from function call");
                 that.showSpinner = false;
             }).exceptionally(function(throwable) {
@@ -120,16 +113,16 @@ module.exports = {
         },
 
         showSignup : function() {
-	    var that = this;
-	    peergos.shared.NetworkAccess.buildJS("QmVdFZgHnEgcedCS2G2ZNiEN59LuVrnRm7z3yXtEBv2XiF")
+            var that = this;
+            peergos.shared.NetworkAccess.buildJS("QmVdFZgHnEgcedCS2G2ZNiEN59LuVrnRm7z3yXtEBv2XiF")
                 .thenApply(function(network) {
-		    that.$dispatch('child-msg', {view:"signup", props:{
-			username:that.username,
-			password:that.password,
-			crypto: that.crypto,
-			network: network
-		    }})
-		});
+                    that.$emit("signup", {
+                        username:that.username,
+                        password:that.password,
+                        crypto: that.crypto,
+                        network: network
+                    })
+                });
         }
     },
     computed: {

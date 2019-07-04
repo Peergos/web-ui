@@ -8,7 +8,7 @@ module.exports = {
             videoUrl: null
         };
     },
-    props: ['show', 'files', 'context', 'initialFileName'],
+    props: ['files', 'context', 'initialFileName'],
     created: function() {
         console.debug('Gallery module created!');
 	var showable = this.showableFiles;
@@ -28,7 +28,7 @@ module.exports = {
 
     methods: {
         close: function() {
-            this.show = false;
+            this.$emit("hide-gallery");
         },
 
         keyup: function(e) {

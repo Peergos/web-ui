@@ -1,4 +1,5 @@
-<div class="modal-mask" @click="close" v-show="show" transition="modal">
+<transition name="modal">
+<div class="modal-mask" @click="close">
     <div class="modal-container" @click.stop style="height:95%;width:95%;overflow-y:auto" @keyup.right="next" @keyup.left="previous">
         <span @click="close" class="close">&times;</span>
         <spinner v-if="showSpinner"></spinner>
@@ -20,3 +21,4 @@
         </center>
     </div>
 </div>
+</transition>

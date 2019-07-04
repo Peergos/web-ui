@@ -3,12 +3,12 @@ module.exports = {
     data: function() {
         return {}
     },
-    props: ['show', 'warning_message', 'warning_body', 'consumer_func'],
+    props: ['warning_message', 'warning_body', 'consumer_func'],
     created: function() {
     },
     methods: {
-        close: function () {
-            this.show = false;
+        close: function() {
+            this.$emit("hide-warning");
         },
 
         complete: function() {
