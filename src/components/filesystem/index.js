@@ -29,7 +29,6 @@ module.exports = {
 	    isAdmin: false,
             showAdmin:false,
             showSocial:false,
-            showGallery:false,
             showHexViewer:false,
             showTextViewer:false,
             showPassword:false,
@@ -59,11 +58,10 @@ module.exports = {
             errorBody:'',
             showError:false,
             showSpinner: true,
-            initiateDownload: false, // used to trigger a download for a secret link to a file
             onUpdateCompletion: [] // methods to invoke when current dir is next refreshed
         };
     },
-    props: ["context"],
+    props: ["context", "showGallery", "initiateDownload"],
     created: function() {
         console.debug('Filesystem module created!');
 	this.init();
@@ -125,9 +123,6 @@ module.exports = {
                 // from a secret link
                 this.context.getEntryPath().thenApply(function(linkPath) {
                     that.changePath(linkPath);
-                    Vue.nextTick(function() {
-                        that.showGallery = msg.open;
-                    });
                     if (that.initiateDownload) {
                         that.context.getByPath(that.getPath())
                             .thenApply(function(file){file.get().getChildren(that.context.network).thenApply(function(children){
