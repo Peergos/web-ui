@@ -28,6 +28,7 @@ module.exports = {
 	    usageBytes: 0,
 	    isAdmin: false,
             showAdmin:false,
+            showGallery: false,
             showSocial:false,
             showHexViewer:false,
             showTextViewer:false,
@@ -62,9 +63,10 @@ module.exports = {
             onUpdateCompletion: [] // methods to invoke when current dir is next refreshed
         };
     },
-    props: ["context", "showGallery", "initiateDownload"],
+    props: ["context", "opengallery", "initiateDownload"],
     created: function() {
         console.debug('Filesystem module created!');
+	this.showGallery = this.opengallery;
 	this.init();
     },
     watch: {
