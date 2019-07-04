@@ -59,7 +59,8 @@ module.exports = {
             });
         },
 
-        sendInitialFollowRequest: function(name) {
+        sendInitialFollowRequest: function() {
+	    var name = this.targetUsername;
             if(name !== this.context.username) {
                 var that = this;
                 console.log("sending follow request to " + name);
