@@ -18,7 +18,7 @@ var Signup          = require('./components/signup');
 var Social          = require('./components/social');
 var Space           = require('./components/space');
 var Spinner         = require('./components/spinner');
-var Text            = require('./components/viewers/text');
+var Text            = require('./components/viewers/text-viewer');
 var Warning         = require('./components/warning');
 
 Vue.mixin({
@@ -131,7 +131,7 @@ Vue.component('shared-with-modal', Vue.extend(SharedWithModal));
 Vue.component('social', Vue.extend(Social));
 Vue.component('spinner', Vue.extend(Spinner));
 Vue.component('space', Vue.extend(Space));
-Vue.component('text', Vue.extend(Text));
+Vue.component('text-viewer', Vue.extend(Text));
 Vue.component('warning', Vue.extend(Warning));
 
 // Initializing Vue after GWT has finished
