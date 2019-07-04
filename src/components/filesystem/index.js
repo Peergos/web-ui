@@ -66,7 +66,6 @@ module.exports = {
     props: ["context", "opengallery", "initiateDownload"],
     created: function() {
         console.debug('Filesystem module created!');
-	this.showGallery = this.opengallery;
 	this.init();
     },
     watch: {
@@ -134,6 +133,7 @@ module.exports = {
                                     that.downloadFile(arr[0]);
                             })});
                     }
+		    that.showGallery = that.opengallery;
                 });
 		
             } else {

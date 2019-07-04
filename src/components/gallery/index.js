@@ -17,12 +17,13 @@ module.exports = {
 		this.fileIndex = i;
 	console.log("Set initial gallery index to " + this.fileIndex);
         window.addEventListener('keyup', this.keyup)
-            this.updateCurrentFileData();
+        this.updateCurrentFileData();
     },
 
     watch: {
         files: function(newFiles) {
             this.files = newFiles;
+	    this.updateCurrentFileData();
         }
     },
 
@@ -68,8 +69,10 @@ module.exports = {
         },
         updateCurrentFileData: function() {
             var file = this.current;
-            if (file == null)
+            if (file == null) {
+		console.log("null file in gallery");
                 return;
+	    }
             if (file.isDirectory())
                 return;
             var props = file.getFileProperties();
