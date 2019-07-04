@@ -2,7 +2,6 @@ module.exports = {
     template: require('filesystem.html'),
     data: function() {
         return {
-            context: null,
             contextUpdates: 0,
             path: [],
             currentDir: null,
@@ -64,8 +63,7 @@ module.exports = {
             onUpdateCompletion: [] // methods to invoke when current dir is next refreshed
         };
     },
-    props: {
-    },
+    props: ["context"],
     created: function() {
         console.debug('Filesystem module created!');
     },

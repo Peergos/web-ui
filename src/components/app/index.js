@@ -3,7 +3,9 @@ module.exports = {
     data: function() {
         return {
             view:"login",
-	    data: {}
+	    data: {
+		context:null
+	    }
         };
     },
     props: [],
