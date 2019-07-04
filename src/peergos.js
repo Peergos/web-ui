@@ -1,4 +1,5 @@
 var Admin           = require('./components/admin');
+var App             = require('./components/app');
 var Error           = require('./components/error');
 var Feedback        = require('./components/feedback');
 var Filesystem      = require('./components/filesystem');
@@ -19,9 +20,6 @@ var Space           = require('./components/space');
 var Spinner         = require('./components/spinner');
 var Text            = require('./components/viewers/text');
 var Warning         = require('./components/warning');
-
-var VueAsyncComputed = require('./plugins/vue-async-computed');
-Vue.use(VueAsyncComputed);
 
 var VueTouch = require('./plugins/vue-touch')
 VueTouch.registerCustomEvent('doubletap', {
@@ -123,6 +121,7 @@ Vue.mixin({
 
 // Loading components
 Vue.component('admin', Vue.extend(Admin));
+Vue.component('app', Vue.extend(App));
 Vue.component('error', Vue.extend(Error));
 Vue.component('feedback', Vue.extend(Feedback));
 Vue.component('filesystem', Vue.extend(Filesystem));
@@ -143,46 +142,13 @@ Vue.component('space', Vue.extend(Space));
 Vue.component('text', Vue.extend(Text));
 Vue.component('warning', Vue.extend(Warning));
 
-const vueRoot = new Vue({
-    el: "body"
-})
-
-function login(props) {
-    vueRoot.currentView = "login";
-}
-
-function signup(props) {
-    vueRoot.currentView = "signup";
-}
-
-function filesystem(props) {
-    vueRoot.currentView = "filesystem";
-}
-
-vueRoot.$on("login", login)
-vueRoot.$on("signup", signup)
-vueRoot.$on("filesystem", filesystem) 
-
 // Initializing Vue after GWT has finished
 setTimeout(function() {
-    vueRoot.$emit("login", {})
+    vueRoot.$emit("app", {})
     var vueRoot = new Vue({
         el: 'body',
         data: {
-            currentView: 'login',
-            serverPort: 8000
-        },
-        events: {
-            'child-msg': function (msg) {
-                // `this` in event callbacks are automatically bound
-                // to the instance that registered it
-                this.currentView = msg.view;
-
-                // this sends the received props to the new child component
-                this.$nextTick(function() {
-                    this.$broadcast('parent-msg', msg.props);
-                });
-            }
+            currentView: 'app',
         }
     });
 }, 500);

@@ -2,10 +2,7 @@ module.exports = {
     template: require('signup.html'),
     data: function() {
         return {
-            crypto: null,
-            network: null,
-            username: "",
-	    passwordFieldType: "password",
+            passwordFieldType: "password",
 	    password1: "",
             password2FieldType: "password",
 	    password2: "",
@@ -25,9 +22,7 @@ module.exports = {
 	    safePassword:false
         };
     },
-    props: {
-
-    },
+    props: ["username", "password1", "crypto", "network"],
     created: function() {
         console.debug('Signup module created!');
         var that = this;
@@ -121,15 +116,5 @@ module.exports = {
 	host: function() {
 	    return window.location.origin;
 	}
-    },
-    events: {
-        'parent-msg': function (msg) {
-            // `this` in event callbacks are automatically bound
-            // to the instance that registered it
-            this.username = msg.username;
-            this.password1 = msg.password;
-            this.crypto = msg.crypto;
-            this.network = msg.network;
-        }
     }
 };

@@ -83,6 +83,27 @@ module.exports = {
 		    that.isAdmin = true;
 		});
 	    }
+	    const that = this;
+            if (newContext.username == null) {
+                // from a secret link
+                newContext.getEntryPath().thenApply(function(linkPath) {
+                    that.changePath(linkPath);
+                    Vue.nextTick(function() {
+                        that.showGallery = msg.open;
+                    });
+                    if (that.initiateDownload) {
+                        that.context.getByPath(that.getPath())
+                            .thenApply(function(file){file.get().getChildren(that.context.network).thenApply(function(children){
+                                var arr = children.toArray();
+                                if (arr.length == 1)
+                                    that.downloadFile(arr[0]);
+                            })});
+                    }
+                });
+            } else {
+		this.path = [newContext.username];
+                this.updateSocial();
+            }
         },
 
         path: function(newPath) {
@@ -1091,36 +1112,6 @@ module.exports = {
             if (context == null)
                 return "";
             return context.username;
-        }
-    },
-    events: {
-        'parent-msg': function (msg) {
-            // `this` in event callbacks are automatically bound
-            // to the instance that registered it
-            this.context = msg.context;
-            this.contextUpdates++;
-            this.initiateDownload = msg.download;
-            const that = this;
-            if (this.context.username == null) {
-                // from a secret link
-                this.context.getEntryPath().thenApply(function(linkPath) {
-                    that.changePath(linkPath);
-                    Vue.nextTick(function() {
-                        that.showGallery = msg.open;
-                    });
-                    if (that.initiateDownload) {
-                        that.context.getByPath(that.getPath())
-                            .thenApply(function(file){file.get().getChildren(that.context.network).thenApply(function(children){
-                                var arr = children.toArray();
-                                if (arr.length == 1)
-                                    that.downloadFile(arr[0]);
-                            })});
-                    }
-                });
-            } else {
-		this.path = [this.context.username];
-                this.updateSocial();
-            }
         }
     }
 };

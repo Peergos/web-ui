@@ -3,6 +3,7 @@ module.exports = {
     template: require('login.html'),
     data: function() {
         return {
+	    network: null,
             username: [],
             passwordFieldType: "password",
             password: [],
@@ -20,7 +21,11 @@ module.exports = {
     props: {},
     created: function() {
         console.debug('Login module created!');
-        this.isFirefox = navigator.userAgent.toLowerCase().indexOf('firefox') > -1;
+	this.updateNetwork();
+    },
+    watch: {
+	network: function(newNetwork) {
+	    this.isFirefox = navigator.userAgent.toLowerCase().indexOf('firefox') > -1;
         this.isSafari = /constructor/i.test(window.HTMLElement) || (function (p) { return p.toString() === "[object SafariRemoteNotification]"; })(!window['safari'] || safari.pushNotification);
         var that = this;
         var href = window.location.href;
@@ -38,9 +43,18 @@ module.exports = {
         } else
             Vue.nextTick(function() {
                 document.getElementById("username").focus();
-            });
-    },
+            });	
+	}
+    }
     methods: {
+	updateNetwork: function() {
+	    var that = this;
+	    peergos.shared.NetworkAccess.buildJS("QmVdFZgHnEgcedCS2G2ZNiEN59LuVrnRm7z3yXtEBv2XiF")
+                .thenApply(function(network){
+		    that.network = network;
+		});
+	},
+	
         togglePassword: function() {
             this.passwordFieldType = this.passwordFieldType == "text" ? "password" : "text";
         },
@@ -75,14 +89,13 @@ module.exports = {
             peergos.shared.NetworkAccess.buildJS("QmXZXGXsNhxh2LiWFsa7CLHeRWJS5wb8RHxcTvQhvCzAeu")
                 .thenApply(function(network){
                     peergos.shared.user.UserContext.fromSecretLink(link, network, that.crypto).thenApply(function(context) {
-                        that.$dispatch('child-msg', {
-                            view:'filesystem', 
-                            props:{
-                                context: context,
-                                download: download,
-                                open: open
-                            }
-                        });
+                        that.$emit('filesystem', 
+				   {
+                                       context: context,
+                                       download: download,
+                                       open: open
+				   }
+				  );
                     }).exceptionally(function(throwable) {
                         that.errorTitle = 'Secret link not found!'
                         that.errorBody = 'Url copy/paste error?'
@@ -128,14 +141,6 @@ module.exports = {
     computed: {
         crypto: function() {
             return peergos.shared.Crypto.initJS();
-        }
-    },
-    asyncComputed: {
-        network: function() {
-            return new Promise(function(resolve, reject) {
-                peergos.shared.NetworkAccess.buildJS("QmVdFZgHnEgcedCS2G2ZNiEN59LuVrnRm7z3yXtEBv2XiF")
-                    .thenApply(function(network){resolve(network)});
-            });
         }
     }
 };
