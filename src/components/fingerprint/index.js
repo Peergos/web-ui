@@ -19,9 +19,7 @@ module.exports = {
 	    if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
 		var video = document.getElementById('video');
 		var that = this;
-		navigator.mediaDevices.getUserMedia({ video: {
-		    width: 512, height:512
-		}}).then(function(stream) {
+		navigator.mediaDevices.getUserMedia({ video: true }).then(function(stream) {
 		    video.srcObject = stream;
 		    video.play();
 		    that.takeSnapshot()
