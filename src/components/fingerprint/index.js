@@ -2,6 +2,8 @@ module.exports = {
     template: require('fingerprint.html'),
     data: function() {
         return {
+	    width: 512,
+	    height: 512
         };
     },
     props: ['fingerprint', 'friendname', 'context'],
@@ -34,13 +36,23 @@ module.exports = {
 	    var canvas = document.getElementById('canvas');
 	    var context = canvas.getContext('2d');
 	    var video = document.getElementById('video');
-	    context.drawImage(video, 0, 0, 640, 480);
-	    var image = this.convertCanvasToImage(canvas)
-	    console.log(image);
+	    context.drawImage(video, 0, 0, this.width, this.height);
+	    var pixels = this.convertCanvasToPixels(context)
+	    console.log(pixels);
+	    try {
+		var scanned = peergos.shared.fingerprint.FingerPrint.decodeFromPixels(pixels, this.width, this.height);
+		console.log("Success!");
+	    } catch (err) {
+		console.log(err);
+	    }
 	},
 
-	convertCanvasToImage: function(canvas) {
-	    return canvas.toDataURL("image/png");
+	convertCanvasToPixels: function(context) {
+	    var b = context.getImageData(0, 0, this.width, this.height);
+	    var pixels = []; // ARGB
+	    for (var i=0; i < this.width*this.height; i++)
+		pixels[i] = b[i*4+3] & 0xff | ((b[i*4] & 0xff) << 8) | ((b[i*4+1] & 0xff) << 16) | ((b[i*4+2] & 0xff) << 24);
+	    return pixels;
 	}
     },
     computed: {
