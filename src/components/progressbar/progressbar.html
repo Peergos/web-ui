@@ -1,4 +1,4 @@
-<div class="progressbar" @click="closeMessage" v-show="show">
+<div class="progressbar" @click="closeMessage">
     <div class="" @click.stop>
 
         <div class="">
@@ -7,7 +7,7 @@
 
         <div class="">
             <div class="progresscontainer">
-                <progress value="{{ done }}" max="{{ max }}"></progress>
+                <progress v-bind:value="done" v-bind:max="max"></progress>
                 <button class="btn btn-success" @click="closeMessage">Dismiss</button>
             </div>
         </div>

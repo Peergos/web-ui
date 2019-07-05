@@ -1,96 +1,180 @@
-<nav class="navbar navbar-inverse navbar-static-top" role="navigation">
-  <input type="file" id="uploadInput" @change="uploadFiles" style="display:none;" multiple="" />
-  <div style="display:block;">
-    <ul class="nav navbar-nav">
-      <li id="homeButton" @click="goHome()" class="navbar-brand nopad"><a><span data-toggle="tooltip" data-placement="bottom" title="Global root" class="pnavbar fas fa-globe-asia" style="cursor: pointer;"/></a></li>
-      <li id="uploadButton" @click="askForFile()" v-if="isWritable" class="navbar-brand nopad"><a><span data-toggle="tooltip" data-placement="bottom" title="Upload file" class="pnavbar fa fa-upload" style="cursor: pointer;"/></a></li>
-      <li id="mkdirButton" @click="askMkdir()" v-if="isWritable" class="navbar-brand nopad"><a><span data-toggle="tooltip" data-placement="bottom" title="Create new directory" class="pnavbar fas fa-folder-plus" style="cursor: pointer;"/></a></li>
-      <li id="alternateViewButton" @click="switchView()" class="navbar-brand nopad"><a><span data-toggle="tooltip" data-placement="bottom" title="Switch view" id="altViewSpan" v-bind:class="['pnavbar', 'fa', 'tour-view', grid ? 'fa-list' : 'fa-th-large']" style="cursor: pointer;"/></a></li>
-      <li id="userOptionsButton" v-if="isLoggedIn" @click="showSocialView()" class="navbar-brand nopad">
-        <a>
-          <span data-toggle="tooltip" data-placement="bottom" title="Sharing options" id="sharingOptionsSpan" class="pnavbar fa fa-user-plus" style="cursor: pointer;"/>
-          <span id="pendingSpan" class="pending-badge" v-if="social != null && social.pending.length > 0">{{ social.pending.length }}</span>
-        </a>
-      </li>
-    </ul>
-  </div>
-  <span data-toggle="tooltip" data-placement="bottom" title="Current location" class="nav navbar-nav pnavbar" style="float:left;display:inline-block;font-size:2.5em;color:#9d9d9d;padding: 0.2em 0.2em 0em;">/</span>
-  <span v-for="dir in path" track-by="$index" class="nav navbar-nav navbar-brand" style="display:inline-block;padding: 0.2em 0.2em 1em;margin-bottom: 0.2em;">
-    <button @click="goBackToLevel($index+1)" class="btn_pnavbar btn">{{dir}}</button>
-    <span class="divider"> </span>
-  </span>
-
+<div class="fillspace">
+  <nav class="navbar navbar-inverse navbar-static-top" role="navigation">
+    <input type="file" id="uploadInput" @change="uploadFiles" style="display:none;" multiple="" />
+    <div style="display:block;">
+      <ul class="nav navbar-nav">
+	<li id="homeButton" @click="goHome()" class="navbar-brand nopad"><a><span data-toggle="tooltip" data-placement="bottom" title="Global root" class="pnavbar fas fa-globe-asia" style="cursor: pointer;"/></a></li>
+	<li id="uploadButton" @click="askForFile()" v-if="isWritable" class="navbar-brand nopad"><a><span data-toggle="tooltip" data-placement="bottom" title="Upload file" class="pnavbar fa fa-upload" style="cursor: pointer;"/></a></li>
+	<li id="mkdirButton" @click="askMkdir()" v-if="isWritable" class="navbar-brand nopad"><a><span data-toggle="tooltip" data-placement="bottom" title="Create new directory" class="pnavbar fas fa-folder-plus" style="cursor: pointer;"/></a></li>
+	<li id="alternateViewButton" @click="switchView()" class="navbar-brand nopad"><a><span data-toggle="tooltip" data-placement="bottom" title="Switch view" id="altViewSpan" v-bind:class="['pnavbar', 'fa', 'tour-view', grid ? 'fa-list' : 'fa-th-large']" style="cursor: pointer;"/></a></li>
+	<li id="userOptionsButton" v-if="isLoggedIn" @click="showSocialView()" class="navbar-brand nopad">
+          <a>
+            <span data-toggle="tooltip" data-placement="bottom" title="Sharing options" id="sharingOptionsSpan" class="pnavbar fa fa-user-plus" style="cursor: pointer;"/>
+            <span id="pendingSpan" class="pending-badge" v-if="social != null && social.pending.length > 0">{{ social.pending.length }}</span>
+          </a>
+	</li>
+      </ul>
+    </div>
+    <span data-toggle="tooltip" data-placement="bottom" title="Current location" class="nav navbar-nav pnavbar" style="float:left;display:inline-block;font-size:2.5em;color:#9d9d9d;padding: 0.2em 0.2em 0em;">/</span>
+    <span v-for="(dir, index) in path" class="nav navbar-nav navbar-brand" style="display:inline-block;padding: 0.2em 0.2em 1em;margin-bottom: 0.2em;">
+      <button @click="goBackToLevel(index+1)" class="btn_pnavbar btn">{{dir}}</button>
+      <span class="divider"> </span>
+    </span>
+    
     <ul v-if="isLoggedIn" class="nav navbar-right pnavbar_top_right">
-        <button id="logoutButton" @click="toggleUserMenu()" class="btn top_right_icon dropdown-toggle" data-toggle="dropdown" aria-haspopup="true" aria-expanded="true">
-            <span class="fa fa-cog"></span>
-            <span class="collapse navbar-collapse">{{username}}</span>
-        </button>
-        <ul id="settingsMenu" v-if="showSettingsMenu" class="dropdown-menu" aria-labelledby="logoutButton" style="cursor:pointer;display:block">
-            <li v-if="isAdmin"><a @click="showAdminPanel">Admin Panel</a></li>
-            <li><a @click="showRequestStorage">Request more storage</a></li>
-            <li><a @click="showChangePassword">Change Password</a></li>
-            <li role="separator" class="divider"></li>
-            <li><a @click="logout">Log out</a></li>
-        </ul>
+      <button id="logoutButton" @click="toggleUserMenu()" class="btn top_right_icon dropdown-toggle" data-toggle="dropdown" aria-haspopup="true" aria-expanded="true">
+        <span class="fa fa-cog"></span>
+        <span class="collapse navbar-collapse">{{username}}</span>
+      </button>
+      <ul id="settingsMenu" v-if="showSettingsMenu" class="dropdown-menu" aria-labelledby="logoutButton" style="cursor:pointer;display:block">
+        <li v-if="isAdmin"><a @click="showAdminPanel">Admin Panel</a></li>
+        <li><a @click="showRequestStorage">Request more storage</a></li>
+        <li><a @click="showChangePassword">Change Password</a></li>
+        <li role="separator" class="divider"></li>
+        <li><a @click="logout">Log out</a></li>
+      </ul>
     </ul>
-
-</nav>
-
-<a id="downloadAnchor" style="display:none"></a>
-<ul id="right-click-menu" tabindex="-1" v-el="right" v-if="viewMenu && (isNotHome || isPasteAvailable || isNotBackground)" v-on:blur="closeMenu" v-bind:style="{top:top, left:left}">
+    
+  </nav>
+  
+  <a id="downloadAnchor" style="display:none"></a>
+  <ul id="right-click-menu" tabindex="-1" v-if="viewMenu && (isNotHome || isPasteAvailable || isNotBackground)" v-on:blur="closeMenu" v-bind:style="{top:top, left:left}">
     <li id='gallery' v-if="canOpen" v-on:click="gallery">View</li>
     <li id='open-file' v-if="canOpen" v-on:click="downloadAll">Download</li>
     <li id='rename-file' v-if="isNotBackground && isWritable" v-on:click="rename">Rename</li>
-    <li id='delete-file' v-if="isNotBackground && isWritable" v-on:click="delete">Delete</li>
+    <li id='delete-file' v-if="isNotBackground && isWritable" v-on:click="deleteFiles">Delete</li>
     <li id='copy-file' v-if="isNotBackground && isWritable" v-on:click="copy">Copy</li>
     <li id='cut-file' v-if="isNotBackground && isWritable" v-on:click="cut">Cut</li>
     <li id='paste-file' v-if="isPasteAvailable" v-on:click="paste">Paste</li>
     <li id='secret-link-file' v-if="(isNotHome || isNotBackground)" v-on:click="createSecretLink">Create secret link</li>
     <li id='share-file' v-if="(isNotHome || isNotBackground) && isLoggedIn" v-on:click="showShareWith">Share</li>
     <li id='shared-with-file' v-if="(isNotHome || isNotBackground) && isWritable" v-on:click="sharedWith">Shared with</li>
-</ul>
-
-<modal :show.sync="showModal" :title.sync="modalTitle" :links.sync="modalLinks"></modal>
-<share-with v-if="showShare" :forceshared.sync="forceSharedWithUpdate" :show.sync="showShare" :files.sync="selectedFiles" :parent.sync="currentDir" :context.sync="context" :followernames.sync="followernames" :messages.sync="messages"></share-with>
-<shared-with-modal :forceshared.sync="forceSharedWithUpdate" :show.sync="showSharedWith" :data.sync="sharedWithData" :files.sync="selectedFiles" :context.sync="context"></shared-with-modal>
-<social v-if="showSocial" :show.sync="showSocial" :data.sync="social" :context.sync="context" :externalchange.sync="externalChange" :messages.sync="messages"></social>
-<admin v-if="showAdmin" :show.sync="showAdmin" :data.sync="admindata" :context.sync="context"></admin>
-<password v-if="showPassword" :show.sync="showPassword" :changepassword.sync="changePassword" :username.sync="this.getContext().username"></password>
-<space v-if="showRequestSpace" :show.sync="showRequestSpace" :context.sync="context" :quota.sync="quota" :usage.sync="usageBytes"></space>
-<feedback v-if="showFeedbackForm" :show.sync="showFeedbackForm"
-          :data.sync="feedback" :context.sync="context"
-          :externalchange.sync="externalChange"
-          :messages.sync="messages"></feedback>
-<gallery v-if="showGallery" :show.sync="showGallery" :files.sync="sortedFiles" :context.sync="context" :initial-file-name="selectedFiles[0] == null ? '' : selectedFiles[0].getFileProperties().name"></gallery>
-
-<hex v-if="showHexViewer" :show.sync="showHexViewer" :file.sync="selectedFiles[0]" :context.sync="context"></hex>
-<text v-if="showTextViewer" :show.sync="showTextViewer" :file.sync="selectedFiles[0]" :context.sync="context"></text>
-
-<message v-for="message in messages" :show.sync="message.show" :title.sync="message.title" :message.sync="message.body"></message>
-<prompt v-if="showPrompt" :prompt_message.sync='prompt_message'
-        :show.sync="showPrompt" :placeholder.sync="prompt_placeholder"
-        :value.sync="prompt_value" :consumer_func.sync="prompt_consumer_func"></prompt>
-<warning v-if="showWarning" :warning_message.sync='warning_message'
-         :warning_body.sync="warning_body"
-         :show.sync="showWarning" :consumer_func.sync="warning_consumer_func"></warning>
-
-<div v-if="progressMonitors.length>0" class="progressholder">
-    <progressbar v-for="progress in progressMonitors" :show.sync="progress.show" :title.sync="progress.title" :done.sync="progress.done":max.sync="progress.max"></progressbar>
-</div>
-<div id="dnd" @drop="dndDrop($event)" @dragover.prevent v-bind:class="{ fillspace: true, not_owner: isNotMe }" v-on:contextmenu="openMenu($event)">
+  </ul>
+  
+  <modal
+    v-if="showModal" 
+    v-on:hide-modal="showModal = false" 
+    :title="modalTitle" 
+    :links="modalLinks">
+  </modal>
+  <share 
+    v-if="showShare" 
+    v-on:hide-share-with="showShare = false"
+    v-on:update-shared="forceSharedWithUpdate++" 
+    :files="selectedFiles" 
+    :parent="currentDir" 
+    :context="context" 
+    :followernames="followernames" 
+    :messages="messages">
+  </share>
+  <shared-with-modal 
+    v-if="showSharedWith" 
+    v-on:update-shared="forceSharedWithUpdate++"
+    v-on:hide-shared-with="showSharedWith = false" 
+    :data="sharedWithData" 
+    :files="selectedFiles" 
+    :context="context">
+  </shared-with-modal>
+  <social 
+    v-if="showSocial" 
+    v-on:hide-social="showSocial = false" 
+    v-on:external-change="externalChange++"
+    :data="social" 
+    :context="context" 
+    :messages="messages">
+  </social>
+  <admin 
+    v-if="showAdmin" 
+    v-on:hide-admin="showAdmin = false"
+    :data="admindata" 
+    :context="context">
+  </admin>
+  <password 
+    v-if="showPassword" 
+    v-on:hide-password="showPassword = false" 
+    :changepassword="changePassword" 
+    :username="this.getContext().username">
+  </password>
+  <space 
+    v-if="showRequestSpace" 
+    v-on:hide-request-space="showRequestSpace = false"
+    :context="context" 
+    :quota="quota" 
+    :usage="usageBytes">
+  </space>
+  <feedback 
+    v-if="showFeedbackForm" 
+    v-on:hide-feedback="showFeedbackForm = false"
+    v-on:external-change="externalChange++"
+    :data="feedback" 
+    :context="context"
+    :messages="messages">
+  </feedback>
+  <gallery 
+    v-if="showGallery" 
+    v-on:hide-gallery="showGallery = false"
+    :files="sortedFiles" 
+    :context="context" 
+    :initial-file-name="selectedFiles[0] == null ? '' : selectedFiles[0].getFileProperties().name">
+  </gallery>
+  <hex 
+    v-if="showHexViewer" 
+    v-on:hide-hex-viewer="showHexViewer = false"
+    :file="selectedFiles[0]" 
+    :context="context">
+  </hex>
+  <text 
+    v-if="showTextViewer" 
+    v-on:hide-text-viewer="showTextViewer = false"
+    :file="selectedFiles[0]" 
+    :context="context">
+  </text>
+  <message 
+    v-for="message in messages" 
+    v-on:remove-message="messages.splice(messages.indexOf(message), 1)"
+    :title="message.title" 
+    :message="message.body">
+  </message>
+  <prompt 
+    v-if="showPrompt" 
+    v-on:hide-prompt="showPrompt = false"
+    :prompt_message='prompt_message'
+    :placeholder="prompt_placeholder"
+    :value="prompt_value" 
+    :consumer_func="prompt_consumer_func">
+  </prompt>
+  <warning 
+    v-if="showWarning" 
+    v-on:hide-warning="showWarning = false"
+    :warning_message='warning_message'
+    :warning_body="warning_body"
+    :consumer_func="warning_consumer_func">
+  </warning>
+  
+  <div v-if="progressMonitors.length>0" class="progressholder">
+    <progressbar 
+        v-for="progress in progressMonitors" 
+      v-on:hide-progress="progressMonitors.splice(progressMonitors.indexOf(progress),
+                          1)"
+      :title="progress.title" 
+      :done="progress.done"
+      :max="progress.max">
+    </progressbar>
+  </div>
+  <div id="dnd" @drop="dndDrop($event)" @dragover.prevent v-bind:class="{ fillspace: true, not_owner: isNotMe }" v-on:contextmenu="openMenu($event)">
     <spinner v-if="showSpinner"></spinner>
-
+    
     <div class="grid" v-if="grid">
         <span class="column" v-for="file in sortedFiles">
-            <span class="grid_icon_wrapper fa" id="grid$index" draggable="true" @dragStart="dragStart($event, file)" @dragover.prevent @drop="drop($event, file)">
-                <a class="picon" v-bind:id="file.getFileProperties().name" v-on:contextmenu="openMenu($event, file)">
-                  <span v-if="!file.getFileProperties().thumbnail.isPresent()" v-on:click="navigateOrMenu($event, file)" v-on:contextmenu="openMenu($event, file)"
-			v-bind:class="['file_icon', getFileIcon(file), 'picon']"> </span>
-                    <img v-if="file.getFileProperties().thumbnail.isPresent()" v-on:click="navigateOrMenu($event, file)" v-on:contextmenu="openMenu($event, file)" v-bind:src="getThumbnailURL(file)"/>
+          <span class="grid_icon_wrapper fa" draggable="true" @dragStart="dragStart($event, file)" @dragover.prevent @drop="drop($event, file)">
+            <a class="picon" v-bind:id="file.getFileProperties().name" v-on:contextmenu="openMenu($event, file)">
+              <span v-if="!file.getFileProperties().thumbnail.isPresent()" v-on:click="navigateOrMenu($event, file)" v-on:contextmenu="openMenu($event, file)"
+		    v-bind:class="['file_icon', getFileIcon(file), 'picon']"> </span>
+              <img v-if="file.getFileProperties().thumbnail.isPresent()" v-on:click="navigateOrMenu($event, file)" v-on:contextmenu="openMenu($event, file)" v-bind:src="getThumbnailURL(file)"/>
                 </a>
-                <div class="content filename" >
-                    <div v-bind:class="{ noselect: true, shared: isShared(file) }">{{ file.getFileProperties().name }}</div>
-                </div>
+            <div class="content filename" >
+              <div v-bind:class="{ noselect: true, shared: isShared(file) }">{{ file.getFileProperties().name }}</div>
+            </div>
             </span>
         </span>
 	<div v-if="sortedFiles.length==0 && currentDir != null && currentDir.isWritable()" class="instruction">
@@ -104,26 +188,32 @@
     </div>
     <div class="table-responsive" v-if="!grid">
         <table class="table">
-            <thead>
-                <tr style="cursor:pointer;">
-                    <th @click="setSortBy('name')">Name <span v-if="sortBy=='name'" v-bind:class="['fas', normalSortOrder ? 'fa-angle-down' : 'fa-angle-up']"/></th>
-                    <th @click="setSortBy('size')">Size <span v-if="sortBy=='size'" v-bind:class="['fas', normalSortOrder ? 'fa-angle-down' : 'fa-angle-up']"/></th>
-                    <th @click="setSortBy('type')">Type <span v-if="sortBy=='type'" v-bind:class="['fas', normalSortOrder ? 'fa-angle-down' : 'fa-angle-up']"/></th>
-                    <th @click="setSortBy('modified')">Modified <span v-if="sortBy=='modified'" v-bind:class="['fas', normalSortOrder ? 'fa-angle-down' : 'fa-angle-up']"/></th>
-                </tr>
-            </thead>
-            <tbody>
+          <thead>
+            <tr style="cursor:pointer;">
+              <th @click="setSortBy('name')">Name <span v-if="sortBy=='name'" v-bind:class="['fas', normalSortOrder ? 'fa-angle-down' : 'fa-angle-up']"/></th>
+              <th @click="setSortBy('size')">Size <span v-if="sortBy=='size'" v-bind:class="['fas', normalSortOrder ? 'fa-angle-down' : 'fa-angle-up']"/></th>
+              <th @click="setSortBy('type')">Type <span v-if="sortBy=='type'" v-bind:class="['fas', normalSortOrder ? 'fa-angle-down' : 'fa-angle-up']"/></th>
+              <th @click="setSortBy('modified')">Modified <span v-if="sortBy=='modified'" v-bind:class="['fas', normalSortOrder ? 'fa-angle-down' : 'fa-angle-up']"/></th>
+            </tr>
+          </thead>
+          <tbody>
                 <tr v-for="file in sortedFiles">
-                    <td v-bind:id="file.getFileProperties().name" v-on:click="navigateOrMenu($event, file)" v-on:contextmenu="openMenu($event, file)" style="cursor:pointer" v-bind:class="{ shared: isShared(file) }">{{ file.getFileProperties().name }}</td>
-                    <td>{{ getFileSize(file.getFileProperties()) }}</td>
-                    <td>{{ file.getFileProperties().getType() }}</td>
-                    <td>{{ file.getFileProperties().modified }}</td>
+                  <td v-bind:id="file.getFileProperties().name" v-on:click="navigateOrMenu($event, file)" v-on:contextmenu="openMenu($event, file)" style="cursor:pointer" v-bind:class="{ shared: isShared(file) }">{{ file.getFileProperties().name }}</td>
+                  <td>{{ getFileSize(file.getFileProperties()) }}</td>
+                  <td>{{ file.getFileProperties().getType() }}</td>
+                  <td>{{ file.getFileProperties().modified }}</td>
                 </tr>
-            </tbody>
+          </tbody>
         </table>
     </div>
     <button id="popup" v-if="!isSecretLink" class="feedback-button" @click="toggleFeedbackForm()"> 
-        Feedback
+      Feedback
     </button>
-    <error :show.sync="showError" :title.sync="errorTitle" :body.sync="errorBody"></error>
+    <error
+      v-if="showError"
+      v-on:hide-error="showError = false"
+      :title="errorTitle" 
+      :body="errorBody">
+    </error>
+  </div>
 </div>

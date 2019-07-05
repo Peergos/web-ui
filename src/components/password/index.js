@@ -14,7 +14,7 @@ module.exports = {
             errorClass: ""
         };
     },
-    props: ['show', 'changepassword', 'username'],
+    props: ['changepassword', 'username'],
     created: function() {
     },
     methods: {
@@ -72,7 +72,7 @@ module.exports = {
             }
         },
         close: function () {
-            this.show = false;
+            this.$emit("hide-password");
         }
     }
 }

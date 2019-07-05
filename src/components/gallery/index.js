@@ -8,7 +8,7 @@ module.exports = {
             videoUrl: null
         };
     },
-    props: ['show', 'files', 'context', 'initialFileName'],
+    props: ['files', 'context', 'initialFileName'],
     created: function() {
         console.debug('Gallery module created!');
 	var showable = this.showableFiles;
@@ -17,18 +17,19 @@ module.exports = {
 		this.fileIndex = i;
 	console.log("Set initial gallery index to " + this.fileIndex);
         window.addEventListener('keyup', this.keyup)
-            this.updateCurrentFileData();
+        this.updateCurrentFileData();
     },
 
     watch: {
         files: function(newFiles) {
             this.files = newFiles;
+	    this.updateCurrentFileData();
         }
     },
 
     methods: {
         close: function() {
-            this.show = false;
+            this.$emit("hide-gallery");
         },
 
         keyup: function(e) {
@@ -68,8 +69,10 @@ module.exports = {
         },
         updateCurrentFileData: function() {
             var file = this.current;
-            if (file == null)
+            if (file == null) {
+		console.log("null file in gallery");
                 return;
+	    }
             if (file.isDirectory())
                 return;
             var props = file.getFileProperties();

@@ -2,7 +2,6 @@ module.exports = {
     template: require('filesystem.html'),
     data: function() {
         return {
-            context: null,
             contextUpdates: 0,
             path: [],
             currentDir: null,
@@ -29,8 +28,8 @@ module.exports = {
 	    usageBytes: 0,
 	    isAdmin: false,
             showAdmin:false,
+            showGallery: false,
             showSocial:false,
-            showGallery:false,
             showHexViewer:false,
             showTextViewer:false,
             showPassword:false,
@@ -51,6 +50,7 @@ module.exports = {
             prompt_message: '',
             prompt_placeholder: '',
             prompt_value: '',
+            prompt_consumer_func: () => {},
             showPrompt: false,
             showWarning: false,
 	    warning_message: "",
@@ -60,19 +60,18 @@ module.exports = {
             errorBody:'',
             showError:false,
             showSpinner: true,
-            initiateDownload: false, // used to trigger a download for a secret link to a file
             onUpdateCompletion: [] // methods to invoke when current dir is next refreshed
         };
     },
-    props: {
-    },
+    props: ["context", "opengallery", "initiateDownload"],
     created: function() {
         console.debug('Filesystem module created!');
+	this.init();
     },
     watch: {
         // manually encode currentDir dependencies to get around infinite dependency chain issues with async-computed methods
         context: function(newContext) {
-            this.contextUpdates++;
+	    this.contextUpdates++;
             this.updateCurrentDir();
             this.updateFollowerNames();
 	    if (newContext != null && newContext.username != null) {
@@ -120,6 +119,34 @@ module.exports = {
 	}
     },
     methods: {
+	init: function() {
+	    const that = this;
+            if (this.context != null && this.context.username == null) {
+                // from a secret link
+                this.context.getEntryPath().thenApply(function(linkPath) {
+                    that.changePath(linkPath);
+                    if (that.initiateDownload) {
+                        that.context.getByPath(that.getPath())
+                            .thenApply(function(file){file.get().getChildren(that.context.network).thenApply(function(children){
+                                var arr = children.toArray();
+                                if (arr.length == 1)
+                                    that.downloadFile(arr[0]);
+                            })});
+                    }
+		    that.showGallery = that.opengallery;
+                });
+		
+            } else {
+		this.path = [this.context.username];
+                this.updateSocial();
+		this.updateUsage();
+		this.updateQuota();
+		this.context.getPendingSpaceRequests().thenApply(reqs => {
+		    that.isAdmin = true;
+		});
+            }
+	},
+	
         processPending: function() {
             for (var i=0; i < this.onUpdateCompletion.length; i++) {
                 this.onUpdateCompletion[i].call();
@@ -263,7 +290,7 @@ module.exports = {
             this.prompt_value='';
             this.prompt_consumer_func = function(prompt_result) {
                 console.log("creating new sub-dir " + prompt_result);
-                if (prompt_result === '')
+                if (prompt_result === '' || prompt_result === null)
                     return;
                 this.mkdir(prompt_result);
             }.bind(this);
@@ -881,7 +908,7 @@ module.exports = {
             this.showPrompt =  true;
         },
 
-        delete: function() {
+        deleteFiles: function() {
             var selectedCount = this.selectedFiles.length;
             if (selectedCount == 0)
                 return;
@@ -1091,36 +1118,6 @@ module.exports = {
             if (context == null)
                 return "";
             return context.username;
-        }
-    },
-    events: {
-        'parent-msg': function (msg) {
-            // `this` in event callbacks are automatically bound
-            // to the instance that registered it
-            this.context = msg.context;
-            this.contextUpdates++;
-            this.initiateDownload = msg.download;
-            const that = this;
-            if (this.context.username == null) {
-                // from a secret link
-                this.context.getEntryPath().thenApply(function(linkPath) {
-                    that.changePath(linkPath);
-                    Vue.nextTick(function() {
-                        that.showGallery = msg.open;
-                    });
-                    if (that.initiateDownload) {
-                        that.context.getByPath(that.getPath())
-                            .thenApply(function(file){file.get().getChildren(that.context.network).thenApply(function(children){
-                                var arr = children.toArray();
-                                if (arr.length == 1)
-                                    that.downloadFile(arr[0]);
-                            })});
-                    }
-                });
-            } else {
-		this.path = [this.context.username];
-                this.updateSocial();
-            }
         }
     }
 };
