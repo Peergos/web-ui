@@ -2,7 +2,12 @@
 <div class="modal-mask" @click="close"> 
     <div style="height:30%"></div>
     <div class="modal-container" @click.stop style="height:70%;overflow-y:auto">
-
+      <fingerprint v-if="showFingerprint"
+		   v-on:hide-fingerprint="showFingerprint = false"
+		   :fingerprint="fingerprint"
+		   :friendname="friendname"
+		   :context="context">
+      </fingerprint>
         <div class="modal-header">
             <h2>Social</h2>
         </div>
@@ -43,10 +48,19 @@
             <div>
                 <h3>Followers</h3>
                 <table id='follower-table-id' class="table table-responsive table-striped table-hover">
-                    <tr v-if="data.followers.length==0"><th></th><th style="text-align:right"></th></tr>
+                  <tr v-if="data.followers.length==0">
+		    <th></th>
+		    <th style="text-align:right"></th>
+		    <th style="text-align:right"></th>
+		  </tr>
                     <tr v-for="username in data.followers">
                         <td id='follower-id'>{{ username }}</td>
-                        <td style="text-align:right"><button class="btn btn-danger" @click="removeFollower(username)">Remove</button></td>
+                        <td style="text-align:right">
+			  <button class="btn btn-danger" @click="removeFollower(username)">Remove</button>
+			</td>
+			<td style="text-align:right">
+			  <button class="btn btn-success" @click="showFingerPrint(username)">Safety Numbers</button>
+			</td>
                     </tr>
                 </table>
             </div>
@@ -57,7 +71,9 @@
                     <tr v-if="data.following.length==0"><th></th><th style="text-align:right"></th></tr>
                     <tr v-for="user in data.following">
                         <td>{{ user }}</td>
-                        <td style="text-align:right"><button class="btn btn-danger" @click="unfollow(user)">Unfollow</button></td>
+                        <td style="text-align:right">
+			  <button class="btn btn-danger" @click="unfollow(user)">Unfollow</button>
+			</td>
                     </tr>
                 </table>
             </div>

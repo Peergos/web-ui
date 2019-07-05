@@ -1,0 +1,21 @@
+<transition name="modal">
+<div class="modal-mask" @click="close">
+    <div class="modal-container" @click.stop style="height:75%;width:65%;overflow-y:auto">
+        <span @click="close" class="close">&times;</span>
+        <center>
+            <h2 >{{ friendname }}</h2>
+        </center>
+        <center>
+            <img v-bind:src="QRCodeURL"></img>
+        </center>
+	<center>
+	  <button class="btn btn-success" >Scan your friend's QR code</button>
+	  <br/>
+	  Or you can read this number out to each other (they should match).
+	</center>
+        <center>
+            {{ safetyNumber }}
+        </center>
+    </div>
+</div>
+</transition>
