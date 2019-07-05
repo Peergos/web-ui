@@ -9,12 +9,19 @@
             <img v-bind:src="QRCodeURL"></img>
         </center>
 	<center>
-	  <button class="btn btn-success" >Scan your friend's QR code</button>
+	  <video id="video" width="512" height="512" autoplay></video>
+	  <canvas id="canvas" width="512" height="512" ></canvas>
 	  <br/>
-	  Or you can read this number out to each other (they should match).
+	  <button class="btn btn-success" @click="scanQRCode()">Scan your friend's QR code</button>
+	  <br/>
 	</center>
         <center>
-            {{ safetyNumber }}
+	  <h4>Or you can read these numbers out to each other (they should match)</h4>
+          {{ safetyNumber[0] }}
+	  <br/>
+	  {{ safetyNumber[1] }}
+	  <br/>
+	  {{ safetyNumber[2] }}
         </center>
     </div>
 </div>
