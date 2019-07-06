@@ -1,6 +1,6 @@
 <div class="fillspace">
   <nav class="navbar navbar-inverse navbar-static-top" role="navigation">
-    <input type="file" id="uploadInput" @change="uploadFiles" style="display:none;" multiple="" />
+    <input type="file" id="uploadInput" @change="uploadFiles" style="display:none;" multiple directory mozDirectory webkitDirectory/>
     <div style="display:block;">
       <ul class="nav navbar-nav">
 	<li id="homeButton" @click="goHome()" class="navbar-brand nopad"><a><span data-toggle="tooltip" data-placement="bottom" title="Global root" class="pnavbar fas fa-globe-asia" style="cursor: pointer;"/></a></li>
@@ -20,7 +20,7 @@
       <button @click="goBackToLevel(index+1)" class="btn_pnavbar btn">{{dir}}</button>
       <span class="divider"> </span>
     </span>
-    
+
     <ul v-if="isLoggedIn" class="nav navbar-right pnavbar_top_right">
       <button id="logoutButton" @click="toggleUserMenu()" class="btn top_right_icon dropdown-toggle" data-toggle="dropdown" aria-haspopup="true" aria-expanded="true">
         <span class="fa fa-cog"></span>
