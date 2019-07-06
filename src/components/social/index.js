@@ -6,7 +6,7 @@ module.exports = {
             showSpinner: false 
         }
     },
-    props: ['show', 'data', 'context', 'externalchange', 'messages'],
+    props: ['data', 'context', 'externalchange', 'messages'],
     created: function() {
         Vue.nextTick(this.setTypeAhead);
     },
@@ -59,7 +59,8 @@ module.exports = {
             });
         },
 
-        sendInitialFollowRequest: function(name) {
+        sendInitialFollowRequest: function() {
+	    var name = this.targetUsername;
             if(name !== this.context.username) {
                 var that = this;
                 console.log("sending follow request to " + name);
@@ -69,7 +70,7 @@ module.exports = {
                         if(success) {
                             that.showMessage("Follow request sent!", "");
                             that.targetUsername = "";
-                            that.externalchange++;
+                            that.$emit("external-change");
                         } else {
                             that.showMessage("Follow request failed!", "");
                         }
@@ -89,7 +90,7 @@ module.exports = {
                 .thenApply(function(success) {
                     that.showMessage("Follow request reciprocated!", "");
                     that.showSpinner = false;
-                    that.externalchange++;
+                    that.$emit("external-change");
                 });
         },
 
@@ -100,7 +101,7 @@ module.exports = {
                 .thenApply(function(success) {
                     that.showMessage("Follow request accepted!", "");
                     that.showSpinner = false;
-                    that.externalchange++;
+                    that.$emit("external-change");
                 });
         },
 
@@ -111,7 +112,7 @@ module.exports = {
                 .thenApply(function(success) {
                     that.showMessage("Follow request rejected!", "");
                     that.showSpinner = false;
-                    that.externalchange++;
+                    that.$emit("external-change");
                 });
         },
 
@@ -122,7 +123,7 @@ module.exports = {
                 .thenApply(function(success) {
                     that.showMessage("Removed follower " + username, "");
                     that.showSpinner = false;
-                    that.externalchange++;
+                    that.$emit("external-change");
                 });
         },
 
@@ -133,12 +134,12 @@ module.exports = {
                 .thenApply(function(success) {
                     that.showMessage("Stopped following " + username, "");
                     that.showSpinner = false;
-                    that.externalchange++;
+                    that.$emit("external-change");
                 });
         },
 
         close: function () {
-            this.show = false;
+            this.$emit("hide-social");
         }
     },
     computed: {

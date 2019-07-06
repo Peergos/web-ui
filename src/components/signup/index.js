@@ -2,10 +2,7 @@ module.exports = {
     template: require('signup.html'),
     data: function() {
         return {
-            crypto: null,
-            network: null,
-            username: "",
-	    passwordFieldType: "password",
+            passwordFieldType: "password",
 	    password1: "",
             password2FieldType: "password",
 	    password2: "",
@@ -25,9 +22,7 @@ module.exports = {
 	    safePassword:false
         };
     },
-    props: {
-
-    },
+    props: ["username", "password1", "crypto", "network"],
     created: function() {
         console.debug('Signup module created!');
         var that = this;
@@ -80,10 +75,7 @@ module.exports = {
                     return peergos.shared.user.UserContext.signUp(that.username, that.password1, that.network, that.crypto
                     , {"accept" : x => that.spinnerMessage = x})
                         .thenApply(function(context) {
-                            that.$dispatch('child-msg', {
-                                view:'filesystem',
-                                props:{context: context}
-                            });
+                            that.$emit("filesystem", {context: context});
                             console.log("Signing in/up took " + (Date.now()-creationStart)+" mS from function call");
                             this.showSpinner = false;
                         }).exceptionally(function(throwable) {
@@ -124,15 +116,5 @@ module.exports = {
 	host: function() {
 	    return window.location.origin;
 	}
-    },
-    events: {
-        'parent-msg': function (msg) {
-            // `this` in event callbacks are automatically bound
-            // to the instance that registered it
-            this.username = msg.username;
-            this.password1 = msg.password;
-            this.crypto = msg.crypto;
-            this.network = msg.network;
-        }
     }
 };

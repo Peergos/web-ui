@@ -1,4 +1,5 @@
-<div class="modal-mask" @click="close" v-show="show" transition="modal">
+<transition name="modal">
+<div class="modal-mask" @click="close">
     <meta http-equiv="content-type" content="text/html; charset=utf-8" />
     <div style="height:30%"></div>
     <div class="modal-container" @click.stop style="height:70%;overflow-y:auto">
@@ -27,3 +28,4 @@
         </div>
     </div>
 </div>
+</transition>

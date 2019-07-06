@@ -8,7 +8,7 @@ module.exports = {
             showError:false
         }
     },
-    props: ['show', 'data', 'files', 'context', 'forceshared'],
+    props: ['show', 'data', 'files', 'context'],
     created: function() {
     },
     methods: {
@@ -30,7 +30,7 @@ module.exports = {
                     .thenApply(function(b) {
                         that.showSpinner = false;
                         console.log("unshared read access to " + that.files[0].getFileProperties().name + " with " + targetUsername);
-                        that.forceshared++;
+                        that.$emit("update-shared");
                     }).exceptionally(function(throwable) {
                         that.showSpinner = false;
                         that.errorTitle = 'Error unsharing file: ' + filename;
@@ -43,7 +43,7 @@ module.exports = {
                     .thenApply(function(b) {
                         that.showSpinner = false;
                         console.log("unshared write access to " + that.files[0].getFileProperties().name + " with " + targetUsername);
-                        that.forceshared++;
+                        that.$emit("update-shared");
                     }).exceptionally(function(throwable) {
                         that.showSpinner = false;
                         that.errorTitle = 'Error unsharing file: ' + filename;

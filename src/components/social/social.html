@@ -1,4 +1,5 @@
-<div class="modal-mask" @click="close" v-show="show" transition="modal">
+<transition name="modal">
+<div class="modal-mask" @click="close"> 
     <div style="height:30%"></div>
     <div class="modal-container" @click.stop style="height:70%;overflow-y:auto">
 
@@ -15,7 +16,7 @@
                         <td style="text-align:right; padding:20px">
                             <input id="friend-name-input" v-model="targetUsername" type="text" placeholder="Friend name" class="form-control" style="width:200px"></input>
                         </td>
-                        <td style="text-align:right"><button id='send-follow-request-id' class="btn btn-success" @click="sendInitialFollowRequest(this.targetUsername)">Send</button></td>
+                        <td style="text-align:right"><button id='send-follow-request-id' class="btn btn-success" @click="sendInitialFollowRequest()">Send</button></td>
                     </tr>
                 </table>
             </div>
@@ -27,13 +28,13 @@
                     <tr v-for="req in data.pending">
                         <td id='follow-request-id'>{{ req.getEntry().ownerName }}</td>
                         <td style="text-align:right">
-                            <button id='{{req.getEntry().owner + "_allow-and-follow-back-id"}}' class="btn btn-success" @click="acceptAndReciprocate(req)">Allow and follow back</button>
+                            <button class="btn btn-success" @click="acceptAndReciprocate(req)">Allow and follow back</button>
                         </td>
                         <td style="text-align:right">
-                            <button id='{{req.getEntry().owner + "_allow-follow-request-id"}}' class="btn btn-info" @click="accept(req)">Allow</button>
+                            <button class="btn btn-info" @click="accept(req)">Allow</button>
                         </td>
                         <td style="text-align:right">
-                            <button id='{{req.getEntry().owner + "_deny-follow-request-id"}}' class="btn btn-danger" @click="reject(req)">Deny</button>
+                            <button class="btn btn-danger" @click="reject(req)">Deny</button>
                         </td>
                     </tr>
                 </table>
@@ -63,3 +64,4 @@
         </div>
     </div>
 </div>
+</transition>

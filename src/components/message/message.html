@@ -1,4 +1,5 @@
-<div class="modal-mask" @click="closeMessage" v-show="show" transition="modal">
+<transition name="modal">
+<div class="modal-mask" @click="closeMessage">
     <div class="modal-container" @click.stop>
 
         <div class="modal-header">
@@ -9,8 +10,11 @@
             <div class="container">
                 <div>{{ message }}</div>
                 <p/>
-                <button class="btn btn-success" @click="closeMessage">Ok</button>
+                <button class="btn btn-success" @click="closeMessage">
+                    OK
+                </button>
             </div>
         </div>
     </div>
 </div>
+</transition>

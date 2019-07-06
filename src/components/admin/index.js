@@ -5,7 +5,7 @@ module.exports = {
             showSpinner: false 
         }
     },
-    props: ['show', 'data', 'context'],
+    props: ['data', 'context'],
     created: function() {
     },
     methods: {
@@ -40,7 +40,7 @@ module.exports = {
         },
 
         close: function () {
-            this.show = false;
+            this.$emit("hide-admin");
         }
     }
 }

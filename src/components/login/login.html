@@ -1,13 +1,13 @@
 <!-- LOGIN PAGE -->
 <div class="container form-signin">
-    <spinner v-if="showSpinner" :message.sync="spinnerMessage"></spinner>
+    <spinner v-if="showSpinner" :message="spinnerMessage"></spinner>
     <div class="alert alert-danger" v-if="displayDemoWarning()"><strong>WARNING:</strong>This is a demo server and all data will be occasionally cleared.</div>
     <h2>Peergos</h2>
     <center>
         <img src="images/logo.png" class="image">
     </center>
-    <h2 v-if="isPublicLink">Loading public link...</h2>
-    <div v-if="!isPublicLink">
+    <h2 v-if="isSecretLink">Loading secret link...</h2>
+    <div v-if="!isSecretLink">
         <h4>Please log in</h4>
         <div class="form-group">
             <input type="text" name="username" id="username" class="form-control" v-on:keyup="lowercaseUsername()" v-model="username" placeholder="Username">
@@ -24,6 +24,11 @@
             <button @click="showSignup()" class="btn btn-large btn-block btn-primary">Sign Up</button>
         </div>
     </div>
-    <error :show.sync="showError" :title.sync="errorTitle" :body.sync="errorBody"></error>
+    <error
+        v-if="showError"
+        v-on:hide-error="showError = false"
+        :title="errorTitle" 
+        :body="errorBody">
+    </error>
 </div>
 <!-- EOF LOGIN PAGE -->

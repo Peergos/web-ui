@@ -6,7 +6,7 @@ module.exports = {
             fileData: null
         };
     },
-    props: ['show', 'file', 'context'],
+    props: ['file', 'context'],
     created: function() {
         console.debug('Text viewer created!');
         this.updateCurrentFileData();
@@ -14,7 +14,7 @@ module.exports = {
 
     methods: {
         close: function() {
-            this.show = false;
+            this.$emit("hide-text-viewer");
         },
 
         updateCurrentFileData: function() {
@@ -41,26 +41,26 @@ module.exports = {
                 });
         },
 
-	bytesToString: function(arr, start, end) {
-	    if (end - start > 64*1024)
-		throw "Can't convert array longer than 64k to string!";
-	    return String.fromCharCode.apply(null, arr.slice(start, end));
-	}
+        bytesToString: function(arr, start, end) {
+            if (end - start > 64*1024)
+                throw "Can't convert array longer than 64k to string!";
+            return String.fromCharCode.apply(null, arr.slice(start, end));
+        }
     },
     computed: {
-	lines: function() {
-	    var data = this.fileData;
-	    if (data == null)
-		return [];
-	    var res = "";
-	    for (var i=0; i < data.length; i += 64*1024)
-		res += this.bytesToString(data, i, Math.min(i + 64*1024, data.length))
+        lines: function() {
+            var data = this.fileData;
+            if (data == null)
+                return [];
+            var res = "";
+            for (var i=0; i < data.length; i += 64*1024)
+                res += this.bytesToString(data, i, Math.min(i + 64*1024, data.length))
 
-	    var lines = res.split("\n");
-	    // split on space to allow them to be rendered, and replace tabs with spaces
-	    for (var i=0; i < lines.length; i++)
-		lines[i] = lines[i].split("\t").join("   ").split(" ");
-	    return lines;
-	}
+            var lines = res.split("\n");
+            // split on space to allow them to be rendered, and replace tabs with spaces
+            for (var i=0; i < lines.length; i++)
+                lines[i] = lines[i].split("\t").join("   ").split(" ");
+            return lines;
+        }
     }
 };
