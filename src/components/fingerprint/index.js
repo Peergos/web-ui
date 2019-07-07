@@ -38,10 +38,15 @@ module.exports = {
 
 	takeSnapshot: function(attemptsLeft) {
 	    var canvas = document.getElementById('canvas');
-	    var context = canvas.getContext('2d');
+	    var vctx = canvas.getContext('2d');
 	    var video = document.getElementById('video');
-	    context.drawImage(video, 0, 0, this.width, this.height);
-	    var pixels = this.convertCanvasToPixels(context)
+	    vctx.drawImage(video, 0, 0, this.width, this.height);
+	    this.processSnapshot(attemptsLeft);
+	},
+
+	processSnapshot: function(attemptsLeft) {
+	    var vctx = canvas.getContext('2d');
+	    var pixels = this.convertCanvasToPixels(vctx)
 	    try {
 		var scanned = peergos.shared.fingerprint.FingerPrint.decodeFromPixels(pixels, this.width, this.height);
 		console.log("Success!");
