@@ -55,15 +55,11 @@ module.exports = {
 		var scanned = peergos.shared.fingerprint.FingerPrint.decodeFromPixels(pixels, this.width, this.height);
 		this.stream.getVideoTracks()[0].stop();
 		this.stream = null;
-		alert("success scanning qr code!!!!!")
-		var that = this;
-		this.context.generateFingerPrint(this.friendname)
-		    .thenApply(gen => {
-			if (gen.matches(scanned)) {
-			    alert("Friend successfully verified!");
-			} else
-			    alert("non matching fingerprint!!");
-		    })
+		if (this.fingerprint.matches(scanned)) {
+		    alert("Friend successfully verified!");
+		} else
+		    alert("non matching fingerprint!!");
+		   
 	    } catch (err) {
 		console.log("Couldn't find qr code in image");
 		if (attemptsLeft > 0)
