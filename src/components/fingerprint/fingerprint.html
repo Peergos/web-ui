@@ -3,21 +3,21 @@
     <div class="modal-container" @click.stop style="height:100%;width:65%;overflow-y:auto">
         <span @click="close" class="close">&times;</span>
         <center>
-            <h2 >{{ friendname }}</h2>
+            <h2 >Verifying friend: {{ friendname }}</h2>
         </center>
         <center style="font-size:2em">
-          <img v-bind:src="QRCodeURL"></img>
-	  <button class="btn btn-success" @click="scanQRCode()">Scan your friend's QR code</button>
-	  <video id="video" width="512" height="512" autoplay></video>
-	  <a @click="processSnapshot(0)"><canvas id="canvas" width="512" height="512" ></canvas></a>
-	  <br/>
-	  <br/>
-	  <h4>Or you can read these numbers out to each other (they should match)</h4>
-          {{ safetyNumber[0] }}
-	  <br/>
-	  {{ safetyNumber[1] }}
-	  <br/>
-	  {{ safetyNumber[2] }}
+          <img v-if="stream == null" v-bind:src="QRCodeURL" width="512" height="512"></img>
+	  <video v-if="stream != null" id="video" width="512" height="512"></video>
+	  <div>
+	    <button class="btn btn-success" @click="scanQRCode()">Scan your friend's QR code</button>
+	    <br/>
+	    <h4>Or you can read these numbers out to each other (they should match)</h4>
+            {{ safetyNumber[0] }}
+	    <br/>
+	    {{ safetyNumber[1] }}
+	    <br/>
+	    {{ safetyNumber[2] }}
+	  </div>
         </center>
     </div>
 </div>
