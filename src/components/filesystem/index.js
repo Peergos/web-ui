@@ -218,16 +218,21 @@ module.exports = {
                 this.social = {
                     pending: [],
                     followers: [],
-                    following: []
+                    following: [],
+		    pendingOutgoing: [],
+		    annotations: {}
                 };
 	    else {
 		var that = this;
                 context.getSocialState().thenApply(function(social){
+		    var annotations = {};
+		    social.friendAnnotations.keySet().toArray([]).map(name => annotations.name=social.friendAnnotations.get(name));
 		    that.social = {
                         pending: social.pendingIncoming.toArray([]),
                         followers: social.followerRoots.keySet().toArray([]),
                         following: social.followingRoots.toArray([]).map(function(f){return f.getFileProperties().name}),
-                        pendingOutgoing: social.pendingOutgoingFollowRequests.keySet().toArray([])
+                        pendingOutgoing: social.pendingOutgoingFollowRequests.keySet().toArray([]),
+			annotations: annotations
 		    };
                 }).exceptionally(function(throwable) {
 		    that.errorTitle = 'Error retrieving social state';

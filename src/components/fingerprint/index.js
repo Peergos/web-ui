@@ -55,7 +55,7 @@ module.exports = {
 		var scanned = peergos.shared.fingerprint.FingerPrint.decodeFromPixels(pixels, this.width, this.height);
 		this.stream.getVideoTracks()[0].stop();
 		this.stream = null;
-		if (this.fingerprint.matches(scanned)) {
+		if (this.fingerprint.right.matches(scanned)) {
 		    alert("Friend successfully verified!");
 		} else
 		    alert("non matching fingerprint!!");
@@ -83,11 +83,11 @@ module.exports = {
     },
     computed: {
         QRCodeURL: function() {
-            return this.fingerprint.getBase64Thumbnail();
+            return this.fingerprint.right.getBase64Thumbnail();
         },
 
 	safetyNumber: function() {
-	    var res = this.fingerprint.getDisplayString();
+	    var res = this.fingerprint.right.getDisplayString();
 	    var split = [];
 	    for (var i=0; i < res.length; i += 5)
 		split.push(res.substring(i, i + 5))
