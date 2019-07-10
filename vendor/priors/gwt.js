@@ -253,6 +253,12 @@ var scryptJS = {
 	    res.length = 32;
 	    return res;
 	}
+
+	this.blake2b = function(input, outputLength) {
+	    var res = peergos.shared.user.JavaScriptPoster.convertToBytes(blake2b.blake2b(input, outputLength));
+	    res.length = outputLength;
+	    return res;
+	}
     }
 };
 
