@@ -171,7 +171,6 @@ module.exports = {
 
 	updateUsage: function() {
 	    var context = this.getContext();
-	    console.log(this);
             if (this.isSecretLink)
 		return;
 	    var that = this;
