@@ -56,6 +56,7 @@ module.exports = {
 		this.stream.getVideoTracks()[0].stop();
 		this.stream = null;
 		if (this.fingerprint.right.matches(scanned)) {
+		    this.context.addFriendAnnotation(new peergos.shared.user.FriendAnnotation(this.friendname, true, this.fingerprint.left))
 		    alert("Friend successfully verified!");
 		} else
 		    alert("non matching fingerprint!!");

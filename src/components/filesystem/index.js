@@ -226,7 +226,7 @@ module.exports = {
 		var that = this;
                 context.getSocialState().thenApply(function(social){
 		    var annotations = {};
-		    social.friendAnnotations.keySet().toArray([]).map(name => annotations.name=social.friendAnnotations.get(name));
+		    social.friendAnnotations.keySet().toArray([]).map(name => annotations[name]=social.friendAnnotations.get(name));
 		    that.social = {
                         pending: social.pendingIncoming.toArray([]),
                         followers: social.followerRoots.keySet().toArray([]),
