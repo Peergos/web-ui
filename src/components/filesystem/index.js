@@ -35,6 +35,7 @@ module.exports = {
             showPassword:false,
             showRequestSpace:false,
             showSettingsMenu:false,
+            showUploadMenu:false,
             showFeedbackForm: false,
 	    admindata: {pending:[]},
             social:{
@@ -170,7 +171,6 @@ module.exports = {
 
 	updateUsage: function() {
 	    var context = this.getContext();
-	    console.log(this);
             if (this.isSecretLink)
 		return;
 	    var that = this;
@@ -374,10 +374,16 @@ module.exports = {
 		});
         },
 
-        askForFile: function() {
-            console.log("ask for file");
-            document.getElementById('uploadInput').click();
+        askForFiles: function() {
+            this.toggleUploadMenu();
+            document.getElementById('uploadFileInput').click();
         },
+
+        askForDirectories: function() {
+            this.toggleUploadMenu();
+            document.getElementById('uploadDirectoriesInput').click();
+        },
+
         dndDrop: function(evt) {
             evt.preventDefault();
             console.log("upload files from DnD");
@@ -417,7 +423,6 @@ module.exports = {
                 }
         },
         uploadFiles: function(evt) {
-            console.log("upload files");
             let uploadPath = this.getPath();
             var files = evt.target.files || evt.dataTransfer.files;
             this.traverseDirectories(uploadPath, uploadPath, null, 0, files, 0, false);
@@ -461,8 +466,9 @@ module.exports = {
                         });
                 } else {
                     let file = items[itemIndex];
+                    let refreshDir = that.getPath() == currentDir ? true : false;
                     if (file.name != '.DS_Store') { //FU OSX
-                        that.uploadFileToDirectory(file, updatedDir, false, fromDnd);
+                        that.uploadFileToDirectory(file, updatedDir, refreshDir, fromDnd);
                     }
                     if(itemIndex < items.length -1) {
                         //optimisation - Next entry will likely be in the same directory
@@ -482,7 +488,7 @@ module.exports = {
                              }
                             if (sameDirectory) {
                                 if (nextFile.name != '.DS_Store') { //FU OSX
-                                    that.uploadFileToDirectory(nextFile, updatedDir, false, fromDnd);
+                                    that.uploadFileToDirectory(nextFile, updatedDir, refreshDir, fromDnd);
                                 }
                             } else {
                                 nextIndex++;
@@ -564,6 +570,10 @@ module.exports = {
 
         toggleFeedbackForm: function() { 
             this.showFeedbackForm = !this.showFeedbackForm;
+        },
+
+        toggleUploadMenu: function() {
+            this.showUploadMenu = !this.showUploadMenu;
         },
 
         showChangePassword: function() {
