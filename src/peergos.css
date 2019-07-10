@@ -248,9 +248,12 @@ table {
   transition: opacity .3s ease;
 }
 
+.full-height {
+    height:100%;
+}
+
 .modal-container {
   width: 50%;
-  height: 100%;
   margin: 0px auto;
   padding: 20px 30px;
   background-color: #fff;
@@ -263,7 +266,6 @@ table {
 @media (max-width: 600px) {
     .modal-container {
 	width: 100%;
-	height: 100%;
     }
 }
 

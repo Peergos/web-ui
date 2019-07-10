@@ -1,6 +1,6 @@
 <transition name="modal">
 <div class="modal-mask" @click="close">
-    <div class="modal-container" @click.stop style="overflow-y:auto" @keyup.right="next" @keyup.left="previous">
+    <div class="modal-container full-height" @click.stop style="overflow-y:auto" @keyup.right="next" @keyup.left="previous">
         <span @click="close" class="close">&times;</span>
         <spinner v-if="showSpinner"></spinner>
         <center>
