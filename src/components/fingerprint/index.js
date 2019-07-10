@@ -32,7 +32,7 @@ module.exports = {
 			that.takeSnapshot(60)
 		    }, 100);
 		}).catch(function(error) {
-		    alert("Is webcam connected?");
+		    alert("Couldn't connect to webcam. Make sure it is connected and you click allow access when prompted.");
 		    console.error(error);
 		    that.stream = null;
 		});
