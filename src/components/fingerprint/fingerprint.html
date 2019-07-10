@@ -1,13 +1,15 @@
 <transition name="modal">
 <div class="modal-mask" @click="close">
-    <div class="modal-container" @click.stop style="height:100%;width:65%;overflow-y:auto">
+    <div class="modal-container" @click.stop style="overflow-y:auto">
         <span @click="close" class="close">&times;</span>
         <center>
             <h2>Verifying friend: {{ friendname }}</h2>
         </center>
-        <center style="font-size:2em">
-          <img v-if="stream == null" v-bind:src="QRCodeURL" width="512" height="512"></img>
-	  <video v-if="stream != null" id="video" width="512" height="512"></video>
+        <center style="font-size:1.6em">
+	  <div class="qrcode-container">
+            <img v-if="stream == null" v-bind:src="QRCodeURL" class="qrcode"></img>
+	    <video v-if="stream != null" id="video" class="qrcode"></video>
+	  </div>
 	  <div>
 	    <button class="btn btn-success" @click="scanQRCode()">Scan your friend's QR code</button>
 	    <br/>
