@@ -3,7 +3,10 @@ module.exports = {
     data: function() {
         return {
             targetUsername: "",
-            showSpinner: false 
+            showSpinner: false,
+	    showFingerprint: false,
+	    fingerprint:null,
+	    friendname:null
         }
     },
     props: ['data', 'context', 'externalchange', 'messages'],
@@ -59,7 +62,16 @@ module.exports = {
             });
         },
 
-        sendInitialFollowRequest: function() {
+	showFingerPrint: function(friendname) {
+	    var that = this;
+	    this.context.generateFingerPrint(friendname).thenApply(function(f) {
+		that.fingerprint = f;
+		that.friendname = friendname;
+		that.showFingerprint = true;
+	    })
+	},
+
+	sendInitialFollowRequest: function() {
 	    var name = this.targetUsername;
             if(name !== this.context.username) {
                 var that = this;
