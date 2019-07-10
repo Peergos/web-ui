@@ -5,8 +5,8 @@ module.exports = {
             targetUsername: "",
             showSpinner: false,
 	    showFingerprint: false,
-	    fingerprint:null,
-	    friendname:null
+	    fingerprint: null,
+	    friendname: null
         }
     },
     props: ['data', 'context', 'externalchange', 'messages'],

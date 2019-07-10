@@ -59,7 +59,7 @@ module.exports = {
 		    this.context.addFriendAnnotation(new peergos.shared.user.FriendAnnotation(this.friendname, true, this.fingerprint.left))
 		    alert("Friend successfully verified!");
 		} else
-		    alert("non matching fingerprint!!");
+		    alert("QR code did not match this person's identity on Peergos. Are you sure this person is who they say they are?");
 		   
 	    } catch (err) {
 		console.log("Couldn't find qr code in image");
