@@ -3,7 +3,7 @@
     <div class="modal-container" @click.stop style="height:100%;width:65%;overflow-y:auto">
         <span @click="close" class="close">&times;</span>
         <center>
-            <h2 >Verifying friend: {{ friendname }}</h2>
+            <h2>Verifying friend: {{ friendname }}</h2>
         </center>
         <center style="font-size:2em">
           <img v-if="stream == null" v-bind:src="QRCodeURL" width="512" height="512"></img>

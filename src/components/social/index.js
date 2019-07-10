@@ -5,8 +5,8 @@ module.exports = {
             targetUsername: "",
             showSpinner: false,
 	    showFingerprint: false,
-	    fingerprint:null,
-	    friendname:null
+	    fingerprint: null,
+	    friendname: null
         }
     },
     props: ['data', 'context', 'externalchange', 'messages'],
@@ -62,6 +62,13 @@ module.exports = {
             });
         },
 
+	isVerified: function(username) {
+	    var annotations = this.data.annotations[username]
+	    if (annotations == null)
+		return false;
+	    return annotations.isVerified();
+	},
+	
 	showFingerPrint: function(friendname) {
 	    var that = this;
 	    this.context.generateFingerPrint(friendname).thenApply(function(f) {
