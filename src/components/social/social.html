@@ -1,7 +1,7 @@
 <transition name="modal">
 <div class="modal-mask" @click="close"> 
-    <div style="height:30%"></div>
-    <div class="modal-container" @click.stop style="height:70%;overflow-y:auto">
+    <div class="modal-container full-height" @click.stop style="overflow-y:auto">
+      <span @click="close" class="close">&times;</span>
       <fingerprint v-if="showFingerprint"
 		   v-on:hide-fingerprint="showFingerprint = false"
 		   :fingerprint="fingerprint"
