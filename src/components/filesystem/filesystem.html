@@ -131,12 +131,12 @@
     :file="selectedFiles[0]" 
     :context="context">
   </hex>
-  <text 
+  <text-viewer 
     v-if="showTextViewer" 
     v-on:hide-text-viewer="showTextViewer = false"
     :file="selectedFiles[0]" 
     :context="context">
-  </text>
+  </text-viewer>
   <message 
     v-for="message in messages" 
     v-on:remove-message="messages.splice(messages.indexOf(message), 1)"
