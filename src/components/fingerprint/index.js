@@ -23,7 +23,7 @@ module.exports = {
 	    console.log("Scan QR code");
 	    if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
 		var that = this;
-		navigator.mediaDevices.getUserMedia({ video: true }).then(function(stream) {
+		navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" }}).then(function(stream) {
 		    that.stream = stream;
 		    setTimeout(() => {
 			var video = document.getElementById('video');
