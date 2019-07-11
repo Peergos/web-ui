@@ -316,6 +316,12 @@ table {
     right: 0; }
 
 
+@media (max-width: 600px) {
+    .not-mobile {
+	display: none;
+    }
+}
+
 .pending-badge {
     display: inline-block;
     min-width: 10px;

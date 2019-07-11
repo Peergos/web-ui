@@ -47,20 +47,39 @@
             </div>
 
             <div>
+                <h3>Friends</h3>
+                <table id='friend-table-id' class="table table-responsive table-striped table-hover">
+                  <tr v-if="data.friends.length==0">
+		    <th></th>
+		    <th style="text-align:right"></th>
+		    <th style="text-align:right"></th>
+		    <th style="text-align:right"></th>
+		  </tr>
+                    <tr v-for="username in data.friends">
+                      <td id='friend-id'>{{ username }} <span v-if="isVerified(username)" class="fas fa-check-circle"><span class="not-mobile">Verified<span></span></td>
+                      <td style="text-align:right">
+			<button class="btn btn-danger" @click="unfollow(username)">Unfollow</button>
+			</td><td style="text-align:right">
+			<button class="btn btn-danger" @click="removeFollower(username)">Remove</button>
+		      </td>
+		      <td style="text-align:right">
+			<button class="btn btn-success" @click="showFingerPrint(username)">Verification</button>
+		      </td>
+                    </tr>
+                </table>
+            </div>
+
+            <div>
                 <h3>Followers</h3>
                 <table id='follower-table-id' class="table table-responsive table-striped table-hover">
                   <tr v-if="data.followers.length==0">
 		    <th></th>
 		    <th style="text-align:right"></th>
-		    <th style="text-align:right"></th>
 		  </tr>
                     <tr v-for="username in data.followers">
-                        <td id='follower-id'>{{ username }} <span v-if="isVerified(username)" class="fas fa-check-circle">Verified</span></td>
+                        <td id='follower-id'>{{ username }}</td>
                         <td style="text-align:right">
 			  <button class="btn btn-danger" @click="removeFollower(username)">Remove</button>
-			</td>
-			<td style="text-align:right">
-			  <button class="btn btn-success" @click="showFingerPrint(username)">View Safety Numbers</button>
 			</td>
                     </tr>
                 </table>

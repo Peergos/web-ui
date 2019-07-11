@@ -227,10 +227,16 @@ module.exports = {
                 context.getSocialState().thenApply(function(social){
 		    var annotations = {};
 		    social.friendAnnotations.keySet().toArray([]).map(name => annotations[name]=social.friendAnnotations.get(name));
+		    var followerNames = social.followerRoots.keySet().toArray([]);
+		    var followeeNames = social.followingRoots.toArray([]).map(function(f){return f.getFileProperties().name});
+		    var friendNames = followerNames.filter(x => followeeNames.includes(x));
+		    followerNames = followerNames.filter(x => !friendNames.includes(x));
+		    followeeNames = followeeNames.filter(x => !friendNames.includes(x));
 		    that.social = {
                         pending: social.pendingIncoming.toArray([]),
-                        followers: social.followerRoots.keySet().toArray([]),
-                        following: social.followingRoots.toArray([]).map(function(f){return f.getFileProperties().name}),
+			friends: friendNames,
+                        followers: followerNames,
+                        following: followeeNames,
                         pendingOutgoing: social.pendingOutgoingFollowRequests.keySet().toArray([]),
 			annotations: annotations
 		    };
