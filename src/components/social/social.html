@@ -3,9 +3,10 @@
     <div class="modal-container full-height" @click.stop style="overflow-y:auto">
       <span @click="close" class="close">&times;</span>
       <fingerprint v-if="showFingerprint"
-		   v-on:hide-fingerprint="showFingerprint = false"
+		   v-on:hide-fingerprint="hideFingerprint"
 		   :fingerprint="fingerprint"
 		   :friendname="friendname"
+		   :initialIsVerified="initialIsVerified"
 		   :context="context">
       </fingerprint>
         <div class="modal-header">

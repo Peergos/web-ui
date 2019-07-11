@@ -12,6 +12,7 @@
 	  </div>
 	  <div>
 	    <button class="btn btn-success" @click="scanQRCode()">Scan your friend's QR code</button>
+	    <span style="display:block;width:6em;text-align:left;"><input type="checkbox" v-model="isVerified" autocomplete="off"> {{ verified }}</span>
 	    <br/>
 	    <h4>Or you can read these numbers out to each other (they should match)</h4>
             {{ safetyNumber[0] }}

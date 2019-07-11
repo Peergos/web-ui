@@ -5,6 +5,7 @@ module.exports = {
             targetUsername: "",
             showSpinner: false,
 	    showFingerprint: false,
+	    initialIsVerified: false,
 	    fingerprint: null,
 	    friendname: null
         }
@@ -68,12 +69,18 @@ module.exports = {
 		return false;
 	    return annotations.isVerified();
 	},
+
+	hideFingerprint: function(isVerified) {
+	    this.showFingerprint = false;
+	    this.data.annotations[this.friendname] = new peergos.shared.user.FriendAnnotation(this.friendname, isVerified, this.fingerprint.left)
+	},
 	
 	showFingerPrint: function(friendname) {
 	    var that = this;
 	    this.context.generateFingerPrint(friendname).thenApply(function(f) {
 		that.fingerprint = f;
 		that.friendname = friendname;
+		that.initialIsVerified = that.isVerified(friendname);
 		that.showFingerprint = true;
 	    })
 	},

@@ -5,17 +5,25 @@ module.exports = {
 	    width: 512,
 	    height: 512,
 	    stream: null,
+	    isVerified: false
         };
     },
-    props: ['fingerprint', 'friendname', 'context'],
+    props: ['fingerprint', 'friendname', 'context', "initialIsVerified"],
     created: function() {
         console.debug('Fingerprint module created!');
+	this.isVerified = this.initialIsVerified;
     },
 
+    watch: {
+	isVerified: function(newVerified) {
+	    this.persistVerification(newVerified);
+	}
+    },
+    
     methods: {
         close: function() {
 	    this.closeCamera();
-            this.$emit("hide-fingerprint");
+            this.$emit("hide-fingerprint", this.isVerified);
         },
 
 	closeCamera: function() {
@@ -28,7 +36,8 @@ module.exports = {
 	    }
 	    this.stream = null;
 	    var video = document.getElementById('video');
-	    video.srcObject = null;
+	    if (video != null)
+		video.srcObject = null;
 	},
 
 	scanQRCode: function() {
@@ -51,6 +60,10 @@ module.exports = {
 	    }
 	},
 
+	persistVerification: function(verified) {
+	    this.context.addFriendAnnotation(new peergos.shared.user.FriendAnnotation(this.friendname, verified, this.fingerprint.left));
+	},
+
 	takeSnapshot: function(attemptsLeft) {
 	    var canvas = document.createElement('canvas');
 	    canvas.width = 512;
@@ -67,10 +80,12 @@ module.exports = {
 		var scanned = peergos.shared.fingerprint.FingerPrint.decodeFromPixels(pixels, this.width, this.height);
 		this.closeCamera();
 		if (this.fingerprint.right.matches(scanned)) {
-		    this.context.addFriendAnnotation(new peergos.shared.user.FriendAnnotation(this.friendname, true, this.fingerprint.left))
+		    this.isVerified = true;
 		    alert("Friend successfully verified!");
-		} else
+		} else {
 		    alert("QR code did not match this person's identity on Peergos. Are you sure this person is who they say they are?");
+		    this.isVerified = false;
+		}
 	    } catch (err) {
 		console.log("Couldn't find qr code in image");
 		if (attemptsLeft > 0)
@@ -106,5 +121,9 @@ module.exports = {
 		lines.push(split.slice(j*4, j*4 + 4).join(" "));
             return lines;
         },
+
+	verified: function() {
+	    return this.isVerified ? "Verified" : "Unverified";
+	}
     }
 };
