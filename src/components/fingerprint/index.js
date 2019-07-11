@@ -14,10 +14,22 @@ module.exports = {
 
     methods: {
         close: function() {
-	    if (this.stream != null)
-		this.stream.getVideoTracks()[0].stop();
+	    this.closeCamera();
             this.$emit("hide-fingerprint");
         },
+
+	closeCamera: function() {
+	    if (this.stream != null) {
+		var tracks = this.stream.getTracks();
+		for (var i = 0; i < tracks.length; i++) {
+		    var track = tracks[i];
+		    track.stop();
+		}
+	    }
+	    this.stream = null;
+	    var video = document.getElementById('video');
+	    video.srcObject = null;
+	},
 
 	scanQRCode: function() {
 	    console.log("Scan QR code");
@@ -34,7 +46,7 @@ module.exports = {
 		}).catch(function(error) {
 		    alert("Couldn't connect to webcam. Make sure it is connected and you click allow access when prompted.");
 		    console.error(error);
-		    that.stream = null;
+		    that.closeCamera();
 		});
 	    }
 	},
@@ -53,21 +65,18 @@ module.exports = {
 	    var pixels = this.convertCanvasToPixels(vctx)
 	    try {
 		var scanned = peergos.shared.fingerprint.FingerPrint.decodeFromPixels(pixels, this.width, this.height);
-		this.stream.getVideoTracks()[0].stop();
-		this.stream = null;
+		this.closeCamera();
 		if (this.fingerprint.right.matches(scanned)) {
 		    this.context.addFriendAnnotation(new peergos.shared.user.FriendAnnotation(this.friendname, true, this.fingerprint.left))
 		    alert("Friend successfully verified!");
-		} else
+		} else {
 		    alert("QR code did not match this person's identity on Peergos. Are you sure this person is who they say they are?");
-		   
 	    } catch (err) {
 		console.log("Couldn't find qr code in image");
 		if (attemptsLeft > 0)
 		    setTimeout(() => this.takeSnapshot(attemptsLeft-1), 1000);
 		else {
-		    this.stream.getVideoTracks()[0].stop();
-		    this.stream = null;
+		    this.closeCamera();
 		}
 	    }
 	},
