@@ -40,6 +40,7 @@ module.exports = {
 	    admindata: {pending:[]},
             social:{
                 pending: [],
+                friends: [],
                 followers: [],
                 following: []
             },
@@ -217,6 +218,7 @@ module.exports = {
             if (context == null || context.username == null)
                 this.social = {
                     pending: [],
+		    friends: [],
                     followers: [],
                     following: [],
 		    pendingOutgoing: [],
@@ -1222,7 +1224,7 @@ module.exports = {
         },
 
 	followernames: function() {
-	    return this.social.followers;
+	    return this.social.followers.concat(this.social.friends);
 	},
 
         username: function() {

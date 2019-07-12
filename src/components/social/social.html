@@ -56,7 +56,7 @@
 		    <th style="text-align:right"></th>
 		  </tr>
                     <tr v-for="username in data.friends">
-                      <td id='friend-id'>{{ username }} <span v-if="isVerified(username)" class="fas fa-check-circle"><span class="not-mobile">Verified<span></span></td>
+                      <td id='friend-id'>{{ username }} <span v-if="isVerified(username)" class="fas fa-check-circle"><span class="not-mobile">Verified</span></span></td>
                       <td style="text-align:right">
 			<button class="btn btn-danger" @click="unfollow(username)">Unfollow</button>
 			</td><td style="text-align:right">
