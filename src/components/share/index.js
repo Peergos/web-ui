@@ -17,7 +17,7 @@ module.exports = {
     methods: {
         close: function () {
             this.showSpinner = false;
-            $emit("hide-share-with");
+            this.$emit("hide-share-with");
         },
 
 	allowedToShare: function(file) {
