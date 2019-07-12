@@ -112,6 +112,10 @@ module.exports = {
             }
         });
 	},
+
+	typeaheadSelect: function(a, value) {
+	    this.targetUsername = value;
+	},
 	
 	setTypeAhead: function() {
             var substringMatcher = function(strs) {
@@ -148,7 +152,8 @@ module.exports = {
 		    {
                         name: 'usernames',
                         source: substringMatcher(this.followernames)
-		    });
+		    })
+		.bind('typeahead:select', this.typeaheadSelect);
 	}
     }
 }
