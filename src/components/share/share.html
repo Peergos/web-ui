@@ -17,7 +17,7 @@
                             <label for="read-access" style="font-weight: normal;">Read Only</label>
                             <input v-if="this.files[0].getOwnerName() == this.context.username" type="radio" id="edit-access" value="Edit" v-model="sharedWithAccess">
                             <label v-if="this.files[0].getOwnerName() == this.context.username" for="edit-access" style="font-weight: normal;">Read &amp; Write</label>
-                            <button class="btn btn-success" @click="shareWith(this.targetUsername, this.sharedWithAccess)">Send</button>
+                            <button class="btn btn-success" @click="shareWith(targetUsername, sharedWithAccess)">Send</button>
                         </td>
                     </tr>
                 </table>
