@@ -15,7 +15,11 @@ module.exports = {
         Vue.nextTick(this.setTypeAhead);
     },
     methods: {
-        setTypeAhead: function() {
+        typeaheadSelect: function(a, value) {
+	    this.targetUsername = value;
+	},
+	
+	setTypeAhead: function() {
             var substringMatcher = function(strs) {
                 return function findMatches(q, cb) {
                     var matches, substringRegex;
@@ -52,7 +56,8 @@ module.exports = {
                         {
                             name: 'usernames',
                             source: substringMatcher(usernames)
-                        });
+                        })
+		.bind('typeahead:select', this.typeaheadSelect);
         },
 
         showMessage: function(title, body) {
