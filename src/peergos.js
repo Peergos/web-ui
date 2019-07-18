@@ -52,7 +52,7 @@ Vue.mixin({
         var that = this;
         this.progressMonitors.push(progress);
         var context = this.getContext();
-        file.getInputStream(context.network, context.crypto.random, props.sizeHigh(), props.sizeLow(), function(read) {
+        file.getInputStream(context.network, context.crypto, props.sizeHigh(), props.sizeLow(), function(read) {
             progress.done += read.value_0;
             that.progressMonitors.sort(function(a, b) {
               return Math.floor(b.done / b.max) - Math.floor(a.done / a.max);
