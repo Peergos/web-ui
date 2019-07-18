@@ -81,12 +81,12 @@ module.exports = {
             var isLargeAudioFile = that.isAudio(file) && that.getFileSize(props) > 1024 * 1024 * 5;
             if(that.supportsStreaming() && ( that.isVideo(file) || isLargeAudioFile )) {
                 var size = props.sizeLow();
-                function Context(file, network, random, sizeHigh, sizeLow) {
+                function Context(file, network, crypto, sizeHigh, sizeLow) {
                     this.maxBlockSize = 1024 * 1024 * 5;
                     this.writer = null;
                     this.file = file;
                     this.network = network;
-                    this.random = random;
+                    this.crypto = crypto;
                     this.sizeHigh = sizeHigh,
                     this.sizeLow = sizeLow;
                     this.counter = 0;
@@ -111,7 +111,7 @@ module.exports = {
                                     return future;
                                 }
                             }
-                            file.getInputStream(network, random, sizeHigh, sizeLow, function(read) {}).thenCompose(function(reader) {
+                            file.getInputStream(network, crypto, sizeHigh, sizeLow, function(read) {}).thenCompose(function(reader) {
                                 return reader.seekJS(seekHi, seekLo).thenApply(function(seekReader){
                                     return pump(seekReader);
                                 })
@@ -122,7 +122,7 @@ module.exports = {
                         return work(this, this.counter);
                     }
                 }
-                const context = new Context(file, this.context.network, this.context.crypto.random, props.sizeHigh(), props.sizeLow());
+                const context = new Context(file, this.context.network, this.context.crypto, props.sizeHigh(), props.sizeLow());
                 console.log("streaming data of length " + size);
                 let fileStream = streamSaver.createWriteStream("media-" + props.name, props.mimeType, function(url){
                     that.videoUrl = url;
@@ -133,7 +133,7 @@ module.exports = {
                 context.writer = fileStream.getWriter()
                 return context.stream(0, 0, Math.min(size, 1024 * 1024))
             } else {
-                file.getInputStream(this.context.network, this.context.crypto.random,
+                file.getInputStream(this.context.network, this.context.crypto,
                         props.sizeHigh(), props.sizeLow(),
                         function(read) {})
                     .thenCompose(function(reader) {

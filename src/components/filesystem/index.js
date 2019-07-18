@@ -129,7 +129,7 @@ module.exports = {
                     that.changePath(linkPath);
                     if (that.initiateDownload) {
                         that.context.getByPath(that.getPath())
-                            .thenApply(function(file){file.get().getChildren(that.context.network).thenApply(function(children){
+                            .thenApply(function(file){file.get().getChildren(that.context.crypto.hasher, that.context.network).thenApply(function(children){
                                 var arr = children.toArray();
                                 if (arr.length == 1)
                                     that.downloadFile(arr[0]);
@@ -204,7 +204,7 @@ module.exports = {
             if (current == null)
                 return Promise.resolve([]);
             var that = this;
-            current.getChildren(that.getContext().network).thenApply(function(children){
+            current.getChildren(that.getContext().crypto.hasher, that.getContext().network).thenApply(function(children){
                 var arr = children.toArray();
                 that.showSpinner = false;
                 that.files = arr.filter(function(f){
@@ -457,7 +457,7 @@ module.exports = {
                     let dirName = dirs[dirIndex];
                     let path = currentDir + dirName + "/" ;
 
-                    updatedDir.hasChild(dirName, that.context.network)
+                    updatedDir.hasChild(dirName, that.context.crypto.hasher, that.context.network)
                         .thenApply(function(alreadyExists){
                             if (alreadyExists) {
                                 that.traverseDirectories(origDir, path, dirs, ++dirIndex, items, itemIndex, fromDnd);
