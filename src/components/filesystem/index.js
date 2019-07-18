@@ -89,7 +89,6 @@ module.exports = {
 
         path: function(newPath) {
             this.updateCurrentDir();
-	    this.updateHistory();
         },
 
         forceSharedWithUpdate: function(newCounter) {
@@ -190,13 +189,32 @@ module.exports = {
 
 	updateHistory: function() {
 	    var path = this.getPath();
-	    window.location.hash = propsToFragment({app:"filesystem",path:path});
+	    var rawProps = propsToFragment({app:"filesystem", path:path});
+	    var props = this.encryptProps(rawProps);
+	    window.location.hash = "#" + propsToFragment(props);
+	},
+
+	encryptProps: function(props) {
+	    if (this.isSecretLink)
+		return path;
+	    var context = this.getContext();
+	    var both = context.encryptURL(props)
+	    const nonce = both.base64Nonce;
+	    const ciphertext = both.base64Ciphertext;
+	    return {nonce:nonce, ciphertext:ciphertext};
+	},
+
+	decryptProps: function(props) {
+	    if (this.isSecretLink)
+		return path;
+	    var context = this.getContext();
+	    return fragmentToProps(context.decryptURL(props.ciphertext, props.nonce));
 	},
 
 	onUrlChange: function() {
-	    var props = fragmentToProps(window.location.hash);
+	    var props = this.decryptProps(fragmentToProps(window.location.hash.substring(1)));
 	    var path = props.path;
-	    if (path != null)
+	    if (path != null && path != this.getPath())
 		this.path = path.split("/").filter(x => x.length > 0);
 	},
 
@@ -210,6 +228,7 @@ module.exports = {
             context.getByPath(path).thenApply(function(file){
                 that.currentDir = file.get();
                 that.updateFiles();
+		that.updateHistory();
             });
         },
 	
@@ -779,7 +798,7 @@ module.exports = {
                 var file = this.selectedFiles[i];
                 var name = file.getFileProperties().name;
                 links.push({href:window.location.origin + window.location.pathname +
-			    propsToFragment({secretLink:true,link:file.toLink()}), 
+			    "#" + propsToFragment({secretLink:true,link:file.toLink()}), 
                     name:name, 
                     id:'secret_link_'+name});
             }

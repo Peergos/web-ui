@@ -13,11 +13,11 @@ function convertToByteArray(target) {
 }
 
 function propsToFragment(props) {
-    return "#" + JSON.stringify(props);
+    return JSON.stringify(props);
 }
 
 function fragmentToProps(fragment) {
-    var decoded = decodeURIComponent(fragment.substring(1));
+    var decoded = decodeURIComponent(fragment);
     return JSON.parse(decoded);
 }
 
