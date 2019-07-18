@@ -188,12 +188,24 @@ module.exports = {
 	},
 
 	updateHistory: function() {
-	    var path = this.getPath();
+	    const path = this.getPath();
+	    const pathFromUrl = this.getPathFromUrl();
+	    if (path == pathFromUrl)
+		return;
 	    var rawProps = propsToFragment({app:"filesystem", path:path});
 	    var props = this.encryptProps(rawProps);
 	    window.location.hash = "#" + propsToFragment(props);
 	},
 
+	getPathFromUrl: function() {
+	    try {
+	    var props = this.decryptProps(fragmentToProps(window.location.hash.substring(1)));
+		return props.path;
+	    } catch(e) {
+		return null;
+	    }
+	},
+	
 	encryptProps: function(props) {
 	    if (this.isSecretLink)
 		return path;
@@ -212,8 +224,7 @@ module.exports = {
 	},
 
 	onUrlChange: function() {
-	    var props = this.decryptProps(fragmentToProps(window.location.hash.substring(1)));
-	    var path = props.path;
+	    const path = this.getPathFromUrl();
 	    if (path != null && path != this.getPath())
 		this.path = path.split("/").filter(x => x.length > 0);
 	},
