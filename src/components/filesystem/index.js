@@ -69,6 +69,7 @@ module.exports = {
     created: function() {
         console.debug('Filesystem module created!');
 	this.init();
+	window.onhashchange = this.onUrlChange;
     },
     watch: {
         // manually encode currentDir dependencies to get around infinite dependency chain issues with async-computed methods
@@ -88,6 +89,7 @@ module.exports = {
 
         path: function(newPath) {
             this.updateCurrentDir();
+	    this.updateHistory();
         },
 
         forceSharedWithUpdate: function(newCounter) {
@@ -184,6 +186,18 @@ module.exports = {
 		return;
 	    var that = this;
 	    this.context.getQuota().thenApply(q => that.quota = that.convertBytesToHumanReadable(q));
+	},
+
+	updateHistory: function() {
+	    var path = this.getPath();
+	    window.location.hash = propsToFragment({app:"filesystem",path:path});
+	},
+
+	onUrlChange: function() {
+	    var props = fragmentToProps(window.location.hash);
+	    var path = props.path;
+	    if (path != null)
+		this.path = path.split("/").filter(x => x.length > 0);
 	},
 
 	updateCurrentDir: function() {
@@ -764,7 +778,8 @@ module.exports = {
             for (var i=0; i < this.selectedFiles.length; i++) {
                 var file = this.selectedFiles[i];
                 var name = file.getFileProperties().name;
-                links.push({href:window.location.origin + window.location.pathname + file.toLink(), 
+                links.push({href:window.location.origin + window.location.pathname +
+			    propsToFragment({secretLink:true,link:file.toLink()}), 
                     name:name, 
                     id:'secret_link_'+name});
             }

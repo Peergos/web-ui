@@ -28,17 +28,37 @@ module.exports = {
 	    this.isFirefox = navigator.userAgent.toLowerCase().indexOf('firefox') > -1;
             this.isSafari = /constructor/i.test(window.HTMLElement) || (function (p) { return p.toString() === "[object SafariRemoteNotification]"; })(!window['safari'] || safari.pushNotification);
             var that = this;
-            var href = window.location.href;
-	    
-            const fragment = href.includes("#") ? href.substring(href.indexOf("#") + 1) : "";
+            const href = window.location.href;
+            const fragment = window.location.hash;
+	    var props = {};
+	    try {
+		props = fragmentToProps(fragment);
+	    } catch (e) {
+		if (fragment.length > 0) {
+		    // support legacy secret links
+		    props.secretLink = true;
+
+		    var query = fragment.indexOf("?");
+		    var download = false;
+		    var open = false;
+		    if (query > 0) {
+			if (fragment.indexOf("download=true") > 0)
+			    download = true;
+			if (fragment.indexOf("open=true") > 0)
+			    open = true;
+			fragment = fragment.substring(0, query);
+		    }
+		    props.link = fragment.substring(1);
+		}
+	    }
             if (href.includes("?signup=true"))
 		this.showSignup();
-            else if (fragment.length > 0) {
+            else if (props.secretLink) {
 		// this is a secret link
 		this.isSecretLink = true;
 		console.log("Navigating to secret link...");
 		Vue.nextTick(function() {
-                    that.gotoSecretLink(fragment);
+                    that.gotoSecretLink(props);
 		});
             } else
 		Vue.nextTick(function() {
@@ -73,27 +93,16 @@ module.exports = {
                 return false;
             }
         },
-        gotoSecretLink: function(link) {
-            var that = this;
-            var query = link.indexOf("?");
-            var download = false;
-            var open = false;
-            if (query > 0) {
-                if (link.indexOf("download=true") > 0)
-                    download = true;
-                if (link.indexOf("open=true") > 0)
-                    open = true;
-                link = link.substring(0, query);
-            }
+        gotoSecretLink: function(props) {
             var that = this;
             peergos.shared.NetworkAccess.buildJS("QmXZXGXsNhxh2LiWFsa7CLHeRWJS5wb8RHxcTvQhvCzAeu")
                 .thenApply(function(network){
-                    peergos.shared.user.UserContext.fromSecretLink(link, network, that.crypto).thenApply(function(context) {
+                    peergos.shared.user.UserContext.fromSecretLink(props.link, network, that.crypto).thenApply(function(context) {
                         that.$emit('filesystem', 
 				   {
                                        context: context,
-                                       download: download,
-                                       open: open
+                                       download: props.download,
+                                       open: props.open
 				   }
 				  );
                     }).exceptionally(function(throwable) {
@@ -101,7 +110,6 @@ module.exports = {
                         that.errorBody = 'Url copy/paste error?'
                         that.showSpinner = false;
                         that.showError = true;
-
                     });
                 });
         },
