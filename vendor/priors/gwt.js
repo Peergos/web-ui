@@ -12,6 +12,15 @@ function convertToByteArray(target) {
     return target;
 }
 
+function propsToFragment(props) {
+    return JSON.stringify(props);
+}
+
+function fragmentToProps(fragment) {
+    var decoded = decodeURIComponent(fragment);
+    return JSON.parse(decoded);
+}
+
 function getProm(url) {
     console.log("getProm " + url);
     var future = peergos.shared.util.Futures.incomplete();

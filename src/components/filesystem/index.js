@@ -69,6 +69,7 @@ module.exports = {
     created: function() {
         console.debug('Filesystem module created!');
 	this.init();
+	window.onhashchange = this.onUrlChange;
     },
     watch: {
         // manually encode currentDir dependencies to get around infinite dependency chain issues with async-computed methods
@@ -186,6 +187,48 @@ module.exports = {
 	    this.context.getQuota().thenApply(q => that.quota = that.convertBytesToHumanReadable(q));
 	},
 
+	updateHistory: function() {
+	    const path = this.getPath();
+	    const pathFromUrl = this.getPathFromUrl();
+	    if (path == pathFromUrl)
+		return;
+	    var rawProps = propsToFragment({app:"filesystem", path:path});
+	    var props = this.encryptProps(rawProps);
+	    window.location.hash = "#" + propsToFragment(props);
+	},
+
+	getPathFromUrl: function() {
+	    try {
+	    var props = this.decryptProps(fragmentToProps(window.location.hash.substring(1)));
+		return props.path;
+	    } catch(e) {
+		return null;
+	    }
+	},
+	
+	encryptProps: function(props) {
+	    if (this.isSecretLink)
+		return path;
+	    var context = this.getContext();
+	    var both = context.encryptURL(props)
+	    const nonce = both.base64Nonce;
+	    const ciphertext = both.base64Ciphertext;
+	    return {nonce:nonce, ciphertext:ciphertext};
+	},
+
+	decryptProps: function(props) {
+	    if (this.isSecretLink)
+		return path;
+	    var context = this.getContext();
+	    return fragmentToProps(context.decryptURL(props.ciphertext, props.nonce));
+	},
+
+	onUrlChange: function() {
+	    const path = this.getPathFromUrl();
+	    if (path != null && path != this.getPath())
+		this.path = path.split("/").filter(x => x.length > 0);
+	},
+
 	updateCurrentDir: function() {
             var context = this.getContext();
             if (context == null)
@@ -196,6 +239,7 @@ module.exports = {
             context.getByPath(path).thenApply(function(file){
                 that.currentDir = file.get();
                 that.updateFiles();
+		that.updateHistory();
             });
         },
 	
@@ -764,7 +808,8 @@ module.exports = {
             for (var i=0; i < this.selectedFiles.length; i++) {
                 var file = this.selectedFiles[i];
                 var name = file.getFileProperties().name;
-                links.push({href:window.location.origin + window.location.pathname + file.toLink(), 
+                links.push({href:window.location.origin + window.location.pathname +
+			    "#" + propsToFragment({secretLink:true,link:file.toLink()}), 
                     name:name, 
                     id:'secret_link_'+name});
             }
