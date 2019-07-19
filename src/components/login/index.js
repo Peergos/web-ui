@@ -48,7 +48,7 @@ module.exports = {
 			    open = true;
 			fragment = fragment.substring(0, query);
 		    }
-		    props.link = fragment.substring(1);
+		    props.link = fragment;
 		}
 	    }
             if (href.includes("?signup=true"))
