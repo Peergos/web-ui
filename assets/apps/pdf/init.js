@@ -1,4 +1,3 @@
-document.getElementById("subtitle").textContent = "JS is working";
 window.addEventListener('message', function (e) {
     // You must verify that the origin of the message's sender matches your
     // expectations. In this case, we're only planning on accepting messages

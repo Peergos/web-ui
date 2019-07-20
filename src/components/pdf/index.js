@@ -12,8 +12,10 @@ module.exports = {
     methods: {
 	startListener: function() {
 	    var iframe = document.getElementById("pdf");
-	    if (iframe == null)
+	    if (iframe == null) {
 		setTimeout(this.startListener, 500);
+		return;
+	    }
 	    // Listen for response messages from the frames.
 	    window.addEventListener('message', function (e) {
 		// Normally, you should verify that the origin of the message's sender
