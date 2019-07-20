@@ -1,0 +1,15 @@
+<transition name="modal">
+<div class="modal-mask" @click="close"> 
+    <div class="modal-container full-height" @click.stop style="width:100%;overflow-y:auto;padding:0;">
+      <span @click="close" class="close">&times;</span>
+      
+        <div class="modal-header">
+            <h2>PDF viewer</h2>
+        </div>
+
+        <div class="modal-body">
+	  <iframe id="pdf" sandbox="allow-scripts" src="apps/pdf/index.html" style="width:100%;height:100%;" frameBorder="0"></iframe>
+        </div>
+    </div>
+</div>
+</transition>

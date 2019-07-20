@@ -131,6 +131,12 @@
     :file="selectedFiles[0]" 
     :context="context">
   </hex>
+  <pdf 
+    v-if="showPdfViewer" 
+    v-on:hide-pdf-viewer="showPdfViewer = false"
+    :file="selectedFiles[0]" 
+    :context="context">
+  </pdf>
   <text-viewer 
     v-if="showTextViewer" 
     v-on:hide-text-viewer="showTextViewer = false"
