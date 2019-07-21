@@ -8,6 +8,7 @@ window.addEventListener('message', function (e) {
         return;
     
     var mainWindow = e.source;
-    
-    mainWindow.postMessage("message sent successfully from iframe!", e.origin);
+
+    PDFViewerApplication.setTitle(e.data.name);
+    PDFViewerApplication.open(new Uint8Array(e.data.bytes));
 });

@@ -26,14 +26,24 @@ module.exports = {
 		// have to be careful about accepting data via the messaging API you
 		// create. Check that source, and validate those inputs!
 		if (e.origin === "null" && e.source === iframe.contentWindow) {
-		    alert('Result: ' + e.data);
+		    console.log('Message from Iframe: ' + e.data);
 		}
 	    });
 	    // Note that we're sending the message to "*", rather than some specific
             // origin. Sandboxed iframes which lack the 'allow-same-origin' header
             // don't have an origin which you can target: you'll have to send to any
             // origin, which might alow some esoteric attacks. Validate your output!
-            iframe.contentWindow.postMessage("Hey", '*');
+	    const props = this.file.getFileProperties();
+	    const name = this.file.getName();
+	    var that = this;
+	    this.file.getInputStream(this.context.network, this.context.crypto, props.sizeHigh(), props.sizeLow(), function(read){}).thenCompose(function(reader) {
+		var size = that.getFileSize(props);
+		var data = convertToByteArray(new Int8Array(size));
+		return reader.readIntoArray(data, 0, data.length)
+		    .thenApply(function(read){
+			iframe.contentWindow.postMessage({name:name,bytes:data}, '*');
+		    });
+	    });
 	},
 
         close: function () {
