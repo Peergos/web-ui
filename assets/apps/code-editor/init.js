@@ -1,3 +1,6 @@
+var editor;
+var mainWindow;
+var origin;
 window.addEventListener('message', function (e) {
     // You must verify that the origin of the message's sender matches your
     // expectations. In this case, we're only planning on accepting messages
@@ -7,14 +10,20 @@ window.addEventListener('message', function (e) {
     if (e.origin !== (window.location.protocol + "//" + window.location.host))
         return;
     
-    var mainWindow = e.source;
+    mainWindow = e.source;
+    origin = e.origin;
 
     document.getElementById("modeSource").src = "mode/" + e.data.mode + "/" + e.data.mode + ".js";
-    CodeMirror.fromTextArea(document.getElementById("code"), {
-	value: e.data.text,
-	lineNumbers: true,
-	mode: e.data.mode
-    });
+    document.getElementById("code").value = e.data.text;
+    setTimeout(function() {
+	editor = CodeMirror.fromTextArea(document.getElementById("code"), {
+	    lineNumbers: true,
+	    mode: e.data.mode
+	});
+    }, 100);
 });
 
-CodeMirror.fromTextArea(document.getElementById("code"));
+function save() {
+    var text = editor.getValue();
+    mainWindow.postMessage({text:text}, e.origin);
+}
