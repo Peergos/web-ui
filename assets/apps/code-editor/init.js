@@ -13,18 +13,18 @@ window.addEventListener('message', function (e) {
     mainWindow = e.source;
     origin = e.origin;
 
-    document.getElementById("modeSource").src = "mode/" + e.data.mode + "/" + e.data.mode + ".js";
-    document.getElementById("code").value = e.data.text;
-    setTimeout(function() {
-	editor = CodeMirror.fromTextArea(document.getElementById("code"), {
-	    lineNumbers: true,
-	    lineWrapping: true,
-	    mode: e.data.mode
-	});
-    }, 100);
+    if (e.data.type == "save") {
+	var text = editor.getValue();
+	mainWindow.postMessage({text:text}, e.origin);
+    } else {
+	document.getElementById("modeSource").src = "mode/" + e.data.mode + "/" + e.data.mode + ".js";
+	document.getElementById("code").value = e.data.text;
+	setTimeout(function() {
+	    editor = CodeMirror.fromTextArea(document.getElementById("code"), {
+		lineNumbers: true,
+		lineWrapping: true,
+		mode: e.data.mode
+	    });
+	}, 100);
+    }
 });
-
-function save() {
-    var text = editor.getValue();
-    mainWindow.postMessage({text:text}, e.origin);
-}

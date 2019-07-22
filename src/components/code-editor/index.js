@@ -3,9 +3,11 @@ module.exports = {
     data: function() {
         return {
             showSpinner: false,
+	    expectingSave: false,
+	    saving: false,
         }
     },
-    props: ['context', 'file'],
+    props: ['context', 'file', 'parent'],
     created: function() {
         this.startListener();
     },
@@ -16,6 +18,7 @@ module.exports = {
 		setTimeout(this.startListener, 500);
 		return;
 	    }
+	    var that = this;
 	    // Listen for response messages from the frames.
 	    window.addEventListener('message', function (e) {
 		// Normally, you should verify that the origin of the message's sender
@@ -27,6 +30,10 @@ module.exports = {
 		// create. Check that source, and validate those inputs!
 		if (e.origin === "null" && e.source === iframe.contentWindow) {
 		    console.log('Message from Iframe: ' + e.data);
+		    if (that.expectingSave) {
+			that.save(e.data.text);
+			that.expectingSave = false;
+		    }
 		}
 	    });
 	    // Note that we're sending the message to "*", rather than some specific
@@ -37,7 +44,7 @@ module.exports = {
 	    const name = this.file.getName();
 	    const mimeType = props.mimeType;
 	    const mode = "markdown";
-	    var that = this;
+	    
 	    this.file.getInputStream(this.context.network, this.context.crypto, props.sizeHigh(), props.sizeLow(), function(read){}).thenCompose(function(reader) {
 		var size = that.getFileSize(props);
 		var data = convertToByteArray(new Int8Array(size));
@@ -46,6 +53,32 @@ module.exports = {
 			iframe.contentWindow.postMessage({mode:mode,text:new TextDecoder().decode(data)}, '*');
 		    });
 	    });
+	},
+
+	getAndSave: function() {
+	    var iframe = document.getElementById("editor");
+	    this.expectingSave = true;
+	    iframe.contentWindow.postMessage({type:"save"}, '*');
+	},
+
+        save: function(text) {
+	    var bytes = convertToByteArray(new TextEncoder().encode(text));
+	    var java_reader = peergos.shared.user.fs.AsyncReader.build(bytes);
+
+	    const file = this.file;
+	    const context = this.context;
+	    const size = text.length;
+	    const that = this;
+	    this.saving = true;
+	    this.parent.uploadFileJS(file.getName(), java_reader, (size - (size % Math.pow(2, 32)))/Math.pow(2, 32), size,
+				true, context.network, context.crypto, len => {}, context.getTransactionService())
+		.thenApply(function(res) {
+		    that.saving = false;
+		}).exceptionally(function(throwable) {
+		    console.log('Error uploading file: ' + file.name);
+		    console.log(throwable.getMessage());
+		    throwable.printStackTrace();
+		});
 	},
 
         close: function () {
