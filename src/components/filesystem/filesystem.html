@@ -139,7 +139,7 @@
   </pdf>
   <code-editor 
     v-if="showCodeEditor" 
-    v-on:hide-code-editor="showCodeEditor = false"
+    v-on:hide-code-editor="showCodeEditor = false; updateCurrentDir();"
     :file="selectedFiles[0]"
     :parent="currentDir"
     :context="context">
