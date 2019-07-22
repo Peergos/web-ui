@@ -18,6 +18,7 @@ window.addEventListener('message', function (e) {
     setTimeout(function() {
 	editor = CodeMirror.fromTextArea(document.getElementById("code"), {
 	    lineNumbers: true,
+	    lineWrapping: true,
 	    mode: e.data.mode
 	});
     }, 100);
