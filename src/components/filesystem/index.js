@@ -31,6 +31,7 @@ module.exports = {
             showGallery: false,
             showSocial:false,
             showHexViewer:false,
+            showCodeEditor:false,
             showPdfViewer:false,
             showTextViewer:false,
             showPassword:false,
@@ -850,7 +851,10 @@ module.exports = {
 		var that = this;
 		this.confirmView(file, () => {that.showGallery = true;});
 	    } else if (mimeType === "text/plain") {
-		this.showTextViewer = true;
+		if (file.getName().endsWith(".md"))
+		    this.showCodeEditor = true;
+		else
+		    this.showTextViewer = true;
 	    } else if (mimeType === "application/pdf") {
 		this.showPdfViewer = true;
 	    } else {

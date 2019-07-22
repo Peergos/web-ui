@@ -137,6 +137,12 @@
     :file="selectedFiles[0]" 
     :context="context">
   </pdf>
+  <code-editor 
+    v-if="showCodeEditor" 
+    v-on:hide-code-editor="showCodeEditor = false"
+    :file="selectedFiles[0]" 
+    :context="context">
+  </code-editor>
   <text-viewer 
     v-if="showTextViewer" 
     v-on:hide-text-viewer="showTextViewer = false"
