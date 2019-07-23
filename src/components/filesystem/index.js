@@ -851,10 +851,7 @@ module.exports = {
 		var that = this;
 		this.confirmView(file, () => {that.showGallery = true;});
 	    } else if (mimeType === "text/plain") {
-		if (file.getName().endsWith(".md"))
-		    this.showCodeEditor = true;
-		else
-		    this.showTextViewer = true;
+		this.showCodeEditor = true;
 	    } else if (mimeType === "application/pdf") {
 		this.showPdfViewer = true;
 	    } else {
