@@ -88,6 +88,12 @@ module.exports = {
 	    } else if (name.endsWith(".r")) {
 		modes = ["r"];
 		mimeType = "text/x-rsrc";
+	    } else if (name.endsWith(".rb")) {
+		modes = ["ruby"];
+		mimeType = "text/x-ruby";
+	    } else if (name.endsWith(".sh")) {
+		modes = ["shell"];
+		mimeType = "text/x-sh";
 	    } else if (name.endsWith(".tex")) {
 		modes = ["stex"];
 		mimeType = "text/x-stex";
