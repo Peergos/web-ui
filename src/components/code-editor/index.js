@@ -58,6 +58,9 @@ module.exports = {
 	    } else if (name.endsWith(".cpp")) {
 		modes = ["clike"];
 		mimeType = "text/x-c++src";
+	    } else if (name.endsWith(".clj")) {
+		modes = ["clojure"];
+		mimeType = "text/x-clojure";
 	    } else if (name.endsWith(".css")) {
 		modes = ["css"];
 		mimeType = "text/css";
@@ -81,6 +84,10 @@ module.exports = {
 		mimeType = "text/x-rustsrc";
 	    } else if (name.endsWith(".r")) {
 		modes = ["r"];
+		mimeType = "text/x-rsrc";
+	    } else if (name.endsWith(".tex")) {
+		modes = ["stex"];
+		mimeType = "text/x-stex";
 	    } else if (name.endsWith(".xml")) {
 		modes = ["xml"];
 	    } else if (name.endsWith(".yaml")) {
