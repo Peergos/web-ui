@@ -41,7 +41,7 @@ module.exports = {
             // origin, which might alow some esoteric attacks. Validate your output!
 	    const props = this.file.getFileProperties();
 	    const name = this.file.getName();
-	    var mimeType = props.mimeType;
+	    var mimeType = "text/x-markdown";
 	    var mode = "markdown"; // default to markdown for plain text
 	    if (name.endsWith(".java")) {
 		mode = "clike";
