@@ -90,8 +90,10 @@ module.exports = {
 		mimeType = "text/x-stex";
 	    } else if (name.endsWith(".xml")) {
 		modes = ["xml"];
+		mimeType = "application/xml";
 	    } else if (name.endsWith(".yaml")) {
 		modes = ["yaml"];
+		mimeType = "text/x-yaml";
 	    }
 	    
 	    this.file.getInputStream(this.context.network, this.context.crypto, props.sizeHigh(), props.sizeLow(), function(read){}).thenCompose(function(reader) {
