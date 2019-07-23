@@ -42,7 +42,29 @@ module.exports = {
 	    const props = this.file.getFileProperties();
 	    const name = this.file.getName();
 	    const mimeType = props.mimeType;
-	    const mode = "markdown";
+	    var mode = "markdown"; // default to markdown for plain text
+	    if (name.endsWith(".java"))
+		mode = "java";
+	    else if (name.endsWith(".css"))
+		mode = "css";
+	    else if (name.endsWith(".diff"))
+		mode = "diff";
+	    else if (name.endsWith(".go"))
+		mode = "go";
+	    else if (name.endsWith(".html"))
+		mode = "htmlmixed";
+	    else if (name.endsWith(".js"))
+		mode = "javascript";
+	    else if (name.endsWith(".rs"))
+		mode = "rust";
+	    else if (name.endsWith(".r"))
+		mode = "r";
+	    else if (name.endsWith(".scala"))
+		mode = "scala";
+	    else if (name.endsWith(".xml"))
+		mode = "xml";
+	    else if (name.endsWith(".yaml"))
+		mode = "yaml";
 	    
 	    this.file.getInputStream(this.context.network, this.context.crypto, props.sizeHigh(), props.sizeLow(), function(read){}).thenCompose(function(reader) {
 		var size = that.getFileSize(props);
