@@ -42,49 +42,49 @@ module.exports = {
 	    const props = this.file.getFileProperties();
 	    const name = this.file.getName();
 	    var mimeType = "text/x-markdown";
-	    var mode = "markdown"; // default to markdown for plain text
+	    var modes = ["markdown"]; // default to markdown for plain text
 	    if (name.endsWith(".java")) {
-		mode = "clike";
+		modes = ["clike"];
 		mimeType = "text/x-java";
 	    } else if (name.endsWith(".scala")) {
-		mode = "clike";
+		modes = ["clike"];
 		mimeType = "text/x-scala";
 	    } else if (name.endsWith(".kt")) {
-		mode = "clike";
+		modes = ["clike"];
 		mimeType = "text/x-kotlin";
 	    } else if (name.endsWith(".c")) {
-		mode = "clike";
+		modes = ["clike"];
 		mimeType = "text/x-csrc";
 	    } else if (name.endsWith(".cpp")) {
-		mode = "clike";
+		modes = ["clike"];
 		mimeType = "text/x-c++src";
 	    } else if (name.endsWith(".css")) {
-		mode = "css";
+		modes = ["css"];
 		mimeType = "text/css";
 	    } else if (name.endsWith(".diff")) {
-		mode = "diff";
+		modes = ["diff"];
 		mimeType = "text/x-diff";
 	    } else if (name.endsWith(".go")) {
-		mode = "go";
+		modes = ["go"];
 		mimeType = "text/x-go";
 	    } else if (name.endsWith(".html")) {
-		mode = "htmlmixed";
+		modes = ["xml", "javascript", "css", "htmlmixed"];
 		mimeType = "text/html";
 	    } else if (name.endsWith(".js")) {
-		mode = "javascript";
+		modes = ["javascript"];
 		mimeType = "text/javascript";
 	    } else if (name.endsWith(".json")) {
-		mode = "javascript";
+		modes = ["javascript"];
 		mimeType = "application/json";
 	    } else if (name.endsWith(".rs")) {
-		mode = "rust";
+		modes = "rust";
 		mimeType = "text/x-rustsrc";
 	    } else if (name.endsWith(".r")) {
-		mode = "r";
+		modes = ["r"];
 	    } else if (name.endsWith(".xml")) {
-		mode = "xml";
+		modes = ["xml"];
 	    } else if (name.endsWith(".yaml")) {
-		mode = "yaml";
+		modes = ["yaml"];
 	    }
 	    
 	    this.file.getInputStream(this.context.network, this.context.crypto, props.sizeHigh(), props.sizeLow(), function(read){}).thenCompose(function(reader) {
@@ -92,7 +92,7 @@ module.exports = {
 		var data = convertToByteArray(new Int8Array(size));
 		return reader.readIntoArray(data, 0, data.length)
 		    .thenApply(function(read){
-			iframe.contentWindow.postMessage({mode:mode, mime:mimeType, text:new TextDecoder().decode(data)}, '*');
+			iframe.contentWindow.postMessage({modes:modes, mime:mimeType, text:new TextDecoder().decode(data)}, '*');
 		    });
 	    });
 	},
