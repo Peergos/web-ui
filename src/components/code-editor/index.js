@@ -41,37 +41,58 @@ module.exports = {
             // origin, which might alow some esoteric attacks. Validate your output!
 	    const props = this.file.getFileProperties();
 	    const name = this.file.getName();
-	    const mimeType = props.mimeType;
+	    var mimeType = props.mimeType;
 	    var mode = "markdown"; // default to markdown for plain text
-	    if (name.endsWith(".java"))
-		mode = "java";
-	    else if (name.endsWith(".css"))
+	    if (name.endsWith(".java")) {
+		mode = "clike";
+		mimeType = "text/x-java";
+	    } else if (name.endsWith(".scala")) {
+		mode = "clike";
+		mimeType = "text/x-scala";
+	    } else if (name.endsWith(".kt")) {
+		mode = "clike";
+		mimeType = "text/x-kotlin";
+	    } else if (name.endsWith(".c")) {
+		mode = "clike";
+		mimeType = "text/x-csrc";
+	    } else if (name.endsWith(".cpp")) {
+		mode = "clike";
+		mimeType = "text/x-c++src";
+	    } else if (name.endsWith(".css")) {
 		mode = "css";
-	    else if (name.endsWith(".diff"))
+		mimeType = "text/css";
+	    } else if (name.endsWith(".diff")) {
 		mode = "diff";
-	    else if (name.endsWith(".go"))
+		mimeType = "text/x-diff";
+	    } else if (name.endsWith(".go")) {
 		mode = "go";
-	    else if (name.endsWith(".html"))
+		mimeType = "text/x-go";
+	    } else if (name.endsWith(".html")) {
 		mode = "htmlmixed";
-	    else if (name.endsWith(".js"))
+		mimeType = "text/html";
+	    } else if (name.endsWith(".js")) {
 		mode = "javascript";
-	    else if (name.endsWith(".rs"))
+		mimeType = "text/javascript";
+	    } else if (name.endsWith(".json")) {
+		mode = "javascript";
+		mimeType = "application/json";
+	    } else if (name.endsWith(".rs")) {
 		mode = "rust";
-	    else if (name.endsWith(".r"))
+		mimeType = "text/x-rustsrc";
+	    } else if (name.endsWith(".r")) {
 		mode = "r";
-	    else if (name.endsWith(".scala"))
-		mode = "scala";
-	    else if (name.endsWith(".xml"))
+	    } else if (name.endsWith(".xml")) {
 		mode = "xml";
-	    else if (name.endsWith(".yaml"))
+	    } else if (name.endsWith(".yaml")) {
 		mode = "yaml";
+	    }
 	    
 	    this.file.getInputStream(this.context.network, this.context.crypto, props.sizeHigh(), props.sizeLow(), function(read){}).thenCompose(function(reader) {
 		var size = that.getFileSize(props);
 		var data = convertToByteArray(new Int8Array(size));
 		return reader.readIntoArray(data, 0, data.length)
 		    .thenApply(function(read){
-			iframe.contentWindow.postMessage({mode:mode,text:new TextDecoder().decode(data)}, '*');
+			iframe.contentWindow.postMessage({mode:mode, mime:mimeType, text:new TextDecoder().decode(data)}, '*');
 		    });
 	    });
 	},

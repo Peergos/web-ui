@@ -23,7 +23,8 @@ window.addEventListener('message', function (e) {
 	    editor = CodeMirror.fromTextArea(document.getElementById("code"), {
 		lineNumbers: true,
 		lineWrapping: true,
-		mode: e.data.mode
+//		matchBrackets: true,
+		mode: e.data.mime,
 	    });
 	}, 100);
     }
