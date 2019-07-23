@@ -29,7 +29,6 @@ module.exports = {
 		// have to be careful about accepting data via the messaging API you
 		// create. Check that source, and validate those inputs!
 		if (e.origin === "null" && e.source === iframe.contentWindow) {
-		    console.log('Message from Iframe: ' + e.data);
 		    if (that.expectingSave) {
 			that.save(e.data.text);
 			that.expectingSave = false;
