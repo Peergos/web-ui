@@ -77,7 +77,7 @@ module.exports = {
 		modes = ["javascript"];
 		mimeType = "application/json";
 	    } else if (name.endsWith(".rs")) {
-		modes = "rust";
+		modes = ["rust"];
 		mimeType = "text/x-rustsrc";
 	    } else if (name.endsWith(".r")) {
 		modes = ["r"];
