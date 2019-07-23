@@ -1,6 +1,7 @@
 var editor;
 var mainWindow;
 var origin;
+var attacher;
 window.addEventListener('message', function (e) {
     // You must verify that the origin of the message's sender matches your
     // expectations. In this case, we're only planning on accepting messages
@@ -17,15 +18,17 @@ window.addEventListener('message', function (e) {
 	var text = editor.getValue();
 	mainWindow.postMessage({text:text}, e.origin);
     } else {
-	document.getElementById("modeSource").src = "mode/" + e.data.mode + "/" + e.data.mode + ".js";
+	var modejs = document.getElementById("modeSource");
+	modejs.src = "mode/" + e.data.mode + "/" + e.data.mode + ".js";
 	document.getElementById("code").value = e.data.text;
-	setTimeout(function() {
+	attacher = function() {
 	    editor = CodeMirror.fromTextArea(document.getElementById("code"), {
 		lineNumbers: true,
 		lineWrapping: true,
 //		matchBrackets: true,
 		mode: e.data.mime,
 	    });
-	}, 100);
+	};
+	modejs.onload = attacher;
     }
 });
