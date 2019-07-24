@@ -128,14 +128,19 @@ module.exports = {
 	    const file = this.file;
 	    const context = this.context;
 	    const size = text.length;
+	    const parent = this.parent;
 	    const that = this;
 	    this.saving = true;
 	    this.parent.uploadFileJS(file.getName(), java_reader, (size - (size % Math.pow(2, 32)))/Math.pow(2, 32), size,
 				true, context.network, context.crypto, len => {}, context.getTransactionService())
-		.thenApply(function(res) {
-		    that.saving = false;
+		.thenCompose(function(res) {
+		    return res.getChild(file.getName(), context.crypto.hasher, context.network)
+			.thenCompose(child => child.get().truncate(size, parent, context.network, context.crypto)
+				     .thenApply(function(updated) {
+					 that.saving = false;
+				     }));
 		}).exceptionally(function(throwable) {
-		    console.log('Error uploading file: ' + file.name);
+		    console.log('Error uploading file: ' + file.getName());
 		    console.log(throwable.getMessage());
 		    throwable.printStackTrace();
 		});
