@@ -62,7 +62,7 @@ module.exports = {
             var seekOffset = this.offsetLow - (this.offsetLow % (5*1024*1024));
             var requestedOffset = this.offsetLow;
             this.maxOffsetLow = props.sizeLow() - (props.sizeLow() % this.bytesPerPage);
-            this.file.getInputStream(this.context.network, this.context.crypto.random, 
+            this.file.getInputStream(this.context.network, this.context.crypto, 
                 props.sizeHigh(), props.sizeLow(), 
                 function(read) {})
                 .thenCompose(function(startReader) {
