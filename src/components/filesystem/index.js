@@ -911,21 +911,6 @@ module.exports = {
                 return 'fa-file-excel';
             return 'fa-file';
         },
-        openItem: function(name, data, mimeType) {
-            console.log("saving data of length " + data.length + " to " + name);
-            if(this.url != null){
-                window.URL.revokeObjectURL(this.url);
-            }
-
-            var blob =  new Blob([data], {type: "octet/stream"});
-            this.url = window.URL.createObjectURL(blob);
-            var link = document.getElementById("downloadAnchor");
-            link.href = this.url;
-	    link.type = mimeType;
-            link.download = name;
-            link.click();
-        },
-
         getPath: function() {
             return '/'+this.path.join('/') + (this.path.length > 0 ? "/" : "");
         },
