@@ -137,6 +137,13 @@
     :file="selectedFiles[0]" 
     :context="context">
   </pdf>
+  <code-editor 
+    v-if="showCodeEditor" 
+    v-on:hide-code-editor="showCodeEditor = false; updateCurrentDir();"
+    :file="selectedFiles[0]"
+    :parent="currentDir"
+    :context="context">
+  </code-editor>
   <text-viewer 
     v-if="showTextViewer" 
     v-on:hide-text-viewer="showTextViewer = false"
