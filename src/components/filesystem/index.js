@@ -143,6 +143,7 @@ module.exports = {
 		
             } else {
 		this.path = [this.context.username];
+		this.updateHistory("filesystem", this.getPath(), "");
                 this.updateSocial();
 		this.updateUsage();
 		this.updateQuota();
@@ -189,20 +190,20 @@ module.exports = {
 	    this.context.getQuota().thenApply(q => that.quota = that.convertBytesToHumanReadable(q));
 	},
 
-	updateHistory: function() {
-	    const path = this.getPath();
-	    const pathFromUrl = this.getPathFromUrl();
+	updateHistory: function(app, path, filename) {
+	    const currentProps = this.getPropsFromUrl();
+	    const pathFromUrl = props == null ? null : currentProps.path;
 	    if (path == pathFromUrl)
 		return;
-	    var rawProps = propsToFragment({app:"filesystem", path:path});
+	    console.log("setting app:path:file in url to " + app + ":" + path + ":" + filename);
+	    var rawProps = propsToFragment({app:app, path:path, filename:filename});
 	    var props = this.encryptProps(rawProps);
 	    window.location.hash = "#" + propsToFragment(props);
 	},
 
-	getPathFromUrl: function() {
+	getPropsFromUrl: function() {
 	    try {
-	    var props = this.decryptProps(fragmentToProps(window.location.hash.substring(1)));
-		return props.path;
+		return this.decryptProps(fragmentToProps(window.location.hash.substring(1)));
 	    } catch(e) {
 		return null;
 	    }
@@ -226,9 +227,51 @@ module.exports = {
 	},
 
 	onUrlChange: function() {
-	    const path = this.getPathFromUrl();
-	    if (path != null && path != this.getPath())
+	    const props = this.getPropsFromUrl();
+	    const path = props == null ? null : props.path;
+	    const filename = props == null ? null : props.filename;
+	    const app = props == null ? null : props.app;
+	    const that = this;
+	    const differentPath = path != null && path != this.getPath();
+	    if (differentPath)
 		this.path = path.split("/").filter(x => x.length > 0);
+
+	    console.log("restoring app:path:file to " + app + ":" + path +":" + filename);
+	    if (app == "filesystem") {
+		this.showGallery = false;
+		this.showPdfViewer = false;
+		this.showCodeEditor = false;
+		this.showTextViewer = false;
+		this.showHexViewer = false;
+	    } else {
+		if (! differentPath)
+		    this.openInApp(filename, app);
+		else
+		    this.onUpdateCompletion.push(() => {
+			that.openInApp(filename, app);
+		    });
+	    }
+	},
+
+	closeApps: function() {
+	    this.showGallery = false;
+	    this.showPdfViewer = false;
+	    this.showCodeEditor = false;
+	    this.showTextViewer = false;
+	    this.showHexViewer = false;
+	    this.updateHistory("filesystem", this.getPath(), "");
+	},
+
+	openInApp: function(filename, app) {
+	    this.selectedFiles = this.files.filter(f => f.getName() == filename);
+	    if (app == "gallery")
+		this.showGallery = true;
+	    else if (app == "pdf")
+		this.showPdfViewer = true;
+	    else if (app == "editor")
+		this.showCodeEditor = true;
+	    else if (app == "hex")
+		this.showHexViewer = true;
 	},
 
 	updateCurrentDir: function() {
@@ -241,7 +284,6 @@ module.exports = {
             context.getByPath(path).thenApply(function(file){
                 that.currentDir = file.get();
                 that.updateFiles();
-		that.updateHistory();
             });
         },
 	
@@ -799,6 +841,7 @@ module.exports = {
                 path = path.substring(1);
             this.path = path ? path.split('/') : [];
             this.showSpinner = true;
+	    this.updateHistory("filesystem", path, "");
         },
 
         createSecretLink: function() {
@@ -843,19 +886,26 @@ module.exports = {
 	    if (this.selectedFiles.length == 0)
 		return;
 	    var file = this.selectedFiles[0];
+	    var filename = file.getName();
 	    var mimeType = file.getFileProperties().mimeType;
 	    console.log("Opening " + mimeType);
 	    if (mimeType.startsWith("audio") ||
 		mimeType.startsWith("video") ||
 		mimeType.startsWith("image")) {
 		var that = this;
-		this.confirmView(file, () => {that.showGallery = true;});
+		this.confirmView(file, () => {
+		    that.showGallery = true;
+		    that.updateHistory("gallery", that.getPath(), filename);
+		});
 	    } else if (mimeType === "text/plain") {
 		this.showCodeEditor = true;
+		this.updateHistory("editor", this.getPath(), filename);
 	    } else if (mimeType === "application/pdf") {
 		this.showPdfViewer = true;
+		this.updateHistory("pdf", this.getPath(), filename);
 	    } else {
 		this.showHexViewer = true;
+		this.updateHistory("hex", this.getPath(), filename);
 	    } 
         },
 
