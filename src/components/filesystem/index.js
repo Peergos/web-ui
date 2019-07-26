@@ -75,7 +75,7 @@ module.exports = {
     },
     watch: {
         // manually encode currentDir dependencies to get around infinite dependency chain issues with async-computed methods
-        context: function(newContext) {
+        context: function(newContext, oldContext) {
 	    this.contextUpdates++;
             this.updateCurrentDir();
             this.updateFollowerNames();
@@ -89,36 +89,36 @@ module.exports = {
 	    }
         },
 
-        path: function(newPath) {
+        path: function(newPath, oldPath) {
             this.updateCurrentDir();
         },
 
-        forceSharedWithUpdate: function(newCounter) {
+        forceSharedWithUpdate: function(newCounter, oldCounter) {
             this.sharedWithDataUpdate();
             this.updateCurrentDir();
         },
-        forceUpdate: function(newUpdateCounter) {
+        forceUpdate: function(newUpdateCounter, oldUpdateCounter) {
             this.updateCurrentDir();
         },
 
-	externalChange: function(newExternalChange) {
+	externalChange: function(newExternalChange, oldExternalChange) {
 	    this.updateSocial();
 	},
 
-	files: function(newFiles) {
+	files: function(newFiles, oldFiles) {
 	    console.log("files")
 	    
 	    if (newFiles == null)
 		return;
 	    
-	    if (this.files == null && newFiles != null)
+	    if (oldFiles == null && newFiles != null)
 		return this.processPending();
 
-	    if (this.files.length != newFiles.length) {
+	    if (oldFiles.length != newFiles.length) {
 		this.processPending();
 	    } else {
-		for (var i=0; i < this.files.length; i++)
-		    if (! this.files[i].equals(newFiles[i]))
+		for (var i=0; i < oldFiles.length; i++)
+		    if (! oldFiles.equals(newFiles[i]))
 			return this.processPending();
 	    }
 	}
@@ -142,8 +142,21 @@ module.exports = {
                 });
 		
             } else {
-		this.path = [this.context.username];
-		this.updateHistory("filesystem", this.getPath(), "");
+		const props = this.getPropsFromUrl();
+		var pathFromUrl = props == null ? null : props.path;
+		if (pathFromUrl != null) {
+		    this.showSpinner = true;
+		    const filename = props.filename;
+		    const app = props.app;
+		    var open = () => {
+			that.openInApp(filename, app);
+		    };
+		    this.onUpdateCompletion.push(open);
+		    this.path = pathFromUrl.split('/').filter(n => n.length > 0);
+		} else {
+		    this.path = [this.context.username];
+		    this.updateHistory("filesystem", this.getPath(), "");
+		}
                 this.updateSocial();
 		this.updateUsage();
 		this.updateQuota();
@@ -192,7 +205,7 @@ module.exports = {
 
 	updateHistory: function(app, path, filename) {
 	    const currentProps = this.getPropsFromUrl();
-	    const pathFromUrl = props == null ? null : currentProps.path;
+	    const pathFromUrl = currentProps == null ? null : currentProps.path;
 	    if (path == pathFromUrl)
 		return;
 	    console.log("setting app:path:file in url to " + app + ":" + path + ":" + filename);
@@ -264,6 +277,8 @@ module.exports = {
 
 	openInApp: function(filename, app) {
 	    this.selectedFiles = this.files.filter(f => f.getName() == filename);
+	    if (this.selectedFiles.length == 0)
+		return;
 	    if (app == "gallery")
 		this.showGallery = true;
 	    else if (app == "pdf")
@@ -685,6 +700,7 @@ module.exports = {
         logout: function() {
             this.toggleUserMenu();
             this.context = null;
+	    window.location.fragment = "";
             window.location.reload();
         },
 
