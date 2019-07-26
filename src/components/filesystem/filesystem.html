@@ -120,33 +120,33 @@
   </feedback>
   <gallery 
     v-if="showGallery" 
-    v-on:hide-gallery="showGallery = false"
+    v-on:hide-gallery="closeApps()"
     :files="sortedFiles" 
     :context="context" 
     :initial-file-name="selectedFiles[0] == null ? '' : selectedFiles[0].getFileProperties().name">
   </gallery>
   <hex 
     v-if="showHexViewer" 
-    v-on:hide-hex-viewer="showHexViewer = false"
+    v-on:hide-hex-viewer="closeApps()"
     :file="selectedFiles[0]" 
     :context="context">
   </hex>
   <pdf 
     v-if="showPdfViewer" 
-    v-on:hide-pdf-viewer="showPdfViewer = false"
+    v-on:hide-pdf-viewer="closeApps()"
     :file="selectedFiles[0]" 
     :context="context">
   </pdf>
   <code-editor 
     v-if="showCodeEditor" 
-    v-on:hide-code-editor="showCodeEditor = false; updateCurrentDir();"
+    v-on:hide-code-editor="closeApps(); updateCurrentDir();"
     :file="selectedFiles[0]"
     :parent="currentDir"
     :context="context">
   </code-editor>
   <text-viewer 
     v-if="showTextViewer" 
-    v-on:hide-text-viewer="showTextViewer = false"
+    v-on:hide-text-viewer="closeApps()"
     :file="selectedFiles[0]" 
     :context="context">
   </text-viewer>

@@ -75,7 +75,7 @@ module.exports = {
     },
     watch: {
         // manually encode currentDir dependencies to get around infinite dependency chain issues with async-computed methods
-        context: function(newContext) {
+        context: function(newContext, oldContext) {
 	    this.contextUpdates++;
             this.updateCurrentDir();
             this.updateFollowerNames();
@@ -89,36 +89,34 @@ module.exports = {
 	    }
         },
 
-        path: function(newPath) {
+        path: function(newPath, oldPath) {
             this.updateCurrentDir();
         },
 
-        forceSharedWithUpdate: function(newCounter) {
+        forceSharedWithUpdate: function(newCounter, oldCounter) {
             this.sharedWithDataUpdate();
             this.updateCurrentDir();
         },
-        forceUpdate: function(newUpdateCounter) {
+        forceUpdate: function(newUpdateCounter, oldUpdateCounter) {
             this.updateCurrentDir();
         },
 
-	externalChange: function(newExternalChange) {
+	externalChange: function(newExternalChange, oldExternalChange) {
 	    this.updateSocial();
 	},
 
-	files: function(newFiles) {
-	    console.log("files")
-	    
+	files: function(newFiles, oldFiles) {
 	    if (newFiles == null)
 		return;
 	    
-	    if (this.files == null && newFiles != null)
+	    if (oldFiles == null && newFiles != null)
 		return this.processPending();
 
-	    if (this.files.length != newFiles.length) {
+	    if (oldFiles.length != newFiles.length) {
 		this.processPending();
 	    } else {
-		for (var i=0; i < this.files.length; i++)
-		    if (! this.files[i].equals(newFiles[i]))
+		for (var i=0; i < oldFiles.length; i++)
+		    if (! oldFiles.equals(newFiles[i]))
 			return this.processPending();
 	    }
 	}
@@ -142,7 +140,21 @@ module.exports = {
                 });
 		
             } else {
-		this.path = [this.context.username];
+		const props = this.getPropsFromUrl();
+		var pathFromUrl = props == null ? null : props.path;
+		if (pathFromUrl != null) {
+		    this.showSpinner = true;
+		    const filename = props.filename;
+		    const app = props.app;
+		    var open = () => {
+			that.openInApp(filename, app);
+		    };
+		    this.onUpdateCompletion.push(open);
+		    this.path = pathFromUrl.split('/').filter(n => n.length > 0);
+		} else {
+		    this.path = [this.context.username];
+		    this.updateHistory("filesystem", this.getPath(), "");
+		}
                 this.updateSocial();
 		this.updateUsage();
 		this.updateQuota();
@@ -189,20 +201,20 @@ module.exports = {
 	    this.context.getQuota().thenApply(q => that.quota = that.convertBytesToHumanReadable(q));
 	},
 
-	updateHistory: function() {
-	    const path = this.getPath();
-	    const pathFromUrl = this.getPathFromUrl();
-	    if (path == pathFromUrl)
+	updateHistory: function(app, path, filename) {
+	    const currentProps = this.getPropsFromUrl();
+	    const pathFromUrl = currentProps == null ? null : currentProps.path;
+	    const appFromUrl = currentProps == null ? null : currentProps.app;
+	    if (path == pathFromUrl && app == appFromUrl)
 		return;
-	    var rawProps = propsToFragment({app:"filesystem", path:path});
+	    var rawProps = propsToFragment({app:app, path:path, filename:filename});
 	    var props = this.encryptProps(rawProps);
 	    window.location.hash = "#" + propsToFragment(props);
 	},
 
-	getPathFromUrl: function() {
+	getPropsFromUrl: function() {
 	    try {
-	    var props = this.decryptProps(fragmentToProps(window.location.hash.substring(1)));
-		return props.path;
+		return this.decryptProps(fragmentToProps(window.location.hash.substring(1)));
 	    } catch(e) {
 		return null;
 	    }
@@ -226,9 +238,52 @@ module.exports = {
 	},
 
 	onUrlChange: function() {
-	    const path = this.getPathFromUrl();
-	    if (path != null && path != this.getPath())
+	    const props = this.getPropsFromUrl();
+	    const path = props == null ? null : props.path;
+	    const filename = props == null ? null : props.filename;
+	    const app = props == null ? null : props.app;
+	    const that = this;
+	    const differentPath = path != null && path != this.getPath();
+	    if (differentPath)
 		this.path = path.split("/").filter(x => x.length > 0);
+
+	    if (app == "filesystem") {
+		this.showGallery = false;
+		this.showPdfViewer = false;
+		this.showCodeEditor = false;
+		this.showTextViewer = false;
+		this.showHexViewer = false;
+	    } else {
+		if (! differentPath)
+		    this.openInApp(filename, app);
+		else
+		    this.onUpdateCompletion.push(() => {
+			that.openInApp(filename, app);
+		    });
+	    }
+	},
+
+	closeApps: function() {
+	    this.showGallery = false;
+	    this.showPdfViewer = false;
+	    this.showCodeEditor = false;
+	    this.showTextViewer = false;
+	    this.showHexViewer = false;
+	    this.updateHistory("filesystem", this.getPath(), "");
+	},
+
+	openInApp: function(filename, app) {
+	    this.selectedFiles = this.files.filter(f => f.getName() == filename);
+	    if (this.selectedFiles.length == 0)
+		return;
+	    if (app == "gallery")
+		this.showGallery = true;
+	    else if (app == "pdf")
+		this.showPdfViewer = true;
+	    else if (app == "editor")
+		this.showCodeEditor = true;
+	    else if (app == "hex")
+		this.showHexViewer = true;
 	},
 
 	updateCurrentDir: function() {
@@ -241,7 +296,6 @@ module.exports = {
             context.getByPath(path).thenApply(function(file){
                 that.currentDir = file.get();
                 that.updateFiles();
-		that.updateHistory();
             });
         },
 	
@@ -348,7 +402,6 @@ module.exports = {
             this.prompt_message='Enter a new folder name';
             this.prompt_value='';
             this.prompt_consumer_func = function(prompt_result) {
-                console.log("creating new sub-dir " + prompt_result);
                 if (prompt_result === '' || prompt_result === null)
                     return;
                 this.mkdir(prompt_result);
@@ -440,7 +493,6 @@ module.exports = {
 
         dndDrop: function(evt) {
             evt.preventDefault();
-            console.log("upload files from DnD");
             let entries = evt.dataTransfer.items;
             let allItems = [];
             for(i=0; i < entries.length; i ++) {
@@ -571,7 +623,6 @@ module.exports = {
             }
         },
         uploadAFile: function(file, directory, refreshDirectory) {
-            console.log("uploading " + file.name);
             var thumbnailAllocation = Math.min(100000, file.size / 10);
             var resultingSize = file.size + thumbnailAllocation;
             var progress = {
@@ -643,6 +694,7 @@ module.exports = {
         logout: function() {
             this.toggleUserMenu();
             this.context = null;
+	    window.location.fragment = "";
             window.location.reload();
         },
 
@@ -799,6 +851,7 @@ module.exports = {
                 path = path.substring(1);
             this.path = path ? path.split('/') : [];
             this.showSpinner = true;
+	    this.updateHistory("filesystem", path, "");
         },
 
         createSecretLink: function() {
@@ -843,19 +896,26 @@ module.exports = {
 	    if (this.selectedFiles.length == 0)
 		return;
 	    var file = this.selectedFiles[0];
+	    var filename = file.getName();
 	    var mimeType = file.getFileProperties().mimeType;
 	    console.log("Opening " + mimeType);
 	    if (mimeType.startsWith("audio") ||
 		mimeType.startsWith("video") ||
 		mimeType.startsWith("image")) {
 		var that = this;
-		this.confirmView(file, () => {that.showGallery = true;});
+		this.confirmView(file, () => {
+		    that.showGallery = true;
+		    that.updateHistory("gallery", that.getPath(), filename);
+		});
 	    } else if (mimeType === "text/plain") {
 		this.showCodeEditor = true;
+		this.updateHistory("editor", this.getPath(), filename);
 	    } else if (mimeType === "application/pdf") {
 		this.showPdfViewer = true;
+		this.updateHistory("pdf", this.getPath(), filename);
 	    } else {
 		this.showHexViewer = true;
+		this.updateHistory("hex", this.getPath(), filename);
 	    } 
         },
 
