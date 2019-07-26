@@ -33,7 +33,7 @@ Vue.component('error', Vue.extend(Error));
 Vue.component('feedback', Vue.extend(Feedback));
 Vue.component('filesystem', Vue.extend(Downloader).extend(Filesystem));
 Vue.component('fingerprint', Vue.extend(Fingerprint));
-Vue.component('gallery', Vue.extend(Gallery));
+Vue.component('gallery', Vue.extend(Downloader).extend(Gallery));
 Vue.component('hex', Vue.extend(Downloader).extend(Hex));
 Vue.component('login', Vue.extend(Login));
 Vue.component('message', Vue.extend(Message));
