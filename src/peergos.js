@@ -28,7 +28,7 @@ var Warning         = require('./components/warning');
 // Loading components
 Vue.component('admin', Vue.extend(Admin));
 Vue.component('app', Vue.extend(App));
-Vue.component('code-editor', Vue.extend(CodeEditor));
+Vue.component('code-editor', Vue.extend(Downloader).extend(CodeEditor));
 Vue.component('error', Vue.extend(Error));
 Vue.component('feedback', Vue.extend(Feedback));
 Vue.component('filesystem', Vue.extend(Downloader).extend(Filesystem));
@@ -39,7 +39,7 @@ Vue.component('login', Vue.extend(Login));
 Vue.component('message', Vue.extend(Message));
 Vue.component('modal', Vue.extend(Modal));
 Vue.component('password', Vue.extend(PasswordUtil).extend(Password));
-Vue.component('pdf', Vue.extend(Pdf));
+Vue.component('pdf', Vue.extend(Downloader).extend(Pdf));
 Vue.component('progressbar', Vue.extend(ProgressBar));
 Vue.component('prompt', Vue.extend(Prompt));
 Vue.component('signup', Vue.extend(PasswordUtil).extend(Signup));
