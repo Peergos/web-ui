@@ -116,7 +116,7 @@ module.exports = {
 		this.processPending();
 	    } else {
 		for (var i=0; i < oldFiles.length; i++)
-		    if (! oldFiles.equals(newFiles[i]))
+		    if (! oldFiles[i].equals(newFiles[i]))
 			return this.processPending();
 	    }
 	}
