@@ -204,7 +204,8 @@ module.exports = {
 	updateHistory: function(app, path, filename) {
 	    const currentProps = this.getPropsFromUrl();
 	    const pathFromUrl = currentProps == null ? null : currentProps.path;
-	    if (path == pathFromUrl)
+	    const appFromUrl = currentProps == null ? null : currentProps.app;
+	    if (path == pathFromUrl && app == appFromUrl)
 		return;
 	    var rawProps = propsToFragment({app:app, path:path, filename:filename});
 	    var props = this.encryptProps(rawProps);
