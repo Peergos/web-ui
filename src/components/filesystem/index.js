@@ -106,8 +106,6 @@ module.exports = {
 	},
 
 	files: function(newFiles, oldFiles) {
-	    console.log("files")
-	    
 	    if (newFiles == null)
 		return;
 	    
@@ -208,7 +206,6 @@ module.exports = {
 	    const pathFromUrl = currentProps == null ? null : currentProps.path;
 	    if (path == pathFromUrl)
 		return;
-	    console.log("setting app:path:file in url to " + app + ":" + path + ":" + filename);
 	    var rawProps = propsToFragment({app:app, path:path, filename:filename});
 	    var props = this.encryptProps(rawProps);
 	    window.location.hash = "#" + propsToFragment(props);
@@ -249,7 +246,6 @@ module.exports = {
 	    if (differentPath)
 		this.path = path.split("/").filter(x => x.length > 0);
 
-	    console.log("restoring app:path:file to " + app + ":" + path +":" + filename);
 	    if (app == "filesystem") {
 		this.showGallery = false;
 		this.showPdfViewer = false;
@@ -405,7 +401,6 @@ module.exports = {
             this.prompt_message='Enter a new folder name';
             this.prompt_value='';
             this.prompt_consumer_func = function(prompt_result) {
-                console.log("creating new sub-dir " + prompt_result);
                 if (prompt_result === '' || prompt_result === null)
                     return;
                 this.mkdir(prompt_result);
@@ -497,7 +492,6 @@ module.exports = {
 
         dndDrop: function(evt) {
             evt.preventDefault();
-            console.log("upload files from DnD");
             let entries = evt.dataTransfer.items;
             let allItems = [];
             for(i=0; i < entries.length; i ++) {
@@ -628,7 +622,6 @@ module.exports = {
             }
         },
         uploadAFile: function(file, directory, refreshDirectory) {
-            console.log("uploading " + file.name);
             var thumbnailAllocation = Math.min(100000, file.size / 10);
             var resultingSize = file.size + thumbnailAllocation;
             var progress = {
