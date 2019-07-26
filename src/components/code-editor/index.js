@@ -104,13 +104,14 @@ module.exports = {
 		modes = ["yaml"];
 		mimeType = "text/x-yaml";
 	    }
+	    var readOnly = ! this.file.isWritable();
 	    
 	    this.file.getInputStream(this.context.network, this.context.crypto, props.sizeHigh(), props.sizeLow(), function(read){}).thenCompose(function(reader) {
 		var size = that.getFileSize(props);
 		var data = convertToByteArray(new Int8Array(size));
 		return reader.readIntoArray(data, 0, data.length)
 		    .thenApply(function(read){
-			iframe.contentWindow.postMessage({modes:modes, mime:mimeType, text:new TextDecoder().decode(data)}, '*');
+			iframe.contentWindow.postMessage({modes:modes, mime:mimeType, readOnly:readOnly, text:new TextDecoder().decode(data)}, '*');
 		    });
 	    });
 	},

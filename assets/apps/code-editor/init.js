@@ -32,6 +32,7 @@ window.addEventListener('message', function (e) {
 		    editor = CodeMirror.fromTextArea(document.getElementById("code"), {
 			lineNumbers: true,
 			lineWrapping: true,
+			readOnly: e.data.readOnly,
 			//		matchBrackets: true,
 			mode: e.data.mime,
 		    });
