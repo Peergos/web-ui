@@ -1,9 +1,6 @@
 module.exports = {
     data() {
-	return {
-	    "commonPasswords": commonPasswords,
-	    "bip39": bip39
-	}
+	return {}
     },
     methods: {
 	// This will only work up to a file size of 2^52 bytes (the biggest integer you can fit in a double)
