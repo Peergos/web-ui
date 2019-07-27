@@ -202,6 +202,8 @@ module.exports = {
 	},
 
 	updateHistory: function(app, path, filename) {
+	    if (this.isSecretLink)
+		return;
 	    const currentProps = this.getPropsFromUrl();
 	    const pathFromUrl = currentProps == null ? null : currentProps.path;
 	    const appFromUrl = currentProps == null ? null : currentProps.app;
@@ -221,8 +223,6 @@ module.exports = {
 	},
 	
 	encryptProps: function(props) {
-	    if (this.isSecretLink)
-		return path;
 	    var context = this.getContext();
 	    var both = context.encryptURL(props)
 	    const nonce = both.base64Nonce;
