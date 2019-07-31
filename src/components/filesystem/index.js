@@ -496,7 +496,10 @@ module.exports = {
             let entries = evt.dataTransfer.items;
             let allItems = [];
             for(i=0; i < entries.length; i ++) {
-                allItems.push(entries[i].webkitGetAsEntry());
+                let entry = entries[i].webkitGetAsEntry();
+                if(entry != null) {
+                    allItems.push(entry);
+                }
             }
             let allFiles = [];
             this.getEntries(allItems, 0, this, allFiles);
