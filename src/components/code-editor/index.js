@@ -151,7 +151,9 @@ module.exports = {
             this.$emit("hide-code-editor");
         }
     },
-    calculated: function() {
-	return this.file.isWritable();
+    computed: {
+	isWritable: function() {
+	    return this.file.isWritable();
+	}
     }
 }
