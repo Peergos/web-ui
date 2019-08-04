@@ -38,7 +38,7 @@ module.exports = {
             var resultingSize = this.getFileSize(props);
             var progress = {
 		show:true,
-		title:"Downloading " + props.name,
+		title:"Downloading and decrypting " + props.name,
 		done:0,
 		max:resultingSize
             };

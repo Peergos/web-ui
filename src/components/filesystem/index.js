@@ -630,7 +630,7 @@ module.exports = {
             var resultingSize = file.size + thumbnailAllocation;
             var progress = {
                 show:true,
-                title:"Uploading " + file.name,
+                title:"Encrypting and uploading " + file.name,
                 done:0,
                 max:resultingSize
             };
