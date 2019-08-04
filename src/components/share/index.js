@@ -76,7 +76,7 @@ module.exports = {
                                 that.showSpinner = false;
                                 that.messages.push({
                                     title: "Success!",
-                                    body: "Sharing complete",
+                                    body: "Secure sharing complete",
                                     show: true
                                 });
                                 that.close();
@@ -94,7 +94,7 @@ module.exports = {
                                 that.showSpinner = false;
                                 that.messages.push({
                                     title: "Success!",
-                                    body: "Sharing complete",
+                                    body: "Secure sharing complete",
                                     show: true
                                 });
                                 that.close();
