@@ -1008,7 +1008,7 @@ module.exports = {
             console.log("drop");
             ev.preventDefault();
             var moveId = ev.dataTransfer.getData("text");
-            var id = ev.target.id;
+            var id = ev.currentTarget.id;
             var that = this;
             if(id != moveId && target.isDirectory()) {
                 const clipboard = this.clipboard;
