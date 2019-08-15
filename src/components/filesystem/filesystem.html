@@ -186,12 +186,12 @@
     <spinner v-if="showSpinner"></spinner>
     
     <div class="grid" v-if="grid">
-        <span class="column" v-for="file in sortedFiles">
-          <span class="grid_icon_wrapper fa" id="grid$index" draggable="true" @dragover.prevent v-on:dragstart="dragStart($event, file)" @drop="drop($event, file)">
+        <span class="column" v-for="(file, itemObjKey) in sortedFiles">
+          <span class="grid_icon_wrapper fa" :id="itemObjKey" draggable="true" @dragover.prevent v-on:dragstart="dragStart($event, file)" @drop="drop($event, file)">
             <a class="picon" v-bind:id="file.getFileProperties().name" v-on:contextmenu="openMenu($event, file)">
               <span v-if="!file.getFileProperties().thumbnail.isPresent()" v-on:click="navigateOrMenu($event, file)" v-on:contextmenu="openMenu($event, file)"
 		    v-bind:class="['file_icon', getFileIcon(file), 'picon']"> </span>
-              <img v-if="file.getFileProperties().thumbnail.isPresent()" v-on:click="navigateOrMenu($event, file)" v-on:contextmenu="openMenu($event, file)" v-bind:src="getThumbnailURL(file)"/>
+              <img id="thumbnail" v-if="file.getFileProperties().thumbnail.isPresent()" v-on:click="navigateOrMenu($event, file)" v-on:contextmenu="openMenu($event, file)" v-bind:src="getThumbnailURL(file)"/>
                 </a>
             <div class="content filename" >
               <div v-bind:class="{ noselect: true, shared: isShared(file) }">{{ file.getFileProperties().name }}</div>

@@ -1008,7 +1008,7 @@ module.exports = {
             console.log("drop");
             ev.preventDefault();
             var moveId = ev.dataTransfer.getData("text");
-            var id = ev.target.id;
+            var id = ev.currentTarget.id;
             var that = this;
             if(id != moveId && target.isDirectory()) {
                 const clipboard = this.clipboard;
@@ -1024,6 +1024,7 @@ module.exports = {
                         that.currentDirChanged();
 			            that.onUpdateCompletion.push(function() {
                             that.showSpinner = false;
+                            that.clipboard = null;
 			            });
                     }).exceptionally(function(throwable) {
                         that.errorTitle = 'Error moving file';
@@ -1040,6 +1041,7 @@ module.exports = {
                         that.currentDirChanged();
                         that.onUpdateCompletion.push(function() {
                             that.showSpinner = false;
+                            that.clipboard = null;
                         });
                     }).exceptionally(function(throwable) {
                         that.errorTitle = 'Error copying file';
