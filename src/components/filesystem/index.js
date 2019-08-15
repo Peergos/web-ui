@@ -1024,6 +1024,7 @@ module.exports = {
                         that.currentDirChanged();
 			            that.onUpdateCompletion.push(function() {
                             that.showSpinner = false;
+                            that.clipboard = null;
 			            });
                     }).exceptionally(function(throwable) {
                         that.errorTitle = 'Error moving file';
@@ -1040,6 +1041,7 @@ module.exports = {
                         that.currentDirChanged();
                         that.onUpdateCompletion.push(function() {
                             that.showSpinner = false;
+                            that.clipboard = null;
                         });
                     }).exceptionally(function(throwable) {
                         that.errorTitle = 'Error copying file';
