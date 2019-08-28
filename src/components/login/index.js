@@ -29,7 +29,7 @@ module.exports = {
             this.isSafari = /constructor/i.test(window.HTMLElement) || (function (p) { return p.toString() === "[object SafariRemoteNotification]"; })(!window['safari'] || safari.pushNotification);
             var that = this;
             const href = window.location.href;
-            const fragment = window.location.hash.substring(1);
+            var fragment = window.location.hash.substring(1);
 	    var props = {};
 	    try {
 		props = fragmentToProps(fragment);
