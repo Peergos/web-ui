@@ -39,13 +39,11 @@ module.exports = {
 		    props.secretLink = true;
 
 		    var query = fragment.indexOf("?");
-		    var download = false;
-		    var open = false;
 		    if (query > 0) {
 			if (fragment.indexOf("download=true") > 0)
-			    download = true;
+			    props.download = true;
 			if (fragment.indexOf("open=true") > 0)
-			    open = true;
+			    props.open = true;
 			fragment = fragment.substring(0, query);
 		    }
 		    props.link = fragment;
