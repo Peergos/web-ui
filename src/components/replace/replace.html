@@ -1,0 +1,26 @@
+<transition name="modal">
+<div class="modal-mask" @click="close">
+  <div style="height:30%"></div>
+  <div class="modal-container" @click.stop>
+
+    <div class="modal-header">
+      <h3 id="replace-header-id">{{replace_message}}</h3>
+    </div>
+
+    <div class="modal-body">
+      <div class="container" style="word-wrap:break-word;width:auto">
+        <p id='replace-body-id' >{{replace_body}}</p>
+      </div>
+      <div  style="font-weight: bold;">
+        <input type="checkbox" name="applyToAll" id="applyToAll" v-model="applyToAll" placeholder="Do this for all conflicts">&nbsp;Do this for all conflicts
+      </div>
+      <button class="btn btn-success btn-lg" @click="no()" style="margin:10%;">
+        No
+      </button>
+      <button class="btn btn-success btn-lg" @click="yes()" style="margin:10%">
+        Yes
+      </button>
+    </div>
+  </div>
+</div>
+</transition>

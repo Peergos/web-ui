@@ -171,7 +171,14 @@
     :warning_body="warning_body"
     :consumer_func="warning_consumer_func">
   </warning>
-  
+  <replace
+          v-if="showReplace"
+          v-on:hide-replace="showReplace = false"
+          :replace_message='replace_message'
+          :replace_body="replace_body"
+          :consumer_cancel_func="replace_consumer_cancel_func"
+          :consumer_func="replace_consumer_func">
+  </replace>
   <div v-if="progressMonitors.length>0" class="progressholder">
     <progressbar 
         v-for="progress in progressMonitors" 

@@ -10,7 +10,9 @@ module.exports = {
         close: function() {
             this.$emit("hide-warning");
         },
-
+        cancel: function() {
+            this.close();
+        },
         complete: function() {
             this.close();
             this.consumer_func();
