@@ -15,7 +15,7 @@
 # ./build_native_image.sh <peergos-jar-path> <native-image-path>
 #
 # You can run the output with:
-# ./peergos -peergos -peergos.identity.hash z59vuwzfFDp3ZA8ZpnnmHEuMtyA1q34m3Th49DYXQVJntWpxdGrRqXi -pki-node-id QmVdFZgHnEgcedCS2G2ZNiEN59LuVrnRm7z3yXtEBv2XiF -admin-usernames demo -logToConsole true
+# ./peergos -peergos -admin-usernames demo -logToConsole true
 
 PEERGOS_JAR_PATH=${1:-PeergosServer.jar}
 NATIVE_IMAGE_BIN=${NATIVE_IMAGE_BIN:-native-image}
