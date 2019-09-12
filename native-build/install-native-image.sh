@@ -7,7 +7,7 @@
 #
 #
 
-curl  -L -O https://github.com/oracle/graal/releases/download/vm-19.2.0/graalvm-ce-linux-amd64-19.2.0.tar.gz
+curl -L -O https://github.com/oracle/graal/releases/download/vm-19.2.0/graalvm-ce-linux-amd64-19.2.0.tar.gz
 tar -zxvf graalvm-ce-linux-amd64-19.2.0.tar.gz
 ./graalvm-ce-19.2.0/bin/gu install native-image
 
