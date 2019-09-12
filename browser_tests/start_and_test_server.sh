@@ -13,7 +13,7 @@ function start_peergos() {
 }
 
 function get_peergos_pid() {
-    ps aux |grep PeergosServer.jar | awk '{print $2}';
+    ps aux |grep Peergos.jar | awk '{print $2}';
 }
 
 function kill_peergos_server() {
