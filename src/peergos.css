@@ -363,3 +363,5 @@ table {
 .btn-shared-with {
   padding: 0px 0px 0px 0px;
 }
+
+h3 {word-wrap:break-word; white-space:normal;}
