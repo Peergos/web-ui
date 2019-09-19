@@ -4,7 +4,7 @@ module.exports = {
     data: function() {
         return {
 	    network: null,
-            username: [],
+            username: "",
             passwordFieldType: "password",
             password: [],
             demo: isDemo,
@@ -82,7 +82,7 @@ module.exports = {
         },
 
         displayDemoWarning: function() {
-            if (this.demo == true) {
+	    if (this.demo == true) {
                 if(this.isSecretLink == true) {
                     return false;
                 }
