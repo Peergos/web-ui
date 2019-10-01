@@ -5,7 +5,7 @@ module.exports = {
             contextUpdates: 0,
             path: [],
             currentDir: null,
-            files: [],
+	    files: [],
             grid: true,
             sortBy: "name",
             normalSortOrder: true,
@@ -90,7 +90,7 @@ module.exports = {
         },
 
         path: function(newPath, oldPath) {
-            this.updateCurrentDir();
+	    this.updateCurrentDir();
         },
 
         forceSharedWithUpdate: function(newCounter, oldCounter) {

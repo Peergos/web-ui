@@ -70,7 +70,8 @@
     v-on:hide-share-with="showShare = false"
     v-on:update-shared="forceSharedWithUpdate++" 
     :files="selectedFiles" 
-    :parent="currentDir" 
+    :parent="isNotBackground ? currentDir : null"
+    :path="path"
     :context="context" 
     :followernames="followernames" 
     :messages="messages">
