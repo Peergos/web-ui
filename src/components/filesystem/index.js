@@ -65,8 +65,7 @@ module.exports = {
             replace_body: "",
             replace_consumer_cancel_func: (applyToAll) => {},
             replace_consumer_func: (applyToAll) => {},
-            applyReplaceToAll: false,
-            replaceAllFiles: false,
+            replace_showApplyAll: false,
             errorTitle:'',
             errorBody:'',
             showError:false,
@@ -535,13 +534,23 @@ module.exports = {
                     }
                 } else {
                     let uploadPath = that.getPath();
-                    that.traverseDirectories(uploadPath, uploadPath, null, 0, allFiles, 0, true);
+                    var replaceParams = {
+                        applyReplaceToAll : false,
+                        replaceFile : false,
+                        runSerial : false
+                    };
+                    that.traverseDirectories(uploadPath, uploadPath, null, 0, allFiles, 0, true, replaceParams);
                 }
         },
         uploadFiles: function(evt) {
             let uploadPath = this.getPath();
             var files = evt.target.files || evt.dataTransfer.files;
-            this.traverseDirectories(uploadPath, uploadPath, null, 0, files, 0, false);
+            var replaceParams = {
+                applyReplaceToAll : false,
+                replaceFile : false,
+                runSerial : false
+            };
+            this.traverseDirectories(uploadPath, uploadPath, null, 0, files, 0, false, replaceParams);
         },
         splitDirectory: function (dir, fromDnd) {
             if (fromDnd) {
@@ -550,13 +559,11 @@ module.exports = {
                 return dir.webkitRelativePath.split('/');
             }
         },
-        traverseDirectories: function(origDir, currentDir, dirs, dirIndex, items, itemIndex, fromDnd) {
+        traverseDirectories: function(origDir, currentDir, dirs, dirIndex, items, itemIndex, fromDnd, replaceParams) {
             if (dirs == null) {
                 if (itemIndex < items.length) {
                     dirs = this.splitDirectory(items[itemIndex], fromDnd);
                 } else {
-                    that.applyReplaceToAll = false;
-                    that.replaceAllFiles = false;
                     return;
                 }
             }
@@ -573,17 +580,17 @@ module.exports = {
                                 if (itemIndex == 0) {
                                     that.confirmReplaceDirectory(dirName,
                                     (applyToAll) => {
-                                        that.applyReplaceToAll = applyToAll;
-                                        that.replaceAllFiles = false;
+                                        replaceParams.applyReplaceToAll = applyToAll;
+                                        replaceParams.replaceFile = false;
                                     },
                                     (applyToAll) => {
-                                        that.applyReplaceToAll = applyToAll;
-                                        that.replaceAllFiles = true;
-                                        that.traverseDirectories(origDir, path, dirs, ++dirIndex, items, itemIndex, fromDnd);
+                                        replaceParams.applyReplaceToAll = applyToAll;
+                                        replaceParams.replaceFile = true;
+                                        that.traverseDirectories(origDir, path, dirs, ++dirIndex, items, itemIndex, fromDnd, replaceParams);
                                     }
                                     );
                                 } else {
-                                    that.traverseDirectories(origDir, path, dirs, ++dirIndex, items, itemIndex, fromDnd);
+                                    that.traverseDirectories(origDir, path, dirs, ++dirIndex, items, itemIndex, fromDnd, replaceParams);
                                 }
                             } else {
                                 updatedDir.mkdir(dirName, that.context.network, false, that.context.crypto)
@@ -592,14 +599,14 @@ module.exports = {
                                             that.currentDir = updated;
                                             that.updateFiles();
                                         }
-                                        that.traverseDirectories(origDir, path, dirs, ++dirIndex, items, itemIndex, fromDnd);
+                                        that.traverseDirectories(origDir, path, dirs, ++dirIndex, items, itemIndex, fromDnd, replaceParams);
                                 });
                             }
                         });
                 } else {
                     let file = items[itemIndex];
                     let refreshDir = that.getPath() == currentDir ? true : false;
-                    that.uploadDirectoryFiles(that, refreshDir, origDir, currentDir, dirs, dirIndex, items, itemIndex, fromDnd);
+                    that.uploadDirectoryFiles(that, refreshDir, origDir, currentDir, dirs, dirIndex, items, itemIndex, fromDnd, replaceParams);
                 }
             });
         },
@@ -608,9 +615,10 @@ module.exports = {
             this.replace_body='';
             this.replace_consumer_cancel_func = cancelFn;
             this.replace_consumer_func = replaceFn;
+            this.replace_showApplyAll = false;
             this.showReplace = true;
         },
-        uploadDirectoryFiles: function(that, refreshDir, origDir, currentDir, dirs, dirIndex, items, itemIndex, fromDnd) {
+        uploadDirectoryFiles: function(that, refreshDir, origDir, currentDir, dirs, dirIndex, items, itemIndex, fromDnd, replaceParams) {
             //optimisation - Next entry will likely be in the same directory
             if(itemIndex < items.length) {
                 let nextFile = items[itemIndex];
@@ -626,61 +634,63 @@ module.exports = {
                  }
                 if (sameDirectory) {
                     if (nextFile.name != '.DS_Store') { //FU OSX
-                        that.uploadFileToDirectory(nextFile, currentDir, refreshDir, fromDnd).thenCompose(res =>
+                        that.uploadFileToDirectory(nextFile, currentDir, refreshDir, fromDnd, replaceParams).thenCompose(res =>
                             that.uploadDirectoryFiles(that, refreshDir, origDir, currentDir, dirs, dirIndex,
-                                items, ++itemIndex, fromDnd));
+                                items, ++itemIndex, fromDnd, replaceParams));
                     } else {
                         that.uploadDirectoryFiles(that, refreshDir, origDir, currentDir, dirs, dirIndex,
-                            items, ++itemIndex, fromDnd);
+                            items, ++itemIndex, fromDnd, replaceParams);
                     }
                 } else {
-                    that.traverseDirectories(origDir, origDir, null, 0, items, itemIndex, fromDnd);
+                    that.traverseDirectories(origDir, origDir, null, 0, items, itemIndex, fromDnd, replaceParams);
                 }
             } else {
-                that.traverseDirectories(origDir, origDir, null, 0, items, itemIndex, fromDnd);
+                that.traverseDirectories(origDir, origDir, null, 0, items, itemIndex, fromDnd, replaceParams);
             }
         },
-        uploadFileToDirectory: function(file, directory, refreshDirectory, fromDnd) {
+        uploadFileToDirectory: function(file, directory, refreshDirectory, fromDnd, replaceParams) {
             var future = peergos.shared.util.Futures.incomplete();
             if(fromDnd) {
                 let that = this;
                 file.file(function(fileEntry) {
-                    that.uploadAFile(fileEntry, directory, refreshDirectory, future);
+                    that.uploadAFile(fileEntry, directory, refreshDirectory, future, replaceParams);
                 });
             } else {
-                this.uploadAFile(file, directory, refreshDirectory, future);
+                this.uploadAFile(file, directory, refreshDirectory, future, replaceParams);
             }
             return future;
         },
-        uploadAFile: function(file, directory, refreshDirectory, future) {
+        uploadAFile: function(file, directory, refreshDirectory, future, replaceParams) {
             let that = this;
             this.context.getByPath(directory).thenApply(function(updatedDirOpt){
                 let updatedDir = updatedDirOpt.get();
                 updatedDir.hasChild(file.name, that.context.crypto.hasher, that.context.network)
                     .thenApply(function(alreadyExists){
                         if(alreadyExists) {
-                            if (that.applyReplaceToAll) {
-                                if(that.replaceAllFiles) {
-                                    that.uploadNewFile(file, directory, refreshDirectory, true, future)
+                            if (replaceParams.applyReplaceToAll) {
+                                if(replaceParams.replaceFile) {
+                                    replaceParams.runSerial = true;
+                                    that.uploadNewFile(file, directory, refreshDirectory, true, future, replaceParams)
                                 } else {
-                                    future.complete(false);
+                                    future.complete(true);
                                 }
                             } else {
                                 that.confirmReplaceFile(file,
                                 (applyToAll) => {
-                                    that.applyReplaceToAll = applyToAll;
-                                    that.replaceAllFiles = false;
-                                    future.complete(false);
+                                    replaceParams.applyReplaceToAll = applyToAll;
+                                    replaceParams.replaceFile = false;
+                                    future.complete(true);
                                  },
                                 (applyToAll) => {
-                                    that.applyReplaceToAll = applyToAll;
-                                    that.replaceAllFiles = true;
-                                    that.uploadNewFile(file, directory, refreshDirectory, true, future)
+                                    replaceParams.applyReplaceToAll = applyToAll;
+                                    replaceParams.replaceFile = true;
+                                    replaceParams.runSerial = true;
+                                    that.uploadNewFile(file, directory, refreshDirectory, true, future, replaceParams)
                                  }
                                 );
                             }
                         } else {
-                            that.uploadNewFile(file, directory, refreshDirectory, false, future);
+                            that.uploadNewFile(file, directory, refreshDirectory, false, future, replaceParams);
                         }
                 });
             });
@@ -690,10 +700,13 @@ module.exports = {
             this.replace_body='';
             this.replace_consumer_cancel_func = cancelFn;
             this.replace_consumer_func = replaceFn;
+            this.replace_showApplyAll = true;
             this.showReplace = true;
         },
-        uploadNewFile: function(file, directory, refreshDirectory, overwriteExisting, future) {
-            future.complete(true);
+        uploadNewFile: function(file, directory, refreshDirectory, overwriteExisting, future, replaceParams) {
+            if(! replaceParams.runSerial) {
+                future.complete(true);
+            }
             var thumbnailAllocation = Math.min(100000, file.size / 10);
             var resultingSize = file.size + thumbnailAllocation;
             var progress = {
@@ -734,6 +747,9 @@ module.exports = {
                                                 that.updateFiles();
                                             }
                                             that.updateUsage();
+                                            if(replaceParams.runSerial) {
+                                                future.complete(true);
+                                            }
                                         }).exceptionally(function(throwable) {
                                             progress.show = false;
                                             that.errorTitle = 'Error uploading file: ' + file.name;
@@ -741,8 +757,10 @@ module.exports = {
                                             that.showError = true;
                                             throwable.printStackTrace();
                                             that.updateUsage();
+                                            if(replaceParams.runSerial) {
+                                                future.complete(true);
+                                            }
                                         });
-
                                      }));
                 } else {
                     updatedDirOpt.get().uploadFileJS(file.name, java_reader, (file.size - (file.size % Math.pow(2, 32)))/Math.pow(2, 32), file.size,
@@ -754,6 +772,9 @@ module.exports = {
                             that.updateFiles();
                         }
                         that.updateUsage();
+                        if(replaceParams.runSerial) {
+                            future.complete(true);
+                        }
                     }).exceptionally(function(throwable) {
                         progress.show = false;
                         that.errorTitle = 'Error uploading file: ' + file.name;
@@ -761,6 +782,9 @@ module.exports = {
                         that.showError = true;
                         throwable.printStackTrace();
                         that.updateUsage();
+                        if(replaceParams.runSerial) {
+                            future.complete(true);
+                        }
                     });
                 }
             });

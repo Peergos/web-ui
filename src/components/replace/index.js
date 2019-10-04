@@ -5,7 +5,7 @@ module.exports = {
             applyToAll:false
         }
     },
-    props: ['replace_message', 'replace_body', 'consumer_cancel_func', 'consumer_func'],
+    props: ['replace_message', 'replace_body', 'consumer_cancel_func', 'consumer_func', 'showApplyAll'],
     created: function() {
     },
     methods: {

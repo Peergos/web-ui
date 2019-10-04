@@ -11,7 +11,7 @@
       <div class="container" style="word-wrap:break-word;width:auto">
         <p id='replace-body-id' >{{replace_body}}</p>
       </div>
-      <div  style="font-weight: bold;">
+      <div v-if="showApplyAll" style="font-weight: bold;">
         <input type="checkbox" name="applyToAll" id="applyToAll" v-model="applyToAll" placeholder="Do this for all conflicts">&nbsp;Do this for all conflicts
       </div>
       <button class="btn btn-success btn-lg" @click="no()" style="margin:10%;">
