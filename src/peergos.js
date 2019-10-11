@@ -24,6 +24,7 @@ var Space           = require('./components/space');
 var Spinner         = require('./components/spinner');
 var Text            = require('./components/viewers/text-viewer');
 var Warning         = require('./components/warning');
+var Replace         = require('./components/replace');
 
 // Loading components
 Vue.component('admin', Vue.extend(Admin));
@@ -50,6 +51,7 @@ Vue.component('spinner', Vue.extend(Spinner));
 Vue.component('space', Vue.extend(Space));
 Vue.component('text-viewer', Vue.extend(Downloader).extend(Text));
 Vue.component('warning', Vue.extend(Warning));
+Vue.component('replace', Vue.extend(Replace));
 
 // Initializing Vue after GWT has finished
 setTimeout(function() {
