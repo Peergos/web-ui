@@ -8,14 +8,14 @@ module.exports = {
             showError:false
         }
     },
-    props: ['show', 'data', 'files', 'context'],
+    props: ['data', 'files', 'context'],
     created: function() {
     },
     methods: {
         close: function () {
-            this.show = false;
             this.showSpinner = false;
-        } ,
+            this.$emit("hide-shared-with");
+        },
         unshare : function (targetUsername, sharedWithAccess) {
             if (this.files.length == 0)
                 return this.close();

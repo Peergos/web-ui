@@ -843,6 +843,25 @@ module.exports = {
             this.externalChange++;
         },
 
+        showSharedWithView: function(name) {
+            if (this.selectedFiles.length == 0)
+                return;
+            if (this.selectedFiles.length != 1)
+                return;
+            this.closeMenu();
+            var file = this.selectedFiles[0];
+            var that = this;
+            this.getContext().sharedWith(file)
+                .thenApply(function(allSharedWithUsernames) {
+                    var read_usernames = allSharedWithUsernames.left.toArray([]);
+                    var edit_usernames = allSharedWithUsernames.right.toArray([]);
+                    var filename = file.getFileProperties().name;
+                    var title = filename + " is shared with:";
+                    that.sharedWithData = {title:title, read_shared_with_users:read_usernames, edit_shared_with_users:edit_usernames};
+                    that.showSharedWith = true;
+                });
+        },
+
         copy: function() {
             if (this.selectedFiles.length != 1)
                 return;
@@ -925,25 +944,6 @@ module.exports = {
                 return;
             this.closeMenu();
             this.showShare = true;
-        },
-
-        sharedWith: function() {
-            if (this.selectedFiles.length == 0)
-                return;
-            if (this.selectedFiles.length != 1)
-                return;
-            this.closeMenu();
-            var file = this.selectedFiles[0];
-            var that = this;
-            this.getContext().sharedWith(file)
-                .thenApply(function(allSharedWithUsernames) {
-                    var read_usernames = allSharedWithUsernames.left.toArray([]);
-                    var edit_usernames = allSharedWithUsernames.right.toArray([]);
-                    var filename = file.getFileProperties().name;
-                    var title = filename + " is shared with:";
-                    that.sharedWithData = {title:title, read_shared_with_users:read_usernames, edit_shared_with_users:edit_usernames};
-                    that.showSharedWith = true;
-                });
         },
 
         setSortBy: function(prop) {

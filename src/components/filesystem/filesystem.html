@@ -56,7 +56,7 @@
     <li id='paste-file' v-if="isPasteAvailable" v-on:click="paste">Paste</li>
     <li id='secret-link-file' v-if="(isNotHome || isNotBackground)" v-on:click="createSecretLink">Create secret link</li>
     <li id='share-file' v-if="(isNotHome || isNotBackground) && isLoggedIn" v-on:click="showShareWith">Share</li>
-    <li id='shared-with-file' v-if="(isNotHome || isNotBackground) && isWritable" v-on:click="sharedWith">Shared with</li>
+    <li id='shared-with-file' v-if="(isNotHome || isNotBackground) && isWritable" @click="showSharedWithView">Shared with</li>
   </ul>
   
   <modal
@@ -78,15 +78,15 @@
   </share>
   <shared-with-modal 
     v-if="showSharedWith" 
+    v-on:hide-shared-with="showSharedWith = false"
     v-on:update-shared="forceSharedWithUpdate++"
-    v-on:hide-shared-with="showSharedWith = false" 
-    :data="sharedWithData" 
+    :data="sharedWithData"
     :files="selectedFiles" 
     :context="context">
   </shared-with-modal>
   <social 
     v-if="showSocial" 
-    v-on:hide-social="showSocial = false" 
+    v-on:hide-social="showSocial = false"
     v-on:external-change="externalChange++"
     :data="social" 
     :context="context" 
