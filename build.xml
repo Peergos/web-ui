@@ -147,7 +147,7 @@
     <mkdir dir="${server}/webroot"/>
 
     <copy todir="${server}" overwrite="true">
-        <fileset file="${peergos_project_root}/PeergosServer.jar"/>
+        <fileset file="${peergos_project_root}/Peergos.jar"/>
     </copy>
     <copy todir="${ui}/js">
       <fileset file="${peergos_project_root}/war/peergoslib/*cache.js"/>
@@ -157,11 +157,11 @@
     </touch>
 
     <!--flatten Peergos dependencies into a  fat-jar -->
-    <zip destfile="${server}/PeergosServer.jar" update="true">
+    <zip destfile="${server}/Peergos.jar" update="true">
         <zipgroupfileset dir="${peergos_project_root}/lib" includes="*.jar"/>
     </zip>        
     <!-- add web resouces to fat-jar under webroot -->
-    <zip destfile="${server}/PeergosServer.jar" update="true">
+    <zip destfile="${server}/Peergos.jar" update="true">
             <fileset dir="${server}">
                     <include name="**/webroot/**"/>
             </fileset>
@@ -173,7 +173,7 @@ Class-Path: .</echo>
     <touch millis="0">
       <fileset dir="META-INF"/>
     </touch>
-    <zip destfile="${server}/PeergosServer.jar" basedir="." includes="META-INF/MANIFEST.MF" update="true"></zip>
+    <zip destfile="${server}/Peergos.jar" basedir="." includes="META-INF/MANIFEST.MF" update="true"></zip>
     <delete dir="META-INF"/>
 
   </target>
@@ -191,7 +191,7 @@ Class-Path: .</echo>
     </echo>     
     <exec executable="java" dir="${server}" failonerror="true">
       <arg value="-jar"/>
-      <arg value="PeergosServer.jar"/>
+      <arg value="Peergos.jar"/>
       <arg value="-pki-init"/>
       <arg value="-logToConsole"/>
       <arg value="true"/>

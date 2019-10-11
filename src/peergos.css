@@ -424,3 +424,6 @@ table {
   -ms-transform: rotate(45deg);
   transform: rotate(45deg);
 }
+
+h3 {word-wrap:break-word; white-space:normal;}
+
