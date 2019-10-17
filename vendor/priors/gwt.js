@@ -13,7 +13,8 @@ function convertToByteArray(target) {
 }
 
 function propsToFragment(props) {
-    return encodeURI(JSON.stringify(props));
+    // Manually percent encode commas to work around some broken clients, like signal
+    return encodeURI(JSON.stringify(props)).split(",").join("%2c");
 }
 
 function fragmentToProps(fragment) {
