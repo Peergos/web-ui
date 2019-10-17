@@ -13,7 +13,7 @@ function convertToByteArray(target) {
 }
 
 function propsToFragment(props) {
-    return JSON.stringify(props);
+    return encodeURI(JSON.stringify(props));
 }
 
 function fragmentToProps(fragment) {
