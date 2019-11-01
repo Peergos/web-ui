@@ -96,7 +96,22 @@ module.exports = {
         },
 
         path: function(newPath, oldPath) {
-	    this.updateCurrentDir();
+            if(newPath != null && oldPath != null) {
+                if(newPath.length != oldPath.length) {
+                        this.updateCurrentDir();
+                } else {
+                    var same = true;
+                    for(var i=0;i<newPath.length;i++) {
+                        if(newPath[i] != oldPath[i]) {
+                            same = false;
+                            break;
+                        }
+                    }
+                    if(!same){
+                        this.updateCurrentDir();
+                    }
+	            }
+	        }
         },
 
         forceSharedWithUpdate: function(newCounter, oldCounter) {
@@ -302,6 +317,8 @@ module.exports = {
             context.getByPath(path).thenApply(function(file){
                 that.currentDir = file.get();
                 that.updateFiles();
+            }).exceptionally(function(throwable) {
+                throwable.printStackTrace();
             });
         },
 	
@@ -316,6 +333,8 @@ module.exports = {
                 that.files = arr.filter(function(f){
                     return !f.getFileProperties().isHidden;
                 });
+            }).exceptionally(function(throwable) {
+                throwable.printStackTrace();
             });
         },
 
