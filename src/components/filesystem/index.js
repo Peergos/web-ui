@@ -143,9 +143,10 @@ module.exports = {
             if (this.context != null && this.context.username == null) {
                 // from a secret link
                 this.context.getEntryPath().thenApply(function(linkPath) {
-		    if (that.initPath != null &&
-			(that.initPath.startsWith(linkPath) || linkPath.startsWith(that.initPath)))
-			that.changePath(that.initPath);
+		    var path = that.initPath == null ? null : decodeURIComponent(that.initPath);
+		    if (path != null &&
+			(path.startsWith(linkPath) || linkPath.startsWith(path)))
+			that.changePath(path);
 		    else
 			that.changePath(linkPath);
                     if (that.initiateDownload) {
