@@ -96,22 +96,20 @@ module.exports = {
         },
 
         path: function(newPath, oldPath) {
-            if(newPath != null && oldPath != null) {
-                if(newPath.length != oldPath.length) {
-                        this.updateCurrentDir();
-                } else {
-                    var same = true;
-                    for(var i=0;i<newPath.length;i++) {
-                        if(newPath[i] != oldPath[i]) {
-                            same = false;
-                            break;
-                        }
+            if(newPath.length != oldPath.length) {
+                    this.updateCurrentDir();
+            } else {
+                var same = true;
+                for(var i=0;i<newPath.length;i++) {
+                    if(newPath[i] != oldPath[i]) {
+                        same = false;
+                        break;
                     }
-                    if(!same){
-                        this.updateCurrentDir();
-                    }
-	            }
-	        }
+                }
+                if(!same){
+                    this.updateCurrentDir();
+                }
+            }
         },
 
         forceSharedWithUpdate: function(newCounter, oldCounter) {
@@ -315,6 +313,7 @@ module.exports = {
             var path = this.getPath();
             var that = this;
             context.getByPath(path).thenApply(function(file){
+                console.log("kev inhere");
                 that.currentDir = file.get();
                 that.updateFiles();
             }).exceptionally(function(throwable) {
