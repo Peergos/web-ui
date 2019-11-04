@@ -313,7 +313,6 @@ module.exports = {
             var path = this.getPath();
             var that = this;
             context.getByPath(path).thenApply(function(file){
-                console.log("kev inhere");
                 that.currentDir = file.get();
                 that.updateFiles();
             }).exceptionally(function(throwable) {
