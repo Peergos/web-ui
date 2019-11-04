@@ -73,7 +73,7 @@ module.exports = {
             onUpdateCompletion: [] // methods to invoke when current dir is next refreshed
         };
     },
-    props: ["context", "opengallery", "initiateDownload"],
+    props: ["context", "initPath", "opengallery", "initiateDownload"],
     created: function() {
         console.debug('Filesystem module created!');
 	this.init();
@@ -118,7 +118,7 @@ module.exports = {
 
 	externalChange: function(newExternalChange, oldExternalChange) {
 	    this.updateSocial();
-        this.updateCurrentDir();
+            this.updateCurrentDir();
 	},
 
 	files: function(newFiles, oldFiles) {
@@ -143,7 +143,11 @@ module.exports = {
             if (this.context != null && this.context.username == null) {
                 // from a secret link
                 this.context.getEntryPath().thenApply(function(linkPath) {
-                    that.changePath(linkPath);
+		    if (that.initPath != null &&
+			(that.initPath.startsWith(linkPath) || linkPath.startsWith(that.initPath)))
+			that.changePath(that.initPath);
+		    else
+			that.changePath(linkPath);
                     if (that.initiateDownload) {
                         that.context.getByPath(that.getPath())
                             .thenApply(function(file){file.get().getChildren(that.context.crypto.hasher, that.context.network).thenApply(function(children){

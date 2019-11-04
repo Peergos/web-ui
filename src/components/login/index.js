@@ -100,7 +100,8 @@ module.exports = {
 				   {
                                        context: context,
                                        download: props.download,
-                                       open: props.open
+                                       open: props.open,
+				       initPath: props.path
 				   }
 				  );
                     }).exceptionally(function(throwable) {
