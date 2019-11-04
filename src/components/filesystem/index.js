@@ -118,6 +118,7 @@ module.exports = {
 
 	externalChange: function(newExternalChange, oldExternalChange) {
 	    this.updateSocial();
+        this.updateCurrentDir();
 	},
 
 	files: function(newFiles, oldFiles) {
@@ -305,7 +306,6 @@ module.exports = {
             var context = this.getContext();
             if (context == null)
                 return Promise.resolve(null);
-            var x = this.forceUpdate;
             var path = this.getPath();
             var that = this;
             context.getByPath(path).thenApply(function(file){
