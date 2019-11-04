@@ -96,18 +96,14 @@ module.exports = {
         },
 
         path: function(newPath, oldPath) {
-            if(newPath.length != oldPath.length) {
+            if (newPath.length != oldPath.length) {
                     this.updateCurrentDir();
             } else {
-                var same = true;
-                for(var i=0;i<newPath.length;i++) {
-                    if(newPath[i] != oldPath[i]) {
-                        same = false;
-                        break;
+                for (var i=0; i < newPath.length; i++) {
+                    if (newPath[i] != oldPath[i]) {
+                        this.updateCurrentDir();
+			return;
                     }
-                }
-                if(!same){
-                    this.updateCurrentDir();
                 }
             }
         },
