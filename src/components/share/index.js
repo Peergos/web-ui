@@ -70,8 +70,9 @@ module.exports = {
                             });
 			} else {
                             var filename = that.files[0].getFileProperties().name;
+			    var filepath = "/" + that.path.join('/') + "/" + filename;
                             if(sharedWithAccess == "Read") {
-				that.context.shareReadAccessWith(that.files[0], targetUsername)
+				that.context.shareReadAccessWith(that.files[0], filepath, targetUsername)
 				    .thenApply(function(b) {
 					that.showSpinner = false;
 					that.messages.push({
@@ -90,7 +91,7 @@ module.exports = {
 				    });
                             } else {
 				var doShare = function(theParent) {
-				    that.context.shareWriteAccessWith(that.files[0], theParent, targetUsername)
+				    that.context.shareWriteAccessWith(that.files[0], filepath, theParent, targetUsername)
 					.thenApply(function(b) {
 					    that.showSpinner = false;
 					    that.messages.push({
