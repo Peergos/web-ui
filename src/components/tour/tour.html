@@ -1,0 +1,29 @@
+<transition name="modal">
+<div class="modal-mask" @click="$emit('hide-tour')">
+    <div style="height:30%"></div>
+    <div class="modal-container" @click="$emit('hide-tour')">
+
+        <div class="modal-header">
+            <h3 id="modal-header-id">Welcome to Peergos!</h3>
+        </div>
+
+        <div class="modal-body">
+          <div class="container">
+	    
+            </div>
+          </div>
+        </div>
+	
+        <div class="modal-footer">
+          <slot name="footer">
+            <button 
+              id='modal-button-id' 
+              class="modal-default-button"
+              @click="$emit('hide-tour')">
+              Skip
+            </button>
+          </slot>
+        </div>
+    </div>
+</div>
+</transition>

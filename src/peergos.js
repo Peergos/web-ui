@@ -23,6 +23,7 @@ var Social          = require('./components/social');
 var Space           = require('./components/space');
 var Spinner         = require('./components/spinner');
 var Text            = require('./components/viewers/text-viewer');
+var Tour            = require('./components/tour');
 var Warning         = require('./components/warning');
 var Replace         = require('./components/replace');
 
@@ -50,6 +51,7 @@ Vue.component('social', Vue.extend(Social));
 Vue.component('spinner', Vue.extend(Spinner));
 Vue.component('space', Vue.extend(Space));
 Vue.component('text-viewer', Vue.extend(Downloader).extend(Text));
+Vue.component('tour', Vue.extend(Tour));
 Vue.component('warning', Vue.extend(Warning));
 Vue.component('replace', Vue.extend(Replace));
 

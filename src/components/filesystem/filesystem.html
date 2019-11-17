@@ -31,6 +31,7 @@
         <li v-if="isAdmin"><a @click="showAdminPanel">Admin Panel</a></li>
         <li><a @click="showRequestStorage">Request more storage</a></li>
         <li><a @click="showChangePassword">Change Password</a></li>
+        <li><a @click="showTour=true;showSettingsMenu=false">Show tour</a></li>
         <li role="separator" class="divider"></li>
         <li><a @click="logout">Log out</a></li>
       </ul>
@@ -59,6 +60,10 @@
     <li id='shared-with-file' v-if="(isNotHome || isNotBackground) && isWritable" @click="showSharedWithView">Shared with</li>
   </ul>
   
+  <tour
+    v-if="showTour" 
+    v-on:hide-tour="showTour = false">
+  </tour>
   <modal
     v-if="showModal" 
     v-on:hide-modal="showModal = false" 

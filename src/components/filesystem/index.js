@@ -19,6 +19,7 @@ module.exports = {
             showModal:false,
             modalTitle:"",
             modalLinks:[],
+	    showTour: false,
             showShare:false,
             showSharedWith:false,
             sharedWithData:{"edit_shared_with_users":[],"read_shared_with_users":[]},
@@ -73,9 +74,10 @@ module.exports = {
             onUpdateCompletion: [] // methods to invoke when current dir is next refreshed
         };
     },
-    props: ["context", "initPath", "opengallery", "initiateDownload"],
+    props: ["context", "newsignup", "initPath", "opengallery", "initiateDownload"],
     created: function() {
         console.debug('Filesystem module created!');
+	this.showTour = this.newsignup;
 	this.init();
 	window.onhashchange = this.onUrlChange;
     },
