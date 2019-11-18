@@ -1,29 +1,59 @@
 <transition name="modal">
 <div class="modal-mask" @click="$emit('hide-tour')">
     <div style="height:30%"></div>
-    <div class="modal-container" @click="$emit('hide-tour')">
+    <div class="modal-container" @click.stop>
 
-        <div class="modal-header">
-            <h3 id="modal-header-id">Welcome to Peergos!</h3>
-        </div>
+      <div class="modal-header">
+	<centre>
+          <h3 id="modal-header-id"> {{ headline }}</h3>
+	</centre>
+      </div>
 
-        <div class="modal-body">
-          <div class="container">
-	    
-            </div>
-          </div>
+      <div class="modal-body">
+        <div class="container">
+	  <div>
+	    <div class="tour-carousel">
+	      <button
+		class="fas fa-angle-left"
+		@click="showPrevElement"
+		:disabled="this.reachedMaxLeft"
+		/>
+	      {{ text }}
+	      <button
+		class="fas fa-angle-right"
+		@click="showNextElement"
+		:disabled="this.reachedMaxRight"
+		/>
+	    </div>
+	    <!-- indicators -->
+	    <ul style="list-style-type: none;padding: 0;">
+	      <li
+		v-for="(_, index) in this.cards"
+		class="dot"
+		:key="index"
+		:class="{'dot-selected': currentElementIndex === index}"
+		>
+		<button
+		  class="indicator-btn"
+		  @click='showElement(index)'
+		  :disabled=" currentElementIndex === index"
+		  />
+	      </li>
+	    </ul>
+	  </div>
         </div>
+      </div>
 	
-        <div class="modal-footer">
-          <slot name="footer">
-            <button 
-              id='modal-button-id' 
-              class="modal-default-button"
-              @click="$emit('hide-tour')">
-              Skip
-            </button>
-          </slot>
-        </div>
+      <div class="modal-footer">
+        <slot name="footer">
+          <button 
+            id='modal-button-id' 
+            class="modal-default-button"
+            @click="$emit('hide-tour')">
+            Skip
+          </button>
+        </slot>
+      </div>
     </div>
 </div>
 </transition>
