@@ -1,7 +1,7 @@
 <transition name="modal">
 <div class="modal-mask" @click="$emit('hide-tour')">
-    <div style="height:30%"></div>
-    <div class="modal-container" @click.stop>
+    <div style="height:10%"></div>
+    <div class="modal-container" @click.stop style="display:flex;flex-direction: column;padding: 0;">
 
       <div class="modal-header">
 	<center>
@@ -9,31 +9,30 @@
 	</center>
       </div>
 
-      <div class="modal-body">
-        <div class="container">
-	  <div>
-	    <div class="tour-carousel">
+      <div class="modal-body" style="flex:1;padding: 0;">
+        <div class="container" style="height:100%;display:flex;">
+	  <div style="display:flex;flex-direction: column;width: 100%;">
+	    <div class="tour-carousel" style="flex:1;">
+	      <div style="flex:1;">
+		<center v-if="image != null">
+		  <img :src="image"/>
+		</center>
+		<center style="font-size:large;">
+		  <div style="width:80%;">
+		    {{ text }}
+		  </div>
+		</center>
+	      </div>
+	    </div>
+	    <!-- indicators -->
+	    <center>
 	      <button
 		style="font-size:xx-large;padding-left:0;padding-right:0;"
 		class="fas fa-angle-left"
 		@click="showPrevElement"
 		:disabled="this.reachedMaxLeft"
 		/>
-	      <div style="flex:1;">
-		<center>
-		  {{ text }}
-		</center>
-	      </div>
-	      <button
-		style="font-size:xx-large;padding-left:0;padding-right:0;"
-		class="fas fa-angle-right"
-		@click="showNextElement"
-		:disabled="this.reachedMaxRight"
-		/>
-	    </div>
-	    <!-- indicators -->
-	    <center>
-	      <ul style="list-style-type: none;padding: 0;">
+	      <ul style="list-style-type: none;padding: 0;display: inline;">
 		<li
 		  v-for="(_, index) in this.cards"
 		  class="dot"
@@ -47,6 +46,12 @@
 		    />
 		</li>
 	      </ul>
+	      <button
+		style="font-size:xx-large;padding-left:0;padding-right:0;"
+		class="fas fa-angle-right"
+		@click="showNextElement"
+		:disabled="this.reachedMaxRight"
+		/>
 	    </center>
 	  </div>
         </div>

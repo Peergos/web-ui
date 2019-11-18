@@ -10,23 +10,33 @@ module.exports = {
 		},
 		{
 		    headline: "Safe storage",
-		    text: "You can store your files in Peergos and arrange them in folders."
+		    text: "You can store your files in Peergos and arrange them in folders.",
+		    image: "images/tour/upload.png"
+		},
+		{
+		    headline: "Find your friends",
+		    text: "You can add friends by sending them a secure follow request.",
+		    image: "images/tour/social.png"
 		},
 		{
 		    headline: "Secure sharing",
-		    text: "You can securely share files or folders with friends in Peergos."
+		    text: "You can securely share files or folders with friends in Peergos.",
+		    image: "images/tour/share.png"
 		},
 		{
 		    headline: "Secret links",
-		    text: "You can create a secret link to a file or folder to share with anyone."
+		    text: "You can create a secret link to a file or folder to share with anyone.",
+		    image: "images/tour/secret.png"
 		},
 		{
 		    headline: "Photo gallery",
-		    text: "You can store your photos in Peergos and view slideshows of them."
+		    text: "You can store your photos in Peergos and view slideshows of them.",
+		    image: "images/tour/images.png"
 		},
 		{
 		    headline: "Document editing",
-		    text: "You can store your text documents and edit them directly in Peerogs. We support text, markdown, and most progamming languages."
+		    text: "You can store your text documents and edit them directly in Peergos. We support text, markdown, and most progamming languages.",
+		    image: "images/tour/text.png"
 		},
 		{
 		    headline: "Music collection",
@@ -34,11 +44,13 @@ module.exports = {
 		},
 		{
 		    headline: "Videos and movies",
-		    text: "You can store your videos and movies and watch them directly from the browser on any device."
+		    text: "You can store your videos and movies and watch them directly from the browser on any device.",
+		    image: "images/tour/video.png"
 		},
 		{
 		    headline: "PDF viewer",
-		    text: "You can store and view PDF documents."
+		    text: "You can store and view PDF documents.",
+		    image: "images/tour/pdf.png"
 		},
 	    ],
 	};
@@ -61,6 +73,9 @@ module.exports = {
 	},
 	text() {
 	    return this.currentElement.text;
+	},
+	image() {
+	    return this.currentElement.image;
 	},
     },
     methods: {
