@@ -4,9 +4,9 @@
     <div class="modal-container" @click.stop>
 
       <div class="modal-header">
-	<centre>
+	<center>
           <h3 id="modal-header-id"> {{ headline }}</h3>
-	</centre>
+	</center>
       </div>
 
       <div class="modal-body">
@@ -14,32 +14,40 @@
 	  <div>
 	    <div class="tour-carousel">
 	      <button
+		style="font-size:xx-large;"
 		class="fas fa-angle-left"
 		@click="showPrevElement"
 		:disabled="this.reachedMaxLeft"
 		/>
-	      {{ text }}
+	      <div style="flex:1;">
+		<center>
+		  {{ text }}
+		</center>
+	      </div>
 	      <button
+		style="font-size:xx-large;"
 		class="fas fa-angle-right"
 		@click="showNextElement"
 		:disabled="this.reachedMaxRight"
 		/>
 	    </div>
 	    <!-- indicators -->
-	    <ul style="list-style-type: none;padding: 0;">
-	      <li
-		v-for="(_, index) in this.cards"
-		class="dot"
-		:key="index"
-		:class="{'dot-selected': currentElementIndex === index}"
-		>
-		<button
-		  class="indicator-btn"
-		  @click='showElement(index)'
-		  :disabled=" currentElementIndex === index"
-		  />
-	      </li>
-	    </ul>
+	    <center>
+	      <ul style="list-style-type: none;padding: 0;">
+		<li
+		  v-for="(_, index) in this.cards"
+		  class="dot"
+		  :key="index"
+		  :class="{'dot-selected': currentElementIndex === index}"
+		  >
+		  <button
+		    class="indicator-btn"
+		    @click='showElement(index)'
+		    :disabled=" currentElementIndex === index"
+		    />
+		</li>
+	      </ul>
+	    </center>
 	  </div>
         </div>
       </div>
@@ -50,7 +58,7 @@
             id='modal-button-id' 
             class="modal-default-button"
             @click="$emit('hide-tour')">
-            Skip
+            Skip tour
           </button>
         </slot>
       </div>
