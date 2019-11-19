@@ -40,7 +40,8 @@ module.exports = {
 		},
 		{
 		    headline: "Music collection",
-		    text: "You can store your music collection in Peergos and play songs back directly."
+		    text: "You can store your music collection in Peergos and play songs back directly.",
+		    image: "images/tour/music.png"
 		},
 		{
 		    headline: "Videos and movies",
