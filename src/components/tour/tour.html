@@ -1,0 +1,72 @@
+<transition name="modal">
+<div class="modal-mask" @click="$emit('hide-tour')">
+    <div style="height:10%"></div>
+    <div class="modal-container" @click.stop style="display:flex;flex-direction: column;padding: 0;">
+
+      <div class="modal-header">
+	<center>
+          <h3 id="modal-header-id"> {{ headline }}</h3>
+	</center>
+      </div>
+
+      <div class="modal-body" style="flex:1;padding: 0;">
+        <div class="container" style="height:100%;display:flex;">
+	  <div style="display:flex;flex-direction: column;width: 100%;">
+	    <div class="tour-carousel" style="flex:1;">
+	      <div style="flex:1;">
+		<center v-if="image != null">
+		  <img :src="image" style="max-width:100%"/>
+		</center>
+		<center style="font-size:large;">
+		  <div style="width:80%;">
+		    {{ text }}
+		  </div>
+		</center>
+	      </div>
+	    </div>
+	    <!-- indicators -->
+	    <center>
+	      <button
+		style="font-size:xx-large;padding-left:0;padding-right:0;"
+		class="fas fa-angle-left"
+		@click="showPrevElement"
+		:disabled="this.reachedMaxLeft"
+		/>
+	      <ul style="list-style-type: none;padding: 0;display: inline;">
+		<li
+		  v-for="(_, index) in this.cards"
+		  class="dot"
+		  :key="index"
+		  :class="{'dot-selected': currentElementIndex === index}"
+		  >
+		  <button
+		    class="indicator-btn"
+		    @click='showElement(index)'
+		    :disabled=" currentElementIndex === index"
+		    />
+		</li>
+	      </ul>
+	      <button
+		style="font-size:xx-large;padding-left:0;padding-right:0;"
+		class="fas fa-angle-right"
+		@click="showNextElement"
+		:disabled="this.reachedMaxRight"
+		/>
+	    </center>
+	  </div>
+        </div>
+      </div>
+	
+      <div class="modal-footer">
+        <slot name="footer">
+          <button 
+            id='modal-button-id' 
+            class="modal-default-button"
+            @click="$emit('hide-tour')">
+            Skip tour
+          </button>
+        </slot>
+      </div>
+    </div>
+</div>
+</transition>

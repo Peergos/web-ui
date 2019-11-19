@@ -8,6 +8,40 @@ body {
     flex-direction: column;
 }
 
+.tour-carousel {
+  display: flex;
+  align-items: center;
+  margin-bottom: 30px;
+}
+
+.dot {
+  height: 10px;
+  width: 10px;
+  border-radius: 50%;
+  background: black;
+  opacity: 0.2;
+  cursor: pointer;
+  position: relative;
+  display: inline-block;
+  margin: 0 10px;
+}
+
+.dot-selected {
+  opacity: 0.7;
+  cursor: default;
+}
+
+.indicator-btn {
+  position: absolute;
+  left: 0px;
+  padding: 0px;
+  height: 10px;
+  width: 10px;
+  border-radius: 50%;
+  background: transparent;
+  border: none;
+}
+
 .bottom-message {
     position:absolute;
     bottom:10%;
@@ -253,14 +287,15 @@ table {
 }
 
 .modal-container {
-  width: 50%;
-  margin: 0px auto;
-  padding: 20px 30px;
-  background-color: #fff;
-  border-radius: 2px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, .33);
-  transition: all .3s ease;
-  font-family: Helvetica, Arial, sans-serif;
+    width: 90%;
+    height:80%;
+    margin: 0px auto;
+    padding: 20px 30px;
+    background-color: #fff;
+    border-radius: 2px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, .33);
+    transition: all .3s ease;
+    font-family: Helvetica, Arial, sans-serif;
 }
 
 @media (max-width: 600px) {
