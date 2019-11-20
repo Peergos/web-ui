@@ -23,7 +23,7 @@ body {
   cursor: pointer;
   position: relative;
   display: inline-block;
-  margin: 0 10px;
+  margin: 0 6px;
 }
 
 .dot-selected {

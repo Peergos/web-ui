@@ -1,16 +1,12 @@
 <transition name="modal">
 <div class="modal-mask" @click="$emit('hide-tour')">
-    <div style="height:10%"></div>
-    <div class="modal-container" @click.stop style="display:flex;flex-direction: column;padding: 0;">
+    <div class="modal-container" @click.stop style="display:flex;flex-direction: column;padding: 0;max-width:1200px;height: 100%;">
 
-      <div class="modal-header">
+      <div class="modal-body" style="height:100%;flex:1;padding: 0;">
 	<center>
           <h3 id="modal-header-id"> {{ headline }}</h3>
 	</center>
-      </div>
-
-      <div class="modal-body" style="flex:1;padding: 0;">
-        <div class="container" style="height:100%;display:flex;">
+        <div class="container" style="height:90%;display:flex;">
 	  <div style="display:flex;flex-direction: column;width: 100%;">
 	    <div class="tour-carousel" style="flex:1;">
 	      <div style="flex:1;">
@@ -52,20 +48,17 @@
 		@click="showNextElement"
 		:disabled="this.reachedMaxRight"
 		/>
+	      <br/>
+	      <button 
+              id='modal-button-id' 
+		class="btn btn-danger"
+		style="display: block;float:;"
+		@click="$emit('hide-tour')">
+		Skip tour
+              </button>
 	    </center>
 	  </div>
         </div>
-      </div>
-	
-      <div class="modal-footer">
-        <slot name="footer">
-          <button 
-            id='modal-button-id' 
-            class="modal-default-button"
-            @click="$emit('hide-tour')">
-            Skip tour
-          </button>
-        </slot>
       </div>
     </div>
 </div>

@@ -35,7 +35,7 @@ module.exports = {
 		},
 		{
 		    headline: "Document editing",
-		    text: "You can store your text documents and edit them directly in Peergos. We support text, markdown, and most progamming languages.",
+		    text: "You can store your text documents and edit them directly in Peergos. We support text, markdown, and more!",
 		    image: "images/tour/text.png"
 		},
 		{
