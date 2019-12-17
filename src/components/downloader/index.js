@@ -57,7 +57,7 @@ module.exports = {
 			setTimeout(function(){
 			    progress.show = false;
 			    that.progressMonitors.pop(progress);
-			}, 2000);
+			}, 100);
 		    }
 		}
             }).thenCompose(function(reader) {
