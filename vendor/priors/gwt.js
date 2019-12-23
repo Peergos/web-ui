@@ -51,7 +51,7 @@ function getProm(url) {
         if (err != null)
             future.completeExceptionally(java.lang.Throwable.of(err));
         else {
-            future.complete(convertToByteArray(Array.from(result)));
+            future.complete(convertToByteArray(result));
 	}
     }, function(err) {
 	future.completeExceptionally(java.lang.Throwable.of(err)); 
@@ -82,13 +82,13 @@ function postProm(url, data) {
 	req.onerror = function() {
             reject(Error("Network Error"));
 	};
-	
-	req.send(new Uint8Array(data));
+
+	req.send(data);
     }).then(function(result, err) {
         if (err != null)
             future.completeExceptionally(java.lang.Throwable.of(err));
         else
-            future.complete(peergos.shared.user.JavaScriptPoster.convertToBytes(result));
+            future.complete(convertToByteArray(result));
     }, function(err) {
 	future.completeExceptionally(java.lang.Throwable.of(err)); 
     });
@@ -130,7 +130,7 @@ function postMultipartProm(url, dataArrays) {
         if (err != null)
             future.completeExceptionally(java.lang.Throwable.of(err));
         else
-            future.complete(peergos.shared.user.JavaScriptPoster.convertToBytes(result));
+            future.complete(convertToByteArray(result));
     }, function(err) {
 	future.completeExceptionally(java.lang.Throwable.of(err)); 
     });
@@ -187,19 +187,19 @@ function hashToKeyBytesProm(username, password, algorithm) {
         if (err != null)
             future.completeExceptionally(err);
         else
-            future.complete(peergos.shared.user.JavaScriptPoster.convertToBytes(result));
+            future.complete(convertToByteArray(new Int8Array(result)));
     });
     return future;
 }
 
 function generateRandomBytes(len) {    
     var bytes = nacl.randomBytes(len);
-    return peergos.shared.user.JavaScriptPoster.convertToBytes(new Int8Array(bytes));
+    return convertToByteArray(new Int8Array(bytes));
 }
 
 function generateSecretbox(data, nonce, key) {
     var bytes = nacl.secretbox(new Uint8Array(data), new Uint8Array(nonce), new Uint8Array(key));
-    return peergos.shared.user.JavaScriptPoster.convertToBytes(bytes);
+    return convertToByteArray(new Int8Array(bytes));
 }
 
 function generateSecretbox_open(cipher, nonce, key) {
@@ -207,17 +207,17 @@ function generateSecretbox_open(cipher, nonce, key) {
     if(bytes === false) {
         throw "Invalid encryption!";
     }
-    return peergos.shared.user.JavaScriptPoster.convertToBytes(new Int8Array(bytes.buffer, bytes.byteOffset, bytes.byteLength));
+    return convertToByteArray(new Int8Array(bytes.buffer, bytes.byteOffset, bytes.byteLength));
 }
 
 function generateCrypto_sign_open(signed, publicSigningKey) {    
     var bytes = nacl.sign.open(new Uint8Array(signed), new Uint8Array(publicSigningKey));
-    return peergos.shared.user.JavaScriptPoster.convertToBytes(new Int8Array(bytes));
+    return convertToByteArray(new Int8Array(bytes));
 }
 
 function generateCrypto_sign(message, secretSigningKey) {    
     var bytes = nacl.sign(new Uint8Array(message), new Uint8Array(secretSigningKey));
-    return peergos.shared.user.JavaScriptPoster.convertToBytes(bytes);
+    return convertToByteArray(new Int8Array(bytes));
 }
 
 function generateCrypto_sign_keypair(publicKey, secretKey) {    
@@ -237,13 +237,13 @@ function generateCrypto_sign_keypair(publicKey, secretKey) {
 function generateCrypto_box_open(cipher, nonce, theirPublicBoxingKey, ourSecretBoxingKey) {    
     var res = nacl.box.open(new Uint8Array(cipher), new Uint8Array(nonce), new Uint8Array(theirPublicBoxingKey), new Uint8Array(ourSecretBoxingKey));
     var i8Array = new Int8Array(res);
-    return peergos.shared.user.JavaScriptPoster.convertToBytes(i8Array);
+    convertToByteArray(i8Array);
 }
 
 function generateCrypto_box(message, nonce, theirPublicBoxingKey, ourSecretBoxingKey) {    
     var res = nacl.box(new Uint8Array(message), new Uint8Array(nonce), new Uint8Array(theirPublicBoxingKey), new Uint8Array(ourSecretBoxingKey));
     var i8Array = new Int8Array(res);
-    return peergos.shared.user.JavaScriptPoster.convertToBytes(i8Array);
+    return convertToByteArray(i8Array);
 }
 
 function generateCrypto_box_keypair(publicKey, secretKey) {    
@@ -259,14 +259,14 @@ var scryptJS = {
         this.hashToKeyBytes = hashToKeyBytesProm;
 
 	this.sha256 = function(input) {
-	    var res = peergos.shared.user.JavaScriptPoster.convertToBytes(sha256(input));
-	    res.length = 32;
+		var data = new Int8Array(sha256(input));
+	    var res = convertToByteArray(data.slice(0, 32));
 	    return res;
 	}
 
 	this.blake2b = function(input, outputLength) {
-	    var res = peergos.shared.user.JavaScriptPoster.convertToBytes(blake2b.blake2b(input, outputLength));
-	    res.length = outputLength;
+		var data = new Int8Array(blake2b.blake2b(input, outputLength));
+	    var res = convertToByteArray(data.slice(0, outputLength));
 	    return res;
 	}
     }
@@ -320,8 +320,8 @@ document.encryptworker.onmessage = function(oEvent) {
     let taskId = uInt8IdView.toString();
     let future = inflightEncryptFutures[taskId];
     delete inflightEncryptFutures[taskId];
-    var uInt8DataView = new Uint8Array(oEvent.data.data, oEvent.data.data.byteOffset, oEvent.data.data.byteLength);
-    future.complete(peergos.shared.user.JavaScriptPoster.convertToBytes(uInt8DataView));
+    var int8DataView = new Int8Array(oEvent.data.data, oEvent.data.data.byteOffset, oEvent.data.data.byteLength);
+    future.complete(convertToByteArray(int8DataView));
 };
 
 document.decryptworker = new Worker('js/decrypt.js');
@@ -331,7 +331,7 @@ document.decryptworker.onmessage = function(oEvent) {
     let future = inflightDecryptFutures[taskId];
     delete inflightDecryptFutures[taskId];
     let int8DataView = new Int8Array(oEvent.data.data, oEvent.data.data.byteOffset, oEvent.data.data.byteLength);
-    future.complete(peergos.shared.user.JavaScriptPoster.convertToBytes(int8DataView));
+    future.complete(convertToByteArray(int8DataView));
 };
 
 function generateSecretboxAsync(data, nonce, key) {
