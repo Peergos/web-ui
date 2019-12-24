@@ -123,7 +123,7 @@ function postMultipartProm(url, dataArrays) {
 	var form = new FormData();
 
 	for (var i=0; i < dataArrays.array.length; i++)
-	    form.append(i, new Blob([new Int8Array(dataArrays.array[i])]));
+	    form.append(i, new Blob([dataArrays.array[i]]));
 
         req.send(form);
     }).then(function(result, err) {
