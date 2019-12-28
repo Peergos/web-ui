@@ -259,9 +259,21 @@ var scryptJS = {
         this.hashToKeyBytes = hashToKeyBytesProm;
 
 	this.sha256 = function(input) {
-		var data = new Int8Array(sha256(input));
-	    var res = convertToByteArray(data.slice(0, 32));
-	    return res;
+	    var future = peergos.shared.util.Futures.incomplete();
+	    window.crypto.subtle.digest(
+		{
+		    name: "SHA-256",
+		},
+		input
+	    ).then(function(hash){
+		//returns the hash as an ArrayBuffer
+		var data = new Int8Array(hash);
+		var res = convertToByteArray(data.slice(0, 32));
+		future.complete(res);
+	    }).catch(function(err){
+		future.completeExceptionally(java.lang.Throwable.of(err));
+	    });
+	    return future;
 	}
 
 	this.blake2b = function(input, outputLength) {
