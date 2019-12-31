@@ -407,7 +407,12 @@ module.exports = {
         },
 
         getThumbnailURL: function(file) {
-            return file.getBase64Thumbnail();
+	    // cache thumbnail to avoid recalculating it
+	    if (file.thumbnail != null)
+		return file.thumbnail;
+            var thumb = file.getBase64Thumbnail();
+	    file.thumbnail = thumb;
+	    return thumb;
         },
         goBackToLevel: function(level) {
             // By default let's jump to the root.
