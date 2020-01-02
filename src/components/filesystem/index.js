@@ -426,6 +426,9 @@ module.exports = {
 
         goHome: function() {
             this.changePath("/");
+            Vue.nextTick(function() {
+                this.showSpinner = false;
+            }.bind(this));
         },
 
         askMkdir: function() {
