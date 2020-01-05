@@ -7,14 +7,14 @@ The Web interface for Peergos
 
 ## install 
 
-Requires [ant](http://ant.apache.org/) along with Java 8 including JavaFX. 
+Requires [ant](http://ant.apache.org/) and with Java 11.
 
 NB: all other dependencies are checked into the repo.
 
 ### eg. on debian/ubuntu derivatives
 
 ```
-sudo apt install openjdk-8-jdk openjfx ant
+sudo apt install openjdk-11-jdk ant
 ```
 
 ### project setup
