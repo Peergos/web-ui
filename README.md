@@ -7,9 +7,9 @@ The Web interface for Peergos
 
 ## install 
 
-Requires [ant](http://ant.apache.org/) and with Java 11.
+Requires [ant](http://ant.apache.org/) and Java 11.
 
-NB: all other dependencies are checked into the repo.
+NB: all other dependencies are checked into the repo, or into the submodule peergos repo.
 
 ### eg. on debian/ubuntu derivatives
 
