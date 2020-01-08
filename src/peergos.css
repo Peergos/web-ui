@@ -6,6 +6,7 @@ body {
     height: 100%;
     display: flex;
     flex-direction: column;
+    font-family: "montserat";
 }
 
 .tour-carousel {
@@ -109,12 +110,14 @@ body .grid {
   margin-bottom: 0.1em;
 }
 .filename {
+  font-family: "montserat";
   font-size: 1.2em;
   word-wrap: break-word;
   max-width: 5em;
   margin: 0.5em;
 }
 .btn_pnavbar {
+    font-family: "montserat";
     color:#333;
     font-size: 1.7em;
     padding: 2px 6px;
@@ -185,7 +188,7 @@ table {
     height:40px; 
     border:solid 3px #CCCCCC; 
     background:#333;
-    width:100px; 
+    width:120px; 
     line-height:32px; 
     -webkit-transform:rotate(-90deg);
     font-weight:600; 
@@ -198,7 +201,6 @@ table {
     position:fixed; 
     right:-40px; 
     top:45%;
-    font-family: Helvetica, Arial, sans-serif; 
     z-index:999; 
 }
 
