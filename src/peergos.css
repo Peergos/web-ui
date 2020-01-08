@@ -6,7 +6,7 @@ body {
     height: 100%;
     display: flex;
     flex-direction: column;
-    font-family: "montserat";
+    font-family: 'Montserrat', Sans-Serif;
 }
 
 .tour-carousel {
@@ -99,10 +99,13 @@ body .grid {
     padding-top: 0px;
   }
 }
-.picon {
+.picon{
   font-size: 2.5em;
   word-wrap: break-word;
   max-width: 5em;
+}
+.picon:hover {
+  color: #26b99a;
 }
 .pnavbar {
   font-size: 1.7em;
@@ -110,14 +113,14 @@ body .grid {
   margin-bottom: 0.1em;
 }
 .filename {
-  font-family: "montserat";
+  font-family: 'Montserrat', Sans-Serif;
   font-size: 1.2em;
   word-wrap: break-word;
   max-width: 5em;
   margin: 0.5em;
 }
 .btn_pnavbar {
-    font-family: "montserat";
+    font-family: 'Montserrat', Sans-Serif;
     color:#333;
     font-size: 1.7em;
     padding: 2px 6px;
@@ -136,8 +139,19 @@ body .grid {
 .top_right_icon {
   font-size: 1em;
 }
-.file_icon {
-  cursor:pointer;
+.dir {
+  cursor: pointer;
+  color: #26a69a;
+}
+.dir:hover {
+  color: #26b99a;
+}
+.file {
+  cursor: pointer;
+  color: #2c3e50;
+}
+.file:hover {
+  color: #35495e;
 }
 .grid_icon_wrapper {
   margin: 1em;

@@ -1090,6 +1090,11 @@ module.exports = {
         navigateToSubdir: function(name) {
             this.changePath(this.getPath() + name);
         },
+	getFileClass: function(file) {
+	    if (file.isDirectory())
+		return "dir";
+	    return "file"
+	},
         getFileIcon: function(file) {
             if (file.isDirectory()) {
                 if (file.isUserRoot() && file.getName() == this.username)
