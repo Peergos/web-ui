@@ -9,6 +9,15 @@ body {
     font-family: 'Montserrat', Sans-Serif;
 }
 
+.btn-success {
+    background-color: #26b99a;
+    border-color: #16a98a;
+}
+
+.btn-success:hover {
+    background-color: #26a69a;
+}
+
 .tour-carousel {
   display: flex;
   align-items: center;
