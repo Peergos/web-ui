@@ -12,13 +12,24 @@ module.exports = {
 	},
 	
 	supportsStreaming: function() {
-            try {
-		return 'serviceWorker' in navigator && !!new ReadableStream() && !!new WritableStream()
-            } catch(err) {
-		return false;
-            }
+        try {
+		    return 'serviceWorker' in navigator && !!new ReadableStream() && !!new WritableStream()
+        } catch(err) {
+		    return false;
+        }
 	},
-	
+
+    detectFirefoxWritableSteams: function() {
+        let userAgent = navigator.userAgent;
+        let firefoxToken = "Firefox/";
+        if (userAgent.includes("Gecko/") && userAgent.includes(firefoxToken)) {
+            let version = Number(userAgent.substring(userAgent.indexOf(firefoxToken) + firefoxToken.length));
+            return version >= 72; //indicates javascript.options.writable_streams is available in about:config
+        } else {
+            return false;
+        }
+    },
+
 	openItem: function(name, data, mimeType) {
             console.log("saving data of length " + data.length + " to " + name);
 	    
