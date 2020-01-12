@@ -449,23 +449,31 @@ module.exports = {
         },
 
         confirmDownload: function(file, downloadFn) {
-	    var size = this.getFileSize(file.getFileProperties());
-	    if (this.supportsStreaming() || size < 50*1024*1024)
-		return downloadFn();
-	    var sizeMb = (size/1024/1024) | 0;
-            this.warning_message='Are you sure you want to download ' + file.getName() + " of size " + sizeMb +'MB?'; 
-            this.warning_body="We recommend Chrome for downloads of large files. Your browser doesn't support it and may crash or be very slow";
+            var size = this.getFileSize(file.getFileProperties());
+            if (this.supportsStreaming() || size < 50*1024*1024)
+                return downloadFn();
+            var sizeMb = (size/1024/1024) | 0;
+            this.warning_message='Are you sure you want to download ' + file.getName() + " of size " + sizeMb +'MB?';
+            if(this.detectFirefoxWritableSteams()) {
+                this.warning_body="Firefox has added support for streaming behind a feature flag. To enable streaming; open about:config, enable 'javascript.options.writable_streams' and then open a new tab";
+            } else {
+                this.warning_body="We recommend Chrome for downloads of large files. Your browser doesn't support it and may crash or be very slow";
+            }
             this.warning_consumer_func = downloadFn;
             this.showWarning = true;
         },
 
         confirmView: function(file, viewFn) {
-	    var size = this.getFileSize(file.getFileProperties());
-	    if (this.supportsStreaming() || size < 50*1024*1024)
-		return viewFn();
-	    var sizeMb = (size/1024/1024) | 0;
+	        var size = this.getFileSize(file.getFileProperties());
+	        if (this.supportsStreaming() || size < 50*1024*1024)
+		        return viewFn();
+	        var sizeMb = (size/1024/1024) | 0;
             this.warning_message='Are you sure you want to view ' + file.getName() + " of size " + sizeMb +'MB?'; 
-            this.warning_body="We recommend Chrome for viewing large files. Your browser doesn't support it and may crash or be very slow to start";
+            if(this.detectFirefoxWritableSteams()) {
+                this.warning_body="Firefox has added support for streaming behind a feature flag. To enable streaming; open about:config, enable 'javascript.options.writable_streams' and then open a new tab";
+            } else {
+                this.warning_body="We recommend Chrome for downloads of large files. Your browser doesn't support it and may crash or be very slow";
+            }
             this.warning_consumer_func = viewFn;
             this.showWarning = true;
         },
