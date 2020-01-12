@@ -197,7 +197,7 @@
     </progressbar>
   </div>
   <div id="dnd" @drop="dndDrop($event)" @dragover.prevent v-bind:class="{ fillspace: true, not_owner: isNotMe }" v-on:contextmenu="openMenu($event)">
-    <spinner v-if="showSpinner"></spinner>
+    <spinner v-if="showSpinner" :message="spinnerMessage"></spinner>
     
     <div class="grid" v-if="grid">
         <span class="column" v-for="(file, itemObjKey) in sortedFiles">
