@@ -436,9 +436,14 @@ module.exports = {
             this.prompt_message='Enter a new folder name';
             this.prompt_value='';
             this.prompt_consumer_func = function(prompt_result) {
-                if (prompt_result === '' || prompt_result === null)
+                if (prompt_result === null)
                     return;
-                this.mkdir(prompt_result);
+                let folderName = prompt_result.trim();
+                if (folderName === '')
+                    return;
+                if (folderName === '.' || folderName === '..')
+                    return;
+                this.mkdir(folderName);
             }.bind(this);
             this.showPrompt = true;
         },
@@ -1246,23 +1251,30 @@ module.exports = {
             this.prompt_message = 'Enter a new name';
             var that = this;
             this.prompt_consumer_func = function(prompt_result) {
-                if (prompt_result === '')
+                if (prompt_result === null)
+                    return;
+                if (prompt_result === old_name)
+                    return;
+                let newName = prompt_result.trim();
+                if (newName === '')
+                    return;
+                if (newName === '.' || newName === '..')
                     return;
                 that.showSpinner = true;
-                console.log("Renaming " + old_name + "to "+ prompt_result);
-                file.rename(prompt_result, that.currentDir, that.getContext())
+                console.log("Renaming " + old_name + "to "+ newName);
+                file.rename(newName, that.currentDir, that.getContext())
                     .thenApply(function(parent){
-			that.currentDir = parent;
-			that.updateFiles();
-			that.onUpdateCompletion.push(function() {
+			            that.currentDir = parent;
+			            that.updateFiles();
+			            that.onUpdateCompletion.push(function() {
                             that.showSpinner = false;
-			});
+			            });
                     }).exceptionally(function(throwable) {
-			that.errorTitle = 'Error renaming file: ' + old_name;
-			that.errorBody = throwable.getMessage();
-			that.showError = true;
-			that.showSpinner = false;
-		    });
+                        that.errorTitle = 'Error renaming file: ' + old_name;
+                        that.errorBody = throwable.getMessage();
+                        that.showError = true;
+                        that.showSpinner = false;
+                    });
             };
             this.showPrompt =  true;
         },
