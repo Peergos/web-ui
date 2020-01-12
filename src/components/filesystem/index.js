@@ -455,7 +455,7 @@ module.exports = {
             var sizeMb = (size/1024/1024) | 0;
             this.warning_message='Are you sure you want to download ' + file.getName() + " of size " + sizeMb +'MB?';
             if(this.detectFirefoxWritableSteams()) {
-                this.warning_body="Firefox has added support for streaming behind a feature flag. To activate streaming; open about:config, enable 'javascript.options.writable_streams' and then open a new tab";
+                this.warning_body="Firefox has added support for streaming behind a feature flag. To enable streaming; open about:config, enable 'javascript.options.writable_streams' and then open a new tab";
             } else {
                 this.warning_body="We recommend Chrome for downloads of large files. Your browser doesn't support it and may crash or be very slow";
             }
@@ -470,7 +470,7 @@ module.exports = {
 	        var sizeMb = (size/1024/1024) | 0;
             this.warning_message='Are you sure you want to view ' + file.getName() + " of size " + sizeMb +'MB?'; 
             if(this.detectFirefoxWritableSteams()) {
-                this.warning_body="Firefox has added support for streaming behind a feature flag. To activate streaming; open about:config, enable 'javascript.options.writable_streams' and then open a new tab";
+                this.warning_body="Firefox has added support for streaming behind a feature flag. To enable streaming; open about:config, enable 'javascript.options.writable_streams' and then open a new tab";
             } else {
                 this.warning_body="We recommend Chrome for downloads of large files. Your browser doesn't support it and may crash or be very slow";
             }
