@@ -577,7 +577,7 @@ module.exports = {
                         that.getEntries(items, ++itemIndex, that, allFiles);
                     }
                 } else {
-                    let uploadPath = that.getPath();
+                    let uploadPath = this.getPath();
                     var replaceParams = {
                         applyReplaceToAll : false,
                         replaceFile : false,
@@ -588,11 +588,20 @@ module.exports = {
                     if(allFiles.length > 10) {
                         this.spinnerMessage = "preparing for upload";
                     }
-                    that.traverseDirectories(uploadPath, uploadPath, null, 0, allFiles, 0, true, replaceParams, future);
+                    this.traverseDirectories(uploadPath, uploadPath, null, 0, allFiles, 0, true, replaceParams, future);
                     let that = this;
-                    future.thenCompose(done => {
+                    future.thenApply(done => {
+                        this.spinnerMessage = "";
                         that.updateFiles();
-                        replaceParams.fileInfoStore.forEach(file => that.uploadFileFromFileInfo(file));
+                        let counter = replaceParams.fileInfoStore.length;
+                        replaceParams.fileInfoStore.forEach(file => {
+                          that.uploadFileFromFileInfo(file).thenApply(res => {
+                              counter--;
+                              if(counter ==0) {
+                                that.progressMonitors.length = 0;
+                              }
+                          });
+                        });
                     });
                 }
         },
@@ -611,10 +620,19 @@ module.exports = {
             }
             this.traverseDirectories(uploadPath, uploadPath, null, 0, files, 0, false, replaceParams, future);
             let that = this;
-            future.thenCompose(done => {
+            future.thenApply(done => {
                 this.spinnerMessage = "";
                 that.updateFiles();
-                replaceParams.fileInfoStore.forEach(file => that.uploadFileFromFileInfo(file));
+                let counter = replaceParams.fileInfoStore.length;
+                replaceParams.fileInfoStore.forEach(file => {
+                  that.uploadFileFromFileInfo(file).thenApply(res => {
+                      counter--;
+                      if(counter ==0) {
+                        that.progressMonitors.length = 0;
+                      }
+                  });
+                });
+
             });
         },
         splitDirectory: function (dir, fromDnd) {
@@ -784,6 +802,8 @@ module.exports = {
             uploadFileFuture.complete(true);
         },
         uploadFileFromFileInfo: function(fileInfo) {
+            var future = peergos.shared.util.Futures.incomplete();
+
             let directory = fileInfo.directory;
             let file = fileInfo.file;
             let refreshDirectory = fileInfo.refreshDirectory;
@@ -795,7 +815,6 @@ module.exports = {
                 done:0,
                 max:resultingSize
             };
-            this.progressMonitors.push(progress);
             var that = this;
 
             var updateProgressBar = function(len){
@@ -804,12 +823,10 @@ module.exports = {
                 //  return Math.floor(b.done / b.max) - Math.floor(a.done / a.max);
                 //});
                 if (progress.done >= progress.max) {
-                    setTimeout(function(){
-                        progress.show = false;
-                        that.progressMonitors.pop(progress);
-                    }, 100);
+                    progress.show = false;
                 }
             };
+            that.progressMonitors.push(progress);
             if(fileInfo.overwriteExisting) { //we delete then upload
                 let that = this;
                 let context = this.getContext();
@@ -820,7 +837,7 @@ module.exports = {
 
                          child.get().remove(updatedDirOpt2.get(), context)
                               .thenApply(updatedDirectory => {
-                                that.uploadFileJS(file, directory, refreshDirectory, updateProgressBar)
+                                that.uploadFileJS(file, directory, refreshDirectory, updateProgressBar, future)
                              })
 
                              })
@@ -828,10 +845,11 @@ module.exports = {
                          })
                      });
             } else {
-                this.uploadFileJS(file, directory, refreshDirectory, updateProgressBar);
+                this.uploadFileJS(file, directory, refreshDirectory, updateProgressBar, future);
             }
+            return future;
         },
-        uploadFileJS: function(file, directory, refreshDirectory, updateProgressBar) {
+        uploadFileJS: function(file, directory, refreshDirectory, updateProgressBar, future) {
             var reader = new browserio.JSFileReader(file);
             var java_reader = new peergos.shared.user.fs.BrowserFileReader(reader);
             let that = this;
@@ -848,6 +866,7 @@ module.exports = {
                         that.updateFiles();
                     }
                     that.updateUsage();
+                    future.complete(true);
                 }).exceptionally(function(throwable) {
                     progress.show = false;
                     that.errorTitle = 'Error uploading file: ' + file.name;
@@ -855,6 +874,7 @@ module.exports = {
                     that.showError = true;
                     throwable.printStackTrace();
                     that.updateUsage();
+                    future.complete(false);
                 })
             });
         },

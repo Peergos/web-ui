@@ -188,9 +188,8 @@
   </replace>
   <div v-if="progressMonitors.length>0" class="progressholder">
     <progressbar 
-        v-for="progress in progressMonitors" 
-      v-on:hide-progress="progressMonitors.splice(progressMonitors.indexOf(progress),
-                          1)"
+        v-for="progress in progressMonitors" v-if="progress.show"
+      v-on:hide-progress="progressMonitors.pop(progress)"
       :title="progress.title" 
       :done="progress.done"
       :max="progress.max">
