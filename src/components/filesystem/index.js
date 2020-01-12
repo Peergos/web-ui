@@ -1242,9 +1242,11 @@ module.exports = {
             if (this.selectedFiles.length > 1)
                 throw "Can't rename more than one file at once!";
 
-            var file = this.selectedFiles[0];
-            var old_name =  file.getFileProperties().name
+            let file = this.selectedFiles[0];
+            let fileProps = file.getFileProperties();
+            let old_name =  fileProps.name
                 this.closeMenu();
+            let fileType = fileProps.isDirectory ? "directory" : "file";
 
             this.prompt_placeholder = 'New name';
 	        this.prompt_value = old_name;
@@ -1270,7 +1272,8 @@ module.exports = {
                             that.showSpinner = false;
 			            });
                     }).exceptionally(function(throwable) {
-                        that.errorTitle = 'Error renaming file: ' + old_name;
+			            that.updateFiles();
+                        that.errorTitle = "Error renaming " + fileType + ": " + old_name;
                         that.errorBody = throwable.getMessage();
                         that.showError = true;
                         that.showSpinner = false;
