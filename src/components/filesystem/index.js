@@ -833,15 +833,10 @@ module.exports = {
                  context.getByPath(directory).thenApply(updatedDirOpt => {
                      updatedDirOpt.get().getChild(file.name, context.crypto.hasher, context.network)
                          .thenCompose(child => {
-                         context.getByPath(directory).thenApply(updatedDirOpt2 => {
-
-                         child.get().remove(updatedDirOpt2.get(), context)
+                            child.get().remove(null, context)
                               .thenApply(updatedDirectory => {
                                 that.uploadFileJS(file, directory, refreshDirectory, updateProgressBar, future)
                              })
-
-                             })
-
                          })
                      });
             } else {
