@@ -7,6 +7,7 @@ module.exports = {
             password2FieldType: "password",
 	    password2: "",
             checkPassword: false,
+	    acceptingSignups: true,
             isError: false,
             errorClass: "",
             error:"",
@@ -19,13 +20,20 @@ module.exports = {
             showError:false,
 	        bannedUsernames:["ipfs", "ipns", "root", "http", "https", "admin", "administrator", "support", "mail", "www", "web", "onion", "i2p", "ftp", "sftp", "file", "mailto", "wss", "xmpp", "ssh", "smtp", "imap", "irc"],
 	    tosAccepted:false,
-	    safePassword:false
+	    safePassword:false,
+	    showMessage: false,
+	    message: {}
         };
     },
     props: ["username", "password1", "crypto", "network"],
     created: function() {
         console.debug('Signup module created!');
-        var that = this;
+	var that = this;
+	this.network.instanceAdmin.acceptingSignups().thenApply(function(res) {
+	    that.acceptingSignups = res;
+	    console.log("accepting signups: " + res);
+	});
+        
         Vue.nextTick(function() {
             if (that.username.length == 0)
                 document.getElementById("username").focus();
@@ -36,6 +44,15 @@ module.exports = {
         });
     },
     methods: {
+	addToWaitList: function() {
+	    var that = this;
+	    this.network.instanceAdmin.addToWaitList(this.email).thenApply(function(res) {
+		that.message.title = "Congratulations";
+		that.message.body = "You have joined the waiting list";
+		that.showMessage = true;
+	    });
+	},
+	
 	lowercaseUsername: function() {
 	    this.username = this.username.toLocaleLowerCase();
 	},
