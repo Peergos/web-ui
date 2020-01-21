@@ -70,6 +70,7 @@ module.exports = {
             errorTitle:'',
             errorBody:'',
             showError:false,
+	    hideDonate: false,
             showSpinner: true,
             onUpdateCompletion: [] // methods to invoke when current dir is next refreshed
         };
@@ -1446,7 +1447,7 @@ module.exports = {
 	},
 	
 	showDonate: function() {
-	    return this.isLoggedIn && this.usageBytes > 1024*1024;
+	    return this.isLoggedIn && this.usageBytes > 1024*1024 && !this.hideDonate;
 	},
 	
 	isLoggedIn: function() {

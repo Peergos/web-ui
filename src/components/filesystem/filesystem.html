@@ -222,6 +222,7 @@
 	<center v-if="showDonate" class="bottom-message">
 	  If you like Peergos, help us spend more time on it by donating!<br/>
 	  <a href="https://donorbox.org/peergos" target="_blank"><button class="btn btn-lg btn-success">Donate</button></a>
+	  <button class="btn btn-lg btn-danger" @click="hideDonate=true;">Hide this</button>
 	</center>
 	<div v-if="!isSecretLink" style="position:absolute;bottom:5px;right:5%;font-size:1.4em"> Usage: {{ usage }} / {{ quota }}</div>
     </div>
