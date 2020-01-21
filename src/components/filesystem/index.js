@@ -489,6 +489,10 @@ module.exports = {
 
 	gotoSignup: function() {
 	    var url = window.location.origin + window.location.pathname + "?signup=true";
+	    this.openLinkInNewTab(url);
+	},
+
+        openLinkInNewTab: function(url) {
 	    let link = document.createElement('a')
             let click = new MouseEvent('click')
 
@@ -1439,6 +1443,10 @@ module.exports = {
 	
 	isSecretLink: function() {
 	    return this.context != null && this.context.username == null;
+	},
+	
+	showDonate: function() {
+	    return this.isLoggedIn && this.usageBytes > 1024*1024;
 	},
 	
 	isLoggedIn: function() {
