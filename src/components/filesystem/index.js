@@ -434,9 +434,14 @@ module.exports = {
             this.prompt_message='Enter a new folder name';
             this.prompt_value='';
             this.prompt_consumer_func = function(prompt_result) {
-                if (prompt_result === '' || prompt_result === null)
+                if (prompt_result === null)
                     return;
-                this.mkdir(prompt_result);
+                let folderName = prompt_result.trim();
+                if (folderName === '')
+                    return;
+                if (folderName === '.' || folderName === '..')
+                    return;
+                this.mkdir(folderName);
             }.bind(this);
             this.showPrompt = true;
         },
@@ -1005,12 +1010,15 @@ module.exports = {
         },
 
         changePath: function(path) {
+            if(path == "/" && this.path.length == 0) {
+                return; //already root
+            }
             console.debug('Changing to path:'+ path);
             if (path.startsWith("/"))
                 path = path.substring(1);
             this.path = path ? path.split('/') : [];
             this.showSpinner = true;
-	    this.updateHistory("filesystem", path, "");
+            this.updateHistory("filesystem", path, "");
         },
 
         createSecretLink: function() {
@@ -1252,32 +1260,42 @@ module.exports = {
             if (this.selectedFiles.length > 1)
                 throw "Can't rename more than one file at once!";
 
-            var file = this.selectedFiles[0];
-            var old_name =  file.getFileProperties().name
+            let file = this.selectedFiles[0];
+            let fileProps = file.getFileProperties();
+            let old_name =  fileProps.name
                 this.closeMenu();
+            let fileType = fileProps.isDirectory ? "directory" : "file";
 
             this.prompt_placeholder = 'New name';
 	        this.prompt_value = old_name;
             this.prompt_message = 'Enter a new name';
             var that = this;
             this.prompt_consumer_func = function(prompt_result) {
-                if (prompt_result === '')
+                if (prompt_result === null)
+                    return;
+                if (prompt_result === old_name)
+                    return;
+                let newName = prompt_result.trim();
+                if (newName === '')
+                    return;
+                if (newName === '.' || newName === '..')
                     return;
                 that.showSpinner = true;
-                console.log("Renaming " + old_name + "to "+ prompt_result);
-                file.rename(prompt_result, that.currentDir, that.getContext())
+                console.log("Renaming " + old_name + "to "+ newName);
+                file.rename(newName, that.currentDir, that.getContext())
                     .thenApply(function(parent){
-			that.currentDir = parent;
-			that.updateFiles();
-			that.onUpdateCompletion.push(function() {
+			            that.currentDir = parent;
+			            that.updateFiles();
+			            that.onUpdateCompletion.push(function() {
                             that.showSpinner = false;
-			});
+			            });
                     }).exceptionally(function(throwable) {
-			that.errorTitle = 'Error renaming file: ' + old_name;
-			that.errorBody = throwable.getMessage();
-			that.showError = true;
-			that.showSpinner = false;
-		    });
+			            that.updateFiles();
+                        that.errorTitle = "Error renaming " + fileType + ": " + old_name;
+                        that.errorBody = throwable.getMessage();
+                        that.showError = true;
+                        that.showSpinner = false;
+                    });
             };
             this.showPrompt =  true;
         },

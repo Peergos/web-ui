@@ -68,7 +68,12 @@ module.exports = {
         signup : function() {
             const creationStart = Date.now();
             const that = this;
-            if(!that.tosAccepted) {
+
+            if(!that.safePassword) {
+                this.errorClass = "has-error has-feedback alert alert-danger";
+                this.isError = true;
+                this.error = "You must accept the password safety warning";
+            }else if (!that.tosAccepted) {
                 this.errorClass = "has-error has-feedback alert alert-danger";
                 this.isError = true;
                 this.error = "You must accept the Terms of Service";
