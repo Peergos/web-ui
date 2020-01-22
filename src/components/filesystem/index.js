@@ -827,31 +827,17 @@ module.exports = {
                 }
             };
             that.progressMonitors.push(progress);
-            if(fileInfo.overwriteExisting) { //we delete then upload
-                let that = this;
-                let context = this.getContext();
-                 context.getByPath(directory).thenApply(updatedDirOpt => {
-                     updatedDirOpt.get().getChild(file.name, context.crypto.hasher, context.network)
-                         .thenCompose(child => {
-                            child.get().remove(null, context)
-                              .thenApply(updatedDirectory => {
-                                that.uploadFileJS(file, directory, refreshDirectory, updateProgressBar, future)
-                             })
-                         })
-                     });
-            } else {
-                this.uploadFileJS(file, directory, refreshDirectory, updateProgressBar, future);
-            }
+            this.uploadFileJS(file, directory, refreshDirectory, fileInfo.overwriteExisting, updateProgressBar, future);
             return future;
         },
-        uploadFileJS: function(file, directory, refreshDirectory, updateProgressBar, future) {
+        uploadFileJS: function(file, directory, refreshDirectory, overwriteExisting, updateProgressBar, future) {
             var reader = new browserio.JSFileReader(file);
             var java_reader = new peergos.shared.user.fs.BrowserFileReader(reader);
             let that = this;
             let context = this.getContext();
             context.getByPath(directory).thenApply(function(updatedDirOpt){
                 updatedDirOpt.get().uploadFileJS(file.name, java_reader, (file.size - (file.size % Math.pow(2, 32)))/Math.pow(2, 32), file.size,
-                    false, context.network, context.crypto, updateProgressBar, context.getTransactionService()).thenApply(function(res) {
+                    overwriteExisting, context.network, context.crypto, updateProgressBar, context.getTransactionService()).thenApply(function(res) {
                     var thumbnailAllocation = Math.min(100000, file.size / 10);
                     updateProgressBar({ value_0: thumbnailAllocation});
                     console.log("uploaded file:" + file.name + " in dir: " + directory);
