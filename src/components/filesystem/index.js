@@ -837,7 +837,7 @@ module.exports = {
             let context = this.getContext();
             context.getByPath(directory).thenApply(function(updatedDirOpt){
                 updatedDirOpt.get().uploadFileJS(file.name, java_reader, (file.size - (file.size % Math.pow(2, 32)))/Math.pow(2, 32), file.size,
-                    overwriteExisting, context.network, context.crypto, updateProgressBar, context.getTransactionService()).thenApply(function(res) {
+                    overwriteExisting, overwriteExisting ? true : false, context.network, context.crypto, updateProgressBar, context.getTransactionService()).thenApply(function(res) {
                     var thumbnailAllocation = Math.min(100000, file.size / 10);
                     updateProgressBar({ value_0: thumbnailAllocation});
                     console.log("uploaded file:" + file.name + " in dir: " + directory);
