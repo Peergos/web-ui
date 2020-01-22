@@ -426,9 +426,6 @@ module.exports = {
 
         goHome: function() {
             this.changePath("/");
-            Vue.nextTick(function() {
-                this.showSpinner = false;
-            }.bind(this));
         },
 
         askMkdir: function() {
@@ -1000,12 +997,15 @@ module.exports = {
         },
 
         changePath: function(path) {
+            if(path == "/" && this.path.length == 0) {
+                return; //already root
+            }
             console.debug('Changing to path:'+ path);
             if (path.startsWith("/"))
                 path = path.substring(1);
             this.path = path ? path.split('/') : [];
             this.showSpinner = true;
-	    this.updateHistory("filesystem", path, "");
+            this.updateHistory("filesystem", path, "");
         },
 
         createSecretLink: function() {
