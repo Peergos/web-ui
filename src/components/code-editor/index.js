@@ -133,13 +133,9 @@ module.exports = {
 	    const that = this;
 	    this.saving = true;
 	    this.parent.uploadFileJS(file.getName(), java_reader, (size - (size % Math.pow(2, 32)))/Math.pow(2, 32), size,
-				true, context.network, context.crypto, len => {}, context.getTransactionService())
-		.thenCompose(function(res) {
-		    return res.getChild(file.getName(), context.crypto.hasher, context.network)
-			.thenCompose(child => child.get().truncate(size, parent, context.network, context.crypto)
-				     .thenApply(function(updated) {
-					 that.saving = false;
-				     }));
+				true, true, context.network, context.crypto, len => {}, context.getTransactionService())
+        .thenApply(function(updated) {
+             that.saving = false;
 		}).exceptionally(function(throwable) {
 		    console.log('Error uploading file: ' + file.getName());
 		    console.log(throwable.getMessage());
