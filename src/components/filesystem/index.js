@@ -11,6 +11,7 @@ module.exports = {
             normalSortOrder: true,
             clipboard:{},
             selectedFiles:[],
+            captureChunks:[],
             url:null,
             viewMenu:false,
             ignoreEvent:false,
@@ -40,6 +41,7 @@ module.exports = {
             showSettingsMenu:false,
             showUploadMenu:false,
             showFeedbackForm: false,
+            showVideoCapture:false,
 	    admindata: {pending:[]},
             social:{
                 pending: [],
@@ -876,6 +878,11 @@ module.exports = {
             this.showPassword = true;
         },
 
+        showMediaCapture: function() {
+            this.closeMenu();
+            this.showVideoCapture = true;
+        },
+
         showRequestStorage: function() {
             this.toggleUserMenu();
             this.showRequestSpace = true;
@@ -929,6 +936,28 @@ module.exports = {
                     that.sharedWithData = {title:title, read_shared_with_users:read_usernames, edit_shared_with_users:edit_usernames};
                     that.showSharedWith = true;
                 });
+        },
+
+        videoCapture: function(filename, data, initial, timesliceInMs) {
+            this.captureChunks.push(data);
+            if (initial) {
+                this.videoCaptureProcessing(filename, timesliceInMs);
+            }
+        },
+        videoCaptureProcessing: function(filename, timesliceInMs) {
+            //chew up chunks one by one in order
+            let chunk = this.captureChunks.shift();
+            if (chunk != null) {
+                let that = this;
+                this.getContext().captureVideo(this.currentDir, filename, chunk).thenApply(function(newContext){
+                    that.currentDirChanged();
+                    if (that.captureChunks.length >= 2) {
+                        setTimeout(function(){ that.videoCaptureProcessing(filename); }, 100);
+                    } else {
+                        setTimeout(function(){ that.videoCaptureProcessing(filename); }, timesliceInMs); //must be >= timeslice
+                    }
+                });
+            }
         },
 
         copy: function() {
