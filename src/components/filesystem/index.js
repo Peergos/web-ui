@@ -949,12 +949,17 @@ module.exports = {
             let chunk = this.captureChunks.shift();
             if (chunk != null) {
                 let that = this;
+                let before = new Date();
                 this.getContext().captureVideo(this.currentDir, filename, chunk).thenApply(function(newContext){
                     that.currentDirChanged();
-                    if (that.captureChunks.length >= 2) {
-                        setTimeout(function(){ that.videoCaptureProcessing(filename); }, 100);
+                    if (that.captureChunks.length >= 1) {
+                        setTimeout(function(){ that.videoCaptureProcessing(filename, timesliceInMs); }, 1);
                     } else {
-                        setTimeout(function(){ that.videoCaptureProcessing(filename); }, timesliceInMs); //must be >= timeslice
+                        let after = new Date();
+                        let duration = after - before;
+                        let waitMs = Math.max(1, timesliceInMs - duration + 1200);
+                        //console.log("stats duration=" + duration + " waitMs=" + waitMs);
+                        setTimeout(function(){ that.videoCaptureProcessing(filename, timesliceInMs); }, waitMs);
                     }
                 });
             }

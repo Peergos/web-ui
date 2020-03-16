@@ -42,7 +42,7 @@ module.exports = {
                   //recorder = new MediaRecorder(stream, { mimeType: 'video/mp4'  });
                 this.recorder = new MediaRecorder(preview.captureStream(this.fps));
                 this.recorder.ondataavailable = this.handleDataAvailable;
-                this.recorder.onstop = () => this.handleEndOfCapture;
+                this.recorder.onstop = this.handleEndOfCapture;
                 this.recorder.start(this.timesliceInMs);
               });
         },
