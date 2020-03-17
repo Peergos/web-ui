@@ -950,7 +950,7 @@ module.exports = {
             if (chunk != null) {
                 let that = this;
                 let before = new Date();
-                this.getContext().captureVideo(this.currentDir, filename, chunk).thenApply(function(newContext){
+                this.currentDir.appendToChild(filename, chunk, false, this.context.network, this.context.crypto, x => {}).thenApply(function(newContext){
                     that.currentDirChanged();
                     if (that.captureChunks.length >= 1) {
                         setTimeout(function(){ that.videoCaptureProcessing(filename, timesliceInMs); }, 1);
