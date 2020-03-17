@@ -39,7 +39,7 @@ module.exports = {
                 return new Promise(resolve => preview.onplaying = resolve);
               }).then(() => {
                 this.buttonLabel = "stop capture";
-                  //recorder = new MediaRecorder(stream, { mimeType: 'video/mp4'  });
+                //this.recorder = new MediaRecorder(preview.captureStream(this.fps), { mimeType: 'video/webm; codecs="vp8, opus"'  });
                 this.recorder = new MediaRecorder(preview.captureStream(this.fps));
                 this.recorder.ondataavailable = this.handleDataAvailable;
                 this.recorder.onstop = this.handleEndOfCapture;
@@ -48,7 +48,7 @@ module.exports = {
         },
         handleEndOfCapture: function() {
         },
-        handleDataAvailable: function() {
+        handleDataAvailable: function(event) {
             event.data.arrayBuffer().then(ab => {
                 var initial = false;
                 if(this.filename == null) {
