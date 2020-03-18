@@ -1093,22 +1093,30 @@ module.exports = {
 	    var mimeType = file.getFileProperties().mimeType;
 	    console.log("Opening " + mimeType);
 	    if (mimeType.startsWith("audio") ||
-		mimeType.startsWith("video") ||
-		mimeType.startsWith("image")) {
-		var that = this;
-		this.confirmView(file, () => {
-		    that.showGallery = true;
-		    that.updateHistory("gallery", that.getPath(), filename);
-		});
+            mimeType.startsWith("video") ||
+            mimeType.startsWith("image")) {
+            var that = this;
+            this.confirmView(file, () => {
+    	        if (this.isSecretLink) {
+                    that.showGallery = true;
+                }
+                that.updateHistory("gallery", that.getPath(), filename);
+            });
 	    } else if (mimeType === "text/plain") {
-		this.showCodeEditor = true;
-		this.updateHistory("editor", this.getPath(), filename);
+	        if (this.isSecretLink) {
+                this.showCodeEditor = true;
+            }
+            this.updateHistory("editor", this.getPath(), filename);
 	    } else if (mimeType === "application/pdf") {
-		this.showPdfViewer = true;
-		this.updateHistory("pdf", this.getPath(), filename);
+	        if (this.isSecretLink) {
+                this.showPdfViewer = true;
+            }
+            this.updateHistory("pdf", this.getPath(), filename);
 	    } else {
-		this.showHexViewer = true;
-		this.updateHistory("hex", this.getPath(), filename);
+	        if (this.isSecretLink) {
+                this.showHexViewer = true;
+            }
+            this.updateHistory("hex", this.getPath(), filename);
 	    } 
         },
 
