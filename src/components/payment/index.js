@@ -30,7 +30,7 @@ module.exports = {
         },
 
         updateCard: function() {
-            this.paymentUrl = this.paymentProperties.getUrl() + "/addcard.html";
+            this.paymentUrl = this.paymentProperties.getUrl() + "/addcard.html?username=" + this.context.username;
 	    this.showCard = true;
         },
 
