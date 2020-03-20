@@ -37,6 +37,8 @@ module.exports = {
             showTextViewer:false,
             showPassword:false,
             showRequestSpace:false,
+            showBuySpace:false,
+	    paymentProperties:{},
             showSettingsMenu:false,
             showUploadMenu:false,
             showFeedbackForm: false,
@@ -878,7 +880,14 @@ module.exports = {
 
         showRequestStorage: function() {
             this.toggleUserMenu();
-            this.showRequestSpace = true;
+	    var that = this;
+	    this.context.getPaymentProperties().thenApply(function(paymentProps) {
+		if (paymentProps.isPaid()) {
+		    that.paymentProperties = paymentProps;
+		    that.showBuySpace = true;
+		} else
+		    that.showRequestSpace = true;
+	    });
         },
 
         logout: function() {

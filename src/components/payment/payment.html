@@ -1,0 +1,37 @@
+<transition name="modal">
+<div class="modal-mask" @click="close">
+    <div style="height:30%"></div>
+    <div class="modal-container" @click.stop>
+
+      <div class="modal-header">
+        <h3> Buy more space</h3>
+      </div>
+
+      <div class="modal-body">
+        <div v-bind:class="errorClass">
+          <label v-if="isError">{{ error }}</label>
+	  <br/>
+	  <label> Current space: {{ getQuota() }}</label>
+	  <br/>
+          <button class="btn btn-large btn-success" @click="requestStorage(10737418240)">
+            Basic (10 GB for 5 GBP / month)
+          </button>
+	  <button class="btn btn-large btn-success" @click="requestStorage(107374182400)">
+            Plus (100 GB for 50 GBP / month)
+          </button>
+        </div>
+	<button class="btn btn-large btn-success" @click="updateCard">
+            Update payment card
+          </button>
+	<div v-if="showCard">
+	  <iframe style="border: none;" width="350px" height="250px" :src="paymentUrl"/>
+	</div>
+      </div>
+      
+      <div class="modal-footer">
+        <slot name="footer">
+        </slot>
+      </div>
+    </div>
+</div>
+</transition>

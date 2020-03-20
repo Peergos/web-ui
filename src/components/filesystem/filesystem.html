@@ -116,6 +116,14 @@
     :quota="quota" 
     :usage="usageBytes">
   </space>
+  <payment 
+    v-if="showBuySpace" 
+    v-on:hide-payment="showBuySpace = false"
+    :context="context" 
+    :quota="quota" 
+    :usage="usageBytes"
+    :paymentProperties="paymentProperties">
+  </payment>
   <feedback 
     v-if="showFeedbackForm" 
     v-on:hide-feedback="showFeedbackForm = false"
