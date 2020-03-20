@@ -13,7 +13,7 @@
 	  <br/>
 	  <label> Current space: {{ getQuota() }}</label>
           <div class="form-group">
-            <input :type="text" name="space" v-on:keyup="validateSpace()" class="form-control" v-model="space" placeholder="New total space amount" style="width:15em;display:inline;">
+            <input type="text" name="space" v-on:keyup="validateSpace()" class="form-control" v-model="space" placeholder="New total space amount" style="width:15em;display:inline;">
 	    <select v-model="unit">
                <option value = "MiB">MiB</option>
                <option value = "GiB">GiB</option>
