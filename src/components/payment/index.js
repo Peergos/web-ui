@@ -31,8 +31,11 @@ module.exports = {
         },
 
         updateCard: function() {
-            this.paymentUrl = this.paymentProperties.getUrl() + "/addcard.html?username=" + this.context.username + "&client_secret=" + this.paymentProperties.getClientSecret();
-	    this.showCard = true;
+	    var that = this;
+	    this.context.getPaymentProperties(true).thenApply(function(props) {
+		that.paymentUrl = props.getUrl() + "/addcard.html?username=" + that.context.username + "&client_secret=" + props.getClientSecret();
+		that.showCard = true;
+	    });
         },
 
         close: function() {

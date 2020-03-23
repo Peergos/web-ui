@@ -881,7 +881,7 @@ module.exports = {
         showRequestStorage: function() {
             this.toggleUserMenu();
 	    var that = this;
-	    this.context.getPaymentProperties().thenApply(function(paymentProps) {
+	    this.context.getPaymentProperties(false).thenApply(function(paymentProps) {
 		if (paymentProps.isPaid()) {
 		    that.paymentProperties = paymentProps;
 		    that.showBuySpace = true;
