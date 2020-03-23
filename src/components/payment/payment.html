@@ -1,31 +1,40 @@
 <transition name="modal">
 <div class="modal-mask" @click="close">
-    <div style="height:30%"></div>
+    <div style="height:0%"></div>
     <div class="modal-container" @click.stop>
-
+      <span @click="close" class="close">&times;</span>
       <div class="modal-header">
-        <h3> Buy more space</h3>
+	<center>
+          <h3> Buy more space</h3>
+	</center>
       </div>
 
       <div class="modal-body">
-        <div v-bind:class="errorClass">
-          <label v-if="isError">{{ error }}</label>
+	<center>
+          <div v-bind:class="errorClass">
+            <label v-if="isError">{{ error }}</label>
+	    <br/>
+	    <label> Current space: {{ getQuota() }}</label>
+	    <br/>
+            <button class="btn btn-success" @click="requestStorage(10737418240)" style="height:10em;">
+              Basic account
+	      <br/>
+	      (10 GB for 5 GBP / month)
+            </button>
+	    <button class="btn btn-success" @click="requestStorage(107374182400)" style="height:10em;">
+              Visionary account
+	      <br/>
+	      (100 GB for 50 GBP / month)
+            </button>
+          </div>
 	  <br/>
-	  <label> Current space: {{ getQuota() }}</label>
-	  <br/>
-          <button class="btn btn-large btn-success" @click="requestStorage(10737418240)">
-            Basic (10 GB for 5 GBP / month)
-          </button>
-	  <button class="btn btn-large btn-success" @click="requestStorage(107374182400)">
-            Plus (100 GB for 50 GBP / month)
-          </button>
-        </div>
-	<button class="btn btn-large btn-success" @click="updateCard">
+	  <button class="btn btn-large btn-success" @click="updateCard">
             Update payment card
           </button>
-	<div v-if="showCard">
-	  <iframe style="border: none;" width="350px" height="250px" :src="paymentUrl"/>
-	</div>
+	  <div v-if="showCard">
+	    <iframe style="border: none;" width="450px" height="420px" :src="paymentUrl"/>
+	  </div>
+	</center>
       </div>
       
       <div class="modal-footer">
