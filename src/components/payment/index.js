@@ -11,7 +11,7 @@ module.exports = {
             errorClass: ""
         };
     },
-    props: ['context', 'quota', 'usage', 'paymentProperties'],
+    props: ['context', 'quota', 'usage', 'paymentProperties', 'updateQuota'],
     created: function() {
     },
     methods: {
@@ -26,7 +26,8 @@ module.exports = {
         },
 
         requestStorage: function(bytes) {
-            this.context.requestSpace(bytes).thenApply(x => that.close())
+	    var that = this;
+            this.context.requestSpace(bytes).thenApply(x => that.updateQuota())
         },
 
         updateCard: function() {
