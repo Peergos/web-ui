@@ -1,6 +1,5 @@
 <transition name="modal">
 <div class="modal-mask" @click="close">
-    <div style="height:0%"></div>
     <div class="modal-container" @click.stop>
       <span @click="close" class="close">&times;</span>
       <div class="modal-header">
@@ -17,14 +16,24 @@
 	    <label> Current space: {{ getQuota() }}</label>
 	    <br/>
             <button class="btn btn-success" @click="requestStorage(10737418240)" style="height:10em;">
-              Basic account
+              <div style="font-size:x-large">Basic account</div>
 	      <br/>
-	      (10 GB for 5 GBP / month)
+	      <div>
+		<ul style="text-align:left;padding-right:40px;">
+		  <li>10 GB of hyper secure storage</li>
+		  <li>5 GBP / month</li>
+		</ul>
+	      </div>
             </button>
 	    <button class="btn btn-success" @click="requestStorage(107374182400)" style="height:10em;">
-              Visionary account
+              <div style="font-size:x-large">Visionary account</div>
 	      <br/>
-	      (100 GB for 50 GBP / month)
+	      <div>
+		<ul style="text-align:left;padding-right:40px;">
+		  <li>100 GB of hyper secure storage</li>
+		  <li>50 GBP / month</li>
+		</ul>
+	      </div>
             </button>
           </div>
 	  <br/>
