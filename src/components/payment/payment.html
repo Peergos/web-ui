@@ -17,6 +17,13 @@
 	    <br/>
 	    <label> Current space: {{ getQuota() }}</label>
 	    <br/>
+	    <button class="btn btn-large btn-success" @click="updateCard">
+              Add payment card
+            </button>
+	    <div v-if="showCard">
+	      <iframe style="border: none;" width="450px" height="420px" :src="paymentUrl"/>
+	    </div>
+	    <br/>
             <button class="btn btn-success" @click="requestStorage(10737418240)" style="height:10em;">
               <div style="font-size:x-large">Basic account</div>
 	      <br/>
@@ -38,13 +45,6 @@
 	      </div>
             </button>
           </div>
-	  <br/>
-	  <button class="btn btn-large btn-success" @click="updateCard">
-            Update payment card
-          </button>
-	  <div v-if="showCard">
-	    <iframe style="border: none;" width="450px" height="420px" :src="paymentUrl"/>
-	  </div>
 	</center>
       </div>
       
