@@ -11,7 +11,9 @@
       <div class="modal-body">
 	<center>
           <div v-bind:class="errorClass">
-            <label v-if="isError">{{ error }}</label>
+	    <div v-if="isError" class="alert alert-danger">
+              <label>{{ error }}</label>
+	    </div>
 	    <br/>
 	    <label> Current space: {{ getQuota() }}</label>
 	    <br/>

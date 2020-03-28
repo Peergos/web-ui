@@ -13,6 +13,7 @@ module.exports = {
     },
     props: ['context', 'quota', 'usage', 'paymentProperties', 'updateQuota'],
     created: function() {
+	this.updateError();
     },
     methods: {
         getQuota: function() {
@@ -28,7 +29,16 @@ module.exports = {
         requestStorage: function(bytes) {
 	    var that = this;
             this.context.requestSpace(bytes).thenApply(x => that.updateQuota())
+		.thenApply(x => that.updateError());
         },
+
+	updateError: function() {
+	    if (this.paymentProperties.hasError()) {
+		this.isError = true;
+		this.error = this.paymentProperties.getError();
+	    } else
+		this.isError = false;
+	},
 
         updateCard: function() {
 	    var that = this;
