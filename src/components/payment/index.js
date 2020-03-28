@@ -33,7 +33,7 @@ module.exports = {
         updateCard: function() {
 	    var that = this;
 	    this.context.getPaymentProperties(true).thenApply(function(props) {
-		that.paymentUrl = props.getUrl() + "/addcard.html?username=" + that.context.username + "&client_secret=" + props.getClientSecret();
+		that.paymentUrl = props.getUrl() + "&username=" + that.context.username + "&client_secret=" + props.getClientSecret();
 		that.showCard = true;
 	    });
         },
