@@ -223,8 +223,6 @@ Class-Path: .</echo>
       <arg value="-enable-wait-list"/>
       <arg value="true"/>
       <!-- uncomment these to test payments
-      <arg value="payment-domain"/>
-      <arg value="localhost:7000"/>
       <arg value="quota-admin-address"/>
       <arg value="/ip4/127.0.0.1/tcp/6000"/>
       !-->
