@@ -1,0 +1,58 @@
+<transition name="modal">
+<div class="modal-mask" @click="close">
+    <div class="modal-container" @click.stop>
+      <span @click="close" class="close">&times;</span>
+      <div class="modal-header">
+	<center>
+          <h3> Add a card and upgrade your account to get more space</h3>
+	</center>
+      </div>
+
+      <div class="modal-body">
+	<center>
+          <div v-bind:class="errorClass">
+	    <div v-if="isError" class="alert alert-danger">
+              <label>{{ error }}</label>
+	    </div>
+	    <br/>
+	    <label> Current space: {{ getQuota() }}</label>
+	    <br/>
+	    <button class="btn btn-large btn-success" @click="updateCard">
+              Add payment card
+            </button>
+	    <div v-if="showCard">
+	      <iframe style="border: none;" width="450px" height="420px" :src="paymentUrl"/>
+	    </div>
+	    <br/>
+	    <br/>
+            <button class="btn btn-success" @click="requestStorage(10737418240)" style="height:10em;">
+              <div style="font-size:x-large">Basic account</div>
+	      <br/>
+	      <div>
+		<ul style="text-align:left;padding-right:40px;">
+		  <li>10 GB of hyper secure storage</li>
+		  <li>5 GBP / month</li>
+		</ul>
+	      </div>
+            </button>
+	    <button class="btn btn-success" @click="requestStorage(107374182400)" style="height:10em;">
+              <div style="font-size:x-large">Visionary account</div>
+	      <br/>
+	      <div>
+		<ul style="text-align:left;padding-right:40px;">
+		  <li>100 GB of hyper secure storage</li>
+		  <li>50 GBP / month</li>
+		</ul>
+	      </div>
+            </button>
+          </div>
+	</center>
+      </div>
+      
+      <div class="modal-footer">
+        <slot name="footer">
+        </slot>
+      </div>
+    </div>
+</div>
+</transition>
