@@ -188,6 +188,11 @@ module.exports = {
 		this.context.getPendingSpaceRequests().thenApply(reqs => {
 		    that.isAdmin = true;
 		});
+        this.context.getPaymentProperties(false).thenApply(function(paymentProps) {
+            if (paymentProps.isPaid()) {
+                that.paymentProperties = paymentProps;
+            }
+        });
             }
 	},
 	
@@ -217,7 +222,7 @@ module.exports = {
             if (this.isSecretLink)
 		return;
 	    var that = this;
-	    this.context.getSpaceUsage().thenApply(u => that.usageBytes = u);
+	    this.context.getSpaceUsage().thenApply(u => that.usageBytes = u.value_0);
 	},
 
 	updateQuota: function() {
@@ -1508,7 +1513,13 @@ module.exports = {
 	},
 	
 	showDonate: function() {
-	    return this.isLoggedIn && this.usageBytes > 1024*1024 && !this.hideDonate;
+        if (! this.isLoggedIn || this.hideDonate) {
+            return false;
+        }
+        if (this.paymentProperties.paymentServerUrl != undefined && this.paymentProperties.isPaid()) {
+            return false;
+        }
+	    return this.usageBytes > 1024*1024;
 	},
 	
 	isLoggedIn: function() {
