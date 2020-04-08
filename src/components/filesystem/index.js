@@ -824,6 +824,12 @@ module.exports = {
             };
             var that = this;
 
+            that.progressMonitors.push(progress);
+            this.uploadFileJS(file, directory, refreshDirectory, fileInfo.overwriteExisting, progress, future);
+            return future;
+        },
+        uploadFileJS: function(file, directory, refreshDirectory, overwriteExisting, progress, future) {
+
             var updateProgressBar = function(len){
                 progress.done += len.value_0;
                 //that.progressMonitors.sort(function(a, b) {
@@ -833,18 +839,16 @@ module.exports = {
                     progress.show = false;
                 }
             };
-            that.progressMonitors.push(progress);
-            this.uploadFileJS(file, directory, refreshDirectory, fileInfo.overwriteExisting, updateProgressBar, future);
-            return future;
-        },
-        uploadFileJS: function(file, directory, refreshDirectory, overwriteExisting, updateProgressBar, future) {
+
             var reader = new browserio.JSFileReader(file);
             var java_reader = new peergos.shared.user.fs.BrowserFileReader(reader);
             let that = this;
             let context = this.getContext();
             context.getByPath(directory).thenApply(function(updatedDirOpt){
                 updatedDirOpt.get().uploadFileJS(file.name, java_reader, (file.size - (file.size % Math.pow(2, 32)))/Math.pow(2, 32), file.size,
-                    overwriteExisting, overwriteExisting ? true : false, context.network, context.crypto, updateProgressBar, context.getTransactionService()).thenApply(function(res) {
+                    overwriteExisting, overwriteExisting ? true : false, context.network, context.crypto, updateProgressBar,
+                    context.getTransactionService()
+                ).thenApply(function(res) {
                     var thumbnailAllocation = Math.min(100000, file.size / 10);
                     updateProgressBar({ value_0: thumbnailAllocation});
                     console.log("uploaded file:" + file.name + " in dir: " + directory);
@@ -860,7 +864,6 @@ module.exports = {
                     that.errorTitle = 'Error uploading file: ' + file.name;
                     that.errorBody = throwable.getMessage();
                     that.showError = true;
-                    throwable.printStackTrace();
                     that.updateUsage();
                     future.complete(false);
                 })
