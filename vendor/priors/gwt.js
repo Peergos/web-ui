@@ -42,7 +42,7 @@ function getProm(url) {
             }
 	};
 	
-	req.onerror = function() {
+	req.onerror = function(e) {
             reject(Error("Network Error"));
 	};
 	
@@ -79,7 +79,7 @@ function postProm(url, data) {
             }
 	};
 	
-	req.onerror = function() {
+	req.onerror = function(e) {
             reject(Error("Network Error"));
 	};
 
