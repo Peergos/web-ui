@@ -111,7 +111,7 @@ module.exports = {
                                     return future;
                                 }
                             }
-                            file.getInputStream(network, crypto, sizeHigh, sizeLow, function(read) {}).thenCompose(function(reader) {
+                            file.getBufferedInputStream(network, crypto, sizeHigh, sizeLow, 4, function(read) {}).thenCompose(function(reader) {
                                 return reader.seekJS(seekHi, seekLo).thenApply(function(seekReader){
                                     return pump(seekReader);
                                 })
