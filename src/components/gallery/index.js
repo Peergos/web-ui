@@ -90,6 +90,7 @@ module.exports = {
                     this.sizeHigh = sizeHigh,
                     this.sizeLow = sizeLow;
                     this.counter = 0;
+		    this.readerFuture = null;
                     this.stream = function(seekHi, seekLo, length) {
                         this.counter++;
                         var work = function(thatRef, currentCount) {
@@ -111,11 +112,17 @@ module.exports = {
                                     return future;
                                 }
                             }
-                            file.getBufferedInputStream(network, crypto, sizeHigh, sizeLow, 4, function(read) {}).thenCompose(function(reader) {
+                            var updated = thatRef.readerFuture != null && thatRef.counter == currentCount ?
+				thatRef.readerFuture :
+				file.getBufferedInputStream(network, crypto, sizeHigh, sizeLow, 4, function(read) {})
+			    updated.thenCompose(function(reader) {
                                 return reader.seekJS(seekHi, seekLo).thenApply(function(seekReader){
-                                    return pump(seekReader);
+				    var readerFuture = peergos.shared.util.Futures.incomplete();
+                                    readerFuture.complete(seekReader);
+				    thatRef.readerFuture = readerFuture;
+				    return pump(seekReader);
                                 })
-                            });
+			    });
                         }
                         var empty = convertToByteArray(new Uint8Array(0));
                         this.writer.write(empty);
