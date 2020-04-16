@@ -136,8 +136,7 @@ self.onfetch = event => {
             event.request.headers.get('range')
         );
         const start = Number(bytes[1]);
-        const blockSize = cacheEntry.firstRun ? 1024 * 1024 : maxBlockSize;
-        var end = Math.min(Number(bytes[2]) || start + blockSize - 1, start + blockSize - 1);
+        var end = cacheEntry.firstRun ? (1024 * 1024) - 1 : alignToChunkBoundary(start, Number(bytes[2]));
         if(end > cacheEntry.fileSize - 1) {
             end = cacheEntry.fileSize - 1;
         }
@@ -155,20 +154,30 @@ self.onfetch = event => {
         return event.respondWith(new Response(stream, { headers }))
     }
 }
-
+function alignToChunkBoundary(start, end) {
+    if (end) {
+        return end;
+    } else {
+        return ((Math.floor(start / maxBlockSize) + 1) * maxBlockSize) - 1;
+    }
+}
 function returnRangeRequest(start, end, cacheEntry) {
-    const fileSize = cacheEntry.getFileSize();
     return new Promise(function(resolve, reject) {
-        let pump = () => {
+        let pump = (currentCount) => {
             const store = cacheEntry.bytes;
             if (cacheEntry.getSkip() || store.byteLength != end-start + 1) {
-                setTimeout(pump, 500)
+                if(currentCount > 30) {
+                    resolve(null);
+                } else {
+                    setTimeout(function(){pump(++currentCount);}, 1000);
+                }
             } else {
                 resolve(store);
             }
         }
-        pump()
+        pump(0);
     }).then(function(arrayBuffer, err) {
+        const fileSize = cacheEntry.getFileSize();
         if (arrayBuffer == null) {
             return new Response(null, {
               status: 416,
