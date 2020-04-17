@@ -436,9 +436,6 @@ function generateThumbnailProm(asyncReader, fileSize, fileName) {
 }
 
 function supportsStreaming() {
-    var href = window.location.href;
-    if (href.indexOf("streaming=true") == -1)
-        return false;
     try {
         return 'serviceWorker' in navigator && !!new ReadableStream() && !!new WritableStream()
     } catch(err) {
@@ -448,7 +445,7 @@ function supportsStreaming() {
 
 function generateVideoThumbnailProm(asyncReader, fileSize, fileName, mimeType) {
     var future = peergos.shared.util.Futures.incomplete();
-    if(supportsStreaming() && fileSize > 100 * 1000 * 1000) {
+    if(supportsStreaming() && fileSize > 50 * 1000 * 1000) {
         return createVideoThumbnailStreamingProm(future, asyncReader, fileSize, fileName, mimeType);
     }else{
         return createVideoThumbnailProm(future, asyncReader, fileSize, fileName);
@@ -473,7 +470,7 @@ function createVideoThumbnailProm(future, asyncReader, fileSize, fileName) {
                 if(currentIncrement < duration){
                     captureThumbnail(width, height, currentIncrement, video).thenApply((thumbnail)=>{
                         if(thumbnail.length == 0){
-                            setTimeout(thumbnailGenerator, 1000)
+                            setTimeout(function(){thumbnailGenerator();}, 1000);
                         } else {
                             future.complete(thumbnail);
                         }
@@ -560,7 +557,7 @@ function createVideoThumbnailStreamingProm(future, asyncReader, size, filename, 
                         var data = convertToByteArray(new Uint8Array(blockSize));
                         data.length = blockSize;
                         reader.readIntoArray(data, 0, blockSize).thenApply(function(read){
-                               currentSize = currentSize - read;
+                               currentSize = currentSize - read.value_0;
                                blockSize = currentSize > thatRef.maxBlockSize ? thatRef.maxBlockSize : currentSize;
                                thatRef.writer.write(data);
                                pump(reader);
@@ -601,9 +598,9 @@ function createVideoThumbnailStreamingProm(future, asyncReader, size, filename, 
             let thumbnailGenerator = () => {
                 try {
                     //console.log("in oncanplay time= " + video.currentTime);
-                    if(! result.done) {
-                        if(video.currentTime >= 10) {
-                            if(video.currentTime >= video.duration || video.currentTime > 30) {
+                    if (! result.done) {
+                        if (video.currentTime >= 10) {
+                            if (video.currentTime >= video.duration || video.currentTime > 30) {
                                 console.log("unable to create video thumbnail within time");
                                 result.done = true;
                                 future.complete("");
@@ -611,17 +608,17 @@ function createVideoThumbnailStreamingProm(future, asyncReader, size, filename, 
                             let context = canvas.getContext('2d');
                             context.drawImage(video, 0, 0, width, height);
                             let imageData = context.getImageData(0, 0, width, height);
-                            if(isLikelyValidImage(imageData, blackWhiteThreshold)) {
+                            if (isLikelyValidImage(imageData, blackWhiteThreshold)) {
                                 result.done = true;
                                 let b64Thumb = canvas.toDataURL().substring("data:image/png;base64,".length);
                                 future.complete(b64Thumb);
-                            }else{
-                                if(! result.done) {
-                                    setTimeout(thumbnailGenerator, 1000)
+                            } else {
+                                if (! result.done) {
+                                    setTimeout(function(){thumbnailGenerator();}, 1000);
                                 }
                             }
                         } else {
-                            setTimeout(thumbnailGenerator, 1000)
+                            setTimeout(function(){thumbnailGenerator();}, 1000);
                         }
                     }
                 }catch(e) {
@@ -631,7 +628,7 @@ function createVideoThumbnailStreamingProm(future, asyncReader, size, filename, 
                 }
             };
             if(! result.done) {
-                thumbnailGenerator();
+                setTimeout(function(){thumbnailGenerator();}, 1000);
             }
         }
         video.src = url;
@@ -640,8 +637,7 @@ function createVideoThumbnailStreamingProm(future, asyncReader, size, filename, 
         if(! result.done) {
             context.stream(seekHi, seekLo, seekLength);
         }
-    }, undefined, size)
-    context.writer = fileStream.getWriter()
-    context.stream(0, 0, Math.min(size, 1024 * 1024))
+    }, undefined, size);
+    context.writer = fileStream.getWriter();
     return future;
 }

@@ -101,7 +101,7 @@ module.exports = {
                                     var data = convertToByteArray(new Uint8Array(blockSize));
                                     data.length = blockSize;
                                     return reader.readIntoArray(data, 0, blockSize).thenApply(function(read){
-                                           currentSize = currentSize - read;
+                                           currentSize = currentSize - read.value_0;
                                            blockSize = currentSize > thatRef.maxBlockSize ? thatRef.maxBlockSize : currentSize;
                                            thatRef.writer.write(data);
                                            return pump(reader);
