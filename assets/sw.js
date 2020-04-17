@@ -118,7 +118,7 @@ self.addEventListener('activate', event => {
 });
 
 const maxBlockSize = 1024 * 1024 * 5;
-
+const oneMegBlockSize = 1024 * 1024 * 1;
 self.onfetch = event => {
     const url = event.request.url
 
@@ -136,7 +136,7 @@ self.onfetch = event => {
             event.request.headers.get('range')
         );
         const start = Number(bytes[1]);
-        var end = cacheEntry.firstRun ? (1024 * 1024) - 1 : alignToChunkBoundary(start, Number(bytes[2]));
+        var end = cacheEntry.firstRun ? oneMegBlockSize - 1 : alignToChunkBoundary(start, Number(bytes[2]));
         if(end > cacheEntry.fileSize - 1) {
             end = cacheEntry.fileSize - 1;
         }
@@ -158,7 +158,12 @@ function alignToChunkBoundary(start, end) {
     if (end) {
         return end;
     } else {
-        return ((Math.floor(start / maxBlockSize) + 1) * maxBlockSize) - 1;
+        let endOfRange = ((Math.floor(start / maxBlockSize) + 1) * maxBlockSize) - 1;
+        let len = endOfRange - start;
+        if(len < oneMegBlockSize) {
+            endOfRange = endOfRange + maxBlockSize;
+        }
+        return endOfRange;
     }
 }
 function returnRangeRequest(start, end, cacheEntry) {
