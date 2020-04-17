@@ -1,4 +1,5 @@
 var isDemo = window.location.hostname == "demo.peergos.net";
+var isLocalhost = window.location.hostname == "localhost";
 module.exports = {
     template: require('login.html'),
     data: function() {
@@ -67,7 +68,7 @@ module.exports = {
     methods: {
 	updateNetwork: function() {
 	    var that = this;
-	    peergos.shared.NetworkAccess.buildJS("QmVdFZgHnEgcedCS2G2ZNiEN59LuVrnRm7z3yXtEBv2XiF")
+	    peergos.shared.NetworkAccess.buildJS("QmVdFZgHnEgcedCS2G2ZNiEN59LuVrnRm7z3yXtEBv2XiF", !isLocalhost)
                 .thenApply(function(network){
 		    that.network = network;
 		});
@@ -93,7 +94,7 @@ module.exports = {
         },
         gotoSecretLink: function(props) {
             var that = this;
-            peergos.shared.NetworkAccess.buildJS("QmXZXGXsNhxh2LiWFsa7CLHeRWJS5wb8RHxcTvQhvCzAeu")
+            peergos.shared.NetworkAccess.buildJS("QmVdFZgHnEgcedCS2G2ZNiEN59LuVrnRm7z3yXtEBv2XiF", !isLocalhost)
                 .thenApply(function(network){
                     peergos.shared.user.UserContext.fromSecretLink(props.link, network, that.crypto).thenApply(function(context) {
                         that.$emit('filesystem', 
@@ -134,7 +135,7 @@ module.exports = {
 
         showSignup : function() {
             var that = this;
-            peergos.shared.NetworkAccess.buildJS("QmVdFZgHnEgcedCS2G2ZNiEN59LuVrnRm7z3yXtEBv2XiF")
+            peergos.shared.NetworkAccess.buildJS("QmVdFZgHnEgcedCS2G2ZNiEN59LuVrnRm7z3yXtEBv2XiF", !isLocalhost)
                 .thenApply(function(network) {
                     that.$emit("signup", {
                         username:that.username,
