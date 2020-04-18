@@ -1,7 +1,7 @@
 /* global self ReadableStream Response */
 
 const downloadMap = new Map()
-var streamingMap
+var streamingMap = new Map()
 
 // This should be called once per download
 // Each event has a dataChannel that the data will be piped through
@@ -21,7 +21,6 @@ self.onmessage = event => {
   if (filename.startsWith("media")) {
       var entry = new CacheEntry(event.data.size);
       setupStreamingEntry(port, entry)
-      streamingMap = new Map()
       streamingMap.set(uniqLink, [entry, port])
   } else {
       // Make filename RFC5987 compatible
