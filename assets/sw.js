@@ -128,7 +128,10 @@ self.onfetch = event => {
     }
     if (event.request.headers.get('range')) {
         const streamingEntry = streamingMap.get(url)
-        if (!streamingEntry) return;
+        if (!streamingEntry) {
+	    console.log("Ignoring service worker request for " + url);
+	    return;
+	}
         const [cacheEntry, port] = streamingEntry
 
         const bytes = /^bytes\=(\d+)\-(\d+)?$/g.exec(
