@@ -1,7 +1,7 @@
 /* global self ReadableStream Response */
 
 const downloadMap = new Map()
-var streamingMap
+var streamingMap = new Map()
 
 // This should be called once per download
 // Each event has a dataChannel that the data will be piped through
@@ -21,7 +21,6 @@ self.onmessage = event => {
   if (filename.startsWith("media")) {
       var entry = new CacheEntry(event.data.size);
       setupStreamingEntry(port, entry)
-      streamingMap = new Map()
       streamingMap.set(uniqLink, [entry, port])
   } else {
       // Make filename RFC5987 compatible
@@ -118,7 +117,7 @@ self.addEventListener('activate', event => {
 });
 
 const maxBlockSize = 1024 * 1024 * 5;
-
+const oneMegBlockSize = 1024 * 1024 * 1;
 self.onfetch = event => {
     const url = event.request.url
 
@@ -129,15 +128,17 @@ self.onfetch = event => {
     }
     if (event.request.headers.get('range')) {
         const streamingEntry = streamingMap.get(url)
-        if (!streamingEntry) return;
+        if (!streamingEntry) {
+	    console.log("Ignoring service worker request for " + url);
+	    return;
+	}
         const [cacheEntry, port] = streamingEntry
 
         const bytes = /^bytes\=(\d+)\-(\d+)?$/g.exec(
             event.request.headers.get('range')
         );
         const start = Number(bytes[1]);
-        const blockSize = cacheEntry.firstRun ? 1024 * 1024 : maxBlockSize;
-        var end = Math.min(Number(bytes[2]) || start + blockSize - 1, start + blockSize - 1);
+        var end = cacheEntry.firstRun ? oneMegBlockSize - 1 : alignToChunkBoundary(start, Number(bytes[2]));
         if(end > cacheEntry.fileSize - 1) {
             end = cacheEntry.fileSize - 1;
         }
@@ -155,20 +156,35 @@ self.onfetch = event => {
         return event.respondWith(new Response(stream, { headers }))
     }
 }
-
+function alignToChunkBoundary(start, end) {
+    if (end) {
+        return end;
+    } else {
+        let endOfRange = ((Math.floor(start / maxBlockSize) + 1) * maxBlockSize) - 1;
+        let len = endOfRange - start;
+        if(len < oneMegBlockSize) {
+            endOfRange = endOfRange + maxBlockSize;
+        }
+        return endOfRange;
+    }
+}
 function returnRangeRequest(start, end, cacheEntry) {
-    const fileSize = cacheEntry.getFileSize();
     return new Promise(function(resolve, reject) {
-        let pump = () => {
+        let pump = (currentCount) => {
             const store = cacheEntry.bytes;
             if (cacheEntry.getSkip() || store.byteLength != end-start + 1) {
-                setTimeout(pump, 500)
+                if(currentCount > 30) {
+                    resolve(null);
+                } else {
+                    setTimeout(function(){pump(++currentCount);}, 1000);
+                }
             } else {
                 resolve(store);
             }
         }
-        pump()
+        pump(0);
     }).then(function(arrayBuffer, err) {
+        const fileSize = cacheEntry.getFileSize();
         if (arrayBuffer == null) {
             return new Response(null, {
               status: 416,

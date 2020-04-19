@@ -96,9 +96,9 @@ module.exports = {
                             var data = convertToByteArray(new Uint8Array(blockSize));
                             reader.readIntoArray(data, 0, blockSize)
                             .thenApply(function(read){
-                                size = size - read;
+                                size = size - read.value_0;
                                 blockSize = size > maxBlockSize ? maxBlockSize : size;
-                                writer.write(data).then(()=>{setTimeout(pump)})
+                                writer.write(data).then(()=>{setTimeout(pump);});
                             });
 			}
                     }

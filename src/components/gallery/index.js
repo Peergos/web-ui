@@ -90,6 +90,7 @@ module.exports = {
                     this.sizeHigh = sizeHigh,
                     this.sizeLow = sizeLow;
                     this.counter = 0;
+		            this.readerFuture = null;
                     this.stream = function(seekHi, seekLo, length) {
                         this.counter++;
                         var work = function(thatRef, currentCount) {
@@ -100,7 +101,7 @@ module.exports = {
                                     var data = convertToByteArray(new Uint8Array(blockSize));
                                     data.length = blockSize;
                                     return reader.readIntoArray(data, 0, blockSize).thenApply(function(read){
-                                           currentSize = currentSize - read;
+                                           currentSize = currentSize - read.value_0;
                                            blockSize = currentSize > thatRef.maxBlockSize ? thatRef.maxBlockSize : currentSize;
                                            thatRef.writer.write(data);
                                            return pump(reader);
@@ -111,11 +112,17 @@ module.exports = {
                                     return future;
                                 }
                             }
-                            file.getInputStream(network, crypto, sizeHigh, sizeLow, function(read) {}).thenCompose(function(reader) {
-                                return reader.seekJS(seekHi, seekLo).thenApply(function(seekReader){
-                                    return pump(seekReader);
-                                })
-                            });
+                            var updated = thatRef.readerFuture != null && thatRef.counter == currentCount ?
+                            thatRef.readerFuture :
+                                file.getBufferedInputStream(network, crypto, sizeHigh, sizeLow, 4, function(read) {})
+                                updated.thenCompose(function(reader) {
+                                    return reader.seekJS(seekHi, seekLo).thenApply(function(seekReader){
+                                        var readerFuture = peergos.shared.util.Futures.incomplete();
+                                        readerFuture.complete(seekReader);
+                                        thatRef.readerFuture = readerFuture;
+                                        return pump(seekReader);
+                                    })
+                                });
                         }
                         var empty = convertToByteArray(new Uint8Array(0));
                         this.writer.write(empty);
@@ -130,8 +137,7 @@ module.exports = {
                 }, function(seekHi, seekLo, seekLength){
                     context.stream(seekHi, seekLo, seekLength);
                 }, undefined, size)
-                context.writer = fileStream.getWriter()
-                return context.stream(0, 0, Math.min(size, 1024 * 1024))
+                context.writer = fileStream.getWriter();
             } else {
                 file.getInputStream(this.context.network, this.context.crypto,
                         props.sizeHigh(), props.sizeLow(),
