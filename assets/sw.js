@@ -9,7 +9,7 @@ self.addEventListener('activate', event => {
 })
 
 const downloadMap = new Map()
-const streamingMap = new Map()
+const streamingMap
 
 // This should be called once per download
 // Each event has a dataChannel that the data will be piped through
@@ -39,6 +39,7 @@ self.onmessage = event => {
   if (filename.startsWith("media")) {
       var entry = new CacheEntry(size);
       setupStreamingEntry(port, entry)
+      streamingMap = new Map()
       streamingMap.set(downloadUrl, [entry, port])
   } else {
   	metadata[0] = createStream(port)
