@@ -9,7 +9,7 @@ self.addEventListener('activate', event => {
 })
 
 const downloadMap = new Map()
-const streamingMap
+var streamingMap
 
 // This should be called once per download
 // Each event has a dataChannel that the data will be piped through
