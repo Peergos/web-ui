@@ -18,8 +18,9 @@ self.onmessage = event => {
 
   var filename = event.data.filename
   var headers
-  if (filename.startsWith("media")) {
-      var entry = new CacheEntry(event.data.size);
+  let isCaptureFile = filename.startsWith("capture");
+  if (filename.startsWith("media") || isCaptureFile) {
+      var entry = new CacheEntry(event.data.size, isCaptureFile);
       setupStreamingEntry(port, entry)
       streamingMap = new Map()
       streamingMap.set(uniqLink, [entry, port])
@@ -43,11 +44,12 @@ self.onmessage = event => {
   port.postMessage({ debug: 'Mocking a download request' })
 }
 
-function CacheEntry(fileSize) {
+function CacheEntry(fileSize, isCaptureFile) {
     this.fileSize = fileSize;
     this.bytes = new Uint8Array(0);
     this.skip = false;
     this.firstRun = true;
+    this.isCaptureFile = isCaptureFile;
     this.getFileSize = function() {
         return this.fileSize;
     }
@@ -67,10 +69,13 @@ function CacheEntry(fileSize) {
     }
     this.enqueue = function(moreData) {
         const currentBytes = this.bytes;
-        const combinedSize = currentBytes.byteLength + moreData.byteLength;
+        const combinedSize = currentBytes.byteLength + moreData.byteLength -4;
+        let dataView = new DataView(moreData.buffer);
+        this.fileSize = dataView.getInt32(0);
+
         var newStore = new Uint8Array(combinedSize);
         newStore.set(currentBytes);
-        newStore.set(moreData, currentBytes.byteLength);
+        newStore.set(moreData.subarray(4), currentBytes.byteLength);
         this.bytes = newStore;
     }
 }
@@ -136,10 +141,14 @@ self.onfetch = event => {
             event.request.headers.get('range')
         );
         const start = Number(bytes[1]);
+
         const blockSize = cacheEntry.firstRun ? 1024 * 1024 : maxBlockSize;
+
         var end = Math.min(Number(bytes[2]) || start + blockSize - 1, start + blockSize - 1);
-        if(end > cacheEntry.fileSize - 1) {
-            end = cacheEntry.fileSize - 1;
+        if(! cacheEntry.isCaptureFile) {
+            if(end > cacheEntry.fileSize - 1) {
+                end = cacheEntry.fileSize - 1;
+            }
         }
         const seekHi = (start - (start % Math.pow(2, 32)))/Math.pow(2, 32);
         const seekLength = end-start + 1;
@@ -157,18 +166,34 @@ self.onfetch = event => {
 }
 
 function returnRangeRequest(start, end, cacheEntry) {
-    const fileSize = cacheEntry.getFileSize();
     return new Promise(function(resolve, reject) {
-        let pump = () => {
+        let pump = (currentCount) => {
             const store = cacheEntry.bytes;
-            if (cacheEntry.getSkip() || store.byteLength != end-start + 1) {
-                setTimeout(pump, 500)
+            if(cacheEntry.isCaptureFile) {
+                if (cacheEntry.getSkip() || store.byteLength == 0) {
+                    if(currentCount > 30) {
+                        resolve(null);
+                    } else {
+                        setTimeout(function(){pump(++currentCount);}, 1000);
+                    }
+                } else {
+                    resolve(store);
+                }
             } else {
-                resolve(store);
+                if (cacheEntry.getSkip() || store.byteLength != end-start + 1 ) {
+                    if(currentCount > 30) {
+                        resolve(null);
+                    } else {
+                        setTimeout(function(){pump(++currentCount);}, 1000);
+                    }
+                } else {
+                    resolve(store);
+                }
             }
         }
-        pump()
+        pump(0);
     }).then(function(arrayBuffer, err) {
+        let fileSize = cacheEntry.isCaptureFile ? 2147483647 : cacheEntry.getFileSize();
         if (arrayBuffer == null) {
             return new Response(null, {
               status: 416,
@@ -181,10 +206,9 @@ function returnRangeRequest(start, end, cacheEntry) {
               status: 206,
               statusText: 'Partial Content',
               headers: [
-//               'Content-Type': 'video/mp4',
-                ['accept-ranges', 'bytes'],
+                ['Accept-Ranges', 'bytes'],
                 ['Content-Range', `bytes ${start}-${bytesProvided}/${fileSize}`],
-                ['content-length', arrayBuffer.byteLength]
+                ['Content-Length', arrayBuffer.byteLength]
               ]
             });
         }

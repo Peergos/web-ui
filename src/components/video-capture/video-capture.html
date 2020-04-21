@@ -8,14 +8,15 @@
       </div>
 
       <div class="modal-body">
-          <div class="container">
+          <div v-bind:class="errorClass">
+              <label v-if="isError">{{ error }}</label>
+          </div>
               <button class="btn btn-success" @click="toggleCapture">
                   {{ buttonLabel }}
               </button>
-              <center style="height:75%">
-                  <video id="preview" style="height:50%;max-width:50%;max-height:50%;text-align:center;line-height:200px" autoplay="autoplay" muted="muted" />
+              <center>
+                  <video id="preview" style="width:300px;" autoplay="autoplay" muted="muted" />
               </center>
-          </div>
       </div>
       <div class="modal-footer">
       </div>

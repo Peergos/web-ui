@@ -11,7 +11,6 @@ module.exports = {
             normalSortOrder: true,
             clipboard:{},
             selectedFiles:[],
-            captureChunks:[],
             url:null,
             viewMenu:false,
             ignoreEvent:false,
@@ -938,31 +937,17 @@ module.exports = {
                 });
         },
 
-        videoCapture: function(filename, data, initial, timesliceInMs) {
-            this.captureChunks.push(data);
-            if (initial) {
-                this.videoCaptureProcessing(filename, timesliceInMs);
-            }
-        },
-        videoCaptureProcessing: function(filename, timesliceInMs) {
-            //chew up chunks one by one in order
-            let chunk = this.captureChunks.shift();
-            if (chunk != null) {
-                let that = this;
-                let before = new Date();
-                this.currentDir.appendToChild(filename, chunk, false, this.context.network, this.context.crypto, x => {}).thenApply(function(newContext){
-                    that.currentDirChanged();
-                    if (that.captureChunks.length >= 1) {
-                        setTimeout(function(){ that.videoCaptureProcessing(filename, timesliceInMs); }, 1);
-                    } else {
-                        let after = new Date();
-                        let duration = after - before;
-                        let waitMs = Math.max(1, timesliceInMs - duration + 1200);
-                        //console.log("stats duration=" + duration + " waitMs=" + waitMs);
-                        setTimeout(function(){ that.videoCaptureProcessing(filename, timesliceInMs); }, waitMs);
-                    }
-                });
-            }
+        videoCapture: function(filename, chunk) {
+            let future = peergos.shared.util.Futures.incomplete();
+            let that = this;
+            this.currentDir.appendToChild(filename, chunk, false, this.context.network, this.context.crypto, x => {})
+            .thenApply(function(newContext){
+                that.currentDirChanged();
+                future.complete(true);
+            }).exceptionally(function(throwable) {
+                future.complete(false);
+            });
+            return future;
         },
 
         copy: function() {
