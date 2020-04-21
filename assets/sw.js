@@ -1,45 +1,52 @@
 /* global self ReadableStream Response */
 
+self.addEventListener('install', () => {
+  self.skipWaiting()
+})
+
+self.addEventListener('activate', event => {
+  event.waitUntil(self.clients.claim())
+})
+
 const downloadMap = new Map()
-var streamingMap = new Map()
+var streamingMap
 
 // This should be called once per download
 // Each event has a dataChannel that the data will be piped through
 self.onmessage = event => {
   // We send a heartbeat every x secound to keep the
-  // service worker alive
+  // service worker alive if a transferable stream is not sent
   if (event.data === 'ping') {
     return
   }
 
-  // Create a uniq link for the download
-  const uniqLink = self.registration.scope + 'intercept-me-nr' + Math.random()
+  const data = event.data
+  const downloadUrl = self.registration.scope + 'intercept-me-nr' + Math.random();//data.url || self.registration.scope + Math.random() + '/' + (typeof data === 'string' ? data : data.filename)
   const port = event.ports[0]
+  const metadata = new Array(3) // [stream, data, port]
 
-  var filename = event.data.filename
-  var headers
+  metadata[1] = data
+  metadata[2] = port
+
+
+  let headers = new Headers(data.headers || {})
+
+  let size = Number(headers.get('Content-Length'));
+  let disposition = headers.get('Content-Disposition');
+  let startIndex = disposition.indexOf("''");
+  let filename = disposition.substring(startIndex+2, disposition.length);
+  
   if (filename.startsWith("media")) {
-      var entry = new CacheEntry(event.data.size);
+      var entry = new CacheEntry(size);
       setupStreamingEntry(port, entry)
-      streamingMap.set(uniqLink, [entry, port])
+      streamingMap = new Map()
+      streamingMap.set(downloadUrl, [entry, port])
   } else {
-      // Make filename RFC5987 compatible
-      filename = encodeURIComponent(filename).replace(/['()]/g, escape)
-          .replace(/\*/g, '%2A')
-      headers = {
-          'Content-Type': event.data.mimeType,
-          'Content-Disposition': "attachment; filename*=UTF-8''" + filename
-      }
-      const stream = event.data.readableStream || createStream(port)
-      if (event.data.size) headers['Content-Length'] = event.data.size
-      downloadMap.set(uniqLink, [stream, headers])
+  	metadata[0] = createStream(port)
+  	downloadMap.set(downloadUrl, metadata)
   }
-
-  port.postMessage({ download: uniqLink, ping: self.registration.scope + 'ping' })
-
-  // Mistage adding this and have streamsaver.js rely on it
-  // depricated as from 0.2.1
-  port.postMessage({ debug: 'Mocking a download request' })
+  
+  port.postMessage({ download: downloadUrl })
 }
 
 function CacheEntry(fileSize) {
@@ -100,6 +107,7 @@ function createStream (port) {
           controller.error('Aborted the download')
           return
         }
+
         controller.enqueue(data)
       }
     },
@@ -109,29 +117,23 @@ function createStream (port) {
   })
 }
 
-self.addEventListener('install', event =>  {
-    self.skipWaiting();
-});
-self.addEventListener('activate', event => {
-    clients.claim();
-});
-
 const maxBlockSize = 1024 * 1024 * 5;
 const oneMegBlockSize = 1024 * 1024 * 1;
-self.onfetch = event => {
-    const url = event.request.url
 
-    if (url.endsWith('/ping')) {
-      return event.respondWith(new Response('pong', {
-        headers: { 'Access-Control-Allow-Origin': '*' }
-      }))
-    }
+self.onfetch = event => {
+  const url = event.request.url
+
+  // this only works for Firefox
+  if (url.endsWith('/ping')) {
+    return event.respondWith(new Response('pong'))
+  }
+
     if (event.request.headers.get('range')) {
         const streamingEntry = streamingMap.get(url)
         if (!streamingEntry) {
-	    console.log("Ignoring service worker request for " + url);
-	    return;
-	}
+	    	console.log("Ignoring service worker request for " + url);
+	    	return;
+		}
         const [cacheEntry, port] = streamingEntry
 
         const bytes = /^bytes\=(\d+)\-(\d+)?$/g.exec(
@@ -148,14 +150,32 @@ self.onfetch = event => {
         port.postMessage({ seekHi: seekHi, seekLo: start, seekLength: seekLength })
         return event.respondWith(returnRangeRequest(start, end, cacheEntry))
     } else {
-        const downloadEntry = downloadMap.get(url)
-        if (!downloadEntry) return;
+    
+  		const downloadEntry = downloadMap.get(url)
+  		if (!downloadEntry) return null
+  		const [ stream, data, port ] = downloadEntry
+  		downloadMap.delete(url)
 
-        const [stream, headers] = downloadEntry
-        downloadMap.delete(url)
-        return event.respondWith(new Response(stream, { headers }))
-    }
+  		// Not comfortable letting any user control all headers
+  		// so we only copy over the length & disposition
+  		const responseHeaders = new Headers({
+    		// To be on the safe side, The link can be opened in a iframe.
+   		 	// but octet-stream should stop it.
+    		'Content-Security-Policy': "default-src 'none'",
+    		'X-Content-Security-Policy': "default-src 'none'",
+    		'X-WebKit-CSP': "default-src 'none'",
+    		'X-XSS-Protection': '1; mode=block'
+  		})
+
+  		let headers = new Headers(data.headers || {})
+    	responseHeaders.set('Content-Length', headers.get('Content-Length'))
+    	responseHeaders.set('Content-Disposition', headers.get('Content-Disposition'))
+    	responseHeaders.set('Content-Type', headers.get('Content-Type'))
+  		event.respondWith(new Response(stream, { headers: responseHeaders }))
+  		port.postMessage({ debug: 'Download started' })
+  	}
 }
+
 function alignToChunkBoundary(start, end) {
     if (end) {
         return end;
@@ -206,4 +226,3 @@ function returnRangeRequest(start, end, cacheEntry) {
         }
     });
 }
-

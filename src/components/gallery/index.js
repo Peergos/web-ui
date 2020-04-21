@@ -136,7 +136,7 @@ module.exports = {
                     that.showSpinner = false;
                 }, function(seekHi, seekLo, seekLength){
                     context.stream(seekHi, seekLo, seekLength);
-                }, undefined, size)
+                }, size)
                 context.writer = fileStream.getWriter();
             } else {
                 file.getInputStream(this.context.network, this.context.crypto,
