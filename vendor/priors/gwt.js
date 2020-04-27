@@ -137,11 +137,55 @@ function postMultipartProm(url, dataArrays) {
     return future;
 }
 
+function putProm(url, data, headers) {
+    console.log("putProm " + url);
+    var future = peergos.shared.util.Futures.incomplete();
+    new Promise(function(resolve, reject) {
+	var req = new XMLHttpRequest();
+	req.open('PUT', url);
+	req.responseType = 'arraybuffer';
+	var index = 0;
+	while (index < headers.length){
+	    var name = headers[index++];
+    	    var value = headers[index++];
+	    if (name != "Host" && name != "Content-Length")
+		req.setRequestHeader(name, value);
+	}
+	
+	req.onload = function() {
+	    console.log("http put returned retrieving " + url);
+            // This is called even on 404 etc
+            // so check the status
+            if (req.status == 200) {
+		resolve(new Int8Array(req.response));
+            }
+            else {
+		reject("HTTP " + req.status);
+            }
+	};
+	
+	req.onerror = function(e) {
+            reject(Error("Network Error"));
+	};
+
+	req.send(data);
+    }).then(function(result, err) {
+        if (err != null)
+            future.completeExceptionally(java.lang.Throwable.of(err));
+        else
+            future.complete(convertToByteArray(result));
+    }, function(err) {
+	future.completeExceptionally(java.lang.Throwable.of(err)); 
+    });
+    return future;
+}
+
 var http = {
     NativeJSHttp: function() {
 	this.get = getProm;
 	this.post = postProm;
 	this.postMultipart = postMultipartProm;
+	this.put = putProm;
     }
 };
 
