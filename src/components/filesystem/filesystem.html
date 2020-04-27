@@ -113,7 +113,8 @@
   <video-capture
           v-if="showVideoCapture"
           v-on:hide-video-capture="showVideoCapture = false"
-          :videocapture="videoCapture">
+          :videocapture="videoCapture"
+          :playbackVideo="playbackVideo">
   </video-capture>
   <space 
     v-if="showRequestSpace" 

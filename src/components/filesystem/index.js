@@ -949,7 +949,90 @@ module.exports = {
             });
             return future;
         },
+        playbackVideo: function(filename) {
+            let that = this;
+            let futureUrl = peergos.shared.util.Futures.incomplete();
+            this.currentDir.getChild(filename, this.context.crypto.hasher, this.context.network).thenApply(function(fileOpt){
+                let file = fileOpt.get();
+                let props = file.getFileProperties();
+                let size = props.sizeLow();
+                function Context(network, crypto, sizeHigh, sizeLow) {
+                    this.maxBlockSize = 1024 * 1024 * 5;
+                    this.writer = null;
+                    this.network = network;
+                    this.crypto = crypto;
+                    this.sizeHigh = sizeHigh,
+                    this.sizeLow = sizeLow;
+                    this.counter = 0;
+                    this.file = file;
+                    this.stream = function(file, seekHi, seekLo, length, sizeHigh, sizeLow) {
+                        this.file = file;
+                        this.sizeHigh = sizeHigh;
+                        this.sizeLow = sizeLow;
+                        this.counter++;
+                        var work = function(thatRef, currentCount) {
+                            var currentSize = length;
+                            var blockSize = currentSize > this.maxBlockSize ? this.maxBlockSize : currentSize;
+                            var pump = function(reader) {
+                                if(blockSize > 0 && thatRef.counter == currentCount) {
+                                    var data = convertToByteArray(new Uint8Array(blockSize));
+                                    data.length = blockSize;
+                                    return reader.readIntoArray(data, 0, blockSize).thenApply(function(read){
+                                            currentSize = currentSize - read;
+                                            blockSize = currentSize > thatRef.maxBlockSize ? thatRef.maxBlockSize : currentSize;
+                                            let chunk = new Uint8Array(4 + data.byteLength);
+                                            let dataView = new DataView(chunk.buffer);
+                                            dataView.setInt32(0, thatRef.sizeLow);
+                                            chunk.set(data, 4);
 
+                                            let fileSizeBytes = chunk.subarray(0, 4);
+                                            let dataView2 = new DataView(fileSizeBytes.buffer);
+                                            let fileSizeInt = dataView2.getInt32(0);
+                                           thatRef.writer.write(chunk);
+                                           return pump(reader);
+                                    });
+                                } else {
+                                    var future = peergos.shared.util.Futures.incomplete();
+                                    future.complete(true);
+                                    return future;
+                                }
+                            }
+                            file.getInputStream(network, crypto, sizeHigh, sizeLow, function(read) {}).thenCompose(function(reader) {
+                                return reader.seekJS(seekHi, seekLo).thenApply(function(seekReader){
+                                    return pump(seekReader);
+                                })
+                            });
+                        }
+                        var empty = convertToByteArray(new Uint8Array(0));
+                        this.writer.write(empty);
+                        return work(this, this.counter);
+                    }
+                }
+                var context = new Context(that.context.network, that.context.crypto, props.sizeHigh(), props.sizeLow());
+                let fileStream = streamSaver.createWriteStream(props.name, props.mimeType, function(url){
+                    futureUrl.complete(url);
+                }, function(seekHi, seekLo, seekLength){
+                    let loop = function(counter) {
+                        file.getLatest(context.network).thenApply(function(updatedFile){
+                            var updatedProps = updatedFile.getFileProperties();
+                            if (counter < 10) {
+                                if(seekLo + seekLength < updatedProps.sizeLow()) {
+                                    context.stream(updatedFile, seekHi, seekLo, seekLength, props.sizeHigh(), props.sizeLow());
+                                }else if(props.sizeLow() == updatedProps.sizeLow() && seekLo == updatedProps.sizeLow()) {
+                                    setTimeout(function(){loop(++counter);}, 1000);
+                                } else {
+                                    let updatedSeekLength = Math.min(updatedProps.sizeLow() - seekLo, context.maxBlockSize);
+                                    context.stream(updatedFile, seekHi, seekLo, updatedSeekLength, updatedProps.sizeHigh(), updatedProps.sizeLow());
+                                }
+                            }
+                        });
+                    };
+                    loop(1);
+                }, undefined, size);
+                context.writer = fileStream.getWriter();
+            });
+            return futureUrl;
+        },
         copy: function() {
             if (this.selectedFiles.length != 1)
                 return;

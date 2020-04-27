@@ -11,12 +11,17 @@
           <div v-bind:class="errorClass">
               <label v-if="isError">{{ error }}</label>
           </div>
+            <div>
               <button class="btn btn-success" @click="toggleCapture">
                   {{ buttonLabel }}
               </button>
-              <center>
-                  <video id="preview" style="width:300px;" autoplay="autoplay" muted="muted" />
-              </center>
+            </div>
+                  <div>
+                     <video id="preview" style="width:150px;" autoplay="autoplay" muted="muted" />
+                  </div>
+                  <div>
+                      <video id="playback" style="width:150px;" autoplay="autoplay" muted="muted" />
+                  </div>
       </div>
       <div class="modal-footer">
       </div>

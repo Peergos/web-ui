@@ -9,11 +9,27 @@ module.exports = {
             captureChunks:[],
             finalCaptureChunks:[],
             isFinished: false,
-            recorder: null
+            recorder: null,
+            running: ""
         };
     },
-    props: ['videocapture'],
+    props: ['videocapture','playbackVideo'],
     created: function() {
+    },
+    watch: {
+            running: function(newFilename, oldFilename) {
+                let playback = document.getElementById("playback");
+                if(newFilename.length == 0) {
+                    return;
+                }
+                this.playbackVideo(newFilename).thenApply(function(url){
+                    if (url.length > 0) {
+                        playback.src = url;
+                        playback.playbackRate = 3.0;
+                        playback.play();
+                    }
+                });
+            }
     },
     methods: {
         createCaptureFilename: function() {
@@ -88,6 +104,9 @@ module.exports = {
                 if(! this.inError) {
                     this.videocapture(filename, chunk).thenApply(function(res){
                         //console.log("videocapture-now=" + new Date());
+                        if(that.running == "") {
+                            that.running = filename;
+                        }
                         if (res) {
                             if(!that.isFinished) {
                                 that.recorder.requestData();
