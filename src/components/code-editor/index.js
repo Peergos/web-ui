@@ -4,11 +4,21 @@ module.exports = {
         return {
             showSpinner: false,
 	        expectingSave: false,
-	        saving: false
+	        saving: false,
+	        showReplace: false,
+            replace_message: "",
+            replace_body: "",
+            replace_consumer_cancel_func: () => {},
+            replace_consumer_func: () => {},
+            currentFile: null,
+            currentParent: null
         }
     },
     props: ['context', 'file', 'parent'],
     created: function() {
+        console.log("kev- in created");
+        this.currentFile = this.file;
+        this.currentParent = this.parent;
         this.startListener();
     },
     methods: {
@@ -30,8 +40,8 @@ module.exports = {
 		// create. Check that source, and validate those inputs!
 		if (e.origin === "null" && e.source === iframe.contentWindow) {
 		    if (that.expectingSave) {
-			    that.save(e.data.text);
 			    that.expectingSave = false;
+			    that.save(e.data.text);
 		    }
 		}
 	    });
@@ -39,8 +49,8 @@ module.exports = {
             // origin. Sandboxed iframes which lack the 'allow-same-origin' header
             // don't have an origin which you can target: you'll have to send to any
             // origin, which might alow some esoteric attacks. Validate your output!
-	    const props = this.file.getFileProperties();
-	    const name = this.file.getName();
+	    const props = this.currentFile.getFileProperties();
+	    const name = this.currentFile.getName();
 	    var mimeType = "text/x-markdown";
 	    var modes = ["markdown"]; // default to markdown for plain text
 	    if (name.endsWith(".java")) {
@@ -104,9 +114,9 @@ module.exports = {
 		    modes = ["yaml"];
 		    mimeType = "text/x-yaml";
 	    }
-	    var readOnly = ! this.file.isWritable();
+	    var readOnly = ! this.currentFile.isWritable();
 
-	    this.file.getInputStream(this.context.network, this.context.crypto, props.sizeHigh(), props.sizeLow(), function(read){})
+	    this.currentFile.getInputStream(this.context.network, this.context.crypto, props.sizeHigh(), props.sizeLow(), function(read){})
 	        .thenCompose(function(reader) {
                 var size = that.getFileSize(props);
                 var data = convertToByteArray(new Int8Array(size));
@@ -124,33 +134,58 @@ module.exports = {
 	},
 
     save: function(text) {
+	    this.saving = true;
+	    const that = this;
+	    this.currentFile.isLatest(this.context.network).thenApply(function(isLatest) {
+	        if(isLatest) {
+	            that.saveTextFile(text);
+	        } else {
+                that.confirmReplaceFile(that.currentFile.getName(),() => {
+                    that.saving = false;
+                 },() => {
+                    that.saveTextFile(text);
+                 }
+                );
+	        }
+	    });
+	},
+    saveTextFile: function (text) {
 	    var bytes = convertToByteArray(new TextEncoder().encode(text));
 	    var java_reader = peergos.shared.user.fs.AsyncReader.build(bytes);
-
-	    const file = this.file;
+	    const file = this.currentFile;
 	    const context = this.context;
 	    const size = text.length;
-	    const parent = this.parent;
 	    const that = this;
-	    this.saving = true;
-	    this.parent.uploadFileJS(file.getName(), java_reader, (size - (size % Math.pow(2, 32)))/Math.pow(2, 32), size,
-				true, true, context.network, context.crypto, len => {}, context.getTransactionService())
+        this.currentParent.uploadFileJS(file.getName(), java_reader, (size - (size % Math.pow(2, 32)))/Math.pow(2, 32), size,
+                true, true, context.network, context.crypto, len => {}, context.getTransactionService())
         .thenApply(function(updated) {
+            that.currentParent.getLatest(context.network).thenApply(function(updatedParent) {
+                that.currentFile = updated;
+                that.currentParent = updatedParent;
+                that.saving = false;
+            });
+        }).exceptionally(function(throwable) {
+            console.log('Error uploading file: ' + file.getName());
+            console.log(throwable.getMessage());
+            throwable.printStackTrace();
             that.saving = false;
-		}).exceptionally(function(throwable) {
-		    console.log('Error uploading file: ' + file.getName());
-		    console.log(throwable.getMessage());
-		    throwable.printStackTrace();
-		});
-	},
-
+        });
+    },
+    confirmReplaceFile: function(fileName, cancelFn, replaceFn) {
+        this.showSpinner = false;
+        this.replace_message='The file: "' + fileName + '" has been updated by another user. Do you wish to replace?';
+        this.replace_body='';
+        this.replace_consumer_cancel_func = cancelFn;
+        this.replace_consumer_func = replaceFn;
+        this.showReplace = true;
+    },
     close: function () {
         this.$emit("hide-code-editor");
     }
     },
     computed: {
         isWritable: function() {
-	        return this.file.isWritable();
+	        return this.currentFile.isWritable();
 	    }
     }
 }

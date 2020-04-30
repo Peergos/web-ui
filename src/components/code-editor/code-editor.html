@@ -1,8 +1,15 @@
 <transition name="modal">
 <div class="modal-mask" @click="close"> 
     <div class="modal-container full-height" @click.stop style="width:100%;overflow-y:auto;padding:0;display:flex;flex-flow:column;">
-      
-      
+
+        <replace
+                v-if="showReplace"
+                v-on:hide-replace="showReplace = false"
+                :replace_message='replace_message'
+                :replace_body="replace_body"
+                :consumer_cancel_func="replace_consumer_cancel_func"
+                :consumer_func="replace_consumer_func">
+        </replace>
         <div class="modal-header" style="padding:0">
           <h2>{{ file.getName() }}</h2>
 	  <span style="position:absolute;top:0;right:0.2em;">
