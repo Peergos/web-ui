@@ -5,70 +5,47 @@ module.exports = {
             showSpinner: false,
 	        expectingSave: false,
 	        saving: false,
-	        showReplace: false,
-            replace_message: "",
-            replace_body: "",
-            replace_consumer_cancel_func: () => {},
-            replace_consumer_func: () => {},
             currentFile: null,
             currentParent: null
         }
     },
-    props: ['context', 'file', 'parent'],
+    props: ['context', 'file', 'parent', 'messages'],
     created: function() {
         let that = this;
         that.currentParent = this.parent;
         that.currentFile = this.file;
-        this.reload(function() {
-            that.startListener(false);
-        });
-    },
-    methods: {
-    reloadFile: function() {
-        let that = this;
-        this.reload(function() {
-            that.startListener(true);
-        });
-    },
-    reload: function(callback) {
-        let that = this;
         this.currentParent.getLatest(this.context.network).thenApply(function(updatedParent) {
             that.currentParent = updatedParent;
             updatedParent.getChild(that.currentFile.getName(), that.context.crypto.hasher, that.context.network).thenApply(function(updatedFile) {
                 that.currentFile = updatedFile.get();
-                callback();
+                that.startListener();
             });
         });
     },
-	startListener: function(reload) {
+    methods: {
+	startListener: function() {
 	    var that = this;
 	    var iframe = document.getElementById("editor");
 	    if (iframe == null) {
-    		setTimeout(function(){that.startListener(reload);}, 1000);
+    		setTimeout(function(){that.startListener();}, 1000);
 	    	return;
 	    }
-	    if (reload) {
-	        iframe.src = "apps/code-editor/index.html";
-    		setTimeout(function(){that.startListener(false);}, 1000);
-	    	return;
-        } else {
-            // Listen for response messages from the frames.
-            window.addEventListener('message', function (e) {
-                // Normally, you should verify that the origin of the message's sender
-                // was the origin and source you expected. This is easily done for the
-                // unsandboxed frame. The sandboxed frame, on the other hand is more
-                // difficult. Sandboxed iframes which lack the 'allow-same-origin'
-                // header have "null" rather than a valid origin. This means you still
-                // have to be careful about accepting data via the messaging API you
-                // create. Check that source, and validate those inputs!
-                if (e.origin === "null" && e.source === iframe.contentWindow) {
-                    if (that.expectingSave) {
-                        that.expectingSave = false;
-                        that.save(e.data.text);
-                    }
+        // Listen for response messages from the frames.
+        window.addEventListener('message', function (e) {
+            // Normally, you should verify that the origin of the message's sender
+            // was the origin and source you expected. This is easily done for the
+            // unsandboxed frame. The sandboxed frame, on the other hand is more
+            // difficult. Sandboxed iframes which lack the 'allow-same-origin'
+            // header have "null" rather than a valid origin. This means you still
+            // have to be careful about accepting data via the messaging API you
+            // create. Check that source, and validate those inputs!
+            if (e.origin === "null" && e.source === iframe.contentWindow) {
+                if (that.expectingSave) {
+                    that.expectingSave = false;
+                    that.save(e.data.text);
                 }
-            });
-        }
+            }
+        });
 	    // Note that we're sending the message to "*", rather than some specific
             // origin. Sandboxed iframes which lack the 'allow-same-origin' header
             // don't have an origin which you can target: you'll have to send to any
@@ -146,7 +123,9 @@ module.exports = {
                 var data = convertToByteArray(new Int8Array(size));
                 return reader.readIntoArray(data, 0, data.length)
                     .thenApply(function(read){
-                        iframe.contentWindow.postMessage({modes:modes, mime:mimeType, readOnly:readOnly, text:new TextDecoder().decode(data)}, '*');
+                        setTimeout(function(){
+                            iframe.contentWindow.postMessage({modes:modes, mime:mimeType, readOnly:readOnly, text:new TextDecoder().decode(data)}, '*');
+                        });
                     });
 	    });
 	},
@@ -162,21 +141,6 @@ module.exports = {
 
     save: function(text) {
 	    this.saving = true;
-	    const that = this;
-	    this.currentFile.isLatest(this.context.network).thenApply(function(isLatest) {
-	        if(isLatest) {
-	            that.saveTextFile(text);
-	        } else {
-                that.confirmReplaceFile(that.currentFile.getName(),() => {
-                    that.saving = false;
-                 },() => {
-                    that.saveTextFile(text);
-                 }
-                );
-	        }
-	    });
-	},
-    saveTextFile: function (text) {
 	    var bytes = convertToByteArray(new TextEncoder().encode(text));
 	    var java_reader = peergos.shared.user.fs.AsyncReader.build(bytes);
 	    const file = this.currentFile;
@@ -192,19 +156,23 @@ module.exports = {
                 that.saving = false;
             });
         }).exceptionally(function(throwable) {
-            console.log('Error uploading file: ' + file.getName());
-            console.log(throwable.getMessage());
-            throwable.printStackTrace();
+            if (throwable.detailMessage.includes("java.lang.JsException: Couldn%27t+update+mutable+pointer%2C+cas+failed%3A+")) {
+                that.showMessage("Concurrent modification detected", "The file: '" + file.getName() + "' has been updated by another user. Your changes could not been saved.");
+            } else {
+                that.showMessage("Unexpected error", throwable.detailMessage);
+                console.log('Error uploading file: ' + file.getName());
+                console.log(throwable.getMessage());
+                throwable.printStackTrace();
+            }
             that.saving = false;
         });
     },
-    confirmReplaceFile: function(fileName, cancelFn, replaceFn) {
-        this.showSpinner = false;
-        this.replace_message='The file: "' + fileName + '" has been updated by another user. Do you wish to continue?';
-        this.replace_body='';
-        this.replace_consumer_cancel_func = cancelFn;
-        this.replace_consumer_func = replaceFn;
-        this.showReplace = true;
+    showMessage: function(title, body) {
+        this.messages.push({
+            title: title,
+            body: body,
+            show: true
+        });
     },
     close: function () {
         this.$emit("hide-code-editor");
