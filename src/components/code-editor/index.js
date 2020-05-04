@@ -16,35 +16,59 @@ module.exports = {
     },
     props: ['context', 'file', 'parent'],
     created: function() {
-        console.log("kev- in created");
-        this.currentFile = this.file;
-        this.currentParent = this.parent;
-        this.startListener();
+        let that = this;
+        that.currentParent = this.parent;
+        that.currentFile = this.file;
+        this.reload(function() {
+            that.startListener(false);
+        });
     },
     methods: {
-	startListener: function() {
+    reloadFile: function() {
+        let that = this;
+        this.reload(function() {
+            that.startListener(true);
+        });
+    },
+    reload: function(callback) {
+        let that = this;
+        this.currentParent.getLatest(this.context.network).thenApply(function(updatedParent) {
+            that.currentParent = updatedParent;
+            updatedParent.getChild(that.currentFile.getName(), that.context.crypto.hasher, that.context.network).thenApply(function(updatedFile) {
+                that.currentFile = updatedFile.get();
+                callback();
+            });
+        });
+    },
+	startListener: function(reload) {
+	    var that = this;
 	    var iframe = document.getElementById("editor");
 	    if (iframe == null) {
-    		setTimeout(this.startListener, 500);
+    		setTimeout(function(){that.startListener(reload);}, 1000);
 	    	return;
 	    }
-	    var that = this;
-	    // Listen for response messages from the frames.
-	    window.addEventListener('message', function (e) {
-		// Normally, you should verify that the origin of the message's sender
-		// was the origin and source you expected. This is easily done for the
-		// unsandboxed frame. The sandboxed frame, on the other hand is more
-		// difficult. Sandboxed iframes which lack the 'allow-same-origin'
-		// header have "null" rather than a valid origin. This means you still
-		// have to be careful about accepting data via the messaging API you
-		// create. Check that source, and validate those inputs!
-		if (e.origin === "null" && e.source === iframe.contentWindow) {
-		    if (that.expectingSave) {
-			    that.expectingSave = false;
-			    that.save(e.data.text);
-		    }
-		}
-	    });
+	    if (reload) {
+	        iframe.src = "apps/code-editor/index.html";
+    		setTimeout(function(){that.startListener(false);}, 1000);
+	    	return;
+        } else {
+            // Listen for response messages from the frames.
+            window.addEventListener('message', function (e) {
+                // Normally, you should verify that the origin of the message's sender
+                // was the origin and source you expected. This is easily done for the
+                // unsandboxed frame. The sandboxed frame, on the other hand is more
+                // difficult. Sandboxed iframes which lack the 'allow-same-origin'
+                // header have "null" rather than a valid origin. This means you still
+                // have to be careful about accepting data via the messaging API you
+                // create. Check that source, and validate those inputs!
+                if (e.origin === "null" && e.source === iframe.contentWindow) {
+                    if (that.expectingSave) {
+                        that.expectingSave = false;
+                        that.save(e.data.text);
+                    }
+                }
+            });
+        }
 	    // Note that we're sending the message to "*", rather than some specific
             // origin. Sandboxed iframes which lack the 'allow-same-origin' header
             // don't have an origin which you can target: you'll have to send to any
@@ -128,6 +152,9 @@ module.exports = {
 	},
 
 	getAndSave: function() {
+	    if(this.saving) {
+	        return;
+	    }
 	    var iframe = document.getElementById("editor");
 	    this.expectingSave = true;
 	    iframe.contentWindow.postMessage({type:"save"}, '*');
@@ -158,9 +185,9 @@ module.exports = {
 	    const that = this;
         this.currentParent.uploadFileJS(file.getName(), java_reader, (size - (size % Math.pow(2, 32)))/Math.pow(2, 32), size,
                 true, true, context.network, context.crypto, len => {}, context.getTransactionService())
-        .thenApply(function(updated) {
-            that.currentParent.getLatest(context.network).thenApply(function(updatedParent) {
-                that.currentFile = updated;
+        .thenApply(function(updatedParent) {
+            updatedParent.getChild(file.getName(), context.crypto.hasher, context.network).thenApply(function(updatedFile) {
+                that.currentFile = updatedFile.get();
                 that.currentParent = updatedParent;
                 that.saving = false;
             });
@@ -173,7 +200,7 @@ module.exports = {
     },
     confirmReplaceFile: function(fileName, cancelFn, replaceFn) {
         this.showSpinner = false;
-        this.replace_message='The file: "' + fileName + '" has been updated by another user. Do you wish to replace?';
+        this.replace_message='The file: "' + fileName + '" has been updated by another user. Do you wish to continue?';
         this.replace_body='';
         this.replace_consumer_cancel_func = cancelFn;
         this.replace_consumer_func = replaceFn;
