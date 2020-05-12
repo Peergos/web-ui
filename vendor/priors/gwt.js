@@ -185,7 +185,7 @@ function callbackFunc(func, delay) {
 }
 
 var callback = {
-    NativeJSCallback: function() {
+    NativeJSScheduler: function() {
 	    this.get = callbackFunc;
     }
 };
