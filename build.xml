@@ -142,7 +142,7 @@
     </exec>
   </target>
 
-  <target name="update_server" depends="clean, clean_server, compile_server, ui" description="regenerate the server">
+  <target name="dist" depends="clean, clean_server, compile_server, ui" description="regenerate the server">
     <mkdir dir="${server}"/>
     <mkdir dir="${server}/webroot"/>
 
@@ -229,7 +229,7 @@ Class-Path: .</echo>
     </exec>
   </target> 
 
-  <target name="update_and_run" depends="peergos_submodule_sync,update_server,run">
+  <target name="update_and_run" depends="peergos_submodule_sync,dist,run">
   </target>
 
   <target name="test" depends="">
