@@ -180,13 +180,13 @@ function putProm(url, data, headers) {
     return future;
 }
 
-function callbackFunc(func, delay) {
-    setTimeout(function(){func();}, delay);
-}
-
 var callback = {
     NativeJSScheduler: function() {
-	    this.get = callbackFunc;
+	    this.callAfterDelay = function callbackFunc(func, delay) {
+           setTimeout(function(){
+                func.call();
+           }, delay);
+       }
     }
 };
 
