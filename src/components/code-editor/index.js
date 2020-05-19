@@ -144,9 +144,10 @@ module.exports = {
             that.saving = false;
             that.currentFile = updatedFile;
         }).exceptionally(function(throwable) {
-            if (throwable.detailMessage.includes("Couldn%27t+update+mutable+pointer%2C+cas+failed")) {
+            if (throwable.detailMessage.includes("Couldn%27t+update+mutable+pointer%2C+cas+failed")
+                ||   throwable.detailMessage.includes("CAS exception updating cryptree node.")) {
                 that.showMessage("Concurrent modification detected", "The file: '" +
-                that.file.getName() + "' has been updated by another user. Your changes could not been saved.");
+                that.file.getName() + "' has been updated by another user. Your changes have not been saved.");
             } else {
                 that.showMessage("Unexpected error", throwable.detailMessage);
                 console.log('Error uploading file: ' + that.file.getName());
