@@ -5,22 +5,13 @@ module.exports = {
             showSpinner: false,
 	        expectingSave: false,
 	        saving: false,
-            currentFile: null,
-            currentParent: null
+	        currentFile: null
         }
     },
-    props: ['context', 'file', 'parent', 'messages'],
+    props: ['context', 'file', 'messages'],
     created: function() {
-        let that = this;
-        that.currentParent = this.parent;
-        that.currentFile = this.file;
-        this.currentParent.getLatest(this.context.network).thenApply(function(updatedParent) {
-            that.currentParent = updatedParent;
-            updatedParent.getChild(that.currentFile.getName(), that.context.crypto.hasher, that.context.network).thenApply(function(updatedFile) {
-                that.currentFile = updatedFile.get();
-                that.startListener();
-            });
-        });
+        this.currentFile = this.file;
+        this.startListener();
     },
     methods: {
 	startListener: function() {
@@ -143,24 +134,22 @@ module.exports = {
 	    this.saving = true;
 	    var bytes = convertToByteArray(new TextEncoder().encode(text));
 	    var java_reader = peergos.shared.user.fs.AsyncReader.build(bytes);
-	    const file = this.currentFile;
 	    const context = this.context;
 	    const size = text.length;
 	    const that = this;
-        this.currentParent.uploadFileJS(file.getName(), java_reader, (size - (size % Math.pow(2, 32)))/Math.pow(2, 32), size,
-                true, true, context.network, context.crypto, len => {}, context.getTransactionService())
-        .thenApply(function(updatedParent) {
-            updatedParent.getChild(file.getName(), context.crypto.hasher, context.network).thenApply(function(updatedFile) {
-                that.currentFile = updatedFile.get();
-                that.currentParent = updatedParent;
-                that.saving = false;
-            });
+
+        this.currentFile.overwriteSectionJS(java_reader, 0, 0, (size - (size % Math.pow(2, 32)))/Math.pow(2, 32), size,
+            context.network, context.crypto, len => {})
+        .thenApply(function(updatedFile) {
+            that.saving = false;
+            that.currentFile = updatedFile;
         }).exceptionally(function(throwable) {
-            if (throwable.detailMessage.includes("java.lang.JsException: Couldn%27t+update+mutable+pointer%2C+cas+failed%3A+")) {
-                that.showMessage("Concurrent modification detected", "The file: '" + file.getName() + "' has been updated by another user. Your changes could not been saved.");
+            if (throwable.detailMessage.includes("CAS exception")) {
+                that.showMessage("Concurrent modification detected", "The file: '" +
+                that.file.getName() + "' has been updated by another user. Your changes could not been saved.");
             } else {
                 that.showMessage("Unexpected error", throwable.detailMessage);
-                console.log('Error uploading file: ' + file.getName());
+                console.log('Error uploading file: ' + that.file.getName());
                 console.log(throwable.getMessage());
                 throwable.printStackTrace();
             }
