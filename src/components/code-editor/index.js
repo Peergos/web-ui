@@ -135,7 +135,7 @@ module.exports = {
 	    var bytes = convertToByteArray(new TextEncoder().encode(text));
 	    var java_reader = peergos.shared.user.fs.AsyncReader.build(bytes);
 	    const context = this.context;
-	    const size = text.length;
+	    const size = this.currentFile.getFileProperties().sizeLow();
 	    const that = this;
 
         this.currentFile.overwriteSectionJS(java_reader, 0, 0, (size - (size % Math.pow(2, 32)))/Math.pow(2, 32), size,
