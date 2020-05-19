@@ -135,23 +135,22 @@ module.exports = {
 	    var bytes = convertToByteArray(new TextEncoder().encode(text));
 	    var java_reader = peergos.shared.user.fs.AsyncReader.build(bytes);
 	    const context = this.context;
-	    const size = this.currentFile.getFileProperties().sizeLow();
+	    const existingSizeLo = this.currentFile.getFileProperties().sizeLow() ;
+	    const newSizeLo = existingSizeLo + (Math.max(0, text.length - existingSizeLo));
 	    const that = this;
-
-        this.currentFile.overwriteSectionJS(java_reader, 0, 0, (size - (size % Math.pow(2, 32)))/Math.pow(2, 32), size,
+        this.currentFile.overwriteSectionJS(java_reader, 0, 0, 0, newSizeLo,
             context.network, context.crypto, len => {})
         .thenApply(function(updatedFile) {
             that.saving = false;
             that.currentFile = updatedFile;
         }).exceptionally(function(throwable) {
-            if (throwable.detailMessage.includes("CAS exception")) {
+            if (throwable.detailMessage.includes("Couldn%27t+update+mutable+pointer%2C+cas+failed")) {
                 that.showMessage("Concurrent modification detected", "The file: '" +
                 that.file.getName() + "' has been updated by another user. Your changes could not been saved.");
             } else {
                 that.showMessage("Unexpected error", throwable.detailMessage);
                 console.log('Error uploading file: ' + that.file.getName());
                 console.log(throwable.getMessage());
-                throwable.printStackTrace();
             }
             that.saving = false;
         });
