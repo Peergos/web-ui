@@ -18,7 +18,7 @@ module.exports = {
 	    var that = this;
 	    var iframe = document.getElementById("editor");
 	    if (iframe == null) {
-    		setTimeout(function(){that.startListener();}, 1000);
+    		setTimeout(that.startListener, 1000);
 	    	return;
 	    }
         // Listen for response messages from the frames.
