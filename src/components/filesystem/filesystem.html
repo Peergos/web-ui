@@ -156,8 +156,8 @@
     v-if="showCodeEditor" 
     v-on:hide-code-editor="closeApps(); updateCurrentDir();"
     :file="selectedFiles[0]"
-    :parent="currentDir"
-    :context="context">
+    :context="context"
+    :messages="messages">
   </code-editor>
   <text-viewer 
     v-if="showTextViewer" 
