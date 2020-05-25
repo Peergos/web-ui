@@ -180,6 +180,16 @@ function putProm(url, data, headers) {
     return future;
 }
 
+var callback = {
+    NativeJSScheduler: function() {
+	    this.callAfterDelay = function callbackFunc(func, delay) {
+           setTimeout(function(){
+                func.call();
+           }, delay);
+       }
+    }
+};
+
 var http = {
     NativeJSHttp: function() {
 	this.get = getProm;
