@@ -10,7 +10,7 @@ module.exports = {
             showError:false
         }
     },
-    props: ['followernames', 'files', 'parent', 'path', 'context', 'messages', 'shared'],
+    props: ['data', 'followernames', 'files', 'path', 'context', 'messages', 'shared'],
     created: function() {
         Vue.nextTick(this.setTypeAhead);
     },
@@ -18,6 +18,47 @@ module.exports = {
         close: function () {
             this.showSpinner = false;
             this.$emit("hide-share-with");
+        },
+        unshare : function (targetUsername, sharedWithAccess) {
+            if (this.files.length == 0)
+                return this.close();
+            if (this.files.length != 1)
+                throw "Unimplemented multiple file share call";
+            if (this.files[0].getOwnerName() != this.context.username) {
+                this.errorTitle = 'Only the owner can unshare a file!';
+                this.errorBody = "";
+                this.showError = true;
+                return false;
+            }
+            var that = this;
+            this.showSpinner = true;
+            var filename = that.files[0].getFileProperties().name;
+            if(sharedWithAccess == "Read") {
+                this.context.unShareReadAccess(this.files[0], targetUsername)
+                    .thenApply(function(b) {
+                        that.showSpinner = false;
+                        console.log("unshared read access to " + filename + " with " + targetUsername);
+                        that.$emit("update-shared");
+                    }).exceptionally(function(throwable) {
+                        that.showSpinner = false;
+                        that.errorTitle = 'Error unsharing file: ' + filename;
+                        that.errorBody = throwable.getMessage();
+                        that.showError = true;
+                    });
+
+            } else {
+                this.context.unShareWriteAccess(this.files[0], targetUsername)
+                    .thenApply(function(b) {
+                        that.showSpinner = false;
+                        console.log("unshared write access to " + filename + " with " + targetUsername);
+                        that.$emit("update-shared");
+                    }).exceptionally(function(throwable) {
+                        that.showSpinner = false;
+                        that.errorTitle = 'Error unsharing file: ' + filename;
+                        that.errorBody = throwable.getMessage();
+                        that.showError = true;
+                    });
+            }
         },
 
 	allowedToShare: function(file) {
@@ -58,9 +99,8 @@ module.exports = {
                     });
                     that.close();
 		} else {
-                    that.context.sharedWith(that.files[0]).thenApply(function(allSharedWithUsernames){
-			var read_usernames = allSharedWithUsernames.left.toArray([]);
-			var edit_usernames = allSharedWithUsernames.right.toArray([]);
+			var read_usernames = that.data.read_shared_with_users;
+			var edit_usernames = that.data.edit_shared_with_users;
 			if(read_usernames.indexOf(targetUsername) > -1 || edit_usernames.indexOf(targetUsername) > -1) {
                             that.showSpinner = false;
                             that.messages.push({
@@ -69,18 +109,12 @@ module.exports = {
 				show: true
                             });
 			} else {
-                            var filename = that.files[0].getFileProperties().name;
+                var filename = that.files[0].getFileProperties().name;
 			    var filepath = "/" + that.path.join('/') + "/" + filename;
                             if(sharedWithAccess == "Read") {
-				that.context.shareReadAccessWith(that.files[0], filepath, targetUsername)
+				that.context.shareReadAccessWith(filepath, targetUsername)
 				    .thenApply(function(b) {
 					that.showSpinner = false;
-					that.messages.push({
-					    title: "Success!",
-					    body: "Secure sharing complete",
-					    show: true
-					});
-					that.close();
 					console.log("shared read access to " + filename + " with " + targetUsername);
 					that.$emit("update-shared");
 				    }).exceptionally(function(throwable) {
@@ -90,16 +124,9 @@ module.exports = {
 					that.showError = true;
 				    });
                             } else {
-				var doShare = function(theParent) {
-				    that.context.shareWriteAccessWith(that.files[0], filepath, theParent, targetUsername)
+				    that.context.shareWriteAccessWith(filepath, targetUsername)
 					.thenApply(function(b) {
 					    that.showSpinner = false;
-					    that.messages.push({
-						title: "Success!",
-						body: "Secure sharing complete",
-						show: true
-					    });
-					    that.close();
 					    console.log("shared write access to " + filename + " with " + targetUsername);
 					    that.$emit("update-shared");
 					}).exceptionally(function(throwable) {
@@ -108,20 +135,8 @@ module.exports = {
 					    that.errorBody = throwable.getMessage();
 					    that.showError = true;
 					});
-				};
-				if (that.parent == null) {
-				    var path = '/' + that.path.slice(0, that.path.length-1).join('/');
-				    console.log("retrieving parent " + path);
-				    that.context.getByPath(path)
-					.thenCompose(function(p){
-					    console.log(p)
-					    doShare(p.get());
-					});
-				} else
-				    doShare(that.parent);
                             }
 			}
-                    });
 		}
             });
 	},

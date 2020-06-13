@@ -5,7 +5,7 @@
         <span @click="close" class="close">&times;</span>
         <spinner v-if="showSpinner"></spinner>
         <div class="modal-header">
-            <h3>Enter user to share {{ files[0].getFileProperties().name }} with:</h3>
+            <h4>Enter users to share {{ files[0].getFileProperties().name }} with:</h4>
         </div>
 
         <div class="modal-body">
@@ -23,13 +23,31 @@
                     </tr>
                 </table>
             </div>
-            <error 
-                v-if="showError"
-                v-on:hide-error="showError = false"
-                :title="errorTitle" 
-                :body="errorBody">
-            </error>
         </div>
+        <div class="modal-body modal-prominent">
+            <div class="container" v-if="data.edit_shared_with_users.length > 0"><p style="word-wrap;break-all;">
+                Read and Write Access:</p>
+                <div v-for="user in data.edit_shared_with_users"><button v-on:click="unshare(user, 'Edit')"><span class="fa fa-trash btn btn-shared-with"></span></button> {{ user }} </div>
+            </div>
+            <div class="container" v-if="data.edit_shared_with_users.length == 0"><p style="word-wrap;break-all;">
+                Read and Write Write Access:    None</p>
+            </div>
+        </div>
+        <div class="modal-body modal-prominent">
+            <div class="container" v-if="data.read_shared_with_users.length > 0"><p style="word-wrap;break-all;">
+                Read only Access:</p>
+                <div v-for="user in data.read_shared_with_users"><button v-on:click="unshare(user, 'Read')"><span class="fa fa-trash btn btn-shared-with"></span></button> {{ user }} </div>
+            </div>
+            <div class="container" v-if="data.read_shared_with_users.length == 0"><p style="word-wrap;break-all;">
+                Read only Access:    None</p>
+            </div>
+        </div>
+        <error
+            v-if="showError"
+            v-on:hide-error="showError = false"
+            :title="errorTitle"
+            :body="errorBody">
+        </error>
     </div>
 </div>
 </transition>

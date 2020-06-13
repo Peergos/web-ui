@@ -21,7 +21,6 @@ module.exports = {
             modalLinks:[],
 	    showTour: false,
             showShare:false,
-            showSharedWith:false,
             sharedWithData:{"edit_shared_with_users":[],"read_shared_with_users":[]},
             forceSharedWithUpdate:0,
             isNotBackground: true,
@@ -398,16 +397,16 @@ module.exports = {
         sharedWithDataUpdate: function() {
             var context = this.getContext();
             if (this.selectedFiles.length != 1 || context == null) {
-                that.sharedWithData = {title:'', read_shared_with_users:[], edit_shared_with_users:[] };
+                that.sharedWithData = {read_shared_with_users:[], edit_shared_with_users:[] };
             }
             var file = this.selectedFiles[0];
             var that = this;
-            context.sharedWith(file).thenApply(function(allSharedWithUsernames){
+            var filename = file.getFileProperties().name;
+            var filepath = "/" + this.path.join('/') + "/" + filename;
+            context.sharedWith(filepath).thenApply(function(allSharedWithUsernames){
                 var read_usernames = allSharedWithUsernames.left.toArray([]);
                 var edit_usernames = allSharedWithUsernames.right.toArray([]);
-                var filename = file.getFileProperties().name;
-                var title = filename + " is shared with:";
-                that.sharedWithData = {title:title, read_shared_with_users:read_usernames, edit_shared_with_users:edit_usernames};
+                that.sharedWithData = {read_shared_with_users:read_usernames, edit_shared_with_users:edit_usernames};
             });
         },
         getContext: function() {
@@ -929,7 +928,7 @@ module.exports = {
             this.externalChange++;
         },
 
-        showSharedWithView: function(name) {
+        showShareWith: function() {
             if (this.selectedFiles.length == 0)
                 return;
             if (this.selectedFiles.length != 1)
@@ -937,14 +936,14 @@ module.exports = {
             this.closeMenu();
             var file = this.selectedFiles[0];
             var that = this;
-            this.getContext().sharedWith(file)
+            var filename = file.getFileProperties().name;
+            var filepath = "/" + this.path.join('/') + "/" + filename;
+            this.getContext().sharedWith(filepath)
                 .thenApply(function(allSharedWithUsernames) {
                     var read_usernames = allSharedWithUsernames.left.toArray([]);
                     var edit_usernames = allSharedWithUsernames.right.toArray([]);
-                    var filename = file.getFileProperties().name;
-                    var title = filename + " is shared with:";
-                    that.sharedWithData = {title:title, read_shared_with_users:read_usernames, edit_shared_with_users:edit_usernames};
-                    that.showSharedWith = true;
+                    that.sharedWithData = {read_shared_with_users:read_usernames, edit_shared_with_users:edit_usernames};
+                    that.showShare = true;
                 });
         },
 
@@ -1023,13 +1022,6 @@ module.exports = {
             }
 
             this.closeMenu();
-        },
-
-        showShareWith: function() {
-            if (this.selectedFiles.length == 0)
-                return;
-            this.closeMenu();
-            this.showShare = true;
         },
 
         setSortBy: function(prop) {

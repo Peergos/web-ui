@@ -57,7 +57,6 @@
     <li id='paste-file' v-if="isPasteAvailable" v-on:click="paste">Paste</li>
     <li id='secret-link-file' v-if="(isNotHome || isNotBackground)" v-on:click="createSecretLink">Create secret link</li>
     <li id='share-file' v-if="(isNotHome || isNotBackground) && isLoggedIn" v-on:click="showShareWith">Share</li>
-    <li id='shared-with-file' v-if="(isNotHome || isNotBackground) && isWritable" @click="showSharedWithView">Shared with</li>
   </ul>
   
   <tour
@@ -73,22 +72,14 @@
   <share 
     v-if="showShare" 
     v-on:hide-share-with="showShare = false"
-    v-on:update-shared="forceSharedWithUpdate++" 
-    :files="selectedFiles" 
-    :parent="isNotBackground ? currentDir : null"
+    v-on:update-shared="forceSharedWithUpdate++"
+    :data="sharedWithData"
+    :files="selectedFiles"
     :path="path"
     :context="context" 
     :followernames="followernames" 
     :messages="messages">
   </share>
-  <shared-with-modal 
-    v-if="showSharedWith" 
-    v-on:hide-shared-with="showSharedWith = false"
-    v-on:update-shared="forceSharedWithUpdate++"
-    :data="sharedWithData"
-    :files="selectedFiles" 
-    :context="context">
-  </shared-with-modal>
   <social 
     v-if="showSocial" 
     v-on:hide-social="showSocial = false"
