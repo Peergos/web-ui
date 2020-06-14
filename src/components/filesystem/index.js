@@ -114,8 +114,7 @@ module.exports = {
         },
 
         forceSharedWithUpdate: function(newCounter, oldCounter) {
-            this.sharedWithDataUpdate();
-            this.updateCurrentDir();
+            this.updateCurrentDir(true);
         },
         forceUpdate: function(newUpdateCounter, oldUpdateCounter) {
             this.updateCurrentDir();
@@ -317,7 +316,7 @@ module.exports = {
 		this.showHexViewer = true;
 	},
 
-	updateCurrentDir: function() {
+	updateCurrentDir: function(refreshSharing) {
             var context = this.getContext();
             if (context == null)
                 return Promise.resolve(null);
@@ -325,13 +324,13 @@ module.exports = {
             var that = this;
             context.getByPath(path).thenApply(function(file){
                 that.currentDir = file.get();
-                that.updateFiles();
+                that.updateFiles(refreshSharing);
             }).exceptionally(function(throwable) {
                 throwable.printStackTrace();
             });
         },
 	
-        updateFiles: function() {
+        updateFiles: function(refreshSharing) {
             var current = this.currentDir;
             if (current == null)
                 return Promise.resolve([]);
@@ -342,6 +341,9 @@ module.exports = {
                 that.files = arr.filter(function(f){
                     return !f.getFileProperties().isHidden;
                 });
+                if (refreshSharing) {
+                    that.sharedWithDataUpdate();
+                }
             }).exceptionally(function(throwable) {
                 throwable.printStackTrace();
             });
@@ -398,16 +400,15 @@ module.exports = {
             var context = this.getContext();
             if (this.selectedFiles.length != 1 || context == null) {
                 that.sharedWithData = {read_shared_with_users:[], edit_shared_with_users:[] };
+                return;
             }
             var file = this.selectedFiles[0];
-            var that = this;
             var filename = file.getFileProperties().name;
-            var filepath = "/" + this.path.join('/') + "/" + filename;
-            context.sharedWith(filepath).thenApply(function(allSharedWithUsernames){
-                var read_usernames = allSharedWithUsernames.left.toArray([]);
-                var edit_usernames = allSharedWithUsernames.right.toArray([]);
-                that.sharedWithData = {read_shared_with_users:read_usernames, edit_shared_with_users:edit_usernames};
-            });
+            let latestFile = this.files.filter(f => f.getName() == filename)[0];
+            let allSharedWithUsernames = context.sharedWith(latestFile);
+            var read_usernames = allSharedWithUsernames.left.toArray([]);
+            var edit_usernames = allSharedWithUsernames.right.toArray([]);
+            this.sharedWithData = {read_shared_with_users:read_usernames, edit_shared_with_users:edit_usernames};
         },
         getContext: function() {
             var x = this.contextUpdates;
@@ -935,16 +936,11 @@ module.exports = {
                 return;
             this.closeMenu();
             var file = this.selectedFiles[0];
-            var that = this;
-            var filename = file.getFileProperties().name;
-            var filepath = "/" + this.path.join('/') + "/" + filename;
-            this.getContext().sharedWith(filepath)
-                .thenApply(function(allSharedWithUsernames) {
-                    var read_usernames = allSharedWithUsernames.left.toArray([]);
-                    var edit_usernames = allSharedWithUsernames.right.toArray([]);
-                    that.sharedWithData = {read_shared_with_users:read_usernames, edit_shared_with_users:edit_usernames};
-                    that.showShare = true;
-                });
+            let allSharedWithUsernames = this.getContext().sharedWith(file);
+            var read_usernames = allSharedWithUsernames.left.toArray([]);
+            var edit_usernames = allSharedWithUsernames.right.toArray([]);
+            this.sharedWithData = {read_shared_with_users:read_usernames, edit_shared_with_users:edit_usernames};
+            this.showShare = true;
         },
 
         copy: function() {
