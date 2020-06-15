@@ -118,7 +118,6 @@ module.exports = {
             this.sharedWithDataUpdate();
         },
         forceSharedRefreshWithUpdate: function(newCounter, oldCounter) {
-            console.log("kev");
             this.updateCurrentDir(true);
         },
         forceUpdate: function(newUpdateCounter, oldUpdateCounter) {
@@ -329,16 +328,13 @@ module.exports = {
             var that = this;
             context.getByPath(path).thenApply(function(file){
                 that.currentDir = file.get();
-                that.updateFiles();
-                if (refreshSharedWith) {
-                    that.sharedWithDataUpdate();
-                }
+                that.updateFiles(refreshSharedWith);
             }).exceptionally(function(throwable) {
                 throwable.printStackTrace();
             });
         },
 	
-        updateFiles: function() {
+        updateFiles: function(refreshSharedWith) {
             var current = this.currentDir;
             if (current == null)
                 return Promise.resolve([]);
@@ -349,6 +345,9 @@ module.exports = {
                 that.files = arr.filter(function(f){
                     return !f.getFileProperties().isHidden;
                 });
+                if (refreshSharedWith) {
+                    that.sharedWithDataUpdate();
+                }
             }).exceptionally(function(throwable) {
                 throwable.printStackTrace();
             });
