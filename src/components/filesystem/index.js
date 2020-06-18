@@ -21,9 +21,9 @@ module.exports = {
             modalLinks:[],
 	    showTour: false,
             showShare:false,
-            showSharedWith:false,
             sharedWithData:{"edit_shared_with_users":[],"read_shared_with_users":[]},
             forceSharedWithUpdate:0,
+            forceSharedRefreshWithUpdate:0,
             isNotBackground: true,
 	    quota: "N/A",
 	    usageBytes: 0,
@@ -116,7 +116,9 @@ module.exports = {
 
         forceSharedWithUpdate: function(newCounter, oldCounter) {
             this.sharedWithDataUpdate();
-            this.updateCurrentDir();
+        },
+        forceSharedRefreshWithUpdate: function(newCounter, oldCounter) {
+            this.updateCurrentDir(true);
         },
         forceUpdate: function(newUpdateCounter, oldUpdateCounter) {
             this.updateCurrentDir();
@@ -318,7 +320,7 @@ module.exports = {
 		this.showHexViewer = true;
 	},
 
-	updateCurrentDir: function() {
+	updateCurrentDir: function(refreshSharedWith) {
             var context = this.getContext();
             if (context == null)
                 return Promise.resolve(null);
@@ -326,13 +328,13 @@ module.exports = {
             var that = this;
             context.getByPath(path).thenApply(function(file){
                 that.currentDir = file.get();
-                that.updateFiles();
+                that.updateFiles(refreshSharedWith);
             }).exceptionally(function(throwable) {
                 throwable.printStackTrace();
             });
         },
 	
-        updateFiles: function() {
+        updateFiles: function(refreshSharedWith) {
             var current = this.currentDir;
             if (current == null)
                 return Promise.resolve([]);
@@ -343,6 +345,9 @@ module.exports = {
                 that.files = arr.filter(function(f){
                     return !f.getFileProperties().isHidden;
                 });
+                if (refreshSharedWith) {
+                    that.sharedWithDataUpdate();
+                }
             }).exceptionally(function(throwable) {
                 throwable.printStackTrace();
             });
@@ -398,17 +403,17 @@ module.exports = {
         sharedWithDataUpdate: function() {
             var context = this.getContext();
             if (this.selectedFiles.length != 1 || context == null) {
-                that.sharedWithData = {title:'', read_shared_with_users:[], edit_shared_with_users:[] };
+                this.sharedWithData = {read_shared_with_users:[], edit_shared_with_users:[] };
             }
             var file = this.selectedFiles[0];
-            var that = this;
-            context.sharedWith(file).thenApply(function(allSharedWithUsernames){
-                var read_usernames = allSharedWithUsernames.left.toArray([]);
-                var edit_usernames = allSharedWithUsernames.right.toArray([]);
-                var filename = file.getFileProperties().name;
-                var title = filename + " is shared with:";
-                that.sharedWithData = {title:title, read_shared_with_users:read_usernames, edit_shared_with_users:edit_usernames};
-            });
+            var filename = file.getFileProperties().name;
+
+            let latestFile = this.files.filter(f => f.getName() == filename)[0];
+            this.selectedFiles = [latestFile];
+            var allSharedWithUsernames = context.sharedWith(latestFile);
+            var read_usernames = allSharedWithUsernames.left.toArray([]);
+            var edit_usernames = allSharedWithUsernames.right.toArray([]);
+            this.sharedWithData = {read_shared_with_users:read_usernames, edit_shared_with_users:edit_usernames};
         },
         getContext: function() {
             var x = this.contextUpdates;
@@ -929,25 +934,6 @@ module.exports = {
             this.externalChange++;
         },
 
-        showSharedWithView: function(name) {
-            if (this.selectedFiles.length == 0)
-                return;
-            if (this.selectedFiles.length != 1)
-                return;
-            this.closeMenu();
-            var file = this.selectedFiles[0];
-            var that = this;
-            this.getContext().sharedWith(file)
-                .thenApply(function(allSharedWithUsernames) {
-                    var read_usernames = allSharedWithUsernames.left.toArray([]);
-                    var edit_usernames = allSharedWithUsernames.right.toArray([]);
-                    var filename = file.getFileProperties().name;
-                    var title = filename + " is shared with:";
-                    that.sharedWithData = {title:title, read_shared_with_users:read_usernames, edit_shared_with_users:edit_usernames};
-                    that.showSharedWith = true;
-                });
-        },
-
         copy: function() {
             if (this.selectedFiles.length != 1)
                 return;
@@ -1028,7 +1014,17 @@ module.exports = {
         showShareWith: function() {
             if (this.selectedFiles.length == 0)
                 return;
+            if (this.selectedFiles.length != 1)
+                return;
             this.closeMenu();
+            var file = this.selectedFiles[0];
+            var filename = file.getFileProperties().name;
+            let latestFile = this.files.filter(f => f.getName() == filename)[0];
+            this.selectedFiles = [latestFile];
+            var allSharedWithUsernames = this.getContext().sharedWith(latestFile);
+            var read_usernames = allSharedWithUsernames.left.toArray([]);
+            var edit_usernames = allSharedWithUsernames.right.toArray([]);
+            this.sharedWithData = {read_shared_with_users:read_usernames, edit_shared_with_users:edit_usernames};
             this.showShare = true;
         },
 
@@ -1416,14 +1412,7 @@ module.exports = {
 
             if (this.currentDir == null)
                 return false;
-
-            var owner = this.currentDir.getOwnerName();
-            var me = this.username;
-            if (owner === me) {
-                return file.isShared(this.context);
-            } else {
-                return false;
-            }
+            return file.isShared(this.context);
         },
         closeMenu: function() {
             this.viewMenu = false;

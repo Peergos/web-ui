@@ -7,10 +7,12 @@ module.exports = {
             sharedWithAccess: "Read",
             errorTitle:'',
             errorBody:'',
-            showError:false
+            showError:false,
+            unsharedReadAccessNames: [],
+            unsharedEditAccessNames: []
         }
     },
-    props: ['followernames', 'files', 'parent', 'path', 'context', 'messages', 'shared'],
+    props: ['data', 'followernames', 'files', 'parent', 'path', 'context', 'messages', 'shared'],
     created: function() {
         Vue.nextTick(this.setTypeAhead);
     },
@@ -20,6 +22,55 @@ module.exports = {
             this.$emit("hide-share-with");
         },
 
+        unshare : function (sharedWithAccess) {
+            if (this.files.length == 0)
+                return this.close();
+            if (this.files.length != 1)
+                throw "Unimplemented multiple file share call";
+
+            var that = this;
+            this.showSpinner = true;
+            var filename = that.files[0].getFileProperties().name;
+            if(sharedWithAccess == "Read") {
+
+                this.context.unShareReadAccess(this.files[0], this.unsharedReadAccessNames)
+                    .thenApply(function(b) {
+                        that.showSpinner = false;
+                        that.messages.push({
+                            title: "Success!",
+                            body: "Read access revoked",
+                            show: true
+                        });
+                        that.close();
+                        console.log("unshared read access to " + that.files[0].getFileProperties().name + " with " + that.unsharedReadAccessNames);
+                        that.$emit("update-shared-refresh");
+                    }).exceptionally(function(throwable) {
+                        that.showSpinner = false;
+                        that.errorTitle = 'Error unsharing file: ' + filename;
+                        that.errorBody = throwable.getMessage();
+                        that.showError = true;
+                    });
+
+            } else {
+                this.context.unShareWriteAccess(this.files[0], this.unsharedEditAccessNames)
+                    .thenApply(function(b) {
+                        that.showSpinner = false;
+                        that.messages.push({
+                            title: "Success!",
+                            body: "Read & Write access revoked",
+                            show: true
+                        });
+                        that.close();
+                        console.log("unshared write access to " + that.files[0].getFileProperties().name + " with " + that.unsharedEditAccessNames);
+                        that.$emit("update-shared-refresh");
+                    }).exceptionally(function(throwable) {
+                        that.showSpinner = false;
+                        that.errorTitle = 'Error unsharing file: ' + filename;
+                        that.errorBody = throwable.getMessage();
+                        that.showError = true;
+                    });
+            }
+        },
 	allowedToShare: function(file) {
         if (file.isUserRoot()) {
             this.errorTitle = 'You cannot share your home directory!';
@@ -58,7 +109,7 @@ module.exports = {
                     });
                     that.close();
 		} else {
-                    that.context.sharedWith(that.files[0]).thenApply(function(allSharedWithUsernames){
+            var allSharedWithUsernames = that.context.sharedWith(that.files[0]);
 			var read_usernames = allSharedWithUsernames.left.toArray([]);
 			var edit_usernames = allSharedWithUsernames.right.toArray([]);
 			if(read_usernames.indexOf(targetUsername) > -1 || edit_usernames.indexOf(targetUsername) > -1) {
@@ -101,7 +152,7 @@ module.exports = {
 					    });
 					    that.close();
 					    console.log("shared write access to " + filename + " with " + targetUsername);
-					    that.$emit("update-shared");
+					    that.$emit("update-shared-refresh");
 					}).exceptionally(function(throwable) {
 					    that.showSpinner = false;
 					    that.errorTitle = 'Error sharing file: ' + filename;
@@ -121,7 +172,6 @@ module.exports = {
 				    doShare(that.parent);
                             }
 			}
-                    });
 		}
             });
 	},
