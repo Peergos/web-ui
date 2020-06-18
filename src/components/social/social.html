@@ -20,9 +20,9 @@
                     <tr>
                         <td><h3>Send follow request:</h3></td>
                         <td style="text-align:right; padding:20px">
-                            <input id="friend-name-input" v-model="targetUsername" type="text" placeholder="Friend name" class="form-control" style="width:200px"></input>
+                            <input id="friend-name-input" v-model="targetUsername" type="text" placeholder="Friend name" class="token-input" style="min-width: 200px; width: 300px;" ></input>
                         </td>
-                        <td style="text-align:right"><button id='send-follow-request-id' class="btn btn-success" @click="sendInitialFollowRequest()">Send</button></td>
+                        <td style="text-align:right"><button id='send-follow-request-id' :disabled="this.targetUsernames.length == 0" class="btn btn-success" @click="sendInitialFollowRequest()">Send</button></td>
                     </tr>
                 </table>
             </div>

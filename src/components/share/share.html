@@ -13,12 +13,12 @@
                 <table>
                     <tr>
                         <td style="padding:10px; font-size: 0.8em; ">
-                            <input id="friend-name-input" v-model="targetUsername" type="text" placeholder="Friend name" class="form-control" style="width:200px"></input>
+                            <input id="friend-name-input" v-model="targetUsername" type="text" placeholder="Friend name" class="token-input" style="width:200px"></input>
                             &nbsp;<input type="radio" id="read-access" value="Read" v-model="sharedWithAccess">
                             <label for="read-access" style="font-weight: normal;">Read Only</label>
                             <input v-if="this.files[0].getOwnerName() == this.context.username" type="radio" id="edit-access" value="Edit" v-model="sharedWithAccess">
                             <label v-if="this.files[0].getOwnerName() == this.context.username" for="edit-access" style="font-weight: normal;">Read &amp; Write</label>
-                            <button class="btn btn-success" @click="shareWith(targetUsername, sharedWithAccess)">Send</button>
+                            <button :disabled="this.targetUsernames.length == 0" class="btn btn-success" @click="shareWith(sharedWithAccess)">Send</button>
                         </td>
                     </tr>
                 </table>

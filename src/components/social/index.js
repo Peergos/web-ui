@@ -3,6 +3,7 @@ module.exports = {
     data: function() {
         return {
             targetUsername: "",
+            targetUsernames: [],
             showSpinner: false,
 	    showFingerprint: false,
 	    initialIsVerified: false,
@@ -15,51 +16,62 @@ module.exports = {
         Vue.nextTick(this.setTypeAhead);
     },
     methods: {
-        typeaheadSelect: function(a, value) {
-	    this.targetUsername = value;
-	},
-	
-	setTypeAhead: function() {
-            var substringMatcher = function(strs) {
-                return function findMatches(q, cb) {
-                    var matches, substringRegex;
+    setTypeAhead: function() {
 
-                    //an array that will be populated with substring matches
-                    matches = [];
+        var usernames = this.usernames;
+        // remove our username
+        usernames.splice(usernames.indexOf(this.context.username), 1);
 
-                    // regex used to determine if a string contains the substring `q`
-                    substrRegex = new RegExp(q, 'i');
+        this.data.friends.forEach(function(name){
+            usernames.splice(usernames.indexOf(name), 1);
+        });
+        var engine = new Bloodhound({
+          datumTokenizer: Bloodhound.tokenizers.whitespace,
+          queryTokenizer: Bloodhound.tokenizers.whitespace,
+          local: usernames
+        });
 
-                    // iterate through the pool of strings and for any string that
-                    // contains the substring `q`, add it to the `matches` array
-                    $.each(strs, function(i, str) {
-                        if (substrRegex.test(str)) {
-                            matches.push(str);
-                        }
-                    });
+        engine.initialize();
 
-                    cb(matches);
-                };
-            };
-            var usernames = this.usernames;
-            // remove our username
-            usernames.splice(usernames.indexOf(this.context.username), 1);
-            console.log("TYPEAHEAD:");
-            console.log(usernames);
-            $('#friend-name-input')
-                .typeahead(
-                        {
-                            hint: true,
-                            highlight: true,
-                            minLength: 1
-                        },
-                        {
-                            name: 'usernames',
-                            source: substringMatcher(usernames)
-                        })
-		.bind('typeahead:select', this.typeaheadSelect);
-        },
+        $('#friend-name-input').tokenfield({
+            minLength: 1,
+            minWidth: 200,
+            typeahead: [{hint: true, highlight: true, minLength: 1}, { source: engine }]
+        });
 
+        $('#friend-name-input').on('tokenfield:createtoken', function (event) {
+            //only select from available items
+        	var available_tokens = usernames;
+        	var exists = true;
+        	$.each(available_tokens, function(index, token) {
+        		if (token === event.attrs.value)
+        			exists = false;
+        	});
+        	if(exists === true) {
+        		event.preventDefault();
+            } else {
+                //do not allow duplicates in selection
+                var existingTokens = $(this).tokenfield('getTokens');
+                $.each(existingTokens, function(index, token) {
+                    if (token.value === event.attrs.value)
+                        event.preventDefault();
+                });
+            }
+        });
+        let that = this;
+        $('#friend-name-input').on('tokenfield:createdtoken', function (event) {
+    	    that.targetUsernames.push(event.attrs.value);
+        });
+
+        $('#friend-name-input').on('tokenfield:removedtoken', function (event) {
+    	    that.targetUsernames.pop(event.attrs.value);
+        });
+    },
+    resetTypeahead: function() {
+        this.targetUsernames = [];
+        this.targetUsername = "";
+        $('#friend-name-input').tokenfield('setTokens', []);
+    },
         showMessage: function(title, body) {
             this.messages.push({
                 title: title,
@@ -91,27 +103,27 @@ module.exports = {
 	},
 
 	sendInitialFollowRequest: function() {
-	    var name = this.targetUsername;
-            if(name !== this.context.username) {
-                var that = this;
-                console.log("sending follow request to " + name);
-                that.showSpinner = true;
-                that.context.sendInitialFollowRequest(name)
-                    .thenApply(function(success) {
-                        if(success) {
-                            that.showMessage("Follow request sent!", "");
-                            that.targetUsername = "";
-                            that.$emit("external-change");
-                        } else {
-                            that.showMessage("Follow request failed!", "");
-                        }
-                        that.showSpinner = false;
-                }).exceptionally(function(throwable) {
-                        that.showMessage(throwable.getMessage());
-                        that.targetUsername = "";
-                        that.showSpinner = false;
-                });
-            }
+	        if(this.targetUsernames.length == 0) {
+	            return;
+	        }
+            var that = this;
+            console.log("sending follow request to " + name);
+            that.showSpinner = true;
+            that.context.sendInitialFollowRequests(this.targetUsernames)
+                .thenApply(function(success) {
+                    if(success) {
+                        that.showMessage("Follow request(s) sent!", "");
+                        that.resetTypeahead();
+                        that.$emit("external-change");
+                    } else {
+                        that.showMessage("Follow request(s) failed!", "");
+                        that.resetTypeahead();
+                    }
+                    that.showSpinner = false;
+            }).exceptionally(function(throwable) {
+                    that.showMessage(throwable.getMessage());
+                    that.showSpinner = false;
+            });
         },
 
         acceptAndReciprocate: function(req) {
