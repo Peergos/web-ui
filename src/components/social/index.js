@@ -35,7 +35,7 @@ module.exports = {
 
         $('#friend-name-input').tokenfield({
             minLength: 1,
-            minWidth: 200,
+            minWidth: 1,
             typeahead: [{hint: true, highlight: true, minLength: 1}, { source: engine }]
         });
 
