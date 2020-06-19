@@ -353,7 +353,7 @@ module.exports = {
             });
         },
 
-	updateSocial: function() {
+	updateSocial: function(callbackFunc) {
 	    var context = this.getContext();
             if (context == null || context.username == null)
                 this.social = {
@@ -382,11 +382,17 @@ module.exports = {
                         pendingOutgoing: social.pendingOutgoingFollowRequests.keySet().toArray([]),
 			annotations: annotations
 		    };
+		    if (callbackFunc != null) {
+		        callbackFunc(true);
+		    }
                 }).exceptionally(function(throwable) {
 		    that.errorTitle = 'Error retrieving social state';
 		    that.errorBody = throwable.getMessage();
 		    that.showError = true;
 		    that.showSpinner = false;
+            if (callbackFunc != null) {
+                callbackFunc(false);
+            }
 		});
 	    }
 	},
@@ -1021,11 +1027,18 @@ module.exports = {
             var filename = file.getFileProperties().name;
             let latestFile = this.files.filter(f => f.getName() == filename)[0];
             this.selectedFiles = [latestFile];
-            var allSharedWithUsernames = this.getContext().sharedWith(latestFile);
-            var read_usernames = allSharedWithUsernames.left.toArray([]);
-            var edit_usernames = allSharedWithUsernames.right.toArray([]);
-            this.sharedWithData = {read_shared_with_users:read_usernames, edit_shared_with_users:edit_usernames};
-            this.showShare = true;
+            let that = this;
+            this.showSpinner = true;
+            this.updateSocial(function(result) {
+                that.showSpinner = false;
+                if (result) {
+                    var allSharedWithUsernames = that.getContext().sharedWith(latestFile);
+                    var read_usernames = allSharedWithUsernames.left.toArray([]);
+                    var edit_usernames = allSharedWithUsernames.right.toArray([]);
+                    that.sharedWithData = {read_shared_with_users:read_usernames, edit_shared_with_users:edit_usernames};
+                    that.showShare = true;
+                }
+            });
         },
 
         setSortBy: function(prop) {
