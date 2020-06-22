@@ -103,11 +103,16 @@ module.exports = {
 	},
 
 	sendInitialFollowRequest: function() {
-	        if(this.targetUsernames.length == 0) {
-	            return;
+	        if (this.targetUsernames.length == 0) {
+    	        let singleVal = document.getElementById("friend-name-input-tokenfield").value.trim();
+    	        if (singleVal.length > 0) {
+            	    this.targetUsernames.push(singleVal);
+    	        } else {
+	                return;
+	            }
 	        }
             var that = this;
-            console.log("sending follow request to " + name);
+            console.log("sending follow request");
             that.showSpinner = true;
             that.context.sendInitialFollowRequests(this.targetUsernames)
                 .thenApply(function(success) {
@@ -121,6 +126,9 @@ module.exports = {
                     }
                     that.showSpinner = false;
             }).exceptionally(function(throwable) {
+                    if (that.targetUsernames.length == 1) {
+                        that.resetTypeahead();
+                    }
                     that.showMessage(throwable.getMessage());
                     that.showSpinner = false;
             });

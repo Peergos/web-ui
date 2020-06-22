@@ -22,7 +22,7 @@
                         <td style="padding:20px">
                             <input id="friend-name-input" v-model="targetUsername" type="text" class="token-input" style="width: 300px;" ></input>
                         </td>
-                        <td style="text-align:right"><button id='send-follow-request-id' :disabled="this.targetUsernames.length == 0" class="btn btn-success" @click="sendInitialFollowRequest()">Send</button></td>
+                        <td style="text-align:right"><button id='send-follow-request-id' class="btn btn-success" @click="sendInitialFollowRequest()">Send</button></td>
                     </tr>
                 </table>
             </div>
