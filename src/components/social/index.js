@@ -36,8 +36,20 @@ module.exports = {
         $('#friend-name-input').tokenfield({
             minLength: 1,
             minWidth: 1,
-            typeahead: [{hint: true, highlight: true, minLength: 1}, { source: engine }]
+            typeahead: [{hint: true, highlight: true, minLength: 1}, { source: suggestions }]
         });
+
+        function suggestions(q, sync, async) {
+            var matches, substringRegex;
+            matches = [];
+            substrRegex = new RegExp(q, 'i');
+            $.each(usernames, function(i, str) {
+                if (substrRegex.test(str)) {
+                    matches.push(str);
+                }
+            });
+            sync(matches);
+        }
 
         $('#friend-name-input').on('tokenfield:createtoken', function (event) {
             //only select from available items
