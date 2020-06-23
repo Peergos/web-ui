@@ -1026,22 +1026,11 @@ module.exports = {
             var filename = file.getFileProperties().name;
             let latestFile = this.files.filter(f => f.getName() == filename)[0];
             this.selectedFiles = [latestFile];
-            let that = this;
-            this.showSpinner = true;
-            this.updateSocial(function(result) {
-                var path = that.getPath();
-                that.getContext().getByPath(path).thenApply(function(dir){
-                    that.currentDir = dir.get();
-                    that.showSpinner = false;
-                    if (result) {
-                        var allSharedWithUsernames = that.getContext().sharedWith(latestFile);
-                        var read_usernames = allSharedWithUsernames.left.toArray([]);
-                        var edit_usernames = allSharedWithUsernames.right.toArray([]);
-                        that.sharedWithData = {read_shared_with_users:read_usernames, edit_shared_with_users:edit_usernames};
-                        that.showShare = true;
-                    }
-                });
-            });
+            var allSharedWithUsernames = this.getContext().sharedWith(latestFile);
+            var read_usernames = allSharedWithUsernames.left.toArray([]);
+            var edit_usernames = allSharedWithUsernames.right.toArray([]);
+            this.sharedWithData = {read_shared_with_users:read_usernames, edit_shared_with_users:edit_usernames};
+            this.showShare = true;
         },
 
         setSortBy: function(prop) {
