@@ -125,8 +125,8 @@ module.exports = {
         },
 
 	externalChange: function(newExternalChange, oldExternalChange) {
-	    this.updateSocial();
-            this.updateCurrentDir();
+	    let that = this;
+	    this.updateSocial(function(res) {that.updateCurrentDir();});
 	},
 
 	files: function(newFiles, oldFiles) {
@@ -333,7 +333,6 @@ module.exports = {
                 throwable.printStackTrace();
             });
         },
-	
         updateFiles: function(refreshSharedWith) {
             var current = this.currentDir;
             if (current == null)
@@ -353,7 +352,7 @@ module.exports = {
             });
         },
 
-	updateSocial: function() {
+	updateSocial: function(callbackFunc) {
 	    var context = this.getContext();
             if (context == null || context.username == null)
                 this.social = {
@@ -382,11 +381,17 @@ module.exports = {
                         pendingOutgoing: social.pendingOutgoingFollowRequests.keySet().toArray([]),
 			annotations: annotations
 		    };
+		    if (callbackFunc != null) {
+		        callbackFunc(true);
+		    }
                 }).exceptionally(function(throwable) {
 		    that.errorTitle = 'Error retrieving social state';
 		    that.errorBody = throwable.getMessage();
 		    that.showError = true;
 		    that.showSpinner = false;
+            if (callbackFunc != null) {
+                callbackFunc(false);
+            }
 		});
 	    }
 	},
