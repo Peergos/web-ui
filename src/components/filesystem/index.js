@@ -51,6 +51,7 @@ module.exports = {
             },
             messages: [],
             progressMonitors: [],
+            messageMonitors: [],
             clipboardAction:"",
             forceUpdate:0,
             externalChange:0,
@@ -72,7 +73,7 @@ module.exports = {
             errorTitle:'',
             errorBody:'',
             showError:false,
-	    hideDonate: false,
+            hideDonate: false,
             showSpinner: true,
             spinnerMessage: '',
             onUpdateCompletion: [] // methods to invoke when current dir is next refreshed
@@ -81,9 +82,9 @@ module.exports = {
     props: ["context", "newsignup", "initPath", "opengallery", "initiateDownload"],
     created: function() {
         console.debug('Filesystem module created!');
-	this.showTour = this.newsignup;
-	this.init();
-	window.onhashchange = this.onUrlChange;
+        this.showTour = this.newsignup;
+        this.init();
+        window.onhashchange = this.onUrlChange;
     },
     watch: {
         // manually encode currentDir dependencies to get around infinite dependency chain issues with async-computed methods
@@ -196,14 +197,26 @@ module.exports = {
             }
         });
             }
+        this.showPendingMessages();
 	},
-	
-        processPending: function() {
-            for (var i=0; i < this.onUpdateCompletion.length; i++) {
-                this.onUpdateCompletion[i].call();
-            }
-            this.onUpdateCompletion = [];
-        },
+	showPendingMessages: function() {
+	    let messages = [];
+        //messages.push({id: "11111", context: this.context, date:"2020-02-01", title:"This is a sample message!"});
+        let that = this;
+        if(messages.length > 0) {
+            Vue.nextTick(function() {
+                messages.forEach(function(message){
+                    that.messageMonitors.push(message);
+                });
+            });
+		}
+	},
+    processPending: function() {
+        for (var i=0; i < this.onUpdateCompletion.length; i++) {
+            this.onUpdateCompletion[i].call();
+        }
+        this.onUpdateCompletion = [];
+    },
 
 	roundToDisplay: function(x) {
 	    return Math.round(x * 100)/100;
@@ -1518,7 +1531,7 @@ module.exports = {
         }
 	    return this.usageBytes > 1024*1024;
 	},
-	
+
 	isLoggedIn: function() {
 	    return ! this.isSecretLink;
 	},
