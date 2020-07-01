@@ -36,6 +36,7 @@ module.exports = {
             showPdfViewer:false,
             showTextViewer:false,
             showPassword:false,
+            showAccount:false,
             showRequestSpace:false,
             showBuySpace:false,
 	    paymentProperties:{},
@@ -896,6 +897,11 @@ module.exports = {
             this.showPassword = true;
         },
 
+        showViewAccount: function() {
+            this.toggleUserMenu();
+            this.showAccount = true;
+        },
+
         showRequestStorage: function() {
             this.toggleUserMenu();
 	    var that = this;
@@ -1053,6 +1059,29 @@ module.exports = {
             }.bind(this));
         },
 
+        deleteAccount: function(password) {
+            console.log("Deleting Account");
+            this.showSpinner = true;
+            var that = this;
+            this.getContext().deleteAccount(password).thenApply(function(result){
+                if (result) {
+                    that.showMessage("Account Deleted!");
+                    setTimeout(function(){ that.logout(); }, 5000);
+                } else {
+                    that.updateFiles();
+                    that.errorTitle = "Error Deleting Account";
+                    that.errorBody = throwable.getMessage();
+                    that.showError = true;
+                    that.showSpinner = false;
+                }
+            }).exceptionally(function(throwable) {
+                that.updateFiles();
+                that.errorTitle = "Error Deleting Account";
+                that.errorBody = throwable.getMessage();
+                that.showError = true;
+                that.showSpinner = false;
+            });
+        },
         changePath: function(path) {
             if(path == "/" && this.path.length == 0) {
                 return; //already root
