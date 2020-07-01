@@ -11,7 +11,7 @@
           <div class="modal-body">
               <h4>If you choose to proceed you will lose access to your account and data!</h4>
               <h4>This action is not reversible</h4>
-              <h4>You must enter your password to confirm you wish to DELETE your Account</h4>
+              <h4>You must enter your password to confirm you want to delete your account and all your data</h4>
             <div v-bind:class="errorClass">
                 <label v-if="isError">{{ error }}</label>
                 <div class="form-group">
@@ -29,7 +29,7 @@
         </warning>
       <div class="modal-footer">
           <slot name="footer">
-          <button class="btn btn-success" @click="deleteAccountAction">
+          <button class="btn btn-danger" @click="deleteAccountAction">
               Delete Account
           </button>
           </slot>
