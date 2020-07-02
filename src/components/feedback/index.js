@@ -2,37 +2,34 @@ module.exports = {
     template: require('feedback.html'),
     data: function() {
         return {
-        showSpinner: false
+            showSpinner: false,
+            isFeedback: false,
         }
     },
-    props: ['context', 'messages'],
+    props: ['context','closeFeedbackForm','messageId'],
+    created: function() {
+        if(this.messageId != null) {
+            this.isFeedback = false;
+        } else {
+            this.isFeedback = true;
+        }
+    },
     methods: {
         close: function () {
-            this.$emit("hide-feedback");
+            this.closeFeedbackForm(this.messageId, false);
         },
-        showMessage: function(title, body) {
-            this.messages.push({
-                title: title,
-                body: body,
-                show: true
-            });
-        },
-        submitFeedback: function(fb) {
-            var formFeedback = document.getElementById("feedback-text").value;
+        submitFeedback: function() {
             var that = this;
-            console.log("Feedback to submit: " + formFeedback);
-            this.showSpinner = true;
-            this.context.submitFeedback(formFeedback)
-                .thenApply(function(success) {
-                    that.showMessage("Feedback submitted!", "Your feedback has been added to a folder shared with Peergos developers.");
-                    that.showSpinner = false;
-                    console.log("Feedback submitted!");
-                    that.$emit("external-change");
+            var contents = document.getElementById("feedback-text").value;
+            if (contents.length > 0) {
+                this.showSpinner = true;
+                this.context.sendMessage(this.messageId, contents)
+                    .thenApply(function(success) {
+                        that.showSpinner = false;
+                        console.log("Feedback submitted!");
+                        that.closeFeedbackForm(that.messageId, that.isFeedback ? false : true);
                 });
-        },
-        getContext: function(){
-            var x = this.contextUpdates;
-            return this.context;
+            }
         }
     }
 }

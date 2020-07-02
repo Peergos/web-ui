@@ -50,6 +50,7 @@ module.exports = {
                 following: []
             },
             messages: [],
+            messageId: null,
             progressMonitors: [],
             messageMonitors: [],
             clipboardAction:"",
@@ -200,16 +201,25 @@ module.exports = {
         this.showPendingMessages();
 	},
 	showPendingMessages: function() {
-	    let messages = [];
-        //messages.push({id: "11111", context: this.context, date:"2020-02-01", title:"This is a sample message!"});
+        let context = this.getContext();
         let that = this;
-        if(messages.length > 0) {
-            Vue.nextTick(function() {
-                messages.forEach(function(message){
-                    that.messageMonitors.push(message);
-                });
+        context.getNewMessages().thenApply(function(msgs){
+            let messages = [];
+            var arr = msgs.toArray();
+            arr.forEach(function(message){
+                messages.push({id: message.Id, context: that.context,
+                    date: message.dateTime.toString(), title: message.contents});
             });
-		}
+            if(messages.length > 0) {
+                Vue.nextTick(function() {
+                    messages.forEach(function(message){
+                        that.messageMonitors.push(message);
+                    });
+                });
+            }
+        }).exceptionally(function(throwable) {
+            throwable.printStackTrace();
+        });
 	},
     processPending: function() {
         for (var i=0; i < this.onUpdateCompletion.length; i++) {
@@ -898,6 +908,47 @@ module.exports = {
 
         toggleFeedbackForm: function() { 
             this.showFeedbackForm = !this.showFeedbackForm;
+        },
+
+        popMessage: function(msgId) {
+            if (msgId != null) {
+                for (var i=0; i < this.messageMonitors.length; i++ ) {
+                    let currentMessage = this.messageMonitors[i];
+                    if(currentMessage.id == msgId) {
+                        this.messageMonitors.splice(i, 1);
+                        break;
+                    }
+                }
+            }
+        },
+
+        closeFeedbackForm: function(msgId, submitted) {
+            let submittedMsgId = submitted ? msgId : null;
+            this.showFeedbackForm = false;
+            this.messageId = null;
+            this.popMessage(submittedMsgId);
+        },
+
+        replyToMessage: function(msgId) {
+            if (this.showFeedbackForm) {
+                return;
+            }
+            this.messageId = msgId;
+            this.showFeedbackForm = true;
+        },
+
+        acknowledgeMessage: function(msgId) {
+            if (this.showFeedbackForm) {
+                return;
+            }
+            this.messageId = null;
+            if (msgId != null) {
+	            let context = this.getContext();
+                let that = this;
+                context.dismissMessage(msgId).thenApply(res => {
+                    that.popMessage(msgId);
+                });
+            }
         },
 
         toggleUploadMenu: function() {

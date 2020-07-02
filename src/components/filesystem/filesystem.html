@@ -119,12 +119,10 @@
     :updateQuota="updateQuota">
   </payment>
   <feedback 
-    v-if="showFeedbackForm" 
-    v-on:hide-feedback="showFeedbackForm = false"
-    v-on:external-change="externalChange++"
-    :data="feedback" 
+    v-if="showFeedbackForm"
+    :closeFeedbackForm="closeFeedbackForm"
     :context="context"
-    :messages="messages">
+    :messageId="messageId">
   </feedback>
   <gallery 
     v-if="showGallery" 
@@ -194,18 +192,15 @@
       v-on:hide-progress="progressMonitors.pop(progress)"
       :title="progress.title" 
       :done="progress.done"
-      :max="progress.max">
-    </progressbar>
+      :max="progress.max" />
   </div>
   <div v-if="messageMonitors.length>0" class="messageholder">
-    <messagebar
+    <messagebar :replyToMessage="replyToMessage" :acknowledgeMessage="acknowledgeMessage"
             v-for="message in messageMonitors"
-            v-on:hide-message="messageMonitors.pop(message)"
             :id="message.id"
             :context="message.context"
             :date="message.date"
-            :title="message.title">
-    </messagebar>
+            :title="message.title" />
   </div>
   <div id="dnd" @drop="dndDrop($event)" @dragover.prevent v-bind:class="{ fillspace: true, not_owner: isNotMe }" v-on:contextmenu="openMenu($event)">
     <spinner v-if="showSpinner" :message="spinnerMessage"></spinner>
@@ -264,7 +259,8 @@
       v-if="showError"
       v-on:hide-error="showError = false"
       :title="errorTitle" 
-      :body="errorBody">
+      :body="errorBody"
+      :messageId="messageId">
     </error>
   </div>
 </div>

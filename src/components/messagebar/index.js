@@ -4,14 +4,17 @@ module.exports = {
         return {
         }
     },
-    props: ['context', 'id', 'date', 'title'],
+    props: ['context', 'id', 'date', 'title', 'replyToMessage', 'acknowledgeMessage'],
     created: function() {
     },
     methods: {
+        reply: function() {
+            console.log("reply to message id: " + this.id);
+            this.replyToMessage(this.id);
+        },
         closeMessage: function() {
             console.log("acknowledge message id: " + this.id);
-
-            this.$emit("hide-message");
+            this.acknowledgeMessage(this.id);
         }
     }
 }
