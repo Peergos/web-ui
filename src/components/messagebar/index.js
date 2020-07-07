@@ -4,7 +4,7 @@ module.exports = {
         return {
         }
     },
-    props: ['context', 'id', 'date', 'title', 'replyToMessage', 'acknowledgeMessage'],
+    props: ['id', 'date', 'contents', 'replyToMessage', 'acknowledgeMessage'],
     created: function() {
     },
     methods: {

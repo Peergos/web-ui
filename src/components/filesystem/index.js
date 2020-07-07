@@ -207,8 +207,8 @@ module.exports = {
             let messages = [];
             var arr = msgs.toArray();
             arr.forEach(function(message){
-                messages.push({id: message.Id, context: that.context,
-                    date: message.dateTime.toString(), title: message.contents});
+                messages.push({id: message.id(), sendTime: message.getSendTime().toString(),
+                    contents: message.getContents(), msg: message});
             });
             if(messages.length > 0) {
                 Vue.nextTick(function() {
@@ -921,6 +921,64 @@ module.exports = {
                 }
             }
         },
+        getMessage: function(msgId) {
+            if (msgId != null) {
+                //linear scan
+                for (var i=0; i < this.messageMonitors.length; i++ ) {
+                    let currentMessage = this.messageMonitors[i];
+                    if(currentMessage.id == msgId) {
+                        return this.messageMonitors[i];
+                    }
+                }
+            }
+            return null;
+        },
+        sendFeedback: function(contents) {
+            this.showSpinner = true;
+            let that = this;
+            this.context.sendFeedback(contents)
+                .thenApply(function(res) {
+                    that.showSpinner = false;
+                    if (res) {
+                        console.log("Feedback submitted!");
+                        that.closeFeedbackForm(null, false);
+                    } else {
+                        that.errorTitle = 'Error sending feedback';
+                        that.errorBody = "";
+                        that.showError = true;
+                    }
+            }).exceptionally(function(throwable) {
+                that.errorTitle = 'Error sending feedback';
+                that.errorBody = throwable.getMessage();
+                that.showError = true;
+                that.showSpinner = false;
+            });
+        },
+
+        sendMessage: function(msgId, contents) {
+            let that = this;
+            let message = this.getMessage(msgId);
+            if (message != null) {
+                this.showSpinner = true;
+                this.context.sendReply(message.msg, contents)
+                    .thenApply(function(res) {
+                        that.showSpinner = false;
+                        if (res) {
+                            console.log("message sent!");
+                            that.closeFeedbackForm(msgId, true);
+                        } else {
+                            that.errorTitle = 'Error sending message';
+                            that.errorBody = "";
+                            that.showError = true;
+                        }
+                }).exceptionally(function(throwable) {
+                    that.errorTitle = 'Error sending message';
+                    that.errorBody = throwable.getMessage();
+                    that.showError = true;
+                    that.showSpinner = false;
+                });
+            }
+        },
 
         closeFeedbackForm: function(msgId, submitted) {
             let submittedMsgId = submitted ? msgId : null;
@@ -943,11 +1001,27 @@ module.exports = {
             }
             this.messageId = null;
             if (msgId != null) {
-	            let context = this.getContext();
-                let that = this;
-                context.dismissMessage(msgId).thenApply(res => {
-                    that.popMessage(msgId);
-                });
+                let message = this.getMessage(msgId);
+                if (message != null) {
+                     let that = this;
+                     this.showSpinner = true;
+                     this.context.dismissMessage(message.msg).thenApply(res => {
+                        this.showSpinner = false;
+                        if (res) {
+                            console.log("acknowledgement sent!");
+                            that.popMessage(msgId);
+                        } else {
+                           that.errorTitle = 'Error acknowledging message';
+                           that.errorBody = "";
+                           that.showError = true;
+                        }
+                     }).exceptionally(function(throwable) {
+                           that.errorTitle = 'Error acknowledging message';
+                           that.errorBody = throwable.getMessage();
+                           that.showError = true;
+                           that.showSpinner = false;
+                    });
+                }
             }
         },
 

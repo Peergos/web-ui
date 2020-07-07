@@ -121,7 +121,8 @@
   <feedback 
     v-if="showFeedbackForm"
     :closeFeedbackForm="closeFeedbackForm"
-    :context="context"
+    :sendFeedback="sendFeedback"
+    :sendMessage="sendMessage"
     :messageId="messageId">
   </feedback>
   <gallery 
@@ -198,9 +199,8 @@
     <messagebar :replyToMessage="replyToMessage" :acknowledgeMessage="acknowledgeMessage"
             v-for="message in messageMonitors"
             :id="message.id"
-            :context="message.context"
-            :date="message.date"
-            :title="message.title" />
+            :date="message.sendTime"
+            :contents="message.contents" />
   </div>
   <div id="dnd" @drop="dndDrop($event)" @dragover.prevent v-bind:class="{ fillspace: true, not_owner: isNotMe }" v-on:contextmenu="openMenu($event)">
     <spinner v-if="showSpinner" :message="spinnerMessage"></spinner>
