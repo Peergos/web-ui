@@ -53,6 +53,7 @@ module.exports = {
             messageId: null,
             progressMonitors: [],
             messageMonitors: [],
+            conversationMonitors: [],
             clipboardAction:"",
             forceUpdate:0,
             externalChange:0,
@@ -203,18 +204,28 @@ module.exports = {
 	showPendingMessages: function() {
         let context = this.getContext();
         let that = this;
-        context.getNewMessages().thenApply(function(msgs){
-            let messages = [];
-            var arr = msgs.toArray();
-            arr.forEach(function(message){
-                messages.push({id: message.id(), sendTime: message.getSendTime().toString(),
-                    contents: message.getContents(), previousMessageId: message.getPreviousMessageId(),
-                    msg: message});
+        context.getServerConversations().thenApply(function(conversations){
+            let allConversations = [];
+            let conv = conversations.toArray();
+            conv.forEach(function(conversation){
+                let arr = conversation.messages.toArray();
+                arr.forEach(function(message){
+                    that.messageMonitors.push({id: message.id(), sendTime: message.getSendTime().toString(),
+                        contents: message.getContents(), previousMessageId: message.getPreviousMessageId(),
+                        from: message.getAuthor(), msg: message});
+                });
+                let message = arr[arr.length - 1];
+                let auth = message.getAuthor();
+                if(message.getAuthor() == "FromServer") {
+                    allConversations.push({id: message.id(), sendTime: message.getSendTime().toString(),
+                        contents: message.getContents(), previousMessageId: message.getPreviousMessageId(),
+                        from: message.getAuthor(), msg: message});
+                }
             });
-            if(messages.length > 0) {
+            if(allConversations.length > 0) {
                 Vue.nextTick(function() {
-                    messages.forEach(function(message){
-                        that.messageMonitors.push(message);
+                    allConversations.forEach(function(msg){
+                        that.conversationMonitors.push(msg);
                     });
                 });
             }
@@ -911,12 +922,12 @@ module.exports = {
             this.showFeedbackForm = !this.showFeedbackForm;
         },
 
-        popMessage: function(msgId) {
+        popConversation: function(msgId) {
             if (msgId != null) {
-                for (var i=0; i < this.messageMonitors.length; i++ ) {
-                    let currentMessage = this.messageMonitors[i];
+                for (var i=0; i < this.conversationMonitors.length; i++ ) {
+                    let currentMessage = this.conversationMonitors[i];
                     if(currentMessage.id == msgId) {
-                        this.messageMonitors.splice(i, 1);
+                        this.conversationMonitors.splice(i, 1);
                         break;
                     }
                 }
@@ -937,7 +948,8 @@ module.exports = {
         sendFeedback: function(contents) {
             this.showSpinner = true;
             let that = this;
-            this.context.sendFeedback(contents)
+            var trimmedContents = contents.length > 1000 ? contents.substring(0, 1000) : contents;
+            this.context.sendFeedback(trimmedContents)
                 .thenApply(function(res) {
                     that.showSpinner = false;
                     if (res) {
@@ -961,7 +973,8 @@ module.exports = {
             let message = this.getMessage(msgId);
             if (message != null) {
                 this.showSpinner = true;
-                this.context.sendReply(message.msg, contents)
+                var trimmedContents = contents.length > 1000 ? contents.substring(0, 1000) : contents;
+                this.context.sendReply(message.msg, trimmedContents)
                     .thenApply(function(res) {
                         that.showSpinner = false;
                         if (res) {
@@ -985,7 +998,7 @@ module.exports = {
             let submittedMsgId = submitted ? msgId : null;
             this.showFeedbackForm = false;
             this.messageId = null;
-            this.popMessage(submittedMsgId);
+            this.popConversation(submittedMsgId);
         },
 
         loadMessageThread: function(msgId) {
@@ -1000,11 +1013,11 @@ module.exports = {
                     break;
                 }
                 messages.push({id: message.id, sendTime: message.sendTime,
-                    contents: message.contents, visible: false});
-                msgId = message.previousMessageId;
-                if (msgId == null) {
+                    contents: message.contents, from: message.from, visible: false});
+                if (message.previousMessageId == null || message.previousMessageId >= msgId) {
                     finished = true;
                 }
+                msgId = message.previousMessageId;
             }
             return messages.reverse();
         },
@@ -1017,7 +1030,7 @@ module.exports = {
             this.showFeedbackForm = true;
         },
 
-        acknowledgeMessage: function(msgId) {
+        dismissMessage: function(msgId) {
             if (this.showFeedbackForm) {
                 return;
             }
@@ -1031,7 +1044,7 @@ module.exports = {
                         this.showSpinner = false;
                         if (res) {
                             console.log("acknowledgement sent!");
-                            that.popMessage(msgId);
+                            that.popConversation(msgId);
                         } else {
                            that.errorTitle = 'Error acknowledging message';
                            that.errorBody = "";

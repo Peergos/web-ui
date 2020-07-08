@@ -9,7 +9,7 @@
                 <h2>Feedback</h2>
             </div>
             <div v-if="!isFeedback" >
-                <h2>Reply</h2>
+                <h2>Message</h2>
             </div>
         </div>
         <div class="modal-body">
@@ -28,8 +28,20 @@
                     <tbody>
                     <template v-for="message in messageThread" >
                         <tr @click="message.visible = !message.visible">
-                            <td><p>{{message.sendTime}}</p>
-                            </td>
+                                <div v-if="message.from == 'FromServer'">
+                                    <td>
+                                    <span v-if="!message.visible" class="fas fa-angle-up" />
+                                    <span v-if="message.visible" class="fas fa-angle-down" />
+                                        {{message.sendTime}}&nbsp;From Server
+                                    </td>
+                                </div>
+                                <div v-if="message.from == 'FromUser'">
+                                    <td>
+                                        <span v-if="!message.visible" class="fas fa-angle-up" />
+                                        <span v-if="message.visible" class="fas fa-angle-down" />
+                                        {{message.sendTime}}&nbsp;You replied
+                                    </td>
+                                </div>
                         </tr>
                         <tr v-if="message.visible">
                             <td>
@@ -43,10 +55,10 @@
                 </table>
                 </div>
                 <div v-if="isFeedback" >
-                    <textarea id="feedback-text" style="width:100%" rows=5 placeholder="Let us know what we can improve."></textarea>
+                    <textarea id="feedback-text" style="width:100%" rows=5 placeholder="Let us know what we can improve." maxlength="1000"></textarea>
                 </div>
                 <div v-if="!isFeedback" >
-                    <textarea id="feedback-text" style="width:100%" rows=5 placeholder="Reply..."></textarea>
+                    <textarea id="feedback-text" style="width:100%" rows=5 placeholder="Reply..." maxlength="1000"></textarea>
                 </div>
                 </p>
                 <p>

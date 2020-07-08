@@ -4,7 +4,7 @@ module.exports = {
         return {
         }
     },
-    props: ['id', 'date', 'contents', 'replyToMessage', 'acknowledgeMessage'],
+    props: ['id', 'date', 'contents', 'replyToMessage', 'dismissMessage'],
     created: function() {
     },
     methods: {
@@ -12,9 +12,9 @@ module.exports = {
             console.log("reply to message id: " + this.id);
             this.replyToMessage(this.id);
         },
-        closeMessage: function() {
+        close: function() {
             console.log("acknowledge message id: " + this.id);
-            this.acknowledgeMessage(this.id);
+            this.dismissMessage(this.id);
         }
     }
 }
