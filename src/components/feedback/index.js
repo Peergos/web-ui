@@ -4,12 +4,15 @@ module.exports = {
         return {
             showSpinner: false,
             isFeedback: false,
+            messageThread: []
         }
     },
-    props: ['closeFeedbackForm','messageId', 'sendFeedback', 'sendMessage'],
+    props: ['loadMessageThread', 'closeFeedbackForm','messageId', 'sendFeedback', 'sendMessage'],
     created: function() {
         if(this.messageId != null) {
             this.isFeedback = false;
+            this.messageThread = this.loadMessageThread(this.messageId);
+            this.messageThread[this.messageThread.length -1].visible = true;
         } else {
             this.isFeedback = true;
         }

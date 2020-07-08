@@ -18,12 +18,35 @@
                 <div v-if="isFeedback" >
         	      <h3>You can tell us here how we can improve, or you can chat with us on <a href="https://reddit.com/r/peergos" target="_blank" rel="noopener noreferrer">reddit</a> or send us an email: <a href="mailto:feedback@peergos.org">feedback@peergos.org</a></h3>
                 </div>
-                <p>
+                <div v-if="!isFeedback">
+                <table>
+                    <thead>
+                    <tr>
+                        <th></th>
+                    </tr>
+                    </thead>
+                    <tbody>
+                    <template v-for="message in messageThread" >
+                        <tr @click="message.visible = !message.visible">
+                            <td><p>{{message.sendTime}}</p>
+                            </td>
+                        </tr>
+                        <tr v-if="message.visible">
+                            <td>
+                                <div class="accordian-body">
+                                    <textarea readonly style="width:100%" rows=2>{{message.contents}}</textarea>
+                                </div>
+                            </td>
+                        </tr>
+                    </template>
+                    </tbody>
+                </table>
+                </div>
                 <div v-if="isFeedback" >
-                    <textarea id="feedback-text" style="width:100%" rows=10 placeholder="Let us know what we can improve."></textarea>
+                    <textarea id="feedback-text" style="width:100%" rows=5 placeholder="Let us know what we can improve."></textarea>
                 </div>
                 <div v-if="!isFeedback" >
-                    <textarea id="feedback-text" style="width:100%" rows=10 placeholder="Reply..."></textarea>
+                    <textarea id="feedback-text" style="width:100%" rows=5 placeholder="Reply..."></textarea>
                 </div>
                 </p>
                 <p>

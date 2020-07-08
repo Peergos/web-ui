@@ -208,7 +208,8 @@ module.exports = {
             var arr = msgs.toArray();
             arr.forEach(function(message){
                 messages.push({id: message.id(), sendTime: message.getSendTime().toString(),
-                    contents: message.getContents(), msg: message});
+                    contents: message.getContents(), previousMessageId: message.getPreviousMessageId(),
+                    msg: message});
             });
             if(messages.length > 0) {
                 Vue.nextTick(function() {
@@ -985,6 +986,27 @@ module.exports = {
             this.showFeedbackForm = false;
             this.messageId = null;
             this.popMessage(submittedMsgId);
+        },
+
+        loadMessageThread: function(msgId) {
+            let messages = [];
+            if (msgId == null) {
+                return messages;
+            }
+            var finished = false;
+            while (!finished) {
+                let message = this.getMessage(msgId);
+                if (message == null) {
+                    break;
+                }
+                messages.push({id: message.id, sendTime: message.sendTime,
+                    contents: message.contents, visible: false});
+                msgId = message.previousMessageId;
+                if (msgId == null) {
+                    finished = true;
+                }
+            }
+            return messages.reverse();
         },
 
         replyToMessage: function(msgId) {
