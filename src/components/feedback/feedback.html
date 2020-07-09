@@ -45,8 +45,8 @@
                         </tr>
                         <tr v-if="message.visible">
                             <td>
-                                <div class="accordian-body">
-                                    <textarea readonly style="width:100%" rows=2>{{message.contents}}</textarea>
+                                <div>
+                                    <pre style="background-color: #ffffff;">{{message.contents}}</pre>
                                 </div>
                             </td>
                         </tr>
@@ -54,6 +54,7 @@
                     </tbody>
                 </table>
                 </div>
+                <p>
                 <div v-if="isFeedback" >
                     <textarea id="feedback-text" style="width:100%" rows=5 placeholder="Let us know what we can improve." maxlength="1000"></textarea>
                 </div>
