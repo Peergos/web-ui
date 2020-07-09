@@ -45,8 +45,11 @@
                         </tr>
                         <tr v-if="message.visible">
                             <td>
-                                <div>
+                                <div v-if="message.from == 'FromUser'">
                                     <pre style="background-color: #ffffff;">{{message.contents}}</pre>
+                                </div>
+                                <div v-if="message.from != 'FromUser'">
+                                    <pre>{{message.contents}}</pre>
                                 </div>
                             </td>
                         </tr>
