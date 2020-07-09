@@ -210,17 +210,14 @@ module.exports = {
             conv.forEach(function(conversation){
                 let arr = conversation.messages.toArray();
                 let lastMessage = arr[arr.length - 1];
-                let auth = lastMessage.getAuthor();
-                if(lastMessage.getAuthor() == "FromServer" && !lastMessage.isDismissed) {
-                    arr.forEach(function(message){
-                        that.messageMonitors.push({id: message.id(), sendTime: message.getSendTime().toString(),
-                            contents: message.getContents(), previousMessageId: message.getPreviousMessageId(),
-                            from: message.getAuthor(), msg: message});
-                    });
-                    allConversations.push({id: lastMessage.id(), sendTime: lastMessage.getSendTime().toString(),
-                        contents: lastMessage.getContents(), previousMessageId: lastMessage.getPreviousMessageId(),
-                        from: lastMessage.getAuthor(), msg: lastMessage});
-                }
+                allConversations.push({id: lastMessage.id(), sendTime: lastMessage.getSendTime().toString(),
+                    contents: lastMessage.getContents(), previousMessageId: lastMessage.getPreviousMessageId(),
+                    from: lastMessage.getAuthor(), msg: lastMessage});
+                arr.forEach(function(message){
+                    that.messageMonitors.push({id: message.id(), sendTime: message.getSendTime().toString(),
+                        contents: message.getContents(), previousMessageId: message.getPreviousMessageId(),
+                        from: message.getAuthor(), msg: message});
+                });
             });
             if(allConversations.length > 0) {
                 Vue.nextTick(function() {
