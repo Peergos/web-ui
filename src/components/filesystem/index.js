@@ -199,9 +199,9 @@ module.exports = {
             }
         });
             }
-        this.showPendingMessages();
+        this.showPendingServerMessages();
 	},
-	showPendingMessages: function() {
+	showPendingServerMessages: function() {
         let context = this.getContext();
         let that = this;
         context.getServerConversations().thenApply(function(conversations){
@@ -945,7 +945,8 @@ module.exports = {
         sendFeedback: function(contents) {
             this.showSpinner = true;
             let that = this;
-            var trimmedContents = contents.length > 1000 ? contents.substring(0, 1000) : contents;
+            var maxContextSize = peergos.shared.user.ServerMessage.MAX_CONTENT_SIZE;
+            var trimmedContents = contents.length > maxContextSize ? contents.substring(0, maxContextSize) : contents;
             this.context.sendFeedback(trimmedContents)
                 .thenApply(function(res) {
                     that.showSpinner = false;
@@ -970,7 +971,8 @@ module.exports = {
             let message = this.getMessage(msgId);
             if (message != null) {
                 this.showSpinner = true;
-                var trimmedContents = contents.length > 1000 ? contents.substring(0, 1000) : contents;
+                var maxContextSize = peergos.shared.user.ServerMessage.MAX_CONTENT_SIZE;
+                var trimmedContents = contents.length > maxContextSize ? contents.substring(0, maxContextSize) : contents;
                 this.context.sendReply(message.msg, trimmedContents)
                     .thenApply(function(res) {
                         that.showSpinner = false;
