@@ -25,42 +25,28 @@ function fragmentToProps(fragment) {
 function getProm(url) {
     console.log("getProm " + url);
     var future = peergos.shared.util.Futures.incomplete();
-    new Promise(function(resolve, reject) {
-	var req = new XMLHttpRequest();
-	req.open('GET', url);
-	req.responseType = 'arraybuffer';
-	
-	req.onload = function() {
-	    console.log("http get returned retrieving " + url);
-            // This is called even on 404 etc
-            // so check the status
-            if (req.status == 200) {
-		resolve(new Int8Array(req.response));
-            } else if (req.status == 404) {
-		reject(Error("File not found"));
-            } else {
-		reject(Error(req.getResponseHeader("Trailer")));
-            }
-	};
-	
-	req.onerror = function(e) {
-            reject(Error("Network Error"));
-	};
-
-	try {
-	    req.send();
-	} catch (e) {
-	    reject("Error");
-	}
-    }).then(function(result, err) {
-        if (err != null)
-            future.completeExceptionally(java.lang.Throwable.of(err));
-        else {
-            future.complete(convertToByteArray(result));
-	}
-    }, function(err) {
-	future.completeExceptionally(java.lang.Throwable.of(err)); 
-    });
+    var req = new XMLHttpRequest();
+    req.open('GET', url);
+    req.responseType = 'arraybuffer';
+    
+    req.onload = function() {
+	console.log("http get returned retrieving " + url);
+        // This is called even on 404 etc
+        // so check the status
+        if (req.status == 200) {
+	    future.complete(convertToByteArray(new Int8Array(req.response)));
+        } else if (req.status == 404) {
+	    future.completeExceptionally(new peergos.shared.storage.HttpFileNotFoundException());
+        } else {
+	    future.completeExceptionally(Error(req.getResponseHeader("Trailer")));
+        }
+    };
+    
+    req.onerror = function(e) {
+        future.completeExceptionally(Error("Network Error"));
+    };
+    
+    req.send();
     return future;
 }
 
