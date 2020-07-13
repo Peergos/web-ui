@@ -36,8 +36,9 @@ function getProm(url) {
             // so check the status
             if (req.status == 200) {
 		resolve(new Int8Array(req.response));
-            }
-            else {
+            } else if (req.status == 404) {
+		reject(Error("File not found"));
+            } else {
 		reject(Error(req.getResponseHeader("Trailer")));
             }
 	};
@@ -45,8 +46,12 @@ function getProm(url) {
 	req.onerror = function(e) {
             reject(Error("Network Error"));
 	};
-	
-	req.send();
+
+	try {
+	    req.send();
+	} catch (e) {
+	    reject("Error");
+	}
     }).then(function(result, err) {
         if (err != null)
             future.completeExceptionally(java.lang.Throwable.of(err));
@@ -75,7 +80,11 @@ function postProm(url, data) {
 		resolve(new Int8Array(req.response));
             }
             else {
-		reject(req.getResponseHeader("Trailer"));
+		try {
+		    reject(req.getResponseHeader("Trailer"));
+		} catch (e) {
+		    reject("Error");
+		}
             }
 	};
 	
@@ -111,7 +120,11 @@ function postMultipartProm(url, dataArrays) {
 		resolve(new Int8Array(req.response));
             }
             else {
-		reject(req.getResponseHeader("Trailer"));
+		try {
+		    reject(req.getResponseHeader("Trailer"));
+		} catch (e) {
+		    reject("Error");
+		}
             }
 	};
 	
