@@ -5,12 +5,7 @@
     <div class="modal-container" @click.stop style="height:70%;overflow-y:auto">
         <span @click="close" class="close">&times;</span>
         <div class="modal-header">
-            <div v-if="isFeedback" >
-                <h2>Feedback</h2>
-            </div>
-            <div v-if="!isFeedback" >
-                <h2>Message</h2>
-            </div>
+                <h2>{{title}}</h2>
         </div>
         <div class="modal-body">
             <spinner v-if="showSpinner"></spinner>
@@ -58,14 +53,8 @@
                 </table>
                 </div>
                 <p>
-                <div v-if="isFeedback" >
-                    <textarea id="feedback-text" style="width:100%" rows=5 placeholder="Let us know what we can improve." maxlength="1000"></textarea>
-                </div>
-                <div v-if="!isFeedback" >
-                    <textarea id="feedback-text" style="width:100%" rows=5 placeholder="Reply..." maxlength="1000"></textarea>
-                </div>
+                    <textarea id="feedback-text" style="width:100%" rows=5 :placeholder="textAreaPlaceholder" maxlength="1000"></textarea>
                 </p>
-                <p>
                 <button class="btn btn-success" 
                         style = "width:100%"
                     @click="submitFeedback()">

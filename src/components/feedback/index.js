@@ -4,17 +4,23 @@ module.exports = {
         return {
             showSpinner: false,
             isFeedback: false,
-            messageThread: []
+            messageThread: [],
+            title: "",
+            textAreaPlaceholder: "",
         }
     },
     props: ['loadMessageThread', 'closeFeedbackForm','messageId', 'sendFeedback', 'sendMessage'],
     created: function() {
         if(this.messageId != null) {
             this.isFeedback = false;
+            this.title = "Message";
+            this.textAreaPlaceholder = "Reply...";
             this.messageThread = this.loadMessageThread(this.messageId);
             this.messageThread[this.messageThread.length -1].visible = true;
         } else {
             this.isFeedback = true;
+            this.title = "Feedback";
+            this.textAreaPlaceholder = "Let us know what we can improve.";
         }
     },
     methods: {
