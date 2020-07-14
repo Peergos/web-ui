@@ -69,7 +69,7 @@ function postProm(url, data) {
 		try {
 		    reject(req.getResponseHeader("Trailer"));
 		} catch (e) {
-		    reject("Error");
+		    reject(e);
 		}
             }
 	};
