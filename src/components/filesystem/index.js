@@ -570,7 +570,9 @@ module.exports = {
                 }
             }
             let allFiles = [];
-            this.getEntries(allItems, 0, this, allFiles);
+            if (allItems.length > 0) {
+                this.getEntries(allItems, 0, this, allFiles);
+            }
         },
         getEntries: function(items, itemIndex, that, allFiles) {
                 if (itemIndex < items.length) {
