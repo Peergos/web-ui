@@ -12,6 +12,7 @@ module.exports = {
     props: ['context', 'file', 'messages'],
     created: function() {
         this.currentFile = this.file;
+        this.isFileWritable = this.file.isWritable();
         this.startListener();
     },
     methods: {
@@ -165,14 +166,9 @@ module.exports = {
     },
     close: function () {
         this.$emit("hide-code-editor");
-    }
     },
-    computed: {
-        isWritable: function() {
-            if (this.isFileWritable == null) {
-                this.isFileWritable = this.currentFile.isWritable();
-	        }
-            return this.isFileWritable;
-	    }
+    isWritable: function() {
+        return this.isFileWritable;
+    }
     }
 }
