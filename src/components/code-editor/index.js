@@ -5,12 +5,14 @@ module.exports = {
             showSpinner: false,
 	        expectingSave: false,
 	        saving: false,
-	        currentFile: null
+	        currentFile: null,
+	        isFileWritable: null
         }
     },
     props: ['context', 'file', 'messages'],
     created: function() {
         this.currentFile = this.file;
+        this.isFileWritable = this.file.isWritable();
         this.startListener();
     },
     methods: {
@@ -106,7 +108,7 @@ module.exports = {
 		    modes = ["yaml"];
 		    mimeType = "text/x-yaml";
 	    }
-	    var readOnly = ! this.currentFile.isWritable();
+	    var readOnly = ! this.isFileWritable;
 
 	    this.currentFile.getInputStream(this.context.network, this.context.crypto, props.sizeHigh(), props.sizeLow(), function(read){})
 	        .thenCompose(function(reader) {
@@ -164,11 +166,9 @@ module.exports = {
     },
     close: function () {
         this.$emit("hide-code-editor");
-    }
     },
-    computed: {
-        isWritable: function() {
-	        return this.currentFile.isWritable();
-	    }
+    isWritable: function() {
+        return this.isFileWritable;
+    }
     }
 }
