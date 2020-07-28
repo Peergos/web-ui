@@ -21,6 +21,7 @@ module.exports = {
             modalLinks:[],
 	    showTour: false,
             showShare:false,
+            sharedWithState: null,
             sharedWithData:{"edit_shared_with_users":[],"read_shared_with_users":[]},
             forceSharedWithUpdate:0,
             forceSharedRefreshWithUpdate:0,
@@ -339,15 +340,20 @@ module.exports = {
             if (current == null)
                 return Promise.resolve([]);
             var that = this;
-            current.getChildren(that.getContext().crypto.hasher, that.getContext().network).thenApply(function(children){
-                var arr = children.toArray();
-                that.showSpinner = false;
-                that.files = arr.filter(function(f){
-                    return !f.getFileProperties().isHidden;
+            this.getContext().getDirectorySharingState(this.path).thenCompose(function(updatedSharedWithState) {
+                current.getChildren(that.getContext().crypto.hasher, that.getContext().network).thenApply(function(children){
+                    that.sharedWithState = updatedSharedWithState;
+                    var arr = children.toArray();
+                    that.showSpinner = false;
+                    that.files = arr.filter(function(f){
+                        return !f.getFileProperties().isHidden;
+                    });
+                    if (refreshSharedWith) {
+                        that.sharedWithDataUpdate();
+                    }
+                }).exceptionally(function(throwable) {
+                    throwable.printStackTrace();
                 });
-                if (refreshSharedWith) {
-                    that.sharedWithDataUpdate();
-                }
             }).exceptionally(function(throwable) {
                 throwable.printStackTrace();
             });
@@ -416,9 +422,9 @@ module.exports = {
 
             let latestFile = this.files.filter(f => f.getName() == filename)[0];
             this.selectedFiles = [latestFile];
-            var allSharedWithUsernames = context.sharedWith(latestFile);
-            var read_usernames = allSharedWithUsernames.left.toArray([]);
-            var edit_usernames = allSharedWithUsernames.right.toArray([]);
+            let fileSharedWithState = this.sharedWithState.get(filename);
+            let read_usernames = fileSharedWithState.readAccess.toArray([]);
+            let edit_usernames = fileSharedWithState.writeAccess.toArray([]);
             this.sharedWithData = {read_shared_with_users:read_usernames, edit_shared_with_users:edit_usernames};
         },
         getContext: function() {
@@ -990,8 +996,10 @@ module.exports = {
 
                 var context = this.getContext();
                 if (clipboard.op == "cut") {
-                    console.log("paste-cut "+clipboard.fileTreeNode.getFileProperties().name + " -> "+target.getFileProperties().name);
-                    clipboard.fileTreeNode.moveTo(target, clipboard.parent, context)
+                    let name = clipboard.fileTreeNode.getFileProperties().name;
+                    console.log("paste-cut "+ name + " -> "+target.getFileProperties().name);
+                    let filePath = peergos.shared.user.UserContext.toPath(that.path, name);
+                    clipboard.fileTreeNode.moveTo(target, clipboard.parent, filePath, context)
                         .thenApply(function() {
                             that.currentDirChanged();
 			                that.onUpdateCompletion.push(function() {
@@ -1034,9 +1042,9 @@ module.exports = {
             var filename = file.getFileProperties().name;
             let latestFile = this.files.filter(f => f.getName() == filename)[0];
             this.selectedFiles = [latestFile];
-            var allSharedWithUsernames = this.getContext().sharedWith(latestFile);
-            var read_usernames = allSharedWithUsernames.left.toArray([]);
-            var edit_usernames = allSharedWithUsernames.right.toArray([]);
+            let fileSharedWithState = this.sharedWithState.get(filename);
+            let read_usernames = fileSharedWithState.readAccess.toArray([]);
+            let edit_usernames = fileSharedWithState.writeAccess.toArray([]);
             this.sharedWithData = {read_shared_with_users:read_usernames, edit_shared_with_users:edit_usernames};
             this.showShare = true;
         },
@@ -1271,7 +1279,8 @@ module.exports = {
                 if (clipboard.op == "cut") {
         		    var name = clipboard.fileTreeNode.getFileProperties().name;
                     console.log("drop-cut " + name + " -> "+target.getFileProperties().name);
-                    clipboard.fileTreeNode.moveTo(target, clipboard.parent, context)
+                    let filePath = peergos.shared.user.UserContext.toPath(that.path, name);
+                    clipboard.fileTreeNode.moveTo(target, clipboard.parent, filePath, context)
                     .thenApply(function() {
                         that.currentDirChanged();
 			            that.onUpdateCompletion.push(function() {
@@ -1342,7 +1351,6 @@ module.exports = {
                 return;
             if (this.selectedFiles.length > 1)
                 throw "Can't rename more than one file at once!";
-
             let file = this.selectedFiles[0];
             let fileProps = file.getFileProperties();
             let old_name =  fileProps.name
@@ -1365,7 +1373,8 @@ module.exports = {
                     return;
                 that.showSpinner = true;
                 console.log("Renaming " + old_name + "to "+ newName);
-                file.rename(newName, that.currentDir, that.getContext())
+                let filePath = peergos.shared.user.UserContext.toPath(that.path, old_name);
+                file.rename(newName, that.currentDir, filePath, that.getContext())
                     .thenApply(function(parent){
 			            that.currentDir = parent;
 			            that.updateFiles();
@@ -1399,10 +1408,12 @@ module.exports = {
         },
 
 	deleteOne: function(file, parent, context) {
-	    console.log("deleting: " + file.getFileProperties().name);
+	    let name = file.getFileProperties().name;
+	    console.log("deleting: " + name);
             this.showSpinner = true;
             var that = this;
-            file.remove(parent, context)
+            let filePath = peergos.shared.user.UserContext.toPath(that.path, name);
+            file.remove(parent, filePath, context)
                 .thenApply(function(b){
                     that.currentDirChanged();
                     that.showSpinner = false;
@@ -1445,10 +1456,11 @@ module.exports = {
         },
 
         isShared: function(file) {
-
             if (this.currentDir == null)
                 return false;
-            return file.isShared(this.context);
+            if (this.sharedWithState == null)
+                return false;
+            return this.sharedWithState.isShared(file.getFileProperties().name);
         },
         closeMenu: function() {
             this.viewMenu = false;
@@ -1573,7 +1585,7 @@ module.exports = {
             if (this.currentDir == null)
                 return false;
 
-            if (typeof(this.clipboard) ==  undefined || this.clipboard.op == null || typeof(this.clipboard.op) == "undefined")
+            if (typeof(this.clipboard) ==  undefined || this.clipboard == null || this.clipboard.op == null || typeof(this.clipboard.op) == "undefined")
                 return false;
 
             if (this.selectedFiles.length != 1)
