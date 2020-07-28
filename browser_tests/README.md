@@ -3,17 +3,22 @@
 Runs selenium-based tests against a local Peergos web-server.
 
 ### requirements
-* Python 2.7
-* Chrome (or Chromium) web browser
+* Python 3.6+
+* pip3
+* Chrome 84 (or Chromium) web browser
+NB: *it has to be chrome84 for the web-driver to work*
 > sudo apt-get install python-setuptools
 #####  chromedriver
 taken from https://sites.google.com/a/chromium.org/chromedriver/downloads
 
-### install dependencies 
-> sudo python setup.py install
+### install dependencies and python  v-env
+>  . setup_browser_tests.sh
 
 ### start server and run tests
-> ./start_and_test_server.sh 
+##### with  visible browser
+> ./run_browser_tests.sh 0 || true 
+##### headlessly 
+> ./run_browser_tests.sh || true 
 
 
 ### test cases (X = done)

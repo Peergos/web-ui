@@ -2,6 +2,7 @@ import pytest
 from controllers import *
 
 
+@pytest.mark.skip
 def test_send_follow_request_to_nonexistent_user_fails():
     users = [randomUsername(), randomUsername()]
     sender, receiver = users
@@ -13,6 +14,7 @@ def test_send_follow_request_to_nonexistent_user_fails():
         assert len(follow_request_sent) == 0
 
 
+@pytest.mark.skip
 def _send_follow_request():
     # signup two users
     sender, receiver = randomUsername(), randomUsername()
@@ -28,6 +30,7 @@ def _send_follow_request():
     return sender, receiver
 
 
+@pytest.mark.skip
 def test_send_and_accept_follow_request():
     sender, receiver = _send_follow_request()
 
@@ -55,6 +58,7 @@ def test_send_and_accept_follow_request():
     assert followers == []
 
 
+@pytest.mark.skip
 def test_send_and_deny_follow_request():
     sender, receiver = _send_follow_request()
 
@@ -73,6 +77,7 @@ def test_send_and_deny_follow_request():
             assert followers == []
 
 
+@pytest.mark.skip
 def test_send_and_accept_and_reciprocate_follow_request():
     sender, receiver = _send_follow_request()
 
