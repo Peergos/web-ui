@@ -340,9 +340,24 @@ module.exports = {
             if (current == null)
                 return Promise.resolve([]);
             var that = this;
-            this.getContext().getDirectorySharingState(this.path).thenCompose(function(updatedSharedWithState) {
+            let context = this.getContext();
+            let getSharingState = function(callback) {
+                if(that.path.length == 0) {
+                    callback(null);
+                } else {
+                    let directoryPath = peergos.shared.user.UserContext.directoryToPath(that.path);
+                    console.log("JS kev-directoryPath=" + directoryPath.toString());
+                    context.getDirectorySharingState(directoryPath).thenApply(function(updatedSharedWithState) {
+                        that.sharedWithState = updatedSharedWithState;
+                        callback();
+                    }).exceptionally(function(throwable) {
+                        throwable.printStackTrace();
+                        callback(null);
+                    });
+                }
+            };
+            getSharingState(function() {
                 current.getChildren(that.getContext().crypto.hasher, that.getContext().network).thenApply(function(children){
-                    that.sharedWithState = updatedSharedWithState;
                     var arr = children.toArray();
                     that.showSpinner = false;
                     that.files = arr.filter(function(f){
@@ -354,8 +369,6 @@ module.exports = {
                 }).exceptionally(function(throwable) {
                     throwable.printStackTrace();
                 });
-            }).exceptionally(function(throwable) {
-                throwable.printStackTrace();
             });
         },
 
