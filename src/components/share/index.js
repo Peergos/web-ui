@@ -107,6 +107,7 @@ module.exports = {
         this.showSpinner = true;
         let filePath = peergos.shared.user.UserContext.toPath(this.path, this.files[0].getFileProperties().name);
 		this.context.sharedWith(filePath).thenApply(function(fileSharedWithState) {
+            that.showSpinner = false;
             let read_usernames = fileSharedWithState.readAccess.toArray([]);
             let edit_usernames = fileSharedWithState.writeAccess.toArray([]);
 	        that.shareFileWith(sharedWithAccess, read_usernames, edit_usernames);
@@ -140,6 +141,7 @@ module.exports = {
         }
         var filename = that.files[0].getFileProperties().name;
         var filepath = "/" + that.path.join('/') + "/" + filename;
+        this.showSpinner = true;
         if (sharedWithAccess == "Read") {
             that.context.shareReadAccessWith(that.files[0], filepath, usersToShareWith)
             .thenApply(function(b) {
