@@ -343,7 +343,7 @@ module.exports = {
             let context = this.getContext();
             let getSharingState = function(callback) {
                 if(that.path.length == 0) {
-                    callback(null);
+                    callback();
                 } else {
                     let directoryPath = peergos.shared.user.UserContext.directoryToPath(that.path);
                     console.log("JS kev-directoryPath=" + directoryPath.toString());
@@ -352,7 +352,6 @@ module.exports = {
                         callback();
                     }).exceptionally(function(throwable) {
                         throwable.printStackTrace();
-                        callback(null);
                     });
                 }
             };
