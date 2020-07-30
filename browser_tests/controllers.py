@@ -12,6 +12,7 @@ import random
 from selenium import webdriver
 from selenium.webdriver.common.keys import Keys
 from selenium.webdriver.common.action_chains import ActionChains
+from selenium.webdriver.common.desired_capabilities import DesiredCapabilities    
 
 # get url from environment, default to localhost:8000
 PEERGOS_URL = os.environ.get("PEERGOS_URL", "http://localhost:8000")
@@ -64,7 +65,12 @@ def get_driver(download_dir_path: str):
       "download.directory_upgrade": True,
       "safebrowsing.enabled": False, 
     })
-    driver = webdriver.Chrome("./chromedriver", chrome_options=options)
+
+    # needed to capture console.log
+    desired = DesiredCapabilities.CHROME
+    desired ['goog:loggingPrefs'] = { 'browser':'ALL' }
+
+    driver = webdriver.Chrome("./chromedriver", chrome_options=options, desired_capabilities=desired)
     driver.download_path = download_dir_path
     return driver
 
@@ -116,7 +122,7 @@ def login_to_homedir(username, password):
 
 
 @contextmanager
-def driver_context(url=PEERGOS_URL, screenshot_file="screenshot.png", download_dir_path=None):
+def driver_context(url=PEERGOS_URL, screenshot_file="screenshot.png", download_dir_path=None, print_browser_console_log_on_failure=True):
     """
     context-manager that prints exception info. and creates a screenshot
     on error.
@@ -135,8 +141,13 @@ def driver_context(url=PEERGOS_URL, screenshot_file="screenshot.png", download_d
     try:
         yield driver
     except Exception as e:
-        print(sys.exc_info())
+        print(f"Screenshot of browser on latest failure at {screenshot_file}")
         driver.get_screenshot_as_file(screenshot_file)
+        if print_browser_console_log_on_failure:
+            print("*"*20)
+            print("Browser console log")
+            print("*"*20)
+            print('\n'.join([l['message'] for l in driver.get_log("browser")]))
         raise e
     finally:
         driver.quit()
