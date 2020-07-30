@@ -3,21 +3,58 @@
     <meta http-equiv="content-type" content="text/html; charset=utf-8" />
     <div style="height:30%"></div>
     <div class="modal-container" @click.stop style="height:70%;overflow-y:auto">
+        <span @click="close" class="close">&times;</span>
         <div class="modal-header">
-            <h2>Feedback</h2>
+                <h2>{{title}}</h2>
         </div>
         <div class="modal-body">
             <spinner v-if="showSpinner"></spinner>
             <div id="feedback-main">
-	      <h3>You can tell us here how we can improve, or you can chat with us on <a href="https://reddit.com/r/peergos" target="_blank" rel="noopener noreferrer">reddit</a> or send us an email: <a href="mailto:feedback@peergos.org">feedback@peergos.org</a>
-		<h3/>
+                <div v-if="isFeedback" >
+        	      <h3>You can tell us here how we can improve, or you can chat with us on <a href="https://reddit.com/r/peergos" target="_blank" rel="noopener noreferrer">reddit</a> or send us an email: <a href="mailto:feedback@peergos.org">feedback@peergos.org</a></h3>
+                </div>
+                <div v-if="!isFeedback">
+                <table style="width: 100%; font-size: 1.0em;">
+                    <thead>
+                    <tr>
+                        <th></th>
+                    </tr>
+                    </thead>
+                    <tbody>
+                    <template v-for="message in messageThread" >
+                        <tr @click="message.visible = !message.visible">
+                                <div v-if="message.from == 'FromServer'">
+                                    <td>
+                                    <span v-if="!message.visible" class="fas fa-angle-up" />
+                                    <span v-if="message.visible" class="fas fa-angle-down" />
+                                        {{message.sendTime}}&nbsp;From Server
+                                    </td>
+                                </div>
+                                <div v-if="message.from == 'FromUser'">
+                                    <td>
+                                        <span v-if="!message.visible" class="fas fa-angle-up" />
+                                        <span v-if="message.visible" class="fas fa-angle-down" />
+                                        {{message.sendTime}}&nbsp;You replied
+                                    </td>
+                                </div>
+                        </tr>
+                        <tr v-if="message.visible">
+                            <td>
+                                <div v-if="message.from == 'FromUser'">
+                                    <pre style="background-color: #ffffff;">{{message.contents}}</pre>
+                                </div>
+                                <div v-if="message.from != 'FromUser'">
+                                    <pre>{{message.contents}}</pre>
+                                </div>
+                            </td>
+                        </tr>
+                    </template>
+                    </tbody>
+                </table>
+                </div>
                 <p>
-                <textarea id="feedback-text"
-                          style="width:100%"
-                          rows=10
-                     placeholder="Let us know what we can improve."></textarea>
+                    <textarea id="feedback-text" style="width:100%" rows=5 :placeholder="textAreaPlaceholder" maxlength="1000"></textarea>
                 </p>
-                <p>
                 <button class="btn btn-success" 
                         style = "width:100%"
                     @click="submitFeedback()">

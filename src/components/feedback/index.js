@@ -2,37 +2,40 @@ module.exports = {
     template: require('feedback.html'),
     data: function() {
         return {
-        showSpinner: false
+            showSpinner: false,
+            isFeedback: false,
+            messageThread: [],
+            title: "",
+            textAreaPlaceholder: "",
         }
     },
-    props: ['context', 'messages'],
+    props: ['loadMessageThread', 'closeFeedbackForm','messageId', 'sendFeedback', 'sendMessage'],
+    created: function() {
+        if(this.messageId != null) {
+            this.isFeedback = false;
+            this.title = "Message";
+            this.textAreaPlaceholder = "Reply...";
+            this.messageThread = this.loadMessageThread(this.messageId);
+            this.messageThread[this.messageThread.length -1].visible = true;
+        } else {
+            this.isFeedback = true;
+            this.title = "Feedback";
+            this.textAreaPlaceholder = "Let us know what we can improve.";
+        }
+    },
     methods: {
         close: function () {
-            this.$emit("hide-feedback");
+            this.closeFeedbackForm(this.messageId);
         },
-        showMessage: function(title, body) {
-            this.messages.push({
-                title: title,
-                body: body,
-                show: true
-            });
-        },
-        submitFeedback: function(fb) {
-            var formFeedback = document.getElementById("feedback-text").value;
-            var that = this;
-            console.log("Feedback to submit: " + formFeedback);
-            this.showSpinner = true;
-            this.context.submitFeedback(formFeedback)
-                .thenApply(function(success) {
-                    that.showMessage("Feedback submitted!", "Your feedback has been added to a folder shared with Peergos developers.");
-                    that.showSpinner = false;
-                    console.log("Feedback submitted!");
-                    that.$emit("external-change");
-                });
-        },
-        getContext: function(){
-            var x = this.contextUpdates;
-            return this.context;
+        submitFeedback: function() {
+            var contents = document.getElementById("feedback-text").value;
+            if (contents.length > 0) {
+                if (this.isFeedback) {
+                    this.sendFeedback(contents);
+                } else {
+                    this.sendMessage(this.messageId, contents);
+                }
+            }
         }
     }
 }

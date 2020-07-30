@@ -276,6 +276,23 @@ table {
   padding: 10px;
 }
 
+.messageholder {
+  z-index: 9998;
+  overflow-y: auto;
+}
+
+.messagebar {
+  padding: 10px;
+  background-color: #fff;
+  transition: opacity .3s ease;
+  border-radius: 2px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, .33) inset;
+}
+
+.messagecontainer {
+  padding: 2px;
+}
+
 .qrcode-container {
     position: relative;
     width: 400px;

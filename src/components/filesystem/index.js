@@ -51,7 +51,10 @@ module.exports = {
                 following: []
             },
             messages: [],
+            messageId: null,
             progressMonitors: [],
+            messageMonitors: [],
+            conversationMonitors: [],
             clipboardAction:"",
             forceUpdate:0,
             externalChange:0,
@@ -73,7 +76,7 @@ module.exports = {
             errorTitle:'',
             errorBody:'',
             showError:false,
-	    hideDonate: false,
+            hideDonate: false,
             showSpinner: true,
             spinnerMessage: '',
             onUpdateCompletion: [] // methods to invoke when current dir is next refreshed
@@ -82,9 +85,9 @@ module.exports = {
     props: ["context", "newsignup", "initPath", "opengallery", "initiateDownload"],
     created: function() {
         console.debug('Filesystem module created!');
-	this.showTour = this.newsignup;
-	this.init();
-	window.onhashchange = this.onUrlChange;
+        this.showTour = this.newsignup;
+        this.init();
+        window.onhashchange = this.onUrlChange;
     },
     watch: {
         // manually encode currentDir dependencies to get around infinite dependency chain issues with async-computed methods
@@ -193,14 +196,43 @@ module.exports = {
             }
         });
             }
+        this.showPendingServerMessages();
 	},
-	
-        processPending: function() {
-            for (var i=0; i < this.onUpdateCompletion.length; i++) {
-                this.onUpdateCompletion[i].call();
+	showPendingServerMessages: function() {
+        let context = this.getContext();
+        let that = this;
+        context.getServerConversations().thenApply(function(conversations){
+            let allConversations = [];
+            let conv = conversations.toArray();
+            conv.forEach(function(conversation){
+                let arr = conversation.messages.toArray();
+                let lastMessage = arr[arr.length - 1];
+                allConversations.push({id: lastMessage.id(), sendTime: lastMessage.getSendTime().toString(),
+                    contents: lastMessage.getContents(), previousMessageId: lastMessage.getPreviousMessageId(),
+                    from: lastMessage.getAuthor(), msg: lastMessage});
+                arr.forEach(function(message){
+                    that.messageMonitors.push({id: message.id(), sendTime: message.getSendTime().toString(),
+                        contents: message.getContents(), previousMessageId: message.getPreviousMessageId(),
+                        from: message.getAuthor(), msg: message});
+                });
+            });
+            if(allConversations.length > 0) {
+                Vue.nextTick(function() {
+                    allConversations.forEach(function(msg){
+                        that.conversationMonitors.push(msg);
+                    });
+                });
             }
-            this.onUpdateCompletion = [];
-        },
+        }).exceptionally(function(throwable) {
+            throwable.printStackTrace();
+        });
+	},
+    processPending: function() {
+        for (var i=0; i < this.onUpdateCompletion.length; i++) {
+            this.onUpdateCompletion[i].call();
+        }
+        this.onUpdateCompletion = [];
+    },
 
 	roundToDisplay: function(x) {
 	    return Math.round(x * 100)/100;
@@ -893,6 +925,146 @@ module.exports = {
             this.showFeedbackForm = !this.showFeedbackForm;
         },
 
+        popConversation: function(msgId) {
+            if (msgId != null) {
+                for (var i=0; i < this.conversationMonitors.length; i++ ) {
+                    let currentMessage = this.conversationMonitors[i];
+                    if(currentMessage.id == msgId) {
+                        this.conversationMonitors.splice(i, 1);
+                        break;
+                    }
+                }
+            }
+        },
+        getMessage: function(msgId) {
+            if (msgId != null) {
+                //linear scan
+                for (var i=0; i < this.messageMonitors.length; i++ ) {
+                    let currentMessage = this.messageMonitors[i];
+                    if(currentMessage.id == msgId) {
+                        return this.messageMonitors[i];
+                    }
+                }
+            }
+            return null;
+        },
+        sendFeedback: function(contents) {
+            this.showSpinner = true;
+            let that = this;
+            var maxContextSize = peergos.shared.user.ServerMessage.MAX_CONTENT_SIZE;
+            var trimmedContents = contents.length > maxContextSize ? contents.substring(0, maxContextSize) : contents;
+            this.context.sendFeedback(trimmedContents)
+                .thenApply(function(res) {
+                    that.showSpinner = false;
+                    if (res) {
+                        console.log("Feedback submitted!");
+                        that.closeFeedbackForm(null, false);
+                    } else {
+                        that.errorTitle = 'Error sending feedback';
+                        that.errorBody = "";
+                        that.showError = true;
+                    }
+            }).exceptionally(function(throwable) {
+                that.errorTitle = 'Error sending feedback';
+                that.errorBody = throwable.getMessage();
+                that.showError = true;
+                that.showSpinner = false;
+            });
+        },
+
+        sendMessage: function(msgId, contents) {
+            let that = this;
+            let message = this.getMessage(msgId);
+            if (message != null) {
+                this.showSpinner = true;
+                var maxContextSize = peergos.shared.user.ServerMessage.MAX_CONTENT_SIZE;
+                var trimmedContents = contents.length > maxContextSize ? contents.substring(0, maxContextSize) : contents;
+                this.context.sendReply(message.msg, trimmedContents)
+                    .thenApply(function(res) {
+                        that.showSpinner = false;
+                        if (res) {
+                            console.log("message sent!");
+                            that.closeFeedbackForm(msgId, true);
+                        } else {
+                            that.errorTitle = 'Error sending message';
+                            that.errorBody = "";
+                            that.showError = true;
+                        }
+                }).exceptionally(function(throwable) {
+                    that.errorTitle = 'Error sending message';
+                    that.errorBody = throwable.getMessage();
+                    that.showError = true;
+                    that.showSpinner = false;
+                });
+            }
+        },
+
+        closeFeedbackForm: function(msgId, submitted) {
+            let submittedMsgId = submitted ? msgId : null;
+            this.showFeedbackForm = false;
+            this.messageId = null;
+            this.popConversation(submittedMsgId);
+        },
+
+        loadMessageThread: function(msgId) {
+            let messages = [];
+            if (msgId == null) {
+                return messages;
+            }
+            var finished = false;
+            while (!finished) {
+                let message = this.getMessage(msgId);
+                if (message == null) {
+                    break;
+                }
+                messages.push({id: message.id, sendTime: message.sendTime,
+                    contents: message.contents, from: message.from, visible: false});
+                if (message.previousMessageId == null || message.previousMessageId >= msgId) {
+                    finished = true;
+                }
+                msgId = message.previousMessageId;
+            }
+            return messages.reverse();
+        },
+
+        replyToMessage: function(msgId) {
+            if (this.showFeedbackForm) {
+                return;
+            }
+            this.messageId = msgId;
+            this.showFeedbackForm = true;
+        },
+
+        dismissMessage: function(msgId) {
+            if (this.showFeedbackForm) {
+                return;
+            }
+            this.messageId = null;
+            if (msgId != null) {
+                let message = this.getMessage(msgId);
+                if (message != null) {
+                     let that = this;
+                     this.showSpinner = true;
+                     this.context.dismissMessage(message.msg).thenApply(res => {
+                        this.showSpinner = false;
+                        if (res) {
+                            console.log("acknowledgement sent!");
+                            that.popConversation(msgId);
+                        } else {
+                           that.errorTitle = 'Error acknowledging message';
+                           that.errorBody = "";
+                           that.showError = true;
+                        }
+                     }).exceptionally(function(throwable) {
+                           that.errorTitle = 'Error acknowledging message';
+                           that.errorBody = throwable.getMessage();
+                           that.showError = true;
+                           that.showSpinner = false;
+                    });
+                }
+            }
+        },
+
         toggleUploadMenu: function() {
             this.showUploadMenu = !this.showUploadMenu;
         },
@@ -1557,7 +1729,7 @@ module.exports = {
         }
 	    return this.usageBytes > 1024*1024;
 	},
-	
+
 	isLoggedIn: function() {
 	    return ! this.isSecretLink;
 	},
