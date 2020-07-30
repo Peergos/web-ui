@@ -13,7 +13,7 @@ module.exports = {
             unsharedEditAccessNames: []
         }
     },
-    props: ['data', 'followernames', 'files', 'parent', 'path', 'context', 'messages', 'shared'],
+    props: ['data', 'followernames', 'files', 'parent', 'path', 'context', 'messages'],
     created: function() {
         Vue.nextTick(this.setTypeAhead);
     },
@@ -100,12 +100,27 @@ module.exports = {
 	    
             if (! this.allowedToShare(this.files[0]))
 		return;
-	    
+        if (this.targetUsernames.slice() == 0) {
+            return;
+        }
         var that = this;
-        var allSharedWithUsernames = that.context.sharedWith(that.files[0]);
-        var read_usernames = allSharedWithUsernames.left.toArray([]);
-        var edit_usernames = allSharedWithUsernames.right.toArray([]);
-
+        this.showSpinner = true;
+        let filePath = peergos.client.PathUtils.toPath(this.path, this.files[0].getFileProperties().name);
+		this.context.sharedWith(filePath).thenApply(function(fileSharedWithState) {
+            that.showSpinner = false;
+            let read_usernames = fileSharedWithState.readAccess.toArray([]);
+            let edit_usernames = fileSharedWithState.writeAccess.toArray([]);
+	        that.shareFileWith(sharedWithAccess, read_usernames, edit_usernames);
+        }).exceptionally(function(throwable) {
+            that.resetTypeahead();
+            that.showSpinner = false;
+            that.errorTitle = 'Error sharing file: ' + that.files[0].getFileProperties().name;
+            that.errorBody = throwable.getMessage();
+            that.showError = true;
+        });
+    },
+    shareFileWith: function(sharedWithAccess, read_usernames, edit_usernames) {
+        var that = this;
         var usersToShareWith = this.targetUsernames.slice();
         if (usersToShareWith.length == 0) {
             return;
@@ -124,9 +139,9 @@ module.exports = {
             });
             return;
         }
-        this.showSpinner = true;
         var filename = that.files[0].getFileProperties().name;
         var filepath = "/" + that.path.join('/') + "/" + filename;
+        this.showSpinner = true;
         if (sharedWithAccess == "Read") {
             that.context.shareReadAccessWith(that.files[0], filepath, usersToShareWith)
             .thenApply(function(b) {
@@ -139,7 +154,7 @@ module.exports = {
             that.close();
             that.resetTypeahead();
             console.log("shared read access to " + filename);
-            that.$emit("update-shared");
+            that.$emit("update-shared-refresh");
             }).exceptionally(function(throwable) {
             that.resetTypeahead();
             that.showSpinner = false;

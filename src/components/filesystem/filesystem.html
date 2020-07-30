@@ -73,7 +73,6 @@
   <share 
     v-if="showShare" 
     v-on:hide-share-with="showShare = false"
-    v-on:update-shared="forceSharedWithUpdate++"
     v-on:update-shared-refresh="forceSharedRefreshWithUpdate++"
     :data="sharedWithData"
     :files="selectedFiles" 
@@ -155,6 +154,7 @@
   <code-editor 
     v-if="showCodeEditor" 
     v-on:hide-code-editor="closeApps(); updateCurrentDir();"
+    v-on:update-refresh="forceUpdate++"
     :file="selectedFiles[0]"
     :context="context"
     :messages="messages">
