@@ -341,22 +341,10 @@ module.exports = {
                 return Promise.resolve([]);
             let that = this;
             let context = this.getContext();
-            let getSharingState = function(callback) {
-                if(that.path.length == 0) {
-                    callback();
-                } else {
-                    let directoryPath = peergos.client.PathUtils.directoryToPath(that.path);
-                    context.getDirectorySharingState(directoryPath).thenApply(function(updatedSharedWithState) {
-                        that.sharedWithState = updatedSharedWithState;
-                        callback();
-                    }).exceptionally(function(throwable) {
-                        console.log(throwable.getMessage());
-                    });
-                }
-            };
-            getSharingState(function() {
-                current = that.currentDir;
-                current.getChildren(that.getContext().crypto.hasher, that.getContext().network).thenApply(function(children){
+            let directoryPath = peergos.client.PathUtils.directoryToPath(that.path);
+            context.getDirectorySharingState(directoryPath).thenApply(function(updatedSharedWithState) {
+                that.sharedWithState = updatedSharedWithState;
+                current.getChildren(that.getContext().crypto.hasher, context.network).thenApply(function(children){
                     var arr = children.toArray();
                     that.showSpinner = false;
                     that.files = arr.filter(function(f){
@@ -368,6 +356,8 @@ module.exports = {
                 }).exceptionally(function(throwable) {
                     console.log(throwable.getMessage());
                 });
+            }).exceptionally(function(throwable) {
+                console.log(throwable.getMessage());
             });
         },
 
