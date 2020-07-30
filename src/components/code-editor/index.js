@@ -6,12 +6,14 @@ module.exports = {
 	        expectingSave: false,
 	        saving: false,
 	        currentFile: null,
+	        currentFilename: null,
 	        isFileWritable: null
         }
     },
     props: ['context', 'file', 'messages'],
     created: function() {
         this.currentFile = this.file;
+        this.currentFilename = this.file.getName();
         this.isFileWritable = this.file.isWritable();
         this.startListener();
     },
@@ -120,7 +122,11 @@ module.exports = {
                             iframe.contentWindow.postMessage({modes:modes, mime:mimeType, readOnly:readOnly, text:new TextDecoder().decode(data)}, '*');
                         });
                     });
-	    });
+        }).exceptionally(function(throwable) {
+            that.showMessage("Unexpected error", throwable.detailMessage);
+            console.log('Error loading file: ' + that.file.getName());
+            console.log(throwable.getMessage());
+        });
 	},
 
 	getAndSave: function() {
@@ -144,6 +150,7 @@ module.exports = {
         .thenApply(function(updatedFile) {
             that.saving = false;
             that.currentFile = updatedFile;
+            that.$emit("update-refresh");
         }).exceptionally(function(throwable) {
             if (throwable.detailMessage.includes("Couldn%27t+update+mutable+pointer%2C+cas+failed")
                 ||   throwable.detailMessage.includes("CAS exception updating cryptree node.")) {
@@ -156,6 +163,10 @@ module.exports = {
             }
             that.saving = false;
         });
+    },
+    getFilename: function() {
+        console.log("updated");
+        return this.currentFilename;
     },
     showMessage: function(title, body) {
         this.messages.push({

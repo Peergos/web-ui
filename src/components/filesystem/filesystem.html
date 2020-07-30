@@ -155,6 +155,7 @@
   <code-editor 
     v-if="showCodeEditor" 
     v-on:hide-code-editor="closeApps(); updateCurrentDir();"
+    v-on:update-refresh="forceUpdate++"
     :file="selectedFiles[0]"
     :context="context"
     :messages="messages">

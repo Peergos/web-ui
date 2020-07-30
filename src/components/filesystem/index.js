@@ -346,7 +346,6 @@ module.exports = {
                     callback();
                 } else {
                     let directoryPath = peergos.client.PathUtils.directoryToPath(that.path);
-                    console.log("JS kev-directoryPath=" + directoryPath.toString());
                     context.getDirectorySharingState(directoryPath).thenApply(function(updatedSharedWithState) {
                         that.sharedWithState = updatedSharedWithState;
                         callback();
