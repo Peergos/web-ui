@@ -73,7 +73,6 @@
   <share 
     v-if="showShare" 
     v-on:hide-share-with="showShare = false"
-    v-on:update-shared="forceSharedWithUpdate++"
     v-on:update-shared-refresh="forceSharedRefreshWithUpdate++"
     :data="sharedWithData"
     :files="selectedFiles" 

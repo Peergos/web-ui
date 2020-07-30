@@ -23,7 +23,6 @@ module.exports = {
             showShare:false,
             sharedWithState: null,
             sharedWithData:{"edit_shared_with_users":[],"read_shared_with_users":[]},
-            forceSharedWithUpdate:0,
             forceSharedRefreshWithUpdate:0,
             isNotBackground: true,
 	    quota: "N/A",
@@ -115,12 +114,8 @@ module.exports = {
                 }
             }
         },
-
-        forceSharedWithUpdate: function(newCounter, oldCounter) {
-            this.sharedWithDataUpdate();
-        },
         forceSharedRefreshWithUpdate: function(newCounter, oldCounter) {
-            this.updateCurrentDir(true);
+            this.updateCurrentDir();
         },
         forceUpdate: function(newUpdateCounter, oldUpdateCounter) {
             this.updateCurrentDir();
@@ -322,7 +317,7 @@ module.exports = {
 		this.showHexViewer = true;
 	},
 
-	updateCurrentDir: function(refreshSharedWith) {
+	updateCurrentDir: function() {
             var context = this.getContext();
             if (context == null)
                 return Promise.resolve(null);
@@ -330,12 +325,12 @@ module.exports = {
             var that = this;
             context.getByPath(path).thenApply(function(file){
                 that.currentDir = file.get();
-                that.updateFiles(refreshSharedWith);
+                that.updateFiles();
             }).exceptionally(function(throwable) {
                 console.log(throwable.getMessage());
             });
         },
-        updateFiles: function(refreshSharedWith) {
+        updateFiles: function() {
             var current = this.currentDir;
             if (current == null)
                 return Promise.resolve([]);
@@ -343,16 +338,14 @@ module.exports = {
             let context = this.getContext();
             let directoryPath = peergos.client.PathUtils.directoryToPath(that.path);
             context.getDirectorySharingState(directoryPath).thenApply(function(updatedSharedWithState) {
-                that.sharedWithState = updatedSharedWithState;
                 current.getChildren(that.getContext().crypto.hasher, context.network).thenApply(function(children){
+                    that.sharedWithState = updatedSharedWithState;
                     var arr = children.toArray();
                     that.showSpinner = false;
                     that.files = arr.filter(function(f){
                         return !f.getFileProperties().isHidden;
                     });
-                    if (refreshSharedWith) {
-                        that.sharedWithDataUpdate();
-                    }
+                    that.sharedWithDataUpdate();
                 }).exceptionally(function(throwable) {
                     console.log(throwable.getMessage());
                 });
@@ -1379,11 +1372,11 @@ module.exports = {
                 file.rename(newName, that.currentDir, filePath, that.getContext())
                     .thenApply(function(parent){
 			            that.currentDir = parent;
-			            that.updateFiles(true);
+			            that.updateFiles();
                         this.showPrompt =  false;
                         that.showSpinner = false;
                     }).exceptionally(function(throwable) {
-			            that.updateFiles(true);
+			            that.updateFiles();
                         that.errorTitle = "Error renaming " + fileType + ": " + old_name;
                         that.errorBody = throwable.getMessage();
                         that.showError = true;
