@@ -336,7 +336,8 @@ module.exports = {
                 return Promise.resolve([]);
             let that = this;
             let context = this.getContext();
-            let directoryPath = peergos.client.PathUtils.directoryToPath(that.path);
+            let path = that.path.length == 0 ? ["/"] : that.path;
+            let directoryPath = peergos.client.PathUtils.directoryToPath(path);
             context.getDirectorySharingState(directoryPath).thenApply(function(updatedSharedWithState) {
                 current.getChildren(that.getContext().crypto.hasher, context.network).thenApply(function(children){
                     that.sharedWithState = updatedSharedWithState;
@@ -411,6 +412,7 @@ module.exports = {
             var context = this.getContext();
             if (this.selectedFiles.length != 1 || context == null) {
                 this.sharedWithData = {read_shared_with_users:[], edit_shared_with_users:[] };
+                return;
             }
             var file = this.selectedFiles[0];
             var filename = file.getFileProperties().name;
