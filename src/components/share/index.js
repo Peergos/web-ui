@@ -105,7 +105,7 @@ module.exports = {
         }
         var that = this;
         this.showSpinner = true;
-        let filePath = peergos.shared.user.UserContext.toPath(this.path, this.files[0].getFileProperties().name);
+        let filePath = peergos.client.PathUtils.toPath(this.path, this.files[0].getFileProperties().name);
 		this.context.sharedWith(filePath).thenApply(function(fileSharedWithState) {
             that.showSpinner = false;
             let read_usernames = fileSharedWithState.readAccess.toArray([]);

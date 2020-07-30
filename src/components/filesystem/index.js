@@ -332,30 +332,31 @@ module.exports = {
                 that.currentDir = file.get();
                 that.updateFiles(refreshSharedWith);
             }).exceptionally(function(throwable) {
-                throwable.printStackTrace();
+                console.log(throwable.getMessage());
             });
         },
         updateFiles: function(refreshSharedWith) {
             var current = this.currentDir;
             if (current == null)
                 return Promise.resolve([]);
-            var that = this;
+            let that = this;
             let context = this.getContext();
             let getSharingState = function(callback) {
                 if(that.path.length == 0) {
                     callback();
                 } else {
-                    let directoryPath = peergos.shared.user.UserContext.directoryToPath(that.path);
+                    let directoryPath = peergos.client.PathUtils.directoryToPath(that.path);
                     console.log("JS kev-directoryPath=" + directoryPath.toString());
                     context.getDirectorySharingState(directoryPath).thenApply(function(updatedSharedWithState) {
                         that.sharedWithState = updatedSharedWithState;
                         callback();
                     }).exceptionally(function(throwable) {
-                        throwable.printStackTrace();
+                        console.log(throwable.getMessage());
                     });
                 }
             };
             getSharingState(function() {
+                current = that.currentDir;
                 current.getChildren(that.getContext().crypto.hasher, that.getContext().network).thenApply(function(children){
                     var arr = children.toArray();
                     that.showSpinner = false;
@@ -366,7 +367,7 @@ module.exports = {
                         that.sharedWithDataUpdate();
                     }
                 }).exceptionally(function(throwable) {
-                    throwable.printStackTrace();
+                    console.log(throwable.getMessage());
                 });
             });
         },
@@ -1010,7 +1011,7 @@ module.exports = {
                 if (clipboard.op == "cut") {
                     let name = clipboard.fileTreeNode.getFileProperties().name;
                     console.log("paste-cut "+ name + " -> "+target.getFileProperties().name);
-                    let filePath = peergos.shared.user.UserContext.toPath(that.path, name);
+                    let filePath = peergos.client.PathUtils.toPath(that.path, name);
                     clipboard.fileTreeNode.moveTo(target, clipboard.parent, filePath, context)
                         .thenApply(function() {
                             that.currentDirChanged();
@@ -1291,7 +1292,7 @@ module.exports = {
                 if (clipboard.op == "cut") {
         		    var name = clipboard.fileTreeNode.getFileProperties().name;
                     console.log("drop-cut " + name + " -> "+target.getFileProperties().name);
-                    let filePath = peergos.shared.user.UserContext.toPath(that.path, name);
+                    let filePath = peergos.client.PathUtils.toPath(that.path, name);
                     clipboard.fileTreeNode.moveTo(target, clipboard.parent, filePath, context)
                     .thenApply(function() {
                         that.currentDirChanged();
@@ -1385,16 +1386,15 @@ module.exports = {
                     return;
                 that.showSpinner = true;
                 console.log("Renaming " + old_name + "to "+ newName);
-                let filePath = peergos.shared.user.UserContext.toPath(that.path, old_name);
+                let filePath = peergos.client.PathUtils.toPath(that.path, old_name);
                 file.rename(newName, that.currentDir, filePath, that.getContext())
                     .thenApply(function(parent){
 			            that.currentDir = parent;
-			            that.updateFiles();
-			            that.onUpdateCompletion.push(function() {
-                            that.showSpinner = false;
-			            });
+			            that.updateFiles(true);
+                        this.showPrompt =  false;
+                        that.showSpinner = false;
                     }).exceptionally(function(throwable) {
-			            that.updateFiles();
+			            that.updateFiles(true);
                         that.errorTitle = "Error renaming " + fileType + ": " + old_name;
                         that.errorBody = throwable.getMessage();
                         that.showError = true;
@@ -1424,7 +1424,7 @@ module.exports = {
 	    console.log("deleting: " + name);
             this.showSpinner = true;
             var that = this;
-            let filePath = peergos.shared.user.UserContext.toPath(that.path, name);
+            let filePath = peergos.client.PathUtils.toPath(that.path, name);
             file.remove(parent, filePath, context)
                 .thenApply(function(b){
                     that.currentDirChanged();
