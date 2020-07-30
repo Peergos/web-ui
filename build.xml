@@ -188,7 +188,7 @@ Class-Path: .</echo>
 ***********************************
 ***********************************
     </echo>     
-    <exec executable="java" dir="${server}" failonerror="true">
+    <exec executable="java" dir="${server}">
       <arg value="-jar"/>
       <arg value="Peergos.jar"/>
       <arg value="-pki-init"/>
@@ -201,7 +201,7 @@ Class-Path: .</echo>
       <arg value="-webcache"/>
       <arg value="false"/>
       <arg value="-max-users"/>
-      <arg value="100"/>
+      <arg value="5"/>
       <arg value="peergos.password"/>
       <arg value="testpassword"/>
       <arg value="pki.keygen.password"/>

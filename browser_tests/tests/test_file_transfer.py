@@ -14,8 +14,8 @@ def test_hello_world():
         fs_page.upload_file(temp_path)
         # download file
         fs_page.download_file(temp_fname)
-    # check file downloaded
-    expected_f = os.path.join(fs_page.d.download_path, temp_fname)
+        # check file downloaded
+        expected_f = fs_page.download_path(temp_fname)
     assert os.path.isfile(expected_f)
     # check contents
     with open(expected_f) as f:

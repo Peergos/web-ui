@@ -6,9 +6,21 @@ set -euf -o pipefail
 #
 function ensure_no_peergos_server_running() {
    ps aux |grep Peergos.jar  | grep -v grep | awk '{print $2}' | xargs kill -9 || true;
-   rm -rf  ../server/.peergos;
 }
 
+function start_peergos_async() {
+    (cd ../server
+    JAR_PATH="Peergos.jar"
+    PEERGOS_PATH=".peergos"
+    LOG_TO_CONSOLE="false"
+
+    rm -fr "$PEERGOS_PATH"
+    #
+    # hold on
+    #
+    java -jar "$JAR_PATH" -pki-init  -logToConsole "$LOG_TO_CONSOLE" -useIPFS false -webroot webroot -webcache false -max-users 100 peergos.password testpassword pki.keygen.password testpkipassword pki.keyfile.password testpkifilepassword mutable-pointers-file mutable.sql social-sql-file social.sql default-quota 157286400 PEERGOS_PATH "$PEERGOS_PATH" -admin-usernames peergos -collect-metrics true -enable-wait-list true || true &
+    )
+}
 #
 #  set teardown
 #
@@ -22,7 +34,7 @@ ensure_no_peergos_server_running
 #
 # start local peergos server, wait for startup
 #
-ant -buildfile ../build.xml run || true &
+start_peergos_async
 sleep 10
 
 #

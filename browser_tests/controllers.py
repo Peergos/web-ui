@@ -43,8 +43,9 @@ def get_driver(download_dir_path: str):
         #options.add_argument('--no-sandbox')
         #options.add_argument('--disable-dev-shm-usage')
         options.add_argument('--headless')
-        options.add_argument('--disable-extensions')
-        options.add_argument('--disable-popup-blocking')
+        #options.add_argument('--disable-extensions')
+        #options.add_argument('--disable-popup-blocking')
+
         #options.add_argument('--disable-gpu')
         #options.add_argument('--window-size=1280,800')
         #options.add_argument('--user-data-dir=' + os.getcwd())
@@ -191,9 +192,9 @@ class Page(object):
         """A short-hand for the driver attribute."""
         return self.driver
 
-    @property
-    def download_path(path: str):
-        return os.path.resolve(self.d.download_path,  path)
+    def download_path(self, path: str):
+        return os.path.join(self.d.download_path,  path)
+
 
     def get_source(self):
         """Returns the page source that the driver is currently on."""
