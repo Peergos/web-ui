@@ -9,15 +9,15 @@ function get_chrome_major_version() {
 
 function get_and_check_chromedriver() {
     url=$1
-    md5=$2
+    sha256=$2
     download_path=$(mktemp)
     echo "Downloading chromedriver $url"
     curl -o $download_path $url
     # compare checksum
-    chk=$(md5sum $download_path | awk '{print $1}')
-    if [[ "$chk" != "$md5" ]];
+    chk=$(sha256sum $download_path | awk '{print $1}')
+    if [[ "$chk" != "$sha256" ]];
     then
-        echo "ERROR: Specified url $url has md5 $chk, expected $md5"
+        echo "ERROR: Specified url $url has sha256 $chk, expected $sha256"
         return 1
     fi
     # unzip chromedriver
@@ -28,10 +28,10 @@ function get_chromedriver() {
     VERSION=$(get_chrome_major_version)
     if [[ $VERSION == "84" ]]; 
     then
-        get_and_check_chromedriver https://chromedriver.storage.googleapis.com/84.0.4147.30/chromedriver_linux64.zip beffb1bca07d8f4fd23213b292ef963b
+        get_and_check_chromedriver https://chromedriver.storage.googleapis.com/84.0.4147.30/chromedriver_linux64.zip 160531e8f98f13b486411cd6445ec0e3c56cd4d4b2839e3e9a0fda09a279797a 
     elif [[ $VERSION == "85" ]]; 
     then
-        get_and_check_chromedriver https://chromedriver.storage.googleapis.com/85.0.4183.38/chromedriver_linux64.zip 856c69ea0e6c71b04119167e1b72e4bf
+        get_and_check_chromedriver https://chromedriver.storage.googleapis.com/85.0.4183.38/chromedriver_linux64.zip cd4e08b4a7ddd0f8b60126051c64f64de7edf07350294965a98bfd984d429eed
     else
         echo "ERROR: Unsupported chrome version $VERSION"
         return 1
