@@ -1,6 +1,7 @@
 from controllers import *
+import pytest
 
-
+@pytest.mark.skip
 def test_context_menu():
     with signup_to_homedir() as filesystem:
         dir_name = randomUsername()
@@ -9,6 +10,7 @@ def test_context_menu():
         assert filesystem.d.find_element_by_id('right-click-menu') is not None
 
 
+@pytest.mark.skip
 def test_delete_folder():
     with signup_to_homedir() as filesystem:
         dir_name = randomUsername()
@@ -18,6 +20,7 @@ def test_delete_folder():
         assert len(filesystem.d.find_elements_by_id(dir_name)) == 0
 
 
+@pytest.mark.skip
 def test_public_link_to_folder():
     with signup_to_homedir() as filesystem:
         dir_name = randomUsername()
@@ -31,6 +34,7 @@ def test_public_link_to_folder():
     assert page.d.find_element_by_xpath("//button[text()='{}']".format(dir_name))
         
 
+@pytest.mark.skip
 def test_rename():
     with signup_to_homedir() as filesystem:
         dir_name = randomUsername()

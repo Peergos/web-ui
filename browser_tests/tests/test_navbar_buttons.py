@@ -4,7 +4,7 @@ import os
 import tempfile
 import pytest
 
-
+@pytest.mark.skip
 def test_home_button_has_home_folder():
     with driver_context() as driver:
         landing_page = LoginPage(driver)
@@ -15,6 +15,7 @@ def test_home_button_has_home_folder():
         filesystem_page.get_unique_xpath(xpath)
 
 
+@pytest.mark.skip
 def test_mkdir_and_upload_not_present_in_root():
     with driver_context() as driver:
         landing_page = LoginPage(driver)
@@ -28,6 +29,7 @@ def test_mkdir_and_upload_not_present_in_root():
             assert not len(filesystem_page.d.find_elements_by_xpath(xpath))
 
 
+@pytest.mark.skip
 def test_mkdir():
     with driver_context() as driver:
         landing_page = LoginPage(driver)
@@ -40,6 +42,7 @@ def test_mkdir():
         assert filesystem_page.d.find_element_by_id(folder_name) is not None
 
 
+@pytest.mark.skip
 @pytest.mark.parametrize('file_size', [101, 1024*97, 1024*1024* 6]) 
 def test_binary_file_upload_and_download(file_size):
     # setup random data and temp file 

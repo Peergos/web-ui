@@ -1,0 +1,28 @@
+name: Browser Tests
+
+on: [push]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v1
+    - name: Set up JDK
+      uses: actions/setup-java@v1
+      with:
+        java-version: 11
+    - uses: actions/setup-python@v2
+      with:
+        python-version: '3.6'
+    - name: Build with Ant
+      run: ant -noinput -buildfile build.xml peergos_submodule_sync dist 
+    - name: echo chrome
+      run: which google-chrome 
+      shell: bash
+    - name: chrome-version
+      run: google-chrome --version
+      shell: bash
+    - name: browser-tests
+      working-directory: browser_tests
+      run: ./setup_and_run_browser_tests.sh
+      timeout-minutes: 90

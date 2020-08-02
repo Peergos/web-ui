@@ -188,7 +188,7 @@ Class-Path: .</echo>
 ***********************************
 ***********************************
     </echo>     
-    <exec executable="java" dir="${server}" failonerror="true">
+    <exec executable="java" dir="${server}">
       <arg value="-jar"/>
       <arg value="Peergos.jar"/>
       <arg value="-pki-init"/>
