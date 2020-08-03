@@ -105,7 +105,7 @@ module.exports = {
         },
 
         lowercaseUsername: function() {
-            this.username = this.username.toLocaleLowerCase();
+            return this.username.toLocaleLowerCase();
         },
 
         displayDemoWarning: function() {
@@ -145,7 +145,7 @@ module.exports = {
             const that = this;
             this.showSpinner = true;
             return peergos.shared.user.UserContext.signIn(
-                    that.username, that.password, that.network, that.crypto, {"accept" : x => that.spinnerMessage = x}).thenApply(function(context) {
+                    that.lowercaseUsername(), that.password, that.network, that.crypto, {"accept" : x => that.spinnerMessage = x}).thenApply(function(context) {
                 that.$emit("filesystem", {context: context})
                 console.log("Signing in/up took " + (Date.now()-creationStart)+" mS from function call");
                 that.showSpinner = false;
@@ -164,7 +164,7 @@ module.exports = {
             peergos.shared.NetworkAccess.buildJS("QmVdFZgHnEgcedCS2G2ZNiEN59LuVrnRm7z3yXtEBv2XiF", !isLocalhost)
                 .thenApply(function(network) {
                     that.$emit("signup", {
-                        username:that.username,
+                        username:that.lowercaseUsername(),
                         password1:that.password,
                         crypto: that.crypto,
                         network: network
