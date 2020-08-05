@@ -44,7 +44,10 @@
                                     <pre style="background-color: #ffffff;">{{message.contents}}</pre>
                                 </div>
                                 <div v-if="message.from != 'FromUser'">
-                                    <pre>{{message.contents}}</pre>
+				  <div v-for="paragraph in message.paragraphs" >
+                                    {{paragraph}}
+				    <br/>
+				  </div>
                                 </div>
                             </td>
                         </tr>
