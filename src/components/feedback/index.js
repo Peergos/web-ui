@@ -17,6 +17,8 @@ module.exports = {
             this.textAreaPlaceholder = "Reply...";
             this.messageThread = this.loadMessageThread(this.messageId);
             this.messageThread[this.messageThread.length -1].visible = true;
+	    for (i=0; i < this.messageThread.length; i++)
+		this.messageThread[i].paragraphs = this.toParagraphs(this.messageThread[i].contents);
         } else {
             this.isFeedback = true;
             this.title = "Feedback";
@@ -36,6 +38,9 @@ module.exports = {
                     this.sendMessage(this.messageId, contents);
                 }
             }
-        }
+        },
+	toParagraphs: function(msg) {
+	    return msg.split("\n");
+	}
     }
 }

@@ -207,11 +207,11 @@ module.exports = {
             conv.forEach(function(conversation){
                 let arr = conversation.messages.toArray();
                 let lastMessage = arr[arr.length - 1];
-                allConversations.push({id: lastMessage.id(), sendTime: lastMessage.getSendTime().toString(),
+                allConversations.push({id: lastMessage.id(), sendTime: lastMessage.getSendTime().toString().replace("T", " "),
                     contents: lastMessage.getContents(), previousMessageId: lastMessage.getPreviousMessageId(),
                     from: lastMessage.getAuthor(), msg: lastMessage});
                 arr.forEach(function(message){
-                    that.messageMonitors.push({id: message.id(), sendTime: message.getSendTime().toString(),
+                    that.messageMonitors.push({id: message.id(), sendTime: message.getSendTime().toString().replace("T", " "),
                         contents: message.getContents(), previousMessageId: message.getPreviousMessageId(),
                         from: message.getAuthor(), msg: message});
                 });
