@@ -7,7 +7,7 @@ module.exports = {
 	        saving: false,
 	        currentFile: null,
 	        currentFilename: null,
-	        isFileWritable: null
+	        isFileWritable: false
         }
     },
     props: ['context', 'file', 'messages'],
@@ -165,7 +165,6 @@ module.exports = {
         });
     },
     getFilename: function() {
-        console.log("updated");
         return this.currentFilename;
     },
     showMessage: function(title, body) {
