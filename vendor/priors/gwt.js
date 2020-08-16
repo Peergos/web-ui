@@ -23,11 +23,22 @@ function fragmentToProps(fragment) {
 }
 
 function getProm(url) {
-    console.log("getProm " + url);
+    return getWithHeadersProm(url, []);
+}
+
+function getWithHeadersProm(url, headers) {
+    console.log("getWithHeadersProm " + url);
     var future = peergos.shared.util.Futures.incomplete();
     var req = new XMLHttpRequest();
     req.open('GET', url);
     req.responseType = 'arraybuffer';
+    var index = 0;
+    while (index < headers.length){
+	var name = headers[index++];
+    	var value = headers[index++];
+	if (name != "Host" && name != "Content-Length")
+	    req.setRequestHeader(name, value);
+    }
     
     req.onload = function() {
 	console.log("http get returned retrieving " + url);
@@ -192,6 +203,7 @@ var callback = {
 var http = {
     NativeJSHttp: function() {
 	this.get = getProm;
+	this.getWithHeaders = getWithHeadersProm;
 	this.post = postProm;
 	this.postMultipart = postMultipartProm;
 	this.put = putProm;
