@@ -23,31 +23,7 @@ function fragmentToProps(fragment) {
 }
 
 function getProm(url) {
-    console.log("getProm " + url);
-    var future = peergos.shared.util.Futures.incomplete();
-    var req = new XMLHttpRequest();
-    req.open('GET', url);
-    req.responseType = 'arraybuffer';
-    
-    req.onload = function() {
-	console.log("http get returned retrieving " + url);
-        // This is called even on 404 etc
-        // so check the status
-        if (req.status == 200) {
-	    future.complete(convertToByteArray(new Int8Array(req.response)));
-        } else if (req.status == 404) {
-	    future.completeExceptionally(new peergos.shared.storage.HttpFileNotFoundException());
-        } else {
-	    future.completeExceptionally(Error(req.getResponseHeader("Trailer")));
-        }
-    };
-    
-    req.onerror = function(e) {
-        future.completeExceptionally(Error("Network Error"));
-    };
-    
-    req.send();
-    return future;
+    return getWithHeadersProm(url, []);
 }
 
 function getWithHeadersProm(url, headers) {
