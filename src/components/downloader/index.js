@@ -86,7 +86,7 @@ module.exports = {
 								       link.type = props.mimeType;
 								       link.href = url
 								       link.dispatchEvent(click)
-								   }, function(seekHi, seekLo, seekLength){}, size);
+								   }, function(seekHi, seekLo, seekLength){}, undefined, size);
                     let writer = fileStream.getWriter()
                     let pump = () => {
 			if (blockSize == 0) {
