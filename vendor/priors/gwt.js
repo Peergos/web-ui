@@ -651,7 +651,7 @@ function createVideoThumbnailStreamingProm(future, asyncReader, size, filename, 
         if(! result.done) {
             context.stream(seekHi, seekLo, seekLength);
         }
-    }, size);
+    }, undefined, size);
     context.writer = fileStream.getWriter();
     return future;
 }
