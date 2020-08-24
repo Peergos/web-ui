@@ -320,6 +320,7 @@ function generateCrypto_box_keypair(publicKey, secretKey) {
 }
 
 var tryProofOfWork = function(counter, difficulty, combined, future) {
+    // Put the counter into the first 8 bytes little endian (JS can't reach 8th byte)
     combined[0] = counter;
     combined[1] = (counter >> 8);
     combined[2] = (counter >> 16);
