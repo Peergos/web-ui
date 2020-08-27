@@ -10,12 +10,12 @@ body {
 }
 
 .btn-success {
-    background-color: #26b99a;
-    border-color: #16a98a;
+    background-color: #26b99a !important;
+    border-color: #16a98a !important;
 }
 
 .btn-success:hover {
-    background-color: #26a69a;
+    background-color: #26a69a !important;
 }
 
 .tour-carousel {

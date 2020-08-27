@@ -319,10 +319,47 @@ function generateCrypto_box_keypair(publicKey, secretKey) {
     return publicKey;
 }
 
+var tryProofOfWork = function(counter, difficulty, combined, future) {
+    // Put the counter into the first 8 bytes little endian (JS can't reach 8th byte)
+    combined[0] = counter;
+    combined[1] = (counter >> 8);
+    combined[2] = (counter >> 16);
+    combined[3] = (counter >> 24);
+    combined[4] = (counter / 4294967296);
+    combined[5] = ((counter / 4294967296) >> 8);
+    combined[6] = ((counter / 4294967296) >> 16);
+    window.crypto.subtle.digest(
+	{
+	    name: "SHA-256",
+	},
+	combined
+    ).then(function(hash){
+	//returns the hash as an ArrayBuffer
+	var data = new Int8Array(hash);
+	var res = convertToByteArray(data.slice(0, 32));
+	if (peergos.shared.crypto.ProofOfWork.satisfiesDifficulty(difficulty, res))
+	    future.complete(peergos.shared.crypto.ProofOfWork.buildSha256(convertToByteArray(combined.slice(0, 8))));
+	else
+	    setTimeout(() => tryProofOfWork(counter + 1, difficulty, combined, future), 0);
+    }).catch(function(err){
+	future.completeExceptionally(java.lang.Throwable.of(err));
+    });
+}
+
 var scryptJS = {
     NativeScryptJS: function() {
         this.hashToKeyBytes = hashToKeyBytesProm;
 
+	this.generateProofOfWork = function(difficulty, data) {
+	    var future = peergos.shared.util.Futures.incomplete();
+	    var combined = new Int8Array(data.length + 8);
+	    for (var i=0; i < data.length; i++)
+		combined[8 + i] = data[i];
+	    
+	    tryProofOfWork(0, difficulty, combined, future);
+	    return future;
+	}
+	
 	this.sha256 = function(input) {
 	    var future = peergos.shared.util.Futures.incomplete();
 	    window.crypto.subtle.digest(
