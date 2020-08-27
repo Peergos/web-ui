@@ -18,7 +18,7 @@ function start_peergos_async() {
     #
     # hold on
     #
-    java -jar "$JAR_PATH" pki-init  -logToConsole "$LOG_TO_CONSOLE" -useIPFS false -webroot webroot -webcache false -max-users 100 peergos.password testpassword pki.keygen.password testpkipassword pki.keyfile.password testpkifilepassword mutable-pointers-file mutable.sql social-sql-file social.sql default-quota 157286400 PEERGOS_PATH "$PEERGOS_PATH" -admin-usernames peergos -collect-metrics true -enable-wait-list true || true &
+    java -jar "$JAR_PATH" pki-init  -logToConsole "$LOG_TO_CONSOLE" -useIPFS false -webroot webroot -webcache false -max-users 100 peergos.password testpassword pki.keygen.password testpkipassword pki.keyfile.password testpkifilepassword mutable-pointers-file mutable.sql social-sql-file social.sql default-quota 157286400 PEERGOS_PATH "$PEERGOS_PATH" -admin-usernames peergos -collect-metrics true -enable-wait-list true -max-daily-signups 10000 || true &
     )
 }
 #
