@@ -1514,7 +1514,43 @@ module.exports = {
             }.bind(this));
             e.preventDefault();
         },
-
+        createTextFile: function() {
+            this.closeMenu();
+            this.prompt_placeholder='File name';
+            this.prompt_message='Enter a file name';
+            this.prompt_value='';
+            this.prompt_consumer_func = function(prompt_result) {
+                if (prompt_result === null)
+                    return;
+                let fileName = prompt_result.trim();
+                if (fileName === '')
+                    return;
+                this.uploadEmptyFile(fileName);
+            }.bind(this);
+            this.showPrompt = true;
+        },
+        uploadEmptyFile: function(filename) {
+            this.showSpinner = true;
+            let that = this;
+            let context = this.getContext();
+            let empty = peergos.shared.user.JavaScriptPoster.emptyArray();
+            let reader = new peergos.shared.user.fs.AsyncReader.ArrayBacked(empty);
+            this.currentDir.uploadFileJS(filename, reader, 0, 0,
+                false, false, context.network, context.crypto, function(len){},
+                context.getTransactionService()
+            ).thenApply(function(res) {
+                that.currentDir = res;
+                that.updateFiles();
+                that.onUpdateCompletion.push(function() {
+                    that.showSpinner = false;
+                });
+            }).exceptionally(function(throwable) {
+                that.showSpinner = false;
+                that.errorTitle = 'Error creating file';
+                that.errorBody = throwable.getMessage();
+                that.showError = true;
+            })
+        },
         rename: function() {
             if (this.selectedFiles.length == 0)
                 return;

@@ -50,6 +50,7 @@
   <a id="downloadAnchor" style="display:none"></a>
   <ul id="right-click-menu" tabindex="-1" v-if="viewMenu && (isNotHome || isPasteAvailable || isNotBackground)" v-on:blur="closeMenu" v-bind:style="{top:top, left:left}">
     <li id='gallery' v-if="canOpen" v-on:click="gallery">View</li>
+    <li id='create-file' v-if="!isNotBackground" v-on:click="createTextFile">Create Text file</li>
     <li id='open-file' v-if="canOpen" v-on:click="downloadAll">Download</li>
     <li id='rename-file' v-if="isNotBackground && isWritable" v-on:click="rename">Rename</li>
     <li id='delete-file' v-if="isNotBackground && isWritable" v-on:click="deleteFiles">Delete</li>
