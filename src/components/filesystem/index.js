@@ -31,6 +31,7 @@ module.exports = {
             showAdmin:false,
             showGallery: false,
             showSocial:false,
+            showTimeline:false,
             showHexViewer:false,
             showCodeEditor:false,
             showPdfViewer:false,
@@ -335,6 +336,18 @@ module.exports = {
 	    this.updateHistory("filesystem", this.getPath(), "");
 	},
 
+    navigateToAction: function(directory, filename) {
+        console.log("navigateToAction");
+        this.changePath(directory);
+    },
+    viewAction: function(path, filename) {
+        console.log("viewAction");
+        if (path.startsWith("/"))
+            path = path.substring(1);
+        this.path = path ? path.split('/') : [];
+        this.updateHistory("filesystem", path, "");
+        this.updateCurrentDirectory(filename);
+    },
 	openInApp: function(filename, app) {
 	    this.selectedFiles = this.files.filter(f => f.getName() == filename);
 	    if (this.selectedFiles.length == 0)
@@ -348,8 +361,10 @@ module.exports = {
 	    else if (app == "hex")
 		this.showHexViewer = true;
 	},
-
 	updateCurrentDir: function() {
+	    this.updateCurrentDirectory(null);
+	},
+	updateCurrentDirectory: function(selectedFilename) {
             var context = this.getContext();
             if (context == null)
                 return Promise.resolve(null);
@@ -357,12 +372,12 @@ module.exports = {
             var that = this;
             context.getByPath(path).thenApply(function(file){
                 that.currentDir = file.get();
-                that.updateFiles();
+                that.updateFiles(selectedFilename);
             }).exceptionally(function(throwable) {
                 console.log(throwable.getMessage());
             });
         },
-        updateFiles: function() {
+        updateFiles: function(selectedFilename) {
             var current = this.currentDir;
             if (current == null)
                 return Promise.resolve([]);
@@ -371,14 +386,19 @@ module.exports = {
             let path = that.path.length == 0 ? ["/"] : that.path;
             let directoryPath = peergos.client.PathUtils.directoryToPath(path);
             context.getDirectorySharingState(directoryPath).thenApply(function(updatedSharedWithState) {
-                current.getChildren(that.getContext().crypto.hasher, context.network).thenApply(function(children){
+                current.getChildren(context.crypto.hasher, context.network).thenApply(function(children){
                     that.sharedWithState = updatedSharedWithState;
                     var arr = children.toArray();
                     that.showSpinner = false;
                     that.files = arr.filter(function(f){
                         return !f.getFileProperties().isHidden;
                     });
-                    that.sharedWithDataUpdate();
+                    if(selectedFilename != null) {
+                        that.selectedFiles = that.files.filter(f => f.getName() == selectedFilename);
+                        that.gallery();
+                    } else {
+                        that.sharedWithDataUpdate();
+                    }
                 }).exceptionally(function(throwable) {
                     console.log(throwable.getMessage());
                 });
@@ -1120,6 +1140,10 @@ module.exports = {
         showSocialView: function(name) {
             this.showSocial = true;
             this.externalChange++;
+        },
+
+        showTimelineView: function() {
+            this.showTimeline = true;
         },
 
         copy: function() {

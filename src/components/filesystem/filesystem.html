@@ -7,8 +7,11 @@
 	<li id="homeButton" @click="goHome()" class="navbar-brand nopad"><a><span data-toggle="tooltip" data-placement="bottom" title="Global root" class="pnavbar fas fa-globe-asia" style="cursor: pointer;"/></a></li>
 	<li id="uploadButton" @click="toggleUploadMenu()" v-if="isWritable" class="navbar-brand nopad"><a><span data-toggle="tooltip" data-placement="bottom" title="Upload" class="pnavbar fa fa-upload" style="cursor: pointer;"/></a></li>
 	<li id="mkdirButton" @click="askMkdir()" v-if="isWritable" class="navbar-brand nopad"><a><span data-toggle="tooltip" data-placement="bottom" title="Create new directory" class="pnavbar fas fa-folder-plus" style="cursor: pointer;"/></a></li>
-	<li id="alternateViewButton" @click="switchView()" class="navbar-brand nopad"><a><span data-toggle="tooltip" data-placement="bottom" title="Switch view" id="altViewSpan" v-bind:class="['pnavbar', 'fa', 'tour-view', grid ? 'fa-list' : 'fa-th-large']" style="cursor: pointer;"/></a></li>
-	<li id="userOptionsButton" v-if="isLoggedIn" @click="showSocialView()" class="navbar-brand nopad">
+        <li id="alternateViewButton" @click="switchView()" class="navbar-brand nopad"><a><span data-toggle="tooltip" data-placement="bottom" title="Switch view" id="altViewSpan" v-bind:class="['pnavbar', 'fa', 'tour-view', grid ? 'fa-list' : 'fa-th-large']" style="cursor: pointer;"/></a></li>
+        <li id="timelineButton" v-if="isLoggedIn" @click="showTimelineView()" class="navbar-brand nopad">
+          <a><span data-toggle="tooltip" data-placement="bottom" title="Timeline" class="pnavbar fas fa-history" style="cursor: pointer;"/></a>
+        </li>
+        <li id="userOptionsButton" v-if="isLoggedIn" @click="showSocialView()" class="navbar-brand nopad">
           <a>
             <span data-toggle="tooltip" data-placement="bottom" title="Sharing options" id="sharingOptionsSpan" class="pnavbar fa fa-user-plus" style="cursor: pointer;"/>
             <span id="pendingSpan" class="pending-badge" v-if="social != null && social.pending.length > 0">{{ social.pending.length }}</span>
@@ -91,6 +94,15 @@
     :context="context" 
     :messages="messages">
   </social>
+  <timeline
+    v-if="showTimeline"
+    v-on:hide-timeline="showTimeline = false"
+    :navigateToAction="navigateToAction"
+    :viewAction="viewAction"
+    :getFileIcon="getFileIcon"
+    :messages="messages"
+    :context="context">
+  </timeline>
   <admin 
     v-if="showAdmin" 
     v-on:hide-admin="showAdmin = false"

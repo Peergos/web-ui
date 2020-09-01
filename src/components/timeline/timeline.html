@@ -1,0 +1,32 @@
+<transition name="modal">
+<div class="modal-mask" @click="close">
+    <div style="height:30%"></div>
+    <div class="modal-container" @click.stop>
+        <span @click="close" class="close">&times;</span>
+
+        <div class="modal-header">
+            <h2>Timeline</h2>
+        </div>
+
+        <div class="modal-body">
+            <spinner v-if="showSpinner"></spinner>
+            <div>
+                <table id='timeline-table-id' class="table table-responsive table-striped table-hover">
+                    <tr v-if="data.length==0"><th></th></tr>
+                    <tr v-for="entry in data">
+                        <td id='entry-id' >
+                            <span>{{ entry.info }}</span>
+                            <a v-on:click="navigateTo(entry)">
+                                <span :title="entry.link">{{ entry.name }}</span>
+                            </a>
+                            <span v-if="!entry.hasThumbnail" v-on:click="view(entry)" v-bind:class="[entry.isDirectory ? 'dir' : 'file', getFileIconClass(entry.file), 'picon']"> </span>
+                            <img id="thumbnail" v-if="entry.hasThumbnail" v-on:click="view(entry)" v-bind:src="entry.thumbnail"/>
+                            </a>
+                        </td>
+                    </tr>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+</transition>
