@@ -6,9 +6,13 @@ module.exports = {
             data: []
         }
     },
-    props: ['context','navigateToAction','viewAction', 'messages', 'getFileIcon'],
+    props: ['context','navigateToAction','viewAction', 'messages', 'getFileIcon', 'socialFeed'],
     created: function() {
-        this.init();
+        let that = this;
+        Vue.nextTick(function() {
+            that.init();
+        });
+
     },
     methods: {
         showMessage: function(title, body) {
@@ -24,7 +28,11 @@ module.exports = {
         },
         view: function (entry) {
             this.close();
-            this.viewAction(entry.path, entry.name);
+            if (entry.isDirectory) {
+                this.navigateToAction(entry.path, null);
+            } else {
+                this.viewAction(entry.path, entry.name);
+            }
         },
         addTimelineEntry: function(entry) {
             let that = this;
@@ -43,16 +51,20 @@ module.exports = {
                     return;
                 }
                 if (props.isDirectory) {
-                    info = info + " the directory: ";
+                    info = info + " the directory";
                 } else {
-                    info = info + " the file: ";
+                    info = info + " the file";
                 }
+                if (entry.sharer != entry.owner) {
+                    info = info + " owned by " + entry.owner;
+                }
+                info = info + ": ";
                 let path = props.isDirectory ? entry.path : entry.path.substring(0, entry.path.lastIndexOf(props.name) -1);
                 let item = {
                     info: info,
                     link: entry.path,
                     path: path,
-                    name: props.name,
+                    name: props.name.length > 25 ? props.name.substring(0,22) + '...' : props.name,
                     hasThumbnail: props.thumbnail.ref != null,
                     thumbnail: props.thumbnail.ref == null ? null : file.ref.getBase64Thumbnail(),
                     isDirectory: props.isDirectory,
@@ -71,16 +83,11 @@ module.exports = {
             var that = this;
             that.showSpinner = true;
             var ctx = this.context;
-            ctx.getSocialFeed().thenApply(function(socialFeed) {
-                socialFeed.getShared(0, 100, ctx.crypto, ctx.network).thenApply(function(items) {
-                    items.toArray().forEach(entry => {
-                        that.addTimelineEntry(entry);
-                    });
-                    that.showSpinner = false;
-                }).exceptionally(function(throwable) {
-                    that.showMessage(throwable.getMessage());
-                    that.showSpinner = false;
+            this.socialFeed.getShared(0, 100, ctx.crypto, ctx.network).thenApply(function(items) {
+                items.toArray().forEach(entry => {
+                    that.addTimelineEntry(entry);
                 });
+                that.showSpinner = false;
             }).exceptionally(function(throwable) {
                 that.showMessage(throwable.getMessage());
                 that.showSpinner = false;

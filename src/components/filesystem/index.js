@@ -1143,7 +1143,17 @@ module.exports = {
         },
 
         showTimelineView: function() {
-            this.showTimeline = true;
+            let that = this;
+            that.showSpinner = true;
+            const ctx = this.getContext()
+            ctx.getSocialFeed().thenApply(function(socialFeed) {
+                that.socialFeed = socialFeed;
+                that.showTimeline = true;
+                that.showSpinner = false;
+            }).exceptionally(function(throwable) {
+                that.showMessage(throwable.getMessage());
+                that.showSpinner = false;
+            });
         },
 
         copy: function() {

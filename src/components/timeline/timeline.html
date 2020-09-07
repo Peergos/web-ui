@@ -1,9 +1,8 @@
 <transition name="modal">
 <div class="modal-mask" @click="close">
-    <div style="height:30%"></div>
-    <div class="modal-container" @click.stop>
+    <div style="height:10%"></div>
+    <div class="modal-container" @click.stop style="height:100%;overflow-y:auto">
         <span @click="close" class="close">&times;</span>
-
         <div class="modal-header">
             <h2>Timeline</h2>
         </div>
@@ -19,9 +18,14 @@
                             <a v-on:click="navigateTo(entry)">
                                 <span :title="entry.link">{{ entry.name }}</span>
                             </a>
-                            <span v-if="!entry.hasThumbnail" v-on:click="view(entry)" v-bind:class="[entry.isDirectory ? 'dir' : 'file', getFileIconClass(entry.file), 'picon']"> </span>
-                            <img id="thumbnail" v-if="entry.hasThumbnail" v-on:click="view(entry)" v-bind:src="entry.thumbnail"/>
+                        </td>
+                        <td>
+                            <span class="grid_icon_wrapper fa">
+                            <a class="picon">
+                                <span v-if="!entry.hasThumbnail" v-on:click="view(entry)" v-bind:class="[entry.isDirectory ? 'dir' : 'file', getFileIconClass(entry.file), 'picon']"> </span>
                             </a>
+                            <img id="thumbnail" v-if="entry.hasThumbnail" v-on:click="view(entry)" v-bind:src="entry.thumbnail"/>
+                            </span>
                         </td>
                     </tr>
                 </table>
