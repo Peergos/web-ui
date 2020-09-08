@@ -10,10 +10,10 @@
         <div class="modal-body">
             <spinner v-if="showSpinner"></spinner>
             <div>
-                <table id='timeline-table-id' class="table table-responsive table-striped table-hover">
+                <table class="table table-responsive table-striped table-hover">
                     <tr v-if="data.length==0"><th></th></tr>
                     <tr v-for="entry in data">
-                        <td id='entry-id' >
+                        <td>
                             <span>{{ entry.info }}</span>
                             <a v-on:click="navigateTo(entry)">
                                 <span :title="entry.link">{{ entry.name }}</span>
@@ -24,7 +24,7 @@
                             <a class="picon">
                                 <span v-if="!entry.hasThumbnail" v-on:click="view(entry)" v-bind:class="[entry.isDirectory ? 'dir' : 'file', getFileIconClass(entry.file), 'picon']"> </span>
                             </a>
-                            <img id="thumbnail" v-if="entry.hasThumbnail" v-on:click="view(entry)" v-bind:src="entry.thumbnail"/>
+                            <img v-if="entry.hasThumbnail" v-on:click="view(entry)" v-bind:src="entry.thumbnail"/>
                             </span>
                         </td>
                     </tr>

@@ -34,7 +34,8 @@ module.exports = {
                 this.viewAction(entry.path, entry.name);
             }
         },
-        addTimelineEntry: function(entry) {
+        createTimelineEntry: function(entry) {
+            var future = peergos.shared.util.Futures.incomplete();
             let that = this;
             let info = entry.sharer + " has shared";
             if(entry.cap.isWritable() ) {
@@ -70,10 +71,11 @@ module.exports = {
                     isDirectory: props.isDirectory,
                     file : file.ref
                 };
-                that.data.push(item);
+                return future.complete(item);
             }).exceptionally(function(throwable) {
                 console.log("error loading timeline entry: " + throwable.getMessage());
             });
+            return future;
         },
         getFileIconClass: function(file) {
             return this.getFileIcon(file);
@@ -84,10 +86,18 @@ module.exports = {
             that.showSpinner = true;
             var ctx = this.context;
             this.socialFeed.getShared(0, 100, ctx.crypto, ctx.network).thenApply(function(items) {
-                items.toArray().forEach(entry => {
-                    that.addTimelineEntry(entry);
+                let arr = items.toArray();
+                let numberOfEntries = arr.length;
+                let allTimelineEntries = [];
+                arr.forEach(function(entry,idx){
+                    that.createTimelineEntry(entry).thenApply(function(timelineEntry){
+                        allTimelineEntries.push(timelineEntry);
+                        if (numberOfEntries == idx + 1) {
+                            that.data = allTimelineEntries;
+                            that.showSpinner = false;
+                        }
+                    });
                 });
-                that.showSpinner = false;
             }).exceptionally(function(throwable) {
                 that.showMessage(throwable.getMessage());
                 that.showSpinner = false;
