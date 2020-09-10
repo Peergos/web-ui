@@ -47,6 +47,7 @@ module.exports = {
             showSideNav: false,
             showTodoBoardViewer: false,
             newTodoBoardName: null,
+            showCalendarViewer: false,
 	    admindata: {pending:[]},
             social:{
                 pending: [],
@@ -323,6 +324,7 @@ module.exports = {
 		this.showTextViewer = false;
 		this.showHexViewer = false;
 	    this.showTodoBoardViewer = false;
+	    this.showCalendarViewer = false;
 	    } else {
 		if (! differentPath)
 		    this.openInApp(filename, app);
@@ -340,6 +342,7 @@ module.exports = {
 	    this.showTextViewer = false;
 	    this.showHexViewer = false;
 	    this.showTodoBoardViewer = false;
+	    this.showCalendarViewer = false;
         this.selectedFiles = [];
         this.updateHistory("filesystem", this.getPath(), "");
 	    this.forceSharedRefreshWithUpdate++;
@@ -1152,6 +1155,10 @@ module.exports = {
                 that.showTodoBoardViewer = true;
             };
             this.showPrompt = true;
+        },
+        showCalendar: function() {
+            this.toggleNav();
+            this.showCalendarViewer = true;
         },
         logout: function() {
             this.toggleUserMenu();

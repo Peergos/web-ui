@@ -1,5 +1,6 @@
 var Admin           = require('./components/admin');
 var App             = require('./components/app');
+var Calendar        = require('./components/calendar');
 var CodeEditor      = require('./components/code-editor');
 var Downloader      = require('./components/downloader');
 var Error           = require('./components/error');
@@ -34,6 +35,7 @@ var Replace         = require('./components/replace');
 // Loading components
 Vue.component('admin', Vue.extend(Admin));
 Vue.component('app', Vue.extend(App));
+Vue.component('calendar', Vue.extend(Calendar));
 Vue.component('code-editor', Vue.extend(Downloader).extend(CodeEditor));
 Vue.component('error', Vue.extend(Error));
 Vue.component('feedback', Vue.extend(Feedback));

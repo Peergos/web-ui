@@ -50,9 +50,9 @@
   <div id="sideMenu" class="sidenav">
     <a><span/>&nbsp</a>
     <a id="homeButton" @click="goHome()"><span data-toggle="tooltip" data-placement="bottom" title="Global root" class="fas fa-globe-asia" style="cursor: pointer;"/></a>
-    
     <a id="timelineButton" v-if="isLoggedIn" @click="showTimelineView()"><span data-toggle="tooltip" data-placement="bottom" title="Timeline" class="fas fa-history" style="cursor: pointer;"/></a>
-    <a v-if="isLoggedIn" @click="newTodoBoard"><span class="fas fa-tasks"/></a>
+    <a v-if="isLoggedIn" @click="showCalendar"><span data-toggle="tooltip" data-placement="bottom" title="Calendar" class="fa fa-calendar-alt"/></a>
+    <a v-if="isLoggedIn" @click="newTodoBoard"><span data-toggle="tooltip" data-placement="bottom" title="Todo Board" class="fas fa-tasks"/></a>
   </div>
   <a id="downloadAnchor" style="display:none"></a>
   <ul id="right-click-menu" tabindex="-1" v-if="viewMenu && (isNotHome || isPasteAvailable || isNotBackground)" v-on:blur="closeMenu" v-bind:style="{top:top, left:left}">
@@ -178,6 +178,7 @@
     :context="context"
     :messages="messages">
   </code-editor>
+<<<<<<< HEAD
   <todo-board
           v-if="showTodoBoardViewer"
           v-on:hide-todo-board="closeApps();"
@@ -187,6 +188,12 @@
           v-on:update-refresh="forceUpdate++"
           :messages="messages">
   </todo-board>
+  <calendar
+          v-if="showCalendarViewer"
+          v-on:hide-calendar="closeApps();"
+          :context="context"
+          :messages="messages">
+  </calendar>
   <text-viewer
     v-if="showTextViewer" 
     v-on:hide-text-viewer="closeApps()"
