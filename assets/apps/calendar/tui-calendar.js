@@ -10526,6 +10526,30 @@ function createMonthView(baseController, layoutContainer, dragHandler, options) 
             }
 
             detailView.render(eventData);
+
+            let eventDetails = document.getElementById("event-details");
+            var div1 = document.createElement("div");
+            eventDetails.appendChild(div1);
+
+            var span1 = document.createElement("span");
+            div1.appendChild(span1);
+            var img = document.createElement("img");
+            img.src = "./images/user-plus.svg";
+            img.style.width="16px";
+            img.style.height="16px";
+            span1.appendChild(img);
+
+            var span2 = document.createElement("span");
+            div1.appendChild(span2);
+            var shareLink = document.createElement("a");
+            shareLink.style.marginLeft="3px";
+            shareLink.innerText = "Share With";
+            span2.appendChild(shareLink);
+
+            var handler = function() {
+                console.log("share after");
+            }
+            shareLink.onclick=handler;
         };
         onDeleteSchedule = function(eventData) {
             if (creationHandler) {
@@ -22916,7 +22940,7 @@ module.exports = (Handlebars['default'] || Handlebars).template({"1":function(co
     + alias4(((helper = (helper = lookupProperty(helpers,"CSS_PREFIX") || (depth0 != null ? lookupProperty(depth0,"CSS_PREFIX") : depth0)) != null ? helper : alias2),(typeof helper === alias3 ? helper.call(alias1,{"name":"CSS_PREFIX","hash":{},"data":data,"loc":{"start":{"line":8,"column":50},"end":{"line":8,"column":64}}}) : helper)))
     + "content\">"
     + ((stack1 = (lookupProperty(helpers,"popupDetailDate-tmpl")||(depth0 && lookupProperty(depth0,"popupDetailDate-tmpl"))||alias2).call(alias1,((stack1 = (depth0 != null ? lookupProperty(depth0,"schedule") : depth0)) != null ? lookupProperty(stack1,"isAllDay") : stack1),((stack1 = (depth0 != null ? lookupProperty(depth0,"schedule") : depth0)) != null ? lookupProperty(stack1,"start") : stack1),((stack1 = (depth0 != null ? lookupProperty(depth0,"schedule") : depth0)) != null ? lookupProperty(stack1,"end") : stack1),{"name":"popupDetailDate-tmpl","hash":{},"data":data,"loc":{"start":{"line":8,"column":73},"end":{"line":8,"column":145}}})) != null ? stack1 : "")
-    + "</div>\n    </div>\n    <div class=\""
+    + "</div>\n    </div>\n    <div id='event-details' class=\""
     + alias4(((helper = (helper = lookupProperty(helpers,"CSS_PREFIX") || (depth0 != null ? lookupProperty(depth0,"CSS_PREFIX") : depth0)) != null ? helper : alias2),(typeof helper === alias3 ? helper.call(alias1,{"name":"CSS_PREFIX","hash":{},"data":data,"loc":{"start":{"line":10,"column":16},"end":{"line":10,"column":30}}}) : helper)))
     + "section-detail\">\n        "
     + ((stack1 = lookupProperty(helpers,"if").call(alias1,((stack1 = (depth0 != null ? lookupProperty(depth0,"schedule") : depth0)) != null ? lookupProperty(stack1,"location") : stack1),{"name":"if","hash":{},"fn":container.program(1, data, 0),"inverse":container.noop,"data":data,"loc":{"start":{"line":11,"column":8},"end":{"line":11,"column":241}}})) != null ? stack1 : "")
