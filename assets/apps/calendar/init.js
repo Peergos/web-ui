@@ -1,5 +1,105 @@
 var mainWindow;
 var origin;
+
+var cal, resizeThrottled;
+var useCreationPopup = true;
+var useDetailPopup = true;
+var datePicker, selectedCalendar;
+var CalendarList = [];
+var ScheduleList = [];
+let ScheduleCache = [];
+var currentMoment = moment();
+
+cal = new tui.Calendar('#calendar', {
+    usageStatistics: false,
+    defaultView: 'month',
+    //week: {
+    //	startDayOfWeek: 1
+    //},
+    //month: {
+    //	startDayOfWeek: 1
+    //},
+    taskView: false,
+    useCreationPopup: useCreationPopup,
+    useDetailPopup: useDetailPopup,
+    calendars: CalendarList,
+    template: {
+        allday: function(schedule) {
+            return getTimeTemplate(schedule, true);
+        },
+        time: function(schedule) {
+            return getTimeTemplate(schedule, false);
+        }
+    }
+});
+
+cal.on({
+    'clickMore': function(e) {
+        console.log('clickMore', e);
+    },
+    'clickSchedule': function(e) {
+        console.log('clickSchedule', e);
+    },
+    'clickDayname': function(date) {
+        console.log('clickDayname', date);
+    },
+    'beforeCreateSchedule': function(e) {
+        console.log('beforeCreateSchedule', e);
+        let schedule = buildNewSchedule(e);
+        ScheduleList.push(schedule);
+        cal.createSchedules([schedule]);
+        addToCache(schedule);
+        refreshScheduleVisibility();
+        save(schedule);
+    },
+    'beforeUpdateSchedule': function(e) {
+        var schedule = e.schedule;
+        var changes = e.changes;
+        console.log('beforeUpdateSchedule', e);
+        if (changes && !changes.isAllDay && schedule.category === 'allday') {
+            changes.category = 'time';
+        }
+        cal.updateSchedule(schedule.id, schedule.calendarId, changes);
+        let updatedCalendarId = (changes != null && changes.calendarId != null) ? changes.calendarId : schedule.calendarId;
+        let updatedSchedule = cal.getSchedule(schedule.id, updatedCalendarId);
+
+        ScheduleList.splice(ScheduleList.findIndex(v => v.id === schedule.id), 1);
+        ScheduleList.push(updatedSchedule);
+        updateCache(schedule, updatedSchedule);
+        save(updatedSchedule);
+        refreshScheduleVisibility();
+    },
+    'beforeDeleteSchedule': function(e) {
+        console.log('beforeDeleteSchedule', e);
+        cal.deleteSchedule(e.schedule.id, e.schedule.calendarId);
+        ScheduleList.splice(ScheduleList.findIndex(v => v.id === e.schedule.id), 1);
+        removeFromCache(e.schedule);
+        deleteSchedule(e.schedule);
+    },
+    'afterRenderSchedule': function(e) {
+        var schedule = e.schedule;
+        // var element = cal.getElement(schedule.id, schedule.calendarId);
+        // console.log('afterRenderSchedule', element);
+    },
+    'clickTimezonesCollapseBtn': function(timezonesCollapsed) {
+        console.log('timezonesCollapsed', timezonesCollapsed);
+
+        if (timezonesCollapsed) {
+            cal.setTheme({
+                'week.daygridLeft.width': '77px',
+                'week.timegridLeft.width': '77px'
+            });
+        } else {
+            cal.setTheme({
+                'week.daygridLeft.width': '60px',
+                'week.timegridLeft.width': '60px'
+            });
+        }
+
+        return true;
+    }
+});
+
 window.addEventListener('message', function (e) {
     // You must verify that the origin of the message's sender matches your
     // expectations. In this case, we're only planning on accepting messages
@@ -11,8 +111,15 @@ window.addEventListener('message', function (e) {
     
     mainWindow = e.source;
     origin = e.origin;
-
-    load(e.data.text);
+    if (e.data.type == "load") {
+        setCalendars();
+        cal.setCalendars(CalendarList);
+        setDropdownCalendarType();
+        setEventListener();
+        load(e.data.previousMonth, e.data.currentMonth, e.data.nextMonth, e.data.yearMonth);
+    } else if (e.data.type == "loadAdditional") {
+        loadAdditional(e.data.currentMonth, e.data.yearMonth);
+    }
 });
 
 function ScheduleInfo() {
@@ -61,13 +168,9 @@ function ScheduleInfo() {
 }
 
 function addCalendarEvent(event) {
-
     var schedule = new ScheduleInfo();
-    var schedule = new ScheduleInfo();
-
     schedule.id = event.Id;
     schedule.calendarId = event.categoryId; //note calendarId -> categoryId
-
     schedule.title = event.title;
     schedule.body = '';
     schedule.isReadOnly = false;
@@ -86,24 +189,88 @@ function addCalendarEvent(event) {
     schedule.dragBgColor = calendarCategory.dragBgColor;
     schedule.borderColor = calendarCategory.borderColor;
     schedule.raw.memo = event.memo;
-    ScheduleList.push(schedule);
+    return schedule;
+
 }
-
-function load(calendarEvents) {
-    setCalendars();
-    cal.setCalendars(CalendarList);
-    setDropdownCalendarType();
-    setRenderRangeText();
-
-    cal.clear();
-    console.log("loading calendarEvents");
-
-    for (var i = 0; i < calendarEvents.length; i++) {
-        addCalendarEvent(calendarEvents[i]);
+function removeFromCache(schedule) {
+    let yearMonth = schedule.start.getFullYear() * 12 + schedule.start.getMonth();
+    let monthCache = ScheduleCache[yearMonth];
+    monthCache.splice(monthCache.findIndex(v => v.id === schedule.id), 1);
+}
+function addToCache(newSchedule) {
+    let newYearMonth = newSchedule.start.getFullYear()  * 12 + newSchedule.start.getMonth();
+    let monthCache = ScheduleCache[newYearMonth];
+    monthCache.push(newSchedule);
+}
+function updateCache(oldSchedule, newSchedule) {
+    if (oldSchedule != null) {
+        let oldYearMonth = oldSchedule.start.getFullYear() * 12 + oldSchedule.start.getMonth();
+        let monthCache = ScheduleCache[oldYearMonth];
+        monthCache.splice(monthCache.findIndex(v => v.id === oldSchedule.id), 1);
+    }
+    if (newSchedule != null) {
+        let newYearMonth = newSchedule.start.getFullYear() * 12 + newSchedule.start.getMonth();
+        let monthCache = ScheduleCache[newYearMonth];
+        monthCache.push(newSchedule);
+    }
+}
+function loadAdditional(currentMonthEvents, yearMonth) {
+    console.log("loadAdditional calendarEvents");
+    let year = Math.floor(yearMonth / 12);
+    let month = yearMonth % 12;
+    let monthCache = [];
+    ScheduleCache[yearMonth] = monthCache;
+    let currentYearMonth = currentMoment.year() * 12 + currentMoment.month();
+    if (currentYearMonth < yearMonth) {
+        ScheduleList = ScheduleCache[currentYearMonth-1].concat(ScheduleCache[currentYearMonth]);
+    } else {
+        ScheduleList = ScheduleCache[currentYearMonth+1].concat(ScheduleCache[currentYearMonth]);
+    }
+    for (var i = 0; i < currentMonthEvents.length; i++) {
+        let schedule = addCalendarEvent(currentMonthEvents[i]);
+        ScheduleList.push(schedule);
+        monthCache.push(schedule);
     }
     cal.createSchedules(ScheduleList);
     refreshScheduleVisibility();
-    setEventListener();
+    setRenderRangeText();
+    removeSpinner();
+}
+
+function load(previousMonthEvents, currentMonthEvents, nextMonthEvents, yearMonth) {
+    console.log("loading calendarEvents");
+    let previousYearMonth = yearMonth - 1;
+    let year = Math.floor(previousYearMonth / 12);
+    let month = previousYearMonth % 12;
+    let previousMonthCache = [];
+    ScheduleCache[year * 12 + month] = previousMonthCache;
+    for (var i = 0; i < previousMonthEvents.length; i++) {
+        let schedule = addCalendarEvent(previousMonthEvents[i]);
+        ScheduleList.push(schedule);
+        previousMonthCache.push(schedule);
+    }
+    year = Math.floor(yearMonth / 12);
+    month = yearMonth % 12;
+    let currentMonthCache = [];
+    ScheduleCache[year * 12 + month] = currentMonthCache;
+    for (var i = 0; i < currentMonthEvents.length; i++) {
+        let schedule = addCalendarEvent(currentMonthEvents[i]);
+        ScheduleList.push(schedule);
+        currentMonthCache.push(schedule);
+    }
+    let nextYearMonth = yearMonth + 1;
+    year = Math.floor(nextYearMonth / 12);
+    month = nextYearMonth % 12;
+    let nextMonthCache = [];
+    ScheduleCache[year * 12 + month] = nextMonthCache;
+    for (var i = 0; i < nextMonthEvents.length; i++) {
+        let schedule = addCalendarEvent(nextMonthEvents[i]);
+        ScheduleList.push(schedule);
+        nextMonthCache.push(schedule);
+    }
+    cal.createSchedules(ScheduleList);
+    refreshScheduleVisibility();
+    setRenderRangeText();
     removeSpinner();
 }
 
@@ -147,98 +314,7 @@ function save(schedule) {
     };
     mainWindow.postMessage({text:item, type:"save"}, origin);
 }
-    var cal, resizeThrottled;
-    var useCreationPopup = true;
-    var useDetailPopup = true;
-    var datePicker, selectedCalendar;
-	var CalendarList = [];
-	var ScheduleList = [];
 
-  cal = new tui.Calendar('#calendar', {
-  usageStatistics: false,
-        defaultView: 'month',
-        //week: {
-        //	startDayOfWeek: 1
-        //},
-        //month: {
-        //	startDayOfWeek: 1
-        //},
-        taskView: false,
-        useCreationPopup: useCreationPopup,
-        useDetailPopup: useDetailPopup,
-        calendars: CalendarList,
-        template: {
-            allday: function(schedule) {
-                return getTimeTemplate(schedule, true);
-            },
-            time: function(schedule) {
-                return getTimeTemplate(schedule, false);
-            }
-        }
-});
-
-    // event handlers
-    cal.on({
-        'clickMore': function(e) {
-            console.log('clickMore', e);
-        },
-        'clickSchedule': function(e) {
-            console.log('clickSchedule', e);
-        },
-        'clickDayname': function(date) {
-            console.log('clickDayname', date);
-        },
-        'beforeCreateSchedule': function(e) {
-            console.log('beforeCreateSchedule', e);
-            saveNewSchedule(e);
-        },
-        'beforeUpdateSchedule': function(e) {
-            var schedule = e.schedule;
-            var changes = e.changes;
-            console.log('beforeUpdateSchedule', e);
-            if (changes && !changes.isAllDay && schedule.category === 'allday') {
-                changes.category = 'time';
-            }
-            cal.updateSchedule(schedule.id, schedule.calendarId, changes);
-            let updatedCalendarId = (changes != null && changes.calendarId != null) ? changes.calendarId : schedule.calendarId;
-            let updatedSchedule = cal.getSchedule(schedule.id, updatedCalendarId);
-
-            ScheduleList.splice(ScheduleList.findIndex(v => v.id === schedule.id), 1);
-            ScheduleList.push(updatedSchedule);
-            save(updatedSchedule);
-            refreshScheduleVisibility();
-        },
-        'beforeDeleteSchedule': function(e) {
-            console.log('beforeDeleteSchedule', e);
-            cal.deleteSchedule(e.schedule.id, e.schedule.calendarId);
-            ScheduleList.splice(ScheduleList.findIndex(v => v.id === e.schedule.id), 1);
-            deleteSchedule(e.schedule);
-        },
-        'afterRenderSchedule': function(e) {
-            var schedule = e.schedule;
-            // var element = cal.getElement(schedule.id, schedule.calendarId);
-            // console.log('afterRenderSchedule', element);
-        },
-        'clickTimezonesCollapseBtn': function(timezonesCollapsed) {
-            console.log('timezonesCollapsed', timezonesCollapsed);
-
-            if (timezonesCollapsed) {
-                cal.setTheme({
-                    'week.daygridLeft.width': '77px',
-                    'week.timegridLeft.width': '77px'
-                });
-            } else {
-                cal.setTheme({
-                    'week.daygridLeft.width': '60px',
-                    'week.timegridLeft.width': '60px'
-                });
-            }
-
-            return true;
-        }
-    });
-
-////////
 function CalendarInfo() {
     this.id = null;
     this.name = null;
@@ -251,21 +327,17 @@ function CalendarInfo() {
 
 function findCalendar(id) {
     var found;
-
     CalendarList.forEach(function(calendar) {
         if (calendar.id === id) {
             found = calendar;
         }
     });
-
     return found || CalendarList[0];
 }
 
 function setCalendars() {
-
     var calendar;
     var id = 0;
-
     calendar = new CalendarInfo();
     id += 1;
     calendar.id = String(id);
@@ -274,7 +346,7 @@ function setCalendars() {
     calendar.bgColor = '#9e5fff';
     calendar.dragBgColor = '#9e5fff';
     calendar.borderColor = '#9e5fff';
-CalendarList.push(calendar);
+    CalendarList.push(calendar);
 
     calendar = new CalendarInfo();
     id += 1;
@@ -284,7 +356,7 @@ CalendarList.push(calendar);
     calendar.bgColor = '#00a9ff';
     calendar.dragBgColor = '#00a9ff';
     calendar.borderColor = '#00a9ff';
-CalendarList.push(calendar);
+    CalendarList.push(calendar);
 
     calendar = new CalendarInfo();
     id += 1;
@@ -294,7 +366,7 @@ CalendarList.push(calendar);
     calendar.bgColor = '#ff5583';
     calendar.dragBgColor = '#ff5583';
     calendar.borderColor = '#ff5583';
-CalendarList.push(calendar);
+    CalendarList.push(calendar);
 
     calendar = new CalendarInfo();
     id += 1;
@@ -304,8 +376,7 @@ CalendarList.push(calendar);
     calendar.bgColor = '#03bd9e';
     calendar.dragBgColor = '#03bd9e';
     calendar.borderColor = '#03bd9e';
-CalendarList.push(calendar);
-
+    CalendarList.push(calendar);
 
     var calendarList = document.getElementById('calendarList');
     var html = [];
@@ -355,34 +426,21 @@ CalendarList.push(calendar);
         var calendarNameElement = document.getElementById('calendarName');
         var calendar = findCalendar(calendarId);
         var html = [];
-
         html.push('<span class="calendar-bar" style="background-color: ' + calendar.bgColor + '; border-color:' + calendar.borderColor + ';"></span>');
         html.push('<span class="calendar-name">' + calendar.name + '</span>');
 
         calendarNameElement.innerHTML = html.join('');
-
         selectedCalendar = calendar;
     }
 
-    function createNewSchedule(event) {
-        var start = event.start ? new Date(event.start.getTime()) : new Date();
-        var end = event.end ? new Date(event.end.getTime()) : moment().add(1, 'hours').toDate();
-
-        if (useCreationPopup) {
-            cal.openCreationPopup({
-                start: start,
-                end: end
-            });
-        }
-    }
     //https://stackoverflow.com/questions/105034/how-to-create-guid-uuid
-function uuidv4() {
-  return ([1e7]+-1e3+-4e3+-8e3+-1e11).replace(/[018]/g, c =>
-    (c ^ crypto.getRandomValues(new Uint8Array(1))[0] & 15 >> c / 4).toString(16)
-  );
-}
+    function uuidv4() {
+      return ([1e7]+-1e3+-4e3+-8e3+-1e11).replace(/[018]/g, c =>
+        (c ^ crypto.getRandomValues(new Uint8Array(1))[0] & 15 >> c / 4).toString(16)
+      );
+    }
 
-    function saveNewSchedule(scheduleData) {
+    function buildNewSchedule(scheduleData) {
         var calendar = scheduleData.calendar || findCalendar(scheduleData.calendarId);
         var schedule = {
             id: uuidv4(),
@@ -410,10 +468,7 @@ function uuidv4() {
             schedule.bgColor = calendar.bgColor;
             schedule.borderColor = calendar.borderColor;
         }
-        ScheduleList.push(schedule);
-        cal.createSchedules([schedule]);
-        refreshScheduleVisibility();
-        save(schedule);
+        return schedule;
     }
 
     function onChangeCalendars(e) {
@@ -450,21 +505,6 @@ function uuidv4() {
         }
 
         refreshScheduleVisibility();
-    }
-
-    function refreshScheduleVisibility() {
-        var calendarElements = Array.prototype.slice.call(document.querySelectorAll('#calendarList input'));
-
-        CalendarList.forEach(function(calendar) {
-            cal.toggleSchedules(calendar.id, !calendar.checked, false);
-        });
-
-        cal.render(true);
-
-        calendarElements.forEach(function(input) {
-            var span = input.nextElementSibling;
-            span.style.backgroundColor = input.checked ? span.style.borderColor : 'transparent';
-        });
     }
 
 function getDataAction(target) {
@@ -528,22 +568,82 @@ function onClickMenu(e) {
 }
 
 function onClickNavi(e) {
-  var action = getDataAction(e.target);
+    var action = getDataAction(e.target);
+    let viewName = cal.getViewName();
+    let wasMoment = currentMoment.clone();
+    if (action == 'move-today') {
+        let today = moment();
+        cal.today();
+        if (wasMoment.month() == currentMoment.month()) {
+          setRenderRangeText();
+        } else {
+          reload(today, today);
+        }
+    } else {
+        if (viewName === 'day') {
+              switch (action) {
+                case 'move-prev':
+                    currentMoment.subtract(1, 'days');
+                    cal.prev();
+                    break;
+                case 'move-next':
+                    currentMoment.add(1, 'days');
+                    cal.next();
+                    break;
+              }
+        }else if (viewName === 'week') {
+              switch (action) {
+                case 'move-prev':
+                    currentMoment.subtract(1, 'weeks');
+                    cal.prev();
+                    break;
+                case 'move-next':
+                    currentMoment.add(1, 'weeks');
+                    cal.next();
+                    break;
+              }
+        }else if(viewName === 'month') {
+                switch (action) {
+                  case 'move-prev':
+                      currentMoment.subtract(1, 'months');
+                      cal.prev();
+                      break;
+                  case 'move-next':
+                      currentMoment.add(1, 'months');
+                      cal.next();
+                      break;
+                }
+        }
+        if (wasMoment.month() == currentMoment.month()) {
+            setRenderRangeText();
+        } else {
+            let toLoadMonth = currentMoment.clone();
+            if (wasMoment.isSameOrAfter(currentMoment)) {
+                toLoadMonth.subtract(1, 'months');
+                reload(currentMoment, toLoadMonth);
+            } else {
+                toLoadMonth.add(1, 'months');
+                reload(currentMoment, toLoadMonth);
+            }
+        }
+    }
+}
 
-  switch (action) {
-    case 'move-prev':
-      cal.prev();
-      break;
-    case 'move-next':
-      cal.next();
-      break;
-    case 'move-today':
-      cal.today();
-      break;
-    default:
-      return;
-  }
-  setRenderRangeText();
+function reload(currentMoment, toLoadMonth) {
+    ScheduleList = [];
+    cal.clear();
+    let cachedList = ScheduleCache[toLoadMonth.year() * 12 + toLoadMonth.month()];
+    if (cachedList == null) {
+        displaySpinner();
+        mainWindow.postMessage({type:"loadAdditional", year: toLoadMonth.year(), month: (toLoadMonth.month() + 1)},
+            origin);
+    } else {
+        let currentYearMonth = currentMoment.year() * 12 + currentMoment.month();
+        ScheduleList = ScheduleCache[currentYearMonth-1].concat(ScheduleCache[currentYearMonth]).concat(ScheduleCache[currentYearMonth+1]);
+        cal.createSchedules(ScheduleList);
+        refreshScheduleVisibility();
+        setRenderRangeText();
+    }
 }
 
 function setRenderRangeText() {

@@ -37,6 +37,8 @@ module.exports = {
                     that.displaySpinner();
                 } else if(e.data.type=="removeSpinner") {
                     that.removeSpinner();
+                } else if(e.data.type=="loadAdditional") {
+                    that.loadAdditional(e.data.year, e.data.month, 'loadAdditional');
                 }
             }
         });
@@ -44,35 +46,76 @@ module.exports = {
             // origin. Sandboxed iframes which lack the 'allow-same-origin' header
             // don't have an origin which you can target: you'll have to send to any
             // origin, which might alow some esoteric attacks. Validate your output!
-
-        this.context.getAllCalendarEvents().thenCompose(function(allEvents) {
-            let items = allEvents.toArray([]);
-            let allItems = [];
-            let itemCount = items.length;
-            if (itemCount == 0) {
-                setTimeout(function(){
-                    iframe.contentWindow.postMessage({text: allItems}, '*');
-                });
-            } else {
-                items.forEach(function(item, idx){
-                    let entry = {Id: item.Id, categoryId: item.categoryId, title: item.title,
-                        isAllDay: item.isAllDay, start: item.start, end: item.end,
-                        location: item.location, isPrivate: item.isPrivate, state: item.state, memo: item.memo
-                    };
-                    allItems.push(entry);
-                    if(idx == itemCount -1) {
-                        setTimeout(function(){
-                            iframe.contentWindow.postMessage({text: allItems}, '*');
-                        });
-                    }
-                });
-            }
-	    });
+        let date = new Date();
+        let year = 1900 + date.getYear();
+        let monthIndex = date.getMonth() + 1;
+        this.load(year, monthIndex, 'load');
 	},
+    loadAdditional: function(year, month, messageType) {
+        let calendar = this.context.getCalendarApp();
+        let that = this;
+        calendar.getCalendarEventsForMonth(year, month).thenCompose(function(allEvents) {
+            that.loadAdditionalEvents(year, month, messageType, allEvents.toArray([]));
+        });
+    },
+    loadAdditionalEvents: function(year, month, messageType, eventsThisMonth) {
+        let currentMonth = [];
+        eventsThisMonth.forEach(function(item){
+            currentMonth.push({Id: item.Id, categoryId: item.categoryId, title: item.title,
+                isAllDay: item.isAllDay, start: item.start, end: item.end,
+                location: item.location, isPrivate: item.isPrivate, state: item.state, memo: item.memo
+            });
+        });
+        let iframe = document.getElementById("editor");
+        let yearMonth = year * 12 + (month -1);
+        setTimeout(function(){
+            iframe.contentWindow.postMessage({type: messageType, currentMonth: currentMonth
+                , yearMonth: yearMonth }, '*');
+        });
+    },
+    load: function(year, month, messageType) {
+        let calendar = this.context.getCalendarApp();
+        let that = this;
+        calendar.getCalendarEventsAroundMonth(year, month).thenCompose(function(allEvents) {
+            that.loadEvents(year, month, messageType, allEvents.left.toArray([]), allEvents.middle.toArray([]),
+                    allEvents.right.toArray([]));
+        });
+    },
+
+    loadEvents: function(year, month, messageType, eventsPreviousMonth, eventsThisMonth, eventsNextMonth) {
+        let previousMonth = [];
+        let currentMonth = [];
+        let nextMonth = [];
+        eventsPreviousMonth.forEach(function(item){
+            previousMonth.push({Id: item.Id, categoryId: item.categoryId, title: item.title,
+                isAllDay: item.isAllDay, start: item.start, end: item.end,
+                location: item.location, isPrivate: item.isPrivate, state: item.state, memo: item.memo
+            });
+        });
+        eventsThisMonth.forEach(function(item){
+            currentMonth.push({Id: item.Id, categoryId: item.categoryId, title: item.title,
+                isAllDay: item.isAllDay, start: item.start, end: item.end,
+                location: item.location, isPrivate: item.isPrivate, state: item.state, memo: item.memo
+            });
+        });
+        eventsNextMonth.forEach(function(item){
+            nextMonth.push({Id: item.Id, categoryId: item.categoryId, title: item.title,
+                isAllDay: item.isAllDay, start: item.start, end: item.end,
+                location: item.location, isPrivate: item.isPrivate, state: item.state, memo: item.memo
+            });
+        });
+        let iframe = document.getElementById("editor");
+        let yearMonth = year * 12 + (month-1);
+        setTimeout(function(){
+            iframe.contentWindow.postMessage({type: messageType, previousMonth: previousMonth,
+                    currentMonth: currentMonth, nextMonth: nextMonth, yearMonth: yearMonth}, '*');
+        });
+    },
     deleteEvent: function(item) {
 	    const that = this;
 	    that.displaySpinner();
-        this.context.removeCalendarEvent(item.year, item.month, item.Id).thenApply(function(res) {
+        let calendar = this.context.getCalendarApp();
+        calendar.removeCalendarEvent(item.year, item.month, item.Id).thenApply(function(res) {
 	        that.removeSpinner();
         }).exceptionally(function(throwable) {
             that.showMessage("Unable to delete event","Please close calendar and try again");
@@ -92,7 +135,8 @@ module.exports = {
         let entry = new peergos.shared.user.CalendarEvent(item.Id, item.categoryId, item.title,
             item.isAllDay, item.start, item.end, item.location,item.isPrivate, item.state, item.memo
         );
-        this.context.updateCalendarEvent(item.year, item.month, entry).thenApply(function(res) {
+        let calendar = this.context.getCalendarApp();
+        calendar.updateCalendarEvent(item.year, item.month, entry).thenApply(function(res) {
 	        that.removeSpinner();
         }).exceptionally(function(throwable) {
             that.showMessage("Unable to save event","Please close calendar and try again");
