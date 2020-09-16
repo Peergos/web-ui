@@ -219,14 +219,14 @@ function unpackEvent(iCalEvent) {
     event.attendees = allAttendees;
     return event;
 }
-function addCalendarEvent(eventIcal) {
-    let event = unpackIcal(eventIcal);
+function addCalendarEvent(eventInfo) {
+    let event = unpackIcal(eventInfo.item);
     if(event == null) {
         return;
     }
     var schedule = new ScheduleInfo();
     schedule.id = event.Id;
-    schedule.calendarId = event.categoryId; //note calendarId -> categoryId
+    schedule.calendarId = eventInfo.isSharedWithUs ? "5" : event.categoryId;
     schedule.title = event.title;
     schedule.body = '';
     schedule.isReadOnly = false;
@@ -249,23 +249,27 @@ function addCalendarEvent(eventIcal) {
 
 }
 function removeFromCache(schedule) {
-    let yearMonth = schedule.start.getFullYear() * 12 + schedule.start.getMonth();
+    let dt = moment.utc(schedule.start.toUTCString());
+    let yearMonth = dt.year() * 12 + dt.month();
     let monthCache = ScheduleCache[yearMonth];
     monthCache.splice(monthCache.findIndex(v => v.id === schedule.id), 1);
 }
 function addToCache(newSchedule) {
-    let newYearMonth = newSchedule.start.getFullYear()  * 12 + newSchedule.start.getMonth();
+    let dt = moment.utc(newSchedule.start.toUTCString());
+    let newYearMonth = dt.year() * 12 + dt.month();
     let monthCache = ScheduleCache[newYearMonth];
     monthCache.push(newSchedule);
 }
 function updateCache(oldSchedule, newSchedule) {
     if (oldSchedule != null) {
-        let oldYearMonth = oldSchedule.start.getFullYear() * 12 + oldSchedule.start.getMonth();
+        let dt = moment.utc(oldSchedule.start.toUTCString());
+        let oldYearMonth = dt.year() * 12 + dt.month();
         let monthCache = ScheduleCache[oldYearMonth];
         monthCache.splice(monthCache.findIndex(v => v.id === oldSchedule.id), 1);
     }
     if (newSchedule != null) {
-        let newYearMonth = newSchedule.start.getFullYear() * 12 + newSchedule.start.getMonth();
+        let newDt = moment.utc(newSchedule.start.toUTCString());
+        let newYearMonth = newDt.year() * 12 + newDt.month();
         let monthCache = ScheduleCache[newYearMonth];
         monthCache.push(newSchedule);
     }
@@ -330,8 +334,9 @@ function load(previousMonthEvents, currentMonthEvents, nextMonthEvents, yearMont
 
 function deleteSchedule(schedule) {
     let Id = schedule.id;
-    let year = schedule.start.getFullYear();
-    let month = schedule.start.getMonth() + 1;
+    let dt = moment.utc(schedule.start.toUTCString());
+    let year = dt.year();
+    let month = dt.month() + 1;
     mainWindow.postMessage({year: year, month: month, Id: Id, type:"delete"}, origin);
 }
 
@@ -359,8 +364,9 @@ function toICalTime(tzDate, isAllDay) {
 function save(schedule) {
     //let isPrivate = schedule.isPrivate;
     //let state = schedule.state;
-    let year = schedule.start.getFullYear();
-    let month = schedule.start.getMonth() + 1;
+    let dt = moment.utc(schedule.start.toUTCString());
+    let year = dt.year();
+    let month = dt.month() + 1;
 
 	let comp = new ICAL.Component(['vcalendar', [], []]);
 	comp.updatePropertyWithValue('prodid', '-//iCal.js');

@@ -61,7 +61,7 @@ module.exports = {
     loadAdditionalEvents: function(year, month, messageType, eventsThisMonth) {
         let currentMonth = [];
         eventsThisMonth.forEach(function(item){
-            currentMonth.push(item);
+            currentMonth.push({item:item, isSharedWithUs: false});
         });
         let iframe = document.getElementById("editor");
         let yearMonth = year * 12 + (month -1);
@@ -84,13 +84,13 @@ module.exports = {
         let currentMonth = [];
         let nextMonth = [];
         eventsPreviousMonth.forEach(function(item){
-            previousMonth.push(item);
+            previousMonth.push({item:item, isSharedWithUs: false});
         });
         eventsThisMonth.forEach(function(item){
-            currentMonth.push(item);
+            currentMonth.push({item:item, isSharedWithUs: false});
         });
         eventsNextMonth.forEach(function(item){
-            nextMonth.push(item);
+            nextMonth.push({item:item, isSharedWithUs: false});
         });
         let iframe = document.getElementById("editor");
         let yearMonth = year * 12 + (month-1);
