@@ -30,9 +30,9 @@ module.exports = {
             // create. Check that source, and validate those inputs!
             if (e.origin === "null" && e.source === iframe.contentWindow) {
                 if(e.data.type=="save") {
-                    that.saveEvent(e.data.text);
+                    that.saveEvent(e.data);
                 } else if(e.data.type=="delete") {
-                    that.deleteEvent(e.data.text);
+                    that.deleteEvent(e.data);
                 } else if(e.data.type=="displaySpinner") {
                     that.displaySpinner();
                 } else if(e.data.type=="removeSpinner") {
@@ -61,10 +61,7 @@ module.exports = {
     loadAdditionalEvents: function(year, month, messageType, eventsThisMonth) {
         let currentMonth = [];
         eventsThisMonth.forEach(function(item){
-            currentMonth.push({Id: item.Id, categoryId: item.categoryId, title: item.title,
-                isAllDay: item.isAllDay, start: item.start, end: item.end,
-                location: item.location, isPrivate: item.isPrivate, state: item.state, memo: item.memo
-            });
+            currentMonth.push(item);
         });
         let iframe = document.getElementById("editor");
         let yearMonth = year * 12 + (month -1);
@@ -87,22 +84,13 @@ module.exports = {
         let currentMonth = [];
         let nextMonth = [];
         eventsPreviousMonth.forEach(function(item){
-            previousMonth.push({Id: item.Id, categoryId: item.categoryId, title: item.title,
-                isAllDay: item.isAllDay, start: item.start, end: item.end,
-                location: item.location, isPrivate: item.isPrivate, state: item.state, memo: item.memo
-            });
+            previousMonth.push(item);
         });
         eventsThisMonth.forEach(function(item){
-            currentMonth.push({Id: item.Id, categoryId: item.categoryId, title: item.title,
-                isAllDay: item.isAllDay, start: item.start, end: item.end,
-                location: item.location, isPrivate: item.isPrivate, state: item.state, memo: item.memo
-            });
+            currentMonth.push(item);
         });
         eventsNextMonth.forEach(function(item){
-            nextMonth.push({Id: item.Id, categoryId: item.categoryId, title: item.title,
-                isAllDay: item.isAllDay, start: item.start, end: item.end,
-                location: item.location, isPrivate: item.isPrivate, state: item.state, memo: item.memo
-            });
+            nextMonth.push(item);
         });
         let iframe = document.getElementById("editor");
         let yearMonth = year * 12 + (month-1);
@@ -132,11 +120,8 @@ module.exports = {
     saveEvent: function(item) {
 	    const that = this;
 	    that.displaySpinner();
-        let entry = new peergos.shared.user.CalendarEvent(item.Id, item.categoryId, item.title,
-            item.isAllDay, item.start, item.end, item.location,item.isPrivate, item.state, item.memo
-        );
         let calendar = this.context.getCalendarApp();
-        calendar.updateCalendarEvent(item.year, item.month, entry).thenApply(function(res) {
+        calendar.updateCalendarEvent(item.year, item.month, item.Id, item.item).thenApply(function(res) {
 	        that.removeSpinner();
         }).exceptionally(function(throwable) {
             that.showMessage("Unable to save event","Please close calendar and try again");

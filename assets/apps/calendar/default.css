@@ -73,7 +73,7 @@ body {
 #lnb {
   position: absolute;
   width: 200px;
-  top: 49px;
+  top: 0px;
   bottom: 0;
   border-right: 1px solid #d5d5d5;
   padding: 12px 10px;
@@ -83,7 +83,7 @@ body {
 #right {
   position: absolute;
   left: 200px;
-  top: 49px;
+  top: 0px;
   right: 0;
   bottom: 0;
 }

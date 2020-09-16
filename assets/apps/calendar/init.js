@@ -55,6 +55,9 @@ cal.on({
     'beforeUpdateSchedule': function(e) {
         var schedule = e.schedule;
         var changes = e.changes;
+        if(changes == null) {
+            return;
+        }
         console.log('beforeUpdateSchedule', e);
         if (changes && !changes.isAllDay && schedule.category === 'allday') {
             changes.category = 'time';
@@ -166,8 +169,61 @@ function ScheduleInfo() {
         }
     };
 }
+function unpackIcal(IcalFile) {
+    let vevents = new ICAL.Component(ICAL.parse(IcalFile)).getAllSubcomponents('vevent');
+    if(vevents.length != 1) {
+        console.log("multiple events in ical not supported!");
+        return null;
+    }
+    let vvent = vevents[0];
+    if( vvent.hasProperty('rrule') ){
+        console.log("recurring events currently not supported!");
+        return null;
+    } else {
+        return unpackEvent(vvent);
+    }
+}
+function unpackEvent(iCalEvent) {
+    var event = {};
+    event['isAllDay'] = true;
+    event['Id'] = iCalEvent.getFirstPropertyValue('uid');
+    event['title'] = iCalEvent.getFirstPropertyValue('summary');
+    event['description'] = iCalEvent.getFirstPropertyValue('description');
+    event['location'] = iCalEvent.getFirstPropertyValue('location');
+    let dtStart = iCalEvent.getFirstPropertyValue('dtstart');
+    event['start'] = dtStart.toJSDate();
+    if (dtStart.toICALString().indexOf('T')>-1){
+        event['isAllDay'] = false;
+    }
+    try {
+        let duration = iCalEvent.getFirstPropertyValue('duration').toSeconds();
+        event['end']= new Date(event['start'].getTime() + (duration * 1000));
+    } catch (ex) {
+	    try {
+        	event['end'] = iCalEvent.getFirstPropertyValue('dtend').toJSDate();
+    	} catch (ex2) {
+    		event['end'] = event['start'];
+	    }
+    }
+    let xCategory = iCalEvent.getFirstPropertyValue('x-category-id');
+    event['categoryId'] = xCategory == null ? "1" : xCategory;
 
-function addCalendarEvent(event) {
+    if(iCalEvent.getFirstPropertyValue('status') === "CANCELLED") {
+        event['categoryId'] = "6";
+    }
+    let allAttendees = [];
+    let attendees = iCalEvent.getAllProperties('attendee');
+    attendees.forEach(function(attendee) {
+        allAttendees.push(attendee.getFirstValue());
+    });
+    event.attendees = allAttendees;
+    return event;
+}
+function addCalendarEvent(eventIcal) {
+    let event = unpackIcal(eventIcal);
+    if(event == null) {
+        return;
+    }
     var schedule = new ScheduleInfo();
     schedule.id = event.Id;
     schedule.calendarId = event.categoryId; //note calendarId -> categoryId
@@ -175,20 +231,20 @@ function addCalendarEvent(event) {
     schedule.body = '';
     schedule.isReadOnly = false;
     schedule.isAllday = event.isAllDay;
-    schedule.category = 'time';
+    schedule.category = event.isAllDay ? 'allday' : 'time';
     schedule.start = moment(event.start).toDate();
     schedule.end = moment(event.end).toDate();
-    schedule.isPrivate = event.isPrivate;
+    //schedule.isPrivate = event.isPrivate;
     schedule.location = event.location;
-    schedule.attendees = [];
+    schedule.attendees = event.attendees;
     schedule.recurrenceRule = '';
-    schedule.state = event.state;
+    //schedule.state = event.state;
     var calendarCategory = findCalendar(event.categoryId);
     schedule.color = calendarCategory.color;
     schedule.bgColor = calendarCategory.bgColor;
     schedule.dragBgColor = calendarCategory.dragBgColor;
     schedule.borderColor = calendarCategory.borderColor;
-    schedule.raw.memo = event.memo;
+    schedule.raw.memo = event.description;
     return schedule;
 
 }
@@ -215,7 +271,6 @@ function updateCache(oldSchedule, newSchedule) {
     }
 }
 function loadAdditional(currentMonthEvents, yearMonth) {
-    console.log("loadAdditional calendarEvents");
     let year = Math.floor(yearMonth / 12);
     let month = yearMonth % 12;
     let monthCache = [];
@@ -238,7 +293,6 @@ function loadAdditional(currentMonthEvents, yearMonth) {
 }
 
 function load(previousMonthEvents, currentMonthEvents, nextMonthEvents, yearMonth) {
-    console.log("loading calendarEvents");
     let previousYearMonth = yearMonth - 1;
     let year = Math.floor(previousYearMonth / 12);
     let month = previousYearMonth % 12;
@@ -275,12 +329,10 @@ function load(previousMonthEvents, currentMonthEvents, nextMonthEvents, yearMont
 }
 
 function deleteSchedule(schedule) {
-	console.log("deleteSchedule");
     let Id = schedule.id;
     let year = schedule.start.getFullYear();
     let month = schedule.start.getMonth() + 1;
-    let item = {Id: Id, year: year, month: month};
-    mainWindow.postMessage({text:item, type:"delete"}, origin);
+    mainWindow.postMessage({year: year, month: month, Id: Id, type:"delete"}, origin);
 }
 
 function displaySpinner(schedule) {
@@ -291,29 +343,46 @@ function removeSpinner(schedule) {
     mainWindow.postMessage({type:"removeSpinner"}, origin);
 }
 
+function toICalTime(tzDate, isAllDay) {
+    let dt = moment.utc(tzDate.toUTCString());
+    var dateTime = new ICAL.Time({
+      year: dt.year(),
+      month:  dt.month() +1,
+      day: dt.date(),
+      hour: dt.hour(),
+      minute: dt.minute(),
+      second: dt.second(),
+      isDate: isAllDay
+    }, ICAL.Timezone.utcTimezone);
+    return dateTime;
+}
 function save(schedule) {
-	console.log("save");
-    let Id = schedule.id;
-    let categoryId = schedule.calendarId; // note calendarId -> categoryId
-    let title = schedule.title;
-    let isAllDay = schedule.isAllDay;
-    //schedule.start.getTime().toString()
-    //moment.format()
-    //schedule.end.toDate().toString()
-    let start = schedule.start.toUTCString();
-    let end = schedule.end.toUTCString();
-    let location = schedule.location;
-    let isPrivate = schedule.isPrivate;
-    let state = schedule.state;
+    //let isPrivate = schedule.isPrivate;
+    //let state = schedule.state;
     let year = schedule.start.getFullYear();
     let month = schedule.start.getMonth() + 1;
-    let memo = schedule.raw.memo;
-    let item = {Id: Id, categoryId: categoryId, title: title, isAllDay: isAllDay,
-        start: start, end: end, location: location, isPrivate: isPrivate, state: state,
-        year: year, month: month, memo: memo
-    };
-    mainWindow.postMessage({text:item, type:"save"}, origin);
+
+	let comp = new ICAL.Component(['vcalendar', [], []]);
+	comp.updatePropertyWithValue('prodid', '-//iCal.js');
+	let vevent = new ICAL.Component('vevent'),
+    event = new ICAL.Event(vevent);
+    event.uid = schedule.id;
+    event.summary = schedule.title;
+    event.description = schedule.raw.memo;
+    event.location = schedule.location;
+    event.startDate = toICalTime(schedule.start, schedule.isAllDay);
+    event.endDate = toICalTime(schedule.end, schedule.isAllDay);
+    vevent.addPropertyWithValue('x-category-id', schedule.calendarId); //not to be exported
+    if(schedule.calendarId == "6") { //CANCELLED
+        vevent.addPropertyWithValue('status', "CANCELLED");
+    }
+    comp.addSubcomponent(vevent);
+    let output = comp.toString();
+
+    mainWindow.postMessage({year: year, month: month, Id: event.uid, item:output, type:"save"}, origin);
 }
+
+
 
 function CalendarInfo() {
     this.id = null;
@@ -339,7 +408,7 @@ function setCalendars() {
     var calendar;
     var id = 0;
     calendar = new CalendarInfo();
-    id += 1;
+    id = 1; //Numbers are important!
     calendar.id = String(id);
     calendar.name = 'My Calendar';
     calendar.color = '#ffffff';
@@ -349,7 +418,7 @@ function setCalendars() {
     CalendarList.push(calendar);
 
     calendar = new CalendarInfo();
-    id += 1;
+    id = 2;
     calendar.id = String(id);
     calendar.name = 'Work';
     calendar.color = '#ffffff';
@@ -359,7 +428,7 @@ function setCalendars() {
     CalendarList.push(calendar);
 
     calendar = new CalendarInfo();
-    id += 1;
+    id = 3;
     calendar.id = String(id);
     calendar.name = 'Family';
     calendar.color = '#ffffff';
@@ -369,7 +438,7 @@ function setCalendars() {
     CalendarList.push(calendar);
 
     calendar = new CalendarInfo();
-    id += 1;
+    id = 4;
     calendar.id = String(id);
     calendar.name = 'Friends';
     calendar.color = '#ffffff';
@@ -377,6 +446,27 @@ function setCalendars() {
     calendar.dragBgColor = '#03bd9e';
     calendar.borderColor = '#03bd9e';
     CalendarList.push(calendar);
+
+    calendar = new CalendarInfo();
+    id = 5;
+    calendar.id = String(id);
+    calendar.name = 'Shared With Me';
+    calendar.color = '#ffffff';
+    calendar.bgColor = '#bbdc00';
+    calendar.dragBgColor = '#bbdc00';
+    calendar.borderColor = '#bbdc00';
+    CalendarList.push(calendar);
+
+    calendar = new CalendarInfo();
+    id = 6;
+    calendar.id = String(id);
+    calendar.name = 'Cancelled';
+    calendar.color = '#ffffff';
+    calendar.bgColor = '#9d9d9d';
+    calendar.dragBgColor = '#9d9d9d';
+    calendar.borderColor = '#9d9d9d';
+    CalendarList.push(calendar);
+
 
     var calendarList = document.getElementById('calendarList');
     var html = [];
@@ -455,12 +545,12 @@ function setCalendars() {
             dragBgColor: calendar.bgColor,
             borderColor: calendar.borderColor,
             location: scheduleData.location,
-            isPrivate: scheduleData.raw['class'] == 'private' ? true : false,
+            isPrivate: false,//scheduleData.raw['class'] == 'private' ? true : false,
             raw: {
                 class: scheduleData.raw['class'],
                 memo: scheduleData.raw['memo']
             },
-            state: scheduleData.state
+            state: ''//scheduleData.state
         };
         if (calendar) {
             schedule.calendarId = calendar.id;

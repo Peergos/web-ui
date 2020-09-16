@@ -10526,7 +10526,10 @@ function createMonthView(baseController, layoutContainer, dragHandler, options) 
             }
 
             detailView.render(eventData);
-
+            let state = document.getElementById("detail-busy-free-state");
+            if(state != null) {
+                state.style.display = 'none';
+            }
             let eventDetails = document.getElementById("event-details");
             var div1 = document.createElement("div");
             eventDetails.appendChild(div1);
@@ -10578,6 +10581,13 @@ function createMonthView(baseController, layoutContainer, dragHandler, options) 
     }
 
     let addMemoField = function(eventData) {
+
+        let lock = document.getElementById("tui-full-calendar-schedule-private");
+        lock.style.display = 'none';
+        let state = document.getElementById("busy-free-state");
+        state.style.display = 'none';
+
+
         let loc = document.getElementById("tui-full-calendar-schedule-location");
         let parent = loc.parentNode.parentNode.parentNode;
         var locTextArea = document.createElement("textarea");
@@ -22658,7 +22668,7 @@ module.exports = (Handlebars['default'] || Handlebars).template({"1":function(co
     + alias4(((helper = (helper = lookupProperty(helpers,"CSS_PREFIX") || (depth0 != null ? lookupProperty(depth0,"CSS_PREFIX") : depth0)) != null ? helper : alias2),(typeof helper === alias3 ? helper.call(alias1,{"name":"CSS_PREFIX","hash":{},"data":data,"loc":{"start":{"line":48,"column":29},"end":{"line":48,"column":43}}}) : helper)))
     + "content\">"
     + ((stack1 = ((helper = (helper = lookupProperty(helpers,"popupIsAllDay-tmpl") || (depth0 != null ? lookupProperty(depth0,"popupIsAllDay-tmpl") : depth0)) != null ? helper : alias2),(typeof helper === alias3 ? helper.call(alias1,{"name":"popupIsAllDay-tmpl","hash":{},"data":data,"loc":{"start":{"line":48,"column":52},"end":{"line":48,"column":76}}}) : helper))) != null ? stack1 : "")
-    + "</span>\n            </div>\n        </div>\n        <div class=\""
+    + "</span>\n            </div>\n        </div>\n        <div id='busy-free-state' class=\""
     + alias4(((helper = (helper = lookupProperty(helpers,"CSS_PREFIX") || (depth0 != null ? lookupProperty(depth0,"CSS_PREFIX") : depth0)) != null ? helper : alias2),(typeof helper === alias3 ? helper.call(alias1,{"name":"CSS_PREFIX","hash":{},"data":data,"loc":{"start":{"line":51,"column":20},"end":{"line":51,"column":34}}}) : helper)))
     + "popup-section "
     + alias4(((helper = (helper = lookupProperty(helpers,"CSS_PREFIX") || (depth0 != null ? lookupProperty(depth0,"CSS_PREFIX") : depth0)) != null ? helper : alias2),(typeof helper === alias3 ? helper.call(alias1,{"name":"CSS_PREFIX","hash":{},"data":data,"loc":{"start":{"line":51,"column":48},"end":{"line":51,"column":62}}}) : helper)))
@@ -22822,7 +22832,7 @@ module.exports = (Handlebars['default'] || Handlebars).template({"1":function(co
         return undefined
     };
 
-  return "<div class=\""
+  return "<div id='detail-busy-free-state' class=\""
     + alias4(((helper = (helper = lookupProperty(helpers,"CSS_PREFIX") || (depth0 != null ? lookupProperty(depth0,"CSS_PREFIX") : depth0)) != null ? helper : alias2),(typeof helper === alias3 ? helper.call(alias1,{"name":"CSS_PREFIX","hash":{},"data":data,"loc":{"start":{"line":14,"column":42},"end":{"line":14,"column":56}}}) : helper)))
     + "popup-detail-item\"><span class=\""
     + alias4(((helper = (helper = lookupProperty(helpers,"CSS_PREFIX") || (depth0 != null ? lookupProperty(depth0,"CSS_PREFIX") : depth0)) != null ? helper : alias2),(typeof helper === alias3 ? helper.call(alias1,{"name":"CSS_PREFIX","hash":{},"data":data,"loc":{"start":{"line":14,"column":88},"end":{"line":14,"column":102}}}) : helper)))
