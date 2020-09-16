@@ -10531,28 +10531,41 @@ function createMonthView(baseController, layoutContainer, dragHandler, options) 
                 state.style.display = 'none';
             }
             let eventDetails = document.getElementById("event-details");
-            var div1 = document.createElement("div");
-            eventDetails.appendChild(div1);
+            if(!eventData.schedule.isReadOnly) {
+                var div1 = document.createElement("div");
+                eventDetails.appendChild(div1);
 
-            var span1 = document.createElement("span");
-            div1.appendChild(span1);
-            var img = document.createElement("img");
-            img.src = "./images/user-plus.svg";
-            img.style.width="16px";
-            img.style.height="16px";
-            span1.appendChild(img);
+                var span1 = document.createElement("span");
+                div1.appendChild(span1);
+                var img = document.createElement("img");
+                img.src = "./images/user-plus.svg";
+                img.style.width="16px";
+                img.style.height="16px";
+                span1.appendChild(img);
 
-            var span2 = document.createElement("span");
-            div1.appendChild(span2);
-            var shareLink = document.createElement("a");
-            shareLink.style.marginLeft="3px";
-            shareLink.innerText = "Share With";
-            span2.appendChild(shareLink);
+                var span2 = document.createElement("span");
+                div1.appendChild(span2);
+                var shareLink = document.createElement("a");
+                shareLink.style.marginLeft="3px";
+                shareLink.innerText = "Share With";
+                span2.appendChild(shareLink);
 
-            var handler = function() {
-                console.log("share after");
+                var handler = function() {
+                    console.log("share after");
+                }
+                shareLink.onclick=handler;
             }
-            shareLink.onclick=handler;
+            var locTextArea = document.createElement("textarea");
+            locTextArea.id = "popup-memo-readonly";
+            locTextArea.value = eventData == null ? "" : eventData.schedule.raw.memo;
+            locTextArea.rows = 5;
+            locTextArea.cols = 40;
+            locTextArea.readOnly = true;
+            var div2 = document.createElement("div");
+            eventDetails.appendChild(div2);
+            var div3 = document.createElement("div");
+            div2.appendChild(div3);
+            div3.appendChild(locTextArea);
         };
         onDeleteSchedule = function(eventData) {
             if (creationHandler) {

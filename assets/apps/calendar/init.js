@@ -23,6 +23,7 @@ cal = new tui.Calendar('#calendar', {
     useCreationPopup: useCreationPopup,
     useDetailPopup: useDetailPopup,
     calendars: CalendarList,
+//    isReadOnly: true,
     template: {
         allday: function(schedule) {
             return getTimeTemplate(schedule, true);
@@ -184,7 +185,6 @@ function unpackIcal(IcalFile) {
     }
 }
 function unpackEvent(iCalEvent) {
-    var event = {};
     event['isAllDay'] = true;
     event['Id'] = iCalEvent.getFirstPropertyValue('uid');
     event['title'] = iCalEvent.getFirstPropertyValue('summary');
@@ -229,7 +229,7 @@ function addCalendarEvent(eventInfo) {
     schedule.calendarId = eventInfo.isSharedWithUs ? "5" : event.categoryId;
     schedule.title = event.title;
     schedule.body = '';
-    schedule.isReadOnly = false;
+    schedule.isReadOnly = eventInfo.isSharedWithUs ? true : false;
     schedule.isAllday = event.isAllDay;
     schedule.category = event.isAllDay ? 'allday' : 'time';
     schedule.start = moment(event.start).toDate();
