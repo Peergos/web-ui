@@ -9,6 +9,10 @@ body {
     font-family: 'Montserrat', Sans-Serif;
 }
 
+.token-input {
+    width:100% !important;
+}
+
 .btn-success {
     background-color: #26b99a !important;
     border-color: #16a98a !important;
