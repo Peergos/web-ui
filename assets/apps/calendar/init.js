@@ -8,6 +8,7 @@ var datePicker, selectedCalendar;
 var CalendarList = [];
 var ScheduleList = [];
 let ScheduleCache = [];
+let LoadedEvents = [];
 var currentMoment = moment();
 
 cal = new tui.Calendar('#calendar', {
@@ -123,6 +124,9 @@ window.addEventListener('message', function (e) {
         load(e.data.previousMonth, e.data.currentMonth, e.data.nextMonth, e.data.yearMonth);
     } else if (e.data.type == "loadAdditional") {
         loadAdditional(e.data.currentMonth, e.data.yearMonth);
+    } else if(e.data.type == "importICSFile") {
+        setCalendars();
+        importICSFile(e.data.contents);
     }
 });
 
@@ -173,8 +177,10 @@ function ScheduleInfo() {
 function displayMessage(msg) {
     mainWindow.postMessage({type:"displayMessage", message: msg}, origin);
 }
+
 function unpackIcal(IcalFile) {
-    let vevents = new ICAL.Component(ICAL.parse(IcalFile)).getAllSubcomponents('vevent');
+    let icalComponent = new ICAL.Component(ICAL.parse(IcalFile));
+    let vevents = icalComponent.getAllSubcomponents('vevent');
     if(vevents.length != 1) {
         let msg = "multiple events in ical not supported!";
         console.log(msg);
@@ -188,6 +194,7 @@ function unpackIcal(IcalFile) {
         displayMessage(msg);
         return null;
     } else {
+        LoadedEvents[vvent.getFirstPropertyValue('uid')] = icalComponent;
         return unpackEvent(vvent);
     }
 }
@@ -231,12 +238,15 @@ function addCalendarEvent(eventInfo) {
     if(event == null) {
         return;
     }
+    return buildScheduleFromEvent(event, eventInfo.isSharedWithUs);
+}
+function buildScheduleFromEvent(event, isSharedWithUs) {
     var schedule = new ScheduleInfo();
     schedule.id = event.Id;
-    schedule.calendarId = eventInfo.isSharedWithUs ? "5" : event.categoryId;
+    schedule.calendarId = isSharedWithUs ? "5" : event.categoryId;
     schedule.title = event.title;
     schedule.body = '';
-    schedule.isReadOnly = eventInfo.isSharedWithUs ? true : false;
+    schedule.isReadOnly = isSharedWithUs ? true : false;
     schedule.isAllday = event.isAllDay;
     schedule.category = event.isAllDay ? 'allday' : 'time';
     schedule.start = moment(event.start).toDate();
@@ -288,6 +298,29 @@ function updateCache(oldSchedule, newSchedule) {
             monthCache.push(newSchedule);
         }
     }
+}
+function importICSFile(contents) {
+    let icalComponent = new ICAL.Component(ICAL.parse(contents));
+    let vevents = icalComponent.getAllSubcomponents('vevent');
+    let allEvents = [];
+    vevents.forEach(function(vvent, idx) {
+        if( vvent.hasProperty('rrule') ){
+            let msg = "recurring events currently not supported!";
+            console.log(msg);
+            displayMessage(msg);
+            return null;
+        } else {
+            let schedule = buildScheduleFromEvent(unpackEvent(vvent), false);
+            let dt = moment.utc(schedule.start.toUTCString());
+            let year = dt.year();
+            let month = dt.month() + 1;
+            let output = serialiseICal(schedule);
+            allEvents.push({year: year, month: month, Id: schedule.id, item:output});
+            if(idx == vevents.length -1) {
+                mainWindow.postMessage({items:allEvents, type:"saveAll"}, origin);
+            }
+        }
+    });
 }
 function loadAdditional(currentMonthEvents, yearMonth) {
     let year = Math.floor(yearMonth / 12);
@@ -385,27 +418,43 @@ function save(schedule) {
     let dt = moment.utc(schedule.start.toUTCString());
     let year = dt.year();
     let month = dt.month() + 1;
-
-	let comp = new ICAL.Component(['vcalendar', [], []]);
-	comp.updatePropertyWithValue('prodid', '-//iCal.js');
-	let vevent = new ICAL.Component('vevent'),
-    event = new ICAL.Event(vevent);
-    event.uid = schedule.id;
-    event.summary = schedule.title;
-    event.description = schedule.raw.memo;
-    event.location = schedule.location;
-    event.startDate = toICalTime(schedule.start, schedule.isAllDay);
-    event.endDate = toICalTime(schedule.end, schedule.isAllDay);
-    vevent.addPropertyWithValue('x-category-id', schedule.calendarId); //not to be exported
-    if(schedule.calendarId == "6") { //CANCELLED
-        vevent.addPropertyWithValue('status', "CANCELLED");
-    }
-    comp.addSubcomponent(vevent);
-    let output = comp.toString();
-
-    mainWindow.postMessage({year: year, month: month, Id: event.uid, item:output, type:"save"}, origin);
+    let output = serialiseICal(schedule);
+    mainWindow.postMessage({year: year, month: month, Id: schedule.id, item:output, type:"save"}, origin);
 }
-
+function serialiseICal(schedule) {
+    var comp = LoadedEvents[schedule.id];
+    if (comp != null) {
+        let vevents = comp.getAllSubcomponents('vevent');
+        let vvent = vevents[0];
+        vvent.updatePropertyWithValue('summary', schedule.title);
+        vvent.updatePropertyWithValue('description', schedule.raw.memo);
+        vvent.updatePropertyWithValue('location', schedule.location);
+        vvent.updatePropertyWithValue('dtstart', toICalTime(schedule.start, schedule.isAllDay));
+        vvent.updatePropertyWithValue('dtend', toICalTime(schedule.end, schedule.isAllDay));
+        vvent.updatePropertyWithValue('x-category-id', schedule.calendarId); //not to be exported
+        if(schedule.calendarId == "6") { //CANCELLED
+            vvent.updatePropertyWithValue('status', "CANCELLED");
+        }
+    } else {
+        comp = new ICAL.Component(['vcalendar', [], []]);
+        comp.updatePropertyWithValue('prodid', '-//iCal.js');
+        let vevent = new ICAL.Component('vevent'),
+        event = new ICAL.Event(vevent);
+        event.uid = schedule.id;
+        event.summary = schedule.title;
+        event.description = schedule.raw.memo;
+        event.location = schedule.location;
+        event.startDate = toICalTime(schedule.start, schedule.isAllDay);
+        event.endDate = toICalTime(schedule.end, schedule.isAllDay);
+        vevent.addPropertyWithValue('x-category-id', schedule.calendarId); //not to be exported
+        if(schedule.calendarId == "6") { //CANCELLED
+            vevent.addPropertyWithValue('status', "CANCELLED");
+        }
+        comp.addSubcomponent(vevent);
+        LoadedEvents[schedule.id] = comp;
+    }
+    return comp.toString();
+}
 
 
 function CalendarInfo() {

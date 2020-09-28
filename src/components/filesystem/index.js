@@ -1158,6 +1158,7 @@ module.exports = {
         },
         showCalendar: function() {
             this.toggleNav();
+            this.importFile = null;
             this.showCalendarViewer = true;
         },
         logout: function() {
@@ -1398,7 +1399,25 @@ module.exports = {
                 this.navigateOrDownload(file);
             }    
         },
-
+        importICSFile: function() {
+            if (this.selectedFiles.length == 0)
+                return;
+            this.closeMenu();
+            let file = this.selectedFiles[0];
+            let props = file.getFileProperties();
+            let that = this;
+            let context = this.getContext();
+            file.getInputStream(context.network, context.crypto, props.sizeHigh(), props.sizeLow(), function(read) {})
+                .thenCompose(function(reader) {
+                    var size = that.getFileSize(props);
+                    var data = convertToByteArray(new Int8Array(size));
+                    return reader.readIntoArray(data, 0, data.length)
+                        .thenApply(function(read){
+                            that.importFile = new TextDecoder().decode(data);
+                            that.showCalendarViewer = true;
+                        });
+            })
+        },
         gallery: function() {
             // TODO: once we support selecting files re-enable this
             //if (this.selectedFiles.length == 0)
@@ -1847,6 +1866,18 @@ module.exports = {
                if (this.selectedFiles.length != 1)
                    return false;
                return !this.selectedFiles[0].isDirectory()
+           } catch (err) {
+               return false;
+           }
+        },
+        isIcsFile: function() {
+           try {
+               if (this.currentDir == null)
+                   return false;
+               if (this.selectedFiles.length != 1)
+                   return false;
+               return !this.selectedFiles[0].isDirectory() &&
+                    this.selectedFiles[0].getFileProperties().name.toUpperCase().endsWith(".ICS");
            } catch (err) {
                return false;
            }

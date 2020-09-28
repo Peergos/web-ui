@@ -6,7 +6,7 @@ module.exports = {
             spinnerMessage: ""
         }
     },
-    props: ['context', 'messages'],
+    props: ['context', 'messages', 'importFile'],
     created: function() {
         this.displaySpinner();
         this.startListener();
@@ -31,6 +31,8 @@ module.exports = {
             if (e.origin === "null" && e.source === iframe.contentWindow) {
                 if(e.data.type=="save") {
                     that.saveEvent(e.data);
+                } else if(e.data.type=="saveAll") {
+                    that.saveAllEvents(e.data);
                 } else if(e.data.type=="delete") {
                     that.deleteEvent(e.data);
                 } else if(e.data.type=="displaySpinner") {
@@ -51,8 +53,19 @@ module.exports = {
         let date = new Date();
         let year = 1900 + date.getYear();
         let monthIndex = date.getMonth() + 1;
-        this.load(year, monthIndex, 'load');
+        if(this.importFile != null) {
+            this.importICSFile();
+        } else {
+            this.load(year, monthIndex, 'load');
+        }
 	},
+    importICSFile: function() {
+        let that = this;
+        let iframe = document.getElementById("editor");
+        setTimeout(function(){
+            iframe.contentWindow.postMessage({type: 'importICSFile', contents: that.importFile}, '*');
+        });
+    },
     loadAdditional: function(year, month, messageType) {
         let calendar = this.context.getCalendarApp();
         let that = this;
@@ -133,6 +146,27 @@ module.exports = {
             console.log(throwable.getMessage());
 	        that.removeSpinner();
         });
+    },
+    saveAllEvents: function(items) {
+        let calendar = this.context.getCalendarApp();
+        this.saveAllEventsRecursive(calendar, items.items, 0);
+    },
+    saveAllEventsRecursive: function(calendar, items, index) {
+        const that = this;
+        if(index == items.length) {
+            that.removeSpinner();
+            that.close();
+            that.showMessage(items.length + " Event(s) successfully imported!");
+        } else {
+            let item = items[index];
+            calendar.updateCalendarEvent(item.year, item.month, item.Id, item.item).thenApply(function(res) {
+                that.saveAllEventsRecursive(calendar, items, ++index);
+            }).exceptionally(function(throwable) {
+                that.showMessage("Unable to import event");
+                console.log(throwable.getMessage());
+                that.removeSpinner();
+            });
+        }
     },
     showMessage: function(title, body) {
         this.messages.push({
