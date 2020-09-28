@@ -162,9 +162,10 @@ module.exports = {
             calendar.updateCalendarEvent(item.year, item.month, item.Id, item.item).thenApply(function(res) {
                 that.saveAllEventsRecursive(calendar, items, ++index);
             }).exceptionally(function(throwable) {
+                that.removeSpinner();
+                that.close();
                 that.showMessage("Unable to import event");
                 console.log(throwable.getMessage());
-                that.removeSpinner();
             });
         }
     },
