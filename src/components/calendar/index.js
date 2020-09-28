@@ -37,6 +37,8 @@ module.exports = {
                     that.displaySpinner();
                 } else if(e.data.type=="removeSpinner") {
                     that.removeSpinner();
+                } else if(e.data.type=="displayMessage") {
+                    that.displayMessage(e.data.message);
                 } else if(e.data.type=="loadAdditional") {
                     that.loadAdditional(e.data.year, e.data.month, 'loadAdditional');
                 }
@@ -116,6 +118,9 @@ module.exports = {
     },
     removeSpinner: function(item) {
         this.showSpinner = false;
+    },
+    displayMessage: function(msg) {
+        this.showMessage(msg);
     },
     saveEvent: function(item) {
 	    const that = this;

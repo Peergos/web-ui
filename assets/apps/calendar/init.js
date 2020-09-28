@@ -170,15 +170,22 @@ function ScheduleInfo() {
         }
     };
 }
+function displayMessage(msg) {
+    mainWindow.postMessage({type:"displayMessage", message: msg}, origin);
+}
 function unpackIcal(IcalFile) {
     let vevents = new ICAL.Component(ICAL.parse(IcalFile)).getAllSubcomponents('vevent');
     if(vevents.length != 1) {
-        console.log("multiple events in ical not supported!");
+        let msg = "multiple events in ical not supported!";
+        console.log(msg);
+        displayMessage(msg);
         return null;
     }
     let vvent = vevents[0];
     if( vvent.hasProperty('rrule') ){
-        console.log("recurring events currently not supported!");
+        let msg = "recurring events currently not supported!";
+        console.log(msg);
+        displayMessage(msg);
         return null;
     } else {
         return unpackEvent(vvent);
@@ -252,26 +259,34 @@ function removeFromCache(schedule) {
     let dt = moment.utc(schedule.start.toUTCString());
     let yearMonth = dt.year() * 12 + dt.month();
     let monthCache = ScheduleCache[yearMonth];
-    monthCache.splice(monthCache.findIndex(v => v.id === schedule.id), 1);
+    if (monthCache != null) {
+        monthCache.splice(monthCache.findIndex(v => v.id === schedule.id), 1);
+    }
 }
 function addToCache(newSchedule) {
     let dt = moment.utc(newSchedule.start.toUTCString());
     let newYearMonth = dt.year() * 12 + dt.month();
     let monthCache = ScheduleCache[newYearMonth];
-    monthCache.push(newSchedule);
+    if (monthCache != null) {
+        monthCache.push(newSchedule);
+    }
 }
 function updateCache(oldSchedule, newSchedule) {
     if (oldSchedule != null) {
         let dt = moment.utc(oldSchedule.start.toUTCString());
         let oldYearMonth = dt.year() * 12 + dt.month();
         let monthCache = ScheduleCache[oldYearMonth];
-        monthCache.splice(monthCache.findIndex(v => v.id === oldSchedule.id), 1);
+        if (monthCache != null) {
+            monthCache.splice(monthCache.findIndex(v => v.id === oldSchedule.id), 1);
+        }
     }
     if (newSchedule != null) {
         let newDt = moment.utc(newSchedule.start.toUTCString());
         let newYearMonth = newDt.year() * 12 + newDt.month();
         let monthCache = ScheduleCache[newYearMonth];
-        monthCache.push(newSchedule);
+        if (monthCache != null) {
+            monthCache.push(newSchedule);
+        }
     }
 }
 function loadAdditional(currentMonthEvents, yearMonth) {
@@ -350,6 +365,9 @@ function removeSpinner(schedule) {
 
 function toICalTime(tzDate, isAllDay) {
     let dt = moment.utc(tzDate.toUTCString());
+    if (isAllDay && tzDate.getMonth() != dt.month()) {
+        dt.add(1, 'days');
+    }
     var dateTime = new ICAL.Time({
       year: dt.year(),
       month:  dt.month() +1,
