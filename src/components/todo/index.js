@@ -78,10 +78,11 @@ module.exports = {
                     let allItems = [];
                     for(var j = 0; j < items.length; j++) {
                         let item = items[j];
-                        let entry = {id: item.Id, created: item.created, text: item.text, checked: item.checked};
+                        let milliseconds = item.getCreatedAsMillisecondsString();
+                        let entry = {id: item.Id, created: milliseconds, text: item.text, checked: item.checked};
                         allItems.push(entry);
                     }
-                    allLists.push({index: list.getIndex(), name: list.getName(), items: allItems});
+                    allLists.push({id: list.getId(), name: list.getName(), items: allItems});
                 }
                 let title = that.isOwner ? that.todoBoardName : that.todoBoardName + " (shared by: " + that.todoBoardOwner + ")";
                 that.isWritable = todoBoard.isWritable();
@@ -155,10 +156,10 @@ module.exports = {
     	    let listItems = [];
     	    for(var j = 0; j < list.items.length; j++) {
     	        let item = list.items[j];
-    	        let entry = new peergos.shared.user.TodoListItem(item.id, item.created, item.text, item.checked);
+    	        let entry = peergos.shared.user.TodoListItem.build(item.id, item.created, item.text, item.checked);
                 listItems.push(entry);
 	        }
-    	    let todoList = peergos.shared.user.TodoList.buildFromJs(list.name, list.index, listItems);
+    	    let todoList = peergos.shared.user.TodoList.buildFromJs(list.name, list.id, listItems);
     	    todoLists.push(todoList);
 	    }
 	    let todoBoard = peergos.shared.user.TodoBoard.buildFromJs(this.todoBoardName, todoLists);

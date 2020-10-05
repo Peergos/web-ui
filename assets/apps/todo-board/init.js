@@ -183,7 +183,7 @@ function onFormSubmit(e, todoItem, todoList) {
   if (inputValue === '') {
     return;
   }
-  let newItem = {id: uuidv4(), created: Date.now(), text:inputValue, checked: false};
+  let newItem = {id: uuidv4(), created: new Date().getTime(), text:inputValue, checked: false};
   appendTodoItem(newItem, todoList);
   document.getElementById(todoItem).value = "";
   registerChange();
@@ -355,7 +355,7 @@ function load(title, isWritable, lists) {
         return;
     }
     lists.forEach(function(list, listIdx){
-        let index = list.index;
+        let index = new Number(list.id);
         if(index > largestIndexNumber) {
             largestIndexNumber = index;
         }
@@ -420,7 +420,7 @@ function save() {
 				    todoItems.push(item);
 				}
 			}
-			let todoList = {index: index, name: todoListName, items: todoItems};
+			let todoList = {id: "" + index, name: todoListName, items: todoItems};
 			contents.push(todoList);
 		}
     }
