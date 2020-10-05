@@ -370,6 +370,11 @@ table {
   color: #26b99a;
 }
 
+.modal-header-app {
+    min-height:16.43px;
+    padding:15px;
+}
+
 .modal-body {
   margin: 20px 0;
 }
