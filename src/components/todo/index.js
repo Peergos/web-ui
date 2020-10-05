@@ -70,7 +70,7 @@ module.exports = {
             this.readyToShare = true;
             let todoApp = this.context.getTodoApp();
             todoApp.getTodoBoard(this.todoBoardOwner, this.todoBoardName).thenCompose(function(todoBoard) {
-                let lists = todoBoard.getTodoLists().toArray([]);
+                let lists = todoBoard.left.getTodoLists().toArray([]);
                 let allLists = [];
                 for(var i = 0; i < lists.length; i++) {
                     let list = lists[i];
@@ -85,7 +85,7 @@ module.exports = {
                     allLists.push({id: list.getId(), name: list.getName(), items: allItems});
                 }
                 let title = that.isOwner ? that.todoBoardName : that.todoBoardName + " (shared by: " + that.todoBoardOwner + ")";
-                that.isWritable = todoBoard.isWritable();
+                that.isWritable = todoBoard.right;
                 setTimeout(function(){
                     iframe.contentWindow.postMessage({title: title, isWritable: that.isWritable, text: allLists}, '*');
                 });
