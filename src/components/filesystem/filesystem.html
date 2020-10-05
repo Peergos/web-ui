@@ -4,6 +4,7 @@
     <input type="file" id="uploadDirectoriesInput" @change="uploadFiles" style="display:none;" multiple directory mozDirectory webkitDirectory/>
     <div style="display:block;">
       <ul class="nav navbar-nav">
+    <li id="appButton" @click="toggleNav()" class="navbar-brand nopad"><a><span data-toggle="tooltip" data-placement="bottom" title="Apps" class="pnavbar fas fa-th" style="cursor: pointer;"/></a></li>
 	<li id="homeButton" @click="goHome()" class="navbar-brand nopad"><a><span data-toggle="tooltip" data-placement="bottom" title="Global root" class="pnavbar fas fa-globe-asia" style="cursor: pointer;"/></a></li>
 	<li id="uploadButton" @click="toggleUploadMenu()" v-if="isWritable" class="navbar-brand nopad"><a><span data-toggle="tooltip" data-placement="bottom" title="Upload" class="pnavbar fa fa-upload" style="cursor: pointer;"/></a></li>
 	<li id="mkdirButton" @click="askMkdir()" v-if="isWritable" class="navbar-brand nopad"><a><span data-toggle="tooltip" data-placement="bottom" title="Create new directory" class="pnavbar fas fa-folder-plus" style="cursor: pointer;"/></a></li>
@@ -49,7 +50,10 @@
     </ul>
 
   </nav>
-  
+  <div id="sideMenu" class="sidenav">
+    <a><span/>&nbsp</a>
+    <a @click="showTodoBoard"><span class="fas fa-list-alt"/></a>
+  </div>
   <a id="downloadAnchor" style="display:none"></a>
   <ul id="right-click-menu" tabindex="-1" v-if="viewMenu && (isNotHome || isPasteAvailable || isNotBackground)" v-on:blur="closeMenu" v-bind:style="{top:top, left:left}">
     <li id='gallery' v-if="canOpen" v-on:click="gallery">View</li>
@@ -79,9 +83,9 @@
     v-on:hide-share-with="showShare = false"
     v-on:update-shared-refresh="forceSharedRefreshWithUpdate++"
     :data="sharedWithData"
-    :files="selectedFiles" 
-    :parent="isNotBackground ? currentDir : null"
-    :path="path"
+    :files="filesToShare"
+    :parent="parentFile"
+    :path="pathToFile"
     :context="context" 
     :followernames="followernames" 
     :messages="messages">
@@ -173,6 +177,16 @@
     :context="context"
     :messages="messages">
   </code-editor>
+  <todo-board
+          v-if="showTodoBoardViewer"
+          v-on:hide-todo-board="closeApps();"
+          :context="context"
+          :todoBoardName="todoBoardName"
+          :todoBoardOwner="todoBoardOwner"
+          :isNewTodoBoard="isNewTodoBoard"
+          :shareWith="showShareWithFromApp"
+          :messages="messages">
+  </todo-board>
   <text-viewer
     v-if="showTextViewer" 
     v-on:hide-text-viewer="closeApps()"
@@ -193,6 +207,15 @@
     :value="prompt_value" 
     :consumer_func="prompt_consumer_func">
   </prompt>
+  <create
+          v-if="showCreate"
+          v-on:hide-create="showCreate = false"
+          :create_message='create_message'
+          :placeholder="create_placeholder"
+          :items="create_items"
+          :messages="messages"
+          :consumer_func="create_consumer_func">
+  </create>
   <warning 
     v-if="showWarning" 
     v-on:hide-warning="showWarning = false"

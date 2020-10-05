@@ -44,6 +44,8 @@ module.exports = {
             showSettingsMenu:false,
             showUploadMenu:false,
             showFeedbackForm: false,
+            showSideNav: false,
+            showTodoBoardViewer: false,
 	    admindata: {pending:[]},
             social:{
                 pending: [],
@@ -63,6 +65,7 @@ module.exports = {
             prompt_placeholder: '',
             prompt_value: '',
             prompt_consumer_func: () => {},
+            showCreate: false,
             showPrompt: false,
             showWarning: false,
             showReplace: false,
@@ -317,6 +320,7 @@ module.exports = {
 		this.showCodeEditor = false;
 		this.showTextViewer = false;
 		this.showHexViewer = false;
+	    this.showTodoBoardViewer = false;
 	    } else {
 		if (! differentPath)
 		    this.openInApp(filename, app);
@@ -333,6 +337,7 @@ module.exports = {
 	    this.showCodeEditor = false;
 	    this.showTextViewer = false;
 	    this.showHexViewer = false;
+	    this.showTodoBoardViewer = false;
 	    this.updateHistory("filesystem", this.getPath(), "");
 	},
 
@@ -529,9 +534,8 @@ module.exports = {
             }.bind(this);
             this.showPrompt = true;
         },
-
         confirmDelete: function(file, deleteFn) {
-	    var extra = file.isDirectory() ? " and all its contents" : "";
+	        var extra = file.isDirectory() ? " and all its contents" : "";
             this.warning_message='Are you sure you want to delete ' + file.getName() + extra +'?'; 
             this.warning_body='';
             this.warning_consumer_func = deleteFn;
@@ -1120,7 +1124,40 @@ module.exports = {
 		    that.showRequestSpace = true;
 	    });
         },
-
+        showTodoBoard: function() {
+            this.toggleNav();
+            this.create_placeholder='todo board';
+            this.create_message='Todo Board';
+            let that = this;
+            let todoApp = this.context.getTodoApp();
+            that.showSpinner = true;
+            todoApp.getTodoBoards().thenApply(function(existingBoards) {
+                let todoBoards = existingBoards.toArray([]);
+                let formattedTodoBoards = [];
+                todoBoards.forEach(function(item) {
+                    let value = item.left + "/" + item.right;
+                    let text = that.context.username == item.left ? item.right : item.right + " (shared by: " + item.left + ")";
+                    formattedTodoBoards.push({value : value, text : text})
+                });
+                that.create_items=formattedTodoBoards;
+                that.create_consumer_func = function(create_result) {
+                    if (create_result === null)
+                        return;
+                    that.isNewTodoBoard = !create_result.includes("/");
+                    let ownerAndName = create_result.split('/');
+                    that.todoBoardOwner = that.isNewTodoBoard ? that.context.username : ownerAndName[0];
+                    that.todoBoardName = that.isNewTodoBoard ? create_result.trim() : ownerAndName[1];
+                    that.showTodoBoardViewer = true;
+                };
+                that.showSpinner = false;
+                that.showCreate = true;
+            }).exceptionally(function(throwable) {
+                that.errorTitle = 'Error';
+                that.errorBody = throwable.getMessage();
+                that.showError = true;
+                that.showSpinner = false;
+            });
+        },
         logout: function() {
             this.toggleUserMenu();
             this.context = null;
@@ -1250,6 +1287,30 @@ module.exports = {
             this.closeMenu();
         },
 
+        showShareWithFromApp: function(app, filename) {
+            let that = this;
+            var context = this.getContext();
+            let dirPath = context.username + "/.apps/" + app;
+            this.context.getByPath(dirPath)
+                .thenApply(function(dir){dir.get().getChild(filename, that.context.crypto.hasher, that.context.network).thenApply(function(child){
+                    let file = child.get();
+                    if (file == null) {
+                        return;
+                    }
+                    that.filesToShare = [file];
+                    that.parentFile = dir.ref;
+                    that.pathToFile = dirPath.split('/');
+                    let directoryPath = peergos.client.PathUtils.directoryToPath(that.pathToFile);
+                    context.getDirectorySharingState(directoryPath).thenApply(function(updatedSharedWithState) {
+                        let fileSharedWithState = updatedSharedWithState.get(file.getFileProperties().name);
+                        let read_usernames = fileSharedWithState.readAccess.toArray([]);
+                        let edit_usernames = fileSharedWithState.writeAccess.toArray([]);
+                        that.sharedWithData = {read_shared_with_users:read_usernames, edit_shared_with_users:edit_usernames};
+                        that.showShare = true;
+                    });
+                })});
+        },
+
         showShareWith: function() {
             if (this.selectedFiles.length == 0)
                 return;
@@ -1259,7 +1320,9 @@ module.exports = {
             var file = this.selectedFiles[0];
             var filename = file.getFileProperties().name;
             let latestFile = this.files.filter(f => f.getName() == filename)[0];
-            this.selectedFiles = [latestFile];
+            this.filesToShare = [latestFile];
+            this.parentFile = this.isNotBackground ? this.currentDir : null;
+            this.pathToFile = this.path;
             let fileSharedWithState = this.sharedWithState.get(filename);
             let read_usernames = fileSharedWithState.readAccess.toArray([]);
             let edit_usernames = fileSharedWithState.writeAccess.toArray([]);
@@ -1718,6 +1781,14 @@ module.exports = {
         closeMenu: function() {
             this.viewMenu = false;
             this.ignoreEvent = false;
+        },
+        toggleNav : function() {
+            if (this.showSideNav) {
+                  document.getElementById("sideMenu").style.width = "0";
+            } else {
+              document.getElementById("sideMenu").style.width = "80px";
+            }
+            this.showSideNav = !this.showSideNav;
         }
     },
     computed: {

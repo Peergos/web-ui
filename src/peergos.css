@@ -319,6 +319,17 @@ table {
 
 .modal-mask {
   position: fixed;
+  z-index: 9999;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0, 0, 0, .5);
+  transition: opacity .3s ease;
+}
+
+.modal-mask-app {
+  position: fixed;
   z-index: 9998;
   top: 0;
   left: 0;
@@ -347,6 +358,12 @@ table {
     .modal-container {
 	width: 100%;
     }
+}
+
+.modal-header-app {
+    min-height:16.43px;
+    padding:15px;
+    border-bottom:1px solid #e5e5e5
 }
 
 .modal-header h3 {
@@ -506,4 +523,33 @@ table {
 }
 
 h3 {word-wrap:break-word; white-space:normal;}
+
+.sidenav {
+  height: 100%;
+  width: 0;
+  position: fixed;
+  z-index: 1;
+  top: 0;
+  left: 0;
+  background-color: #111;
+  overflow-x: hidden;
+  overflow-y: hidden;
+  transition: 0.5s;
+  padding-top: 60px;
+}
+
+.sidenav a {
+  padding: 8px 8px 8px 8px;
+  text-decoration: none;
+  font-size: 40px;
+  color: #818181;
+  display: block;
+  transition: 0.3s;
+}
+
+.sidenav a:hover {
+  color: #f1f1f1;
+}
+
+
 
