@@ -31,7 +31,7 @@ module.exports = {
 
         showMessage : function (title, body) {
             if (! this.fromApp) {
-                that.messages.push({
+                this.messages.push({
                     title: title,
                     body: body,
                     show: true
