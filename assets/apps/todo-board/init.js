@@ -1,5 +1,6 @@
 var mainWindow;
 var origin;
+var isWritable;
 window.addEventListener('message', function (e) {
     // You must verify that the origin of the message's sender matches your
     // expectations. In this case, we're only planning on accepting messages
@@ -18,7 +19,8 @@ window.addEventListener('message', function (e) {
     } else if (e.data.type == "respondRenameList") {
         respondToRename(e.data.index, e.data.newName);
     } else {
-        load(e.data.title, e.data.isWritable, e.data.text);
+        isWritable = e.data.isWritable;
+        load(e.data.title, e.data.text);
     }
 });
 
@@ -191,7 +193,7 @@ function onFormSubmit(e, todoItem, todoList) {
 }
 
 function registerChange() {
-  if(! this.changeMade) {
+  if (isWritable && ! this.changeMade) {
     this.changeMade = true;
     mainWindow.postMessage({action:'registerChange'}, origin);
   }
@@ -343,7 +345,7 @@ function droppedList(evt){
 // tmp fix for iOS10 touchmove bug (https://github.com/timruffles/ios-html5-drag-drop-shim/issues/77)
 window.addEventListener('touchmove', function () {})
 
-function load(title, isWritable, lists) {
+function load(title, lists) {
     let polyfillApplied = MobileDragDrop.polyfill();
     if (polyfillApplied) {
 		console.log("mobile DnD polyfill applied");

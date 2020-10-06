@@ -83,6 +83,7 @@
     v-on:hide-share-with="showShare = false"
     v-on:update-shared-refresh="forceSharedRefreshWithUpdate++"
     :data="sharedWithData"
+    :fromApp="fromApp"
     :files="filesToShare"
     :parent="parentFile"
     :path="pathToFile"

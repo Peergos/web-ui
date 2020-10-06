@@ -1306,6 +1306,7 @@ module.exports = {
                         let read_usernames = fileSharedWithState.readAccess.toArray([]);
                         let edit_usernames = fileSharedWithState.writeAccess.toArray([]);
                         that.sharedWithData = {read_shared_with_users:read_usernames, edit_shared_with_users:edit_usernames};
+                        that.fromApp = true;
                         that.showShare = true;
                     });
                 })});
@@ -1327,6 +1328,7 @@ module.exports = {
             let read_usernames = fileSharedWithState.readAccess.toArray([]);
             let edit_usernames = fileSharedWithState.writeAccess.toArray([]);
             this.sharedWithData = {read_shared_with_users:read_usernames, edit_shared_with_users:edit_usernames};
+            this.fromApp = false;
             this.showShare = true;
         },
 
