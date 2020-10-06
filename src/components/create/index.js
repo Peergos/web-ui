@@ -37,6 +37,7 @@ module.exports = {
             if(newVal == "@@@new@@@") {
                 document.getElementById("name-input").style.display = '';
                 document.getElementById("name-input-button").style.display = '';
+                document.getElementById("create-input").focus();
             } else {
                 document.getElementById("name-input").style.display = 'none';
                 document.getElementById("name-input-button").style.display = 'none';

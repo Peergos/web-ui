@@ -292,7 +292,7 @@ function dropped(evt){
 	evt.stopPropagation();
 	let list = document.getElementById(evt.currentTarget.parentElement.id);
 	var target = evt.target;
-	if(target.classList.contains("new-entry") || target.localName == "div") {
+	if(target.classList.contains("new-entry") || target.localName == "div" || target.localName == "img") {
 		return;
 	}
 	if(target.type == "submit" || target.id.includes("todoListName") || target.id.includes("todoItem") || target.id.includes("todoListContainer")) {

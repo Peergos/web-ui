@@ -1126,7 +1126,7 @@ module.exports = {
         },
         showTodoBoard: function() {
             this.toggleNav();
-            this.create_placeholder='todo board';
+            this.create_placeholder='Todo Board';
             this.create_message='Todo Board';
             let that = this;
             let todoApp = this.context.getTodoApp();
