@@ -43,6 +43,10 @@ module.exports = {
                     that.displayMessage(e.data.message);
                 } else if(e.data.type=="loadAdditional") {
                     that.loadAdditional(e.data.year, e.data.month, 'loadAdditional');
+                } else if(e.data.type=="downloadEvent") {
+                    that.downloadEvent(e.data.id, e.data.year, e.data.month);
+                } else if(e.data.type=="addToClipboardEvent") {
+                    that.addToClipboardEvent(e.data.id, e.data.year, e.data.month);
                 }
             }
         });
@@ -168,6 +172,42 @@ module.exports = {
                 console.log(throwable.getMessage());
             });
         }
+    },
+    addToClipboardEvent: function(id, year, month) {
+        let that = this;
+        let calendar = this.context.getCalendarApp();
+        calendar.getEventFile(year, month, id).thenApply(function(file){
+            console.log("name=" + file.getName())
+            let link = window.location.origin + window.location.pathname +
+                    "#" + propsToFragment({secretLink:true,link:file.toLink()});
+            navigator.clipboard.writeText(link).then(function() {}, function() {
+              console.error("Unable to write to clipboard.");
+            });
+        });
+    },
+    downloadEvent: function(id, year, month) {
+        let that = this;
+        let calendar = this.context.getCalendarApp();
+        calendar.getEventFile(year, month, id)
+            .thenApply(function(file){
+                let props = file.getFileProperties();
+                file.getInputStream(that.context.network, that.context.crypto, props.sizeHigh(), props.sizeLow(), function(read) {})
+                    .thenCompose(function(reader){
+                        let size = props.sizeLow();
+                        let data = convertToByteArray(new Int8Array(size));
+                        return reader.readIntoArray(data, 0, data.length)
+                                .thenApply(function(read){that.openItem('' + year+'-'+month+'-event.ics', data, props.mimeType)});
+                    });
+            });
+    },
+    openItem: function(name, data, mimeType) {
+        var blob =  new Blob([data], {type: "octet/stream"});
+        var url = window.URL.createObjectURL(blob);
+        var link = document.getElementById("downloadEventAnchor");
+        link.href = url;
+        link.type = mimeType;
+        link.download = name;
+        link.click();
     },
     showMessage: function(title, body) {
         this.messages.push({

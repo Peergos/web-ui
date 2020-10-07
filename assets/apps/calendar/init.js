@@ -398,7 +398,7 @@ function removeSpinner(schedule) {
 
 function toICalTime(tzDate, isAllDay) {
     let dt = moment.utc(tzDate.toUTCString());
-    if (isAllDay && tzDate.getMonth() != dt.month()) {
+    if (isAllDay && tzDate.getDate() != dt.date()) {
         dt.add(1, 'days');
     }
     var dateTime = new ICAL.Time({
@@ -841,7 +841,21 @@ function refreshScheduleVisibility() {
     span.style.backgroundColor = input.checked ? span.style.borderColor : 'transparent';
   });
 }
-
+function downloadEvent(id, startDate, isAllDay) {
+    sendEvent(id, startDate, isAllDay, 'downloadEvent');
+}
+function addEventToClipboard(id, startDate, isAllDay) {
+    sendEvent(id, startDate, isAllDay, 'addToClipboardEvent');
+}
+function sendEvent(id, startDate, isAllDay, eventType) {
+   let dt = moment.utc(startDate.toUTCString());
+    if (isAllDay && startDate.getDate() != dt.date()) {
+        dt.add(1, 'days');
+    }
+   let year = dt.year();
+   let month = dt.month() +1;
+   mainWindow.postMessage({id: id, year: year, month: month, type: eventType}, origin);
+}
 resizeThrottled = tui.util.throttle(function() {
   cal.render();
 }, 50);

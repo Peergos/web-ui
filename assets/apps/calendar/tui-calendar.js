@@ -10543,17 +10543,39 @@ function createMonthView(baseController, layoutContainer, dragHandler, options) 
                 img.style.height="16px";
                 span1.appendChild(img);
 
-                var span2 = document.createElement("span");
-                div1.appendChild(span2);
                 var shareLink = document.createElement("a");
                 shareLink.style.marginLeft="3px";
                 shareLink.innerText = "Share With";
-                span2.appendChild(shareLink);
+                span1.appendChild(shareLink);
+                shareLink.onclick=function() {
+                  console.log("share after");
+                };
+	            span1.appendChild(document.createTextNode('\u00A0\u00A0'));
 
-                var handler = function() {
-                    console.log("share after");
-                }
-                shareLink.onclick=handler;
+                var img5 = document.createElement("img");
+                img5.src = "./images/download.png";
+                span1.appendChild(img5);
+
+                var downloadLink = document.createElement("a");
+                downloadLink.style.marginLeft="3px";
+                downloadLink.innerText = "Download";
+                span1.appendChild(downloadLink);
+                downloadLink.onclick=function() {
+                    downloadEvent(eventData.schedule.id, eventData.schedule.start, eventData.schedule.isAllDay);
+                };
+	            span1.appendChild(document.createTextNode('\u00A0\u00A0'));
+
+                var clipboardButton = document.createElement("button");
+                span1.appendChild(clipboardButton);
+
+                var img3 = document.createElement("img");
+                img3.src = "./images/external-link-square.png";
+                clipboardButton.appendChild(img3);
+	            clipboardButton.appendChild(document.createTextNode("\u00A0\u00A0Clipboard"));
+                clipboardButton.onclick=function() {
+                   addEventToClipboard(eventData.schedule.id, eventData.schedule.start, eventData.schedule.isAllDay);
+                };
+
             }
             var locTextArea = document.createElement("textarea");
             locTextArea.id = "popup-memo-readonly";
