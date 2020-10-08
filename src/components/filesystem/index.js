@@ -337,11 +337,20 @@ module.exports = {
 	},
 
     navigateToAction: function(directory, filename) {
-        console.log("navigateToAction");
-        this.changePath(directory);
+        let newPath = directory.startsWith("/") ? directory.substring(1).split('/') : directory.split('/');
+        let currentPath = this.path;
+        if (newPath.length != currentPath.length) {
+                this.changePath(directory);
+        } else {
+            for (var i=0; i < newPath.length; i++) {
+                if (newPath[i] != currentPath[i]) {
+                    this.changePath(directory);
+                    return;
+                }
+            }
+        }
     },
     viewAction: function(path, filename) {
-        console.log("viewAction");
         if (path.startsWith("/"))
             path = path.substring(1);
         this.path = path ? path.split('/') : [];
