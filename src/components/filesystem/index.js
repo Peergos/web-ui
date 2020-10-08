@@ -1291,6 +1291,32 @@ module.exports = {
             this.closeMenu();
         },
 
+        showShareWithFromApp: function(app, filename, allowReadWriteSharing) {
+            let that = this;
+            var context = this.getContext();
+            let dirPath = context.username + "/.apps/" + app;
+            this.context.getByPath(dirPath)
+                .thenApply(function(dir){dir.get().getChild(filename, that.context.crypto.hasher, that.context.network).thenApply(function(child){
+                    let file = child.get();
+                    if (file == null) {
+                        return;
+                    }
+                    that.filesToShare = [file];
+                    that.parentFile = dir.ref;
+                    that.pathToFile = dirPath.split('/');
+                    let directoryPath = peergos.client.PathUtils.directoryToPath(that.pathToFile);
+                    context.getDirectorySharingState(directoryPath).thenApply(function(updatedSharedWithState) {
+                        let fileSharedWithState = updatedSharedWithState.get(file.getFileProperties().name);
+                        let read_usernames = fileSharedWithState.readAccess.toArray([]);
+                        let edit_usernames = fileSharedWithState.writeAccess.toArray([]);
+                        that.sharedWithData = {read_shared_with_users:read_usernames, edit_shared_with_users:edit_usernames};
+                        that.fromApp = true;
+                        that.allowReadWriteSharing = allowReadWriteSharing;
+                        that.showShare = true;
+                    });
+                })});
+        },
+
         showShareWith: function() {
             if (this.selectedFiles.length == 0)
                 return;
@@ -1308,6 +1334,7 @@ module.exports = {
             let edit_usernames = fileSharedWithState.writeAccess.toArray([]);
             this.sharedWithData = {read_shared_with_users:read_usernames, edit_shared_with_users:edit_usernames};
             this.fromApp = false;
+            this.allowReadWriteSharing = true;
             this.showShare = true;
         },
 

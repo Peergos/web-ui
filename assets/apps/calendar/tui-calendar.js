@@ -10531,12 +10531,12 @@ function createMonthView(baseController, layoutContainer, dragHandler, options) 
                 state.style.display = 'none';
             }
             let eventDetails = document.getElementById("event-details");
-            if(!eventData.schedule.isReadOnly) {
-                var div1 = document.createElement("div");
-                eventDetails.appendChild(div1);
+            var div1 = document.createElement("div");
+            eventDetails.appendChild(div1);
 
-                var span1 = document.createElement("span");
-                div1.appendChild(span1);
+            var span1 = document.createElement("span");
+            div1.appendChild(span1);
+            if(!eventData.schedule.isReadOnly) {
                 var img = document.createElement("img");
                 img.src = "./images/user-plus.svg";
                 img.style.width="16px";
@@ -10548,35 +10548,38 @@ function createMonthView(baseController, layoutContainer, dragHandler, options) 
                 shareLink.innerText = "Share With";
                 span1.appendChild(shareLink);
                 shareLink.onclick=function() {
-                  console.log("share after");
+                    shareCalendarEvent(eventData.schedule.id, eventData.schedule.start
+                        , eventData.schedule.isAllDay, eventData.schedule.raw.creator.name)
                 };
 	            span1.appendChild(document.createTextNode('\u00A0\u00A0'));
-
-                var img5 = document.createElement("img");
-                img5.src = "./images/download.png";
-                span1.appendChild(img5);
-
-                var downloadLink = document.createElement("a");
-                downloadLink.style.marginLeft="3px";
-                downloadLink.innerText = "Download";
-                span1.appendChild(downloadLink);
-                downloadLink.onclick=function() {
-                    downloadEvent(eventData.schedule.id, eventData.schedule.start, eventData.schedule.isAllDay);
-                };
-	            span1.appendChild(document.createTextNode('\u00A0\u00A0'));
-
-                var clipboardButton = document.createElement("button");
-                span1.appendChild(clipboardButton);
-
-                var img3 = document.createElement("img");
-                img3.src = "./images/external-link-square.png";
-                clipboardButton.appendChild(img3);
-	            clipboardButton.appendChild(document.createTextNode("\u00A0\u00A0Clipboard"));
-                clipboardButton.onclick=function() {
-                   addEventToClipboard(eventData.schedule.id, eventData.schedule.start, eventData.schedule.isAllDay);
-                };
-
             }
+
+            var img5 = document.createElement("img");
+            img5.src = "./images/download.png";
+            span1.appendChild(img5);
+
+            var downloadLink = document.createElement("a");
+            downloadLink.style.marginLeft="3px";
+            downloadLink.innerText = "Download";
+            span1.appendChild(downloadLink);
+            downloadLink.onclick=function() {
+                downloadEvent(eventData.schedule.id, eventData.schedule.start
+                    , eventData.schedule.isAllDay, eventData.schedule.raw.creator.name);
+            };
+            span1.appendChild(document.createTextNode('\u00A0\u00A0'));
+
+            var clipboardButton = document.createElement("button");
+            span1.appendChild(clipboardButton);
+
+            var img3 = document.createElement("img");
+            img3.src = "./images/external-link-square.png";
+            clipboardButton.appendChild(img3);
+            clipboardButton.appendChild(document.createTextNode("\u00A0\u00A0Clipboard"));
+            clipboardButton.onclick=function() {
+               addEventToClipboard(eventData.schedule.id, eventData.schedule.start
+                , eventData.schedule.isAllDay, eventData.schedule.raw.creator.name);
+            };
+
             var locTextArea = document.createElement("textarea");
             locTextArea.id = "popup-memo-readonly";
             locTextArea.value = eventData == null ? "" : eventData.schedule.raw.memo;

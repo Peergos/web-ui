@@ -4,7 +4,7 @@
         <span @click="close" class="close">&times;</span>
         <spinner v-if="showSpinner"></spinner>
         <div class="modal-header">
-            <h4>Enter user to share {{ files[0].getFileProperties().name }} with:</h4>
+            <h4>Enter user to share {{ displayName }} with:</h4>
         </div>
 
         <div class="modal-body">
@@ -15,16 +15,16 @@
                             <input id="friend-name-input" v-model="targetUsername" type="text" class="token-input" style="width:300px"></input>
                         </td>
                         <td style="padding:5px; font-size: 0.8em; ">
-                                &nbsp;<input type="radio" id="read-access" value="Read" v-model="sharedWithAccess">
-                                <label for="read-access" style="font-weight: normal;">Read Only</label>
-                                <input v-if="this.files[0].getOwnerName() == this.context.username" type="radio" id="edit-access" value="Edit" v-model="sharedWithAccess">
-                                <label v-if="this.files[0].getOwnerName() == this.context.username" for="edit-access" style="font-weight: normal;">Read &amp; Write</label>
+                                &nbsp;<input v-if="this.allowReadWriteSharing" type="radio" id="read-access" value="Read" v-model="sharedWithAccess">
+                                <label v-if="this.allowReadWriteSharing" for="read-access" style="font-weight: normal;">Read Only</label>
+                                <input v-if="this.allowReadWriteSharing && this.files[0].getOwnerName() == this.context.username" type="radio" id="edit-access" value="Edit" v-model="sharedWithAccess">
+                                <label v-if="this.allowReadWriteSharing && this.files[0].getOwnerName() == this.context.username" for="edit-access" style="font-weight: normal;">Read &amp; Write</label>
                                 <button :disabled="this.targetUsernames.length == 0" class="btn btn-success" @click="shareWith(sharedWithAccess)">Send</button>
                         </td>
                     </tr>
                 </table>
             </div>
-            <div class="modal-body modal-prominent">
+            <div v-if="this.allowReadWriteSharing" class="modal-body modal-prominent">
                 <div class="container" v-if="data.edit_shared_with_users.length > 0"><p style="word-wrap;break-all;">
                     Read and Write Access:</p>
                     <div v-if="this.files[0].getOwnerName() == this.context.username">

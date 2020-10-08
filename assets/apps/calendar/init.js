@@ -1,6 +1,6 @@
 var mainWindow;
 var origin;
-
+var currentUsername;
 var cal, resizeThrottled;
 var useCreationPopup = true;
 var useDetailPopup = true;
@@ -121,7 +121,7 @@ window.addEventListener('message', function (e) {
         cal.setCalendars(CalendarList);
         setDropdownCalendarType();
         setEventListener();
-        load(e.data.previousMonth, e.data.currentMonth, e.data.nextMonth, e.data.yearMonth);
+        load(e.data.previousMonth, e.data.currentMonth, e.data.nextMonth, e.data.yearMonth, e.data.username);
     } else if (e.data.type == "loadAdditional") {
         loadAdditional(e.data.currentMonth, e.data.yearMonth);
     } else if(e.data.type == "importICSFile") {
@@ -166,7 +166,7 @@ function ScheduleInfo() {
         location: null,
         class: 'public', // or 'private'
         creator: {
-            name: '',
+            name: currentUsername,
             avatar: '',
             company: '',
             email: '',
@@ -178,7 +178,7 @@ function displayMessage(msg) {
     mainWindow.postMessage({type:"displayMessage", message: msg}, origin);
 }
 
-function unpackIcal(IcalFile) {
+function unpackIcal(IcalFile, username) {
     let icalComponent = new ICAL.Component(ICAL.parse(IcalFile));
     let vevents = icalComponent.getAllSubcomponents('vevent');
     if(vevents.length != 1) {
@@ -195,10 +195,10 @@ function unpackIcal(IcalFile) {
         return null;
     } else {
         LoadedEvents[vvent.getFirstPropertyValue('uid')] = icalComponent;
-        return unpackEvent(vvent);
+        return unpackEvent(vvent, username);
     }
 }
-function unpackEvent(iCalEvent) {
+function unpackEvent(iCalEvent, username) {
     event['isAllDay'] = true;
     event['Id'] = iCalEvent.getFirstPropertyValue('uid');
     event['title'] = iCalEvent.getFirstPropertyValue('summary');
@@ -220,10 +220,12 @@ function unpackEvent(iCalEvent) {
 	    }
     }
     let xCategory = iCalEvent.getFirstPropertyValue('x-category-id');
-    event['categoryId'] = xCategory == null ? "1" : xCategory;
-
-    if(iCalEvent.getFirstPropertyValue('status') === "CANCELLED") {
+    if (iCalEvent.getFirstPropertyValue('status') === "CANCELLED") {
         event['categoryId'] = "6";
+    } else if (currentUsername != username) {
+        event['categoryId'] = "5";
+    } else {
+        event['categoryId'] = xCategory == null ? "1" : xCategory;
     }
     let allAttendees = [];
     let attendees = iCalEvent.getAllProperties('attendee');
@@ -234,19 +236,19 @@ function unpackEvent(iCalEvent) {
     return event;
 }
 function addCalendarEvent(eventInfo) {
-    let event = unpackIcal(eventInfo.item);
+    let event = unpackIcal(eventInfo.item, eventInfo.username);
     if(event == null) {
         return;
     }
-    return buildScheduleFromEvent(event, eventInfo.isSharedWithUs);
+    return buildScheduleFromEvent(event, eventInfo.username);
 }
-function buildScheduleFromEvent(event, isSharedWithUs) {
+function buildScheduleFromEvent(event, username) {
     var schedule = new ScheduleInfo();
     schedule.id = event.Id;
-    schedule.calendarId = isSharedWithUs ? "5" : event.categoryId;
+    schedule.calendarId = currentUsername != username ? "5" : event.categoryId;
     schedule.title = event.title;
     schedule.body = '';
-    schedule.isReadOnly = isSharedWithUs ? true : false;
+    schedule.isReadOnly = currentUsername != username ? true : false;
     schedule.isAllday = event.isAllDay;
     schedule.category = event.isAllDay ? 'allday' : 'time';
     schedule.start = moment(event.start).toDate();
@@ -262,6 +264,7 @@ function buildScheduleFromEvent(event, isSharedWithUs) {
     schedule.dragBgColor = calendarCategory.dragBgColor;
     schedule.borderColor = calendarCategory.borderColor;
     schedule.raw.memo = event.description;
+    schedule.raw.creator.name = username;
     return schedule;
 
 }
@@ -310,7 +313,7 @@ function importICSFile(contents) {
             displayMessage(msg);
             return null;
         } else {
-            let schedule = buildScheduleFromEvent(unpackEvent(vvent), false);
+            let schedule = buildScheduleFromEvent(unpackEvent(vvent, currentUsername), currentUsername);
             let dt = moment.utc(schedule.start.toUTCString());
             let year = dt.year();
             let month = dt.month() + 1;
@@ -344,7 +347,8 @@ function loadAdditional(currentMonthEvents, yearMonth) {
     removeSpinner();
 }
 
-function load(previousMonthEvents, currentMonthEvents, nextMonthEvents, yearMonth) {
+function load(previousMonthEvents, currentMonthEvents, nextMonthEvents, yearMonth, username) {
+    currentUsername = username;
     let previousYearMonth = yearMonth - 1;
     let year = Math.floor(previousYearMonth / 12);
     let month = previousYearMonth % 12;
@@ -584,18 +588,6 @@ function setCalendars() {
         return html.join('');
     }
 
-
-    function changeNewScheduleCalendar(calendarId) {
-        var calendarNameElement = document.getElementById('calendarName');
-        var calendar = findCalendar(calendarId);
-        var html = [];
-        html.push('<span class="calendar-bar" style="background-color: ' + calendar.bgColor + '; border-color:' + calendar.borderColor + ';"></span>');
-        html.push('<span class="calendar-name">' + calendar.name + '</span>');
-
-        calendarNameElement.innerHTML = html.join('');
-        selectedCalendar = calendar;
-    }
-
     //https://stackoverflow.com/questions/105034/how-to-create-guid-uuid
     function uuidv4() {
       return ([1e7]+-1e3+-4e3+-8e3+-1e11).replace(/[018]/g, c =>
@@ -621,7 +613,10 @@ function setCalendars() {
             isPrivate: false,//scheduleData.raw['class'] == 'private' ? true : false,
             raw: {
                 class: scheduleData.raw['class'],
-                memo: scheduleData.raw['memo']
+                memo: scheduleData.raw['memo'],
+                creator: {
+                    name: currentUsername
+                }
             },
             state: ''//scheduleData.state
         };
@@ -841,20 +836,20 @@ function refreshScheduleVisibility() {
     span.style.backgroundColor = input.checked ? span.style.borderColor : 'transparent';
   });
 }
-function downloadEvent(id, startDate, isAllDay) {
-    sendEvent(id, startDate, isAllDay, 'downloadEvent');
+function downloadEvent(id, startDate, isAllDay, username) {
+    sendEvent(id, startDate, isAllDay, username, 'downloadEvent');
 }
-function addEventToClipboard(id, startDate, isAllDay) {
-    sendEvent(id, startDate, isAllDay, 'addToClipboardEvent');
+function shareCalendarEvent(id, startDate, isAllDay, username) {
+    sendEvent(id, startDate, isAllDay, username, 'shareCalendarEvent');
 }
-function sendEvent(id, startDate, isAllDay, eventType) {
+function addEventToClipboard(id, startDate, isAllDay, username) {
+    sendEvent(id, startDate, isAllDay, username, 'addToClipboardEvent');
+}
+function sendEvent(id, startDate, isAllDay, username, eventType) {
    let dt = moment.utc(startDate.toUTCString());
-    if (isAllDay && startDate.getDate() != dt.date()) {
-        dt.add(1, 'days');
-    }
    let year = dt.year();
    let month = dt.month() +1;
-   mainWindow.postMessage({id: id, year: year, month: month, type: eventType}, origin);
+   mainWindow.postMessage({id: id, year: year, month: month, username: username, type: eventType}, origin);
 }
 resizeThrottled = tui.util.throttle(function() {
   cal.render();

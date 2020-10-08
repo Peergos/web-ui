@@ -10,17 +10,35 @@ module.exports = {
             errorBody:'',
             showError:false,
             unsharedReadAccessNames: [],
-            unsharedEditAccessNames: []
+            unsharedEditAccessNames: [],
+            displayName:''
         }
     },
-    props: ['data', 'followernames', 'files', 'parent', 'path', 'context', 'messages', 'fromApp'],
+    props: ['data', 'followernames', 'files', 'parent', 'path', 'context', 'messages', 'fromApp', 'allowReadWriteSharing'],
     created: function() {
         Vue.nextTick(this.setTypeAhead);
+        this.displayName = this.fromApp && this.files[0].getFileProperties().name.endsWith('.ics') ?
+            'Calendar event' : files[0].getFileProperties().name;
     },
     methods: {
         close: function () {
             this.showSpinner = false;
             this.$emit("hide-share-with");
+        },
+        refresh : function () {
+            if (! this.fromApp) {
+                this.$emit("update-shared-refresh");
+            }
+        },
+
+        showMessage : function (title, body) {
+            if (! this.fromApp) {
+                this.messages.push({
+                    title: title,
+                    body: body,
+                    show: true
+                });
+            }
         },
 
         refresh : function () {

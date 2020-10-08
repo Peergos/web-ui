@@ -6,7 +6,7 @@ module.exports = {
             spinnerMessage: ""
         }
     },
-    props: ['context', 'messages', 'importFile'],
+    props: ['context', 'messages', 'importFile','shareWith'],
     created: function() {
         this.displaySpinner();
         this.startListener();
@@ -44,9 +44,11 @@ module.exports = {
                 } else if(e.data.type=="loadAdditional") {
                     that.loadAdditional(e.data.year, e.data.month, 'loadAdditional');
                 } else if(e.data.type=="downloadEvent") {
-                    that.downloadEvent(e.data.id, e.data.year, e.data.month);
+                    that.downloadEvent(e.data.id, e.data.year, e.data.month, e.data.username);
                 } else if(e.data.type=="addToClipboardEvent") {
-                    that.addToClipboardEvent(e.data.id, e.data.year, e.data.month);
+                    that.addToClipboardEvent(e.data.id, e.data.year, e.data.month, e.data.username);
+                } else if(e.data.type=="shareCalendarEvent") {
+                    that.shareCalendarEvent(e.data.id, e.data.year, e.data.month, e.data.username);
                 }
             }
         });
@@ -79,8 +81,9 @@ module.exports = {
     },
     loadAdditionalEvents: function(year, month, messageType, eventsThisMonth) {
         let currentMonth = [];
+        let that = this;
         eventsThisMonth.forEach(function(item){
-            currentMonth.push({item:item, isSharedWithUs: false});
+            currentMonth.push({item:item.right, username: item.left});
         });
         let iframe = document.getElementById("editor");
         let yearMonth = year * 12 + (month -1);
@@ -94,7 +97,7 @@ module.exports = {
         let that = this;
         calendar.getCalendarEventsAroundMonth(year, month).thenCompose(function(allEvents) {
             that.loadEvents(year, month, messageType, allEvents.left.toArray([]), allEvents.middle.toArray([]),
-                    allEvents.right.toArray([]));
+                    allEvents.right.toArray([]), that.context.username);
         });
     },
 
@@ -102,20 +105,21 @@ module.exports = {
         let previousMonth = [];
         let currentMonth = [];
         let nextMonth = [];
+        let that = this;
         eventsPreviousMonth.forEach(function(item){
-            previousMonth.push({item:item, isSharedWithUs: false});
+            previousMonth.push({item:item.right, username: item.left});
         });
         eventsThisMonth.forEach(function(item){
-            currentMonth.push({item:item, isSharedWithUs: false});
+            currentMonth.push({item:item.right, username: item.left});
         });
         eventsNextMonth.forEach(function(item){
-            nextMonth.push({item:item, isSharedWithUs: false});
+            nextMonth.push({item:item.right, username: item.left});
         });
         let iframe = document.getElementById("editor");
         let yearMonth = year * 12 + (month-1);
         setTimeout(function(){
             iframe.contentWindow.postMessage({type: messageType, previousMonth: previousMonth,
-                    currentMonth: currentMonth, nextMonth: nextMonth, yearMonth: yearMonth}, '*');
+                    currentMonth: currentMonth, nextMonth: nextMonth, yearMonth: yearMonth, username: that.context.username}, '*');
         });
     },
     deleteEvent: function(item) {
@@ -173,10 +177,10 @@ module.exports = {
             });
         }
     },
-    addToClipboardEvent: function(id, year, month) {
+    addToClipboardEvent: function(id, year, month, username) {
         let that = this;
         let calendar = this.context.getCalendarApp();
-        calendar.getEventFile(year, month, id).thenApply(function(file){
+        calendar.getEventFile(username, year, month, id).thenApply(function(file){
             console.log("name=" + file.getName())
             let link = window.location.origin + window.location.pathname +
                     "#" + propsToFragment({secretLink:true,link:file.toLink()});
@@ -185,10 +189,10 @@ module.exports = {
             });
         });
     },
-    downloadEvent: function(id, year, month) {
+    downloadEvent: function(id, year, month, username) {
         let that = this;
         let calendar = this.context.getCalendarApp();
-        calendar.getEventFile(year, month, id)
+        calendar.getEventFile(username, year, month, id)
             .thenApply(function(file){
                 let props = file.getFileProperties();
                 file.getInputStream(that.context.network, that.context.crypto, props.sizeHigh(), props.sizeLow(), function(read) {})
@@ -208,6 +212,11 @@ module.exports = {
         link.type = mimeType;
         link.download = name;
         link.click();
+    },
+    shareCalendarEvent: function(id, year, month, username) {
+        let that = this;
+        let calendar = this.context.getCalendarApp();
+        that.shareWith('calendar/' + this.context.username + '/' + year + '/' + month, id + '.ics', false);
     },
     showMessage: function(title, body) {
         this.messages.push({
