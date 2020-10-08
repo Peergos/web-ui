@@ -38,7 +38,7 @@
       </ul>
     </ul>
 
-    <ul v-if="isLoggedIn" class="nav">
+    <ul v-if="isWritable" class="nav">
       <ul id="uploadMenu" v-if="showUploadMenu" class="dropdown-menu" style="cursor:pointer;display:block">
         <li><a @click="askForFiles">Upload files</a></li>
         <li><a @click="askForDirectories">Upload directories</a></li>
