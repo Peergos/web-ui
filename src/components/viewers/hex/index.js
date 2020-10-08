@@ -2,6 +2,7 @@ module.exports = {
     template: require('hex.html'),
     data: function() {
         return {
+	    lookup: ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'A', 'B', 'C', 'D', 'E', 'F'],
             showSpinner: false,
             fileData: { // immutable
                 data: null, // a 5 MiB chunk or less
@@ -105,8 +106,7 @@ module.exports = {
         },
 
         byteToHex: function(b) {
-            var lookup = ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'A', 'B', 'C', 'D', 'E', 'F'];
-            return  lookup[(b >> 4) & 0xf] + lookup[b & 0xf];
+            return this.lookup[(b >> 4) & 0xf] + this.lookup[b & 0xf];
         },
 
         intToHex: function(i) {
