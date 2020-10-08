@@ -89,15 +89,20 @@ module.exports = {
                 let arr = items.toArray();
                 let numberOfEntries = arr.length;
                 let allTimelineEntries = [];
-                arr.forEach(function(entry,idx){
-                    that.createTimelineEntry(entry).thenApply(function(timelineEntry){
-                        allTimelineEntries.push(timelineEntry);
-                        if (numberOfEntries == idx + 1) {
-                            that.data = allTimelineEntries;
-                            that.showSpinner = false;
-                        }
+                if (numberOfEntries == 0) {
+                    that.data = allTimelineEntries;
+                    that.showSpinner = false;
+                } else {
+                    arr.forEach(function(entry,idx){
+                        that.createTimelineEntry(entry).thenApply(function(timelineEntry){
+                            allTimelineEntries.push(timelineEntry);
+                            if (numberOfEntries == idx + 1) {
+                                that.data = allTimelineEntries;
+                                that.showSpinner = false;
+                            }
+                        });
                     });
-                });
+                }
             }).exceptionally(function(throwable) {
                 that.showMessage(throwable.getMessage());
                 that.showSpinner = false;
