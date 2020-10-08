@@ -35,11 +35,9 @@ module.exports = {
             }
         },
         createTimelineEntry: function(entry, file) {
-            let info = entry.sharer + " has shared";
+            let info = entry.sharer + " shared";
             if(entry.cap.isWritable() ) {
-                info = info + " read/write access to";
-            } else {
-                info = info + " read access to";
+                info = info + " write access to";
             }
             let props = file.props;
             if (props.isHidden) {
