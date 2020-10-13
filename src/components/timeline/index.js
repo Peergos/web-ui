@@ -80,14 +80,14 @@ module.exports = {
         },
         navigateTo: function (entry) {
             this.close();
-            this.navigateToAction(entry.path, entry.isDirectory ? null : entry.name);
+            this.navigateToAction(entry.path, entry.isDirectory ? null : entry.fullName);
         },
         view: function (entry) {
             this.close();
             if (entry.isDirectory) {
                 this.navigateToAction(entry.path, null);
             } else {
-                this.viewAction(entry.path, entry.name);
+                this.viewAction(entry.path, entry.fullName);
             }
         },
         createTimelineEntry: function(entry, file) {
@@ -109,11 +109,13 @@ module.exports = {
             }
             info = info + ": ";
             let path = props.isDirectory ? entry.path : entry.path.substring(0, entry.path.lastIndexOf(props.name) -1);
+            let name = props.name.length > 25 ? props.name.substring(0,22) + '...' : props.name;
             let item = {
                 info: info,
                 link: entry.path,
                 path: path,
                 name: props.name.length > 25 ? props.name.substring(0,22) + '...' : props.name,
+                fullName: props.name,
                 hasThumbnail: props.thumbnail.ref != null,
                 thumbnail: props.thumbnail.ref == null ? null : file.getBase64Thumbnail(),
                 isDirectory: props.isDirectory,

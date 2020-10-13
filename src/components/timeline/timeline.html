@@ -20,7 +20,7 @@
                         </td>
                         <td v-if="!entry.isLastEntry">
                             <span>{{ entry.info }}</span>
-                            <a v-on:click="navigateTo(entry)">
+                            <a v-on:click="navigateTo(entry)" style="cursor: pointer">
                                 <span :title="entry.link">{{ entry.name }}</span>
                             </a>
                         </td>
@@ -29,7 +29,7 @@
                             <a v-if="!entry.hasThumbnail" class="picon">
                                 <span v-on:click="view(entry)" v-bind:class="[entry.isDirectory ? 'dir' : 'file', getFileIconClass(entry.file), 'picon']"> </span>
                             </a>
-                            <img v-if="entry.hasThumbnail" v-on:click="view(entry)" v-bind:src="entry.thumbnail"/>
+                            <img v-if="entry.hasThumbnail" v-on:click="view(entry)" v-bind:src="entry.thumbnail" style="cursor: pointer"/>
                             </span>
                         </td>
                     </tr>

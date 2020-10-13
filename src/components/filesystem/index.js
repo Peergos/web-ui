@@ -351,6 +351,7 @@ module.exports = {
         }
     },
     viewAction: function(path, filename) {
+        this.showSpinner = true;
         if (path.startsWith("/"))
             path = path.substring(1);
         this.path = path ? path.split('/') : [];
