@@ -30,7 +30,7 @@ module.exports = {
             var ctx = this.context;
             let allTimelineEntries = [];
             let numberOfEntries = items.length;
-            peergos.client.JSUtil.getFiles(ctx, items).thenApply(function(files) {
+            ctx.getFiles(peergos.client.JsUtil.asList(items)).thenApply(function(files) {
                 let allFiles = files.toArray();
                 items.forEach(function(item, idx){
                     allTimelineEntries.push(that.createTimelineEntry(item, allFiles[idx]));
@@ -185,7 +185,7 @@ module.exports = {
                         that.data = allTimelineEntries;
                         that.showSpinner = false;
                     } else {
-                        peergos.client.JSUtil.getFiles(ctx, items).thenApply(function(files) {
+                        ctx.getFiles(peergos.client.JsUtil.asList(items)).thenApply(function(files) {
                             let allFiles = files.toArray();
                             items.forEach(function(item, idx){
                                 allTimelineEntries.push(that.createTimelineEntry(item, allFiles[idx]));
