@@ -245,7 +245,7 @@ function addCalendarEvent(eventInfo) {
 function buildScheduleFromEvent(event, username) {
     var schedule = new ScheduleInfo();
     schedule.id = event.Id;
-    schedule.calendarId = currentUsername != username ? "5" : event.categoryId;
+    schedule.calendarId = event.categoryId;
     schedule.title = event.title;
     schedule.body = '';
     schedule.isReadOnly = currentUsername != username ? true : false;

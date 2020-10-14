@@ -10612,6 +10612,7 @@ function createMonthView(baseController, layoutContainer, dragHandler, options) 
                 createView.setCalendars(baseController.calendars);
                 createView.render(eventData);
                 addMemoField(eventData);
+                removeSharedWithUsCalendar();
             };
             createView.on('beforeUpdateSchedule', onEditSchedule);
             detailView.on('beforeUpdateSchedule', onShowEditPopup);
@@ -10619,7 +10620,15 @@ function createMonthView(baseController, layoutContainer, dragHandler, options) 
             detailView.on('beforeUpdateSchedule', onEditSchedule);
         }
     }
-
+    let removeSharedWithUsCalendar = function() {
+        let dropdownMenuItems = document.getElementById("dropdown-menu-items").childNodes;
+        for(var i=0;i<dropdownMenuItems.length;i++){
+            let item = dropdownMenuItems[i];
+            if(item.nodeName != "#text" && item.getAttribute("data-calendar-id") == "5") {
+                item.remove();
+            }
+        }
+    }
     let addMemoField = function(eventData) {
 
         let lock = document.getElementById("tui-full-calendar-schedule-private");
@@ -10732,6 +10741,7 @@ function createMonthView(baseController, layoutContainer, dragHandler, options) 
                 createView.setCalendars(baseController.calendars);
                 createView.render(eventData);
                 addMemoField(null);
+                removeSharedWithUsCalendar();
             }
         },
         hideMoreView: function() {
@@ -22602,7 +22612,7 @@ module.exports = (Handlebars['default'] || Handlebars).template({"1":function(co
     + alias4(((helper = (helper = lookupProperty(helpers,"CSS_PREFIX") || (depth0 != null ? lookupProperty(depth0,"CSS_PREFIX") : depth0)) != null ? helper : alias2),(typeof helper === alias3 ? helper.call(alias1,{"name":"CSS_PREFIX","hash":{},"data":data,"loc":{"start":{"line":7,"column":48},"end":{"line":7,"column":62}}}) : helper)))
     + "dropdown-arrow\"></span>\n            </button>\n            <ul class=\""
     + alias4(((helper = (helper = lookupProperty(helpers,"CSS_PREFIX") || (depth0 != null ? lookupProperty(depth0,"CSS_PREFIX") : depth0)) != null ? helper : alias2),(typeof helper === alias3 ? helper.call(alias1,{"name":"CSS_PREFIX","hash":{},"data":data,"loc":{"start":{"line":9,"column":23},"end":{"line":9,"column":37}}}) : helper)))
-    + "dropdown-menu\" style=\"z-index: "
+    + "dropdown-menu\" id=\"dropdown-menu-items\" style=\"z-index: "
     + alias4(((helper = (helper = lookupProperty(helpers,"zIndex") || (depth0 != null ? lookupProperty(depth0,"zIndex") : depth0)) != null ? helper : alias2),(typeof helper === alias3 ? helper.call(alias1,{"name":"zIndex","hash":{},"data":data,"loc":{"start":{"line":9,"column":68},"end":{"line":9,"column":78}}}) : helper)))
     + "\">\n"
     + ((stack1 = lookupProperty(helpers,"each").call(alias1,(depth0 != null ? lookupProperty(depth0,"calendars") : depth0),{"name":"each","hash":{},"fn":container.program(3, data, 0),"inverse":container.noop,"data":data,"loc":{"start":{"line":10,"column":16},"end":{"line":15,"column":25}}})) != null ? stack1 : "")
