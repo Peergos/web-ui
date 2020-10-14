@@ -438,6 +438,8 @@ function serialiseICal(schedule) {
         vvent.updatePropertyWithValue('x-category-id', schedule.calendarId); //not to be exported
         if(schedule.calendarId == "6") { //CANCELLED
             vvent.updatePropertyWithValue('status', "CANCELLED");
+        } else {
+            vvent.removeProperty('status');
         }
     } else {
         comp = new ICAL.Component(['vcalendar', [], []]);

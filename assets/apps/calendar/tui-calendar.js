@@ -10544,6 +10544,7 @@ function createMonthView(baseController, layoutContainer, dragHandler, options) 
                 span1.appendChild(img);
 
                 var shareLink = document.createElement("a");
+                shareLink.style.cursor="pointer";
                 shareLink.style.marginLeft="3px";
                 shareLink.innerText = "Share With";
                 span1.appendChild(shareLink);
@@ -10559,6 +10560,7 @@ function createMonthView(baseController, layoutContainer, dragHandler, options) 
             span1.appendChild(img5);
 
             var downloadLink = document.createElement("a");
+            downloadLink.style.cursor="pointer";
             downloadLink.style.marginLeft="3px";
             downloadLink.innerText = "Download";
             span1.appendChild(downloadLink);
