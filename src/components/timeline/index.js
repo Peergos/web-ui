@@ -15,6 +15,17 @@ module.exports = {
         let that = this;
         Vue.nextTick(function() {
             that.init();
+            //TODO size scroll display area using css!
+            let scrollingArea = document.getElementById('scroll-area');
+            var rect = scrollingArea.getBoundingClientRect();
+            scrollingArea.style["height"] = (window.innerHeight - rect.top) /10 * 9 + "px";
+            let body = document.getElementsByTagName('body');
+            body[0].onresize = function(){
+                var rect = scrollingArea.getBoundingClientRect();
+                var height = (window.innerHeight - rect.top);
+                scrollingArea.style["height"] = height/10 * 9+ "px";
+            };
+
         });
     },
     methods: {
@@ -109,12 +120,12 @@ module.exports = {
             }
             info = info + ": ";
             let path = props.isDirectory ? entry.path : entry.path.substring(0, entry.path.lastIndexOf(props.name) -1);
-            let name = props.name.length > 25 ? props.name.substring(0,22) + '...' : props.name;
+            let name = props.name.length > 30 ? props.name.substring(0,27) + '...' : props.name;
             let item = {
                 info: info,
                 link: entry.path,
                 path: path,
-                name: props.name.length > 25 ? props.name.substring(0,22) + '...' : props.name,
+                name: name,
                 fullName: props.name,
                 hasThumbnail: props.thumbnail.ref != null,
                 thumbnail: props.thumbnail.ref == null ? null : file.getBase64Thumbnail(),
