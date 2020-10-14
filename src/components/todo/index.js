@@ -141,7 +141,7 @@ module.exports = {
         if (! this.isWritable) {
             return;
         }
-        this.shareWith('todo', this.todoBoardName);
+        this.shareWith('todo', this.todoBoardName + peergos.shared.user.UserContext.App.Todo.TODO_FILE_EXTENSION);
     },
     save: function(lists) {
         if (! this.isWritable) {
