@@ -1154,7 +1154,10 @@ module.exports = {
 
         showTimelineView: function() {
             let that = this;
-            that.showSpinner = true;
+            if (this.showSpinner) {
+                return;
+            }
+            this.showSpinner = true;
             const ctx = this.getContext()
             ctx.getSocialFeed().thenCompose(function(socialFeed) {
 		return socialFeed.update().thenApply(function(updated) {
