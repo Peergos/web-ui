@@ -63,6 +63,7 @@ module.exports = {
             externalChange:0,
             prompt_message: '',
             prompt_placeholder: '',
+            prompt_max_input_size: null,
             prompt_value: '',
             prompt_consumer_func: () => {},
             showCreate: false,

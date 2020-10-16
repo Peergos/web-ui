@@ -59,6 +59,9 @@ function getNextListId() {
 	return nextListId;
 }
 function buildNextList(index) {
+    if (!isWritable) {
+        return;
+    }
 	var parent = document.getElementById("board");
 	var container = document.createElement("div");
 	container.id='nextList';
@@ -112,7 +115,6 @@ function buildNewList(index, name, buildNext) {
 	var listInner = document.createElement("div");
 	listInner.classList.add("list-inner");
 
-
 	var listAccent = document.createElement("div");
 	listAccent.classList.add("list-accent");
 	listAccent.id = "todoListAccent" + index;
@@ -121,57 +123,62 @@ function buildNewList(index, name, buildNext) {
 	listInner.appendChild(listAccent);
 
 	var heading = document.createElement("div");
-	var closeButtonImg = document.createElement("img");
-    closeButtonImg.src = "./images/trash.png";
-	closeButtonImg.addEventListener('click', function(){removeList(index);});
-    heading.appendChild(closeButtonImg);
-	var span = document.createElement("span");
 
+	if (isWritable) {
+        var closeButtonImg = document.createElement("img");
+        closeButtonImg.src = "./images/trash.png";
+        closeButtonImg.addEventListener('click', function(){removeList(index);});
+        heading.appendChild(closeButtonImg);
+    }
+
+	var span = document.createElement("span");
 	var listName = document.createElement("h3");
 	listName.classList.add("list-name");
 	listName.id = listNameId;
     listName.innerText = name;
 
-    listName.appendChild(document.createTextNode('\u00A0\u00A0'));
-    var editButtonImg = document.createElement("img");
-    editButtonImg.src = "./images/edit.png";
-	editButtonImg.addEventListener('click', function(){renameList(index);});
-    listName.appendChild(editButtonImg);
-
+	if (isWritable) {
+        listName.appendChild(document.createTextNode('\u00A0\u00A0'));
+        var editButtonImg = document.createElement("img");
+        editButtonImg.src = "./images/edit.png";
+        editButtonImg.addEventListener('click', function(){renameList(index);});
+        listName.appendChild(editButtonImg);
+    }
 
     span.appendChild(listName);
     heading.appendChild(span);
     listInner.appendChild(heading);
 	var orderedList = document.createElement("ol");
 	orderedList.id = listId;
+    if (isWritable) {
+        orderedList.addEventListener('click', function(ev) {
+            if (ev.target.tagName === 'LI' &&  !ev.target.classList.contains('empty-item')) {
+                ev.target.classList.toggle('checked');
+            }
+        }, false);
+    }
     listInner.appendChild(orderedList);
 	var formDiv = document.createElement("div");
 	formDiv.classList.add("new-entry");
-	var form = document.createElement("form");
-	form.addEventListener('submit', function(e){return onFormSubmit(e, itemId, listId);});
-	var inputItem = document.createElement("input");
-	inputItem.classList.add("new-input");
-	inputItem.type="text";
-	inputItem.id = itemId;
-	//inputItem.size = 60;
-	inputItem.maxlength = 60;
-	inputItem.placeholder = "Type something";
-
-    form.appendChild(inputItem);
-    formDiv.appendChild(form);
-    listInner.appendChild(formDiv);
-    addDragAndDropListeners(list);
+    if (isWritable) {
+        var form = document.createElement("form");
+        form.addEventListener('submit', function(e){return onFormSubmit(e, itemId, listId);});
+        var inputItem = document.createElement("input");
+        inputItem.classList.add("new-input");
+        inputItem.type="text";
+        inputItem.id = itemId;
+        inputItem.setAttribute("maxlength", "60");
+        inputItem.placeholder = "Type something";
+    	inputItem.focus();
+        form.appendChild(inputItem);
+        formDiv.appendChild(form);
+        listInner.appendChild(formDiv);
+        addDragAndDropListeners(list);
+    }
     list.appendChild(listInner);
     parent.appendChild(list);
 
-    document.getElementById(listId).addEventListener('click', function(ev) {
-  		if (ev.target.tagName === 'LI' &&  !ev.target.classList.contains('empty-item')) {
-			ev.target.classList.toggle('checked');
-  		}
-	}, false);
-
 	addEmptyTodoItem(listId);
-	inputItem.focus();
 
     if(buildNext) {
 	    buildNextList(getNextListId());
@@ -212,7 +219,6 @@ function appendTodoItem(item, todoList) {
   var li = document.createElement("li");
   var t = document.createTextNode(item.text);
   li.appendChild(t);
-  addDragAndDropListeners(li);
 
   li.setAttribute("id", item.id);
   li.setAttribute("created", item.created);
@@ -221,12 +227,15 @@ function appendTodoItem(item, todoList) {
   }
   todoListElement.appendChild(li);
 
-  var span = document.createElement("SPAN");
-  var txt = document.createTextNode("\u00D7");
-  span.className = "close";
-  span.appendChild(txt);
-  span.addEventListener('click', close);
-  li.appendChild(span);
+  if (isWritable) {
+      var span = document.createElement("SPAN");
+      var txt = document.createTextNode("\u00D7");
+      span.className = "close";
+      span.appendChild(txt);
+      span.addEventListener('click', close);
+      li.appendChild(span);
+      addDragAndDropListeners(li);
+  }
 }
 
 function addEmptyTodoItem(todoList) {
@@ -235,9 +244,11 @@ function addEmptyTodoItem(todoList) {
   li.classList.add("empty-item");
   var t = document.createTextNode("");
   li.appendChild(t);
-  addDragAndDropListeners(li);
   li.setAttribute("draggable", "false");
   document.getElementById(todoList).appendChild(li);
+  if (isWritable) {
+    addDragAndDropListeners(li);
+  }
 }
 
  function close(evt){

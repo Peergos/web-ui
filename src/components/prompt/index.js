@@ -1,13 +1,16 @@
 module.exports = {
     template: require('prompt.html'),
     data: function() {
-        return {'prompt_result': ''}
+        return {'prompt_result': '',
+                input_length
+        }
     },
-    props: ['prompt_message', 'placeholder', 'value', 'consumer_func'],
+    props: ['prompt_message', 'placeholder', 'value', 'consumer_func', 'max_input_size'],
     created: function() {
-	this.prompt_result = this.value;
-	Vue.nextTick(function() {
-            document.getElementById("prompt-input").focus();
+        this.prompt_result = this.value;
+        this.input_length = (this.max_input_size == null || this.max_input_size == '') ? 255 : this.max_input_size;
+        Vue.nextTick(function() {
+                document.getElementById("prompt-input").focus();
         });
     },
     methods: {

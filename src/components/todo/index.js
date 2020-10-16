@@ -17,6 +17,7 @@ module.exports = {
             showPrompt: false,
             prompt_message: '',
             prompt_placeholder: '',
+            prompt_max_input_size: null,
             prompt_value: '',
             prompt_consumer_func: () => {}
         }
@@ -194,6 +195,7 @@ module.exports = {
         this.prompt_placeholder = 'New name';
         this.prompt_value = currentName;
         this.prompt_message = 'Enter a new name';
+        this.prompt_max_input_size = 20;
         var that = this;
         this.prompt_consumer_func = function(prompt_result) {
             if (prompt_result === null)
