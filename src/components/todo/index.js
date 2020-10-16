@@ -19,7 +19,8 @@ module.exports = {
             prompt_placeholder: '',
             prompt_max_input_size: null,
             prompt_value: '',
-            prompt_consumer_func: () => {}
+            prompt_consumer_func: () => {},
+            todoBoardTimestamp: null
         }
     },
     props: ['context', 'messages', 'todoBoardName', 'todoBoardOwner', 'isNewTodoBoard', 'shareWith'],
@@ -87,6 +88,7 @@ module.exports = {
                 }
                 let title = that.isOwner ? that.todoBoardName : that.todoBoardName + " (shared by: " + that.todoBoardOwner + ")";
                 that.isWritable = todoBoard.right;
+                that.todoBoardTimestamp = todoBoard.left.getTimestamp();
                 setTimeout(function(){
                     iframe.contentWindow.postMessage({title: title, isWritable: that.isWritable, text: allLists}, '*');
                 });
@@ -163,14 +165,20 @@ module.exports = {
     	    let todoList = peergos.shared.user.TodoList.buildFromJs(list.name, list.id, listItems);
     	    todoLists.push(todoList);
 	    }
-	    let todoBoard = peergos.shared.user.TodoBoard.buildFromJs(this.todoBoardName, todoLists);
+
+	    let todoBoard = peergos.shared.user.TodoBoard.buildFromJs(this.todoBoardName, todoLists, this.todoBoardTimestamp);
         let todoApp = this.context.getTodoApp();
-        todoApp.updateTodoBoard(this.todoBoardOwner, todoBoard).thenApply(function(res) {
+        todoApp.updateTodoBoard(this.todoBoardOwner, todoBoard).thenApply(function(updatedTodoBoard) {
+            that.todoBoardTimestamp = updatedTodoBoard.getTimestamp();
             that.saving = false;
             that.readyToShare = true;
             that.unsavedChanges = false;
         }).exceptionally(function(throwable) {
-            that.showMessage("Unexpected error", throwable.detailMessage);
+            if (throwable.detailMessage.includes("Todo Board out-of-date!")) {
+                that.showMessage(throwable.detailMessage, "");
+            } else {
+                that.showMessage("Unexpected error", throwable.detailMessage);
+            }
             console.log(throwable.getMessage());
             that.saving = false;
         });
