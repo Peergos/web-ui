@@ -7,12 +7,15 @@
 	<li id="homeButton" @click="goHome()" class="navbar-brand nopad"><a><span data-toggle="tooltip" data-placement="bottom" title="Global root" class="pnavbar fas fa-globe-asia" style="cursor: pointer;"/></a></li>
 	<li id="uploadButton" @click="toggleUploadMenu()" v-if="isWritable" class="navbar-brand nopad"><a><span data-toggle="tooltip" data-placement="bottom" title="Upload" class="pnavbar fa fa-upload" style="cursor: pointer;"/></a></li>
 	<li id="mkdirButton" @click="askMkdir()" v-if="isWritable" class="navbar-brand nopad"><a><span data-toggle="tooltip" data-placement="bottom" title="Create new directory" class="pnavbar fas fa-folder-plus" style="cursor: pointer;"/></a></li>
-	<li id="alternateViewButton" @click="switchView()" class="navbar-brand nopad"><a><span data-toggle="tooltip" data-placement="bottom" title="Switch view" id="altViewSpan" v-bind:class="['pnavbar', 'fa', 'tour-view', grid ? 'fa-list' : 'fa-th-large']" style="cursor: pointer;"/></a></li>
-	<li id="userOptionsButton" v-if="isLoggedIn" @click="showSocialView()" class="navbar-brand nopad">
-          <a>
-            <span data-toggle="tooltip" data-placement="bottom" title="Sharing options" id="sharingOptionsSpan" class="pnavbar fa fa-user-plus" style="cursor: pointer;"/>
-            <span id="pendingSpan" class="pending-badge" v-if="social != null && social.pending.length > 0">{{ social.pending.length }}</span>
-          </a>
+    <li id="alternateViewButton" @click="switchView()" class="navbar-brand nopad"><a><span data-toggle="tooltip" data-placement="bottom" title="Switch view" id="altViewSpan" v-bind:class="['pnavbar', 'fa', 'tour-view', grid ? 'fa-list' : 'fa-th-large']" style="cursor: pointer;"/></a></li>
+    <li id="timelineButton" v-if="isLoggedIn" @click="showTimelineView()" class="navbar-brand nopad">
+      <a><span data-toggle="tooltip" data-placement="bottom" title="Timeline" class="pnavbar fas fa-history" style="cursor: pointer;"/></a>
+    </li>
+    <li id="userOptionsButton" v-if="isLoggedIn" @click="showSocialView()" class="navbar-brand nopad">
+      <a>
+        <span data-toggle="tooltip" data-placement="bottom" title="Sharing options" id="sharingOptionsSpan" class="pnavbar fa fa-user-plus" style="cursor: pointer;"/>
+        <span id="pendingSpan" class="pending-badge" v-if="social != null && social.pending.length > 0">{{ social.pending.length }}</span>
+      </a>
 	</li>
       </ul>
     </div>
@@ -91,16 +94,26 @@
     :context="context" 
     :messages="messages">
   </social>
-  <admin 
-    v-if="showAdmin" 
+  <timeline
+    v-if="showTimeline"
+    v-on:hide-timeline="showTimeline = false"
+    :navigateToAction="navigateToAction"
+    :viewAction="viewAction"
+    :getFileIcon="getFileIcon"
+    :messages="messages"
+    :socialFeed="socialFeed"
+    :context="context">
+  </timeline>
+  <admin
+    v-if="showAdmin"
     v-on:hide-admin="showAdmin = false"
-    :data="admindata" 
+    :data="admindata"
     :context="context">
   </admin>
-  <password 
-    v-if="showPassword" 
-    v-on:hide-password="showPassword = false" 
-    :changepassword="changePassword" 
+  <password
+    v-if="showPassword"
+    v-on:hide-password="showPassword = false"
+    :changepassword="changePassword"
     :username="this.getContext().username">
   </password>
   <account
@@ -109,23 +122,23 @@
           :deleteAccount="deleteAccount"
           :username="this.getContext().username">
   </account>
-  <space 
-    v-if="showRequestSpace" 
+  <space
+    v-if="showRequestSpace"
     v-on:hide-request-space="showRequestSpace = false"
-    :context="context" 
-    :quota="quota" 
+    :context="context"
+    :quota="quota"
     :usage="usageBytes">
   </space>
-  <payment 
-    v-if="showBuySpace" 
+  <payment
+    v-if="showBuySpace"
     v-on:hide-payment="showBuySpace = false"
-    :context="context" 
-    :quota="quota" 
+    :context="context"
+    :quota="quota"
     :usage="usageBytes"
     :paymentProperties="paymentProperties"
     :updateQuota="updateQuota">
   </payment>
-  <feedback 
+  <feedback
     v-if="showFeedbackForm"
     :closeFeedbackForm="closeFeedbackForm"
     :loadMessageThread="loadMessageThread"
@@ -133,34 +146,34 @@
     :sendMessage="sendMessage"
     :messageId="messageId">
   </feedback>
-  <gallery 
-    v-if="showGallery" 
+  <gallery
+    v-if="showGallery"
     v-on:hide-gallery="closeApps()"
-    :files="sortedFiles" 
-    :context="context" 
+    :files="sortedFiles"
+    :context="context"
     :initial-file-name="selectedFiles[0] == null ? '' : selectedFiles[0].getFileProperties().name">
   </gallery>
-  <hex 
-    v-if="showHexViewer" 
+  <hex
+    v-if="showHexViewer"
     v-on:hide-hex-viewer="closeApps()"
-    :file="selectedFiles[0]" 
+    :file="selectedFiles[0]"
     :context="context">
   </hex>
-  <pdf 
-    v-if="showPdfViewer" 
+  <pdf
+    v-if="showPdfViewer"
     v-on:hide-pdf-viewer="closeApps()"
-    :file="selectedFiles[0]" 
+    :file="selectedFiles[0]"
     :context="context">
   </pdf>
-  <code-editor 
-    v-if="showCodeEditor" 
+  <code-editor
+    v-if="showCodeEditor"
     v-on:hide-code-editor="closeApps(); updateCurrentDir();"
     v-on:update-refresh="forceUpdate++"
     :file="selectedFiles[0]"
     :context="context"
     :messages="messages">
   </code-editor>
-  <text-viewer 
+  <text-viewer
     v-if="showTextViewer" 
     v-on:hide-text-viewer="closeApps()"
     :file="selectedFiles[0]" 
