@@ -10530,6 +10530,15 @@ function createMonthView(baseController, layoutContainer, dragHandler, options) 
             if(state != null) {
                 state.style.display = 'none';
             }
+
+            let cal = document.getElementsByClassName("tui-full-calendar-content");
+            for(var j=0;j<cal.length;j++){
+                let el = cal[j];
+                if(el.localName == "span" && el.innerText == "Shared With Me") {
+                    el.innerText = el.innerText + " (" + eventData.schedule.raw.creator.name + ")";
+                    break;
+                }
+            }
             let eventDetails = document.getElementById("event-details");
             var div1 = document.createElement("div");
             eventDetails.appendChild(div1);
