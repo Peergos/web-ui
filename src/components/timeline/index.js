@@ -40,11 +40,11 @@ module.exports = {
             var that = this;
             var ctx = this.context;
             let allTimelineEntries = [];
-            let numberOfEntries = items.length;
-            ctx.getFiles(peergos.client.JsUtil.asList(items)).thenApply(function(files) {
-                let allFiles = files.toArray();
-                items.forEach(function(item, idx){
-                    allTimelineEntries.push(that.createTimelineEntry(item, allFiles[idx]));
+            ctx.getFiles(peergos.client.JsUtil.asList(items)).thenApply(function(pairs) {
+                let allPairs = pairs.toArray();
+                let numberOfEntries = allPairs.length;
+                allPairs.forEach(function(pair, idx){
+                    allTimelineEntries.push(that.createTimelineEntry(pair.left, pair.right));
                     if (numberOfEntries == idx + 1) {
                         that.data = that.data.concat(allTimelineEntries);
                         that.showSpinner = false;
@@ -191,15 +191,16 @@ module.exports = {
                     that.pageEndIndex = that.pageEndIndex - additionalItems.length;
                     let allTimelineEntries = [];
                     let items = unseenItems.reverse().concat(additionalItems.reverse());
-                    let numberOfEntries = items.length;
+                    var numberOfEntries = items.length;
                     if (numberOfEntries == 0) {
                         that.data = allTimelineEntries;
                         that.showSpinner = false;
                     } else {
-                        ctx.getFiles(peergos.client.JsUtil.asList(items)).thenApply(function(files) {
-                            let allFiles = files.toArray();
-                            items.forEach(function(item, idx){
-                                allTimelineEntries.push(that.createTimelineEntry(item, allFiles[idx]));
+                        ctx.getFiles(peergos.client.JsUtil.asList(items)).thenApply(function(pairs) {
+                            let allPairs = pairs.toArray();
+                            numberOfEntries = allPairs.length;
+                            allPairs.forEach(function(pair, idx){
+                                allTimelineEntries.push(that.createTimelineEntry(pair.left, pair.right));
                                 if (numberOfEntries == idx + 1) {
                                     that.data = allTimelineEntries;
                                     that.showSpinner = false;
