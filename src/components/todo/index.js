@@ -5,10 +5,8 @@ module.exports = {
             showSpinner: false,
 	        expectingSave: false,
 	        saving: false,
-	        deleting: false,
 	        isWritable : false,
 	        isOwner : false,
-	        readyToShare : false,
 	        warning_message: "",
 	        warning_body: "",
             warning_consumer_func: () => {},
@@ -23,7 +21,7 @@ module.exports = {
             todoBoardTimestamp: null
         }
     },
-    props: ['context', 'messages', 'todoBoardName', 'todoBoardOwner', 'isNewTodoBoard', 'shareWith'],
+    props: ['context', 'messages', 'todoBoardName', 'todoBoardOwner', 'isNewTodoBoard'],
     created: function() {
         this.startListener();
     },
@@ -69,7 +67,6 @@ module.exports = {
                     iframe.contentWindow.postMessage({title: that.todoBoardName, isWritable: that.isWritable, text: empty}, '*');
                 });
         } else {
-            this.readyToShare = true;
             let todoApp = new peergos.shared.user.App.Todo(this.context);
             todoApp.getTodoBoard(this.todoBoardOwner, this.todoBoardName).thenCompose(function(todoBoard) {
                 let lists = todoBoard.left.getTodoLists().toArray([]);
@@ -95,17 +92,8 @@ module.exports = {
             });
         }
 	},
-    isShareable: function() {
-        return this.isOwner && this.isWritable && this.readyToShare;
-    },
-    isDeletable: function() {
-        return this.readyToShare && this.isOwner && this.isWritable;
-    },
 	saveTodoBoard: function() {
         if (! this.isWritable) {
-            return;
-        }
-        if(this.deleting) {
             return;
         }
 	    if(this.saving) {
@@ -121,30 +109,6 @@ module.exports = {
         this.warning_body=body;
         this.warning_consumer_func = deleteFn;
         this.showWarning = true;
-    },
-    deleteTodoBoard: function() {
-        let that = this;
-        this.confirmationWarning('Are you sure you want to delete ' + this.todoBoardName +'?', '',
-            () => that.delete());
-    },
-    delete: function() {
-        const that = this;
-        that.deleting = true;
-        let todoApp = new peergos.shared.user.App.Todo(this.context);
-        todoApp.deleteTodoBoard(this.todoBoardOwner, this.todoBoardName).thenApply(function(res) {
-            that.deleting = false;
-            that.close();
-        }).exceptionally(function(throwable) {
-            that.showMessage("Unexpected error", throwable.detailMessage);
-            console.log(throwable.getMessage());
-            that.deleting = false;
-        });
-    },
-    shareTodoBoard: function(text) {
-        if (! this.isWritable) {
-            return;
-        }
-        this.shareWith('todo', this.todoBoardName + peergos.shared.user.UserContext.App.Todo.TODO_FILE_EXTENSION);
     },
     save: function(lists) {
         if (! this.isWritable) {
@@ -171,7 +135,6 @@ module.exports = {
         todoApp.updateTodoBoard(this.todoBoardOwner, todoBoard).thenApply(function(updatedTodoBoard) {
             that.todoBoardTimestamp = updatedTodoBoard.getTimestamp();
             that.saving = false;
-            that.readyToShare = true;
             that.unsavedChanges = false;
         }).exceptionally(function(throwable) {
             if (throwable.detailMessage.includes("Todo Board out-of-date!")) {
