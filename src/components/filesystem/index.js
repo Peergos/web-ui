@@ -1130,7 +1130,7 @@ module.exports = {
             this.create_placeholder='Todo Board';
             this.create_message='Todo Board';
             let that = this;
-            let todoApp = this.context.getTodoApp();
+            let todoApp = new peergos.shared.user.App.Todo(this.context);
             that.showSpinner = true;
             todoApp.getTodoBoards().thenApply(function(existingBoards) {
                 let todoBoards = existingBoards.toArray([]);

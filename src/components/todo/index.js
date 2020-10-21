@@ -70,7 +70,7 @@ module.exports = {
                 });
         } else {
             this.readyToShare = true;
-            let todoApp = this.context.getTodoApp();
+            let todoApp = new peergos.shared.user.App.Todo(this.context);
             todoApp.getTodoBoard(this.todoBoardOwner, this.todoBoardName).thenCompose(function(todoBoard) {
                 let lists = todoBoard.left.getTodoLists().toArray([]);
                 let allLists = [];
@@ -130,7 +130,7 @@ module.exports = {
     delete: function() {
         const that = this;
         that.deleting = true;
-        let todoApp = this.context.getTodoApp();
+        let todoApp = new peergos.shared.user.App.Todo(this.context);
         todoApp.deleteTodoBoard(this.todoBoardOwner, this.todoBoardName).thenApply(function(res) {
             that.deleting = false;
             that.close();
@@ -167,7 +167,7 @@ module.exports = {
 	    }
 
 	    let todoBoard = peergos.shared.user.TodoBoard.buildFromJs(this.todoBoardName, todoLists, this.todoBoardTimestamp);
-        let todoApp = this.context.getTodoApp();
+        let todoApp = new peergos.shared.user.App.Todo(this.context);
         todoApp.updateTodoBoard(this.todoBoardOwner, todoBoard).thenApply(function(updatedTodoBoard) {
             that.todoBoardTimestamp = updatedTodoBoard.getTimestamp();
             that.saving = false;
