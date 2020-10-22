@@ -32,6 +32,9 @@ function get_chromedriver() {
     elif [[ $VERSION == "85" ]]; 
     then
         get_and_check_chromedriver https://chromedriver.storage.googleapis.com/85.0.4183.38/chromedriver_linux64.zip cd4e08b4a7ddd0f8b60126051c64f64de7edf07350294965a98bfd984d429eed
+    elif [[ $VERSION == "86" ]]; 
+    then
+        get_and_check_chromedriver https://chromedriver.storage.googleapis.com/86.0.4240.22/chromedriver_linux64.zip d498eaacc414adbaf638333b59390cdfea5d780f941f57f41fd90280df78b159
     else
         echo "ERROR: Unsupported chrome version $VERSION"
         return 1
