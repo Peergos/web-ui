@@ -71,6 +71,7 @@ module.exports = {
             that.isWritable = true;
             setTimeout(function(){
                 that.showSpinner = false;
+                that.unsavedChanges = true;
                 iframe.contentWindow.postMessage({title: that.todoBoardName, isWritable: that.isWritable, text: []}, '*');
             });
         } else {
