@@ -953,6 +953,7 @@ function buildExtraFields(eventData, that) {
     locTextArea.value = eventData == null ? "" : eventData.schedule.raw.memo;
     locTextArea.rows = 5;
     locTextArea.cols = 40;
+    locTextArea.style.width="100%";
     locTextArea.readOnly = true;
     var div2 = document.createElement("div");
     eventDetails.appendChild(div2);
