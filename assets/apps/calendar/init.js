@@ -864,3 +864,140 @@ $('#lnb-calendars').on('change', onChangeCalendars);
   window.addEventListener('resize', resizeThrottled);
 }
 
+function buildExtraFields(eventData, that) {
+    let state = document.getElementById("detail-busy-free-state");
+    if(state != null) {
+        state.style.display = 'none';
+    }
+
+    let cal = document.getElementsByClassName("tui-full-calendar-content");
+    for(var j=0;j<cal.length;j++){
+        let el = cal[j];
+        if(el.localName == "span" && el.innerText == "Shared With Me") {
+            el.innerText = el.innerText + " (" + eventData.schedule.raw.creator.name + ")";
+            break;
+        }
+    }
+
+    let closeBtnDiv = document.getElementById("close-button");
+    if(closeBtnDiv != null) {
+        var closeBtn = document.createElement("button");
+        closeBtn.classList.add("tui-full-calendar-button");
+        closeBtn.classList.add("tui-full-calendar-popup-close");
+        closeBtnDiv.appendChild(closeBtn);
+
+        var btnSpan = document.createElement("span");
+        btnSpan.classList.add("tui-full-calendar-icon");
+        btnSpan.classList.add("tui-full-calendar-ic-close");
+        closeBtn.appendChild(btnSpan);
+        closeBtn.onclick=function() {
+           that.hide();
+            return true;
+        };
+    }
+
+    let eventDetails = document.getElementById("event-details");
+    var div1 = document.createElement("div");
+    eventDetails.appendChild(div1);
+
+    var span1 = document.createElement("span");
+    div1.appendChild(span1);
+    if(!eventData.schedule.isReadOnly) {
+        var img = document.createElement("img");
+        img.src = "./images/user-plus.svg";
+        img.style.width="16px";
+        img.style.height="16px";
+        span1.appendChild(img);
+
+        var shareLink = document.createElement("a");
+        shareLink.style.cursor="pointer";
+        shareLink.style.marginLeft="3px";
+        shareLink.innerText = "Share With";
+        span1.appendChild(shareLink);
+        shareLink.onclick=function() {
+            shareCalendarEvent(eventData.schedule.id, eventData.schedule.start
+                , eventData.schedule.isAllDay, eventData.schedule.raw.creator.name)
+        };
+        span1.appendChild(document.createTextNode('\u00A0\u00A0'));
+    }
+
+    var img5 = document.createElement("img");
+    img5.src = "./images/download.png";
+    span1.appendChild(img5);
+
+    var downloadLink = document.createElement("a");
+    downloadLink.style.cursor="pointer";
+    downloadLink.style.marginLeft="3px";
+    downloadLink.innerText = "Download";
+    span1.appendChild(downloadLink);
+    downloadLink.onclick=function() {
+        downloadEvent(eventData.schedule.id, eventData.schedule.start
+            , eventData.schedule.isAllDay, eventData.schedule.raw.creator.name);
+    };
+    span1.appendChild(document.createTextNode('\u00A0\u00A0'));
+
+    var clipboardButton = document.createElement("button");
+    span1.appendChild(clipboardButton);
+
+    var img3 = document.createElement("img");
+    img3.src = "./images/external-link-square.png";
+    clipboardButton.appendChild(img3);
+    clipboardButton.appendChild(document.createTextNode("\u00A0\u00A0Clipboard"));
+    clipboardButton.onclick=function() {
+       addEventToClipboard(eventData.schedule.id, eventData.schedule.start
+        , eventData.schedule.isAllDay, eventData.schedule.raw.creator.name);
+    };
+
+    var locTextArea = document.createElement("textarea");
+    locTextArea.id = "popup-memo-readonly";
+    locTextArea.value = eventData == null ? "" : eventData.schedule.raw.memo;
+    locTextArea.rows = 5;
+    locTextArea.cols = 40;
+    locTextArea.readOnly = true;
+    var div2 = document.createElement("div");
+    eventDetails.appendChild(div2);
+    var div3 = document.createElement("div");
+    div2.appendChild(div3);
+    div3.appendChild(locTextArea);
+}
+function removeSharedWithUsCalendar() {
+    let dropdownMenuItems = document.getElementById("dropdown-menu-items").childNodes;
+    for(var i=0;i<dropdownMenuItems.length;i++){
+        let item = dropdownMenuItems[i];
+        if(item.nodeName != "#text" && item.getAttribute("data-calendar-id") == "5") {
+            item.remove();
+        }
+    }
+}
+function addMemoField(eventData) {
+
+    let lock = document.getElementById("tui-full-calendar-schedule-private");
+    lock.style.display = 'none';
+    let state = document.getElementById("busy-free-state");
+    state.style.display = 'none';
+
+
+    let loc = document.getElementById("tui-full-calendar-schedule-location");
+    let parent = loc.parentNode.parentNode.parentNode;
+    var locTextArea = document.createElement("textarea");
+    locTextArea.id = "popup-memo";
+    locTextArea.value = eventData == null ? "" : eventData.schedule.raw.memo;
+    locTextArea.rows = 5;
+    locTextArea.cols = 85;
+
+    var div1 = document.createElement("div");
+    parent.appendChild(div1);
+    var div2 = document.createElement("div");
+    div1.appendChild(div2);
+    div2.appendChild(locTextArea);
+    if (eventData != null) {
+        let saveBtn = document.getElementById("popup-save");
+        var handler = function() {
+            eventData.schedule.raw.memo = locTextArea.value;
+            console.log("handler after");
+        }
+        saveBtn.onclick=handler;
+    }
+}
+
+
