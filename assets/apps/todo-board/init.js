@@ -168,7 +168,7 @@ function buildNewList(index, name, buildNext) {
         inputItem.type="text";
         inputItem.id = itemId;
         inputItem.setAttribute("maxlength", "60");
-        inputItem.placeholder = "Type something";
+        inputItem.placeholder = "add new item";
     	inputItem.focus();
         form.appendChild(inputItem);
         formDiv.appendChild(form);

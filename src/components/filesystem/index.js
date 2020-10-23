@@ -46,6 +46,7 @@ module.exports = {
             showFeedbackForm: false,
             showSideNav: false,
             showTodoBoardViewer: false,
+            newTodoBoardName: null,
 	    admindata: {pending:[]},
             social:{
                 pending: [],
@@ -339,7 +340,9 @@ module.exports = {
 	    this.showTextViewer = false;
 	    this.showHexViewer = false;
 	    this.showTodoBoardViewer = false;
-	    this.updateHistory("filesystem", this.getPath(), "");
+        this.selectedFiles = [];
+        this.updateHistory("filesystem", this.getPath(), "");
+	    this.forceSharedRefreshWithUpdate++;
 	},
 
     navigateToAction: function(directory, filename) {
@@ -376,6 +379,9 @@ module.exports = {
 		this.showCodeEditor = true;
 	    else if (app == "hex")
 		this.showHexViewer = true;
+	    else if (app == "todo") {
+            this.showTodoBoardViewer = true;
+	    }
 	},
 	updateCurrentDir: function() {
 	    this.updateCurrentDirectory(null);
@@ -1125,39 +1131,26 @@ module.exports = {
 		    that.showRequestSpace = true;
 	    });
         },
-        showTodoBoard: function() {
+        newTodoBoard: function() {
             this.toggleNav();
-            this.create_placeholder='Todo Board';
-            this.create_message='Todo Board';
             let that = this;
-            let todoApp = new peergos.shared.user.App.Todo(this.context);
-            that.showSpinner = true;
-            todoApp.getTodoBoards().thenApply(function(existingBoards) {
-                let todoBoards = existingBoards.toArray([]);
-                let formattedTodoBoards = [];
-                todoBoards.forEach(function(item) {
-                    let value = item.left + "/" + item.right;
-                    let text = that.context.username == item.left ? item.right : item.right + " (shared by: " + item.left + ")";
-                    formattedTodoBoards.push({value : value, text : text})
-                });
-                that.create_items=formattedTodoBoards;
-                that.create_consumer_func = function(create_result) {
-                    if (create_result === null)
-                        return;
-                    that.isNewTodoBoard = !create_result.includes("/");
-                    let ownerAndName = create_result.split('/');
-                    that.todoBoardOwner = that.isNewTodoBoard ? that.context.username : ownerAndName[0];
-                    that.todoBoardName = that.isNewTodoBoard ? create_result.trim() : ownerAndName[1];
-                    that.showTodoBoardViewer = true;
-                };
-                that.showSpinner = false;
-                that.showCreate = true;
-            }).exceptionally(function(throwable) {
-                that.errorTitle = 'Error';
-                that.errorBody = throwable.getMessage();
-                that.showError = true;
-                that.showSpinner = false;
-            });
+            this.prompt_placeholder='Todo Board';
+            this.prompt_message='Enter a name';
+            this.prompt_value='';
+            this.prompt_consumer_func = function(res) {
+                if (res === null)
+                    return;
+                if (res == '')
+                    return;
+                if (!res.match(/^[a-z\d\-_\s]+$/i)) {
+                    that.showMessage("Invalid name. Use only alphanumeric characters plus space, dash and underscore");
+                    return;
+                }
+                that.newTodoBoardName = res.trim();
+                this.selectedFiles = [];
+                that.showTodoBoardViewer = true;
+            };
+            this.showPrompt = true;
         },
         logout: function() {
             this.toggleUserMenu();
@@ -1418,8 +1411,13 @@ module.exports = {
                 }
                 that.updateHistory("gallery", that.getPath(), filename);
             });
-	    } else if (mimeType === "text/plain") {
-	        if (this.isSecretLink) {
+	    } else if (mimeType === "application/vnd.peergos-todo") {
+            if (this.isSecretLink) {
+                this.showTodoBoardViewer = true;
+            }
+            this.updateHistory("todo", this.getPath(), filename);
+        } else if (mimeType === "text/plain") {
+            if (this.isSecretLink) {
                 this.showCodeEditor = true;
             }
             this.updateHistory("editor", this.getPath(), filename);

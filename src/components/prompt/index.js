@@ -2,7 +2,7 @@ module.exports = {
     template: require('prompt.html'),
     data: function() {
         return {'prompt_result': '',
-                input_length
+                input_length: 255
         }
     },
     props: ['prompt_message', 'placeholder', 'value', 'consumer_func', 'max_input_size'],

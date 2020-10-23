@@ -52,7 +52,7 @@
   </nav>
   <div id="sideMenu" class="sidenav">
     <a><span/>&nbsp</a>
-    <a @click="showTodoBoard"><span class="fas fa-list-alt"/></a>
+    <a @click="newTodoBoard"><span class="fas fa-list-alt"/></a>
   </div>
   <a id="downloadAnchor" style="display:none"></a>
   <ul id="right-click-menu" tabindex="-1" v-if="viewMenu && (isNotHome || isPasteAvailable || isNotBackground)" v-on:blur="closeMenu" v-bind:style="{top:top, left:left}">
@@ -182,9 +182,9 @@
           v-if="showTodoBoardViewer"
           v-on:hide-todo-board="closeApps();"
           :context="context"
-          :todoBoardName="todoBoardName"
-          :todoBoardOwner="todoBoardOwner"
-          :isNewTodoBoard="isNewTodoBoard"
+          :file="selectedFiles[0]"
+          :newTodoBoardName="newTodoBoardName"
+          v-on:update-refresh="forceUpdate++"
           :messages="messages">
   </todo-board>
   <text-viewer
@@ -208,15 +208,6 @@
     :value="prompt_value"
     :consumer_func="prompt_consumer_func">
   </prompt>
-  <create
-          v-if="showCreate"
-          v-on:hide-create="showCreate = false"
-          :create_message='create_message'
-          :placeholder="create_placeholder"
-          :items="create_items"
-          :messages="messages"
-          :consumer_func="create_consumer_func">
-  </create>
   <warning 
     v-if="showWarning" 
     v-on:hide-warning="showWarning = false"

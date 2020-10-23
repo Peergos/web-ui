@@ -3,10 +3,10 @@ module.exports = {
     data: function() {
         return {
             showSpinner: false,
+            spinnerMessage: '',
 	        expectingSave: false,
 	        saving: false,
 	        isWritable : false,
-	        isOwner : false,
 	        warning_message: "",
 	        warning_body: "",
             warning_consumer_func: () => {},
@@ -18,14 +18,22 @@ module.exports = {
             prompt_max_input_size: null,
             prompt_value: '',
             prompt_consumer_func: () => {},
-            todoBoardTimestamp: null
+            todoBoardName: null,
+            todoExtension: ".todo",
+            currentFile: null
         }
     },
-    props: ['context', 'messages', 'todoBoardName', 'todoBoardOwner', 'isNewTodoBoard'],
+    props: ['context', 'messages', 'newTodoBoardName', 'file'],
     created: function() {
+        this.showSpinner = true;
         this.startListener();
+        this.currentFile = this.file;
+        this.todoBoardName = this.currentFile == null ? this.newTodoBoardName : this.extractTodoBoardName(this.currentFile.getName());
     },
     methods: {
+    extractTodoBoardName: function(filename) {
+        return filename.endsWith(this.todoExtension) ? filename.substring(0, filename.length - 5) : filename;
+    },
 	startListener: function() {
 	    var that = this;
 	    var iframe = document.getElementById("editor");
@@ -59,39 +67,54 @@ module.exports = {
             // origin. Sandboxed iframes which lack the 'allow-same-origin' header
             // don't have an origin which you can target: you'll have to send to any
             // origin, which might alow some esoteric attacks. Validate your output!
-        this.isOwner = this.todoBoardOwner == this.context.username;
-        if (this.isNewTodoBoard) {
-                let empty = [];
-                that.isWritable = true;
-                setTimeout(function(){
-                    iframe.contentWindow.postMessage({title: that.todoBoardName, isWritable: that.isWritable, text: empty}, '*');
-                });
+        if (this.currentFile == null) {
+            that.isWritable = true;
+            setTimeout(function(){
+                that.showSpinner = false;
+                iframe.contentWindow.postMessage({title: that.todoBoardName, isWritable: that.isWritable, text: []}, '*');
+            });
         } else {
-            let todoApp = new peergos.shared.user.App.Todo(this.context);
-            todoApp.getTodoBoard(this.todoBoardOwner, this.todoBoardName).thenCompose(function(todoBoard) {
-                let lists = todoBoard.left.getTodoLists().toArray([]);
-                let allLists = [];
-                for(var i = 0; i < lists.length; i++) {
-                    let list = lists[i];
-                    let items = list.getTodoItems().toArray([]);
-                    let allItems = [];
-                    for(var j = 0; j < items.length; j++) {
-                        let item = items[j];
-                        let milliseconds = item.getCreatedAsMillisecondsString();
-                        let entry = {id: item.Id, created: milliseconds, text: item.text, checked: item.checked};
-                        allItems.push(entry);
-                    }
-                    allLists.push({id: list.getId(), name: list.getName(), items: allItems});
-                }
-                let title = that.isOwner ? that.todoBoardName : that.todoBoardName + " (shared by: " + that.todoBoardOwner + ")";
-                that.isWritable = todoBoard.right;
-                that.todoBoardTimestamp = todoBoard.left.getTimestamp();
-                setTimeout(function(){
-                    iframe.contentWindow.postMessage({title: title, isWritable: that.isWritable, text: allLists}, '*');
-                });
+            that.isWritable = that.currentFile.isWritable();
+            const props = this.currentFile.getFileProperties();
+            this.currentFile.getInputStream(this.context.network, this.context.crypto, props.sizeHigh(), props.sizeLow(), function(read){})
+                .thenCompose(function(reader) {
+                    var size = that.getFileSize(props);
+                    var data = convertToByteArray(new Int8Array(size));
+                    return reader.readIntoArray(data, 0, data.length).thenApply(function(read){
+                        setTimeout(function(){
+                            let allLists = that.loadTodoBoard(peergos.shared.user.TodoBoard.fromByteArray(data));
+                            let title = that.todoBoardName;
+                            setTimeout(function(){
+                                that.showSpinner = false;
+                                iframe.contentWindow.postMessage({title: title, isWritable: that.isWritable, text: allLists}, '*');
+                            });
+                        });
+                    });
+            }).exceptionally(function(throwable) {
+                that.showSpinner = false;
+                that.showMessage("Unexpected error", throwable.detailMessage);
+                console.log('Error loading file: ' + that.currentFile.getName());
+                console.log(throwable.getMessage());
             });
         }
 	},
+    loadTodoBoard: function(todoBoard) {
+        let lists = todoBoard.getTodoLists().toArray([]);
+        let allLists = [];
+        for(var i = 0; i < lists.length; i++) {
+            let list = lists[i];
+            let items = list.getTodoItems().toArray([]);
+            let allItems = [];
+            for(var j = 0; j < items.length; j++) {
+                let item = items[j];
+                let milliseconds = item.getCreatedAsMillisecondsString();
+                let entry = {id: item.Id, created: milliseconds, text: item.text, checked: item.checked};
+                allItems.push(entry);
+            }
+            allLists.push({id: list.getId(), name: list.getName(), items: allItems});
+        }
+        return allLists;
+    },
 	saveTodoBoard: function() {
         if (! this.isWritable) {
             return;
@@ -114,6 +137,7 @@ module.exports = {
         if (! this.isWritable) {
             return;
         }
+        this.showSpinner = true;
 	    const that = this;
 	    that.saving = true;
 
@@ -130,21 +154,73 @@ module.exports = {
     	    todoLists.push(todoList);
 	    }
 
-	    let todoBoard = peergos.shared.user.TodoBoard.buildFromJs(this.todoBoardName, todoLists, this.todoBoardTimestamp);
-        let todoApp = new peergos.shared.user.App.Todo(this.context);
-        todoApp.updateTodoBoard(this.todoBoardOwner, todoBoard).thenApply(function(updatedTodoBoard) {
-            that.todoBoardTimestamp = updatedTodoBoard.getTimestamp();
-            that.saving = false;
-            that.unsavedChanges = false;
-        }).exceptionally(function(throwable) {
-            if (throwable.detailMessage.includes("Todo Board out-of-date!")) {
-                that.showMessage(throwable.detailMessage, "");
-            } else {
-                that.showMessage("Unexpected error", throwable.detailMessage);
-            }
-            console.log(throwable.getMessage());
-            that.saving = false;
-        });
+	    let todoBoard = peergos.shared.user.TodoBoard.buildFromJs(this.todoBoardName, todoLists);
+        let bytes = todoBoard.toByteArray();
+        let java_reader = peergos.shared.user.fs.AsyncReader.build(bytes);
+        const context = this.context;
+        const sizeHi = (bytes.length - (bytes.length % Math.pow(2, 32)))/Math.pow(2, 32);
+        if(this.currentFile == null) {
+            let pathToFile = "/" + context.username;
+            this.context.getByPath(pathToFile).thenApply(function(dirOpt){
+                let filename = that.todoBoardName + that.todoExtension;
+                const sizeHi = (bytes.length - (bytes.length % Math.pow(2, 32)))/Math.pow(2, 32);
+                let dir = dirOpt.get();
+                dir.hasChild(filename, context.crypto.hasher, context.network).thenApply(function(alreadyExists){
+                    if(alreadyExists) {
+                        that.showSpinner = false;
+                        that.saving = false;
+                        that.showMessage("TodoBoard with same filename already exists! File have not been saved");
+                    } else {
+                        dir.uploadFileJS(filename, java_reader, sizeHi, bytes.length,
+                            false, false, context.network, context.crypto, function(len){}, context.getTransactionService()
+                        ).thenApply(function(updatedDir) {
+                            updatedDir.getChild(filename, context.crypto.hasher, context.network).thenApply(function(fileOpt){
+                                that.showSpinner = false;
+                                that.unsavedChanges = false;
+                                that.saving = false;
+                                that.currentFile = fileOpt.get();
+                                that.$emit("update-refresh");
+                            }).exceptionally(function(throwable) {
+                                that.handleException(throwable, 'Error retrieving file', 'Error retrieving file: ' + pathToFile + "/" + filename);
+                            });
+                        }).exceptionally(function(throwable) {
+                            that.handleException(throwable, 'Error creating file', 'Error creating file: ' + pathToFile + "/" + filename);
+                        });
+                    }
+                }).exceptionally(function(throwable) {
+                    that.handleException(throwable, 'Error listing Directory', 'Error listing Directory: ' + pathToFile);
+                });
+            }).exceptionally(function(throwable) {
+                that.handleException(throwable, 'Error navigating to directory', 'Error navigating to directory: ' + pathToFile);
+            })
+        } else {
+            this.currentFile.overwriteFileJS(java_reader, sizeHi, bytes.length,
+                context.network, context.crypto, len => {})
+            .thenApply(function(updatedFile) {
+                that.showSpinner = false;
+                that.unsavedChanges = false;
+                that.saving = false;
+                that.currentFile = updatedFile;
+                that.$emit("update-refresh");
+            }).exceptionally(function(throwable) {
+                that.showSpinner = false;
+                if (throwable.detailMessage.includes("Couldn%27t+update+mutable+pointer%2C+cas+failed")
+                    ||   throwable.detailMessage.includes("CAS exception updating cryptree node.")) {
+                    that.showMessage("Concurrent modification detected", "The file: '" +
+                    that.currentFile.getName() + "' has been updated by another user. Your changes have not been saved.");
+                } else {
+                    that.handleException(throwable, "Unexpected error", 'Error uploading file: ' + that.currentFile.getName());
+                }
+                that.saving = false;
+            });
+        }
+    },
+    handleException: function(throwable, publicMessage, logMessage) {
+        this.showSpinner = false;
+        this.saving = false;
+        this.showMessage(publicMessage);
+        console.log(logMessage);
+        console.log(throwable.getMessage());
     },
     showMessage: function(title, body) {
         this.messages.push({
