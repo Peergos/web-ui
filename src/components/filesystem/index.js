@@ -44,6 +44,9 @@ module.exports = {
             showSettingsMenu:false,
             showUploadMenu:false,
             showFeedbackForm: false,
+            showSideNav: false,
+            showTodoBoardViewer: false,
+            newTodoBoardName: null,
 	    admindata: {pending:[]},
             social:{
                 pending: [],
@@ -61,8 +64,10 @@ module.exports = {
             externalChange:0,
             prompt_message: '',
             prompt_placeholder: '',
+            prompt_max_input_size: null,
             prompt_value: '',
             prompt_consumer_func: () => {},
+            showCreate: false,
             showPrompt: false,
             showWarning: false,
             showReplace: false,
@@ -317,6 +322,7 @@ module.exports = {
 		this.showCodeEditor = false;
 		this.showTextViewer = false;
 		this.showHexViewer = false;
+	    this.showTodoBoardViewer = false;
 	    } else {
 		if (! differentPath)
 		    this.openInApp(filename, app);
@@ -333,7 +339,10 @@ module.exports = {
 	    this.showCodeEditor = false;
 	    this.showTextViewer = false;
 	    this.showHexViewer = false;
-	    this.updateHistory("filesystem", this.getPath(), "");
+	    this.showTodoBoardViewer = false;
+        this.selectedFiles = [];
+        this.updateHistory("filesystem", this.getPath(), "");
+	    this.forceSharedRefreshWithUpdate++;
 	},
 
     navigateToAction: function(directory, filename) {
@@ -370,6 +379,9 @@ module.exports = {
 		this.showCodeEditor = true;
 	    else if (app == "hex")
 		this.showHexViewer = true;
+	    else if (app == "todo") {
+            this.showTodoBoardViewer = true;
+	    }
 	},
 	updateCurrentDir: function() {
 	    this.updateCurrentDirectory(null);
@@ -529,9 +541,8 @@ module.exports = {
             }.bind(this);
             this.showPrompt = true;
         },
-
         confirmDelete: function(file, deleteFn) {
-	    var extra = file.isDirectory() ? " and all its contents" : "";
+	        var extra = file.isDirectory() ? " and all its contents" : "";
             this.warning_message='Are you sure you want to delete ' + file.getName() + extra +'?'; 
             this.warning_body='';
             this.warning_consumer_func = deleteFn;
@@ -1120,7 +1131,27 @@ module.exports = {
 		    that.showRequestSpace = true;
 	    });
         },
-
+        newTodoBoard: function() {
+            this.toggleNav();
+            let that = this;
+            this.prompt_placeholder='Todo Board';
+            this.prompt_message='Enter a name';
+            this.prompt_value='';
+            this.prompt_consumer_func = function(res) {
+                if (res === null)
+                    return;
+                if (res == '')
+                    return;
+                if (!res.match(/^[a-z\d\-_\s]+$/i)) {
+                    that.showMessage("Invalid name. Use only alphanumeric characters plus space, dash and underscore");
+                    return;
+                }
+                that.newTodoBoardName = res.trim();
+                this.selectedFiles = [];
+                that.showTodoBoardViewer = true;
+            };
+            this.showPrompt = true;
+        },
         logout: function() {
             this.toggleUserMenu();
             this.context = null;
@@ -1259,11 +1290,14 @@ module.exports = {
             var file = this.selectedFiles[0];
             var filename = file.getFileProperties().name;
             let latestFile = this.files.filter(f => f.getName() == filename)[0];
-            this.selectedFiles = [latestFile];
+            this.filesToShare = [latestFile];
+            this.parentFile = this.isNotBackground ? this.currentDir : null;
+            this.pathToFile = this.path;
             let fileSharedWithState = this.sharedWithState.get(filename);
             let read_usernames = fileSharedWithState.readAccess.toArray([]);
             let edit_usernames = fileSharedWithState.writeAccess.toArray([]);
             this.sharedWithData = {read_shared_with_users:read_usernames, edit_shared_with_users:edit_usernames};
+            this.fromApp = false;
             this.showShare = true;
         },
 
@@ -1377,8 +1411,13 @@ module.exports = {
                 }
                 that.updateHistory("gallery", that.getPath(), filename);
             });
-	    } else if (mimeType === "text/plain") {
-	        if (this.isSecretLink) {
+	    } else if (mimeType === "application/vnd.peergos-todo") {
+            if (this.isSecretLink) {
+                this.showTodoBoardViewer = true;
+            }
+            this.updateHistory("todo", this.getPath(), filename);
+        } else if (mimeType === "text/plain") {
+            if (this.isSecretLink) {
                 this.showCodeEditor = true;
             }
             this.updateHistory("editor", this.getPath(), filename);
@@ -1718,6 +1757,14 @@ module.exports = {
         closeMenu: function() {
             this.viewMenu = false;
             this.ignoreEvent = false;
+        },
+        toggleNav : function() {
+            if (this.showSideNav) {
+                  document.getElementById("sideMenu").style.width = "0";
+            } else {
+              document.getElementById("sideMenu").style.width = "80px";
+            }
+            this.showSideNav = !this.showSideNav;
         }
     },
     computed: {

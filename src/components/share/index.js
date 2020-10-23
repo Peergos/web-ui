@@ -13,7 +13,7 @@ module.exports = {
             unsharedEditAccessNames: []
         }
     },
-    props: ['data', 'followernames', 'files', 'parent', 'path', 'context', 'messages'],
+    props: ['data', 'followernames', 'files', 'parent', 'path', 'context', 'messages', 'fromApp'],
     created: function() {
         Vue.nextTick(this.setTypeAhead);
     },
@@ -21,6 +21,22 @@ module.exports = {
         close: function () {
             this.showSpinner = false;
             this.$emit("hide-share-with");
+        },
+
+        refresh : function () {
+            if (! this.fromApp) {
+                this.$emit("update-shared-refresh");
+            }
+        },
+
+        showMessage : function (title, body) {
+            if (! this.fromApp) {
+                this.messages.push({
+                    title: title,
+                    body: body,
+                    show: true
+                });
+            }
         },
 
         unshare : function (sharedWithAccess) {
@@ -37,14 +53,10 @@ module.exports = {
                 this.context.unShareReadAccess(this.files[0], this.unsharedReadAccessNames)
                     .thenApply(function(b) {
                         that.showSpinner = false;
-                        that.messages.push({
-                            title: "Success!",
-                            body: "Read access revoked",
-                            show: true
-                        });
+                        that.showMessage("Success!", "Read access revoked");
                         that.close();
                         console.log("unshared read access to " + that.files[0].getFileProperties().name + " with " + that.unsharedReadAccessNames);
-                        that.$emit("update-shared-refresh");
+                        that.refresh();
                     }).exceptionally(function(throwable) {
                         that.showSpinner = false;
                         that.errorTitle = 'Error unsharing file: ' + filename;
@@ -56,14 +68,10 @@ module.exports = {
                 this.context.unShareWriteAccess(this.files[0], this.unsharedEditAccessNames)
                     .thenApply(function(b) {
                         that.showSpinner = false;
-                        that.messages.push({
-                            title: "Success!",
-                            body: "Read & Write access revoked",
-                            show: true
-                        });
+                        that.showMessage("Success!", "Read & Write access revoked");
                         that.close();
                         console.log("unshared write access to " + that.files[0].getFileProperties().name + " with " + that.unsharedEditAccessNames);
-                        that.$emit("update-shared-refresh");
+                        that.refresh();
                     }).exceptionally(function(throwable) {
                         that.showSpinner = false;
                         that.errorTitle = 'Error unsharing file: ' + filename;
@@ -132,11 +140,9 @@ module.exports = {
             }
         }
         if (usersToShareWith.length == 0) {
-            that.messages.push({
-                title: "Already shared!",
-                body: "",
-                show: true
-            });
+            that.errorTitle = "Already shared!";
+            that.errorBody = "";
+            that.showError = true;
             return;
         }
         var filename = that.files[0].getFileProperties().name;
@@ -146,15 +152,11 @@ module.exports = {
             that.context.shareReadAccessWith(that.files[0], filepath, usersToShareWith)
             .thenApply(function(b) {
             that.showSpinner = false;
-            that.messages.push({
-                title: "Success!",
-                body: "Secure sharing complete",
-                show: true
-            });
+            that.showMessage("Success!", "Secure sharing complete");
             that.close();
             that.resetTypeahead();
             console.log("shared read access to " + filename);
-            that.$emit("update-shared-refresh");
+            that.refresh();
             }).exceptionally(function(throwable) {
             that.resetTypeahead();
             that.showSpinner = false;
@@ -167,15 +169,11 @@ module.exports = {
                 that.context.shareWriteAccessWith(that.files[0], filepath, theParent, usersToShareWith)
                 .thenApply(function(b) {
                     that.showSpinner = false;
-                    that.messages.push({
-                    title: "Success!",
-                    body: "Secure sharing complete",
-                    show: true
-                    });
+                    that.showMessage("Success!", "Secure sharing complete");
                     that.resetTypeahead();
                     that.close();
                     console.log("shared write access to " + filename);
-                    that.$emit("update-shared-refresh");
+                    that.refresh();
                 }).exceptionally(function(throwable) {
                     that.resetTypeahead();
                     that.showSpinner = false;

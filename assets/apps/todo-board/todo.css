@@ -1,0 +1,108 @@
+.board {
+  display: grid;
+  height: 100vh;
+  grid-gap: 1rem;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+}
+
+
+ol {
+  margin: 0;
+  font: 400 13.3333px Arial;
+}
+
+ol li {
+  cursor: pointer;
+  position: relative;
+  padding: 12px 8px 12px 40px;
+  background: #eee;
+  transition: 0.2s;
+  /* make the list items unselectable */
+  -webkit-user-select: none;
+  -moz-user-select: none;
+  -ms-user-select: none;
+  user-select: none;
+}
+ol li:nth-child(odd) {
+  background: #f9f9f9;
+}
+
+ol li:hover {
+  background: #ddd;
+}
+
+ol li.checked {
+  background: #888;
+  text-decoration: line-through;
+}
+
+ol li.checked::before {
+  content: '';
+  position: absolute;
+  border-color: #fff;
+  border-style: solid;
+  border-width: 0 2px 2px 0;
+  top: 10px;
+  left: 16px;
+  transform: rotate(45deg);
+  height: 15px;
+  width: 7px;
+}
+
+.close {
+  position: absolute;
+  right: 0;
+  top: 0;
+  padding: 12px 16px 12px 16px;
+}
+
+.close:hover {
+  background-color: #f44336;
+  color: white;
+}
+
+.new-entry {
+  padding: 20px 40px;
+}
+
+.new-entry:after {
+  content: "";
+  display: table;
+  clear: both;
+}
+
+.new-input {
+  padding: 10px;
+  width:95%;
+  font: 400 13.3333px Arial;
+}
+
+.list {
+  /* Add shadows to create the "card" effect */
+  box-shadow: 0 4px 8px 0 rgba(0,0,0,0.2);
+  transition: 0.3s;
+  border-radius: 5px;
+  height: fit-content;
+}
+
+/* On mouse-over, add a deeper shadow */
+.list:hover {
+  box-shadow: 0 8px 16px 0 rgba(0,0,0,0.2);
+}
+
+.list-inner {
+  padding: 2px 5px;
+}
+.list-accent {
+  height: 4px;
+  width: 70%;
+  margin: 0 auto;
+}
+
+.list-name {
+  text-align: center;
+  font-size: 1.2em;
+}
+[draggable] {
+user-select: none;
+}
