@@ -54,7 +54,7 @@ function getWithHeadersProm(url, headers) {
     };
     
     req.onerror = function(e) {
-        future.completeExceptionally(Error("Network Error"));
+        future.completeExceptionally(java.lang.Throwable.of(Error("Network Error")));
     };
     
     req.send();
