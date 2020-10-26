@@ -30,6 +30,7 @@
       </button>
       <ul id="settingsMenu" v-if="showSettingsMenu" class="dropdown-menu" aria-labelledby="logoutButton" style="cursor:pointer;display:block">
         <li v-if="isAdmin"><a @click="showAdminPanel">Admin Panel</a></li>
+        <li><a @click="showProfile(true)">Profile</a></li>
         <li><a @click="showRequestStorage">Request more storage</a></li>
         <li><a @click="showChangePassword">Change Password</a></li>
         <li><a @click="showViewAccount">Delete Account</a></li>
@@ -55,18 +56,25 @@
     <a v-if="isLoggedIn" @click="newTodoBoard"><span data-toggle="tooltip" data-placement="bottom" title="Todo Board" class="fas fa-tasks"/></a>
   </div>
   <a id="downloadAnchor" style="display:none"></a>
-  <ul id="right-click-menu" tabindex="-1" v-if="viewMenu && (isNotHome || isPasteAvailable || isNotBackground)" v-on:blur="closeMenu" v-bind:style="{top:top, left:left}">
-    <li id='gallery' v-if="canOpen" v-on:click="gallery">View</li>
-    <li id='create-file' v-if="!isNotBackground" v-on:click="createTextFile">Create Text file</li>
-    <li id='open-file' v-if="canOpen" v-on:click="downloadAll">Download</li>
-    <li id='rename-file' v-if="isNotBackground && isWritable" v-on:click="rename">Rename</li>
-    <li id='delete-file' v-if="isNotBackground && isWritable" v-on:click="deleteFiles">Delete</li>
-    <li id='copy-file' v-if="isNotBackground && isWritable" v-on:click="copy">Copy</li>
-    <li id='cut-file' v-if="isNotBackground && isWritable" v-on:click="cut">Cut</li>
-    <li id='paste-file' v-if="isPasteAvailable" v-on:click="paste">Paste</li>
-    <li id='share-file' v-if="(isNotHome || isNotBackground) && isLoggedIn" v-on:click="showShareWith">Share</li>
-  </ul>
-  
+  <div v-if="viewMenu && (isNotHome || isPasteAvailable || isNotBackground)">
+    <ul id="right-click-menu" tabindex="-1" v-if="viewMenu && (isNotHome || isPasteAvailable || isNotBackground)" v-on:blur="closeMenu" v-bind:style="{top:top, left:left}">
+      <li id='gallery' v-if="canOpen" v-on:click="gallery">View</li>
+      <li id='create-file' v-if="!isNotBackground" v-on:click="createTextFile">Create Text file</li>
+      <li id='open-file' v-if="canOpen" v-on:click="downloadAll">Download</li>
+      <li id='rename-file' v-if="isNotBackground && isWritable" v-on:click="rename">Rename</li>
+      <li id='delete-file' v-if="isNotBackground && isWritable" v-on:click="deleteFiles">Delete</li>
+      <li id='copy-file' v-if="isNotBackground && isWritable" v-on:click="copy">Copy</li>
+      <li id='cut-file' v-if="isNotBackground && isWritable" v-on:click="cut">Cut</li>
+      <li id='paste-file' v-if="isPasteAvailable" v-on:click="paste">Paste</li>
+      <li id='share-file' v-if="(isNotHome || isNotBackground) && isLoggedIn" v-on:click="showShareWith">Share</li>
+      <li id='import-ics-file' v-if="isLoggedIn && isNotBackground && isIcsFile" v-on:click="importICALFile(false)">Import into Calendar</li>
+    </ul>
+  </div>
+  <div v-if="viewMenu && isProfileViewable()">
+    <ul id="right-click-menu-profile" tabindex="-1"  v-on:blur="closeMenu" v-bind:style="{top:top, left:left}">
+      <li id='profile-view' v-on:click="showProfile(false)">Show Profile</li>
+    </ul>
+  </div>
   <tour
     v-if="showTour" 
     v-on:hide-tour="showTour = false">
@@ -146,6 +154,18 @@
     :sendMessage="sendMessage"
     :messageId="messageId">
   </feedback>
+  <profile-edit
+          v-if="showProfileEditForm"
+          v-on:hide-profile-edit="showProfileEditForm = false"
+          :context="context"
+          :profile="profile"
+          :messages="messages">
+  </profile-edit>
+  <profile-view
+          v-if="showProfileViewForm"
+          v-on:hide-profile-view="showProfileViewForm = false"
+          :profile="profile">
+  </profile-view>
   <gallery
     v-if="showGallery"
     v-on:hide-gallery="closeApps()"

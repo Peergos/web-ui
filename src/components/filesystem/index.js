@@ -45,12 +45,24 @@ module.exports = {
             showTodoBoardViewer: false,
             newTodoBoardName: null,
             showCalendarViewer: false,
+            showProfileEditForm: false,
+            showProfileViewForm: false,
 	    admindata: {pending:[]},
             social:{
                 pending: [],
                 friends: [],
                 followers: [],
                 following: []
+            },
+            profile:{
+                firstName: "",
+                lastName: "",
+                biography: "",
+                primaryPhone: "",
+                primaryEmail: "",
+                profileImage: "",
+                status: "",
+                webRoot: ""
             },
             messages: [],
             messageId: null,
@@ -1133,6 +1145,58 @@ module.exports = {
             this.showAccount = true;
         },
 
+        showProfile: function(showEditForm) {
+            if(showEditForm) {
+                this.toggleUserMenu();
+            } else {
+                this.closeMenu();
+            }
+            let username = showEditForm ? this.context.username : this.selectedFiles[0].getOwnerName();
+            let that = this;
+            let context = this.context;
+            peergos.shared.user.ProfilePaths.getFirstName(username, context)
+                .thenApply(firstNameOpt => peergos.shared.user.ProfilePaths.getLastName(username, context)
+                    .thenApply(lastNameOpt => peergos.shared.user.ProfilePaths.getBio(username, context)
+                        .thenApply(bioOpt => peergos.shared.user.ProfilePaths.getPhone(username, context)
+                            .thenApply(phoneOpt => peergos.shared.user.ProfilePaths.getEmail(username, context)
+                                .thenApply(emailOpt => peergos.shared.user.ProfilePaths.getProfilePhoto(username, context)
+                                    .thenApply(imageOpt => peergos.shared.user.ProfilePaths.getStatus(username, context)
+                                        .thenApply(statusOpt => peergos.shared.user.ProfilePaths.getWebRoot(username, context)
+                                            .thenApply(webRootOpt => {
+                                                let firstName = firstNameOpt.isPresent() ? firstNameOpt.get() : "";
+                                                let lastName = lastNameOpt.isPresent() ? lastNameOpt.get() : "";
+                                                let biography = bioOpt.isPresent() ? bioOpt.get() : "";
+                                                let primaryPhone = phoneOpt.isPresent() ? phoneOpt.get() : "";
+                                                let primaryEmail = emailOpt.isPresent() ? emailOpt.get() : "";
+                                                let base64Image = imageOpt.isPresent() ? imageOpt.get() : "";
+                                                let status = statusOpt.isPresent() ? statusOpt.get() : "";
+                                                let webRoot = webRootOpt.isPresent() ? webRootOpt.get() : "";
+
+                                                that.profile = {
+                                                    firstName: firstName,
+                                                    lastName: lastName,
+                                                    biography: biography,
+                                                    primaryPhone: primaryPhone,
+                                                    primaryEmail: primaryEmail,
+                                                    profileImage: base64Image,
+                                                    status: status,
+                                                    webRoot: webRoot
+                                                };
+                                                if (showEditForm) {
+                                                    that.showProfileEditForm = true;
+                                                } else {
+                                                    that.showProfileViewForm = true;
+                                                }
+                                            })
+                                        )
+                                    )
+                                )
+                            )
+                        )
+                    )
+                );
+        },
+
         showRequestStorage: function() {
             this.toggleUserMenu();
 	    var that = this;
@@ -1628,7 +1692,17 @@ module.exports = {
                 }
             }
         },
-
+        isProfileViewable: function() {
+           try {
+               if (this.currentDir.props.name != "/")
+                   return false;
+               if (this.selectedFiles.length != 1)
+                   return false;
+               return this.selectedFiles[0].isDirectory()
+           } catch (err) {
+               return false;
+           }
+        },
         openMenu: function(e, file) {
             if (this.ignoreEvent) {
                 e.preventDefault();
@@ -1640,25 +1714,34 @@ module.exports = {
                 return;
             }
             if (this.getPath() == "/") {
-                e.preventDefault();
-                return; // disable sharing your root directory
-            }
-            if(file) {
-		this.isNotBackground = true;
-                this.selectedFiles = [file];
-            } else {
-		this.isNotBackground = false;
+		        this.isNotBackground = false;
                 this.selectedFiles = [this.currentDir];
-            }
-            this.viewMenu = true;
+                this.viewMenu = true;
+                Vue.nextTick(function() {
+                    var menu = document.getElementById("right-click-menu-profile");
+                    if (menu != null)
+                        menu.focus();
+                    this.setMenu(e.y, e.x, "right-click-menu-profile")
+                }.bind(this));
+                e.preventDefault();
+            } else {
+                if(file) {
+                    this.isNotBackground = true;
+                    this.selectedFiles = [file];
+                } else {
+                    this.isNotBackground = false;
+                    this.selectedFiles = [this.currentDir];
+                }
+                this.viewMenu = true;
 
-            Vue.nextTick(function() {
-                var menu = document.getElementById("right-click-menu");
-		if (menu != null)
-		    menu.focus();
-                this.setMenu(e.y, e.x)
-            }.bind(this));
-            e.preventDefault();
+                Vue.nextTick(function() {
+                    var menu = document.getElementById("right-click-menu");
+                    if (menu != null)
+                    menu.focus();
+                    this.setMenu(e.y, e.x, "right-click-menu")
+                }.bind(this));
+                e.preventDefault();
+            }
         },
         createTextFile: function() {
             this.closeMenu();
@@ -1784,14 +1867,14 @@ module.exports = {
             }
         },
 
-        setMenu: function(top, left) {
+        setMenu: function(top, left, menuId) {
             console.log("open menu");
 
             if (this.isNotBackground) {
                 this.ignoreEvent = true;
             }
 
-            var menu = document.getElementById("right-click-menu");
+            var menu = document.getElementById(menuId);
             if (menu != null) {
                 var largestHeight = window.innerHeight - menu.offsetHeight - 25;
                 var largestWidth = window.innerWidth - menu.offsetWidth - 25;

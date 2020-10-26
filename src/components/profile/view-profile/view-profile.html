@@ -1,0 +1,46 @@
+<transition name="modal">
+<div class="modal-mask" @click="close">
+    <meta http-equiv="content-type" content="text/html; charset=utf-8" />
+    <div class="modal-container" @click.stop style="height:100%;overflow-y:auto">
+        <span @click="close" class="close">&times;</span>
+        <div class="modal-header">
+            <h2>Profile</h2>
+        </div>
+        <div class="modal-body">
+            <spinner v-if="showSpinner"></spinner>
+            <div id="profile-main">
+                <p>Public Profile Image
+                <div id="profile-container" v-if="hasProfileImage()">
+                    <img id="profile-image" v-bind:src="getProfileImage()"/>
+                </div>
+                </p>
+                <span>First name
+                    <input id="profile-first-name" class="form-control" readonly v-model="firstName" placeholder="First Name" style="width:30%" maxlength="20">
+                </span>
+                <p>
+                    Last name
+                    <input id="profile-last-name" class="form-control" readonly v-model="lastName" placeholder="Last Name" style="width:30%" maxlength="20">
+                </p>
+                <p>Phone
+                    <input id="profile-primary-phone" class="form-control" readonly v-model="primaryPhone" placeholder="Primary Phone Number" style="width:30%" maxlength="30">
+                </p>
+                <p>
+                    Email
+                    <input id="profile-primary-email" class="form-control" readonly v-model="primaryEmail" placeholder="Primary Email Address" style="width:30%" maxlength="30">
+                </p>
+                <p>Biography
+                    <textarea id="profile-biography" class="form-control" readonly v-model="biography" placeholder="Biography" style="width:50%;resize: none;" rows=3 maxlength="400"></textarea>
+                </p>
+                <p>
+                    Status
+                    <input id="profile-status" class="form-control" readonly v-model="status" placeholder="Status" style="width:30%" maxlength="30">
+                </p>
+                <p>
+                    WebRoot
+                    <input id="profile-web-root" class="form-control" readonly v-model="webRoot" placeholder="WebRoot" style="width:30%" maxlength="30">
+                </p>
+            </div>
+        </div>
+    </div>
+</div>
+</transition>
