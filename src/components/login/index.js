@@ -62,7 +62,8 @@ module.exports = {
             } else
 		Vue.nextTick(function() {
                     document.getElementById("username").focus();
-		});	
+		});
+	    this.checkIfDomainNeedsUnblocking();
 	}
     },
     methods: {
@@ -72,6 +73,31 @@ module.exports = {
                 .thenApply(function(network){
 		    that.network = network;
 		});
+	},
+
+	checkIfDomainNeedsUnblocking: function() {
+	    if (this.network == null)
+		return;
+	    var that = this;
+	    this.network.otherDomain().thenApply(function(domainOpt) {
+		if (domainOpt.isPresent()) {
+		    var req = new XMLHttpRequest();
+		    var url = domainOpt.get() + "notablock";
+		    req.open('GET', url);
+		    req.responseType = 'arraybuffer';
+		    req.onload = function() {
+			console.log("S3 test returned: " + req.status)
+		    };
+    
+		    req.onerror = function(e) {
+			that.errorTitle = "Unblock domain";
+			that.errorBody = "Please unblock the following domain for Peergos to function correctly: " + domainOpt.get();
+			that.showError = true;
+		    };
+		    
+		    req.send();
+		}
+	    });
 	},
 	
         togglePassword: function() {
