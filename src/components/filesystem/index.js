@@ -1821,7 +1821,7 @@ module.exports = {
             if (this.showSideNav) {
                   document.getElementById("sideMenu").style.width = "0";
             } else {
-              document.getElementById("sideMenu").style.width = "80px";
+              document.getElementById("sideMenu").style.width = "60px";
             }
             this.showSideNav = !this.showSideNav;
         }
