@@ -8,15 +8,18 @@ module.exports = {
     },
     props: ['context', 'messages', 'importFile','shareWith'],
     created: function() {
+        let that = this;
         this.displaySpinner();
-        this.startListener();
+        this.context.getCalendarApp().thenApply(calendar =>
+            that.startListener(calendar)
+        );
     },
     methods: {
-	startListener: function() {
+	startListener: function(calendar) {
 	    var that = this;
 	    var iframe = document.getElementById("editor");
 	    if (iframe == null) {
-    		setTimeout(that.startListener, 1000);
+    		setTimeout(function(){that.startListener(calendar)}, 1000);
 	    	return;
 	    }
         // Listen for response messages from the frames.
@@ -30,11 +33,11 @@ module.exports = {
             // create. Check that source, and validate those inputs!
             if (e.origin === "null" && e.source === iframe.contentWindow) {
                 if(e.data.type=="save") {
-                    that.saveEvent(e.data);
+                    that.saveEvent(calendar, e.data);
                 } else if(e.data.type=="saveAll") {
-                    that.saveAllEvents(e.data);
+                    that.saveAllEvents(calendar, e.data);
                 } else if(e.data.type=="delete") {
-                    that.deleteEvent(e.data);
+                    that.deleteEvent(calendar, e.data);
                 } else if(e.data.type=="displaySpinner") {
                     that.displaySpinner();
                 } else if(e.data.type=="removeSpinner") {
@@ -42,13 +45,13 @@ module.exports = {
                 } else if(e.data.type=="displayMessage") {
                     that.displayMessage(e.data.message);
                 } else if(e.data.type=="loadAdditional") {
-                    that.loadAdditional(e.data.year, e.data.month, 'loadAdditional');
+                    that.loadAdditional(calendar, e.data.year, e.data.month, 'loadAdditional');
                 } else if(e.data.type=="downloadEvent") {
-                    that.downloadEvent(e.data.id, e.data.year, e.data.month, e.data.username);
+                    that.downloadEvent(calendar, e.data.id, e.data.year, e.data.month, e.data.username);
                 } else if(e.data.type=="addToClipboardEvent") {
-                    that.addToClipboardEvent(e.data.id, e.data.year, e.data.month, e.data.username);
+                    that.addToClipboardEvent(calendar, e.data.id, e.data.year, e.data.month, e.data.username);
                 } else if(e.data.type=="shareCalendarEvent") {
-                    that.shareCalendarEvent(e.data.id, e.data.year, e.data.month, e.data.username);
+                    that.shareCalendarEvent(calendar, e.data.id, e.data.year, e.data.month, e.data.username);
                 }
             }
         });
@@ -62,7 +65,7 @@ module.exports = {
         if(this.importFile != null) {
             this.importICSFile();
         } else {
-            this.load(year, monthIndex, 'load');
+            this.load(calendar, year, monthIndex, 'load');
         }
 	},
     importICSFile: function() {
@@ -72,8 +75,7 @@ module.exports = {
             iframe.contentWindow.postMessage({type: 'importICSFile', contents: that.importFile}, '*');
         });
     },
-    loadAdditional: function(year, month, messageType) {
-        let calendar = this.context.getCalendarApp();
+    loadAdditional: function(calendar, year, month, messageType) {
         let that = this;
         calendar.getCalendarEventsForMonth(year, month).thenCompose(function(allEvents) {
             that.loadAdditionalEvents(year, month, messageType, allEvents.toArray([]));
@@ -92,8 +94,7 @@ module.exports = {
                 , yearMonth: yearMonth }, '*');
         });
     },
-    load: function(year, month, messageType) {
-        let calendar = this.context.getCalendarApp();
+    load: function(calendar, year, month, messageType) {
         let that = this;
         calendar.getCalendarEventsAroundMonth(year, month).thenCompose(function(allEvents) {
             that.loadEvents(year, month, messageType, allEvents.left.toArray([]), allEvents.middle.toArray([]),
@@ -122,10 +123,9 @@ module.exports = {
                     currentMonth: currentMonth, nextMonth: nextMonth, yearMonth: yearMonth, username: that.context.username}, '*');
         });
     },
-    deleteEvent: function(item) {
+    deleteEvent: function(calendar, item) {
 	    const that = this;
 	    that.displaySpinner();
-        let calendar = this.context.getCalendarApp();
         calendar.removeCalendarEvent(item.year, item.month, item.Id).thenApply(function(res) {
 	        that.removeSpinner();
         }).exceptionally(function(throwable) {
@@ -143,10 +143,9 @@ module.exports = {
     displayMessage: function(msg) {
         this.showMessage(msg);
     },
-    saveEvent: function(item) {
+    saveEvent: function(calendar, item) {
 	    const that = this;
 	    that.displaySpinner();
-        let calendar = this.context.getCalendarApp();
         calendar.updateCalendarEvent(item.year, item.month, item.Id, item.item).thenApply(function(res) {
 	        that.removeSpinner();
         }).exceptionally(function(throwable) {
@@ -155,8 +154,7 @@ module.exports = {
 	        that.removeSpinner();
         });
     },
-    saveAllEvents: function(items) {
-        let calendar = this.context.getCalendarApp();
+    saveAllEvents: function(calendar, items) {
         this.saveAllEventsRecursive(calendar, items.items, 0);
     },
     saveAllEventsRecursive: function(calendar, items, index) {
@@ -177,21 +175,22 @@ module.exports = {
             });
         }
     },
-    addToClipboardEvent: function(id, year, month, username) {
+    addToClipboardEvent: function(calendar, id, year, month, username) {
         let that = this;
-        let calendar = this.context.getCalendarApp();
+        this.displaySpinner();
         calendar.getEventFile(username, year, month, id).thenApply(function(file){
             console.log("name=" + file.getName())
             let link = window.location.origin + window.location.pathname +
                     "#" + propsToFragment({secretLink:true,link:file.toLink()});
-            navigator.clipboard.writeText(link).then(function() {}, function() {
+            navigator.clipboard.writeText(link).then(function() { that.displayMessage("Secret link to event copied to clipboard");}, function() {
               console.error("Unable to write to clipboard.");
             });
+            that.removeSpinner();
         });
     },
-    downloadEvent: function(id, year, month, username) {
+    downloadEvent: function(calendar, id, year, month, username) {
         let that = this;
-        let calendar = this.context.getCalendarApp();
+        this.displaySpinner();
         calendar.getEventFile(username, year, month, id)
             .thenApply(function(file){
                 let props = file.getFileProperties();
@@ -200,7 +199,7 @@ module.exports = {
                         let size = props.sizeLow();
                         let data = convertToByteArray(new Int8Array(size));
                         return reader.readIntoArray(data, 0, data.length)
-                                .thenApply(function(read){that.openItem('' + year+'-'+month+'-event.ics', data, props.mimeType)});
+                                .thenApply(function(read){that.openItem('event.ics', data, props.mimeType)});
                     });
             });
     },
@@ -212,10 +211,10 @@ module.exports = {
         link.type = mimeType;
         link.download = name;
         link.click();
+        this.removeSpinner();
     },
-    shareCalendarEvent: function(id, year, month, username) {
+    shareCalendarEvent: function(calendar, id, year, month, username) {
         let that = this;
-        let calendar = this.context.getCalendarApp();
         that.shareWith('calendar/' + this.context.username + '/' + year + '/' + month, id + '.ics', false);
     },
     showMessage: function(title, body) {

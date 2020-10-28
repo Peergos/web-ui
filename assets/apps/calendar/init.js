@@ -37,16 +37,16 @@ cal = new tui.Calendar('#calendar', {
 
 cal.on({
     'clickMore': function(e) {
-        console.log('clickMore', e);
+        //console.log('clickMore', e);
     },
     'clickSchedule': function(e) {
-        console.log('clickSchedule', e);
+        //console.log('clickSchedule', e);
     },
     'clickDayname': function(date) {
-        console.log('clickDayname', date);
+        //console.log('clickDayname', date);
     },
     'beforeCreateSchedule': function(e) {
-        console.log('beforeCreateSchedule', e);
+        //console.log('beforeCreateSchedule', e);
         let schedule = buildNewSchedule(e);
         ScheduleList.push(schedule);
         cal.createSchedules([schedule]);
@@ -60,7 +60,7 @@ cal.on({
         if(changes == null) {
             return;
         }
-        console.log('beforeUpdateSchedule', e);
+        //console.log('beforeUpdateSchedule', e);
         if (changes && !changes.isAllDay && schedule.category === 'allday') {
             changes.category = 'time';
         }
@@ -75,7 +75,7 @@ cal.on({
         refreshScheduleVisibility();
     },
     'beforeDeleteSchedule': function(e) {
-        console.log('beforeDeleteSchedule', e);
+        //console.log('beforeDeleteSchedule', e);
         cal.deleteSchedule(e.schedule.id, e.schedule.calendarId);
         ScheduleList.splice(ScheduleList.findIndex(v => v.id === e.schedule.id), 1);
         removeFromCache(e.schedule);
@@ -87,8 +87,7 @@ cal.on({
         // console.log('afterRenderSchedule', element);
     },
     'clickTimezonesCollapseBtn': function(timezonesCollapsed) {
-        console.log('timezonesCollapsed', timezonesCollapsed);
-
+        //console.log('timezonesCollapsed', timezonesCollapsed);
         if (timezonesCollapsed) {
             cal.setTheme({
                 'week.daygridLeft.width': '77px',
@@ -995,7 +994,6 @@ function addMemoField(eventData) {
         let saveBtn = document.getElementById("popup-save");
         var handler = function() {
             eventData.schedule.raw.memo = locTextArea.value;
-            console.log("handler after");
         }
         saveBtn.onclick=handler;
     }
