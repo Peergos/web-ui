@@ -1,6 +1,6 @@
 /*!
  * TOAST UI Calendar
- * @version 1.12.13 | Tue Apr 28 2020
+ * @version 1.12.14 | Tue Sep 22 2020
  * @author NHN FE Development Lab <dl_javascript@nhn.com>
  * @license MIT
  */
@@ -223,7 +223,7 @@ var _logger2 = _interopRequireDefault(_logger);
 
 var _internalProtoAccess = __webpack_require__(/*! ./internal/proto-access */ "./node_modules/handlebars/dist/cjs/handlebars/internal/proto-access.js");
 
-var VERSION = '4.7.3';
+var VERSION = '4.7.6';
 exports.VERSION = VERSION;
 var COMPILER_REVISION = 8;
 exports.COMPILER_REVISION = COMPILER_REVISION;
@@ -314,7 +314,7 @@ var log = _logger2['default'].log;
 exports.log = log;
 exports.createFrame = _utils.createFrame;
 exports.logger = _logger2['default'];
-//# sourceMappingURL=data:application/json;charset=utf-8;base64,eyJ2ZXJzaW9uIjozLCJzb3VyY2VzIjpbIi4uLy4uLy4uL2xpYi9oYW5kbGViYXJzL2Jhc2UuanMiXSwibmFtZXMiOltdLCJtYXBwaW5ncyI6Ijs7Ozs7Ozs7cUJBQThDLFNBQVM7O3lCQUNqQyxhQUFhOzs7O3VCQUNJLFdBQVc7OzBCQUNSLGNBQWM7O3NCQUNyQyxVQUFVOzs7O21DQUNTLHlCQUF5Qjs7QUFFeEQsSUFBTSxPQUFPLEdBQUcsT0FBTyxDQUFDOztBQUN4QixJQUFNLGlCQUFpQixHQUFHLENBQUMsQ0FBQzs7QUFDNUIsSUFBTSxpQ0FBaUMsR0FBRyxDQUFDLENBQUM7OztBQUU1QyxJQUFNLGdCQUFnQixHQUFHO0FBQzlCLEdBQUMsRUFBRSxhQUFhO0FBQ2hCLEdBQUMsRUFBRSxlQUFlO0FBQ2xCLEdBQUMsRUFBRSxlQUFlO0FBQ2xCLEdBQUMsRUFBRSxVQUFVO0FBQ2IsR0FBQyxFQUFFLGtCQUFrQjtBQUNyQixHQUFDLEVBQUUsaUJBQWlCO0FBQ3BCLEdBQUMsRUFBRSxpQkFBaUI7QUFDcEIsR0FBQyxFQUFFLFVBQVU7Q0FDZCxDQUFDOzs7QUFFRixJQUFNLFVBQVUsR0FBRyxpQkFBaUIsQ0FBQzs7QUFFOUIsU0FBUyxxQkFBcUIsQ0FBQyxPQUFPLEVBQUUsUUFBUSxFQUFFLFVBQVUsRUFBRTtBQUNuRSxNQUFJLENBQUMsT0FBTyxHQUFHLE9BQU8sSUFBSSxFQUFFLENBQUM7QUFDN0IsTUFBSSxDQUFDLFFBQVEsR0FBRyxRQUFRLElBQUksRUFBRSxDQUFDO0FBQy9CLE1BQUksQ0FBQyxVQUFVLEdBQUcsVUFBVSxJQUFJLEVBQUUsQ0FBQzs7QUFFbkMsa0NBQXVCLElBQUksQ0FBQyxDQUFDO0FBQzdCLHdDQUEwQixJQUFJLENBQUMsQ0FBQztDQUNqQzs7QUFFRCxxQkFBcUIsQ0FBQyxTQUFTLEdBQUc7QUFDaEMsYUFBVyxFQUFFLHFCQUFxQjs7QUFFbEMsUUFBTSxxQkFBUTtBQUNkLEtBQUcsRUFBRSxvQkFBTyxHQUFHOztBQUVmLGdCQUFjLEVBQUUsd0JBQVMsSUFBSSxFQUFFLEVBQUUsRUFBRTtBQUNqQyxRQUFJLGdCQUFTLElBQUksQ0FBQyxJQUFJLENBQUMsS0FBSyxVQUFVLEVBQUU7QUFDdEMsVUFBSSxFQUFFLEVBQUU7QUFDTixjQUFNLDJCQUFjLHlDQUF5QyxDQUFDLENBQUM7T0FDaEU7QUFDRCxvQkFBTyxJQUFJLENBQUMsT0FBTyxFQUFFLElBQUksQ0FBQyxDQUFDO0tBQzVCLE1BQU07QUFDTCxVQUFJLENBQUMsT0FBTyxDQUFDLElBQUksQ0FBQyxHQUFHLEVBQUUsQ0FBQztLQUN6QjtHQUNGO0FBQ0Qsa0JBQWdCLEVBQUUsMEJBQVMsSUFBSSxFQUFFO0FBQy9CLFdBQU8sSUFBSSxDQUFDLE9BQU8sQ0FBQyxJQUFJLENBQUMsQ0FBQztHQUMzQjs7QUFFRCxpQkFBZSxFQUFFLHlCQUFTLElBQUksRUFBRSxPQUFPLEVBQUU7QUFDdkMsUUFBSSxnQkFBUyxJQUFJLENBQUMsSUFBSSxDQUFDLEtBQUssVUFBVSxFQUFFO0FBQ3RDLG9CQUFPLElBQUksQ0FBQyxRQUFRLEVBQUUsSUFBSSxDQUFDLENBQUM7S0FDN0IsTUFBTTtBQUNMLFVBQUksT0FBTyxPQUFPLEtBQUssV0FBVyxFQUFFO0FBQ2xDLGNBQU0seUVBQ3dDLElBQUksb0JBQ2pELENBQUM7T0FDSDtBQUNELFVBQUksQ0FBQyxRQUFRLENBQUMsSUFBSSxDQUFDLEdBQUcsT0FBTyxDQUFDO0tBQy9CO0dBQ0Y7QUFDRCxtQkFBaUIsRUFBRSwyQkFBUyxJQUFJLEVBQUU7QUFDaEMsV0FBTyxJQUFJLENBQUMsUUFBUSxDQUFDLElBQUksQ0FBQyxDQUFDO0dBQzVCOztBQUVELG1CQUFpQixFQUFFLDJCQUFTLElBQUksRUFBRSxFQUFFLEVBQUU7QUFDcEMsUUFBSSxnQkFBUyxJQUFJLENBQUMsSUFBSSxDQUFDLEtBQUssVUFBVSxFQUFFO0FBQ3RDLFVBQUksRUFBRSxFQUFFO0FBQ04sY0FBTSwyQkFBYyw0Q0FBNEMsQ0FBQyxDQUFDO09BQ25FO0FBQ0Qsb0JBQU8sSUFBSSxDQUFDLFVBQVUsRUFBRSxJQUFJLENBQUMsQ0FBQztLQUMvQixNQUFNO0FBQ0wsVUFBSSxDQUFDLFVBQVUsQ0FBQyxJQUFJLENBQUMsR0FBRyxFQUFFLENBQUM7S0FDNUI7R0FDRjtBQUNELHFCQUFtQixFQUFFLDZCQUFTLElBQUksRUFBRTtBQUNsQyxXQUFPLElBQUksQ0FBQyxVQUFVLENBQUMsSUFBSSxDQUFDLENBQUM7R0FDOUI7Ozs7O0FBS0QsNkJBQTJCLEVBQUEsdUNBQUc7QUFDNUIsZ0RBQXVCLENBQUM7R0FDekI7Q0FDRixDQUFDOztBQUVLLElBQUksR0FBRyxHQUFHLG9CQUFPLEdBQUcsQ0FBQzs7O1FBRW5CLFdBQVc7UUFBRSxNQUFNIiwiZmlsZSI6ImJhc2UuanMiLCJzb3VyY2VzQ29udGVudCI6WyJpbXBvcnQgeyBjcmVhdGVGcmFtZSwgZXh0ZW5kLCB0b1N0cmluZyB9IGZyb20gJy4vdXRpbHMnO1xuaW1wb3J0IEV4Y2VwdGlvbiBmcm9tICcuL2V4Y2VwdGlvbic7XG5pbXBvcnQgeyByZWdpc3RlckRlZmF1bHRIZWxwZXJzIH0gZnJvbSAnLi9oZWxwZXJzJztcbmltcG9ydCB7IHJlZ2lzdGVyRGVmYXVsdERlY29yYXRvcnMgfSBmcm9tICcuL2RlY29yYXRvcnMnO1xuaW1wb3J0IGxvZ2dlciBmcm9tICcuL2xvZ2dlcic7XG5pbXBvcnQgeyByZXNldExvZ2dlZFByb3BlcnRpZXMgfSBmcm9tICcuL2ludGVybmFsL3Byb3RvLWFjY2Vzcyc7XG5cbmV4cG9ydCBjb25zdCBWRVJTSU9OID0gJzQuNy4zJztcbmV4cG9ydCBjb25zdCBDT01QSUxFUl9SRVZJU0lPTiA9IDg7XG5leHBvcnQgY29uc3QgTEFTVF9DT01QQVRJQkxFX0NPTVBJTEVSX1JFVklTSU9OID0gNztcblxuZXhwb3J0IGNvbnN0IFJFVklTSU9OX0NIQU5HRVMgPSB7XG4gIDE6ICc8PSAxLjAucmMuMicsIC8vIDEuMC5yYy4yIGlzIGFjdHVhbGx5IHJldjIgYnV0IGRvZXNuJ3QgcmVwb3J0IGl0XG4gIDI6ICc9PSAxLjAuMC1yYy4zJyxcbiAgMzogJz09IDEuMC4wLXJjLjQnLFxuICA0OiAnPT0gMS54LngnLFxuICA1OiAnPT0gMi4wLjAtYWxwaGEueCcsXG4gIDY6ICc+PSAyLjAuMC1iZXRhLjEnLFxuICA3OiAnPj0gNC4wLjAgPDQuMy4wJyxcbiAgODogJz49IDQuMy4wJ1xufTtcblxuY29uc3Qgb2JqZWN0VHlwZSA9ICdbb2JqZWN0IE9iamVjdF0nO1xuXG5leHBvcnQgZnVuY3Rpb24gSGFuZGxlYmFyc0Vudmlyb25tZW50KGhlbHBlcnMsIHBhcnRpYWxzLCBkZWNvcmF0b3JzKSB7XG4gIHRoaXMuaGVscGVycyA9IGhlbHBlcnMgfHwge307XG4gIHRoaXMucGFydGlhbHMgPSBwYXJ0aWFscyB8fCB7fTtcbiAgdGhpcy5kZWNvcmF0b3JzID0gZGVjb3JhdG9ycyB8fCB7fTtcblxuICByZWdpc3RlckRlZmF1bHRIZWxwZXJzKHRoaXMpO1xuICByZWdpc3RlckRlZmF1bHREZWNvcmF0b3JzKHRoaXMpO1xufVxuXG5IYW5kbGViYXJzRW52aXJvbm1lbnQucHJvdG90eXBlID0ge1xuICBjb25zdHJ1Y3RvcjogSGFuZGxlYmFyc0Vudmlyb25tZW50LFxuXG4gIGxvZ2dlcjogbG9nZ2VyLFxuICBsb2c6IGxvZ2dlci5sb2csXG5cbiAgcmVnaXN0ZXJIZWxwZXI6IGZ1bmN0aW9uKG5hbWUsIGZuKSB7XG4gICAgaWYgKHRvU3RyaW5nLmNhbGwobmFtZSkgPT09IG9iamVjdFR5cGUpIHtcbiAgICAgIGlmIChmbikge1xuICAgICAgICB0aHJvdyBuZXcgRXhjZXB0aW9uKCdBcmcgbm90IHN1cHBvcnRlZCB3aXRoIG11bHRpcGxlIGhlbHBlcnMnKTtcbiAgICAgIH1cbiAgICAgIGV4dGVuZCh0aGlzLmhlbHBlcnMsIG5hbWUpO1xuICAgIH0gZWxzZSB7XG4gICAgICB0aGlzLmhlbHBlcnNbbmFtZV0gPSBmbjtcbiAgICB9XG4gIH0sXG4gIHVucmVnaXN0ZXJIZWxwZXI6IGZ1bmN0aW9uKG5hbWUpIHtcbiAgICBkZWxldGUgdGhpcy5oZWxwZXJzW25hbWVdO1xuICB9LFxuXG4gIHJlZ2lzdGVyUGFydGlhbDogZnVuY3Rpb24obmFtZSwgcGFydGlhbCkge1xuICAgIGlmICh0b1N0cmluZy5jYWxsKG5hbWUpID09PSBvYmplY3RUeXBlKSB7XG4gICAgICBleHRlbmQodGhpcy5wYXJ0aWFscywgbmFtZSk7XG4gICAgfSBlbHNlIHtcbiAgICAgIGlmICh0eXBlb2YgcGFydGlhbCA9PT0gJ3VuZGVmaW5lZCcpIHtcbiAgICAgICAgdGhyb3cgbmV3IEV4Y2VwdGlvbihcbiAgICAgICAgICBgQXR0ZW1wdGluZyB0byByZWdpc3RlciBhIHBhcnRpYWwgY2FsbGVkIFwiJHtuYW1lfVwiIGFzIHVuZGVmaW5lZGBcbiAgICAgICAgKTtcbiAgICAgIH1cbiAgICAgIHRoaXMucGFydGlhbHNbbmFtZV0gPSBwYXJ0aWFsO1xuICAgIH1cbiAgfSxcbiAgdW5yZWdpc3RlclBhcnRpYWw6IGZ1bmN0aW9uKG5hbWUpIHtcbiAgICBkZWxldGUgdGhpcy5wYXJ0aWFsc1tuYW1lXTtcbiAgfSxcblxuICByZWdpc3RlckRlY29yYXRvcjogZnVuY3Rpb24obmFtZSwgZm4pIHtcbiAgICBpZiAodG9TdHJpbmcuY2FsbChuYW1lKSA9PT0gb2JqZWN0VHlwZSkge1xuICAgICAgaWYgKGZuKSB7XG4gICAgICAgIHRocm93IG5ldyBFeGNlcHRpb24oJ0FyZyBub3Qgc3VwcG9ydGVkIHdpdGggbXVsdGlwbGUgZGVjb3JhdG9ycycpO1xuICAgICAgfVxuICAgICAgZXh0ZW5kKHRoaXMuZGVjb3JhdG9ycywgbmFtZSk7XG4gICAgfSBlbHNlIHtcbiAgICAgIHRoaXMuZGVjb3JhdG9yc1tuYW1lXSA9IGZuO1xuICAgIH1cbiAgfSxcbiAgdW5yZWdpc3RlckRlY29yYXRvcjogZnVuY3Rpb24obmFtZSkge1xuICAgIGRlbGV0ZSB0aGlzLmRlY29yYXRvcnNbbmFtZV07XG4gIH0sXG4gIC8qKlxuICAgKiBSZXNldCB0aGUgbWVtb3J5IG9mIGlsbGVnYWwgcHJvcGVydHkgYWNjZXNzZXMgdGhhdCBoYXZlIGFscmVhZHkgYmVlbiBsb2dnZWQuXG4gICAqIEBkZXByZWNhdGVkIHNob3VsZCBvbmx5IGJlIHVzZWQgaW4gaGFuZGxlYmFycyB0ZXN0LWNhc2VzXG4gICAqL1xuICByZXNldExvZ2dlZFByb3BlcnR5QWNjZXNzZXMoKSB7XG4gICAgcmVzZXRMb2dnZWRQcm9wZXJ0aWVzKCk7XG4gIH1cbn07XG5cbmV4cG9ydCBsZXQgbG9nID0gbG9nZ2VyLmxvZztcblxuZXhwb3J0IHsgY3JlYXRlRnJhbWUsIGxvZ2dlciB9O1xuIl19
+//# sourceMappingURL=data:application/json;charset=utf-8;base64,eyJ2ZXJzaW9uIjozLCJzb3VyY2VzIjpbIi4uLy4uLy4uL2xpYi9oYW5kbGViYXJzL2Jhc2UuanMiXSwibmFtZXMiOltdLCJtYXBwaW5ncyI6Ijs7Ozs7Ozs7cUJBQThDLFNBQVM7O3lCQUNqQyxhQUFhOzs7O3VCQUNJLFdBQVc7OzBCQUNSLGNBQWM7O3NCQUNyQyxVQUFVOzs7O21DQUNTLHlCQUF5Qjs7QUFFeEQsSUFBTSxPQUFPLEdBQUcsT0FBTyxDQUFDOztBQUN4QixJQUFNLGlCQUFpQixHQUFHLENBQUMsQ0FBQzs7QUFDNUIsSUFBTSxpQ0FBaUMsR0FBRyxDQUFDLENBQUM7OztBQUU1QyxJQUFNLGdCQUFnQixHQUFHO0FBQzlCLEdBQUMsRUFBRSxhQUFhO0FBQ2hCLEdBQUMsRUFBRSxlQUFlO0FBQ2xCLEdBQUMsRUFBRSxlQUFlO0FBQ2xCLEdBQUMsRUFBRSxVQUFVO0FBQ2IsR0FBQyxFQUFFLGtCQUFrQjtBQUNyQixHQUFDLEVBQUUsaUJBQWlCO0FBQ3BCLEdBQUMsRUFBRSxpQkFBaUI7QUFDcEIsR0FBQyxFQUFFLFVBQVU7Q0FDZCxDQUFDOzs7QUFFRixJQUFNLFVBQVUsR0FBRyxpQkFBaUIsQ0FBQzs7QUFFOUIsU0FBUyxxQkFBcUIsQ0FBQyxPQUFPLEVBQUUsUUFBUSxFQUFFLFVBQVUsRUFBRTtBQUNuRSxNQUFJLENBQUMsT0FBTyxHQUFHLE9BQU8sSUFBSSxFQUFFLENBQUM7QUFDN0IsTUFBSSxDQUFDLFFBQVEsR0FBRyxRQUFRLElBQUksRUFBRSxDQUFDO0FBQy9CLE1BQUksQ0FBQyxVQUFVLEdBQUcsVUFBVSxJQUFJLEVBQUUsQ0FBQzs7QUFFbkMsa0NBQXVCLElBQUksQ0FBQyxDQUFDO0FBQzdCLHdDQUEwQixJQUFJLENBQUMsQ0FBQztDQUNqQzs7QUFFRCxxQkFBcUIsQ0FBQyxTQUFTLEdBQUc7QUFDaEMsYUFBVyxFQUFFLHFCQUFxQjs7QUFFbEMsUUFBTSxxQkFBUTtBQUNkLEtBQUcsRUFBRSxvQkFBTyxHQUFHOztBQUVmLGdCQUFjLEVBQUUsd0JBQVMsSUFBSSxFQUFFLEVBQUUsRUFBRTtBQUNqQyxRQUFJLGdCQUFTLElBQUksQ0FBQyxJQUFJLENBQUMsS0FBSyxVQUFVLEVBQUU7QUFDdEMsVUFBSSxFQUFFLEVBQUU7QUFDTixjQUFNLDJCQUFjLHlDQUF5QyxDQUFDLENBQUM7T0FDaEU7QUFDRCxvQkFBTyxJQUFJLENBQUMsT0FBTyxFQUFFLElBQUksQ0FBQyxDQUFDO0tBQzVCLE1BQU07QUFDTCxVQUFJLENBQUMsT0FBTyxDQUFDLElBQUksQ0FBQyxHQUFHLEVBQUUsQ0FBQztLQUN6QjtHQUNGO0FBQ0Qsa0JBQWdCLEVBQUUsMEJBQVMsSUFBSSxFQUFFO0FBQy9CLFdBQU8sSUFBSSxDQUFDLE9BQU8sQ0FBQyxJQUFJLENBQUMsQ0FBQztHQUMzQjs7QUFFRCxpQkFBZSxFQUFFLHlCQUFTLElBQUksRUFBRSxPQUFPLEVBQUU7QUFDdkMsUUFBSSxnQkFBUyxJQUFJLENBQUMsSUFBSSxDQUFDLEtBQUssVUFBVSxFQUFFO0FBQ3RDLG9CQUFPLElBQUksQ0FBQyxRQUFRLEVBQUUsSUFBSSxDQUFDLENBQUM7S0FDN0IsTUFBTTtBQUNMLFVBQUksT0FBTyxPQUFPLEtBQUssV0FBVyxFQUFFO0FBQ2xDLGNBQU0seUVBQ3dDLElBQUksb0JBQ2pELENBQUM7T0FDSDtBQUNELFVBQUksQ0FBQyxRQUFRLENBQUMsSUFBSSxDQUFDLEdBQUcsT0FBTyxDQUFDO0tBQy9CO0dBQ0Y7QUFDRCxtQkFBaUIsRUFBRSwyQkFBUyxJQUFJLEVBQUU7QUFDaEMsV0FBTyxJQUFJLENBQUMsUUFBUSxDQUFDLElBQUksQ0FBQyxDQUFDO0dBQzVCOztBQUVELG1CQUFpQixFQUFFLDJCQUFTLElBQUksRUFBRSxFQUFFLEVBQUU7QUFDcEMsUUFBSSxnQkFBUyxJQUFJLENBQUMsSUFBSSxDQUFDLEtBQUssVUFBVSxFQUFFO0FBQ3RDLFVBQUksRUFBRSxFQUFFO0FBQ04sY0FBTSwyQkFBYyw0Q0FBNEMsQ0FBQyxDQUFDO09BQ25FO0FBQ0Qsb0JBQU8sSUFBSSxDQUFDLFVBQVUsRUFBRSxJQUFJLENBQUMsQ0FBQztLQUMvQixNQUFNO0FBQ0wsVUFBSSxDQUFDLFVBQVUsQ0FBQyxJQUFJLENBQUMsR0FBRyxFQUFFLENBQUM7S0FDNUI7R0FDRjtBQUNELHFCQUFtQixFQUFFLDZCQUFTLElBQUksRUFBRTtBQUNsQyxXQUFPLElBQUksQ0FBQyxVQUFVLENBQUMsSUFBSSxDQUFDLENBQUM7R0FDOUI7Ozs7O0FBS0QsNkJBQTJCLEVBQUEsdUNBQUc7QUFDNUIsZ0RBQXVCLENBQUM7R0FDekI7Q0FDRixDQUFDOztBQUVLLElBQUksR0FBRyxHQUFHLG9CQUFPLEdBQUcsQ0FBQzs7O1FBRW5CLFdBQVc7UUFBRSxNQUFNIiwiZmlsZSI6ImJhc2UuanMiLCJzb3VyY2VzQ29udGVudCI6WyJpbXBvcnQgeyBjcmVhdGVGcmFtZSwgZXh0ZW5kLCB0b1N0cmluZyB9IGZyb20gJy4vdXRpbHMnO1xuaW1wb3J0IEV4Y2VwdGlvbiBmcm9tICcuL2V4Y2VwdGlvbic7XG5pbXBvcnQgeyByZWdpc3RlckRlZmF1bHRIZWxwZXJzIH0gZnJvbSAnLi9oZWxwZXJzJztcbmltcG9ydCB7IHJlZ2lzdGVyRGVmYXVsdERlY29yYXRvcnMgfSBmcm9tICcuL2RlY29yYXRvcnMnO1xuaW1wb3J0IGxvZ2dlciBmcm9tICcuL2xvZ2dlcic7XG5pbXBvcnQgeyByZXNldExvZ2dlZFByb3BlcnRpZXMgfSBmcm9tICcuL2ludGVybmFsL3Byb3RvLWFjY2Vzcyc7XG5cbmV4cG9ydCBjb25zdCBWRVJTSU9OID0gJzQuNy42JztcbmV4cG9ydCBjb25zdCBDT01QSUxFUl9SRVZJU0lPTiA9IDg7XG5leHBvcnQgY29uc3QgTEFTVF9DT01QQVRJQkxFX0NPTVBJTEVSX1JFVklTSU9OID0gNztcblxuZXhwb3J0IGNvbnN0IFJFVklTSU9OX0NIQU5HRVMgPSB7XG4gIDE6ICc8PSAxLjAucmMuMicsIC8vIDEuMC5yYy4yIGlzIGFjdHVhbGx5IHJldjIgYnV0IGRvZXNuJ3QgcmVwb3J0IGl0XG4gIDI6ICc9PSAxLjAuMC1yYy4zJyxcbiAgMzogJz09IDEuMC4wLXJjLjQnLFxuICA0OiAnPT0gMS54LngnLFxuICA1OiAnPT0gMi4wLjAtYWxwaGEueCcsXG4gIDY6ICc+PSAyLjAuMC1iZXRhLjEnLFxuICA3OiAnPj0gNC4wLjAgPDQuMy4wJyxcbiAgODogJz49IDQuMy4wJ1xufTtcblxuY29uc3Qgb2JqZWN0VHlwZSA9ICdbb2JqZWN0IE9iamVjdF0nO1xuXG5leHBvcnQgZnVuY3Rpb24gSGFuZGxlYmFyc0Vudmlyb25tZW50KGhlbHBlcnMsIHBhcnRpYWxzLCBkZWNvcmF0b3JzKSB7XG4gIHRoaXMuaGVscGVycyA9IGhlbHBlcnMgfHwge307XG4gIHRoaXMucGFydGlhbHMgPSBwYXJ0aWFscyB8fCB7fTtcbiAgdGhpcy5kZWNvcmF0b3JzID0gZGVjb3JhdG9ycyB8fCB7fTtcblxuICByZWdpc3RlckRlZmF1bHRIZWxwZXJzKHRoaXMpO1xuICByZWdpc3RlckRlZmF1bHREZWNvcmF0b3JzKHRoaXMpO1xufVxuXG5IYW5kbGViYXJzRW52aXJvbm1lbnQucHJvdG90eXBlID0ge1xuICBjb25zdHJ1Y3RvcjogSGFuZGxlYmFyc0Vudmlyb25tZW50LFxuXG4gIGxvZ2dlcjogbG9nZ2VyLFxuICBsb2c6IGxvZ2dlci5sb2csXG5cbiAgcmVnaXN0ZXJIZWxwZXI6IGZ1bmN0aW9uKG5hbWUsIGZuKSB7XG4gICAgaWYgKHRvU3RyaW5nLmNhbGwobmFtZSkgPT09IG9iamVjdFR5cGUpIHtcbiAgICAgIGlmIChmbikge1xuICAgICAgICB0aHJvdyBuZXcgRXhjZXB0aW9uKCdBcmcgbm90IHN1cHBvcnRlZCB3aXRoIG11bHRpcGxlIGhlbHBlcnMnKTtcbiAgICAgIH1cbiAgICAgIGV4dGVuZCh0aGlzLmhlbHBlcnMsIG5hbWUpO1xuICAgIH0gZWxzZSB7XG4gICAgICB0aGlzLmhlbHBlcnNbbmFtZV0gPSBmbjtcbiAgICB9XG4gIH0sXG4gIHVucmVnaXN0ZXJIZWxwZXI6IGZ1bmN0aW9uKG5hbWUpIHtcbiAgICBkZWxldGUgdGhpcy5oZWxwZXJzW25hbWVdO1xuICB9LFxuXG4gIHJlZ2lzdGVyUGFydGlhbDogZnVuY3Rpb24obmFtZSwgcGFydGlhbCkge1xuICAgIGlmICh0b1N0cmluZy5jYWxsKG5hbWUpID09PSBvYmplY3RUeXBlKSB7XG4gICAgICBleHRlbmQodGhpcy5wYXJ0aWFscywgbmFtZSk7XG4gICAgfSBlbHNlIHtcbiAgICAgIGlmICh0eXBlb2YgcGFydGlhbCA9PT0gJ3VuZGVmaW5lZCcpIHtcbiAgICAgICAgdGhyb3cgbmV3IEV4Y2VwdGlvbihcbiAgICAgICAgICBgQXR0ZW1wdGluZyB0byByZWdpc3RlciBhIHBhcnRpYWwgY2FsbGVkIFwiJHtuYW1lfVwiIGFzIHVuZGVmaW5lZGBcbiAgICAgICAgKTtcbiAgICAgIH1cbiAgICAgIHRoaXMucGFydGlhbHNbbmFtZV0gPSBwYXJ0aWFsO1xuICAgIH1cbiAgfSxcbiAgdW5yZWdpc3RlclBhcnRpYWw6IGZ1bmN0aW9uKG5hbWUpIHtcbiAgICBkZWxldGUgdGhpcy5wYXJ0aWFsc1tuYW1lXTtcbiAgfSxcblxuICByZWdpc3RlckRlY29yYXRvcjogZnVuY3Rpb24obmFtZSwgZm4pIHtcbiAgICBpZiAodG9TdHJpbmcuY2FsbChuYW1lKSA9PT0gb2JqZWN0VHlwZSkge1xuICAgICAgaWYgKGZuKSB7XG4gICAgICAgIHRocm93IG5ldyBFeGNlcHRpb24oJ0FyZyBub3Qgc3VwcG9ydGVkIHdpdGggbXVsdGlwbGUgZGVjb3JhdG9ycycpO1xuICAgICAgfVxuICAgICAgZXh0ZW5kKHRoaXMuZGVjb3JhdG9ycywgbmFtZSk7XG4gICAgfSBlbHNlIHtcbiAgICAgIHRoaXMuZGVjb3JhdG9yc1tuYW1lXSA9IGZuO1xuICAgIH1cbiAgfSxcbiAgdW5yZWdpc3RlckRlY29yYXRvcjogZnVuY3Rpb24obmFtZSkge1xuICAgIGRlbGV0ZSB0aGlzLmRlY29yYXRvcnNbbmFtZV07XG4gIH0sXG4gIC8qKlxuICAgKiBSZXNldCB0aGUgbWVtb3J5IG9mIGlsbGVnYWwgcHJvcGVydHkgYWNjZXNzZXMgdGhhdCBoYXZlIGFscmVhZHkgYmVlbiBsb2dnZWQuXG4gICAqIEBkZXByZWNhdGVkIHNob3VsZCBvbmx5IGJlIHVzZWQgaW4gaGFuZGxlYmFycyB0ZXN0LWNhc2VzXG4gICAqL1xuICByZXNldExvZ2dlZFByb3BlcnR5QWNjZXNzZXMoKSB7XG4gICAgcmVzZXRMb2dnZWRQcm9wZXJ0aWVzKCk7XG4gIH1cbn07XG5cbmV4cG9ydCBsZXQgbG9nID0gbG9nZ2VyLmxvZztcblxuZXhwb3J0IHsgY3JlYXRlRnJhbWUsIGxvZ2dlciB9O1xuIl19
 
 
 /***/ }),
@@ -2270,7 +2270,7 @@ AutoScroll.prototype._onMouseDown = function(mouseDownEvent) {
     }
 
     window.clearInterval(this._intervalID);
-    this._intervalID = window.setInterval(util.bind(this._onTick, this), SCROLL_INTERVAL);
+    this._intervalID = window.setInterval(this._onTick.bind(this), SCROLL_INTERVAL);
 
     domevent.on(global, {
         'mousemove': this._onMouseMove,
@@ -2448,52 +2448,6 @@ Collection.and = function(filters) {
     };
 };
 
-/**
- * Combine multiple function filters with OR clause.
- * @param {...function} filters - function filters
- * @returns {function} combined filter
- */
-Collection.or = function(filters) {
-    var cnt;
-
-    filters = aps.call(arguments);
-    cnt = filters.length;
-
-    return function(item) {
-        var i = 1,
-            result = filters[0].call(null, item);
-
-        for (; i < cnt; i += 1) {
-            result = (result || filters[i].call(null, item));
-        }
-
-        return result;
-    };
-};
-
-/**
- * Merge several collections.
- *
- * You can\'t merge collections different _getScheduleID functions. Take case of use.
- * @param {...Collection} collections collection arguments to merge
- * @returns {Collection} merged collection.
- */
-Collection.merge = function(collections) {    // eslint-disable-line
-    var cols = aps.call(arguments),
-        newItems = {},
-        merged = new Collection(cols[0].getItemID),
-        extend = util.extend;
-
-    forEachArr(cols, function(col) {
-        extend(newItems, col.items);
-    });
-
-    merged.items = newItems;
-    merged.length = util.keys(merged.items).length;
-
-    return merged;
-};
-
 /**********
  * prototype props
  **********/
@@ -2649,8 +2603,6 @@ Collection.prototype.doWhenHas = function(id, fn, context) {
  * }
  *
  * collection.find(Collection.and(filter1, filter2));
- *
- * collection.find(Collection.or(filter1, filter2));
  */
 Collection.prototype.find = function(filter) {
     var result = new Collection();
@@ -2839,7 +2791,6 @@ module.exports = Collection;
 
 
 var util = __webpack_require__(/*! tui-code-snippet */ "tui-code-snippet");
-var aps = Array.prototype.slice;
 
 var domutil = __webpack_require__(/*! ../common/domutil */ "./src/js/common/domutil.js"),
     Collection = __webpack_require__(/*! ../common/collection */ "./src/js/common/collection.js");
@@ -2856,17 +2807,10 @@ function scheduleIDGetter(schedule) {
 
 module.exports = {
     /**
-     * @param {...*} initItems - items to add newly created collection.
      * @returns {Collection} new collection for schedule models.
      */
-    createScheduleCollection: function(initItems) {    // eslint-disable-line
-        var collection = new Collection(scheduleIDGetter);
-
-        if (arguments.length) {
-            collection.add.apply(collection, arguments);
-        }
-
-        return collection;
+    createScheduleCollection: function() {
+        return new Collection(scheduleIDGetter);
     },
 
     /**
@@ -2900,51 +2844,6 @@ module.exports = {
             nearestIndex = util.inArray(Math.min.apply(null, diff), diff);
 
         return nearest[nearestIndex];
-    },
-
-    /**
-     * pick value from object then return utility object to treat it.
-     * @param {object} obj - object to search supplied path property.
-     * @param {...string} paths - rest parameter that string value to search property in object.
-     * @returns {object} pick object.
-     */
-    pick2: function(obj, paths) {    // eslint-disable-line
-        var result = util.pick.apply(null, arguments),
-            pick;
-
-        pick = {
-            /**
-             * @returns {*} picked value.
-             */
-            val: function() {
-                return result;
-            },
-
-            /**
-             * invoke supplied function in picked object.
-             *
-             * the callback context is set picked object.
-             * @param {string|function} fn - function to invoke in picked object.
-             * @returns {*} result of invoke.
-             */
-            then: function(fn) {
-                var args;
-
-                if (!result) {
-                    return undefined;    //eslint-disable-line
-                }
-
-                args = aps.call(arguments, 1);
-
-                if (util.isString(fn)) {
-                    return (util.pick(result, fn) || function() {}).apply(result, args);
-                }
-
-                return fn.call(result, result);
-            }
-        };
-
-        return pick;
     },
 
     /**
@@ -3030,7 +2929,7 @@ module.exports = {
     },
 
     /**
-     * Set 'title' attribute for all element that has exceeded content in
+     * Set 'title' attribute for all elements that have exceeded content in
      * container
      * @param {string} selector - CSS selector {@see domutil#find}
      * @param {HTMLElement} container - container element
@@ -3672,7 +3571,7 @@ datetime = {
             cursor, week,
             calendar = [],
             startDayOfWeek = options.startDayOfWeek,
-            isAlways6Week = util.isUndefined(options.isAlways6Week) ? true : options.isAlways6Week,
+            isAlways6Week = util.isUndefined(options.isAlways6Week) || options.isAlways6Week,
             visibleWeeksCount = options.visibleWeeksCount,
             workweek = options.workweek;
 
@@ -3813,10 +3712,33 @@ datetime = {
     },
 
     getDateDifference: function(d1, d2) {
-        var _d1 = new TZDate(d1.getFullYear(), d1.getMonth(), d1.getDate()).getTime();
-        var _d2 = new TZDate(d2.getFullYear(), d2.getMonth(), d2.getDate()).getTime();
+        var time1 = new TZDate(d1.getFullYear(), d1.getMonth(), d1.getDate()).getTime();
+        var time2 = new TZDate(d2.getFullYear(), d2.getMonth(), d2.getDate()).getTime();
 
-        return Math.round((_d1 - _d2) / datetime.MILLISECONDS_PER_DAY);
+        return Math.round((time1 - time2) / datetime.MILLISECONDS_PER_DAY);
+    },
+
+    getHourDifference: function(d1, d2) {
+        var time1 = new TZDate(d1).getTime();
+        var time2 = new TZDate(d2).getTime();
+
+        return Math.round((time1 - time2) / datetime.MILLISECONDS_PER_HOUR);
+    },
+
+    hasMultiDates: function(start, end) {
+        var diffDays = datetime.getDateDifference(start, end);
+        var diffHours = Math.abs(datetime.getHourDifference(start, end));
+        var withinDay = Math.abs(diffDays) === 1 && diffHours < 24 && datetime.isStartOfDay(end);
+
+        return !datetime.isSameDate(start, end) && !withinDay;
+    },
+
+    renderEnd: function(start, end) {
+        var diffDays = datetime.getDateDifference(start, end);
+
+        return Math.abs(diffDays) >= 1 && datetime.isStartOfDay(end) ?
+            datetime.convertStartDayToLastDay(end) :
+            datetime.end(end);
     }
 };
 
@@ -4058,23 +3980,8 @@ module.exports = dirty;
 
 
 var util = __webpack_require__(/*! tui-code-snippet */ "tui-code-snippet");
-var browser = util.browser,
-    eventKey = '_evt',
-    DRAG = {
-        START: ['touchstart', 'mousedown'],
-        END: {
-            mousedown: 'mouseup',
-            touchstart: 'touchend',
-            pointerdown: 'touchend',
-            MSPointerDown: 'touchend'
-        },
-        MOVE: {
-            mousedown: 'mousemove',
-            touchstart: 'touchmove',
-            pointerdown: 'touchmove',
-            MSPointerDown: 'touchmove'
-        }
-    };
+var eventKey = '_evt',
+    DRAG_START = ['touchstart', 'mousedown'];
 
 var domevent = {
     /**
@@ -4209,13 +4116,6 @@ var domevent = {
             return;
         }
 
-        // throw exception when deleting host object's property in below IE8
-        if (util.browser.msie && util.browser.version < 9) {
-            obj[eventKey] = null;
-
-            return;
-        }
-
         delete obj[eventKey];
     },
 
@@ -4294,7 +4194,7 @@ var domevent = {
      * @param {HTMLElement} el HTML element to prevent all event related with click.
      */
     disableClickPropagation: function(el) {
-        domevent.on(el, DRAG.START.join(' ') + ' click dblclick', domevent.stopPropagation);
+        domevent.on(el, DRAG_START.join(' ') + ' click dblclick', domevent.stopPropagation);
     },
 
     /**
@@ -4417,11 +4317,6 @@ var domevent = {
             button: 0,
             relatedTarget: undefined  // eslint-disable-line
         }, eventObj);
-
-        // prevent throw error when inserting wheelDelta property to mouse event on below IE8
-        if (browser.msie && browser.version < 9) {
-            delete e.wheelDelta;
-        }
 
         if (typeof document.createEvent === 'function') {
             evt = document.createEvent('MouseEvents');
@@ -4881,7 +4776,7 @@ domutil = {
                         });
                     }
 
-                    return el.currentStyle[prop] ? el.currentStyle[prop] : null;
+                    return el.currentStyle[prop] || null;
                 }
             };
         }
@@ -6029,7 +5924,6 @@ module.exports = Point;
  */
 
 
-var util = __webpack_require__(/*! tui-code-snippet */ "tui-code-snippet");
 var requestFn,
     cancelFn;
 
@@ -6065,7 +5959,7 @@ module.exports = {
      * @returns {number} Unique id
      */
     requestAnimFrame: function(fn, context) {
-        return requestFn.call(global, util.bind(fn, context));
+        return requestFn.call(global, fn.bind(context));
     },
 
     /**
@@ -6135,7 +6029,7 @@ var setterMethods = [
  * @private
  */
 function getTimezoneOffset(timestamp) {
-    timestamp = timestamp || Date.now();
+    timestamp = util.isUndefined(timestamp) ? Date.now() : timestamp;
 
     return new Date(timestamp).getTimezoneOffset() * MIN_TO_MS;
 }
@@ -6162,8 +6056,18 @@ function getCustomTimezoneOffset(timestamp) {
 function getLocalTime(time) {
     var timezoneOffset = getTimezoneOffset(time);
     var customTimezoneOffset = getCustomTimezoneOffset(time);
-    var timezoneOffsetDiff = customTimezoneOffset ? 0 : nativeOffsetMs - timezoneOffset;
-    var localTime = time - customTimezoneOffset + timezoneOffset + timezoneOffsetDiff;
+    var localTime = time - customTimezoneOffset + timezoneOffset;
+    var newDateTimezoneOffsetMS = new Date(localTime).getTimezoneOffset() * MIN_TO_MS;
+    var timezoneOffsetDiff;
+
+    if (setByTimezoneOption) {
+        if (newDateTimezoneOffsetMS !== timezoneOffset) {
+            timezoneOffsetDiff = newDateTimezoneOffsetMS - timezoneOffset;
+            localTime += timezoneOffsetDiff;
+        }
+    } else {
+        localTime += (customTimezoneOffset - timezoneOffset);
+    }
 
     return localTime;
 }
@@ -6381,6 +6285,14 @@ module.exports = {
      */
     setOffsetCallback: function(callback) {
         timezoneOffsetCallback = callback;
+    },
+
+    /**
+     * Check to use custom timezone option
+     * @returns {boolean} use custom timezone option
+     */
+    hasTimezoneOption: function() {
+        return setByTimezoneOption;
     },
 
     /**
@@ -7334,6 +7246,10 @@ Base.prototype.updateSchedule = function(schedule, options) {
         schedule.set('isFocused', options.isFocused);
     }
 
+    if (!util.isUndefined(options.isReadOnly)) {
+        schedule.set('isReadOnly', options.isReadOnly);
+    }
+
     if (options.location) {
         schedule.set('location', options.location);
     }
@@ -7344,6 +7260,10 @@ Base.prototype.updateSchedule = function(schedule, options) {
 
     if (options.raw) {
         schedule.set('raw', options.raw);
+    }
+
+    if (options.attendees) {
+        schedule.set('attendees', options.attendees);
     }
 
     this._removeFromMatrix(schedule);
@@ -7709,19 +7629,21 @@ var Core = {
         forEachArr(matrices, function(matrix) {
             forEachArr(matrix, function(column) {
                 forEachArr(column, function(viewModel, index) {
-                    var ymd, dateLength;
+                    var ymd, dateLength, startDate, endDate;
 
                     if (!viewModel) {
                         return;
                     }
 
-                    ymd = datetime.format(viewModel.getStarts(), 'YYYYMMDD');
+                    startDate = viewModel.getStarts();
+                    endDate = viewModel.getEnds();
                     dateLength = datetime.range(
-                        datetime.start(viewModel.getStarts()),
-                        datetime.end(viewModel.getEnds()),
+                        datetime.start(startDate),
+                        datetime.renderEnd(startDate, endDate),
                         datetime.MILLISECONDS_PER_DAY
                     ).length;
 
+                    ymd = datetime.format(startDate, 'YYYYMMDD');
                     viewModel.top = index;
                     viewModel.left = util.inArray(ymd, ymdListToRender);
                     viewModel.width = dateLength;
@@ -7966,11 +7888,11 @@ var Month = {
             var start = model.getStarts();
             var end = model.getEnds();
 
-            viewModel.hasMultiDates = !datetime.isSameDate(start, end);
+            viewModel.hasMultiDates = datetime.hasMultiDates(start, end);
 
             if (!model.isAllDay && viewModel.hasMultiDates) {
                 viewModel.renderStarts = datetime.start(start);
-                viewModel.renderEnds = datetime.convertStartDayToLastDay(end);
+                viewModel.renderEnds = datetime.renderEnd(start, end);
             }
         });
     },
@@ -8242,6 +8164,7 @@ var Week = {
      * @returns {function} - filtering function
      */
     _makeHourRangeFilter: function(hStart, hEnd) {
+        // eslint-disable-next-line complexity
         return function(schedule) {
             var ownHourStart = schedule.model.start;
             var ownHourEnd = schedule.model.end;
@@ -8271,9 +8194,12 @@ var Week = {
     _addMultiDatesInfo: function(vColl) {
         vColl.each(function(viewModel) {
             var model = viewModel.model;
+            var start = model.getStarts();
+            var end = model.getEnds();
+
             viewModel.hasMultiDates = true;
-            viewModel.renderStarts = datetime.start(model.getStarts());
-            viewModel.renderEnds = datetime.convertStartDayToLastDay(model.getEnds());
+            viewModel.renderStarts = datetime.start(start);
+            viewModel.renderEnds = datetime.renderEnd(start, end);
         });
     },
 
@@ -10010,7 +9936,7 @@ Calendar.prototype.changeView = function(newViewName, force) {
             dragHandler,
             options
         );
-    } else if (newViewName === 'week' || newViewName === 'day') {
+    } else if (newViewName === 'week') {
         created = _createWeekView(
             controller,
             layout.container,
@@ -10348,7 +10274,7 @@ function mixin(from, to, propertyName) {
     var obj = to[propertyName] = {};
 
     util.forEach(from, function(method, methodName) {
-        obj[methodName] = util.bind(method, to);
+        obj[methodName] = method.bind(to);
     });
 }
 
@@ -10416,7 +10342,7 @@ var config = __webpack_require__(/*! ../config */ "./src/js/config.js"),
 function getViewModelForMoreLayer(date, target, schedules, daynames) {
     schedules.each(function(schedule) {
         var model = schedule.model;
-        schedule.hasMultiDates = !datetime.isSameDate(model.start, model.end);
+        schedule.hasMultiDates = datetime.hasMultiDates(model.start, model.end);
     });
 
     return {
@@ -10503,7 +10429,7 @@ function createMonthView(baseController, layoutContainer, dragHandler, options) 
         createView = new ScheduleCreationPopup(layoutContainer, baseController.calendars, options.usageStatistics);
 
         onSaveNewSchedule = function(scheduleData) {
-            let popupMemo = document.getElementById("popup-memo");
+        	let popupMemo = document.getElementById("popup-memo");
             scheduleData.raw.memo = popupMemo.value;
             creationHandler.fire('beforeCreateSchedule', util.extend(scheduleData, {
                 useCreationPopup: true
@@ -10524,6 +10450,7 @@ function createMonthView(baseController, layoutContainer, dragHandler, options) 
             if (options.isReadOnly) {
                 eventData.schedule = util.extend({}, eventData.schedule, {isReadOnly: true});
             }
+
             detailView.render(eventData);
             buildExtraFields(eventData, detailView);
         };
@@ -11269,10 +11196,11 @@ var dayGridCore = {
     /**
      * @param {view} view - view instance.
      * @param {TZDate} startDate - start date
-     * @returns {function|boolean} function that return schedule data by mouse events.
+     * @returns {object} schedule data by mouse events.
      */
     _retriveScheduleDataFromDate: function(view, startDate) {
         var weekdayView = view.children.single(),
+            xIndex = 0,
             datesInRange,
             dragStartXIndex = 0,
             grids,
@@ -11288,36 +11216,22 @@ var dayGridCore = {
 
         util.forEach(range, function(date, index) {
             if (datetime.isSameDate(date, startDate)) {
-                dragStartXIndex = index;
+                xIndex = dragStartXIndex = index;
             }
         });
 
-        /**
-         * @param {TZDate} targetDate - target date
-         * @returns {object} schedule data.
-         */
-        return function(targetDate) {
-            var xIndex = 0;
+        // apply limitation of creation schedule X index.
+        xIndex = mmax(xIndex, 0);
+        xIndex = mmin(xIndex, datesInRange - 1);
 
-            util.forEach(range, function(date, index) {
-                if (datetime.isSameDate(date, targetDate)) {
-                    xIndex = index;
-                }
-            });
-
-            // apply limitation of creation schedule X index.
-            xIndex = mmax(xIndex, 0);
-            xIndex = mmin(xIndex, datesInRange - 1);
-
-            return {
-                relatedView: view,
-                dragStartXIndex: dragStartXIndex,
-                datesInRange: datesInRange,
-                xIndex: xIndex,
-                triggerEvent: 'manual',
-                grids: grids,
-                range: range
-            };
+        return {
+            relatedView: view,
+            dragStartXIndex: dragStartXIndex,
+            datesInRange: datesInRange,
+            xIndex: xIndex,
+            triggerEvent: 'manual',
+            grids: grids,
+            range: range
         };
     }
 };
@@ -11683,10 +11597,7 @@ DayGridCreation.prototype._onDblClick = function(clickEventData) {
  * @param {Schedule} schedule - schedule instance
  */
 DayGridCreation.prototype.invokeCreationClick = function(schedule) {
-    var getScheduleDataFunc, scheduleData;
-
-    getScheduleDataFunc = this._retriveScheduleDataFromDate(this.view, schedule.start);
-    scheduleData = getScheduleDataFunc(schedule.start);
+    var scheduleData = this._retriveScheduleDataFromDate(this.view, schedule.start);
 
     this.fire('click', scheduleData);
 
@@ -13291,6 +13202,7 @@ module.exports = MonthClick;
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
+/* eslint-disable complexity */
 /**
  * @fileoverview Module for calculate date by month view and mouse event object
  * @author NHN FE Development Lab <dl_javascript@nhn.com>
@@ -13300,7 +13212,8 @@ module.exports = MonthClick;
 var util = __webpack_require__(/*! tui-code-snippet */ "tui-code-snippet");
 var common = __webpack_require__(/*! ../../common/common */ "./src/js/common/common.js"),
     domutil = __webpack_require__(/*! ../../common/domutil */ "./src/js/common/domutil.js"),
-    domevent = __webpack_require__(/*! ../../common/domevent */ "./src/js/common/domevent.js");
+    domevent = __webpack_require__(/*! ../../common/domevent */ "./src/js/common/domevent.js"),
+    datetime = __webpack_require__(/*! ../../common/datetime */ "./src/js/common/datetime.js");
 var mfloor = Math.floor;
 
 /**
@@ -13384,7 +13297,7 @@ function getMousePosDate(monthView) {
             y: y,
             sizeX: dayCount,
             sizeY: weekCount,
-            date: date,
+            date: datetime.end(date),
             weekdayView: weekdayView,
             triggerEvent: mouseEvent.type
         };
@@ -13969,7 +13882,6 @@ module.exports = (Handlebars['default'] || Handlebars).template({"1":function(co
 
 var util = __webpack_require__(/*! tui-code-snippet */ "tui-code-snippet");
 var config = __webpack_require__(/*! ../../config */ "./src/js/config.js"),
-    common = __webpack_require__(/*! ../../common/common */ "./src/js/common/common.js"),
     domutil = __webpack_require__(/*! ../../common/domutil */ "./src/js/common/domutil.js"),
     datetime = __webpack_require__(/*! ../../common/datetime */ "./src/js/common/datetime.js"),
     TZDate = __webpack_require__(/*! ../../common/timezone */ "./src/js/common/timezone.js").Date,
@@ -13988,8 +13900,6 @@ var mmax = Math.max,
  * @param {Month} monthView - Month view instance
  */
 function MonthGuide(options, monthView) {
-    var self = this;
-
     /**
      * @type {object}
      */
@@ -14021,13 +13931,6 @@ function MonthGuide(options, monthView) {
     this.days = monthView.children.single().getRenderDateRange().length;
 
     /**
-     * @type {function}
-     */
-    this.ratio = util.bind(function(value) {
-        return common.ratio(self.days, 100, value);
-    });
-
-    /**
      * start coordinate of guide effect. (x, y) (days, weeks) effect can't
      *  start lower than this coordinate.
      * @type {number[]}
@@ -14053,7 +13956,7 @@ MonthGuide.prototype.destroy = function() {
     this.clear();
 
     this.options = this.view = this.weeks = this.days =
-        this.ratio = this.startCoord = this.guideElements = null;
+        this.startCoord = this.guideElements = null;
 };
 
 MonthGuide.prototype.clearGuideElement = function() {
@@ -14766,7 +14669,7 @@ module.exports = (Handlebars['default'] || Handlebars).template({"1":function(co
     };
 
   return container.escapeExpression(((helper = (helper = lookupProperty(helpers,"CSS_PREFIX") || (depth0 != null ? lookupProperty(depth0,"CSS_PREFIX") : depth0)) != null ? helper : container.hooks.helperMissing),(typeof helper === "function" ? helper.call(depth0 != null ? depth0 : (container.nullContext || {}),{"name":"CSS_PREFIX","hash":{},"data":data,"loc":{"start":{"line":16,"column":110},"end":{"line":16,"column":124}}}) : helper)))
-    + "weekday-schedule-title-focused\"";
+    + "weekday-schedule-title-focused";
 },"7":function(container,depth0,helpers,partials,data) {
     var stack1, lookupProperty = container.lookupProperty || function(parent, propertyName) {
         if (Object.prototype.hasOwnProperty.call(parent, propertyName)) {
@@ -14818,8 +14721,8 @@ module.exports = (Handlebars['default'] || Handlebars).template({"1":function(co
     + "month-move-guide "
     + alias4(((helper = (helper = lookupProperty(helpers,"CSS_PREFIX") || (depth0 != null ? lookupProperty(depth0,"CSS_PREFIX") : depth0)) != null ? helper : alias2),(typeof helper === alias3 ? helper.call(alias1,{"name":"CSS_PREFIX","hash":{},"data":data,"loc":{"start":{"line":16,"column":47},"end":{"line":16,"column":61}}}) : helper)))
     + "weekday-schedule-title "
-    + ((stack1 = lookupProperty(helpers,"unless").call(alias1,((stack1 = (depth0 != null ? lookupProperty(depth0,"model") : depth0)) != null ? lookupProperty(stack1,"isAllDay") : stack1),{"name":"unless","hash":{},"fn":container.program(5, data, 0),"inverse":container.noop,"data":data,"loc":{"start":{"line":16,"column":84},"end":{"line":16,"column":166}}})) != null ? stack1 : "")
-    + ">\n"
+    + ((stack1 = lookupProperty(helpers,"unless").call(alias1,((stack1 = (depth0 != null ? lookupProperty(depth0,"model") : depth0)) != null ? lookupProperty(stack1,"isAllDay") : stack1),{"name":"unless","hash":{},"fn":container.program(5, data, 0),"inverse":container.noop,"data":data,"loc":{"start":{"line":16,"column":84},"end":{"line":16,"column":165}}})) != null ? stack1 : "")
+    + "\">\n"
     + ((stack1 = lookupProperty(helpers,"if").call(alias1,((stack1 = (depth0 != null ? lookupProperty(depth0,"model") : depth0)) != null ? lookupProperty(stack1,"isAllDay") : stack1),{"name":"if","hash":{},"fn":container.program(7, data, 0),"inverse":container.program(9, data, 0),"data":data,"loc":{"start":{"line":17,"column":8},"end":{"line":21,"column":15}}})) != null ? stack1 : "")
     + "    </div>\n</div>\n<div class=\""
     + alias4(((helper = (helper = lookupProperty(helpers,"CSS_PREFIX") || (depth0 != null ? lookupProperty(depth0,"CSS_PREFIX") : depth0)) != null ? helper : alias2),(typeof helper === alias3 ? helper.call(alias1,{"name":"CSS_PREFIX","hash":{},"data":data,"loc":{"start":{"line":24,"column":12},"end":{"line":24,"column":26}}}) : helper)))
@@ -15679,9 +15582,9 @@ var timeCore = {
         /**
          * @param {MouseEvent} mouseEvent - mouse event object to get common event data.
          * @param {object} [extend] - object to extend event data before return.
-         * @returns {object} - common event data for time.*
+         * @returns {object} - common event data for time
          */
-        return util.bind(function(mouseEvent, extend) {
+        return function(mouseEvent, extend) {
             var mouseY = Point.n(domevent.getMousePosition(mouseEvent, container)).y,
                 gridY = common.ratio(viewHeight, hourLength, mouseY),
                 timeY = new TZDate(viewTime).addMinutes(datetime.minutesFromHours(gridY)),
@@ -15701,47 +15604,40 @@ var timeCore = {
                 nearestGridTimeY: nearestGridTimeY,
                 triggerEvent: mouseEvent.type
             }, extend);
-        }, this);
+        };
     },
 
     /**
      * Get function to makes event data from Time and mouseEvent
      * @param {Time} timeView - Instance of time view.
-     * @param {number} xIndex - Time view index
-     * @returns {function} - Function that return event data from mouse event.
+     * @param {TZDate} startDate - start date
+     * @param {TZDate} endDate - end date
+     * @param {number} hourStart Can limit of render hour start.
+     * @returns {object} - common event data for time from mouse event.
      */
-    _retriveScheduleDataFromDate: function(timeView) {
+    _retriveScheduleDataFromDate: function(timeView, startDate, endDate, hourStart) {
         var viewTime = timeView.getDate();
+        var gridY, timeY, nearestGridY, nearestGridTimeY, nearestGridEndY, nearestGridEndTimeY;
 
-        /**
-         * @param {TZDate} startDate - start date
-         * @param {TZDate} endDate - end date
-         * @param {number} hourStart Can limit of render hour start.
-         * @returns {object} - common event data for time.*
-         */
-        return util.bind(function(startDate, endDate, hourStart) {
-            var gridY, timeY, nearestGridY, nearestGridTimeY, nearestGridEndY, nearestGridEndTimeY;
+        gridY = startDate.getHours() - hourStart + getNearestHour(startDate.getMinutes());
+        timeY = new TZDate(viewTime).addMinutes(datetime.minutesFromHours(gridY));
+        nearestGridY = gridY;
+        nearestGridTimeY = new TZDate(viewTime).addMinutes(datetime.minutesFromHours(nearestGridY));
+        nearestGridEndY = endDate.getHours() - hourStart + getNearestHour(endDate.getMinutes());
+        nearestGridEndTimeY = new TZDate(viewTime).addMinutes(datetime.minutesFromHours(nearestGridEndY));
 
-            gridY = startDate.getHours() - hourStart + getNearestHour(startDate.getMinutes());
-            timeY = new TZDate(viewTime).addMinutes(datetime.minutesFromHours(gridY));
-            nearestGridY = gridY;
-            nearestGridTimeY = new TZDate(viewTime).addMinutes(datetime.minutesFromHours(nearestGridY));
-            nearestGridEndY = endDate.getHours() - hourStart + getNearestHour(endDate.getMinutes());
-            nearestGridEndTimeY = new TZDate(viewTime).addMinutes(datetime.minutesFromHours(nearestGridEndY));
-
-            return util.extend({
-                target: timeView,
-                relatedView: timeView,
-                gridY: gridY,
-                timeY: timeY,
-                nearestGridY: nearestGridY,
-                nearestGridTimeY: nearestGridTimeY,
-                nearestGridEndY: nearestGridEndY,
-                nearestGridEndTimeY: nearestGridEndTimeY,
-                triggerEvent: 'manual',
-                hourStart: hourStart
-            });
-        }, this);
+        return {
+            target: timeView,
+            relatedView: timeView,
+            gridY: gridY,
+            timeY: timeY,
+            nearestGridY: nearestGridY,
+            nearestGridTimeY: nearestGridTimeY,
+            nearestGridEndY: nearestGridEndY,
+            nearestGridEndTimeY: nearestGridEndTimeY,
+            triggerEvent: 'manual',
+            hourStart: hourStart
+        };
     },
 
     /**
@@ -16162,7 +16058,7 @@ TimeCreation.prototype.invokeCreationClick = function(schedule) {
             datetime.MILLISECONDS_PER_DAY),
         hourStart = opt.hourStart,
         targetDate = schedule.start;
-    var getScheduleDataFunc, eventData, timeView;
+    var eventData, timeView;
 
     util.forEach(range, function(date, index) {
         if (datetime.isSameDate(date, targetDate)) {
@@ -16175,8 +16071,7 @@ TimeCreation.prototype.invokeCreationClick = function(schedule) {
         timeView = this.timeGridView.children.toArray()[0];
     }
 
-    getScheduleDataFunc = this._retriveScheduleDataFromDate(timeView);
-    eventData = getScheduleDataFunc(schedule.start, schedule.end, hourStart);
+    eventData = this._retriveScheduleDataFromDate(timeView, schedule.start, schedule.end, hourStart);
 
     this.fire('timeCreationClick', eventData);
 
@@ -17965,26 +17860,36 @@ Schedule.prototype.init = function(options) {
 
 Schedule.prototype.setAllDayPeriod = function(start, end) {
     // If it is an all-day schedule, only the date information of the string is used.
-    if (util.isString(start)) {
-        start = datetime.parse(start.substring(0, 10));
+    if (util.isString(start) && start.length === 10) {
+        start = datetime.parse(start);
     } else {
         start = new TZDate(start || Date.now());
     }
-    if (util.isString(end)) {
-        end = datetime.parse(end.substring(0, 10));
+
+    if (util.isString(end) && end.length === 10) {
+        end = datetime.parse(end);
+        end.setHours(23, 59, 59);
     } else {
-        end = new TZDate(end || this.start);
+        end = new TZDate(end || start);
     }
 
-    this.start = start;
-    this.start.setHours(0, 0, 0);
-    this.end = end || new TZDate(this.start);
-    this.end.setHours(23, 59, 59);
+    this.start = datetime.start(start);
+    this.end = datetime.renderEnd(start, end);
 };
 
 Schedule.prototype.setTimePeriod = function(start, end) {
-    this.start = new TZDate(start || Date.now());
-    this.end = new TZDate(end || this.start);
+    if (start instanceof TZDate) {
+        this.start = start;
+    } else {
+        this.start = new TZDate(start || Date.now());
+    }
+
+    if (end instanceof TZDate) {
+        this.end = end;
+    } else {
+        this.end = new TZDate(end || this.start);
+    }
+
 
     if (!end) {
         this.end.setMinutes(this.end.getMinutes() + 30);
@@ -20056,20 +19961,21 @@ ScheduleCreationPopup.prototype._toggleIsPrivate = function(target) {
 ScheduleCreationPopup.prototype._onClickSaveSchedule = function(target) {
     var className = config.classname('popup-save');
     var cssPrefix = config.cssPrefix;
-    var title;
-    var startDate;
-    var endDate;
-    var rangeDate;
-    var form;
-    var isAllDay;
+    var title, startDate, endDate, rangeDate, form, isAllDay;
+
 
     if (!domutil.hasClass(target, className) && !domutil.closest(target, '.' + className)) {
         return false;
     }
 
     title = domutil.get(cssPrefix + 'schedule-title');
-    startDate = new TZDate(this.rangePicker.getStartDate()).toLocalTime();
-    endDate = new TZDate(this.rangePicker.getEndDate()).toLocalTime();
+    startDate = new TZDate(this.rangePicker.getStartDate());
+    endDate = new TZDate(this.rangePicker.getEndDate());
+
+    if (timezone.hasTimezoneOption()) {
+        startDate = new TZDate(startDate.getTime());
+        endDate = new TZDate(endDate.getTime());
+    }
 
     if (!this._validateForm(title, startDate, endDate)) {
         if (!title.value) {
@@ -20155,10 +20061,11 @@ ScheduleCreationPopup.prototype._makeEditModeData = function(viewModel) {
 
     var id = schedule.id;
     title = schedule.title;
+    //isPrivate = raw['class'] === 'private';
     isPrivate = schedule.isPrivate;
     location = schedule.location;
-    startDate = schedule.start;
-    endDate = schedule.end;
+    startDate = new TZDate(schedule.start);
+    endDate = new TZDate(schedule.end);
     isAllDay = schedule.isAllDay;
     state = schedule.state;
 
@@ -20491,12 +20398,8 @@ ScheduleCreationPopup.prototype._validateForm = function(title, startDate, endDa
  * @returns {RangeDate} Returns the start and end time data that is the range date
  */
 ScheduleCreationPopup.prototype._getRangeDate = function(startDate, endDate, isAllDay) {
-    if (isAllDay) {
-        startDate.setHours(0, 0, 0);
-        endDate = datetime.isStartOfDay(endDate) ?
-            datetime.convertStartDayToLastDay(endDate) :
-            endDate.setHours(23, 59, 59);
-    }
+    var start = isAllDay ? datetime.start(startDate) : startDate;
+    var end = isAllDay ? datetime.renderEnd(startDate, endDate) : endDate;
 
     /**
      * @typedef {object} RangeDate
@@ -20504,8 +20407,8 @@ ScheduleCreationPopup.prototype._getRangeDate = function(startDate, endDate, isA
      * @property {TZDate} end end time
      */
     return {
-        start: new TZDate(startDate),
-        end: new TZDate(endDate)
+        start: new TZDate(start),
+        end: new TZDate(end)
     };
 };
 
@@ -20524,7 +20427,6 @@ ScheduleCreationPopup.prototype._getRangeDate = function(startDate, endDate, isA
   }} form schedule input form data
 */
 ScheduleCreationPopup.prototype._onClickUpdateSchedule = function(form) {
-
 	this._schedule.isPrivate = form.isPrivate;
     var changes = common.getScheduleChanges(
         this._schedule,
@@ -20607,7 +20509,7 @@ module.exports = ScheduleCreationPopup;
 
 "use strict";
 /**
- * @fileoverview Floating layer for  showing detail schedule
+ * @fileoverview Floating layer for showing detail schedule
  * @author NHN FE Development Lab <dl_javascript@nhn.com>
  */
 
@@ -20795,7 +20697,7 @@ ScheduleDetailPopup.prototype._getYAndArrowTop = function(
         y = 0;
         arrowTop = scheduleVerticalCenter - containerTop - ARROW_WIDTH_HALF;
     } else if (y + layerHeight > containerBottom) {
-        y = containerBottom - layerHeight - containerTop;
+        y = Math.max(containerBottom - layerHeight - containerTop, 0);
         arrowTop = scheduleVerticalCenter - y - containerTop - ARROW_WIDTH_HALF;
     } else {
         y -= containerTop;
@@ -25460,6 +25362,12 @@ function TimeGrid(name, options, panelElement) {
     this.timerID = 0;
 
     /**
+     * requestAnimationFrame unique ID
+     * @type {number}
+     */
+    this.rAnimationFrameID = 0;
+
+    /**
      * @type {boolean}
      */
     this._scrolled = false;
@@ -25497,6 +25405,7 @@ TimeGrid.prototype.viewName = 'timegrid';
 TimeGrid.prototype._beforeDestroy = function() {
     clearInterval(this.intervalID);
     clearTimeout(this.timerID);
+    reqAnimFrame.cancelAnimFrame(this.rAnimationFrameID);
 
     if (this._autoScroll) {
         this._autoScroll.destroy();
@@ -25505,7 +25414,7 @@ TimeGrid.prototype._beforeDestroy = function() {
     domevent.off(this.stickyContainer, 'click', this._onClickStickyContainer, this);
 
     this._autoScroll = this.hourmarkers = this.intervalID =
-    this.timerID = this._cacheParentViewModel = this.stickyContainer = null;
+    this.timerID = this.rAnimationFrameID = this._cacheParentViewModel = this.stickyContainer = null;
 };
 
 /**
@@ -25777,15 +25686,16 @@ TimeGrid.prototype.refreshHourmarker = function() {
     var hourmarkers = this.hourmarkers;
     var viewModel = this._cacheParentViewModel;
     var hoursLabels = this._cacheHoursLabels;
+    var rAnimationFrameID = this.rAnimationFrameID;
     var baseViewModel;
 
-    if (!hourmarkers || !viewModel) {
+    if (!hourmarkers || !viewModel || rAnimationFrameID) {
         return;
     }
 
     baseViewModel = this._getBaseViewModel(viewModel);
 
-    reqAnimFrame.requestAnimFrame(function() {
+    this.rAnimationFrameID = reqAnimFrame.requestAnimFrame(function() {
         var needsRender = false;
 
         util.forEach(hoursLabels, function(hoursLabel, index) {
@@ -25819,6 +25729,8 @@ TimeGrid.prototype.refreshHourmarker = function() {
                 }
             });
         }
+
+        this.rAnimationFrameID = null;
     }, this);
 };
 
@@ -25828,9 +25740,9 @@ TimeGrid.prototype.refreshHourmarker = function() {
 TimeGrid.prototype.attachEvent = function() {
     clearInterval(this.intervalID);
     clearTimeout(this.timerID);
-    this.intervalID = this.timerID = null;
+    this.intervalID = this.timerID = this.rAnimationFrameID = null;
 
-    this.timerID = setTimeout(util.bind(this.onTick, this), (SIXTY_SECONDS - new TZDate().getSeconds()) * 1000);
+    this.timerID = setTimeout(this.onTick.bind(this), (SIXTY_SECONDS - new TZDate().getSeconds()) * 1000);
 
     domevent.on(this.stickyContainer, 'click', this._onClickStickyContainer, this);
 };
@@ -25885,7 +25797,7 @@ TimeGrid.prototype.onTick = function() {
     }
 
     if (!this.intervalID) {
-        this.intervalID = setInterval(util.bind(this.onTick, this), HOURMARKER_REFRESH_INTERVAL);
+        this.intervalID = setInterval(this.onTick.bind(this), HOURMARKER_REFRESH_INTERVAL);
     }
     this.refreshHourmarker();
 };
@@ -26456,3 +26368,4 @@ module.exports = __WEBPACK_EXTERNAL_MODULE_tui_date_picker__;
 
 /******/ });
 });
+//# sourceMappingURL=tui-calendar.js.map

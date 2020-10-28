@@ -2,6 +2,9 @@ module.exports = {
     template: require('calendar.html'),
     data: function() {
         return {
+            APPS_DIR_NAME: '.apps',
+            CALENDAR_DIR_NAME: 'calendar',
+            CALENDAR_FILE_EXTENSION: '.ics',
             showSpinner: false,
             spinnerMessage: ""
         }
@@ -10,7 +13,7 @@ module.exports = {
     created: function() {
         let that = this;
         this.displaySpinner();
-        this.context.getCalendarApp().thenApply(calendar =>
+        peergos.shared.user.App.init(this.context, "calendar", ".ics").thenApply(calendar =>
             that.startListener(calendar)
         );
     },
@@ -77,56 +80,45 @@ module.exports = {
     },
     loadAdditional: function(calendar, year, month, messageType) {
         let that = this;
-        calendar.getCalendarEventsForMonth(year, month).thenCompose(function(allEvents) {
-            that.loadAdditionalEvents(year, month, messageType, allEvents.toArray([]));
+        this.getCalendarEventsForMonth(calendar, year, month).thenApply(function(allEvents) {
+            that.loadAdditionalEvents(year, month, messageType, allEvents);
         });
     },
     loadAdditionalEvents: function(year, month, messageType, eventsThisMonth) {
-        let currentMonth = [];
-        let that = this;
-        eventsThisMonth.forEach(function(item){
-            currentMonth.push({item:item.right, username: item.left});
-        });
         let iframe = document.getElementById("editor");
         let yearMonth = year * 12 + (month -1);
         setTimeout(function(){
-            iframe.contentWindow.postMessage({type: messageType, currentMonth: currentMonth
+            iframe.contentWindow.postMessage({type: messageType, currentMonth: eventsThisMonth
                 , yearMonth: yearMonth }, '*');
         });
     },
     load: function(calendar, year, month, messageType) {
         let that = this;
-        calendar.getCalendarEventsAroundMonth(year, month).thenCompose(function(allEvents) {
-            that.loadEvents(year, month, messageType, allEvents.left.toArray([]), allEvents.middle.toArray([]),
-                    allEvents.right.toArray([]), that.context.username);
+        this.getCalendarEventsAroundMonth(calendar, year, month).thenApply(function(allEvents) {
+            that.loadEvents(year, month, messageType, allEvents.previous, allEvents.current,
+                    allEvents.next, that.context.username);
         });
     },
 
     loadEvents: function(year, month, messageType, eventsPreviousMonth, eventsThisMonth, eventsNextMonth) {
-        let previousMonth = [];
-        let currentMonth = [];
-        let nextMonth = [];
         let that = this;
-        eventsPreviousMonth.forEach(function(item){
-            previousMonth.push({item:item.right, username: item.left});
-        });
-        eventsThisMonth.forEach(function(item){
-            currentMonth.push({item:item.right, username: item.left});
-        });
-        eventsNextMonth.forEach(function(item){
-            nextMonth.push({item:item.right, username: item.left});
-        });
         let iframe = document.getElementById("editor");
         let yearMonth = year * 12 + (month-1);
         setTimeout(function(){
-            iframe.contentWindow.postMessage({type: messageType, previousMonth: previousMonth,
-                    currentMonth: currentMonth, nextMonth: nextMonth, yearMonth: yearMonth, username: that.context.username}, '*');
+            iframe.contentWindow.postMessage({type: messageType, previousMonth: eventsPreviousMonth,
+                    currentMonth: eventsThisMonth, nextMonth: eventsNextMonth, yearMonth: yearMonth, username: that.context.username}, '*');
         });
+    },
+    removeCalendarEvent: function(calendar, year, monthIndex, id) {
+        let dirPath = this.context.username + "/" + this.APPS_DIR_NAME + "/" + this.CALENDAR_DIR_NAME + "/" + this.context.username + "/" + year + "/" + monthIndex;
+        let filename = id + this.CALENDAR_FILE_EXTENSION;
+        let filePath = peergos.client.PathUtils.toPath(dirPath.split('/'), filename);
+        return calendar.deleteInternal(filePath);
     },
     deleteEvent: function(calendar, item) {
 	    const that = this;
 	    that.displaySpinner();
-        calendar.removeCalendarEvent(item.year, item.month, item.Id).thenApply(function(res) {
+        this.removeCalendarEvent(calendar, item.year, item.month, item.Id).thenApply(function(res) {
 	        that.removeSpinner();
         }).exceptionally(function(throwable) {
             that.showMessage("Unable to delete event","Please close calendar and try again");
@@ -143,10 +135,19 @@ module.exports = {
     displayMessage: function(msg) {
         this.showMessage(msg);
     },
+    updateCalendarEvent: function(calendar, year, monthIndex, id, calendarEvent) {
+        let dirPath = this.context.username + "/" + this.APPS_DIR_NAME + "/" + this.CALENDAR_DIR_NAME + "/" + this.context.username + "/" + year + "/" + monthIndex;
+        let filename = id + this.CALENDAR_FILE_EXTENSION;
+        let filePath = peergos.client.PathUtils.toPath(dirPath.split('/'), filename);
+        let encoder = new TextEncoder();
+        let uint8Array = encoder.encode(calendarEvent);
+        let bytes = convertToByteArray(uint8Array);
+        return calendar.writeInternal(filePath, bytes);
+    },
     saveEvent: function(calendar, item) {
 	    const that = this;
 	    that.displaySpinner();
-        calendar.updateCalendarEvent(item.year, item.month, item.Id, item.item).thenApply(function(res) {
+        this.updateCalendarEvent(calendar, item.year, item.month, item.Id, item.item).thenApply(function(res) {
 	        that.removeSpinner();
         }).exceptionally(function(throwable) {
             that.showMessage("Unable to save event","Please close calendar and try again");
@@ -165,7 +166,7 @@ module.exports = {
             that.showMessage(items.length + " Event(s) successfully imported!");
         } else {
             let item = items[index];
-            calendar.updateCalendarEvent(item.year, item.month, item.Id, item.item).thenApply(function(res) {
+            this.updateCalendarEvent(calendar, item.year, item.month, item.Id, item.item).thenApply(function(res) {
                 that.saveAllEventsRecursive(calendar, items, ++index);
             }).exceptionally(function(throwable) {
                 that.removeSpinner();
@@ -175,32 +176,135 @@ module.exports = {
             });
         }
     },
+    //public CompletableFuture<List<Pair<String, String>>>
+    getCalendarEventsForMonth: function(calendar, year, monthIndex) {
+        let that = this;
+        let completed = peergos.shared.util.Futures.incomplete();
+        let dirStr = that.context.username + "/" + this.APPS_DIR_NAME + "/" + this.CALENDAR_DIR_NAME + "/" + that.context.username + "/" + year + "/" + monthIndex;
+        that.context.getByPath(dirStr).thenCompose(fw => {
+            if (fw.isPresent()) {
+                return that.getEventsForMonth(that.context.username, fw.get());
+            } else {
+                return peergos.shared.util.Futures.of([]);
+            }
+        }).thenApply(ourEvents => {
+            let filteredSharedEvents = calendar.filterSharedItems(item => item.path.includes(year + "/" + monthIndex));
+            that.context.getFiles(filteredSharedEvents)
+                .thenApply(availableSharedEvents => that.readSharedItems(availableSharedEvents.toArray([]))
+                        .thenApply(sharedEvents => {
+                                let results = ourEvents.concat(sharedEvents);
+                                results.sort(function(a, b){
+                                    if (a.left < b.left)
+                                        return -1;
+                                    if (a.left > b.left)
+                                        return 1;
+                                    return 0;
+                                });
+                                completed.complete(results);
+                        }));
+        });
+        return completed;
+    },
+    //public CompletableFuture<Triple<List<Pair<String,String>>,List<Pair<String,String>>,List<Pair<String,String>>>>
+    getCalendarEventsAroundMonth: function(calendar, year, monthIndex) {
+        let that = this;
+        let previousMonth = monthIndex == 1 ? {year:year -1, monthIndex: 12}
+                : {year: year, monthIndex:monthIndex -1};
+        let currentMonth = {year: year, monthIndex: monthIndex};
+        let nextMonth = monthIndex == 12 ? {year:year +1, monthIndex:1}
+                : {year:year, monthIndex:monthIndex +1};
+        let future = peergos.shared.util.Futures.incomplete();
+        that.getCalendarEventsForMonth(calendar, previousMonth.year, previousMonth.monthIndex).thenApply(previous =>
+                that.getCalendarEventsForMonth(calendar, currentMonth.year, currentMonth.monthIndex).thenApply(current =>
+                        that.getCalendarEventsForMonth(calendar, nextMonth.year, nextMonth.monthIndex).thenApply(next => {
+                                let result = {previous: previous, current: current, next: next};
+                                future.complete(result);
+                        })
+                )
+        );
+        return future;
+    },
+    readEventFile: function(file) {
+        let that = this;
+        let props = file.getFileProperties();
+        return file.getInputStream(that.context.network, that.context.crypto, props.sizeHigh(), props.sizeLow(), function(read) {})
+            .thenCompose(function(reader){
+                let data = convertToByteArray(new Int8Array(props.sizeLow()));
+                return reader.readIntoArray(data, 0, data.length)
+                        .thenApply(function(read){ return new TextDecoder().decode(data);});
+            });
+    },
+    reduceAllEvents: function(eventFiles, username, accumulator, future) {
+        let that = this;
+        let eventFile = eventFiles.pop();
+        if (eventFile == null) {
+            future.complete(accumulator);
+        } else {
+            that.readEventFile(eventFile).thenApply(text => {
+                accumulator.push({username: username, item: text});
+                that.reduceAllEvents(eventFiles, username, accumulator, future);
+            });
+        }
+    },
+    reduceAllPairedEvents: function(pairs, accumulator, future) {
+        let that = this;
+        let pair = pairs.pop();
+        if (pair == null) {
+            future.complete(accumulator);
+        } else {
+            that.readEventFile(pair.right).thenApply(text => {
+                accumulator.push({username: pair.left.owner, item: text});
+                that.reduceAllPairedEvents(pairs, accumulator, future);
+            });
+        }
+    },
+    //CompletableFuture<List<Pair<String, String>>>
+    readSharedItems: function(pairs) {
+        let events = [];
+        let future = peergos.shared.util.Futures.incomplete();
+        this.reduceAllPairedEvents(pairs, [], future);
+        return future;
+    },
+    //CompletableFuture<List<Pair<String, String>>>
+    getEventsForMonth: function(username, monthDirectory) {
+        let that = this;
+        let future = peergos.shared.util.Futures.incomplete();
+        monthDirectory.getChildren(that.context.crypto.hasher, that.context.network).thenApply(eventFiles => {
+            let events = [];
+            that.reduceAllEvents(eventFiles.toArray([]), username, [], future);
+        });
+        return future;
+    },
+    createSecretLink: function(calendar, username, year, monthIndex, id) {
+        let dirPath = username + "/" + this.APPS_DIR_NAME + "/" + this.CALENDAR_DIR_NAME + "/" + username + "/" + year + "/" + monthIndex;
+        let filename = id + this.CALENDAR_FILE_EXTENSION;
+        let filePath = peergos.client.PathUtils.toPath(dirPath.split('/'), filename);
+        return calendar.createSecretLinkInternal(filePath);
+    },
     addToClipboardEvent: function(calendar, id, year, month, username) {
         let that = this;
         this.displaySpinner();
-        calendar.getEventFile(username, year, month, id).thenApply(function(file){
-            console.log("name=" + file.getName())
+        this.createSecretLink(calendar, username, year, month, id).thenApply(function(secretLink){
             let link = window.location.origin + window.location.pathname +
-                    "#" + propsToFragment({secretLink:true,link:file.toLink()});
-            navigator.clipboard.writeText(link).then(function() { that.displayMessage("Secret link to event copied to clipboard");}, function() {
+                    "#" + propsToFragment({secretLink:true, link:secretLink});
+            navigator.clipboard.writeText(link).then(function() { that.displayMessage("Secret link to Calendar event copied to clipboard");}, function() {
               console.error("Unable to write to clipboard.");
             });
             that.removeSpinner();
         });
     },
+    getEventFileContents: function(calendar, username, year, monthIndex, id) {
+        let dirPath = username + "/" + this.APPS_DIR_NAME + "/" + this.CALENDAR_DIR_NAME + "/" + username + "/" + year + "/" + monthIndex;
+        let filename = id + this.CALENDAR_FILE_EXTENSION;
+        let filePath = peergos.client.PathUtils.toPath(dirPath.split('/'), filename);
+        return calendar.readInternal(filePath);
+    },
     downloadEvent: function(calendar, id, year, month, username) {
         let that = this;
         this.displaySpinner();
-        calendar.getEventFile(username, year, month, id)
-            .thenApply(function(file){
-                let props = file.getFileProperties();
-                file.getInputStream(that.context.network, that.context.crypto, props.sizeHigh(), props.sizeLow(), function(read) {})
-                    .thenCompose(function(reader){
-                        let size = props.sizeLow();
-                        let data = convertToByteArray(new Int8Array(size));
-                        return reader.readIntoArray(data, 0, data.length)
-                                .thenApply(function(read){that.openItem('event.ics', data, props.mimeType)});
-                    });
+        this.getEventFileContents(calendar, username, year, month, id)
+            .thenApply(function(data){
+                that.openItem('event.ics', data, "text/calendar")
             });
     },
     openItem: function(name, data, mimeType) {
