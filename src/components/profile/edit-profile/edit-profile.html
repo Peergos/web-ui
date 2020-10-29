@@ -18,29 +18,29 @@
                 </div>
                 </p>
                 <span>First name
-                    <input id="profile-first-name" class="form-control" v-model="firstName" placeholder="First Name" style="width:30%" maxlength="20">
+                    <input id="profile-first-name" class="form-control" v-model="firstName" placeholder="First Name" style="width:30%" :maxlength="FIRSTNAME_MAX_LENGTH">
                 </span>
                 <p>
                     Last name
-                    <input id="profile-last-name" class="form-control" v-model="lastName" placeholder="Last Name" style="width:30%" maxlength="20">
+                    <input id="profile-last-name" class="form-control" v-model="lastName" placeholder="Last Name" style="width:30%" :maxlength="LASTNAME_MAX_LENGTH">
                 </p>
                 <p>Phone
-                    <input id="profile-primary-phone" class="form-control" v-model="primaryPhone" placeholder="Primary Phone Number" style="width:30%" maxlength="30">
+                    <input id="profile-primary-phone" class="form-control" v-model="primaryPhone" placeholder="Primary Phone Number" style="width:30%" :maxlength="PHONE_MAX_LENGTH">
                 </p>
                 <p>
                     Email
-                    <input id="profile-primary-email" class="form-control" v-model="primaryEmail" placeholder="Primary Email Address" style="width:30%" maxlength="30">
+                    <input id="profile-primary-email" class="form-control" v-model="primaryEmail" placeholder="Primary Email Address" style="width:30%" :maxlength="EMAIL_MAX_LENGTH">
                 </p>
                 <p>Biography
-                    <textarea id="profile-biography" class="form-control" v-model="biography" placeholder="Biography" style="width:50%;resize: none;" rows=3 maxlength="400"></textarea>
+                    <textarea id="profile-biography" class="form-control" v-model="biography" placeholder="Biography" style="width:50%;resize: none;" rows=3 :maxlength="BIO_MAX_LENGTH"></textarea>
                 </p>
                 <p>
                     Status
-                    <input id="profile-status" class="form-control" v-model="status" placeholder="Status" style="width:30%" maxlength="30">
+                    <input id="profile-status" class="form-control" v-model="status" placeholder="Status" style="width:30%" :maxlength="STATUS_MAX_LENGTH">
                 </p>
                 <p>
                     WebRoot
-                    <input id="profile-web-root" class="form-control" v-model="webRoot" placeholder="WebRoot" style="width:30%" maxlength="30">
+                    <input id="profile-web-root" class="form-control" v-model="webRoot" placeholder="Web Root" style="width:30%" :maxlength="WEBROOT_MAX_LENGTH">
                 </p>
                 <p>
                 <button class="btn btn-success" 

@@ -17,6 +17,13 @@ module.exports = {
         previousPrimaryEmail: "",
         previousStatus: "",
         previousWebRoot: "",
+        BIO_MAX_LENGTH: 200,
+        STATUS_MAX_LENGTH: 50,
+        FIRSTNAME_MAX_LENGTH: 25,
+        LASTNAME_MAX_LENGTH: 25,
+        PHONE_MAX_LENGTH: 15,
+        EMAIL_MAX_LENGTH: 50,
+        WEBROOT_MAX_LENGTH: 40,
         showSpinner: false,
         spinnerMessage: ''
         }
@@ -163,20 +170,59 @@ module.exports = {
                     }
                 });
             }
-            if (this.webRoot != this.previousWebRoot) {
-                changes.push({func: function(){
-                        var future = peergos.shared.util.Futures.incomplete();
-                        peergos.shared.user.ProfilePaths.setWebRoot(context, that.webRoot).thenApply(res => {
-                            if(res) {
-                                that.previousWebRoot = that.webRoot;
-                            }
-                            future.complete(res);
-                        });
-                        return future;
+            if (this.webRoot == this.previousWebRoot) {
+                this.saveChanges(changes); //save other changes
+            } else {
+                var updatedPath = this.webRoot.trim();
+                let changeWebRootFunc = function(){
+                    var future = peergos.shared.util.Futures.incomplete();
+                    peergos.shared.user.ProfilePaths.setWebRoot(context, updatedPath).thenApply(res => {
+                        if(res) {
+                            that.webRoot = updatedPath;
+                            that.previousWebRoot = updatedPath;
+                        }
+                        future.complete(res);
+                    });
+                    return future;
+                }
+                if(updatedPath == '') {
+                    changes.push({func: changeWebRootFunc});
+                    this.saveChanges(changes);
+                } else if (updatedPath == '/') {
+                    that.showMessage("Validation Error", "Web Root directory not set. Changes not saved!");
+                } else {
+                    if (updatedPath.endsWith('/')) {
+                        updatedPath = updatedPath.substring(0, updatedPath.length -1);
                     }
-                });
+                    if (updatedPath.startsWith('/')) {
+                        updatedPath = updatedPath.substring(1);
+                    }
+                    if (updatedPath == '') {
+                        this.showMessage("Validation Error", "Web Root directory not set. Changes not saved!");
+                    } else {
+                        if (!updatedPath.startsWith(this.context.username+ '/')) {
+                            updatedPath = this.context.username + '/' + updatedPath;
+                        }
+                        if (updatedPath == '' || updatedPath == this.context.username + '/' + this.context.username) {
+                            this.showMessage("Validation Error", "Web Root directory not set. Changes not saved!");
+                        } else {
+                            try {
+                                let dirPath = peergos.client.PathUtils.directoryToPath(updatedPath.split('/'));
+                                this.context.getByPath(dirPath.toString()).thenApply(function(dirOpt){
+                                        if (dirOpt.isEmpty()) {
+                                            that.showMessage("Validation Error", "Web Root directory not found. Changes not saved!");
+                                        } else {
+                                            changes.push({func: changeWebRootFunc});
+                                            that.saveChanges(changes);
+                                        }
+                                });
+                            } catch (pathException) {
+                                that.showMessage("Validation Error", "Web Root directory not valid. Changes not saved!");
+                            }
+                        }
+                    }
+                }
             }
-            this.saveChanges(changes);
         },
         updateThumbnail: function() {
             let that = this;
