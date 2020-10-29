@@ -1489,6 +1489,10 @@ module.exports = {
                 return 'fa-file-word';
             if (type == 'excel spreadsheet' || type == 'spreadsheet')
                 return 'fa-file-excel';
+            if (type == 'todo')
+                return 'fas fa-list-alt';
+            if (type == 'calendar')
+                return 'fa fa-calendar-alt';
             return 'fa-file';
         },
         getPath: function() {
