@@ -1239,14 +1239,14 @@ body {
   width: 96px;
   height: 36px;
   border-radius: 40px;
-  background-color: #ff6618;
+  background-color: #26b99a;
   font-size: 12px;
   font-weight: bold;
   color: #fff;
   border: none;
 }
 .tui-full-calendar-confirm:hover {
-  background-color: #e55b15;
+  background-color: rgb(22, 169, 138);
   color: #fff;
 }
 .tui-full-calendar-confirm:active {
