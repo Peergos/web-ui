@@ -1151,6 +1151,7 @@ module.exports = {
             } else {
                 this.closeMenu();
             }
+            this.showSpinner = true;
             let username = showEditForm ? this.context.username : this.selectedFiles[0].getOwnerName();
             let that = this;
             let context = this.context;
@@ -1182,6 +1183,7 @@ module.exports = {
                                                     status: status,
                                                     webRoot: webRoot
                                                 };
+                                                that.showSpinner = false;
                                                 if (showEditForm) {
                                                     that.showProfileEditForm = true;
                                                 } else {
@@ -1368,6 +1370,16 @@ module.exports = {
 
             this.closeMenu();
         },
+/*
+        showShareWithForProfile: function(field, fieldName) {
+            let that = this;
+            var context = this.getContext();
+            let dirPath = context.username + "/.profile/";
+            this.context.getByPath(dirPath)
+                .thenApply(function(dir){dir.get().getChild(field, that.context.crypto.hasher, that.context.network).thenApply(function(child){
+                                        that.fieldName = fieldName;
+                                        that.allowReadWriteSharing = false;
+*/
 
         showShareWithFromApp: function(app, filename, allowReadWriteSharing) {
             let that = this;
@@ -1412,6 +1424,7 @@ module.exports = {
             let edit_usernames = fileSharedWithState.writeAccess.toArray([]);
             this.sharedWithData = {read_shared_with_users:read_usernames, edit_shared_with_users:edit_usernames};
             this.fromApp = false;
+            this.fieldName = '';
             this.allowReadWriteSharing = true;
             this.showShare = true;
         },
@@ -1715,7 +1728,9 @@ module.exports = {
             }
             if (this.getPath() == "/") {
 		        this.isNotBackground = false;
-                this.selectedFiles = [this.currentDir];
+		        if (file != null) {
+                    this.selectedFiles = [file];
+                }
                 this.viewMenu = true;
                 Vue.nextTick(function() {
                     var menu = document.getElementById("right-click-menu-profile");

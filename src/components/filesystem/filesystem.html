@@ -85,6 +85,7 @@
     v-on:update-shared-refresh="forceSharedRefreshWithUpdate++"
     :data="sharedWithData"
     :fromApp="fromApp"
+    :fieldName="fieldName"
     :allowReadWriteSharing="allowReadWriteSharing"
     :files="filesToShare"
     :parent="parentFile"
@@ -159,6 +160,7 @@
           v-on:hide-profile-edit="showProfileEditForm = false"
           :context="context"
           :profile="profile"
+          :shareWith="showShareWithForProfile"
           :messages="messages">
   </profile-edit>
   <profile-view

@@ -1,5 +1,5 @@
 <transition name="modal">
-<div class="modal-mask" @click="close">
+<div class="modal-mask-app" @click="close">
     <meta http-equiv="content-type" content="text/html; charset=utf-8" />
     <div class="modal-container" @click.stop style="height:100%;overflow-y:auto">
         <span @click="close" class="close">&times;</span>
@@ -9,38 +9,41 @@
         <div class="modal-body">
             <spinner v-if="showSpinner"></spinner>
             <div id="profile-main">
-                <p>Public Profile Image
+                <p>Profile Image
                 <button class="btn btn-success" onclick="document.getElementById('uploadImageInput').click()">Upload Image</button>
                 <input type="file" id="uploadImageInput" @change="uploadImageFile" style="display:none;" accept="image/*" />
                 <button v-if="hasProfileImage()" v-on:click="removeImage()" class="btn btn-success" >Remove Image</button>
+                <button v-if="hasProfileImage()" @click="share('highres', 'Profile image')" class="btn btn-success" >Share With</button>
+
                 <div id="profile-container">
                     <img id="profile-image" v-bind:src="getProfileImage()"/>
                 </div>
+                <p>First name
+                    <input id="profile-first-name" class="form-control-profile" v-model="firstName" placeholder="First Name" style="width:30%" :maxlength="FIRSTNAME_MAX_LENGTH">
+                    <button class="btn btn-success" @click="share('firstname', 'First name')">Share With</button>
                 </p>
-                <span>First name
-                    <input id="profile-first-name" class="form-control" v-model="firstName" placeholder="First Name" style="width:30%" :maxlength="FIRSTNAME_MAX_LENGTH">
-                </span>
-                <p>
-                    Last name
-                    <input id="profile-last-name" class="form-control" v-model="lastName" placeholder="Last Name" style="width:30%" :maxlength="LASTNAME_MAX_LENGTH">
+                <p>Last name
+                    <input id="profile-last-name" class="form-control-profile" v-model="lastName" placeholder="Last Name" style="width:30%" :maxlength="LASTNAME_MAX_LENGTH">
+                    <button class="btn btn-success" @click="share('lastname', 'Last name')">Share With</button>
                 </p>
                 <p>Phone
-                    <input id="profile-primary-phone" class="form-control" v-model="primaryPhone" placeholder="Primary Phone Number" style="width:30%" :maxlength="PHONE_MAX_LENGTH">
+                    <input id="profile-primary-phone" class="form-control-profile" v-model="primaryPhone" placeholder="Primary Phone Number" style="width:30%" :maxlength="PHONE_MAX_LENGTH">
+                    <button class="btn btn-success" @click="share('phone', 'Phone number')">Share With</button>
                 </p>
-                <p>
-                    Email
-                    <input id="profile-primary-email" class="form-control" v-model="primaryEmail" placeholder="Primary Email Address" style="width:30%" :maxlength="EMAIL_MAX_LENGTH">
+                <p>Email
+                    <input id="profile-primary-email" class="form-control-profile" v-model="primaryEmail" placeholder="Primary Email Address" style="width:30%" :maxlength="EMAIL_MAX_LENGTH">
+                    <button class="btn btn-success" @click="share('email', 'Email address')">Share With</button>
                 </p>
                 <p>Biography
-                    <textarea id="profile-biography" class="form-control" v-model="biography" placeholder="Biography" style="width:50%;resize: none;" rows=3 :maxlength="BIO_MAX_LENGTH"></textarea>
+                    <textarea id="profile-biography" class="form-control-profile" v-model="biography" placeholder="Biography" style="width:50%;resize: none;" rows=3 :maxlength="BIO_MAX_LENGTH"></textarea>
+                    <button class="btn btn-success" @click="share('bio', 'Biography')">Share With</button>
                 </p>
-                <p>
-                    Status
-                    <input id="profile-status" class="form-control" v-model="status" placeholder="Status" style="width:30%" :maxlength="STATUS_MAX_LENGTH">
+                <p>Status
+                    <input id="profile-status" class="form-control-profile" v-model="status" placeholder="Status" style="width:30%" :maxlength="STATUS_MAX_LENGTH">
+                    <button class="btn btn-success" @click="share('status', 'Status message')">Share With</button>
                 </p>
-                <p>
-                    WebRoot
-                    <input id="profile-web-root" class="form-control" v-model="webRoot" placeholder="Web Root" style="width:30%" :maxlength="WEBROOT_MAX_LENGTH">
+                <p>WebRoot
+                    <input id="profile-web-root" class="form-control-profile" v-model="webRoot" placeholder="Web Root" style="width:30%" :maxlength="WEBROOT_MAX_LENGTH">
                 </p>
                 <p>
                 <button class="btn btn-success" 

@@ -9,7 +9,7 @@
         <div class="modal-body">
             <spinner v-if="showSpinner"></spinner>
             <div id="profile-main">
-                <p>Public Profile Image
+                <p>Profile Image
                 <div id="profile-container" v-if="hasProfileImage()">
                     <img id="profile-image" v-bind:src="getProfileImage()"/>
                 </div>
@@ -34,10 +34,6 @@
                 <p>
                     Status
                     <input id="profile-status" class="form-control" readonly v-model="status" placeholder="Status" style="width:30%" maxlength="50">
-                </p>
-                <p>
-                    WebRoot
-                    <input id="profile-web-root" class="form-control" readonly v-model="webRoot" placeholder="Web Root" style="width:30%" maxlength="40">
                 </p>
             </div>
         </div>

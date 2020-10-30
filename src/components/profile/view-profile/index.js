@@ -9,7 +9,6 @@ module.exports = {
         primaryEmail: "",
         profileImage: "",
         status: "",
-        webRoot: "",
         showSpinner: false,
         spinnerMessage: ''
         }
@@ -23,7 +22,6 @@ module.exports = {
         this.primaryEmail = this.profile.primaryEmail;
         this.profileImage = this.profile.profileImage;
         this.status = this.profile.status;
-        this.webRoot = this.profile.webRoot;
     },
     methods: {
         close: function () {

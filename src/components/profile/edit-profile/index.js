@@ -28,7 +28,7 @@ module.exports = {
         spinnerMessage: ''
         }
     },
-    props: ['context', 'profile', 'messages'],
+    props: ['context', 'profile', 'messages', 'shareWith'],
     created: function() {
         this.firstName = this.previousFirstName = this.profile.firstName;
         this.lastName = this.previousLastName = this.profile.lastName;
@@ -49,6 +49,9 @@ module.exports = {
                 body: body,
                 show: true
             });
+        },
+        share: function(field, fieldName) {
+            this.shareWith(field, fieldName);
         },
         uploadImageFile: function(evt) {
             let files = evt.target.files || evt.dataTransfer.files;
