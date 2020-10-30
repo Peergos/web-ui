@@ -4,6 +4,7 @@ module.exports = {
         return {
             APPS_DIR_NAME: '.apps',
             CALENDAR_DIR_NAME: 'calendar',
+            DATA_DIR_NAME: 'data',
             CALENDAR_FILE_EXTENSION: '.ics',
             showSpinner: false,
             spinnerMessage: ""
@@ -110,7 +111,7 @@ module.exports = {
         });
     },
     removeCalendarEvent: function(calendar, year, monthIndex, id) {
-        let dirPath = this.context.username + "/" + this.APPS_DIR_NAME + "/" + this.CALENDAR_DIR_NAME + "/" + this.context.username + "/" + year + "/" + monthIndex;
+        let dirPath = this.context.username + "/" + this.APPS_DIR_NAME + "/" + this.CALENDAR_DIR_NAME + "/" + this.DATA_DIR_NAME + "/" + year + "/" + monthIndex;
         let filename = id + this.CALENDAR_FILE_EXTENSION;
         let filePath = peergos.client.PathUtils.toPath(dirPath.split('/'), filename);
         return calendar.deleteInternal(filePath);
@@ -136,7 +137,7 @@ module.exports = {
         this.showMessage(msg);
     },
     updateCalendarEvent: function(calendar, year, monthIndex, id, calendarEvent) {
-        let dirPath = this.context.username + "/" + this.APPS_DIR_NAME + "/" + this.CALENDAR_DIR_NAME + "/" + this.context.username + "/" + year + "/" + monthIndex;
+        let dirPath = this.context.username + "/" + this.APPS_DIR_NAME + "/" + this.CALENDAR_DIR_NAME + "/" + this.DATA_DIR_NAME + "/" + year + "/" + monthIndex;
         let filename = id + this.CALENDAR_FILE_EXTENSION;
         let filePath = peergos.client.PathUtils.toPath(dirPath.split('/'), filename);
         let encoder = new TextEncoder();
@@ -180,7 +181,7 @@ module.exports = {
     getCalendarEventsForMonth: function(calendar, year, monthIndex) {
         let that = this;
         let completed = peergos.shared.util.Futures.incomplete();
-        let dirStr = that.context.username + "/" + this.APPS_DIR_NAME + "/" + this.CALENDAR_DIR_NAME + "/" + that.context.username + "/" + year + "/" + monthIndex;
+        let dirStr = that.context.username + "/" + this.APPS_DIR_NAME + "/" + this.CALENDAR_DIR_NAME + "/" + this.DATA_DIR_NAME + "/" + year + "/" + monthIndex;
         that.context.getByPath(dirStr).thenCompose(fw => {
             if (fw.isPresent()) {
                 return that.getEventsForMonth(that.context.username, fw.get());
@@ -276,7 +277,7 @@ module.exports = {
         return future;
     },
     createSecretLink: function(calendar, username, year, monthIndex, id) {
-        let dirPath = username + "/" + this.APPS_DIR_NAME + "/" + this.CALENDAR_DIR_NAME + "/" + username + "/" + year + "/" + monthIndex;
+        let dirPath = username + "/" + this.APPS_DIR_NAME + "/" + this.CALENDAR_DIR_NAME + "/" + this.DATA_DIR_NAME + "/" + year + "/" + monthIndex;
         let filename = id + this.CALENDAR_FILE_EXTENSION;
         let filePath = peergos.client.PathUtils.toPath(dirPath.split('/'), filename);
         return calendar.createSecretLinkInternal(filePath);
@@ -294,7 +295,7 @@ module.exports = {
         });
     },
     getEventFileContents: function(calendar, username, year, monthIndex, id) {
-        let dirPath = username + "/" + this.APPS_DIR_NAME + "/" + this.CALENDAR_DIR_NAME + "/" + username + "/" + year + "/" + monthIndex;
+        let dirPath = username + "/" + this.APPS_DIR_NAME + "/" + this.CALENDAR_DIR_NAME + "/" + this.DATA_DIR_NAME + "/" + year + "/" + monthIndex;
         let filename = id + this.CALENDAR_FILE_EXTENSION;
         let filePath = peergos.client.PathUtils.toPath(dirPath.split('/'), filename);
         return calendar.readInternal(filePath);
@@ -319,7 +320,7 @@ module.exports = {
     },
     shareCalendarEvent: function(calendar, id, year, month, username) {
         let that = this;
-        that.shareWith('calendar/' + this.context.username + '/' + year + '/' + month, id + '.ics', false);
+        that.shareWith('calendar/' + this.DATA_DIR_NAME + '/' + year + '/' + month, id + '.ics', false);
     },
     showMessage: function(title, body) {
         this.messages.push({

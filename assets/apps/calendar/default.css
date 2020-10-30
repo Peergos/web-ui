@@ -1250,7 +1250,7 @@ body {
   color: #fff;
 }
 .tui-full-calendar-confirm:active {
-  background-color: #d95614;
+  background-color: rgb(22, 169, 138);
   color: #fff;
 }
 .tui-full-calendar-icon.tui-full-calendar-right {
