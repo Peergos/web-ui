@@ -360,9 +360,7 @@ class FileSystemPage(Page):
     def _is_valid(self):
         xpaths = [
             "//button[@id='logoutButton']",
-            "//li[@id='homeButton']",
             "//li[@id='alternateViewButton']",
-            "//li[@id='homeButton']",
             "//li[@id='userOptionsButton']",
             #"//a[@id='pathSpan']",
         ]
@@ -370,7 +368,9 @@ class FileSystemPage(Page):
         return True
 
     def go_home(self):
-        self.get_unique_xpath("//li[@id='homeButton']").click()
+        self.get_unique_xpath("//li[@id='appButton']").click()
+        self.d.implicitly_wait(1)  # seconds 
+        self.get_unique_xpath("//a[@id='homeButton']").click()
         return FileSystemPage(self.d, self.username, self.password)
 
     def logout(self):

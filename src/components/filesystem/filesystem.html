@@ -49,8 +49,9 @@
   </nav>
   <div id="sideMenu" class="sidenav">
     <a><span/>&nbsp</a>
-    <a @click="goHome()"><span data-toggle="tooltip" data-placement="bottom" title="Global root" class="fas fa-globe-asia" style="cursor: pointer;"/></a>
-    <a v-if="isLoggedIn" @click="showTimelineView()"><span data-toggle="tooltip" data-placement="bottom" title="Timeline" class="fas fa-history" style="cursor: pointer;"/></a>
+    <a id="homeButton" @click="goHome()"><span data-toggle="tooltip" data-placement="bottom" title="Global root" class="fas fa-globe-asia" style="cursor: pointer;"/></a>
+    
+    <a id="timelineButton" v-if="isLoggedIn" @click="showTimelineView()"><span data-toggle="tooltip" data-placement="bottom" title="Timeline" class="fas fa-history" style="cursor: pointer;"/></a>
     <a @click="newTodoBoard"><span class="fas fa-list-alt"/></a>
   </div>
   <a id="downloadAnchor" style="display:none"></a>
