@@ -62,7 +62,6 @@ module.exports = {
             let thumbnailWidth = 100;
             let thumbnailHeight = 100;
             filereader.onload = function(){
-                let fullSize = this.result;
                 let canvas = document.createElement("canvas");
                 canvas.width = thumbnailWidth;
                 canvas.height = thumbnailHeight;
@@ -70,8 +69,13 @@ module.exports = {
                 let image = new Image();
                 image.onload = function() {
                     context.drawImage(image, 0, 0, thumbnailWidth, thumbnailHeight);
-                    that.profileImage = canvas.toDataURL();
-                    that.updateThumbnail();
+                    let binFilereader = new FileReader();
+                    binFilereader.file_name = file.name;
+                    binFilereader.onload = function(){
+                        const data = convertToByteArray(new Int8Array(this.result));
+                        that.updateThumbnail(data, canvas.toDataURL());
+                    };
+                    binFilereader.readAsArrayBuffer(file);
                 };
                 image.onerror = function() {
                     that.showMessage("Unable to read image");
@@ -87,8 +91,7 @@ module.exports = {
             return this.profileImage.length > 0;
         },
         removeImage: function() {
-            this.profileImage = "";
-            this.updateThumbnail();
+            this.updateThumbnail(peergos.shared.user.JavaScriptPoster.emptyArray(), "");
         },
         update: function() {
             var that = this;
@@ -227,12 +230,20 @@ module.exports = {
                 }
             }
         },
-        updateThumbnail: function() {
+        updateThumbnail: function(hires, thumbnail) {
             let that = this;
+            this.profileImage = thumbnail;
             console.log("updating profile image");
             that.showSpinner = true;
-            peergos.shared.user.ProfilePaths.setProfilePhoto(that.context, that.profileImage).thenApply(function(success){
-                that.showSpinner = false;
+
+            peergos.shared.user.ProfilePaths.setHighResProfilePhoto(that.context, hires).thenApply(function(success){
+                peergos.shared.user.ProfilePaths.setProfilePhoto(that.context, that.profileImage).thenApply(function(success){
+                    that.showSpinner = false;
+                }).exceptionally(function(throwable) {
+                  that.showMessage("Unexpected error", throwable.getMessage());
+                  console.log(throwable.getMessage());
+                  that.showSpinner = false;
+                });
             }).exceptionally(function(throwable) {
               that.showMessage("Unexpected error", throwable.getMessage());
               console.log(throwable.getMessage());
