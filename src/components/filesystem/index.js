@@ -1492,7 +1492,7 @@ module.exports = {
             if (type == 'excel spreadsheet' || type == 'spreadsheet')
                 return 'fa-file-excel';
             if (type == 'todo')
-                return 'fas fa-list-alt';
+                return 'fas fa-tasks';
             if (type == 'calendar')
                 return 'fa fa-calendar-alt';
             return 'fa-file';

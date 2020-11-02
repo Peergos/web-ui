@@ -52,7 +52,7 @@
     <a id="homeButton" @click="goHome()"><span data-toggle="tooltip" data-placement="bottom" title="Global root" class="fas fa-globe-asia" style="cursor: pointer;"/></a>
     
     <a id="timelineButton" v-if="isLoggedIn" @click="showTimelineView()"><span data-toggle="tooltip" data-placement="bottom" title="Timeline" class="fas fa-history" style="cursor: pointer;"/></a>
-    <a v-if="isLoggedIn" @click="newTodoBoard"><span class="fas fa-list-alt"/></a>
+    <a v-if="isLoggedIn" @click="newTodoBoard"><span class="fas fa-tasks"/></a>
   </div>
   <a id="downloadAnchor" style="display:none"></a>
   <ul id="right-click-menu" tabindex="-1" v-if="viewMenu && (isNotHome || isPasteAvailable || isNotBackground)" v-on:blur="closeMenu" v-bind:style="{top:top, left:left}">
