@@ -13,7 +13,7 @@
                 <button class="btn btn-success" onclick="document.getElementById('uploadImageInput').click()">Upload Image</button>
                 <input type="file" id="uploadImageInput" @change="uploadImageFile" style="display:none;" accept="image/*" />
                 <button v-if="hasProfileImage()" v-on:click="removeImage()" class="btn btn-success" >Remove Image</button>
-                <button v-if="hasProfileImage()" @click="share('highres', 'Profile image')" class="btn btn-success" >Share With</button>
+                <button v-if="hasProfileImage()" @click="share('photo', 'Profile image')" class="btn btn-success" >Share With</button>
 
                 <div id="profile-container">
                     <img id="profile-image" v-bind:src="getProfileImage()"/>
