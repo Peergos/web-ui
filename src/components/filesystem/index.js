@@ -523,6 +523,7 @@ module.exports = {
 
         goHome: function() {
             this.changePath("/");
+	    this.toggleNav();
         },
 
         askMkdir: function() {
@@ -1188,6 +1189,7 @@ module.exports = {
             if (this.showSpinner) {
                 return;
             }
+	    this.toggleNav();
             this.showSpinner = true;
             const ctx = this.getContext()
             ctx.getSocialFeed().thenCompose(function(socialFeed) {
@@ -1490,7 +1492,7 @@ module.exports = {
             if (type == 'excel spreadsheet' || type == 'spreadsheet')
                 return 'fa-file-excel';
             if (type == 'todo')
-                return 'fas fa-list-alt';
+                return 'fas fa-tasks';
             if (type == 'calendar')
                 return 'fa fa-calendar-alt';
             return 'fa-file';
