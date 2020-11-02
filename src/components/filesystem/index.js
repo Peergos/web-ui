@@ -523,6 +523,7 @@ module.exports = {
 
         goHome: function() {
             this.changePath("/");
+	    this.toggleNav();
         },
 
         askMkdir: function() {
@@ -1188,6 +1189,7 @@ module.exports = {
             if (this.showSpinner) {
                 return;
             }
+	    this.toggleNav();
             this.showSpinner = true;
             const ctx = this.getContext()
             ctx.getSocialFeed().thenCompose(function(socialFeed) {
