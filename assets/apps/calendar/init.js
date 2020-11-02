@@ -837,20 +837,21 @@ function refreshScheduleVisibility() {
     span.style.backgroundColor = input.checked ? span.style.borderColor : 'transparent';
   });
 }
-function downloadEvent(id, startDate, isAllDay, username) {
-    sendEvent(id, startDate, isAllDay, username, 'downloadEvent');
+function downloadEvent(schedule) {
+    let event = serialiseICal(schedule);
+    mainWindow.postMessage({event: event, type: 'downloadEvent'}, origin);
 }
-function shareCalendarEvent(id, startDate, isAllDay, username) {
-    sendEvent(id, startDate, isAllDay, username, 'shareCalendarEvent');
+function shareCalendarEvent(id, startDate) {
+    sendEvent(id, startDate, 'shareCalendarEvent');
 }
-function addEventToClipboard(id, startDate, isAllDay, username) {
-    sendEvent(id, startDate, isAllDay, username, 'addToClipboardEvent');
+function addEventToClipboard(id, startDate) {
+    sendEvent(id, startDate, 'addToClipboardEvent');
 }
-function sendEvent(id, startDate, isAllDay, username, eventType) {
+function sendEvent(id, startDate, eventType) {
    let dt = moment.utc(startDate.toUTCString());
    let year = dt.year();
    let month = dt.month() +1;
-   mainWindow.postMessage({id: id, year: year, month: month, username: username, type: eventType}, origin);
+   mainWindow.postMessage({id: id, year: year, month: month, type: eventType}, origin);
 }
 resizeThrottled = tui.util.throttle(function() {
   cal.render();
@@ -914,8 +915,7 @@ function buildExtraFields(eventData, that) {
         shareLink.innerText = "Share With";
         span1.appendChild(shareLink);
         shareLink.onclick=function() {
-            shareCalendarEvent(eventData.schedule.id, eventData.schedule.start
-                , eventData.schedule.isAllDay, eventData.schedule.raw.creator.name)
+            shareCalendarEvent(eventData.schedule.id, eventData.schedule.start);
         };
         span1.appendChild(document.createTextNode('\u00A0\u00A0'));
     }
@@ -930,23 +930,22 @@ function buildExtraFields(eventData, that) {
     downloadLink.innerText = "Download";
     span1.appendChild(downloadLink);
     downloadLink.onclick=function() {
-        downloadEvent(eventData.schedule.id, eventData.schedule.start
-            , eventData.schedule.isAllDay, eventData.schedule.raw.creator.name);
+        downloadEvent(eventData.schedule);
     };
     span1.appendChild(document.createTextNode('\u00A0\u00A0'));
 
-    var clipboardButton = document.createElement("button");
-    span1.appendChild(clipboardButton);
+    if(!eventData.schedule.isReadOnly) {
+        var clipboardButton = document.createElement("button");
+        span1.appendChild(clipboardButton);
 
-    var img3 = document.createElement("img");
-    img3.src = "./images/external-link-square.png";
-    clipboardButton.appendChild(img3);
-    clipboardButton.appendChild(document.createTextNode("\u00A0\u00A0Clipboard"));
-    clipboardButton.onclick=function() {
-       addEventToClipboard(eventData.schedule.id, eventData.schedule.start
-        , eventData.schedule.isAllDay, eventData.schedule.raw.creator.name);
-    };
-
+        var img3 = document.createElement("img");
+        img3.src = "./images/external-link-square.png";
+        clipboardButton.appendChild(img3);
+        clipboardButton.appendChild(document.createTextNode("\u00A0\u00A0Clipboard"));
+        clipboardButton.onclick=function() {
+           addEventToClipboard(eventData.schedule.id, eventData.schedule.start);
+        };
+    }
     var locTextArea = document.createElement("textarea");
     locTextArea.id = "popup-memo-readonly";
     locTextArea.value = eventData == null ? "" : eventData.schedule.raw.memo;
