@@ -103,6 +103,7 @@ module.exports = {
         },
         createTimelineEntry: function(entry, file) {
             let info = entry.sharer + " shared";
+            var displayFilename = true;
             if(entry.cap.isWritable() ) {
                 info = info + " write access to";
             }
@@ -112,6 +113,10 @@ module.exports = {
             }
             if (props.isDirectory) {
                 info = info + " the directory";
+
+            } else if (props.getType() == 'calendar') {
+                info = info + " a calendar event";
+                displayFilename = false;
             } else {
                 info = info + " the file";
             }
@@ -131,7 +136,8 @@ module.exports = {
                 thumbnail: props.thumbnail.ref == null ? null : file.getBase64Thumbnail(),
                 isDirectory: props.isDirectory,
                 file : file,
-                isLastEntry: false
+                isLastEntry: false,
+                displayFilename: displayFilename
             };
             return item;
         },

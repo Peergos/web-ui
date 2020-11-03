@@ -1483,6 +1483,8 @@ module.exports = {
                 this.showPdfViewer = true;
             }
             this.updateHistory("pdf", this.getPath(), filename);
+	    } else if (mimeType === "text/calendar") {
+	        this.importICSFile();
 	    } else {
 	        if (this.isSecretLink) {
                 this.showHexViewer = true;
