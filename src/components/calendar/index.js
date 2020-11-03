@@ -76,7 +76,7 @@ module.exports = {
         let that = this;
         let iframe = document.getElementById("editor");
         setTimeout(function(){
-            iframe.contentWindow.postMessage({type: 'importICSFile', contents: that.importFile}, '*');
+            iframe.contentWindow.postMessage({type: 'importICSFile', contents: that.importFile, username: that.context.username }, '*');
         });
     },
     loadAdditional: function(calendar, year, month, messageType) {
@@ -177,33 +177,25 @@ module.exports = {
             });
         }
     },
-    //public CompletableFuture<List<Pair<String, String>>>
     getCalendarEventsForMonth: function(calendar, year, month) {
         let that = this;
-        let completed = peergos.shared.util.Futures.incomplete();
         let dirStr = "" + year + "/" + month;
         let directoryPath = peergos.client.PathUtils.directoryToPath(dirStr.split('/'));
-        calendar.dirInternal(directoryPath).thenCompose(filenames => {
+        return calendar.dirInternal(directoryPath).thenCompose(filenames => {
             return that.getEventsForMonth(calendar, dirStr, filenames.toArray([]));
-        }).thenApply(ourEvents => {
-            let filteredSharedEvents = calendar.filterSharedItems(item => item.path.includes(dirStr));
-            that.context.getFiles(filteredSharedEvents)
-                .thenApply(availableSharedEvents => that.readSharedItems(availableSharedEvents.toArray([]))
-                        .thenApply(sharedEvents => {
-                                let results = ourEvents.concat(sharedEvents);
-                                results.sort(function(a, b){
-                                    if (a.left < b.left)
-                                        return -1;
-                                    if (a.left > b.left)
-                                        return 1;
-                                    return 0;
-                                });
-                                completed.complete(results);
-                        }));
+        }).thenCompose(ourEvents => {
+            return calendar.filterSharedItems(path => path.includes(dirStr))
+                .thenApply(sharedBinEvents => {
+                    let binResults = sharedBinEvents.toArray([]);
+                    let sharedEvents = [];
+                    for(var i=0;i < binResults.length; i++) {
+                        sharedEvents.push(new TextDecoder().decode(binResults[i]));
+                    }
+                    let results = ourEvents.concat(sharedEvents);
+                    return results;
+                });
         });
-        return completed;
     },
-    //public CompletableFuture<Triple<List<Pair<String,String>>,List<Pair<String,String>>,List<Pair<String,String>>>>
     getCalendarEventsAroundMonth: function(calendar, year, month) {
         let that = this;
         let previousMonth = month == 1 ? {year:year -1, month: 12}
@@ -222,16 +214,6 @@ module.exports = {
         );
         return future;
     },
-    readEventFile: function(file) {
-        let that = this;
-        let props = file.getFileProperties();
-        return file.getInputStream(that.context.network, that.context.crypto, props.sizeHigh(), props.sizeLow(), function(read) {})
-            .thenCompose(function(reader){
-                let data = convertToByteArray(new Int8Array(props.sizeLow()));
-                return reader.readIntoArray(data, 0, data.length)
-                        .thenApply(function(read){ return new TextDecoder().decode(data);});
-            });
-    },
     reduceAllEvents: function(calendar, directory, filenames, accumulator, future) {
         let that = this;
         let eventFilename = filenames.pop();
@@ -240,31 +222,11 @@ module.exports = {
         } else {
             let filePath = peergos.client.PathUtils.toPath(directory.split('/'), eventFilename);
             calendar.readInternal(filePath).thenApply(data => {
-                accumulator.push({username: that.context.username, item: new TextDecoder().decode(data)});
+                accumulator.push(new TextDecoder().decode(data));
                 that.reduceAllEvents(calendar, directory, filenames, accumulator, future);
             });
         }
     },
-    reduceAllPairedEvents: function(pairs, accumulator, future) {
-        let that = this;
-        let pair = pairs.pop();
-        if (pair == null) {
-            future.complete(accumulator);
-        } else {
-            that.readEventFile(pair.right).thenApply(text => {
-                accumulator.push({username: pair.left.owner, item: text});
-                that.reduceAllPairedEvents(pairs, accumulator, future);
-            });
-        }
-    },
-    //CompletableFuture<List<Pair<String, String>>>
-    readSharedItems: function(pairs) {
-        let events = [];
-        let future = peergos.shared.util.Futures.incomplete();
-        this.reduceAllPairedEvents(pairs, [], future);
-        return future;
-    },
-    //CompletableFuture<List<Pair<String, String>>>
     getEventsForMonth: function(calendar, directory, filenames) {
         let that = this;
         let future = peergos.shared.util.Futures.incomplete();

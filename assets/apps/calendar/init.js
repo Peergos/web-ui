@@ -125,7 +125,7 @@ window.addEventListener('message', function (e) {
         loadAdditional(e.data.currentMonth, e.data.yearMonth);
     } else if(e.data.type == "importICSFile") {
         setCalendars();
-        importICSFile(e.data.contents);
+        importICSFile(e.data.contents, e.data.username);
     }
 });
 
@@ -177,7 +177,7 @@ function displayMessage(msg) {
     mainWindow.postMessage({type:"displayMessage", message: msg}, origin);
 }
 
-function unpackIcal(IcalFile, username) {
+function unpackIcal(IcalFile) {
     let icalComponent = new ICAL.Component(ICAL.parse(IcalFile));
     let vevents = icalComponent.getAllSubcomponents('vevent');
     if(vevents.length != 1) {
@@ -194,10 +194,10 @@ function unpackIcal(IcalFile, username) {
         return null;
     } else {
         LoadedEvents[vvent.getFirstPropertyValue('uid')] = icalComponent;
-        return unpackEvent(vvent, username);
+        return unpackEvent(vvent, false);
     }
 }
-function unpackEvent(iCalEvent, username) {
+function unpackEvent(iCalEvent, fromImport) {
     event['isAllDay'] = true;
     event['Id'] = iCalEvent.getFirstPropertyValue('uid');
     event['title'] = iCalEvent.getFirstPropertyValue('summary');
@@ -218,10 +218,17 @@ function unpackEvent(iCalEvent, username) {
     		event['end'] = event['start'];
 	    }
     }
+    let xOwner = iCalEvent.getFirstPropertyValue('x-owner');
     let xCategory = iCalEvent.getFirstPropertyValue('x-category-id');
+    if (fromImport) {
+        event.owner = currentUsername;
+        xCategory = 1;
+    } else {
+        event.owner = xOwner;
+    }
     if (iCalEvent.getFirstPropertyValue('status') === "CANCELLED") {
         event['categoryId'] = "6";
-    } else if (currentUsername != username) {
+    } else if (currentUsername != event.owner) {
         event['categoryId'] = "5";
     } else {
         event['categoryId'] = xCategory == null ? "1" : xCategory;
@@ -235,19 +242,19 @@ function unpackEvent(iCalEvent, username) {
     return event;
 }
 function addCalendarEvent(eventInfo) {
-    let event = unpackIcal(eventInfo.item, eventInfo.username);
+    let event = unpackIcal(eventInfo);
     if(event == null) {
         return;
     }
-    return buildScheduleFromEvent(event, eventInfo.username);
+    return buildScheduleFromEvent(event);
 }
-function buildScheduleFromEvent(event, username) {
+function buildScheduleFromEvent(event) {
     var schedule = new ScheduleInfo();
     schedule.id = event.Id;
     schedule.calendarId = event.categoryId;
     schedule.title = event.title;
     schedule.body = '';
-    schedule.isReadOnly = currentUsername != username ? true : false;
+    schedule.isReadOnly = currentUsername != event.owner ? true : false;
     schedule.isAllday = event.isAllDay;
     schedule.category = event.isAllDay ? 'allday' : 'time';
     schedule.start = moment(event.start).toDate();
@@ -263,7 +270,7 @@ function buildScheduleFromEvent(event, username) {
     schedule.dragBgColor = calendarCategory.dragBgColor;
     schedule.borderColor = calendarCategory.borderColor;
     schedule.raw.memo = event.description;
-    schedule.raw.creator.name = username;
+    schedule.raw.creator.name = event.owner;
     return schedule;
 
 }
@@ -301,7 +308,8 @@ function updateCache(oldSchedule, newSchedule) {
         }
     }
 }
-function importICSFile(contents) {
+function importICSFile(contents, username) {
+    currentUsername = username;
     let icalComponent = new ICAL.Component(ICAL.parse(contents));
     let vevents = icalComponent.getAllSubcomponents('vevent');
     let allEvents = [];
@@ -312,7 +320,7 @@ function importICSFile(contents) {
             displayMessage(msg);
             return null;
         } else {
-            let schedule = buildScheduleFromEvent(unpackEvent(vvent, currentUsername), currentUsername);
+            let schedule = buildScheduleFromEvent(unpackEvent(vvent, true));
             let dt = moment.utc(schedule.start.toUTCString());
             let year = dt.year();
             let month = dt.month() + 1;
@@ -434,7 +442,8 @@ function serialiseICal(schedule) {
         vvent.updatePropertyWithValue('location', schedule.location);
         vvent.updatePropertyWithValue('dtstart', toICalTime(schedule.start, schedule.isAllDay));
         vvent.updatePropertyWithValue('dtend', toICalTime(schedule.end, schedule.isAllDay));
-        vvent.updatePropertyWithValue('x-category-id', schedule.calendarId); //not to be exported
+        vvent.updatePropertyWithValue('x-category-id', schedule.calendarId);
+        vvent.updatePropertyWithValue('x-owner', schedule.raw.creator.name);
         if(schedule.calendarId == "6") { //CANCELLED
             vvent.updatePropertyWithValue('status', "CANCELLED");
         } else {
@@ -451,7 +460,8 @@ function serialiseICal(schedule) {
         event.location = schedule.location;
         event.startDate = toICalTime(schedule.start, schedule.isAllDay);
         event.endDate = toICalTime(schedule.end, schedule.isAllDay);
-        vevent.addPropertyWithValue('x-category-id', schedule.calendarId); //not to be exported
+        vevent.addPropertyWithValue('x-category-id', schedule.calendarId);
+        vevent.addPropertyWithValue('x-owner', schedule.raw.creator.name);
         if(schedule.calendarId == "6") { //CANCELLED
             vevent.addPropertyWithValue('status', "CANCELLED");
         }
