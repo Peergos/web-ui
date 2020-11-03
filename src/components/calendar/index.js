@@ -10,7 +10,7 @@ module.exports = {
             spinnerMessage: ""
         }
     },
-    props: ['context', 'messages', 'importFile','shareWith'],
+    props: ['context', 'messages', 'importFile', 'importSharedEvent','shareWith'],
     created: function() {
         let that = this;
         this.displaySpinner();
@@ -76,7 +76,7 @@ module.exports = {
         let that = this;
         let iframe = document.getElementById("editor");
         setTimeout(function(){
-            iframe.contentWindow.postMessage({type: 'importICSFile', contents: that.importFile, username: that.context.username }, '*');
+            iframe.contentWindow.postMessage({type: 'importICSFile', contents: that.importFile, isSharedWithUs: that.importSharedEvent, username: that.context.username }, '*');
         });
     },
     loadAdditional: function(calendar, year, month, messageType) {
@@ -183,17 +183,6 @@ module.exports = {
         let directoryPath = peergos.client.PathUtils.directoryToPath(dirStr.split('/'));
         return calendar.dirInternal(directoryPath).thenCompose(filenames => {
             return that.getEventsForMonth(calendar, dirStr, filenames.toArray([]));
-        }).thenCompose(ourEvents => {
-            return calendar.filterSharedItems(path => path.includes(dirStr))
-                .thenApply(sharedBinEvents => {
-                    let binResults = sharedBinEvents.toArray([]);
-                    let sharedEvents = [];
-                    for(var i=0;i < binResults.length; i++) {
-                        sharedEvents.push(new TextDecoder().decode(binResults[i]));
-                    }
-                    let results = ourEvents.concat(sharedEvents);
-                    return results;
-                });
         });
     },
     getCalendarEventsAroundMonth: function(calendar, year, month) {

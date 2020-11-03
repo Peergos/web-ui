@@ -1159,6 +1159,7 @@ module.exports = {
         showCalendar: function() {
             this.toggleNav();
             this.importFile = null;
+            this.importSharedEvent = false;
             this.showCalendarViewer = true;
         },
         logout: function() {
@@ -1441,6 +1442,7 @@ module.exports = {
                     return reader.readIntoArray(data, 0, data.length)
                         .thenApply(function(read){
                             that.importFile = new TextDecoder().decode(data);
+                            that.importSharedEvent = file.getOwnerName() != context.username;
                             that.showCalendarViewer = true;
                         });
             })

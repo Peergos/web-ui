@@ -193,6 +193,7 @@
           v-if="showCalendarViewer"
           v-on:hide-calendar="closeApps();"
           :importFile="importFile"
+          :importSharedEvent="importSharedEvent"
           :shareWith="showShareWithFromApp"
           :context="context"
           :messages="messages">

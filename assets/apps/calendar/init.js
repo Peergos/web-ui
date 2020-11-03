@@ -11,99 +11,103 @@ let ScheduleCache = [];
 let LoadedEvents = [];
 var currentMoment = moment();
 
-cal = new tui.Calendar('#calendar', {
-    usageStatistics: false,
-    defaultView: 'month',
-    //week: {
-    //	startDayOfWeek: 1
-    //},
-    //month: {
-    //	startDayOfWeek: 1
-    //},
-    taskView: false,
-    useCreationPopup: useCreationPopup,
-    useDetailPopup: useDetailPopup,
-    calendars: CalendarList,
-//    isReadOnly: true,
-    template: {
-        allday: function(schedule) {
-            return getTimeTemplate(schedule, true);
+function buildUI() {
+    let uiDiv = document.getElementById("ui");
+    uiDiv.removeAttribute("style");
+
+    cal = new tui.Calendar('#calendar', {
+        usageStatistics: false,
+        defaultView: 'month',
+        //week: {
+        //	startDayOfWeek: 1
+        //},
+        //month: {
+        //	startDayOfWeek: 1
+        //},
+        taskView: false,
+        useCreationPopup: useCreationPopup,
+        useDetailPopup: useDetailPopup,
+        calendars: CalendarList,
+    //    isReadOnly: true,
+        template: {
+            allday: function(schedule) {
+                return getTimeTemplate(schedule, true);
+            },
+            time: function(schedule) {
+                return getTimeTemplate(schedule, false);
+            }
+        }
+    });
+
+    cal.on({
+        'clickMore': function(e) {
+            //console.log('clickMore', e);
         },
-        time: function(schedule) {
-            return getTimeTemplate(schedule, false);
-        }
-    }
-});
+        'clickSchedule': function(e) {
+            //console.log('clickSchedule', e);
+        },
+        'clickDayname': function(date) {
+            //console.log('clickDayname', date);
+        },
+        'beforeCreateSchedule': function(e) {
+            //console.log('beforeCreateSchedule', e);
+            let schedule = buildNewSchedule(e);
+            ScheduleList.push(schedule);
+            cal.createSchedules([schedule]);
+            addToCache(schedule);
+            refreshScheduleVisibility();
+            save(schedule);
+        },
+        'beforeUpdateSchedule': function(e) {
+            var schedule = e.schedule;
+            var changes = e.changes;
+            if(changes == null) {
+                return;
+            }
+            //console.log('beforeUpdateSchedule', e);
+            if (changes && !changes.isAllDay && schedule.category === 'allday') {
+                changes.category = 'time';
+            }
+            cal.updateSchedule(schedule.id, schedule.calendarId, changes);
+            let updatedCalendarId = (changes != null && changes.calendarId != null) ? changes.calendarId : schedule.calendarId;
+            let updatedSchedule = cal.getSchedule(schedule.id, updatedCalendarId);
 
-cal.on({
-    'clickMore': function(e) {
-        //console.log('clickMore', e);
-    },
-    'clickSchedule': function(e) {
-        //console.log('clickSchedule', e);
-    },
-    'clickDayname': function(date) {
-        //console.log('clickDayname', date);
-    },
-    'beforeCreateSchedule': function(e) {
-        //console.log('beforeCreateSchedule', e);
-        let schedule = buildNewSchedule(e);
-        ScheduleList.push(schedule);
-        cal.createSchedules([schedule]);
-        addToCache(schedule);
-        refreshScheduleVisibility();
-        save(schedule);
-    },
-    'beforeUpdateSchedule': function(e) {
-        var schedule = e.schedule;
-        var changes = e.changes;
-        if(changes == null) {
-            return;
-        }
-        //console.log('beforeUpdateSchedule', e);
-        if (changes && !changes.isAllDay && schedule.category === 'allday') {
-            changes.category = 'time';
-        }
-        cal.updateSchedule(schedule.id, schedule.calendarId, changes);
-        let updatedCalendarId = (changes != null && changes.calendarId != null) ? changes.calendarId : schedule.calendarId;
-        let updatedSchedule = cal.getSchedule(schedule.id, updatedCalendarId);
+            ScheduleList.splice(ScheduleList.findIndex(v => v.id === schedule.id), 1);
+            ScheduleList.push(updatedSchedule);
+            updateCache(schedule, updatedSchedule);
+            save(updatedSchedule);
+            refreshScheduleVisibility();
+        },
+        'beforeDeleteSchedule': function(e) {
+            //console.log('beforeDeleteSchedule', e);
+            cal.deleteSchedule(e.schedule.id, e.schedule.calendarId);
+            ScheduleList.splice(ScheduleList.findIndex(v => v.id === e.schedule.id), 1);
+            removeFromCache(e.schedule);
+            deleteSchedule(e.schedule);
+        },
+        'afterRenderSchedule': function(e) {
+            var schedule = e.schedule;
+            // var element = cal.getElement(schedule.id, schedule.calendarId);
+            // console.log('afterRenderSchedule', element);
+        },
+        'clickTimezonesCollapseBtn': function(timezonesCollapsed) {
+            //console.log('timezonesCollapsed', timezonesCollapsed);
+            if (timezonesCollapsed) {
+                cal.setTheme({
+                    'week.daygridLeft.width': '77px',
+                    'week.timegridLeft.width': '77px'
+                });
+            } else {
+                cal.setTheme({
+                    'week.daygridLeft.width': '60px',
+                    'week.timegridLeft.width': '60px'
+                });
+            }
 
-        ScheduleList.splice(ScheduleList.findIndex(v => v.id === schedule.id), 1);
-        ScheduleList.push(updatedSchedule);
-        updateCache(schedule, updatedSchedule);
-        save(updatedSchedule);
-        refreshScheduleVisibility();
-    },
-    'beforeDeleteSchedule': function(e) {
-        //console.log('beforeDeleteSchedule', e);
-        cal.deleteSchedule(e.schedule.id, e.schedule.calendarId);
-        ScheduleList.splice(ScheduleList.findIndex(v => v.id === e.schedule.id), 1);
-        removeFromCache(e.schedule);
-        deleteSchedule(e.schedule);
-    },
-    'afterRenderSchedule': function(e) {
-        var schedule = e.schedule;
-        // var element = cal.getElement(schedule.id, schedule.calendarId);
-        // console.log('afterRenderSchedule', element);
-    },
-    'clickTimezonesCollapseBtn': function(timezonesCollapsed) {
-        //console.log('timezonesCollapsed', timezonesCollapsed);
-        if (timezonesCollapsed) {
-            cal.setTheme({
-                'week.daygridLeft.width': '77px',
-                'week.timegridLeft.width': '77px'
-            });
-        } else {
-            cal.setTheme({
-                'week.daygridLeft.width': '60px',
-                'week.timegridLeft.width': '60px'
-            });
+            return true;
         }
-
-        return true;
-    }
-});
-
+    });
+}
 window.addEventListener('message', function (e) {
     // You must verify that the origin of the message's sender matches your
     // expectations. In this case, we're only planning on accepting messages
@@ -116,7 +120,8 @@ window.addEventListener('message', function (e) {
     mainWindow = e.source;
     origin = e.origin;
     if (e.data.type == "load") {
-        setCalendars();
+        buildUI();
+        setCalendars(false);
         cal.setCalendars(CalendarList);
         setDropdownCalendarType();
         setEventListener();
@@ -124,8 +129,8 @@ window.addEventListener('message', function (e) {
     } else if (e.data.type == "loadAdditional") {
         loadAdditional(e.data.currentMonth, e.data.yearMonth);
     } else if(e.data.type == "importICSFile") {
-        setCalendars();
-        importICSFile(e.data.contents, e.data.username);
+        setCalendars(true);
+        importICSFile(e.data.contents, e.data.username, e.data.isSharedWithUs);
     }
 });
 
@@ -194,10 +199,10 @@ function unpackIcal(IcalFile) {
         return null;
     } else {
         LoadedEvents[vvent.getFirstPropertyValue('uid')] = icalComponent;
-        return unpackEvent(vvent, false);
+        return unpackEvent(vvent, false, false);
     }
 }
-function unpackEvent(iCalEvent, fromImport) {
+function unpackEvent(iCalEvent, fromImport, isSharedWithUs) {
     event['isAllDay'] = true;
     event['Id'] = iCalEvent.getFirstPropertyValue('uid');
     event['title'] = iCalEvent.getFirstPropertyValue('summary');
@@ -220,7 +225,7 @@ function unpackEvent(iCalEvent, fromImport) {
     }
     let xOwner = iCalEvent.getFirstPropertyValue('x-owner');
     let xCategory = iCalEvent.getFirstPropertyValue('x-category-id');
-    if (fromImport) {
+    if (fromImport && ! isSharedWithUs) {
         event.owner = currentUsername;
         xCategory = 1;
     } else {
@@ -308,7 +313,7 @@ function updateCache(oldSchedule, newSchedule) {
         }
     }
 }
-function importICSFile(contents, username) {
+function importICSFile(contents, username, isSharedWithUs) {
     currentUsername = username;
     let icalComponent = new ICAL.Component(ICAL.parse(contents));
     let vevents = icalComponent.getAllSubcomponents('vevent');
@@ -320,7 +325,7 @@ function importICSFile(contents, username) {
             displayMessage(msg);
             return null;
         } else {
-            let schedule = buildScheduleFromEvent(unpackEvent(vvent, true));
+            let schedule = buildScheduleFromEvent(unpackEvent(vvent, true, isSharedWithUs));
             let dt = moment.utc(schedule.start.toUTCString());
             let year = dt.year();
             let month = dt.month() + 1;
@@ -492,7 +497,7 @@ function findCalendar(id) {
     return found || CalendarList[0];
 }
 
-function setCalendars() {
+function setCalendars(headless) {
     var calendar;
     var id = 0;
     calendar = new CalendarInfo();
@@ -555,18 +560,19 @@ function setCalendars() {
     calendar.borderColor = '#9d9d9d';
     CalendarList.push(calendar);
 
-
-    var calendarList = document.getElementById('calendarList');
-    var html = [];
-    CalendarList.forEach(function(calendar) {
-        html.push('<div class="lnb-calendars-item"><label>' +
-            '<input type="checkbox" class="tui-full-calendar-checkbox-round" value="' + calendar.id + '" checked>' +
-            '<span style="border-color: ' + calendar.borderColor + '; background-color: ' + calendar.borderColor + ';"></span>' +
-            '<span>' + calendar.name + '</span>' +
-            '</label></div>'
-        );
-    });
-    calendarList.innerHTML = html.join('\n');
+    if (!headless) {
+        var calendarList = document.getElementById('calendarList');
+        var html = [];
+        CalendarList.forEach(function(calendar) {
+            html.push('<div class="lnb-calendars-item"><label>' +
+                '<input type="checkbox" class="tui-full-calendar-checkbox-round" value="' + calendar.id + '" checked>' +
+                '<span style="border-color: ' + calendar.borderColor + '; background-color: ' + calendar.borderColor + ';"></span>' +
+                '<span>' + calendar.name + '</span>' +
+                '</label></div>'
+            );
+        });
+        calendarList.innerHTML = html.join('\n');
+    }
 }
     /**
      * Get time template for time and all-day
