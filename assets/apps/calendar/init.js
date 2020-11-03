@@ -255,7 +255,7 @@ function buildScheduleFromEvent(event) {
     schedule.title = event.title;
     schedule.body = '';
     schedule.isReadOnly = currentUsername != event.owner ? true : false;
-    schedule.isAllday = event.isAllDay;
+    schedule.isAllDay = event.isAllDay;
     schedule.category = event.isAllDay ? 'allday' : 'time';
     schedule.start = moment(event.start).toDate();
     schedule.end = moment(event.end).toDate();
