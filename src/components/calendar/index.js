@@ -115,7 +115,7 @@ module.exports = {
         });
     },
     removeCalendarEvent: function(calendar, year, month, id) {
-        let dirPath = "" + year + "/" + month;
+        let dirPath = "default/" + year + "/" + month;
         let filename = id + this.CALENDAR_FILE_EXTENSION;
         let filePath = peergos.client.PathUtils.toPath(dirPath.split('/'), filename);
         return calendar.deleteInternal(filePath);
@@ -141,7 +141,7 @@ module.exports = {
         this.showMessage(msg);
     },
     updateCalendarEvent: function(calendar, year, month, id, calendarEvent) {
-        let dirPath = year + "/" + month;
+        let dirPath = "default/" + year + "/" + month;
         let filename = id + this.CALENDAR_FILE_EXTENSION;
         let filePath = peergos.client.PathUtils.toPath(dirPath.split('/'), filename);
         let encoder = new TextEncoder();
@@ -183,7 +183,7 @@ module.exports = {
     },
     getCalendarEventsForMonth: function(calendar, year, month) {
         let that = this;
-        let dirStr = "" + year + "/" + month;
+        let dirStr = "default/" + year + "/" + month;
         let directoryPath = peergos.client.PathUtils.directoryToPath(dirStr.split('/'));
         return calendar.dirInternal(directoryPath).thenCompose(filenames => {
             return that.getEventsForMonth(calendar, dirStr, filenames.toArray([]));
@@ -243,7 +243,7 @@ module.exports = {
     },
     shareCalendarEvent: function(calendar, id, year, month) {
         let that = this;
-        that.shareWith(this.CALENDAR_DIR_NAME + '/' + this.DATA_DIR_NAME + '/' + year + '/' + month, id + '.ics', false);
+        that.shareWith(this.CALENDAR_DIR_NAME + '/' + this.DATA_DIR_NAME + "/default/" + year + '/' + month, id + '.ics', false);
     },
     showMessage: function(title, body) {
         this.messages.push({
