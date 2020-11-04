@@ -76,6 +76,7 @@ module.exports = {
 	},
     importICSFile: function() {
         let that = this;
+        that.displaySpinner();
         let iframe = document.getElementById("editor");
         setTimeout(function(){
             iframe.contentWindow.postMessage({type: 'importICSFile', contents: that.importFile,

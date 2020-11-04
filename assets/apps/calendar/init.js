@@ -345,6 +345,9 @@ function importICSFile(contents, username, isSharedWithUs, loadCalendarAsGuest) 
             let schedule = buildScheduleFromEvent(unpackEvent(vvent, true, isSharedWithUs));
             if (loadCalendarAsGuest) {
                 loadArbitrarySchedule(schedule);
+                if(idx == vevents.length -1) {
+                    removeSpinner();
+                }
             } else {
                 let dt = moment.utc(schedule.start.toUTCString());
                 let year = dt.year();
@@ -926,15 +929,16 @@ function buildExtraFields(eventData, that) {
         let el = cal[j];
         if(el.localName == "span" && el.innerText == "Shared With Me") {
             el.innerText = "Shared by " + eventData.schedule.raw.creator.name;
-
-            var deleteButton = document.createElement("button");
-            el.appendChild(deleteButton);
-            deleteButton.appendChild(document.createTextNode("Delete"));
-            deleteButton.style.marginLeft="20px";
-            deleteButton.onclick=function() {
-                that.hide();
-                removeScheduleFromCalendar(eventData.schedule);
-            };
+            if (!loadCalendarAsGuest) {
+                var deleteButton = document.createElement("button");
+                el.appendChild(deleteButton);
+                deleteButton.appendChild(document.createTextNode("Delete"));
+                deleteButton.style.marginLeft="20px";
+                deleteButton.onclick=function() {
+                    that.hide();
+                    removeScheduleFromCalendar(eventData.schedule);
+                };
+            }
             break;
         }
     }
