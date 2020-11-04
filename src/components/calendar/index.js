@@ -10,13 +10,17 @@ module.exports = {
             spinnerMessage: ""
         }
     },
-    props: ['context', 'messages', 'importFile', 'importSharedEvent','shareWith'],
+    props: ['context', 'messages', 'importFile', 'importSharedEvent', 'shareWith', 'loadCalendarAsGuest'],
     created: function() {
         let that = this;
         this.displaySpinner();
-        peergos.shared.user.App.init(this.context, "calendar", ".ics").thenApply(calendar =>
-            that.startListener(calendar)
-        );
+        if (that.loadCalendarAsGuest) {
+            that.startListener(null);
+        } else {
+            peergos.shared.user.App.init(that.context, "calendar", ".ics").thenApply(calendar =>
+                that.startListener(calendar)
+            );
+        }
     },
     methods: {
 	startListener: function(calendar) {
@@ -74,7 +78,9 @@ module.exports = {
         let that = this;
         let iframe = document.getElementById("editor");
         setTimeout(function(){
-            iframe.contentWindow.postMessage({type: 'importICSFile', contents: that.importFile, isSharedWithUs: that.importSharedEvent, username: that.context.username }, '*');
+            iframe.contentWindow.postMessage({type: 'importICSFile', contents: that.importFile,
+                isSharedWithUs: that.importSharedEvent, loadCalendarAsGuest: that.loadCalendarAsGuest,
+                username: that.context.username }, '*');
         });
     },
     loadAdditional: function(calendar, year, month, messageType) {

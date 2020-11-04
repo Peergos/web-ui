@@ -1157,6 +1157,7 @@ module.exports = {
             this.toggleNav();
             this.importFile = null;
             this.importSharedEvent = false;
+            this.loadCalendarAsGuest = false;
             this.showCalendarViewer = true;
         },
         logout: function() {
@@ -1399,7 +1400,7 @@ module.exports = {
                 this.navigateOrDownload(file);
             }    
         },
-        importICSFile: function() {
+        importICSFile: function(isSecretLink) {
             if (this.selectedFiles.length == 0)
                 return;
             this.closeMenu();
@@ -1415,6 +1416,7 @@ module.exports = {
                         .thenApply(function(read){
                             that.importFile = new TextDecoder().decode(data);
                             that.importSharedEvent = file.getOwnerName() != context.username;
+                            that.loadCalendarAsGuest = isSecretLink;
                             that.showCalendarViewer = true;
                         });
             })
@@ -1456,7 +1458,7 @@ module.exports = {
             }
             this.updateHistory("pdf", this.getPath(), filename);
 	    } else if (mimeType === "text/calendar") {
-	        this.importICSFile();
+            this.importICSFile(this.isSecretLink);
 	    } else {
 	        if (this.isSecretLink) {
                 this.showHexViewer = true;

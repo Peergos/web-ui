@@ -10,8 +10,9 @@ var ScheduleList = [];
 let ScheduleCache = [];
 let LoadedEvents = [];
 var currentMoment = moment();
+var loadCalendarAsGuest = false;
 
-function buildUI() {
+function buildUI(isCalendarReadonly) {
     let uiDiv = document.getElementById("ui");
     uiDiv.removeAttribute("style");
 
@@ -28,7 +29,7 @@ function buildUI() {
         useCreationPopup: useCreationPopup,
         useDetailPopup: useDetailPopup,
         calendars: CalendarList,
-    //    isReadOnly: true,
+        isReadOnly: isCalendarReadonly,
         template: {
             allday: function(schedule) {
                 return getTimeTemplate(schedule, true);
@@ -120,20 +121,27 @@ window.addEventListener('message', function (e) {
     mainWindow = e.source;
     origin = e.origin;
     if (e.data.type == "load") {
-        buildUI();
-        setCalendars(false);
-        cal.setCalendars(CalendarList);
-        setDropdownCalendarType();
-        setEventListener();
+        initialiseCalendar(false);
         load(e.data.previousMonth, e.data.currentMonth, e.data.nextMonth, e.data.yearMonth, e.data.username);
     } else if (e.data.type == "loadAdditional") {
         loadAdditional(e.data.currentMonth, e.data.yearMonth);
     } else if(e.data.type == "importICSFile") {
-        setCalendars(true);
-        importICSFile(e.data.contents, e.data.username, e.data.isSharedWithUs);
+        loadCalendarAsGuest = e.data.loadCalendarAsGuest;
+        if(loadCalendarAsGuest) {
+            initialiseCalendar(true);
+        } else {
+            setCalendars(true);
+        }
+        importICSFile(e.data.contents, e.data.username, e.data.isSharedWithUs, loadCalendarAsGuest);
     }
 });
-
+function initialiseCalendar(loadCalendarAsGuest) {
+    buildUI(loadCalendarAsGuest);
+    setCalendars(false);
+    cal.setCalendars(CalendarList);
+    setDropdownCalendarType();
+    setEventListener();
+}
 function ScheduleInfo() {
     this.id = null;
     this.calendarId = null;
@@ -313,7 +321,7 @@ function updateCache(oldSchedule, newSchedule) {
         }
     }
 }
-function importICSFile(contents, username, isSharedWithUs) {
+function importICSFile(contents, username, isSharedWithUs, loadCalendarAsGuest) {
     currentUsername = username;
     let icalComponent = new ICAL.Component(ICAL.parse(contents));
     let vevents = icalComponent.getAllSubcomponents('vevent');
@@ -326,13 +334,19 @@ function importICSFile(contents, username, isSharedWithUs) {
             return null;
         } else {
             let schedule = buildScheduleFromEvent(unpackEvent(vvent, true, isSharedWithUs));
-            let dt = moment.utc(schedule.start.toUTCString());
-            let year = dt.year();
-            let month = dt.month() + 1;
-            let output = serialiseICal(schedule);
-            allEvents.push({year: year, month: month, Id: schedule.id, item:output});
-            if(idx == vevents.length -1) {
-                mainWindow.postMessage({items:allEvents, type:"saveAll"}, origin);
+            if (loadCalendarAsGuest) {
+                var yearMonth = currentMoment.year() * 12 + currentMoment.month();
+                load([], [], [], yearMonth, "unknown");
+                loadArbitrarySchedule(schedule);
+            } else {
+                let dt = moment.utc(schedule.start.toUTCString());
+                let year = dt.year();
+                let month = dt.month() + 1;
+                let output = serialiseICal(schedule);
+                allEvents.push({year: year, month: month, Id: schedule.id, item:output});
+                if(idx == vevents.length -1) {
+                    mainWindow.postMessage({items:allEvents, type:"saveAll"}, origin);
+                }
             }
         }
     });
@@ -358,7 +372,20 @@ function loadAdditional(currentMonthEvents, yearMonth) {
     setRenderRangeText();
     removeSpinner();
 }
-
+function loadArbitrarySchedule(schedule) {
+    let dt = moment.utc(schedule.start.toUTCString());
+    let yearMonth = dt.year() * 12 + dt.month();
+    let year = Math.floor(yearMonth / 12);
+    let month = yearMonth % 12;
+    let monthCache = [];
+    ScheduleCache[yearMonth] = monthCache;
+    ScheduleList = ScheduleCache[yearMonth];
+    monthCache.push(schedule);
+    cal.createSchedules(ScheduleList);
+    refreshScheduleVisibility();
+    setRenderRangeText();
+    removeSpinner();
+}
 function load(previousMonthEvents, currentMonthEvents, nextMonthEvents, yearMonth, username) {
     currentUsername = username;
     let previousYearMonth = yearMonth - 1;
@@ -810,8 +837,13 @@ function reload(currentMoment, toLoadMonth) {
     let cachedList = ScheduleCache[toLoadMonth.year() * 12 + toLoadMonth.month()];
     if (cachedList == null) {
         displaySpinner();
-        mainWindow.postMessage({type:"loadAdditional", year: toLoadMonth.year(), month: (toLoadMonth.month() + 1)},
-            origin);
+        if (loadCalendarAsGuest) {
+            let yearMonth = toLoadMonth.year() * 12 + toLoadMonth.month();
+            loadAdditional([], yearMonth);
+        } else {
+            mainWindow.postMessage({type:"loadAdditional", year: toLoadMonth.year(), month: (toLoadMonth.month() + 1)},
+                origin);
+        }
     } else {
         let currentYearMonth = currentMoment.year() * 12 + currentMoment.month();
         ScheduleList = ScheduleCache[currentYearMonth-1].concat(ScheduleCache[currentYearMonth]).concat(ScheduleCache[currentYearMonth+1]);
