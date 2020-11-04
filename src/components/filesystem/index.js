@@ -16,9 +16,6 @@ module.exports = {
             ignoreEvent:false,
             top:"0px",
             left:"0px",
-            showModal:false,
-            modalTitle:"",
-            modalLinks:[],
 	    showTour: false,
             showShare:false,
             sharedWithState: null,
@@ -1393,31 +1390,6 @@ module.exports = {
             this.showSpinner = true;
             this.updateHistory("filesystem", path, "");
         },
-
-        createSecretLink: function() {
-            if (this.selectedFiles.length == 0)
-                return;
-
-            this.closeMenu();
-            var links = [];
-            for (var i=0; i < this.selectedFiles.length; i++) {
-                var file = this.selectedFiles[i];
-                var name = file.getFileProperties().name;
-                links.push({href:window.location.origin + window.location.pathname +
-			    "#" + propsToFragment({secretLink:true,link:file.toLink()}), 
-                    name:name, 
-                    id:'secret_link_'+name});
-            }
-            var title = links.length > 1 ? "Secret links to files: " : "Secret link to file: ";
-            this.showLinkModal(title, links);
-        },
-
-        showLinkModal: function(title, links) {
-            this.showModal = true;
-            this.modalTitle = title;
-            this.modalLinks = links;
-        },
-
         downloadAll: function() {
             if (this.selectedFiles.length == 0)
                 return;

@@ -64,7 +64,6 @@
     <li id='copy-file' v-if="isNotBackground && isWritable" v-on:click="copy">Copy</li>
     <li id='cut-file' v-if="isNotBackground && isWritable" v-on:click="cut">Cut</li>
     <li id='paste-file' v-if="isPasteAvailable" v-on:click="paste">Paste</li>
-    <li id='secret-link-file' v-if="(isNotHome || isNotBackground)" v-on:click="createSecretLink">Create secret link</li>
     <li id='share-file' v-if="(isNotHome || isNotBackground) && isLoggedIn" v-on:click="showShareWith">Share</li>
     <li id='import-ics-file' v-if="isLoggedIn && isNotBackground && isIcsFile" v-on:click="importICSFile">Import into Calendar</li>
   </ul>
@@ -73,12 +72,6 @@
     v-if="showTour" 
     v-on:hide-tour="showTour = false">
   </tour>
-  <modal
-    v-if="showModal" 
-    v-on:hide-modal="showModal = false" 
-    :title="modalTitle" 
-    :links="modalLinks">
-  </modal>
   <share 
     v-if="showShare" 
     v-on:hide-share-with="showShare = false"

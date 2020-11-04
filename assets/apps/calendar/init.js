@@ -830,7 +830,7 @@ function setRenderRangeText() {
     html.push(moment(cal.getDate().getTime()).format('YYYY.MM.DD'));
   } else if (viewName === 'month' &&
     (!options.month.visibleWeeksCount || options.month.visibleWeeksCount > 4)) {
-    html.push(moment(cal.getDate().getTime()).format('YYYY.MM'));
+    html.push(moment(cal.getDate().getTime()).format('MMMM YYYY'));
   } else {
     html.push(moment(cal.getDateRangeStart().getTime()).format('YYYY.MM.DD'));
     html.push(' ~ ');
@@ -855,7 +855,7 @@ function refreshScheduleVisibility() {
 }
 function downloadEvent(schedule) {
     let event = serialiseICal(schedule);
-    mainWindow.postMessage({event: event, type: 'downloadEvent'}, origin);
+    mainWindow.postMessage({event: event, title: schedule.title, type: 'downloadEvent'}, origin);
 }
 function shareCalendarEvent(id, startDate) {
     sendEvent(id, startDate, 'shareCalendarEvent');
@@ -890,7 +890,7 @@ function buildExtraFields(eventData, that) {
     for(var j=0;j<cal.length;j++){
         let el = cal[j];
         if(el.localName == "span" && el.innerText == "Shared With Me") {
-            el.innerText = el.innerText + " (" + eventData.schedule.raw.creator.name + ")";
+            el.innerText = "Shared by " + eventData.schedule.raw.creator.name;
             break;
         }
     }
@@ -950,18 +950,6 @@ function buildExtraFields(eventData, that) {
     };
     span1.appendChild(document.createTextNode('\u00A0\u00A0'));
 
-    if(!eventData.schedule.isReadOnly) {
-        var clipboardButton = document.createElement("button");
-        span1.appendChild(clipboardButton);
-
-        var img3 = document.createElement("img");
-        img3.src = "./images/external-link-square.png";
-        clipboardButton.appendChild(img3);
-        clipboardButton.appendChild(document.createTextNode("\u00A0\u00A0Clipboard"));
-        clipboardButton.onclick=function() {
-           addEventToClipboard(eventData.schedule.id, eventData.schedule.start);
-        };
-    }
     var locTextArea = document.createElement("textarea");
     locTextArea.id = "popup-memo-readonly";
     locTextArea.value = eventData == null ? "" : eventData.schedule.raw.memo;

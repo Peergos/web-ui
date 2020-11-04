@@ -51,9 +51,7 @@ module.exports = {
                 } else if(e.data.type=="loadAdditional") {
                     that.loadAdditional(calendar, e.data.year, e.data.month, 'loadAdditional');
                 } else if(e.data.type=="downloadEvent") {
-                    that.downloadEvent(calendar, e.data.event);
-                } else if(e.data.type=="addToClipboardEvent") {
-                    that.addToClipboardEvent(calendar, e.data.id, e.data.year, e.data.month);
+                    that.downloadEvent(calendar, e.data.title, e.data.event);
                 } else if(e.data.type=="shareCalendarEvent") {
                     that.shareCalendarEvent(calendar, e.data.id, e.data.year, e.data.month);
                 }
@@ -222,25 +220,7 @@ module.exports = {
         that.reduceAllEvents(calendar, directory, filenames, [], future);
         return future;
     },
-    createSecretLink: function(calendar, year, month, id) {
-        let dirPath = "" + year + "/" + month;
-        let filename = id + this.CALENDAR_FILE_EXTENSION;
-        let filePath = peergos.client.PathUtils.toPath(dirPath.split('/'), filename);
-        return calendar.createSecretLinkInternal(filePath);
-    },
-    addToClipboardEvent: function(calendar, id, year, month) {
-        let that = this;
-        this.displaySpinner();
-        this.createSecretLink(calendar, year, month, id).thenApply(function(secretLink){
-            let link = window.location.origin + window.location.pathname +
-                    "#" + propsToFragment({secretLink:true, link:secretLink});
-            navigator.clipboard.writeText(link).then(function() { that.displayMessage("Secret link to Calendar event copied to clipboard");}, function() {
-              console.error("Unable to write to clipboard.");
-            });
-            that.removeSpinner();
-        });
-    },
-    downloadEvent: function(calendar, event) {
+    downloadEvent: function(calendar, title, event) {
         let that = this;
         this.displaySpinner();
         let encoder = new TextEncoder();
@@ -251,7 +231,7 @@ module.exports = {
         let link = document.getElementById("downloadEventAnchor");
         link.href = url;
         link.type = "text/calendar";
-        link.download = 'event.ics';
+        link.download = 'event - ' + title + '.ics';
         link.click();
         this.removeSpinner();
     },

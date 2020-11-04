@@ -62,12 +62,21 @@
                     Read only Access:    None</p>
                 </div>
             </div>
+            <div class="modal-body modal-prominent">
+                <button class="btn btn-success" @click="createSecretLink()">Create secret Link</button>
+            </div>
             <error
                     v-if="showError"
                     v-on:hide-error="showError = false"
                     :title="errorTitle"
                     :body="errorBody">
             </error>
+            <modal
+                    v-if="showModal"
+                    v-on:hide-modal="showModal = false"
+                    :title="modalTitle"
+                    :links="modalLinks">
+            </modal>
         </div>
     </div>
 </div>

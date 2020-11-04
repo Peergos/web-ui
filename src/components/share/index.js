@@ -11,7 +11,10 @@ module.exports = {
             showError:false,
             unsharedReadAccessNames: [],
             unsharedEditAccessNames: [],
-            displayName:''
+            displayName:'',
+            showModal:false,
+            modalTitle:"",
+            modalLinks:[]
         }
     },
     props: ['data', 'followernames', 'files', 'parent', 'path', 'context', 'messages', 'fromApp', 'allowReadWriteSharing'],
@@ -55,6 +58,30 @@ module.exports = {
                     show: true
                 });
             }
+        },
+
+        createSecretLink : function () {
+            if (this.files.length == 0)
+                return this.close();
+            if (this.files.length != 1)
+                throw "Unimplemented multiple file share call";
+
+            let file = this.files[0];
+            var links = [];
+            let props = file.getFileProperties();
+            var name = props.getType() == 'calendar' ? 'Calendar event' : props.name;
+            links.push({href:window.location.origin + window.location.pathname +
+            "#" + propsToFragment({secretLink:true,link:file.toLink()}),
+                name:name,
+                id:'secret_link_'+name});
+            var title = links.length > 1 ? "Secret links to files: " : "Secret link to file: ";
+            this.showLinkModal(title, links);
+        },
+
+        showLinkModal: function(title, links) {
+            this.showModal = true;
+            this.modalTitle = title;
+            this.modalLinks = links;
         },
 
         unshare : function (sharedWithAccess) {
