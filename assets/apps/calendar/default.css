@@ -2309,6 +2309,7 @@ input[type='checkbox'].tui-full-calendar-checkbox-round + span {
     background-color: #fafafa;
     min-width: 301px;
     min-height: 100px;
+    resize: none;
 }
 
 .memo-field-edit {
