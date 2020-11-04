@@ -983,19 +983,14 @@ function buildExtraFields(eventData, that) {
     };
     span1.appendChild(document.createTextNode('\u00A0\u00A0'));
 
-    var locTextArea = document.createElement("textarea");
-    locTextArea.id = "popup-memo-readonly";
-    locTextArea.value = eventData == null ? "" : eventData.schedule.raw.memo;
-    locTextArea.rows = 5;
-    locTextArea.cols = 40;
-    //locTextArea.style.width="100%";
-    locTextArea.readOnly = true;
+
     var div2 = document.createElement("div");
     eventDetails.appendChild(div2);
     var div3 = document.createElement("div");
+    div3.classList.add("memo-field-alternate");
+    div3.id = "popup-memo-readonly";
+    div3.innerText = eventData == null ? "" : eventData.schedule.raw.memo;
     div2.appendChild(div3);
-    div3.appendChild(locTextArea);
-    locTextArea.classList.add("memo-field-view");
 }
 function removeSharedWithUsCalendar() {
     let dropdownMenuItems = document.getElementById("dropdown-menu-items").childNodes;
