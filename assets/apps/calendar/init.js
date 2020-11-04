@@ -955,13 +955,14 @@ function buildExtraFields(eventData, that) {
     locTextArea.value = eventData == null ? "" : eventData.schedule.raw.memo;
     locTextArea.rows = 5;
     locTextArea.cols = 40;
-    locTextArea.style.width="100%";
+    //locTextArea.style.width="100%";
     locTextArea.readOnly = true;
     var div2 = document.createElement("div");
     eventDetails.appendChild(div2);
     var div3 = document.createElement("div");
     div2.appendChild(div3);
     div3.appendChild(locTextArea);
+    locTextArea.classList.add("memo-field-view");
 }
 function removeSharedWithUsCalendar() {
     let dropdownMenuItems = document.getElementById("dropdown-menu-items").childNodes;
@@ -986,7 +987,7 @@ function addMemoField(eventData) {
     locTextArea.id = "popup-memo";
     locTextArea.value = eventData == null ? "" : eventData.schedule.raw.memo;
     locTextArea.rows = 5;
-    locTextArea.cols = 85;
+    locTextArea.classList.add("memo-field-edit");
 
     var div1 = document.createElement("div");
     parent.appendChild(div1);

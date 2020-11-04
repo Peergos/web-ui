@@ -1306,7 +1306,6 @@ input[type='checkbox'].tui-full-calendar-checkbox-round + span {
   top: 0;
 }
 .tui-full-calendar-popup-detail .tui-full-calendar-popup-container {
-  width: 301px;
   min-width: 301px;
   padding-bottom: 0;
 }
@@ -2306,4 +2305,13 @@ input[type='checkbox'].tui-full-calendar-checkbox-round + span {
     display: none;
 }
 
+.memo-field-view {
+    background-color: #fafafa;
+    min-width: 301px;
+    min-height: 100px;
+}
 
+.memo-field-edit {
+    min-width: 474px;
+    min-height: 100px;
+}
