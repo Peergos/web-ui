@@ -29,6 +29,7 @@ module.exports = {
             showGallery: false,
             showSocial:false,
             showTimeline:false,
+            viewingFromTimeline:false,
             showHexViewer:false,
             showCodeEditor:false,
             showPdfViewer:false,
@@ -364,6 +365,7 @@ module.exports = {
         if (path.startsWith("/"))
             path = path.substring(1);
         this.path = path ? path.split('/') : [];
+        this.viewingFromTimeline = true;
         this.updateHistory("filesystem", path, "");
         this.updateCurrentDirectory(filename);
     },
@@ -1458,7 +1460,12 @@ module.exports = {
             }
             this.updateHistory("pdf", this.getPath(), filename);
 	    } else if (mimeType === "text/calendar") {
-            this.importICSFile(true);
+	        if(this.viewingFromTimeline) {
+	            this.viewingFromTimeline = false;
+                this.importICSFile(false);
+	        } else {
+                this.importICSFile(true);
+            }
 	    } else {
 	        if (this.isSecretLink) {
                 this.showHexViewer = true;
