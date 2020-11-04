@@ -81,10 +81,7 @@ function buildUI(isCalendarReadonly) {
         },
         'beforeDeleteSchedule': function(e) {
             //console.log('beforeDeleteSchedule', e);
-            cal.deleteSchedule(e.schedule.id, e.schedule.calendarId);
-            ScheduleList.splice(ScheduleList.findIndex(v => v.id === e.schedule.id), 1);
-            removeFromCache(e.schedule);
-            deleteSchedule(e.schedule);
+            removeScheduleFromCalendar(e.schedule);
         },
         'afterRenderSchedule': function(e) {
             var schedule = e.schedule;
@@ -186,6 +183,14 @@ function ScheduleInfo() {
         }
     };
 }
+
+function removeScheduleFromCalendar(schedule) {
+    cal.deleteSchedule(schedule.id, schedule.calendarId);
+    ScheduleList.splice(ScheduleList.findIndex(v => v.id === schedule.id), 1);
+    removeFromCache(schedule);
+    deleteSchedule(schedule);
+}
+
 function displayMessage(msg) {
     mainWindow.postMessage({type:"displayMessage", message: msg}, origin);
 }
@@ -893,9 +898,6 @@ function downloadEvent(schedule) {
 function shareCalendarEvent(id, startDate) {
     sendEvent(id, startDate, 'shareCalendarEvent');
 }
-function addEventToClipboard(id, startDate) {
-    sendEvent(id, startDate, 'addToClipboardEvent');
-}
 function sendEvent(id, startDate, eventType) {
    let dt = moment.utc(startDate.toUTCString());
    let year = dt.year();
@@ -924,6 +926,15 @@ function buildExtraFields(eventData, that) {
         let el = cal[j];
         if(el.localName == "span" && el.innerText == "Shared With Me") {
             el.innerText = "Shared by " + eventData.schedule.raw.creator.name;
+
+            var deleteButton = document.createElement("button");
+            el.appendChild(deleteButton);
+            deleteButton.appendChild(document.createTextNode("Delete"));
+            deleteButton.style.marginLeft="20px";
+            deleteButton.onclick=function() {
+                that.hide();
+                removeScheduleFromCalendar(eventData.schedule);
+            };
             break;
         }
     }
