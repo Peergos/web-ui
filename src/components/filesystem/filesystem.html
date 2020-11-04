@@ -65,7 +65,7 @@
     <li id='cut-file' v-if="isNotBackground && isWritable" v-on:click="cut">Cut</li>
     <li id='paste-file' v-if="isPasteAvailable" v-on:click="paste">Paste</li>
     <li id='share-file' v-if="(isNotHome || isNotBackground) && isLoggedIn" v-on:click="showShareWith">Share</li>
-    <li id='import-ics-file' v-if="isLoggedIn && isNotBackground && isIcsFile" v-on:click="importICSFile">Import into Calendar</li>
+    <li id='import-ics-file' v-if="isLoggedIn && isNotBackground && isIcsFile" v-on:click="importICSFile(false)">Import into Calendar</li>
   </ul>
   
   <tour

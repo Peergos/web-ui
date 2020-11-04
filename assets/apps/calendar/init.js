@@ -326,6 +326,10 @@ function importICSFile(contents, username, isSharedWithUs, loadCalendarAsGuest) 
     let icalComponent = new ICAL.Component(ICAL.parse(contents));
     let vevents = icalComponent.getAllSubcomponents('vevent');
     let allEvents = [];
+    if (loadCalendarAsGuest) {
+        var yearMonth = currentMoment.year() * 12 + currentMoment.month();
+        load([], [], [], yearMonth, "unknown");
+    }
     vevents.forEach(function(vvent, idx) {
         if( vvent.hasProperty('rrule') ){
             let msg = "recurring events currently not supported!";
@@ -335,8 +339,6 @@ function importICSFile(contents, username, isSharedWithUs, loadCalendarAsGuest) 
         } else {
             let schedule = buildScheduleFromEvent(unpackEvent(vvent, true, isSharedWithUs));
             if (loadCalendarAsGuest) {
-                var yearMonth = currentMoment.year() * 12 + currentMoment.month();
-                load([], [], [], yearMonth, "unknown");
                 loadArbitrarySchedule(schedule);
             } else {
                 let dt = moment.utc(schedule.start.toUTCString());
@@ -352,8 +354,6 @@ function importICSFile(contents, username, isSharedWithUs, loadCalendarAsGuest) 
     });
 }
 function loadAdditional(currentMonthEvents, yearMonth) {
-    let year = Math.floor(yearMonth / 12);
-    let month = yearMonth % 12;
     let monthCache = [];
     ScheduleCache[yearMonth] = monthCache;
     let currentYearMonth = currentMoment.year() * 12 + currentMoment.month();
@@ -375,12 +375,13 @@ function loadAdditional(currentMonthEvents, yearMonth) {
 function loadArbitrarySchedule(schedule) {
     let dt = moment.utc(schedule.start.toUTCString());
     let yearMonth = dt.year() * 12 + dt.month();
-    let year = Math.floor(yearMonth / 12);
-    let month = yearMonth % 12;
-    let monthCache = [];
-    ScheduleCache[yearMonth] = monthCache;
     ScheduleList = ScheduleCache[yearMonth];
-    monthCache.push(schedule);
+    if (ScheduleList == null) {
+        let monthCache = [];
+        ScheduleCache[yearMonth] = monthCache;
+        ScheduleList = ScheduleCache[yearMonth];
+    }
+    ScheduleList.push(schedule);
     cal.createSchedules(ScheduleList);
     refreshScheduleVisibility();
     setRenderRangeText();

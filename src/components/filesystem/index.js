@@ -1458,7 +1458,7 @@ module.exports = {
             }
             this.updateHistory("pdf", this.getPath(), filename);
 	    } else if (mimeType === "text/calendar") {
-            this.importICSFile(this.isSecretLink);
+            this.importICSFile(true);
 	    } else {
 	        if (this.isSecretLink) {
                 this.showHexViewer = true;
