@@ -94,9 +94,9 @@ module.exports = {
             this.navigateToAction(entry.path, entry.isDirectory ? null : entry.fullName);
         },
         view: function (entry) {
-            this.close();
             if (entry.isDirectory) {
                 this.navigateToAction(entry.path, null);
+                this.close();
             } else {
                 this.viewAction(entry.path, entry.fullName);
             }
