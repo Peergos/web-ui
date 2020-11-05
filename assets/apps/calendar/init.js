@@ -11,6 +11,10 @@ let ScheduleCache = [];
 let LoadedEvents = [];
 var currentMoment = moment();
 var loadCalendarAsGuest = false;
+let CALENDAR_ID_MY_CALENDAR = "1";
+
+let CALENDAR_EVENT_CANCELLED = "Cancelled";
+let CALENDAR_EVENT_ACTIVE = "Active";
 
 function buildUI(isCalendarReadonly) {
     let uiDiv = document.getElementById("ui");
@@ -166,7 +170,7 @@ function ScheduleInfo() {
     this.goingDuration = 0;
     this.comingDuration = 0;
     this.recurrenceRule = '';
-    this.state = '';
+    this.state = CALENDAR_EVENT_ACTIVE;
 
     this.raw = {
         memo: '',
@@ -237,19 +241,16 @@ function unpackEvent(iCalEvent, fromImport, isSharedWithUs) {
 	    }
     }
     let xOwner = iCalEvent.getFirstPropertyValue('x-owner');
-    let xCategory = iCalEvent.getFirstPropertyValue('x-category-id');
     if (fromImport && ! isSharedWithUs) {
         event.owner = currentUsername;
-        xCategory = 1;
     } else {
         event.owner = xOwner;
     }
+    event['calendarId'] = CALENDAR_ID_MY_CALENDAR;
     if (iCalEvent.getFirstPropertyValue('status') === "CANCELLED") {
-        event['categoryId'] = "6";
-    } else if (currentUsername != event.owner) {
-        event['categoryId'] = "5";
+        event['state'] = CALENDAR_EVENT_CANCELLED;
     } else {
-        event['categoryId'] = xCategory == null ? "1" : xCategory;
+        event['state'] = CALENDAR_EVENT_ACTIVE;
     }
     let allAttendees = [];
     let attendees = iCalEvent.getAllProperties('attendee');
@@ -269,7 +270,7 @@ function addCalendarEvent(eventInfo) {
 function buildScheduleFromEvent(event) {
     var schedule = new ScheduleInfo();
     schedule.id = event.Id;
-    schedule.calendarId = event.categoryId;
+    schedule.calendarId = event.calendarId;
     schedule.title = event.title;
     schedule.body = '';
     schedule.isReadOnly = currentUsername != event.owner ? true : false;
@@ -281,12 +282,12 @@ function buildScheduleFromEvent(event) {
     schedule.location = event.location;
     schedule.attendees = event.attendees;
     schedule.recurrenceRule = '';
-    //schedule.state = event.state;
-    var calendarCategory = findCalendar(event.categoryId);
-    schedule.color = calendarCategory.color;
-    schedule.bgColor = calendarCategory.bgColor;
-    schedule.dragBgColor = calendarCategory.dragBgColor;
-    schedule.borderColor = calendarCategory.borderColor;
+    schedule.state = event.state;
+    var calendar = findCalendar(event.calendarId);
+    schedule.color = calendar.color;
+    schedule.bgColor = calendar.bgColor;
+    schedule.dragBgColor = calendar.dragBgColor;
+    schedule.borderColor = calendar.borderColor;
     schedule.raw.memo = event.description;
     schedule.raw.creator.name = event.owner;
     return schedule;
@@ -483,9 +484,8 @@ function serialiseICal(schedule) {
         vvent.updatePropertyWithValue('location', schedule.location);
         vvent.updatePropertyWithValue('dtstart', toICalTime(schedule.start, schedule.isAllDay));
         vvent.updatePropertyWithValue('dtend', toICalTime(schedule.end, schedule.isAllDay));
-        vvent.updatePropertyWithValue('x-category-id', schedule.calendarId);
         vvent.updatePropertyWithValue('x-owner', schedule.raw.creator.name);
-        if(schedule.calendarId == "6") { //CANCELLED
+        if(schedule.state == CALENDAR_EVENT_CANCELLED) { //CANCELLED
             vvent.updatePropertyWithValue('status', "CANCELLED");
         } else {
             vvent.removeProperty('status');
@@ -501,9 +501,8 @@ function serialiseICal(schedule) {
         event.location = schedule.location;
         event.startDate = toICalTime(schedule.start, schedule.isAllDay);
         event.endDate = toICalTime(schedule.end, schedule.isAllDay);
-        vevent.addPropertyWithValue('x-category-id', schedule.calendarId);
         vevent.addPropertyWithValue('x-owner', schedule.raw.creator.name);
-        if(schedule.calendarId == "6") { //CANCELLED
+        if(schedule.state == CALENDAR_EVENT_CANCELLED) { //CANCELLED
             vevent.addPropertyWithValue('status', "CANCELLED");
         }
         comp.addSubcomponent(vevent);
@@ -536,10 +535,24 @@ function findCalendar(id) {
 function setCalendars(headless) {
     var calendar;
     var id = 0;
+
     calendar = new CalendarInfo();
-    id = 1; //Numbers are important!
+    id = CALENDAR_ID_MY_CALENDAR;
     calendar.id = String(id);
     calendar.name = 'My Calendar';
+    calendar.color = '#ffffff';
+    calendar.bgColor = '#00a9ff';
+    calendar.dragBgColor = '#00a9ff';
+    calendar.borderColor = '#00a9ff';
+    CalendarList.push(calendar);
+
+
+
+/* future extensibility
+    calendar = new CalendarInfo();
+    id = 1; //purple
+    calendar.id = String(id);
+    calendar.name = 'Work';
     calendar.color = '#ffffff';
     calendar.bgColor = '#9e5fff';
     calendar.dragBgColor = '#9e5fff';
@@ -547,17 +560,7 @@ function setCalendars(headless) {
     CalendarList.push(calendar);
 
     calendar = new CalendarInfo();
-    id = 2;
-    calendar.id = String(id);
-    calendar.name = 'Work';
-    calendar.color = '#ffffff';
-    calendar.bgColor = '#00a9ff';
-    calendar.dragBgColor = '#00a9ff';
-    calendar.borderColor = '#00a9ff';
-    CalendarList.push(calendar);
-
-    calendar = new CalendarInfo();
-    id = 3;
+    id = 3; //red
     calendar.id = String(id);
     calendar.name = 'Family';
     calendar.color = '#ffffff';
@@ -567,7 +570,7 @@ function setCalendars(headless) {
     CalendarList.push(calendar);
 
     calendar = new CalendarInfo();
-    id = 4;
+    id = 4; //dark green
     calendar.id = String(id);
     calendar.name = 'Friends';
     calendar.color = '#ffffff';
@@ -579,16 +582,6 @@ function setCalendars(headless) {
     calendar = new CalendarInfo();
     id = 5;
     calendar.id = String(id);
-    calendar.name = 'Shared With Me';
-    calendar.color = '#ffffff';
-    calendar.bgColor = '#bbdc00';
-    calendar.dragBgColor = '#bbdc00';
-    calendar.borderColor = '#bbdc00';
-    CalendarList.push(calendar);
-
-    calendar = new CalendarInfo();
-    id = 6;
-    calendar.id = String(id);
     calendar.name = 'Cancelled';
     calendar.color = '#ffffff';
     calendar.bgColor = '#9d9d9d';
@@ -596,16 +589,26 @@ function setCalendars(headless) {
     calendar.borderColor = '#9d9d9d';
     CalendarList.push(calendar);
 
+    calendar = new CalendarInfo();
+    id = 6;
+    calendar.id = String(id);
+    calendar.name = 'Shared With Me';
+    calendar.color = '#ffffff';
+    calendar.bgColor = '#bbdc00';
+    calendar.dragBgColor = '#bbdc00';
+    calendar.borderColor = '#bbdc00';
+    CalendarList.push(calendar);
+*/
     if (!headless) {
         var calendarList = document.getElementById('calendarList');
         var html = [];
         CalendarList.forEach(function(calendar) {
-            html.push('<div class="lnb-calendars-item"><label>' +
-                '<input type="checkbox" class="tui-full-calendar-checkbox-round" value="' + calendar.id + '" checked>' +
-                '<span style="border-color: ' + calendar.borderColor + '; background-color: ' + calendar.borderColor + ';"></span>' +
-                '<span>' + calendar.name + '</span>' +
-                '</label></div>'
-            );
+                html.push('<div class="lnb-calendars-item"><label>' +
+                    '<input type="checkbox" class="tui-full-calendar-checkbox-round" value="' + calendar.id + '" checked>' +
+                    '<span style="border-color: ' + calendar.borderColor + '; background-color: ' + calendar.borderColor + ';"></span>' +
+                    '<span>' + calendar.name + '</span>' +
+                    '</label></div>'
+                );
         });
         calendarList.innerHTML = html.join('\n');
     }
@@ -671,7 +674,7 @@ function setCalendars(headless) {
                     name: currentUsername
                 }
             },
-            state: ''//scheduleData.state
+            state: scheduleData.state
         };
         if (calendar) {
             schedule.calendarId = calendar.id;
@@ -919,27 +922,18 @@ $('#lnb-calendars').on('change', onChangeCalendars);
 }
 
 function buildExtraFields(eventData, that) {
-    let state = document.getElementById("detail-busy-free-state");
-    if(state != null) {
-        state.style.display = 'none';
-    }
-
-    let cal = document.getElementsByClassName("tui-full-calendar-content");
-    for(var j=0;j<cal.length;j++){
-        let el = cal[j];
-        if(el.localName == "span" && el.innerText == "Shared With Me") {
-            el.innerText = "Shared by " + eventData.schedule.raw.creator.name;
-            if (!loadCalendarAsGuest) {
-                var deleteButton = document.createElement("button");
-                el.appendChild(deleteButton);
-                deleteButton.appendChild(document.createTextNode("Delete"));
-                deleteButton.style.marginLeft="20px";
-                deleteButton.onclick=function() {
-                    that.hide();
-                    removeScheduleFromCalendar(eventData.schedule);
-                };
-            }
-            break;
+    let calendarSpan = document.getElementById("calendar-name");
+    if(eventData.schedule.raw.creator.name != currentUsername) {
+        calendarSpan.innerText = calendarSpan.innerText + " (Shared by " + eventData.schedule.raw.creator.name + ")";
+        if (!loadCalendarAsGuest) {
+            var deleteButton = document.createElement("button");
+            calendarSpan.appendChild(deleteButton);
+            deleteButton.appendChild(document.createTextNode("Delete"));
+            deleteButton.style.marginLeft="20px";
+            deleteButton.onclick=function() {
+                that.hide();
+                removeScheduleFromCalendar(eventData.schedule);
+            };
         }
     }
 
@@ -1007,22 +1001,10 @@ function buildExtraFields(eventData, that) {
     div3.innerText = eventData == null ? "" : eventData.schedule.raw.memo;
     div2.appendChild(div3);
 }
-function removeSharedWithUsCalendar() {
-    let dropdownMenuItems = document.getElementById("dropdown-menu-items").childNodes;
-    for(var i=0;i<dropdownMenuItems.length;i++){
-        let item = dropdownMenuItems[i];
-        if(item.nodeName != "#text" && item.getAttribute("data-calendar-id") == "5") {
-            item.remove();
-        }
-    }
-}
 function addMemoField(eventData) {
 
     let lock = document.getElementById("tui-full-calendar-schedule-private");
     lock.style.display = 'none';
-    let state = document.getElementById("busy-free-state");
-    state.style.display = 'none';
-
 
     let loc = document.getElementById("tui-full-calendar-schedule-location");
     let parent = loc.parentNode.parentNode.parentNode;
@@ -1045,5 +1027,3 @@ function addMemoField(eventData) {
         saveBtn.onclick=handler;
     }
 }
-
-

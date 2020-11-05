@@ -10472,7 +10472,6 @@ function createMonthView(baseController, layoutContainer, dragHandler, options) 
                 createView.setCalendars(baseController.calendars);
                 createView.render(eventData);
                 addMemoField(eventData);
-                removeSharedWithUsCalendar();
             };
             createView.on('beforeUpdateSchedule', onEditSchedule);
             detailView.on('beforeUpdateSchedule', onShowEditPopup);
@@ -10563,7 +10562,6 @@ function createMonthView(baseController, layoutContainer, dragHandler, options) 
                 createView.setCalendars(baseController.calendars);
                 createView.render(eventData);
                 addMemoField(null);
-                removeSharedWithUsCalendar();
             }
         },
         hideMoreView: function() {
@@ -10888,7 +10886,6 @@ module.exports = function(baseController, layoutContainer, dragHandler, options,
                 createView.setCalendars(calendars);
                 createView.render(eventData);
                 addMemoField(eventData);
-                removeSharedWithUsCalendar();
             };
             createView.on('beforeUpdateSchedule', onEditSchedule);
             detailView.on('beforeUpdateSchedule', onShowEditPopup);
@@ -10960,7 +10957,6 @@ module.exports = function(baseController, layoutContainer, dragHandler, options,
                 createView.setCalendars(baseController.calendars);
                 createView.render(eventData);
                 addMemoField(null);
-                removeSharedWithUsCalendar();
             }
         }
     };
@@ -21255,11 +21251,11 @@ var helpers = {
     },
 
     'popupStateFree-tmpl': function() {
-        return 'Free';
+        return 'Cancelled';
     },
 
     'popupStateBusy-tmpl': function() {
-        return 'Busy';
+        return 'Active';
     },
 
     'titlePlaceholder-tmpl': function() {
@@ -21300,7 +21296,7 @@ var helpers = {
         return (schedule.attendees || []).join(', ');
     },
     'popupDetailState-tmpl': function(schedule) {
-        return schedule.state || 'Busy';
+        return schedule.state || '';
     },
     'popupDetailRepeat-tmpl': function(schedule) {
         return schedule.recurrenceRule;
@@ -22713,7 +22709,7 @@ module.exports = (Handlebars['default'] || Handlebars).template({"1":function(co
     + alias4(((helper = (helper = lookupProperty(helpers,"CSS_PREFIX") || (depth0 != null ? lookupProperty(depth0,"CSS_PREFIX") : depth0)) != null ? helper : alias2),(typeof helper === alias3 ? helper.call(alias1,{"name":"CSS_PREFIX","hash":{},"data":data,"loc":{"start":{"line":16,"column":85},"end":{"line":16,"column":99}}}) : helper)))
     + "calendar-dot\" style=\"background-color: "
     + alias4(alias5(((stack1 = (depth0 != null ? lookupProperty(depth0,"schedule") : depth0)) != null ? lookupProperty(stack1,"bgColor") : stack1), depth0))
-    + "\"></span><span class=\""
+    + "\"></span><span id='calendar-name' class=\""
     + alias4(((helper = (helper = lookupProperty(helpers,"CSS_PREFIX") || (depth0 != null ? lookupProperty(depth0,"CSS_PREFIX") : depth0)) != null ? helper : alias2),(typeof helper === alias3 ? helper.call(alias1,{"name":"CSS_PREFIX","hash":{},"data":data,"loc":{"start":{"line":16,"column":180},"end":{"line":16,"column":194}}}) : helper)))
     + "content\">"
     + alias4(alias5(((stack1 = (depth0 != null ? lookupProperty(depth0,"calendar") : depth0)) != null ? lookupProperty(stack1,"name") : stack1), depth0))

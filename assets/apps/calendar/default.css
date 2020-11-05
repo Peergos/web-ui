@@ -1026,10 +1026,10 @@ body {
   padding-left: 4px;
 }
 .tui-full-calendar-section-state {
-  width: 109px;
+  width: 220px;
 }
 .tui-full-calendar-section-state .tui-full-calendar-content {
-  width: 58px;
+  width: 169px;
   text-overflow: ellipsis;
   overflow: hidden;
 }
