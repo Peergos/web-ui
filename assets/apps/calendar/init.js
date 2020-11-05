@@ -122,23 +122,57 @@ window.addEventListener('message', function (e) {
     mainWindow = e.source;
     origin = e.origin;
     if (e.data.type == "load") {
-        initialiseCalendar(false);
+        initialiseCalendar(false, e.data.calendars);
         load(e.data.previousMonth, e.data.currentMonth, e.data.nextMonth, e.data.yearMonth, e.data.username);
     } else if (e.data.type == "loadAdditional") {
         loadAdditional(e.data.currentMonth, e.data.yearMonth);
+    } else if (e.data.type == "respondRenameCalendar") {
+        respondToCalendarRename(e.data.oldName, e.data.newName);
     } else if(e.data.type == "importICSFile") {
         loadCalendarAsGuest = e.data.loadCalendarAsGuest;
         if(loadCalendarAsGuest) {
-            initialiseCalendar(true);
+            initialiseCalendar(true, []);
         } else {
-            setCalendars(true);
+            setCalendars(true, []);
         }
         importICSFile(e.data.contents, e.data.username, e.data.isSharedWithUs, loadCalendarAsGuest);
     }
 });
-function initialiseCalendar(loadCalendarAsGuest) {
+function renameCalendar(currentName) {
+    //TODO mainWindow.postMessage({action:'requestRenameCalendar', currentName: currentName}, origin);
+}
+function safetext(text){
+	var table = {
+		'<': 'lt',
+		'>': 'gt',
+		'"': 'quot',
+		'\'': 'apos',
+		'&': 'amp',
+		'\r': '#10',
+		'\n': '#13'
+	};
+
+	return text.toString().replace(/[<>"'\r\n&]/g, function(chr){
+		return '&' + table[chr] + ';';
+	});
+	return text;
+};
+function respondToCalendarRename(oldName, newName) {
+    console.log("back in calendar")
+    let newCalendarName = safetext(newName);
+    for(var i=0; i < CalendarList.length;i++) {
+        let item = CalendarList[i];
+        if (item.name == oldName) {
+            item.name = newCalendarName;
+            break;
+        }
+    }
+    replaceCalendarsInUI();
+    cal.setCalendars(CalendarList);
+}
+function initialiseCalendar(loadCalendarAsGuest, calendars) {
     buildUI(loadCalendarAsGuest);
-    setCalendars(false);
+    setCalendars(false, calendars);
     cal.setCalendars(CalendarList);
     setDropdownCalendarType();
     setEventListener();
@@ -532,21 +566,19 @@ function findCalendar(id) {
     return found || CalendarList[0];
 }
 
-function setCalendars(headless) {
+function setCalendars(headless, calendars) {
     var calendar;
     var id = 0;
 
     calendar = new CalendarInfo();
     id = CALENDAR_ID_MY_CALENDAR;
     calendar.id = String(id);
-    calendar.name = 'My Calendar';
+    calendar.name = calendars[0].name;
     calendar.color = '#ffffff';
     calendar.bgColor = '#00a9ff';
     calendar.dragBgColor = '#00a9ff';
     calendar.borderColor = '#00a9ff';
     CalendarList.push(calendar);
-
-
 
 /* future extensibility
     calendar = new CalendarInfo();
@@ -600,6 +632,10 @@ function setCalendars(headless) {
     CalendarList.push(calendar);
 */
     if (!headless) {
+        replaceCalendarsInUI();
+    }
+}
+    function replaceCalendarsInUI() {
         var calendarList = document.getElementById('calendarList');
         var html = [];
         CalendarList.forEach(function(calendar) {
@@ -607,12 +643,12 @@ function setCalendars(headless) {
                     '<input type="checkbox" class="tui-full-calendar-checkbox-round" value="' + calendar.id + '" checked>' +
                     '<span style="border-color: ' + calendar.borderColor + '; background-color: ' + calendar.borderColor + ';"></span>' +
                     '<span>' + calendar.name + '</span>' +
+//TODO                    '<span>' + calendar.name + '&nbsp;&nbsp;<img src="./images/edit.png" onclick="renameCalendar(\'' + calendar.name + '\')" /></span>' +
                     '</label></div>'
                 );
         });
         calendarList.innerHTML = html.join('\n');
     }
-}
     /**
      * Get time template for time and all-day
      * @param {Schedule} schedule - schedule

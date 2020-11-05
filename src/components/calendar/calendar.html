@@ -12,6 +12,15 @@
         <a id="downloadEventAnchor" style="display:none"></a>
 	  <iframe id="editor" sandbox="allow-scripts allow-forms" src="apps/calendar/index.html" style="width:100%;height:100%;" frameBorder="0"></iframe>
         </div>
+        <prompt
+                v-if="showPrompt"
+                v-on:hide-prompt="showPrompt = false"
+                :prompt_message='prompt_message'
+                :placeholder="prompt_placeholder"
+                :max_input_size="prompt_max_input_size"
+                :value="prompt_value"
+                :consumer_func="prompt_consumer_func">
+        </prompt>
     </div>
 </div>
 </transition>

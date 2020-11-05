@@ -6,8 +6,16 @@ module.exports = {
             CALENDAR_DIR_NAME: 'calendar',
             DATA_DIR_NAME: 'data',
             CALENDAR_FILE_EXTENSION: '.ics',
+            CONFIG_FILENAME: 'App.config',
             showSpinner: false,
-            spinnerMessage: ""
+            spinnerMessage: "",
+            calendarProperties: null,
+            showPrompt: false,
+            prompt_message: '',
+            prompt_placeholder: '',
+            prompt_max_input_size: null,
+            prompt_value: '',
+            prompt_consumer_func: () => {},
         }
     },
     props: ['context', 'messages', 'importFile', 'importSharedEvent', 'shareWith', 'loadCalendarAsGuest'],
@@ -17,8 +25,11 @@ module.exports = {
         if (that.loadCalendarAsGuest) {
             that.startListener(null);
         } else {
-            peergos.shared.user.App.init(that.context, "calendar", ".ics").thenApply(calendar =>
-                that.startListener(calendar)
+            peergos.shared.user.App.init(that.context, "calendar", ".ics").thenCompose(calendar =>
+                that.getPropertiesFile(calendar).thenApply(props => {
+                    that.calendarProperties = props;
+                    that.startListener(calendar)
+                })
             );
         }
     },
@@ -58,6 +69,8 @@ module.exports = {
                     that.downloadEvent(calendar, e.data.title, e.data.event);
                 } else if(e.data.type=="shareCalendarEvent") {
                     that.shareCalendarEvent(calendar, e.data.id, e.data.year, e.data.month);
+                } else if (e.data.action == 'requestRenameCalendar') {
+                    that.renameCalendarRequest(calendar, e.data.currentName);
                 }
             }
         });
@@ -74,6 +87,38 @@ module.exports = {
             this.load(calendar, year, month, 'load');
         }
 	},
+    renameCalendarRequest: function(calendar, currentName) {
+        let that = this;
+        this.prompt_placeholder = 'New Calendar name';
+        this.prompt_value = currentName;
+        this.prompt_message = 'Enter a new name';
+        this.prompt_max_input_size = 20;
+        this.prompt_consumer_func = function(prompt_result) {
+            if (prompt_result === null)
+                return;
+            if (prompt_result === currentName)
+                return;
+            let newName = prompt_result.trim();
+            if (newName === '')
+                return;
+            if (newName === '.' || newName === '..')
+                return;
+            setTimeout(function(){
+                for(var i=0;i < that.calendarProperties.calendars.length; i++) {
+                    let calendar = that.calendarProperties.calendars[i];
+                    if(calendar.name == currentName) {
+                        calendar.name = prompt_result;
+                        break;
+                    }
+                }
+                that.updatePropertiesFile(calendar, that.calendarProperties).thenApply(res => {
+                    var iframe = document.getElementById("editor");
+                    iframe.contentWindow.postMessage({type: 'respondRenameCalendar', oldName: currentName, newName: prompt_result}, '*');
+                });
+            });
+        };
+        this.showPrompt =  true;
+    },
     importICSFile: function() {
         let that = this;
         that.displaySpinner();
@@ -111,8 +156,14 @@ module.exports = {
         let iframe = document.getElementById("editor");
         let yearMonth = year * 12 + (month-1);
         setTimeout(function(){
+            let calendars = [];
+            for(var i=0;i < that.calendarProperties.calendars.length;i++) {
+                let calendar = that.calendarProperties.calendars[i];
+                calendars.push({name: calendar.name});
+            }
             iframe.contentWindow.postMessage({type: messageType, previousMonth: eventsPreviousMonth,
-                    currentMonth: eventsThisMonth, nextMonth: eventsNextMonth, yearMonth: yearMonth, username: that.context.username}, '*');
+                    currentMonth: eventsThisMonth, nextMonth: eventsNextMonth, yearMonth: yearMonth
+                    , username: that.context.username, calendars: calendars}, '*');
         });
     },
     removeCalendarEvent: function(calendar, year, month, id) {
@@ -140,6 +191,32 @@ module.exports = {
     },
     displayMessage: function(msg) {
         this.showMessage(msg);
+    },
+    renameCalendar: function(msg) {
+        this.showMessage(msg);
+    },
+    getPropertiesFile: function(calendar) {
+        let that = this;
+        let filePath = peergos.client.PathUtils.directoryToPath([this.CONFIG_FILENAME]);
+        return calendar.readInternal(filePath).thenApply(data => {
+            return JSON.parse(new TextDecoder().decode(data));
+        }).exceptionally(function(throwable) {//File not found
+            if (throwable.detailMessage.startsWith("File not found")) {
+                let props = new Object();
+                props.calendars = [];
+                props.calendars.push({name:'My Calendar', directory:'default'});
+                return props;
+            } else {
+                that.showMessage("Unable to load file","Please close calendar and try again");
+            }
+        });
+    },
+    updatePropertiesFile: function(calendar, json) {
+        let filePath = peergos.client.PathUtils.directoryToPath([this.CONFIG_FILENAME]);
+        let encoder = new TextEncoder();
+        let uint8Array = encoder.encode(JSON.stringify(json));
+        let bytes = convertToByteArray(uint8Array);
+        return calendar.writeInternal(filePath, bytes);
     },
     updateCalendarEvent: function(calendar, year, month, id, calendarEvent) {
         let dirPath = "default/" + year + "/" + month;
