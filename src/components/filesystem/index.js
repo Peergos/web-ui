@@ -1402,11 +1402,14 @@ module.exports = {
                 this.navigateOrDownload(file);
             }    
         },
-        importICSFile: function(isSecretLink) {
+        importICALFile: function(isSecretLink) {
             if (this.selectedFiles.length == 0)
                 return;
             this.closeMenu();
             let file = this.selectedFiles[0];
+            this.importCalendarFile(isSecretLink, file);
+        },
+        importCalendarFile: function(isSecretLink, file) {
             let props = file.getFileProperties();
             let that = this;
             let context = this.getContext();
@@ -1462,9 +1465,9 @@ module.exports = {
 	    } else if (mimeType === "text/calendar") {
 	        if(this.viewingFromTimeline) {
 	            this.viewingFromTimeline = false;
-                this.importICSFile(false);
+                this.importICALFile(false);
 	        } else {
-                this.importICSFile(true);
+                this.importICALFile(true);
             }
 	    } else {
 	        if (this.isSecretLink) {

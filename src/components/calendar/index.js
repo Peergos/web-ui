@@ -121,7 +121,6 @@ module.exports = {
     },
     importICSFile: function() {
         let that = this;
-        that.displaySpinner();
         let iframe = document.getElementById("editor");
         setTimeout(function(){
             iframe.contentWindow.postMessage({type: 'importICSFile', contents: that.importFile,
@@ -183,10 +182,10 @@ module.exports = {
 	        that.removeSpinner();
         });
     },
-    displaySpinner: function(item) {
+    displaySpinner: function() {
         this.showSpinner = true;
     },
-    removeSpinner: function(item) {
+    removeSpinner: function() {
         this.showSpinner = false;
     },
     displayMessage: function(msg) {

@@ -573,7 +573,7 @@ function setCalendars(headless, calendars) {
     calendar = new CalendarInfo();
     id = CALENDAR_ID_MY_CALENDAR;
     calendar.id = String(id);
-    calendar.name = calendars[0].name;
+    calendar.name = calendars.length == 0 ? "My Calendar" : calendars[0].name;
     calendar.color = '#ffffff';
     calendar.bgColor = '#00a9ff';
     calendar.dragBgColor = '#00a9ff';

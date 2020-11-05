@@ -10,7 +10,7 @@ module.exports = {
             noMoreResults: false
         }
     },
-    props: ['context','navigateToAction','viewAction', 'messages', 'getFileIcon', 'socialFeed'],
+    props: ['context','navigateToAction','viewAction', 'messages', 'getFileIcon', 'socialFeed', 'importCalendarFile'],
     created: function() {
         let that = this;
         Vue.nextTick(function() {
@@ -94,11 +94,18 @@ module.exports = {
             this.navigateToAction(entry.path, entry.isDirectory ? null : entry.fullName);
         },
         view: function (entry) {
-            if (entry.isDirectory) {
-                this.navigateToAction(entry.path, null);
-                this.close();
+            var filename = entry.file.getName();
+            var mimeType = entry.file.getFileProperties().mimeType;
+            console.log("Opening " + mimeType);
+            if (mimeType === "text/calendar") {
+                this.importCalendarFile(false, entry.file);
             } else {
-                this.viewAction(entry.path, entry.fullName);
+                if (entry.isDirectory) {
+                    this.navigateToAction(entry.path, null);
+                    this.close();
+                } else {
+                    this.viewAction(entry.path, entry.fullName);
+                }
             }
         },
         createTimelineEntry: function(entry, file) {
