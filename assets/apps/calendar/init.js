@@ -138,8 +138,9 @@ window.addEventListener('message', function (e) {
         importICSFile(e.data.contents, e.data.username, e.data.isSharedWithUs, loadCalendarAsGuest);
     }
 });
-function renameCalendar(currentName) {
-    //TODO mainWindow.postMessage({action:'requestRenameCalendar', currentName: currentName}, origin);
+function renameCalendar(currentName, event) {
+    mainWindow.postMessage({action:'requestRenameCalendar', currentName: currentName}, origin);
+    event.stopPropagation();
 }
 function safetext(text){
 	var table = {
@@ -642,8 +643,7 @@ function setCalendars(headless, calendars) {
                 html.push('<div class="lnb-calendars-item"><label>' +
                     '<input type="checkbox" class="tui-full-calendar-checkbox-round" value="' + calendar.id + '" checked>' +
                     '<span style="border-color: ' + calendar.borderColor + '; background-color: ' + calendar.borderColor + ';"></span>' +
-                    '<span>' + calendar.name + '</span>' +
-//TODO                    '<span>' + calendar.name + '&nbsp;&nbsp;<img src="./images/edit.png" onclick="renameCalendar(\'' + calendar.name + '\')" /></span>' +
+                    '</label><label><span style="cursor:text;" onclick="renameCalendar(\'' + calendar.name + '\', event)">' + calendar.name + '</span>' +
                     '</label></div>'
                 );
         });
