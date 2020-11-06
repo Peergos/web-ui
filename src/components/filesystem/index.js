@@ -1155,7 +1155,7 @@ module.exports = {
                 that.newTodoBoardName = res.trim();
                 this.selectedFiles = [];
                 that.showTodoBoardViewer = true;
-		this.updateHistory("todo", this.getPath(), "");
+		        that.updateHistory("todo", that.getPath(), "");
             };
             this.showPrompt = true;
         },
