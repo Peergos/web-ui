@@ -321,8 +321,8 @@ module.exports = {
 		this.showCodeEditor = false;
 		this.showTextViewer = false;
 		this.showHexViewer = false;
-	    this.showTodoBoardViewer = false;
-	    this.showCalendarViewer = false;
+		this.showTodoBoardViewer = false;
+		this.showCalendarViewer = false;
 	    } else {
 		if (! differentPath)
 		    this.openInApp(filename, app);
@@ -341,8 +341,8 @@ module.exports = {
 	    this.showHexViewer = false;
 	    this.showTodoBoardViewer = false;
 	    this.showCalendarViewer = false;
-        this.selectedFiles = [];
-        this.updateHistory("filesystem", this.getPath(), "");
+            this.selectedFiles = [];
+            this.updateHistory("filesystem", this.getPath(), "");
 	    this.forceSharedRefreshWithUpdate++;
 	},
 
@@ -381,9 +381,10 @@ module.exports = {
 		this.showCodeEditor = true;
 	    else if (app == "hex")
 		this.showHexViewer = true;
-	    else if (app == "todo") {
-            this.showTodoBoardViewer = true;
-	    }
+	    else if (app == "todo")
+		this.showTodoBoardViewer = true;
+	    else if (app == "calendar")
+		this.showCalendarViewer = true;
 	},
 	updateCurrentDir: function() {
 	    this.updateCurrentDirectory(null);
@@ -1161,6 +1162,7 @@ module.exports = {
             this.importSharedEvent = false;
             this.loadCalendarAsGuest = false;
             this.showCalendarViewer = true;
+	    this.updateHistory("calendar", this.getPath(), "");
         },
         logout: function() {
             this.toggleUserMenu();
@@ -1448,33 +1450,34 @@ module.exports = {
                 that.updateHistory("gallery", that.getPath(), filename);
             });
 	    } else if (mimeType === "application/vnd.peergos-todo") {
-            if (this.isSecretLink) {
-                this.showTodoBoardViewer = true;
-            }
-            this.updateHistory("todo", this.getPath(), filename);
-        } else if (mimeType === "text/plain") {
-            if (this.isSecretLink) {
-                this.showCodeEditor = true;
-            }
-            this.updateHistory("editor", this.getPath(), filename);
+		if (this.isSecretLink) {
+                    this.showTodoBoardViewer = true;
+		}
+		this.updateHistory("todo", this.getPath(), filename);
+            } else if (mimeType === "text/plain") {
+		if (this.isSecretLink) {
+                    this.showCodeEditor = true;
+		}
+		this.updateHistory("editor", this.getPath(), filename);
 	    } else if (mimeType === "application/pdf") {
 	        if (this.isSecretLink) {
-                this.showPdfViewer = true;
-            }
-            this.updateHistory("pdf", this.getPath(), filename);
+                    this.showPdfViewer = true;
+		}
+		this.updateHistory("pdf", this.getPath(), filename);
 	    } else if (mimeType === "text/calendar") {
 	        if(this.viewingFromTimeline) {
 	            this.viewingFromTimeline = false;
-                this.importICALFile(false);
+                    this.importICALFile(false);
 	        } else {
-                this.importICALFile(true);
-            }
+                    this.importICALFile(true);
+		}
+		this.updateHistory("calender", this.getPath(), filename);
 	    } else {
 	        if (this.isSecretLink) {
-                this.showHexViewer = true;
-            }
-            this.updateHistory("hex", this.getPath(), filename);
-	    } 
+                    this.showHexViewer = true;
+		}
+		this.updateHistory("hex", this.getPath(), filename);
+	    }
         },
 
 	navigateOrDownload: function(file) {
