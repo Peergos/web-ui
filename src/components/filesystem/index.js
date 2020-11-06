@@ -1538,6 +1538,8 @@ module.exports = {
                 return 'fas fa-tasks';
             if (type == 'calendar')
                 return 'fa fa-calendar-alt';
+            if (type == 'contact file')
+                return 'fa fa-address-card';
             return 'fa-file';
         },
         getPath: function() {
