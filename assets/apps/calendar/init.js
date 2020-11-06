@@ -1006,7 +1006,7 @@ function buildExtraFields(eventData, that) {
         var shareLink = document.createElement("a");
         shareLink.style.cursor="pointer";
         shareLink.style.marginLeft="3px";
-        shareLink.innerText = "Share With";
+        shareLink.innerText = "Share";
         span1.appendChild(shareLink);
         shareLink.onclick=function() {
             shareCalendarEvent(eventData.schedule.id, eventData.schedule.start);
