@@ -131,7 +131,7 @@ module.exports = {
             iframe.contentWindow.postMessage({type: 'importICSFile', contents: that.importFile,
                 isSharedWithUs: that.importSharedEvent, loadCalendarAsGuest: that.loadCalendarAsGuest,
                 username: that.context.username }, '*');
-        });
+        },200);
     },
     loadAdditional: function(calendar, year, month, messageType) {
         let that = this;
