@@ -385,6 +385,8 @@ module.exports = {
 		this.showTodoBoardViewer = true;
 	    else if (app == "calendar")
 		this.showCalendarViewer = true;
+	    else if (app == "timeline")
+		this.showTimeline = true;
 	},
 	updateCurrentDir: function() {
 	    this.updateCurrentDirectory(null);
@@ -1209,6 +1211,7 @@ module.exports = {
                     that.socialFeed = updated;
                     that.showTimeline = true;
                     that.showSpinner = false;
+		    that.updateHistory("timeline", that.getPath(), "");
 		});
             }).exceptionally(function(throwable) {
                 that.showMessage(throwable.getMessage());
