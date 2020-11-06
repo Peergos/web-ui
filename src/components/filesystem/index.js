@@ -320,6 +320,7 @@ module.exports = {
 		this.showCodeEditor = false;
 		this.showTextViewer = false;
 		this.showHexViewer = false;
+		this.showTimeline = false;
 		this.showTodoBoardViewer = false;
 		this.showCalendarViewer = false;
 	    } else {
