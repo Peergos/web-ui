@@ -319,7 +319,7 @@ table {
 
 .modal-mask {
   position: fixed;
-  z-index: 9999;
+  z-index: 9997;
   top: 0;
   left: 0;
   width: 100%;
@@ -361,13 +361,18 @@ table {
 }
 
 .modal-header-app {
-    min-height:16.43px;
+    min-height:16px;
     padding:15px;
 }
 
 .modal-header h3 {
   margin-top: 0;
   color: #26b99a;
+}
+
+.modal-header-app {
+    min-height:16px;
+    padding:15px;
 }
 
 .modal-body {
@@ -549,6 +554,3 @@ h3 {word-wrap:break-word; white-space:normal;}
 .sidenav a:hover {
   color: #f1f1f1;
 }
-
-
-

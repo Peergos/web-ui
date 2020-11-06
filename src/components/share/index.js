@@ -10,17 +10,38 @@ module.exports = {
             errorBody:'',
             showError:false,
             unsharedReadAccessNames: [],
-            unsharedEditAccessNames: []
+            unsharedEditAccessNames: [],
+            displayName:'',
+            showModal:false,
+            modalTitle:"",
+            modalLinks:[]
         }
     },
-    props: ['data', 'followernames', 'files', 'parent', 'path', 'context', 'messages', 'fromApp'],
+    props: ['data', 'followernames', 'files', 'parent', 'path', 'context', 'messages', 'fromApp', 'allowReadWriteSharing'],
     created: function() {
         Vue.nextTick(this.setTypeAhead);
+        this.displayName = this.fromApp && this.files[0].getFileProperties().name.endsWith('.ics') ?
+            'Calendar event' : files[0].getFileProperties().name;
     },
     methods: {
         close: function () {
             this.showSpinner = false;
             this.$emit("hide-share-with");
+        },
+        refresh : function () {
+            if (! this.fromApp) {
+                this.$emit("update-shared-refresh");
+            }
+        },
+
+        showMessage : function (title, body) {
+            if (! this.fromApp) {
+                this.messages.push({
+                    title: title,
+                    body: body,
+                    show: true
+                });
+            }
         },
 
         refresh : function () {
@@ -37,6 +58,30 @@ module.exports = {
                     show: true
                 });
             }
+        },
+
+        createSecretLink : function () {
+            if (this.files.length == 0)
+                return this.close();
+            if (this.files.length != 1)
+                throw "Unimplemented multiple file share call";
+
+            let file = this.files[0];
+            var links = [];
+            let props = file.getFileProperties();
+            var name = props.getType() == 'calendar' ? 'Calendar event' : props.name;
+            links.push({href:window.location.origin + window.location.pathname +
+            "#" + propsToFragment({secretLink:true,link:file.toLink()}),
+                name:name,
+                id:'secret_link_'+name});
+            var title = links.length > 1 ? "Secret links to files: " : "Secret link to file: ";
+            this.showLinkModal(title, links);
+        },
+
+        showLinkModal: function(title, links) {
+            this.showModal = true;
+            this.modalTitle = title;
+            this.modalLinks = links;
         },
 
         unshare : function (sharedWithAccess) {

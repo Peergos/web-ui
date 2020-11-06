@@ -1,5 +1,6 @@
 var Admin           = require('./components/admin');
 var App             = require('./components/app');
+var Calendar        = require('./components/calendar');
 var CodeEditor      = require('./components/code-editor');
 var Downloader      = require('./components/downloader');
 var Error           = require('./components/error');
@@ -28,12 +29,14 @@ var Text            = require('./components/viewers/text-viewer');
 var Timeline        = require('./components/timeline');
 var Todo            = require('./components/todo');
 var Tour            = require('./components/tour');
+var Confirm         = require('./components/confirm');
 var Warning         = require('./components/warning');
 var Replace         = require('./components/replace');
 
 // Loading components
 Vue.component('admin', Vue.extend(Admin));
 Vue.component('app', Vue.extend(App));
+Vue.component('calendar', Vue.extend(Calendar));
 Vue.component('code-editor', Vue.extend(Downloader).extend(CodeEditor));
 Vue.component('error', Vue.extend(Error));
 Vue.component('feedback', Vue.extend(Feedback));
@@ -60,6 +63,7 @@ Vue.component('text-viewer', Vue.extend(Downloader).extend(Text));
 Vue.component('timeline', Vue.extend(Timeline));
 Vue.component('todo-board', Vue.extend(Downloader).extend(Todo));
 Vue.component('tour', Vue.extend(Tour));
+Vue.component('confirm', Vue.extend(Confirm));
 Vue.component('warning', Vue.extend(Warning));
 Vue.component('replace', Vue.extend(Replace));
 

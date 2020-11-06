@@ -50,9 +50,9 @@
   <div id="sideMenu" class="sidenav">
     <a><span/>&nbsp</a>
     <a id="homeButton" @click="goHome()"><span data-toggle="tooltip" data-placement="bottom" title="Global root" class="fas fa-globe-asia" style="cursor: pointer;"/></a>
-    
     <a id="timelineButton" v-if="isLoggedIn" @click="showTimelineView()"><span data-toggle="tooltip" data-placement="bottom" title="Timeline" class="fas fa-history" style="cursor: pointer;"/></a>
-    <a v-if="isLoggedIn" @click="newTodoBoard"><span class="fas fa-tasks"/></a>
+    <a v-if="isLoggedIn" @click="showCalendar"><span data-toggle="tooltip" data-placement="bottom" title="Calendar" class="fa fa-calendar-alt"/></a>
+    <a v-if="isLoggedIn" @click="newTodoBoard"><span data-toggle="tooltip" data-placement="bottom" title="Todo Board" class="fas fa-tasks"/></a>
   </div>
   <a id="downloadAnchor" style="display:none"></a>
   <ul id="right-click-menu" tabindex="-1" v-if="viewMenu && (isNotHome || isPasteAvailable || isNotBackground)" v-on:blur="closeMenu" v-bind:style="{top:top, left:left}">
@@ -64,26 +64,21 @@
     <li id='copy-file' v-if="isNotBackground && isWritable" v-on:click="copy">Copy</li>
     <li id='cut-file' v-if="isNotBackground && isWritable" v-on:click="cut">Cut</li>
     <li id='paste-file' v-if="isPasteAvailable" v-on:click="paste">Paste</li>
-    <li id='secret-link-file' v-if="(isNotHome || isNotBackground)" v-on:click="createSecretLink">Create secret link</li>
     <li id='share-file' v-if="(isNotHome || isNotBackground) && isLoggedIn" v-on:click="showShareWith">Share</li>
+    <li id='import-ics-file' v-if="isLoggedIn && isNotBackground && isIcsFile" v-on:click="importICALFile(false)">Import into Calendar</li>
   </ul>
   
   <tour
     v-if="showTour" 
     v-on:hide-tour="showTour = false">
   </tour>
-  <modal
-    v-if="showModal" 
-    v-on:hide-modal="showModal = false" 
-    :title="modalTitle" 
-    :links="modalLinks">
-  </modal>
   <share 
     v-if="showShare" 
     v-on:hide-share-with="showShare = false"
     v-on:update-shared-refresh="forceSharedRefreshWithUpdate++"
     :data="sharedWithData"
     :fromApp="fromApp"
+    :allowReadWriteSharing="allowReadWriteSharing"
     :files="filesToShare"
     :parent="parentFile"
     :path="pathToFile"
@@ -107,6 +102,7 @@
     :getFileIcon="getFileIcon"
     :messages="messages"
     :socialFeed="socialFeed"
+    :importCalendarFile="importCalendarFile"
     :context="context">
   </timeline>
   <admin
@@ -187,6 +183,16 @@
           v-on:update-refresh="forceUpdate++"
           :messages="messages">
   </todo-board>
+  <calendar
+          v-if="showCalendarViewer"
+          v-on:hide-calendar="closeApps();"
+          :importFile="importFile"
+          :importSharedEvent="importSharedEvent"
+          :loadCalendarAsGuest="loadCalendarAsGuest"
+          :shareWith="showShareWithFromApp"
+          :context="context"
+          :messages="messages">
+  </calendar>
   <text-viewer
     v-if="showTextViewer" 
     v-on:hide-text-viewer="closeApps()"

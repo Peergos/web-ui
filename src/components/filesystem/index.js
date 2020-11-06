@@ -16,9 +16,6 @@ module.exports = {
             ignoreEvent:false,
             top:"0px",
             left:"0px",
-            showModal:false,
-            modalTitle:"",
-            modalLinks:[],
 	    showTour: false,
             showShare:false,
             sharedWithState: null,
@@ -47,6 +44,7 @@ module.exports = {
             showSideNav: false,
             showTodoBoardViewer: false,
             newTodoBoardName: null,
+            showCalendarViewer: false,
 	    admindata: {pending:[]},
             social:{
                 pending: [],
@@ -322,7 +320,9 @@ module.exports = {
 		this.showCodeEditor = false;
 		this.showTextViewer = false;
 		this.showHexViewer = false;
-	    this.showTodoBoardViewer = false;
+		this.showTimeline = false;
+		this.showTodoBoardViewer = false;
+		this.showCalendarViewer = false;
 	    } else {
 		if (! differentPath)
 		    this.openInApp(filename, app);
@@ -340,8 +340,9 @@ module.exports = {
 	    this.showTextViewer = false;
 	    this.showHexViewer = false;
 	    this.showTodoBoardViewer = false;
-        this.selectedFiles = [];
-        this.updateHistory("filesystem", this.getPath(), "");
+	    this.showCalendarViewer = false;
+            this.selectedFiles = [];
+            this.updateHistory("filesystem", this.getPath(), "");
 	    this.forceSharedRefreshWithUpdate++;
 	},
 
@@ -364,6 +365,7 @@ module.exports = {
         if (path.startsWith("/"))
             path = path.substring(1);
         this.path = path ? path.split('/') : [];
+        this.viewingFromTimeline = true;
         this.updateHistory("filesystem", path, "");
         this.updateCurrentDirectory(filename);
     },
@@ -379,9 +381,12 @@ module.exports = {
 		this.showCodeEditor = true;
 	    else if (app == "hex")
 		this.showHexViewer = true;
-	    else if (app == "todo") {
-            this.showTodoBoardViewer = true;
-	    }
+	    else if (app == "todo")
+		this.showTodoBoardViewer = true;
+	    else if (app == "calendar")
+		this.showCalendarViewer = true;
+	    else if (app == "timeline")
+		this.showTimeline = true;
 	},
 	updateCurrentDir: function() {
 	    this.updateCurrentDirectory(null);
@@ -1150,8 +1155,17 @@ module.exports = {
                 that.newTodoBoardName = res.trim();
                 this.selectedFiles = [];
                 that.showTodoBoardViewer = true;
+		        that.updateHistory("todo", that.getPath(), "");
             };
             this.showPrompt = true;
+        },
+        showCalendar: function() {
+            this.toggleNav();
+            this.importFile = null;
+            this.importSharedEvent = false;
+            this.loadCalendarAsGuest = false;
+            this.showCalendarViewer = true;
+	    this.updateHistory("calendar", this.getPath(), "");
         },
         logout: function() {
             this.toggleUserMenu();
@@ -1197,6 +1211,7 @@ module.exports = {
                     that.socialFeed = updated;
                     that.showTimeline = true;
                     that.showSpinner = false;
+		    that.updateHistory("timeline", that.getPath(), "");
 		});
             }).exceptionally(function(throwable) {
                 that.showMessage(throwable.getMessage());
@@ -1283,6 +1298,32 @@ module.exports = {
             this.closeMenu();
         },
 
+        showShareWithFromApp: function(app, filename, allowReadWriteSharing) {
+            let that = this;
+            var context = this.getContext();
+            let dirPath = context.username + "/.apps/" + app;
+            this.context.getByPath(dirPath)
+                .thenApply(function(dir){dir.get().getChild(filename, that.context.crypto.hasher, that.context.network).thenApply(function(child){
+                    let file = child.get();
+                    if (file == null) {
+                        return;
+                    }
+                    that.filesToShare = [file];
+                    that.parentFile = dir.ref;
+                    that.pathToFile = dirPath.split('/');
+                    let directoryPath = peergos.client.PathUtils.directoryToPath(that.pathToFile);
+                    context.getDirectorySharingState(directoryPath).thenApply(function(updatedSharedWithState) {
+                        let fileSharedWithState = updatedSharedWithState.get(file.getFileProperties().name);
+                        let read_usernames = fileSharedWithState.readAccess.toArray([]);
+                        let edit_usernames = fileSharedWithState.writeAccess.toArray([]);
+                        that.sharedWithData = {read_shared_with_users:read_usernames, edit_shared_with_users:edit_usernames};
+                        that.fromApp = true;
+                        that.allowReadWriteSharing = allowReadWriteSharing;
+                        that.showShare = true;
+                    });
+                })});
+        },
+
         showShareWith: function() {
             if (this.selectedFiles.length == 0)
                 return;
@@ -1300,6 +1341,7 @@ module.exports = {
             let edit_usernames = fileSharedWithState.writeAccess.toArray([]);
             this.sharedWithData = {read_shared_with_users:read_usernames, edit_shared_with_users:edit_usernames};
             this.fromApp = false;
+            this.allowReadWriteSharing = true;
             this.showShare = true;
         },
 
@@ -1357,31 +1399,6 @@ module.exports = {
             this.showSpinner = true;
             this.updateHistory("filesystem", path, "");
         },
-
-        createSecretLink: function() {
-            if (this.selectedFiles.length == 0)
-                return;
-
-            this.closeMenu();
-            var links = [];
-            for (var i=0; i < this.selectedFiles.length; i++) {
-                var file = this.selectedFiles[i];
-                var name = file.getFileProperties().name;
-                links.push({href:window.location.origin + window.location.pathname +
-			    "#" + propsToFragment({secretLink:true,link:file.toLink()}), 
-                    name:name, 
-                    id:'secret_link_'+name});
-            }
-            var title = links.length > 1 ? "Secret links to files: " : "Secret link to file: ";
-            this.showLinkModal(title, links);
-        },
-
-        showLinkModal: function(title, links) {
-            this.showModal = true;
-            this.modalTitle = title;
-            this.modalLinks = links;
-        },
-
         downloadAll: function() {
             if (this.selectedFiles.length == 0)
                 return;
@@ -1391,7 +1408,30 @@ module.exports = {
                 this.navigateOrDownload(file);
             }    
         },
-
+        importICALFile: function(isSecretLink) {
+            if (this.selectedFiles.length == 0)
+                return;
+            this.closeMenu();
+            let file = this.selectedFiles[0];
+            this.importCalendarFile(isSecretLink, file);
+        },
+        importCalendarFile: function(isSecretLink, file) {
+            let props = file.getFileProperties();
+            let that = this;
+            let context = this.getContext();
+            file.getInputStream(context.network, context.crypto, props.sizeHigh(), props.sizeLow(), function(read) {})
+                .thenCompose(function(reader) {
+                    var size = that.getFileSize(props);
+                    var data = convertToByteArray(new Int8Array(size));
+                    return reader.readIntoArray(data, 0, data.length)
+                        .thenApply(function(read){
+                            that.importFile = new TextDecoder().decode(data);
+                            that.importSharedEvent = file.getOwnerName() != context.username;
+                            that.loadCalendarAsGuest = isSecretLink;
+                            that.showCalendarViewer = true;
+                        });
+            })
+        },
         gallery: function() {
             // TODO: once we support selecting files re-enable this
             //if (this.selectedFiles.length == 0)
@@ -1414,26 +1454,29 @@ module.exports = {
                 that.updateHistory("gallery", that.getPath(), filename);
             });
 	    } else if (mimeType === "application/vnd.peergos-todo") {
-            if (this.isSecretLink) {
-                this.showTodoBoardViewer = true;
-            }
-            this.updateHistory("todo", this.getPath(), filename);
-        } else if (mimeType === "text/plain") {
-            if (this.isSecretLink) {
-                this.showCodeEditor = true;
-            }
-            this.updateHistory("editor", this.getPath(), filename);
+		if (this.isSecretLink) {
+                    this.showTodoBoardViewer = true;
+		}
+		this.updateHistory("todo", this.getPath(), filename);
+            } else if (mimeType === "text/plain") {
+		if (this.isSecretLink) {
+                    this.showCodeEditor = true;
+		}
+		this.updateHistory("editor", this.getPath(), filename);
 	    } else if (mimeType === "application/pdf") {
 	        if (this.isSecretLink) {
-                this.showPdfViewer = true;
-            }
-            this.updateHistory("pdf", this.getPath(), filename);
+                    this.showPdfViewer = true;
+		}
+		this.updateHistory("pdf", this.getPath(), filename);
+	    } else if (mimeType === "text/calendar") {
+                    this.importICALFile(true);
+		this.updateHistory("calender", this.getPath(), filename);
 	    } else {
 	        if (this.isSecretLink) {
-                this.showHexViewer = true;
-            }
-            this.updateHistory("hex", this.getPath(), filename);
-	    } 
+                    this.showHexViewer = true;
+		}
+		this.updateHistory("hex", this.getPath(), filename);
+	    }
         },
 
 	navigateOrDownload: function(file) {
@@ -1768,7 +1811,7 @@ module.exports = {
             if (this.showSideNav) {
                   document.getElementById("sideMenu").style.width = "0";
             } else {
-              document.getElementById("sideMenu").style.width = "80px";
+              document.getElementById("sideMenu").style.width = "60px";
             }
             this.showSideNav = !this.showSideNav;
         }
@@ -1840,6 +1883,18 @@ module.exports = {
                if (this.selectedFiles.length != 1)
                    return false;
                return !this.selectedFiles[0].isDirectory()
+           } catch (err) {
+               return false;
+           }
+        },
+        isIcsFile: function() {
+           try {
+               if (this.currentDir == null)
+                   return false;
+               if (this.selectedFiles.length != 1)
+                   return false;
+               return !this.selectedFiles[0].isDirectory() &&
+                    this.selectedFiles[0].getFileProperties().name.toUpperCase().endsWith(".ICS");
            } catch (err) {
                return false;
            }
