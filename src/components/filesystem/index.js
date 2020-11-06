@@ -1153,6 +1153,7 @@ module.exports = {
                 that.newTodoBoardName = res.trim();
                 this.selectedFiles = [];
                 that.showTodoBoardViewer = true;
+		this.updateHistory("todo", this.getPath(), "");
             };
             this.showPrompt = true;
         },
