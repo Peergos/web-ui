@@ -16,6 +16,11 @@ module.exports = {
             prompt_max_input_size: null,
             prompt_value: '',
             prompt_consumer_func: () => {},
+            showConfirm: false,
+            confirm_message: "",
+            confirm_body: "",
+            confirm_consumer_cancel_func: () => {},
+            confirm_consumer_func: () => {}
         }
     },
     props: ['context', 'messages', 'importFile', 'importSharedEvent', 'shareWith', 'loadCalendarAsGuest'],
@@ -238,25 +243,40 @@ module.exports = {
         });
     },
     saveAllEvents: function(calendar, items) {
+        this.removeSpinner();
         this.saveAllEventsRecursive(calendar, items.items, 0);
     },
     saveAllEventsRecursive: function(calendar, items, index) {
         const that = this;
         if(index == items.length) {
-            that.removeSpinner();
             that.close();
-            that.showMessage(items.length + " Event(s) successfully imported!");
         } else {
             let item = items[index];
-            this.updateCalendarEvent(calendar, item.year, item.month, item.Id, item.item).thenApply(function(res) {
-                that.saveAllEventsRecursive(calendar, items, ++index);
-            }).exceptionally(function(throwable) {
-                that.removeSpinner();
-                that.close();
-                that.showMessage("Unable to import event");
-                console.log(throwable.getMessage());
-            });
+            this.confirmImportEventFile(item.summary,
+                () => { that.showConfirm = false; that.importEventFile(calendar, items, index);},
+                () => { that.showConfirm = false; that.saveAllEventsRecursive(calendar, items, ++index);}
+            );
         }
+    },
+    importEventFile: function(calendar, items, index) {
+        let that = this;
+        let item = items[index];
+        that.displaySpinner();
+        this.updateCalendarEvent(calendar, item.year, item.month, item.Id, item.item).thenApply(function(res) {
+           that.saveAllEventsRecursive(calendar, items, ++index);
+        }).exceptionally(function(throwable) {
+           that.removeSpinner();
+           that.close();
+           that.showMessage("Unable to import event");
+           console.log(throwable.getMessage());
+        });
+    },
+    confirmImportEventFile: function(summary, importFunction, cancelFunction) {
+        this.confirm_message='Do you wish to import Event: ' + summary.datetime + ' - ' + summary.title;
+        this.confirm_body='';
+        this.confirm_consumer_cancel_func = cancelFunction;
+        this.confirm_consumer_func = importFunction;
+        this.showConfirm = true;
     },
     getCalendarEventsForMonth: function(calendar, year, month) {
         let that = this;

@@ -29,7 +29,6 @@ module.exports = {
             showGallery: false,
             showSocial:false,
             showTimeline:false,
-            viewingFromTimeline:false,
             showHexViewer:false,
             showCodeEditor:false,
             showPdfViewer:false,
@@ -1469,12 +1468,7 @@ module.exports = {
 		}
 		this.updateHistory("pdf", this.getPath(), filename);
 	    } else if (mimeType === "text/calendar") {
-	        if(this.viewingFromTimeline) {
-	            this.viewingFromTimeline = false;
-                    this.importICALFile(false);
-	        } else {
                     this.importICALFile(true);
-		}
 		this.updateHistory("calender", this.getPath(), filename);
 	    } else {
 	        if (this.isSecretLink) {

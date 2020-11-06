@@ -29,6 +29,7 @@ var Text            = require('./components/viewers/text-viewer');
 var Timeline        = require('./components/timeline');
 var Todo            = require('./components/todo');
 var Tour            = require('./components/tour');
+var Confirm         = require('./components/confirm');
 var Warning         = require('./components/warning');
 var Replace         = require('./components/replace');
 
@@ -62,6 +63,7 @@ Vue.component('text-viewer', Vue.extend(Downloader).extend(Text));
 Vue.component('timeline', Vue.extend(Timeline));
 Vue.component('todo-board', Vue.extend(Downloader).extend(Todo));
 Vue.component('tour', Vue.extend(Tour));
+Vue.component('confirm', Vue.extend(Confirm));
 Vue.component('warning', Vue.extend(Warning));
 Vue.component('replace', Vue.extend(Replace));
 

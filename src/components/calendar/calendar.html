@@ -21,6 +21,14 @@
                 :value="prompt_value"
                 :consumer_func="prompt_consumer_func">
         </prompt>
+        <confirm
+                v-if="showConfirm"
+                v-on:hide-confirm="showConfirm = false"
+                :confirm_message='confirm_message'
+                :confirm_body="confirm_body"
+                :consumer_cancel_func="confirm_consumer_cancel_func"
+                :consumer_func="confirm_consumer_func">
+        </confirm>
     </div>
 </div>
 </transition>

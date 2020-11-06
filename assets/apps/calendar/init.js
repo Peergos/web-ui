@@ -367,6 +367,7 @@ function importICSFile(contents, username, isSharedWithUs, loadCalendarAsGuest) 
     let icalComponent = new ICAL.Component(ICAL.parse(contents));
     let vevents = icalComponent.getAllSubcomponents('vevent');
     let allEvents = [];
+    let allEventSummaries = [];
     if (loadCalendarAsGuest) {
         var yearMonth = currentMoment.year() * 12 + currentMoment.month();
         load([], [], [], yearMonth, "unknown");
@@ -389,7 +390,8 @@ function importICSFile(contents, username, isSharedWithUs, loadCalendarAsGuest) 
                 let year = dt.year();
                 let month = dt.month() + 1;
                 let output = serialiseICal(schedule);
-                allEvents.push({year: year, month: month, Id: schedule.id, item:output});
+                let eventSummary = {datetime: moment(schedule.start.toUTCString()).format('YYYY MMMM Do, h:mm:ss a'), title: schedule.title};
+                allEvents.push({year: year, month: month, Id: schedule.id, item:output, summary: eventSummary});
                 if(idx == vevents.length -1) {
                     mainWindow.postMessage({items:allEvents, type:"saveAll"}, origin);
                 }
