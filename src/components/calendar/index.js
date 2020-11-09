@@ -272,7 +272,8 @@ module.exports = {
         });
     },
     confirmImportEventFile: function(summary, importFunction, cancelFunction) {
-        this.confirm_message='Do you wish to import Event: ' + summary.datetime + ' - ' + summary.title;
+        this.confirm_message='Do you wish to import Event: ' + summary.datetime
+                + ' - ' + summary.title + ' ?';
         this.confirm_body='';
         this.confirm_consumer_cancel_func = cancelFunction;
         this.confirm_consumer_func = importFunction;
