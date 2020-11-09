@@ -138,29 +138,11 @@ window.addEventListener('message', function (e) {
         importICSFile(e.data.contents, e.data.username, e.data.isSharedWithUs, loadCalendarAsGuest);
     }
 });
-function renameCalendar(currentName, event) {
+function renameCalendar(currentName) {
     mainWindow.postMessage({action:'requestRenameCalendar', currentName: currentName}, origin);
-    event.stopPropagation();
 }
-function safetext(text){
-	var table = {
-		'<': 'lt',
-		'>': 'gt',
-		'"': 'quot',
-		'\'': 'apos',
-		'&': 'amp',
-		'\r': '#10',
-		'\n': '#13'
-	};
-
-	return text.toString().replace(/[<>"'\r\n&]/g, function(chr){
-		return '&' + table[chr] + ';';
-	});
-	return text;
-};
 function respondToCalendarRename(oldName, newName) {
-    console.log("back in calendar")
-    let newCalendarName = safetext(newName);
+    let newCalendarName = newName;
     for(var i=0; i < CalendarList.length;i++) {
         let item = CalendarList[i];
         if (item.name == oldName) {
@@ -255,6 +237,7 @@ function unpackIcal(IcalFile) {
     }
 }
 function unpackEvent(iCalEvent, fromImport, isSharedWithUs) {
+    let event = new Object();
     event['isAllDay'] = true;
     event['Id'] = iCalEvent.getFirstPropertyValue('uid');
     event['title'] = iCalEvent.getFirstPropertyValue('summary');
@@ -306,7 +289,7 @@ function buildScheduleFromEvent(event) {
     var schedule = new ScheduleInfo();
     schedule.id = event.Id;
     schedule.calendarId = event.calendarId;
-    schedule.title = event.title;
+    schedule.title = event.title == null ? "No Title" : event.title;
     schedule.body = '';
     schedule.isReadOnly = currentUsername != event.owner ? true : false;
     schedule.isAllDay = event.isAllDay;
@@ -314,7 +297,7 @@ function buildScheduleFromEvent(event) {
     schedule.start = moment(event.start).toDate();
     schedule.end = moment(event.end).toDate();
     //schedule.isPrivate = event.isPrivate;
-    schedule.location = event.location;
+    schedule.location = event.location == null ? "" : event.location;
     schedule.attendees = event.attendees;
     schedule.recurrenceRule = '';
     schedule.state = event.state;
@@ -323,7 +306,7 @@ function buildScheduleFromEvent(event) {
     schedule.bgColor = calendar.bgColor;
     schedule.dragBgColor = calendar.dragBgColor;
     schedule.borderColor = calendar.borderColor;
-    schedule.raw.memo = event.description;
+    schedule.raw.memo = event.description == null ? "" : event.description;
     schedule.raw.creator.name = event.owner;
     return schedule;
 
@@ -641,15 +624,23 @@ function setCalendars(headless, calendars) {
     function replaceCalendarsInUI() {
         var calendarList = document.getElementById('calendarList');
         var html = [];
-        CalendarList.forEach(function(calendar) {
+        CalendarList.forEach(function(calendar, idx) {
                 html.push('<div class="lnb-calendars-item"><label>' +
                     '<input type="checkbox" class="tui-full-calendar-checkbox-round" value="' + calendar.id + '" checked>' +
                     '<span style="border-color: ' + calendar.borderColor + '; background-color: ' + calendar.borderColor + ';"></span>' +
-                    '</label><label><span style="cursor:text;" onclick="renameCalendar(\'' + calendar.name + '\', event)">' + calendar.name + '</span>' +
+                    '</label><label><span id="cal-' + idx + '" style="cursor:text;"></span>' +
                     '</label></div>'
                 );
         });
         calendarList.innerHTML = html.join('\n');
+        CalendarList.forEach(function(calendar, idx) {
+            let calendarEl = document.getElementById('cal-' + idx);
+            let calName = calendar.name;
+            calendarEl.innerText = calName;
+            calendarEl.onclick=function() {
+                renameCalendar(calName);
+            };
+        });
     }
     /**
      * Get time template for time and all-day
