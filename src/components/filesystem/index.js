@@ -1370,21 +1370,17 @@ module.exports = {
 
             this.closeMenu();
         },
-/*
         showShareWithForProfile: function(field, fieldName) {
+            let dirPath = this.getContext().username + "/.profile/";
+            this.showShareWithForFile(dirPath, field, false, fieldName);
+        },
+        showShareWithFromApp: function(app, filename, allowReadWriteSharing, nameToDisplay) {
+            let dirPath = this.getContext().username + "/.apps/" + app;
+            this.showShareWithForFile(dirPath, filename, allowReadWriteSharing, nameToDisplay);
+        },
+        showShareWithForFile: function(dirPath, filename, allowReadWriteSharing, nameToDisplay) {
             let that = this;
             var context = this.getContext();
-            let dirPath = context.username + "/.profile/";
-            this.context.getByPath(dirPath)
-                .thenApply(function(dir){dir.get().getChild(field, that.context.crypto.hasher, that.context.network).thenApply(function(child){
-                                        that.fieldName = fieldName;
-                                        that.allowReadWriteSharing = false;
-*/
-
-        showShareWithFromApp: function(app, filename, allowReadWriteSharing) {
-            let that = this;
-            var context = this.getContext();
-            let dirPath = context.username + "/.apps/" + app;
             this.context.getByPath(dirPath)
                 .thenApply(function(dir){dir.get().getChild(filename, that.context.crypto.hasher, that.context.network).thenApply(function(child){
                     let file = child.get();
@@ -1401,6 +1397,8 @@ module.exports = {
                         let edit_usernames = fileSharedWithState.writeAccess.toArray([]);
                         that.sharedWithData = {read_shared_with_users:read_usernames, edit_shared_with_users:edit_usernames};
                         that.fromApp = true;
+                        that.displayName = this.nameToDisplay != null && this.nameToDisplay.length > 0 ?
+                                                     nameToDisplay : file.getFileProperties().name;
                         that.allowReadWriteSharing = allowReadWriteSharing;
                         that.showShare = true;
                     });
@@ -1424,7 +1422,7 @@ module.exports = {
             let edit_usernames = fileSharedWithState.writeAccess.toArray([]);
             this.sharedWithData = {read_shared_with_users:read_usernames, edit_shared_with_users:edit_usernames};
             this.fromApp = false;
-            this.fieldName = '';
+            this.displayName = latestFile.getFileProperties().name;
             this.allowReadWriteSharing = true;
             this.showShare = true;
         },

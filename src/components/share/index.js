@@ -11,19 +11,14 @@ module.exports = {
             showError:false,
             unsharedReadAccessNames: [],
             unsharedEditAccessNames: [],
-            displayName:'',
             showModal:false,
             modalTitle:"",
             modalLinks:[]
         }
     },
-    props: ['data', 'followernames', 'files', 'parent', 'path', 'context', 'messages', 'fromApp', 'fieldName', 'allowReadWriteSharing'],
+    props: ['data', 'followernames', 'files', 'parent', 'path', 'context', 'messages', 'fromApp', 'displayName', 'allowReadWriteSharing'],
     created: function() {
         Vue.nextTick(this.setTypeAhead);
-        this.displayName = this.fromApp && this.files[0].getFileProperties().name.endsWith('.ics') ?
-            'Calendar event' : files[0].getFileProperties().name;
-            //        this.displayName = this.fieldName != null && this.fieldName.length > 0 ?
-            //              this.fieldName : this.files[0].getFileProperties().name;
     },
     methods: {
         close: function () {
