@@ -1065,3 +1065,19 @@ function addMemoField(eventData) {
         saveBtn.onclick=handler;
     }
 }
+
+/**
+ * Toggle calendar list, when user clicks calendars button
+ */
+Window.toggleCalendarsView = function(event) {
+    var cals = document.getElementById("lnb")
+    var visible = cals.style.display != "none";
+    if (visible) {
+	cals.style.display = "none";
+	document.getElementById("right").style.left = "0px"
+    } else {
+	cals.style.display = "block";
+	document.getElementById("right").style.left = "200px"
+    }
+    event.stopPropagation();
+};
