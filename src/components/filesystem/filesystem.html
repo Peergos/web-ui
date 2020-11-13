@@ -185,6 +185,7 @@
   <calendar
           v-if="showCalendarViewer"
           v-on:hide-calendar="closeApps();"
+          v-on:reload-calendar="reloadCalendar();"
           :importFile="importFile"
           :importSharedEvent="importSharedEvent"
           :loadCalendarAsGuest="loadCalendarAsGuest"

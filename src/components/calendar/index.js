@@ -82,6 +82,8 @@ module.exports = {
                     that.calendarColorChangeRequest(calendar, e.data.calendarName, e.data.newColor);
                 } else if (e.data.action == 'requestAddCalendar') {
                     that.addCalendarRequest(calendar, e.data.newColor);
+                } else if (e.data.action == 'requestCalendarReload') {
+                    that.reloadCalendar();
                 }
             }
         });
@@ -98,6 +100,9 @@ module.exports = {
             this.load(calendar, year, month, 'load');
         }
 	},
+    reloadCalendar: function() {
+        this.$emit("reload-calendar");
+    },
     renameCalendarRequest: function(calendar, calendarItem) {
         let that = this;
         this.prompt_placeholder = 'New Calendar name';

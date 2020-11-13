@@ -20,6 +20,8 @@ var colorpicker = null;
 let colorPalette = ['#181818', '#282828', '#383838', '#585858', '#B8B8B8', '#D8D8D8', '#E8E8E8', '#F8F8F8', '#AB4642', '#DC9656', '#F7CA88', '#A1B56C', '#86C1B9', '#7CAFC2', '#BA8BAF', '#A16946'];
 let colorPickerElement = document.getElementById('color-picker');
 
+var calendarRequiresReload = false;
+
 function buildUI(isCalendarReadonly) {
     let uiDiv = document.getElementById("ui");
     uiDiv.removeAttribute("style");
@@ -1103,6 +1105,9 @@ function showConfigurationPopup() {
     var calendarModalClose = document.getElementsByClassName("calendar-modal-close")[0];
     calendarModalClose.onclick = function() {
          calendarModal.style.display = "none";
+         if(calendarRequiresReload) {
+             mainWindow.postMessage({action: "requestCalendarReload"}, origin);
+         }
      };
 
 	let calendarListElement = document.getElementById('calendar-list');
@@ -1215,6 +1220,7 @@ function importICal(item, evt){
     let filereader = new FileReader();
     filereader.onload = function(){
         importICSFile(this.result, currentUsername, false, false, item.name, false);
+        calendarRequiresReload = true;
     };
     filereader.readAsText(file);
 }
