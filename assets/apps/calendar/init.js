@@ -1099,16 +1099,17 @@ function showConfigurationPopup() {
     var calendarModal = document.getElementById("calendarModal");
     calendarModal.style.display = "block";
 
-    let colorChange = {targetId: null, newColor: null, oldColor: null, closeFunc: null};
-    calendarModal.onclick = (ev) => calendarModalHandler(ev, colorChange);
-
-    var calendarModalClose = document.getElementsByClassName("calendar-modal-close")[0];
-    calendarModalClose.onclick = function() {
+    let colorChange = {targetId: null, newColor: null, oldColor: null};
+    let configurationPopupCloseFunc = function() {
          calendarModal.style.display = "none";
          if(calendarRequiresReload) {
              mainWindow.postMessage({action: "requestCalendarReload"}, origin);
          }
      };
+    calendarModal.onclick = (ev) => calendarModalHandler(ev, colorChange, configurationPopupCloseFunc);
+
+    var calendarModalClose = document.getElementsByClassName("calendar-modal-close")[0];
+    calendarModalClose.onclick = configurationPopupCloseFunc;
 
 	let calendarListElement = document.getElementById('calendar-list');
 	while(calendarListElement.hasChildNodes()) {
@@ -1119,12 +1120,15 @@ function showConfigurationPopup() {
     });
 }
 
-function calendarModalHandler(event, colorChange) {
+function calendarModalHandler(event, colorChange, configurationPopupCloseFunc) {
     let colorChangeCallback = function(targetId, newColor, oldColor) {
         colorChange.targetId = targetId;
         colorChange.newColor = newColor;
+        colorChange.oldColor = oldColor;
     }
-    if (event.target.id == "color-picker-container"
+    if (event.target.id == "calendarModal") {
+        configurationPopupCloseFunc();
+    } else if (event.target.id == "color-picker-container"
         || event.target.id == "add-calendar-container"
         || event.target.className == "calendar-modal-content") {
             calendarColorChange(colorChange);
@@ -1142,6 +1146,7 @@ function calendarColorChange(colorChange) {
     let oldColor = colorChange.oldColor;
     if (newColor != oldColor) {
         mainWindow.postMessage({action:'requestCalendarColorChange', calendarName: calendarName, newColor: newColor}, origin);
+        colorChange.targetId = colorChange.newColor = colorChange.oldColor = null;
     }
     colorPickerElement.style="display:none";
 }
