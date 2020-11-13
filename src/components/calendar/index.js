@@ -171,7 +171,7 @@ module.exports = {
                 }
                 //create directory
                 that.displaySpinner();
-                let newId = that.calendarProperties.calendars.length + 1;
+                let newId = String(that.calendarProperties.calendars.length + 1);
                 let dirName = that.generateDirectoryName();
                 that.calendarProperties.calendars.push({name:newName, directory:dirName, color: newColor});
                 that.updatePropertiesFile(calendar, that.calendarProperties).thenApply(res => {
