@@ -101,7 +101,8 @@ module.exports = {
         }
 	},
     reloadCalendar: function() {
-        this.$emit("reload-calendar");
+        //This is troublesome on firefox, so disabling - this.$emit("reload-calendar");
+        this.$emit("hide-calendar");
     },
     renameCalendarRequest: function(calendar, calendarItem) {
         let that = this;
