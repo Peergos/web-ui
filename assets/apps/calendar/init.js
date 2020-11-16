@@ -1098,6 +1098,7 @@ function addMemoField(eventData) {
 function showConfigurationPopup() {
     var calendarModal = document.getElementById("calendarModal");
     calendarModal.style.display = "block";
+     destroyColorPicker();
 
     let colorChange = {targetId: null, newColor: null, oldColor: null};
     let configurationPopupCloseFunc = function() {
@@ -1257,6 +1258,7 @@ function calendarColorChooser(id, callback){
 function destroyColorPicker() {
     if(colorpicker != null) {
         colorpicker.destroy();
+        colorpicker = null;
     };
 }
 function toHexString(rdgColourStr) {
