@@ -320,7 +320,7 @@ function unpackEvent(iCalEvent, fromImport, isSharedWithUs, calendarId) {
     if (fromImport && ! isSharedWithUs) {
         event.owner = currentUsername;
     } else {
-        event.owner = xOwner;
+        event.owner = xOwner != null ? xOwner : '';
     }
     event['calendarId'] = calendarId;
     if (iCalEvent.getFirstPropertyValue('status') === "CANCELLED") {
