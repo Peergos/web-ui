@@ -348,10 +348,10 @@ module.exports = {
 	reloadCalendar: function() {
         this.closeApps();
         let that = this;
-        Vue.nextTick(function() {
+        setTimeout(function(){
             that.toggleNav();
             that.showCalendar();
-        });
+        },600);
     },
     navigateToAction: function(directory, filename) {
         let newPath = directory.startsWith("/") ? directory.substring(1).split('/') : directory.split('/');
