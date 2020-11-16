@@ -1129,13 +1129,21 @@ function calendarModalHandler(event, colorChange, configurationPopupCloseFunc) {
     }
     if (event.target.id == "calendarModal") {
         configurationPopupCloseFunc();
-    } else if (event.target.id == "color-picker-container"
-        || event.target.id == "add-calendar-container"
-        || event.target.className == "calendar-modal-content") {
-            calendarColorChange(colorChange);
+    } else if (event.target.id == "color-picker-cancel-btn") {
+        resetColorChange(colorChange);
+    } else if (event.target.id == "color-picker-confirm-btn") {
+        calendarColorChange(colorChange);
     } else if (event.srcElement.className == "line-item") {
         calendarColorChooser(event.target.id, colorChangeCallback);
     }
+}
+function resetColorChange(colorChange) {
+    if (colorChange.targetId != null) {
+        let calendarItem = document.getElementById(colorChange.targetId);
+        let originalColor = colorChange.oldColor;
+        calendarItem.style = "border-color:" + originalColor + "; background-color: " + originalColor;
+    }
+    destroyColorPicker();
 }
 function calendarColorChange(colorChange) {
     if (colorChange.targetId == null) {
@@ -1234,7 +1242,7 @@ function deleteCalendar(item){
     console.log("deleteCalendar=" + item.name);
     mainWindow.postMessage({ calendarName: item.name, id: item.id, type:"deleteCalendar"}, origin);
 }
-function calendarColorChooser(id, callback){
+function calendarColorChooser(id, changeCallback){
     let calendarItem = document.getElementById(id);
 
     let currentColor = calendarItem.style.borderColor;
@@ -1252,13 +1260,14 @@ function calendarColorChooser(id, callback){
     colorpicker.on('selectColor', function(ev) {
         let updatedColor = ev.color;
         calendarItem.style = "border-color:" + updatedColor + "; background-color: " + updatedColor;
-        callback(id, updatedColor, currentColorRGB);
+        changeCallback(id, updatedColor, currentColorRGB);
     });
 }
 function destroyColorPicker() {
     if(colorpicker != null) {
         colorpicker.destroy();
         colorpicker = null;
+        colorPickerElement.style.display = "none";
     };
 }
 function toHexString(rdgColourStr) {
