@@ -2417,3 +2417,17 @@ ul li:hover {
   background-color: rgb(22, 169, 138);
   color: #fff;
 }
+
+
+.button-confirm {
+    background-color: #26b99a;
+    color: #fff;
+}
+.button-confirm:hover {
+  background-color: rgb(22, 169, 138);
+  color: #fff;
+}
+.button-confirm:active {
+  background-color: rgb(22, 169, 138);
+  color: #fff;
+}
