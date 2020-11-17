@@ -3189,13 +3189,6 @@ function Slider(options, container) {
   /**
    * @type {object}
    */
-
-    setTimeout(function() {
-	var colorBox = document.getElementsByClassName("tui-colorpicker-slider-container")[0];
-	var target = document.getElementsByClassName("color-box")[0]; 
-	colorBox.parentNode.removeChild(colorBox);
-	target.appendChild(colorBox);
-    }, 0);
     
   this.options = extend({
     color: '#f8f8f8',
