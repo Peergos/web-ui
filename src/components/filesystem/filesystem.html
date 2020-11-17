@@ -98,6 +98,7 @@
     v-if="showSocial" 
     v-on:hide-social="showSocial = false"
     v-on:external-change="externalChange++"
+    :displayProfile="displayProfile"
     :data="social" 
     :context="context" 
     :messages="messages">

@@ -1151,8 +1151,11 @@ module.exports = {
             } else {
                 this.closeMenu();
             }
-            this.showSpinner = true;
             let username = showEditForm ? this.context.username : this.selectedFiles[0].getOwnerName();
+            this.displayProfile(username, showEditForm);
+        },
+        displayProfile: function(username, showEditForm) {
+            this.showSpinner = true;
             let that = this;
             let context = this.context;
             peergos.shared.user.ProfilePaths.getFirstName(username, context)
