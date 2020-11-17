@@ -1400,7 +1400,7 @@ module.exports = {
                         let edit_usernames = fileSharedWithState.writeAccess.toArray([]);
                         that.sharedWithData = {read_shared_with_users:read_usernames, edit_shared_with_users:edit_usernames};
                         that.fromApp = true;
-                        that.displayName = this.nameToDisplay != null && this.nameToDisplay.length > 0 ?
+                        that.displayName = nameToDisplay != null && nameToDisplay.length > 0 ?
                                                      nameToDisplay : file.getFileProperties().name;
                         that.allowReadWriteSharing = allowReadWriteSharing;
                         that.showShare = true;
