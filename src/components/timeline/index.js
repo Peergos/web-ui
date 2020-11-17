@@ -56,6 +56,16 @@ module.exports = {
                 that.requestingMoreResults = false;
             });
         },
+        filterSharedItems: function(items) {
+            let filteredSharedItems = [];
+            for(var i=0; i < items.length; i++) {
+                let currentSharedItem = items[i];
+                if (!currentSharedItem.path.startsWith("/" + currentSharedItem.owner + "/.profile/")) {
+                    filteredSharedItems.push(currentSharedItem);
+                }
+            }
+            return filteredSharedItems;
+        },
         requestMoreResults: function() {
             let that = this;
             if (that.noMoreResults || that.requestingMoreResults) {
@@ -66,7 +76,7 @@ module.exports = {
             let startIndex = Math.max(0, this.pageEndIndex - this.pageSize);
             this.retrieveResults(startIndex, this.pageEndIndex).thenApply(function(additionalItems) {
                that.pageEndIndex = that.pageEndIndex - additionalItems.length;
-               let items = additionalItems.reverse();
+               let items = that.filterSharedItems(additionalItems.reverse());
                if (items.length == 0) {
                     that.showSpinner = false;
                     that.requestingMoreResults = false;
@@ -202,7 +212,7 @@ module.exports = {
                 that.retrieveResults(startIndex, that.pageEndIndex, []).thenApply(function(additionalItems) {
                     that.pageEndIndex = that.pageEndIndex - additionalItems.length;
                     let allTimelineEntries = [];
-                    let items = unseenItems.reverse().concat(additionalItems.reverse());
+                    let items = that.filterSharedItems(unseenItems.reverse().concat(additionalItems.reverse()));
                     var numberOfEntries = items.length;
                     if (numberOfEntries == 0) {
                         that.data = allTimelineEntries;
