@@ -4611,7 +4611,7 @@ var template = __webpack_require__(52);
 
 module.exports = function (context) {
   var item = ['<li><input class="{{cssPrefix}}palette-button{{isSelected @this}}{{getItemClass @this}}" type="button"', '{{if isValidRGB @this}}', ' style="background-color:{{@this}};color:{{@this}}"', '{{/if}}', ' title="{{@this}}" value="{{@this}}" /></li>'].join('');
-  var layout = ['<ul class="{{cssPrefix}}clearfix">', '{{each preset}}', item, '{{/each}}', '</ul>', '<input type="button" class="{{cssPrefix}}palette-toggle-slider" value="{{detailTxt}}" />', '<input id="color-picker-cancel-btn" type="button" class="{{cssPrefix}}palette-custom-button" value="Cancel" />', '<input id="color-picker-confirm-btn" type="button" class="{{cssPrefix}}palette-custom-button button-confirm" value="Confirm" />', '</div>'].join('\n');
+  var layout = ['<ul class="{{cssPrefix}}clearfix">', '{{each preset}}', item, '{{/each}}', '</ul>', '<input type="button" class="{{cssPrefix}}palette-toggle-slider" value="{{detailTxt}}" />', '<div style="padding-top:10px;"><input id="color-picker-cancel-btn" type="button" class="{{cssPrefix}}palette-custom-button" value="Cancel" />', '<input id="color-picker-confirm-btn" type="button" class="{{cssPrefix}}palette-custom-button button-confirm" value="OK" /></div></div>', '</div>'].join('\n');
   return template(layout, context);
 };
 

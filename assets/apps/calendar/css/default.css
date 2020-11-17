@@ -2421,15 +2421,28 @@ ul li:hover {
 .button-confirm {
     background-color: #26b99a;
     color: #fff;
-    height: 22px;
+    width: 45%;
     border-radius: 3px;
-    border: none;
+    border-left-width: 17px;
+    border-right-width: 17px;
+    border-top-width: 5px;
+    border-bottom-width: 5px;
+    border-block-color: #26b99a;
+    border-left-color: #26b99a;
+    border-right-color: #26b99a;
+    border-style: solid;
 }
 .button-confirm:hover {
-  background-color: rgb(22, 169, 138);
-  color: #fff;
+    background-color: rgb(22, 169, 138);
+    border-block-color: rgb(22, 169, 138);
+    border-left-color: rgb(22, 169, 138);
+    border-right-color: rgb(22, 169, 138);
+    color: #fff;
 }
 .button-confirm:active {
-  background-color: rgb(22, 169, 138);
-  color: #fff;
+    background-color: rgb(22, 169, 138);
+    border-block-color: rgb(22, 169, 138);
+    border-left-color: rgb(22, 169, 138);
+    border-right-color: rgb(22, 169, 138);
+    color: #fff;
 }
