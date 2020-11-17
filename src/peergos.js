@@ -1,3 +1,4 @@
+var Account         = require('./components/account');
 var Admin           = require('./components/admin');
 var App             = require('./components/app');
 var Calendar        = require('./components/calendar');
@@ -15,13 +16,14 @@ var Modal           = require('./components/modal');
 var Password        = require('./components/password');
 var ProfileEdit     = require('./components/profile/edit-profile');
 var ProfileView     = require('./components/profile/view-profile');
-var Account         = require('./components/account');
 var PasswordUtil    = require('./components/passwordutil');
 var Payments        = require('./components/payment');
 var Pdf             = require('./components/pdf');
 var ProgressBar     = require('./components/progressbar');
 var MessageBar     = require('./components/messagebar');
 var Prompt          = require('./components/prompt');
+var Replace         = require('./components/replace');
+var Search          = require('./components/search');
 var Share           = require('./components/share');
 var Signup          = require('./components/signup');
 var Social          = require('./components/social');
@@ -33,9 +35,9 @@ var Todo            = require('./components/todo');
 var Tour            = require('./components/tour');
 var Confirm         = require('./components/confirm');
 var Warning         = require('./components/warning');
-var Replace         = require('./components/replace');
 
 // Loading components
+Vue.component('account', Vue.extend(Account));
 Vue.component('admin', Vue.extend(Admin));
 Vue.component('app', Vue.extend(App));
 Vue.component('calendar', Vue.extend(Calendar));
@@ -52,12 +54,13 @@ Vue.component('modal', Vue.extend(Modal));
 Vue.component('password', Vue.extend(PasswordUtil).extend(Password));
 Vue.component('profile-edit', Vue.extend(ProfileEdit));
 Vue.component('profile-view', Vue.extend(ProfileView));
-Vue.component('account', Vue.extend(Account));
 Vue.component('payment', Vue.extend(Payments));
 Vue.component('pdf', Vue.extend(Downloader).extend(Pdf));
 Vue.component('progressbar', Vue.extend(ProgressBar));
 Vue.component('messagebar', Vue.extend(MessageBar));
 Vue.component('prompt', Vue.extend(Prompt));
+Vue.component('replace', Vue.extend(Replace));
+Vue.component('search', Vue.extend(Search));
 Vue.component('signup', Vue.extend(PasswordUtil).extend(Signup));
 Vue.component('share', Vue.extend(Share));
 Vue.component('social', Vue.extend(Social));
@@ -69,7 +72,6 @@ Vue.component('todo-board', Vue.extend(Downloader).extend(Todo));
 Vue.component('tour', Vue.extend(Tour));
 Vue.component('confirm', Vue.extend(Confirm));
 Vue.component('warning', Vue.extend(Warning));
-Vue.component('replace', Vue.extend(Replace));
 
 // Initializing Vue after GWT has finished
 setTimeout(function() {

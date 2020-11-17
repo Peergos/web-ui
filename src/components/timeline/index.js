@@ -101,7 +101,7 @@ module.exports = {
         },
         navigateTo: function (entry) {
             this.close();
-            this.navigateToAction(entry.path, entry.isDirectory ? null : entry.fullName);
+            this.navigateToAction(entry.path);
         },
         view: function (entry) {
             var filename = entry.file.getName();
@@ -111,7 +111,7 @@ module.exports = {
                 this.importCalendarFile(false, entry.file);
             } else {
                 if (entry.isDirectory) {
-                    this.navigateToAction(entry.path, null);
+                    this.navigateToAction(entry.path);
                     this.close();
                 } else {
                     this.viewAction(entry.path, entry.fullName);

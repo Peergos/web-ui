@@ -4,6 +4,7 @@ module.exports = {
         return {
             contextUpdates: 0,
             path: [],
+            searchPath: null,
             currentDir: null,
 	    files: [],
             grid: true,
@@ -29,6 +30,7 @@ module.exports = {
             showGallery: false,
             showSocial:false,
             showTimeline:false,
+            showSearch:false,
             showHexViewer:false,
             showCodeEditor:false,
             showPdfViewer:false,
@@ -365,7 +367,7 @@ module.exports = {
             that.showCalendar();
         },600);
     },
-    navigateToAction: function(directory, filename) {
+    navigateToAction: function(directory) {
         let newPath = directory.startsWith("/") ? directory.substring(1).split('/') : directory.split('/');
         let currentPath = this.path;
         if (newPath.length != currentPath.length) {
@@ -407,6 +409,23 @@ module.exports = {
 	    else if (app == "timeline")
 		this.showTimeline = true;
 	},
+    canSearch: function() {
+       try {
+           if (this.currentDir == null)
+               return false;
+           if (this.selectedFiles.length != 1)
+               return false;
+           return this.selectedFiles[0].isDirectory();
+       } catch (err) {
+           return false;
+       }
+    },
+    openSearch: function(fromRoot) {
+        this.searchPath = fromRoot ? "/" + this.getContext().username
+            : this.getPath() + this.selectedFiles[0].getFileProperties().name;
+        this.showSearch = true;
+        this.closeMenu();
+    },
 	updateCurrentDir: function() {
 	    this.updateCurrentDirectory(null);
 	},

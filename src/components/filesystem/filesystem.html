@@ -51,6 +51,7 @@
   <div id="sideMenu" class="sidenav">
     <a><span/>&nbsp</a>
     <a id="homeButton" @click="goHome()"><span data-toggle="tooltip" data-placement="bottom" title="Global root" class="fas fa-globe-asia" style="cursor: pointer;"/></a>
+    <a id="searchButton" @click="openSearch(true)"><span data-toggle="tooltip" data-placement="bottom" title="Search..." class="fa fa-search" style="cursor: pointer;"/></a>
     <a id="timelineButton" v-if="isLoggedIn" @click="showTimelineView()"><span data-toggle="tooltip" data-placement="bottom" title="Timeline" class="fas fa-history" style="cursor: pointer;"/></a>
     <a v-if="isLoggedIn" @click="showCalendar"><span data-toggle="tooltip" data-placement="bottom" title="Calendar" class="fa fa-calendar-alt"/></a>
     <a v-if="isLoggedIn" @click="newTodoBoard"><span data-toggle="tooltip" data-placement="bottom" title="Todo Board" class="fas fa-tasks"/></a>
@@ -67,7 +68,7 @@
       <li id='cut-file' v-if="isNotBackground && isWritable" v-on:click="cut">Cut</li>
       <li id='paste-file' v-if="isPasteAvailable" v-on:click="paste">Paste</li>
       <li id='share-file' v-if="(isNotHome || isNotBackground) && isLoggedIn" v-on:click="showShareWith">Share</li>
-      <li id='import-ics-file' v-if="isLoggedIn && isNotBackground && isIcsFile" v-on:click="importICALFile(false)">Import into Calendar</li>
+      <li id='file-search' v-if="canSearch" v-on:click="openSearch(false)">Search...</li>
     </ul>
   </div>
   <div v-if="viewMenu && isProfileViewable()">
@@ -115,6 +116,14 @@
     :displayProfile="displayProfile"
     :context="context">
   </timeline>
+  <search
+          v-if="showSearch"
+          v-on:hide-search="showSearch = false"
+          :path="searchPath"
+          :navigateToAction="navigateToAction"
+          :viewAction="viewAction"
+          :context="context">
+  </search>
   <admin
     v-if="showAdmin"
     v-on:hide-admin="showAdmin = false"
