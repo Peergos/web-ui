@@ -609,3 +609,7 @@ h3 {word-wrap:break-word; white-space:normal;}
     -o-transition: border-color ease-in-out .15s,box-shadow ease-in-out .15s;
     transition: border-color ease-in-out .15s,box-shadow ease-in-out .15s;
 }
+
+.profile-table th, td {
+  padding: 2px;
+}
