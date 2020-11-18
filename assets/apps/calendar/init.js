@@ -1109,8 +1109,8 @@ function showConfigurationPopup() {
      };
     calendarModal.onclick = (ev) => calendarModalHandler(ev, colorChange, configurationPopupCloseFunc);
 
-    var calendarModalClose = document.getElementsByClassName("calendar-modal-close")[0];
-    calendarModalClose.onclick = configurationPopupCloseFunc;
+    //var calendarModalClose = document.getElementsByClassName("calendar-modal-close")[0];
+    //calendarModalClose.onclick = configurationPopupCloseFunc;
 
 	let calendarListElement = document.getElementById('calendar-list');
 	while(calendarListElement.hasChildNodes()) {
@@ -1188,17 +1188,18 @@ function appendCalendar(item) {
     div.appendChild(innerDiv);
     var itemName = document.createTextNode(item.name);
     innerDiv.appendChild(itemName);
-
+	innerDiv.addEventListener('click', function(){renameCalendar(item);});
     var span = document.createElement("SPAN");
     span.className = "line-items-calendar-buttons";
-
+    li.appendChild(span);
+    /*
     var renameButton = document.createElement("button");
     renameButton.innerText = 'Rename';
     renameButton.style = "margin-right: 5px;";
     renameButton.addEventListener('click', function(){renameCalendar(item);});
     span.appendChild(renameButton);
     li.appendChild(span);
-
+    */
     var importICalButton = document.createElement("button");
 	importICalButton.innerText = 'Import ICAL';
 	//<button class="btn btn-success" onclick="document.getElementById('uploadImageInput').click()">Upload Image</button>
@@ -1217,8 +1218,10 @@ function appendCalendar(item) {
     uploadICal.accept="text/calendar";
     span.appendChild(uploadICal);
 
-    var deleteCalendarButton = document.createElement("button");
-    deleteCalendarButton.innerText = 'Delete';
+    var deleteCalendarButton = document.createElement("img");
+    //deleteCalendarButton.innerText = 'Delete';
+    deleteCalendarButton.src = "./images/trash.png";
+    deleteCalendarButton.style.marginLeft = "10px";
     if (item.id == "1") {
         deleteCalendarButton.style.visibility= 'hidden';
     } else {
