@@ -26,7 +26,8 @@ ol li {
 
 ol li::before {
     letter-spacing: 0.1em;
-    content: "\22ee \22ee     "counter(step-counter)".";
+    /* chrome screws this up content: "\22ee \22ee     "counter(step-counter)"."; */
+    content: "\2e2c     "counter(step-counter)".";
     cursor: pointer;
     margin-right: 5px;
     position: relative;
