@@ -17,10 +17,10 @@
   display: block;
 }
 .tui-colorpicker-container {
-  /*width: 170px;*/
+  width: 152px;
 }
 .tui-colorpicker-palette-container {
-  /*width: 152px;*/
+  width: 152px;
 }
 .tui-colorpicker-palette-container ul {
   width: 152px;
@@ -76,13 +76,13 @@
   display: inline-block;
   zoom: 1;
   vertical-align: middle;
-  /* float: right; */
+  float: right;
 }
 .tui-colorpicker-palette-custom-button {
   display: inline-block;
   zoom: 1;
   vertical-align: middle;
-  /* float: right; */
+  float: right;
 }
 .tui-colorpicker-slider-container {
   margin: 5px 0 0 0;
@@ -139,7 +139,7 @@
   height: 122px;
 }
 .tui-colorpicker-svg-huebar {
-  /* float: right; */
+  float: right;
   width: 18px;
   height: 120px;
   border: 1px solid #ccc;

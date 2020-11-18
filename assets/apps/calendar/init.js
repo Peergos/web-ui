@@ -1129,7 +1129,7 @@ function calendarModalHandler(event, colorChange, configurationPopupCloseFunc) {
     }
     if (event.target.id == "calendarModal") {
         configurationPopupCloseFunc();
-    } else if (event.target.id == "color-picker-cancel-btn") {
+    } else if (event.target.id == "color-picker-container") {
         resetColorChange(colorChange);
     } else if (event.target.id == "color-picker-confirm-btn") {
         calendarColorChange(colorChange);
@@ -1255,8 +1255,10 @@ function calendarColorChooser(id, changeCallback){
         container: colorPickerElement,
         usageStatistics: false,
         preset: colorPalette,
-        color: colorPalette[0]
+        color: colorPalette[0],
+        detailTxt: 'Confirm'
     });
+    colorpicker._onToggleSlider();
     colorpicker.on('selectColor', function(ev) {
         let updatedColor = ev.color;
         calendarItem.style = "border-color:" + updatedColor + "; background-color: " + updatedColor;
