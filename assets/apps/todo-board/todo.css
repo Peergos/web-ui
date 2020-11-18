@@ -5,14 +5,14 @@
   grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
 }
 
-
 ol {
   margin: 0;
   font: 400 13.3333px Arial;
+  list-style-type: none;
 }
 
 ol li {
-  cursor: pointer;
+  counter-increment: step-counter;
   position: relative;
   padding: 12px 8px 12px 40px;
   background: #eee;
@@ -23,6 +23,16 @@ ol li {
   -ms-user-select: none;
   user-select: none;
 }
+
+ol li::before {
+    letter-spacing: 0.1em;
+    content: "\22ee \22ee     "counter(step-counter)".";
+    cursor: pointer;
+    margin-right: 5px;
+    position: relative;
+    right: 5.2em;
+}
+
 ol li:nth-child(odd) {
   background: #f9f9f9;
 }

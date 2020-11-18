@@ -288,8 +288,12 @@ function addDragAndDropListeners(element) {
 
 
 function dragStarted(evt){
-	evt.dataTransfer.setData("Text", evt.target.id);
-	evt.dataTransfer.effectAllowed = "move";
+    if (evt.offsetX > 0) { // only allow drags starting in the ::before area
+	evt.preventDefault();
+	return;
+    }
+    evt.dataTransfer.setData("Text", evt.target.id);
+    evt.dataTransfer.effectAllowed = "move";
 }
 
 function dropped(evt){
