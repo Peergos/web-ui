@@ -1297,9 +1297,9 @@ function destroyColorPicker() {
         colorPickerElement.style.display = "none";
     };
 }
-function toHexString(rgbColourStr) {
-	let colorRGB = rgbColourStr.replaceAll('rgb(','');
-	colorRGB = colorRGB.replaceAll(')','');
+function toHexString(rdgColourStr) {
+    let colorRGB = rdgColourStr.substring(4);
+    colorRGB = colorRGB.substring(0, colorRGB.length - 1);
     colorRGB = colorRGB.split(',');
     let red = toHex(new Number(colorRGB[0]));
     let green = toHex(new Number(colorRGB[1]));
