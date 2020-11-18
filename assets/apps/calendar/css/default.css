@@ -2418,21 +2418,44 @@ ul li:hover {
   color: #fff;
 }
 
+.button-cancel {
+    width: 40%;
+    display: inline;
+    margin: 5px;
+    border-width: 1px;
+    border-radius: 3px;
+    border-style: solid;
+    padding: 5px;
+}
+
 .button-confirm {
     background-color: #26b99a;
     color: #fff;
-    float: right;
-    margin-right: 5px;
-    display: inline-block;
+    width: 40%;
+    margin: 5px;
+    padding: 5px;
+    display: inline;
     zoom: 1;
     vertical-align: middle;
+    border-width: 1px;
     border-radius: 3px;
     border-color: #26b99a;
     border-style: solid;
+    border-block-color: #26b99a;
+    border-left-color: #26b99a;
+    border-right-color: #26b99a;
+    border-top-color: #26b99a;
+    border-bottom-color: #26b99a;
+    border-style: solid;
 }
 .button-confirm:hover {
-  background-color: rgb(22, 169, 138);
-  color: #fff;
+    background-color: rgb(22, 169, 138);
+    border-block-color: rgb(22, 169, 138);
+    border-left-color: rgb(22, 169, 138);
+    border-top-color: rgb(22, 169, 138);
+    border-right-color: rgb(22, 169, 138);
+    border-bottom-color: rgb(22, 169, 138);
+    color: #fff;
 }
 .button-confirm:active {
   background-color: rgb(22, 169, 138);

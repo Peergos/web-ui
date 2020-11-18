@@ -1271,20 +1271,19 @@ function calendarColorChooser(id, changeCallback){
     buttonDiv.classList.add("tui-colorpicker-button-container");
     colorPickerContainer.appendChild(buttonDiv);
 
-    var confirmItem = document.createElement("INPUT");
-    buttonDiv.appendChild(confirmItem);
-    confirmItem.id="color-picker-confirm-btn";
-    confirmItem.type = "button";
-    //confirmItem.classList.add("tui-colorpicker-palette-toggle-slider");
-    confirmItem.classList.add("button-confirm");
-    confirmItem.value = "OK";
-
     var cancelItem = document.createElement("INPUT");
     buttonDiv.appendChild(cancelItem);
     cancelItem.id="color-picker-cancel-btn";
     cancelItem.type = "button";
-    cancelItem.classList.add("tui-colorpicker-palette-toggle-slider");
+    cancelItem.classList.add("button-cancel");
     cancelItem.value = "Cancel";
+    
+    var confirmItem = document.createElement("INPUT");
+    buttonDiv.appendChild(confirmItem);
+    confirmItem.id="color-picker-confirm-btn";
+    confirmItem.type = "button";
+    confirmItem.classList.add("button-confirm");
+    confirmItem.value = "OK";
 }
 function destroyColorPicker() {
     if(colorpicker != null) {
