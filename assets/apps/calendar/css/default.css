@@ -2371,7 +2371,7 @@ ul {
 ul li {
   cursor: pointer;
   position: relative;
-  padding: 12px 8px 12px 40px;
+  padding: 12px 8px 12px 10px;
   background: #eee;
   transition: 0.2s;
   /* make the list items unselectable */
