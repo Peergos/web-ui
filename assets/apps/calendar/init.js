@@ -1202,7 +1202,7 @@ function appendCalendar(item) {
     li.appendChild(span);
     */
     var importICalButton = document.createElement("button");
-	importICalButton.innerText = 'Import ICAL';
+	importICalButton.innerText = 'Import';
 	//<button class="btn btn-success" onclick="document.getElementById('uploadImageInput').click()">Upload Image</button>
 	importICalButton.addEventListener('click', function(){
 	    document.getElementById('uploadImageInput-cal-' + item.id).click();
@@ -1297,8 +1297,8 @@ function destroyColorPicker() {
         colorPickerElement.style.display = "none";
     };
 }
-function toHexString(rdgColourStr) {
-	let colorRGB = rdgColourStr.replaceAll('rgb(','');
+function toHexString(rgbColourStr) {
+	let colorRGB = rgbColourStr.replaceAll('rgb(','');
 	colorRGB = colorRGB.replaceAll(')','');
     colorRGB = colorRGB.split(',');
     let red = toHex(new Number(colorRGB[0]));
