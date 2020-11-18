@@ -2351,6 +2351,9 @@ input[type='checkbox'].tui-full-calendar-checkbox-round + span {
   float: right;
   font-size: 28px;
   font-weight: bold;
+  position: relative;
+  z-index: 10;
+  line-height: 0;
 }
 
 .calendar-modal-close:hover,

@@ -1109,8 +1109,8 @@ function showConfigurationPopup() {
      };
     calendarModal.onclick = (ev) => calendarModalHandler(ev, colorChange, configurationPopupCloseFunc);
 
-    //var calendarModalClose = document.getElementsByClassName("calendar-modal-close")[0];
-    //calendarModalClose.onclick = configurationPopupCloseFunc;
+    var calendarModalClose = document.getElementsByClassName("calendar-modal-close")[0];
+    calendarModalClose.onclick = configurationPopupCloseFunc;
 
 	let calendarListElement = document.getElementById('calendar-list');
 	while(calendarListElement.hasChildNodes()) {
