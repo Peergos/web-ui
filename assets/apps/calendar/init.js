@@ -1129,7 +1129,7 @@ function calendarModalHandler(event, colorChange, configurationPopupCloseFunc) {
     }
     if (event.target.id == "calendarModal") {
         configurationPopupCloseFunc();
-    } else if (event.target.id == "color-picker-container") {
+    } else if (event.target.id == "color-picker-container" || event.target.id == "color-picker-cancel-btn") {
         resetColorChange(colorChange);
     } else if (event.target.id == "color-picker-confirm-btn") {
         calendarColorChange(colorChange);
@@ -1264,6 +1264,27 @@ function calendarColorChooser(id, changeCallback){
         calendarItem.style = "border-color:" + updatedColor + "; background-color: " + updatedColor;
         changeCallback(id, updatedColor, currentColorRGB);
     });
+    //let colorPickerEl = document.getElementById('color-picker');
+    var colorPickerContainer = document.getElementsByClassName("tui-colorpicker-container")[0];
+//, '<input id="color-picker-confirm-btn" type="button" class="{{cssPrefix}}palette-toggle-slider" value="{{detailTxt}}" />'
+    var buttonDiv = document.createElement("div");
+    buttonDiv.classList.add("tui-colorpicker-button-container");
+    colorPickerContainer.appendChild(buttonDiv);
+
+    var confirmItem = document.createElement("INPUT");
+    buttonDiv.appendChild(confirmItem);
+    confirmItem.id="color-picker-confirm-btn";
+    confirmItem.type = "button";
+    //confirmItem.classList.add("tui-colorpicker-palette-toggle-slider");
+    confirmItem.classList.add("button-confirm");
+    confirmItem.value = "Confirm";
+
+    var cancelItem = document.createElement("INPUT");
+    buttonDiv.appendChild(cancelItem);
+    cancelItem.id="color-picker-cancel-btn";
+    cancelItem.type = "button";
+    cancelItem.classList.add("tui-colorpicker-palette-toggle-slider");
+    cancelItem.value = "Cancel";
 }
 function destroyColorPicker() {
     if(colorpicker != null) {

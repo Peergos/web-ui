@@ -33,6 +33,10 @@
   padding: 0 3px 3px 0;
   list-style: none;
 }
+.tui-colorpicker-button-container {
+  width: 152px;
+  padding-bottom: 20px;
+}
 .tui-colorpicker-palette-button {
   display: block;
   border: none;
@@ -77,6 +81,7 @@
   zoom: 1;
   vertical-align: middle;
   float: right;
+  margin-right: 5px;
 }
 .tui-colorpicker-palette-custom-button {
   display: inline-block;
