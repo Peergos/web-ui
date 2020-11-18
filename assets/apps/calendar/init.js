@@ -1277,7 +1277,7 @@ function calendarColorChooser(id, changeCallback){
     confirmItem.type = "button";
     //confirmItem.classList.add("tui-colorpicker-palette-toggle-slider");
     confirmItem.classList.add("button-confirm");
-    confirmItem.value = "Confirm";
+    confirmItem.value = "OK";
 
     var cancelItem = document.createElement("INPUT");
     buttonDiv.appendChild(cancelItem);
