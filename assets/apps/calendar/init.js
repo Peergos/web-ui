@@ -1188,6 +1188,7 @@ function appendCalendar(item) {
     div.appendChild(innerDiv);
     var itemName = document.createTextNode(item.name);
     innerDiv.appendChild(itemName);
+    innerDiv.style.cursor = "text";
 	innerDiv.addEventListener('click', function(){renameCalendar(item);});
     var span = document.createElement("SPAN");
     span.className = "line-items-calendar-buttons";
