@@ -2343,6 +2343,7 @@ input[type='checkbox'].tui-full-calendar-checkbox-round + span {
   padding: 20px;
   border: 1px solid #888;
   width: 80%;
+  max-width: 700px;
 }
 
 .calendar-modal-close {

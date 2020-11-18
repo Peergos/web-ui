@@ -1193,8 +1193,9 @@ function appendCalendar(item) {
     span.className = "line-items-calendar-buttons";
 
     var renameButton = document.createElement("button");
-	renameButton.innerText = 'Rename';
-	renameButton.addEventListener('click', function(){renameCalendar(item);});
+    renameButton.innerText = 'Rename';
+    renameButton.style = "margin-right: 5px;";
+    renameButton.addEventListener('click', function(){renameCalendar(item);});
     span.appendChild(renameButton);
     li.appendChild(span);
 
