@@ -32,6 +32,8 @@ ol li::before {
     margin-right: 5px;
     position: relative;
     right: 5.2em;
+    padding-top: 12px;
+    padding-bottom: 12px;
 }
 
 ol li:nth-child(odd) {
