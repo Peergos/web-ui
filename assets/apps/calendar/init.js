@@ -16,6 +16,12 @@ let CALENDAR_ID_MY_CALENDAR = "1";
 let CALENDAR_EVENT_CANCELLED = "Cancelled";
 let CALENDAR_EVENT_ACTIVE = "Active";
 
+var colorpicker = null;
+let colorPalette = ['#181818', '#282828', '#383838', '#585858', '#B8B8B8', '#D8D8D8', '#E8E8E8', '#F8F8F8', '#AB4642', '#DC9656', '#F7CA88', '#A1B56C', '#86C1B9', '#7CAFC2', '#BA8BAF', '#A16946'];
+let colorPickerElement = document.getElementById('color-picker');
+
+var calendarRequiresReload = false;
+
 function buildUI(isCalendarReadonly) {
     let uiDiv = document.getElementById("ui");
     uiDiv.removeAttribute("style");
@@ -61,7 +67,7 @@ function buildUI(isCalendarReadonly) {
             cal.createSchedules([schedule]);
             addToCache(schedule);
             refreshScheduleVisibility();
-            save(schedule);
+            save(schedule, schedule.calendarId);
         },
         'beforeUpdateSchedule': function(e) {
             var schedule = e.schedule;
@@ -69,6 +75,7 @@ function buildUI(isCalendarReadonly) {
             if(changes == null) {
                 return;
             }
+            let previousCalendarId = schedule.calendarId;
             //console.log('beforeUpdateSchedule', e);
             if (changes && !changes.isAllDay && schedule.category === 'allday') {
                 changes.category = 'time';
@@ -80,7 +87,7 @@ function buildUI(isCalendarReadonly) {
             ScheduleList.splice(ScheduleList.findIndex(v => v.id === schedule.id), 1);
             ScheduleList.push(updatedSchedule);
             updateCache(schedule, updatedSchedule);
-            save(updatedSchedule);
+            save(updatedSchedule, previousCalendarId);
             refreshScheduleVisibility();
         },
         'beforeDeleteSchedule': function(e) {
@@ -127,7 +134,13 @@ window.addEventListener('message', function (e) {
     } else if (e.data.type == "loadAdditional") {
         loadAdditional(e.data.currentMonth, e.data.yearMonth);
     } else if (e.data.type == "respondRenameCalendar") {
-        respondToCalendarRename(e.data.oldName, e.data.newName);
+        respondToCalendarRename(e.data.calendar);
+    } else if (e.data.type == "respondDeleteCalendar") {
+        respondToCalendarDelete(e.data.calendar);
+    } else if (e.data.type == "respondAddCalendar") {
+        respondToCalendarAdd(e.data.newId, e.data.newName, e.data.newColor);
+    } else if (e.data.type == "respondCalendarColorChange") {
+        respondToCalendarColorChange(e.data.calendarName, e.data.newColor);
     } else if(e.data.type == "importICSFile") {
         loadCalendarAsGuest = e.data.loadCalendarAsGuest;
         if(loadCalendarAsGuest) {
@@ -135,23 +148,68 @@ window.addEventListener('message', function (e) {
         } else {
             setCalendars(true, []);
         }
-        importICSFile(e.data.contents, e.data.username, e.data.isSharedWithUs, loadCalendarAsGuest);
+        importICSFile(e.data.contents, e.data.username, e.data.isSharedWithUs, loadCalendarAsGuest, "default", true);
     }
 });
-function renameCalendar(currentName) {
-    mainWindow.postMessage({action:'requestRenameCalendar', currentName: currentName}, origin);
+function renameCalendar(calendar) {
+    mainWindow.postMessage({action:'requestRenameCalendar', calendar: calendar}, origin);
 }
-function respondToCalendarRename(oldName, newName) {
-    let newCalendarName = newName;
+function addCalendar(){
+    let idAsInt = new Number(CALENDAR_ID_MY_CALENDAR) + CalendarList.length;
+    let color = colorPalette[(idAsInt % 8) + 8];
+    mainWindow.postMessage({action:'requestAddCalendar', newColor:color}, origin);
+}
+function respondToCalendarRename(calendar) {
+    let calendarItem = document.getElementById("cal-item-name-" + calendar.id);
+    calendarItem.innerText = calendar.name;
     for(var i=0; i < CalendarList.length;i++) {
         let item = CalendarList[i];
-        if (item.name == oldName) {
-            item.name = newCalendarName;
+        if (item.id == calendar.id) {
+            item.name = calendar.name;
             break;
         }
     }
     replaceCalendarsInUI();
     cal.setCalendars(CalendarList);
+}
+function respondToCalendarColorChange(calendarName, newColor) {
+    let calendarId = findCalendarByName(calendarName).id
+    let calendarEl = document.getElementById("cal-item-" + calendarId);
+    calendarEl.style = "border-color: " + newColor + "; background-color: " + newColor;
+    for(var i=0; i < CalendarList.length;i++) {
+        let item = CalendarList[i];
+        if (item.id == calendarId) {
+            item.bgColor = newColor;
+            item.dragBgColor = newColor;
+            item.borderColor = newColor;
+            break;
+        }
+    }
+    replaceCalendarsInUI();
+    cal.setCalendars(CalendarList);
+}
+function respondToCalendarDelete(calendar) {
+    let calendarItem = document.getElementById("cal-id-" + calendar.id);
+    calendarItem.remove();
+    CalendarList.splice(CalendarList.findIndex(v => v.id === calendar.id), 1);
+    replaceCalendarsInUI();
+    cal.setCalendars(CalendarList);
+}
+
+function respondToCalendarAdd(newId, newName, newColor) {
+
+    let newCalendar = new CalendarInfo();
+    newCalendar.id = newId;
+    newCalendar.name = newName;
+    newCalendar.color = '#ffffff';
+    newCalendar.bgColor = newColor;
+    newCalendar.dragBgColor = newColor;
+    newCalendar.borderColor = newColor;
+    CalendarList.push(newCalendar);
+
+    replaceCalendarsInUI();
+    cal.setCalendars(CalendarList);
+    appendCalendar(newCalendar);
 }
 function initialiseCalendar(loadCalendarAsGuest, calendars) {
     buildUI(loadCalendarAsGuest);
@@ -216,7 +274,7 @@ function displayMessage(msg) {
     mainWindow.postMessage({type:"displayMessage", message: msg}, origin);
 }
 
-function unpackIcal(IcalFile) {
+function unpackIcal(IcalFile, calendarId) {
     let icalComponent = new ICAL.Component(ICAL.parse(IcalFile));
     let vevents = icalComponent.getAllSubcomponents('vevent');
     if(vevents.length != 1) {
@@ -233,10 +291,10 @@ function unpackIcal(IcalFile) {
         return null;
     } else {
         LoadedEvents[vvent.getFirstPropertyValue('uid')] = icalComponent;
-        return unpackEvent(vvent, false, false);
+        return unpackEvent(vvent, false, false, calendarId);
     }
 }
-function unpackEvent(iCalEvent, fromImport, isSharedWithUs) {
+function unpackEvent(iCalEvent, fromImport, isSharedWithUs, calendarId) {
     let event = new Object();
     event['isAllDay'] = true;
     event['Id'] = iCalEvent.getFirstPropertyValue('uid');
@@ -262,9 +320,9 @@ function unpackEvent(iCalEvent, fromImport, isSharedWithUs) {
     if (fromImport && ! isSharedWithUs) {
         event.owner = currentUsername;
     } else {
-        event.owner = xOwner;
+        event.owner = xOwner != null ? xOwner : '';
     }
-    event['calendarId'] = CALENDAR_ID_MY_CALENDAR;
+    event['calendarId'] = calendarId;
     if (iCalEvent.getFirstPropertyValue('status') === "CANCELLED") {
         event['state'] = CALENDAR_EVENT_CANCELLED;
     } else {
@@ -279,7 +337,7 @@ function unpackEvent(iCalEvent, fromImport, isSharedWithUs) {
     return event;
 }
 function addCalendarEvent(eventInfo) {
-    let event = unpackIcal(eventInfo);
+    let event = unpackIcal(eventInfo.data, findCalendarByName(eventInfo.calendarName).id);
     if(event == null) {
         return;
     }
@@ -345,7 +403,7 @@ function updateCache(oldSchedule, newSchedule) {
         }
     }
 }
-function importICSFile(contents, username, isSharedWithUs, loadCalendarAsGuest) {
+function importICSFile(contents, username, isSharedWithUs, loadCalendarAsGuest, calendarName, showConfirmation) {
     currentUsername = username;
     let icalComponent = new ICAL.Component(ICAL.parse(contents));
     let vevents = icalComponent.getAllSubcomponents('vevent');
@@ -362,7 +420,7 @@ function importICSFile(contents, username, isSharedWithUs, loadCalendarAsGuest) 
             displayMessage(msg);
             return null;
         } else {
-            let schedule = buildScheduleFromEvent(unpackEvent(vvent, true, isSharedWithUs));
+            let schedule = buildScheduleFromEvent(unpackEvent(vvent, true, isSharedWithUs, CALENDAR_ID_MY_CALENDAR));
             if (loadCalendarAsGuest) {
                 loadArbitrarySchedule(schedule);
                 if(idx == vevents.length -1) {
@@ -374,9 +432,11 @@ function importICSFile(contents, username, isSharedWithUs, loadCalendarAsGuest) 
                 let month = dt.month() + 1;
                 let output = serialiseICal(schedule);
                 let eventSummary = {datetime: moment(schedule.start.toUTCString()).format('YYYY MMMM Do, h:mm:ss a'), title: schedule.title};
-                allEvents.push({year: year, month: month, Id: schedule.id, item:output, summary: eventSummary});
+
+                allEvents.push({calendarName: calendarName, year: year, month: month, Id: schedule.id, item:output,
+                        summary: eventSummary});
                 if(idx == vevents.length -1) {
-                    mainWindow.postMessage({items:allEvents, type:"saveAll"}, origin);
+                    mainWindow.postMessage({items:allEvents, showConfirmation: showConfirmation, type:"saveAll"}, origin);
                 }
             }
         }
@@ -458,7 +518,8 @@ function deleteSchedule(schedule) {
     let dt = moment.utc(schedule.start.toUTCString());
     let year = dt.year();
     let month = dt.month() + 1;
-    mainWindow.postMessage({year: year, month: month, Id: Id, type:"delete"}, origin);
+    let calendarName = findCalendar(schedule.calendarId).name;
+    mainWindow.postMessage({ calendarName: calendarName, year: year, month: month, Id: Id, type:"delete"}, origin);
 }
 
 function displaySpinner(schedule) {
@@ -485,14 +546,17 @@ function toICalTime(tzDate, isAllDay) {
     }, ICAL.Timezone.utcTimezone);
     return dateTime;
 }
-function save(schedule) {
+function save(schedule, previousCalendarId) {
     //let isPrivate = schedule.isPrivate;
     //let state = schedule.state;
     let dt = moment.utc(schedule.start.toUTCString());
     let year = dt.year();
     let month = dt.month() + 1;
     let output = serialiseICal(schedule);
-    mainWindow.postMessage({year: year, month: month, Id: schedule.id, item:output, type:"save"}, origin);
+    let calendarName = findCalendar(schedule.calendarId).name;
+    let previousCalendarName = findCalendar(previousCalendarId).name;
+    mainWindow.postMessage({ calendarName: calendarName, year: year, month: month, Id: schedule.id,
+        item:output, previousCalendarName: previousCalendarName, type:"save"}, origin);
 }
 function serialiseICal(schedule) {
     var comp = LoadedEvents[schedule.id];
@@ -552,71 +616,41 @@ function findCalendar(id) {
     return found || CalendarList[0];
 }
 
+function findCalendarByName(name) {
+    var found;
+    CalendarList.forEach(function(calendar) {
+        if (calendar.name === name) {
+            found = calendar;
+        }
+    });
+    return found || CalendarList[0];
+}
+
 function setCalendars(headless, calendars) {
-    var calendar;
-    var id = 0;
+    var id = CALENDAR_ID_MY_CALENDAR;
 
-    calendar = new CalendarInfo();
-    id = CALENDAR_ID_MY_CALENDAR;
-    calendar.id = String(id);
-    calendar.name = calendars.length == 0 ? "My Calendar" : calendars[0].name;
-    calendar.color = '#ffffff';
-    calendar.bgColor = '#00a9ff';
-    calendar.dragBgColor = '#00a9ff';
-    calendar.borderColor = '#00a9ff';
-    CalendarList.push(calendar);
-
-/* future extensibility
-    calendar = new CalendarInfo();
-    id = 1; //purple
-    calendar.id = String(id);
-    calendar.name = 'Work';
-    calendar.color = '#ffffff';
-    calendar.bgColor = '#9e5fff';
-    calendar.dragBgColor = '#9e5fff';
-    calendar.borderColor = '#9e5fff';
-    CalendarList.push(calendar);
-
-    calendar = new CalendarInfo();
-    id = 3; //red
-    calendar.id = String(id);
-    calendar.name = 'Family';
-    calendar.color = '#ffffff';
-    calendar.bgColor = '#ff5583';
-    calendar.dragBgColor = '#ff5583';
-    calendar.borderColor = '#ff5583';
-    CalendarList.push(calendar);
-
-    calendar = new CalendarInfo();
-    id = 4; //dark green
-    calendar.id = String(id);
-    calendar.name = 'Friends';
-    calendar.color = '#ffffff';
-    calendar.bgColor = '#03bd9e';
-    calendar.dragBgColor = '#03bd9e';
-    calendar.borderColor = '#03bd9e';
-    CalendarList.push(calendar);
-
-    calendar = new CalendarInfo();
-    id = 5;
-    calendar.id = String(id);
-    calendar.name = 'Cancelled';
-    calendar.color = '#ffffff';
-    calendar.bgColor = '#9d9d9d';
-    calendar.dragBgColor = '#9d9d9d';
-    calendar.borderColor = '#9d9d9d';
-    CalendarList.push(calendar);
-
-    calendar = new CalendarInfo();
-    id = 6;
-    calendar.id = String(id);
-    calendar.name = 'Shared With Me';
-    calendar.color = '#ffffff';
-    calendar.bgColor = '#bbdc00';
-    calendar.dragBgColor = '#bbdc00';
-    calendar.borderColor = '#bbdc00';
-    CalendarList.push(calendar);
-*/
+    if (calendars.length == 0) {
+        var calendar = new CalendarInfo();
+        calendar.id = String(id);
+        calendar.name = "My Calendar";
+        calendar.color = '#ffffff';
+        calendar.bgColor = '#00a9ff';
+        calendar.dragBgColor = '#00a9ff';
+        calendar.borderColor = '#00a9ff';
+        CalendarList.push(calendar);
+    } else {
+        for(var i = 0; i < calendars.length; i++) {
+            var calendar = new CalendarInfo();
+            calendar.name = calendars[i].name;
+            calendar.id = String(id++);
+            calendar.color = '#ffffff';
+            let color = calendars[i].color == null ? '#00a9ff' : calendars[i].color;
+            calendar.bgColor = color;
+            calendar.dragBgColor = color;
+            calendar.borderColor = color;
+            CalendarList.push(calendar);
+        }
+    }
     if (!headless) {
         replaceCalendarsInUI();
     }
@@ -624,23 +658,27 @@ function setCalendars(headless, calendars) {
     function replaceCalendarsInUI() {
         var calendarList = document.getElementById('calendarList');
         var html = [];
-        CalendarList.forEach(function(calendar, idx) {
+        CalendarList.forEach(function(calendar) {
                 html.push('<div class="lnb-calendars-item"><label>' +
                     '<input type="checkbox" class="tui-full-calendar-checkbox-round" value="' + calendar.id + '" checked>' +
                     '<span style="border-color: ' + calendar.borderColor + '; background-color: ' + calendar.borderColor + ';"></span>' +
-                    '</label><label><span id="cal-' + idx + '" style="cursor:text;"></span>' +
+                    '</label><label><span id="cal-' + calendar.id + '" style="cursor:text;"></span>' +
                     '</label></div>'
                 );
         });
         calendarList.innerHTML = html.join('\n');
-        CalendarList.forEach(function(calendar, idx) {
-            let calendarEl = document.getElementById('cal-' + idx);
+        CalendarList.forEach(function(calendar) {
+            let calendarEl = document.getElementById('cal-' + calendar.id);
             let calName = calendar.name;
             calendarEl.innerText = calName;
-            calendarEl.onclick=function() {
-                renameCalendar(calName);
+            calendarEl.onclick=function(e) {
+                let checkbox = target = e.target.parentElement.parentElement.firstElementChild.firstElementChild; //from calendar name to calendar checkbox
+                checkbox.checked = !checkbox.checked;
+                onChangeCalendars(e);
             };
+
         });
+        $('#lnb-calendars').on('change', onChangeCalendars);
     }
     /**
      * Get time template for time and all-day
@@ -715,8 +753,12 @@ function setCalendars(headless, calendars) {
     }
 
     function onChangeCalendars(e) {
-        var calendarId = e.target.value;
-        var checked = e.target.checked;
+        let target = e.target;
+        if(e.target.value == null) {
+            target = e.target.parentElement.parentElement.firstElementChild.firstElementChild; //from calendar name to calendar checkbox
+        }
+        var calendarId = target.value;
+        var checked = target.checked;
         var viewAll = document.querySelector('.lnb-calendars-item input');
         var calendarElements = Array.prototype.slice.call(document.querySelectorAll('#calendarList input'));
         var allCheckedCalendars = true;
@@ -903,7 +945,7 @@ function setRenderRangeText() {
     html.push(moment(cal.getDate().getTime()).format('YYYY.MM.DD'));
   } else if (viewName === 'month' &&
     (!options.month.visibleWeeksCount || options.month.visibleWeeksCount > 4)) {
-    html.push(moment(cal.getDate().getTime()).format('MMMM YYYY'));
+    html.push(moment(cal.getDate().getTime()).format('MMM YYYY'));
   } else {
     html.push(moment(cal.getDateRangeStart().getTime()).format('YYYY.MM.DD'));
     html.push(' ~ ');
@@ -930,14 +972,12 @@ function downloadEvent(schedule) {
     let event = serialiseICal(schedule);
     mainWindow.postMessage({event: event, title: schedule.title, type: 'downloadEvent'}, origin);
 }
-function shareCalendarEvent(id, startDate) {
-    sendEvent(id, startDate, 'shareCalendarEvent');
-}
-function sendEvent(id, startDate, eventType) {
-   let dt = moment.utc(startDate.toUTCString());
+function shareCalendarEvent(schedule) {
+   let dt = moment.utc(schedule.start.toUTCString());
    let year = dt.year();
    let month = dt.month() +1;
-   mainWindow.postMessage({id: id, year: year, month: month, type: eventType}, origin);
+   let calendarName = findCalendar(schedule.calendarId).name;
+   mainWindow.postMessage({calendarName: calendarName, id: schedule.id, year: year, month: month, type: 'shareCalendarEvent'}, origin);
 }
 resizeThrottled = tui.util.throttle(function() {
   cal.render();
@@ -946,7 +986,6 @@ resizeThrottled = tui.util.throttle(function() {
 function setEventListener() {
   $('.dropdown-menu a[role="menuitem"]').on('click', onClickMenu);
   $('#menu-navi').on('click', onClickNavi);
-$('#lnb-calendars').on('change', onChangeCalendars);
   window.addEventListener('resize', resizeThrottled);
 }
 
@@ -1002,7 +1041,7 @@ function buildExtraFields(eventData, that) {
         shareLink.innerText = "Share";
         span1.appendChild(shareLink);
         shareLink.onclick=function() {
-            shareCalendarEvent(eventData.schedule.id, eventData.schedule.start);
+            shareCalendarEvent(eventData.schedule);
         };
         span1.appendChild(document.createTextNode('\u00A0\u00A0'));
     }
@@ -1055,6 +1094,223 @@ function addMemoField(eventData) {
         }
         saveBtn.onclick=handler;
     }
+}
+function showConfigurationPopup() {
+    var calendarModal = document.getElementById("calendarModal");
+    calendarModal.style.display = "block";
+     destroyColorPicker();
+
+    let colorChange = {targetId: null, newColor: null, oldColor: null};
+    let configurationPopupCloseFunc = function() {
+         calendarModal.style.display = "none";
+         if(calendarRequiresReload) {
+             mainWindow.postMessage({action: "requestCalendarReload"}, origin);
+         }
+     };
+    calendarModal.onclick = (ev) => calendarModalHandler(ev, colorChange, configurationPopupCloseFunc);
+
+    var calendarModalClose = document.getElementsByClassName("calendar-modal-close")[0];
+    calendarModalClose.onclick = configurationPopupCloseFunc;
+
+	let calendarListElement = document.getElementById('calendar-list');
+	while(calendarListElement.hasChildNodes()) {
+        calendarListElement.removeChild(calendarListElement.firstChild);
+	}
+    CalendarList.forEach(function(calendar) {
+        appendCalendar(calendar);
+    });
+}
+
+function calendarModalHandler(event, colorChange, configurationPopupCloseFunc) {
+    let colorChangeCallback = function(targetId, newColor, oldColor) {
+        colorChange.targetId = targetId;
+        colorChange.newColor = newColor;
+        colorChange.oldColor = oldColor;
+    }
+    if (event.target.id == "calendarModal") {
+        configurationPopupCloseFunc();
+    } else if (event.target.id == "color-picker-container" || event.target.id == "color-picker-cancel-btn") {
+        resetColorChange(colorChange);
+    } else if (event.target.id == "color-picker-confirm-btn") {
+        calendarColorChange(colorChange);
+    } else if (event.srcElement.className == "line-item") {
+        calendarColorChooser(event.target.id, colorChangeCallback);
+    }
+}
+function resetColorChange(colorChange) {
+    if (colorChange.targetId != null) {
+        let calendarItem = document.getElementById(colorChange.targetId);
+        let originalColor = colorChange.oldColor;
+        calendarItem.style = "border-color:" + originalColor + "; background-color: " + originalColor;
+    }
+    destroyColorPicker();
+}
+function calendarColorChange(colorChange) {
+    if (colorChange.targetId == null) {
+        return;
+    }
+    let id = colorChange.targetId.substring(colorChange.targetId.lastIndexOf('-') + 1);
+    let calendarName = findCalendar(id).name;
+    let newColor = colorChange.newColor;
+    let oldColor = colorChange.oldColor;
+    if (newColor != oldColor) {
+        mainWindow.postMessage({action:'requestCalendarColorChange', calendarName: calendarName, newColor: newColor}, origin);
+        colorChange.targetId = colorChange.newColor = colorChange.oldColor = null;
+    }
+    colorPickerElement.style="display:none";
+}
+function appendCalendar(item) {
+
+    let calendarListElement = document.getElementById('calendar-list');
+    var li = document.createElement("li");
+    li.id = "cal-id-" + item.id;
+    calendarListElement.appendChild(li);
+
+    var div = document.createElement("DIV");
+    li.appendChild(div);
+
+    var inputItem = document.createElement("INPUT");
+    div.appendChild(inputItem);
+    inputItem.type = "checkbox";
+    inputItem.className = "tui-full-calendar-checkbox-round";
+    inputItem.value = "";
+    inputItem.checked = true;
+
+    var itemSpan = document.createElement("SPAN");
+    div.appendChild(itemSpan);
+    itemSpan.style = "border-color: " + item.borderColor + "; background-color: " + item.borderColor;
+    itemSpan.id = "cal-item-" + item.id;
+    itemSpan.className = "line-item";
+
+    var innerDiv = document.createElement("DIV");
+    innerDiv.id = "cal-item-name-" + item.id;
+    innerDiv.style = "display: contents;";
+    div.appendChild(innerDiv);
+    var itemName = document.createTextNode(item.name);
+    innerDiv.appendChild(itemName);
+    innerDiv.style.cursor = "text";
+	innerDiv.addEventListener('click', function(){renameCalendar(item);});
+    var span = document.createElement("SPAN");
+    span.className = "line-items-calendar-buttons";
+    li.appendChild(span);
+    /*
+    var renameButton = document.createElement("button");
+    renameButton.innerText = 'Rename';
+    renameButton.style = "margin-right: 5px;";
+    renameButton.addEventListener('click', function(){renameCalendar(item);});
+    span.appendChild(renameButton);
+    li.appendChild(span);
+    */
+    var importICalButton = document.createElement("button");
+	importICalButton.innerText = 'Import';
+	//<button class="btn btn-success" onclick="document.getElementById('uploadImageInput').click()">Upload Image</button>
+	importICalButton.addEventListener('click', function(){
+	    document.getElementById('uploadImageInput-cal-' + item.id).click();
+    });
+    span.appendChild(importICalButton);
+
+    var uploadICal = document.createElement("INPUT");
+    uploadICal.type = "file";
+    uploadICal.id = 'uploadImageInput-cal-' + item.id;
+    uploadICal.addEventListener('change', function(evt){
+        importICal(item, evt);
+    });
+    uploadICal.style="display:none;";
+    uploadICal.accept="text/calendar";
+    span.appendChild(uploadICal);
+
+    var deleteCalendarButton = document.createElement("img");
+    //deleteCalendarButton.innerText = 'Delete';
+    deleteCalendarButton.src = "./images/trash.png";
+    deleteCalendarButton.style.marginLeft = "10px";
+    if (item.id == "1") {
+        deleteCalendarButton.style.visibility= 'hidden';
+    } else {
+    	deleteCalendarButton.addEventListener('click', function(){
+    	    deleteCalendar(item);
+        });
+    }
+    span.appendChild(deleteCalendarButton);
+}
+
+function importICal(item, evt){
+    let files = evt.target.files || evt.dataTransfer.files;
+    let file = files[0];
+    let filereader = new FileReader();
+    filereader.onload = function(){
+        importICSFile(this.result, currentUsername, false, false, item.name, false);
+        calendarRequiresReload = true;
+    };
+    filereader.readAsText(file);
+}
+function deleteCalendar(item){
+    console.log("deleteCalendar=" + item.name);
+    mainWindow.postMessage({ calendarName: item.name, id: item.id, type:"deleteCalendar"}, origin);
+}
+function calendarColorChooser(id, changeCallback){
+    let calendarItem = document.getElementById(id);
+
+    let currentColor = calendarItem.style.borderColor;
+    destroyColorPicker();
+    let currentColorRGB = toHexString(currentColor);
+    colorPalette[0] = currentColorRGB;
+
+    colorPickerElement.style='';
+    colorpicker = tui.colorPicker.create({
+        container: colorPickerElement,
+        usageStatistics: false,
+        preset: colorPalette,
+        color: colorPalette[0],
+        detailTxt: 'Confirm'
+    });
+    colorpicker._onToggleSlider();
+    colorpicker.on('selectColor', function(ev) {
+        let updatedColor = ev.color;
+        calendarItem.style = "border-color:" + updatedColor + "; background-color: " + updatedColor;
+        changeCallback(id, updatedColor, currentColorRGB);
+    });
+    //let colorPickerEl = document.getElementById('color-picker');
+    var colorPickerContainer = document.getElementsByClassName("tui-colorpicker-container")[0];
+//, '<input id="color-picker-confirm-btn" type="button" class="{{cssPrefix}}palette-toggle-slider" value="{{detailTxt}}" />'
+    var buttonDiv = document.createElement("div");
+    buttonDiv.classList.add("tui-colorpicker-button-container");
+    colorPickerContainer.appendChild(buttonDiv);
+
+    var cancelItem = document.createElement("INPUT");
+    buttonDiv.appendChild(cancelItem);
+    cancelItem.id="color-picker-cancel-btn";
+    cancelItem.type = "button";
+    cancelItem.classList.add("button-cancel");
+    cancelItem.value = "Cancel";
+    
+    var confirmItem = document.createElement("INPUT");
+    buttonDiv.appendChild(confirmItem);
+    confirmItem.id="color-picker-confirm-btn";
+    confirmItem.type = "button";
+    confirmItem.classList.add("button-confirm");
+    confirmItem.value = "OK";
+}
+function destroyColorPicker() {
+    if(colorpicker != null) {
+        colorpicker.destroy();
+        colorpicker = null;
+        colorPickerElement.style.display = "none";
+    };
+}
+function toHexString(rdgColourStr) {
+    let colorRGB = rdgColourStr.substring(4);
+    colorRGB = colorRGB.substring(0, colorRGB.length - 1);
+    colorRGB = colorRGB.split(',');
+    let red = toHex(new Number(colorRGB[0]));
+    let green = toHex(new Number(colorRGB[1]));
+    let blue = toHex(new Number(colorRGB[2]));
+    return "#" +  red + green + blue;
+}
+
+function toHex(n) {
+  var hex = n.toString(16);
+  while (hex.length < 2) {hex = "0" + hex; }
+  return hex;
 }
 
 /**

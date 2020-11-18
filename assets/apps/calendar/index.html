@@ -4,6 +4,7 @@
     <meta charset="utf-8">
     <link rel="stylesheet" type="text/css" href="css/bootstrap.css" />
     <link rel="stylesheet" type="text/css" href="css/default.css" />
+    <link rel="stylesheet" type="text/css" href="css/tui-color-picker.css" />
     <script src="jquery-3.js"></script>
     <script src="bootstrap.js"></script>
     <script src="tui-code-snippet.js"></script>
@@ -12,12 +13,35 @@
     <script src="moment.js"></script>
     <script src="ical.min.js"></script>
     <script src="tui-calendar.js"></script>
+    <script src="tui-color-picker.js"></script>
   </head>
   <body>
     <div id="ui" style="display: none">
+        <div id="calendarModal" class="calendar-modal">
+            <div class="calendar-modal-content">
+	      <span class="calendar-modal-close">&times;</span>
+                <div id="color-picker-container">
+                    <div id="color-picker" style="display:none" ></div>
+                </div>
+                <div id="calendars" style="margin-top: 20px;">
+                    <ul id="calendar-list">
+                    </ul>
+                </div>
+                <div id="add-calendar-container">
+                    <button onclick="addCalendar()" style="margin-top: 10px;">Add Calendar</button>
+                </div>
+            </div>
+        </div>
       <div id="lnb" style="display: none">
 	<div id="lnb-calendars" class="lnb-calendars">
 	  <div>
+          <div class="lnb-calendars-item">
+              <button onclick="showConfigurationPopup()" class="button-action">
+                <label>
+                  <strong>Calendar Settings</strong>
+                </label>
+              </button>
+          </div>
             <div class="lnb-calendars-item">
               <label>
 		<input class="tui-full-calendar-checkbox-square" type="checkbox" value="all" checked>

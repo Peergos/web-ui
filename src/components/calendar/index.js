@@ -60,6 +60,8 @@ module.exports = {
                     that.saveEvent(calendar, e.data);
                 } else if(e.data.type=="saveAll") {
                     that.saveAllEvents(calendar, e.data);
+                } else if(e.data.type=="deleteCalendar") {
+                    that.deleteCalendar(calendar, e.data);
                 } else if(e.data.type=="delete") {
                     that.deleteEvent(calendar, e.data);
                 } else if(e.data.type=="displaySpinner") {
@@ -73,9 +75,15 @@ module.exports = {
                 } else if(e.data.type=="downloadEvent") {
                     that.downloadEvent(calendar, e.data.title, e.data.event);
                 } else if(e.data.type=="shareCalendarEvent") {
-                    that.shareCalendarEvent(calendar, e.data.id, e.data.year, e.data.month);
+                    that.shareCalendarEvent(calendar, e.data.calendarName, e.data.id, e.data.year, e.data.month);
                 } else if (e.data.action == 'requestRenameCalendar') {
-                    that.renameCalendarRequest(calendar, e.data.currentName);
+                    that.renameCalendarRequest(calendar, e.data.calendar);
+                } else if (e.data.action == 'requestCalendarColorChange') {
+                    that.calendarColorChangeRequest(calendar, e.data.calendarName, e.data.newColor);
+                } else if (e.data.action == 'requestAddCalendar') {
+                    that.addCalendarRequest(calendar, e.data.newColor);
+                } else if (e.data.action == 'requestCalendarReload') {
+                    that.reloadCalendar();
                 }
             }
         });
@@ -92,16 +100,20 @@ module.exports = {
             this.load(calendar, year, month, 'load');
         }
 	},
-    renameCalendarRequest: function(calendar, currentName) {
+    reloadCalendar: function() {
+        //This is troublesome on firefox, so disabling - this.$emit("reload-calendar");
+        this.$emit("hide-calendar");
+    },
+    renameCalendarRequest: function(calendar, calendarItem) {
         let that = this;
         this.prompt_placeholder = 'New Calendar name';
-        this.prompt_value = currentName;
+        this.prompt_value = calendarItem.name;
         this.prompt_message = 'Enter a new name';
         this.prompt_max_input_size = 20;
         this.prompt_consumer_func = function(prompt_result) {
             if (prompt_result === null)
                 return;
-            if (prompt_result === currentName)
+            if (prompt_result === calendarItem.name)
                 return;
             let newName = prompt_result.trim();
             if (newName === '')
@@ -109,20 +121,90 @@ module.exports = {
             if (newName === '.' || newName === '..')
                 return;
             setTimeout(function(){
-                for(var i=0;i < that.calendarProperties.calendars.length; i++) {
+                //make sure names are unique
+                for (var i=0;i < that.calendarProperties.calendars.length; i++) {
                     let calendar = that.calendarProperties.calendars[i];
-                    if(calendar.name == currentName) {
-                        calendar.name = prompt_result;
+                    if (calendar.name == newName) {
+                        return;
+                    }
+                }
+                var calendarToChange = null;
+                for (var i=0;i < that.calendarProperties.calendars.length; i++) {
+                    let calendar = that.calendarProperties.calendars[i];
+                    if (calendar.name == calendarItem.name) {
+                        calendarToChange = calendar;
                         break;
                     }
                 }
+                calendarToChange.name = newName;
+                calendarItem.name = newName;
+                that.displaySpinner();
                 that.updatePropertiesFile(calendar, that.calendarProperties).thenApply(res => {
+                    that.removeSpinner();
                     var iframe = document.getElementById("editor");
-                    iframe.contentWindow.postMessage({type: 'respondRenameCalendar', oldName: currentName, newName: prompt_result}, '*');
+                    iframe.contentWindow.postMessage({type: 'respondRenameCalendar', calendar: calendarItem}, '*');
                 });
             });
         };
         this.showPrompt =  true;
+    },
+    addCalendarRequest: function(calendar, newColor) {
+        let that = this;
+        this.prompt_placeholder = 'New Calendar name';
+        this.prompt_value = "";
+        this.prompt_message = 'Enter a new name';
+        this.prompt_max_input_size = 20;
+        this.prompt_consumer_func = function(prompt_result) {
+            if (prompt_result === null)
+                return;
+            let newName = prompt_result.trim();
+            if (newName === '')
+                return;
+            if (newName === '.' || newName === '..')
+                return;
+            setTimeout(function(){
+                //make sure names are unique
+                for (var i=0;i < that.calendarProperties.calendars.length; i++) {
+                    let calendar = that.calendarProperties.calendars[i];
+                    if (calendar.name == newName) {
+                        return;
+                    }
+                }
+                //create directory
+                that.displaySpinner();
+                let newId = String(that.calendarProperties.calendars.length + 1);
+                let dirName = that.generateDirectoryName();
+                that.calendarProperties.calendars.push({name:newName, directory:dirName, color: newColor});
+                that.updatePropertiesFile(calendar, that.calendarProperties).thenApply(res => {
+                    that.removeSpinner();
+                    var iframe = document.getElementById("editor");
+                    iframe.contentWindow.postMessage({type: 'respondAddCalendar', newId: newId, newName: newName, newColor: newColor}, '*');
+                });
+            });
+        };
+        this.showPrompt =  true;
+    },
+    calendarColorChangeRequest: function(calendar, calendarName, newColor) {
+        let that = this;
+        for (var i=0;i < that.calendarProperties.calendars.length; i++) {
+            let calendar = that.calendarProperties.calendars[i];
+            if (calendar.name == calendarName) {
+                calendar.color = newColor;
+                break;
+            }
+        }
+        that.displaySpinner();
+        that.updatePropertiesFile(calendar, that.calendarProperties).thenApply(res => {
+            that.removeSpinner();
+            var iframe = document.getElementById("editor");
+            iframe.contentWindow.postMessage({type: 'respondCalendarColorChange', calendarName: calendarName, newColor: newColor}, '*');
+        });
+    },
+    //https://stackoverflow.com/questions/105034/how-to-create-guid-uuid
+    generateDirectoryName: function() {
+      return ([1e7]+-1e3+-4e3+-8e3+-1e11).replace(/[018]/g, c =>
+        (c ^ crypto.getRandomValues(new Uint8Array(1))[0] & 15 >> c / 4).toString(16)
+      ).substring(0, 8);
     },
     importICSFile: function() {
         let that = this;
@@ -131,7 +213,7 @@ module.exports = {
             iframe.contentWindow.postMessage({type: 'importICSFile', contents: that.importFile,
                 isSharedWithUs: that.importSharedEvent, loadCalendarAsGuest: that.loadCalendarAsGuest,
                 username: that.context.username }, '*');
-        },200);
+        },600);
     },
     loadAdditional: function(calendar, year, month, messageType) {
         let that = this;
@@ -163,15 +245,53 @@ module.exports = {
             let calendars = [];
             for(var i=0;i < that.calendarProperties.calendars.length;i++) {
                 let calendar = that.calendarProperties.calendars[i];
-                calendars.push({name: calendar.name});
+                calendars.push({name: calendar.name, color: calendar.color});
             }
             iframe.contentWindow.postMessage({type: messageType, previousMonth: eventsPreviousMonth,
                     currentMonth: eventsThisMonth, nextMonth: eventsNextMonth, yearMonth: yearMonth
                     , username: that.context.username, calendars: calendars}, '*');
         });
     },
-    removeCalendarEvent: function(calendar, year, month, id) {
-        let dirPath = "default/" + year + "/" + month;
+    postDeleteCalendar: function(calendar, data) {
+        let that = this;
+        this.calendarProperties.calendars.splice(this.calendarProperties.calendars.findIndex(v => v.id === data.id), 1);
+        this.updatePropertiesFile(calendar, this.calendarProperties).thenApply(res => {
+            that.removeSpinner();
+            var iframe = document.getElementById("editor");
+            iframe.contentWindow.postMessage({type: 'respondDeleteCalendar', calendar: data}, '*');
+        });
+    },
+    deleteCalendar: function(calendar, data) {
+        let that = this;
+        this.confirmDeleteCalendar(data.calendarName,
+            () => { that.showConfirm = false;
+        	    that.displaySpinner();
+                let dirPath = peergos.client.PathUtils.directoryToPath(
+                    [that.findCalendarDirectory(data.calendarName)]);
+                calendar.deleteInternal(dirPath).thenApply(function(res) {
+                    that.postDeleteCalendar(calendar, data);
+                }).exceptionally(function(throwable) {
+                    if (throwable.toString() == "java.util.NoSuchElementException") { //Because calendar had no events
+                        that.postDeleteCalendar(calendar, data);
+                    } else {
+                        that.removeSpinner();
+                        that.showMessage("Unable to delete Calendar");
+                        console.log(throwable.getMessage());
+                    }
+                });
+            },
+            () => { that.showConfirm = false;}
+        );
+    },
+    confirmDeleteCalendar: function(calendarName, deleteCalendarFunction, cancelFunction) {
+        this.confirm_message='Do you sure you want to delete calendar: ' + calendarName + " ?";
+        this.confirm_body='';
+        this.confirm_consumer_cancel_func = cancelFunction;
+        this.confirm_consumer_func = deleteCalendarFunction;
+        this.showConfirm = true;
+    },
+    removeCalendarEvent: function(calendar, calendarName, year, month, id) {
+        let dirPath = this.findCalendarDirectory(calendarName) + "/" + year + "/" + month;
         let filename = id + this.CALENDAR_FILE_EXTENSION;
         let filePath = peergos.client.PathUtils.toPath(dirPath.split('/'), filename);
         return calendar.deleteInternal(filePath);
@@ -179,7 +299,7 @@ module.exports = {
     deleteEvent: function(calendar, item) {
 	    const that = this;
 	    that.displaySpinner();
-        this.removeCalendarEvent(calendar, item.year, item.month, item.Id).thenApply(function(res) {
+        this.removeCalendarEvent(calendar, item.calendarName, item.year, item.month, item.Id).thenApply(function(res) {
 	        that.removeSpinner();
         }).exceptionally(function(throwable) {
             that.showMessage("Unable to delete event","Please close calendar and try again");
@@ -208,7 +328,7 @@ module.exports = {
             if (throwable.detailMessage.startsWith("File not found")) {
                 let props = new Object();
                 props.calendars = [];
-                props.calendars.push({name:'My Calendar', directory:'default'});
+                props.calendars.push({name: 'My Calendar', directory: 'default', color: '#00a9ff'});
                 return props;
             } else {
                 that.showMessage("Unable to load file","Please close calendar and try again");
@@ -222,8 +342,17 @@ module.exports = {
         let bytes = convertToByteArray(uint8Array);
         return calendar.writeInternal(filePath, bytes);
     },
-    updateCalendarEvent: function(calendar, year, month, id, calendarEvent) {
-        let dirPath = "default/" + year + "/" + month;
+    findCalendarDirectory: function(calendarName) {
+        for (var i=0;i < this.calendarProperties.calendars.length; i++) {
+            let calendar = this.calendarProperties.calendars[i];
+            if (calendar.name == calendarName) {
+                return calendar.directory;
+            }
+        }
+        return "default";
+    },
+    updateCalendarEvent: function(calendar, calendarName, year, month, id, calendarEvent) {
+        let dirPath = this.findCalendarDirectory(calendarName) + "/" + year + "/" + month;
         let filename = id + this.CALENDAR_FILE_EXTENSION;
         let filePath = peergos.client.PathUtils.toPath(dirPath.split('/'), filename);
         let encoder = new TextEncoder();
@@ -234,39 +363,66 @@ module.exports = {
     saveEvent: function(calendar, item) {
 	    const that = this;
 	    that.displaySpinner();
-        this.updateCalendarEvent(calendar, item.year, item.month, item.Id, item.item).thenApply(function(res) {
-	        that.removeSpinner();
-        }).exceptionally(function(throwable) {
-            that.showMessage("Unable to save event","Please close calendar and try again");
-            console.log(throwable.getMessage());
-	        that.removeSpinner();
-        });
-    },
-    saveAllEvents: function(calendar, items) {
-        this.removeSpinner();
-        this.saveAllEventsRecursive(calendar, items.items, 0);
-    },
-    saveAllEventsRecursive: function(calendar, items, index) {
-        const that = this;
-        if(index == items.length) {
-            that.close();
-        } else {
-            let item = items[index];
-            this.confirmImportEventFile(item.summary,
-                () => { that.showConfirm = false; that.importEventFile(calendar, items, index);},
-                () => { that.showConfirm = false; that.saveAllEventsRecursive(calendar, items, ++index);}
-            );
+	    if(item.calendarName == item.previousCalendarName) {
+            this.updateCalendarEvent(calendar, item.calendarName, item.year, item.month, item.Id, item.item).thenApply(function(res) {
+                that.removeSpinner();
+            }).exceptionally(function(throwable) {
+                that.showMessage("Unable to save event","Please close calendar and try again");
+                console.log(throwable.getMessage());
+                that.removeSpinner();
+            });
+        } else { //move between calendars
+            this.removeCalendarEvent(calendar, item.previousCalendarName, item.year, item.month, item.Id).thenApply(function(res) {
+                that.updateCalendarEvent(calendar, item.calendarName, item.year, item.month, item.Id, item.item).thenApply(function(res2) {
+                    that.removeSpinner();
+                }).exceptionally(function(throwable) {
+                    that.showMessage("Unable to save moved event","Please re-create event");
+                    console.log(throwable.getMessage());
+                    that.removeSpinner();
+                });
+            }).exceptionally(function(throwable) {
+                that.showMessage("Unable to move event","Please close calendar and try again");
+                console.log(throwable.getMessage());
+                that.removeSpinner();
+            });
         }
     },
-    importEventFile: function(calendar, items, index) {
+    saveAllEvents: function(calendar, data) {
+        this.removeSpinner();
+        this.saveAllEventsRecursive(calendar, data.items, 0, data.showConfirmation);
+    },
+    saveAllEventsRecursive: function(calendar, items, index, showConfirmation) {
+        const that = this;
+        if (index == items.length) {
+            if (showConfirmation) {
+                that.close();
+            } else {
+    	        that.removeSpinner();
+                that.showMessage("Imported: " + items.length + " event(s)");
+            }
+        } else {
+            let item = items[index];
+            if (showConfirmation) {
+                this.confirmImportEventFile(item.summary,
+                    () => { that.showConfirm = false; that.importEventFile(calendar, items, index, showConfirmation);},
+                    () => { that.showConfirm = false; that.saveAllEventsRecursive(calendar, items, ++index, showConfirmation);}
+                );
+            } else {
+                this.importEventFile(calendar, items, index, showConfirmation);
+            }
+        }
+    },
+    importEventFile: function(calendar, items, index, showConfirmation) {
         let that = this;
         let item = items[index];
         that.displaySpinner();
-        this.updateCalendarEvent(calendar, item.year, item.month, item.Id, item.item).thenApply(function(res) {
-           that.saveAllEventsRecursive(calendar, items, ++index);
+        this.updateCalendarEvent(calendar, item.calendarName, item.year, item.month, item.Id, item.item).thenApply(function(res) {
+           that.saveAllEventsRecursive(calendar, items, ++index, showConfirmation);
         }).exceptionally(function(throwable) {
            that.removeSpinner();
-           that.close();
+           if (showConfirmation) {
+                that.close();
+           }
            that.showMessage("Unable to import event");
            console.log(throwable.getMessage());
         });
@@ -279,13 +435,26 @@ module.exports = {
         this.confirm_consumer_func = importFunction;
         this.showConfirm = true;
     },
+
+    reduceCalendarEventsForMonth: function(calendar, year, month, calendarIndex, accumulator, future) {
+            let that = this;
+            if (calendarIndex == that.calendarProperties.calendars.length) {
+                future.complete(accumulator);
+            } else {
+                let currentCalendar = that.calendarProperties.calendars[calendarIndex];
+                let dirStr = currentCalendar.directory + "/" + year + "/" + month;
+                let directoryPath = peergos.client.PathUtils.directoryToPath(dirStr.split('/'));
+                calendar.dirInternal(directoryPath).thenCompose(filenames => {
+                    that.getEventsForMonth(calendar, currentCalendar.name, dirStr, filenames.toArray([])).thenApply(res => {
+                        that.reduceCalendarEventsForMonth(calendar, year, month, ++calendarIndex, accumulator.concat(res), future);
+                    })
+                });
+            }
+    },
     getCalendarEventsForMonth: function(calendar, year, month) {
-        let that = this;
-        let dirStr = "default/" + year + "/" + month;
-        let directoryPath = peergos.client.PathUtils.directoryToPath(dirStr.split('/'));
-        return calendar.dirInternal(directoryPath).thenCompose(filenames => {
-            return that.getEventsForMonth(calendar, dirStr, filenames.toArray([]));
-        });
+        let future = peergos.shared.util.Futures.incomplete();
+        this.reduceCalendarEventsForMonth(calendar, year, month, 0, [], future);
+        return future;
     },
     getCalendarEventsAroundMonth: function(calendar, year, month) {
         let that = this;
@@ -305,7 +474,7 @@ module.exports = {
         );
         return future;
     },
-    reduceAllEvents: function(calendar, directory, filenames, accumulator, future) {
+    reduceAllEvents: function(calendar, calendarName, directory, filenames, accumulator, future) {
         let that = this;
         let eventFilename = filenames.pop();
         if (eventFilename == null) {
@@ -313,15 +482,15 @@ module.exports = {
         } else {
             let filePath = peergos.client.PathUtils.toPath(directory.split('/'), eventFilename);
             calendar.readInternal(filePath).thenApply(data => {
-                accumulator.push(new TextDecoder().decode(data));
-                that.reduceAllEvents(calendar, directory, filenames, accumulator, future);
+                accumulator.push({calendarName: calendarName, data: new TextDecoder().decode(data)});
+                that.reduceAllEvents(calendar, calendarName, directory, filenames, accumulator, future);
             });
         }
     },
-    getEventsForMonth: function(calendar, directory, filenames) {
+    getEventsForMonth: function(calendar, calendarName, directory, filenames) {
         let that = this;
         let future = peergos.shared.util.Futures.incomplete();
-        that.reduceAllEvents(calendar, directory, filenames, [], future);
+        that.reduceAllEvents(calendar, calendarName, directory, filenames, [], future);
         return future;
     },
     downloadEvent: function(calendar, title, event) {
@@ -339,9 +508,9 @@ module.exports = {
         link.click();
         this.removeSpinner();
     },
-    shareCalendarEvent: function(calendar, id, year, month) {
-        let that = this;
-        that.shareWith(this.CALENDAR_DIR_NAME + '/' + this.DATA_DIR_NAME + "/default/" + year + '/' + month, id + '.ics', false);
+    shareCalendarEvent: function(calendar, calendarName, id, year, month) {
+        let calendarDirectory = this.findCalendarDirectory(calendarName);
+        this.shareWith(this.CALENDAR_DIR_NAME + '/' + this.DATA_DIR_NAME + "/" + calendarDirectory + "/" + year + '/' + month, id + '.ics', false);
     },
     showMessage: function(title, body) {
         this.messages.push({

@@ -345,7 +345,14 @@ module.exports = {
             this.updateHistory("filesystem", this.getPath(), "");
 	    this.forceSharedRefreshWithUpdate++;
 	},
-
+	reloadCalendar: function() {
+        this.closeApps();
+        let that = this;
+        setTimeout(function(){
+            that.toggleNav();
+            that.showCalendar();
+        },600);
+    },
     navigateToAction: function(directory, filename) {
         let newPath = directory.startsWith("/") ? directory.substring(1).split('/') : directory.split('/');
         let currentPath = this.path;

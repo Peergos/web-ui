@@ -43,14 +43,13 @@ module.exports = {
             ctx.getFiles(peergos.client.JsUtil.asList(items)).thenApply(function(pairs) {
                 let allPairs = pairs.toArray();
                 let numberOfEntries = allPairs.length;
-                allPairs.forEach(function(pair, idx){
+                for(var j = 0; j < numberOfEntries; j++) {
+                    let pair = allPairs[j];
                     allTimelineEntries.push(that.createTimelineEntry(pair.left, pair.right));
-                    if (numberOfEntries == idx + 1) {
-                        that.data = that.data.concat(allTimelineEntries);
-                        that.showSpinner = false;
-                        that.requestingMoreResults = false;
-                    }
-                });
+                }
+                that.data = that.data.concat(allTimelineEntries);
+                that.showSpinner = false;
+                that.requestingMoreResults = false;
             }).exceptionally(function(throwable) {
                 that.showMessage(throwable.getMessage());
                 that.showSpinner = false;
@@ -212,13 +211,12 @@ module.exports = {
                         ctx.getFiles(peergos.client.JsUtil.asList(items)).thenApply(function(pairs) {
                             let allPairs = pairs.toArray();
                             numberOfEntries = allPairs.length;
-                            allPairs.forEach(function(pair, idx){
+                            for(var j = 0; j < numberOfEntries; j++) {
+                                let pair = allPairs[j];
                                 allTimelineEntries.push(that.createTimelineEntry(pair.left, pair.right));
-                                if (numberOfEntries == idx + 1) {
-                                    that.data = allTimelineEntries;
-                                    that.showSpinner = false;
-                                }
-                            });
+                            }
+                            that.data = allTimelineEntries;
+                            that.showSpinner = false;
                         }).exceptionally(function(throwable) {
                             that.showMessage(throwable.getMessage());
                             that.showSpinner = false;
