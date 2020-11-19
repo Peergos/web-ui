@@ -1,8 +1,8 @@
 .board {
-  display: grid;
+  display: flex;
   height: 100vh;
   grid-gap: 1rem;
-  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  flex-wrap: wrap;
 }
 
 ol {
@@ -96,6 +96,7 @@ ol li.checked::before {
   transition: 0.3s;
   border-radius: 5px;
   height: fit-content;
+  flex-grow: 1;
 }
 
 /* On mouse-over, add a deeper shadow */
