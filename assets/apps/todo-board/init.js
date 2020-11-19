@@ -299,12 +299,16 @@ function addDragAndDropListeners(element) {
 function dragStarted(evt){
     var dragElement = document.elementFromPoint(evt.pageX, evt.pageY);
     // only allow drags starting in the ::before area or on a drag handle
-    if (evt.offsetX > 0 && ! dragElement.id.startsWith("dragHandle")) {
+    var fromListDragHandle = dragElement.id.startsWith("dragHandle")
+    if (evt.offsetX > 0 && ! fromListDragHandle) {
 	evt.preventDefault();
 	return;
     }
 
-    evt.dataTransfer.setData("Text", evt.currentTarget.id);
+    if (fromListDragHandle)
+	evt.dataTransfer.setData("Text", evt.currentTarget.id);
+    else
+	evt.dataTransfer.setData("Text", evt.target.id);
     evt.dataTransfer.effectAllowed = "move";
 }
 
