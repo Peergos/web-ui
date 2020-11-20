@@ -62,30 +62,26 @@ function buildNextList(index) {
     if (!isWritable) {
         return;
     }
-	var parent = document.getElementById("board");
-	var container = document.createElement("div");
-	container.id='nextList';
-	var buttonImg = document.createElement("img");
+    var parent = document.getElementById("board");
+    var container = document.createElement("div");
+    container.id='nextList';
+    container.style.maxWidth = "50px";
+    var buttonImg = document.createElement("img");
     buttonImg.src = "./images/plus.png";
-	buttonImg.addEventListener('click', function(){buildNewList(index, 'New List', true);});
+    buttonImg.addEventListener('click', function(){buildNewList(index, 'New List', true);});
     container.appendChild(buttonImg);
     parent.appendChild(container);
 }
 
 function renameList(index) {
 	var listName = document.getElementById("todoListName" + index);
-	let currentName = listName.childNodes[0].nodeValue;
+	let currentName = listName.innerText;
     mainWindow.postMessage({action:'requestRenameList', index: index, currentName: currentName}, origin);
 }
 
 function respondToRename(index, newName) {
 	var listName = document.getElementById("todoListName" + index);
-    listName.innerText = newName;
-	listName.appendChild(document.createTextNode('\u00A0\u00A0'));
-    var editButtonImg = document.createElement("img");
-    editButtonImg.src = "./images/edit.png";
-    editButtonImg.addEventListener('click', function(){renameList(index);});
-    listName.appendChild(editButtonImg);
+	listName.innerText = newName;
     registerChange();
 }
 
@@ -98,58 +94,65 @@ function removeList(index) {
 }
 
 function buildNewList(index, name, buildNext) {
-	var parent = document.getElementById("board");
-	var nextList = document.getElementById("nextList");
-	if (nextList != null) {
-		parent.removeChild(nextList);
+    var parent = document.getElementById("board");
+    var nextList = document.getElementById("nextList");
+    if (nextList != null) {
+	parent.removeChild(nextList);
 	}
-
-	var listContainerId = "todoListContainer" + index;
-	var listNameId = "todoListName" + index;
-	var listId = "todoList" + index;
-	var itemId = "todoItem" + index;
-	var list = document.createElement("div");
-	list.classList.add("list");
-	list.id = listContainerId;
-
-	var listInner = document.createElement("div");
-	listInner.classList.add("list-inner");
-
-	var listAccent = document.createElement("div");
-	listAccent.classList.add("list-accent");
-	listAccent.id = "todoListAccent" + index;
-	let colour = todoListColours[index % todoListColours.length];
-	listAccent.style.backgroundColor = colour;
-	listInner.appendChild(listAccent);
-
-	var heading = document.createElement("div");
-
-	if (isWritable) {
+    
+    var listContainerId = "todoListContainer" + index;
+    var listNameId = "todoListName" + index;
+    var listId = "todoList" + index;
+    var itemId = "todoItem" + index;
+    var list = document.createElement("div");
+    list.classList.add("list");
+    list.id = listContainerId;
+    
+    var listInner = document.createElement("div");
+    listInner.classList.add("list-inner");
+    
+    var listAccent = document.createElement("div");
+    listAccent.classList.add("list-accent");
+    listAccent.id = "todoListAccent" + index;
+    let colour = todoListColours[index % todoListColours.length];
+    listAccent.style.backgroundColor = colour;
+    listInner.appendChild(listAccent);
+    
+    var heading = document.createElement("div");
+    
+    if (isWritable) {
         var closeButtonImg = document.createElement("img");
         closeButtonImg.src = "./images/trash.png";
         closeButtonImg.addEventListener('click', function(){removeList(index);});
         heading.appendChild(closeButtonImg);
     }
+    
+    var span = document.createElement("span");
+    var listName = document.createElement("h3");
+    listName.classList.add("list-name");
+	var dragHandle = document.createElement("span");
+	dragHandle.innerHTML = "&#x2e2c";
+	dragHandle.id = "dragHandle" + index;
+	dragHandle.style.cursor = "pointer";
+	dragHandle.style.padding = ".3em";
+	dragHandle.style.fontSize = "1.5em";
+	listName.appendChild(dragHandle);
 
-	var span = document.createElement("span");
-	var listName = document.createElement("h3");
-	listName.classList.add("list-name");
-	listName.id = listNameId;
-    listName.innerText = name;
-
-	if (isWritable) {
-        listName.appendChild(document.createTextNode('\u00A0\u00A0'));
-        var editButtonImg = document.createElement("img");
-        editButtonImg.src = "./images/edit.png";
-        editButtonImg.addEventListener('click', function(){renameList(index);});
-        listName.appendChild(editButtonImg);
+    var nameSpan = document.createElement("span");
+    nameSpan.id = listNameId;
+    listName.appendChild(nameSpan);
+    nameSpan.innerText = name;
+    
+    if (isWritable) {
+	    nameSpan.style.cursor = "text";
+        nameSpan.addEventListener('click', function(){renameList(index);});
     }
 
     span.appendChild(listName);
     heading.appendChild(span);
     listInner.appendChild(heading);
-	var orderedList = document.createElement("ol");
-	orderedList.id = listId;
+    var orderedList = document.createElement("ol");
+    orderedList.id = listId;
     if (isWritable) {
         orderedList.addEventListener('click', function(ev) {
             if (ev.target.tagName === 'LI' &&  !ev.target.classList.contains('empty-item')) {
@@ -158,8 +161,8 @@ function buildNewList(index, name, buildNext) {
         }, false);
     }
     listInner.appendChild(orderedList);
-	var formDiv = document.createElement("div");
-	formDiv.classList.add("new-entry");
+    var formDiv = document.createElement("div");
+    formDiv.classList.add("new-entry");
     if (isWritable) {
         var form = document.createElement("form");
         form.addEventListener('submit', function(e){return onFormSubmit(e, itemId, listId);});
@@ -177,12 +180,12 @@ function buildNewList(index, name, buildNext) {
     }
     list.appendChild(listInner);
     parent.appendChild(list);
-
-	addEmptyTodoItem(listId);
-
+    
+    addEmptyTodoItem(listId);
+    
     if(buildNext) {
-	    buildNextList(getNextListId());
-	}
+	buildNextList(getNextListId());
+    }
 }
 
 function onFormSubmit(e, todoItem, todoList) {
@@ -288,8 +291,19 @@ function addDragAndDropListeners(element) {
 
 
 function dragStarted(evt){
+    var dragElement = document.elementFromPoint(evt.pageX, evt.pageY);
+    // only allow drags starting in the ::before area or on a drag handle
+    var fromListDragHandle = dragElement.id.startsWith("dragHandle")
+    if (evt.offsetX > 0 && ! fromListDragHandle) {
+	evt.preventDefault();
+	return;
+    }
+
+    if (fromListDragHandle)
+	evt.dataTransfer.setData("Text", evt.currentTarget.id);
+    else
 	evt.dataTransfer.setData("Text", evt.target.id);
-	evt.dataTransfer.effectAllowed = "move";
+    evt.dataTransfer.effectAllowed = "move";
 }
 
 function dropped(evt){
@@ -417,7 +431,7 @@ function save() {
 		if(list.id != null && list.id.includes("todoListContainer")) {
 			let index = list.id.substring("todoListContainer".length);
 			let listNameNode = document.getElementById("todoListName" + index);
-			let todoListName = listNameNode.childNodes[0].nodeValue;
+			let todoListName = listNameNode.innerText;
 
 			let todoItems = [];
 
