@@ -75,25 +75,13 @@ function buildNextList(index) {
 
 function renameList(index) {
 	var listName = document.getElementById("todoListName" + index);
-	let currentName = listName.childNodes[0].nodeValue;
+	let currentName = listName.innerText;
     mainWindow.postMessage({action:'requestRenameList', index: index, currentName: currentName}, origin);
 }
 
 function respondToRename(index, newName) {
 	var listName = document.getElementById("todoListName" + index);
-    listName.innerText = newName;
-	listName.appendChild(document.createTextNode('\u00A0\u00A0'));
-    var editButtonImg = document.createElement("img");
-    editButtonImg.src = "./images/edit.png";
-    editButtonImg.addEventListener('click', function(){renameList(index);});
-    listName.appendChild(editButtonImg);
-    var dragHandle = document.createElement("span");
-    dragHandle.innerHTML = "&#x2e2c";
-    dragHandle.id = "dragHandle" + index;
-    dragHandle.style.cursor = "pointer";
-    dragHandle.style.padding = ".3em";
-    dragHandle.style.fontSize = "1.5em";
-    listName.appendChild(dragHandle);
+	listName.innerText = newName;
     registerChange();
 }
 
@@ -142,16 +130,6 @@ function buildNewList(index, name, buildNext) {
     var span = document.createElement("span");
     var listName = document.createElement("h3");
     listName.classList.add("list-name");
-    listName.id = listNameId;
-    listName.innerText = name;
-    
-    if (isWritable) {
-        listName.appendChild(document.createTextNode('\u00A0\u00A0'));
-        var editButtonImg = document.createElement("img");
-        editButtonImg.src = "./images/edit.png";
-	editButtonImg.style.cursor = "pointer";
-        editButtonImg.addEventListener('click', function(){renameList(index);});
-        listName.appendChild(editButtonImg);
 	var dragHandle = document.createElement("span");
 	dragHandle.innerHTML = "&#x2e2c";
 	dragHandle.id = "dragHandle" + index;
@@ -159,6 +137,15 @@ function buildNewList(index, name, buildNext) {
 	dragHandle.style.padding = ".3em";
 	dragHandle.style.fontSize = "1.5em";
 	listName.appendChild(dragHandle);
+
+    var nameSpan = document.createElement("span");
+    nameSpan.id = listNameId;
+    listName.appendChild(nameSpan);
+    nameSpan.innerText = name;
+    
+    if (isWritable) {
+	    nameSpan.style.cursor = "text";
+        nameSpan.addEventListener('click', function(){renameList(index);});
     }
 
     span.appendChild(listName);
@@ -444,7 +431,7 @@ function save() {
 		if(list.id != null && list.id.includes("todoListContainer")) {
 			let index = list.id.substring("todoListContainer".length);
 			let listNameNode = document.getElementById("todoListName" + index);
-			let todoListName = listNameNode.childNodes[0].nodeValue;
+			let todoListName = listNameNode.innerText;
 
 			let todoItems = [];
 
