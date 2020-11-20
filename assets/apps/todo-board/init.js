@@ -87,6 +87,13 @@ function respondToRename(index, newName) {
     editButtonImg.src = "./images/edit.png";
     editButtonImg.addEventListener('click', function(){renameList(index);});
     listName.appendChild(editButtonImg);
+    var dragHandle = document.createElement("span");
+    dragHandle.innerHTML = "&#x2e2c";
+    dragHandle.id = "dragHandle" + index;
+    dragHandle.style.cursor = "pointer";
+    dragHandle.style.padding = ".3em";
+    dragHandle.style.fontSize = "1.5em";
+    listName.appendChild(dragHandle);
     registerChange();
 }
 
