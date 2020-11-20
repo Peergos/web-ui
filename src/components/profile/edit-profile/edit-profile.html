@@ -1,7 +1,7 @@
 <transition name="modal">
 <div class="modal-mask-app" @click="close">
     <meta http-equiv="content-type" content="text/html; charset=utf-8" />
-    <div class="modal-container" @click.stop style="height:100%;overflow-y:auto">
+    <div class="modal-container" @click.stop style="height:100%;overflow-y:auto; max-width:1000px">
         <span @click="close" class="close">&times;</span>
         <div class="modal-header">
             <h2>Profile</h2>
@@ -13,28 +13,12 @@
                 <button class="btn btn-success" onclick="document.getElementById('uploadImageInput').click()">Upload Profile Image</button>
                 <input type="file" id="uploadImageInput" @change="uploadImageFile" style="display:none;" accept="image/*" />
                 <button v-if="hasProfileImage()" v-on:click="removeImage()" class="btn btn-success" >Remove Image</button>
-                <button v-if="hasProfileImage()" @click="share('photo', 'Profile image')" class="btn btn-success" >Share With</button>
+                <button v-if="hasProfileImage()" @click="share('photo', 'Profile image')" class="btn btn-success" >Share</button>
 
-                <div id="profile-container">
+                <div id="profile-container" style="margin: auto; width: 20%;">
                     <img id="profile-image" v-bind:src="getProfileImage()"/>
                 </div>
                 <table id='profile-table-id' class="table table-responsive table-striped table-hover profile-table">
-                    <tr>
-                        <td>
-                            WebRoot
-                        </td>
-                        <td>
-                            <input id="profile-web-root" class="form-control-profile" v-model="webRoot" placeholder="Web Root" :maxlength="WEBROOT_MAX_LENGTH">
-                        </td>
-                        <td>
-                        </td>
-                        <td>
-                        </td>
-                        <td>
-                        </td>
-                        <td>
-                        </td>
-                    </tr>
                     <tr>
                         <td>
                             First name
@@ -43,7 +27,7 @@
                             <input id="profile-first-name" class="form-control-profile" v-model="firstName" placeholder="First Name" :maxlength="FIRSTNAME_MAX_LENGTH">
                         </td>
                         <td>
-                            <button class="btn btn-success" @click="share('firstname', 'First name')">Share With</button>
+                            <button class="btn btn-success" @click="share('firstname', 'First name')">Share</button>
                         </td>
                         <td>
                             Last name
@@ -52,7 +36,7 @@
                             <input id="profile-last-name" class="form-control-profile" v-model="lastName" placeholder="Last Name" :maxlength="LASTNAME_MAX_LENGTH">
                         </td>
                         <td>
-                            <button class="btn btn-success" @click="share('lastname', 'Last name')">Share With</button>
+                            <button class="btn btn-success" @click="share('lastname', 'Last name')">Share</button>
                         </td>
                     </tr>
                     <tr>
@@ -63,7 +47,7 @@
                             <input id="profile-primary-phone" class="form-control-profile" v-model="primaryPhone" placeholder="Primary Phone Number" :maxlength="PHONE_MAX_LENGTH">
                         </td>
                         <td>
-                            <button class="btn btn-success" @click="share('phone', 'Phone number')">Share With</button>
+                            <button class="btn btn-success" @click="share('phone', 'Phone number')">Share</button>
                         </td>
                         <td>
                             Email
@@ -72,7 +56,7 @@
                             <input id="profile-primary-email" class="form-control-profile" v-model="primaryEmail" placeholder="Primary Email Address" :maxlength="EMAIL_MAX_LENGTH">
                         </td>
                         <td>
-                            <button class="btn btn-success" @click="share('email', 'Email address')">Share With</button>
+                            <button class="btn btn-success" @click="share('email', 'Email address')">Share</button>
                         </td>
                     </tr>
                     <tr>
@@ -83,28 +67,39 @@
                             <input id="profile-status" class="form-control-profile" style="width: 98%;" v-model="status" placeholder="Status" :maxlength="STATUS_MAX_LENGTH">
                         </td>
                         <td>
-                            <button class="btn btn-success" @click="share('status', 'Status message')">Share With</button>
+                            <button class="btn btn-success" @click="share('status', 'Status message')">Share</button>
                         </td>
                         <td>
                         </td>
                         <td>
                         </td>
                     </tr>
+                </table>
+                <table id='biography-table-id' class="table table-responsive table-striped table-hover profile-table">
                     <tr>
                         <td>
                             Biography
                         </td>
-                        <td colspan="3">
+                        <td></td>
+                    </tr>
+                    <tr>
+                        <td>
                             <textarea id="profile-biography" class="form-control-profile" style="width: 98%;resize: none;" v-model="biography" placeholder="Biography" rows=3 :maxlength="BIO_MAX_LENGTH"></textarea>
                         </td>
                         <td>
-                            <button class="btn btn-success" @click="share('bio', 'Biography')">Share With</button>
+                            <button class="btn btn-success" @click="share('bio', 'Biography')">Share</button>
                         </td>
+                    </tr>
+                </table>
+                <table id='webroot-table-id' class="table table-responsive table-striped table-hover profile-table">
+                    <tr>
                         <td>
+                            Website Directory
                         </td>
+                    </tr>
+                    <tr>
                         <td>
-                        </td>
-                        <td>
+                            <input id="profile-web-root" class="form-control-profile" v-model="webRoot" placeholder="Website Directory" :maxlength="WEBROOT_MAX_LENGTH">
                         </td>
                     </tr>
                 </table>
