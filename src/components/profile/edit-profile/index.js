@@ -73,7 +73,13 @@ module.exports = {
                     binFilereader.file_name = file.name;
                     binFilereader.onload = function(){
                         const data = convertToByteArray(new Int8Array(this.result));
-                        that.updateThumbnail(data, canvas.toDataURL());
+                        that.profileImage = canvas.toDataURL();
+                        let binaryThumbnail = window.atob(that.profileImage.substring("data:image/png;base64,".length));
+                        var ta = new Int8Array(binaryThumbnail.length);
+                        for (var i = 0; i < binaryThumbnail.length; i++) {
+                            ta[i] = binaryThumbnail.charCodeAt(i);
+                        }
+                        that.updateThumbnail(data, convertToByteArray(ta));
                     };
                     binFilereader.readAsArrayBuffer(file);
                 };
@@ -91,7 +97,7 @@ module.exports = {
             return this.profileImage.length > 0;
         },
         removeImage: function() {
-            this.updateThumbnail(peergos.shared.user.JavaScriptPoster.emptyArray(), "");
+            this.updateThumbnail(peergos.shared.user.JavaScriptPoster.emptyArray(), peergos.shared.user.JavaScriptPoster.emptyArray());
         },
         update: function() {
             var that = this;
@@ -232,12 +238,11 @@ module.exports = {
         },
         updateThumbnail: function(hires, thumbnail) {
             let that = this;
-            this.profileImage = thumbnail;
             console.log("updating profile image");
             that.showSpinner = true;
 
             peergos.shared.user.ProfilePaths.setHighResProfilePhoto(that.context, hires).thenApply(function(success){
-                peergos.shared.user.ProfilePaths.setProfilePhoto(that.context, that.profileImage).thenApply(function(success){
+                peergos.shared.user.ProfilePaths.setProfilePhoto(that.context, thumbnail).thenApply(function(success){
                     that.showSpinner = false;
                 }).exceptionally(function(throwable) {
                   that.showMessage("Unexpected error", throwable.getMessage());

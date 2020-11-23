@@ -1172,7 +1172,15 @@ module.exports = {
                                                 let biography = bioOpt.isPresent() ? bioOpt.get() : "";
                                                 let primaryPhone = phoneOpt.isPresent() ? phoneOpt.get() : "";
                                                 let primaryEmail = emailOpt.isPresent() ? emailOpt.get() : "";
-                                                let base64Image = imageOpt.isPresent() ? imageOpt.get() : "";
+                                                var base64Image = "";
+                                                if (imageOpt.isPresent()) {
+                                                    var str = "";
+                                                    let data = imageOpt.get();
+                                                    for (let i = 0; i < data.length; i++) {
+                                                        str = str + String.fromCharCode(data[i] & 0xff);
+                                                    }
+                                                    base64Image = "data:image/png;base64," + window.btoa(str);
+                                                }
                                                 let status = statusOpt.isPresent() ? statusOpt.get() : "";
                                                 let webRoot = webRootOpt.isPresent() ? webRootOpt.get() : "";
 
