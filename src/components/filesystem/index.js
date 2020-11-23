@@ -1158,56 +1158,33 @@ module.exports = {
             this.showSpinner = true;
             let that = this;
             let context = this.context;
-            peergos.shared.user.ProfilePaths.getFirstName(username, context)
-                .thenApply(firstNameOpt => peergos.shared.user.ProfilePaths.getLastName(username, context)
-                    .thenApply(lastNameOpt => peergos.shared.user.ProfilePaths.getBio(username, context)
-                        .thenApply(bioOpt => peergos.shared.user.ProfilePaths.getPhone(username, context)
-                            .thenApply(phoneOpt => peergos.shared.user.ProfilePaths.getEmail(username, context)
-                                .thenApply(emailOpt => peergos.shared.user.ProfilePaths.getProfilePhoto(username, context)
-                                    .thenApply(imageOpt => peergos.shared.user.ProfilePaths.getStatus(username, context)
-                                        .thenApply(statusOpt => peergos.shared.user.ProfilePaths.getWebRoot(username, context)
-                                            .thenApply(webRootOpt => {
-                                                let firstName = firstNameOpt.isPresent() ? firstNameOpt.get() : "";
-                                                let lastName = lastNameOpt.isPresent() ? lastNameOpt.get() : "";
-                                                let biography = bioOpt.isPresent() ? bioOpt.get() : "";
-                                                let primaryPhone = phoneOpt.isPresent() ? phoneOpt.get() : "";
-                                                let primaryEmail = emailOpt.isPresent() ? emailOpt.get() : "";
-                                                var base64Image = "";
-                                                if (imageOpt.isPresent()) {
-                                                    var str = "";
-                                                    let data = imageOpt.get();
-                                                    for (let i = 0; i < data.length; i++) {
-                                                        str = str + String.fromCharCode(data[i] & 0xff);
-                                                    }
-                                                    base64Image = "data:image/png;base64," + window.btoa(str);
-                                                }
-                                                let status = statusOpt.isPresent() ? statusOpt.get() : "";
-                                                let webRoot = webRootOpt.isPresent() ? webRootOpt.get() : "";
-
-                                                that.profile = {
-                                                    firstName: firstName,
-                                                    lastName: lastName,
-                                                    biography: biography,
-                                                    primaryPhone: primaryPhone,
-                                                    primaryEmail: primaryEmail,
-                                                    profileImage: base64Image,
-                                                    status: status,
-                                                    webRoot: webRoot
-                                                };
-                                                that.showSpinner = false;
-                                                if (showEditForm) {
-                                                    that.showProfileEditForm = true;
-                                                } else {
-                                                    that.showProfileViewForm = true;
-                                                }
-                                            })
-                                        )
-                                    )
-                                )
-                            )
-                        )
-                    )
-                );
+            peergos.shared.user.ProfilePaths.getProfile(username, context).thenApply(profile => {
+                var base64Image = "";
+                if (profile.profilePhoto.isPresent()) {
+                    var str = "";
+                    let data = profile.profilePhoto.get();
+                    for (let i = 0; i < data.length; i++) {
+                        str = str + String.fromCharCode(data[i] & 0xff);
+                    }
+                    base64Image = "data:image/png;base64," + window.btoa(str);
+                }
+                that.profile = {
+                    firstName: profile.firstName.isPresent() ? profile.firstName.get() : "",
+                    lastName: profile.lastName.isPresent() ? profile.lastName.get() : "",
+                    biography: profile.bio.isPresent() ? profile.bio.get() : "",
+                    primaryPhone: profile.phone.isPresent() ? profile.phone.get() : "",
+                    primaryEmail: profile.email.isPresent() ? profile.email.get() : "",
+                    profileImage: base64Image,
+                    status: profile.status.isPresent() ? profile.status.get() : "",
+                    webRoot: profile.webRoot.isPresent() ? profile.webRoot.get() : ""
+                };
+                that.showSpinner = false;
+                if (showEditForm) {
+                    that.showProfileEditForm = true;
+                } else {
+                    that.showProfileViewForm = true;
+                }
+            });
         },
 
         showRequestStorage: function() {
