@@ -409,17 +409,6 @@ module.exports = {
 	    else if (app == "timeline")
 		this.showTimeline = true;
 	},
-    canSearch: function() {
-       try {
-           if (this.currentDir == null)
-               return false;
-           if (this.selectedFiles.length != 1)
-               return false;
-           return this.selectedFiles[0].isDirectory();
-       } catch (err) {
-           return false;
-       }
-    },
     openSearch: function(fromRoot) {
         this.searchPath = fromRoot ? "/" + this.getContext().username
             : this.getPath() + this.selectedFiles[0].getFileProperties().name;
@@ -1989,6 +1978,24 @@ module.exports = {
                     }
                 }
             });
+        },
+        isSearchable: function() {
+           try {
+               if (this.currentDir == null)
+                   return false;
+               if (this.selectedFiles.length != 1)
+                   return false;
+               if (!this.selectedFiles[0].isDirectory())
+                    return false;
+               var owner = this.currentDir.getOwnerName();
+               var me = this.username;
+               if (owner != me) {
+                   return false;
+               }
+               return true;
+           } catch (err) {
+               return false;
+           }
         },
         canOpen: function() {
            try {

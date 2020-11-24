@@ -7,30 +7,42 @@ module.exports = {
             walkCounter: 0,
             matches: [],
             selectedSearchType: "contains",
-            searchFileSizeLessThanMB : "",
-            searchFileSizeGreaterThanMB : "",
-            searchFileModifiedBefore: "",
-            searchFileModifiedAfter: "",
+            selectedSizeUnit: "M",
+            selectedMimeType: "video",
+            selectedDate: "",
+            searchFileSize : "",
+            error: "",
+            isError:false,
+            errorClass: ""
         }
     },
     props: ['path', 'context', 'navigateToAction', 'viewAction'],
     created: function() {
+        this.selectedDate = new Date().toISOString().split('T')[0];
     },
     methods: {
-
 	walk: function(file, path, searchTerm, searchTest) {
+        let searchButton = document.getElementById("submit-search");
         let fileProperties = file.getFileProperties();
         if (fileProperties.isHidden)
             return;
         let that = this;
         if (fileProperties.isDirectory) {
+            that.walkCounter++;
+            if (that.walkCounter == 1) {
+                that.showSpinner = true;
+                searchButton.disabled = true;
+            }
             file.getChildren(this.context.crypto.hasher, this.context.network).thenCompose(function(children) {
-            	that.walkCounter++;
-                if (that.walkCounter == 1) {
-                    that.showSpinner = true;
-                }
                 let arr = children.toArray();
                 let size = arr.length;
+                if (size == 0) {
+                    that.walkCounter--;
+                    if (that.walkCounter == 0) {
+                        that.showSpinner = false;
+                        searchButton.disabled = false;
+                    }
+                }
                 arr.forEach(function(child, index){
                     let newPath = child.getFileProperties().isDirectory ? path + "/" + child.getFileProperties().name : path;
                     that.walk(child, newPath, searchTerm, searchTest);
@@ -38,6 +50,7 @@ module.exports = {
                         that.walkCounter--;
                         if (that.walkCounter == 0) {
                             that.showSpinner = false;
+                            searchButton.disabled = false;
                         }
                     }
                 });
@@ -72,7 +85,7 @@ module.exports = {
         let props = file.getFileProperties();
         let modified = props.modified.date;
         let jsDate = new Date(modified.year, modified.month -1, modified.day, 0, 0, 0, 0);
-        if (jsDate.getTime() > searchTerm.getTime()) {
+        if (jsDate.getTime() > (searchTerm.getTime() + (1000 * 60 * 60 * 24) - 1)) {
             this.addMatch(props, path);
         }
     },
@@ -98,23 +111,53 @@ module.exports = {
             this.addMatch(props, path);
         }
     },
+    mimeTypeTest: function(file, path, searchTerm) {
+        let mimeType = file.getFileProperties().mimeType;
+        if (mimeType.startsWith(searchTerm)) {
+            this.addMatch(props, path);
+        }
+    },
     extractDate: function(searchTerm) {
         if (searchTerm.length == 0) {
-                return;
+            this.isError = true;
+            this.error = "Invalid date!";
+            this.errorClass = "has-error has-feedback alert alert-danger";
+            return;
         }
         return new Date(Date.parse(searchTerm));
     },
-    extractFileSizeInMB: function(searchTerm) {
+    extractFileSize: function(searchTerm) {
         if (searchTerm.length == 0) {
-                return;
+            this.isError = true;
+            this.error = "Missing file size!";
+            this.errorClass = "has-error has-feedback alert alert-danger";
+            return;
         }
-        return Number(searchTerm) * 1000;
+        let num = parseInt(searchTerm);
+        if (num.toString() == "NaN") {
+            this.isError = true;
+            this.error = "Invalid file size!";
+            this.errorClass = "has-error has-feedback alert alert-danger";
+            return;
+        } else if (num < 0) {
+            this.isError = true;
+            this.error = "Negative file size!";
+            this.errorClass = "has-error has-feedback alert alert-danger";
+            return;
+        }
+        if (selectedSizeUnit == 'K')
+            return Number(searchTerm) * 1024;
+        if (selectedSizeUnit == 'M')
+            return Number(searchTerm) * 1024 * 1024;
+        if (selectedSizeUnit == 'G')
+            return Number(searchTerm) * 1024 * 1024 * 1024;
     },
 	search: function() {
+            this.isError = false;
+            this.error = "";
+            this.errorClass = "";
 
             var that = this;
-            console.log("searching");
-            that.showSpinner = true;
             let path = this.path;
             this.matches = [];
             this.walkCounter = 0;
@@ -123,26 +166,37 @@ module.exports = {
             if(this.selectedSearchType == "contains") {
 	            searchTerm = this.searchFilenameContains.trim().toLowerCase();
                 if (searchTerm.length == 0) {
+                    this.isError = true;
+                    this.error = "Missing text!";
+                    this.errorClass = "has-error has-feedback alert alert-danger";
                     return;
                 }
                 filterFunction = this.containsTest;
             } else if(this.selectedSearchType == "modifiedAfter") {
                 filterFunction = this.modifiedAfterTest;
-                searchTerm = this.extractDate(this.searchFileModifiedAfter.trim());
+                searchTerm = this.extractDate(this.selectedDate.trim());
             } else if(this.selectedSearchType == "modifiedBefore") {
                 filterFunction = this.modifiedBeforeTest;
-                searchTerm = this.extractDate(this.searchFileModifiedBefore.trim());
-            } else if(this.selectedSearchType == "fileSizeGreaterThanMB") {
+                searchTerm = this.extractDate(this.selectedDate.trim());
+            } else if(this.selectedSearchType == "fileSizeGreaterThan") {
                 filterFunction = this.fileSizeGreaterThanTest;
-                searchTerm = this.extractFileSizeInMB(this.searchFileSizeGreaterThanMB.trim());
-            } else if(this.selectedSearchType == "fileSizeLessThanMB") {
+                searchTerm = this.extractFileSize(this.searchFileSize.trim());
+            } else if(this.selectedSearchType == "fileSizeLessThan") {
                 filterFunction = this.fileSizeLessThanTest;
-                searchTerm = this.extractFileSizeInMB(this.searchFileSizeLessThanMB.trim());
+                searchTerm = this.extractFileSize(this.searchFileSize.trim());
+            } else if(this.selectedSearchType == "mimeType") {
+                filterFunction = this.mimeTypeTest;
+                searchTerm = this.selectedMimeType.trim();
+            }
+            if (searchTerm == null) {
+                return;
             }
             this.context.getByPath(path).thenApply(function(dir){
                 that.walk(dir.get(), path, searchTerm, filterFunction);
             }).exceptionally(function(throwable) {
                 that.showSpinner = false;
+                let searchButton = document.getElementById("submit-search");
+                searchButton.disabled = false;
                 throwable.printStackTrace();
             });
 
@@ -168,7 +222,7 @@ module.exports = {
                     let bVal = b.lastModified;
                     return bVal.compareTo(aVal);
                 });
-            } else if(this.selectedSearchType == "fileSizeGreaterThanMB" || this.selectedSearchType == "fileSizeLessThanMB") {
+            } else if(this.selectedSearchType == "fileSizeGreaterThan" || this.selectedSearchType == "fileSizeLessThan") {
                 return this.matches.sort(function (a, b) {
                     let aVal = a.size;
                     let bVal = b.size;
