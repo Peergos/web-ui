@@ -10,7 +10,7 @@
                 <label v-if="isError">{{ error }}</label>
             </div>
             <spinner v-if="showSpinner"></spinner>
-                <table class="width:100%">
+                <table>
                 <tr>
                     <td style="padding-right: 20px;">
                         <select v-model="selectedSearchType">
@@ -23,10 +23,10 @@
                         </select>
                     </td>
                     <td v-if="selectedSearchType=='modifiedAfter' || selectedSearchType=='modifiedBefore'" style="padding-right: 20px;">
-                        <input v-model="selectedDate" type="date" min="1900-01-01" max="3000-01-01" style="width: 200px;" ></input>
+                        <input v-model="selectedDate" type="date" min="1900-01-01" max="3000-01-01" maxlength="12" ></input>
                     </td>
                     <td v-if="selectedSearchType=='contains'" style="padding-right: 20px;">
-                        <input v-if="selectedSearchType=='contains'" v-model="searchFilenameContains" placeholder=""type="text" style="width: 300px;" ></input>
+                        <input v-if="selectedSearchType=='contains'" v-model="searchFilenameContains" placeholder=""type="text" maxlength="60" style="width: 200px;" ></input>
                     </td>
                     <td v-if="selectedSearchType=='fileSizeGreaterThan' || selectedSearchType=='fileSizeLessThan'" style="padding-right: 20px;">
                         <input v-model="searchFileSize" placeholder="1" type="number" min="1" style="width: 100px;" ></input>
@@ -54,23 +54,35 @@
 
             <div>
                 <h3>Results: {{ matches.length }}</h3>
-                <table id='search-results-table-id' class="table table-responsive table-striped table-hover">
-                    <tr v-if="matches==0"><th></th><th></th><th></th><th></th></tr>
-                    <tr v-if="matches!=0"><th>Name</th><th>Directory</th><th style="text-align:right">Size</th><th style="text-align:right">Modified</th></tr>
-                    <tr v-for="match in sortedItems">
+                <div v-if="matches!=0" class="table-responsive">
+                    <table class="table">
+                        <thead>
+                        <tr  v-if="matches!=0" style="cursor:pointer;">
+                            <th @click="setSortBy('name')">Name <span v-if="sortBy=='name'" v-bind:class="['fas', normalSortOrder ? 'fa-angle-down' : 'fa-angle-up']"/></th>
+                            <th @click="setSortBy('path')">Directory <span v-if="sortBy=='path'" v-bind:class="['fas', normalSortOrder ? 'fa-angle-down' : 'fa-angle-up']"/></th>
+                            <th @click="setSortBy('size')">Size <span v-if="sortBy=='size'" v-bind:class="['fas', normalSortOrder ? 'fa-angle-down' : 'fa-angle-up']"/></th>
+                            <th @click="setSortBy('modified')">Modified <span v-if="sortBy=='modified'" v-bind:class="['fas', normalSortOrder ? 'fa-angle-down' : 'fa-angle-up']"/></th>
 
-                        <td id='entry-id' v-on:click="view(match, true)">{{ match.name }}</td>
-                        <td v-on:click="navigateTo(match)">
-                            {{ match.path }}
-                        </td>
-                        <td style="text-align:right">
-                            {{ match.size }}
-                        </td>
-                        <td style="text-align:right">
-                            {{ match.lastModified }}
-                        </td>
-                    </tr>
-                </table>
+                        </tr>
+                        </thead>
+                        <tbody>
+                        <tr v-for="match in sortedItems">
+                            <td v-on:click="view(match, true)">{{ match.name }}</td>
+                            <td v-on:click="navigateTo(match)">
+                                {{ match.path }}
+                            </td>
+                            <td>
+                                {{ match.size }}
+                            </td>
+                            <td>
+                                {{ match.lastModified }}
+                            </td>
+                        </tr>
+                        </tbody>
+                    </table>
+                </div>
+
+
             </div>
         </div>
     </div>

@@ -13,7 +13,9 @@ module.exports = {
             searchFileSize : "",
             error: "",
             isError:false,
-            errorClass: ""
+            errorClass: "",
+            sortBy: "name",
+            normalSortOrder: true
         }
     },
     props: ['path', 'context', 'navigateToAction', 'viewAction'],
@@ -112,7 +114,8 @@ module.exports = {
         }
     },
     mimeTypeTest: function(file, path, searchTerm) {
-        let mimeType = file.getFileProperties().mimeType;
+        let props = file.getFileProperties();
+        let mimeType = props.mimeType;
         if (mimeType.startsWith(searchTerm)) {
             this.addMatch(props, path);
         }
@@ -210,22 +213,39 @@ module.exports = {
         },
         close: function () {
             this.$emit("hide-search");
+        },
+        setSortBy: function(prop) {
+            if (this.sortBy == prop)
+                this.normalSortOrder = !this.normalSortOrder;
+            this.sortBy = prop;
         }
     },
     computed:{
         sortedItems(){
-            if(this.selectedSearchType == "contains") {
-                return this.matches.sort(function (a, b) { return ('' + a.name).localeCompare(b.name);});
-            } else if(this.selectedSearchType == "modifiedAfter" || this.selectedSearchType == "modifiedBefore") {
+            var sortBy = this.sortBy;
+            var reverseOrder = ! this.normalSortOrder;
+            if(sortBy == "name" || sortBy == "path") {
+                return this.matches.sort(function (a, b) {
+                    if (reverseOrder) {
+                        return ('' + b.name).localeCompare(a.name);
+                    } else {
+                        return ('' + a.name).localeCompare(b.name);
+                    }
+                });
+            } else if(this.sortBy == "modified") {
                 return this.matches.sort(function (a, b) {
                     let aVal = a.lastModified;
                     let bVal = b.lastModified;
-                    return bVal.compareTo(aVal);
+                    if (reverseOrder) {
+                        return aVal.compareTo(bVal);
+                    } else {
+                        return bVal.compareTo(aVal);
+                    }
                 });
-            } else if(this.selectedSearchType == "fileSizeGreaterThan" || this.selectedSearchType == "fileSizeLessThan") {
+            } else if(sortBy == "size") {
                 return this.matches.sort(function (a, b) {
-                    let aVal = a.size;
-                    let bVal = b.size;
+                    let aVal = reverseOrder ? b.size : a.size;
+                    let bVal = reverseOrder ? a.size : b.size;
                     if (aVal > bVal) {
                         return -1;
                     } else if (aVal == bVal) {
