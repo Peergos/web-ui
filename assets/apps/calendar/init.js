@@ -72,9 +72,10 @@ function buildUI(isCalendarReadonly) {
         'beforeUpdateSchedule': function(e) {
             var schedule = e.schedule;
             var changes = e.changes;
-            if(changes == null) {
-                return;
-            }
+            //do not simply return if no changes. Memo text is not recorded as a change!
+            //if(changes == null) {
+            //    return;
+            //}
             let previousCalendarId = schedule.calendarId;
             //console.log('beforeUpdateSchedule', e);
             if (changes && !changes.isAllDay && schedule.category === 'allday') {
