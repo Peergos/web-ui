@@ -5,7 +5,8 @@ module.exports = {
             showSpinner: false,
             fileIndex: 0,
             imageData: null,
-            videoUrl: null
+            videoUrl: null,
+	    pinging: false
         };
     },
     props: ['files', 'context', 'initialFileName'],
@@ -51,6 +52,13 @@ module.exports = {
                 this.fileIndex = this.showableFiles.length - 1;
             this.updateCurrentFileData();
         },
+
+	startPing: function(pingUrl) {
+	    if (! this.pinging)
+		return;
+	    fetch(pingUrl);
+	    setTimeout(() => this.startPing(pingUrl), 5000);
+	},
 
         next: function() {
             if (this.showableFiles == null || this.showableFiles.length == 0)
@@ -134,6 +142,8 @@ module.exports = {
                 let fileStream = streamSaver.createWriteStream("media-" + props.name, props.mimeType, function(url){
                     that.videoUrl = url;
                     that.showSpinner = false;
+		    that.pinging = true;
+		    that.startPing(url + "/ping");
                 }, function(seekHi, seekLo, seekLength){
                     context.stream(seekHi, seekLo, seekLength);
                 }, undefined, size)
