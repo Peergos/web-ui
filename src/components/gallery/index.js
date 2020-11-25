@@ -52,6 +52,11 @@ module.exports = {
             this.updateCurrentFileData();
         },
 
+	startPing: function(pingUrl) {
+	    fetch(pingUrl);
+	    setTimeout(() => this.startPing(pingUrl), 5000);
+	},
+
         next: function() {
             if (this.showableFiles == null || this.showableFiles.length == 0)
                 this.fileIndex = 0;
@@ -134,6 +139,7 @@ module.exports = {
                 let fileStream = streamSaver.createWriteStream("media-" + props.name, props.mimeType, function(url){
                     that.videoUrl = url;
                     that.showSpinner = false;
+		    that.startPing(url + "/ping");
                 }, function(seekHi, seekLo, seekLength){
                     context.stream(seekHi, seekLo, seekLength);
                 }, undefined, size)
