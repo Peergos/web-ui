@@ -97,6 +97,7 @@ module.exports = {
             return this.profileImage.length > 0;
         },
         removeImage: function() {
+            this.profileImage = "";
             this.updateThumbnail(peergos.shared.user.JavaScriptPoster.emptyArray(), peergos.shared.user.JavaScriptPoster.emptyArray());
         },
         update: function() {

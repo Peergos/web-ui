@@ -1166,7 +1166,9 @@ module.exports = {
                     for (let i = 0; i < data.length; i++) {
                         str = str + String.fromCharCode(data[i] & 0xff);
                     }
-                    base64Image = "data:image/png;base64," + window.btoa(str);
+                    if (data.byteLength > 0) {
+                        base64Image = "data:image/png;base64," + window.btoa(str);
+                    }
                 }
                 that.profile = {
                     firstName: profile.firstName.isPresent() ? profile.firstName.get() : "",
