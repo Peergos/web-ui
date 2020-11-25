@@ -10,7 +10,7 @@ module.exports = {
             selectedSizeUnit: "M",
             selectedMimeType: "video",
             selectedDate: "",
-            searchFileSize : "",
+            searchFileSize : "1",
             error: "",
             isError:false,
             errorClass: "",
@@ -148,11 +148,11 @@ module.exports = {
             this.errorClass = "has-error has-feedback alert alert-danger";
             return;
         }
-        if (selectedSizeUnit == 'K')
+        if (this.selectedSizeUnit == 'K')
             return Number(searchTerm) * 1024;
-        if (selectedSizeUnit == 'M')
+        if (this.selectedSizeUnit == 'M')
             return Number(searchTerm) * 1024 * 1024;
-        if (selectedSizeUnit == 'G')
+        if (this.selectedSizeUnit == 'G')
             return Number(searchTerm) * 1024 * 1024 * 1024;
     },
 	search: function() {

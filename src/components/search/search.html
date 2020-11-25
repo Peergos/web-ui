@@ -40,9 +40,11 @@
                     </td>
                     <td v-if="selectedSearchType=='mimeType'" style="padding-right: 20px;">
                         <select v-model="selectedMimeType">
-                            <option value="video">Video</option>
-                            <option value="image">Image</option>
                             <option value="audio">Audio</option>
+                            <option value="image">Image</option>
+                            <option value="application/pdf">PDF</option>
+                            <option value="text/plain">Text</option>
+                            <option value="video">Video</option>
                         </select>
                     </td>
                     <td>
