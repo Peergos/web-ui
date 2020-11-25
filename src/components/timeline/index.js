@@ -10,7 +10,8 @@ module.exports = {
             noMoreResults: false
         }
     },
-    props: ['context','navigateToAction','viewAction', 'messages', 'getFileIcon', 'socialFeed', 'importCalendarFile'],
+    props: ['context','navigateToAction','viewAction', 'messages', 'getFileIcon', 'socialFeed',
+        'importCalendarFile', 'displayProfile'],
     created: function() {
         let that = this;
         Vue.nextTick(function() {
@@ -117,8 +118,11 @@ module.exports = {
                 }
             }
         },
+        profile: function(username) {
+            this.displayProfile(username, false);
+        },
         createTimelineEntry: function(entry, file) {
-            let info = entry.sharer + " shared";
+            let info = " shared";
             var displayFilename = true;
             if(entry.cap.isWritable() ) {
                 info = info + " write access to";
@@ -143,6 +147,7 @@ module.exports = {
             let path = props.isDirectory ? entry.path : entry.path.substring(0, entry.path.lastIndexOf(props.name) -1);
             let name = props.name.length > 30 ? props.name.substring(0,27) + '...' : props.name;
             let item = {
+                sharer: entry.sharer,
                 info: info,
                 link: entry.path,
                 path: path,
