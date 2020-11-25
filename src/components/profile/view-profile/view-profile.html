@@ -12,19 +12,19 @@
                 <img id="profile-image" v-bind:src="getProfileImage()"/>
             </div>
             <div class="profile-view">
-                <p>
+                <p v-if="status.length > 0">
                     <span class="profile-span">Status:</span><span>{{status}}</span>
                 </p>
-                <p>
+                <p v-if="firstName.length > 0">
                     <span class="profile-span">Name:</span><span>{{firstName}}</span>&nbsp;<span >{{lastName}}</span>
                 </p>
-                <p>
+                <p v-if="primaryPhone.length > 0">
                     <span class="profile-span">Phone:</span><span>{{primaryPhone}}</span>
                 </p>
-                <p>
+                <p v-if="primaryEmail.length > 0">
                     <span class="profile-span">Email:</span><span>{{primaryEmail}}</span>
                 </p>
-                <p>
+                <p v-if="biography.length > 0">
                     <span class="profile-span">Biography:</span>
                 </p>
                 <p style="white-space: pre-wrap; margin-top: 10px; margin-bottom: 0;">{{biography}}</p>

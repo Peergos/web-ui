@@ -645,3 +645,13 @@ h3 {word-wrap:break-word; white-space:normal;}
     margin: auto;
     width: 20%;
 }
+
+.profile-edit-image-buttons-container {
+    position: absolute;
+    top: 0;
+    right: 13em;
+}
+
+.profile-edit-image-button {
+    display: block;
+}
