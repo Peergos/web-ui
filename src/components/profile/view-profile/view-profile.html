@@ -1,39 +1,33 @@
 <transition name="modal">
 <div class="modal-mask" @click="close">
     <meta http-equiv="content-type" content="text/html; charset=utf-8" />
-    <div class="modal-container" @click.stop style="height:100%;overflow-y:auto">
+    <div @click.stop class="profile-page-container">
         <span @click="close" class="close">&times;</span>
         <div class="modal-header">
             <h2>Profile</h2>
         </div>
         <div class="modal-body">
             <spinner v-if="showSpinner"></spinner>
-            <div id="profile-main">
-                <div id="profile-container" v-if="hasProfileImage()">
-                    <img id="profile-image" v-bind:src="getProfileImage()"/>
-                </div>
-                </p>
-                <span>First name
-                    <input id="profile-first-name" class="form-control" readonly v-model="firstName" placeholder="First Name" style="width:30%" maxlength="25">
-                </span>
+            <div id="profile-container" class="profile-image" v-if="hasProfileImage()">
+                <img id="profile-image" v-bind:src="getProfileImage()"/>
+            </div>
+            <div class="profile-view">
                 <p>
-                    Last name
-                    <input id="profile-last-name" class="form-control" readonly v-model="lastName" placeholder="Last Name" style="width:30%" maxlength="25">
+                    <span class="profile-span">Status:</span><span>{{status}}</span>
                 </p>
                 <p>
-                    Status
-                    <input id="profile-status" class="form-control" readonly v-model="status" placeholder="Status" style="width:30%" maxlength="50">
-                </p>
-                <p>Phone
-                    <input id="profile-primary-phone" class="form-control" readonly v-model="primaryPhone" placeholder="Primary Phone Number" style="width:30%" maxlength="15">
+                    <span class="profile-span">Name:</span><span>{{firstName}}</span>&nbsp;<span >{{lastName}}</span>
                 </p>
                 <p>
-                    Email
-                    <input id="profile-primary-email" class="form-control" readonly v-model="primaryEmail" placeholder="Primary Email Address" style="width:30%" maxlength="50">
+                    <span class="profile-span">Phone:</span><span>{{primaryPhone}}</span>
                 </p>
-                <p>Biography
-                    <textarea id="profile-biography" class="form-control" readonly v-model="biography" placeholder="Biography" style="width:50%;resize: none;" rows=3 maxlength="200"></textarea>
+                <p>
+                    <span class="profile-span">Email:</span><span>{{primaryEmail}}</span>
                 </p>
+                <p>
+                    <span class="profile-span">Biography:</span>
+                </p>
+                <p style="white-space: pre-wrap; margin-top: 10px; margin-bottom: 0;">{{biography}}</p>
             </div>
         </div>
     </div>

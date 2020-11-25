@@ -613,3 +613,35 @@ h3 {word-wrap:break-word; white-space:normal;}
 .profile-table th, td {
   padding: 2px;
 }
+
+.profile-page-container {
+	height: 100%;
+	width: 40%;
+    overflow-y: auto;
+    position: fixed;
+    z-index: 2500;
+    top: 0;
+    left: 50%;
+    transform: translate(-50%, 0);
+    margin: 0 auto;
+    padding: 20px 30px;
+    background-color: #fff;
+    border-radius: 2px;
+    box-shadow: 0 2px 8px rgba(0,0,0,.33);
+    transition: all .3s ease;
+    font-family: Helvetica,Arial,sans-serif;
+}
+
+.profile-span {
+    font-weight: bold;
+    padding-right: 10px;
+}
+
+.profile-view {
+    font-size: 1.3em;
+}
+
+.profile-image {
+    margin: auto;
+    width: 20%;
+}
