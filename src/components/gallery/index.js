@@ -6,7 +6,7 @@ module.exports = {
             fileIndex: 0,
             imageData: null,
             videoUrl: null,
-	    pinging: false;
+	    pinging: false
         };
     },
     props: ['files', 'context', 'initialFileName'],
