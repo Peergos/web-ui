@@ -613,8 +613,8 @@ h3 {word-wrap:break-word; white-space:normal;}
 }
 
 .profile-page-container {
-	height: 100%;
-	width: 40%;
+    height: 100%;
+    width: 40%;
     overflow-y: auto;
     position: fixed;
     z-index: 2500;
@@ -641,7 +641,6 @@ h3 {word-wrap:break-word; white-space:normal;}
 
 .profile-image {
     margin: 20px;
-    width: 20%;
 }
 
 .flex-container {
@@ -707,5 +706,11 @@ h3 {word-wrap:break-word; white-space:normal;}
 @media (max-width: 700px) {
   .flex-item-right, .flex-item-left {
     flex: 100%;
+  }
+}
+
+@media (max-width: 900px) {
+  .form-control-profile {
+      max-width:70%;
   }
 }
