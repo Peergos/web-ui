@@ -12,11 +12,11 @@
                 <div id="profile-container" style="margin: auto; width: 20%;">
                     <img id="profile-image" v-bind:src="getProfileImage()"/>
                 </div>
-                <div class="profile-edit-image-buttons-container">
-                    <button class="btn btn-success profile-edit-image-button" onclick="document.getElementById('uploadImageInput').click()">Upload Profile Image</button>
+                <div style="padding: 20px;">
+                    <button class="btn btn-success" onclick="document.getElementById('uploadImageInput').click()">Upload Profile Image</button>
                     <input type="file" id="uploadImageInput" @change="uploadImageFile" style="display:none;" accept="image/*" />
-                    <button class="btn btn-danger profile-edit-image-button" v-if="hasProfileImage()" v-on:click="removeImage()" >Remove Image</button>
-                    <button class="btn btn-success profile-edit-image-button" v-if="hasProfileImage()" @click="share('photo', 'Profile image')" >Share</button>
+                    <button class="btn btn-danger" v-if="hasProfileImage()" v-on:click="removeImage()" >Remove Image</button>
+                    <button class="btn btn-success" v-if="hasProfileImage()" @click="share('photo', 'Profile image')" >Share</button>
                 </div>
                 <table id='profile-table-id' class="table table-responsive table-striped table-hover profile-table">
                     <tr>
