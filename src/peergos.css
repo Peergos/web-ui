@@ -595,6 +595,8 @@ h3 {word-wrap:break-word; white-space:normal;}
 }
 
 .form-control-profile {
+    flex-grow: 1;
+    margin-right: 10px;
     padding: 6px 12px;
     font-size: 16px;
     line-height: 1.42857143;
@@ -638,8 +640,17 @@ h3 {word-wrap:break-word; white-space:normal;}
 }
 
 .profile-image {
-    margin: auto;
+    margin: 20px;
     width: 20%;
+}
+
+.flex-container {
+    display: flex;
+    flex-wrap: wrap;
+}
+
+.flex-grow {
+    flex-grow: 1;
 }
 
 .flex-profile-container {
@@ -652,11 +663,15 @@ h3 {word-wrap:break-word; white-space:normal;}
 .flex-item-left {
   padding: 10px;
   flex: 50%;
+  display: flex;
+  flex-wrap: wrap;
 }
 
 .flex-item-right {
   padding: 10px;
   flex: 50%;
+  display: flex;
+  flex-wrap: wrap;
 }
 
 .flex-item {
@@ -681,12 +696,6 @@ h3 {word-wrap:break-word; white-space:normal;}
   display: flex;
   justify-content: center;
   align-items: center;
-  height: 150px;
-}
-
-.flex-thumbnail-container>div {
-  width: 150px;
-  height: 100px;
 }
 
 .flex-image-button-container {

@@ -10,30 +10,51 @@
             <spinner v-if="showSpinner"></spinner>
 
             <div class="flex-thumbnail-container">
-                <div><img id="profile-image" v-bind:src="getProfileImage()"/></div>
-                <div class="flex-image-button-container">
-                    <div><button class="btn btn-success" onclick="document.getElementById('uploadImageInput').click()">Upload Profile Image</button><input type="file" id="uploadImageInput" @change="uploadImageFile" style="display:none;" accept="image/*" /></div>
-                    <div><button class="btn btn-danger" v-if="hasProfileImage()" v-on:click="removeImage()" >Remove Image</button></div>
-                    <div><button class="btn btn-success" v-if="hasProfileImage()" @click="share('photo', 'Profile image')" >Share</button></div>
-                </div>
+              <div style="padding:20px;">
+		<img id="profile-image" v-bind:src="getProfileImage()"/>
+	      </div>
+              <div class="flex-image-button-container">
+                <div class="flex-container">
+		  <button class="btn btn-success flex-grow" onclick="document.getElementById('uploadImageInput').click()">Upload Image</button>
+		  <input type="file" id="uploadImageInput" @change="uploadImageFile" style="display:none;" accept="image/*" />
+		</div>
+                <div class="flex-container">
+		  <button class="btn btn-danger flex-grow" v-if="hasProfileImage()" v-on:click="removeImage()" >Remove Image</button>
+		</div>
+                <div class="flex-container">
+		  <button class="btn btn-success flex-grow" v-if="hasProfileImage()" @click="share('photo', 'Profile image')" >Share</button>
+		</div>
+              </div>
             </div>
             <div class="flex-profile-container">
-                <div class="flex-item-left">First name
-                    <input id="profile-first-name" class="form-control-profile" v-model="firstName" placeholder="First Name" :maxlength="FIRSTNAME_MAX_LENGTH">
-                    <button v-if="firstNameReadyToBeShared" class="btn btn-success" @click="share('firstname', 'First name')">Share</button>
-                </div>
-                <div class="flex-item-right">Last name
-                    <input id="profile-last-name" class="form-control-profile" v-model="lastName" placeholder="Last Name" :maxlength="LASTNAME_MAX_LENGTH">
-                    <button v-if="lastNameReadyToBeShared" class="btn btn-success" @click="share('lastname', 'Last name')">Share</button>
-                </div>
-                <div class="flex-item-left">Phone
-                    <input id="profile-primary-phone" class="form-control-profile" v-model="primaryPhone" placeholder="Primary Phone Number" :maxlength="PHONE_MAX_LENGTH">
-                    <button v-if="primaryPhoneReadyToBeShared" class="btn btn-success" @click="share('phone', 'Phone number')">Share</button>
-                </div>
-                <div class="flex-item-right">Email
-                    <input id="profile-primary-email" class="form-control-profile" v-model="primaryEmail" placeholder="Primary Email Address" :maxlength="EMAIL_MAX_LENGTH">
-                    <button v-if="primaryEmailReadyToBeShared" class="btn btn-success" @click="share('email', 'Email address')">Share</button>
-                </div>
+              <div class="flex-item-left">
+		<label style="margin-right:10px;">First name</label>
+		<div style="flex-grow:1; display:flex; flex-wrap: wrap;">
+                  <input id="profile-first-name" class="form-control-profile" v-model="firstName" placeholder="First Name" :maxlength="FIRSTNAME_MAX_LENGTH">
+                  <button v-if="firstNameReadyToBeShared" class="btn btn-success" @click="share('firstname', 'First name')">Share</button>
+		</div>
+              </div>
+              <div class="flex-item-right">
+		<label style="margin-right:10px;">Last name</label>
+		<div style="flex-grow:1; display:flex; flex-wrap: wrap;">
+                  <input id="profile-last-name" class="form-control-profile" v-model="lastName" placeholder="Last Name" :maxlength="LASTNAME_MAX_LENGTH">
+                  <button v-if="lastNameReadyToBeShared" class="btn btn-success" @click="share('lastname', 'Last name')">Share</button>
+		</div>
+              </div>
+              <div class="flex-item-left">
+		<label style="margin-right:10px;">Phone</label>
+		<div style="flex-grow:1; display:flex; flex-wrap: wrap;">
+                  <input id="profile-primary-phone" class="form-control-profile" v-model="primaryPhone" placeholder="Primary Phone Number" :maxlength="PHONE_MAX_LENGTH">
+                  <button v-if="primaryPhoneReadyToBeShared" class="btn btn-success" @click="share('phone', 'Phone number')">Share</button>
+		</div>
+              </div>
+              <div class="flex-item-right">
+		<label style="margin-right:10px;">Email</label>
+		<div style="flex-grow:1; display:flex; flex-wrap: wrap;">
+                  <input id="profile-primary-email" class="form-control-profile" v-model="primaryEmail" placeholder="Primary Email Address" :maxlength="EMAIL_MAX_LENGTH">
+                  <button v-if="primaryEmailReadyToBeShared" class="btn btn-success" @click="share('email', 'Email address')">Share</button>
+		</div>
+              </div>
             </div>
             <div class="flex-item">
                 <div>Status</div>
