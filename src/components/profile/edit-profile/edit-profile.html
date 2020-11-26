@@ -8,109 +8,70 @@
         </div>
         <div class="modal-body">
             <spinner v-if="showSpinner"></spinner>
-            <div id="profile-main">
-                <div id="profile-container" style="margin: auto; width: 20%;">
-                    <img id="profile-image" v-bind:src="getProfileImage()"/>
+
+            <div class="flex-thumbnail-container">
+                <div><img id="profile-image" v-bind:src="getProfileImage()"/></div>
+                <div class="flex-image-button-container">
+                    <div><button class="btn btn-success" onclick="document.getElementById('uploadImageInput').click()">Upload Profile Image</button><input type="file" id="uploadImageInput" @change="uploadImageFile" style="display:none;" accept="image/*" /></div>
+                    <div><button class="btn btn-danger" v-if="hasProfileImage()" v-on:click="removeImage()" >Remove Image</button></div>
+                    <div><button class="btn btn-success" v-if="hasProfileImage()" @click="share('photo', 'Profile image')" >Share</button></div>
                 </div>
-                <div style="padding: 20px;">
-                    <button class="btn btn-success" onclick="document.getElementById('uploadImageInput').click()">Upload Profile Image</button>
-                    <input type="file" id="uploadImageInput" @change="uploadImageFile" style="display:none;" accept="image/*" />
-                    <button class="btn btn-danger" v-if="hasProfileImage()" v-on:click="removeImage()" >Remove Image</button>
-                    <button class="btn btn-success" v-if="hasProfileImage()" @click="share('photo', 'Profile image')" >Share</button>
+            </div>
+            <div class="flex-profile-container">
+                <div class="flex-item-left">First name
+                    <input id="profile-first-name" class="form-control-profile" v-model="firstName" placeholder="First Name" :maxlength="FIRSTNAME_MAX_LENGTH">
+                    <button v-if="firstNameReadyToBeShared" class="btn btn-success" @click="share('firstname', 'First name')">Share</button>
                 </div>
-                <table id='profile-table-id' class="table table-responsive table-striped table-hover profile-table">
-                    <tr>
-                        <td>
-                            First name
-                        </td>
-                        <td>
-                            <input id="profile-first-name" class="form-control-profile" v-model="firstName" placeholder="First Name" :maxlength="FIRSTNAME_MAX_LENGTH">
-                        </td>
-                        <td>
-                            <button v-if="firstNameReadyToBeShared" class="btn btn-success" @click="share('firstname', 'First name')">Share</button>
-                        </td>
-                        <td>
-                            Last name
-                        </td>
-                        <td>
-                            <input id="profile-last-name" class="form-control-profile" v-model="lastName" placeholder="Last Name" :maxlength="LASTNAME_MAX_LENGTH">
-                        </td>
-                        <td>
-                            <button v-if="lastNameReadyToBeShared" class="btn btn-success" @click="share('lastname', 'Last name')">Share</button>
-                        </td>
-                    </tr>
-                    <tr>
-                        <td>
-                            Phone
-                        </td>
-                        <td>
-                            <input id="profile-primary-phone" class="form-control-profile" v-model="primaryPhone" placeholder="Primary Phone Number" :maxlength="PHONE_MAX_LENGTH">
-                        </td>
-                        <td>
-                            <button v-if="primaryPhoneReadyToBeShared" class="btn btn-success" @click="share('phone', 'Phone number')">Share</button>
-                        </td>
-                        <td>
-                            Email
-                        </td>
-                        <td>
-                            <input id="profile-primary-email" class="form-control-profile" v-model="primaryEmail" placeholder="Primary Email Address" :maxlength="EMAIL_MAX_LENGTH">
-                        </td>
-                        <td>
-                            <button v-if="primaryEmailReadyToBeShared" class="btn btn-success" @click="share('email', 'Email address')">Share</button>
-                        </td>
-                    </tr>
-                    <tr>
-                        <td>
-                            Status
-                        </td>
-                        <td colspan="3">
-                            <input id="profile-status" class="form-control-profile" style="width: 98%;" v-model="status" placeholder="Status" :maxlength="STATUS_MAX_LENGTH">
-                        </td>
-                        <td>
-                            <button v-if="statusReadyToBeShared" class="btn btn-success" @click="share('status', 'Status message')">Share</button>
-                        </td>
-                        <td>
-                        </td>
-                        <td>
-                        </td>
-                    </tr>
-                </table>
-                <table id='biography-table-id' class="table table-responsive table-striped table-hover profile-table">
-                    <tr>
-                        <td>
-                            Biography
-                        </td>
-                        <td></td>
-                    </tr>
-                    <tr>
-                        <td>
-                            <textarea id="profile-biography" class="form-control-profile" style="width: 98%;resize: none;" v-model="biography" placeholder="Biography" rows=3 :maxlength="BIO_MAX_LENGTH"></textarea>
-                        </td>
-                        <td>
-                            <button v-if="biographyReadyToBeShared" class="btn btn-success" @click="share('bio', 'Biography')">Share</button>
-                        </td>
-                    </tr>
-                </table>
-                <table id='webroot-table-id' class="table table-responsive table-striped table-hover profile-table">
-                    <tr>
-                        <td>
-                            Website Directory
-                        </td>
-                    </tr>
-                    <tr>
-                        <td>
-                            <input id="profile-web-root" class="form-control-profile" v-model="webRoot" placeholder="Website Directory" :maxlength="WEBROOT_MAX_LENGTH">
-                            <button v-if="webRootReadyToBePublished" class="btn btn-success" @click="publishWebroot()">Publish</button>
-                        </td>
-                    </tr>
-                </table>
-                <p>
-                <button class="btn btn-success" 
-                        style = "width:100%"
-                    @click="update()">
-                    Save Profile
-                </button>
-                </p>
+                <div class="flex-item-right">Last name
+                    <input id="profile-last-name" class="form-control-profile" v-model="lastName" placeholder="Last Name" :maxlength="LASTNAME_MAX_LENGTH">
+                    <button v-if="lastNameReadyToBeShared" class="btn btn-success" @click="share('lastname', 'Last name')">Share</button>
+                </div>
+                <div class="flex-item-left">Phone
+                    <input id="profile-primary-phone" class="form-control-profile" v-model="primaryPhone" placeholder="Primary Phone Number" :maxlength="PHONE_MAX_LENGTH">
+                    <button v-if="primaryPhoneReadyToBeShared" class="btn btn-success" @click="share('phone', 'Phone number')">Share</button>
+                </div>
+                <div class="flex-item-right">Email
+                    <input id="profile-primary-email" class="form-control-profile" v-model="primaryEmail" placeholder="Primary Email Address" :maxlength="EMAIL_MAX_LENGTH">
+                    <button v-if="primaryEmailReadyToBeShared" class="btn btn-success" @click="share('email', 'Email address')">Share</button>
+                </div>
+            </div>
+            <div class="flex-item">
+                <div>Status</div>
+            </div>
+            <div class="flex-item">
+                <div style="flex-grow: 2">
+                    <input id="profile-status" style="width: 100%;" class="form-control-profile" v-model="status" placeholder="Status" :maxlength="STATUS_MAX_LENGTH">
+                </div>
+                <div>
+                    <button v-if="statusReadyToBeShared" class="btn btn-success" @click="share('status', 'Status message')">Share</button>
+                </div>
+            </div>
+            <div class="flex-item">
+                <div>Biography</div>
+            </div>
+            <div class="flex-item">
+                <div style="flex-grow: 2">
+                    <textarea id="profile-biography" class="form-control-profile" style="width: 100%;resize: none;" v-model="biography" placeholder="Biography" rows=3 :maxlength="BIO_MAX_LENGTH"></textarea>
+                </div>
+                <div>
+                    <button v-if="biographyReadyToBeShared" class="btn btn-success" @click="share('bio', 'Biography')">Share</button>
+                </div>
+            </div>
+            <div class="flex-item">
+                <div>Website Directory</div>
+            </div>
+            <div class="flex-item">
+                <div>
+                    <input id="profile-web-root" style="width:100%" class="form-control-profile" v-model="webRoot" placeholder="Website Directory" :maxlength="WEBROOT_MAX_LENGTH">
+                </div>
+                <div>
+                    <button v-if="webRootReadyToBePublished" class="btn btn-success" @click="publishWebroot()">Publish</button>
+                </div>
+            </div>
+            <div class="flex-line-item">
+                <div>
+                    <button class="btn btn-success" style = "width:100%" @click="update()">Save Profile</button>
+                </div>
             </div>
         </div>
     </div>

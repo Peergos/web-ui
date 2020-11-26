@@ -610,10 +610,6 @@ h3 {word-wrap:break-word; white-space:normal;}
     transition: border-color ease-in-out .15s,box-shadow ease-in-out .15s;
 }
 
-.profile-table th, td {
-  padding: 2px;
-}
-
 .profile-page-container {
 	height: 100%;
 	width: 40%;
@@ -646,12 +642,61 @@ h3 {word-wrap:break-word; white-space:normal;}
     width: 20%;
 }
 
-.profile-edit-image-buttons-container {
-    position: absolute;
-    top: 0;
-    right: 13em;
+.flex-profile-container {
+  display: flex;
+  flex-wrap: wrap;
+  font-size: 20px;
+  text-align: left;
 }
 
-.profile-edit-image-button {
-    display: block;
+.flex-item-left {
+  padding: 10px;
+  flex: 50%;
+}
+
+.flex-item-right {
+  padding: 10px;
+  flex: 50%;
+}
+
+.flex-item {
+  display: flex;
+}
+
+.flex-item > div {
+  width: 300px;
+  padding: 10px;
+  text-align: left;
+  font-size: 20px;
+}
+
+.flex-line-item > div {
+  width: 100%;
+  padding: 10px;
+  text-align: center;
+  font-size: 20px;
+}
+
+.flex-thumbnail-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 150px;
+}
+
+.flex-thumbnail-container>div {
+  width: 150px;
+  height: 100px;
+}
+
+.flex-image-button-container {
+  display: flex;
+  flex-direction: column;
+}
+
+/* Responsive layout - makes a one column-layout instead of a two-column layout */
+@media (max-width: 700px) {
+  .flex-item-right, .flex-item-left {
+    flex: 100%;
+  }
 }
