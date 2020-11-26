@@ -11,7 +11,10 @@
             <div id="profile-container" class="profile-image" v-if="hasProfileImage()">
                 <img id="profile-image" v-bind:src="getProfileImage()"/>
             </div>
-            <div class="profile-view">
+            <div v-if="status.length == 0 && firstName.length == 0 && primaryPhone.length == 0 && primaryEmail.length == 0 && biography.length == 0 " class="profile-view">
+                This user hasn't shared any of their profile with you yet.
+            </div>
+            <div v-if="status.length > 0 || firstName.length > 0 || primaryPhone.length > 0 || primaryEmail.length > 0 || biography.length > 0 " class="profile-view">
                 <p v-if="status.length > 0">
                     <span class="profile-span">Status:</span><span>{{status}}</span>
                 </p>

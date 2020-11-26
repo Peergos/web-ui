@@ -27,7 +27,7 @@
                             <input id="profile-first-name" class="form-control-profile" v-model="firstName" placeholder="First Name" :maxlength="FIRSTNAME_MAX_LENGTH">
                         </td>
                         <td>
-                            <button class="btn btn-success" @click="share('firstname', 'First name')">Share</button>
+                            <button v-if="firstNameReadyToBeShared" class="btn btn-success" @click="share('firstname', 'First name')">Share</button>
                         </td>
                         <td>
                             Last name
@@ -36,7 +36,7 @@
                             <input id="profile-last-name" class="form-control-profile" v-model="lastName" placeholder="Last Name" :maxlength="LASTNAME_MAX_LENGTH">
                         </td>
                         <td>
-                            <button class="btn btn-success" @click="share('lastname', 'Last name')">Share</button>
+                            <button v-if="lastNameReadyToBeShared" class="btn btn-success" @click="share('lastname', 'Last name')">Share</button>
                         </td>
                     </tr>
                     <tr>
@@ -47,7 +47,7 @@
                             <input id="profile-primary-phone" class="form-control-profile" v-model="primaryPhone" placeholder="Primary Phone Number" :maxlength="PHONE_MAX_LENGTH">
                         </td>
                         <td>
-                            <button class="btn btn-success" @click="share('phone', 'Phone number')">Share</button>
+                            <button v-if="primaryPhoneReadyToBeShared" class="btn btn-success" @click="share('phone', 'Phone number')">Share</button>
                         </td>
                         <td>
                             Email
@@ -56,7 +56,7 @@
                             <input id="profile-primary-email" class="form-control-profile" v-model="primaryEmail" placeholder="Primary Email Address" :maxlength="EMAIL_MAX_LENGTH">
                         </td>
                         <td>
-                            <button class="btn btn-success" @click="share('email', 'Email address')">Share</button>
+                            <button v-if="primaryEmailReadyToBeShared" class="btn btn-success" @click="share('email', 'Email address')">Share</button>
                         </td>
                     </tr>
                     <tr>
@@ -67,7 +67,7 @@
                             <input id="profile-status" class="form-control-profile" style="width: 98%;" v-model="status" placeholder="Status" :maxlength="STATUS_MAX_LENGTH">
                         </td>
                         <td>
-                            <button class="btn btn-success" @click="share('status', 'Status message')">Share</button>
+                            <button v-if="statusReadyToBeShared" class="btn btn-success" @click="share('status', 'Status message')">Share</button>
                         </td>
                         <td>
                         </td>
@@ -87,7 +87,7 @@
                             <textarea id="profile-biography" class="form-control-profile" style="width: 98%;resize: none;" v-model="biography" placeholder="Biography" rows=3 :maxlength="BIO_MAX_LENGTH"></textarea>
                         </td>
                         <td>
-                            <button class="btn btn-success" @click="share('bio', 'Biography')">Share</button>
+                            <button v-if="biographyReadyToBeShared" class="btn btn-success" @click="share('bio', 'Biography')">Share</button>
                         </td>
                     </tr>
                 </table>
@@ -108,7 +108,7 @@
                 <button class="btn btn-success" 
                         style = "width:100%"
                     @click="update()">
-                    Update Profile
+                    Save Profile
                 </button>
                 </p>
             </div>

@@ -3,12 +3,18 @@ module.exports = {
     data: function() {
         return {
         firstName: "",
+        firstNameReadyToBeShared: false,
         lastName: "",
+        lastNameReadyToBeShared: false,
         biography: "",
+        biographyReadyToBeShared: false,
         primaryPhone: "",
+        primaryPhoneReadyToBeShared: false,
         primaryEmail: "",
+        primaryEmailReadyToBeShared: false,
         profileImage: "",
         status: "",
+        statusReadyToBeShared: false,
         webRoot: "",
         webRootReadyToBePublished: false,
         previousFirstName: "",
@@ -32,15 +38,26 @@ module.exports = {
     props: ['context', 'profile', 'messages', 'shareWith'],
     created: function() {
         this.firstName = this.previousFirstName = this.profile.firstName;
+        if (this.firstName.length > 0)
+            this.firstNameReadyToBeShared = true;
         this.lastName = this.previousLastName = this.profile.lastName;
+        if (this.lastName.length > 0)
+            this.lastNameReadyToBeShared = true;
         this.biography = this.previousBiography = this.profile.biography;
+        if (this.biography.length > 0)
+            this.biographyReadyToBeShared = true;
         this.primaryPhone = this.previousPrimaryPhone = this.profile.primaryPhone;
+        if (this.primaryPhone.length > 0)
+            this.primaryPhoneReadyToBeShared = true;
         this.primaryEmail = this.previousPrimaryEmail = this.profile.primaryEmail;
+        if (this.primaryEmail.length > 0)
+            this.primaryEmailReadyToBeShared = true;
         this.status = this.previousStatus = this.profile.status;
+        if (this.status.length > 0)
+            this.statusReadyToBeShared = true;
         this.webRoot = this.previousWebRoot = this.profile.webRoot;
-        if (this.webRoot.length > 0) {
+        if (this.webRoot.length > 0)
             this.webRootReadyToBePublished = true;
-        }
         this.profileImage = this.profile.profileImage;
     },
     methods: {
@@ -115,6 +132,11 @@ module.exports = {
                         peergos.shared.user.ProfilePaths.setFirstName(context, that.firstName).thenApply(res => {
                             if(res) {
                                 that.previousFirstName = that.firstName;
+                                if (that.firstName.length == 0) {
+                                    that.firstNameReadyToBeShared = false;
+                                } else {
+                                    that.firstNameReadyToBeShared = true;
+                                }
                             }
                             future.complete(res);
                         });
@@ -128,6 +150,11 @@ module.exports = {
                         peergos.shared.user.ProfilePaths.setLastName(context, that.lastName).thenApply(res => {
                             if(res) {
                                 that.previousLastName = that.lastName;
+                                if (that.lastName.length == 0) {
+                                    that.lastNameReadyToBeShared = false;
+                                } else {
+                                    that.lastNameReadyToBeShared = true;
+                                }
                             }
                             future.complete(res);
                         });
@@ -141,6 +168,11 @@ module.exports = {
                         peergos.shared.user.ProfilePaths.setBio(context, that.biography).thenApply(res => {
                             if(res) {
                                 that.previousBiography = that.biography;
+                                if (that.biography.length == 0) {
+                                    that.biographyReadyToBeShared = false;
+                                } else {
+                                    that.biographyReadyToBeShared = true;
+                                }
                             }
                             future.complete(res);
                         });
@@ -154,6 +186,11 @@ module.exports = {
                         peergos.shared.user.ProfilePaths.setPhone(context, that.primaryPhone).thenApply(res => {
                             if(res) {
                                 that.previousPrimaryPhone = that.primaryPhone;
+                                if (that.primaryPhone.length == 0) {
+                                    that.primaryPhoneReadyToBeShared = false;
+                                } else {
+                                    that.primaryPhoneReadyToBeShared = true;
+                                }
                             }
                             future.complete(res);
                         });
@@ -167,6 +204,11 @@ module.exports = {
                         peergos.shared.user.ProfilePaths.setEmail(context, that.primaryEmail).thenApply(res => {
                             if(res) {
                                 that.previousPrimaryEmail = that.primaryEmail;
+                                if (that.primaryEmail.length == 0) {
+                                    that.primaryEmailReadyToBeShared = false;
+                                } else {
+                                    that.primaryEmailReadyToBeShared = true;
+                                }
                             }
                             future.complete(res);
                         });
@@ -180,6 +222,11 @@ module.exports = {
                         peergos.shared.user.ProfilePaths.setStatus(context, that.status).thenApply(res => {
                             if(res) {
                                 that.previousStatus = that.status;
+                                if (that.status.length == 0) {
+                                    that.statusReadyToBeShared = false;
+                                } else {
+                                    that.statusReadyToBeShared = true;
+                                }
                             }
                             future.complete(res);
                         });
