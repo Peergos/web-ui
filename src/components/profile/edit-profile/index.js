@@ -10,6 +10,7 @@ module.exports = {
         profileImage: "",
         status: "",
         webRoot: "",
+        webRootReadyToBePublished: false,
         previousFirstName: "",
         previousLastName: "",
         previousBiography: "",
@@ -37,6 +38,9 @@ module.exports = {
         this.primaryEmail = this.previousPrimaryEmail = this.profile.primaryEmail;
         this.status = this.previousStatus = this.profile.status;
         this.webRoot = this.previousWebRoot = this.profile.webRoot;
+        if (this.webRoot.length > 0) {
+            this.webRootReadyToBePublished = true;
+        }
         this.profileImage = this.profile.profileImage;
     },
     methods: {
@@ -193,6 +197,11 @@ module.exports = {
                         if(res) {
                             that.webRoot = updatedPath;
                             that.previousWebRoot = updatedPath;
+                            if (updatedPath.length == 0) {
+                                that.webRootReadyToBePublished = false;
+                            } else {
+                                that.webRootReadyToBePublished = true;
+                            }
                         }
                         future.complete(res);
                     });
@@ -202,7 +211,7 @@ module.exports = {
                     changes.push({func: changeWebRootFunc});
                     this.saveChanges(changes);
                 } else if (updatedPath == '/') {
-                    that.showMessage("Validation Error", "Web Root directory not set. Changes not saved!");
+                    that.showMessage("Validation Error", "Web Directory not set. Changes not saved!");
                 } else {
                     if (updatedPath.endsWith('/')) {
                         updatedPath = updatedPath.substring(0, updatedPath.length -1);
@@ -211,29 +220,58 @@ module.exports = {
                         updatedPath = updatedPath.substring(1);
                     }
                     if (updatedPath == '') {
-                        this.showMessage("Validation Error", "Web Root directory not set. Changes not saved!");
+                        this.showMessage("Validation Error", "Web Directory not set. Changes not saved!");
                     } else {
                         if (!updatedPath.startsWith(this.context.username+ '/')) {
                             updatedPath = this.context.username + '/' + updatedPath;
                         }
                         if (updatedPath == '' || updatedPath == this.context.username + '/' + this.context.username) {
-                            this.showMessage("Validation Error", "Web Root directory not set. Changes not saved!");
+                            this.showMessage("Validation Error", "Web Directory not set. Changes not saved!");
                         } else {
                             try {
                                 let dirPath = peergos.client.PathUtils.directoryToPath(updatedPath.split('/'));
                                 this.context.getByPath(dirPath.toString()).thenApply(function(dirOpt){
                                         if (dirOpt.isEmpty()) {
-                                            that.showMessage("Validation Error", "Web Root directory not found. Changes not saved!");
+                                            that.showMessage("Validation Error", "Web Directory not found. Changes not saved!");
                                         } else {
                                             changes.push({func: changeWebRootFunc});
                                             that.saveChanges(changes);
                                         }
                                 });
                             } catch (pathException) {
-                                that.showMessage("Validation Error", "Web Root directory not valid. Changes not saved!");
+                                that.showMessage("Validation Error", "Web Directory not valid. Changes not saved!");
                             }
                         }
                     }
+                }
+            }
+        },
+        publishWebroot: function() {
+            let that = this;
+            if (this.webRoot.length > 0) {
+                that.showSpinner = true;
+                try {
+                    let dirPath = peergos.client.PathUtils.directoryToPath(this.webRoot.split('/'));
+                    this.context.getByPath(dirPath.toString()).thenApply(function(dirOpt){
+                        if (dirOpt.isEmpty()) {
+                            that.showMessage("Unable to publish Web Directory", "Web Directory not found");
+                        } else {
+                            peergos.shared.user.ProfilePaths.publishWebroot(that.context).thenApply(function(success){
+                                that.showSpinner = false;
+                                if (success) {
+                                    that.showMessage("Web Directory published", "Available at: https://" + that.context.username+".peergos.me");
+                                } else {
+                                    that.showMessage("Unable to publish Web Directory", "");
+                                }
+                            }).exceptionally(function(throwable) {
+                              that.showMessage("Unable to publish Web Directory", throwable.getMessage());
+                              console.log(throwable.getMessage());
+                              that.showSpinner = false;
+                            });
+                        }
+                    });
+                } catch (pathException) {
+                    that.showMessage("Unable to publish Web Directory", "Web Directory not valid");
                 }
             }
         },

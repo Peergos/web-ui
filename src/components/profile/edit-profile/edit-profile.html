@@ -100,6 +100,7 @@
                     <tr>
                         <td>
                             <input id="profile-web-root" class="form-control-profile" v-model="webRoot" placeholder="Website Directory" :maxlength="WEBROOT_MAX_LENGTH">
+                            <button v-if="webRootReadyToBePublished" class="btn btn-success" @click="publishWebroot()">Publish</button>
                         </td>
                     </tr>
                 </table>
