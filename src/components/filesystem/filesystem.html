@@ -68,7 +68,7 @@
       <li id='cut-file' v-if="isNotBackground && isWritable" v-on:click="cut">Cut</li>
       <li id='paste-file' v-if="isPasteAvailable" v-on:click="paste">Paste</li>
       <li id='share-file' v-if="(isNotHome || isNotBackground) && isLoggedIn" v-on:click="showShareWith">Share</li>
-      <li id='file-search' v-if="canSearch" v-on:click="openSearch(false)">Search...</li>
+      <li id='file-search' v-if="isSearchable" v-on:click="openSearch(false)">Search...</li>
     </ul>
   </div>
   <div v-if="viewMenu && isProfileViewable()">
