@@ -11,17 +11,14 @@ module.exports = {
             showError:false,
             unsharedReadAccessNames: [],
             unsharedEditAccessNames: [],
-            displayName:'',
             showModal:false,
             modalTitle:"",
             modalLinks:[]
         }
     },
-    props: ['data', 'followernames', 'files', 'parent', 'path', 'context', 'messages', 'fromApp', 'allowReadWriteSharing'],
+    props: ['data', 'followernames', 'files', 'parent', 'path', 'context', 'messages', 'fromApp', 'displayName', 'allowReadWriteSharing'],
     created: function() {
         Vue.nextTick(this.setTypeAhead);
-        this.displayName = this.fromApp && this.files[0].getFileProperties().name.endsWith('.ics') ?
-            'Calendar event' : files[0].getFileProperties().name;
     },
     methods: {
         close: function () {
@@ -33,7 +30,6 @@ module.exports = {
                 this.$emit("update-shared-refresh");
             }
         },
-
         showMessage : function (title, body) {
             if (! this.fromApp) {
                 this.messages.push({
@@ -43,23 +39,6 @@ module.exports = {
                 });
             }
         },
-
-        refresh : function () {
-            if (! this.fromApp) {
-                this.$emit("update-shared-refresh");
-            }
-        },
-
-        showMessage : function (title, body) {
-            if (! this.fromApp) {
-                this.messages.push({
-                    title: title,
-                    body: body,
-                    show: true
-                });
-            }
-        },
-
         createSecretLink : function () {
             if (this.files.length == 0)
                 return this.close();

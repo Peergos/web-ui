@@ -54,6 +54,7 @@
 		    <th style="text-align:right"></th>
 		    <th style="text-align:right"></th>
 		    <th style="text-align:right"></th>
+            <th style="text-align:right"></th>
 		  </tr>
                     <tr v-for="username in data.friends">
                       <td id='friend-id'>{{ username }} <span v-if="isVerified(username)" class="fas fa-check-circle"><span class="not-mobile">Verified</span></span></td>
@@ -65,6 +66,9 @@
 		      <td style="text-align:right">
 			<button class="btn btn-success" @click="showFingerPrint(username)">Verification</button>
 		      </td>
+                        <td style="text-align:right">
+                            <button class="btn btn-success" @click="profile(username)">Profile</button>
+                        </td>
                     </tr>
                 </table>
             </div>

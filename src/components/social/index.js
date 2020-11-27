@@ -11,11 +11,14 @@ module.exports = {
 	    friendname: null
         }
     },
-    props: ['data', 'context', 'externalchange', 'messages'],
+    props: ['data', 'context', 'externalchange', 'messages', 'displayProfile'],
     created: function() {
         Vue.nextTick(this.setTypeAhead);
     },
     methods: {
+    profile: function(username) {
+        this.displayProfile(username, false);
+    },
     setTypeAhead: function() {
 
         var usernames = this.usernames;

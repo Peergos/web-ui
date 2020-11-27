@@ -45,12 +45,24 @@ module.exports = {
             showTodoBoardViewer: false,
             newTodoBoardName: null,
             showCalendarViewer: false,
+            showProfileEditForm: false,
+            showProfileViewForm: false,
 	    admindata: {pending:[]},
             social:{
                 pending: [],
                 friends: [],
                 followers: [],
                 following: []
+            },
+            profile:{
+                firstName: "",
+                lastName: "",
+                biography: "",
+                primaryPhone: "",
+                primaryEmail: "",
+                profileImage: "",
+                status: "",
+                webRoot: ""
             },
             messages: [],
             messageId: null,
@@ -1133,6 +1145,50 @@ module.exports = {
             this.showAccount = true;
         },
 
+        showProfile: function(showEditForm) {
+            if(showEditForm) {
+                this.toggleUserMenu();
+            } else {
+                this.closeMenu();
+            }
+            let username = showEditForm ? this.context.username : this.selectedFiles[0].getOwnerName();
+            this.displayProfile(username, showEditForm);
+        },
+        displayProfile: function(username, showEditForm) {
+            this.showSpinner = true;
+            let that = this;
+            let context = this.context;
+            peergos.shared.user.ProfilePaths.getProfile(username, context).thenApply(profile => {
+                var base64Image = "";
+                if (profile.profilePhoto.isPresent()) {
+                    var str = "";
+                    let data = profile.profilePhoto.get();
+                    for (let i = 0; i < data.length; i++) {
+                        str = str + String.fromCharCode(data[i] & 0xff);
+                    }
+                    if (data.byteLength > 0) {
+                        base64Image = "data:image/png;base64," + window.btoa(str);
+                    }
+                }
+                that.profile = {
+                    firstName: profile.firstName.isPresent() ? profile.firstName.get() : "",
+                    lastName: profile.lastName.isPresent() ? profile.lastName.get() : "",
+                    biography: profile.bio.isPresent() ? profile.bio.get() : "",
+                    primaryPhone: profile.phone.isPresent() ? profile.phone.get() : "",
+                    primaryEmail: profile.email.isPresent() ? profile.email.get() : "",
+                    profileImage: base64Image,
+                    status: profile.status.isPresent() ? profile.status.get() : "",
+                    webRoot: profile.webRoot.isPresent() ? profile.webRoot.get() : ""
+                };
+                that.showSpinner = false;
+                if (showEditForm) {
+                    that.showProfileEditForm = true;
+                } else {
+                    that.showProfileViewForm = true;
+                }
+            });
+        },
+
         showRequestStorage: function() {
             this.toggleUserMenu();
 	    var that = this;
@@ -1304,11 +1360,17 @@ module.exports = {
 
             this.closeMenu();
         },
-
-        showShareWithFromApp: function(app, filename, allowReadWriteSharing) {
+        showShareWithForProfile: function(field, fieldName) {
+            let dirPath = this.getContext().username + "/.profile/";
+            this.showShareWithForFile(dirPath, field, false, fieldName);
+        },
+        showShareWithFromApp: function(app, filename, allowReadWriteSharing, nameToDisplay) {
+            let dirPath = this.getContext().username + "/.apps/" + app;
+            this.showShareWithForFile(dirPath, filename, allowReadWriteSharing, nameToDisplay);
+        },
+        showShareWithForFile: function(dirPath, filename, allowReadWriteSharing, nameToDisplay) {
             let that = this;
             var context = this.getContext();
-            let dirPath = context.username + "/.apps/" + app;
             this.context.getByPath(dirPath)
                 .thenApply(function(dir){dir.get().getChild(filename, that.context.crypto.hasher, that.context.network).thenApply(function(child){
                     let file = child.get();
@@ -1325,6 +1387,8 @@ module.exports = {
                         let edit_usernames = fileSharedWithState.writeAccess.toArray([]);
                         that.sharedWithData = {read_shared_with_users:read_usernames, edit_shared_with_users:edit_usernames};
                         that.fromApp = true;
+                        that.displayName = nameToDisplay != null && nameToDisplay.length > 0 ?
+                                                     nameToDisplay : file.getFileProperties().name;
                         that.allowReadWriteSharing = allowReadWriteSharing;
                         that.showShare = true;
                     });
@@ -1348,6 +1412,7 @@ module.exports = {
             let edit_usernames = fileSharedWithState.writeAccess.toArray([]);
             this.sharedWithData = {read_shared_with_users:read_usernames, edit_shared_with_users:edit_usernames};
             this.fromApp = false;
+            this.displayName = latestFile.getFileProperties().name;
             this.allowReadWriteSharing = true;
             this.showShare = true;
         },
@@ -1628,7 +1693,17 @@ module.exports = {
                 }
             }
         },
-
+        isProfileViewable: function() {
+           try {
+               if (this.currentDir.props.name != "/")
+                   return false;
+               if (this.selectedFiles.length != 1)
+                   return false;
+               return this.selectedFiles[0].isDirectory()
+           } catch (err) {
+               return false;
+           }
+        },
         openMenu: function(e, file) {
             if (this.ignoreEvent) {
                 e.preventDefault();
@@ -1640,25 +1715,36 @@ module.exports = {
                 return;
             }
             if (this.getPath() == "/") {
+		        this.isNotBackground = false;
+		        if (file != null) {
+                    this.selectedFiles = [file];
+                }
+                this.viewMenu = true;
+                Vue.nextTick(function() {
+                    var menu = document.getElementById("right-click-menu-profile");
+                    if (menu != null)
+                        menu.focus();
+                    this.setMenu(e.y, e.x, "right-click-menu-profile")
+                }.bind(this));
                 e.preventDefault();
-                return; // disable sharing your root directory
-            }
-            if(file) {
-		this.isNotBackground = true;
-                this.selectedFiles = [file];
             } else {
-		this.isNotBackground = false;
-                this.selectedFiles = [this.currentDir];
-            }
-            this.viewMenu = true;
+                if(file) {
+                    this.isNotBackground = true;
+                    this.selectedFiles = [file];
+                } else {
+                    this.isNotBackground = false;
+                    this.selectedFiles = [this.currentDir];
+                }
+                this.viewMenu = true;
 
-            Vue.nextTick(function() {
-                var menu = document.getElementById("right-click-menu");
-		if (menu != null)
-		    menu.focus();
-                this.setMenu(e.y, e.x)
-            }.bind(this));
-            e.preventDefault();
+                Vue.nextTick(function() {
+                    var menu = document.getElementById("right-click-menu");
+                    if (menu != null)
+                    menu.focus();
+                    this.setMenu(e.y, e.x, "right-click-menu")
+                }.bind(this));
+                e.preventDefault();
+            }
         },
         createTextFile: function() {
             this.closeMenu();
@@ -1784,14 +1870,14 @@ module.exports = {
             }
         },
 
-        setMenu: function(top, left) {
+        setMenu: function(top, left, menuId) {
             console.log("open menu");
 
             if (this.isNotBackground) {
                 this.ignoreEvent = true;
             }
 
-            var menu = document.getElementById("right-click-menu");
+            var menu = document.getElementById(menuId);
             if (menu != null) {
                 var largestHeight = window.innerHeight - menu.offsetHeight - 25;
                 var largestWidth = window.innerWidth - menu.offsetWidth - 25;

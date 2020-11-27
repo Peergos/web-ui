@@ -10,7 +10,8 @@ module.exports = {
             noMoreResults: false
         }
     },
-    props: ['context','navigateToAction','viewAction', 'messages', 'getFileIcon', 'socialFeed', 'importCalendarFile'],
+    props: ['context','navigateToAction','viewAction', 'messages', 'getFileIcon', 'socialFeed',
+        'importCalendarFile', 'displayProfile'],
     created: function() {
         let that = this;
         Vue.nextTick(function() {
@@ -56,6 +57,16 @@ module.exports = {
                 that.requestingMoreResults = false;
             });
         },
+        filterSharedItems: function(items) {
+            let filteredSharedItems = [];
+            for(var i=0; i < items.length; i++) {
+                let currentSharedItem = items[i];
+                if (!currentSharedItem.path.startsWith("/" + currentSharedItem.owner + "/.profile/")) {
+                    filteredSharedItems.push(currentSharedItem);
+                }
+            }
+            return filteredSharedItems;
+        },
         requestMoreResults: function() {
             let that = this;
             if (that.noMoreResults || that.requestingMoreResults) {
@@ -66,7 +77,7 @@ module.exports = {
             let startIndex = Math.max(0, this.pageEndIndex - this.pageSize);
             this.retrieveResults(startIndex, this.pageEndIndex).thenApply(function(additionalItems) {
                that.pageEndIndex = that.pageEndIndex - additionalItems.length;
-               let items = additionalItems.reverse();
+               let items = that.filterSharedItems(additionalItems.reverse());
                if (items.length == 0) {
                     that.showSpinner = false;
                     that.requestingMoreResults = false;
@@ -107,8 +118,11 @@ module.exports = {
                 }
             }
         },
+        profile: function(username) {
+            this.displayProfile(username, false);
+        },
         createTimelineEntry: function(entry, file) {
-            let info = entry.sharer + " shared";
+            let info = " shared";
             var displayFilename = true;
             if(entry.cap.isWritable() ) {
                 info = info + " write access to";
@@ -133,6 +147,7 @@ module.exports = {
             let path = props.isDirectory ? entry.path : entry.path.substring(0, entry.path.lastIndexOf(props.name) -1);
             let name = props.name.length > 30 ? props.name.substring(0,27) + '...' : props.name;
             let item = {
+                sharer: entry.sharer,
                 info: info,
                 link: entry.path,
                 path: path,
@@ -202,7 +217,7 @@ module.exports = {
                 that.retrieveResults(startIndex, that.pageEndIndex, []).thenApply(function(additionalItems) {
                     that.pageEndIndex = that.pageEndIndex - additionalItems.length;
                     let allTimelineEntries = [];
-                    let items = unseenItems.reverse().concat(additionalItems.reverse());
+                    let items = that.filterSharedItems(unseenItems.reverse().concat(additionalItems.reverse()));
                     var numberOfEntries = items.length;
                     if (numberOfEntries == 0) {
                         that.data = allTimelineEntries;
