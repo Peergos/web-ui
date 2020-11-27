@@ -702,6 +702,11 @@ h3 {word-wrap:break-word; white-space:normal;}
   flex-direction: column;
 }
 
+.vertical-margin {
+    margin-top: 10px;
+    margin-bottom: 10px;
+}
+
 /* Responsive layout - makes a one column-layout instead of a two-column layout */
 @media (max-width: 700px) {
   .flex-item-right, .flex-item-left {

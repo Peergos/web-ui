@@ -19,7 +19,7 @@
 		  <input type="file" id="uploadImageInput" @change="uploadImageFile" style="display:none;" accept="image/*" />
 		</div>
                 <div class="flex-container">
-		  <button class="btn btn-danger flex-grow" v-if="hasProfileImage()" v-on:click="removeImage()" >Remove Image</button>
+		  <button class="btn btn-danger flex-grow vertical-margin" v-if="hasProfileImage()" v-on:click="removeImage()" >Remove Image</button>
 		</div>
                 <div class="flex-container">
 		  <button class="btn btn-success flex-grow" v-if="hasProfileImage()" @click="share('photo', 'Profile image')" >Share</button>
@@ -36,21 +36,21 @@
               </div>
               <div class="flex-item-right">
 		<label style="margin-right:10px;">Last name</label>
-		<div style="flex-grow:1; display:flex; flex-wrap: wrap;">
+		<div class="flex-container flex-grow">
                   <input id="profile-last-name" class="form-control-profile" v-model="lastName" placeholder="Last Name" :maxlength="LASTNAME_MAX_LENGTH">
                   <button v-if="lastNameReadyToBeShared" class="btn btn-success" @click="share('lastname', 'Last name')">Share</button>
 		</div>
               </div>
               <div class="flex-item-left">
 		<label style="margin-right:10px;">Phone</label>
-		<div style="flex-grow:1; display:flex; flex-wrap: wrap;">
+		<div class="flex-container flex-grow">
                   <input id="profile-primary-phone" class="form-control-profile" v-model="primaryPhone" placeholder="Primary Phone Number" :maxlength="PHONE_MAX_LENGTH">
                   <button v-if="primaryPhoneReadyToBeShared" class="btn btn-success" @click="share('phone', 'Phone number')">Share</button>
 		</div>
               </div>
               <div class="flex-item-right">
 		<label style="margin-right:10px;">Email</label>
-		<div style="flex-grow:1; display:flex; flex-wrap: wrap;">
+		<div class="flex-container flex-grow">
                   <input id="profile-primary-email" class="form-control-profile" v-model="primaryEmail" placeholder="Primary Email Address" :maxlength="EMAIL_MAX_LENGTH">
                   <button v-if="primaryEmailReadyToBeShared" class="btn btn-success" @click="share('email', 'Email address')">Share</button>
 		</div>
