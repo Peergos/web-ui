@@ -15,16 +15,26 @@ module.exports = {
             isError:false,
             errorClass: "",
             sortBy: "name",
-            normalSortOrder: true
+            normalSortOrder: true,
+            cancelSearch: false
         }
     },
     props: ['path', 'context', 'navigateToAction', 'viewAction'],
     created: function() {
         this.selectedDate = new Date().toISOString().split('T')[0];
+        Vue.nextTick(function() {
+            let cancelButton = document.getElementById("cancel-search");
+            cancelButton.style.display = "none";
+        });
     },
     methods: {
 	walk: function(file, path, searchTerm, searchTest) {
         let searchButton = document.getElementById("submit-search");
+        if (this.cancelSearch) {
+            this.showSpinner = false;
+            searchButton.disabled = false;
+            return;
+        }
         let fileProperties = file.getFileProperties();
         if (fileProperties.isHidden)
             return;
@@ -156,6 +166,9 @@ module.exports = {
             return Number(searchTerm) * 1024 * 1024 * 1024;
     },
 	search: function() {
+            let cancelButton = document.getElementById("cancel-search");
+            cancelButton.style.display = "";
+            this.cancelSearch = false;
             this.isError = false;
             this.error = "";
             this.errorClass = "";
@@ -203,6 +216,11 @@ module.exports = {
                 throwable.printStackTrace();
             });
 
+        },
+        stopSearch: function () {
+            this.cancelSearch = true;
+            let cancelButton = document.getElementById("cancel-search");
+            cancelButton.style.display = "none";
         },
         view: function (entry) {
             if (entry.isDirectory) {

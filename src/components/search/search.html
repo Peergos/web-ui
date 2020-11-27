@@ -56,6 +56,9 @@
 
             <div>
                 <h3>Results: {{ matches.length }}</h3>
+                <div>
+                    <button id='cancel-search' class="btn btn-danger" @click="stopSearch()">Cancel Search</button>
+                </div>
                 <div v-if="matches!=0" class="table-responsive">
                     <table class="table">
                         <thead>
