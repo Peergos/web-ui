@@ -73,6 +73,13 @@ Vue.component('tour', Vue.extend(Tour));
 Vue.component('confirm', Vue.extend(Confirm));
 Vue.component('warning', Vue.extend(Warning));
 
+Vue.directive('focus', {
+  inserted: function (el) {
+    // Focus the element
+    el.focus()
+  }
+})
+
 // Initializing Vue after GWT has finished
 setTimeout(function() {
     var vueRoot = new Vue({
