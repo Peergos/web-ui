@@ -4,6 +4,7 @@ module.exports = {
         return {
             contextUpdates: 0,
             path: [],
+            searchPath: null,
             currentDir: null,
 	    files: [],
             grid: true,
@@ -29,6 +30,7 @@ module.exports = {
             showGallery: false,
             showSocial:false,
             showTimeline:false,
+            showSearch:false,
             showHexViewer:false,
             showCodeEditor:false,
             showPdfViewer:false,
@@ -365,7 +367,7 @@ module.exports = {
             that.showCalendar();
         },600);
     },
-    navigateToAction: function(directory, filename) {
+    navigateToAction: function(directory) {
         let newPath = directory.startsWith("/") ? directory.substring(1).split('/') : directory.split('/');
         let currentPath = this.path;
         if (newPath.length != currentPath.length) {
@@ -407,6 +409,12 @@ module.exports = {
 	    else if (app == "timeline")
 		this.showTimeline = true;
 	},
+    openSearch: function(fromRoot) {
+        this.searchPath = fromRoot ? "/" + this.getContext().username
+            : this.getPath() + this.selectedFiles[0].getFileProperties().name;
+        this.showSearch = true;
+        this.closeMenu();
+    },
 	updateCurrentDir: function() {
 	    this.updateCurrentDirectory(null);
 	},
@@ -1909,6 +1917,9 @@ module.exports = {
               document.getElementById("sideMenu").style.width = "60px";
             }
             this.showSideNav = !this.showSideNav;
+        },
+        formatDateTime: function(dateTime) {
+            return dateTime.toString().replace('T',' ');
         }
     },
     computed: {
@@ -1970,6 +1981,24 @@ module.exports = {
                     }
                 }
             });
+        },
+        isSearchable: function() {
+           try {
+               if (this.currentDir == null)
+                   return false;
+               if (this.selectedFiles.length != 1)
+                   return false;
+               if (!this.selectedFiles[0].isDirectory())
+                    return false;
+               var owner = this.currentDir.getOwnerName();
+               var me = this.username;
+               if (owner != me) {
+                   return false;
+               }
+               return true;
+           } catch (err) {
+               return false;
+           }
         },
         canOpen: function() {
            try {

@@ -1,0 +1,95 @@
+<transition name="modal">
+<div class="modal-mask" @click="close"> 
+    <div class="modal-container full-height" @click.stop style="overflow-y:auto">
+      <span @click="close" class="close">&times;</span>
+        <div class="modal-header">
+            <h2>Search</h2>
+        </div>
+        <div class="modal-body">
+            <div v-bind:class="errorClass">
+                <label v-if="isError">{{ error }}</label>
+            </div>
+            <spinner v-if="showSpinner"></spinner>
+                <table>
+                <tr>
+                    <td style="padding-right: 20px;">
+                        <select v-model="selectedSearchType">
+                            <option value="contains">Filename contains</option>
+                            <option value="modifiedAfter">File modified after</option>
+                            <option value="modifiedBefore">File modified before</option>
+                            <option value="fileSizeGreaterThan">File size greater than</option>
+                            <option value="fileSizeLessThan">File size less than</option>
+                            <option value="mimeType">File type</option>
+                        </select>
+                    </td>
+                    <td v-if="selectedSearchType=='modifiedAfter' || selectedSearchType=='modifiedBefore'" style="padding-right: 20px;">
+                        <input v-model="selectedDate" type="date" min="1900-01-01" max="3000-01-01" maxlength="12" ></input>
+                    </td>
+                    <td v-if="selectedSearchType=='contains'" style="padding-right: 20px;">
+                        <input v-focus v-if="selectedSearchType=='contains'" v-on:keyup.enter="search" v-model="searchFilenameContains" placeholder=""type="text" maxlength="60" style="width: 200px;" ></input>
+                    </td>
+                    <td v-if="selectedSearchType=='fileSizeGreaterThan' || selectedSearchType=='fileSizeLessThan'" style="padding-right: 20px;">
+                        <input v-focus v-on:keyup.enter="search" v-model="searchFileSize" placeholder="1" type="number" min="1" style="width: 100px;" ></input>
+                    </td>
+                    <td v-if="selectedSearchType=='fileSizeGreaterThan' || selectedSearchType=='fileSizeLessThan'" style="padding-right: 20px;">
+                        <select v-model="selectedSizeUnit">
+                            <option value="K">KiB</option>
+                            <option value="M">MiB</option>
+                            <option value="G">GiB</option>
+                        </select>
+                    </td>
+                    <td v-if="selectedSearchType=='mimeType'" style="padding-right: 20px;">
+                        <select v-model="selectedMimeType">
+                            <option value="audio">Audio</option>
+                            <option value="image">Image</option>
+                            <option value="application/pdf">PDF</option>
+                            <option value="text/plain">Text</option>
+                            <option value="video">Video</option>
+                        </select>
+                    </td>
+                    <td>
+                        <button id='submit-search' class="btn btn-success" @click="search()">Search</button>
+                    </td>
+                </tr>
+                </table>
+            </div>
+
+            <div>
+                <h3>Results: {{ matches.length }}</h3>
+                <div>
+                    <button id='cancel-search' class="btn btn-danger" @click="stopSearch()">Cancel Search</button>
+                </div>
+                <div v-if="matches!=0" class="table-responsive">
+                    <table class="table">
+                        <thead>
+                        <tr  v-if="matches!=0" style="cursor:pointer;">
+                            <th @click="setSortBy('name')">Name <span v-if="sortBy=='name'" v-bind:class="['fas', normalSortOrder ? 'fa-angle-down' : 'fa-angle-up']"/></th>
+                            <th @click="setSortBy('path')">Directory <span v-if="sortBy=='path'" v-bind:class="['fas', normalSortOrder ? 'fa-angle-down' : 'fa-angle-up']"/></th>
+                            <th @click="setSortBy('size')">Size <span v-if="sortBy=='size'" v-bind:class="['fas', normalSortOrder ? 'fa-angle-down' : 'fa-angle-up']"/></th>
+                            <th @click="setSortBy('modified')">Modified <span v-if="sortBy=='modified'" v-bind:class="['fas', normalSortOrder ? 'fa-angle-down' : 'fa-angle-up']"/></th>
+
+                        </tr>
+                        </thead>
+                        <tbody>
+                        <tr v-for="match in sortedItems">
+                            <td v-on:click="view(match, true)" style="cursor:pointer;">{{ match.name }}</td>
+                            <td v-on:click="navigateTo(match)" style="cursor:pointer;">
+                                {{ match.path }}
+                            </td>
+                            <td>
+                                {{ match.size }}
+                            </td>
+                            <td>
+                                {{ formatDateTime(match.lastModified) }}
+                            </td>
+                        </tr>
+                        </tbody>
+                    </table>
+                </div>
+
+
+            </div>
+        </div>
+    </div>
+</div>
+</transition>
