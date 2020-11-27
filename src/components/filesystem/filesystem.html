@@ -51,10 +51,10 @@
   <div id="sideMenu" class="sidenav">
     <a><span/>&nbsp</a>
     <a id="homeButton" @click="goHome()"><span data-toggle="tooltip" data-placement="bottom" title="Global root" class="fas fa-globe-asia" style="cursor: pointer;"/></a>
-    <a id="searchButton" @click="openSearch(true)"><span data-toggle="tooltip" data-placement="bottom" title="Search..." class="fa fa-search" style="cursor: pointer;"/></a>
     <a id="timelineButton" v-if="isLoggedIn" @click="showTimelineView()"><span data-toggle="tooltip" data-placement="bottom" title="Timeline" class="fas fa-history" style="cursor: pointer;"/></a>
     <a v-if="isLoggedIn" @click="showCalendar"><span data-toggle="tooltip" data-placement="bottom" title="Calendar" class="fa fa-calendar-alt"/></a>
     <a v-if="isLoggedIn" @click="newTodoBoard"><span data-toggle="tooltip" data-placement="bottom" title="Todo Board" class="fas fa-tasks"/></a>
+    <a v-if="isLoggedIn" @click="openSearch(true)"><span data-toggle="tooltip" data-placement="bottom" title="Search..." class="fa fa-search" style="cursor: pointer;"/></a>
   </div>
   <a id="downloadAnchor" style="display:none"></a>
   <div v-if="viewMenu && (isNotHome || isPasteAvailable || isNotBackground)">
@@ -323,7 +323,7 @@
                   <td v-bind:id="file.getFileProperties().name" v-on:click="navigateOrMenu($event, file)" v-on:contextmenu="openMenu($event, file)" style="cursor:pointer" v-bind:class="{ shared: isShared(file) }">{{ file.getFileProperties().name }}</td>
                   <td>{{ getFileSize(file.getFileProperties()) }}</td>
                   <td>{{ file.getFileProperties().getType() }}</td>
-                  <td>{{ file.getFileProperties().modified }}</td>
+                  <td>{{ formatDateTime(file.getFileProperties().modified) }}</td>
                 </tr>
           </tbody>
         </table>

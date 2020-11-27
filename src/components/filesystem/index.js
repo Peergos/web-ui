@@ -1917,6 +1917,9 @@ module.exports = {
               document.getElementById("sideMenu").style.width = "60px";
             }
             this.showSideNav = !this.showSideNav;
+        },
+        formatDateTime: function(dateTime) {
+            return dateTime.toString().replace('T',' ');
         }
     },
     computed: {

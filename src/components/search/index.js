@@ -205,7 +205,9 @@ module.exports = {
 
         },
         view: function (entry) {
-            this.viewAction(entry.path, entry.name);
+            if (!entry.isDirectory) {
+                this.viewAction(entry.path, entry.name);
+            }
         },
         navigateTo: function (entry, includeFile) {
             this.close();
@@ -218,6 +220,9 @@ module.exports = {
             if (this.sortBy == prop)
                 this.normalSortOrder = !this.normalSortOrder;
             this.sortBy = prop;
+        },
+        formatDateTime: function(dateTime) {
+            return dateTime.toString().replace('T',' ');
         }
     },
     computed:{
@@ -237,9 +242,9 @@ module.exports = {
                     let aVal = a.lastModified;
                     let bVal = b.lastModified;
                     if (reverseOrder) {
-                        return aVal.compareTo(bVal);
-                    } else {
                         return bVal.compareTo(aVal);
+                    } else {
+                        return aVal.compareTo(bVal);
                     }
                 });
             } else if(sortBy == "size") {
@@ -247,11 +252,11 @@ module.exports = {
                     let aVal = reverseOrder ? b.size : a.size;
                     let bVal = reverseOrder ? a.size : b.size;
                     if (aVal > bVal) {
-                        return -1;
+                        return 1;
                     } else if (aVal == bVal) {
                         return 0;
                     } else {
-                        return 1;
+                        return -1;
                     }
                 });
             }

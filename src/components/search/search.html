@@ -26,10 +26,10 @@
                         <input v-model="selectedDate" type="date" min="1900-01-01" max="3000-01-01" maxlength="12" ></input>
                     </td>
                     <td v-if="selectedSearchType=='contains'" style="padding-right: 20px;">
-                        <input v-if="selectedSearchType=='contains'" v-model="searchFilenameContains" placeholder=""type="text" maxlength="60" style="width: 200px;" ></input>
+                        <input v-if="selectedSearchType=='contains'" v-on:keyup.enter="search" v-model="searchFilenameContains" placeholder=""type="text" maxlength="60" style="width: 200px;" ></input>
                     </td>
                     <td v-if="selectedSearchType=='fileSizeGreaterThan' || selectedSearchType=='fileSizeLessThan'" style="padding-right: 20px;">
-                        <input v-model="searchFileSize" placeholder="1" type="number" min="1" style="width: 100px;" ></input>
+                        <input v-on:keyup.enter="search" v-model="searchFileSize" placeholder="1" type="number" min="1" style="width: 100px;" ></input>
                     </td>
                     <td v-if="selectedSearchType=='fileSizeGreaterThan' || selectedSearchType=='fileSizeLessThan'" style="padding-right: 20px;">
                         <select v-model="selectedSizeUnit">
@@ -69,15 +69,15 @@
                         </thead>
                         <tbody>
                         <tr v-for="match in sortedItems">
-                            <td v-on:click="view(match, true)">{{ match.name }}</td>
-                            <td v-on:click="navigateTo(match)">
+                            <td v-on:click="view(match, true)" style="cursor:pointer;">{{ match.name }}</td>
+                            <td v-on:click="navigateTo(match)" style="cursor:pointer;">
                                 {{ match.path }}
                             </td>
                             <td>
                                 {{ match.size }}
                             </td>
                             <td>
-                                {{ match.lastModified }}
+                                {{ formatDateTime(match.lastModified) }}
                             </td>
                         </tr>
                         </tbody>
