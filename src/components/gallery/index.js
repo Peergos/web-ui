@@ -30,6 +30,7 @@ module.exports = {
 
     methods: {
         close: function() {
+	    this.pinging = false;
             this.$emit("hide-gallery");
         },
 
