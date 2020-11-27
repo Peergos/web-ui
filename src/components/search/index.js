@@ -205,11 +205,14 @@ module.exports = {
 
         },
         view: function (entry) {
-            if (!entry.isDirectory) {
+            if (entry.isDirectory) {
+                this.close();
+                this.navigateToAction(entry.path + "/" + entry.name);
+            } else {
                 this.viewAction(entry.path, entry.name);
             }
         },
-        navigateTo: function (entry, includeFile) {
+        navigateTo: function (entry) {
             this.close();
             this.navigateToAction(entry.path);
         },
