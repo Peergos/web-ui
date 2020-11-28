@@ -54,8 +54,8 @@
 
             <div>
                 <h3>Results: {{ matches.length }}</h3>
-                <div style="margin: 10px;">
-                    <button id='cancel-search' class="btn btn-danger" @click="stopSearch()">Cancel Search</button>
+                <div v-if="showCancel" style="margin: 10px;">
+                    <button class="btn btn-danger" @click="stopSearch()">Cancel Search</button>
                 </div>
                 <div v-if="matches!=0" class="table-responsive">
                     <table class="table">

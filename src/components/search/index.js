@@ -16,16 +16,13 @@ module.exports = {
             errorClass: "",
             sortBy: "name",
             normalSortOrder: true,
-            cancelSearch: false
+            cancelSearch: false,
+	    showCancel: false
         }
     },
     props: ['path', 'context', 'navigateToAction', 'viewAction'],
     created: function() {
         this.selectedDate = new Date().toISOString().split('T')[0];
-        Vue.nextTick(function() {
-            let cancelButton = document.getElementById("cancel-search");
-            cancelButton.style.display = "none";
-        });
     },
     methods: {
 	walk: function(file, path, searchTerm, searchTest) {
@@ -52,6 +49,7 @@ module.exports = {
                     that.walkCounter--;
                     if (that.walkCounter == 0) {
                         that.showSpinner = false;
+			that.showCancel = false;
                         searchButton.disabled = false;
                     }
                 }
@@ -62,6 +60,7 @@ module.exports = {
                         that.walkCounter--;
                         if (that.walkCounter == 0) {
                             that.showSpinner = false;
+			    that.showCancel = false;
                             searchButton.disabled = false;
                         }
                     }
@@ -166,8 +165,7 @@ module.exports = {
             return Number(searchTerm) * 1024 * 1024 * 1024;
     },
 	search: function() {
-            let cancelButton = document.getElementById("cancel-search");
-            cancelButton.style.display = "";
+	    this.showCancel = true;
             this.cancelSearch = false;
             this.isError = false;
             this.error = "";
@@ -219,8 +217,7 @@ module.exports = {
         },
         stopSearch: function () {
             this.cancelSearch = true;
-            let cancelButton = document.getElementById("cancel-search");
-            cancelButton.style.display = "none";
+	    this.showCancel = false;
         },
         view: function (entry) {
             if (entry.isDirectory) {
