@@ -28,7 +28,7 @@
         <span class="fa fa-cog"></span>
         <span class="collapse navbar-collapse">{{username}}</span>
       </button>
-      <ul id="settingsMenu" v-if="showSettingsMenu" class="dropdown-menu" aria-labelledby="logoutButton" style="cursor:pointer;display:block">
+      <ul id="settingsMenu" v-if="showSettingsMenu" class="dropdown-menu" aria-labelledby="logoutButton" style="cursor:pointer;display:block;left:auto;right:0;">
         <li v-if="isAdmin"><a @click="showAdminPanel">Admin Panel</a></li>
         <li><a @click="showProfile(true)">Profile</a></li>
         <li><a @click="showRequestStorage">Request more storage</a></li>
