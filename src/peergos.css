@@ -64,20 +64,22 @@ body {
     font-size:2em;
 }
 
+.flex-row {
+    display: flex;
+}
+
 .password-eye {
     font-size: 1.5em;
-    float:right;
-    margin-top:-2em;
+    align-self: center;
 }
 
 .password-eye-slash {
     font-size: 1.5em;
-    float:right;
-    margin-top:-1.5em;
+    align-self: center;
 }
 
 .password {
-    width: 93%;
+    position: inherit;
 }
 
 .close {

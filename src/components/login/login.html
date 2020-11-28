@@ -16,12 +16,12 @@
     <h2 v-if="isSecretLink">Loading secret link...</h2>
     <div v-if="!isSecretLink">
         <h4>Please log in</h4>
-        <div class="form-group">
-            <input type="text" name="username" id="username" class="form-control" v-on:keyup="lowercaseUsername()" v-model="username" placeholder="Username">
+        <div class="form-group flex-container">
+            <input type="text" name="username" id="username" class="form-control flex-grow" v-on:keyup="lowercaseUsername()" v-model="username" placeholder="Username">
         </div>
-        <div class="form-group">
-          <input :type="passwordFieldType" name="password" class="form-control password" v-model="password" placeholder="Password" v-on:keyup.enter="login()">
-	  <span v-bind:class="['fa', 'password' == passwordFieldType ? 'fa-eye password-eye' : 'fa-eye-slash password-eye-slash']" @click="togglePassword()"></span>
+        <div class="form-group flex-row">
+          <input :type="passwordFieldType" name="password" class="password form-control flex-grow" v-model="password" placeholder="Password" v-on:keyup.enter="login()">
+	  <div v-bind:class="['fa', 'password' == passwordFieldType ? 'fa-eye password-eye' : 'fa-eye-slash password-eye-slash']" @click="togglePassword()"></div>
         </div>
         <button @click="login()" class="btn btn-large btn-block btn-success">Login</button>
         <center>

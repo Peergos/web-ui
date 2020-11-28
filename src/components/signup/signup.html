@@ -15,12 +15,14 @@
       <div v-bind:class="errorClass">
         <div class="form-group">
           <label v-if="isError">{{ error }}</label>
-          <input :type="passwordFieldType" name="password1" id="password1" v-on:keyup="validatePassword(true)" class="form-control password" v-model="password1" placeholder="Password">
-	  <span v-bind:class="['fa', 'password' == passwordFieldType ? 'fa-eye password-eye' : 'fa-eye-slash password-eye-slash']" @click="togglePassword1()"></span>
+	  <div class="flex-row">
+            <input :type="passwordFieldType" name="password1" id="password1" v-on:keyup="validatePassword(true)" class="form-control password flex-grow" v-model="password1" placeholder="Password">
+	    <div v-bind:class="['fa', 'password' == passwordFieldType ? 'fa-eye password-eye' : 'fa-eye-slash password-eye-slash']" @click="togglePassword1()"></div>
+	  </div>
         </div>
-        <div class="form-group" >
-          <input :type="password2FieldType" name="password2" id="password2" v-on:focus="validatePassword(false)" class="form-control password" v-model="password2" placeholder="Re-enter password">
-	  <span v-bind:class="['fa', 'password' == password2FieldType ? 'fa-eye password-eye' : 'fa-eye-slash password-eye-slash']" @click="togglePassword2()"></span>
+        <div class="form-group flex-row" >
+          <input :type="password2FieldType" name="password2" id="password2" v-on:focus="validatePassword(false)" class="form-control password flex-grow" v-model="password2" placeholder="Re-enter password">
+	  <div v-bind:class="['fa', 'password' == password2FieldType ? 'fa-eye password-eye' : 'fa-eye-slash password-eye-slash']" @click="togglePassword2()"></div>
         </div>
 	<div class="form-group" style="font-weight: bold;">
           <input type="checkbox" name="safePassword" id="safePassword" v-model="safePassword" placeholder="Safely store your password"> I understand that passwords cannot be reset or recovered - if I forget my password, then I will lose access to my account and data. If I enter my password into a malicious website then I will lose control of my account. 
