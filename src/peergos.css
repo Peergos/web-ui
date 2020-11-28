@@ -487,6 +487,13 @@ table {
     z-index: 999;
 }
 
+@media (max-width: 700px) {
+  .spinner-text {
+      width: 80%;
+      left: 10%;
+  }
+}
+
 .modal-prominent {
   font-size: 1.2em;
 }
