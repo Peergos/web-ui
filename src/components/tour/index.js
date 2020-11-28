@@ -78,6 +78,9 @@ module.exports = {
 	image() {
 	    return this.currentElement.image;
 	},
+	isLast() {
+	    return this.currentElementIndex == this.cards.length - 1;
+	}
     },
     methods: {
         showNextElement() {
