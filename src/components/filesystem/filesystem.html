@@ -28,7 +28,7 @@
         <span class="fa fa-cog"></span>
         <span class="collapse navbar-collapse">{{username}}</span>
       </button>
-      <ul id="settingsMenu" v-if="showSettingsMenu" class="dropdown-menu" aria-labelledby="logoutButton" style="cursor:pointer;display:block">
+      <ul id="settingsMenu" v-if="showSettingsMenu" class="dropdown-menu" aria-labelledby="logoutButton" style="cursor:pointer;display:block;left:auto;right:0;">
         <li v-if="isAdmin"><a @click="showAdminPanel">Admin Panel</a></li>
         <li><a @click="showProfile(true)">Profile</a></li>
         <li><a @click="showRequestStorage">Request more storage</a></li>
@@ -300,11 +300,6 @@
 	<center v-if="isSecretLink" class="bottom-message">
 	  Join the revolution!<br/>
 	  <button class="btn btn-lg btn-success" @click="gotoSignup()">Sign up to Peergos</button>
-	</center>
-	<center v-if="showDonate" class="bottom-message">
-	  If you like Peergos, help us spend more time on it by donating!<br/>
-	  <a href="https://donorbox.org/peergos" target="_blank"><button class="btn btn-lg btn-success">Donate</button></a>
-	  <button class="btn btn-lg btn-danger" @click="hideDonate=true;">Hide this</button>
 	</center>
 	<div v-if="!isSecretLink" style="position:absolute;bottom:5px;right:5%;font-size:1.4em"> Usage: {{ usage }} / {{ quota }}</div>
     </div>

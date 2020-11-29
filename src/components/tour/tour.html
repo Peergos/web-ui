@@ -49,12 +49,21 @@
 		:disabled="this.reachedMaxRight"
 		/>
 	      <br/>
-	      <button 
-              id='skip-tour-modal-button-id' 
+	      <button
+		v-if="!isLast"
+		id='skip-tour-modal-button-id' 
 		class="btn btn-danger"
 		style="display: block;float:;"
 		@click="$emit('hide-tour')">
 		Skip tour
+              </button>
+	      <button
+		v-if="isLast"
+		id='skip-tour-modal-button-id' 
+		class="btn btn-danger"
+		style="display: block;float:;"
+		@click="$emit('hide-tour')">
+		Finish
               </button>
 	    </center>
 	  </div>

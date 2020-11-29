@@ -10,9 +10,8 @@
                 <label v-if="isError">{{ error }}</label>
             </div>
             <spinner v-if="showSpinner"></spinner>
-                <table>
-                <tr>
-                    <td style="padding-right: 20px;">
+                <div class="flex-container">
+                    <div class="flex-item" style="margin: 10px;">
                         <select v-model="selectedSearchType">
                             <option value="contains">Filename contains</option>
                             <option value="modifiedAfter">File modified after</option>
@@ -21,24 +20,24 @@
                             <option value="fileSizeLessThan">File size less than</option>
                             <option value="mimeType">File type</option>
                         </select>
-                    </td>
-                    <td v-if="selectedSearchType=='modifiedAfter' || selectedSearchType=='modifiedBefore'" style="padding-right: 20px;">
+                    </div>
+                    <div class="flex-item" v-if="selectedSearchType=='modifiedAfter' || selectedSearchType=='modifiedBefore'" style="margin: 10px;">
                         <input v-model="selectedDate" type="date" min="1900-01-01" max="3000-01-01" maxlength="12" ></input>
-                    </td>
-                    <td v-if="selectedSearchType=='contains'" style="padding-right: 20px;">
+                    </div>
+                    <div class="flex-item" v-if="selectedSearchType=='contains'" style="margin: 10px;">
                         <input v-focus v-if="selectedSearchType=='contains'" v-on:keyup.enter="search" v-model="searchFilenameContains" placeholder=""type="text" maxlength="60" style="width: 200px;" ></input>
-                    </td>
-                    <td v-if="selectedSearchType=='fileSizeGreaterThan' || selectedSearchType=='fileSizeLessThan'" style="padding-right: 20px;">
+                    </div>
+                    <div class="flex-item" v-if="selectedSearchType=='fileSizeGreaterThan' || selectedSearchType=='fileSizeLessThan'" style="margin: 10px;">
                         <input v-focus v-on:keyup.enter="search" v-model="searchFileSize" placeholder="1" type="number" min="1" style="width: 100px;" ></input>
-                    </td>
-                    <td v-if="selectedSearchType=='fileSizeGreaterThan' || selectedSearchType=='fileSizeLessThan'" style="padding-right: 20px;">
+                    </div>
+                    <div class="flex-item" v-if="selectedSearchType=='fileSizeGreaterThan' || selectedSearchType=='fileSizeLessThan'" style="margin: 10px;">
                         <select v-model="selectedSizeUnit">
                             <option value="K">KiB</option>
                             <option value="M">MiB</option>
                             <option value="G">GiB</option>
                         </select>
-                    </td>
-                    <td v-if="selectedSearchType=='mimeType'" style="padding-right: 20px;">
+                    </div>
+                    <div class="flex-item" v-if="selectedSearchType=='mimeType'" style="margin: 10px;">
                         <select v-model="selectedMimeType">
                             <option value="audio">Audio</option>
                             <option value="image">Image</option>
@@ -46,18 +45,17 @@
                             <option value="text/plain">Text</option>
                             <option value="video">Video</option>
                         </select>
-                    </td>
-                    <td>
+                    </div>
+                    <div class="flex-item" style="margin: 10px;">
                         <button id='submit-search' class="btn btn-success" @click="search()">Search</button>
-                    </td>
-                </tr>
-                </table>
+                    </div>
+                </div>
             </div>
 
             <div>
                 <h3>Results: {{ matches.length }}</h3>
-                <div>
-                    <button id='cancel-search' class="btn btn-danger" @click="stopSearch()">Cancel Search</button>
+                <div v-if="showCancel" style="margin: 10px;">
+                    <button class="btn btn-danger" @click="stopSearch()">Cancel Search</button>
                 </div>
                 <div v-if="matches!=0" class="table-responsive">
                     <table class="table">

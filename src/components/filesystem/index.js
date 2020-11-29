@@ -94,7 +94,6 @@ module.exports = {
             errorTitle:'',
             errorBody:'',
             showError:false,
-            hideDonate: false,
             showSpinner: true,
             spinnerMessage: '',
             onUpdateCompletion: [] // methods to invoke when current dir is next refreshed
@@ -2037,16 +2036,6 @@ module.exports = {
 	    return this.context != null && this.context.username == null;
 	},
 	
-	showDonate: function() {
-        if (! this.isLoggedIn || this.hideDonate) {
-            return false;
-        }
-        if (this.paymentProperties.paymentServerUrl != undefined && this.paymentProperties.isPaid()) {
-            return false;
-        }
-	    return this.usageBytes > 1024*1024;
-	},
-
 	isLoggedIn: function() {
 	    return ! this.isSecretLink;
 	},
