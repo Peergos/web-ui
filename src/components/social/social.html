@@ -31,21 +31,22 @@
 
             <div>
                 <h3>Incoming follow requests</h3>
-                <table id='follow-request-table-id' class="table table-responsive table-striped table-hover">
-                    <tr v-if="data.pending.length==0"><th></th><th></th><th></th><th></th></tr>
-                    <tr v-for="req in data.pending">
-                        <td id='follow-request-id'>{{ req.getEntry().ownerName }}</td>
-                        <td style="text-align:right">
-                            <button class="btn btn-success" @click="acceptAndReciprocate(req)">Allow and follow back</button>
-                        </td>
-                        <td style="text-align:right">
-                            <button class="btn btn-info" @click="accept(req)">Allow</button>
-                        </td>
-                        <td style="text-align:right">
-                            <button class="btn btn-danger" @click="reject(req)">Deny</button>
-                        </td>
-                    </tr>
-                </table>
+                <div id='follow-request-table-id' class="flex-container table" style="flex-flow:column;">
+                  <div v-for="req in data.pending" class="flex-container vspace-5" style="justify-content:space-between; max-width:700px;">
+                    <div id='follow-request-id' style="font-size:1.5em;">{{ req.getEntry().ownerName }}</div>
+		    <div class="flex-container" style="justify-content:space-evenly;">
+                      <div class="hspace-5" style="text-align:right">
+			<button class="btn btn-success" @click="acceptAndReciprocate(req)">Allow and follow back</button>
+                      </div>
+                      <div class="hspace-5" style="text-align:right">
+			<button class="btn btn-info" @click="accept(req)">Allow</button>
+                      </div>
+                      <div class="hspace-5" style="text-align:right">
+			<button class="btn btn-danger" @click="reject(req)">Deny</button>
+                      </div>
+		    </div>
+		  </div>
+                </div>
             </div>
 
             <div>

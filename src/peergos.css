@@ -387,6 +387,12 @@ table {
 @media (max-width: 600px) {
     .modal-container {
 	width: 100%;
+	padding: 10px 10px;
+    }
+
+    .modal-body {
+	margin: 0 0;
+	padding: 10px;
     }
 }
 
@@ -655,6 +661,11 @@ h3 {word-wrap:break-word; white-space:normal;}
 .hspace-5 {
     margin-left: 5px;
     margin-right: 5px;
+}
+
+.vspace-5 {
+    margin-top: 5px;
+    margin-bottom: 5px;
 }
 
 .flex-container {
