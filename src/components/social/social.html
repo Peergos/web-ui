@@ -54,7 +54,8 @@
                 <div id='friend-table-id' class="table flex-container" style="flex-flow:column;">
                   <div v-for="username in data.friends" class="flex-container vspace-5" style="justify-content:space-between; max-width:700px;">
                     <div id='friend-id' style="font-size:1.5em;">
-		      {{ username }} <span v-if="isVerified(username)" class="fas fa-check-circle"><span class="not-mobile">Verified</span></span>
+                        <a v-on:click="profile(username)" style="cursor: pointer">{{ username }}</a>
+                        <span v-if="isVerified(username)" class="fas fa-check-circle"><span class="not-mobile">Verified</span></span>
 		    </div>
 		    <div class="flex-container" style="justify-content:space-evenly;">
                       <div class="hspace-5">
@@ -66,9 +67,6 @@
 		      <div class="hspace-5">
 			<button class="btn btn-success" @click="showFingerPrint(username)">Verification</button>
 		      </div>
-                      <div class="hspace-5">
-			<button class="btn btn-success" @click="profile(username)">Profile</button>
-                      </div>
 		    </div>
                   </div>
                 </div>
