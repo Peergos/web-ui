@@ -1,6 +1,6 @@
 <transition name="modal">
 <div class="modal-mask" @click="close"> 
-    <div class="modal-container full-height" @click.stop style="overflow-y:auto">
+    <div class="modal-container full-height" @click.stop style="overflow-y:auto; max-width:1000px;">
       <span @click="close" class="close">&times;</span>
       <fingerprint v-if="showFingerprint"
 		   v-on:hide-fingerprint="hideFingerprint"
