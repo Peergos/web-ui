@@ -76,18 +76,16 @@
 
             <div>
                 <h3>Followers</h3>
-                <table id='follower-table-id' class="table table-responsive table-striped table-hover">
-                  <tr v-if="data.followers.length==0">
-		    <th></th>
-		    <th style="text-align:right"></th>
-		  </tr>
-                    <tr v-for="username in data.followers">
-                        <td id='follower-id'>{{ username }}</td>
-                        <td style="text-align:right">
-			  <button class="btn btn-danger" @click="removeFollower(username)">Remove</button>
-			</td>
-                    </tr>
-                </table>
+                <div id='follower-table-id' class="table flex-container" style="flex-flow:column;">
+		  <div v-for="username in data.followers" class="flex-container vspace-5" style="justify-content:space-between; max-width:700px;">
+                    <div id='follower-id' style="font-size:1.5em;">
+		      {{ username }}
+		    </div>
+                    <div>
+		      <button class="btn btn-danger" @click="removeFollower(username)">Remove</button>
+		    </div>
+                  </div>
+                </div>
             </div>
 
             <div>
