@@ -35,13 +35,13 @@
                   <div v-for="req in data.pending" class="flex-container vspace-5" style="justify-content:space-between; max-width:700px;">
                     <div id='follow-request-id' style="font-size:1.5em;">{{ req.getEntry().ownerName }}</div>
 		    <div class="flex-container" style="justify-content:space-evenly;">
-                      <div class="hspace-5" style="text-align:right">
+                      <div class="hspace-5">
 			<button class="btn btn-success" @click="acceptAndReciprocate(req)">Allow and follow back</button>
                       </div>
-                      <div class="hspace-5" style="text-align:right">
+                      <div class="hspace-5">
 			<button class="btn btn-info" @click="accept(req)">Allow</button>
                       </div>
-                      <div class="hspace-5" style="text-align:right">
+                      <div class="hspace-5">
 			<button class="btn btn-danger" @click="reject(req)">Deny</button>
                       </div>
 		    </div>
@@ -57,16 +57,16 @@
 		      {{ username }} <span v-if="isVerified(username)" class="fas fa-check-circle"><span class="not-mobile">Verified</span></span>
 		    </div>
 		    <div class="flex-container" style="justify-content:space-evenly;">
-                      <div class="hspace-5" style="text-align:right">
+                      <div class="hspace-5">
 			<button class="btn btn-danger" @click="unfollow(username)">Unfollow</button>
 		      </div>
-		      <div class="hspace-5" style="text-align:right">
+		      <div class="hspace-5">
 			<button class="btn btn-danger" @click="removeFollower(username)">Remove</button>
 		      </div>
-		      <div class="hspace-5" style="text-align:right">
+		      <div class="hspace-5">
 			<button class="btn btn-success" @click="showFingerPrint(username)">Verification</button>
 		      </div>
-                      <div class="hspace-5" style="text-align:right">
+                      <div class="hspace-5">
 			<button class="btn btn-success" @click="profile(username)">Profile</button>
                       </div>
 		    </div>
