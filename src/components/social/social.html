@@ -90,15 +90,16 @@
 
             <div>
                 <h3>Following</h3>
-                <table class="table table-responsive table-striped table-hover">
-                    <tr v-if="data.following.length==0"><th></th><th style="text-align:right"></th></tr>
-                    <tr v-for="user in data.following">
-                        <td>{{ user }}</td>
-                        <td style="text-align:right">
-			  <button class="btn btn-danger" @click="unfollow(user)">Unfollow</button>
-			</td>
-                    </tr>
-                </table>
+                <div class="table flex-container" style="flex-flow:column;">
+                  <tr v-for="user in data.following" class="flex-container vspace-5" style="justify-content:space-between; max-width:700px;">
+                    <div style="font-size:1.5em;">
+		      {{ user }}
+		    </div>
+                    <div>
+		      <button class="btn btn-danger" @click="unfollow(user)">Unfollow</button>
+		    </div>
+                  </tr>
+		</div>
             </div>
         </div>
     </div>
