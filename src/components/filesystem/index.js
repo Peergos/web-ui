@@ -905,10 +905,10 @@ module.exports = {
                                 );
                             }
                         } else {
-                            uploadParams.accumulativeFileSize += file.size; //todo need calculation
+                            uploadParams.accumulativeFileSize += (file.size + 2048); // add some padding
                             let spaceAfterOperation = that.checkAvailableSpace(uploadParams.accumulativeFileSize);
                             if (spaceAfterOperation < 0) {
-                                that.errorTitle = "Unable to upload: " + file.name + " . File size exceeds available space";
+                                that.errorTitle = "Unable to proceed. " + file.name + " file size exceeds available space";
                                 that.errorBody = "Please free up " + that.convertBytesToHumanReadable('' + -spaceAfterOperation) + " and try again";
                                 that.showError = true;
                                 uploadParams.cancelUpload = true;
@@ -1427,7 +1427,7 @@ module.exports = {
             return future;
         },
         checkAvailableSpace: function(fileSize) {
-            return (Number(this.quotaBytes.toString()) - 1024 * 5) - (Number(this.usageBytes.toString()) + fileSize); //leave some headroom
+            return Number(this.quotaBytes.toString()) - (Number(this.usageBytes.toString()) + fileSize);
         },
         showShareWithForProfile: function(field, fieldName) {
             let dirPath = this.getContext().username + "/.profile/";
