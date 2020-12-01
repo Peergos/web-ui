@@ -1313,7 +1313,8 @@ module.exports = {
 
             this.clipboard = {
                 fileTreeNode: file,
-                op: "copy"
+                op: "copy",
+                path: this.getPath()
             };
             this.closeMenu();
         },
@@ -1326,7 +1327,8 @@ module.exports = {
             this.clipboard = {
                 parent: this.currentDir,
                 fileTreeNode: file,
-                op: "cut"
+                op: "cut",
+                path: this.getPath()
             };
             this.closeMenu();
         },
@@ -1366,31 +1368,63 @@ module.exports = {
                     });
                 } else if (clipboard.op == "copy") {
                     console.log("paste-copy");
-                    let fileSize = that.getFileSize(clipboard.fileTreeNode.getFileProperties());
-                    let spaceAfterOperation = this.checkAvailableSpace(fileSize);
-                    if (spaceAfterOperation < 0) {
-                        that.errorTitle = "File copy operation exceeds available Space";
-                        that.errorBody = "Please free up " + this.convertBytesToHumanReadable('' + -spaceAfterOperation) + " and try again";
-                        that.showError = true;
-                        that.showSpinner = false;
-                        return;
-                    }
-                    clipboard.fileTreeNode.copyTo(target, context)
-                        .thenApply(function() {
-                            that.currentDirChanged();
-            			    that.onUpdateCompletion.push(function() {
-                			    that.updateUsage();
-			                	that.showSpinner = false;
+                    this.calculateTotalFileSize(clipboard.fileTreeNode, clipboard.path).thenApply(totalSize => {
+                        let spaceAfterOperation = that.checkAvailableSpace(totalSize);
+                        if (spaceAfterOperation < 0) {
+                            that.errorTitle = "File copy operation exceeds available Space";
+                            that.errorBody = "Please free up " + this.convertBytesToHumanReadable('' + -spaceAfterOperation) + " and try again";
+                            that.showError = true;
+                            that.showSpinner = false;
+                            return;
+                        }
+                        clipboard.fileTreeNode.copyTo(target, context)
+                            .thenApply(function() {
+                                that.currentDirChanged();
+                                that.onUpdateCompletion.push(function() {
+                                    that.updateUsage();
+                                    that.showSpinner = false;
+                            });
+                        }).exceptionally(function(throwable) {
+                            that.errorTitle = 'Error copying file';
+                            that.errorBody = throwable.getMessage();
+                            that.showError = true;
+                            that.showSpinner = false;
                         });
-                    }).exceptionally(function(throwable) {
-                        that.errorTitle = 'Error copying file';
-                        that.errorBody = throwable.getMessage();
-                        that.showError = true;
-                        that.showSpinner = false;
                     });
                 }
                 this.clipboard.op = null;
             }
+        },
+        calculateDirectorySize: function(file, path, accumulator, future) {
+            let that = this;
+            file.getChildren(this.context.crypto.hasher, this.context.network).thenApply(function(children) {
+                let arr = children.toArray();
+                for(var i = 0; i < arr.length; i++) {
+                    let child = arr[i];
+                    let childProps = child.getFileProperties();
+                    if (childProps.isDirectory) {
+                        accumulator.walkCounter++;
+                        let newPath = path + "/" + childProps.name;
+                        that.calculateDirectorySize(child, newPath, accumulator, future);
+                    } else {
+                        accumulator.size += that.getFileSize(childProps);
+                    }
+                }
+                accumulator.walkCounter--;
+                if (accumulator.walkCounter == 0) {
+                    future.complete(accumulator.size);
+                }
+            });
+        },
+        calculateTotalFileSize: function(file, path) {
+            let future = peergos.shared.util.Futures.incomplete();
+            if (file.isDirectory()) {
+                this.calculateDirectorySize(file, path + file.getFileProperties().name,
+                    { size: 0, walkCounter: 1}, future);
+            } else {
+                future.complete(this.getFileSize(file.getFileProperties()));
+            }
+            return future;
         },
         checkAvailableSpace: function(fileSize) {
             return (Number(this.quotaBytes.toString()) - 1024 * 5) - (Number(this.usageBytes.toString()) + fileSize); //leave some headroom
