@@ -89,6 +89,13 @@
                     <button v-if="webRootReadyToBePublished" class="btn btn-success" @click="publishWebroot()">Publish</button>
                 </div>
             </div>
+            <div class="flex-item" v-if="webRootUrl.length > 0">
+                <div><span>Publically visible at:</span>
+                </div>
+                <div>
+                    <a v-bind:href="webRootUrl" target="_blank" rel="noopener noreferrer">{{webRootUrl}}</a>
+                </div>
+            </div>
             <div class="flex-line-item">
                 <div>
                     <button class="btn btn-success" style = "width:100%" @click="update()">Save Profile</button>

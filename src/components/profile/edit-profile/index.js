@@ -17,6 +17,7 @@ module.exports = {
         statusReadyToBeShared: false,
         webRoot: "",
         webRootReadyToBePublished: false,
+        webRootUrl: "",
         previousFirstName: "",
         previousLastName: "",
         previousBiography: "",
@@ -56,8 +57,16 @@ module.exports = {
         if (this.status.length > 0)
             this.statusReadyToBeShared = true;
         this.webRoot = this.previousWebRoot = this.profile.webRoot;
-        if (this.webRoot.length > 0)
+        if (this.webRoot.length > 0) {
+            let that = this;
             this.webRootReadyToBePublished = true;
+            let directoryPath = peergos.client.PathUtils.directoryToPath(this.webRoot.split('/'));
+            this.context.getPublicFile(directoryPath).thenApply(res => {
+                that.webRootUrl = "https://" + that.context.username+".peergos.me";
+            }).exceptionally(function(throwable) {
+                that.webRootUrl = "";
+            });
+        }
         this.profileImage = this.profile.profileImage;
     },
     methods: {
@@ -249,6 +258,7 @@ module.exports = {
                             } else {
                                 that.webRootReadyToBePublished = true;
                             }
+                            that.webRootUrl = "";
                         }
                         future.complete(res);
                     });
@@ -307,6 +317,7 @@ module.exports = {
                                 that.showSpinner = false;
                                 if (success) {
                                     that.showMessage("Web Directory published", "Available at: https://" + that.context.username+".peergos.me");
+                                    that.webRootUrl = "https://" + that.context.username + ".peergos.me";
                                 } else {
                                     that.showMessage("Unable to publish Web Directory", "");
                                 }
