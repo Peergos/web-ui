@@ -738,22 +738,41 @@ module.exports = {
             future.thenApply(done => {
                 this.spinnerMessage = "";
                 that.updateFiles();
-                let counter = uploadParams.fileInfoStore.length;
-                uploadParams.fileInfoStore.forEach(file => {
-                    if (!uploadParams.cancelUpload) {
-                        that.uploadFileFromFileInfo(file).thenApply(res => {
-                            if (!res) {
-                                that.progressMonitors.length = 0;
-                            } else {
-                                counter--;
-                                if(counter ==0) {
-                                    that.progressMonitors.length = 0;
-                                }
-                            }
-                        });
-                    }
+                let progressStore = [];
+                uploadParams.fileInfoStore.forEach(fileInfo => {
+                    var thumbnailAllocation = Math.min(100000, fileInfo.file.size / 10);
+                    var resultingSize = fileInfo.file.size + thumbnailAllocation;
+                    var progress = {
+                        show:true,
+                        title:"Encrypting and uploading " + fileInfo.file.name,
+                        done:0,
+                        max:resultingSize
+                    };
+                    that.progressMonitors.push(progress);
+                    progressStore.push(progress);
+                });
+                let futureUploads = peergos.shared.util.Futures.incomplete();
+                that.reduceAllUploads(uploadParams.fileInfoStore.reverse(), progressStore.slice().reverse(), uploadParams, futureUploads);
+                futureUploads.thenApply(done => {
+                    progressStore.forEach(progress => {
+                        let idx = that.progressMonitors.indexOf(progress);
+                        if(idx >= 0) {
+                            that.progressMonitors.splice(idx, 1);
+                        }
+                    });
                 });
             });
+        },
+        reduceAllUploads: function(fileInfoStore, progressStore, uploadParams, future) {
+            let that = this;
+            let fileInfo = fileInfoStore.pop();
+            if (fileInfo == null || uploadParams.cancelUpload) {
+                future.complete(true);
+            } else {
+                that.uploadFileFromFileInfo(fileInfo, progressStore.pop(), uploadParams).thenApply(res => {
+                    that.reduceAllUploads(fileInfoStore, progressStore, uploadParams, future);
+                });
+            }
         },
         splitDirectory: function (dir, fromDnd) {
             if (fromDnd) {
@@ -939,27 +958,15 @@ module.exports = {
             uploadParams.fileInfoStore.push(fileStore);
             uploadFileFuture.complete(true);
         },
-        uploadFileFromFileInfo: function(fileInfo) {
+        uploadFileFromFileInfo: function(fileInfo, progress, uploadParams) {
             var future = peergos.shared.util.Futures.incomplete();
-
             let directory = fileInfo.directory;
             let file = fileInfo.file;
             let refreshDirectory = fileInfo.refreshDirectory;
-            var thumbnailAllocation = Math.min(100000, file.size / 10);
-            var resultingSize = file.size + thumbnailAllocation;
-            var progress = {
-                show:true,
-                title:"Encrypting and uploading " + file.name,
-                done:0,
-                max:resultingSize
-            };
-            var that = this;
-
-            that.progressMonitors.push(progress);
-            this.uploadFileJS(file, directory, refreshDirectory, fileInfo.overwriteExisting, progress, future);
+            this.uploadFileJS(file, directory, refreshDirectory, fileInfo.overwriteExisting, progress, future, uploadParams);
             return future;
         },
-        uploadFileJS: function(file, directory, refreshDirectory, overwriteExisting, progress, future) {
+        uploadFileJS: function(file, directory, refreshDirectory, overwriteExisting, progress, future, uploadParams) {
             var updateProgressBar = function(len){
                 progress.done += len.value_0;
                 //that.progressMonitors.sort(function(a, b) {
