@@ -924,7 +924,7 @@ module.exports = {
                                 );
                             }
                         } else {
-                            uploadParams.accumulativeFileSize += (file.size + 2048); // add some padding
+                            uploadParams.accumulativeFileSize += (file.size + (4096 - (file.size % 4096)));
                             let spaceAfterOperation = that.checkAvailableSpace(uploadParams.accumulativeFileSize);
                             if (spaceAfterOperation < 0) {
                                 that.errorTitle = "Unable to proceed. " + file.name + " file size exceeds available space";
@@ -1002,8 +1002,10 @@ module.exports = {
                         that.currentDir = res;
                         that.updateFiles();
                     }
-                    that.updateUsage();
-                    future.complete(true);
+                    context.getSpaceUsage().thenApply(u => {
+                        that.usageBytes = u;
+                        future.complete(true);
+                    });
                 }).exceptionally(function(throwable) {
                     progress.show = false;
                     that.errorTitle = 'Error uploading file: ' + file.name;
@@ -1411,6 +1413,7 @@ module.exports = {
                     let childProps = child.getFileProperties();
                     if (childProps.isDirectory) {
                         accumulator.walkCounter++;
+                        accumulator.size += 4096;
                         let newPath = path + "/" + childProps.name;
                         that.calculateDirectorySize(child, newPath, accumulator, future);
                     } else {
@@ -1427,7 +1430,7 @@ module.exports = {
             let future = peergos.shared.util.Futures.incomplete();
             if (file.isDirectory()) {
                 this.calculateDirectorySize(file, path + file.getFileProperties().name,
-                    { size: 0, walkCounter: 1}, future);
+                    { size: 4096, walkCounter: 1}, future);
             } else {
                 future.complete(this.getFileSize(file.getFileProperties()));
             }
