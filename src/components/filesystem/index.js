@@ -23,7 +23,7 @@ module.exports = {
             sharedWithData:{"edit_shared_with_users":[],"read_shared_with_users":[]},
             forceSharedRefreshWithUpdate:0,
             isNotBackground: true,
-	    quota: "N/A",
+	    quotaBytes: 0,
 	    usageBytes: 0,
 	    isAdmin: false,
             showAdmin:false,
@@ -255,9 +255,10 @@ module.exports = {
 	    return Math.round(x * 100)/100;
 	},
 
-        convertBytesToHumanReadable: function(bytes) {
+        convertBytesToHumanReadable: function(bytesAsString) {
+        let bytes = Number(bytesAsString);
 	    if (bytes < 1024)
-		return bytes;
+		return bytes + " Bytes";
 	    if (bytes < 1024*1024)
 		return this.roundToDisplay(bytes/1024) + " KiB";
 	    if (bytes < 1024*1024*1024)
@@ -270,7 +271,9 @@ module.exports = {
             if (this.isSecretLink)
 		return;
 	    var that = this;
-	    this.context.getSpaceUsage().thenApply(u => that.usageBytes = u.value_0);
+	    this.context.getSpaceUsage().thenApply(u => {
+	        that.usageBytes = u
+	    });
 	},
 
 	updateQuota: function() {
@@ -278,7 +281,10 @@ module.exports = {
             if (this.isSecretLink)
 		return;
 	    var that = this;
-	    this.context.getQuota().thenApply(q => that.quota = that.convertBytesToHumanReadable(q));
+	    this.context.getQuota().thenApply(q => {
+	        that.quotaBytes = q
+        }
+        );
 	},
 
 	updateHistory: function(app, path, filename) {
@@ -705,38 +711,19 @@ module.exports = {
                         that.getEntries(items, ++itemIndex, that, allFiles);
                     }
                 } else {
-                    let uploadPath = this.getPath();
-                    var replaceParams = {
-                        applyReplaceToAll : false,
-                        replaceFile : false,
-                        fileInfoStore : []
-                    };
-                    var future = peergos.shared.util.Futures.incomplete();
-                    this.showSpinner = true;
-                    if(allFiles.length > 10) {
-                        this.spinnerMessage = "preparing for upload";
-                    }
-                    this.traverseDirectories(uploadPath, uploadPath, null, 0, allFiles, 0, true, replaceParams, future);
-                    let that = this;
-                    future.thenApply(done => {
-                        this.spinnerMessage = "";
-                        that.updateFiles();
-                        let counter = replaceParams.fileInfoStore.length;
-                        replaceParams.fileInfoStore.forEach(file => {
-                          that.uploadFileFromFileInfo(file).thenApply(res => {
-                              counter--;
-                              if(counter ==0) {
-                                that.progressMonitors.length = 0;
-                              }
-                          });
-                        });
-                    });
+                    this.processFileUpload(allFiles, true);
                 }
         },
         uploadFiles: function(evt) {
             let uploadPath = this.getPath();
             var files = evt.target.files || evt.dataTransfer.files;
-            var replaceParams = {
+            this.processFileUpload(files, false);
+        },
+        processFileUpload: function (files, fromDnd) {
+            let uploadPath = this.getPath();
+            var uploadParams = {
+                cancelUpload: false,
+                accumulativeFileSize: 0,
                 applyReplaceToAll : false,
                 replaceFile : false,
                 fileInfoStore : []
@@ -746,22 +733,46 @@ module.exports = {
             if(files.length > 10) {
                 this.spinnerMessage = "preparing for upload";
             }
-            this.traverseDirectories(uploadPath, uploadPath, null, 0, files, 0, false, replaceParams, future);
+            this.traverseDirectories(uploadPath, uploadPath, null, 0, files, 0, fromDnd, uploadParams, future);
             let that = this;
             future.thenApply(done => {
                 this.spinnerMessage = "";
                 that.updateFiles();
-                let counter = replaceParams.fileInfoStore.length;
-                replaceParams.fileInfoStore.forEach(file => {
-                  that.uploadFileFromFileInfo(file).thenApply(res => {
-                      counter--;
-                      if(counter ==0) {
-                        that.progressMonitors.length = 0;
-                      }
-                  });
+                let progressStore = [];
+                uploadParams.fileInfoStore.forEach(fileInfo => {
+                    var thumbnailAllocation = Math.min(100000, fileInfo.file.size / 10);
+                    var resultingSize = fileInfo.file.size + thumbnailAllocation;
+                    var progress = {
+                        show:true,
+                        title:"Encrypting and uploading " + fileInfo.file.name,
+                        done:0,
+                        max:resultingSize
+                    };
+                    that.progressMonitors.push(progress);
+                    progressStore.push(progress);
                 });
-
+                let futureUploads = peergos.shared.util.Futures.incomplete();
+                that.reduceAllUploads(uploadParams.fileInfoStore.reverse(), progressStore.slice().reverse(), uploadParams, futureUploads);
+                futureUploads.thenApply(done => {
+                    progressStore.forEach(progress => {
+                        let idx = that.progressMonitors.indexOf(progress);
+                        if(idx >= 0) {
+                            that.progressMonitors.splice(idx, 1);
+                        }
+                    });
+                });
             });
+        },
+        reduceAllUploads: function(fileInfoStore, progressStore, uploadParams, future) {
+            let that = this;
+            let fileInfo = fileInfoStore.pop();
+            if (fileInfo == null || uploadParams.cancelUpload) {
+                future.complete(true);
+            } else {
+                that.uploadFileFromFileInfo(fileInfo, progressStore.pop(), uploadParams).thenApply(res => {
+                    that.reduceAllUploads(fileInfoStore, progressStore, uploadParams, future);
+                });
+            }
         },
         splitDirectory: function (dir, fromDnd) {
             if (fromDnd) {
@@ -770,7 +781,11 @@ module.exports = {
                 return dir.webkitRelativePath.split('/');
             }
         },
-        traverseDirectories: function(origDir, currentDir, dirs, dirIndex, items, itemIndex, fromDnd, replaceParams, future) {
+        traverseDirectories: function(origDir, currentDir, dirs, dirIndex, items, itemIndex, fromDnd, uploadParams, future) {
+            if (uploadParams.cancelUpload) {
+                future.complete(true);
+                return;
+            }
             if (dirs == null) {
                 if (itemIndex < items.length) {
                     dirs = this.splitDirectory(items[itemIndex], fromDnd);
@@ -792,18 +807,18 @@ module.exports = {
                                 if (itemIndex == 0) {
                                     that.confirmReplaceDirectory(dirName,
                                     (applyToAll) => {
-                                        replaceParams.applyReplaceToAll = applyToAll;
-                                        replaceParams.replaceFile = false;
+                                        uploadParams.applyReplaceToAll = applyToAll;
+                                        uploadParams.replaceFile = false;
                                         future.complete(true);
                                     },
                                     (applyToAll) => {
-                                        replaceParams.applyReplaceToAll = applyToAll;
-                                        replaceParams.replaceFile = true;
-                                        that.traverseDirectories(origDir, path, dirs, ++dirIndex, items, itemIndex, fromDnd, replaceParams, future);
+                                        uploadParams.applyReplaceToAll = applyToAll;
+                                        uploadParams.replaceFile = true;
+                                        that.traverseDirectories(origDir, path, dirs, ++dirIndex, items, itemIndex, fromDnd, uploadParams, future);
                                     }
                                     );
                                 } else {
-                                    that.traverseDirectories(origDir, path, dirs, ++dirIndex, items, itemIndex, fromDnd, replaceParams, future);
+                                    that.traverseDirectories(origDir, path, dirs, ++dirIndex, items, itemIndex, fromDnd, uploadParams, future);
                                 }
                             } else {
                                 updatedDir.mkdir(dirName, that.context.network, false, that.context.crypto)
@@ -811,14 +826,14 @@ module.exports = {
                                         if (dirIndex == 0) {
                                             that.currentDir = updated;
                                         }
-                                        that.traverseDirectories(origDir, path, dirs, ++dirIndex, items, itemIndex, fromDnd, replaceParams, future);
+                                        that.traverseDirectories(origDir, path, dirs, ++dirIndex, items, itemIndex, fromDnd, uploadParams, future);
                                 });
                             }
                         });
                 } else {
                     let file = items[itemIndex];
                     let refreshDir = that.getPath() == currentDir ? true : false;
-                    that.uploadFilesFromDirectory(that, refreshDir, origDir, currentDir, dirs, dirIndex, items, itemIndex, fromDnd, replaceParams, future);
+                    that.uploadFilesFromDirectory(that, refreshDir, origDir, currentDir, dirs, dirIndex, items, itemIndex, fromDnd, uploadParams, future);
                 }
             });
         },
@@ -831,7 +846,7 @@ module.exports = {
             this.replace_showApplyAll = false;
             this.showReplace = true;
         },
-        uploadFilesFromDirectory: function(that, refreshDir, origDir, currentDir, dirs, dirIndex, items, itemIndex, fromDnd, replaceParams, future) {
+        uploadFilesFromDirectory: function(that, refreshDir, origDir, currentDir, dirs, dirIndex, items, itemIndex, fromDnd, uploadParams, future) {
             //optimisation - Next entry will likely be in the same directory
             if(itemIndex < items.length) {
                 let nextFile = items[itemIndex];
@@ -852,60 +867,74 @@ module.exports = {
                         if(items.length > 10) {
                             this.spinnerMessage = "preparing for upload (" + itemIndex + " of " + items.length + ")";
                         }
-                        that.uploadFileFromDirectory(nextFile, currentDir, refreshDir, fromDnd, replaceParams, uploadFileFuture);
+                        that.uploadFileFromDirectory(nextFile, currentDir, refreshDir, fromDnd, uploadParams, uploadFileFuture);
                         uploadFileFuture.thenApply(res =>
                                 that.uploadFilesFromDirectory(that, refreshDir, origDir, currentDir, dirs, dirIndex,
-                                items, ++itemIndex, fromDnd, replaceParams, future));
+                                items, ++itemIndex, fromDnd, uploadParams, future));
                     } else {
                         that.uploadFilesFromDirectory(that, refreshDir, origDir, currentDir, dirs, dirIndex,
-                            items, ++itemIndex, fromDnd, replaceParams, future);
+                            items, ++itemIndex, fromDnd, uploadParams, future);
                     }
                 } else {
-                    that.traverseDirectories(origDir, origDir, null, 0, items, itemIndex, fromDnd, replaceParams, future);
+                    that.traverseDirectories(origDir, origDir, null, 0, items, itemIndex, fromDnd, uploadParams, future);
                 }
             } else {
-                that.traverseDirectories(origDir, origDir, null, 0, items, itemIndex, fromDnd, replaceParams, future);
+                that.traverseDirectories(origDir, origDir, null, 0, items, itemIndex, fromDnd, uploadParams, future);
             }
         },
-        uploadFileFromDirectory: function(file, directory, refreshDirectory, fromDnd, replaceParams, uploadFileFuture) {
+        uploadFileFromDirectory: function(file, directory, refreshDirectory, fromDnd, uploadParams, uploadFileFuture) {
             if(fromDnd) {
                 let that = this;
                 file.file(function(fileEntry) {
-                    that.confirmAndUploadFile(fileEntry, directory, refreshDirectory, replaceParams, uploadFileFuture);
+                    that.confirmAndUploadFile(fileEntry, directory, refreshDirectory, uploadParams, uploadFileFuture);
                 });
             } else {
-                this.confirmAndUploadFile(file, directory, refreshDirectory, replaceParams, uploadFileFuture);
+                this.confirmAndUploadFile(file, directory, refreshDirectory, uploadParams, uploadFileFuture);
             }
         },
-        confirmAndUploadFile: function(file, directory, refreshDirectory, replaceParams, uploadFileFuture) {
+        confirmAndUploadFile: function(file, directory, refreshDirectory, uploadParams, uploadFileFuture) {
+            if (uploadParams.cancelUpload) {
+                uploadFileFuture.complete(true);
+                return;
+            }
             let that = this;
             this.context.getByPath(directory).thenApply(function(updatedDirOpt){
                 let updatedDir = updatedDirOpt.get();
                 updatedDir.hasChild(file.name, that.context.crypto.hasher, that.context.network)
                     .thenApply(function(alreadyExists){
                         if(alreadyExists) {
-                            if (replaceParams.applyReplaceToAll) {
-                                if(replaceParams.replaceFile) {
-                                    that.uploadOrReplaceFile(file, directory, refreshDirectory, true, replaceParams, uploadFileFuture)
+                            if (uploadParams.applyReplaceToAll) {
+                                if(uploadParams.replaceFile) {
+                                    that.uploadOrReplaceFile(file, directory, refreshDirectory, true, uploadParams, uploadFileFuture)
                                 } else {
                                     uploadFileFuture.complete(true);
                                 }
                             } else {
                                 that.confirmReplaceFile(file,
                                 (applyToAll) => {
-                                    replaceParams.applyReplaceToAll = applyToAll;
-                                    replaceParams.replaceFile = false;
+                                    uploadParams.applyReplaceToAll = applyToAll;
+                                    uploadParams.replaceFile = false;
                                     uploadFileFuture.complete(true);
                                  },
                                 (applyToAll) => {
-                                    replaceParams.applyReplaceToAll = applyToAll;
-                                    replaceParams.replaceFile = true;
-                                    that.uploadOrReplaceFile(file, directory, refreshDirectory, true, replaceParams, uploadFileFuture)
+                                    uploadParams.applyReplaceToAll = applyToAll;
+                                    uploadParams.replaceFile = true;
+                                    that.uploadOrReplaceFile(file, directory, refreshDirectory, true, uploadParams, uploadFileFuture)
                                  }
                                 );
                             }
                         } else {
-                            that.uploadOrReplaceFile(file, directory, refreshDirectory, false, replaceParams, uploadFileFuture);
+                            uploadParams.accumulativeFileSize += (file.size + (4096 - (file.size % 4096)));
+                            let spaceAfterOperation = that.checkAvailableSpace(uploadParams.accumulativeFileSize);
+                            if (spaceAfterOperation < 0) {
+                                that.errorTitle = "Unable to proceed. " + file.name + " file size exceeds available space";
+                                that.errorBody = "Please free up " + that.convertBytesToHumanReadable('' + -spaceAfterOperation) + " and try again";
+                                that.showError = true;
+                                uploadParams.cancelUpload = true;
+                                uploadFileFuture.complete(true);
+                            } else {
+                                that.uploadOrReplaceFile(file, directory, refreshDirectory, false, uploadParams, uploadFileFuture);
+                            }
                         }
                 });
             });
@@ -919,38 +948,25 @@ module.exports = {
             this.replace_showApplyAll = true;
             this.showReplace = true;
         },
-        uploadOrReplaceFile: function(file, directory, refreshDirectory, overwriteExisting, replaceParams, uploadFileFuture) {
+        uploadOrReplaceFile: function(file, directory, refreshDirectory, overwriteExisting, uploadParams, uploadFileFuture) {
             var fileStore = {
                 file : file,
                 directory : directory,
                 refreshDirectory : refreshDirectory,
                 overwriteExisting : overwriteExisting
             };
-            replaceParams.fileInfoStore.push(fileStore);
+            uploadParams.fileInfoStore.push(fileStore);
             uploadFileFuture.complete(true);
         },
-        uploadFileFromFileInfo: function(fileInfo) {
+        uploadFileFromFileInfo: function(fileInfo, progress, uploadParams) {
             var future = peergos.shared.util.Futures.incomplete();
-
             let directory = fileInfo.directory;
             let file = fileInfo.file;
             let refreshDirectory = fileInfo.refreshDirectory;
-            var thumbnailAllocation = Math.min(100000, file.size / 10);
-            var resultingSize = file.size + thumbnailAllocation;
-            var progress = {
-                show:true,
-                title:"Encrypting and uploading " + file.name,
-                done:0,
-                max:resultingSize
-            };
-            var that = this;
-
-            that.progressMonitors.push(progress);
-            this.uploadFileJS(file, directory, refreshDirectory, fileInfo.overwriteExisting, progress, future);
+            this.uploadFileJS(file, directory, refreshDirectory, fileInfo.overwriteExisting, progress, future, uploadParams);
             return future;
         },
-        uploadFileJS: function(file, directory, refreshDirectory, overwriteExisting, progress, future) {
-
+        uploadFileJS: function(file, directory, refreshDirectory, overwriteExisting, progress, future, uploadParams) {
             var updateProgressBar = function(len){
                 progress.done += len.value_0;
                 //that.progressMonitors.sort(function(a, b) {
@@ -960,12 +976,20 @@ module.exports = {
                     progress.show = false;
                 }
             };
-
+            let that = this;
             var reader = new browserio.JSFileReader(file);
             var java_reader = new peergos.shared.user.fs.BrowserFileReader(reader);
-            let that = this;
             let context = this.getContext();
             context.getByPath(directory).thenApply(function(updatedDirOpt){
+                let spaceAfterOperation = that.checkAvailableSpace(file.size);
+                if (spaceAfterOperation < 0) {
+                    that.errorTitle = "Unable to upload: " + file.name + " . File size exceeds available space";
+                    that.errorBody = "Please free up " + that.convertBytesToHumanReadable('' + -spaceAfterOperation) + " and try again";
+                    that.showError = true;
+                    uploadParams.cancelUpload = true;
+                    future.complete(false);
+                    return;
+                }
                 updatedDirOpt.get().uploadFileJS(file.name, java_reader, (file.size - (file.size % Math.pow(2, 32)))/Math.pow(2, 32), file.size,
                     overwriteExisting, overwriteExisting ? true : false, context.network, context.crypto, updateProgressBar,
                     context.getTransactionService()
@@ -978,8 +1002,10 @@ module.exports = {
                         that.currentDir = res;
                         that.updateFiles();
                     }
-                    that.updateUsage();
-                    future.complete(true);
+                    context.getSpaceUsage().thenApply(u => {
+                        that.usageBytes = u;
+                        future.complete(true);
+                    });
                 }).exceptionally(function(throwable) {
                     progress.show = false;
                     that.errorTitle = 'Error uploading file: ' + file.name;
@@ -1296,7 +1322,8 @@ module.exports = {
 
             this.clipboard = {
                 fileTreeNode: file,
-                op: "copy"
+                op: "copy",
+                path: this.getPath()
             };
             this.closeMenu();
         },
@@ -1309,7 +1336,8 @@ module.exports = {
             this.clipboard = {
                 parent: this.currentDir,
                 fileTreeNode: file,
-                op: "cut"
+                op: "cut",
+                path: this.getPath()
             };
             this.closeMenu();
         },
@@ -1319,7 +1347,7 @@ module.exports = {
                 return;
             var target = this.selectedFiles[0];
             var that = this;
-
+            this.closeMenu();
             if(target.isDirectory()) {
                 let clipboard = this.clipboard;
                 if (typeof(clipboard) ==  undefined || typeof(clipboard.op) == "undefined")
@@ -1349,23 +1377,68 @@ module.exports = {
                     });
                 } else if (clipboard.op == "copy") {
                     console.log("paste-copy");
-                    clipboard.fileTreeNode.copyTo(target, context)
-                        .thenApply(function() {
-                            that.currentDirChanged();
-            			    that.onUpdateCompletion.push(function() {
-			                	that.showSpinner = false;
+                    this.calculateTotalFileSize(clipboard.fileTreeNode, clipboard.path).thenApply(totalSize => {
+                        let spaceAfterOperation = that.checkAvailableSpace(totalSize);
+                        if (spaceAfterOperation < 0) {
+                            that.errorTitle = "File copy operation exceeds available Space";
+                            that.errorBody = "Please free up " + this.convertBytesToHumanReadable('' + -spaceAfterOperation) + " and try again";
+                            that.showError = true;
+                            that.showSpinner = false;
+                            return;
+                        }
+                        clipboard.fileTreeNode.copyTo(target, context)
+                            .thenApply(function() {
+                                that.currentDirChanged();
+                                that.onUpdateCompletion.push(function() {
+                                    that.updateUsage();
+                                    that.showSpinner = false;
+                            });
+                        }).exceptionally(function(throwable) {
+                            that.errorTitle = 'Error copying file';
+                            that.errorBody = throwable.getMessage();
+                            that.showError = true;
+                            that.showSpinner = false;
                         });
-                    }).exceptionally(function(throwable) {
-                        that.errorTitle = 'Error copying file';
-                        that.errorBody = throwable.getMessage();
-                        that.showError = true;
-                        that.showSpinner = false;
                     });
                 }
                 this.clipboard.op = null;
             }
-
-            this.closeMenu();
+        },
+        calculateDirectorySize: function(file, path, accumulator, future) {
+            let that = this;
+            file.getChildren(this.context.crypto.hasher, this.context.network).thenApply(function(children) {
+                let arr = children.toArray();
+                for(var i = 0; i < arr.length; i++) {
+                    let child = arr[i];
+                    let childProps = child.getFileProperties();
+                    if (childProps.isDirectory) {
+                        accumulator.walkCounter++;
+                        accumulator.size += 4096;
+                        let newPath = path + "/" + childProps.name;
+                        that.calculateDirectorySize(child, newPath, accumulator, future);
+                    } else {
+                        let size = that.getFileSize(childProps);
+                        accumulator.size += (size + (4096 - (size % 4096)));
+                    }
+                }
+                accumulator.walkCounter--;
+                if (accumulator.walkCounter == 0) {
+                    future.complete(accumulator.size);
+                }
+            });
+        },
+        calculateTotalFileSize: function(file, path) {
+            let future = peergos.shared.util.Futures.incomplete();
+            if (file.isDirectory()) {
+                this.calculateDirectorySize(file, path + file.getFileProperties().name,
+                    { size: 4096, walkCounter: 1}, future);
+            } else {
+                future.complete(this.getFileSize(file.getFileProperties()));
+            }
+            return future;
+        },
+        checkAvailableSpace: function(fileSize) {
+            return Number(this.quotaBytes.toString()) - (Number(this.usageBytes.toString()) + fileSize);
         },
         showShareWithForProfile: function(field, fieldName) {
             let dirPath = this.getContext().username + "/.profile/";
@@ -1925,9 +1998,13 @@ module.exports = {
 	usage: function() {
 	    if (this.usageBytes == 0)
 		return "N/A";
-	    return this.convertBytesToHumanReadable(this.usageBytes);
+	    return this.convertBytesToHumanReadable(this.usageBytes.toString());
 	},
-	
+    quota: function() {
+        if (this.quotaBytes == 0)
+        return "N/A";
+        return this.convertBytesToHumanReadable(this.quotaBytes.toString());
+    },
 	sortedFiles: function() {
             if (this.files == null) {
                 return [];
