@@ -1417,7 +1417,8 @@ module.exports = {
                         let newPath = path + "/" + childProps.name;
                         that.calculateDirectorySize(child, newPath, accumulator, future);
                     } else {
-                        accumulator.size += that.getFileSize(childProps);
+                        let size = that.getFileSize(childProps);
+                        accumulator.size += (size + (4096 - (size % 4096)));
                     }
                 }
                 accumulator.walkCounter--;
