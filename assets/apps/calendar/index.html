@@ -58,7 +58,7 @@
 	
 	<div id="menu">
 	  <span>
-	    <button class="btn btn-default btn-sm" onclick="Window.toggleCalendarsView(event);"><img src="images/cog.png"/></button>
+	    <button id="calendar-settings" class="btn btn-default btn-sm" onclick="Window.toggleCalendarsView(event);"><img src="images/cog.png"/></button>
 	  </span>
 	  <span class="dropdown">
             <button id="dropdownMenu-calendarType" class="btn btn-default btn-sm dropdown-toggle" type="button" data-toggle="dropdown"
@@ -96,7 +96,7 @@
 	  </span>
 	  <span id="renderRange" class="render-range"></span>
 	</div>
-	<div id="calendar" style="height: 600px;"></div>
+	<div id="calendar" style="min-height: 600px;"></div>
       </div>
     </div>
     <script src="init.js"></script>
