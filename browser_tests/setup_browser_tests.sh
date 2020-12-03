@@ -7,6 +7,10 @@ function get_chrome_major_version() {
     ${CHROMIUM:-google-chrome} --version | awk '{print $3}' | awk 'BEGIN {FS="."} {print $1}'
 }
 
+function get_chrome_version() {
+    ${CHROMIUM:-google-chrome} --version | awk '{print $3}' | awk 'BEGIN {FS="."} {print $1"."$2"."$3}'
+}
+
 function get_and_check_chromedriver() {
     url=$1
     sha256=$2
@@ -24,21 +28,22 @@ function get_and_check_chromedriver() {
     unzip $download_path -d $PWD
 }
 
+function download_chromedriver() {
+    version=$1
+    echo "Downloading chromedriver version $version"
+    
+    driver=$(curl https://chromedriver.storage.googleapis.com/LATEST_RELEASE_$VERSION)
+    url=https://chromedriver.storage.googleapis.com/$driver/chromedriver_linux64.zip
+    download_path=$(mktemp)
+    echo "Downloading chromedriver $url"
+    curl -o $download_path $url
+    # unzip chromedriver
+    unzip $download_path -d $PWD
+}
+
 function get_chromedriver() {
-    VERSION=$(get_chrome_major_version)
-    if [[ $VERSION == "84" ]]; 
-    then
-        get_and_check_chromedriver https://chromedriver.storage.googleapis.com/84.0.4147.30/chromedriver_linux64.zip 160531e8f98f13b486411cd6445ec0e3c56cd4d4b2839e3e9a0fda09a279797a 
-    elif [[ $VERSION == "85" ]]; 
-    then
-        get_and_check_chromedriver https://chromedriver.storage.googleapis.com/85.0.4183.38/chromedriver_linux64.zip cd4e08b4a7ddd0f8b60126051c64f64de7edf07350294965a98bfd984d429eed
-    elif [[ $VERSION == "86" ]]; 
-    then
-        get_and_check_chromedriver https://chromedriver.storage.googleapis.com/86.0.4240.22/chromedriver_linux64.zip d498eaacc414adbaf638333b59390cdfea5d780f941f57f41fd90280df78b159
-    else
-        echo "ERROR: Unsupported chrome version $VERSION"
-        return 1
-    fi
+    VERSION=$(get_chrome_version)
+    download_chromedriver $VERSION
 }
 
 function ensure_chromedriver() {
