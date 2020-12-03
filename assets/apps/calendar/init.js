@@ -151,7 +151,20 @@ window.addEventListener('message', function (e) {
         }
         importICSFile(e.data.contents, e.data.username, e.data.isSharedWithUs, loadCalendarAsGuest, "default", true);
     }
+
 });
+function disableToolbarButtons(newValue){
+    let calendarSettings = document.getElementById("calendar-settings");
+    calendarSettings.disabled = newValue;
+    let calendarType = document.getElementById("dropdownMenu-calendarType");
+    calendarType.disabled = newValue;
+    var moveToTodayButton = document.getElementsByClassName("move-today")[0];
+    moveToTodayButton.disabled = newValue;
+    var navigateButtons = document.getElementsByClassName("move-day");
+    for(var j=0; j < navigateButtons.length; j++) {
+        navigateButtons[j].disabled = newValue;
+    }
+}
 function renameCalendar(calendar) {
     mainWindow.postMessage({action:'requestRenameCalendar', calendar: calendar}, origin);
 }
@@ -218,6 +231,7 @@ function initialiseCalendar(loadCalendarAsGuest, calendars) {
     cal.setCalendars(CalendarList);
     setDropdownCalendarType();
     setEventListener();
+    disableToolbarButtons(true);
 }
 function ScheduleInfo() {
     this.id = null;
@@ -426,6 +440,7 @@ function importICSFile(contents, username, isSharedWithUs, loadCalendarAsGuest, 
                 loadArbitrarySchedule(schedule);
                 if(idx == vevents.length -1) {
                     removeSpinner();
+                    disableToolbarButtons(false);
                 }
             } else {
                 let dt = moment.utc(schedule.start.toUTCString());
@@ -461,6 +476,7 @@ function loadAdditional(currentMonthEvents, yearMonth) {
     refreshScheduleVisibility();
     setRenderRangeText();
     removeSpinner();
+    disableToolbarButtons(false);
 }
 function loadArbitrarySchedule(schedule) {
     let dt = moment.utc(schedule.start.toUTCString());
@@ -512,6 +528,7 @@ function load(previousMonthEvents, currentMonthEvents, nextMonthEvents, yearMont
     refreshScheduleVisibility();
     setRenderRangeText();
     removeSpinner();
+    disableToolbarButtons(false);
 }
 
 function deleteSchedule(schedule) {
@@ -925,6 +942,7 @@ function reload(currentMoment, toLoadMonth) {
             let yearMonth = toLoadMonth.year() * 12 + toLoadMonth.month();
             loadAdditional([], yearMonth);
         } else {
+            disableToolbarButtons(true);
             mainWindow.postMessage({type:"loadAdditional", year: toLoadMonth.year(), month: (toLoadMonth.month() + 1)},
                 origin);
         }

@@ -510,7 +510,8 @@ module.exports = {
     },
     shareCalendarEvent: function(calendar, calendarName, id, year, month) {
         let calendarDirectory = this.findCalendarDirectory(calendarName);
-        this.shareWith(this.CALENDAR_DIR_NAME + '/' + this.DATA_DIR_NAME + "/" + calendarDirectory + "/" + year + '/' + month, id + '.ics', false);
+        this.shareWith(this.CALENDAR_DIR_NAME + '/' + this.DATA_DIR_NAME + "/" + calendarDirectory + "/" + year + '/' + month,
+            id + '.ics', false, 'Calendar Event');
     },
     showMessage: function(title, body) {
         this.messages.push({
