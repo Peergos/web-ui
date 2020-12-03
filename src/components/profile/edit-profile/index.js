@@ -248,21 +248,29 @@ module.exports = {
             } else {
                 var updatedPath = this.webRoot.trim();
                 let changeWebRootFunc = function(){
-                    var future = peergos.shared.util.Futures.incomplete();
-                    peergos.shared.user.ProfilePaths.setWebRoot(context, updatedPath).thenApply(res => {
-                        if(res) {
-                            that.webRoot = updatedPath;
-                            that.previousWebRoot = updatedPath;
-                            if (updatedPath.length == 0) {
-                                that.webRootReadyToBePublished = false;
-                            } else {
-                                that.webRootReadyToBePublished = true;
+                    var publishFuture = peergos.shared.util.Futures.incomplete();
+                    var unPublishFuture = peergos.shared.util.Futures.incomplete();
+                    if (that.previousWebRoot.length > 0) {
+                        that.unpublishWebroot(unPublishFuture);
+                    } else {
+                        unPublishFuture.complete(true);
+                    }
+                    unPublishFuture.thenApply(done => {
+                        peergos.shared.user.ProfilePaths.setWebRoot(context, updatedPath).thenApply(res => {
+                            if(res) {
+                                that.webRoot = updatedPath;
+                                that.previousWebRoot = updatedPath;
+                                if (updatedPath.length == 0) {
+                                    that.webRootReadyToBePublished = false;
+                                } else {
+                                    that.webRootReadyToBePublished = true;
+                                }
+                                that.webRootUrl = "";
                             }
-                            that.webRootUrl = "";
-                        }
-                        future.complete(res);
+                            publishFuture.complete(res);
+                        });
                     });
-                    return future;
+                    return publishFuture;
                 }
                 if(updatedPath == '') {
                     changes.push({func: changeWebRootFunc});
@@ -302,6 +310,11 @@ module.exports = {
                     }
                 }
             }
+        },
+        unpublishWebroot: function(future) {
+            peergos.shared.user.ProfilePaths.unPublish(this.context).thenApply(function(success){
+                future.complete(true);
+            });
         },
         publishWebroot: function() {
             let that = this;
