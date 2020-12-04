@@ -17,7 +17,7 @@
     <div v-if="!isSecretLink">
         <h4>Please log in</h4>
         <div class="form-group flex-container">
-            <input type="text" name="username" id="username" class="form-control flex-grow" v-on:keyup="lowercaseUsername()" v-model="username" placeholder="Username">
+            <input type="text" name="username" id="username" class="form-control flex-grow" style="text-transform: lowercase;" v-model="username" placeholder="Username">
         </div>
         <div class="form-group flex-row">
           <input :type="passwordFieldType" name="password" class="password form-control flex-grow" v-model="password" placeholder="Password" v-on:keyup.enter="login()">
