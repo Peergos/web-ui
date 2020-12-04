@@ -62,6 +62,7 @@ module.exports = {
             this.webRootReadyToBePublished = true;
             let directoryPath = peergos.client.PathUtils.directoryToPath(this.webRoot.split('/'));
             this.context.getPublicFile(directoryPath).thenApply(res => {
+                this.webRootReadyToBePublished = false;
                 that.webRootUrl = "https://" + that.context.username+".peergos.me";
             }).exceptionally(function(throwable) {
                 that.webRootUrl = "";
@@ -312,7 +313,7 @@ module.exports = {
             }
         },
         unpublishWebroot: function(future) {
-            peergos.shared.user.ProfilePaths.unPublish(this.context).thenApply(function(success){
+            peergos.shared.user.ProfilePaths.unpublishWebRoot(this.context).thenApply(function(success){
                 future.complete(true);
             });
         },
