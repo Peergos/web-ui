@@ -48,7 +48,7 @@ module.exports = {
             iframe.contentWindow.postMessage({type: 'ping'}, '*');
             setTimeout(function(){
                 iframe.contentWindow.postMessage(obj, '*');
-            }, 600);
+            }, 200);
         } else {
             iframe.contentWindow.postMessage(obj, '*');
         }
