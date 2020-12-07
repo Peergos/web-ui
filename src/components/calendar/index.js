@@ -218,11 +218,9 @@ module.exports = {
     },
     importICSFile: function() {
         let that = this;
-        setTimeout(function(){
-            that.postMessage({type: 'importICSFile', contents: that.importFile,
-                isSharedWithUs: that.importSharedEvent, loadCalendarAsGuest: that.loadCalendarAsGuest,
-                username: that.context.username });
-        },600);
+        that.postMessage({type: 'importICSFile', contents: that.importFile,
+            isSharedWithUs: that.importSharedEvent, loadCalendarAsGuest: that.loadCalendarAsGuest,
+            username: that.context.username });
     },
     loadAdditional: function(calendar, year, month, messageType) {
         let that = this;
