@@ -13,7 +13,10 @@ module.exports = {
 	
 	supportsStreaming: function() {
         try {
-		    return 'serviceWorker' in navigator && !!new ReadableStream() && !!new WritableStream()
+            //see https://github.com/jimmywarting/StreamSaver.js/issues/69
+            //safari is getting writable streams, but unable to use them due to issues
+            let safari = /constructor/i.test(window.HTMLElement) || !!window.safari || !!window.WebKitPoint
+		    return !safari && 'serviceWorker' in navigator && !!new ReadableStream() && !!new WritableStream()
         } catch(err) {
 		    return false;
         }
