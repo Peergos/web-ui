@@ -59,12 +59,12 @@ module.exports = {
         this.webRoot = this.previousWebRoot = this.profile.webRoot;
         if (this.webRoot.length > 0) {
             let that = this;
-            this.webRootReadyToBePublished = true;
             let directoryPath = peergos.client.PathUtils.directoryToPath(this.webRoot.split('/'));
             this.context.getPublicFile(directoryPath).thenApply(res => {
-                this.webRootReadyToBePublished = false;
+                that.webRootReadyToBePublished = false;
                 that.webRootUrl = "https://" + that.context.username+".peergos.me";
             }).exceptionally(function(throwable) {
+                that.webRootReadyToBePublished = true;
                 that.webRootUrl = "";
             });
         }
