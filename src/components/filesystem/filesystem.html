@@ -169,6 +169,7 @@
   <profile-edit
           v-if="showProfileEditForm"
           v-on:hide-profile-edit="showProfileEditForm = false"
+          v-on:update-refresh="forceUpdate++"
           :context="context"
           :profile="profile"
           :shareWith="showShareWithForProfile"

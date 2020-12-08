@@ -17,6 +17,7 @@ module.exports = {
         statusReadyToBeShared: false,
         webRoot: "",
         webRootReadyToBePublished: false,
+        webRootUrl: "",
         previousFirstName: "",
         previousLastName: "",
         previousBiography: "",
@@ -32,7 +33,12 @@ module.exports = {
         EMAIL_MAX_LENGTH: 50,
         WEBROOT_MAX_LENGTH: 40,
         showSpinner: false,
-        spinnerMessage: ''
+        spinnerMessage: '',
+        showConfirm: false,
+        confirm_message: "",
+        confirm_body: "",
+        confirm_consumer_cancel_func: () => {},
+        confirm_consumer_func: () => {}
         }
     },
     props: ['context', 'profile', 'messages', 'shareWith'],
@@ -56,8 +62,22 @@ module.exports = {
         if (this.status.length > 0)
             this.statusReadyToBeShared = true;
         this.webRoot = this.previousWebRoot = this.profile.webRoot;
-        if (this.webRoot.length > 0)
-            this.webRootReadyToBePublished = true;
+        if (this.webRoot.length > 0) {
+            let that = this;
+            let directoryPath = peergos.client.PathUtils.directoryToPath(this.webRoot.split('/'));
+            this.context.getPublicFile(directoryPath).thenApply(res => {
+                if(res.isPresent()) {
+                    that.webRootReadyToBePublished = false;
+                    that.webRootUrl = "https://" + that.context.username+".peergos.me";
+                } else {
+                    that.webRootReadyToBePublished = true;
+                    that.webRootUrl = "";
+                }
+            }).exceptionally(function(throwable) {
+                that.webRootReadyToBePublished = true;
+                that.webRootUrl = "";
+            });
+        }
         this.profileImage = this.profile.profileImage;
     },
     methods: {
@@ -235,24 +255,34 @@ module.exports = {
                 });
             }
             if (this.webRoot == this.previousWebRoot) {
-                this.saveChanges(changes); //save other changes
+                this.saveChanges(changes); // save other changes
             } else {
                 var updatedPath = this.webRoot.trim();
                 let changeWebRootFunc = function(){
-                    var future = peergos.shared.util.Futures.incomplete();
-                    peergos.shared.user.ProfilePaths.setWebRoot(context, updatedPath).thenApply(res => {
-                        if(res) {
-                            that.webRoot = updatedPath;
-                            that.previousWebRoot = updatedPath;
-                            if (updatedPath.length == 0) {
-                                that.webRootReadyToBePublished = false;
-                            } else {
-                                that.webRootReadyToBePublished = true;
+                    var publishFuture = peergos.shared.util.Futures.incomplete();
+                    var unPublishFuture = peergos.shared.util.Futures.incomplete();
+                    if (that.previousWebRoot.length > 0) {
+                        that.unpublishWebroot(unPublishFuture);
+                    } else {
+                        unPublishFuture.complete(true);
+                    }
+                    unPublishFuture.thenApply(done => {
+                        peergos.shared.user.ProfilePaths.setWebRoot(context, updatedPath).thenApply(res => {
+                            that.$emit("update-refresh");
+                            if(res) {
+                                that.webRoot = updatedPath;
+                                that.previousWebRoot = updatedPath;
+                                if (updatedPath.length == 0) {
+                                    that.webRootReadyToBePublished = false;
+                                } else {
+                                    that.webRootReadyToBePublished = true;
+                                }
+                                that.webRootUrl = "";
                             }
-                        }
-                        future.complete(res);
+                            publishFuture.complete(res);
+                        });
                     });
-                    return future;
+                    return publishFuture;
                 }
                 if(updatedPath == '') {
                     changes.push({func: changeWebRootFunc});
@@ -293,33 +323,59 @@ module.exports = {
                 }
             }
         },
+        unpublishWebroot: function(future) {
+            let that = this;
+            peergos.shared.user.ProfilePaths.unpublishWebRoot(this.context).thenApply(function(success){
+                that.$emit("update-refresh");
+                future.complete(true);
+            });
+        },
+        showPublishHelp: function(future) {
+            var text = "This allows you to publish a directory as a website."
+            + " This will make everything in that directory public, and it will be available from https://" + this.context.username + ".peergos.me"
+            + " or if you run a local Peergos gateway from http://" + this.context.username + ".peergos.localhost:9000"
+            + " Viewing websites via a local Peergos gateway doesn't rely on DNS or TLS certificate authorities for security or authenticity."
+            + " You can get started by adding a index.html file to your web directory.";
+            this.showMessage("Website Directory", text);
+        },
         publishWebroot: function() {
             let that = this;
             if (this.webRoot.length > 0) {
-                that.showSpinner = true;
-                try {
-                    let dirPath = peergos.client.PathUtils.directoryToPath(this.webRoot.split('/'));
-                    this.context.getByPath(dirPath.toString()).thenApply(function(dirOpt){
-                        if (dirOpt.isEmpty()) {
-                            that.showMessage("Unable to publish Web Directory", "Web Directory not found");
-                        } else {
-                            peergos.shared.user.ProfilePaths.publishWebroot(that.context).thenApply(function(success){
-                                that.showSpinner = false;
-                                if (success) {
-                                    that.showMessage("Web Directory published", "Available at: https://" + that.context.username+".peergos.me");
-                                } else {
-                                    that.showMessage("Unable to publish Web Directory", "");
-                                }
-                            }).exceptionally(function(throwable) {
-                              that.showMessage("Unable to publish Web Directory", throwable.getMessage());
-                              console.log(throwable.getMessage());
-                              that.showSpinner = false;
-                            });
-                        }
-                    });
-                } catch (pathException) {
-                    that.showMessage("Unable to publish Web Directory", "Web Directory not valid");
-                }
+                this.confirm_message='Are you sure you want to publish folder: ' + this.webRoot + " ?";
+                this.confirm_body='This action will make the folder and all its contents public';
+                this.confirm_consumer_cancel_func = () => { that.showConfirm = false;};
+                this.confirm_consumer_func = function() {
+                    that.showConfirm = false;
+                    that.showSpinner = true;
+                    try {
+                        let dirPath = peergos.client.PathUtils.directoryToPath(that.webRoot.split('/'));
+                        that.context.getByPath(dirPath.toString()).thenApply(function(dirOpt){
+                            if (dirOpt.isEmpty()) {
+                                that.showMessage("Unable to publish Web Directory", "Web Directory not found");
+                            } else {
+                                peergos.shared.user.ProfilePaths.publishWebroot(that.context).thenApply(function(success){
+                                    that.showSpinner = false;
+                                    that.$emit("update-refresh");
+                                    if (success) {
+                                        that.showMessage("Web Directory published", "Available at: https://" + that.context.username+".peergos.me");
+                                        that.webRootUrl = "https://" + that.context.username + ".peergos.me";
+                                        that.webRootReadyToBePublished = false;
+                                    } else {
+                                        that.showMessage("Unable to publish Web Directory", "");
+                                    }
+                                }).exceptionally(function(throwable) {
+                                  that.showMessage("Unable to publish Web Directory", throwable.getMessage());
+                                  console.log(throwable.getMessage());
+                                  that.showSpinner = false;
+                                });
+                            }
+                        });
+                    } catch (pathException) {
+                        that.showMessage("Unable to publish Web Directory", "Web Directory not valid");
+                        that.showSpinner = false;
+                    }
+                };
+                this.showConfirm = true;
             }
         },
         updateThumbnail: function(hires, thumbnail) {
@@ -330,10 +386,12 @@ module.exports = {
             peergos.shared.user.ProfilePaths.setHighResProfilePhoto(that.context, hires).thenApply(function(success){
                 peergos.shared.user.ProfilePaths.setProfilePhoto(that.context, thumbnail).thenApply(function(success){
                     that.showSpinner = false;
+                    that.$emit("update-refresh");
                 }).exceptionally(function(throwable) {
                   that.showMessage("Unexpected error", throwable.getMessage());
                   console.log(throwable.getMessage());
                   that.showSpinner = false;
+                  that.$emit("update-refresh");
                 });
             }).exceptionally(function(throwable) {
               that.showMessage("Unexpected error", throwable.getMessage());
@@ -356,6 +414,7 @@ module.exports = {
                 that.showMessage("Profile updated","");
                 that.showSpinner = false;
                 console.log("profile updated");
+                that.$emit("update-refresh");
                 return;
             } else {
                 func.func().thenApply(function(success) {
