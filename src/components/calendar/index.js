@@ -20,7 +20,8 @@ module.exports = {
             confirm_message: "",
             confirm_body: "",
             confirm_consumer_cancel_func: () => {},
-            confirm_consumer_func: () => {}
+            confirm_consumer_func: () => {},
+            firstMessage: true
         }
     },
     props: ['context', 'messages', 'importFile', 'importSharedEvent', 'shareWith', 'loadCalendarAsGuest'],
@@ -39,7 +40,20 @@ module.exports = {
         }
     },
     methods: {
-	startListener: function(calendar) {
+
+    postMessage: function(obj) {
+	    var iframe = document.getElementById("editor");
+	    if (this.firstMessage) { //Firefox really doesn't handle opening/closing/opening iframes well....
+    	    this.firstMessage = false;
+            iframe.contentWindow.postMessage({type: 'ping'}, '*');
+            setTimeout(function(){
+                iframe.contentWindow.postMessage(obj, '*');
+            }, 200);
+        } else {
+            iframe.contentWindow.postMessage(obj, '*');
+        }
+    },
+    startListener: function(calendar) {
 	    var that = this;
 	    var iframe = document.getElementById("editor");
 	    if (iframe == null) {
@@ -101,8 +115,7 @@ module.exports = {
         }
 	},
     reloadCalendar: function() {
-        //This is troublesome on firefox, so disabling - this.$emit("reload-calendar");
-        this.$emit("hide-calendar");
+        this.$emit("reload-calendar");
     },
     renameCalendarRequest: function(calendar, calendarItem) {
         let that = this;
@@ -141,8 +154,7 @@ module.exports = {
                 that.displaySpinner();
                 that.updatePropertiesFile(calendar, that.calendarProperties).thenApply(res => {
                     that.removeSpinner();
-                    var iframe = document.getElementById("editor");
-                    iframe.contentWindow.postMessage({type: 'respondRenameCalendar', calendar: calendarItem}, '*');
+                    that.postMessage({type: 'respondRenameCalendar', calendar: calendarItem});
                 });
             });
         };
@@ -177,8 +189,7 @@ module.exports = {
                 that.calendarProperties.calendars.push({name:newName, directory:dirName, color: newColor});
                 that.updatePropertiesFile(calendar, that.calendarProperties).thenApply(res => {
                     that.removeSpinner();
-                    var iframe = document.getElementById("editor");
-                    iframe.contentWindow.postMessage({type: 'respondAddCalendar', newId: newId, newName: newName, newColor: newColor}, '*');
+                    that.postMessage({type: 'respondAddCalendar', newId: newId, newName: newName, newColor: newColor});
                 });
             });
         };
@@ -196,8 +207,7 @@ module.exports = {
         that.displaySpinner();
         that.updatePropertiesFile(calendar, that.calendarProperties).thenApply(res => {
             that.removeSpinner();
-            var iframe = document.getElementById("editor");
-            iframe.contentWindow.postMessage({type: 'respondCalendarColorChange', calendarName: calendarName, newColor: newColor}, '*');
+            that.postMessage({type: 'respondCalendarColorChange', calendarName: calendarName, newColor: newColor});
         });
     },
     //https://stackoverflow.com/questions/105034/how-to-create-guid-uuid
@@ -208,12 +218,9 @@ module.exports = {
     },
     importICSFile: function() {
         let that = this;
-        let iframe = document.getElementById("editor");
-        setTimeout(function(){
-            iframe.contentWindow.postMessage({type: 'importICSFile', contents: that.importFile,
-                isSharedWithUs: that.importSharedEvent, loadCalendarAsGuest: that.loadCalendarAsGuest,
-                username: that.context.username }, '*');
-        },600);
+        that.postMessage({type: 'importICSFile', contents: that.importFile,
+            isSharedWithUs: that.importSharedEvent, loadCalendarAsGuest: that.loadCalendarAsGuest,
+            username: that.context.username });
     },
     loadAdditional: function(calendar, year, month, messageType) {
         let that = this;
@@ -222,11 +229,11 @@ module.exports = {
         });
     },
     loadAdditionalEvents: function(year, month, messageType, eventsThisMonth) {
-        let iframe = document.getElementById("editor");
+        let that = this;
         let yearMonth = year * 12 + (month -1);
         setTimeout(function(){
-            iframe.contentWindow.postMessage({type: messageType, currentMonth: eventsThisMonth
-                , yearMonth: yearMonth }, '*');
+            that.postMessage({type: messageType, currentMonth: eventsThisMonth
+                , yearMonth: yearMonth });
         });
     },
     load: function(calendar, year, month, messageType) {
@@ -239,7 +246,6 @@ module.exports = {
 
     loadEvents: function(year, month, messageType, eventsPreviousMonth, eventsThisMonth, eventsNextMonth) {
         let that = this;
-        let iframe = document.getElementById("editor");
         let yearMonth = year * 12 + (month-1);
         setTimeout(function(){
             let calendars = [];
@@ -247,9 +253,11 @@ module.exports = {
                 let calendar = that.calendarProperties.calendars[i];
                 calendars.push({name: calendar.name, color: calendar.color});
             }
-            iframe.contentWindow.postMessage({type: messageType, previousMonth: eventsPreviousMonth,
+            Vue.nextTick(function() {
+                that.postMessage({type: messageType, previousMonth: eventsPreviousMonth,
                     currentMonth: eventsThisMonth, nextMonth: eventsNextMonth, yearMonth: yearMonth
-                    , username: that.context.username, calendars: calendars}, '*');
+                    , username: that.context.username, calendars: calendars});
+            });
         });
     },
     postDeleteCalendar: function(calendar, data) {
@@ -257,8 +265,7 @@ module.exports = {
         this.calendarProperties.calendars.splice(this.calendarProperties.calendars.findIndex(v => v.id === data.id), 1);
         this.updatePropertiesFile(calendar, this.calendarProperties).thenApply(res => {
             that.removeSpinner();
-            var iframe = document.getElementById("editor");
-            iframe.contentWindow.postMessage({type: 'respondDeleteCalendar', calendar: data}, '*');
+            that.postMessage({type: 'respondDeleteCalendar', calendar: data});
         });
     },
     deleteCalendar: function(calendar, data) {
@@ -444,7 +451,7 @@ module.exports = {
                 let currentCalendar = that.calendarProperties.calendars[calendarIndex];
                 let dirStr = currentCalendar.directory + "/" + year + "/" + month;
                 let directoryPath = peergos.client.PathUtils.directoryToPath(dirStr.split('/'));
-                calendar.dirInternal(directoryPath).thenCompose(filenames => {
+                calendar.dirInternal(directoryPath).thenApply(filenames => {
                     that.getEventsForMonth(calendar, currentCalendar.name, dirStr, filenames.toArray([])).thenApply(res => {
                         that.reduceCalendarEventsForMonth(calendar, year, month, ++calendarIndex, accumulator.concat(res), future);
                     })

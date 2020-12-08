@@ -1,5 +1,44 @@
 var mainWindow;
 var origin;
+
+let handler = function (e) {
+      // You must verify that the origin of the message's sender matches your
+      // expectations. In this case, we're only planning on accepting messages
+      // from our own origin, so we can simply compare the message event's
+      // origin to the location of this document. If we get a message from an
+      // unexpected host, ignore the message entirely.
+      if (e.origin !== (window.location.protocol + "//" + window.location.host))
+          return;
+
+      mainWindow = e.source;
+      origin = e.origin;
+      if (e.data.type == "ping") {
+          console.log("ping");
+      } else if (e.data.type == "load") {
+          initialiseCalendar(false, e.data.calendars);
+          load(e.data.previousMonth, e.data.currentMonth, e.data.nextMonth, e.data.yearMonth, e.data.username);
+      } else if (e.data.type == "loadAdditional") {
+          loadAdditional(e.data.currentMonth, e.data.yearMonth);
+      } else if (e.data.type == "respondRenameCalendar") {
+          respondToCalendarRename(e.data.calendar);
+      } else if (e.data.type == "respondDeleteCalendar") {
+          respondToCalendarDelete(e.data.calendar);
+      } else if (e.data.type == "respondAddCalendar") {
+          respondToCalendarAdd(e.data.newId, e.data.newName, e.data.newColor);
+      } else if (e.data.type == "respondCalendarColorChange") {
+          respondToCalendarColorChange(e.data.calendarName, e.data.newColor);
+      } else if(e.data.type == "importICSFile") {
+          loadCalendarAsGuest = e.data.loadCalendarAsGuest;
+          if(loadCalendarAsGuest) {
+              initialiseCalendar(true, []);
+          } else {
+              setCalendars(true, []);
+          }
+          importICSFile(e.data.contents, e.data.username, e.data.isSharedWithUs, loadCalendarAsGuest, "default", true);
+      }
+};
+window.addEventListener('message', handler);
+
 var currentUsername;
 var cal, resizeThrottled;
 var useCreationPopup = true;
@@ -118,41 +157,7 @@ function buildUI(isCalendarReadonly) {
         }
     });
 }
-window.addEventListener('message', function (e) {
-    // You must verify that the origin of the message's sender matches your
-    // expectations. In this case, we're only planning on accepting messages
-    // from our own origin, so we can simply compare the message event's
-    // origin to the location of this document. If we get a message from an
-    // unexpected host, ignore the message entirely.
-    if (e.origin !== (window.location.protocol + "//" + window.location.host))
-        return;
-    
-    mainWindow = e.source;
-    origin = e.origin;
-    if (e.data.type == "load") {
-        initialiseCalendar(false, e.data.calendars);
-        load(e.data.previousMonth, e.data.currentMonth, e.data.nextMonth, e.data.yearMonth, e.data.username);
-    } else if (e.data.type == "loadAdditional") {
-        loadAdditional(e.data.currentMonth, e.data.yearMonth);
-    } else if (e.data.type == "respondRenameCalendar") {
-        respondToCalendarRename(e.data.calendar);
-    } else if (e.data.type == "respondDeleteCalendar") {
-        respondToCalendarDelete(e.data.calendar);
-    } else if (e.data.type == "respondAddCalendar") {
-        respondToCalendarAdd(e.data.newId, e.data.newName, e.data.newColor);
-    } else if (e.data.type == "respondCalendarColorChange") {
-        respondToCalendarColorChange(e.data.calendarName, e.data.newColor);
-    } else if(e.data.type == "importICSFile") {
-        loadCalendarAsGuest = e.data.loadCalendarAsGuest;
-        if(loadCalendarAsGuest) {
-            initialiseCalendar(true, []);
-        } else {
-            setCalendars(true, []);
-        }
-        importICSFile(e.data.contents, e.data.username, e.data.isSharedWithUs, loadCalendarAsGuest, "default", true);
-    }
 
-});
 function disableToolbarButtons(newValue){
     let calendarSettings = document.getElementById("calendar-settings");
     calendarSettings.disabled = newValue;
@@ -1114,6 +1119,7 @@ function addMemoField(eventData) {
         saveBtn.onclick=handler;
     }
 }
+
 function showConfigurationPopup() {
     var calendarModal = document.getElementById("calendarModal");
     calendarModal.style.display = "block";
