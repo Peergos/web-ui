@@ -263,6 +263,7 @@ module.exports = {
                     }
                     unPublishFuture.thenApply(done => {
                         peergos.shared.user.ProfilePaths.setWebRoot(context, updatedPath).thenApply(res => {
+                            that.$emit("update-refresh");
                             if(res) {
                                 that.webRoot = updatedPath;
                                 that.previousWebRoot = updatedPath;
@@ -318,7 +319,9 @@ module.exports = {
             }
         },
         unpublishWebroot: function(future) {
+            let that = this;
             peergos.shared.user.ProfilePaths.unpublishWebRoot(this.context).thenApply(function(success){
+                that.$emit("update-refresh");
                 future.complete(true);
             });
         },
@@ -334,6 +337,7 @@ module.exports = {
                         } else {
                             peergos.shared.user.ProfilePaths.publishWebroot(that.context).thenApply(function(success){
                                 that.showSpinner = false;
+                                that.$emit("update-refresh");
                                 if (success) {
                                     that.showMessage("Web Directory published", "Available at: https://" + that.context.username+".peergos.me");
                                     that.webRootUrl = "https://" + that.context.username + ".peergos.me";
@@ -360,10 +364,12 @@ module.exports = {
             peergos.shared.user.ProfilePaths.setHighResProfilePhoto(that.context, hires).thenApply(function(success){
                 peergos.shared.user.ProfilePaths.setProfilePhoto(that.context, thumbnail).thenApply(function(success){
                     that.showSpinner = false;
+                    that.$emit("update-refresh");
                 }).exceptionally(function(throwable) {
                   that.showMessage("Unexpected error", throwable.getMessage());
                   console.log(throwable.getMessage());
                   that.showSpinner = false;
+                  that.$emit("update-refresh");
                 });
             }).exceptionally(function(throwable) {
               that.showMessage("Unexpected error", throwable.getMessage());
@@ -386,6 +392,7 @@ module.exports = {
                 that.showMessage("Profile updated","");
                 that.showSpinner = false;
                 console.log("profile updated");
+                that.$emit("update-refresh");
                 return;
             } else {
                 func.func().thenApply(function(success) {
