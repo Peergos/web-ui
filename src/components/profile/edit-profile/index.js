@@ -250,7 +250,7 @@ module.exports = {
                 });
             }
             if (this.webRoot == this.previousWebRoot) {
-                this.saveChanges(changes); //save other changes
+                this.saveChanges(changes); // save other changes
             } else {
                 var updatedPath = this.webRoot.trim();
                 let changeWebRootFunc = function(){
