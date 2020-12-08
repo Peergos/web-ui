@@ -560,6 +560,8 @@ module.exports = {
 
             if (newLevel < this.path.length) {
                 this.changePath(path);
+            } else if (newLevel == this.path.length) {
+                this.currentDirChanged();
             }
         },
 
