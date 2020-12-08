@@ -340,6 +340,7 @@ module.exports = {
 		this.showTextViewer = false;
 		this.showHexViewer = false;
 		this.showTimeline = false;
+		this.showSearch = false;
 		this.showTodoBoardViewer = false;
 		this.showCalendarViewer = false;
 	    } else {
@@ -413,12 +414,16 @@ module.exports = {
 		this.showCalendarViewer = true;
 	    else if (app == "timeline")
 		this.showTimeline = true;
+	    else if (app == "search")
+		this.showSearch = true;
 	},
     openSearch: function(fromRoot) {
         this.searchPath = fromRoot ? "/" + this.getContext().username
             : this.getPath() + this.selectedFiles[0].getFileProperties().name;
         this.showSearch = true;
+        this.updateHistory("search", this.getPath(), "");
         this.closeMenu();
+        this.toggleNav();
     },
 	updateCurrentDir: function() {
 	    this.updateCurrentDirectory(null);
