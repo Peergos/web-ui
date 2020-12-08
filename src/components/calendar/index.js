@@ -291,7 +291,7 @@ module.exports = {
         );
     },
     confirmDeleteCalendar: function(calendarName, deleteCalendarFunction, cancelFunction) {
-        this.confirm_message='Do you sure you want to delete calendar: ' + calendarName + " ?";
+        this.confirm_message='Are you sure you want to delete calendar: ' + calendarName + " ?";
         this.confirm_body='';
         this.confirm_consumer_cancel_func = cancelFunction;
         this.confirm_consumer_func = deleteCalendarFunction;

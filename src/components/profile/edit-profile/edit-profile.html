@@ -3,6 +3,14 @@
     <meta http-equiv="content-type" content="text/html; charset=utf-8" />
     <div class="modal-container" @click.stop style="height:100%;overflow-y:auto; max-width:1000px">
         <span @click="close" class="close">&times;</span>
+        <confirm
+                v-if="showConfirm"
+                v-on:hide-confirm="showConfirm = false"
+                :confirm_message='confirm_message'
+                :confirm_body="confirm_body"
+                :consumer_cancel_func="confirm_consumer_cancel_func"
+                :consumer_func="confirm_consumer_func">
+        </confirm>
         <div class="modal-header">
             <h2>Profile</h2>
         </div>
@@ -79,7 +87,9 @@
                 </div>
             </div>
             <div class="flex-item">
-                <div><label>Website Directory</label></div>
+                <div>
+                    <label>Website Directory</label>&nbsp;<i class="fa fa-question-circle" aria-hidden="true"  @click="showPublishHelp()" style="cursor: pointer"></i>
+                </div>
             </div>
             <div class="flex-item">
                 <div>

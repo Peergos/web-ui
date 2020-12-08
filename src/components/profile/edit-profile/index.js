@@ -33,7 +33,12 @@ module.exports = {
         EMAIL_MAX_LENGTH: 50,
         WEBROOT_MAX_LENGTH: 40,
         showSpinner: false,
-        spinnerMessage: ''
+        spinnerMessage: '',
+        showConfirm: false,
+        confirm_message: "",
+        confirm_body: "",
+        confirm_consumer_cancel_func: () => {},
+        confirm_consumer_func: () => {}
         }
     },
     props: ['context', 'profile', 'messages', 'shareWith'],
@@ -325,35 +330,47 @@ module.exports = {
                 future.complete(true);
             });
         },
+        showPublishHelp: function(future) {
+            this.showMessage("Web Directory", "Put explanation in here....");
+        },
         publishWebroot: function() {
             let that = this;
             if (this.webRoot.length > 0) {
-                that.showSpinner = true;
-                try {
-                    let dirPath = peergos.client.PathUtils.directoryToPath(this.webRoot.split('/'));
-                    this.context.getByPath(dirPath.toString()).thenApply(function(dirOpt){
-                        if (dirOpt.isEmpty()) {
-                            that.showMessage("Unable to publish Web Directory", "Web Directory not found");
-                        } else {
-                            peergos.shared.user.ProfilePaths.publishWebroot(that.context).thenApply(function(success){
-                                that.showSpinner = false;
-                                that.$emit("update-refresh");
-                                if (success) {
-                                    that.showMessage("Web Directory published", "Available at: https://" + that.context.username+".peergos.me");
-                                    that.webRootUrl = "https://" + that.context.username + ".peergos.me";
-                                } else {
-                                    that.showMessage("Unable to publish Web Directory", "");
-                                }
-                            }).exceptionally(function(throwable) {
-                              that.showMessage("Unable to publish Web Directory", throwable.getMessage());
-                              console.log(throwable.getMessage());
-                              that.showSpinner = false;
-                            });
-                        }
-                    });
-                } catch (pathException) {
-                    that.showMessage("Unable to publish Web Directory", "Web Directory not valid");
-                }
+                this.confirm_message='Are you sure you want to publish folder: ' + this.webRoot + " ?";
+                this.confirm_body='This action will make the folder and all its contents public';
+                this.confirm_consumer_cancel_func = () => { that.showConfirm = false;};
+                this.confirm_consumer_func = function() {
+                    that.showConfirm = false;
+                    that.showSpinner = true;
+                    try {
+                        let dirPath = peergos.client.PathUtils.directoryToPath(that.webRoot.split('/'));
+                        that.context.getByPath(dirPath.toString()).thenApply(function(dirOpt){
+                            if (dirOpt.isEmpty()) {
+                                that.showMessage("Unable to publish Web Directory", "Web Directory not found");
+                            } else {
+                                peergos.shared.user.ProfilePaths.publishWebroot(that.context).thenApply(function(success){
+                                    that.showSpinner = false;
+                                    that.$emit("update-refresh");
+                                    if (success) {
+                                        that.showMessage("Web Directory published", "Available at: https://" + that.context.username+".peergos.me");
+                                        that.webRootUrl = "https://" + that.context.username + ".peergos.me";
+                                        that.webRootReadyToBePublished = false;
+                                    } else {
+                                        that.showMessage("Unable to publish Web Directory", "");
+                                    }
+                                }).exceptionally(function(throwable) {
+                                  that.showMessage("Unable to publish Web Directory", throwable.getMessage());
+                                  console.log(throwable.getMessage());
+                                  that.showSpinner = false;
+                                });
+                            }
+                        });
+                    } catch (pathException) {
+                        that.showMessage("Unable to publish Web Directory", "Web Directory not valid");
+                        that.showSpinner = false;
+                    }
+                };
+                this.showConfirm = true;
             }
         },
         updateThumbnail: function(hires, thumbnail) {
