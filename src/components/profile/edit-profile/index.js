@@ -331,7 +331,12 @@ module.exports = {
             });
         },
         showPublishHelp: function(future) {
-            this.showMessage("Web Directory", "Put explanation in here....");
+            var text = "This allows you to publish a directory as a website."
+            + " This will make everything in that directory public, and it will be available from https://" + this.context.username + ".peergos.me"
+            + " or if you run a local Peergos gateway from http://" + this.context.username + ".peergos.localhost:9000"
+            + " Viewing websites via a local Peergos gateway doesn't rely on DNS or TLS certificate authorities for security or authenticity."
+            + " You can get started by adding a index.html file to your web directory.";
+            this.showMessage("Website Directory", text);
         },
         publishWebroot: function() {
             let that = this;
