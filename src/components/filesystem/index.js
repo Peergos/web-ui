@@ -545,13 +545,35 @@ module.exports = {
             return this.context;
         },
 
+        isThumbnailAvailable: function(file) {
+            let that = this;
+            if(this.path.length == 0 && file.getOwnerName() != this.username && file.loadingProfile == null) {
+                file.loadingProfile = true;
+                peergos.shared.user.ProfilePaths.getProfilePhoto(file.getOwnerName(), this.getContext()).thenApply(profilePhoto => {
+                    var base64Image = "";
+                    if (profilePhoto.isPresent()) {
+                        var str = "";
+                        let data = profilePhoto.get();
+                        for (let i = 0; i < data.length; i++) {
+                            str = str + String.fromCharCode(data[i] & 0xff);
+                        }
+                        if (data.byteLength > 0) {
+                            base64Image = "data:image/png;base64," + window.btoa(str);
+                            file.thumbnail = base64Image;
+                            that.$forceUpdate();
+                        }
+                    }
+                });
+            }
+            return file.thumbnail != null || file.getFileProperties().thumbnail.isPresent();
+        },
         getThumbnailURL: function(file) {
-	    // cache thumbnail to avoid recalculating it
-	    if (file.thumbnail != null)
-		return file.thumbnail;
-            var thumb = file.getBase64Thumbnail();
-	    file.thumbnail = thumb;
-	    return thumb;
+            // cache thumbnail to avoid recalculating it
+            if (file.thumbnail != null)
+            return file.thumbnail;
+                var thumb = file.getBase64Thumbnail();
+            file.thumbnail = thumb;
+            return thumb;
         },
         goBackToLevel: function(level) {
             // By default let's jump to the root.
