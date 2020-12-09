@@ -745,6 +745,9 @@ module.exports = {
             future.thenApply(done => {
                 this.spinnerMessage = "";
                 that.updateFiles();
+                //resetting .value tricks browser into allowing subsequent upload of same file(s)
+                document.getElementById('uploadFileInput').value = "";
+                document.getElementById('uploadDirectoriesInput').value = "";
                 let progressStore = [];
                 uploadParams.fileInfoStore.forEach(fileInfo => {
                     var thumbnailAllocation = Math.min(100000, fileInfo.file.size / 10);
