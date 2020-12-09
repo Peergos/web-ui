@@ -1878,7 +1878,7 @@ module.exports = {
             let file = this.selectedFiles[0];
             let fileProps = file.getFileProperties();
             let old_name =  fileProps.name
-                this.closeMenu();
+            this.closeMenu();
             let fileType = fileProps.isDirectory ? "directory" : "file";
 
             this.prompt_placeholder = 'New name';
@@ -1897,20 +1897,21 @@ module.exports = {
                     return;
                 that.showSpinner = true;
                 console.log("Renaming " + old_name + "to "+ newName);
-                let filePath = peergos.client.PathUtils.toPath(that.path, old_name);
-                file.rename(newName, that.currentDir, filePath, that.getContext())
-                    .thenApply(function(parent){
-			            that.currentDir = parent;
-			            that.updateFiles();
-                        this.showPrompt =  false;
-                        that.showSpinner = false;
-                    }).exceptionally(function(throwable) {
-			            that.updateFiles();
-                        that.errorTitle = "Error renaming " + fileType + ": " + old_name;
-                        that.errorBody = throwable.getMessage();
-                        that.showError = true;
-                        that.showSpinner = false;
-                    });
+                Vue.nextTick(function() {
+                    let filePath = peergos.client.PathUtils.toPath(that.path, old_name);
+                    file.rename(newName, that.currentDir, filePath, that.getContext())
+                        .thenApply(function(parent){
+                            that.currentDir = parent;
+                            that.updateFiles();
+                            that.showSpinner = false;
+                        }).exceptionally(function(throwable) {
+                            that.updateFiles();
+                            that.errorTitle = "Error renaming " + fileType + ": " + old_name;
+                            that.errorBody = throwable.getMessage();
+                            that.showError = true;
+                            that.showSpinner = false;
+                        });
+                });
             };
             this.showPrompt =  true;
         },
