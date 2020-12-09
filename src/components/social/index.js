@@ -120,7 +120,7 @@ module.exports = {
 	sendInitialFollowRequest: function() {
 	        if (this.targetUsernames.length == 0) {
     	        let singleVal = document.getElementById("friend-name-input-tokenfield").value.trim();
-    	        if (singleVal.length > 0) {
+    	        if (singleVal.length > 0 && singleVal != this.context.username) {
             	    this.targetUsernames.push(singleVal);
     	        } else {
 	                return;
