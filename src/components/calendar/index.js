@@ -111,7 +111,7 @@ module.exports = {
         if(this.importFile != null) {
             this.importICSFile();
         } else {
-            this.load(calendar, year, month, 'load');
+            this.load(calendar, year, month);
         }
 	},
     reloadCalendar: function() {
@@ -236,15 +236,17 @@ module.exports = {
                 , yearMonth: yearMonth });
         });
     },
-    load: function(calendar, year, month, messageType) {
+    load: function(calendar, year, month) {
         let that = this;
-        this.getCalendarEventsAroundMonth(calendar, year, month).thenApply(function(allEvents) {
-            that.loadEvents(year, month, messageType, allEvents.previous, allEvents.current,
-                    allEvents.next, that.context.username);
+        this.getRecurringCalendarEvents(calendar).thenApply(function(recurringEvents) {
+            that.getCalendarEventsAroundMonth(calendar, year, month).thenApply(function(allEvents) {
+                that.loadEvents(year, month, allEvents.previous, allEvents.current,
+                        allEvents.next, recurringEvents);
+            });
         });
     },
 
-    loadEvents: function(year, month, messageType, eventsPreviousMonth, eventsThisMonth, eventsNextMonth) {
+    loadEvents: function(year, month, eventsPreviousMonth, eventsThisMonth, eventsNextMonth, recurringEvents) {
         let that = this;
         let yearMonth = year * 12 + (month-1);
         setTimeout(function(){
@@ -254,9 +256,9 @@ module.exports = {
                 calendars.push({name: calendar.name, color: calendar.color});
             }
             Vue.nextTick(function() {
-                that.postMessage({type: messageType, previousMonth: eventsPreviousMonth,
-                    currentMonth: eventsThisMonth, nextMonth: eventsNextMonth, yearMonth: yearMonth
-                    , username: that.context.username, calendars: calendars});
+                that.postMessage({type: 'load', previousMonth: eventsPreviousMonth,
+                    currentMonth: eventsThisMonth, nextMonth: eventsNextMonth, recurringEvents: recurringEvents,
+                    yearMonth: yearMonth, username: that.context.username, calendars: calendars});
             });
         });
     },
@@ -297,8 +299,9 @@ module.exports = {
         this.confirm_consumer_func = deleteCalendarFunction;
         this.showConfirm = true;
     },
-    removeCalendarEvent: function(calendar, calendarName, year, month, id) {
-        let dirPath = this.findCalendarDirectory(calendarName) + "/" + year + "/" + month;
+    removeCalendarEvent: function(calendar, calendarName, year, month, id, isRecurring) {
+        let calendarDirectory = this.findCalendarDirectory(calendarName);
+        let dirPath =  isRecurring ? calendarDirectory + "/recurring" : calendarDirectory + "/" + year + "/" + month;
         let filename = id + this.CALENDAR_FILE_EXTENSION;
         let filePath = peergos.client.PathUtils.toPath(dirPath.split('/'), filename);
         return calendar.deleteInternal(filePath);
@@ -306,7 +309,7 @@ module.exports = {
     deleteEvent: function(calendar, item) {
 	    const that = this;
 	    that.displaySpinner();
-        this.removeCalendarEvent(calendar, item.calendarName, item.year, item.month, item.Id).thenApply(function(res) {
+        this.removeCalendarEvent(calendar, item.calendarName, item.year, item.month, item.Id, item.isRecurring).thenApply(function(res) {
 	        that.removeSpinner();
         }).exceptionally(function(throwable) {
             that.showMessage("Unable to delete event","Please close calendar and try again");
@@ -358,12 +361,13 @@ module.exports = {
         }
         return "default";
     },
-    updateCalendarEvent: function(calendar, calendarName, year, month, id, calendarEvent) {
-        let dirPath = this.findCalendarDirectory(calendarName) + "/" + year + "/" + month;
-        let filename = id + this.CALENDAR_FILE_EXTENSION;
+    updateCalendarEvent: function(calendar, item) {
+        let calendarDirectory = this.findCalendarDirectory(item.calendarName);
+        let dirPath =  item.isRecurring ? calendarDirectory + "/recurring" : calendarDirectory + "/" + item.year + "/" + item.month;
+        let filename = item.Id + this.CALENDAR_FILE_EXTENSION;
         let filePath = peergos.client.PathUtils.toPath(dirPath.split('/'), filename);
         let encoder = new TextEncoder();
-        let uint8Array = encoder.encode(calendarEvent);
+        let uint8Array = encoder.encode(item.item);
         let bytes = convertToByteArray(uint8Array);
         return calendar.writeInternal(filePath, bytes);
     },
@@ -371,7 +375,7 @@ module.exports = {
 	    const that = this;
 	    that.displaySpinner();
 	    if(item.calendarName == item.previousCalendarName) {
-            this.updateCalendarEvent(calendar, item.calendarName, item.year, item.month, item.Id, item.item).thenApply(function(res) {
+            this.updateCalendarEvent(calendar, item).thenApply(function(res) {
                 that.removeSpinner();
             }).exceptionally(function(throwable) {
                 that.showMessage("Unable to save event","Please close calendar and try again");
@@ -380,7 +384,7 @@ module.exports = {
             });
         } else { //move between calendars
             this.removeCalendarEvent(calendar, item.previousCalendarName, item.year, item.month, item.Id).thenApply(function(res) {
-                that.updateCalendarEvent(calendar, item.calendarName, item.year, item.month, item.Id, item.item).thenApply(function(res2) {
+                that.updateCalendarEvent(calendar, item).thenApply(function(res2) {
                     that.removeSpinner();
                 }).exceptionally(function(throwable) {
                     that.showMessage("Unable to save moved event","Please re-create event");
@@ -423,7 +427,7 @@ module.exports = {
         let that = this;
         let item = items[index];
         that.displaySpinner();
-        this.updateCalendarEvent(calendar, item.calendarName, item.year, item.month, item.Id, item.item).thenApply(function(res) {
+        this.updateCalendarEvent(calendar, item).thenApply(function(res) {
            that.saveAllEventsRecursive(calendar, items, ++index, showConfirmation);
         }).exceptionally(function(throwable) {
            that.removeSpinner();
@@ -442,7 +446,26 @@ module.exports = {
         this.confirm_consumer_func = importFunction;
         this.showConfirm = true;
     },
-
+    reduceRecurringCalendarEvents: function(calendar, calendarIndex, accumulator, future) {
+        let that = this;
+        if (calendarIndex == that.calendarProperties.calendars.length) {
+            future.complete(accumulator);
+        } else {
+            let currentCalendar = that.calendarProperties.calendars[calendarIndex];
+            let dirStr = currentCalendar.directory + "/recurring";
+            let directoryPath = peergos.client.PathUtils.directoryToPath(dirStr.split('/'));
+            calendar.dirInternal(directoryPath).thenApply(filenames => {
+                that.getEventsForMonth(calendar, currentCalendar.name, dirStr, filenames.toArray([])).thenApply(res => {
+                    that.reduceRecurringCalendarEvents(calendar, ++calendarIndex, accumulator.concat(res), future);
+                })
+            });
+        }
+    },
+    getRecurringCalendarEvents: function(calendar) {
+        let future = peergos.shared.util.Futures.incomplete();
+        this.reduceRecurringCalendarEvents(calendar, 0, [], future);
+        return future;
+    },
     reduceCalendarEventsForMonth: function(calendar, year, month, calendarIndex, accumulator, future) {
             let that = this;
             if (calendarIndex == that.calendarProperties.calendars.length) {
