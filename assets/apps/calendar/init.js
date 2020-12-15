@@ -451,7 +451,7 @@ function importICSFile(contents, username, isSharedWithUs, loadCalendarAsGuest, 
                 let dt = moment.utc(schedule.start.toUTCString());
                 let year = dt.year();
                 let month = dt.month() + 1;
-                let output = serialiseICal(schedule);
+                let output = serialiseICal(schedule, false);
                 let eventSummary = {datetime: moment(schedule.start.toUTCString()).format('YYYY MMMM Do, h:mm:ss a'), title: schedule.title};
 
                 allEvents.push({calendarName: calendarName, year: year, month: month, Id: schedule.id, item:output,
@@ -575,13 +575,13 @@ function save(schedule, previousCalendarId) {
     let dt = moment.utc(schedule.start.toUTCString());
     let year = dt.year();
     let month = dt.month() + 1;
-    let output = serialiseICal(schedule);
+    let output = serialiseICal(schedule, true);
     let calendarName = findCalendar(schedule.calendarId).name;
     let previousCalendarName = findCalendar(previousCalendarId).name;
     mainWindow.postMessage({ calendarName: calendarName, year: year, month: month, Id: schedule.id,
         item:output, previousCalendarName: previousCalendarName, type:"save"}, origin);
 }
-function serialiseICal(schedule) {
+function serialiseICal(schedule, updateTimestamp) {
     var comp = LoadedEvents[schedule.id];
     if (comp != null) {
         let vevents = comp.getAllSubcomponents('vevent');
@@ -589,6 +589,9 @@ function serialiseICal(schedule) {
         vvent.updatePropertyWithValue('summary', schedule.title);
         vvent.updatePropertyWithValue('description', schedule.raw.memo);
         vvent.updatePropertyWithValue('location', schedule.location);
+        if (updateTimestamp) {
+            vvent.updatePropertyWithValue('dtstamp', toICalTime(moment().toDate(), false));
+        }
         vvent.updatePropertyWithValue('dtstart', toICalTime(schedule.start, schedule.isAllDay));
         vvent.updatePropertyWithValue('dtend', toICalTime(schedule.end, schedule.isAllDay));
         vvent.updatePropertyWithValue('x-owner', schedule.raw.creator.name);
@@ -600,6 +603,7 @@ function serialiseICal(schedule) {
     } else {
         comp = new ICAL.Component(['vcalendar', [], []]);
         comp.updatePropertyWithValue('prodid', '-//iCal.js');
+        comp.updatePropertyWithValue('version', '2.0');
         let vevent = new ICAL.Component('vevent'),
         event = new ICAL.Event(vevent);
         event.uid = schedule.id;
@@ -609,6 +613,7 @@ function serialiseICal(schedule) {
         event.startDate = toICalTime(schedule.start, schedule.isAllDay);
         event.endDate = toICalTime(schedule.end, schedule.isAllDay);
         vevent.addPropertyWithValue('x-owner', schedule.raw.creator.name);
+        vevent.addPropertyWithValue('dtstamp', toICalTime(moment().toDate(), false));
         if(schedule.state == CALENDAR_EVENT_CANCELLED) { //CANCELLED
             vevent.addPropertyWithValue('status', "CANCELLED");
         }
@@ -993,7 +998,7 @@ function refreshScheduleVisibility() {
   });
 }
 function downloadEvent(schedule) {
-    let event = serialiseICal(schedule);
+    let event = serialiseICal(schedule, false);
     mainWindow.postMessage({event: event, title: schedule.title, type: 'downloadEvent'}, origin);
 }
 function shareCalendarEvent(schedule) {
