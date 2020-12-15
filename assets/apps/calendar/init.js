@@ -584,12 +584,14 @@ function save(schedule, previousCalendarId) {
 function serialiseICal(schedule, updateTimestamp) {
     var comp = LoadedEvents[schedule.id];
     if (comp != null) {
+        comp.updatePropertyWithValue('prodid', '-//iCal.js');
+        comp.updatePropertyWithValue('version', '2.0');
         let vevents = comp.getAllSubcomponents('vevent');
         let vvent = vevents[0];
         vvent.updatePropertyWithValue('summary', schedule.title);
         vvent.updatePropertyWithValue('description', schedule.raw.memo);
         vvent.updatePropertyWithValue('location', schedule.location);
-        if (updateTimestamp) {
+        if (updateTimestamp || vvent.getFirstPropertyValue("dtstamp") == null) {
             vvent.updatePropertyWithValue('dtstamp', toICalTime(moment().toDate(), false));
         }
         vvent.updatePropertyWithValue('dtstart', toICalTime(schedule.start, schedule.isAllDay));
