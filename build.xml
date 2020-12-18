@@ -183,7 +183,7 @@
     <mkdir dir="META-INF"/>
     <echo file="META-INF/MANIFEST.MF">Main-Class: peergos.server.Main
 Class-Path: .
-Version: ${repository.version}</echo>
+Version: web-ui/${repository.version}</echo>
     <zip destfile="${server}/Peergos.jar" basedir="." includes="META-INF/MANIFEST.MF" update="true"></zip>
     <!-- Canonicalise jar -->
     <exec executable="java">
