@@ -62,6 +62,33 @@ let colorPickerElement = document.getElementById('color-picker');
 
 var calendarRequiresReload = false;
 
+//--rrule
+let rrule = "";
+var rrule_handler = null;
+var previousRepeatCondition = "";
+let suffix = ["th", "st", "nd", "rd", "th", "th", "th", "th", "th", "th"];
+let byDayLongLabelParts = "Sunday,Monday,Tuesday,Wednesday,Thursday,Friday,Saturday".split(',');
+let monthLongLabelParts = "January,February,March,April,May,June,July,August,September,October,November,December".split(',');
+let monthShortLabelParts = "Jan,Feb,Mar,Apr,May,Jun,Jul,Aug,Sep,Oct,Nov,Dec".split(',');
+let byDayLabelParts = "SU,MO,TU,WE,TH,FR,SA".split(',');
+let byMonthDayLabelParts = "1SU,1MO,1TU,1WE,1TH,1FR,1SA,2SU,2MO,2TU,2WE,2TH,2FR,2SA,3SU,3MO,3TU,3WE,3TH,3FR,3SA,4SU,4MO,4TU,4WE,4TH,4FR,4SA,5SU,5MO,5TU,5WE,5TH,5FR,5SA,-1SU,-1MO,-1TU,-1WE,-1TH,-1FR,-1SA".split(',');
+
+let monthLabels = "";
+for(var i = 1; i < 13; i++) {
+    monthLabels = monthLabels + i + " ";
+}
+let monthLabelParts = monthLabels.trim().split(" ");
+
+let dateLabels = "";
+for(var i = 1; i < 32; i++) {
+    dateLabels = dateLabels + i + " ";
+}
+byDateLabelParts = dateLabels.trim().split(" ");
+
+var outputRRule = "";
+var outputRRuleText = "";
+//--end-rrule
+
 function buildUI(isCalendarReadonly) {
     let uiDiv = document.getElementById("ui");
     uiDiv.removeAttribute("style");
@@ -1485,3 +1512,827 @@ Window.toggleCalendarsView = function(event) {
     }
     event.stopPropagation();
 };
+
+//--RRULE
+function changeRepeatOption() {
+    let selectedValue = document.getElementById('repeat-dropdown').value;
+    let now = new Date();
+    if (selectedValue == "no-repeat") {
+        closeCustomRRULEPage();
+        return;
+    } else if (selectedValue == "DAILY") {
+        rrule = "FREQ=DAILY;INTERVAL=1";
+    } else if (selectedValue == "WEEKDAY") {
+        rrule = "FREQ=WEEKLY;INTERVAL=1;BYDAY=MO,TU,WE,TH,FR";
+    } else if (selectedValue == "WEEKLY") {
+        let dayOfWeek = now.getDay();
+        rrule = "FREQ=WEEKLY;INTERVAL=1;BYDAY=" + byDayLabelParts[dayOfWeek];
+    } else if (selectedValue == "YEARLY") {
+        let dayOfMonth = now.getDate();
+        let month = now.getMonth() + 1;
+        rrule = "FREQ=YEARLY;INTERVAL=1;BYMONTH=" + month + ";BYMONTHDAY=" + dayOfMonth;
+    } else if (selectedValue == "CUSTOM") {
+        console.log("custom");
+        document.getElementById("rrule-modal").style.display = "block";
+    }
+    processRRULE();
+}
+function closeCustomRRULEPage() {
+    rrule_handler = null;
+    document.getElementById('rrule-modal').style.display = "none";
+    document.getElementById('no-repeat').selected = true;
+    result();
+}
+function setRRule() {
+    document.getElementById('rrule-modal').style.display = "none";
+    createRepeatDropdown();
+}
+function createRepeatDropdown() {
+
+    let now = new Date();
+    let dayOfWeek = now.getDay();
+    let dayOfMonth = now.getDate();
+    let month = now.getMonth();
+    let ending = dayOfMonth == 11 || dayOfMonth == 12 || dayOfMonth == 13 ? "th" : suffix[dayOfMonth % 10];
+    let asStr = dayOfMonth + ending;
+
+    var parent = document.getElementById("repeat-div");
+
+    var existingDropdown = document.getElementById("repeat-dropdown");
+    if (existingDropdown != null) {
+        parent.removeChild(existingDropdown);
+    }
+
+    var dropdown = document.createElement("select");
+    dropdown.id='repeat-dropdown';
+    dropdown.name='repeat-dropdown';
+    dropdown.addEventListener('change', function(){changeRepeatOption();});
+
+    if (rrule != null && rrule.length > 0) {
+        var custom = document.createElement("option");
+        custom.id='repeat-rrule';
+        custom.value=rrule;
+        custom.innerText = generateRRuleText();
+        dropdown.appendChild(custom);
+    }
+
+    var noRepeat = document.createElement("option");
+    noRepeat.id='no-repeat';
+    noRepeat.value='no-repeat';
+    noRepeat.innerText = "Does not repeat";
+    dropdown.appendChild(noRepeat);
+
+    var daily = document.createElement("option");
+    daily.id='repeat-daily';
+    daily.value='DAILY';
+    daily.innerText = "Daily";
+    dropdown.appendChild(daily);
+
+    var weekday = document.createElement("option");
+    weekday.id='repeat-weekday';
+    weekday.value='WEEKDAY';
+    weekday.innerText = "Every weekday (Monday to Friday)";
+    dropdown.appendChild(weekday);
+
+    var weekly = document.createElement("option");
+    weekly.id='repeat-weekly';
+    weekly.value='WEEKLY';
+    weekly.innerText = "Weekly on " + byDayLongLabelParts[dayOfWeek]
+    dropdown.appendChild(weekly);
+
+    var yearly = document.createElement("option");
+    yearly.id='repeat-yearly';
+    yearly.value='YEARLY';
+    yearly.innerText = "Annually on " + asStr + " of " + monthLongLabelParts[month];
+    dropdown.appendChild(yearly);
+
+    var custom = document.createElement("option");
+    custom.id='repeat-custom';
+    custom.value='CUSTOM';
+    custom.innerText = "Custom...";
+    dropdown.appendChild(custom);
+
+    parent.appendChild(dropdown);
+}
+function resetRRULEUI() {
+    document.getElementById('freq-daily').selected = true;
+    document.getElementById('freq-monthly-by').style.display = 'none';
+    document.getElementById('daily-interval').style.display = 'none';
+    document.getElementById('repeat-occurrences-counter').style.display = 'none';
+    document.getElementById('repeat-until').style.display = 'none';
+
+    document.getElementById('weekly-interval').style.display = 'none';
+    document.getElementById('by-day-choices').style.display = 'none';
+
+    document.getElementById('monthly-interval').style.display = 'none';
+    document.getElementById('monthly-by-day-choices').style.display = 'none';
+    document.getElementById('monthly-by-date-choices').style.display = 'none';
+
+    document.getElementById('yearly-interval').style.display = 'none';
+    document.getElementById('yearly-month-choice').style.display = 'none';
+
+    document.getElementById('daily-frequency').value = '';
+    document.getElementById('weekly-frequency').value = '';
+    for(var i = 0 ; i < byDayLabelParts.length; i++) {
+        document.getElementById('by-day-' + byDayLabelParts[i]).checked = false;
+    }
+    document.getElementById('monthly-frequency').value = '';
+    document.getElementById('yearly-frequency').value = '';
+    document.getElementById('yearly-month').value = '';
+    document.getElementById('monthly-day').value = "";
+    document.getElementById('monthly-date').value = "";
+}
+function changeFrequency() {
+    let freq = document.getElementById('frequency-dropdown').value;
+    console.log("frequency-dropdown=" + freq);
+    rrule = "FREQ=" + freq + ";" + removePart("FREQ");
+    processRRULE();
+}
+function changeMonthlyBy() {
+    let freq = document.getElementById('frequency-dropdown').value;
+    let by = document.getElementById('frequency-dropdown-monthly').value;
+    console.log("frequency-dropdown-monthly=" + by);
+
+    let val = "";
+    var updatedRRule = rrule;
+    if (by == "BYDAY") {
+        val = "1MO";
+        updatedRRule = removePart("BYMONTHDAY");
+    } else if(by == "BYMONTHDAY") {
+        let now = new Date();
+        val = now.getDate();
+        updatedRRule = removePart("BYDAY");
+    }
+    rrule = updatedRRule + by + "=" + val;
+    processRRULE();
+}
+function removePart(paramName) {
+    let remainingPartsBuffer = "";
+    let parts = rrule.split(';');
+    for(var i = 0; i < parts.length; i++) {
+        let part = parts[i];
+        if (part != null && part.length > 0) {
+            let paramKV = part.split('=');
+            if(paramName != paramKV[0].toUpperCase()){
+                remainingPartsBuffer = remainingPartsBuffer + part + " ";
+            }
+        }
+    }
+    return remainingPartsBuffer.split(" ").join(";");
+}
+function setHandler(initFunc, handlerFunc) {
+    initFunc();
+	rrule_handler = handlerFunc;
+	result();
+}
+function result() {
+	if(rrule_handler != null) {
+	    let result = rrule_handler();
+        console.log("output=" + result);
+	    outputRRule = result;
+	    rrule = result;
+	    outputRRuleText = generateRRuleText();
+    } else {
+	    outputRRule = "";
+	    outputRRuleText = "";
+	    rrule = "";
+    }
+}
+
+function showError(err) {
+    console.log("err=" + err);
+}
+function extractPart(paramName, validator) {
+    let parts = rrule.split(';');
+    for(var i = 0; i < parts.length; i++) {
+        let part = parts[i];
+        if (part != null && part.length > 0) {
+            let paramKV = part.split('=');
+            if(paramName == paramKV[0].toUpperCase()){
+                return validator(paramKV[1].trim());
+            }
+        }
+    }
+    return validator("");
+}
+function hasPart(paramName) {
+    let parts = rrule.split(';');
+    for(var i = 0; i < parts.length; i++) {
+        let part = parts[i];
+        if (part != null && part.length > 0) {
+            let paramKV = part.split('=');
+            if(paramName == paramKV[0].toUpperCase()){
+                return true;
+            }
+        }
+    }
+    return false;
+}
+function generateRRuleText() {
+    rrule;
+    let buffer = "";
+    let frequency = extractPart("FREQ", function(val){return val;});
+    let interval = extractPart("INTERVAL", function(val){return val;});
+    if (interval == 1) {
+        if(frequency == "DAILY") {
+            buffer = "Daily";
+        } else if(frequency == "WEEKLY") {
+            buffer = "Weekly";
+        } else if(frequency == "MONTHLY") {
+            buffer = "Monthly";
+        } else if(frequency == "YEARLY") {
+            buffer = "Yearly";
+        }
+    } else {
+        if(frequency == "DAILY") {
+            buffer = document.getElementById('daily-frequency-' + interval).innerText;
+        } else if(frequency == "WEEKLY") {
+            buffer = document.getElementById('weekly-frequency-' + interval).innerText;
+        } else if(frequency == "MONTHLY") {
+            buffer = document.getElementById('monthly-frequency-' + interval).innerText;
+        } else if(frequency == "YEARLY") {
+            buffer = document.getElementById('yearly-frequency-' + interval).innerText;
+        }
+    }
+
+    let byDay = extractPart("BYDAY", function(val){return val;});
+    if (byDay.length > 0) {
+        let values = byDay.trim().split(",");
+        if(frequency == "WEEKLY") {
+            var days = "";
+            var weekdays = true;
+            for(var j = 1 ; j <= 5; j++) {
+                var foundDay = false;
+                for(var i = 0 ; i < values.length; i++) {
+                    if(values[i] == byDayLabelParts[j]) {
+                        foundDay = true;
+                        break;
+                    }
+                }
+                if (!foundDay) {
+                    weekdays = false;
+                    break;
+                }
+            }
+            for(var j = 0 ; j <= 6; j+=6) {
+                var foundDay = false;
+                for(var i = 0 ; i < values.length; i++) {
+                    if(values[i] == byDayLabelParts[j]) {
+                        foundDay = true;
+                        break;
+                    }
+                }
+                if (foundDay) {
+                    weekdays = false;
+                    break;
+                }
+            }
+            if (weekdays) {
+                buffer = buffer + " (Monday to Friday)";
+            } else {
+                for(var i = 0 ; i < values.length; i++) {
+                    days = days + document.getElementById('by-day-' + values[i]).value + " ";
+                }
+                buffer = buffer + " on " + days.trim().split(" ").join(", ");
+            }
+        } else if(frequency == "MONTHLY" || frequency == "YEARLY") {
+            var monthlyDays = "";
+            for(var i = 0 ; i < values.length; i++) {
+                monthlyDays = monthlyDays + document.getElementById('monthly-day-' + values[i]).getAttribute("name") + "|";
+            }
+            buffer = buffer + " on the " + monthlyDays.trim().split("|").join(", ").trim();
+            buffer = buffer.substring(0, buffer.length -1);
+        }
+    }
+    byMonth = extractPart("BYMONTH", function(val){return val.trim().split(",")[0];});
+    if (byMonth.length > 0) {
+        let values = byMonthDay.trim().split(",");
+        buffer = buffer + " in " + monthShortLabelParts[byMonth-1] ;
+    }
+    byMonthDay = extractPart("BYMONTHDAY", function(val){return val;});
+    if (byMonthDay.length > 0) {
+        let values = byMonthDay.trim().split(",");
+        if(frequency == "MONTHLY") {
+            buffer = buffer + " on the " + document.getElementById('monthly-date-' + values[0]).innerText;
+        }else if(frequency == "YEARLY") {
+            buffer = "Annually on " + monthShortLabelParts[byMonth-1] + " " + document.getElementById('monthly-date-' + values[0]).innerText;
+            buffer = buffer.substring(0, buffer.length - 4); //removing _day
+        }
+    }
+    let until = extractPart("UNTIL", function(val){return val;});
+    if (until.length > 0) {
+        buffer = buffer + " until " + formatDateString(until);
+    }
+    let occurrences = extractPart("COUNT", function(val){return val;});
+    if (occurrences.length > 0 && occurrences != "1") {
+        buffer = buffer + " repeated for " + occurrences + " occurrences";
+    }
+
+    return buffer;
+}
+function formatDateString(yyyymmdd) {
+    return yyyymmdd.substring(0,4) + '-' + yyyymmdd.substring(4,6) + '-' + yyyymmdd.substring(6,8);
+}
+function parse(rruleToParse) {
+    if (rruleToParse == null || rruleToParse.length == 0) {
+        return false;
+    }
+    rrule = rruleToParse;
+    let frequency = extractPart("FREQ",
+        function(val){
+            return frequencyValidator(val) ? val : null;
+        }
+    );
+    if (frequency == null) {
+        showError("Frequency specified not supported");
+        return false;
+    }
+    let intervalOK = extractPart("INTERVAL",
+        function(val){
+            if(frequency == "DAILY") {
+                return numericValidator(val, 1, 30);
+            } else if(frequency == "WEEKLY") {
+                return numericValidator(val, 1, 26)
+            } else if(frequency == "MONTHLY") {
+                return monthStepsValidator(val);
+            } else if(frequency == "YEARLY") {
+                return numericValidator(val, 1, 10);
+            }
+        }
+    );
+    if (!intervalOK) {
+        showError("Interval specified not supported");
+        return false;
+    }
+    var untilProvided = false;
+    let untilOK = extractPart("UNTIL",
+        function(val){
+            if (val.length == 0) {
+                return true;
+            } else {
+                untilProvided = true;
+                return dateValidator(val);
+            }
+        }
+    );
+    if (!intervalOK) {
+        showError("Until specified not supported");
+        return false;
+    }
+    var countProvided = false;
+    let countOK = extractPart("COUNT",
+        function(val){
+            if (val.length == 0) {
+                return true;
+            } else {
+                countProvided = true;
+                return numericValidator(val, 1, 999);
+            }
+        }
+    );
+    if (!countOK) {
+        showError("Count specified not supported");
+        return false;
+    }
+    if (untilProvided && countProvided) {
+        return false;
+    }
+    var byDaySet = false;
+    let byDayOK = extractPart("BYDAY",
+        function(val){
+            if (val.length == 0) {
+                return true;
+            }
+            let values = val.trim().split(",");
+            byDaySet = true;
+            var parts = [];
+            if(frequency == "DAILY") {
+                return false;
+            } else if(frequency == "WEEKLY") {
+                parts = byDayLabelParts;
+            } else if(frequency == "MONTHLY" || frequency == "YEARLY") {
+                if (values.length > 1) {
+                    return false;
+                }
+                parts = byMonthDayLabelParts;
+            }
+            return confirmValues(values, parts);
+        }
+    );
+    if (!byDayOK) {
+        showError("ByDay specified not supported");
+        return;
+    }
+    var byMonthDaySet = false;
+    let byMonthDayOK = extractPart("BYMONTHDAY",
+        function(val){
+            if (val.length == 0) {
+                return true;
+            }
+            let values = val.trim().split(",");
+            byMonthDaySet = true;
+            var parts = [];
+            if(frequency == "DAILY" || frequency == "WEEKLY") {
+                return false;
+            } else if(frequency == "MONTHLY" || frequency == "YEARLY") {
+                if (values.length > 1) {
+                    return false;
+                }
+                parts = byDateLabelParts;
+            }
+            return confirmValues(values, parts);
+        }
+    );
+    if (!byMonthDayOK) {
+        showError("ByMonthDay specified not supported");
+        return false;
+    }
+    var byMonthSet = false;
+    let byMonthOK = extractPart("BYMONTH",
+        function(val){
+            if (val.length == 0) {
+                return true;
+            }
+            let values = val.trim().split(",");
+            byMonthSet = true;
+            var parts = [];
+            if(frequency == "DAILY" || frequency == "WEEKLY" || frequency == "MONTHLY") {
+                return false;
+            } else if(frequency == "YEARLY") {
+                if (values.length > 1) {
+                    return false;
+                }
+                parts = monthLabelParts;
+            }
+            return confirmValues(values, parts);
+        }
+    );
+    if (!byMonthOK) {
+        showError("ByMonth specified not supported");
+        return false;
+    }
+    if (frequency == "YEARLY") {
+        if (!( (byDaySet || byMonthDaySet) && byMonthSet)) {
+            return false;
+        }
+    }
+    if (byDaySet && byMonthDaySet) {
+        return false;
+    }
+    return true;
+}
+function confirmValues(values, parts) {
+    for(var j = 0; j < values.length; j++) {
+        let currentVal = values[j];
+        var found = false;
+        for(var i = 0; i < parts.length; i++) {
+            if (parts[i] == currentVal) {
+                found = true;
+                break;
+            }
+        }
+        if (!found) {
+            return false;
+        }
+    }
+    return true;
+}
+function frequencyValidator(val) {
+    let freq = val.toUpperCase();
+    return (freq == 'DAILY' || freq == 'WEEKLY' || freq == 'MONTHLY' || freq == 'YEARLY');
+}
+function numericValidator(val, min, max) {
+    try {
+        let num = new Number(val);
+        if (num < min) {
+            return false;
+        } else if(num > max) {
+            return false;
+        }
+        return true;
+    } catch (ex) {
+        return false;
+    }
+}
+function monthStepsValidator(val) {
+    let monthLabels = "18 24 36 48 ";
+    for(var i = 1; i < 13; i++) {
+        monthLabels = monthLabels + i + " ";
+    }
+    let monthLabelParts = monthLabels.trim().split(" ");
+    for(var i = 0; i < monthLabelParts.length; i++) {
+        if (monthLabelParts[i] == val) {
+            return true;
+        }
+    }
+    return false;
+}
+function isDigit(c) {
+    return c >= '0' && c <= '9'
+}
+//ie 20201218T000000Z
+function dateValidator(val) {
+    if (val.charAt(8) != 'T') {
+        return false;
+    }
+    if (!val.endsWith('Z')){
+        return false;
+    }
+    for(var i = 0; i < 8; i++) {
+        if (!isDigit(val.charAt(i))){
+            return false;
+        }
+    }
+    for(var i = 9; i < 9+6; i++) {
+        if (!(isDigit(val.charAt(i)) && val[i] == "0")){
+            return false;
+        }
+    }
+    return true;
+}
+function initRepeatCondition() {
+    var untilProvided = false;
+    let until = extractPart("UNTIL",
+        function(val){
+            if (dateValidator(val)) {
+                untilProvided = true;
+                return val;
+             }else {
+                return new Date().toISOString().split("-").join("");
+            }
+        }
+    );
+    document.getElementById('until-date').value = formatDateString(until.split('T')[0]);
+
+    var countProvided = false;
+    let count = extractPart("COUNT",
+        function(val){
+            if (numericValidator(val, 1, 999)) {
+                countProvided = true;
+                return val;
+            } else {
+                return 1;
+            }
+        }
+    );
+    document.getElementById('repeat-counter').value = count;
+    let untilElement = document.getElementById('repeat-until');
+    let occurrencesElement = document.getElementById('repeat-occurrences-counter');
+    if (untilProvided) {
+        occurrencesElement.style.display = 'none';
+        untilElement.style.display = '';
+        document.getElementById('repeat-condition-until').checked = true;
+    }else if(countProvided) {
+        occurrencesElement.style.display = '';
+        untilElement.style.display = 'none';
+        document.getElementById('repeat-condition-occurrences').checked = true;
+    } else { //forever
+        occurrencesElement.style.display = 'none';
+        untilElement.style.display = 'none';
+        document.getElementById('repeat-condition-forever').checked = true;
+    }
+}
+function handleRepeatCondition() {
+    let untilElement = document.getElementById('repeat-until');
+    let occurrencesElement = document.getElementById('repeat-occurrences-counter');
+    let repeatCondition = document.querySelector('input[name="repeat-condition"]:checked').value;
+    var initialiseRepeatCondition = false;
+    if (previousRepeatCondition != repeatCondition) {
+        previousRepeatCondition = repeatCondition;
+        initialiseRepeatCondition = true;
+    }
+    if (initialiseRepeatCondition) {
+        occurrencesElement.style.display = 'none';
+        untilElement.style.display = 'none';
+    }
+
+    if (repeatCondition == "forever") {
+        return "";
+    } else if (repeatCondition == "occurrences") {
+        let counterElement = document.getElementById('repeat-counter');
+        if (initialiseRepeatCondition) {
+            occurrencesElement.style.display = '';
+        }
+        let occurrencesCounter = counterElement.value;
+        if (numericValidator(occurrencesCounter, 1, 999)) {
+            return ";COUNT=" + occurrencesCounter;
+        } else {
+            showError("Occurrence value is invalid");
+        }
+    } else if (repeatCondition == "until") {
+        let dateElement = document.getElementById('until-date');
+        if (initialiseRepeatCondition) {
+            untilElement.style.display = '';
+        }
+        let untilDate = dateElement.value;
+        if (untilDate == "") {
+            showError("Please select Date");
+        } else {
+            let dateParts = untilDate.split('-');
+            let formattedDate = dateParts[0] + dateParts[1] + dateParts[2] + "T000000Z";
+            return ";UNTIL=" + formattedDate;
+        }
+    }
+}
+function processRRULE() {
+    resetRRULEUI();
+    if (rrule== "" || rrule.includes("FREQ=DAILY")) {
+        setHandler(function() {
+            document.getElementById('freq-daily').selected = true;
+            document.getElementById('daily-interval').style.display = '';
+            let interval = extractPart("INTERVAL",
+                function(val){
+                    return numericValidator(val, 1, 30) ? val : 1;
+                }
+            );
+            document.getElementById('daily-frequency-' + interval).selected = true;
+            initRepeatCondition();
+        }, function() {
+            let rruleBuffer = "FREQ=DAILY"
+            let dailyFrequency = document.getElementById('daily-frequency').value;
+            rruleBuffer = rruleBuffer + ";INTERVAL=" + dailyFrequency;
+            rruleBuffer = rruleBuffer + handleRepeatCondition();
+	        return rruleBuffer;
+        });
+    } else if(rrule.includes("FREQ=WEEKLY")) {
+        setHandler(function() {
+            document.getElementById('freq-weekly').selected = true;
+            document.getElementById('weekly-interval').style.display = '';
+            document.getElementById('by-day-choices').style.display = '';
+            let interval = extractPart("INTERVAL",
+                function(val){
+                    return numericValidator(val, 1, 26) ? val : 1;
+                }
+            );
+            document.getElementById('weekly-frequency-' + interval).selected = true;
+            initCheckBoxes('by-day', "BYDAY");
+            initRepeatCondition();
+        }, function() {
+            let rruleBuffer = "FREQ=WEEKLY"
+            let weeklyFrequency = document.getElementById('weekly-frequency').value;
+            rruleBuffer = rruleBuffer + ";INTERVAL=" + weeklyFrequency;
+
+            rruleBuffer = rruleBuffer + handleCheckBoxes(byDayLabelParts, 'by-day', 'BYDAY');
+            rruleBuffer = rruleBuffer + handleRepeatCondition();
+	        return rruleBuffer;
+        });
+    } else if(rrule.includes("FREQ=MONTHLY")) {
+        var hasByDay = false;
+        var hasByDate = false;
+        document.getElementById('freq-monthly-by').style.display = '';
+        document.getElementById('freq-monthly').selected = true;
+        setHandler(function() {
+            document.getElementById('monthly-interval').style.display = '';
+            if (hasPart("BYMONTHDAY")) {
+                hasByDate = true;
+                document.getElementById('freq-by-date').selected = true;
+                document.getElementById('monthly-by-date-choices').style.display = '';
+            } else {
+                hasByDay = true;
+                document.getElementById('freq-by-day').selected = true;
+                document.getElementById('monthly-by-day-choices').style.display = '';
+            }
+            let interval = extractPart("INTERVAL",
+                function(val){
+                    return monthStepsValidator(val) ? val : 1;
+                }
+            );
+            document.getElementById('monthly-frequency-' + interval).selected = true;
+            if (hasByDay) {
+                initSelect('monthly-day', "BYDAY", function() {
+                    return "1MO";
+                });
+            } else if (hasByDate) {
+                initSelect('monthly-date', "BYMONTHDAY", function() {
+                    return (new Date()).getDate();
+                });
+            }
+            initRepeatCondition();
+        }, function() {
+            let rruleBuffer = "FREQ=MONTHLY"
+            let monthlyFrequency = document.getElementById('monthly-frequency').value;
+            rruleBuffer = rruleBuffer + ";INTERVAL=" + monthlyFrequency;
+            if (hasByDay) {
+                rruleBuffer = rruleBuffer + handleSelect(byMonthDayLabelParts, 'monthly-day', 'BYDAY');
+            } else if (hasByDate) {
+                rruleBuffer = rruleBuffer + handleSelect(byDateLabelParts, 'monthly-date', 'BYMONTHDAY');
+            }
+            rruleBuffer = rruleBuffer + handleRepeatCondition();
+	        return rruleBuffer;
+        });
+    } else if(rrule.includes("FREQ=YEARLY")) {
+        var hasByDay = false;
+        var hasByDate = false;
+        document.getElementById('freq-monthly-by').style.display = '';
+        document.getElementById('freq-yearly').selected = true;
+        setHandler(function() {
+            document.getElementById('yearly-interval').style.display = '';
+            if (hasPart("BYMONTHDAY")) {
+                hasByDate = true;
+                document.getElementById('freq-by-date').selected = true;
+                document.getElementById('yearly-month-choice').style.display = '';
+                document.getElementById('monthly-by-date-choices').style.display = '';
+            } else {
+                hasByDay = true;
+                document.getElementById('freq-by-day').selected = true;
+                document.getElementById('yearly-month-choice').style.display = '';
+                document.getElementById('monthly-by-day-choices').style.display = '';
+            }
+            let interval = extractPart("INTERVAL",
+                function(val){
+                    return numericValidator(val, 1, 10) ? val : 1;
+                }
+            );
+            document.getElementById('yearly-frequency-' + interval).selected = true;
+            initSelect('yearly-month', "BYMONTH", function() {
+                    return (new Date()).getMonth() + 1;
+            });
+            if (hasByDay) {
+                initSelect('monthly-day', "BYDAY", function() {
+                    return "1MO";
+                });
+            } else if (hasByDate) {
+                initSelect('monthly-date', "BYMONTHDAY", function() {
+                    return (new Date()).getDate();
+                });
+            }
+            initRepeatCondition();
+        }, function() {
+            let rruleBuffer = "FREQ=YEARLY"
+            let yearlyFrequency = document.getElementById('yearly-frequency').value;
+            rruleBuffer = rruleBuffer + ";INTERVAL=" + yearlyFrequency;
+            let monthLabels = "";
+            rruleBuffer = rruleBuffer + handleSelect(monthLabelParts, 'yearly-month', 'BYMONTH');
+            if (hasByDay) {
+                rruleBuffer = rruleBuffer + handleSelect(byMonthDayLabelParts, 'monthly-day', 'BYDAY');
+            } else if (hasByDate) {
+                rruleBuffer = rruleBuffer + handleSelect(byDateLabelParts, 'monthly-date', 'BYMONTHDAY');
+            }
+            rruleBuffer = rruleBuffer + handleRepeatCondition();
+	        return rruleBuffer;
+        });
+    }
+}
+function initCheckBoxes(prefix, partName, defaultFunc) {
+    initChoices(true, prefix, partName, defaultFunc);
+}
+function initSelect(prefix, partName, defaultFunc) {
+    initChoices(false, prefix, partName, defaultFunc);
+}
+function initChoices(isCheckBoxes, prefix, partName, defaultFunc) {
+    let byDay = extractPart(partName,
+        function(val){
+            return val;
+        }
+    );
+    if (byDay.length > 0) {
+        let byDayParts = byDay.split(',');
+        for(var i = 0 ; i < byDayParts.length; i++) {
+            let element = document.getElementById(prefix + '-' + byDayParts[i]);
+            if (element != null) {
+                if (isCheckBoxes) {
+                    element.checked = true;
+                } else {
+                    element.selected = true;
+                }
+            }
+        }
+    } else {
+        if (defaultFunc != null) {
+            let val = defaultFunc();
+            let element = document.getElementById(prefix + '-' + val);
+            if (isCheckBoxes) {
+                element.checked = true;
+            } else {
+                element.selected = true;
+            }
+        }
+    }
+}
+function handleCheckBoxes(labelParts, prefix, partName) {
+    return handleChoices(labelParts, prefix, partName)
+}
+function handleSelect(labelParts, prefix, partName) {
+    return handleChoices(labelParts, prefix, partName)
+}
+function handleChoices(labelParts, prefix, partName) {
+    var byDayBuffer = "";
+    for(var i = 0 ; i < labelParts.length; i++) {
+        let element = document.getElementById(prefix + '-' + labelParts[i]);
+        if(element.checked || element.selected) {
+            byDayBuffer = byDayBuffer + labelParts[i] + " ";
+        }
+    }
+    byDayBuffer = byDayBuffer.trim().split(" ").join(",");
+    if (byDayBuffer.length > 0) {
+        return ";" + partName + "=" + byDayBuffer;
+    }
+    return "";
+}
+/* TODO RRULE
+let input = "";
+createRepeatDropdown();
+if(parse(input)) {
+    processRRULE();
+}
+*/
