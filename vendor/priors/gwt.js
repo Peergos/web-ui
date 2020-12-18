@@ -27,7 +27,6 @@ function getProm(url) {
 }
 
 function getWithHeadersProm(url, headers) {
-    console.log("getWithHeadersProm " + url);
     var future = peergos.shared.util.Futures.incomplete();
     var req = new XMLHttpRequest();
     req.open('GET', url);
@@ -41,7 +40,6 @@ function getWithHeadersProm(url, headers) {
     }
     
     req.onload = function() {
-	console.log("http get returned retrieving " + url);
         // This is called even on 404 etc
         // so check the status
         if (req.status == 200) {
@@ -62,7 +60,6 @@ function getWithHeadersProm(url, headers) {
 }
 
 function postProm(url, data) {
-    console.log("postProm " + url);
     var future = peergos.shared.util.Futures.incomplete();
     new Promise(function(resolve, reject) {
 	var req = new XMLHttpRequest();
@@ -70,7 +67,6 @@ function postProm(url, data) {
 	req.responseType = 'arraybuffer';
 	
 	req.onload = function() {
-	    console.log("http post returned retrieving " + url);
             // This is called even on 404 etc
             // so check the status
             if (req.status == 200) {
@@ -102,7 +98,6 @@ function postProm(url, data) {
 }
 
 function postMultipartProm(url, dataArrays) {
-    console.log("postMultipartProm " + url);
     var future = peergos.shared.util.Futures.incomplete();
     new Promise(function(resolve, reject) {
 	var req = new XMLHttpRequest();
@@ -110,7 +105,6 @@ function postMultipartProm(url, dataArrays) {
 	req.responseType = 'arraybuffer';
 	
 	req.onload = function() {
-	    console.log("http post returned retrieving " + url);
             // This is called even on 404 etc
             // so check the status
             if (req.status == 200) {
@@ -148,7 +142,6 @@ function postMultipartProm(url, dataArrays) {
 }
 
 function putProm(url, data, headers) {
-    console.log("putProm " + url);
     var future = peergos.shared.util.Futures.incomplete();
     new Promise(function(resolve, reject) {
 	var req = new XMLHttpRequest();
@@ -163,7 +156,6 @@ function putProm(url, data, headers) {
 	}
 	
 	req.onload = function() {
-	    console.log("http put returned retrieving " + url);
             // This is called even on 404 etc
             // so check the status
             if (req.status == 200) {
@@ -229,8 +221,6 @@ function decodeBase64(s) {
 function hashToKeyBytesProm(username, password, algorithm) {
     var future = peergos.shared.util.Futures.incomplete();
     new Promise(function(resolve, reject) {
-        console.log("making scrypt request");
-        
         var t1 = Date.now();
         var hash = sha256(decodeUTF8(password));
         var salt = decodeUTF8(username)
