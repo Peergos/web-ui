@@ -142,7 +142,23 @@
     </exec>
   </target>
 
-  <target name="dist" depends="clean, clean_server, compile_server, ui" description="regenerate the server">
+  <available file=".git" type="dir" property="git.present"/>
+
+  <target name="git.revision" description="Store git revision in ${repository.version}" if="git.present">
+    <exec executable="git" outputproperty="git.revision" failifexecutionfails="false" errorproperty="">
+      <arg value="log"/>
+      <arg value="-1"/>
+      <arg value="--pretty=format:%H"/>
+    </exec>
+    <condition property="repository.version" value="${git.revision}" else="unknown">
+      <and>
+        <isset property="git.revision"/>
+        <length string="${git.revision}" trim="yes" length="0" when="greater"/>
+      </and>
+    </condition>
+  </target>
+  
+  <target name="dist" depends="clean, clean_server, compile_server, ui, git.revision" description="regenerate the server">
     <mkdir dir="${server}"/>
     <mkdir dir="${server}/webroot"/>
 
@@ -166,7 +182,8 @@
     <!-- Add a manifest -->
     <mkdir dir="META-INF"/>
     <echo file="META-INF/MANIFEST.MF">Main-Class: peergos.server.Main
-Class-Path: .</echo>
+Class-Path: .
+Version: web-ui/${repository.version}</echo>
     <zip destfile="${server}/Peergos.jar" basedir="." includes="META-INF/MANIFEST.MF" update="true"></zip>
     <!-- Canonicalise jar -->
     <exec executable="java">
