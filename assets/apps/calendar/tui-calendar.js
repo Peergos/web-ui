@@ -10452,7 +10452,7 @@ function createMonthView(baseController, layoutContainer, dragHandler, options) 
             }
 
             detailView.render(eventData);
-            buildExtraFields(eventData, detailView);
+            buildExtraFieldsToSummary(eventData, detailView);
         };
         onDeleteSchedule = function(eventData) {
             if (creationHandler) {
@@ -10471,7 +10471,7 @@ function createMonthView(baseController, layoutContainer, dragHandler, options) 
             onShowEditPopup = function(eventData) {
                 createView.setCalendars(baseController.calendars);
                 createView.render(eventData);
-                addMemoField(eventData);
+                addExtraFieldsToDetail(eventData);
             };
             createView.on('beforeUpdateSchedule', onEditSchedule);
             detailView.on('beforeUpdateSchedule', onShowEditPopup);
@@ -10561,7 +10561,7 @@ function createMonthView(baseController, layoutContainer, dragHandler, options) 
             if (createView) {
                 createView.setCalendars(baseController.calendars);
                 createView.render(eventData);
-                addMemoField(null);
+                addExtraFieldsToDetail(null);
             }
         },
         hideMoreView: function() {
@@ -10859,7 +10859,7 @@ module.exports = function(baseController, layoutContainer, dragHandler, options,
             }
 
             detailView.render(eventData);
-            buildExtraFields(eventData, detailView);
+            buildExtraFieldsToSummary(eventData, detailView);
         };
         onDeleteSchedule = function(eventData) {
             if (eventData.isAllDay) {
@@ -10885,7 +10885,7 @@ module.exports = function(baseController, layoutContainer, dragHandler, options,
                 eventData.isEditMode = true;
                 createView.setCalendars(calendars);
                 createView.render(eventData);
-                addMemoField(eventData);
+                addExtraFieldsToDetail(eventData);
             };
             createView.on('beforeUpdateSchedule', onEditSchedule);
             detailView.on('beforeUpdateSchedule', onShowEditPopup);
@@ -10956,7 +10956,7 @@ module.exports = function(baseController, layoutContainer, dragHandler, options,
             if (createView) {
                 createView.setCalendars(baseController.calendars);
                 createView.render(eventData);
-                addMemoField(null);
+                addExtraFieldsToDetail(null);
             }
         }
     };
@@ -22574,7 +22574,7 @@ module.exports = (Handlebars['default'] || Handlebars).template({"1":function(co
     + alias4(((helper = (helper = lookupProperty(helpers,"CSS_PREFIX") || (depth0 != null ? lookupProperty(depth0,"CSS_PREFIX") : depth0)) != null ? helper : alias2),(typeof helper === alias3 ? helper.call(alias1,{"name":"CSS_PREFIX","hash":{},"data":data,"loc":{"start":{"line":64,"column":29},"end":{"line":64,"column":43}}}) : helper)))
     + "content\">"
     + ((stack1 = ((helper = (helper = lookupProperty(helpers,"popupStateFree-tmpl") || (depth0 != null ? lookupProperty(depth0,"popupStateFree-tmpl") : depth0)) != null ? helper : alias2),(typeof helper === alias3 ? helper.call(alias1,{"name":"popupStateFree-tmpl","hash":{},"data":data,"loc":{"start":{"line":64,"column":52},"end":{"line":64,"column":77}}}) : helper))) != null ? stack1 : "")
-    + "</span>\n                </li>\n            </ul>\n        </div>\n        <button class=\""
+    + "</span>\n                </li>\n            </ul>\n        </div><div id='repeat-div'></div><div id='rrule-modal' class='rrule-modal' style='display: none'></div>\n        <button class=\""
     + alias4(((helper = (helper = lookupProperty(helpers,"CSS_PREFIX") || (depth0 != null ? lookupProperty(depth0,"CSS_PREFIX") : depth0)) != null ? helper : alias2),(typeof helper === alias3 ? helper.call(alias1,{"name":"CSS_PREFIX","hash":{},"data":data,"loc":{"start":{"line":68,"column":23},"end":{"line":68,"column":37}}}) : helper)))
     + "button "
     + alias4(((helper = (helper = lookupProperty(helpers,"CSS_PREFIX") || (depth0 != null ? lookupProperty(depth0,"CSS_PREFIX") : depth0)) != null ? helper : alias2),(typeof helper === alias3 ? helper.call(alias1,{"name":"CSS_PREFIX","hash":{},"data":data,"loc":{"start":{"line":68,"column":44},"end":{"line":68,"column":58}}}) : helper)))
@@ -22692,7 +22692,7 @@ module.exports = (Handlebars['default'] || Handlebars).template({"1":function(co
     + alias4(((helper = (helper = lookupProperty(helpers,"CSS_PREFIX") || (depth0 != null ? lookupProperty(depth0,"CSS_PREFIX") : depth0)) != null ? helper : alias2),(typeof helper === alias3 ? helper.call(alias1,{"name":"CSS_PREFIX","hash":{},"data":data,"loc":{"start":{"line":14,"column":153},"end":{"line":14,"column":167}}}) : helper)))
     + "content\">"
     + ((stack1 = (lookupProperty(helpers,"popupDetailState-tmpl")||(depth0 && lookupProperty(depth0,"popupDetailState-tmpl"))||alias2).call(alias1,(depth0 != null ? lookupProperty(depth0,"schedule") : depth0),{"name":"popupDetailState-tmpl","hash":{},"data":data,"loc":{"start":{"line":14,"column":176},"end":{"line":14,"column":212}}})) != null ? stack1 : "")
-    + "</span></div>";
+    + "</span></div><div id='repeat-div'></div><div id='rrule-modal' class='rrule-modal' style='display: none'></div>";
 },"9":function(container,depth0,helpers,partials,data) {
     var stack1, helper, alias1=depth0 != null ? depth0 : (container.nullContext || {}), alias2=container.hooks.helperMissing, alias3="function", alias4=container.escapeExpression, alias5=container.lambda, lookupProperty = container.lookupProperty || function(parent, propertyName) {
         if (Object.prototype.hasOwnProperty.call(parent, propertyName)) {
