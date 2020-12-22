@@ -75,6 +75,8 @@ let monthLongLabelParts = "January,February,March,April,May,June,July,August,Sep
 let monthShortLabelParts = "Jan,Feb,Mar,Apr,May,Jun,Jul,Aug,Sep,Oct,Nov,Dec".split(',');
 let byDayLabelParts = "SU,MO,TU,WE,TH,FR,SA".split(',');
 let byMonthDayLabelParts = "1SU,1MO,1TU,1WE,1TH,1FR,1SA,2SU,2MO,2TU,2WE,2TH,2FR,2SA,3SU,3MO,3TU,3WE,3TH,3FR,3SA,4SU,4MO,4TU,4WE,4TH,4FR,4SA,5SU,5MO,5TU,5WE,5TH,5FR,5SA,-1SU,-1MO,-1TU,-1WE,-1TH,-1FR,-1SA".split(',');
+let weeks = ['First', 'Second', 'Third', 'Fourth', 'Fifth', 'Last'];
+let weeksLowercase = ['first', 'second', 'third', 'fourth', 'fifth', 'last'];
 
 let monthLabels = "";
 for(var i = 1; i < 13; i++) {
@@ -417,7 +419,7 @@ function buildScheduleFromEvent(event) {
     schedule.calendarId = event.calendarId;
     schedule.title = event.title == null ? "No Title" : event.title;
     schedule.body = '';
-    schedule.isReadOnly = (currentUsername != event.owner ? true : false) || event.recurrenceRule != null;
+    schedule.isReadOnly = currentUsername != event.owner ? true : false;
     schedule.isAllDay = event.isAllDay;
     schedule.category = event.isAllDay ? 'allday' : 'time';
     schedule.start = moment(event.start).toDate();
@@ -758,6 +760,10 @@ function serialiseICal(schedule, updateTimestamp) {
             vvent.updatePropertyWithValue('status', "CANCELLED");
         } else {
             vvent.removeProperty('status');
+        }
+        if (schedule.raw.hasRecurrenceRule) {
+            let rrule = ICAL.Recur.fromString(schedule.recurrenceRule);
+            vvent.updatePropertyWithValue('rrule', rrule);
         }
     } else {
         comp = new ICAL.Component(['vcalendar', [], []]);
@@ -1653,6 +1659,9 @@ function repeatCondition() {
     date.addEventListener('change', onChange);
     span2.appendChild(date);
 }
+function generateSuffix(num) {
+    return num == 11 || num == 12 || num == 13 ? "th" : suffix[num % 10];
+}
 function monthlyByDateChoices() {
     var parent = document.getElementById("rrule-modal");
     var div = document.createElement("div");
@@ -1664,7 +1673,7 @@ function monthlyByDateChoices() {
     dropdown.id='monthly-date';
     dropdown.addEventListener('change', function(){applyRRULE();});
     for(var i = 1; i < 32; i++) {
-        let ending = i == 11 || i == 12 || i == 13 ? "th" : suffix[i % 10];
+        let ending = generateSuffix(i);
         addOptionToSelect(dropdown, 'monthly-date-' + i, i, i + ending + " day");
     }
     div.appendChild(dropdown);
@@ -1681,20 +1690,31 @@ function monthlyByDayChoices() {
     dropdown.addEventListener('change', function(){applyRRULE();});
     var j = -1;
     var k = 0;
-    let weeks = ['First', 'Second', 'Third', 'Fourth', 'Fifth', 'Last'];
-    let weeksLowercase = ['first', 'second', 'third', 'fourth', 'fifth', 'last'];
     for(var i = 0 ; i < byMonthDayLabelParts.length; i++) {
-        //function addOptionToSelect(selectElement, id, value, innerText)
         if (i % 7 == 0) {
             j++;
             k = 0;
         }
-        let name = weeksLowercase[j] + ' ' + byDayMediumLabelParts[k];
         let innerText = weeks[j] + ' ' + byDayLongLabelParts[k];
-        addOptionWithNameToSelect(dropdown, 'monthly-day-' + byMonthDayLabelParts[i], byMonthDayLabelParts[i], innerText, name);
+        addOptionToSelect(dropdown, 'monthly-day-' + byMonthDayLabelParts[i], byMonthDayLabelParts[i], innerText);
         k++;
     }
     div.appendChild(dropdown);
+}
+//todo make this efficient
+function getMonthlyByDayNameFromIndex(monthDay) {
+    var j = -1;
+    var k = 0;
+    for(var i = 0 ; i < byMonthDayLabelParts.length; i++) {
+        if (i % 7 == 0) {
+            j++;
+            k = 0;
+        }
+        if(monthDay == byMonthDayLabelParts[i]) {
+            return weeksLowercase[j] + ' ' + byDayMediumLabelParts[k];
+        }
+        k++;
+    }
 }
 function freqMonthlyBy() {
     var parent = document.getElementById("rrule-modal");
@@ -1738,7 +1758,7 @@ function createYearlyIntervalDropdown() {
     addOptionToSelect(dropdown, 'yearly-frequency-1', '1', "Every year");
     addOptionToSelect(dropdown, 'yearly-frequency-2', '2', "Every other year");
     for(var i = 3; i < 11; i++) {
-        let ending = i == 11 || i == 12 || i == 13 ? "th" : suffix[i % 10];
+        let ending = generateSuffix(i);
         addOptionToSelect(dropdown, 'yearly-frequency-' + i, i, "Every " + i + ending + " year");
     }
     div.appendChild(dropdown);
@@ -1756,7 +1776,7 @@ function createMonthlyIntervalDropdown() {
     addOptionToSelect(dropdown, 'monthly-frequency-1', '1', "Every month");
     addOptionToSelect(dropdown, 'monthly-frequency-2', '2', "Every other month");
     for(var i = 3; i < 13; i++) {
-        let ending = i == 11 || i == 12 || i == 13 ? "th" : suffix[i % 10];
+        let ending = generateSuffix(i);
         addOptionToSelect(dropdown, 'monthly-frequency-' + i, i, "Every " + i + ending + " month");
     }
     div.appendChild(dropdown);
@@ -1788,7 +1808,7 @@ function createWeeklyIntervalDropdown() {
     option.checked = true;
     addOptionToSelect(dropdown, 'weekly-frequency-2', '2', "Every other week");
     for(var i = 3; i < 27; i++) {
-        let ending = i == 11 || i == 12 || i == 13 ? "th" : suffix[i % 10];
+        let ending = generateSuffix(i);
         addOptionToSelect(dropdown, 'weekly-frequency-' + i, i, "Every " + i + ending + " week");
     }
     div.appendChild(dropdown);
@@ -1822,7 +1842,7 @@ function createDailyIntervalDropdown() {
     select.checked = true;
     addOptionToSelect(dropdown, 'daily-frequency-2', '2', "Every other day");
     for(var i = 3; i < 31; i++) {
-        let ending = i == 11 || i == 12 || i == 13 ? "th" : suffix[i % 10];
+        let ending = generateSuffix(i);
         addOptionToSelect(dropdown, 'daily-frequency-' + i, i, "Every " + i + ending + " day");
     }
     div.appendChild(dropdown);
@@ -1844,15 +1864,7 @@ function createFrequencyDropdown() {
 
     div.appendChild(dropdown);
 }
-function addOptionWithNameToSelect(selectElement, id, value, innerText, name) {
-    var option = document.createElement("option");
-    option.id = id;
-    option.name = name;
-    option.value = value;
-    option.innerText = innerText;
-    selectElement.appendChild(option);
-    return option;
-}
+
 function addOptionToSelect(selectElement, id, value, innerText) {
     var option = document.createElement("option");
     option.id = id;
@@ -1868,7 +1880,7 @@ function createRepeatDropdown() {
     let dayOfWeek = now.getDay();
     let dayOfMonth = now.getDate();
     let month = now.getMonth();
-    let ending = dayOfMonth == 11 || dayOfMonth == 12 || dayOfMonth == 13 ? "th" : suffix[dayOfMonth % 10];
+    let ending = generateSuffix(dayOfMonth);
     let asStr = dayOfMonth + ending;
 
     var parent = document.getElementById("repeat-div");
@@ -2037,11 +2049,21 @@ function hasPart(paramName) {
     }
     return false;
 }
+function getIntervalText(number, unit) {
+    if (number == '1') {
+        return 'Every ' + unit;
+    } else if (number == '2') {
+        return 'Every other ' + unit;
+    } else {
+        let ending = generateSuffix(number);
+        return "Every " + number + ending + ' ' + unit;
+    }
+}
 function generateRRuleText() {
     let buffer = "";
     let frequency = extractPart("FREQ", function(val){return val;});
     let interval = extractPart("INTERVAL", function(val){return val;});
-    if (interval == 1) {
+    if (interval == 1 || interval == "") {
         if(frequency == "DAILY") {
             buffer = "Daily";
         } else if(frequency == "WEEKLY") {
@@ -2053,13 +2075,13 @@ function generateRRuleText() {
         }
     } else {
         if(frequency == "DAILY") {
-            buffer = document.getElementById('daily-frequency-' + interval).innerText;
+            buffer = getIntervalText(interval, 'day');
         } else if(frequency == "WEEKLY") {
-            buffer = document.getElementById('weekly-frequency-' + interval).innerText;
+            buffer = getIntervalText(interval, 'week');
         } else if(frequency == "MONTHLY") {
-            buffer = document.getElementById('monthly-frequency-' + interval).innerText;
+            buffer = getIntervalText(interval, 'month');
         } else if(frequency == "YEARLY") {
-            buffer = document.getElementById('yearly-frequency-' + interval).innerText;
+            buffer = getIntervalText(interval, 'year');
         }
     }
 
@@ -2099,14 +2121,15 @@ function generateRRuleText() {
                 buffer = buffer + " (Monday to Friday)";
             } else {
                 for(var i = 0 ; i < values.length; i++) {
-                    days = days + document.getElementById('by-day-' + values[i]).value + " ";
+                    let index = byDayLabelParts.findIndex(v => v === values[i])
+                    days = days + byDayMediumLabelParts[index] + " ";
                 }
                 buffer = buffer + " on " + days.trim().split(" ").join(", ");
             }
         } else if(frequency == "MONTHLY" || frequency == "YEARLY") {
             var monthlyDays = "";
             for(var i = 0 ; i < values.length; i++) {
-                monthlyDays = monthlyDays + document.getElementById('monthly-day-' + values[i]).getAttribute("name") + "|";
+                monthlyDays = monthlyDays + getMonthlyByDayNameFromIndex(values[i]) + "|";
             }
             buffer = buffer + " on the " + monthlyDays.trim().split("|").join(", ").trim();
             buffer = buffer.substring(0, buffer.length -1);
@@ -2114,17 +2137,16 @@ function generateRRuleText() {
     }
     byMonth = extractPart("BYMONTH", function(val){return val.trim().split(",")[0];});
     if (byMonth.length > 0) {
-        let values = byMonthDay.trim().split(",");
+        let values = byMonth.trim().split(",");
         buffer = buffer + " in " + monthShortLabelParts[byMonth-1] ;
     }
     byMonthDay = extractPart("BYMONTHDAY", function(val){return val;});
     if (byMonthDay.length > 0) {
         let values = byMonthDay.trim().split(",");
         if(frequency == "MONTHLY") {
-            buffer = buffer + " on the " + document.getElementById('monthly-date-' + values[0]).innerText;
+            buffer = buffer + " on the " + values[0] + generateSuffix(values[0]);
         }else if(frequency == "YEARLY") {
-            buffer = "Annually on " + monthShortLabelParts[byMonth-1] + " " + document.getElementById('monthly-date-' + values[0]).innerText;
-            buffer = buffer.substring(0, buffer.length - 4); //removing _day
+            buffer = "Annually on " + monthShortLabelParts[byMonth-1] + " " + values[0] + generateSuffix(values[0]);
         }
     }
     let until = extractPart("UNTIL", function(val){return val;});
@@ -2156,7 +2178,10 @@ function parseRRULE() {
     }
     let intervalOK = extractPart("INTERVAL",
         function(val){
-            if(frequency == "DAILY") {
+            if (val == "") {
+                return true;
+            }
+            if (frequency == "DAILY") {
                 return numericValidator(val, 1, 30);
             } else if(frequency == "WEEKLY") {
                 return numericValidator(val, 1, 26)
