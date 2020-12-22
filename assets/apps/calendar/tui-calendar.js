@@ -22650,7 +22650,7 @@ module.exports = (Handlebars['default'] || Handlebars).template({"1":function(co
     + alias4(((helper = (helper = lookupProperty(helpers,"CSS_PREFIX") || (depth0 != null ? lookupProperty(depth0,"CSS_PREFIX") : depth0)) != null ? helper : alias2),(typeof helper === alias3 ? helper.call(alias1,{"name":"CSS_PREFIX","hash":{},"data":data,"loc":{"start":{"line":12,"column":116},"end":{"line":12,"column":130}}}) : helper)))
     + "ic-repeat-b\"></span><span class=\""
     + alias4(((helper = (helper = lookupProperty(helpers,"CSS_PREFIX") || (depth0 != null ? lookupProperty(depth0,"CSS_PREFIX") : depth0)) != null ? helper : alias2),(typeof helper === alias3 ? helper.call(alias1,{"name":"CSS_PREFIX","hash":{},"data":data,"loc":{"start":{"line":12,"column":163},"end":{"line":12,"column":177}}}) : helper)))
-    + "content\">"
+    + "content\" id='rrule-summary'>"
     + ((stack1 = (lookupProperty(helpers,"popupDetailRepeat-tmpl")||(depth0 && lookupProperty(depth0,"popupDetailRepeat-tmpl"))||alias2).call(alias1,(depth0 != null ? lookupProperty(depth0,"schedule") : depth0),{"name":"popupDetailRepeat-tmpl","hash":{},"data":data,"loc":{"start":{"line":12,"column":186},"end":{"line":12,"column":223}}})) != null ? stack1 : "")
     + "</span></div>";
 },"5":function(container,depth0,helpers,partials,data) {

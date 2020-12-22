@@ -66,6 +66,8 @@ var calendarRequiresReload = false;
 var rrule = "";
 var rrule_handler = null;
 var previousRepeatCondition = "";
+var rruleEditable = true;
+
 let suffix = ["th", "st", "nd", "rd", "th", "th", "th", "th", "th", "th"];
 let byDayLongLabelParts = "Sunday,Monday,Tuesday,Wednesday,Thursday,Friday,Saturday".split(',');
 let byDayMediumLabelParts = "Sun,Mon,Tue,Wed,Thu,Fri,Sat".split(',');
@@ -312,9 +314,10 @@ function ScheduleInfo() {
 
 function removeScheduleFromCalendar(schedule) {
     if (schedule.raw.hasRecurrenceRule) {
-        if (true) { //delete everything
-            let token = '_';
-            let parentId = schedule.id.substring(0, schedule.id.indexOf(token));
+        let token = '_';
+        let index = schedule.id.indexOf(token);
+        let parentId = index > -1 ? schedule.id.substring(0, index) : schedule.id;
+        if (true || parentId == schedule.id) { //delete everything
             //FIXME - that's inefficient
             let repeats = [];
             ScheduleList.forEach(function(item) {
@@ -1179,10 +1182,31 @@ function setEventListener() {
   $('#menu-navi').on('click', onClickNavi);
   window.addEventListener('resize', resizeThrottled);
 }
-
+function updateRRULESummary() {
+    if (rruleEditable) {
+        let element = document.getElementById("rrule-summary");
+        if (element != null) {
+            element.innerText = generateRRuleText();
+        }
+    }
+}
 function buildExtraFieldsToSummary(eventData, that) {
+
+    if (eventData == null) {
+        rruleEditable = true;
+        rrule = "";
+    } else {
+        rrule = eventData.schedule.recurrenceRule;
+        if (parseRRULE()) {
+            rruleEditable = true;
+            updateRRULESummary();
+        } else {
+            rruleEditable = false;
+        }
+    }
+
     let calendarSpan = document.getElementById("calendar-name");
-    var showDeleteBtn = eventData.schedule.raw.hasRecurrenceRule ? true : false;
+    var showDeleteBtn = false;
     if(eventData.schedule.raw.creator.name != currentUsername) {
         calendarSpan.innerText = calendarSpan.innerText + " (Shared by " + eventData.schedule.raw.creator.name + ")";
         if (!loadCalendarAsGuest) {
@@ -1267,20 +1291,6 @@ function addExtraFieldsToDetail(eventData) {
 
     previousRepeatCondition = "";
 
-    var rruleEditable = true;
-    if (eventData == null) {
-        rruleEditable = true;
-        rrule = "";
-    } else {
-        rrule = eventData.schedule.recurrenceRule;
-        if (parseRRULE()) {
-            rruleEditable = true;
-        } else {
-            rruleEditable = false;
-        }
-    }
-
-    createRepeatDropdown(rruleEditable);
     createFrequencyDropdown();
     createDailyIntervalDropdown();
     createWeeklyIntervalDropdown();
@@ -1292,6 +1302,8 @@ function addExtraFieldsToDetail(eventData) {
     monthlyByDayChoices();
     monthlyByDateChoices();
     repeatCondition();
+    createRepeatDropdown();
+
 
     let lock = document.getElementById("tui-full-calendar-schedule-private");
     lock.style.display = 'none';
@@ -1555,7 +1567,7 @@ Window.toggleCalendarsView = function(event) {
 };
 
 //--RRULE
-function changeRepeatOption(isEditable) {
+function changeRepeatOption() {
     let selectedValue = document.getElementById('repeat-dropdown').value;
     let now = new Date();
     if (selectedValue == "no-repeat") {
@@ -1574,7 +1586,7 @@ function changeRepeatOption(isEditable) {
         rrule = "FREQ=YEARLY;INTERVAL=1;BYMONTH=" + month + ";BYMONTHDAY=" + dayOfMonth;
     } else if (selectedValue == "CUSTOM") {
         console.log("custom");
-        if (!isEditable) {
+        if (!rruleEditable) {
             displayMessage("Editing this Event's current repeating rule not supported.");
             return;
         }
@@ -1590,7 +1602,7 @@ function changeRepeatOption(isEditable) {
 */
 function setRRule() {
     document.getElementById('rrule-modal').style.display = "none";
-    createRepeatDropdown(true);
+    createRepeatDropdown();
 }
 function repeatCondition() {
     var parent = document.getElementById("rrule-modal");
@@ -1850,7 +1862,7 @@ function addOptionToSelect(selectElement, id, value, innerText) {
     return option;
 }
 
-function createRepeatDropdown(isEditable) {
+function createRepeatDropdown() {
 
     let now = new Date();
     let dayOfWeek = now.getDay();
@@ -1869,13 +1881,13 @@ function createRepeatDropdown(isEditable) {
     var dropdown = document.createElement("select");
     dropdown.id='repeat-dropdown';
     dropdown.name='repeat-dropdown';
-    dropdown.addEventListener('change', function(){changeRepeatOption(isEditable);});
+    dropdown.addEventListener('change', function(){changeRepeatOption();});
 
     if (rrule != null && rrule.length > 0) {
         var custom = document.createElement("option");
         custom.id='repeat-rrule';
         custom.value=rrule;
-        custom.innerText = isEditable ? generateRRuleText() : rrule;
+        custom.innerText = rruleEditable ? generateRRuleText() : rrule;
         dropdown.appendChild(custom);
     }
 
