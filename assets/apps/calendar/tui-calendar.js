@@ -10561,7 +10561,7 @@ function createMonthView(baseController, layoutContainer, dragHandler, options) 
             if (createView) {
                 createView.setCalendars(baseController.calendars);
                 createView.render(eventData);
-                addExtraFieldsToDetail(null);
+                addExtraFieldsToDetail(eventData);
             }
         },
         hideMoreView: function() {
@@ -10956,7 +10956,7 @@ module.exports = function(baseController, layoutContainer, dragHandler, options,
             if (createView) {
                 createView.setCalendars(baseController.calendars);
                 createView.render(eventData);
-                addExtraFieldsToDetail(null);
+                addExtraFieldsToDetail(eventData);
             }
         }
     };

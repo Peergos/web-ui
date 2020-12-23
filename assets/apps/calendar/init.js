@@ -931,11 +931,11 @@ function setCalendars(headless, calendars) {
             borderColor: calendar.borderColor,
             location: scheduleData.location,
             isPrivate: false,//scheduleData.raw['class'] == 'private' ? true : false,
-            //recurrenceRule: rrule,
+            recurrenceRule: rrule,
             raw: {
                 class: scheduleData.raw['class'],
                 memo: scheduleData.raw['memo'],
-                //hasRecurrenceRule: rrule.length > 0 ? true : false,
+                hasRecurrenceRule: rrule.length > 0 ? true : false,
                 creator: {
                     name: currentUsername
                 }
@@ -1297,18 +1297,19 @@ function addExtraFieldsToDetail(eventData) {
 
     previousRepeatCondition = "";
 
-    createFrequencyDropdown();
+    let startDate = eventData.schedule == null ? moment(eventData.start.toDate()) : moment(eventData.schedule.start.toDate());
+    createFrequencyDropdown(startDate);
     createDailyIntervalDropdown();
     createWeeklyIntervalDropdown();
     byDayChoices();
     createMonthlyIntervalDropdown();
     createYearlyIntervalDropdown();
     yearlyMonthChoice();
-    freqMonthlyBy();
+    freqMonthlyBy(startDate);
     monthlyByDayChoices();
     monthlyByDateChoices();
     repeatCondition();
-    createRepeatDropdown();
+    createRepeatDropdown(startDate);
 
 
     let lock = document.getElementById("tui-full-calendar-schedule-private");
@@ -1318,7 +1319,7 @@ function addExtraFieldsToDetail(eventData) {
     let parent = loc.parentNode.parentNode.parentNode;
     var locTextArea = document.createElement("textarea");
     locTextArea.id = "popup-memo";
-    locTextArea.value = eventData == null ? "" : eventData.schedule.raw.memo;
+    locTextArea.value = eventData.schedule == null ? "" : eventData.schedule.raw.memo;
     locTextArea.rows = 5;
     locTextArea.classList.add("memo-field-edit");
 
@@ -1327,7 +1328,7 @@ function addExtraFieldsToDetail(eventData) {
     var div2 = document.createElement("div");
     div1.appendChild(div2);
     div2.appendChild(locTextArea);
-    if (eventData != null) {
+    if (eventData.schedule != null) {
         let saveBtn = document.getElementById("popup-save");
         var handler = function() {
             eventData.schedule.recurrenceRule = rrule;
@@ -1573,9 +1574,9 @@ Window.toggleCalendarsView = function(event) {
 };
 
 //--RRULE
-function changeRepeatOption() {
+function changeRepeatOption(startDate) {
     let selectedValue = document.getElementById('repeat-dropdown').value;
-    let now = new Date();
+
     if (selectedValue == "no-repeat") {
         rrule = "";
         return;
@@ -1584,11 +1585,11 @@ function changeRepeatOption() {
     } else if (selectedValue == "WEEKDAY") {
         rrule = "FREQ=WEEKLY;INTERVAL=1;BYDAY=MO,TU,WE,TH,FR";
     } else if (selectedValue == "WEEKLY") {
-        let dayOfWeek = now.getDay();
+        let dayOfWeek = startDate.day();
         rrule = "FREQ=WEEKLY;INTERVAL=1;BYDAY=" + byDayLabelParts[dayOfWeek];
     } else if (selectedValue == "YEARLY") {
-        let dayOfMonth = now.getDate();
-        let month = now.getMonth() + 1;
+        let dayOfMonth = startDate.date();
+        let month = startDate.month() + 1;
         rrule = "FREQ=YEARLY;INTERVAL=1;BYMONTH=" + month + ";BYMONTHDAY=" + dayOfMonth;
     } else if (selectedValue == "CUSTOM") {
         console.log("custom");
@@ -1598,17 +1599,7 @@ function changeRepeatOption() {
         }
         document.getElementById("rrule-modal").style.display = "block";
     }
-    processRRULE();
-}
-//todo - YES add a set button, but need to handle cancel
-/*
-                <div id="add-rrule-container">
-                    <button onclick="setRRule()" style="margin-top: 10px;">Done</button>
-                </div>
-*/
-function setRRule() {
-    document.getElementById('rrule-modal').style.display = "none";
-    createRepeatDropdown();
+    processRRULE(startDate);
 }
 function repeatCondition() {
     var parent = document.getElementById("rrule-modal");
@@ -1716,7 +1707,7 @@ function getMonthlyByDayNameFromIndex(monthDay) {
         k++;
     }
 }
-function freqMonthlyBy() {
+function freqMonthlyBy(startDate) {
     var parent = document.getElementById("rrule-modal");
     var div = document.createElement("div");
     div.id='freq-monthly-by';
@@ -1725,7 +1716,7 @@ function freqMonthlyBy() {
 
     var dropdown = document.createElement("select");
     dropdown.id='frequency-dropdown-monthly';
-    dropdown.addEventListener('change', function(){changeMonthlyBy();});
+    dropdown.addEventListener('change', function(){changeMonthlyBy(startDate);});
     addOptionToSelect(dropdown, 'freq-by-date', "BYMONTHDAY", "by Date");
     addOptionToSelect(dropdown, 'freq-by-day', "BYDAY", "by Day");
     div.appendChild(dropdown);
@@ -1836,7 +1827,6 @@ function createDailyIntervalDropdown() {
 
     var dropdown = document.createElement("select");
     dropdown.id='daily-frequency';
-    dropdown.style.display = "none";
     dropdown.addEventListener('change', function(){applyRRULE();});
     let select = addOptionToSelect(dropdown, 'daily-frequency-1', '1', "Every day");
     select.checked = true;
@@ -1847,14 +1837,14 @@ function createDailyIntervalDropdown() {
     }
     div.appendChild(dropdown);
 }
-function createFrequencyDropdown() {
+function createFrequencyDropdown(startDate) {
     var parent = document.getElementById("rrule-modal");
     var div = document.createElement("div");
     parent.appendChild(div);
 
     var dropdown = document.createElement("select");
     dropdown.id='frequency-dropdown';
-    dropdown.addEventListener('change', function(){changeFrequency();});
+    dropdown.addEventListener('change', function(){changeFrequency(startDate);});
 
     addOptionToSelect(dropdown, 'no-repeat', 'no-repeat', "Does not repeat");
     addOptionToSelect(dropdown, 'freq-daily', 'DAILY', "Daily");
@@ -1874,12 +1864,11 @@ function addOptionToSelect(selectElement, id, value, innerText) {
     return option;
 }
 
-function createRepeatDropdown() {
+function createRepeatDropdown(startDate) {
 
-    let now = new Date();
-    let dayOfWeek = now.getDay();
-    let dayOfMonth = now.getDate();
-    let month = now.getMonth();
+    let dayOfWeek = startDate.day();
+    let dayOfMonth = startDate.date();
+    let month = startDate.month();
     let ending = generateSuffix(dayOfMonth);
     let asStr = dayOfMonth + ending;
 
@@ -1893,7 +1882,7 @@ function createRepeatDropdown() {
     var dropdown = document.createElement("select");
     dropdown.id='repeat-dropdown';
     dropdown.name='repeat-dropdown';
-    dropdown.addEventListener('change', function(){changeRepeatOption();});
+    dropdown.addEventListener('change', function(){changeRepeatOption(startDate);});
 
     if (rrule != null && rrule.length > 0) {
         var custom = document.createElement("option");
@@ -1969,13 +1958,13 @@ function resetRRULEUI() {
     document.getElementById('monthly-day').value = "";
     document.getElementById('monthly-date').value = "";
 }
-function changeFrequency() {
+function changeFrequency(startDate) {
     let freq = document.getElementById('frequency-dropdown').value;
     console.log("frequency-dropdown=" + freq);
     rrule = "FREQ=" + freq + ";" + removePart("FREQ");
-    processRRULE();
+    processRRULE(startDate);
 }
-function changeMonthlyBy() {
+function changeMonthlyBy(startDate) {
     let freq = document.getElementById('frequency-dropdown').value;
     let by = document.getElementById('frequency-dropdown-monthly').value;
     console.log("frequency-dropdown-monthly=" + by);
@@ -1986,12 +1975,11 @@ function changeMonthlyBy() {
         val = "1MO";
         updatedRRule = removePart("BYMONTHDAY");
     } else if(by == "BYMONTHDAY") {
-        let now = new Date();
-        val = now.getDate();
+        val = startDate.date();
         updatedRRule = removePart("BYDAY");
     }
     rrule = updatedRRule + by + "=" + val;
-    processRRULE();
+    processRRULE(startDate);
 }
 function removePart(paramName) {
     let remainingPartsBuffer = "";
@@ -2469,7 +2457,7 @@ function handleRepeatCondition() {
         }
     }
 }
-function processRRULE() {
+function processRRULE(startDate) {
     resetRRULEUI();
     if (rrule== "" || rrule.includes("FREQ=DAILY")) {
         setHandler(function() {
@@ -2539,7 +2527,7 @@ function processRRULE() {
                 });
             } else if (hasByDate) {
                 initSelect('monthly-date', "BYMONTHDAY", function() {
-                    return (new Date()).getDate();
+                    return startDate.date();
                 });
             }
             initRepeatCondition();
@@ -2580,7 +2568,7 @@ function processRRULE() {
             );
             document.getElementById('yearly-frequency-' + interval).selected = true;
             initSelect('yearly-month', "BYMONTH", function() {
-                    return (new Date()).getMonth() + 1;
+                    return startDate.month() + 1;
             });
             if (hasByDay) {
                 initSelect('monthly-day', "BYDAY", function() {
@@ -2588,7 +2576,7 @@ function processRRULE() {
                 });
             } else if (hasByDate) {
                 initSelect('monthly-date', "BYMONTHDAY", function() {
-                    return (new Date()).getDate();
+                    return startDate.date();
                 });
             }
             initRepeatCondition();
