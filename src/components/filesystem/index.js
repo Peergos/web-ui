@@ -418,12 +418,21 @@ module.exports = {
 		this.showSearch = true;
 	},
     openSearch: function(fromRoot) {
-        this.searchPath = fromRoot ? "/" + this.getContext().username
-            : this.getPath() + this.selectedFiles[0].getFileProperties().name;
+        var path = fromRoot ? "/" + this.getContext().username : this.getPath();
+        if (! fromRoot) {
+            if (this.isNotBackground) {
+                path = path + this.selectedFiles[0].getFileProperties().name;
+            } else {
+                path = path.substring(0, path.length -1);
+            }
+        }
+        this.searchPath = path;
         this.showSearch = true;
         this.updateHistory("search", this.getPath(), "");
         this.closeMenu();
-        this.toggleNav();
+        if (this.showSideNav) {
+            this.toggleNav();
+        }
     },
 	updateCurrentDir: function() {
 	    this.updateCurrentDirectory(null);
