@@ -165,36 +165,25 @@ function buildUI(isCalendarReadonly) {
             }
             let originalSchedule = cal.getSchedule(schedule.id, previousCalendarId);
             if (originalSchedule.previousRecurrenceRule.length > 0) {
-                if(schedule.raw.hasRecurrenceRule) {
-                    if (originalSchedule.previousRecurrenceRule == schedule.recurrenceRule) {
-                        //no change to rrule
-                        console.log("rrule has not changed");
-                    } else {
-                        //rrule changed
-                        console.log("rrule has changed");
-                    }
-                } else {
-                    //apply changes
-                    cal.updateSchedule(schedule.id, schedule.calendarId, changes);
-                    let updatedCalendarId = (changes != null && changes.calendarId != null) ? changes.calendarId : schedule.calendarId;
-                    let updatedSchedule = cal.getSchedule(schedule.id, updatedCalendarId);
+                //apply changes
+                cal.updateSchedule(schedule.id, schedule.calendarId, changes);
+                let updatedCalendarId = (changes != null && changes.calendarId != null) ? changes.calendarId : schedule.calendarId;
+                let updatedSchedule = cal.getSchedule(schedule.id, updatedCalendarId);
 
-                    //remove all instances
-                    let parentId = schedule.id.substring(0, schedule.id.indexOf(recurringEventIdSeparatorToken));
-                    let repeats = [];
-                    ScheduleList.forEach(function(item) {
-                        if (item.id.startsWith(parentId + recurringEventIdSeparatorToken)) {
-                            repeats.push(item);
-                        }
+                //remove all instances
+                let parentId = schedule.id.substring(0, schedule.id.indexOf(recurringEventIdSeparatorToken));
+                removeRecurringScheduleInstances(parentId);
+                RecurringSchedules.splice(RecurringSchedules.findIndex(v => v.id === parentId), 1);
+                updatedSchedule.id = parentId;
+                let serialisedSchedule = serialiseICal(updatedSchedule);
+                if(schedule.raw.hasRecurrenceRule) {
+                    RecurringSchedules.push(updatedSchedule);
+                    CachedYearMonths.forEach(function(yearMonth) {
+                        loadSchedule(updatedSchedule, yearMonth);
                     });
-                    repeats.forEach(function(item) {
-                        cal.deleteSchedule(item.id, item.calendarId);
-                        ScheduleList.splice(ScheduleList.findIndex(v => v.id === item.id), 1);
-                        removeFromCache(item);
-                    });
-                    RecurringSchedules.splice(RecurringSchedules.findIndex(v => v.id === parentId), 1);
-                    updatedSchedule.id = parentId;
-                    let serialisedSchedule = serialiseICal(updatedSchedule);
+                    save(updatedSchedule, serialisedSchedule, previousCalendarId);
+                    cal.createSchedules(ScheduleList);
+                } else {
                     save(updatedSchedule, serialisedSchedule, previousCalendarId, "deleteRecurring");
                 }
             } else {
@@ -261,7 +250,20 @@ function buildUI(isCalendarReadonly) {
         }
     });
 }
-
+function removeRecurringScheduleInstances(parentId) {
+    let repeats = [];
+    ScheduleList.forEach(function(item) {
+        if (item.id.startsWith(parentId + recurringEventIdSeparatorToken)) {
+            repeats.push(item);
+        }
+    });
+    repeats.forEach(function(item) {
+        cal.deleteSchedule(item.id, item.calendarId);
+        ScheduleList.splice(ScheduleList.findIndex(v => v.id === item.id), 1);
+        removeFromCache(item);
+    });
+    RecurringSchedules.splice(RecurringSchedules.findIndex(v => v.id === parentId), 1);
+}
 function disableToolbarButtons(newValue){
     let calendarSettings = document.getElementById("calendar-settings");
     calendarSettings.disabled = newValue;
@@ -392,18 +394,7 @@ function removeScheduleFromCalendar(schedule) {
         let index = schedule.id.indexOf(recurringEventIdSeparatorToken);
         let parentId = schedule.id.substring(0, index);
         if (true) { //delete everything
-            //FIXME - that's inefficient
-            let repeats = [];
-            ScheduleList.forEach(function(item) {
-                if (item.id.startsWith(parentId + recurringEventIdSeparatorToken)) {
-                    repeats.push(item);
-                }
-            });
-            repeats.forEach(function(item) {
-                cal.deleteSchedule(item.id, item.calendarId);
-                ScheduleList.splice(ScheduleList.findIndex(v => v.id === item.id), 1);
-                removeFromCache(item);
-            });
+            removeRecurringScheduleInstances(parentId);
             let idx = RecurringSchedules.findIndex(v => v.id === parentId);
             let recurringSchedule = RecurringSchedules[idx];
             deleteSchedule(recurringSchedule);
