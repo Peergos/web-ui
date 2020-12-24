@@ -21,7 +21,12 @@ module.exports = {
             confirm_body: "",
             confirm_consumer_cancel_func: () => {},
             confirm_consumer_func: () => {},
-            firstMessage: true
+            firstMessage: true,
+            showChoice: false,
+            choice_message: '',
+            choice_body: '',
+            choice_consumer_func: () => {},
+            choice_options: []
         }
     },
     props: ['context', 'messages', 'importFile', 'importSharedEvent', 'shareWith', 'loadCalendarAsGuest'],
@@ -98,6 +103,8 @@ module.exports = {
                     that.addCalendarRequest(calendar, e.data.newColor);
                 } else if (e.data.action == 'requestCalendarReload') {
                     that.reloadCalendar();
+                } else if (e.data.action == 'requestChoiceSelection') {
+                    that.requestChoiceSelection();
                 }
             }
         });
@@ -113,6 +120,17 @@ module.exports = {
         } else {
             this.load(calendar, year, month);
         }
+	},
+	requestChoiceSelection: function() {
+	    let that = this;
+        this.choice_message = 'Modify Event';
+        this.choice_body = 'Make a choice...';
+        this.choice_consumer_func = (index) => {
+            //console.log("response=" + response);
+            that.postMessage({type: 'respondChoiceSelection', optionIndex: index});
+        };
+        this.choice_options = ['All events', 'Just this event', 'All future events'];
+        this.showChoice = true;
 	},
     reloadCalendar: function() {
         this.$emit("reload-calendar");

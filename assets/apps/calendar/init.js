@@ -27,6 +27,8 @@ let handler = function (e) {
           respondToCalendarAdd(e.data.newId, e.data.newName, e.data.newColor);
       } else if (e.data.type == "respondCalendarColorChange") {
           respondToCalendarColorChange(e.data.calendarName, e.data.newColor);
+      } else if (e.data.type == "respondChoiceSelection") {
+          respondToChoiceSelection(e.data.optionIndex);
       } else if(e.data.type == "importICSFile") {
           loadCalendarAsGuest = e.data.loadCalendarAsGuest;
           if(loadCalendarAsGuest) {
@@ -220,7 +222,6 @@ function buildUI(isCalendarReadonly) {
                     save(updatedSchedule, serialisedSchedule, previousCalendarId);
                 }
             }
-
             refreshScheduleVisibility();
         },
         'beforeDeleteSchedule': function(e) {
@@ -250,6 +251,11 @@ function buildUI(isCalendarReadonly) {
         }
     });
 }
+function respondToChoiceSelection(index) {
+    //to wire up mainWindow.postMessage({action: "requestChoiceSelection"}, origin);
+    console.log("respondToChoiceSelection: " + index);
+}
+
 function removeRecurringScheduleInstances(parentId) {
     let repeats = [];
     ScheduleList.forEach(function(item) {
