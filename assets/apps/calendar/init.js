@@ -47,6 +47,7 @@ var datePicker, selectedCalendar;
 var CalendarList = [];
 var ScheduleList = [];
 let ScheduleCache = [];
+let CachedYearMonths = [];
 let LoadedEvents = [];
 let RecurringSchedules = [];
 var currentMoment = moment();
@@ -63,6 +64,7 @@ let colorPickerElement = document.getElementById('color-picker');
 var calendarRequiresReload = false;
 
 //--rrule
+let recurringEventIdSeparatorToken = '_';
 var rrule = "";
 var rrule_handler = null;
 var previousRepeatCondition = "";
@@ -133,32 +135,103 @@ function buildUI(isCalendarReadonly) {
         'beforeCreateSchedule': function(e) {
             //console.log('beforeCreateSchedule', e);
             let schedule = buildNewSchedule(e);
-            ScheduleList.push(schedule);
-            cal.createSchedules([schedule]);
-            addToCache(schedule);
+            let serialisedSchedule = serialiseICal(schedule);
+            if (schedule.raw.hasRecurrenceRule) {
+                RecurringSchedules.push(schedule);
+                CachedYearMonths.forEach(function(yearMonth) {
+                    loadSchedule(schedule, yearMonth);
+                });
+                cal.createSchedules(ScheduleList);
+            } else {
+                ScheduleList.push(schedule);
+                cal.createSchedules([schedule]);
+                addToCache(schedule);
+            }
             refreshScheduleVisibility();
-            save(schedule, schedule.calendarId);
+            save(schedule, serialisedSchedule, schedule.calendarId);
         },
         'beforeUpdateSchedule': function(e) {
             var schedule = e.schedule;
             var changes = e.changes;
-            //do not simply return if no changes. Memo text is not recorded as a change!
+            //do not simply return if no changes. Memo, rrule text is not recorded as a change!
             //if(changes == null) {
             //    return;
             //}
             let previousCalendarId = schedule.calendarId;
             //console.log('beforeUpdateSchedule', e);
+
             if (changes && !changes.isAllDay && schedule.category === 'allday') {
                 changes.category = 'time';
             }
-            cal.updateSchedule(schedule.id, schedule.calendarId, changes);
-            let updatedCalendarId = (changes != null && changes.calendarId != null) ? changes.calendarId : schedule.calendarId;
-            let updatedSchedule = cal.getSchedule(schedule.id, updatedCalendarId);
+            let originalSchedule = cal.getSchedule(schedule.id, previousCalendarId);
+            if (originalSchedule.previousRecurrenceRule.length > 0) {
+                if(schedule.raw.hasRecurrenceRule) {
+                    if (originalSchedule.previousRecurrenceRule == schedule.recurrenceRule) {
+                        //no change to rrule
+                        console.log("rrule has not changed");
+                    } else {
+                        //rrule changed
+                        console.log("rrule has changed");
+                    }
+                } else {
+                    //apply changes
+                    cal.updateSchedule(schedule.id, schedule.calendarId, changes);
+                    let updatedCalendarId = (changes != null && changes.calendarId != null) ? changes.calendarId : schedule.calendarId;
+                    let updatedSchedule = cal.getSchedule(schedule.id, updatedCalendarId);
 
-            ScheduleList.splice(ScheduleList.findIndex(v => v.id === schedule.id), 1);
-            ScheduleList.push(updatedSchedule);
-            updateCache(schedule, updatedSchedule);
-            save(updatedSchedule, previousCalendarId);
+                    //remove all instances
+                    let parentId = schedule.id.substring(0, schedule.id.indexOf(recurringEventIdSeparatorToken));
+                    let repeats = [];
+                    ScheduleList.forEach(function(item) {
+                        if (item.id.startsWith(parentId + recurringEventIdSeparatorToken)) {
+                            repeats.push(item);
+                        }
+                    });
+                    repeats.forEach(function(item) {
+                        cal.deleteSchedule(item.id, item.calendarId);
+                        ScheduleList.splice(ScheduleList.findIndex(v => v.id === item.id), 1);
+                        removeFromCache(item);
+                    });
+                    RecurringSchedules.splice(RecurringSchedules.findIndex(v => v.id === parentId), 1);
+                    updatedSchedule.id = parentId;
+                    let serialisedSchedule = serialiseICal(updatedSchedule);
+                    save(updatedSchedule, serialisedSchedule, previousCalendarId, "deleteRecurring");
+                }
+            } else {
+                if(schedule.raw.hasRecurrenceRule) {
+                    //normal update schedule handling
+                    cal.updateSchedule(schedule.id, schedule.calendarId, changes);
+                    let updatedCalendarId = (changes != null && changes.calendarId != null) ? changes.calendarId : schedule.calendarId;
+                    let updatedSchedule = cal.getSchedule(schedule.id, updatedCalendarId);
+                    ScheduleList.splice(ScheduleList.findIndex(v => v.id === schedule.id), 1);
+                    ScheduleList.push(updatedSchedule);
+                    updateCache(schedule, updatedSchedule);
+
+                    //remove schedule
+                    cal.deleteSchedule(updatedSchedule.id, updatedSchedule.calendarId);
+                    ScheduleList.splice(ScheduleList.findIndex(v => v.id === updatedSchedule.id), 1);
+                    removeFromCache(updatedSchedule);
+                    // add recurring
+                    let serialisedSchedule = serialiseICal(updatedSchedule);
+                    RecurringSchedules.push(updatedSchedule);
+                    CachedYearMonths.forEach(function(yearMonth) {
+                        loadSchedule(updatedSchedule, yearMonth);
+                    });
+                    save(updatedSchedule, serialisedSchedule, previousCalendarId, "createRecurring");
+                    cal.createSchedules(ScheduleList);
+                } else {
+                    cal.updateSchedule(schedule.id, schedule.calendarId, changes);
+                    let updatedCalendarId = (changes != null && changes.calendarId != null) ? changes.calendarId : schedule.calendarId;
+                    let updatedSchedule = cal.getSchedule(schedule.id, updatedCalendarId);
+
+                    ScheduleList.splice(ScheduleList.findIndex(v => v.id === schedule.id), 1);
+                    ScheduleList.push(updatedSchedule);
+                    updateCache(schedule, updatedSchedule);
+                    let serialisedSchedule = serialiseICal(updatedSchedule);
+                    save(updatedSchedule, serialisedSchedule, previousCalendarId);
+                }
+            }
+
             refreshScheduleVisibility();
         },
         'beforeDeleteSchedule': function(e) {
@@ -316,14 +389,13 @@ function ScheduleInfo() {
 
 function removeScheduleFromCalendar(schedule) {
     if (schedule.raw.hasRecurrenceRule) {
-        let token = '_';
-        let index = schedule.id.indexOf(token);
-        let parentId = index > -1 ? schedule.id.substring(0, index) : schedule.id;
-        if (true || parentId == schedule.id) { //delete everything
+        let index = schedule.id.indexOf(recurringEventIdSeparatorToken);
+        let parentId = schedule.id.substring(0, index);
+        if (true) { //delete everything
             //FIXME - that's inefficient
             let repeats = [];
             ScheduleList.forEach(function(item) {
-                if (item.id.startsWith(parentId + token)) {
+                if (item.id.startsWith(parentId + recurringEventIdSeparatorToken)) {
                     repeats.push(item);
                 }
             });
@@ -428,6 +500,7 @@ function buildScheduleFromEvent(event) {
     schedule.location = event.location == null ? "" : event.location;
     schedule.attendees = event.attendees;
     schedule.recurrenceRule = event.recurrenceRule != null ? event.recurrenceRule.toString() : '';
+    schedule.previousRecurrenceRule = schedule.recurrenceRule;
     schedule.state = event.state;
     var calendar = findCalendar(event.calendarId);
     schedule.color = calendar.color;
@@ -454,6 +527,7 @@ function cloneSchedule(scheduleOrig, newId, start, end) {
     schedule.location = scheduleOrig.location;
     schedule.attendees = scheduleOrig.attendees.slice();
     schedule.recurrenceRule = scheduleOrig.recurrenceRule;
+    schedule.previousRecurrenceRule = scheduleOrig.previousRecurrenceRule;
     schedule.state = scheduleOrig.state;
     schedule.color = scheduleOrig.color;
     schedule.bgColor = scheduleOrig.bgColor;
@@ -532,9 +606,16 @@ function importICSFile(contents, username, isSharedWithUs, loadCalendarAsGuest, 
         }
     });
 }
+function buildMonthScheduleCache(yearMonth) {
+    let monthCache = ScheduleCache[yearMonth];
+    if (monthCache == null) {
+        CachedYearMonths.push(yearMonth);
+        ScheduleCache[yearMonth] = monthCache = [];
+    }
+    return monthCache;
+}
 function loadAdditional(currentMonthEvents, yearMonth) {
-    let monthCache = [];
-    ScheduleCache[yearMonth] = monthCache;
+    let monthCache = buildMonthScheduleCache(yearMonth);
     let currentYearMonth = currentMoment.year() * 12 + currentMoment.month();
     if (currentYearMonth < yearMonth) {
         ScheduleList = ScheduleCache[currentYearMonth-1].concat(ScheduleCache[currentYearMonth]);
@@ -565,16 +646,14 @@ function loadArbitrarySchedule(schedule, yearMonth) {
     removeSpinner();
 }
 function loadSchedule(schedule, yearMonth) {
-    let monthCache = ScheduleCache[yearMonth];
-    if (monthCache == null) {
-        ScheduleCache[yearMonth] = monthCache = [];
-    }
+    let monthCache = buildMonthScheduleCache(yearMonth);
     let year = Math.floor(yearMonth / 12);
     let month = yearMonth % 12;
     var icalComponent = LoadedEvents[schedule.id];
     let vevents = icalComponent.getAllSubcomponents('vevent');
     let vvent = vevents[0];
     if( vvent.hasProperty('rrule') ){
+        //TODO FIXME This MUST be revisited
         var recur = vvent.getFirstPropertyValue('rrule');
         let endOfMonthExclusive = moment.utc(year + '-01-01');
         endOfMonthExclusive.add(month + 1, 'months');
@@ -636,8 +715,8 @@ function recalculateSchedule(schedule, iCalEvent, nextDtStart) {
     		end = start;
 	    }
     }
-    let icalTime =  toICalTime(schedule.start, false);
-    let newId = schedule.id + '_' + icalTime.toICALString();
+    let icalTime =  toICalTime(start, false);
+    let newId = schedule.id + recurringEventIdSeparatorToken + icalTime.toICALString();
     console.log(newId +" " + start);
     return cloneSchedule(schedule, newId, moment(start).toDate(), moment(end).toDate());
 }
@@ -647,8 +726,7 @@ function load(previousMonthEvents, currentMonthEvents, nextMonthEvents, recurrin
     let previousYearMonth = yearMonth - 1;
     let pYear = Math.floor(previousYearMonth / 12);
     let pMonth = previousYearMonth % 12;
-    let previousMonthCache = [];
-    ScheduleCache[pYear * 12 + pMonth] = previousMonthCache;
+    let previousMonthCache = buildMonthScheduleCache(pYear * 12 + pMonth);
     for (var i = 0; i < previousMonthEvents.length; i++) {
         let schedule = buildCalendarEvent(previousMonthEvents[i]);
         if (schedule != null) {
@@ -658,8 +736,7 @@ function load(previousMonthEvents, currentMonthEvents, nextMonthEvents, recurrin
     }
     cYear = Math.floor(yearMonth / 12);
     cMonth = yearMonth % 12;
-    let currentMonthCache = [];
-    ScheduleCache[cYear * 12 + cMonth] = currentMonthCache;
+    let currentMonthCache = buildMonthScheduleCache(cYear * 12 + cMonth);
     for (var i = 0; i < currentMonthEvents.length; i++) {
         let schedule = buildCalendarEvent(currentMonthEvents[i]);
         if (schedule != null) {
@@ -670,8 +747,7 @@ function load(previousMonthEvents, currentMonthEvents, nextMonthEvents, recurrin
     let nextYearMonth = yearMonth + 1;
     nYear = Math.floor(nextYearMonth / 12);
     nMonth = nextYearMonth % 12;
-    let nextMonthCache = [];
-    ScheduleCache[nYear * 12 + nMonth] = nextMonthCache;
+    let nextMonthCache = buildMonthScheduleCache(nYear * 12 + nMonth);
     for (var i = 0; i < nextMonthEvents.length; i++) {
         let schedule = buildCalendarEvent(nextMonthEvents[i]);
         if (schedule != null) {
@@ -728,17 +804,17 @@ function toICalTime(tzDate, isAllDay) {
     }, ICAL.Timezone.utcTimezone);
     return dateTime;
 }
-function save(schedule, previousCalendarId) {
+function save(schedule, serialisedSchedule, previousCalendarId, action) {
     //let isPrivate = schedule.isPrivate;
     //let state = schedule.state;
     let dt = moment.utc(schedule.start.toUTCString());
     let year = dt.year();
     let month = dt.month() + 1;
-    let output = serialiseICal(schedule, true);
     let calendarName = findCalendar(schedule.calendarId).name;
     let previousCalendarName = findCalendar(previousCalendarId).name;
+    let saveAction = action == null ? "" : action;
     mainWindow.postMessage({ calendarName: calendarName, year: year, month: month, Id: schedule.id,
-        item:output, previousCalendarName: previousCalendarName, type:"save"}, origin);
+        item:serialisedSchedule, previousCalendarName: previousCalendarName, isRecurring: schedule.raw.hasRecurrenceRule, action: saveAction, type:"save"}, origin);
 }
 function serialiseICal(schedule, updateTimestamp) {
     var comp = LoadedEvents[schedule.id];
@@ -762,8 +838,9 @@ function serialiseICal(schedule, updateTimestamp) {
             vvent.removeProperty('status');
         }
         if (schedule.raw.hasRecurrenceRule) {
-            let rrule = ICAL.Recur.fromString(schedule.recurrenceRule);
-            vvent.updatePropertyWithValue('rrule', rrule);
+            vvent.updatePropertyWithValue('rrule', ICAL.Recur.fromString(schedule.recurrenceRule));
+        } else {
+            vvent.removeProperty('rrule');
         }
     } else {
         comp = new ICAL.Component(['vcalendar', [], []]);
@@ -783,8 +860,7 @@ function serialiseICal(schedule, updateTimestamp) {
             vevent.addPropertyWithValue('status', "CANCELLED");
         }
         if (schedule.raw.hasRecurrenceRule) {
-            let rrule = ICAL.Recur.fromString(schedule.recurrenceRule);
-            vevent.addPropertyWithValue('rrule', rrule);
+            vevent.addPropertyWithValue('rrule', ICAL.Recur.fromString(schedule.recurrenceRule));
         }
         comp.addSubcomponent(vevent);
         LoadedEvents[schedule.id] = comp;
@@ -932,6 +1008,8 @@ function setCalendars(headless, calendars) {
             location: scheduleData.location,
             isPrivate: false,//scheduleData.raw['class'] == 'private' ? true : false,
             recurrenceRule: rrule,
+            previousRecurrenceRule: rrule,
+            attendees: [],
             raw: {
                 class: scheduleData.raw['class'],
                 memo: scheduleData.raw['memo'],
@@ -1296,7 +1374,9 @@ function buildExtraFieldsToSummary(eventData, that) {
 function addExtraFieldsToDetail(eventData) {
 
     previousRepeatCondition = "";
-
+    if (eventData.schedule == null) {
+        rrule = "";
+    }
     let startDate = eventData.schedule == null ? moment(eventData.start.toDate()) : moment(eventData.schedule.start.toDate());
     createFrequencyDropdown(startDate);
     createDailyIntervalDropdown();
@@ -1331,6 +1411,7 @@ function addExtraFieldsToDetail(eventData) {
     if (eventData.schedule != null) {
         let saveBtn = document.getElementById("popup-save");
         var handler = function() {
+            eventData.schedule.previousRecurrenceRule = eventData.schedule.recurrenceRule;
             eventData.schedule.recurrenceRule = rrule;
             eventData.schedule.raw.memo = locTextArea.value;
             eventData.schedule.raw.hasRecurrenceRule = rrule.length > 0 ? true : false;

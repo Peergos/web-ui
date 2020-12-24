@@ -374,29 +374,39 @@ module.exports = {
     saveEvent: function(calendar, item) {
 	    const that = this;
 	    that.displaySpinner();
-	    if(item.calendarName == item.previousCalendarName) {
-            this.updateCalendarEvent(calendar, item).thenApply(function(res) {
-                that.removeSpinner();
-            }).exceptionally(function(throwable) {
-                that.showMessage("Unable to save event","Please close calendar and try again");
-                console.log(throwable.getMessage());
-                that.removeSpinner();
-            });
-        } else { //move between calendars
-            this.removeCalendarEvent(calendar, item.previousCalendarName, item.year, item.month, item.Id).thenApply(function(res) {
-                that.updateCalendarEvent(calendar, item).thenApply(function(res2) {
+	    if (item.action == "createRecurring") {
+            this.moveEvent(calendar, item, false);
+	    } else if (item.action == "deleteRecurring") {
+            this.moveEvent(calendar, item, true);
+	    } else {
+            if(item.calendarName == item.previousCalendarName) {
+                this.updateCalendarEvent(calendar, item).thenApply(function(res) {
                     that.removeSpinner();
                 }).exceptionally(function(throwable) {
-                    that.showMessage("Unable to save moved event","Please re-create event");
+                    that.showMessage("Unable to save event","Please close calendar and try again");
                     console.log(throwable.getMessage());
                     that.removeSpinner();
                 });
+            } else {
+                this.moveEvent(calendar, item, item.isRecurring);
+            }
+	    }
+    },
+    moveEvent: function(calendar, item, removeRecurring) {
+        const that = this;
+        this.removeCalendarEvent(calendar, item.previousCalendarName, item.year, item.month, item.Id, removeRecurring).thenApply(function(res) {
+            that.updateCalendarEvent(calendar, item).thenApply(function(res2) {
+                that.removeSpinner();
             }).exceptionally(function(throwable) {
-                that.showMessage("Unable to move event","Please close calendar and try again");
+                that.showMessage("Unable to save moved event","Please re-create event");
                 console.log(throwable.getMessage());
                 that.removeSpinner();
             });
-        }
+        }).exceptionally(function(throwable) {
+            that.showMessage("Unable to move event","Please close calendar and try again");
+            console.log(throwable.getMessage());
+            that.removeSpinner();
+        });
     },
     saveAllEvents: function(calendar, data) {
         this.removeSpinner();
