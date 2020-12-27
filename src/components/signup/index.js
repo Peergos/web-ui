@@ -29,11 +29,13 @@ module.exports = {
 	    message: {}
         };
     },
-    props: ["username", "password1", "crypto", "network"],
+    props: ["username", "password1", "token", "crypto", "network"],
     created: function() {
         console.debug('Signup module created!');
 	var that = this;
 	this.network.instanceAdmin.acceptingSignups().thenApply(function(res) {
+	    if (that.token.length > 0)
+		return;
 	    that.acceptingSignups = res;
 	    console.log("accepting signups: " + res);
 	});
@@ -98,7 +100,7 @@ module.exports = {
                 } else {
                     this.showSpinner = true;
                     this.spinnerMessage = "signing up!";
-                    return peergos.shared.user.UserContext.signUp(that.username, that.password1, that.network, that.crypto
+                    return peergos.shared.user.UserContext.signUp(that.username, that.password1, that.token, that.network, that.crypto
                     , {"accept" : x => that.spinnerMessage = x})
                         .thenApply(function(context) {
                             that.$emit("filesystem", {context: context, signup:true});
