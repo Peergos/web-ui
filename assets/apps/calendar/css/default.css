@@ -2465,3 +2465,10 @@ ul li:hover {
   background-color: rgb(22, 169, 138);
   color: #fff;
 }
+
+.label-spacing {
+  margin: 5px;
+}​
+
+
+

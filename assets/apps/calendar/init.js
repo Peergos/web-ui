@@ -1681,9 +1681,10 @@ Window.toggleCalendarsView = function(event) {
 //--RRULE
 function changeRepeatOption(startDate) {
     let selectedValue = document.getElementById('repeat-dropdown').value;
-
+    var isCustom = false;
     if (selectedValue == "no-repeat") {
         rrule = "";
+        document.getElementById("rrule-modal").style.display = "none";
         return;
     } else if (selectedValue == "DAILY") {
         rrule = "FREQ=DAILY;INTERVAL=1";
@@ -1702,7 +1703,12 @@ function changeRepeatOption(startDate) {
             displayMessage("Editing this Event's current repeating rule not supported.");
             return;
         }
+        isCustom = true;
+    }
+    if (isCustom) {
         document.getElementById("rrule-modal").style.display = "block";
+    } else {
+        document.getElementById("rrule-modal").style.display = "none";
     }
     processRRULE(startDate);
 }
@@ -1715,10 +1721,11 @@ function repeatCondition() {
     let onChange = function() {
         applyRRULE();
     }
-    let element = addInput(div, 'radio', 'repeat-condition-forever', 'repeat-condition', 'forever', 'Forever', onChange);
+    let clazz = "label-spacing";
+    let element = addInput(div, 'radio', 'repeat-condition-forever', 'repeat-condition', 'forever', 'Forever', onChange, clazz);
     element.checked = true;
-    addInput(div, 'radio', 'repeat-condition-until', 'repeat-condition', 'until', 'Until', onChange);
-    addInput(div, 'radio', 'repeat-condition-occurrences', 'repeat-condition', 'occurrences', 'Occurrence(s)', onChange);
+    addInput(div, 'radio', 'repeat-condition-until', 'repeat-condition', 'until', 'Until', onChange, clazz);
+    addInput(div, 'radio', 'repeat-condition-occurrences', 'repeat-condition', 'occurrences', 'Occurrence(s)', onChange, clazz);
 
     var div = document.createElement("div");
     div.id='repeat-occurrences-counter';
@@ -1886,8 +1893,9 @@ function byDayChoices() {
     let onChange = function() {
         applyRRULE();
     }
+    let clazz = "label-spacing";
     for(var i = 0; i < 7 ; i++) {
-        addInput(div, 'checkbox', 'by-day-' + byDayLabelParts[i], byDayLongLabelParts[i], byDayMediumLabelParts[i], byDayMediumLabelParts[i] , onChange);
+        addInput(div, 'checkbox', 'by-day-' + byDayLabelParts[i], byDayLongLabelParts[i], byDayMediumLabelParts[i], byDayMediumLabelParts[i] , onChange, clazz);
     }
 }
 function createWeeklyIntervalDropdown() {
@@ -1909,17 +1917,19 @@ function createWeeklyIntervalDropdown() {
     }
     div.appendChild(dropdown);
 }
-function addInput(parentElement, type, id, name, value, text, onChangeHandler) {
+function addInput(parentElement, type, id, name, value, text, onChangeHandler, clazz) {
     var input = document.createElement("input");
     input.type= type;
     input.id= id;
     input.name = name;
     input.value = value;
     input.addEventListener('change', onChangeHandler);
-
     parentElement.appendChild(input);
     var label = document.createElement("label");
     label.innerText = text;
+    if (clazz != null) {
+        label.className = clazz;
+    }
     parentElement.appendChild(label);
     return input;
 }
@@ -1951,7 +1961,6 @@ function createFrequencyDropdown(startDate) {
     dropdown.id='frequency-dropdown';
     dropdown.addEventListener('change', function(){changeFrequency(startDate);});
 
-    addOptionToSelect(dropdown, 'no-repeat', 'no-repeat', "Does not repeat");
     addOptionToSelect(dropdown, 'freq-daily', 'DAILY', "Daily");
     addOptionToSelect(dropdown, 'freq-weekly', 'WEEKLY', "Weekly");
     addOptionToSelect(dropdown, 'freq-monthly', 'MONTHLY', "Monthly");
