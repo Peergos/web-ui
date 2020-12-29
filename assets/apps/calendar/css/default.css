@@ -2468,7 +2468,35 @@ ul li:hover {
 
 .label-spacing {
   margin: 5px;
-}​
+}
 
+.custom-dropdown {
+    min-height: 35px;
+    margin-bottom: 5px;
+}
+
+.dropdown-container-1 {
+  width: 100%;
+}
+
+.dropdown-container-1-block {
+  margin: 5px;
+  display: inline-block;
+}
+.repeat-icon {
+    width: 12px;
+    height: 12px;
+    margin-right: 5px;
+    display: inline-block;
+}
+
+.rrule-container {
+  width: 100%;
+}
+
+.rrule-container-block {
+  margin: 5px;
+  display: inline-block;
+}
 
 

@@ -1408,9 +1408,9 @@ function addExtraFieldsToDetail(eventData) {
     createFrequencyDropdown(startDate);
     createDailyIntervalDropdown();
     createWeeklyIntervalDropdown();
-    byDayChoices();
     createMonthlyIntervalDropdown();
     createYearlyIntervalDropdown();
+    byDayChoices();
     yearlyMonthChoice();
     freqMonthlyBy(startDate);
     monthlyByDayChoices();
@@ -1766,14 +1766,16 @@ function generateSuffix(num) {
     return num == 11 || num == 12 || num == 13 ? "th" : suffix[num % 10];
 }
 function monthlyByDateChoices() {
-    var parent = document.getElementById("rrule-modal");
+    var parent = document.getElementById("rrule-container-2");
     var div = document.createElement("div");
     div.id='monthly-by-date-choices';
+    div.className = 'rrule-container-block';
     div.style.display = "none";
     parent.appendChild(div);
 
     var dropdown = document.createElement("select");
     dropdown.id='monthly-date';
+    dropdown.className = 'custom-dropdown';
     dropdown.addEventListener('change', function(){applyRRULE();});
     for(var i = 1; i < 32; i++) {
         let ending = generateSuffix(i);
@@ -1782,14 +1784,16 @@ function monthlyByDateChoices() {
     div.appendChild(dropdown);
 }
 function monthlyByDayChoices() {
-    var parent = document.getElementById("rrule-modal");
+    var parent = document.getElementById("rrule-container-2");
     var div = document.createElement("div");
     div.id='monthly-by-day-choices';
+    div.className = 'rrule-container-block';
     div.style.display = "none";
     parent.appendChild(div);
 
     var dropdown = document.createElement("select");
     dropdown.id='monthly-day';
+    dropdown.className = 'custom-dropdown';
     dropdown.addEventListener('change', function(){applyRRULE();});
     var j = -1;
     var k = 0;
@@ -1820,28 +1824,32 @@ function getMonthlyByDayNameFromIndex(monthDay) {
     }
 }
 function freqMonthlyBy(startDate) {
-    var parent = document.getElementById("rrule-modal");
+    var parent = document.getElementById("rrule-container-2");
     var div = document.createElement("div");
     div.id='freq-monthly-by';
+    div.className = 'rrule-container-block';
     div.style.display = "none";
     parent.appendChild(div);
 
     var dropdown = document.createElement("select");
     dropdown.id='frequency-dropdown-monthly';
+    dropdown.className = 'custom-dropdown';
     dropdown.addEventListener('change', function(){changeMonthlyBy(startDate);});
     addOptionToSelect(dropdown, 'freq-by-date', "BYMONTHDAY", "by Date");
     addOptionToSelect(dropdown, 'freq-by-day', "BYDAY", "by Day");
     div.appendChild(dropdown);
 }
 function yearlyMonthChoice() {
-    var parent = document.getElementById("rrule-modal");
+    var parent = document.getElementById("rrule-container-2");
     var div = document.createElement("div");
     div.id='yearly-month-choice';
+    div.className = 'rrule-container-block';
     div.style.display = "none";
     parent.appendChild(div);
 
     var dropdown = document.createElement("select");
     dropdown.id='yearly-month';
+    dropdown.className = 'custom-dropdown';
     dropdown.addEventListener('change', function(){applyRRULE();});
     for(var i = 1; i < 13; i++) {
         addOptionToSelect(dropdown, 'yearly-month-' + i, i, monthLongLabelParts[i-1]);
@@ -1849,14 +1857,16 @@ function yearlyMonthChoice() {
     div.appendChild(dropdown);
 }
 function createYearlyIntervalDropdown() {
-    var parent = document.getElementById("rrule-modal");
+    var parent = document.getElementById("rrule-container-1");
     var div = document.createElement("div");
     div.id='yearly-interval';
+    div.className = 'rrule-container-block';
     div.style.display = "none";
     parent.appendChild(div);
 
     var dropdown = document.createElement("select");
     dropdown.id='yearly-frequency';
+    dropdown.className = 'custom-dropdown';
     dropdown.addEventListener('change', function(){applyRRULE();});
     addOptionToSelect(dropdown, 'yearly-frequency-1', '1', "Every year");
     addOptionToSelect(dropdown, 'yearly-frequency-2', '2', "Every other year");
@@ -1867,14 +1877,16 @@ function createYearlyIntervalDropdown() {
     div.appendChild(dropdown);
 }
 function createMonthlyIntervalDropdown() {
-    var parent = document.getElementById("rrule-modal");
+    var parent = document.getElementById("rrule-container-1");
     var div = document.createElement("div");
     div.id='monthly-interval';
+    div.className = 'rrule-container-block';
     div.style.display = "none";
     parent.appendChild(div);
 
     var dropdown = document.createElement("select");
     dropdown.id='monthly-frequency';
+    dropdown.className = 'custom-dropdown';
     dropdown.addEventListener('change', function(){applyRRULE();});
     addOptionToSelect(dropdown, 'monthly-frequency-1', '1', "Every month");
     addOptionToSelect(dropdown, 'monthly-frequency-2', '2', "Every other month");
@@ -1885,9 +1897,10 @@ function createMonthlyIntervalDropdown() {
     div.appendChild(dropdown);
 }
 function byDayChoices() {
-    var parent = document.getElementById("rrule-modal");
+    var parent = document.getElementById("rrule-container-2");
     var div = document.createElement("div");
     div.id = "by-day-choices";
+    div.className = 'rrule-container-block';
     div.style.display = "none";
     parent.appendChild(div);
     let onChange = function() {
@@ -1899,14 +1912,16 @@ function byDayChoices() {
     }
 }
 function createWeeklyIntervalDropdown() {
-    var parent = document.getElementById("rrule-modal");
+    var parent = document.getElementById("rrule-container-1");
     var div = document.createElement("div");
     div.id='weekly-interval';
+    div.className = 'rrule-container-block';
     div.style.display = "none";
     parent.appendChild(div);
 
     var dropdown = document.createElement("select");
     dropdown.id='weekly-frequency';
+    dropdown.className = 'custom-dropdown';
     dropdown.addEventListener('change', function(){applyRRULE();});
     let option = addOptionToSelect(dropdown, 'weekly-frequency-1', '1', "Every week");
     option.checked = true;
@@ -1934,14 +1949,16 @@ function addInput(parentElement, type, id, name, value, text, onChangeHandler, c
     return input;
 }
 function createDailyIntervalDropdown() {
-    var parent = document.getElementById("rrule-modal");
+    var parent = document.getElementById("rrule-container-1");
     var div = document.createElement("div");
     div.id='daily-interval';
+    div.className = 'rrule-container-block';
     div.style.display = "none";
     parent.appendChild(div);
 
     var dropdown = document.createElement("select");
     dropdown.id='daily-frequency';
+    dropdown.className = 'custom-dropdown';
     dropdown.addEventListener('change', function(){applyRRULE();});
     let select = addOptionToSelect(dropdown, 'daily-frequency-1', '1', "Every day");
     select.checked = true;
@@ -1953,12 +1970,14 @@ function createDailyIntervalDropdown() {
     div.appendChild(dropdown);
 }
 function createFrequencyDropdown(startDate) {
-    var parent = document.getElementById("rrule-modal");
+    var parent = document.getElementById("rrule-container-1");
     var div = document.createElement("div");
+    div.className = 'rrule-container-block';
     parent.appendChild(div);
 
     var dropdown = document.createElement("select");
     dropdown.id='frequency-dropdown';
+    dropdown.className = 'custom-dropdown';
     dropdown.addEventListener('change', function(){changeFrequency(startDate);});
 
     addOptionToSelect(dropdown, 'freq-daily', 'DAILY', "Daily");
@@ -1996,6 +2015,7 @@ function createRepeatDropdown(startDate) {
     var dropdown = document.createElement("select");
     dropdown.id='repeat-dropdown';
     dropdown.name='repeat-dropdown';
+    dropdown.className = 'custom-dropdown';
     dropdown.addEventListener('change', function(){changeRepeatOption(startDate);});
 
     if (rrule != null && rrule.length > 0) {
@@ -2074,14 +2094,14 @@ function resetRRULEUI() {
 }
 function changeFrequency(startDate) {
     let freq = document.getElementById('frequency-dropdown').value;
-    console.log("frequency-dropdown=" + freq);
+    //console.log("frequency-dropdown=" + freq);
     rrule = "FREQ=" + freq + ";" + removePart("FREQ");
     processRRULE(startDate);
 }
 function changeMonthlyBy(startDate) {
     let freq = document.getElementById('frequency-dropdown').value;
     let by = document.getElementById('frequency-dropdown-monthly').value;
-    console.log("frequency-dropdown-monthly=" + by);
+    //console.log("frequency-dropdown-monthly=" + by);
 
     let val = "";
     var updatedRRule = rrule;
