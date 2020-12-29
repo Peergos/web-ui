@@ -104,7 +104,7 @@ module.exports = {
                 } else if (e.data.action == 'requestCalendarReload') {
                     that.reloadCalendar();
                 } else if (e.data.action == 'requestChoiceSelection') {
-                    that.requestChoiceSelection();
+                    that.requestChoiceSelection(e.data.method);
                 }
             }
         });
@@ -121,15 +121,15 @@ module.exports = {
             this.load(calendar, year, month);
         }
 	},
-	requestChoiceSelection: function() {
+	requestChoiceSelection: function(method) {
 	    let that = this;
-        this.choice_message = 'Modify Event';
-        this.choice_body = 'Make a choice...';
+        this.choice_message = method + ' Event';
+        this.choice_body = '';
         this.choice_consumer_func = (index) => {
             //console.log("response=" + response);
-            that.postMessage({type: 'respondChoiceSelection', optionIndex: index});
+            that.postMessage({type: 'respondChoiceSelection', optionIndex: index, method: method});
         };
-        this.choice_options = ['All events', 'Just this event', 'All future events'];
+        this.choice_options = ['All occurrences', 'This occurrence', 'All future occurrences'];
         this.showChoice = true;
 	},
     reloadCalendar: function() {

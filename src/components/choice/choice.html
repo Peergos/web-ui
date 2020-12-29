@@ -11,11 +11,13 @@
       <div class="container" style="word-wrap:break-word;width:auto">
         <p id='choice-body-id' >{{choice_body}}</p>
       </div>
-      <div v-for="(option, key) in choice_options">
-        <label>{{ option }}</label>
-        <input type="radio" :id="key" :value="key" v-model="picked">
+      <div class="choice-row">
+        <div v-for="(option, key) in choice_options" class="choice-block">
+          <input type="radio" :id="key" :value="key" v-model="picked">
+          <label>{{ option }}</label>
+        </div>
       </div>
-      <button class="btn btn-success btn-lg" @click="confirm()" style="margin:10%">
+      <button class="btn btn-success btn-lg" @click="confirm()" >
         Confirm
       </button>
     </div>
