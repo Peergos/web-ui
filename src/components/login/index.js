@@ -8,6 +8,7 @@ module.exports = {
             username: "",
             passwordFieldType: "password",
             password: [],
+	    token: "",
             demo: isDemo,
             isFirefox: false,
             isSafari: false,
@@ -50,9 +51,13 @@ module.exports = {
 		    props.link = fragment;
 		}
 	    }
-            if (href.includes("?signup=true"))
+            if (href.includes("?signup=true")) {
+		if (href.includes("token=")) {
+		    var urlParams = new URLSearchParams(window.location.search);
+		    this.token = urlParams.get("token");
+		}
 		this.showSignup();
-            else if (props.secretLink) {
+            } else if (props.secretLink) {
 		// this is a secret link
 		this.isSecretLink = true;
 		console.log("Navigating to secret link...");
@@ -167,7 +172,8 @@ module.exports = {
                         username:that.lowercaseUsername(),
                         password1:that.password,
                         crypto: that.crypto,
-                        network: network
+                        network: network,
+			token: that.token
                     })
                 });
         }

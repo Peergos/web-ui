@@ -241,7 +241,9 @@ Version: web-ui/${repository.version}</echo>
       <arg value="true"/>
       <arg value="-max-daily-signups"/>
       <arg value="1000"/>
-      <!-- uncomment these to test payments
+      <arg value="-generate-token"/>
+      <arg value="true"/>
+      <!-- uncomment these to test payments!
       <arg value="quota-admin-address"/>
       <arg value="/ip4/127.0.0.1/tcp/6000"/>
       !-->
