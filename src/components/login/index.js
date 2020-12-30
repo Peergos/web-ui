@@ -53,11 +53,8 @@ module.exports = {
 	    }
             if (href.includes("?signup=true")) {
 		if (href.includes("token=")) {
-		    var part = href.substring(href.indexOf("token=") + 6);
-		    if (part.includes("&"))
-			part = part.substring(0, part.indexOf("&"));
-		    this.token = part;
-		    console.log("token: " + this.token);
+		    var urlParams = new URLSearchParams(window.location.search);
+		    this.token = urlParams.get("token");
 		}
 		this.showSignup();
             } else if (props.secretLink) {
