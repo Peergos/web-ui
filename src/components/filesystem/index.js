@@ -1971,8 +1971,6 @@ module.exports = {
         },
 
         setMenu: function(top, left, menuId) {
-            console.log("open menu");
-
             if (this.isNotBackground) {
                 this.ignoreEvent = true;
             }

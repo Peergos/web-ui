@@ -6,7 +6,6 @@ module.exports = {
     },
     props: ['message'],
     created: function() {
-        console.debug('Spinner module created!');
         var that = this;
         Vue.nextTick(function() {
             that.spinner.spin(document.getElementById("spinner"));

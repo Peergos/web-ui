@@ -22,7 +22,6 @@ module.exports = {
     },
     props: {},
     created: function() {
-        console.debug('Login module created!');
 	this.updateNetwork();
     },
     watch: {
