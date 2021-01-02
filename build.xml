@@ -158,7 +158,13 @@
     </condition>
   </target>
   
-  <target name="dist" depends="clean, clean_server, compile_server, ui, git.revision" description="regenerate the server">
+  <target name="javac_version" description="Store javac version in ${javac.version}">
+    <exec executable="javac" outputproperty="javac.version" failifexecutionfails="false" errorproperty="">
+      <arg value="-version"/>
+    </exec>
+  </target>
+  
+  <target name="dist" depends="clean, clean_server, compile_server, ui, git.revision, javac_version" description="regenerate the server">
     <mkdir dir="${server}"/>
     <mkdir dir="${server}/webroot"/>
 
@@ -183,7 +189,8 @@
     <mkdir dir="META-INF"/>
     <echo file="META-INF/MANIFEST.MF">Main-Class: peergos.server.Main
 Class-Path: .
-Version: web-ui/${repository.version}</echo>
+Version: web-ui/${repository.version}
+Javac-Version: ${javac.version}</echo>
     <zip destfile="${server}/Peergos.jar" basedir="." includes="META-INF/MANIFEST.MF" update="true"></zip>
     <!-- Canonicalise jar -->
     <exec executable="java">
