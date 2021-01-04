@@ -129,7 +129,7 @@ module.exports = {
             //console.log("response=" + response);
             that.postMessage({type: 'respondChoiceSelection', optionIndex: index, method: method});
         };
-        this.choice_options = ['All occurrences', 'This occurrence', 'All future occurrences'];
+        this.choice_options = ['All events', 'This event', 'This and future events'];
         this.showChoice = true;
 	},
     reloadCalendar: function() {

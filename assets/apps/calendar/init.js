@@ -434,26 +434,47 @@ function addEXDateToSchedule(scheduleId, startDate) {
     let exDate = toICalTime(startDate, false);
     vvent.addPropertyWithValue('exdate', exDate);
 }
+//FIXME not according to spec
+function addUntilToSchedule(schedule, until) {
+    var comp = LoadedEvents[schedule.id];
+    let vevents = comp.getAllSubcomponents('vevent');
+    let vvent = vevents[0];
+
+    let start = moment.utc(until.getFullYear() + '-01-01');
+    start.add(until.getMonth(), 'months');
+    start.add(until.getDate() -2, 'd');
+    start.add(23, 'h');
+    start.add(59, 'm');
+    start.add(59, 's');
+    start.add(0, 'ms');
+    let untilDate = toICalTime(start.toDate(), false);
+    schedule.raw.previousRecurrenceRule = '' + rrule;
+    rrule = removePart("UNTIL");
+    rrule = rrule + "UNTIL=" + untilDate.toICALString();
+    schedule.recurrenceRule = rrule;
+}
 function removeScheduleFromCalendar(choiceIndex, schedule) {
     if (schedule.raw.hasRecurrenceRule) {
         let parentId = schedule.id.substring(0, schedule.id.indexOf(recurringEventIdSeparatorToken));
         let firstScheduledInstance = removeRecurringScheduleInstances(parentId);
         if (choiceIndex == 0 || firstScheduledInstance == null) { //delete everything
-            RecurringSchedules.splice(RecurringSchedules.findIndex(v => v.id === parentId), 1);
             let idx = RecurringSchedules.findIndex(v => v.id === parentId);
             let recurringSchedule = RecurringSchedules[idx];
             deleteSchedule(recurringSchedule);
-        } else if (choiceIndex == 1){ //delete just this instance
-            addEXDateToSchedule(parentId, schedule.start);
+            RecurringSchedules.splice(RecurringSchedules.findIndex(v => v.id === parentId), 1);
+        } else {
             firstScheduledInstance.id = parentId;
+            if (choiceIndex == 1){ //delete just this instance
+                addEXDateToSchedule(parentId, schedule.start);
+            } else { //until
+                addUntilToSchedule(firstScheduledInstance, schedule.start);
+            }
             CachedYearMonths.forEach(function(yearMonth) {
                 let newSchedules = loadSchedule(firstScheduledInstance, yearMonth);
                 cal.createSchedules(newSchedules);
             });
             let serialisedSchedule = serialiseICal(firstScheduledInstance);
             save(firstScheduledInstance, serialisedSchedule, firstScheduledInstance.calendarId);
-        } else { //until
-
         }
     } else {
         cal.deleteSchedule(schedule.id, schedule.calendarId);
@@ -697,15 +718,21 @@ function loadSchedule(schedule, yearMonth) {
     let year = Math.floor(yearMonth / 12);
     let month = yearMonth % 12;
     var icalComponent = LoadedEvents[schedule.id];
-
     let vevents = icalComponent.getAllSubcomponents('vevent');
     let vvent = vevents[0];
     let newSchedules = [];
     if (vvent.hasProperty('rrule') || vvent.hasProperty('rdate')){
         let endOfMonthExclusive = moment.utc(year + '-01-01');
         endOfMonthExclusive.add(month + 1, 'months');
-        //let rangeEnd = endOfMonthExclusive.toISOString();
-        let rangeEnd = toICalTime(endOfMonthExclusive.toDate(), schedule.isAllDay);
+        var rangeEnd = toICalTime(endOfMonthExclusive.toDate(), schedule.isAllDay);
+        if (schedule.raw.hasRecurrenceRule) {
+            let rule = ICAL.Recur.fromString(schedule.recurrenceRule);
+            if (rule.until != null) {
+                if (rule.until.compare(rangeEnd) < 0) {
+                    rangeEnd = rule.until;
+                }
+            }
+        }
         let dtStart = vvent.getFirstPropertyValue('dtstart');
         if (dtStart.compare(toICalTime(endOfMonthExclusive.toDate(), schedule.isAllDay)) > 0) {
             return;
@@ -2297,7 +2324,7 @@ function generateRRuleText() {
     }
     let until = extractPart("UNTIL", function(val){return val;});
     if (until.length > 0) {
-        buffer = buffer + " until " + formatDateString(until);
+        buffer = buffer + " until " + formatUntil();
     }
     let occurrences = extractPart("COUNT", function(val){return val;});
     if (occurrences.length > 0 && occurrences != "1") {
@@ -2305,6 +2332,11 @@ function generateRRuleText() {
     }
 
     return buffer;
+}
+function formatUntil() {
+    let rule = ICAL.Recur.fromString(rrule);
+    let jsDateString = rule.until.toJSDate().toISOString().split("-").join("");
+    return formatDateString(jsDateString);
 }
 function formatDateString(yyyymmdd) {
     return yyyymmdd.substring(0,4) + '-' + yyyymmdd.substring(4,6) + '-' + yyyymmdd.substring(6,8);
@@ -2320,6 +2352,22 @@ function parseRRULE() {
     );
     if (frequency == null) {
         showRecurrenceError("Frequency specified not supported");
+        return false;
+    }
+    let weekStartOK = extractPart("WKST",
+        function(val){
+            if (val.length == 0) {
+                return true;
+            }
+            let values = val.trim().split(",");
+            if (values.length > 1) {
+                return false;
+            }
+            return confirmValues(values, byDayLabelParts);
+        }
+    );
+    if (!weekStartOK) {
+        showRecurrenceError("Week Start specified not supported");
         return false;
     }
     let intervalOK = extractPart("INTERVAL",
@@ -2511,25 +2559,9 @@ function monthStepsValidator(val) {
 function isDigit(c) {
     return c >= '0' && c <= '9'
 }
-//ie 20201218T000000Z
 function dateValidator(val) {
-    if (val.charAt(8) != 'T') {
-        return false;
-    }
-    if (!val.endsWith('Z')){
-        return false;
-    }
-    for(var i = 0; i < 8; i++) {
-        if (!isDigit(val.charAt(i))){
-            return false;
-        }
-    }
-    for(var i = 9; i < 9+6; i++) {
-        if (!(isDigit(val.charAt(i)) && val[i] == "0")){
-            return false;
-        }
-    }
-    return true;
+    let rule = ICAL.Recur.fromString(rrule);
+    return rule.until != null;
 }
 function initRepeatCondition() {
     var untilProvided = false;
@@ -2537,8 +2569,9 @@ function initRepeatCondition() {
         function(val){
             if (dateValidator(val)) {
                 untilProvided = true;
-                return val;
-             }else {
+                let rule = ICAL.Recur.fromString(rrule);
+                return rule.until.toJSDate().toISOString().split("-").join("");
+            }else {
                 return new Date().toISOString().split("-").join("");
             }
         }
@@ -2610,7 +2643,7 @@ function handleRepeatCondition() {
             showRecurrenceError("Please select Date");
         } else {
             let dateParts = untilDate.split('-');
-            let formattedDate = dateParts[0] + dateParts[1] + dateParts[2] + "T000000Z";
+            let formattedDate = dateParts[0] + dateParts[1] + dateParts[2] + "T235959Z";//FIXME TODO not correct format according to spec
             return ";UNTIL=" + formattedDate;
         }
     }
