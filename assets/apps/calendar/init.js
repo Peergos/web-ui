@@ -199,8 +199,12 @@ function handleScheduleUpdate(event) {
         changes.category = 'time';
     }
     let originalSchedule = cal.getSchedule(schedule.id, previousCalendarId);
-    if (originalSchedule.raw.previousRecurrenceRule.length > 0) {
-        requestChoiceSelection("Edit", event);
+    if (originalSchedule.raw.previousRecurrenceRule.length > 0 || originalSchedule.raw.isException) {
+        if (changes && (changes.start != null || changes.end != null || changes.isAllDay != null)) {
+            requestChoiceSelection("Edit", event, false);
+        } else {
+            requestChoiceSelection("Edit", event, true);
+        }
     } else {
         cal.updateSchedule(schedule.id, schedule.calendarId, changes);
         let updatedCalendarId = (changes != null && changes.calendarId != null) ? changes.calendarId : schedule.calendarId;
@@ -235,15 +239,15 @@ function handleScheduleUpdate(event) {
 function handleScheduleDeletion(event) {
     let schedule = event.schedule;
     if(schedule.raw.hasRecurrenceRule || schedule.raw.isException) {
-        requestChoiceSelection("Delete", event);
+        requestChoiceSelection("Delete", event, true);
     } else {
         removeScheduleFromCalendar(0, schedule);
     }
 }
-function requestChoiceSelection(method, event) {
+function requestChoiceSelection(method, event, includeChangeAll) {
     console.log("requestChoiceSelection method: " + method);
     eventToActOn = event;
-    mainWindow.postMessage({action: "requestChoiceSelection", method: method}, origin);
+    mainWindow.postMessage({action: "requestChoiceSelection", method: method, includeChangeAll: includeChangeAll}, origin);
 }
 function respondToChoiceSelection(index, method) {
     console.log("respondToChoiceSelection: " + index + " method: " + method);
@@ -253,6 +257,7 @@ function respondToChoiceSelection(index, method) {
         editRecurringSchedule(index, eventToActOn);
     }
 }
+//todo handle when index = 1 and exception created is first instance!!
 function editRecurringSchedule(index, event) {
     var schedule = event.schedule;
     var changes = event.changes;
@@ -267,14 +272,45 @@ function editRecurringSchedule(index, event) {
     updatedSchedule.raw.hasRecurrenceRule = rrule.length > 0 ? true : false;
 
     let parentId = schedule.raw.parentId;
-    updatedSchedule.id = parentId;
-
     //remove all instances
-    removeRecurringScheduleInstances(parentId);
-
+    let firstScheduledInstance = removeRecurringScheduleInstances(parentId);
+    RecurringSchedules.splice(RecurringSchedules.findIndex(v => v.id === parentId), 1);
     if (index == 0) {
-        RecurringSchedules.splice(RecurringSchedules.findIndex(v => v.id === parentId), 1);
+        if(updatedSchedule.raw.isException) {
+            firstScheduledInstance.raw.exceptions.splice(firstScheduledInstance.raw.exceptions.findIndex(v => v.id === updatedSchedule.id), 1);
+            firstScheduledInstance.raw.exceptions.push(updatedSchedule);
+            firstScheduledInstance.calendarId = updatedSchedule.calendarId;
+            firstScheduledInstance.title = updatedSchedule.title;
+            firstScheduledInstance.body = updatedSchedule.body;
+            firstScheduledInstance.category = updatedSchedule.category;
+            firstScheduledInstance.location = updatedSchedule.location;
+            firstScheduledInstance.attendees = updatedSchedule.attendees;
+            firstScheduledInstance.state = updatedSchedule.state;
+            firstScheduledInstance.color = updatedSchedule.color;
+            firstScheduledInstance.bgColor = updatedSchedule.bgColor;
+            firstScheduledInstance.dragBgColor = updatedSchedule.dragBgColor;
+            firstScheduledInstance.borderColor = updatedSchedule.borderColor;
+            firstScheduledInstance.raw.memo = updatedSchedule.raw.memo;
+            firstScheduledInstance.raw.parentId = null;
+        }
+        updatedSchedule = firstScheduledInstance;
+    } else if (index == 1) { //single instance
+        if(updatedSchedule.raw.isException) {
+            firstScheduledInstance.raw.exceptions.splice(firstScheduledInstance.raw.exceptions.findIndex(v => v.id === updatedSchedule.id), 1);
+        } else {
+            updatedSchedule.id =  parentId + recurrenceIdSeparatorToken + toICalTime(updatedSchedule.start, false).toString();
+            updatedSchedule.raw.parentId = parentId;
+            updatedSchedule.raw.isException = true;
+            updatedSchedule.recurrenceRule = '';
+            updatedSchedule.raw.hasRecurrenceRule =  false;
+            updatedSchedule.raw.previousRecurrenceRule = schedule.recurrenceRule;
+            updatedSchedule.raw.exceptions = [];
+        }
+        firstScheduledInstance.raw.exceptions.push(updatedSchedule);
+        updatedSchedule = firstScheduledInstance;
+    } else { //until
     }
+    updatedSchedule.id = parentId;
     let serialisedSchedule = serialiseICal(updatedSchedule);
     if(updatedSchedule.raw.hasRecurrenceRule) {
         RecurringSchedules.push(updatedSchedule);
@@ -608,6 +644,7 @@ function buildScheduleFromEvent(event) {
     schedule.raw.previousRecurrenceRule = schedule.recurrenceRule;
     return schedule;
 }
+//only copying references. Is that right?
 function cloneSchedule(scheduleOrig, newId, start, end) {
     var schedule = new ScheduleInfo();
     schedule.id = newId;
@@ -621,7 +658,7 @@ function cloneSchedule(scheduleOrig, newId, start, end) {
     schedule.end = end;
     //schedule.isPrivate = scheduleOrig.isPrivate;
     schedule.location = scheduleOrig.location;
-    schedule.attendees = scheduleOrig.attendees.slice();
+    schedule.attendees = scheduleOrig.attendees;
     schedule.recurrenceRule = scheduleOrig.recurrenceRule;
     schedule.raw.previousRecurrenceRule = scheduleOrig.raw.previousRecurrenceRule;
     schedule.state = scheduleOrig.state;
@@ -633,7 +670,7 @@ function cloneSchedule(scheduleOrig, newId, start, end) {
     schedule.raw.creator.name = scheduleOrig.raw.creator.name;
     schedule.raw.hasRecurrenceRule =  scheduleOrig.raw.hasRecurrenceRule;
     schedule.raw.parentId = scheduleOrig.id;
-    schedule.raw.exceptions = scheduleOrig.raw.exceptions.slice();
+    schedule.raw.exceptions = scheduleOrig.raw.exceptions;
     return schedule;
 }
 
@@ -801,7 +838,7 @@ function loadSchedule(schedule, yearMonth) {
                 let next = events.occurrences[i];
                 if (next.startDate.compare(rangeStart) >= 0 && next.startDate.compare(rangeEnd) < 0) {
                     //console.log(next.toString());
-                    let newSchedule = recalculateSchedule(schedule, vvent, next.startDate, next.recurrenceId);
+                    let newSchedule = recalculateSchedule(schedule, vvent, next.startDate);//, next.recurrenceId);
                     newSchedules.push(newSchedule);
                     monthCache.push(newSchedule);
                     ScheduleList.push(newSchedule);
@@ -828,7 +865,7 @@ function loadSchedule(schedule, yearMonth) {
     }
     return newSchedules;
 }
-function recalculateSchedule(schedule, iCalEvent, nextDtStart, recurrenceId) {
+function recalculateSchedule(schedule, iCalEvent, nextDtStart) {
     let dtStart = iCalEvent.getFirstPropertyValue('dtstart');
     var start = nextDtStart.toJSDate();
     var end;
@@ -847,7 +884,7 @@ function recalculateSchedule(schedule, iCalEvent, nextDtStart, recurrenceId) {
     let icalTime =  toICalTime(start, false);
     let newId = schedule.id + recurringEventIdSeparatorToken + icalTime.toString();
     console.log(newId +" " + start);
-    return cloneSchedule(schedule, newId, moment(start).toDate(), moment(end).toDate());//recurrenceId.toJSDate()
+    return cloneSchedule(schedule, newId, moment(start).toDate(), moment(end).toDate());
 }
 
 function load(previousMonthEvents, currentMonthEvents, nextMonthEvents, recurringEvents, yearMonth, username) {
