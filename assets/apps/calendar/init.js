@@ -245,12 +245,10 @@ function handleScheduleDeletion(event) {
     }
 }
 function requestChoiceSelection(method, event, includeChangeAll) {
-    console.log("requestChoiceSelection method: " + method);
     eventToActOn = event;
     mainWindow.postMessage({action: "requestChoiceSelection", method: method, includeChangeAll: includeChangeAll}, origin);
 }
 function respondToChoiceSelection(index, method) {
-    console.log("respondToChoiceSelection: " + index + " method: " + method);
     if (method == "Delete") {
         removeScheduleFromCalendar(index, eventToActOn.schedule);
     } else if (method == "Edit") {
@@ -1454,8 +1452,27 @@ function updateRRULESummary() {
         let element = document.getElementById("rrule-summary");
         if (element != null) {
             element.innerText = generateRRuleText();
+        } else {
+            displayExceptionRRule(generateRRuleText());
         }
     }
+}
+//Todo - this is less than ideal
+function displayExceptionRRule(text) {
+    let eventDetails = document.getElementById("event-details");
+    var div1 = document.createElement("div");
+    eventDetails.appendChild(div1);
+
+    var span1 = document.createElement("span");
+    div1.appendChild(span1);
+
+    var img = document.createElement("img");
+    img.classList.add("repeat-icon");
+    img.classList.add("tui-full-calendar-ic-repeat-b");
+    span1.appendChild(img);
+    var span2 = document.createElement("span");
+    span2.innerText = text;
+    span1.appendChild(span2);
 }
 function buildExtraFieldsToSummary(eventData, that) {
 
@@ -1464,11 +1481,18 @@ function buildExtraFieldsToSummary(eventData, that) {
         rrule = "";
     } else {
         rrule = eventData.schedule.recurrenceRule;
+        if (eventData.schedule.raw.isException) {
+            let parent = RecurringSchedules[RecurringSchedules.findIndex(v => v.id === eventData.schedule.raw.parentId)];
+            rrule = parent.recurrenceRule;
+        }
         if (parseRRULE()) {
             rruleEditable = true;
             updateRRULESummary();
         } else {
             rruleEditable = false;
+            if (eventData.schedule.raw.isException) {
+                displayExceptionRRule(rrule);
+            }
         }
     }
 
@@ -1572,7 +1596,8 @@ function addExtraFieldsToDetail(eventData) {
     monthlyByDayChoices();
     monthlyByDateChoices();
     repeatCondition();
-    createRepeatDropdown(startDate);
+    let readOnly = eventData.schedule != null && eventData.schedule.raw.isException ? true : false;
+    createRepeatDropdown(startDate, readOnly);
 
 
     let lock = document.getElementById("tui-full-calendar-schedule-private");
@@ -2153,7 +2178,7 @@ function addOptionToSelect(selectElement, id, value, innerText) {
     return option;
 }
 
-function createRepeatDropdown(startDate) {
+function createRepeatDropdown(startDate, isReadOnly) {
 
     let dayOfWeek = startDate.day();
     let dayOfMonth = startDate.date();
@@ -2217,7 +2242,9 @@ function createRepeatDropdown(startDate) {
     custom.value='CUSTOM';
     custom.innerText = "Custom...";
     dropdown.appendChild(custom);
-
+    if (isReadOnly) {
+        dropdown.disabled = true;
+    }
     parent.appendChild(dropdown);
 }
 function resetRRULEUI() {
