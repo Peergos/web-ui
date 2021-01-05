@@ -67,6 +67,7 @@ let colorPickerElement = document.getElementById('color-picker');
 var calendarRequiresReload = false;
 
 //--rrule
+let recurrenceIdSeparatorToken = '|';
 let recurringEventIdSeparatorToken = '_';
 var rrule = "";
 var rrule_handler = null;
@@ -233,10 +234,10 @@ function handleScheduleUpdate(event) {
 }
 function handleScheduleDeletion(event) {
     let schedule = event.schedule;
-    if(schedule.raw.hasRecurrenceRule) {
+    if(schedule.raw.hasRecurrenceRule || schedule.raw.isException) {
         requestChoiceSelection("Delete", event);
     } else {
-        removeScheduleFromCalendar(schedule);
+        removeScheduleFromCalendar(0, schedule);
     }
 }
 function requestChoiceSelection(method, event) {
@@ -249,10 +250,10 @@ function respondToChoiceSelection(index, method) {
     if (method == "Delete") {
         removeScheduleFromCalendar(index, eventToActOn.schedule);
     } else if (method == "Edit") {
-        editRecurringSchedule(eventToActOn);
+        editRecurringSchedule(index, eventToActOn);
     }
 }
-function editRecurringSchedule(event) {
+function editRecurringSchedule(index, event) {
     var schedule = event.schedule;
     var changes = event.changes;
     let previousCalendarId = schedule.calendarId;
@@ -265,13 +266,17 @@ function editRecurringSchedule(event) {
     updatedSchedule.recurrenceRule = rrule;
     updatedSchedule.raw.hasRecurrenceRule = rrule.length > 0 ? true : false;
 
-    //remove all instances
-    let parentId = schedule.id.substring(0, schedule.id.indexOf(recurringEventIdSeparatorToken));
-    removeRecurringScheduleInstances(parentId);
-    RecurringSchedules.splice(RecurringSchedules.findIndex(v => v.id === parentId), 1);
+    let parentId = schedule.raw.parentId;
     updatedSchedule.id = parentId;
+
+    //remove all instances
+    removeRecurringScheduleInstances(parentId);
+
+    if (index == 0) {
+        RecurringSchedules.splice(RecurringSchedules.findIndex(v => v.id === parentId), 1);
+    }
     let serialisedSchedule = serialiseICal(updatedSchedule);
-    if(schedule.raw.hasRecurrenceRule) {
+    if(updatedSchedule.raw.hasRecurrenceRule) {
         RecurringSchedules.push(updatedSchedule);
         CachedYearMonths.forEach(function(yearMonth) {
             let newSchedules = loadSchedule(updatedSchedule, yearMonth);
@@ -289,7 +294,8 @@ function removeRecurringScheduleInstances(parentId) {
     let repeats = [];
     let firstScheduleInstance = null;
     ScheduleList.forEach(function(item, idx) {
-        if (item.id.startsWith(parentId + recurringEventIdSeparatorToken)) {
+        if (item.id.startsWith(parentId + recurringEventIdSeparatorToken) ||
+            item.id.startsWith(parentId + recurrenceIdSeparatorToken)) {
             if (idx == 0) {
                 firstScheduleInstance = item;
             }
@@ -416,6 +422,9 @@ function ScheduleInfo() {
         memo: '',
         hasToOrCc: false,
         hasRecurrenceRule: false,
+        exceptions: [],
+        isException: false,
+        parentId: null,
         location: null,
         class: 'public', // or 'private'
         creator: {
@@ -454,8 +463,8 @@ function addUntilToSchedule(schedule, until) {
     schedule.recurrenceRule = rrule;
 }
 function removeScheduleFromCalendar(choiceIndex, schedule) {
-    if (schedule.raw.hasRecurrenceRule) {
-        let parentId = schedule.id.substring(0, schedule.id.indexOf(recurringEventIdSeparatorToken));
+    if (schedule.raw.hasRecurrenceRule || schedule.raw.isException) {
+        let parentId = schedule.raw.parentId;
         let firstScheduledInstance = removeRecurringScheduleInstances(parentId);
         if (choiceIndex == 0 || firstScheduledInstance == null) { //delete everything
             let idx = RecurringSchedules.findIndex(v => v.id === parentId);
@@ -464,10 +473,26 @@ function removeScheduleFromCalendar(choiceIndex, schedule) {
             RecurringSchedules.splice(RecurringSchedules.findIndex(v => v.id === parentId), 1);
         } else {
             firstScheduledInstance.id = parentId;
-            if (choiceIndex == 1){ //delete just this instance
-                addEXDateToSchedule(parentId, schedule.start);
-            } else { //until
-                addUntilToSchedule(firstScheduledInstance, schedule.start);
+            if (schedule.raw.isException) {
+                if (choiceIndex == 1){ //delete just this instance
+                    firstScheduledInstance.raw.exceptions.splice(firstScheduledInstance.raw.exceptions.findIndex(v => v.id === schedule.id), 1);
+                } else { //until
+                    addUntilToSchedule(firstScheduledInstance, schedule.start);
+                    let until = moment.utc(schedule.start.toUTCString());
+                    let filtered = firstScheduledInstance.raw.exceptions.filter(function(item){
+                        let dt = moment.utc(item.start.toUTCString());
+                        return dt >= until;
+                    });
+                    filtered.forEach(function(item){
+                        firstScheduledInstance.raw.exceptions.splice(firstScheduledInstance.raw.exceptions.findIndex(v => v.id === item.id), 1);
+                    });
+                }
+            } else {
+                if (choiceIndex == 1){ //delete just this instance
+                    addEXDateToSchedule(parentId, schedule.start);
+                } else { //until
+                    addUntilToSchedule(firstScheduledInstance, schedule.start);
+                }
             }
             CachedYearMonths.forEach(function(yearMonth) {
                 let newSchedules = loadSchedule(firstScheduledInstance, yearMonth);
@@ -488,19 +513,6 @@ function displayMessage(msg) {
     mainWindow.postMessage({type:"displayMessage", message: msg}, origin);
 }
 
-function unpackIcal(IcalFile, calendarId) {
-    let icalComponent = new ICAL.Component(ICAL.parse(IcalFile));
-    let vevents = icalComponent.getAllSubcomponents('vevent');
-    if(vevents.length != 1) {
-        let msg = "multiple events in ical not supported!";
-        console.log(msg);
-        displayMessage(msg);
-        return null;
-    }
-    let vvent = vevents[0];
-    LoadedEvents[vvent.getFirstPropertyValue('uid')] = icalComponent;
-    return unpackEvent(vvent, false, false, calendarId);
-}
 function unpackEvent(iCalEvent, fromImport, isSharedWithUs, calendarId) {
     let event = new Object();
     event['isAllDay'] = true;
@@ -542,18 +554,36 @@ function unpackEvent(iCalEvent, fromImport, isSharedWithUs, calendarId) {
     });
     event.attendees = allAttendees;
     event.recurrenceRule = iCalEvent.getFirstPropertyValue('rrule');
+    let recurrenceId = iCalEvent.getFirstPropertyValue('recurrence-id');
+    event.recurrenceId = recurrenceId != null ? recurrenceId.toString() : null;
     return event;
 }
 function buildCalendarEvent(eventInfo) {
-    let event = unpackIcal(eventInfo.data, findCalendarByName(eventInfo.calendarName).id);
-    if(event == null) {
-        return;
+    let icalComponent = new ICAL.Component(ICAL.parse(eventInfo.data));
+    let vevents = icalComponent.getAllSubcomponents('vevent');
+    var primary = null;
+    for(var idx = 0; idx < vevents.length; idx++) {
+        let vvent = vevents[idx];
+        let event = unpackEvent(vvent, false, false, findCalendarByName(eventInfo.calendarName).id);
+        let schedule = buildScheduleFromEvent(event);
+        if (event.recurrenceId == null) {
+            primary = schedule;
+            LoadedEvents[vvent.getFirstPropertyValue('uid')] = icalComponent;
+        } else {
+            primary.raw.exceptions.push(schedule);
+        }
     }
-    return buildScheduleFromEvent(event);
+    return primary;
 }
 function buildScheduleFromEvent(event) {
     var schedule = new ScheduleInfo();
-    schedule.id = event.Id;
+    if (event.recurrenceId != null) {
+        schedule.id = event.Id + recurrenceIdSeparatorToken + event.recurrenceId;
+        schedule.raw.parentId = event.Id;
+        schedule.raw.isException = true;
+    } else {
+        schedule.id = event.Id;
+    }
     schedule.calendarId = event.calendarId;
     schedule.title = event.title == null ? "No Title" : event.title;
     schedule.body = '';
@@ -578,7 +608,7 @@ function buildScheduleFromEvent(event) {
     schedule.raw.previousRecurrenceRule = schedule.recurrenceRule;
     return schedule;
 }
-function cloneSchedule(scheduleOrig, newId, start, end, recurrenceId) {
+function cloneSchedule(scheduleOrig, newId, start, end) {
     var schedule = new ScheduleInfo();
     schedule.id = newId;
     schedule.calendarId = scheduleOrig.calendarId;
@@ -602,7 +632,8 @@ function cloneSchedule(scheduleOrig, newId, start, end, recurrenceId) {
     schedule.raw.memo = scheduleOrig.raw.memo;
     schedule.raw.creator.name = scheduleOrig.raw.creator.name;
     schedule.raw.hasRecurrenceRule =  scheduleOrig.raw.hasRecurrenceRule;
-    schedule.raw.recurrenceId = recurrenceId;
+    schedule.raw.parentId = scheduleOrig.id;
+    schedule.raw.exceptions = scheduleOrig.raw.exceptions.slice();
     return schedule;
 }
 
@@ -642,24 +673,35 @@ function updateCache(oldSchedule, newSchedule) {
 }
 function importICSFile(contents, username, isSharedWithUs, loadCalendarAsGuest, calendarName, showConfirmation) {
     currentUsername = username;
-    let icalComponent = new ICAL.Component(ICAL.parse(contents));
-    let vevents = icalComponent.getAllSubcomponents('vevent');
-    let allEvents = [];
-    let allEventSummaries = [];
     if (loadCalendarAsGuest) {
         var yearMonth = currentMoment.year() * 12 + currentMoment.month();
         load([], [], [], [], yearMonth, "unknown");
     }
-    vevents.forEach(function(vvent, idx) {
-        let schedule = buildScheduleFromEvent(unpackEvent(vvent, true, isSharedWithUs, CALENDAR_ID_MY_CALENDAR));
+    let icalComponent = new ICAL.Component(ICAL.parse(contents));
+    let vevents = icalComponent.getAllSubcomponents('vevent');
+    let scheduleMap = {};
+    let scheduleList = [];
+    for(var idx = 0; idx < vevents.length; idx++) {
+        let vvent = vevents[idx];
+        let event = unpackEvent(vvent, true, isSharedWithUs, CALENDAR_ID_MY_CALENDAR);
+        let schedule = buildScheduleFromEvent(event);
+        if (event.recurrenceId == null) {
+            scheduleMap[schedule.id] = schedule;
+            LoadedEvents[schedule.id] = buildComponentFromEvent(vvent);
+            scheduleList.push(schedule);
+        } else {
+            let origSchedule = scheduleMap[schedule.raw.parentId];
+            origSchedule.raw.exceptions.push(schedule);
+        }
+    }
+    let allEvents = [];
+    let allEventSummaries = [];
+    for(var i = 0 ; i < scheduleList.length; i++) {
+        let schedule = scheduleList[i];
         let output = serialiseICal(schedule);
         let dt = moment.utc(schedule.start.toUTCString());
         if (loadCalendarAsGuest) {
             loadArbitrarySchedule(schedule, dt.year() * 12 + dt.month());
-            if(idx == vevents.length -1) {
-                removeSpinner();
-                disableToolbarButtons(false);
-            }
         } else {
             let year = dt.year();
             let month = dt.month() + 1;
@@ -667,11 +709,15 @@ function importICSFile(contents, username, isSharedWithUs, loadCalendarAsGuest, 
             let eventSummary = {datetime: moment(schedule.start.toUTCString()).format('YYYY MMMM Do, h:mm:ss a'), title: schedule.title + recurringText };
             allEvents.push({calendarName: calendarName, year: year, month: month, Id: schedule.id, item:output,
                     summary: eventSummary, isRecurring: schedule.raw.hasRecurrenceRule});
-            if(idx == vevents.length -1) {
-                mainWindow.postMessage({items:allEvents, showConfirmation: showConfirmation, type:"saveAll"}, origin);
-            }
         }
-    });
+    }
+    if (loadCalendarAsGuest) {
+        removeSpinner();
+        disableToolbarButtons(false);
+    }
+    if (allEvents.length > 0) {
+        mainWindow.postMessage({items:allEvents, showConfirmation: showConfirmation, type:"saveAll"}, origin);
+    }
 }
 function buildMonthScheduleCache(yearMonth) {
     let monthCache = ScheduleCache[yearMonth];
@@ -691,10 +737,8 @@ function loadAdditional(currentMonthEvents, yearMonth) {
     }
     for (var i = 0; i < currentMonthEvents.length; i++) {
         let schedule = buildCalendarEvent(currentMonthEvents[i]);
-        if (schedule != null) {
-            ScheduleList.push(schedule);
-            monthCache.push(schedule);
-        }
+        ScheduleList.push(schedule);
+        monthCache.push(schedule);
     }
     for (var i = 0; i < RecurringSchedules.length; i++) {
         let newSchedules = loadSchedule(RecurringSchedules[i], yearMonth);
@@ -712,6 +756,7 @@ function loadArbitrarySchedule(schedule, yearMonth) {
     setRenderRangeText();
     removeSpinner();
 }
+
 //TODO FIXME This MUST be revisited
 function loadSchedule(schedule, yearMonth) {
     let monthCache = buildMonthScheduleCache(yearMonth);
@@ -735,7 +780,7 @@ function loadSchedule(schedule, yearMonth) {
         }
         let dtStart = vvent.getFirstPropertyValue('dtstart');
         if (dtStart.compare(toICalTime(endOfMonthExclusive.toDate(), schedule.isAllDay)) > 0) {
-            return;
+            return [];
         }
         let dt = moment.utc(schedule.start.toUTCString());
         let start = moment.utc(year + '-01-01');
@@ -770,6 +815,12 @@ function loadSchedule(schedule, yearMonth) {
             console.log(ex);
             displayMessage(msg);
         }
+        let exceptions = filterSchedules(schedule.raw.exceptions, yearMonth);
+        exceptions.forEach(function(exception) {
+            monthCache.push(exception);
+            ScheduleList.push(exception);
+            newSchedules.push(exception);
+        });
     } else {
         monthCache.push(schedule);
         ScheduleList.push(schedule);
@@ -794,9 +845,9 @@ function recalculateSchedule(schedule, iCalEvent, nextDtStart, recurrenceId) {
 	    }
     }
     let icalTime =  toICalTime(start, false);
-    let newId = schedule.id + recurringEventIdSeparatorToken + icalTime.toICALString();
+    let newId = schedule.id + recurringEventIdSeparatorToken + icalTime.toString();
     console.log(newId +" " + start);
-    return cloneSchedule(schedule, newId, moment(start).toDate(), moment(end).toDate(), recurrenceId.toJSDate());
+    return cloneSchedule(schedule, newId, moment(start).toDate(), moment(end).toDate());//recurrenceId.toJSDate()
 }
 
 function load(previousMonthEvents, currentMonthEvents, nextMonthEvents, recurringEvents, yearMonth, username) {
@@ -807,20 +858,16 @@ function load(previousMonthEvents, currentMonthEvents, nextMonthEvents, recurrin
     let previousMonthCache = buildMonthScheduleCache(pYear * 12 + pMonth);
     for (var i = 0; i < previousMonthEvents.length; i++) {
         let schedule = buildCalendarEvent(previousMonthEvents[i]);
-        if (schedule != null) {
-            ScheduleList.push(schedule);
-            previousMonthCache.push(schedule);
-        }
+        ScheduleList.push(schedule);
+        previousMonthCache.push(schedule);
     }
     cYear = Math.floor(yearMonth / 12);
     cMonth = yearMonth % 12;
     let currentMonthCache = buildMonthScheduleCache(cYear * 12 + cMonth);
     for (var i = 0; i < currentMonthEvents.length; i++) {
         let schedule = buildCalendarEvent(currentMonthEvents[i]);
-        if (schedule != null) {
-            ScheduleList.push(schedule);
-            currentMonthCache.push(schedule);
-        }
+        ScheduleList.push(schedule);
+        currentMonthCache.push(schedule);
     }
     let nextYearMonth = yearMonth + 1;
     nYear = Math.floor(nextYearMonth / 12);
@@ -828,19 +875,15 @@ function load(previousMonthEvents, currentMonthEvents, nextMonthEvents, recurrin
     let nextMonthCache = buildMonthScheduleCache(nYear * 12 + nMonth);
     for (var i = 0; i < nextMonthEvents.length; i++) {
         let schedule = buildCalendarEvent(nextMonthEvents[i]);
-        if (schedule != null) {
-            ScheduleList.push(schedule);
-            nextMonthCache.push(schedule);
-        }
+        ScheduleList.push(schedule);
+        nextMonthCache.push(schedule);
     }
     for (var i = 0; i < recurringEvents.length; i++) {
         let schedule = buildCalendarEvent(recurringEvents[i]);
-        if (schedule != null) {
-            RecurringSchedules.push(schedule);
-            loadSchedule(schedule, previousYearMonth);
-            loadSchedule(schedule, yearMonth);
-            loadSchedule(schedule, nextYearMonth);
-        }
+        RecurringSchedules.push(schedule);
+        loadSchedule(schedule, previousYearMonth);
+        loadSchedule(schedule, yearMonth);
+        loadSchedule(schedule, nextYearMonth);
     }
     cal.createSchedules(ScheduleList);
     refreshScheduleVisibility();
@@ -848,7 +891,13 @@ function load(previousMonthEvents, currentMonthEvents, nextMonthEvents, recurrin
     removeSpinner();
     disableToolbarButtons(false);
 }
-
+function filterSchedules(schedules, yearMonth) {
+    let filtered = schedules.filter(function(schedule){
+        let dt = moment.utc(schedule.start.toUTCString());
+        return dt.year() * 12 + dt.month() == yearMonth;
+    });
+    return filtered;
+}
 function deleteSchedule(schedule) {
     let Id = schedule.id;
     let dt = moment.utc(schedule.start.toUTCString());
@@ -900,6 +949,9 @@ function serialiseICal(schedule, updateTimestamp) {
         comp.updatePropertyWithValue('prodid', '-//iCal.js');
         comp.updatePropertyWithValue('version', '2.0');
         let vevents = comp.getAllSubcomponents('vevent');
+        for(var j = 1; j < vevents.length; j++) {
+            comp.removeSubcomponent(vevents[j]);
+        }
         let vvent = vevents[0];
         vvent.updatePropertyWithValue('summary', schedule.title);
         vvent.updatePropertyWithValue('description', schedule.raw.memo);
@@ -920,33 +972,49 @@ function serialiseICal(schedule, updateTimestamp) {
         } else {
             vvent.removeProperty('rrule');
         }
+
+        schedule.raw.exceptions.forEach(function(exception) {
+            comp.addSubcomponent(buildEventFromSchedule(exception));
+        });
     } else {
         comp = new ICAL.Component(['vcalendar', [], []]);
         comp.updatePropertyWithValue('prodid', '-//iCal.js');
-        comp.updatePropertyWithValue('version', '2.0');
-        let vevent = new ICAL.Component('vevent'),
-        event = new ICAL.Event(vevent);
-        event.uid = schedule.id;
-        event.summary = schedule.title;
-        event.description = schedule.raw.memo;
-        event.location = schedule.location;
-        event.startDate = toICalTime(schedule.start, schedule.isAllDay);
-        event.endDate = toICalTime(schedule.end, schedule.isAllDay);
-        vevent.addPropertyWithValue('x-owner', schedule.raw.creator.name);
-        vevent.addPropertyWithValue('dtstamp', toICalTime(moment().toDate(), false));
-        if (schedule.state == CALENDAR_EVENT_CANCELLED) { //CANCELLED
-            vevent.addPropertyWithValue('status', "CANCELLED");
-        }
-        if (schedule.raw.hasRecurrenceRule) {
-            vevent.addPropertyWithValue('rrule', ICAL.Recur.fromString(schedule.recurrenceRule));
-        }
+        let vevent = buildEventFromSchedule(schedule);
         comp.addSubcomponent(vevent);
+        schedule.raw.exceptions.forEach(function(exception) {
+            comp.addSubcomponent(buildEventFromSchedule(exception));
+        });
         LoadedEvents[schedule.id] = comp;
     }
     return comp.toString();
 }
-
-
+function buildComponentFromEvent(vevent) {
+    let comp = new ICAL.Component(['vcalendar', [], []]);
+    comp.updatePropertyWithValue('prodid', '-//iCal.js');
+    comp.addSubcomponent(vevent);
+    return comp;
+}
+function buildEventFromSchedule(schedule) {
+    let vevent = new ICAL.Component('vevent'),
+    event = new ICAL.Event(vevent);
+    event.uid = schedule.raw.isException ? schedule.raw.parentId : schedule.id;
+    event.summary = schedule.title;
+    event.description = schedule.raw.memo;
+    event.location = schedule.location;
+    event.startDate = toICalTime(schedule.start, schedule.isAllDay);
+    event.endDate = toICalTime(schedule.end, schedule.isAllDay);
+    vevent.addPropertyWithValue('x-owner', schedule.raw.creator.name);
+    if (schedule.state == CALENDAR_EVENT_CANCELLED) { //CANCELLED
+        vevent.addPropertyWithValue('status', "CANCELLED");
+    }
+    if (schedule.raw.hasRecurrenceRule) {
+        vevent.addPropertyWithValue('rrule', ICAL.Recur.fromString(schedule.recurrenceRule));
+    }
+    if (schedule.raw.isException) {
+        vevent.addPropertyWithValue('recurrence-id', event.startDate);
+    }
+    return vevent;
+}
 function CalendarInfo() {
     this.id = null;
     this.name = null;
@@ -2397,7 +2465,7 @@ function parseRRULE() {
                 return true;
             } else {
                 untilProvided = true;
-                return dateValidator(val);
+                return untilDateValidator();
             }
         }
     );
@@ -2559,7 +2627,7 @@ function monthStepsValidator(val) {
 function isDigit(c) {
     return c >= '0' && c <= '9'
 }
-function dateValidator(val) {
+function untilDateValidator() {
     let rule = ICAL.Recur.fromString(rrule);
     return rule.until != null;
 }
@@ -2567,7 +2635,7 @@ function initRepeatCondition() {
     var untilProvided = false;
     let until = extractPart("UNTIL",
         function(val){
-            if (dateValidator(val)) {
+            if (untilDateValidator()) {
                 untilProvided = true;
                 let rule = ICAL.Recur.fromString(rrule);
                 return rule.until.toJSDate().toISOString().split("-").join("");
