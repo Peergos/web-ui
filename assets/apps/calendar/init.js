@@ -255,60 +255,84 @@ function respondToChoiceSelection(index, method) {
         editRecurringSchedule(index, eventToActOn);
     }
 }
-//todo handle when index = 1 and exception created is first instance!!
 function editRecurringSchedule(index, event) {
+
     var schedule = event.schedule;
     var changes = event.changes;
     let previousCalendarId = schedule.calendarId;
-
     //apply changes
     cal.updateSchedule(schedule.id, schedule.calendarId, changes);
     let updatedCalendarId = (changes != null && changes.calendarId != null) ? changes.calendarId : schedule.calendarId;
     let updatedSchedule = cal.getSchedule(schedule.id, updatedCalendarId);
-    updatedSchedule.raw.previousRecurrenceRule = updatedSchedule.recurrenceRule;
-    updatedSchedule.recurrenceRule = rrule;
-    updatedSchedule.raw.hasRecurrenceRule = rrule.length > 0 ? true : false;
-
+    if (!updatedSchedule.raw.isException) {
+        updatedSchedule.raw.previousRecurrenceRule = updatedSchedule.recurrenceRule;
+        updatedSchedule.recurrenceRule = rrule;
+        updatedSchedule.raw.hasRecurrenceRule = rrule.length > 0 ? true : false;
+    }
     let parentId = schedule.raw.parentId;
     //remove all instances
     let firstScheduledInstance = removeRecurringScheduleInstances(parentId);
-    RecurringSchedules.splice(RecurringSchedules.findIndex(v => v.id === parentId), 1);
-    if (index == 0) {
+    let recurringIndex = RecurringSchedules.findIndex(v => v.id === parentId);
+    let recurringSchedule = RecurringSchedules[recurringIndex];
+    RecurringSchedules.splice(recurringIndex, 1);
+    if (index == 0) { // all
+        //TODO update all other exceptions??
         if(updatedSchedule.raw.isException) {
             firstScheduledInstance.raw.exceptions.splice(firstScheduledInstance.raw.exceptions.findIndex(v => v.id === updatedSchedule.id), 1);
             firstScheduledInstance.raw.exceptions.push(updatedSchedule);
-            firstScheduledInstance.calendarId = updatedSchedule.calendarId;
-            firstScheduledInstance.title = updatedSchedule.title;
-            firstScheduledInstance.body = updatedSchedule.body;
-            firstScheduledInstance.category = updatedSchedule.category;
-            firstScheduledInstance.location = updatedSchedule.location;
-            firstScheduledInstance.attendees = updatedSchedule.attendees;
-            firstScheduledInstance.state = updatedSchedule.state;
-            firstScheduledInstance.color = updatedSchedule.color;
-            firstScheduledInstance.bgColor = updatedSchedule.bgColor;
-            firstScheduledInstance.dragBgColor = updatedSchedule.dragBgColor;
-            firstScheduledInstance.borderColor = updatedSchedule.borderColor;
-            firstScheduledInstance.raw.memo = updatedSchedule.raw.memo;
-            firstScheduledInstance.raw.parentId = null;
+            firstScheduledInstance = fromException(firstScheduledInstance, parentId, updatedSchedule);
+            recreateAndSaveSchedule(firstScheduledInstance, previousCalendarId);
+        } else {
+            updatedSchedule.id = parentId;
+            recreateAndSaveSchedule(updatedSchedule, previousCalendarId);
         }
-        updatedSchedule = firstScheduledInstance;
     } else if (index == 1) { //single instance
         if(updatedSchedule.raw.isException) {
             firstScheduledInstance.raw.exceptions.splice(firstScheduledInstance.raw.exceptions.findIndex(v => v.id === updatedSchedule.id), 1);
         } else {
-            updatedSchedule.id =  parentId + recurrenceIdSeparatorToken + toICalTime(updatedSchedule.start, false).toString();
+            if (firstScheduledInstance.id == updatedSchedule.id) {
+                firstScheduledInstance = cloneSchedule(recurringSchedule, updatedSchedule.id, updatedSchedule.start, updatedSchedule.end);
+            }
+            updatedSchedule.id =  parentId + recurrenceIdSeparatorToken + toICalTime(updatedSchedule.start, false).toICALString();
             updatedSchedule.raw.parentId = parentId;
             updatedSchedule.raw.isException = true;
             updatedSchedule.recurrenceRule = '';
             updatedSchedule.raw.hasRecurrenceRule =  false;
-            updatedSchedule.raw.previousRecurrenceRule = schedule.recurrenceRule;
+            updatedSchedule.raw.previousRecurrenceRule = '';
             updatedSchedule.raw.exceptions = [];
         }
         firstScheduledInstance.raw.exceptions.push(updatedSchedule);
-        updatedSchedule = firstScheduledInstance;
+        firstScheduledInstance.id = parentId;
+        recreateAndSaveSchedule(firstScheduledInstance, previousCalendarId);
     } else { //until
+        firstScheduledInstance.id = parentId;
+        addUntilToSchedule(firstScheduledInstance, updatedSchedule.start);
+        let until = moment.utc(updatedSchedule.start.toUTCString());
+        let filtered = firstScheduledInstance.raw.exceptions.filter(function(item){
+            let dt = moment.utc(item.start.toUTCString());
+            return dt >= until;
+        });
+        filtered.forEach(function(item){
+            firstScheduledInstance.raw.exceptions.splice(firstScheduledInstance.raw.exceptions.findIndex(v => v.id === item.id), 1);
+        });
+
+        recreateAndSaveSchedule(firstScheduledInstance, previousCalendarId);
+
+        let futureSchedule = updatedSchedule.raw.isException ?
+            fromException(firstScheduledInstance, uuidv4(), updatedSchedule)
+            :  cloneSchedule(updatedSchedule, uuidv4(), updatedSchedule.start, updatedSchedule.end);
+        futureSchedule.raw.exceptions = [];
+        filtered.forEach(function(item){
+            //TODO need to update exceptions??
+            if (updatedSchedule.id != item.id) {
+                futureSchedule.raw.exceptions.push(item);
+            }
+        });
+        recreateAndSaveSchedule(futureSchedule, futureSchedule.calendarId);
+
     }
-    updatedSchedule.id = parentId;
+}
+function recreateAndSaveSchedule(updatedSchedule, previousCalendarId) {
     let serialisedSchedule = serialiseICal(updatedSchedule);
     if(updatedSchedule.raw.hasRecurrenceRule) {
         RecurringSchedules.push(updatedSchedule);
@@ -323,6 +347,35 @@ function editRecurringSchedule(index, event) {
         cal.createSchedules([updatedSchedule]);
         addToCache(updatedSchedule);
     }
+}
+function fromException(parentSchedule, newId, exception) {
+    var schedule = new ScheduleInfo();
+    schedule.calendarId = exception.calendarId;
+    schedule.title = exception.title;
+    schedule.body = exception.body;
+    schedule.location = exception.location;
+    schedule.attendees = exception.attendees;
+    schedule.state = exception.state;
+    schedule.color = exception.color;
+    schedule.bgColor = exception.bgColor;
+    schedule.dragBgColor = exception.dragBgColor;
+    schedule.borderColor = exception.borderColor;
+    schedule.raw.memo = exception.raw.memo;
+    schedule.raw.parentId = null;
+
+    schedule.id = newId;
+    schedule.isReadOnly = parentSchedule.isReadOnly;
+    schedule.start = parentSchedule.start;
+    schedule.end = parentSchedule.end;
+    schedule.isAllDay = parentSchedule.isAllDay;
+    schedule.category = parentSchedule.category;
+
+    schedule.recurrenceRule = parentSchedule.recurrenceRule;
+    schedule.raw.creator.name = parentSchedule.raw.creator.name;
+    schedule.raw.hasRecurrenceRule =  parentSchedule.raw.hasRecurrenceRule;
+    schedule.raw.previousRecurrenceRule = parentSchedule.raw.previousRecurrenceRule;
+    schedule.raw.exceptions = parentSchedule.raw.exceptions;
+    return schedule;
 }
 function removeRecurringScheduleInstances(parentId) {
     let repeats = [];
@@ -880,7 +933,7 @@ function recalculateSchedule(schedule, iCalEvent, nextDtStart) {
 	    }
     }
     let icalTime =  toICalTime(start, false);
-    let newId = schedule.id + recurringEventIdSeparatorToken + icalTime.toString();
+    let newId = schedule.id + recurringEventIdSeparatorToken + icalTime.toICALString();
     console.log(newId +" " + start);
     return cloneSchedule(schedule, newId, moment(start).toDate(), moment(end).toDate());
 }
