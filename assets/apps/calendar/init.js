@@ -40,7 +40,8 @@ let handler = function (e) {
       }
 };
 window.addEventListener('message', handler);
-
+let calendarVersions = ['-//iCal.js','-//peergos.v1'];
+let currentVersion = 1;
 var currentUsername;
 var cal, resizeThrottled;
 var useCreationPopup = true;
@@ -63,8 +64,6 @@ let CALENDAR_EVENT_ACTIVE = "Active";
 var colorpicker = null;
 let colorPalette = ['#181818', '#282828', '#383838', '#585858', '#B8B8B8', '#D8D8D8', '#E8E8E8', '#F8F8F8', '#AB4642', '#DC9656', '#F7CA88', '#A1B56C', '#86C1B9', '#7CAFC2', '#BA8BAF', '#A16946'];
 let colorPickerElement = document.getElementById('color-picker');
-
-var calendarRequiresReload = false;
 
 //--rrule
 let recurrenceIdSeparatorToken = '|';
@@ -139,7 +138,7 @@ function buildUI(isCalendarReadonly) {
         'beforeCreateSchedule': function(e) {
             //console.log('beforeCreateSchedule', e);
             let schedule = buildNewSchedule(e);
-            let serialisedSchedule = serialiseICal(schedule);
+            let serialisedSchedule = serialiseICal(schedule, true);
             if (schedule.raw.hasRecurrenceRule) {
                 RecurringSchedules.push(schedule);
                 CachedYearMonths.forEach(function(yearMonth) {
@@ -222,7 +221,7 @@ function handleScheduleUpdate(event) {
             ScheduleList.splice(ScheduleList.findIndex(v => v.id === updatedSchedule.id), 1);
             removeFromCache(updatedSchedule);
             // add recurring
-            let serialisedSchedule = serialiseICal(updatedSchedule);
+            let serialisedSchedule = serialiseICal(updatedSchedule, true);
             RecurringSchedules.push(updatedSchedule);
             CachedYearMonths.forEach(function(yearMonth) {
                 let newSchedules = loadSchedule(updatedSchedule, yearMonth);
@@ -230,7 +229,7 @@ function handleScheduleUpdate(event) {
             });
             save(updatedSchedule, serialisedSchedule, previousCalendarId, "createRecurring");
         } else {
-            let serialisedSchedule = serialiseICal(updatedSchedule);
+            let serialisedSchedule = serialiseICal(updatedSchedule, true);
             save(updatedSchedule, serialisedSchedule, previousCalendarId);
         }
     }
@@ -333,7 +332,7 @@ function editRecurringSchedule(index, event) {
     }
 }
 function recreateAndSaveSchedule(updatedSchedule, previousCalendarId) {
-    let serialisedSchedule = serialiseICal(updatedSchedule);
+    let serialisedSchedule = serialiseICal(updatedSchedule, true);
     if(updatedSchedule.raw.hasRecurrenceRule) {
         RecurringSchedules.push(updatedSchedule);
         CachedYearMonths.forEach(function(yearMonth) {
@@ -585,7 +584,7 @@ function removeScheduleFromCalendar(choiceIndex, schedule) {
                 let newSchedules = loadSchedule(firstScheduledInstance, yearMonth);
                 cal.createSchedules(newSchedules);
             });
-            let serialisedSchedule = serialiseICal(firstScheduledInstance);
+            let serialisedSchedule = serialiseICal(firstScheduledInstance, true);
             save(firstScheduledInstance, serialisedSchedule, firstScheduledInstance.calendarId);
         }
     } else {
@@ -768,15 +767,15 @@ function importICSFile(contents, username, isSharedWithUs, loadCalendarAsGuest, 
     let icalComponent = new ICAL.Component(ICAL.parse(contents));
     let vevents = icalComponent.getAllSubcomponents('vevent');
     let scheduleMap = {};
-    let scheduleList = [];
+    let schedules = [];
     for(var idx = 0; idx < vevents.length; idx++) {
         let vvent = vevents[idx];
         let event = unpackEvent(vvent, true, isSharedWithUs, CALENDAR_ID_MY_CALENDAR);
         let schedule = buildScheduleFromEvent(event);
         if (event.recurrenceId == null) {
             scheduleMap[schedule.id] = schedule;
+            schedules.push(schedule);
             LoadedEvents[schedule.id] = buildComponentFromEvent(vvent);
-            scheduleList.push(schedule);
         } else {
             let origSchedule = scheduleMap[schedule.raw.parentId];
             origSchedule.raw.exceptions.push(schedule);
@@ -784,9 +783,20 @@ function importICSFile(contents, username, isSharedWithUs, loadCalendarAsGuest, 
     }
     let allEvents = [];
     let allEventSummaries = [];
-    for(var i = 0 ; i < scheduleList.length; i++) {
-        let schedule = scheduleList[i];
-        let output = serialiseICal(schedule);
+    for(var i = 0 ; i < schedules.length; i++) {
+        let schedule = schedules[i];
+        let output = serialiseICal(schedule, false);
+        if (schedule.raw.hasRecurrenceRule) {
+            RecurringSchedules.push(schedule);
+            CachedYearMonths.forEach(function(yearMonth) {
+                let newSchedules = loadSchedule(schedule, yearMonth);
+                cal.createSchedules(newSchedules);
+            });
+        } else {
+            ScheduleList.push(schedule);
+            cal.createSchedules([schedule]);
+            addToCache(schedule);
+        }
         let dt = moment.utc(schedule.start.toUTCString());
         if (loadCalendarAsGuest) {
             loadArbitrarySchedule(schedule, dt.year() * 12 + dt.month());
@@ -806,6 +816,7 @@ function importICSFile(contents, username, isSharedWithUs, loadCalendarAsGuest, 
     if (allEvents.length > 0) {
         mainWindow.postMessage({items:allEvents, showConfirmation: showConfirmation, type:"saveAll"}, origin);
     }
+    refreshScheduleVisibility();
 }
 function buildMonthScheduleCache(yearMonth) {
     let monthCache = ScheduleCache[yearMonth];
@@ -1040,6 +1051,8 @@ function serialiseICal(schedule, updateTimestamp) {
         for(var j = 1; j < vevents.length; j++) {
             comp.removeSubcomponent(vevents[j]);
         }
+        comp.updatePropertyWithValue('prodid', '-//iCal.js');
+        comp.updatePropertyWithValue('version', '2.0');
         let vvent = vevents[0];
         vvent.updatePropertyWithValue('summary', schedule.title);
         vvent.updatePropertyWithValue('description', schedule.raw.memo);
@@ -1067,6 +1080,7 @@ function serialiseICal(schedule, updateTimestamp) {
     } else {
         comp = new ICAL.Component(['vcalendar', [], []]);
         comp.updatePropertyWithValue('prodid', '-//iCal.js');
+        comp.updatePropertyWithValue('version', '2.0');
         let vevent = buildEventFromSchedule(schedule);
         comp.addSubcomponent(vevent);
         schedule.raw.exceptions.forEach(function(exception) {
@@ -1079,6 +1093,7 @@ function serialiseICal(schedule, updateTimestamp) {
 function buildComponentFromEvent(vevent) {
     let comp = new ICAL.Component(['vcalendar', [], []]);
     comp.updatePropertyWithValue('prodid', '-//iCal.js');
+    comp.updatePropertyWithValue('version', '2.0');
     comp.addSubcomponent(vevent);
     return comp;
 }
@@ -1092,6 +1107,7 @@ function buildEventFromSchedule(schedule) {
     event.startDate = toICalTime(schedule.start, schedule.isAllDay);
     event.endDate = toICalTime(schedule.end, schedule.isAllDay);
     vevent.addPropertyWithValue('x-owner', schedule.raw.creator.name);
+    vevent.addPropertyWithValue('dtstamp', toICalTime(moment().toDate(), false));
     if (schedule.state == CALENDAR_EVENT_CANCELLED) { //CANCELLED
         vevent.addPropertyWithValue('status', "CANCELLED");
     }
@@ -1681,15 +1697,12 @@ function addExtraFieldsToDetail(eventData) {
 function showConfigurationPopup() {
     var calendarModal = document.getElementById("calendarModal");
     calendarModal.style.display = "block";
-     destroyColorPicker();
+    destroyColorPicker();
 
     let colorChange = {targetId: null, newColor: null, oldColor: null};
     let configurationPopupCloseFunc = function() {
          calendarModal.style.display = "none";
-         if(calendarRequiresReload) {
-             mainWindow.postMessage({action: "requestCalendarReload"}, origin);
-         }
-     };
+    };
     calendarModal.onclick = (ev) => calendarModalHandler(ev, colorChange, configurationPopupCloseFunc);
 
     var calendarModalClose = document.getElementsByClassName("calendar-modal-close")[0];
@@ -1822,7 +1835,8 @@ function importICal(item, evt){
     let filereader = new FileReader();
     filereader.onload = function(){
         importICSFile(this.result, currentUsername, false, false, item.name, false);
-        calendarRequiresReload = true;
+        var calendarModal = document.getElementById("calendarModal");
+        calendarModal.style.display = "none";
     };
     filereader.readAsText(file);
 }
