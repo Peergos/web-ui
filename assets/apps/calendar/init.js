@@ -793,7 +793,7 @@ function importICSFile(contents, username, isSharedWithUs, loadCalendarAsGuest, 
         } else {
             let year = dt.year();
             let month = dt.month() + 1;
-            let recurringText = schedule.raw.hasRecurrenceRule ? ' (' + schedule.recurrenceRule + ')' : '';
+            let recurringText = schedule.raw.hasRecurrenceRule ? ' (Recurring: ' + schedule.recurrenceRule + ')' : '';
             let eventSummary = {datetime: moment(schedule.start.toUTCString()).format('YYYY MMMM Do, h:mm:ss a'), title: schedule.title + recurringText };
             allEvents.push({calendarName: calendarName, year: year, month: month, Id: schedule.id, item:output,
                     summary: eventSummary, isRecurring: schedule.raw.hasRecurrenceRule});
@@ -1460,7 +1460,10 @@ function refreshScheduleVisibility() {
   });
 }
 function downloadEvent(schedule) {
-    let event = serialiseICal(schedule, false);
+    var instance = schedule.raw.parentId != null
+        ? RecurringSchedules[RecurringSchedules.findIndex(v => v.id === schedule.raw.parentId)]
+        : schedule;
+    let event = serialiseICal(instance, false);
     mainWindow.postMessage({event: event, title: schedule.title, type: 'downloadEvent'}, origin);
 }
 function shareCalendarEvent(schedule) {
@@ -1468,7 +1471,8 @@ function shareCalendarEvent(schedule) {
    let year = dt.year();
    let month = dt.month() +1;
    let calendarName = findCalendar(schedule.calendarId).name;
-   mainWindow.postMessage({calendarName: calendarName, id: schedule.id, year: year, month: month, type: 'shareCalendarEvent'}, origin);
+   let scheduleId = schedule.raw.parentId != null ? schedule.raw.parentId : schedule.id;
+   mainWindow.postMessage({calendarName: calendarName, id: scheduleId, year: year, month: month, isRecurring: schedule.raw.hasRecurrenceRule, type: 'shareCalendarEvent'}, origin);
 }
 resizeThrottled = tui.util.throttle(function() {
   cal.render();

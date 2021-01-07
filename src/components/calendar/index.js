@@ -94,7 +94,7 @@ module.exports = {
                 } else if(e.data.type=="downloadEvent") {
                     that.downloadEvent(calendar, e.data.title, e.data.event);
                 } else if(e.data.type=="shareCalendarEvent") {
-                    that.shareCalendarEvent(calendar, e.data.calendarName, e.data.id, e.data.year, e.data.month);
+                    that.shareCalendarEvent(calendar, e.data.calendarName, e.data.id, e.data.year, e.data.month, e.data.isRecurring);
                 } else if (e.data.action == 'requestRenameCalendar') {
                     that.renameCalendarRequest(calendar, e.data.calendar);
                 } else if (e.data.action == 'requestCalendarColorChange') {
@@ -568,9 +568,10 @@ module.exports = {
         link.click();
         this.removeSpinner();
     },
-    shareCalendarEvent: function(calendar, calendarName, id, year, month) {
+    shareCalendarEvent: function(calendar, calendarName, id, year, month, isRecurring) {
         let calendarDirectory = this.findCalendarDirectory(calendarName);
-        this.shareWith(this.CALENDAR_DIR_NAME + '/' + this.DATA_DIR_NAME + "/" + calendarDirectory + "/" + year + '/' + month,
+        let dirPath =  isRecurring ? calendarDirectory + "/recurring" : calendarDirectory + "/" + year + "/" + month;
+        this.shareWith(this.CALENDAR_DIR_NAME + '/' + this.DATA_DIR_NAME + "/" + dirPath,
             id + '.ics', false, 'Calendar Event');
     },
     showMessage: function(title, body) {
