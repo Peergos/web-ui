@@ -152,7 +152,7 @@ function buildUI(isCalendarReadonly) {
             save(schedule, serialisedSchedule, schedule.calendarId);
         },
         'beforeUpdateSchedule': function(e) {
-            handleScheduleUpdate(e);
+            return handleScheduleUpdate(e);
         },
         'beforeDeleteSchedule': function(e) {
             //console.log('beforeDeleteSchedule', e);
@@ -181,7 +181,18 @@ function buildUI(isCalendarReadonly) {
         }
     });
 }
-
+function hasScheduleMoved(oldDate, newDate) {
+    if (oldDate.start.getFullYear() !== newDate.getFullYear()){
+        return true;
+    }
+    if (oldDate.start.getMonth() !== newDate.getMonth()){
+        return true;
+    }
+    if (oldDate.start.getDate() !== newDate.getDate()){
+        return true;
+    }
+    return false;
+}
 function handleScheduleUpdate(event) {
     var schedule = event.schedule;
     var changes = event.changes;
@@ -196,6 +207,12 @@ function handleScheduleUpdate(event) {
         changes.category = 'time';
     }
     let originalSchedule = cal.getSchedule(schedule.id, previousCalendarId);
+    if ((originalSchedule.recurrenceRule.length > 0 || originalSchedule.raw.isException ) && changes != null) {
+        //if dragged in UI, then reject change!
+        if (hasScheduleMoved(schedule, changes.start)) {
+            return false;
+        }
+    }
     if (originalSchedule.raw.previousRecurrenceRule.length > 0 || originalSchedule.raw.isException) {
         if(rrule.length > 0) {
             if (changes && (changes.start != null || changes.end != null || changes.isAllDay != null)) {
@@ -232,6 +249,7 @@ function handleScheduleUpdate(event) {
         }
     }
     refreshScheduleVisibility();
+    return true;
 }
 function handleScheduleDeletion(event) {
     let schedule = event.schedule;
