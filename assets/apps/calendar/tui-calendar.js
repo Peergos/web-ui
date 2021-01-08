@@ -20308,7 +20308,8 @@ ScheduleCreationPopup.prototype._setArrowDirection = function(arrow) {
  */
 ScheduleCreationPopup.prototype._createDatepicker = function(start, end, isAllDay) {
     var cssPrefix = config.cssPrefix;
-
+    let day = new TZDate(start).toDate();
+    let dayJS = new Date(day.getFullYear(), day.getMonth(), day.getDate());
     this.rangePicker = DatePicker.createRangePicker({
         startpicker: {
             date: new TZDate(start).toDate(),
@@ -20328,7 +20329,11 @@ ScheduleCreationPopup.prototype._createDatepicker = function(start, end, isAllDa
             inputType: 'spinbox',
             layoutType: 'tab'
         },
-        usageStatistics: this._usageStatistics
+        selectableRanges: [
+            [dayJS, dayJS],
+            [dayJS, dayJS]
+        ],
+        usageStatistics: false
     });
 };
 

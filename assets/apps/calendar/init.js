@@ -285,10 +285,11 @@ function editRecurringSchedule(index, event) {
             recreateAndSaveSchedule(updatedSchedule, previousCalendarId);
         }
     } else if (index == 1) { //single instance
+        let originalRecurrenceTime = calculateRecurrenceTime(recurringSchedule, updatedSchedule);
+        updatedSchedule.id =  parentId + recurrenceIdSeparatorToken + originalRecurrenceTime.toICALString();
         if(updatedSchedule.raw.isException) {
             recurringSchedule.raw.exceptions.splice(recurringSchedule.raw.exceptions.findIndex(v => v.id === updatedSchedule.id), 1);
         } else {
-            updatedSchedule.id =  parentId + recurrenceIdSeparatorToken + toICalTime(updatedSchedule.start, false).toICALString();
             updatedSchedule.raw.parentId = parentId;
             updatedSchedule.raw.isException = true;
             updatedSchedule.recurrenceRule = '';
@@ -312,7 +313,7 @@ function editRecurringSchedule(index, event) {
 
         recreateAndSaveSchedule(recurringSchedule, previousCalendarId);
 
-        let newId = uuidv4() + recurringEventSplitSeparatorToken + toICalTime(updatedSchedule.start.toDate(), false).toICALString();
+        let newId = uuidv4() + recurringEventSplitSeparatorToken + toICalTime(updatedSchedule.start.toDate(), updatedSchedule.isAllDay).toICALString();
         let futureSchedule = updatedSchedule.raw.isException ?
             fromException(recurringSchedule, newId, updatedSchedule, updatedSchedule)
             :  cloneSchedule(updatedSchedule, newId, updatedSchedule.start, updatedSchedule.end);
@@ -329,6 +330,13 @@ function editRecurringSchedule(index, event) {
         });
         recreateAndSaveSchedule(futureSchedule, futureSchedule.calendarId);
     }
+}
+function calculateRecurrenceTime(recurringSchedule, updatedSchedule) {
+    let jsDate = new Date(updatedSchedule.start.valueOf());
+    jsDate.setHours(recurringSchedule.start.getHours());
+    jsDate.setMinutes(recurringSchedule.start.getMinutes());
+    jsDate.setSeconds(recurringSchedule.start.getSeconds());
+    return toICalTime(jsDate, recurringSchedule.isAllDay);
 }
 function recreateAndSaveSchedule(updatedSchedule, previousCalendarId) {
     if (updatedSchedule.recurrenceRule.length == 0) {
@@ -1099,7 +1107,10 @@ function buildEventFromSchedule(schedule) {
         vevent.addPropertyWithValue('rrule', ICAL.Recur.fromString(schedule.recurrenceRule));
     }
     if (schedule.raw.isException) {
-        vevent.addPropertyWithValue('recurrence-id', event.startDate);
+        let recurrenceIDStr = schedule.id.substring(schedule.id.indexOf(recurrenceIdSeparatorToken) + 1);
+        let timestamp = moment(recurrenceIDStr);
+        let recurrenceID = toICalTime(timestamp.toDate(), false);
+        vevent.addPropertyWithValue('recurrence-id', recurrenceID);
     }
     return vevent;
 }

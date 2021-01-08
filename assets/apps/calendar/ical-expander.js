@@ -81,7 +81,23 @@ class IcalExpander {
             const isOccurrenceExcluded = exdates.indexOf(startTime) !== -1;
 
             // TODO check that within same day?
-            const exception = exceptions.find(ex => ex.uid === event.uid && ex.recurrenceId.toJSDate().getTime() === occurrence.startDate.toJSDate().getTime());
+            const exception = exceptions.find(ex => {
+                if (ex.uid !== event.uid) {
+                    return false;
+                }
+                let exDate = ex.recurrenceId.toJSDate();
+                let occDate = occurrence.startDate.toJSDate();
+                if (exDate.getYear() !== occDate.getYear()){
+                    return false;
+                }
+                if (exDate.getMonth() !== occDate.getMonth()){
+                    return false;
+                }
+                if (exDate.getDate() !== occDate.getDate()){
+                    return false;
+                }
+                return true;
+            });
 
             // We have passed the max date, stop
             if (before && startTime > before.getTime()) break;
