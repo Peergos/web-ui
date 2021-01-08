@@ -21,7 +21,6 @@ module.exports = {
             confirm_body: "",
             confirm_consumer_cancel_func: () => {},
             confirm_consumer_func: () => {},
-            firstMessage: true,
             showChoice: false,
             choice_message: '',
             choice_body: '',
@@ -48,15 +47,7 @@ module.exports = {
 
     postMessage: function(obj) {
 	    var iframe = document.getElementById("editor");
-	    if (this.firstMessage) { //Firefox really doesn't handle opening/closing/opening iframes well....
-    	    this.firstMessage = false;
-            iframe.contentWindow.postMessage({type: 'ping'}, '*');
-            setTimeout(function(){
-                iframe.contentWindow.postMessage(obj, '*');
-            }, 200);
-        } else {
-            iframe.contentWindow.postMessage(obj, '*');
-        }
+        iframe.contentWindow.postMessage(obj, '*');
     },
     startListener: function(calendar) {
 	    var that = this;

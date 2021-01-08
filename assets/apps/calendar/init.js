@@ -12,9 +12,7 @@ let handler = function (e) {
 
       mainWindow = e.source;
       origin = e.origin;
-      if (e.data.type == "ping") {
-          console.log("ping");
-      } else if (e.data.type == "load") {
+      if (e.data.type == "load") {
           initialiseCalendar(false, e.data.calendars);
           load(e.data.previousMonth, e.data.currentMonth, e.data.nextMonth, e.data.recurringEvents, e.data.yearMonth, e.data.username);
       } else if (e.data.type == "loadAdditional") {
@@ -65,8 +63,11 @@ let colorPalette = ['#181818', '#282828', '#383838', '#585858', '#B8B8B8', '#D8D
 let colorPickerElement = document.getElementById('color-picker');
 
 //--rrule
+//These 2 are only internal for display
 let recurrenceIdSeparatorToken = '|';
-let recurringEventIdSeparatorToken = '_';
+let recurringEventIdSeparatorToken = '^';
+//Can appear as part of Id saved
+let recurringEventSplitSeparatorToken = '_';
 var rrule = "";
 var rrule_handler = null;
 var previousRepeatCondition = "";
@@ -256,6 +257,8 @@ function editRecurringSchedule(index, event) {
     cal.updateSchedule(schedule.id, schedule.calendarId, changes);
     let updatedCalendarId = (changes != null && changes.calendarId != null) ? changes.calendarId : schedule.calendarId;
     let updatedSchedule = cal.getSchedule(schedule.id, updatedCalendarId);
+    let previousRRule= updatedSchedule.recurrenceRule;
+    let currentRRule = rrule;
     if (!updatedSchedule.raw.isException) {
         updatedSchedule.raw.previousRecurrenceRule = updatedSchedule.recurrenceRule;
         updatedSchedule.recurrenceRule = rrule;
@@ -263,28 +266,24 @@ function editRecurringSchedule(index, event) {
     }
     let parentId = schedule.raw.parentId;
     //remove all instances
-    let firstScheduledInstance = removeRecurringScheduleInstances(parentId);
+    removeRecurringScheduleInstances(parentId);
     let recurringIndex = RecurringSchedules.findIndex(v => v.id === parentId);
     let recurringSchedule = RecurringSchedules[recurringIndex];
     RecurringSchedules.splice(recurringIndex, 1);
-    if (index == 0) { // all
+    if (index == 0 || (index == 2 && updatedSchedule.start.toUTCString() == recurringSchedule.start.toUTCString())) { // all
         //TODO update all other exceptions??
         if(updatedSchedule.raw.isException) {
-            firstScheduledInstance.raw.exceptions.splice(firstScheduledInstance.raw.exceptions.findIndex(v => v.id === updatedSchedule.id), 1);
-            firstScheduledInstance.raw.exceptions.push(updatedSchedule);
-            firstScheduledInstance = fromException(firstScheduledInstance, parentId, updatedSchedule);
-            recreateAndSaveSchedule(firstScheduledInstance, previousCalendarId);
+            recurringSchedule.raw.exceptions.splice(recurringSchedule.raw.exceptions.findIndex(v => v.id === updatedSchedule.id), 1);
+            recurringSchedule.raw.exceptions.push(updatedSchedule);
+            recreateAndSaveSchedule(fromException(recurringSchedule, parentId, recurringSchedule, updatedSchedule), previousCalendarId);
         } else {
             updatedSchedule.id = parentId;
             recreateAndSaveSchedule(updatedSchedule, previousCalendarId);
         }
     } else if (index == 1) { //single instance
         if(updatedSchedule.raw.isException) {
-            firstScheduledInstance.raw.exceptions.splice(firstScheduledInstance.raw.exceptions.findIndex(v => v.id === updatedSchedule.id), 1);
+            recurringSchedule.raw.exceptions.splice(recurringSchedule.raw.exceptions.findIndex(v => v.id === updatedSchedule.id), 1);
         } else {
-            if (firstScheduledInstance.id == updatedSchedule.id) {
-                firstScheduledInstance = cloneSchedule(recurringSchedule, updatedSchedule.id, updatedSchedule.start, updatedSchedule.end);
-            }
             updatedSchedule.id =  parentId + recurrenceIdSeparatorToken + toICalTime(updatedSchedule.start, false).toICALString();
             updatedSchedule.raw.parentId = parentId;
             updatedSchedule.raw.isException = true;
@@ -293,26 +292,30 @@ function editRecurringSchedule(index, event) {
             updatedSchedule.raw.previousRecurrenceRule = '';
             updatedSchedule.raw.exceptions = [];
         }
-        firstScheduledInstance.raw.exceptions.push(updatedSchedule);
-        firstScheduledInstance.id = parentId;
-        recreateAndSaveSchedule(firstScheduledInstance, previousCalendarId);
+        recurringSchedule.raw.exceptions.push(updatedSchedule);
+        recurringSchedule.id = parentId;
+        recreateAndSaveSchedule(recurringSchedule, previousCalendarId);
     } else { //until
-        firstScheduledInstance.id = parentId;
-        addUntilToSchedule(firstScheduledInstance, updatedSchedule.start);
+        addUntilToSchedule(recurringSchedule, updatedSchedule.start);
         let until = moment.utc(updatedSchedule.start.toUTCString());
-        let filtered = firstScheduledInstance.raw.exceptions.filter(function(item){
+        let filtered = recurringSchedule.raw.exceptions.filter(function(item){
             let dt = moment.utc(item.start.toUTCString());
             return dt >= until;
         });
         filtered.forEach(function(item){
-            firstScheduledInstance.raw.exceptions.splice(firstScheduledInstance.raw.exceptions.findIndex(v => v.id === item.id), 1);
+            recurringSchedule.raw.exceptions.splice(recurringSchedule.raw.exceptions.findIndex(v => v.id === item.id), 1);
         });
 
-        recreateAndSaveSchedule(firstScheduledInstance, previousCalendarId);
+        recreateAndSaveSchedule(recurringSchedule, previousCalendarId);
 
+        let newId = uuidv4() + recurringEventSplitSeparatorToken + toICalTime(updatedSchedule.start.toDate(), false).toICALString();
         let futureSchedule = updatedSchedule.raw.isException ?
-            fromException(firstScheduledInstance, uuidv4(), updatedSchedule)
-            :  cloneSchedule(updatedSchedule, uuidv4(), updatedSchedule.start, updatedSchedule.end);
+            fromException(recurringSchedule, newId, updatedSchedule, updatedSchedule)
+            :  cloneSchedule(updatedSchedule, newId, updatedSchedule.start, updatedSchedule.end);
+
+        futureSchedule.recurrenceRule = currentRRule;
+        futureSchedule.raw.hasRecurrenceRule =  currentRRule.length > 0;
+        futureSchedule.raw.previousRecurrenceRule = previousRRule;
         futureSchedule.raw.exceptions = [];
         filtered.forEach(function(item){
             //TODO need to update exceptions??
@@ -338,7 +341,7 @@ function recreateAndSaveSchedule(updatedSchedule, previousCalendarId) {
         addToCache(updatedSchedule);
     }
 }
-function fromException(parentSchedule, newId, exception) {
+function fromException(parentSchedule, newId, scheduleWithTimes, exception) {
     var schedule = new ScheduleInfo();
     schedule.calendarId = exception.calendarId;
     schedule.title = exception.title;
@@ -352,13 +355,14 @@ function fromException(parentSchedule, newId, exception) {
     schedule.borderColor = exception.borderColor;
     schedule.raw.memo = exception.raw.memo;
     schedule.raw.parentId = null;
+    schedule.isReadOnly = exception.isReadOnly;
 
     schedule.id = newId;
-    schedule.isReadOnly = parentSchedule.isReadOnly;
-    schedule.start = parentSchedule.start;
-    schedule.end = parentSchedule.end;
-    schedule.isAllDay = parentSchedule.isAllDay;
-    schedule.category = parentSchedule.category;
+
+    schedule.start = scheduleWithTimes.start;
+    schedule.end = scheduleWithTimes.end;
+    schedule.isAllDay = scheduleWithTimes.isAllDay;
+    schedule.category = scheduleWithTimes.category;
 
     schedule.recurrenceRule = parentSchedule.recurrenceRule;
     schedule.raw.creator.name = parentSchedule.raw.creator.name;
@@ -369,16 +373,11 @@ function fromException(parentSchedule, newId, exception) {
 }
 function removeRecurringScheduleInstances(parentId) {
     let repeats = [];
-    let firstScheduleInstance = null;
-
     CachedYearMonths.forEach(function(yearMonth) {
         let monthCache = ScheduleCache[yearMonth];
-        monthCache.forEach(function(item, idx) {
+        monthCache.forEach(function(item) {
             if (item.id.startsWith(parentId + recurringEventIdSeparatorToken) ||
                 item.id.startsWith(parentId + recurrenceIdSeparatorToken)) {
-                if (idx == 0) {
-                    firstScheduleInstance = item;
-                }
                 repeats.push(item);
             }
         });
@@ -387,7 +386,6 @@ function removeRecurringScheduleInstances(parentId) {
         cal.deleteSchedule(item.id, item.calendarId);
         removeFromCache(item);
     });
-    return firstScheduleInstance;
 }
 function disableToolbarButtons(newValue){
     let calendarSettings = document.getElementById("calendar-settings");
@@ -545,40 +543,39 @@ function addUntilToSchedule(schedule, until) {
 function removeScheduleFromCalendar(choiceIndex, schedule) {
     if (schedule.raw.hasRecurrenceRule || schedule.raw.isException) {
         let parentId = schedule.raw.parentId;
-        let firstScheduledInstance = removeRecurringScheduleInstances(parentId);
-        if (choiceIndex == 0 || firstScheduledInstance == null) { //delete everything
-            let idx = RecurringSchedules.findIndex(v => v.id === parentId);
-            let recurringSchedule = RecurringSchedules[idx];
+        removeRecurringScheduleInstances(parentId);
+        let idx = RecurringSchedules.findIndex(v => v.id === parentId);
+        let recurringSchedule = RecurringSchedules[idx];
+        if (choiceIndex == 0 || (choiceIndex == 2 && schedule.start.toUTCString() == recurringSchedule.start.toUTCString())) { //delete everything
             deleteSchedule(recurringSchedule);
             RecurringSchedules.splice(RecurringSchedules.findIndex(v => v.id === parentId), 1);
         } else {
-            firstScheduledInstance.id = parentId;
             if (schedule.raw.isException) {
                 if (choiceIndex == 1){ //delete just this instance
-                    firstScheduledInstance.raw.exceptions.splice(firstScheduledInstance.raw.exceptions.findIndex(v => v.id === schedule.id), 1);
+                    recurringSchedule.raw.exceptions.splice(recurringSchedule.raw.exceptions.findIndex(v => v.id === schedule.id), 1);
                 } else { //until
-                    addUntilToSchedule(firstScheduledInstance, schedule.start);
+                    addUntilToSchedule(recurringSchedule, schedule.start);
                     let until = moment.utc(schedule.start.toUTCString());
-                    let filtered = firstScheduledInstance.raw.exceptions.filter(function(item){
+                    let filtered = recurringSchedule.raw.exceptions.filter(function(item){
                         let dt = moment.utc(item.start.toUTCString());
                         return dt >= until;
                     });
                     filtered.forEach(function(item){
-                        firstScheduledInstance.raw.exceptions.splice(firstScheduledInstance.raw.exceptions.findIndex(v => v.id === item.id), 1);
+                        recurringSchedule.raw.exceptions.splice(recurringSchedule.raw.exceptions.findIndex(v => v.id === item.id), 1);
                     });
                 }
             } else {
                 if (choiceIndex == 1){ //delete just this instance
                     addEXDateToSchedule(parentId, schedule.start);
                 } else { //until
-                    addUntilToSchedule(firstScheduledInstance, schedule.start);
+                    addUntilToSchedule(recurringSchedule, schedule.start);
                 }
             }
             CachedYearMonths.forEach(function(yearMonth) {
-                cal.createSchedules(loadSchedule(firstScheduledInstance, yearMonth));
+                cal.createSchedules(loadSchedule(recurringSchedule, yearMonth));
             });
-            let serialisedSchedule = serialiseICal(firstScheduledInstance, true);
-            save(firstScheduledInstance, serialisedSchedule, firstScheduledInstance.calendarId);
+            let serialisedSchedule = serialiseICal(recurringSchedule, true);
+            save(recurringSchedule, serialisedSchedule, recurringSchedule.calendarId);
         }
     } else {
         cal.deleteSchedule(schedule.id, schedule.calendarId);
@@ -1217,11 +1214,11 @@ function setCalendars(headless, calendars) {
 
     //https://stackoverflow.com/questions/105034/how-to-create-guid-uuid
     function uuidv4() {
-      return ([1e7]+-1e3+-4e3+-8e3+-1e11).replace(/[018]/g, c =>
+      let uuid = ([1e7]+-1e3+-4e3+-8e3+-1e11).replace(/[018]/g, c =>
         (c ^ crypto.getRandomValues(new Uint8Array(1))[0] & 15 >> c / 4).toString(16)
-      );
+      ).split("-").join("");
+      return uuid.substring(0, 16);
     }
-
     function buildNewSchedule(scheduleData) {
         var calendar = scheduleData.calendar || findCalendar(scheduleData.calendarId);
         var schedule = new ScheduleInfo();
@@ -1802,8 +1799,6 @@ function importICal(item, evt){
     let filereader = new FileReader();
     filereader.onload = function(){
         importICSFile(this.result, currentUsername, false, false, item.name, false);
-        var calendarModal = document.getElementById("calendarModal");
-        calendarModal.style.display = "none";
     };
     filereader.readAsText(file);
 }
