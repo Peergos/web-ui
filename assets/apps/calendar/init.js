@@ -197,10 +197,14 @@ function handleScheduleUpdate(event) {
     }
     let originalSchedule = cal.getSchedule(schedule.id, previousCalendarId);
     if (originalSchedule.raw.previousRecurrenceRule.length > 0 || originalSchedule.raw.isException) {
-        if (changes && (changes.start != null || changes.end != null || changes.isAllDay != null)) {
-            requestChoiceSelection("Edit", event, false);
+        if(rrule.length > 0) {
+            if (changes && (changes.start != null || changes.end != null || changes.isAllDay != null)) {
+                requestChoiceSelection("Edit", event, false);
+            } else {
+                requestChoiceSelection("Edit", event, true);
+            }
         } else {
-            requestChoiceSelection("Edit", event, true);
+            editRecurringSchedule(0, event);
         }
     } else {
         cal.updateSchedule(schedule.id, schedule.calendarId, changes);
@@ -324,10 +328,12 @@ function editRecurringSchedule(index, event) {
             }
         });
         recreateAndSaveSchedule(futureSchedule, futureSchedule.calendarId);
-
     }
 }
 function recreateAndSaveSchedule(updatedSchedule, previousCalendarId) {
+    if (updatedSchedule.recurrenceRule.length == 0) {
+        updatedSchedule.raw.exceptions = [];
+    }
     let serialisedSchedule = serialiseICal(updatedSchedule, true);
     if(updatedSchedule.raw.hasRecurrenceRule) {
         RecurringSchedules.push(updatedSchedule);
@@ -1492,6 +1498,9 @@ function updateRRULESummary() {
 }
 //Todo - this is less than ideal
 function displayExceptionRRule(text) {
+    if (text.length == 0) {
+        return;
+    }
     let eventDetails = document.getElementById("event-details");
     var div1 = document.createElement("div");
     eventDetails.appendChild(div1);
