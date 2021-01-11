@@ -182,6 +182,9 @@ function buildUI(isCalendarReadonly) {
     });
 }
 function hasScheduleMoved(oldDate, newDate) {
+    if (newDate == null) {
+        return false;
+    }
     if (oldDate.start.getFullYear() !== newDate.getFullYear()){
         return true;
     }
@@ -293,13 +296,13 @@ function editRecurringSchedule(index, event) {
     let recurringSchedule = RecurringSchedules[recurringIndex];
     RecurringSchedules.splice(recurringIndex, 1);
     if (index == 0 || (index == 2 && updatedSchedule.start.toUTCString() == recurringSchedule.start.toUTCString())) { // all
-        //TODO update all other exceptions??
         if(updatedSchedule.raw.isException) {
-            recurringSchedule.raw.exceptions.splice(recurringSchedule.raw.exceptions.findIndex(v => v.id === updatedSchedule.id), 1);
-            recurringSchedule.raw.exceptions.push(updatedSchedule);
-            recreateAndSaveSchedule(fromException(recurringSchedule, parentId, recurringSchedule, updatedSchedule), previousCalendarId);
+            let primarySchedule = fromException(recurringSchedule, parentId, recurringSchedule, updatedSchedule);
+            primarySchedule.raw.exceptions.forEach(function(exception){ modifyException(exception, updatedSchedule); });
+            recreateAndSaveSchedule(primarySchedule, previousCalendarId);
         } else {
             updatedSchedule.id = parentId;
+            updatedSchedule.raw.exceptions.forEach(function(exception){ modifyException(exception, updatedSchedule); });
             recreateAndSaveSchedule(updatedSchedule, previousCalendarId);
         }
     } else if (index == 1) { //single instance
@@ -330,7 +333,6 @@ function editRecurringSchedule(index, event) {
         });
 
         recreateAndSaveSchedule(recurringSchedule, previousCalendarId);
-
         let newId = uuidv4() + recurringEventSplitSeparatorToken + toICalTime(updatedSchedule.start.toDate(), updatedSchedule.isAllDay).toICALString();
         let futureSchedule = updatedSchedule.raw.isException ?
             fromException(recurringSchedule, newId, updatedSchedule, updatedSchedule)
@@ -341,8 +343,11 @@ function editRecurringSchedule(index, event) {
         futureSchedule.raw.previousRecurrenceRule = previousRRule;
         futureSchedule.raw.exceptions = [];
         filtered.forEach(function(item){
-            //TODO need to update exceptions??
             if (updatedSchedule.id != item.id) {
+                modifyException(item, updatedSchedule);
+                let exceptionPart = item.id.substring(item.id.indexOf(recurrenceIdSeparatorToken));
+                item.id = newId + exceptionPart;
+                item.raw.parentId = newId;
                 futureSchedule.raw.exceptions.push(item);
             }
         });
@@ -568,9 +573,8 @@ function addUntilToSchedule(schedule, until) {
     start.add(0, 'ms');
     let untilDate = toICalTime(start.toDate(), false);
     schedule.raw.previousRecurrenceRule = '' + rrule;
-    rrule = removePart("UNTIL");
-    rrule = rrule + "UNTIL=" + untilDate.toICALString();
-    schedule.recurrenceRule = rrule;
+    let updatedRRule = removePart("UNTIL", schedule.recurrenceRule);
+    schedule.recurrenceRule = updatedRRule + "UNTIL=" + untilDate.toICALString();;
 }
 function removeScheduleFromCalendar(choiceIndex, schedule) {
     if (schedule.raw.hasRecurrenceRule || schedule.raw.isException) {
@@ -623,14 +627,20 @@ function displayMessage(msg) {
 function unpackEvent(iCalEvent, fromImport, isSharedWithUs, calendarId) {
     let event = new Object();
     event['isAllDay'] = true;
-    event['Id'] = iCalEvent.getFirstPropertyValue('uid');
-    event['title'] = iCalEvent.getFirstPropertyValue('summary');
-    event['description'] = iCalEvent.getFirstPropertyValue('description');
-    event['location'] = iCalEvent.getFirstPropertyValue('location');
+    let id = iCalEvent.getFirstPropertyValue('uid');
+    event['Id'] = id == null ? "" : id;
+    let title = iCalEvent.getFirstPropertyValue('summary');
+    event['title'] = title == null ? "" : title;
+    let description = iCalEvent.getFirstPropertyValue('description');
+    event['description'] = description == null ? "" : description;
+    let location = iCalEvent.getFirstPropertyValue('location');
+    event['location'] = location == null ? "" : location;
     let dtStart = iCalEvent.getFirstPropertyValue('dtstart');
-    event['start'] = dtStart.toJSDate();
-    if (dtStart.toICALString().indexOf('T')>-1){
-        event['isAllDay'] = false;
+    if (dtStart != null) {
+        event['start'] = dtStart.toJSDate();
+        if (dtStart.toICALString().indexOf('T')>-1){
+            event['isAllDay'] = false;
+        }
     }
     try {
         let duration = iCalEvent.getFirstPropertyValue('duration').toSeconds();
@@ -639,7 +649,7 @@ function unpackEvent(iCalEvent, fromImport, isSharedWithUs, calendarId) {
 	    try {
         	event['end'] = iCalEvent.getFirstPropertyValue('dtend').toJSDate();
     	} catch (ex2) {
-    		event['end'] = event['start'];
+    		event['end'] = event.start;
 	    }
     }
     let xOwner = iCalEvent.getFirstPropertyValue('x-owner');
@@ -663,6 +673,8 @@ function unpackEvent(iCalEvent, fromImport, isSharedWithUs, calendarId) {
     event.recurrenceRule = iCalEvent.getFirstPropertyValue('rrule');
     let recurrenceId = iCalEvent.getFirstPropertyValue('recurrence-id');
     event.recurrenceId = recurrenceId != null ? recurrenceId.toString() : null;
+    event.hasRdate = iCalEvent.hasProperty('rdate');
+    event.hasExdate = iCalEvent.hasProperty('exdate');
     return event;
 }
 function buildCalendarEvent(eventInfo) {
@@ -714,6 +726,18 @@ function buildScheduleFromEvent(event) {
     schedule.raw.hasRecurrenceRule =  schedule.recurrenceRule.length > 0;
     schedule.raw.previousRecurrenceRule = schedule.recurrenceRule;
     return schedule;
+}
+function modifyException(exception, updatedSchedule) {
+    exception.calendarId = updatedSchedule.calendarId;
+    exception.title = updatedSchedule.title;
+    exception.body = updatedSchedule.body;
+    exception.location = updatedSchedule.location;
+    exception.state = updatedSchedule.state;
+    exception.color = updatedSchedule.color;
+    exception.bgColor = updatedSchedule.bgColor;
+    exception.dragBgColor = updatedSchedule.dragBgColor;
+    exception.borderColor = updatedSchedule.borderColor;
+    exception.raw.memo = updatedSchedule.raw.memo;
 }
 //only copying references. Is that right?
 function cloneSchedule(scheduleOrig, newId, start, end) {
@@ -792,14 +816,18 @@ function importICSFile(contents, username, isSharedWithUs, loadCalendarAsGuest, 
     for(var idx = 0; idx < vevents.length; idx++) {
         let vvent = vevents[idx];
         let event = unpackEvent(vvent, true, isSharedWithUs, CALENDAR_ID_MY_CALENDAR);
-        let schedule = buildScheduleFromEvent(event);
-        if (event.recurrenceId == null) {
-            scheduleMap[schedule.id] = schedule;
-            schedules.push(schedule);
-            LoadedEvents[schedule.id] = buildComponentFromEvent(vvent);
-        } else {
-            let origSchedule = scheduleMap[schedule.raw.parentId];
-            origSchedule.raw.exceptions.push(schedule);
+        if (validateEvent(event)) {
+            let schedule = buildScheduleFromEvent(event);
+            if (event.recurrenceId == null) {
+                scheduleMap[schedule.id] = schedule;
+                schedules.push(schedule);
+                LoadedEvents[schedule.id] = buildComponentFromEvent(vvent);
+            } else {
+                let origSchedule = scheduleMap[schedule.raw.parentId];
+                if (origSchedule != null) {
+                    origSchedule.raw.exceptions.push(schedule);
+                }
+            }
         }
     }
     let allEvents = [];
@@ -836,6 +864,29 @@ function importICSFile(contents, username, isSharedWithUs, loadCalendarAsGuest, 
         mainWindow.postMessage({items:allEvents, showConfirmation: showConfirmation, type:"saveAll"}, origin);
     }
     refreshScheduleVisibility();
+}
+function isEmptyValue(val) {
+    return val == null || val.trim().length == 0;
+}
+function validateEvent(event) {
+    if (isEmptyValue(event.Id) || isEmptyValue(event.title) || event.start == null || event.end == null) {
+        showImportError("Event missing all required fields: UID, SUMMARY, DTSTART, DTEND");
+        return false;
+    }
+    if (event.recurrenceRule != null) {
+        let frequency = extractPartFromRecurrenceRule(event.recurrenceRule.toString(),
+                "FREQ",function(val){return frequencyValidator(val) ? val : null;});
+        if (frequency == null) {
+            showImportError("Frequency specified not supported. Supported Frequencies are: DAILY, WEEKLY, MONTHLY, YEARLY");
+            return false;
+        }
+    }
+    if (event.recurrenceId != null) {
+        if (event.hasRdate || event.hasExdate || event.recurrenceRule != null) {
+            showImportError("Calendar does not support event containing both a recurrenceId and either a rdate, exdate or rrule");
+        }
+    }
+    return true;
 }
 function buildMonthScheduleCache(yearMonth) {
     let monthCache = ScheduleCache[yearMonth];
@@ -1058,8 +1109,11 @@ function serialiseICal(schedule, updateTimestamp) {
         comp.updatePropertyWithValue('prodid', '-//iCal.js');
         comp.updatePropertyWithValue('version', '2.0');
         let vevents = comp.getAllSubcomponents('vevent');
-        for(var j = 1; j < vevents.length; j++) { //TODO this is not the way
-            comp.removeSubcomponent(vevents[j]);
+        for(var j = 1; j < vevents.length; j++) {
+            let currentEvent = vevents[j];
+            if (currentEvent.getFirstPropertyValue('recurrence-id') != null) {
+                comp.removeSubcomponent(currentEvent);
+            }
         }
         comp.updatePropertyWithValue('prodid', '-//iCal.js');
         comp.updatePropertyWithValue('version', '2.0');
@@ -1525,7 +1579,7 @@ function updateRRULESummary() {
         }
     }
 }
-//Todo - this is less than ideal
+//this is less than ideal
 function displayExceptionRRule(text) {
     if (text.length == 0) {
         return;
@@ -2345,7 +2399,7 @@ function resetRRULEUI() {
 function changeFrequency(startDate) {
     let freq = document.getElementById('frequency-dropdown').value;
     //console.log("frequency-dropdown=" + freq);
-    rrule = "FREQ=" + freq + ";" + removePart("FREQ");
+    rrule = "FREQ=" + freq + ";" + removePart("FREQ", rrule);
     processRRULE(startDate);
 }
 function changeMonthlyBy(startDate) {
@@ -2357,17 +2411,17 @@ function changeMonthlyBy(startDate) {
     var updatedRRule = rrule;
     if (by == "BYDAY") {
         val = "1MO";
-        updatedRRule = removePart("BYMONTHDAY");
+        updatedRRule = removePart("BYMONTHDAY", rrule);
     } else if(by == "BYMONTHDAY") {
         val = startDate.date();
-        updatedRRule = removePart("BYDAY");
+        updatedRRule = removePart("BYDAY", rrule);
     }
     rrule = updatedRRule + by + "=" + val;
     processRRULE(startDate);
 }
-function removePart(paramName) {
+function removePart(paramName, recurringRule) {
     let remainingPartsBuffer = "";
-    let parts = rrule.split(';');
+    let parts = recurringRule.split(';');
     for(var i = 0; i < parts.length; i++) {
         let part = parts[i];
         if (part != null && part.length > 0) {
@@ -2390,13 +2444,19 @@ function applyRRULE() {
     //console.log("output=" + result);
     rrule = result;
 }
-
+function showImportError(err) {
+    displayMessage("Unable to import Event due to error: " + err);
+    console.log("import error=" + err);
+}
 function showRecurrenceError(err) {
     displayMessage("Event recurrence error: " + err);
     console.log("recurrence error=" + err);
 }
 function extractPart(paramName, validator) {
-    let parts = rrule.split(';');
+    return extractPartFromRecurrenceRule(rrule, paramName, validator);
+}
+function extractPartFromRecurrenceRule(recurrenceRule, paramName, validator) {
+    let parts = recurrenceRule.split(';');
     for(var i = 0; i < parts.length; i++) {
         let part = parts[i];
         if (part != null && part.length > 0) {
