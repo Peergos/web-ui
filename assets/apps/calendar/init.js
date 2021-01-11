@@ -364,6 +364,9 @@ function calculateRecurrenceTime(recurringSchedule, updatedSchedule) {
 function recreateAndSaveSchedule(updatedSchedule, previousCalendarId) {
     if (updatedSchedule.recurrenceRule.length == 0) {
         updatedSchedule.raw.exceptions = [];
+        updatedSchedule.raw.parentId = null;
+        updatedSchedule.raw.previousRecurrenceRule = '';
+        updatedSchedule.raw.hasRecurrenceRule = false;
     }
     let serialisedSchedule = serialiseICal(updatedSchedule, true);
     if(updatedSchedule.raw.hasRecurrenceRule) {
@@ -873,6 +876,13 @@ function validateEvent(event) {
         showImportError("Event missing all required fields: UID, SUMMARY, DTSTART, DTEND");
         return false;
     }
+    if (!(event.start.getFullYear() == event.end.getFullYear()
+        && event.start.getMonth() == event.end.getMonth()
+        && event.start.getDate() == event.end.getDate())) {
+            showImportError("Only single day events supported");
+            return false;
+    }
+
     if (event.recurrenceRule != null) {
         let frequency = extractPartFromRecurrenceRule(event.recurrenceRule.toString(),
                 "FREQ",function(val){return frequencyValidator(val) ? val : null;});
@@ -1725,6 +1735,10 @@ function addExtraFieldsToDetail(eventData) {
     createRepeatDropdown(startDate, readOnly);
 
 
+    if (rrule.length > 0) {
+        let calendarDropdown = document.getElementById("calendar-dropdown");
+        calendarDropdown.style.pointerEvents = 'none';
+    }
     let lock = document.getElementById("tui-full-calendar-schedule-private");
     lock.style.display = 'none';
 

@@ -22393,7 +22393,7 @@ module.exports = (Handlebars['default'] || Handlebars).template({"1":function(co
     + alias4(((helper = (helper = lookupProperty(helpers,"CSS_PREFIX") || (depth0 != null ? lookupProperty(depth0,"CSS_PREFIX") : depth0)) != null ? helper : alias2),(typeof helper === alias3 ? helper.call(alias1,{"name":"CSS_PREFIX","hash":{},"data":data,"loc":{"start":{"line":3,"column":91},"end":{"line":3,"column":105}}}) : helper)))
     + "section-calendar"
     + ((stack1 = lookupProperty(helpers,"unless").call(alias1,((stack1 = (depth0 != null ? lookupProperty(depth0,"calendars") : depth0)) != null ? lookupProperty(stack1,"length") : stack1),{"name":"unless","hash":{},"fn":container.program(1, data, 0),"inverse":container.noop,"data":data,"loc":{"start":{"line":3,"column":121},"end":{"line":3,"column":179}}})) != null ? stack1 : "")
-    + "\">\n            <button class=\""
+    + "\" id='calendar-dropdown'>\n            <button class=\""
     + alias4(((helper = (helper = lookupProperty(helpers,"CSS_PREFIX") || (depth0 != null ? lookupProperty(depth0,"CSS_PREFIX") : depth0)) != null ? helper : alias2),(typeof helper === alias3 ? helper.call(alias1,{"name":"CSS_PREFIX","hash":{},"data":data,"loc":{"start":{"line":4,"column":27},"end":{"line":4,"column":41}}}) : helper)))
     + "button "
     + alias4(((helper = (helper = lookupProperty(helpers,"CSS_PREFIX") || (depth0 != null ? lookupProperty(depth0,"CSS_PREFIX") : depth0)) != null ? helper : alias2),(typeof helper === alias3 ? helper.call(alias1,{"name":"CSS_PREFIX","hash":{},"data":data,"loc":{"start":{"line":4,"column":48},"end":{"line":4,"column":62}}}) : helper)))
