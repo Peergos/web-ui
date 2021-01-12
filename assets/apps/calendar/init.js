@@ -882,7 +882,7 @@ function eventSameDay(event) {
 }
 function validateEvent(event) {
     if (isEmptyValue(event.Id) || isEmptyValue(event.title) || event.start == null || event.end == null) {
-        showImportError("Event missing all required fields: UID, SUMMARY, DTSTART, DTEND");
+        showImportError("Event missing all required fields: UID, SUMMARY, DTSTART, DTEND. UID:" + event.Id);
         return false;
     }
     if (!eventSameDay(event)) {
@@ -893,13 +893,13 @@ function validateEvent(event) {
         let frequency = extractPartFromRecurrenceRule(event.recurrenceRule.toString(),
                 "FREQ",function(val){return frequencyValidator(val) ? val : null;});
         if (frequency == null) {
-            showImportError("Frequency specified not supported. Supported Frequencies are: DAILY, WEEKLY, MONTHLY, YEARLY");
+            showImportError("Frequency specified not supported. Supported Frequencies are: DAILY, WEEKLY, MONTHLY, YEARLY. UID:" + event.Id);
             return false;
         }
     }
     if (event.recurrenceId != null) {
         if (event.hasRdate || event.hasExdate || event.recurrenceRule != null) {
-            showImportError("Calendar does not support event containing both a recurrenceId and either a rdate, exdate or rrule");
+            showImportError("Calendar does not support event containing both a recurrenceId and either a rdate, exdate or rrule. UID:" + event.Id);
         }
     }
     return true;
@@ -1736,7 +1736,7 @@ function addExtraFieldsToDetail(eventData) {
     freqMonthlyBy(startDate);
     monthlyByDayChoices();
     monthlyByDateChoices();
-    repeatCondition();
+    repeatCondition(startDate);
     let readOnly = eventData.schedule != null && (eventData.schedule.raw.isException || !eventSameDay(eventData.schedule)) ? true : false;
     createRepeatDropdown(startDate, readOnly);
 
@@ -1767,6 +1767,8 @@ function addExtraFieldsToDetail(eventData) {
             //more rrule validation
             let frequency = extractPart("FREQ",function(val){ return val;});
             if (frequency == 'WEEKLY' && ! hasPart("BYDAY")) {
+                rrule = '';
+            } else if (frequency == 'MONTHLY' && ! hasPart("BYDAY") && ! hasPart("BYMONTHDAY")) {
                 rrule = '';
             }
         }
@@ -2038,7 +2040,7 @@ function changeRepeatOption(startDate) {
     }
     processRRULE(startDate);
 }
-function repeatCondition() {
+function repeatCondition(startDate) {
     var parent = document.getElementById("rrule-modal");
     var div = document.createElement("div");
     div.id='repeat-condition';
@@ -2081,7 +2083,8 @@ function repeatCondition() {
     var date = document.createElement("input");
     date.type= 'date';
     date.id= 'until-date';
-    date.min = '1900-01-01';
+    let formattedStartDate = formatDateString(startDate.toISOString().split("-").join("").split('T')[0]);
+    date.min = formattedStartDate;
     date.max = '3000-01-01';
     date.maxlength = '12';
     date.value = '';
@@ -2849,7 +2852,7 @@ function untilDateValidator() {
     let rule = ICAL.Recur.fromString(rrule);
     return rule.until != null;
 }
-function initRepeatCondition() {
+function initRepeatCondition(startDate) {
     var untilProvided = false;
     let until = extractPart("UNTIL",
         function(val){
@@ -2858,7 +2861,7 @@ function initRepeatCondition() {
                 let rule = ICAL.Recur.fromString(rrule);
                 return rule.until.toJSDate().toISOString().split("-").join("");
             }else {
-                return new Date().toISOString().split("-").join("");
+                return startDate.toISOString().split("-").join("");
             }
         }
     );
@@ -2918,6 +2921,7 @@ function handleRepeatCondition() {
             return ";COUNT=" + occurrencesCounter;
         } else {
             showRecurrenceError("Occurrence value is invalid");
+            return "";
         }
     } else if (repeatCondition == "until") {
         let dateElement = document.getElementById('until-date');
@@ -2927,6 +2931,7 @@ function handleRepeatCondition() {
         let untilDate = dateElement.value;
         if (untilDate == "") {
             showRecurrenceError("Please select Date");
+            return "";
         } else {
             let dateParts = untilDate.split('-');
             let formattedDate = dateParts[0] + dateParts[1] + dateParts[2] + "T235959Z";//FIXME TODO not correct format according to spec
@@ -2946,7 +2951,7 @@ function processRRULE(startDate) {
                 }
             );
             document.getElementById('daily-frequency-' + interval).selected = true;
-            initRepeatCondition();
+            initRepeatCondition(startDate);
         }, function() {
             let rruleBuffer = "FREQ=DAILY"
             let dailyFrequency = document.getElementById('daily-frequency').value;
@@ -2966,7 +2971,7 @@ function processRRULE(startDate) {
             );
             document.getElementById('weekly-frequency-' + interval).selected = true;
             initCheckBoxes('by-day', "BYDAY");
-            initRepeatCondition();
+            initRepeatCondition(startDate);
         }, function() {
             let rruleBuffer = "FREQ=WEEKLY"
             let weeklyFrequency = document.getElementById('weekly-frequency').value;
@@ -3007,7 +3012,7 @@ function processRRULE(startDate) {
                     return startDate.date();
                 });
             }
-            initRepeatCondition();
+            initRepeatCondition(startDate);
         }, function() {
             let rruleBuffer = "FREQ=MONTHLY"
             let monthlyFrequency = document.getElementById('monthly-frequency').value;
@@ -3056,7 +3061,7 @@ function processRRULE(startDate) {
                     return startDate.date();
                 });
             }
-            initRepeatCondition();
+            initRepeatCondition(startDate);
         }, function() {
             let rruleBuffer = "FREQ=YEARLY"
             let yearlyFrequency = document.getElementById('yearly-frequency').value;
