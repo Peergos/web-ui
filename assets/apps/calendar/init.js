@@ -574,9 +574,10 @@ function addUntilToSchedule(schedule, until) {
     start.add(59, 'm');
     start.add(59, 's');
     start.add(0, 'ms');
+    schedule.raw.previousRecurrenceRule = schedule.recurrenceRule;
+    var updatedRRule = removePart("COUNT", schedule.recurrenceRule);
+    updatedRRule = removePart("UNTIL", updatedRRule);
     let untilDate = toICalTime(start.toDate(), false);
-    schedule.raw.previousRecurrenceRule = '' + rrule;
-    let updatedRRule = removePart("UNTIL", schedule.recurrenceRule);
     schedule.recurrenceRule = updatedRRule + "UNTIL=" + untilDate.toICALString();;
 }
 function removeScheduleFromCalendar(choiceIndex, schedule) {
@@ -871,18 +872,23 @@ function importICSFile(contents, username, isSharedWithUs, loadCalendarAsGuest, 
 function isEmptyValue(val) {
     return val == null || val.trim().length == 0;
 }
+function eventSameDay(event) {
+    if (event.start.getFullYear() == event.end.getFullYear()
+        && event.start.getMonth() == event.end.getMonth()
+        && event.start.getDate() == event.end.getDate()) {
+            return true;
+    }
+    return false;
+}
 function validateEvent(event) {
     if (isEmptyValue(event.Id) || isEmptyValue(event.title) || event.start == null || event.end == null) {
         showImportError("Event missing all required fields: UID, SUMMARY, DTSTART, DTEND");
         return false;
     }
-    if (!(event.start.getFullYear() == event.end.getFullYear()
-        && event.start.getMonth() == event.end.getMonth()
-        && event.start.getDate() == event.end.getDate())) {
-            showImportError("Only single day events supported");
-            return false;
+    if (!eventSameDay(event)) {
+        showImportError("Only single day events supported");
+        return false;
     }
-
     if (event.recurrenceRule != null) {
         let frequency = extractPartFromRecurrenceRule(event.recurrenceRule.toString(),
                 "FREQ",function(val){return frequencyValidator(val) ? val : null;});
@@ -1731,11 +1737,10 @@ function addExtraFieldsToDetail(eventData) {
     monthlyByDayChoices();
     monthlyByDateChoices();
     repeatCondition();
-    let readOnly = eventData.schedule != null && eventData.schedule.raw.isException ? true : false;
+    let readOnly = eventData.schedule != null && (eventData.schedule.raw.isException || !eventSameDay(eventData.schedule)) ? true : false;
     createRepeatDropdown(startDate, readOnly);
 
-
-    if (rrule.length > 0) {
+    if (rrule.length > 0) { //cannot use eventData.schedule != null && eventData.schedule.raw.isException
         let calendarDropdown = document.getElementById("calendar-dropdown");
         calendarDropdown.style.pointerEvents = 'none';
     }
@@ -1759,6 +1764,11 @@ function addExtraFieldsToDetail(eventData) {
         let saveBtn = document.getElementById("popup-save");
         var handler = function() {
             eventData.schedule.raw.memo = locTextArea.value;
+            //more rrule validation
+            let frequency = extractPart("FREQ",function(val){ return val;});
+            if (frequency == 'WEEKLY' && ! hasPart("BYDAY")) {
+                rrule = '';
+            }
         }
         saveBtn.onclick=handler;
     }
@@ -2483,7 +2493,10 @@ function extractPartFromRecurrenceRule(recurrenceRule, paramName, validator) {
     return validator("");
 }
 function hasPart(paramName) {
-    let parts = rrule.split(';');
+    return hasPartFromRecurrenceRule(rrule, paramName);
+}
+function hasPartFromRecurrenceRule(recurrenceRule, paramName) {
+    let parts = recurrenceRule.split(';');
     for(var i = 0; i < parts.length; i++) {
         let part = parts[i];
         if (part != null && part.length > 0) {
