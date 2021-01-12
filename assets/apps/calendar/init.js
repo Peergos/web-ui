@@ -873,10 +873,25 @@ function isEmptyValue(val) {
     return val == null || val.trim().length == 0;
 }
 function eventSameDay(event) {
-    if (event.start.getFullYear() == event.end.getFullYear()
-        && event.start.getMonth() == event.end.getMonth()
-        && event.start.getDate() == event.end.getDate()) {
+    return isSameDay(event.isAllDay, event.start, event.end);
+}
+function isSameDay(isAllDay, start, end) {
+    if (start.getFullYear() == end.getFullYear()
+        && start.getMonth() == end.getMonth() ){
+        if (start.getDate() == end.getDate()) {
             return true;
+        } else {
+            if (isAllDay) {
+                let momentStart = moment(start);
+                let momentEnd = moment(end);
+                let diffDays = momentStart.diff(momentEnd, 'days');
+                if (diffDays == -1 && momentStart.hours() == 0 && momentStart.hours() == momentEnd.hours()
+                    && momentStart.minutes() == 0 && momentStart.minutes() == momentEnd.minutes()
+                    && momentStart.seconds() == 0 && momentStart.seconds() == momentEnd.seconds()) {
+                    return true;
+                }
+            }
+        }
     }
     return false;
 }
@@ -977,7 +992,8 @@ function loadSchedule(schedule, yearMonth) {
             const events = icalExpander.between(start.toDate(), endOfMonthExclusive.toDate());
             for(var i = 0; i < events.occurrences.length; i++) {
                 let next = events.occurrences[i];
-                if (next.startDate.compare(rangeStart) >= 0 && next.startDate.compare(rangeEnd) < 0) {
+                if (next.startDate.compare(rangeStart) >= 0
+                    && (next.startDate.compare(rangeEnd) < 0 || ( rangeEnd.isDate && isSameDay(schedule.isAllDay, next.startDate.toJSDate(), rangeEnd.toJSDate())) )) {
                     //console.log(next.toString());
                     let newSchedule = recalculateSchedule(schedule, vvent, next.startDate);//, next.recurrenceId);
                     newSchedules.push(newSchedule);
