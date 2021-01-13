@@ -34,7 +34,7 @@ let handler = function (e) {
           } else {
               setCalendars(true, []);
           }
-          importICSFile(e.data.contents, e.data.username, e.data.isSharedWithUs, loadCalendarAsGuest, "default", true);
+          importICSFile(e.data.contents, e.data.username, e.data.isSharedWithUs, loadCalendarAsGuest, "My Calendar", true);
       }
 };
 window.addEventListener('message', handler);
@@ -67,7 +67,7 @@ let colorPickerElement = document.getElementById('color-picker');
 let recurrenceIdSeparatorToken = '|';
 let recurringEventIdSeparatorToken = '^';
 //Can appear as part of Id saved
-let recurringEventSplitSeparatorToken = '_';
+let recurringEventSplitSeparatorToken = '_R';
 var rrule = "";
 var rrule_handler = null;
 var previousRepeatCondition = "";
@@ -333,7 +333,8 @@ function editRecurringSchedule(index, event) {
         });
 
         recreateAndSaveSchedule(recurringSchedule, previousCalendarId);
-        let newId = uuidv4() + recurringEventSplitSeparatorToken + toICalTime(updatedSchedule.start.toDate(), updatedSchedule.isAllDay).toICALString();
+        let newId = uuidv4() + recurringEventSplitSeparatorToken
+            + toICalTime(updatedSchedule.start.toDate(), false).toICALString().substring(0, 8);
         let futureSchedule = updatedSchedule.raw.isException ?
             fromException(recurringSchedule, newId, updatedSchedule, updatedSchedule)
             :  cloneSchedule(updatedSchedule, newId, updatedSchedule.start, updatedSchedule.end);
@@ -819,7 +820,7 @@ function importICSFile(contents, username, isSharedWithUs, loadCalendarAsGuest, 
     let schedules = [];
     for(var idx = 0; idx < vevents.length; idx++) {
         let vvent = vevents[idx];
-        let event = unpackEvent(vvent, true, isSharedWithUs, CALENDAR_ID_MY_CALENDAR);
+        let event = unpackEvent(vvent, true, isSharedWithUs, findCalendarByName(calendarName).id);
         if (validateEvent(event)) {
             let schedule = buildScheduleFromEvent(event);
             if (event.recurrenceId == null) {
@@ -841,12 +842,16 @@ function importICSFile(contents, username, isSharedWithUs, loadCalendarAsGuest, 
         let output = serialiseICal(schedule, false);
         if (schedule.raw.hasRecurrenceRule) {
             RecurringSchedules.push(schedule);
-            CachedYearMonths.forEach(function(yearMonth) {
-                cal.createSchedules(loadSchedule(schedule, yearMonth));
-            });
+            if (cal != null) {// could be headless import
+                CachedYearMonths.forEach(function(yearMonth) {
+                    cal.createSchedules(loadSchedule(schedule, yearMonth));
+                });
+            }
         } else {
-            cal.createSchedules([schedule]);
-            addToCache(schedule);
+            if (cal != null) {// could be headless import
+                cal.createSchedules([schedule]);
+                addToCache(schedule);
+            }
         }
         let dt = moment.utc(schedule.start.toUTCString());
         if (loadCalendarAsGuest) {
@@ -867,7 +872,9 @@ function importICSFile(contents, username, isSharedWithUs, loadCalendarAsGuest, 
     if (allEvents.length > 0) {
         mainWindow.postMessage({items:allEvents, showConfirmation: showConfirmation, type:"saveAll"}, origin);
     }
-    refreshScheduleVisibility();
+    if (cal != null) { // could be headless import
+        refreshScheduleVisibility();
+    }
 }
 function isEmptyValue(val) {
     return val == null || val.trim().length == 0;
@@ -993,7 +1000,11 @@ function loadSchedule(schedule, yearMonth) {
             for(var i = 0; i < events.occurrences.length; i++) {
                 let next = events.occurrences[i];
                 if (next.startDate.compare(rangeStart) >= 0
-                    && (next.startDate.compare(rangeEnd) < 0 || ( rangeEnd.isDate && isSameDay(schedule.isAllDay, next.startDate.toJSDate(), rangeEnd.toJSDate())) )) {
+                    && (next.startDate.compare(rangeEnd) < 0
+                        || ( rangeEnd.isDate &&  next.startDate.toJSDate().getMonth() == rangeStart.toJSDate().getMonth()
+                            && isSameDay(schedule.isAllDay, next.startDate.toJSDate(), rangeEnd.toJSDate()))
+                        )
+                    ) {
                     //console.log(next.toString());
                     let newSchedule = recalculateSchedule(schedule, vvent, next.startDate);//, next.recurrenceId);
                     newSchedules.push(newSchedule);
@@ -1590,7 +1601,8 @@ function shareCalendarEvent(schedule) {
    let month = dt.month() +1;
    let calendarName = findCalendar(schedule.calendarId).name;
    let scheduleId = schedule.raw.parentId != null ? schedule.raw.parentId : schedule.id;
-   mainWindow.postMessage({calendarName: calendarName, id: scheduleId, year: year, month: month, isRecurring: schedule.raw.hasRecurrenceRule, type: 'shareCalendarEvent'}, origin);
+   let isRecurring = schedule.raw.hasRecurrenceRule || schedule.raw.isException;
+   mainWindow.postMessage({calendarName: calendarName, id: scheduleId, year: year, month: month, isRecurring: isRecurring, type: 'shareCalendarEvent'}, origin);
 }
 resizeThrottled = tui.util.throttle(function() {
   cal.render();
