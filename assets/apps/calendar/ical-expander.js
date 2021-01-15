@@ -145,12 +145,16 @@ class IcalExpander {
     return this.between();
   }
 }
-
+function getTimeZoneText(txId) {
+    return timeZoneMap[txId];
+}
+let timeZoneMap = [];
 function registerTimezones() {
   Object.keys(timezones).forEach((line) => {
     const nv = timezones[line].split('":"');
     const key = nv[0];
     const icsData = nv[1];
+    timeZoneMap[key] = icsData;
     const icsTimezone = 'BEGIN:VTIMEZONE\r\nTZID:' + key + '\r\n' + icsData + '\r\nEND:VTIMEZONE';
     const text = 'BEGIN:VCALENDAR\nPRODID:-//tzurl.org//NONSGML Olson 2012h//EN\nVERSION:2.0\n' + icsTimezone + '\nEND:VCALENDAR';
     const parsed = ICAL.parse(text);

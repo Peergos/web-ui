@@ -333,8 +333,9 @@ function editRecurringSchedule(index, event) {
         });
 
         recreateAndSaveSchedule(recurringSchedule, previousCalendarId);
+        let comp = LoadedEvents[recurringSchedule.id];
         let newId = uuidv4() + recurringEventSplitSeparatorToken
-            + toICalTime(updatedSchedule.start.toDate(), false).toICALString().substring(0, 8);
+            + toICalTimeTZ(comp, updatedSchedule.start.toDate(), false).toICALString().substring(0, 8);
         let futureSchedule = updatedSchedule.raw.isException ?
             fromException(recurringSchedule, newId, updatedSchedule, updatedSchedule)
             :  cloneSchedule(updatedSchedule, newId, updatedSchedule.start, updatedSchedule.end);
@@ -360,7 +361,8 @@ function calculateRecurrenceTime(recurringSchedule, updatedSchedule) {
     jsDate.setHours(recurringSchedule.start.getHours());
     jsDate.setMinutes(recurringSchedule.start.getMinutes());
     jsDate.setSeconds(recurringSchedule.start.getSeconds());
-    return toICalTime(jsDate, recurringSchedule.isAllDay);
+    let comp = LoadedEvents[recurringSchedule.id];
+    return toICalTimeTZ(comp, jsDate, recurringSchedule.isAllDay);
 }
 function recreateAndSaveSchedule(updatedSchedule, previousCalendarId) {
     if (updatedSchedule.recurrenceRule.length == 0) {
@@ -559,7 +561,7 @@ function addEXDateToSchedule(scheduleId, startDate) {
     var comp = LoadedEvents[scheduleId];
     let vevents = comp.getAllSubcomponents('vevent');
     let vvent = vevents[0];
-    let exDate = toICalTime(startDate, false);
+    let exDate = toICalTimeTZ(comp, startDate, false);
     vvent.addPropertyWithValue('exdate', exDate);
 }
 //FIXME not according to spec
@@ -578,7 +580,7 @@ function addUntilToSchedule(schedule, until) {
     schedule.raw.previousRecurrenceRule = schedule.recurrenceRule;
     var updatedRRule = removePart("COUNT", schedule.recurrenceRule);
     updatedRRule = removePart("UNTIL", updatedRRule);
-    let untilDate = toICalTime(start.toDate(), false);
+    let untilDate = toICalTimeTZ(comp, start.toDate(), false);
     schedule.recurrenceRule = updatedRRule + "UNTIL=" + untilDate.toICALString();;
 }
 function removeScheduleFromCalendar(choiceIndex, schedule) {
@@ -628,8 +630,22 @@ function removeScheduleFromCalendar(choiceIndex, schedule) {
 function displayMessage(msg) {
     mainWindow.postMessage({type:"displayMessage", message: msg}, origin);
 }
-
-function unpackEvent(iCalEvent, fromImport, isSharedWithUs, calendarId) {
+function getTimeZone(iCalComp) {
+	let vtimezone = iCalComp == null ? null : iCalComp.getFirstSubcomponent('vtimezone');
+	if (vtimezone == null) {
+	    vtimezone = ICAL.Timezone.utcTimezone;
+	}
+    return new ICAL.Timezone(vtimezone);
+}
+//discussion on https://github.com/mozilla-comm/ical.js/issues/102#issuecomment-458617272
+function toMoment(iCalComp, icalDateTime) {
+    if (icalDateTime.zone == null) { //TODO required??
+        let vtimezone = getTimeZone(iCalComp);
+        icalDateTime.zone = vtimezone;
+    }
+    return moment.tz(icalDateTime.toJSDate(), icalDateTime.zone.tzid);
+}
+function unpackEvent(iCalComp, iCalEvent, fromImport, isSharedWithUs, calendarId) {
     let event = new Object();
     event['isAllDay'] = true;
     let id = iCalEvent.getFirstPropertyValue('uid');
@@ -640,21 +656,23 @@ function unpackEvent(iCalEvent, fromImport, isSharedWithUs, calendarId) {
     event['description'] = description == null ? "" : description;
     let location = iCalEvent.getFirstPropertyValue('location');
     event['location'] = location == null ? "" : location;
-    let dtStart = iCalEvent.getFirstPropertyValue('dtstart');
-    if (dtStart != null) {
-        event['start'] = dtStart.toJSDate();
-        if (dtStart.toICALString().indexOf('T')>-1){
+    event['start'] = toMoment(iCalComp, iCalEvent.getFirstPropertyValue('dtstart'));
+    if (event['start'] != null) {
+        if (iCalEvent.getFirstPropertyValue('dtstart').toICALString().indexOf('T')>-1){
             event['isAllDay'] = false;
         }
     }
     try {
+        //TODO TEST
         let duration = iCalEvent.getFirstPropertyValue('duration').toSeconds();
-        event['end']= new Date(event['start'].getTime() + (duration * 1000));
+        var endDT = event['start'].clone();
+        endDT = endDT.add(duration, 's');
+        event['end']=  endDT;
     } catch (ex) {
 	    try {
-        	event['end'] = iCalEvent.getFirstPropertyValue('dtend').toJSDate();
+        	event['end'] = toMoment(iCalComp, iCalEvent.getFirstPropertyValue('dtend'));
     	} catch (ex2) {
-    		event['end'] = event.start;
+    		event['end'] = event.start.clone();
 	    }
     }
     let xOwner = iCalEvent.getFirstPropertyValue('x-owner');
@@ -688,7 +706,7 @@ function buildCalendarEvent(eventInfo) {
     var primary = null;
     for(var idx = 0; idx < vevents.length; idx++) {
         let vvent = vevents[idx];
-        let event = unpackEvent(vvent, false, false, findCalendarByName(eventInfo.calendarName).id);
+        let event = unpackEvent(icalComponent, vvent, false, false, findCalendarByName(eventInfo.calendarName).id);
         let schedule = buildScheduleFromEvent(event);
         if (event.recurrenceId == null) {
             primary = schedule;
@@ -698,6 +716,10 @@ function buildCalendarEvent(eventInfo) {
         }
     }
     return primary;
+}
+function toCurrentTimezone(momentDT) {
+    let tzid = getCurrentTimeZoneId();
+    return momentDT.clone().tz(tzid);
 }
 function buildScheduleFromEvent(event) {
     var schedule = new ScheduleInfo();
@@ -714,8 +736,8 @@ function buildScheduleFromEvent(event) {
     schedule.isReadOnly = currentUsername != event.owner ? true : false;
     schedule.isAllDay = event.isAllDay;
     schedule.category = event.isAllDay ? 'allday' : 'time';
-    schedule.start = moment(event.start).toDate();
-    schedule.end = moment(event.end).toDate();
+    schedule.start = toCurrentTimezone(event.start).toDate();
+    schedule.end = toCurrentTimezone(event.end).toDate();
     //schedule.isPrivate = event.isPrivate;
     schedule.location = event.location == null ? "" : event.location;
     schedule.attendees = event.attendees;
@@ -820,13 +842,13 @@ function importICSFile(contents, username, isSharedWithUs, loadCalendarAsGuest, 
     let schedules = [];
     for(var idx = 0; idx < vevents.length; idx++) {
         let vvent = vevents[idx];
-        let event = unpackEvent(vvent, true, isSharedWithUs, findCalendarByName(calendarName).id);
+        let event = unpackEvent(icalComponent, vvent, true, isSharedWithUs, findCalendarByName(calendarName).id);
         if (validateEvent(event)) {
             let schedule = buildScheduleFromEvent(event);
             if (event.recurrenceId == null) {
                 scheduleMap[schedule.id] = schedule;
                 schedules.push(schedule);
-                LoadedEvents[schedule.id] = buildComponentFromEvent(vvent);
+                LoadedEvents[schedule.id] = buildComponentFromEvent(icalComponent, vvent);
             } else {
                 let origSchedule = scheduleMap[schedule.raw.parentId];
                 if (origSchedule != null) {
@@ -880,9 +902,30 @@ function isEmptyValue(val) {
     return val == null || val.trim().length == 0;
 }
 function eventSameDay(event) {
-    return isSameDay(event.isAllDay, event.start, event.end);
+    return isSameDayMomentJS(event.isAllDay, event.start, event.end);
 }
-function isSameDay(isAllDay, start, end) {
+function isSameDayMomentJS(isAllDay, start, end) {
+    if (start.year() == end.year()
+        && start.month() == end.month() ){
+        if (start.date() == end.date()) {
+            return true;
+        } else {
+            if (isAllDay) {
+                let diffDays = start.diff(end, 'days');
+                if (diffDays == -1 && start.hours() == 0 && start.hours() == end.hours()
+                    && start.minutes() == 0 && start.minutes() == end.minutes()
+                    && start.seconds() == 0 && start.seconds() == end.seconds()) {
+                    return true;
+                }
+            }
+        }
+    }
+    return false;
+}
+function scheduleSameDay(schedule) {
+    let isAllDay = schedule.isAllDay;
+    let start = schedule.start;
+    let end = schedule.end;
     if (start.getFullYear() == end.getFullYear()
         && start.getMonth() == end.getMonth() ){
         if (start.getDate() == end.getDate()) {
@@ -957,7 +1000,37 @@ function loadArbitrarySchedule(schedule, yearMonth) {
     removeSpinner();
 }
 
-//TODO FIXME This MUST be revisited
+function calcStartOfNextMonth(icalComponent, year, month) {
+        if (month == 12) {
+            year = year + 1;
+            month = 0;
+        }
+        let timeZone = getTimeZone(icalComponent);
+        var dateTime = new ICAL.Time({
+          year: year,
+          month: month + 1,
+          day: 1,
+          hour: 0,
+          minute: 0,
+          second: 0,
+          isDate: true
+        }, timeZone);
+        return dateTime;
+}
+function calcRangeStart(icalComponent, schedule, month, year) {
+        let day = month == schedule.start.getMonth() + 1 && year == schedule.start.getFullYear() ? schedule.start.getDate() : 1;
+        let timeZone = getTimeZone(icalComponent);
+        var dateTime = new ICAL.Time({
+          year: year,
+          month: month,
+          day: day,
+          hour: schedule.start.getHours(),
+          minute: schedule.start.getMinutes(),
+          second: schedule.start.getSeconds(),
+          isDate: schedule.isAllDay
+        }, timeZone);
+        return dateTime;
+}
 function loadSchedule(schedule, yearMonth) {
     let monthCache = buildMonthScheduleCache(yearMonth);
     let year = Math.floor(yearMonth / 12);
@@ -967,9 +1040,7 @@ function loadSchedule(schedule, yearMonth) {
     let vvent = vevents[0];
     let newSchedules = [];
     if (vvent.hasProperty('rrule') || vvent.hasProperty('rdate')){
-        let endOfMonthExclusive = moment.utc(year + '-01-01');
-        endOfMonthExclusive.add(month + 1, 'months');
-        var rangeEnd = toICalTime(endOfMonthExclusive.toDate(), schedule.isAllDay);
+        var rangeEnd = calcStartOfNextMonth(icalComponent, year, month + 1);
         if (schedule.raw.hasRecurrenceRule) {
             let rule = ICAL.Recur.fromString(schedule.recurrenceRule);
             if (rule.until != null) {
@@ -979,34 +1050,24 @@ function loadSchedule(schedule, yearMonth) {
             }
         }
         let dtStart = vvent.getFirstPropertyValue('dtstart');
-        if (dtStart.compare(toICalTime(endOfMonthExclusive.toDate(), schedule.isAllDay)) > 0) {
+        if (dtStart.compare(rangeEnd) >= 0) {
             return [];
         }
-        let dt = moment.utc(schedule.start.toUTCString());
-        let start = moment.utc(year + '-01-01');
-        start.add(month, 'months');
-        if (month == dt.month() && year == dt.year()) {
-            start.add(dt.date() -1, 'd');
-        }
-        start.add(dt.hour(), 'h');
-        start.add(dt.minute(), 'm');
-        start.add(dt.second(), 's');
-        start.add(dt.millisecond(), 'ms');
-        let rangeStart = toICalTime(start.toDate(), schedule.isAllDay);
-
+        let rangeStart = calcRangeStart(icalComponent, schedule, month + 1, year);
         try {
             const icalExpander = new IcalExpander({ ics: icalComponent});
-            const events = icalExpander.between(start.toDate(), endOfMonthExclusive.toDate());
+            //console.log("start:" + rangeStart.toJSDate() + " rangeEnd:" + rangeEnd.toJSDate());
+            const events = icalExpander.between(rangeStart.toJSDate(), rangeEnd.toJSDate());
             for(var i = 0; i < events.occurrences.length; i++) {
                 let next = events.occurrences[i];
                 if (next.startDate.compare(rangeStart) >= 0
                     && (next.startDate.compare(rangeEnd) < 0
                         || ( rangeEnd.isDate &&  next.startDate.toJSDate().getMonth() == rangeStart.toJSDate().getMonth()
-                            && isSameDay(schedule.isAllDay, next.startDate.toJSDate(), rangeEnd.toJSDate()))
+                            && isSameDayMomentJS(schedule.isAllDay, toMoment(icalComponent, next.startDate), toMoment(icalComponent, rangeEnd)))
                         )
                     ) {
                     //console.log(next.toString());
-                    let newSchedule = recalculateSchedule(schedule, vvent, next.startDate);//, next.recurrenceId);
+                    let newSchedule = recalculateSchedule(icalComponent, schedule, vvent, next.startDate);//, next.recurrenceId);
                     newSchedules.push(newSchedule);
                     monthCache.push(newSchedule);
                 }
@@ -1014,10 +1075,10 @@ function loadSchedule(schedule, yearMonth) {
         } catch (ex) {
             let msg = "Unable to parse recurring event: "
                 + dt .format('YYYY MMMM Do, h:mm:ss a') + ' - ' + schedule.title
-                + " (" + schedule.recurrenceRule + "). See console for details";
+                + " (" + schedule.recurrenceRule + ").";
             console.log(msg);
             console.log(ex);
-            displayMessage(msg);
+            //displayMessage(msg);
         }
         let exceptions = filterSchedules(schedule.raw.exceptions, yearMonth);
         exceptions.forEach(function(exception) {
@@ -1030,26 +1091,25 @@ function loadSchedule(schedule, yearMonth) {
     }
     return newSchedules;
 }
-function recalculateSchedule(schedule, iCalEvent, nextDtStart) {
-    let dtStart = iCalEvent.getFirstPropertyValue('dtstart');
-    var start = nextDtStart.toJSDate();
+function recalculateSchedule(iCalComp, schedule, iCalEvent, nextDtStart) {
+    let dtStart = toMoment(iCalComp, iCalEvent.getFirstPropertyValue('dtstart'));
+    var start = toMoment(iCalComp, nextDtStart);
     var end;
     try {
         let duration = iCalEvent.getFirstPropertyValue('duration').toSeconds();
-        end = new Date(start.getTime() + (duration * 1000));
+        end = start.clone().add(duration, 's');
     } catch (ex) {
-	    try {
-        	var firstEnd = iCalEvent.getFirstPropertyValue('dtend').toJSDate();
-        	var diff = firstEnd.getTime() - dtStart.toJSDate().getTime();
-            end = new Date(start.getTime() + diff);
-    	} catch (ex2) {
-    		end = start;
-	    }
+        try {
+            let firstEnd = toMoment(iCalComp, iCalEvent.getFirstPropertyValue('dtend'));
+            let diff = firstEnd.toDate().getTime() - dtStart.toDate().getTime();
+            end = start.clone().add(diff / 1000, 's');
+        } catch (ex2) {
+            end = event.start.clone();
+        }
     }
-    let icalTime =  toICalTime(start, false);
-    let newId = schedule.id + recurringEventIdSeparatorToken + icalTime.toICALString();
-    console.log(newId +" " + start);
-    return cloneSchedule(schedule, newId, moment(start).toDate(), moment(end).toDate());
+    let newId = schedule.id + recurringEventIdSeparatorToken + nextDtStart.toICALString().substring(0, 8);
+    //console.log(newId +" " + start);
+    return cloneSchedule(schedule, newId, start.toDate(), end.toDate());
 }
 
 function load(previousMonthEvents, currentMonthEvents, nextMonthEvents, recurringEvents, yearMonth, username) {
@@ -1118,11 +1178,8 @@ function removeSpinner(schedule) {
     mainWindow.postMessage({type:"removeSpinner"}, origin);
 }
 
-function toICalTime(tzDate, isAllDay) {
-    let dt = moment.utc(tzDate.toUTCString());
-    if (isAllDay && tzDate.getDate() != dt.date()) {
-        dt.add(1, 'days');
-    }
+function timestamp(jsDate) {
+    let dt = moment.utc(jsDate.toUTCString());
     var dateTime = new ICAL.Time({
       year: dt.year(),
       month:  dt.month() +1,
@@ -1130,7 +1187,7 @@ function toICalTime(tzDate, isAllDay) {
       hour: dt.hour(),
       minute: dt.minute(),
       second: dt.second(),
-      isDate: isAllDay
+      isDate: false
     }, ICAL.Timezone.utcTimezone);
     return dateTime;
 }
@@ -1146,11 +1203,13 @@ function save(schedule, serialisedSchedule, previousCalendarId, action) {
     mainWindow.postMessage({ calendarName: calendarName, year: year, month: month, Id: schedule.id,
         item:serialisedSchedule, previousCalendarName: previousCalendarName, isRecurring: schedule.raw.hasRecurrenceRule, action: saveAction, type:"save"}, origin);
 }
+function upgradeICAL(comp, schedule) {
+    let id = comp.getFirstPropertyValue('prodid');
+    return id == calendarVersions[0];// && schedule.raw.hasRecurrenceRule; //initial version was all in UTC - no good for recurring events
+}
 function serialiseICal(schedule, updateTimestamp) {
     var comp = LoadedEvents[schedule.id];
-    if (comp != null) {
-        comp.updatePropertyWithValue('prodid', '-//iCal.js');
-        comp.updatePropertyWithValue('version', '2.0');
+    if (comp != null && ! upgradeICAL(comp, schedule)) {
         let vevents = comp.getAllSubcomponents('vevent');
         for(var j = 1; j < vevents.length; j++) {
             let currentEvent = vevents[j];
@@ -1158,17 +1217,23 @@ function serialiseICal(schedule, updateTimestamp) {
                 comp.removeSubcomponent(currentEvent);
             }
         }
-        comp.updatePropertyWithValue('prodid', '-//iCal.js');
+        comp.updatePropertyWithValue('prodid', calendarVersions[currentVersion]);
         comp.updatePropertyWithValue('version', '2.0');
         let vvent = vevents[0];
         vvent.updatePropertyWithValue('summary', schedule.title);
         vvent.updatePropertyWithValue('description', schedule.raw.memo);
         vvent.updatePropertyWithValue('location', schedule.location);
         if (updateTimestamp || vvent.getFirstPropertyValue("dtstamp") == null) {
-            vvent.updatePropertyWithValue('dtstamp', toICalTime(moment().toDate(), false));
+            vvent.updatePropertyWithValue('dtstamp', timestamp(new Date()));
         }
-        vvent.updatePropertyWithValue('dtstart', toICalTime(schedule.start, schedule.isAllDay));
-        vvent.updatePropertyWithValue('dtend', toICalTime(schedule.end, schedule.isAllDay));
+        if (schedule.isAllDay) {
+            let allDayStart = toICalTimeTZ(comp, schedule.start, schedule.isAllDay);
+            vvent.updatePropertyWithValue('dtstart', allDayStart);
+            vvent.updatePropertyWithValue('dtend', allDayStart);
+        } else {
+            vvent.updatePropertyWithValue('dtstart', toICalTimeTZ(comp, schedule.start, schedule.isAllDay));
+            vvent.updatePropertyWithValue('dtend', toICalTimeTZ(comp, schedule.end, schedule.isAllDay));
+        }
         vvent.updatePropertyWithValue('x-owner', schedule.raw.creator.name);
         if(schedule.state == CALENDAR_EVENT_CANCELLED) { //CANCELLED
             vvent.updatePropertyWithValue('status', "CANCELLED");
@@ -1182,39 +1247,94 @@ function serialiseICal(schedule, updateTimestamp) {
         }
 
         schedule.raw.exceptions.forEach(function(exception) {
-            comp.addSubcomponent(buildEventFromSchedule(exception));
+            comp.addSubcomponent(buildEventFromSchedule(comp, exception));
         });
     } else {
-        comp = new ICAL.Component(['vcalendar', [], []]);
-        comp.updatePropertyWithValue('prodid', '-//iCal.js');
-        comp.updatePropertyWithValue('version', '2.0');
-        let vevent = buildEventFromSchedule(schedule);
+        comp = emptyComponent(getCurrentTimeZoneId());
+        let vevent = buildEventFromSchedule(comp, schedule);
         comp.addSubcomponent(vevent);
         schedule.raw.exceptions.forEach(function(exception) {
-            comp.addSubcomponent(buildEventFromSchedule(exception));
+            comp.addSubcomponent(buildEventFromSchedule(comp, exception));
         });
         LoadedEvents[schedule.id] = comp;
     }
     return comp.toString();
 }
-function buildComponentFromEvent(vevent) {
-    let comp = new ICAL.Component(['vcalendar', [], []]);
-    comp.updatePropertyWithValue('prodid', '-//iCal.js');
-    comp.updatePropertyWithValue('version', '2.0');
+function getCurrentTimeZoneId() {
+    var tzid = null;
+    try {
+        tzid = Intl.DateTimeFormat().resolvedOptions().timeZone;
+    } catch (e) {
+        tzid = 'UTC';
+    }
+    return tzid;
+}
+function emptyComponent(tzId) {
+    var text = null;
+    if (tzId == null || tzId =='UTC') {
+        text = 'BEGIN:VCALENDAR\nPRODID:' + calendarVersions[currentVersion] + '\nVERSION:2.0\nEND:VCALENDAR';
+    } else {
+        let tzText = getTimeZoneText(tzId);
+        const icsTimezone = 'BEGIN:VTIMEZONE\r\nTZID:' + tzId + '\r\n' + tzText + '\r\nEND:VTIMEZONE';
+        text = 'BEGIN:VCALENDAR\nPRODID:' + calendarVersions[currentVersion] + '\nVERSION:2.0\n' + icsTimezone + '\nEND:VCALENDAR';
+    }
+    const comp = new ICAL.Component(ICAL.parse(text));
+    return comp;
+}
+function buildComponentFromEvent(icalComponent, vevent) {
+    let timeZone = getTimeZone(icalComponent);
+    let comp = emptyComponent(timeZone.tzid)
     comp.addSubcomponent(vevent);
     return comp;
 }
-function buildEventFromSchedule(schedule) {
+//Calendar internally uses TZDate
+//schedule is originally set with a JS Date, but calendar updates it to be a TZDate
+function toJSDate(dateTime) {
+    try {
+        return dateTime.toDate();
+    } catch (e) {
+        return dateTime;
+    }
+}
+function toICalTimeTZ(icalComp, tzDate, isAllDay) {
+    let jsDate = toJSDate(tzDate);
+    let dt = moment(jsDate);
+    let timeZone = getTimeZone(icalComp);
+    let destTZ = dt.clone().tz(timeZone.tzid);
+    if (isAllDay && jsDate.getDate() != destTZ.date()) {
+        if (jsDate > destTZ.toDate()) {
+            destTZ.add(1, 'days');
+        } else {
+            destTZ.subtract(1, 'days');
+        }
+    }
+    var dateTime = new ICAL.Time({
+      year: destTZ.year(),
+      month:  destTZ.month() +1,
+      day: destTZ.date(),
+      hour: destTZ.hour(),
+      minute: destTZ.minute(),
+      second: destTZ.second(),
+      isDate: isAllDay
+    }, timeZone);
+    return dateTime;
+}
+function buildEventFromSchedule(icalComp, schedule) {
     let vevent = new ICAL.Component('vevent'),
     event = new ICAL.Event(vevent);
     event.uid = schedule.raw.isException ? schedule.raw.parentId : schedule.id;
     event.summary = schedule.title;
     event.description = schedule.raw.memo;
     event.location = schedule.location;
-    event.startDate = toICalTime(schedule.start, schedule.isAllDay);
-    event.endDate = toICalTime(schedule.end, schedule.isAllDay);
+    if (schedule.isAllDay) {
+        event.startDate = toICalTimeTZ(icalComp, schedule.start, schedule.isAllDay);
+        event.endDate = event.startDate;
+    } else {
+        event.startDate = toICalTimeTZ(icalComp, schedule.start, schedule.isAllDay);
+        event.endDate = toICalTimeTZ(icalComp, schedule.end, schedule.isAllDay);
+    }
     vevent.addPropertyWithValue('x-owner', schedule.raw.creator.name);
-    vevent.addPropertyWithValue('dtstamp', toICalTime(moment().toDate(), false));
+    vevent.addPropertyWithValue('dtstamp', timestamp(new Date()));
     if (schedule.state == CALENDAR_EVENT_CANCELLED) { //CANCELLED
         vevent.addPropertyWithValue('status', "CANCELLED");
     }
@@ -1224,7 +1344,7 @@ function buildEventFromSchedule(schedule) {
     if (schedule.raw.isException) {
         let recurrenceIDStr = schedule.id.substring(schedule.id.indexOf(recurrenceIdSeparatorToken) + 1);
         let timestamp = moment(recurrenceIDStr);
-        let recurrenceID = toICalTime(timestamp.toDate(), false);
+        let recurrenceID = toICalTimeTZ(icalComp, timestamp.toDate(), schedule.isAllDay);
         vevent.addPropertyWithValue('recurrence-id', recurrenceID);
     }
     return vevent;
@@ -1765,7 +1885,7 @@ function addExtraFieldsToDetail(eventData) {
     monthlyByDayChoices();
     monthlyByDateChoices();
     repeatCondition(startDate);
-    let readOnly = eventData.schedule != null && (eventData.schedule.raw.isException || !eventSameDay(eventData.schedule)) ? true : false;
+    let readOnly = eventData.schedule != null && (eventData.schedule.raw.isException || !scheduleSameDay(eventData.schedule)) ? true : false;
     createRepeatDropdown(startDate, readOnly);
 
     if (rrule.length > 0) { //cannot use eventData.schedule != null && eventData.schedule.raw.isException
@@ -3162,4 +3282,3 @@ function handleChoices(labelParts, prefix, partName) {
     }
     return "";
 }
-
