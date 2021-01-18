@@ -210,6 +210,9 @@ function handleScheduleUpdate(event) {
         changes.category = 'time';
     }
     let originalSchedule = cal.getSchedule(schedule.id, previousCalendarId);
+    if (changes && changes.start != null && !scheduleSameMonth(originalSchedule.start, changes.start)) { //moving across month boundary will currently duplicate event
+        return false;
+    }
     if ((originalSchedule.recurrenceRule.length > 0 || originalSchedule.raw.isException ) && changes != null) {
         //if dragged in UI, then reject change!
         if (hasScheduleMoved(schedule, changes.start)) {
@@ -633,7 +636,7 @@ function displayMessage(msg) {
 function getTimeZone(iCalComp) {
 	let vtimezone = iCalComp == null ? null : iCalComp.getFirstSubcomponent('vtimezone');
 	if (vtimezone == null) {
-	    vtimezone = ICAL.Timezone.utcTimezone;
+	    return ICAL.Timezone.utcTimezone;
 	}
     return new ICAL.Timezone(vtimezone);
 }
@@ -642,6 +645,8 @@ function toMoment(iCalComp, icalDateTime) {
     if (icalDateTime.zone == null) { //TODO required??
         let vtimezone = getTimeZone(iCalComp);
         icalDateTime.zone = vtimezone;
+    } else if (icalDateTime.zone.tzid == 'floating') {
+        icalDateTime = fromDateToStartOfDay(iCalComp, icalDateTime);
     }
     return moment.tz(icalDateTime.toJSDate(), icalDateTime.zone.tzid);
 }
@@ -945,6 +950,11 @@ function scheduleSameDay(schedule) {
     }
     return false;
 }
+function scheduleSameMonth(oldScheduleStart, newScheduleStart) {
+    let oldStart = moment.utc(oldScheduleStart.toUTCString());
+    let newStart = moment.utc(newScheduleStart.toUTCString());
+    return oldStart.year() == newStart.year() && oldStart.month() == newStart.month();
+}
 function validateEvent(event) {
     if (isEmptyValue(event.Id) || isEmptyValue(event.title) || event.start == null || event.end == null) {
         showImportError("Event missing all required fields: UID, SUMMARY, DTSTART, DTEND. UID:" + event.Id);
@@ -1014,6 +1024,19 @@ function calcStartOfNextMonth(icalComponent, year, month) {
           minute: 0,
           second: 0,
           isDate: true
+        }, timeZone);
+        return dateTime;
+}
+function fromDateToStartOfDay(icalComponent, icalTime) {
+        let timeZone = getTimeZone(icalComponent);
+        var dateTime = new ICAL.Time({
+          year: icalTime.year,
+          month: icalTime.month,
+          day: icalTime.day,
+          hour: 0,
+          minute: 0,
+          second: 0,
+          isDate: false
         }, timeZone);
         return dateTime;
 }
@@ -1205,7 +1228,9 @@ function save(schedule, serialisedSchedule, previousCalendarId, action) {
 }
 function upgradeICAL(comp, schedule) {
     let id = comp.getFirstPropertyValue('prodid');
-    return id == calendarVersions[0];// && schedule.raw.hasRecurrenceRule; //initial version was all in UTC - no good for recurring events
+    return id == calendarVersions[0];
+//  let id = comp.getFirstPropertyValue('prodid');
+//    return schedule.raw.hasRecurrenceRule; //initial version was all in UTC - no good for recurring events
 }
 function serialiseICal(schedule, updateTimestamp) {
     var comp = LoadedEvents[schedule.id];
