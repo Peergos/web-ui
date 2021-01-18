@@ -304,9 +304,9 @@ function editRecurringSchedule(index, event) {
             primarySchedule.raw.exceptions.forEach(function(exception){ modifyException(exception, updatedSchedule); });
             recreateAndSaveSchedule(primarySchedule, previousCalendarId);
         } else {
-            updatedSchedule.id = parentId;
-            updatedSchedule.raw.exceptions.forEach(function(exception){ modifyException(exception, updatedSchedule); });
-            recreateAndSaveSchedule(updatedSchedule, previousCalendarId);
+            let primarySchedule = cloneSchedule(updatedSchedule, parentId, recurringSchedule.start, recurringSchedule.end);
+            primarySchedule.raw.exceptions.forEach(function(exception){ modifyException(exception, updatedSchedule); });
+            recreateAndSaveSchedule(primarySchedule, previousCalendarId);
         }
     } else if (index == 1) { //single instance
         let originalRecurrenceTime = calculateRecurrenceTime(recurringSchedule, updatedSchedule);
