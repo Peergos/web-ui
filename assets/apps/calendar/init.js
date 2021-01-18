@@ -646,7 +646,7 @@ function toMoment(iCalComp, icalDateTime) {
         let vtimezone = getTimeZone(iCalComp);
         icalDateTime.zone = vtimezone;
     } else if (icalDateTime.zone.tzid == 'floating') {
-        icalDateTime = fromDateToStartOfDay(iCalComp, icalDateTime);
+        icalDateTime = fromFloatingTZ(iCalComp, icalDateTime);
     }
     return moment.tz(icalDateTime.toJSDate(), icalDateTime.zone.tzid);
 }
@@ -1027,16 +1027,16 @@ function calcStartOfNextMonth(icalComponent, year, month) {
         }, timeZone);
         return dateTime;
 }
-function fromDateToStartOfDay(icalComponent, icalTime) {
+function fromFloatingTZ(icalComponent, icalTime) {
         let timeZone = getTimeZone(icalComponent);
         var dateTime = new ICAL.Time({
           year: icalTime.year,
           month: icalTime.month,
           day: icalTime.day,
-          hour: 0,
-          minute: 0,
-          second: 0,
-          isDate: false
+          hour: icalTime.hour,
+          minute: icalTime.minute,
+          second: icalTime.second,
+          isDate: icalTime.isDate
         }, timeZone);
         return dateTime;
 }
