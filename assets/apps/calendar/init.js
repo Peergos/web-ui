@@ -573,7 +573,7 @@ function addUntilToSchedule(schedule, until) {
     let vevents = comp.getAllSubcomponents('vevent');
     let vvent = vevents[0];
 
-    let start = moment.utc(until.getFullYear() + '-01-01');
+    let start = moment(until.getFullYear() + '-01-01');
     start.add(until.getMonth(), 'months');
     start.add(until.getDate() -2, 'd');
     start.add(23, 'h');
@@ -583,8 +583,9 @@ function addUntilToSchedule(schedule, until) {
     schedule.raw.previousRecurrenceRule = schedule.recurrenceRule;
     var updatedRRule = removePart("COUNT", schedule.recurrenceRule);
     updatedRRule = removePart("UNTIL", updatedRRule);
-    let untilDate = toICalTimeTZ(comp, start.toDate(), false);
-    schedule.recurrenceRule = updatedRRule + "UNTIL=" + untilDate.toICALString();;
+    let dateParts = start.toISOString().substring(0, 10).split('-');
+    let formattedDate = dateParts[0] + dateParts[1] + dateParts[2] + "T235959Z";//FIXME TODO not correct format according to spec
+    schedule.recurrenceRule = updatedRRule + "UNTIL=" + formattedDate;//untilDate.toICALString();;
 }
 function removeScheduleFromCalendar(choiceIndex, schedule) {
     if (schedule.raw.hasRecurrenceRule || schedule.raw.isException) {
@@ -668,7 +669,6 @@ function unpackEvent(iCalComp, iCalEvent, fromImport, isSharedWithUs, calendarId
         }
     }
     try {
-        //TODO TEST
         let duration = iCalEvent.getFirstPropertyValue('duration').toSeconds();
         var endDT = event['start'].clone();
         endDT = endDT.add(duration, 's');
