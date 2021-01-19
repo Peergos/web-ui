@@ -881,9 +881,7 @@ function importICSFile(contents, username, isSharedWithUs, loadCalendarAsGuest, 
             }
         }
         let dt = moment.utc(schedule.start.toUTCString());
-        if (loadCalendarAsGuest) {
-            loadArbitrarySchedule(schedule, dt.year() * 12 + dt.month());
-        } else {
+        if (!loadCalendarAsGuest) {
             let year = dt.year();
             let month = dt.month() + 1;
             let recurringText = schedule.raw.hasRecurrenceRule ? ' (Recurring: ' + schedule.recurrenceRule + ')' : '';
