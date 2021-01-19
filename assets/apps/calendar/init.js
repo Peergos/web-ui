@@ -567,25 +567,24 @@ function addEXDateToSchedule(scheduleId, startDate) {
     let exDate = toICalTimeTZ(comp, startDate, false);
     vvent.addPropertyWithValue('exdate', exDate);
 }
+function untilUTCTimeString(momentJS) {
+    let currentTZ = momentJS.clone().tz(getCurrentTimeZoneId());
+    let dateParts = currentTZ.toISOString().split('-').join('').split(':').join('');
+    let formattedDate = dateParts.substring(0, dateParts.indexOf('.')) + "Z";//FIXME TODO not correct format according to spec
+    return formattedDate;
+}
 //FIXME not according to spec
-function addUntilToSchedule(schedule, until) {
+function addUntilToSchedule(schedule, untilTZDate) {
     var comp = LoadedEvents[schedule.id];
     let vevents = comp.getAllSubcomponents('vevent');
     let vvent = vevents[0];
-
-    let start = moment(until.getFullYear() + '-01-01');
-    start.add(until.getMonth(), 'months');
-    start.add(until.getDate() -2, 'd');
-    start.add(23, 'h');
-    start.add(59, 'm');
-    start.add(59, 's');
-    start.add(0, 'ms');
     schedule.raw.previousRecurrenceRule = schedule.recurrenceRule;
     var updatedRRule = removePart("COUNT", schedule.recurrenceRule);
     updatedRRule = removePart("UNTIL", updatedRRule);
-    let dateParts = start.toISOString().substring(0, 10).split('-');
-    let formattedDate = dateParts[0] + dateParts[1] + dateParts[2] + "T235959Z";//FIXME TODO not correct format according to spec
-    schedule.recurrenceRule = updatedRRule + "UNTIL=" + formattedDate;//untilDate.toICALString();;
+    var start = moment(untilTZDate.toDate());
+    start.subtract(1, 'm');
+    let formattedDate = untilUTCTimeString(start);
+    schedule.recurrenceRule = updatedRRule + "UNTIL=" + formattedDate;
 }
 function removeScheduleFromCalendar(choiceIndex, schedule) {
     if (schedule.raw.hasRecurrenceRule || schedule.raw.isException) {
@@ -2256,7 +2255,8 @@ function repeatCondition(startDate) {
     var date = document.createElement("input");
     date.type= 'date';
     date.id= 'until-date';
-    let formattedStartDate = formatDateString(startDate.toISOString().split("-").join("").split('T')[0]);
+
+    let formattedStartDate = formatDateString(untilUTCTimeString(moment(startDate)));
     date.min = formattedStartDate;
     date.max = '3000-01-01';
     date.maxlength = '12';
@@ -3106,8 +3106,7 @@ function handleRepeatCondition() {
             showRecurrenceError("Please select Date");
             return "";
         } else {
-            let dateParts = untilDate.split('-');
-            let formattedDate = dateParts[0] + dateParts[1] + dateParts[2] + "T235959Z";//FIXME TODO not correct format according to spec
+            let formattedDate = untilUTCTimeString(moment(untilDate + " 23:59:59"));
             return ";UNTIL=" + formattedDate;
         }
     }
