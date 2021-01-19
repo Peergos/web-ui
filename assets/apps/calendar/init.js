@@ -1083,7 +1083,7 @@ function loadSchedule(schedule, yearMonth) {
             for(var i = 0; i < events.occurrences.length; i++) {
                 let next = events.occurrences[i];
                 if (next.startDate.compare(rangeStart) >= 0
-                    && (next.startDate.compare(rangeEnd) < 0
+                    && (next.startDate.compare(rangeEnd) <= 0
                         || ( rangeEnd.isDate &&  next.startDate.toJSDate().getMonth() == rangeStart.toJSDate().getMonth()
                             && isSameDayMomentJS(schedule.isAllDay, toMoment(icalComponent, next.startDate), toMoment(icalComponent, rangeEnd)))
                         )
