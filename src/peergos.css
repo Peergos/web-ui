@@ -744,3 +744,13 @@ h3 {word-wrap:break-word; white-space:normal;}
       max-width:70%;
   }
 }
+
+.choice-row {
+  width: 100%;
+  text-align: center; // center the content of the container
+}
+
+.choice-block {
+  margin: 5px;
+  display: inline-block; // display inline with ability to provide width/height
+}​

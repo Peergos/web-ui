@@ -12,6 +12,14 @@
         <a id="downloadEventAnchor" style="display:none"></a>
 	  <iframe id="editor" sandbox="allow-scripts allow-forms" src="apps/calendar/index.html" style="width:100%" frameBorder="0"></iframe>
         </div>
+        <choice
+                v-if="showChoice"
+                v-on:hide-choice="showChoice = false"
+                :choice_message='choice_message'
+                :choice_body="choice_body"
+                :choice_consumer_func="choice_consumer_func"
+                :choice_options="choice_options">
+        </choice>
         <prompt
                 v-if="showPrompt"
                 v-on:hide-prompt="showPrompt = false"

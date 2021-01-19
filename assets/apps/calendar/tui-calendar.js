@@ -10452,7 +10452,7 @@ function createMonthView(baseController, layoutContainer, dragHandler, options) 
             }
 
             detailView.render(eventData);
-            buildExtraFields(eventData, detailView);
+            buildExtraFieldsToSummary(eventData, detailView);
         };
         onDeleteSchedule = function(eventData) {
             if (creationHandler) {
@@ -10471,7 +10471,7 @@ function createMonthView(baseController, layoutContainer, dragHandler, options) 
             onShowEditPopup = function(eventData) {
                 createView.setCalendars(baseController.calendars);
                 createView.render(eventData);
-                addMemoField(eventData);
+                addExtraFieldsToDetail(eventData);
             };
             createView.on('beforeUpdateSchedule', onEditSchedule);
             detailView.on('beforeUpdateSchedule', onShowEditPopup);
@@ -10561,7 +10561,7 @@ function createMonthView(baseController, layoutContainer, dragHandler, options) 
             if (createView) {
                 createView.setCalendars(baseController.calendars);
                 createView.render(eventData);
-                addMemoField(null);
+                addExtraFieldsToDetail(eventData);
             }
         },
         hideMoreView: function() {
@@ -10859,7 +10859,7 @@ module.exports = function(baseController, layoutContainer, dragHandler, options,
             }
 
             detailView.render(eventData);
-            buildExtraFields(eventData, detailView);
+            buildExtraFieldsToSummary(eventData, detailView);
         };
         onDeleteSchedule = function(eventData) {
             if (eventData.isAllDay) {
@@ -10885,7 +10885,7 @@ module.exports = function(baseController, layoutContainer, dragHandler, options,
                 eventData.isEditMode = true;
                 createView.setCalendars(calendars);
                 createView.render(eventData);
-                addMemoField(eventData);
+                addExtraFieldsToDetail(eventData);
             };
             createView.on('beforeUpdateSchedule', onEditSchedule);
             detailView.on('beforeUpdateSchedule', onShowEditPopup);
@@ -10956,7 +10956,7 @@ module.exports = function(baseController, layoutContainer, dragHandler, options,
             if (createView) {
                 createView.setCalendars(baseController.calendars);
                 createView.render(eventData);
-                addMemoField(null);
+                addExtraFieldsToDetail(eventData);
             }
         }
     };
@@ -20308,7 +20308,8 @@ ScheduleCreationPopup.prototype._setArrowDirection = function(arrow) {
  */
 ScheduleCreationPopup.prototype._createDatepicker = function(start, end, isAllDay) {
     var cssPrefix = config.cssPrefix;
-
+    let day = new TZDate(start).toDate();
+    let dayJS = new Date(day.getFullYear(), day.getMonth(), day.getDate());
     this.rangePicker = DatePicker.createRangePicker({
         startpicker: {
             date: new TZDate(start).toDate(),
@@ -20328,7 +20329,11 @@ ScheduleCreationPopup.prototype._createDatepicker = function(start, end, isAllDa
             inputType: 'spinbox',
             layoutType: 'tab'
         },
-        usageStatistics: this._usageStatistics
+        selectableRanges: [
+            [dayJS, dayJS],
+            [dayJS, dayJS]
+        ],
+        usageStatistics: false
     });
 };
 
@@ -22388,7 +22393,7 @@ module.exports = (Handlebars['default'] || Handlebars).template({"1":function(co
     + alias4(((helper = (helper = lookupProperty(helpers,"CSS_PREFIX") || (depth0 != null ? lookupProperty(depth0,"CSS_PREFIX") : depth0)) != null ? helper : alias2),(typeof helper === alias3 ? helper.call(alias1,{"name":"CSS_PREFIX","hash":{},"data":data,"loc":{"start":{"line":3,"column":91},"end":{"line":3,"column":105}}}) : helper)))
     + "section-calendar"
     + ((stack1 = lookupProperty(helpers,"unless").call(alias1,((stack1 = (depth0 != null ? lookupProperty(depth0,"calendars") : depth0)) != null ? lookupProperty(stack1,"length") : stack1),{"name":"unless","hash":{},"fn":container.program(1, data, 0),"inverse":container.noop,"data":data,"loc":{"start":{"line":3,"column":121},"end":{"line":3,"column":179}}})) != null ? stack1 : "")
-    + "\">\n            <button class=\""
+    + "\" id='calendar-dropdown'>\n            <button class=\""
     + alias4(((helper = (helper = lookupProperty(helpers,"CSS_PREFIX") || (depth0 != null ? lookupProperty(depth0,"CSS_PREFIX") : depth0)) != null ? helper : alias2),(typeof helper === alias3 ? helper.call(alias1,{"name":"CSS_PREFIX","hash":{},"data":data,"loc":{"start":{"line":4,"column":27},"end":{"line":4,"column":41}}}) : helper)))
     + "button "
     + alias4(((helper = (helper = lookupProperty(helpers,"CSS_PREFIX") || (depth0 != null ? lookupProperty(depth0,"CSS_PREFIX") : depth0)) != null ? helper : alias2),(typeof helper === alias3 ? helper.call(alias1,{"name":"CSS_PREFIX","hash":{},"data":data,"loc":{"start":{"line":4,"column":48},"end":{"line":4,"column":62}}}) : helper)))
@@ -22518,7 +22523,7 @@ module.exports = (Handlebars['default'] || Handlebars).template({"1":function(co
     + alias4(((helper = (helper = lookupProperty(helpers,"CSS_PREFIX") || (depth0 != null ? lookupProperty(depth0,"CSS_PREFIX") : depth0)) != null ? helper : alias2),(typeof helper === alias3 ? helper.call(alias1,{"name":"CSS_PREFIX","hash":{},"data":data,"loc":{"start":{"line":48,"column":29},"end":{"line":48,"column":43}}}) : helper)))
     + "content\">"
     + ((stack1 = ((helper = (helper = lookupProperty(helpers,"popupIsAllDay-tmpl") || (depth0 != null ? lookupProperty(depth0,"popupIsAllDay-tmpl") : depth0)) != null ? helper : alias2),(typeof helper === alias3 ? helper.call(alias1,{"name":"popupIsAllDay-tmpl","hash":{},"data":data,"loc":{"start":{"line":48,"column":52},"end":{"line":48,"column":76}}}) : helper))) != null ? stack1 : "")
-    + "</span>\n            </div>\n        </div>\n        <div id='busy-free-state' class=\""
+    + "</span>\n            </div>\n        </div>\n        <div class='dropdown-container-1'><div id='busy-free-state' class=\"dropdown-container-1-block "
     + alias4(((helper = (helper = lookupProperty(helpers,"CSS_PREFIX") || (depth0 != null ? lookupProperty(depth0,"CSS_PREFIX") : depth0)) != null ? helper : alias2),(typeof helper === alias3 ? helper.call(alias1,{"name":"CSS_PREFIX","hash":{},"data":data,"loc":{"start":{"line":51,"column":20},"end":{"line":51,"column":34}}}) : helper)))
     + "popup-section "
     + alias4(((helper = (helper = lookupProperty(helpers,"CSS_PREFIX") || (depth0 != null ? lookupProperty(depth0,"CSS_PREFIX") : depth0)) != null ? helper : alias2),(typeof helper === alias3 ? helper.call(alias1,{"name":"CSS_PREFIX","hash":{},"data":data,"loc":{"start":{"line":51,"column":48},"end":{"line":51,"column":62}}}) : helper)))
@@ -22574,7 +22579,7 @@ module.exports = (Handlebars['default'] || Handlebars).template({"1":function(co
     + alias4(((helper = (helper = lookupProperty(helpers,"CSS_PREFIX") || (depth0 != null ? lookupProperty(depth0,"CSS_PREFIX") : depth0)) != null ? helper : alias2),(typeof helper === alias3 ? helper.call(alias1,{"name":"CSS_PREFIX","hash":{},"data":data,"loc":{"start":{"line":64,"column":29},"end":{"line":64,"column":43}}}) : helper)))
     + "content\">"
     + ((stack1 = ((helper = (helper = lookupProperty(helpers,"popupStateFree-tmpl") || (depth0 != null ? lookupProperty(depth0,"popupStateFree-tmpl") : depth0)) != null ? helper : alias2),(typeof helper === alias3 ? helper.call(alias1,{"name":"popupStateFree-tmpl","hash":{},"data":data,"loc":{"start":{"line":64,"column":52},"end":{"line":64,"column":77}}}) : helper))) != null ? stack1 : "")
-    + "</span>\n                </li>\n            </ul>\n        </div>\n        <button class=\""
+    + "</span>\n                </li>\n            </ul>\n        </div><div id='repeat-div' class='dropdown-container-1-block'><span class='repeat-icon tui-full-calendar-ic-repeat-b'></span></div></div><div id='rrule-modal' class='rrule-modal' style='display: none'><div id='rrule-container-1' class='rrule-container'></div><div id='rrule-container-2' class='rrule-container'></div></div>\n        <button class=\""
     + alias4(((helper = (helper = lookupProperty(helpers,"CSS_PREFIX") || (depth0 != null ? lookupProperty(depth0,"CSS_PREFIX") : depth0)) != null ? helper : alias2),(typeof helper === alias3 ? helper.call(alias1,{"name":"CSS_PREFIX","hash":{},"data":data,"loc":{"start":{"line":68,"column":23},"end":{"line":68,"column":37}}}) : helper)))
     + "button "
     + alias4(((helper = (helper = lookupProperty(helpers,"CSS_PREFIX") || (depth0 != null ? lookupProperty(depth0,"CSS_PREFIX") : depth0)) != null ? helper : alias2),(typeof helper === alias3 ? helper.call(alias1,{"name":"CSS_PREFIX","hash":{},"data":data,"loc":{"start":{"line":68,"column":44},"end":{"line":68,"column":58}}}) : helper)))
@@ -22650,7 +22655,7 @@ module.exports = (Handlebars['default'] || Handlebars).template({"1":function(co
     + alias4(((helper = (helper = lookupProperty(helpers,"CSS_PREFIX") || (depth0 != null ? lookupProperty(depth0,"CSS_PREFIX") : depth0)) != null ? helper : alias2),(typeof helper === alias3 ? helper.call(alias1,{"name":"CSS_PREFIX","hash":{},"data":data,"loc":{"start":{"line":12,"column":116},"end":{"line":12,"column":130}}}) : helper)))
     + "ic-repeat-b\"></span><span class=\""
     + alias4(((helper = (helper = lookupProperty(helpers,"CSS_PREFIX") || (depth0 != null ? lookupProperty(depth0,"CSS_PREFIX") : depth0)) != null ? helper : alias2),(typeof helper === alias3 ? helper.call(alias1,{"name":"CSS_PREFIX","hash":{},"data":data,"loc":{"start":{"line":12,"column":163},"end":{"line":12,"column":177}}}) : helper)))
-    + "content\">"
+    + "content\" id='rrule-summary'>"
     + ((stack1 = (lookupProperty(helpers,"popupDetailRepeat-tmpl")||(depth0 && lookupProperty(depth0,"popupDetailRepeat-tmpl"))||alias2).call(alias1,(depth0 != null ? lookupProperty(depth0,"schedule") : depth0),{"name":"popupDetailRepeat-tmpl","hash":{},"data":data,"loc":{"start":{"line":12,"column":186},"end":{"line":12,"column":223}}})) != null ? stack1 : "")
     + "</span></div>";
 },"5":function(container,depth0,helpers,partials,data) {
@@ -22671,7 +22676,7 @@ module.exports = (Handlebars['default'] || Handlebars).template({"1":function(co
     + alias4(((helper = (helper = lookupProperty(helpers,"CSS_PREFIX") || (depth0 != null ? lookupProperty(depth0,"CSS_PREFIX") : depth0)) != null ? helper : alias2),(typeof helper === alias3 ? helper.call(alias1,{"name":"CSS_PREFIX","hash":{},"data":data,"loc":{"start":{"line":13,"column":150},"end":{"line":13,"column":164}}}) : helper)))
     + "ic-user-b\"></span><span class=\""
     + alias4(((helper = (helper = lookupProperty(helpers,"CSS_PREFIX") || (depth0 != null ? lookupProperty(depth0,"CSS_PREFIX") : depth0)) != null ? helper : alias2),(typeof helper === alias3 ? helper.call(alias1,{"name":"CSS_PREFIX","hash":{},"data":data,"loc":{"start":{"line":13,"column":195},"end":{"line":13,"column":209}}}) : helper)))
-    + "content\">"
+    + "content\" id='rrule-summary'>"
     + ((stack1 = (lookupProperty(helpers,"popupDetailUser-tmpl")||(depth0 && lookupProperty(depth0,"popupDetailUser-tmpl"))||alias2).call(alias1,(depth0 != null ? lookupProperty(depth0,"schedule") : depth0),{"name":"popupDetailUser-tmpl","hash":{},"data":data,"loc":{"start":{"line":13,"column":218},"end":{"line":13,"column":253}}})) != null ? stack1 : "")
     + "</span></div>";
 },"7":function(container,depth0,helpers,partials,data) {

@@ -21,7 +21,11 @@ module.exports = {
             confirm_body: "",
             confirm_consumer_cancel_func: () => {},
             confirm_consumer_func: () => {},
-            firstMessage: true
+            showChoice: false,
+            choice_message: '',
+            choice_body: '',
+            choice_consumer_func: () => {},
+            choice_options: []
         }
     },
     props: ['context', 'messages', 'importFile', 'importSharedEvent', 'shareWith', 'loadCalendarAsGuest'],
@@ -43,15 +47,7 @@ module.exports = {
 
     postMessage: function(obj) {
 	    var iframe = document.getElementById("editor");
-	    if (this.firstMessage) { //Firefox really doesn't handle opening/closing/opening iframes well....
-    	    this.firstMessage = false;
-            iframe.contentWindow.postMessage({type: 'ping'}, '*');
-            setTimeout(function(){
-                iframe.contentWindow.postMessage(obj, '*');
-            }, 200);
-        } else {
-            iframe.contentWindow.postMessage(obj, '*');
-        }
+        iframe.contentWindow.postMessage(obj, '*');
     },
     startListener: function(calendar) {
 	    var that = this;
@@ -89,15 +85,15 @@ module.exports = {
                 } else if(e.data.type=="downloadEvent") {
                     that.downloadEvent(calendar, e.data.title, e.data.event);
                 } else if(e.data.type=="shareCalendarEvent") {
-                    that.shareCalendarEvent(calendar, e.data.calendarName, e.data.id, e.data.year, e.data.month);
+                    that.shareCalendarEvent(calendar, e.data.calendarName, e.data.id, e.data.year, e.data.month, e.data.isRecurring);
                 } else if (e.data.action == 'requestRenameCalendar') {
                     that.renameCalendarRequest(calendar, e.data.calendar);
                 } else if (e.data.action == 'requestCalendarColorChange') {
                     that.calendarColorChangeRequest(calendar, e.data.calendarName, e.data.newColor);
                 } else if (e.data.action == 'requestAddCalendar') {
                     that.addCalendarRequest(calendar, e.data.newColor);
-                } else if (e.data.action == 'requestCalendarReload') {
-                    that.reloadCalendar();
+                } else if (e.data.action == 'requestChoiceSelection') {
+                    that.requestChoiceSelection(e.data.method, e.data.includeChangeAll);
                 }
             }
         });
@@ -111,12 +107,27 @@ module.exports = {
         if(this.importFile != null) {
             this.importICSFile();
         } else {
-            this.load(calendar, year, month, 'load');
+            this.load(calendar, year, month);
         }
 	},
-    reloadCalendar: function() {
-        this.$emit("reload-calendar");
-    },
+	requestChoiceSelection: function(method, includeChangeAll) {
+	    let that = this;
+        this.choice_message = method + ' Event';
+        this.choice_body = '';
+        this.choice_consumer_func = (index) => {
+            //console.log("response=" + response);
+            let chosenIndex = includeChangeAll ? index : index + 1;
+            that.postMessage({type: 'respondChoiceSelection', optionIndex: chosenIndex, method: method});
+        };
+        let options = [];
+        if (includeChangeAll) {
+            options.push('All events');
+        }
+        options.push('This event');
+        options.push('This and future events');
+        this.choice_options = options;
+        this.showChoice = true;
+	},
     renameCalendarRequest: function(calendar, calendarItem) {
         let that = this;
         this.prompt_placeholder = 'New Calendar name';
@@ -236,15 +247,17 @@ module.exports = {
                 , yearMonth: yearMonth });
         });
     },
-    load: function(calendar, year, month, messageType) {
+    load: function(calendar, year, month) {
         let that = this;
-        this.getCalendarEventsAroundMonth(calendar, year, month).thenApply(function(allEvents) {
-            that.loadEvents(year, month, messageType, allEvents.previous, allEvents.current,
-                    allEvents.next, that.context.username);
+        this.getRecurringCalendarEvents(calendar).thenApply(function(recurringEvents) {
+            that.getCalendarEventsAroundMonth(calendar, year, month).thenApply(function(allEvents) {
+                that.loadEvents(year, month, allEvents.previous, allEvents.current,
+                        allEvents.next, recurringEvents);
+            });
         });
     },
 
-    loadEvents: function(year, month, messageType, eventsPreviousMonth, eventsThisMonth, eventsNextMonth) {
+    loadEvents: function(year, month, eventsPreviousMonth, eventsThisMonth, eventsNextMonth, recurringEvents) {
         let that = this;
         let yearMonth = year * 12 + (month-1);
         setTimeout(function(){
@@ -254,9 +267,9 @@ module.exports = {
                 calendars.push({name: calendar.name, color: calendar.color});
             }
             Vue.nextTick(function() {
-                that.postMessage({type: messageType, previousMonth: eventsPreviousMonth,
-                    currentMonth: eventsThisMonth, nextMonth: eventsNextMonth, yearMonth: yearMonth
-                    , username: that.context.username, calendars: calendars});
+                that.postMessage({type: 'load', previousMonth: eventsPreviousMonth,
+                    currentMonth: eventsThisMonth, nextMonth: eventsNextMonth, recurringEvents: recurringEvents,
+                    yearMonth: yearMonth, username: that.context.username, calendars: calendars});
             });
         });
     },
@@ -297,8 +310,9 @@ module.exports = {
         this.confirm_consumer_func = deleteCalendarFunction;
         this.showConfirm = true;
     },
-    removeCalendarEvent: function(calendar, calendarName, year, month, id) {
-        let dirPath = this.findCalendarDirectory(calendarName) + "/" + year + "/" + month;
+    removeCalendarEvent: function(calendar, calendarName, year, month, id, isRecurring) {
+        let calendarDirectory = this.findCalendarDirectory(calendarName);
+        let dirPath =  isRecurring ? calendarDirectory + "/recurring" : calendarDirectory + "/" + year + "/" + month;
         let filename = id + this.CALENDAR_FILE_EXTENSION;
         let filePath = peergos.client.PathUtils.toPath(dirPath.split('/'), filename);
         return calendar.deleteInternal(filePath);
@@ -306,7 +320,7 @@ module.exports = {
     deleteEvent: function(calendar, item) {
 	    const that = this;
 	    that.displaySpinner();
-        this.removeCalendarEvent(calendar, item.calendarName, item.year, item.month, item.Id).thenApply(function(res) {
+        this.removeCalendarEvent(calendar, item.calendarName, item.year, item.month, item.Id, item.isRecurring).thenApply(function(res) {
 	        that.removeSpinner();
         }).exceptionally(function(throwable) {
             that.showMessage("Unable to delete event","Please close calendar and try again");
@@ -358,41 +372,52 @@ module.exports = {
         }
         return "default";
     },
-    updateCalendarEvent: function(calendar, calendarName, year, month, id, calendarEvent) {
-        let dirPath = this.findCalendarDirectory(calendarName) + "/" + year + "/" + month;
-        let filename = id + this.CALENDAR_FILE_EXTENSION;
+    updateCalendarEvent: function(calendar, item) {
+        let calendarDirectory = this.findCalendarDirectory(item.calendarName);
+        let dirPath =  item.isRecurring ? calendarDirectory + "/recurring" : calendarDirectory + "/" + item.year + "/" + item.month;
+        let filename = item.Id + this.CALENDAR_FILE_EXTENSION;
         let filePath = peergos.client.PathUtils.toPath(dirPath.split('/'), filename);
         let encoder = new TextEncoder();
-        let uint8Array = encoder.encode(calendarEvent);
+        let uint8Array = encoder.encode(item.item);
         let bytes = convertToByteArray(uint8Array);
         return calendar.writeInternal(filePath, bytes);
     },
     saveEvent: function(calendar, item) {
 	    const that = this;
 	    that.displaySpinner();
-	    if(item.calendarName == item.previousCalendarName) {
-            this.updateCalendarEvent(calendar, item.calendarName, item.year, item.month, item.Id, item.item).thenApply(function(res) {
-                that.removeSpinner();
-            }).exceptionally(function(throwable) {
-                that.showMessage("Unable to save event","Please close calendar and try again");
-                console.log(throwable.getMessage());
-                that.removeSpinner();
-            });
-        } else { //move between calendars
-            this.removeCalendarEvent(calendar, item.previousCalendarName, item.year, item.month, item.Id).thenApply(function(res) {
-                that.updateCalendarEvent(calendar, item.calendarName, item.year, item.month, item.Id, item.item).thenApply(function(res2) {
+	    if (item.action == "createRecurring") {
+            this.moveEvent(calendar, item, false);
+	    } else if (item.action == "deleteRecurring") {
+            this.moveEvent(calendar, item, true);
+	    } else {
+            if(item.calendarName == item.previousCalendarName) {
+                this.updateCalendarEvent(calendar, item).thenApply(function(res) {
                     that.removeSpinner();
                 }).exceptionally(function(throwable) {
-                    that.showMessage("Unable to save moved event","Please re-create event");
+                    that.showMessage("Unable to save event","Please close calendar and try again");
                     console.log(throwable.getMessage());
                     that.removeSpinner();
                 });
+            } else {
+                this.moveEvent(calendar, item, item.isRecurring);
+            }
+	    }
+    },
+    moveEvent: function(calendar, item, removeRecurring) {
+        const that = this;
+        this.removeCalendarEvent(calendar, item.previousCalendarName, item.year, item.month, item.Id, removeRecurring).thenApply(function(res) {
+            that.updateCalendarEvent(calendar, item).thenApply(function(res2) {
+                that.removeSpinner();
             }).exceptionally(function(throwable) {
-                that.showMessage("Unable to move event","Please close calendar and try again");
+                that.showMessage("Unable to save moved event","Please re-create event");
                 console.log(throwable.getMessage());
                 that.removeSpinner();
             });
-        }
+        }).exceptionally(function(throwable) {
+            that.showMessage("Unable to move event","Please close calendar and try again");
+            console.log(throwable.getMessage());
+            that.removeSpinner();
+        });
     },
     saveAllEvents: function(calendar, data) {
         this.removeSpinner();
@@ -423,7 +448,7 @@ module.exports = {
         let that = this;
         let item = items[index];
         that.displaySpinner();
-        this.updateCalendarEvent(calendar, item.calendarName, item.year, item.month, item.Id, item.item).thenApply(function(res) {
+        this.updateCalendarEvent(calendar, item).thenApply(function(res) {
            that.saveAllEventsRecursive(calendar, items, ++index, showConfirmation);
         }).exceptionally(function(throwable) {
            that.removeSpinner();
@@ -442,7 +467,26 @@ module.exports = {
         this.confirm_consumer_func = importFunction;
         this.showConfirm = true;
     },
-
+    reduceRecurringCalendarEvents: function(calendar, calendarIndex, accumulator, future) {
+        let that = this;
+        if (calendarIndex == that.calendarProperties.calendars.length) {
+            future.complete(accumulator);
+        } else {
+            let currentCalendar = that.calendarProperties.calendars[calendarIndex];
+            let dirStr = currentCalendar.directory + "/recurring";
+            let directoryPath = peergos.client.PathUtils.directoryToPath(dirStr.split('/'));
+            calendar.dirInternal(directoryPath).thenApply(filenames => {
+                that.getEventsForMonth(calendar, currentCalendar.name, dirStr, filenames.toArray([])).thenApply(res => {
+                    that.reduceRecurringCalendarEvents(calendar, ++calendarIndex, accumulator.concat(res), future);
+                })
+            });
+        }
+    },
+    getRecurringCalendarEvents: function(calendar) {
+        let future = peergos.shared.util.Futures.incomplete();
+        this.reduceRecurringCalendarEvents(calendar, 0, [], future);
+        return future;
+    },
     reduceCalendarEventsForMonth: function(calendar, year, month, calendarIndex, accumulator, future) {
             let that = this;
             if (calendarIndex == that.calendarProperties.calendars.length) {
@@ -515,9 +559,10 @@ module.exports = {
         link.click();
         this.removeSpinner();
     },
-    shareCalendarEvent: function(calendar, calendarName, id, year, month) {
+    shareCalendarEvent: function(calendar, calendarName, id, year, month, isRecurring) {
         let calendarDirectory = this.findCalendarDirectory(calendarName);
-        this.shareWith(this.CALENDAR_DIR_NAME + '/' + this.DATA_DIR_NAME + "/" + calendarDirectory + "/" + year + '/' + month,
+        let dirPath =  isRecurring ? calendarDirectory + "/recurring" : calendarDirectory + "/" + year + "/" + month;
+        this.shareWith(this.CALENDAR_DIR_NAME + '/' + this.DATA_DIR_NAME + "/" + dirPath,
             id + '.ics', false, 'Calendar Event');
     },
     showMessage: function(title, body) {

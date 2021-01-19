@@ -365,14 +365,6 @@ module.exports = {
             this.updateHistory("filesystem", this.getPath(), "");
 	    this.forceSharedRefreshWithUpdate++;
 	},
-	reloadCalendar: function() {
-        this.closeApps();
-        let that = this;
-        Vue.nextTick(function() {
-            that.toggleNav();
-            that.showCalendar();
-        });
-    },
     navigateToAction: function(directory) {
         let newPath = directory.startsWith("/") ? directory.substring(1).split('/') : directory.split('/');
         let currentPath = this.path;
