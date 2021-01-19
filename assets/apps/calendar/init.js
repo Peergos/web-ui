@@ -599,6 +599,7 @@ function removeScheduleFromCalendar(choiceIndex, schedule) {
             if (schedule.raw.isException) {
                 if (choiceIndex == 1){ //delete just this instance
                     recurringSchedule.raw.exceptions.splice(recurringSchedule.raw.exceptions.findIndex(v => v.id === schedule.id), 1);
+                    addEXDateToSchedule(parentId, schedule.start);
                 } else { //until
                     addUntilToSchedule(recurringSchedule, schedule.start);
                     let until = moment.utc(schedule.start.toUTCString());
