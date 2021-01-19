@@ -573,7 +573,7 @@ function untilUTCTimeString(momentJS) {
     let formattedDate = dateParts.substring(0, dateParts.indexOf('.')) + "Z";//FIXME TODO not correct format according to spec
     return formattedDate;
 }
-//FIXME not according to spec
+//FIXME not according to spec. The format of UNTIL should match DTSTART. Page 41 https://tools.ietf.org/html/rfc5545
 function addUntilToSchedule(schedule, untilTZDate) {
     var comp = LoadedEvents[schedule.id];
     let vevents = comp.getAllSubcomponents('vevent');
