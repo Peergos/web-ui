@@ -649,7 +649,7 @@ function toMoment(iCalComp, icalDateTime) {
     } else if (icalDateTime.zone.tzid == 'floating') {
         icalDateTime = fromFloatingTZ(iCalComp, icalDateTime);
     }
-    return moment.tz(icalDateTime.toJSDate(), icalDateTime.zone.tzid);
+    return moment.tz(icalDateTime.toJSDate(), normaliseTimeZoneName(icalDateTime.zone.tzid));
 }
 function unpackEvent(iCalComp, iCalEvent, fromImport, isSharedWithUs, calendarId) {
     let event = new Object();
@@ -1323,7 +1323,7 @@ function toICalTimeTZ(icalComp, tzDate, isAllDay) {
     let jsDate = toJSDate(tzDate);
     let dt = moment(jsDate);
     let timeZone = getTimeZone(icalComp);
-    let destTZ = dt.clone().tz(timeZone.tzid);
+    let destTZ = dt.clone().tz(normaliseTimeZoneName(timeZone.tzid));
     if (isAllDay && jsDate.getDate() != destTZ.date()) {
         if (jsDate > destTZ.toDate()) {
             destTZ.add(1, 'days');
