@@ -485,9 +485,25 @@ function respondToCalendarColorChange(calendarName, newColor) {
 function respondToCalendarDelete(calendar) {
     let calendarItem = document.getElementById("cal-id-" + calendar.id);
     calendarItem.remove();
+
+    let records = [];
+    CachedYearMonths.forEach(function(yearMonth) {
+        let monthCache = ScheduleCache[yearMonth];
+        monthCache.forEach(function(item) {
+            if (item.calendarId == calendar.id) {
+                records.push({monthCache : monthCache, item: item});
+            }
+        });
+    });
+    records.forEach(function(record) {
+        cal.deleteSchedule(record.item.id, record.item.calendarId);
+        record.monthCache.splice(record.monthCache.findIndex(v => v.id === record.item.id), 1);
+    });
+
+
     CalendarList.splice(CalendarList.findIndex(v => v.id === calendar.id), 1);
     replaceCalendarsInUI();
-    cal.setCalendars(CalendarList);
+    cal.setCalendars(CalendarList); 
 }
 
 function respondToCalendarAdd(newId, newName, newColor) {
