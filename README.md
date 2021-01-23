@@ -21,10 +21,10 @@ To get started following script will:
 * checkout the project 
 * build the server
 * build the web-ui
-* start a local Peergos server on http://localhost:8000 for web-ui development in which all writes are local to memory
+* start a local Peergos server on http://localhost:8000 for web-ui development in which all writes are local on an ephemeral instance
 
 ```
-git checkout https://github.com/peergos/web-ui
+git clone https://github.com/peergos/web-ui.git
 cd web-ui
 ant update_and_run
 ```
