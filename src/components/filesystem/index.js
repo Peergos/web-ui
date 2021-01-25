@@ -426,6 +426,16 @@ module.exports = {
             this.toggleNav();
         }
     },
+	openAppFromFolder: function() {
+	    let path = this.getPath();
+	    let pathItems = path.split('/').filter(n => n.length > 0);
+	    if (pathItems.length == 5 && pathItems[1] == '.apps') {
+	        if (pathItems[2] == 'calendar' && pathItems[3] == 'data') {
+    	        this.importSharedCalendar(path.substring(0, path.length -1), this.currentDir, true, pathItems[0]);
+    	        this.changePath("/");
+	        }
+	    }
+    },
 	updateCurrentDir: function() {
 	    this.updateCurrentDirectory(null);
 	},
@@ -463,6 +473,7 @@ module.exports = {
                         that.gallery();
                     } else {
                         that.sharedWithDataUpdate();
+                        that.openAppFromFolder();
                     }
                 }).exceptionally(function(throwable) {
                     console.log(throwable.getMessage());
@@ -1269,7 +1280,8 @@ module.exports = {
         showCalendar: function() {
             this.toggleNav();
             this.importFile = null;
-            this.importSharedEvent = false;
+            this.importCalendarPath = null;
+            this.owner = this.context.username;
             this.loadCalendarAsGuest = false;
             this.showCalendarViewer = true;
 	    this.updateHistory("calendar", this.getPath(), "");
@@ -1453,13 +1465,13 @@ module.exports = {
         },
         showShareWithForProfile: function(field, fieldName) {
             let dirPath = this.getContext().username + "/.profile/";
-            this.showShareWithForFile(dirPath, field, false, fieldName);
+            this.showShareWithForFile(dirPath, field, false, true, fieldName);
         },
-        showShareWithFromApp: function(app, filename, allowReadWriteSharing, nameToDisplay) {
+        showShareWithFromApp: function(app, filename, allowReadWriteSharing, allowCreateSecretLink, nameToDisplay) {
             let dirPath = this.getContext().username + "/.apps/" + app;
-            this.showShareWithForFile(dirPath, filename, allowReadWriteSharing, nameToDisplay);
+            this.showShareWithForFile(dirPath, filename, allowReadWriteSharing, allowCreateSecretLink, nameToDisplay);
         },
-        showShareWithForFile: function(dirPath, filename, allowReadWriteSharing, nameToDisplay) {
+        showShareWithForFile: function(dirPath, filename, allowReadWriteSharing, allowCreateSecretLink, nameToDisplay) {
             let that = this;
             var context = this.getContext();
             this.context.getByPath(dirPath)
@@ -1481,6 +1493,7 @@ module.exports = {
                         that.displayName = nameToDisplay != null && nameToDisplay.length > 0 ?
                                                      nameToDisplay : file.getFileProperties().name;
                         that.allowReadWriteSharing = allowReadWriteSharing;
+                        that.allowCreateSecretLink = allowCreateSecretLink;
                         that.showShare = true;
                     });
                 })});
@@ -1589,11 +1602,19 @@ module.exports = {
                     return reader.readIntoArray(data, 0, data.length)
                         .thenApply(function(read){
                             that.importFile = new TextDecoder().decode(data);
-                            that.importSharedEvent = file.getOwnerName() != context.username;
+                            that.importCalendarPath = null;
+                            that.owner = file.getOwnerName();
                             that.loadCalendarAsGuest = isSecretLink;
                             that.showCalendarViewer = true;
                         });
             })
+        },
+        importSharedCalendar: function(path, file, isSecretLink, owner) {
+            this.importFile = null;
+            this.importCalendarPath = path;
+            this.owner = owner;
+            this.loadCalendarAsGuest = isSecretLink;
+            this.showCalendarViewer = true;
         },
         gallery: function() {
             // TODO: once we support selecting files re-enable this
@@ -1673,12 +1694,10 @@ module.exports = {
 	    return "file"
 	},
         getFileIcon: function(file) {
-            if (file.isDirectory()) {
-                if (file.isUserRoot() && file.getName() == this.username)
-                    return 'fa-home';
-                return 'fa-folder-open';
-            }
             var type = file.getFileProperties().getType();
+            return this.getFileIconFromFileAndType(file, type);
+        },
+        getFileIconFromFileAndType: function(file, type) {
             if (type == 'pdf')
                 return 'fa-file-pdf';
             if (type == 'audio')
@@ -1703,6 +1722,11 @@ module.exports = {
                 return 'fa fa-calendar-alt';
             if (type == 'contact file')
                 return 'fa fa-address-card';
+            if (file.isDirectory()) {
+                if (file.isUserRoot() && file.getName() == this.username)
+                    return 'fa-home';
+                return 'fa-folder-open';
+            }
             return 'fa-file';
         },
         getPath: function() {
