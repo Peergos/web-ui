@@ -459,6 +459,15 @@ function addCalendar(){
     let color = colorPalette[(idAsInt % 8) + 8];
     mainWindow.postMessage({action:'requestAddCalendar', newColor:color}, origin);
 }
+function getCalendarListItem(id) {
+    for(var i=0; i < CalendarList.length;i++) {
+        let item = CalendarList[i];
+        if (item.id == id) {
+            return item;
+        }
+    }
+    return null;
+}
 function respondToCalendarRename(calendar) {
     let calendarItem = document.getElementById("cal-item-name-" + calendar.id);
     calendarItem.innerText = calendar.name;
@@ -1838,7 +1847,7 @@ function buildExtraFieldsToSummary(eventData, that) {
     var showDeleteBtn = false;
     if(eventData.schedule.raw.creator.name != currentUsername) {
         calendarSpan.innerText = calendarSpan.innerText + " (Shared by " + eventData.schedule.raw.creator.name + ")";
-        let owner = CalendarList[eventData.schedule.calendarId -1].owner;
+        let owner = getCalendarListItem(eventData.schedule.calendarId).owner;
         if (!loadCalendarAsGuest && owner == null) {
             showDeleteBtn = true;
         }
