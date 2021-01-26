@@ -1518,6 +1518,7 @@ module.exports = {
             this.fromApp = false;
             this.displayName = latestFile.getFileProperties().name;
             this.allowReadWriteSharing = true;
+            this.allowCreateSecretLink = true;
             this.showShare = true;
         },
 
