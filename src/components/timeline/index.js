@@ -10,8 +10,8 @@ module.exports = {
             noMoreResults: false
         }
     },
-    props: ['context','navigateToAction','viewAction', 'messages', 'getFileIcon', 'socialFeed',
-        'importCalendarFile', 'displayProfile'],
+    props: ['context','navigateToAction','viewAction', 'messages', 'getFileIconFromFileAndType', 'socialFeed',
+        'importCalendarFile', 'importSharedCalendar', 'displayProfile'],
     created: function() {
         let that = this;
         Vue.nextTick(function() {
@@ -46,7 +46,10 @@ module.exports = {
                 let numberOfEntries = allPairs.length;
                 for(var j = 0; j < numberOfEntries; j++) {
                     let pair = allPairs[j];
-                    allTimelineEntries.push(that.createTimelineEntry(pair.left, pair.right));
+                    let timelineEntry = that.createTimelineEntry(pair.left, pair.right);
+                    if (timelineEntry != null) {
+                        allTimelineEntries.push(timelineEntry);
+                    }
                 }
                 that.data = that.data.concat(allTimelineEntries);
                 that.showSpinner = false;
@@ -105,21 +108,32 @@ module.exports = {
         },
         view: function (entry) {
             var filename = entry.file.getName();
-            var mimeType = entry.file.getFileProperties().mimeType;
-            console.log("Opening " + mimeType);
-            if (mimeType === "text/calendar") {
-                this.importCalendarFile(false, entry.file);
+            if (this.isSharedCalendar(entry.path)) {
+                this.importSharedCalendar(entry.path, entry.file, false, entry.file.getOwnerName());
             } else {
-                if (entry.isDirectory) {
-                    this.navigateToAction(entry.path);
-                    this.close();
+                var mimeType = entry.file.getFileProperties().mimeType;
+                console.log("Opening " + mimeType);
+                if (mimeType === "text/calendar") {
+                    this.importCalendarFile(false, entry.file);
                 } else {
-                    this.viewAction(entry.path, entry.fullName);
+                    if (entry.isDirectory) {
+                        this.navigateToAction(entry.path);
+                        this.close();
+                    } else {
+                        this.viewAction(entry.path, entry.fullName);
+                    }
                 }
             }
         },
         profile: function(username) {
             this.displayProfile(username, false);
+        },
+        isSharedCalendar: function(path) {
+            let pathParts = path.split("/");
+            return pathParts.length == 6 && pathParts[0] == '' &&
+                pathParts[2] == '.apps' &&
+                pathParts[3] == 'calendar' &&
+                pathParts[4] == 'data';
         },
         createTimelineEntry: function(entry, file) {
             let info = " shared";
@@ -128,12 +142,21 @@ module.exports = {
                 info = info + " write access to";
             }
             let props = file.props;
+            var isSharedCalendar = false;
             if (props.isHidden) {
-                return;
+                if (this.isSharedCalendar(entry.path)) {
+                    isSharedCalendar = true;
+                } else {
+                    return null;
+                }
             }
             if (props.isDirectory) {
-                info = info + " the directory";
-
+                if (isSharedCalendar) {
+                    info = info + " a calendar"; // - " + props.name;
+                    displayFilename = false;
+                } else {
+                    info = info + " the directory";
+                }
             } else if (props.getType() == 'calendar') {
                 info = info + " a calendar event";
                 displayFilename = false;
@@ -146,6 +169,7 @@ module.exports = {
             info = info + ": ";
             let path = props.isDirectory ? entry.path : entry.path.substring(0, entry.path.lastIndexOf(props.name) -1);
             let name = props.name.length > 30 ? props.name.substring(0,27) + '...' : props.name;
+            let fileType = isSharedCalendar ? 'calendar' : props.getType();
             let item = {
                 sharer: entry.sharer,
                 info: info,
@@ -158,7 +182,8 @@ module.exports = {
                 isDirectory: props.isDirectory,
                 file : file,
                 isLastEntry: false,
-                displayFilename: displayFilename
+                displayFilename: displayFilename,
+                fileType : fileType
             };
             return item;
         },
@@ -228,7 +253,10 @@ module.exports = {
                             numberOfEntries = allPairs.length;
                             for(var j = 0; j < numberOfEntries; j++) {
                                 let pair = allPairs[j];
-                                allTimelineEntries.push(that.createTimelineEntry(pair.left, pair.right));
+                                let timelineEntry = that.createTimelineEntry(pair.left, pair.right);
+                                if (timelineEntry != null) {
+                                    allTimelineEntries.push(timelineEntry);
+                                }
                             }
                             that.data = allTimelineEntries;
                             that.showSpinner = false;

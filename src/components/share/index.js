@@ -16,7 +16,7 @@ module.exports = {
             modalLinks:[]
         }
     },
-    props: ['data', 'followernames', 'files', 'parent', 'path', 'context', 'messages', 'fromApp', 'displayName', 'allowReadWriteSharing'],
+    props: ['data', 'followernames', 'files', 'parent', 'path', 'context', 'messages', 'fromApp', 'displayName', 'allowReadWriteSharing', 'allowCreateSecretLink'],
     created: function() {
         Vue.nextTick(this.setTypeAhead);
     },
@@ -48,7 +48,7 @@ module.exports = {
             let file = this.files[0];
             var links = [];
             let props = file.getFileProperties();
-            var name = props.getType() == 'calendar' ? 'Calendar event' : props.name;
+            var name = this.displayName;
             links.push({href:window.location.origin + window.location.pathname +
             "#" + propsToFragment({secretLink:true,link:file.toLink()}),
                 name:name,

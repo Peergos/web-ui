@@ -64,7 +64,7 @@
                     Read only Access:    None</p>
                 </div>
             </div>
-            <div class="modal-body modal-prominent">
+            <div v-if="this.allowCreateSecretLink" class="modal-body modal-prominent">
                 <div class="container">
                     <button class="btn btn-success" @click="createSecretLink()">Create secret Link</button>
                 </div>

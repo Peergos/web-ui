@@ -13,7 +13,7 @@ let handler = function (e) {
       mainWindow = e.source;
       origin = e.origin;
       if (e.data.type == "load") {
-          initialiseCalendar(false, e.data.calendars);
+          initialiseCalendar(e.data.username == null ? true : false, e.data.calendars);
           load(e.data.previousMonth, e.data.currentMonth, e.data.nextMonth, e.data.recurringEvents, e.data.yearMonth, e.data.username);
       } else if (e.data.type == "loadAdditional") {
           loadAdditional(e.data.currentMonth, e.data.yearMonth);
@@ -100,7 +100,10 @@ let byDateLabelParts = dateLabels.trim().split(" ");
 function buildUI(isCalendarReadonly) {
     let uiDiv = document.getElementById("ui");
     uiDiv.removeAttribute("style");
-
+    if (isCalendarReadonly) {
+        let settingsBtn = document.getElementById("calendar-settings");
+        settingsBtn.style.display = 'none';
+    }
     cal = new tui.Calendar('#calendar', {
         usageStatistics: false,
         defaultView: 'month',
@@ -445,6 +448,9 @@ function disableToolbarButtons(newValue){
         navigateButtons[j].disabled = newValue;
     }
 }
+function shareCalendar(calendar) {
+    mainWindow.postMessage({action:'shareCalendar', calendar: calendar}, origin);
+}
 function renameCalendar(calendar) {
     mainWindow.postMessage({action:'requestRenameCalendar', calendar: calendar}, origin);
 }
@@ -452,6 +458,15 @@ function addCalendar(){
     let idAsInt = new Number(CALENDAR_ID_MY_CALENDAR) + CalendarList.length;
     let color = colorPalette[(idAsInt % 8) + 8];
     mainWindow.postMessage({action:'requestAddCalendar', newColor:color}, origin);
+}
+function getCalendarListItem(id) {
+    for(var i=0; i < CalendarList.length;i++) {
+        let item = CalendarList[i];
+        if (item.id == id) {
+            return item;
+        }
+    }
+    return null;
 }
 function respondToCalendarRename(calendar) {
     let calendarItem = document.getElementById("cal-item-name-" + calendar.id);
@@ -500,7 +515,6 @@ function respondToCalendarDelete(calendar) {
         record.monthCache.splice(record.monthCache.findIndex(v => v.id === record.item.id), 1);
     });
 
-
     CalendarList.splice(CalendarList.findIndex(v => v.id === calendar.id), 1);
     replaceCalendarsInUI();
     cal.setCalendars(CalendarList); 
@@ -511,6 +525,7 @@ function respondToCalendarAdd(newId, newName, newColor) {
     let newCalendar = new CalendarInfo();
     newCalendar.id = newId;
     newCalendar.name = newName;
+    newCalendar.shareable = true;
     newCalendar.color = '#ffffff';
     newCalendar.bgColor = newColor;
     newCalendar.dragBgColor = newColor;
@@ -1391,6 +1406,7 @@ function buildEventFromSchedule(icalComp, schedule) {
 function CalendarInfo() {
     this.id = null;
     this.name = null;
+    this.shareable = false;
     this.checked = true;
     this.color = null;
     this.bgColor = null;
@@ -1434,6 +1450,9 @@ function setCalendars(headless, calendars) {
         for(var i = 0; i < calendars.length; i++) {
             var calendar = new CalendarInfo();
             calendar.name = calendars[i].name;
+            calendar.owner = calendars[i].owner;
+            let shareable = calendars[i].shareable;
+            calendar.shareable = shareable == null ? false : true;
             calendar.id = String(id++);
             calendar.color = '#ffffff';
             let color = calendars[i].color == null ? '#00a9ff' : calendars[i].color;
@@ -1828,7 +1847,8 @@ function buildExtraFieldsToSummary(eventData, that) {
     var showDeleteBtn = false;
     if(eventData.schedule.raw.creator.name != currentUsername) {
         calendarSpan.innerText = calendarSpan.innerText + " (Shared by " + eventData.schedule.raw.creator.name + ")";
-        if (!loadCalendarAsGuest) {
+        let owner = getCalendarListItem(eventData.schedule.calendarId).owner;
+        if (!loadCalendarAsGuest && owner == null) {
             showDeleteBtn = true;
         }
     }
@@ -2058,37 +2078,37 @@ function appendCalendar(item) {
     var span = document.createElement("SPAN");
     span.className = "line-items-calendar-buttons";
     li.appendChild(span);
-    /*
-    var renameButton = document.createElement("button");
-    renameButton.innerText = 'Rename';
-    renameButton.style = "margin-right: 5px;";
-    renameButton.addEventListener('click', function(){renameCalendar(item);});
-    span.appendChild(renameButton);
-    li.appendChild(span);
-    */
-    var importICalButton = document.createElement("button");
-	importICalButton.innerText = 'Import';
-	//<button class="btn btn-success" onclick="document.getElementById('uploadImageInput').click()">Upload Image</button>
-	importICalButton.addEventListener('click', function(){
-	    document.getElementById('uploadImageInput-cal-' + item.id).click();
-    });
-    span.appendChild(importICalButton);
 
-    var uploadICal = document.createElement("INPUT");
-    uploadICal.type = "file";
-    uploadICal.id = 'uploadImageInput-cal-' + item.id;
-    uploadICal.addEventListener('change', function(evt){
-        importICal(item, evt);
-    });
-    uploadICal.style="display:none;";
-    uploadICal.accept="text/calendar";
-    span.appendChild(uploadICal);
+    if (item.id != CALENDAR_ID_MY_CALENDAR && item.owner == null && item.shareable) {
+           var shareButton = document.createElement("button");
+           shareButton.innerText = 'Share';
+           shareButton.style = "margin-right: 5px;";
+           shareButton.addEventListener('click', function(){shareCalendar(item);});
+           span.appendChild(shareButton);
+    }
+    if (item.owner == null) {
+        var importICalButton = document.createElement("button");
+        importICalButton.innerText = 'Import';
+        importICalButton.addEventListener('click', function(){
+            document.getElementById('uploadICalInput-cal-' + item.id).click();
+        });
+        span.appendChild(importICalButton);
 
+        var uploadICal = document.createElement("INPUT");
+        uploadICal.type = "file";
+        uploadICal.id = 'uploadICalInput-cal-' + item.id;
+        uploadICal.addEventListener('change', function(evt){
+            importICal(item, evt);
+        });
+        uploadICal.style="display:none;";
+        uploadICal.accept="text/calendar";
+        span.appendChild(uploadICal);
+    }
     var deleteCalendarButton = document.createElement("img");
     //deleteCalendarButton.innerText = 'Delete';
     deleteCalendarButton.src = "./images/trash.png";
     deleteCalendarButton.style.marginLeft = "10px";
-    if (item.id == "1") {
+    if (item.id == CALENDAR_ID_MY_CALENDAR) {
         deleteCalendarButton.style.visibility= 'hidden';
     } else {
     	deleteCalendarButton.addEventListener('click', function(){

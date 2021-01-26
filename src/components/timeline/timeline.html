@@ -30,7 +30,7 @@
                         <td v-if="!entry.isLastEntry">
                             <span class="grid_icon_wrapper fa">
                             <a v-if="!entry.hasThumbnail" class="picon">
-                                <span v-on:click="view(entry)" v-bind:class="[entry.isDirectory ? 'dir' : 'file', getFileIconClass(entry.file), 'picon']"> </span>
+                                <span v-on:click="view(entry)" v-bind:class="[entry.isDirectory ? 'dir' : 'file', getFileIconFromFileAndType(entry.file, entry.fileType), 'picon']"> </span>
                             </a>
                             <img v-if="entry.hasThumbnail" v-on:click="view(entry)" v-bind:src="entry.thumbnail" style="cursor: pointer"/>
                             </span>
