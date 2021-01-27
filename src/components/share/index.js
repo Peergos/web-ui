@@ -6,6 +6,8 @@ module.exports = {
             targetUsername: "",
             targetUsernames: [],
             sharedWithAccess: "Read",
+            shareWithFriendsGroup: false,
+            shareWithFollowersGroup: false,
             errorTitle:'',
             errorBody:'',
             showError:false,
@@ -16,7 +18,7 @@ module.exports = {
             modalLinks:[]
         }
     },
-    props: ['data', 'followernames', 'files', 'parent', 'path', 'context', 'messages', 'fromApp', 'displayName', 'allowReadWriteSharing', 'allowCreateSecretLink'],
+    props: ['data', 'followernames', 'groups', 'files', 'parent', 'path', 'context', 'messages', 'fromApp', 'displayName', 'allowReadWriteSharing', 'allowCreateSecretLink'],
     created: function() {
         Vue.nextTick(this.setTypeAhead);
     },
@@ -124,7 +126,7 @@ module.exports = {
         this.targetUsername = "";
         $('#friend-name-input').tokenfield('setTokens', []);
     },
-	shareWith: function(sharedWithAccess) {
+	shareWith: function() {
             if (this.files.length == 0)
 		return this.close();
             if (this.files.length != 1)
@@ -132,8 +134,10 @@ module.exports = {
 	    
             if (! this.allowedToShare(this.files[0]))
 		return;
-        if (this.targetUsernames.slice() == 0) {
-            return;
+		if (!this.shareWithFriendsGroup && !this.shareWithFollowersGroup) {
+            if (this.targetUsernames.slice() == 0) {
+                return;
+            }
         }
         var that = this;
         this.showSpinner = true;
@@ -142,7 +146,7 @@ module.exports = {
             that.showSpinner = false;
             let read_usernames = fileSharedWithState.readAccess.toArray([]);
             let edit_usernames = fileSharedWithState.writeAccess.toArray([]);
-	        that.shareFileWith(sharedWithAccess, read_usernames, edit_usernames);
+	        that.shareFileWith(read_usernames, edit_usernames);
         }).exceptionally(function(throwable) {
             that.resetTypeahead();
             that.showSpinner = false;
@@ -151,28 +155,54 @@ module.exports = {
             that.showError = true;
         });
     },
-    shareFileWith: function(sharedWithAccess, read_usernames, edit_usernames) {
+    getUserOrGroupName: function(username) {
+        let groupName =  this.groups.groupsUidToName[username];
+        return groupName != null ? groupName : username;
+    },
+    getGroupUid: function(groupName) {
+        return this.groups.groupsNameToUid[groupName];
+    },
+    shareFileWith: function(read_usernames, edit_usernames) {
         var that = this;
         var usersToShareWith = this.targetUsernames.slice();
-        if (usersToShareWith.length == 0) {
-            return;
-        }
+
         for (var i = usersToShareWith.length - 1; i >= 0; i--) {
             let targetUsername = usersToShareWith[i];
             if(read_usernames.indexOf(targetUsername) > -1 || edit_usernames.indexOf(targetUsername) > -1) {
                 usersToShareWith.splice(i, 1);
             }
         }
-        if (usersToShareWith.length == 0) {
-            that.errorTitle = "Already shared!";
-            that.errorBody = "";
-            that.showError = true;
-            return;
+        var incFriendsGroup = this.shareWithFriendsGroup;
+        if (incFriendsGroup) {
+            let friendGroupUid = this.getGroupUid(peergos.shared.user.SocialState.FRIENDS_GROUP_NAME);
+            if(read_usernames.indexOf(friendGroupUid) > -1 || edit_usernames.indexOf(friendGroupUid) > -1) {
+                incFriendsGroup = false;
+            } else {
+                usersToShareWith.push(friendGroupUid);
+            }
         }
+        var incFollowersGroup = this.shareWithFollowersGroup;
+        if (incFollowersGroup) {
+            let followersGroupUid = this.getGroupUid(peergos.shared.user.SocialState.FOLLOWERS_GROUP_NAME);
+            if(read_usernames.indexOf(followersGroupUid) > -1 || edit_usernames.indexOf(followersGroupUid) > -1) {
+                incFriendsGroup = false;
+            } else {
+                usersToShareWith.push(followersGroupUid);
+            }
+        }
+        if (!this.shareWithFriendsGroup && !this.shareWithFollowersGroup) {
+            if (usersToShareWith.length == 0) {
+                that.errorTitle = "Already shared!";
+                that.errorBody = "";
+                that.showError = true;
+                return;
+            }
+        }
+
         var filename = that.files[0].getFileProperties().name;
         var filepath = "/" + that.path.join('/') + "/" + filename;
         this.showSpinner = true;
-        if (sharedWithAccess == "Read") {
+        if (this.sharedWithAccess == "Read") {
             that.context.shareReadAccessWith(that.files[0], filepath, usersToShareWith)
             .thenApply(function(b) {
             that.showSpinner = false;

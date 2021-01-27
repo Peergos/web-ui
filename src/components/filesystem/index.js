@@ -54,7 +54,9 @@ module.exports = {
                 pending: [],
                 friends: [],
                 followers: [],
-                following: []
+                following: [],
+                groupsNameToUid: [],
+                groupsUidToName: [],
             },
             profile:{
                 firstName: "",
@@ -504,13 +506,20 @@ module.exports = {
 		    var friendNames = followerNames.filter(x => followeeNames.includes(x));
 		    followerNames = followerNames.filter(x => !friendNames.includes(x));
 		    followeeNames = followeeNames.filter(x => !friendNames.includes(x));
+
+		    var groupsUidToName = {};
+		    social.uidToGroupName.keySet().toArray([]).map(uid => groupsUidToName[uid]=social.uidToGroupName.get(uid));
+		    var groupsNameToUid = {};
+		    social.groupNameToUid.keySet().toArray([]).map(name => groupsNameToUid[name]=social.groupNameToUid.get(name));
 		    that.social = {
                         pending: social.pendingIncoming.toArray([]),
 			friends: friendNames,
                         followers: followerNames,
                         following: followeeNames,
                         pendingOutgoing: social.pendingOutgoingFollowRequests.keySet().toArray([]),
-			annotations: annotations
+			annotations: annotations,
+			    groupsNameToUid: groupsNameToUid,
+			    groupsUidToName: groupsUidToName
 		    };
 		    if (callbackFunc != null) {
 		        callbackFunc(true);
@@ -2188,6 +2197,9 @@ module.exports = {
 	followernames: function() {
 	    return this.social.followers.concat(this.social.friends);
 	},
+    groups: function() {
+        return {groupsNameToUid: this.social.groupsNameToUid, groupsUidToName: this.social.groupsUidToName};
+    },
 
         username: function() {
             var context = this.getContext();
