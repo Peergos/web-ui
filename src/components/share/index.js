@@ -18,7 +18,7 @@ module.exports = {
             modalLinks:[]
         }
     },
-    props: ['data', 'followernames', 'groups', 'files', 'parent', 'path', 'context', 'messages', 'fromApp', 'displayName', 'allowReadWriteSharing', 'allowCreateSecretLink'],
+    props: ['data', 'friendnames', 'followernames', 'groups', 'files', 'parent', 'path', 'context', 'messages', 'fromApp', 'displayName', 'allowReadWriteSharing', 'allowCreateSecretLink'],
     created: function() {
         Vue.nextTick(this.setTypeAhead);
     },
@@ -64,7 +64,30 @@ module.exports = {
             this.modalTitle = title;
             this.modalLinks = links;
         },
-
+        gatherAllUsersToUnshare: function(currentSharedWithUsernames, usernamesToUnshare) {
+            let friendGroupUid = this.getGroupUid(peergos.shared.user.SocialState.FRIENDS_GROUP_NAME);
+            let includesFriends = usernamesToUnshare.indexOf(friendGroupUid) > -1;
+            let followersGroupUid = this.getGroupUid(peergos.shared.user.SocialState.FOLLOWERS_GROUP_NAME);
+            let includesFollowers = usernamesToUnshare.indexOf(followersGroupUid) > -1;
+            let allUsers = usernamesToUnshare.concat([]);
+            if (includesFriends) {
+                for(var i = 0; i < currentSharedWithUsernames.length; i++) {
+                    let name = this.friendnames[i];
+                    if (allUsers.indexOf(name) == -1 && this.isFriend(name)) {
+                        allUsers.push(name);
+                    }
+                }
+            }
+            if (includesFollowers) {
+                for(var i = 0; i < this.followernames.length; i++) {
+                    let name = this.followernames[i];
+                    if (allUsers.indexOf(name) == -1 && this.isFollower(name)) {
+                        allUsers.push(name);
+                    }
+                }
+            }
+            return allUsers;
+        },
         unshare : function (sharedWithAccess) {
             if (this.files.length == 0)
                 return this.close();
@@ -73,10 +96,25 @@ module.exports = {
 
             var that = this;
             this.showSpinner = true;
+            let filePath = peergos.client.PathUtils.toPath(this.path, this.files[0].getFileProperties().name);
+            this.context.sharedWith(filePath).thenApply(function(fileSharedWithState) {
+                let read_usernames = fileSharedWithState.readAccess.toArray([]);
+                let edit_usernames = fileSharedWithState.writeAccess.toArray([]);
+                that.unshareFileWith(read_usernames, edit_usernames, sharedWithAccess);
+            }).exceptionally(function(throwable) {
+                that.resetTypeahead();
+                that.showSpinner = false;
+                that.errorTitle = 'Error sharing file: ' + that.files[0].getFileProperties().name;
+                that.errorBody = throwable.getMessage();
+                that.showError = true;
+            });
+        },
+        unshareFileWith : function (read_usernames, edit_usernames, sharedWithAccess) {
+            var that = this;
             var filename = that.files[0].getFileProperties().name;
             if(sharedWithAccess == "Read") {
-
-                this.context.unShareReadAccess(this.files[0], this.unsharedReadAccessNames)
+                let allUnsharedReadAccessNames = this.gatherAllUsersToUnshare(read_usernames, this.unsharedReadAccessNames);
+                this.context.unShareReadAccess(this.files[0], allUnsharedReadAccessNames)
                     .thenApply(function(b) {
                         that.showSpinner = false;
                         that.showMessage("Success!", "Read access revoked");
@@ -91,7 +129,8 @@ module.exports = {
                     });
 
             } else {
-                this.context.unShareWriteAccess(this.files[0], this.unsharedEditAccessNames)
+                let allUnsharedEditAccessNames = this.gatherAllUsersToUnshare(edit_usernames, this.unsharedEditAccessNames);
+                this.context.unShareWriteAccess(this.files[0], allUnsharedEditAccessNames)
                     .thenApply(function(b) {
                         that.showSpinner = false;
                         that.showMessage("Success!", "Read & Write access revoked");
@@ -155,6 +194,33 @@ module.exports = {
             that.showError = true;
         });
     },
+    isFriend: function(name) {
+        return this.friendnames.indexOf(name) > -1;
+    },
+    isFollower: function(name) {
+        return this.followernames.indexOf(name) > -1;
+    },
+    filterNamesFromGroups: function(includesFriends, includesFollowers, name) {
+        if (includesFriends && this.isFriend(name)) {
+            return false;
+        }
+        if (includesFollowers && this.isFollower(name)) {
+            return false;
+        }
+        return true;
+    },
+    filterSharedWithUsers: function(usernames) {
+        let includesFriends = usernames.indexOf(this.getGroupUid(peergos.shared.user.SocialState.FRIENDS_GROUP_NAME)) > -1;
+        let includesFollowers = usernames.indexOf(this.getGroupUid(peergos.shared.user.SocialState.FOLLOWERS_GROUP_NAME)) > -1;
+        let result = usernames.filter(name => this.filterNamesFromGroups(includesFriends, includesFollowers, name));
+        return result;
+    },
+    filterEditSharedWithUsers: function() {
+        return this.filterSharedWithUsers(this.data.edit_shared_with_users);
+    },
+    filterReadSharedWithUsers: function() {
+        return this.filterSharedWithUsers(this.data.read_shared_with_users);
+    },
     getUserOrGroupName: function(username) {
         let groupName =  this.groups.groupsUidToName[username];
         return groupName != null ? groupName : username;
@@ -162,29 +228,55 @@ module.exports = {
     getGroupUid: function(groupName) {
         return this.groups.groupsNameToUid[groupName];
     },
+    rationaliseUsersToShareWith: function(incFriendsGroup, incFollowersGroup, existingSharedUsers, usersToShareWith) {
+        let friendGroupUid = this.getGroupUid(peergos.shared.user.SocialState.FRIENDS_GROUP_NAME);
+        let followersGroupUid = this.getGroupUid(peergos.shared.user.SocialState.FOLLOWERS_GROUP_NAME);
+
+        let includesFriends = incFriendsGroup || this.isAlreadySharedWithUser(friendGroupUid, existingSharedUsers);
+        let includesFollowers = incFollowersGroup || this.isAlreadySharedWithUser(followersGroupUid, existingSharedUsers);
+        if (includesFriends || includesFollowers) {
+            for (var i = usersToShareWith.length - 1; i >= 0; i--) {
+                let targetUsername = usersToShareWith[i];
+                let removed = false;
+                if (includesFriends && this.isFriend(targetUsername)) {
+                    usersToShareWith.splice(i, 1);
+                    removed = true;
+                }
+                if (!removed && includesFollowers && this.isFollower(targetUsername)) {
+                    usersToShareWith.splice(i, 1);
+                }
+            }
+        }
+        return usersToShareWith;
+    },
+    isAlreadySharedWithUser: function(username, existingSharedUsers) {
+        return existingSharedUsers.indexOf(username) > -1;
+    },
     shareFileWith: function(read_usernames, edit_usernames) {
         var that = this;
         var usersToShareWith = this.targetUsernames.slice();
 
+        let existingSharedUsers = this.sharedWithAccess == "Read" ? read_usernames : edit_usernames;
         for (var i = usersToShareWith.length - 1; i >= 0; i--) {
             let targetUsername = usersToShareWith[i];
-            if(read_usernames.indexOf(targetUsername) > -1 || edit_usernames.indexOf(targetUsername) > -1) {
+            if(this.isAlreadySharedWithUser(targetUsername, existingSharedUsers)) {
                 usersToShareWith.splice(i, 1);
             }
         }
-        var incFriendsGroup = this.shareWithFriendsGroup;
-        if (incFriendsGroup) {
-            let friendGroupUid = this.getGroupUid(peergos.shared.user.SocialState.FRIENDS_GROUP_NAME);
-            if(read_usernames.indexOf(friendGroupUid) > -1 || edit_usernames.indexOf(friendGroupUid) > -1) {
+        usersToShareWith = this.rationaliseUsersToShareWith(this.shareWithFriendsGroup, this.shareWithFollowersGroup,
+            existingSharedUsers, usersToShareWith);
+
+        let friendGroupUid = this.getGroupUid(peergos.shared.user.SocialState.FRIENDS_GROUP_NAME);
+        let followersGroupUid = this.getGroupUid(peergos.shared.user.SocialState.FOLLOWERS_GROUP_NAME);
+        if (this.shareWithFriendsGroup) {
+            if (this.isAlreadySharedWithUser(friendGroupUid, existingSharedUsers)) {
                 incFriendsGroup = false;
             } else {
                 usersToShareWith.push(friendGroupUid);
             }
         }
-        var incFollowersGroup = this.shareWithFollowersGroup;
-        if (incFollowersGroup) {
-            let followersGroupUid = this.getGroupUid(peergos.shared.user.SocialState.FOLLOWERS_GROUP_NAME);
-            if(read_usernames.indexOf(followersGroupUid) > -1 || edit_usernames.indexOf(followersGroupUid) > -1) {
+        if (this.shareWithFollowersGroup) {
+            if (this.isAlreadySharedWithUser(followersGroupUid, existingSharedUsers)) {
                 incFriendsGroup = false;
             } else {
                 usersToShareWith.push(followersGroupUid);
@@ -249,11 +341,17 @@ module.exports = {
         }
 	},
 	    setTypeAhead: function() {
-            let followernames = this.followernames;
+            let allNames = this.followernames.slice();
+            for(var i = 0; i < this.friendnames.length;i ++) {
+                let friend = this.friendnames[i];
+                if (allNames.indexOf(friend) == -1) {
+                    allNames.push(friend);
+                }
+            }
             var engine = new Bloodhound({
               datumTokenizer: Bloodhound.tokenizers.whitespace,
               queryTokenizer: Bloodhound.tokenizers.whitespace,
-              local: followernames
+              local: allNames
             });
 
             engine.initialize();
@@ -268,7 +366,7 @@ module.exports = {
                 var matches, substringRegex;
                 matches = [];
                 substrRegex = new RegExp(q, 'i');
-                $.each(followernames, function(i, str) {
+                $.each(allNames, function(i, str) {
                     if (substrRegex.test(str)) {
                         matches.push(str);
                     }
@@ -278,7 +376,7 @@ module.exports = {
             let that = this;
             $('#friend-name-input').on('tokenfield:createtoken', function (event) {
                 //only select from available items
-            	var available_tokens = that.followernames;
+            	var available_tokens = allNames;
             	var exists = true;
             	$.each(available_tokens, function(index, token) {
             		if (token === event.attrs.value)
