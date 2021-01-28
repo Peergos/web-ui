@@ -1474,7 +1474,7 @@ module.exports = {
         },
         showShareWithForProfile: function(field, fieldName) {
             let dirPath = this.getContext().username + "/.profile/";
-            this.showShareWithForFile(dirPath, field, false, true, fieldName);
+            this.showShareWithForFile(dirPath, field, false, false, fieldName);
         },
         showShareWithFromApp: function(app, filename, allowReadWriteSharing, allowCreateSecretLink, nameToDisplay) {
             let dirPath = this.getContext().username + "/.apps/" + app;
