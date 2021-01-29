@@ -64,7 +64,8 @@ module.exports = {
             let filteredSharedItems = [];
             for(var i=0; i < items.length; i++) {
                 let currentSharedItem = items[i];
-                if (!currentSharedItem.path.startsWith("/" + currentSharedItem.owner + "/.profile/")) {
+                if (!currentSharedItem.path.startsWith("/" + currentSharedItem.owner + "/.profile/")
+                    && !currentSharedItem.path.startsWith("/" + currentSharedItem.owner + "/shared/.")) { //groups
                     filteredSharedItems.push(currentSharedItem);
                 }
             }
