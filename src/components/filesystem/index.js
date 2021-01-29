@@ -2195,7 +2195,7 @@ module.exports = {
         },
 
 	followernames: function() {
-	    return this.social.followers.concat(this.social.friends);
+	    return this.social.followers;
 	},
     friendnames: function() {
         return this.social.friends;
