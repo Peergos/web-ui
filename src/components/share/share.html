@@ -31,11 +31,11 @@
                     <label style="font-weight: normal;">Or Group(s):</label>
                 </div>
                 <div class="hspace-15">
-                    <input type="checkbox" id="friends-option" value="Read" v-model="shareWithFriendsGroup">
+                    <input type="checkbox" id="friends-option" @change="onFriendChange()" v-model="shareWithFriendsGroup">
                     <label for="friends-option" style="font-weight: normal;">Friends</label>
                 </div>
                 <div class="hspace-15">
-                    <input type="checkbox" id="followers-option" value="Edit" v-model="shareWithFollowersGroup">
+                    <input type="checkbox" id="followers-option" @change="onFollowerChange()" v-model="shareWithFollowersGroup">
                     <label for="followers-option" style="font-weight: normal;">Followers (Includes Friends)</label>
                 </div>
             </div>

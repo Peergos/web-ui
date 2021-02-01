@@ -64,6 +64,16 @@ module.exports = {
             this.modalTitle = title;
             this.modalLinks = links;
         },
+        onFriendChange: function() {
+            if (this.shareWithFollowersGroup && this.shareWithFriendsGroup) {
+                this.shareWithFollowersGroup = false;
+            }
+        },
+        onFollowerChange: function() {
+            if (this.shareWithFollowersGroup && this.shareWithFriendsGroup) {
+                this.shareWithFriendsGroup = false;
+            }
+        },
         gatherAllUsersToUnshare: function(currentSharedWithUsernames, usernamesToUnshare) {
             let friendGroupUid = this.getGroupUid(peergos.shared.user.SocialState.FRIENDS_GROUP_NAME);
             let includesFriends = usernamesToUnshare.indexOf(friendGroupUid) > -1;
@@ -84,6 +94,10 @@ module.exports = {
                     if (allUsers.indexOf(name) == -1 && this.isFollower(name)) {
                         allUsers.push(name);
                     }
+                }
+                let removeFriendsGroup = currentSharedWithUsernames.findIndex(v => v === friendGroupUid);
+                if (removeFriendsGroup > -1) {
+                    allUsers.push(friendGroupUid);
                 }
             }
             return allUsers;
@@ -210,9 +224,14 @@ module.exports = {
         return true;
     },
     filterSharedWithUsers: function(usernames) {
-        let includesFriends = usernames.indexOf(this.getGroupUid(peergos.shared.user.SocialState.FRIENDS_GROUP_NAME)) > -1;
-        let includesFollowers = usernames.indexOf(this.getGroupUid(peergos.shared.user.SocialState.FOLLOWERS_GROUP_NAME)) > -1;
-        let result = usernames.filter(name => this.filterNamesFromGroups(includesFriends, includesFollowers, name));
+        let friendGroupUid = this.getGroupUid(peergos.shared.user.SocialState.FRIENDS_GROUP_NAME);
+        let includesFriends = usernames.indexOf(friendGroupUid) > -1;
+        let followerGroupUid = this.getGroupUid(peergos.shared.user.SocialState.FOLLOWERS_GROUP_NAME);
+        let includesFollowers = usernames.indexOf(followerGroupUid) > -1;
+        var result = usernames.filter(name => this.filterNamesFromGroups(includesFriends, includesFollowers, name));
+        if (includesFollowers) {
+            result.splice(result.findIndex(v => v === friendGroupUid), 1);
+        }
         return result;
     },
     filterEditSharedWithUsers: function() {
@@ -228,12 +247,12 @@ module.exports = {
     getGroupUid: function(groupName) {
         return this.groups.groupsNameToUid[groupName];
     },
-    rationaliseUsersToShareWith: function(incFriendsGroup, incFollowersGroup, existingSharedUsers, usersToShareWith) {
+    rationaliseUsersToShareWith: function(existingSharedUsers, usersToShareWith) {
         let friendGroupUid = this.getGroupUid(peergos.shared.user.SocialState.FRIENDS_GROUP_NAME);
         let followersGroupUid = this.getGroupUid(peergos.shared.user.SocialState.FOLLOWERS_GROUP_NAME);
 
-        let includesFriends = incFriendsGroup || this.isAlreadySharedWithUser(friendGroupUid, existingSharedUsers);
-        let includesFollowers = incFollowersGroup || this.isAlreadySharedWithUser(followersGroupUid, existingSharedUsers);
+        let includesFriends = this.shareWithFriendsGroup || this.isAlreadySharedWithUser(friendGroupUid, existingSharedUsers);
+        let includesFollowers = this.shareWithFollowersGroup || this.isAlreadySharedWithUser(followersGroupUid, existingSharedUsers);
         if (includesFriends || includesFollowers) {
             for (var i = usersToShareWith.length - 1; i >= 0; i--) {
                 let targetUsername = usersToShareWith[i];
@@ -263,34 +282,28 @@ module.exports = {
                 usersToShareWith.splice(i, 1);
             }
         }
-        usersToShareWith = this.rationaliseUsersToShareWith(this.shareWithFriendsGroup, this.shareWithFollowersGroup,
-            existingSharedUsers, usersToShareWith);
+        usersToShareWith = this.rationaliseUsersToShareWith(existingSharedUsers, usersToShareWith);
 
         let friendGroupUid = this.getGroupUid(peergos.shared.user.SocialState.FRIENDS_GROUP_NAME);
         let followersGroupUid = this.getGroupUid(peergos.shared.user.SocialState.FOLLOWERS_GROUP_NAME);
         if (this.shareWithFriendsGroup) {
-            if (this.isAlreadySharedWithUser(friendGroupUid, existingSharedUsers)) {
-                incFriendsGroup = false;
-            } else {
+            if (!this.isAlreadySharedWithUser(friendGroupUid, existingSharedUsers)
+                && !this.isAlreadySharedWithUser(followersGroupUid, existingSharedUsers)
+                && !this.shareWithFollowersGroup) {
                 usersToShareWith.push(friendGroupUid);
             }
         }
         if (this.shareWithFollowersGroup) {
-            if (this.isAlreadySharedWithUser(followersGroupUid, existingSharedUsers)) {
-                incFriendsGroup = false;
-            } else {
+            if (!this.isAlreadySharedWithUser(followersGroupUid, existingSharedUsers)) {
                 usersToShareWith.push(followersGroupUid);
             }
         }
-        if (!this.shareWithFriendsGroup && !this.shareWithFollowersGroup) {
-            if (usersToShareWith.length == 0) {
-                that.errorTitle = "Already shared!";
-                that.errorBody = "";
-                that.showError = true;
-                return;
-            }
+        if (usersToShareWith.length == 0) {
+            that.errorTitle = "Already shared!";
+            that.errorBody = "";
+            that.showError = true;
+            return;
         }
-
         var filename = that.files[0].getFileProperties().name;
         var filepath = "/" + that.path.join('/') + "/" + filename;
         this.showSpinner = true;
