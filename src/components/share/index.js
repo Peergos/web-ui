@@ -198,7 +198,7 @@ module.exports = {
         return this.friendnames.indexOf(name) > -1;
     },
     isFollower: function(name) {
-        return this.followernames.indexOf(name) > -1;
+        return this.followernames.indexOf(name) > -1 || this.isFriend(name);
     },
     filterNamesFromGroups: function(includesFriends, includesFollowers, name) {
         if (includesFriends && this.isFriend(name)) {
