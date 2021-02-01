@@ -72,15 +72,15 @@ module.exports = {
             let allUsers = usernamesToUnshare.concat([]);
             if (includesFriends) {
                 for(var i = 0; i < currentSharedWithUsernames.length; i++) {
-                    let name = this.friendnames[i];
+                    let name = currentSharedWithUsernames[i];
                     if (allUsers.indexOf(name) == -1 && this.isFriend(name)) {
                         allUsers.push(name);
                     }
                 }
             }
             if (includesFollowers) {
-                for(var i = 0; i < this.followernames.length; i++) {
-                    let name = this.followernames[i];
+                for(var i = 0; i < currentSharedWithUsernames.length; i++) {
+                    let name = currentSharedWithUsernames[i];
                     if (allUsers.indexOf(name) == -1 && this.isFollower(name)) {
                         allUsers.push(name);
                     }
