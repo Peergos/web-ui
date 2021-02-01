@@ -368,7 +368,7 @@ class FileSystemPage(Page):
         return True
 
     def go_home(self):
-        self.d.implicitly_wait(2)  # seconds
+        self.d.implicitly_wait(20)  # seconds
         self.get_unique_xpath("//li[@id='appButton']").click()
         self.d.implicitly_wait(1)  # seconds 
         self.get_unique_xpath("//a[@id='homeButton']").click()
