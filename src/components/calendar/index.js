@@ -160,6 +160,10 @@ module.exports = {
                 return;
             if (newName === '.' || newName === '..')
                 return;
+            if (!newName.match(/^[a-z\d\-_\s]+$/i)) {
+                that.showMessage("Invalid calendar name. Use only alphanumeric characters plus space, dash and underscore");
+                return;
+            }
             setTimeout(function(){
                 //make sure names are unique
                 for (var i=0;i < that.calendarProperties.calendars.length; i++) {
@@ -201,6 +205,10 @@ module.exports = {
                 return;
             if (newName === '.' || newName === '..')
                 return;
+            if (!newName.match(/^[a-z\d\-_\s]+$/i)) {
+                that.showMessage("Invalid calendar name. Use only alphanumeric characters plus space, dash and underscore");
+                return;
+            }
             setTimeout(function(){
                 //make sure names are unique
                 for (var i=0;i < that.calendarProperties.calendars.length; i++) {
