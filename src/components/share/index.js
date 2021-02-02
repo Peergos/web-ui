@@ -99,7 +99,7 @@ module.exports = {
             var that = this;
             var filename = that.files[0].getFileProperties().name;
             if(sharedWithAccess == "Read") {
-                this.context.unShareReadAccessGroupAware(this.files[0], this.unsharedReadAccessNames)
+                this.context.unShareReadAccess(this.files[0], this.unsharedReadAccessNames)
                     .thenApply(function(b) {
                         that.showSpinner = false;
                         that.showMessage("Success!", "Read access revoked");
@@ -114,7 +114,7 @@ module.exports = {
                     });
 
             } else {
-                this.context.unShareWriteAccessGroupAware(this.files[0], this.unsharedEditAccessNames)
+                this.context.unShareWriteAccess(this.files[0], this.unsharedEditAccessNames)
                     .thenApply(function(b) {
                         that.showSpinner = false;
                         that.showMessage("Success!", "Read & Write access revoked");
