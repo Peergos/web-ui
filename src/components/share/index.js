@@ -74,34 +74,6 @@ module.exports = {
                 this.shareWithFriendsGroup = false;
             }
         },
-        gatherAllUsersToUnshare: function(currentSharedWithUsernames, usernamesToUnshare) {
-            let friendGroupUid = this.getGroupUid(peergos.shared.user.SocialState.FRIENDS_GROUP_NAME);
-            let includesFriends = usernamesToUnshare.indexOf(friendGroupUid) > -1;
-            let followersGroupUid = this.getGroupUid(peergos.shared.user.SocialState.FOLLOWERS_GROUP_NAME);
-            let includesFollowers = usernamesToUnshare.indexOf(followersGroupUid) > -1;
-            let allUsers = usernamesToUnshare.concat([]);
-            if (includesFriends) {
-                for(var i = 0; i < currentSharedWithUsernames.length; i++) {
-                    let name = currentSharedWithUsernames[i];
-                    if (allUsers.indexOf(name) == -1 && this.isFriend(name)) {
-                        allUsers.push(name);
-                    }
-                }
-            }
-            if (includesFollowers) {
-                for(var i = 0; i < currentSharedWithUsernames.length; i++) {
-                    let name = currentSharedWithUsernames[i];
-                    if (allUsers.indexOf(name) == -1 && this.isFollower(name)) {
-                        allUsers.push(name);
-                    }
-                }
-                let removeFriendsGroup = currentSharedWithUsernames.findIndex(v => v === friendGroupUid);
-                if (removeFriendsGroup > -1) {
-                    allUsers.push(friendGroupUid);
-                }
-            }
-            return allUsers;
-        },
         unshare : function (sharedWithAccess) {
             if (this.files.length == 0)
                 return this.close();
@@ -127,8 +99,7 @@ module.exports = {
             var that = this;
             var filename = that.files[0].getFileProperties().name;
             if(sharedWithAccess == "Read") {
-                let allUnsharedReadAccessNames = this.gatherAllUsersToUnshare(read_usernames, this.unsharedReadAccessNames);
-                this.context.unShareReadAccess(this.files[0], allUnsharedReadAccessNames)
+                this.context.unShareReadAccessGroupAware(this.files[0], this.unsharedReadAccessNames)
                     .thenApply(function(b) {
                         that.showSpinner = false;
                         that.showMessage("Success!", "Read access revoked");
@@ -143,8 +114,7 @@ module.exports = {
                     });
 
             } else {
-                let allUnsharedEditAccessNames = this.gatherAllUsersToUnshare(edit_usernames, this.unsharedEditAccessNames);
-                this.context.unShareWriteAccess(this.files[0], allUnsharedEditAccessNames)
+                this.context.unShareWriteAccessGroupAware(this.files[0], this.unsharedEditAccessNames)
                     .thenApply(function(b) {
                         that.showSpinner = false;
                         that.showMessage("Success!", "Read & Write access revoked");
@@ -354,13 +324,7 @@ module.exports = {
         }
 	},
 	    setTypeAhead: function() {
-            let allNames = this.followernames.slice();
-            for(var i = 0; i < this.friendnames.length;i ++) {
-                let friend = this.friendnames[i];
-                if (allNames.indexOf(friend) == -1) {
-                    allNames.push(friend);
-                }
-            }
+            let allNames = this.followernames.concat(this.friendnames);
             var engine = new Bloodhound({
               datumTokenizer: Bloodhound.tokenizers.whitespace,
               queryTokenizer: Bloodhound.tokenizers.whitespace,
