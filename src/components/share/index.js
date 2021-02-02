@@ -200,7 +200,10 @@ module.exports = {
         let includesFollowers = usernames.indexOf(followerGroupUid) > -1;
         var result = usernames.filter(name => this.filterNamesFromGroups(includesFriends, includesFollowers, name));
         if (includesFollowers) {
-            result.splice(result.findIndex(v => v === friendGroupUid), 1);
+            let friendIndex = result.findIndex(v => v === friendGroupUid);
+            if (friendIndex > -1) {
+                result.splice(friendIndex, 1);
+            }
         }
         return result;
     },
