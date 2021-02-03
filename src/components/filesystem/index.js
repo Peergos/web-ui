@@ -1480,7 +1480,6 @@ module.exports = {
                         return;
                     }
                     that.filesToShare = [file];
-                    that.parentFile = dir.ref;
                     that.pathToFile = dirPath.split('/');
                     let directoryPath = peergos.client.PathUtils.directoryToPath(that.pathToFile);
                     context.getDirectorySharingState(directoryPath).thenApply(function(updatedSharedWithState) {
@@ -1508,7 +1507,6 @@ module.exports = {
             var filename = file.getFileProperties().name;
             let latestFile = this.files.filter(f => f.getName() == filename)[0];
             this.filesToShare = [latestFile];
-            this.parentFile = this.isNotBackground ? this.currentDir : null;
             this.pathToFile = this.path;
             let fileSharedWithState = this.sharedWithState.get(filename);
             let read_usernames = fileSharedWithState.readAccess.toArray([]);

@@ -18,7 +18,7 @@ module.exports = {
             modalLinks:[]
         }
     },
-    props: ['data', 'friendnames', 'followernames', 'groups', 'files', 'parent', 'path', 'context', 'messages', 'fromApp', 'displayName', 'allowReadWriteSharing', 'allowCreateSecretLink'],
+    props: ['data', 'friendnames', 'followernames', 'groups', 'files', 'path', 'context', 'messages', 'fromApp', 'displayName', 'allowReadWriteSharing', 'allowCreateSecretLink'],
     created: function() {
         Vue.nextTick(this.setTypeAhead);
     },
@@ -97,9 +97,10 @@ module.exports = {
         },
         unshareFileWith : function (read_usernames, edit_usernames, sharedWithAccess) {
             var that = this;
-            var filename = that.files[0].getFileProperties().name;
+            var filename = this.files[0].getFileProperties().name;
+            let filePath = peergos.client.PathUtils.toPath(this.path, filename);
             if(sharedWithAccess == "Read") {
-                this.context.unShareReadAccess(this.files[0], this.unsharedReadAccessNames)
+                this.context.unShareReadAccessWith(filePath, peergos.client.JsUtil.asSet(this.unsharedReadAccessNames))
                     .thenApply(function(b) {
                         that.showSpinner = false;
                         that.showMessage("Success!", "Read access revoked");
@@ -114,7 +115,7 @@ module.exports = {
                     });
 
             } else {
-                this.context.unShareWriteAccess(this.files[0], this.unsharedEditAccessNames)
+                this.context.unShareWriteAccessWith(filePath, peergos.client.JsUtil.asSet(this.unsharedEditAccessNames))
                     .thenApply(function(b) {
                         that.showSpinner = false;
                         that.showMessage("Success!", "Read & Write access revoked");
@@ -278,10 +279,10 @@ module.exports = {
             return;
         }
         var filename = that.files[0].getFileProperties().name;
-        var filepath = "/" + that.path.join('/') + "/" + filename;
+        let filePath = peergos.client.PathUtils.toPath(this.path, filename);
         this.showSpinner = true;
         if (this.sharedWithAccess == "Read") {
-            that.context.shareReadAccessWith(that.files[0], filepath, usersToShareWith)
+            that.context.shareReadAccessWith(filePath, peergos.client.JsUtil.asSet(usersToShareWith))
             .thenApply(function(b) {
             that.showSpinner = false;
             that.showMessage("Success!", "Secure sharing complete");
@@ -297,33 +298,21 @@ module.exports = {
             that.showError = true;
             });
         } else {
-            var doShare = function(theParent) {
-                that.context.shareWriteAccessWith(that.files[0], filepath, theParent, usersToShareWith)
-                .thenApply(function(b) {
-                    that.showSpinner = false;
-                    that.showMessage("Success!", "Secure sharing complete");
-                    that.resetTypeahead();
-                    that.close();
-                    console.log("shared write access to " + filename);
-                    that.refresh();
-                }).exceptionally(function(throwable) {
-                    that.resetTypeahead();
-                    that.showSpinner = false;
-                    that.errorTitle = 'Error sharing file: ' + filename;
-                    that.errorBody = throwable.getMessage();
-                    that.showError = true;
-                });
-            };
-            if (that.parent == null) {
-                var path = '/' + that.path.slice(0, that.path.length-1).join('/');
-                console.log("retrieving parent " + path);
-                that.context.getByPath(path)
-                .thenCompose(function(p){
-                    console.log(p)
-                    doShare(p.get());
-                });
-            } else
-                doShare(that.parent);
+            that.context.shareWriteAccessWith(filePath, peergos.client.JsUtil.asSet(usersToShareWith))
+            .thenApply(function(b) {
+                that.showSpinner = false;
+                that.showMessage("Success!", "Secure sharing complete");
+                that.resetTypeahead();
+                that.close();
+                console.log("shared write access to " + filename);
+                that.refresh();
+            }).exceptionally(function(throwable) {
+                that.resetTypeahead();
+                that.showSpinner = false;
+                that.errorTitle = 'Error sharing file: ' + filename;
+                that.errorBody = throwable.getMessage();
+                that.showError = true;
+            });
         }
 	},
 	    setTypeAhead: function() {
