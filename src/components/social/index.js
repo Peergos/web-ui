@@ -118,6 +118,7 @@ module.exports = {
 	},
 
 	sendInitialFollowRequest: function() {
+	        let that = this;
 	        if (this.targetUsernames.length == 0) {
     	        let singleVal = document.getElementById("friend-name-input-tokenfield").value.trim();
     	        if (singleVal.length > 0 && singleVal != this.context.username) {
@@ -126,7 +127,16 @@ module.exports = {
 	                return;
 	            }
 	        }
-            var that = this;
+            this.data.pendingOutgoing.forEach(function(name){
+                let idx = that.targetUsernames.indexOf(name);
+                if (idx > -1) {
+                    that.targetUsernames.splice(idx, 1);
+                }
+            });
+	        if (this.targetUsernames.length == 0) {
+                that.showMessage("Follow request already sent!", "");
+                return;
+	        }
             console.log("sending follow request");
             that.showSpinner = true;
             that.context.sendInitialFollowRequests(this.targetUsernames)
