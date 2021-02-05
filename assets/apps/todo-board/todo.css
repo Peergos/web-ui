@@ -29,9 +29,8 @@ ol li::before {
     /* chrome screws this up content: "\22ee \22ee     "counter(step-counter)"."; */
     content: "\2e2c     "counter(step-counter)".";
     cursor: pointer;
-    margin-right: 5px;
     position: relative;
-    right: 5.2em;
+    right: 6em;
     padding-top: 12px;
     padding-bottom: 12px;
 }
@@ -48,7 +47,7 @@ ol li.checked {
   background: #888;
   text-decoration: line-through;
 }
-
+/* draws tick. not compatible with four dots used for dragging
 ol li.checked::before {
   content: '';
   position: absolute;
@@ -60,7 +59,7 @@ ol li.checked::before {
   transform: rotate(45deg);
   height: 15px;
   width: 7px;
-}
+}*/
 
 .close {
   position: absolute;
