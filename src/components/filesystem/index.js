@@ -498,25 +498,29 @@ module.exports = {
                 };
 	    else {
 		    var that = this;
-            context.getSocialState().thenApply(function(social){
+            context.getSocialState().thenApply(function(socialState){
 		    var annotations = {};
-		    social.friendAnnotations.keySet().toArray([]).map(name => annotations[name]=social.friendAnnotations.get(name));
-		    var followerNames = social.followerRoots.keySet().toArray([]);
-		    var followeeNames = social.followingRoots.toArray([]).map(function(f){return f.getFileProperties().name});
+		    socialState.friendAnnotations.keySet().toArray([]).map(name => annotations[name]=socialState.friendAnnotations.get(name));
+		    var followerNames = socialState.followerRoots.keySet().toArray([]);
+		    var followeeNames = socialState.followingRoots.toArray([]).map(function(f){return f.getFileProperties().name});
 		    var friendNames = followerNames.filter(x => followeeNames.includes(x));
 		    followerNames = followerNames.filter(x => !friendNames.includes(x));
 		    followeeNames = followeeNames.filter(x => !friendNames.includes(x));
 
 		    var groupsUidToName = {};
-		    social.uidToGroupName.keySet().toArray([]).map(uid => groupsUidToName[uid]=social.uidToGroupName.get(uid));
+		    socialState.uidToGroupName.keySet().toArray([]).map(uid => groupsUidToName[uid]=socialState.uidToGroupName.get(uid));
 		    var groupsNameToUid = {};
-		    social.groupNameToUid.keySet().toArray([]).map(name => groupsNameToUid[name]=social.groupNameToUid.get(name));
+		    socialState.groupNameToUid.keySet().toArray([]).map(name => groupsNameToUid[name]=socialState.groupNameToUid.get(name));
+
+		    var pendingOutgoingUsernames = [];
+		    socialState.pendingOutgoing.toArray([]).map(u => pendingOutgoingUsernames.push(u));
+
 		    that.social = {
-                        pending: social.pendingIncoming.toArray([]),
+		                pendingOutgoing: pendingOutgoingUsernames,
+                        pending: socialState.pendingIncoming.toArray([]),
 			friends: friendNames,
                         followers: followerNames,
                         following: followeeNames,
-                        pendingOutgoing: social.pendingOutgoingFollowRequests.keySet().toArray([]),
 			annotations: annotations,
 			    groupsNameToUid: groupsNameToUid,
 			    groupsUidToName: groupsUidToName
