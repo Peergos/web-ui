@@ -22,22 +22,35 @@
                     <input v-if="this.allowReadWriteSharing && this.files[0].getOwnerName() == this.context.username" type="radio" id="edit-access" value="Edit" v-model="sharedWithAccess">
                     <label v-if="this.allowReadWriteSharing && this.files[0].getOwnerName() == this.context.username" for="edit-access" style="font-weight: normal;">Read &amp; Write</label>
 		  </div>
-                  <button :disabled="this.targetUsernames.length == 0" class="btn btn-success" @click="shareWith(sharedWithAccess)">Send</button>
+                  <button :disabled="this.targetUsernames.slice().length == 0 && !this.shareWithFriendsGroup &&  !this.shareWithFollowersGroup" class="btn btn-success" @click="shareWith()">Share</button>
                 </div>
               </div>
+            </div>
+            <div class="flex-container">
+                <div class="hspace-15">
+                    <label style="font-weight: normal;">Or Group(s):</label>
+                </div>
+                <div class="hspace-15">
+                    <input type="checkbox" id="friends-option" @change="onFriendChange()" v-model="shareWithFriendsGroup">
+                    <label for="friends-option" style="font-weight: normal;">Friends</label>
+                </div>
+                <div class="hspace-15">
+                    <input type="checkbox" id="followers-option" @change="onFollowerChange()" v-model="shareWithFollowersGroup">
+                    <label for="followers-option" style="font-weight: normal;">Followers (Includes Friends)</label>
+                </div>
             </div>
             <div v-if="this.allowReadWriteSharing" class="modal-body modal-prominent">
                 <div class="container" v-if="data.edit_shared_with_users.length > 0"><p style="word-wrap;break-all;">
                     Read and Write Access:</p>
                     <div v-if="this.files[0].getOwnerName() == this.context.username">
-                        <div v-for="user in data.edit_shared_with_users">
-                            <input type="checkbox" v-bind:id="user" v-bind:value="user" v-model="unsharedEditAccessNames">&nbsp;<span>{{ user }}</span>
+                        <div v-for="user in filterEditSharedWithUsers()">
+                            <input type="checkbox" v-bind:id="user" v-bind:value="user" v-model="unsharedEditAccessNames">&nbsp;<span>{{ getUserOrGroupName(user) }}</span>
                         </div>
                         <button :disabled="this.unsharedEditAccessNames.length == 0" class="btn btn-success" v-on:click="unshare('Edit')">Revoke</button>
                     </div>
                     <div v-if="this.files[0].getOwnerName() != this.context.username">
-                        <div v-for="user in data.edit_shared_with_users">
-                            {{ user }}
+                        <div v-for="user in filterEditSharedWithUsers()">
+                            {{ getUserOrGroupName(user) }}
                         </div>
                     </div>
                 </div>
@@ -49,14 +62,14 @@
                 <div class="container" v-if="data.read_shared_with_users.length > 0"><p style="word-wrap;break-all;">
                     Read only Access:</p>
                     <div v-if="this.files[0].getOwnerName() == this.context.username">
-                        <div v-for="user in data.read_shared_with_users">
-                            <input type="checkbox" v-bind:id="user" v-bind:value="user" v-model="unsharedReadAccessNames">&nbsp;<span>{{ user }}</span>
+                        <div v-for="user in filterReadSharedWithUsers()">
+                            <input type="checkbox" v-bind:id="user" v-bind:value="user" v-model="unsharedReadAccessNames">&nbsp;<span>{{ getUserOrGroupName(user) }}</span>
                         </div>
                         <button :disabled="this.unsharedReadAccessNames.length == 0" class="btn btn-success" v-on:click="unshare('Read')">Revoke</button>
                     </div>
                     <div v-if="this.files[0].getOwnerName() != this.context.username">
-                        <div v-for="user in data.read_shared_with_users">
-                            {{ user }}
+                        <div v-for="user in filterReadSharedWithUsers()">
+                            {{ getUserOrGroupName(user) }}
                         </div>
                     </div>
                 </div>

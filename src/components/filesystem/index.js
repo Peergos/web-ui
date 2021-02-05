@@ -54,7 +54,9 @@ module.exports = {
                 pending: [],
                 friends: [],
                 followers: [],
-                following: []
+                following: [],
+                groupsNameToUid: [],
+                groupsUidToName: [],
             },
             profile:{
                 firstName: "",
@@ -111,7 +113,6 @@ module.exports = {
         context: function(newContext, oldContext) {
 	    this.contextUpdates++;
             this.updateCurrentDir();
-            this.updateFollowerNames();
 	    if (newContext != null && newContext.username != null) {
 		this.updateUsage();
 		this.updateQuota();
@@ -384,7 +385,6 @@ module.exports = {
         if (path.startsWith("/"))
             path = path.substring(1);
         this.path = path ? path.split('/') : [];
-        this.viewingFromTimeline = true;
         this.updateHistory("filesystem", path, "");
         this.updateCurrentDirectory(filename);
     },
@@ -492,25 +492,38 @@ module.exports = {
                     followers: [],
                     following: [],
 		    pendingOutgoing: [],
-		    annotations: {}
+		    annotations: {},
+		    groupsNameToUid: {},
+		    groupsUidToName: {}
                 };
 	    else {
 		    var that = this;
-            context.getSocialState().thenApply(function(social){
+            context.getSocialState().thenApply(function(socialState){
 		    var annotations = {};
-		    social.friendAnnotations.keySet().toArray([]).map(name => annotations[name]=social.friendAnnotations.get(name));
-		    var followerNames = social.followerRoots.keySet().toArray([]);
-		    var followeeNames = social.followingRoots.toArray([]).map(function(f){return f.getFileProperties().name});
+		    socialState.friendAnnotations.keySet().toArray([]).map(name => annotations[name]=socialState.friendAnnotations.get(name));
+		    var followerNames = socialState.followerRoots.keySet().toArray([]);
+		    var followeeNames = socialState.followingRoots.toArray([]).map(function(f){return f.getFileProperties().name});
 		    var friendNames = followerNames.filter(x => followeeNames.includes(x));
 		    followerNames = followerNames.filter(x => !friendNames.includes(x));
 		    followeeNames = followeeNames.filter(x => !friendNames.includes(x));
+
+		    var groupsUidToName = {};
+		    socialState.uidToGroupName.keySet().toArray([]).map(uid => groupsUidToName[uid]=socialState.uidToGroupName.get(uid));
+		    var groupsNameToUid = {};
+		    socialState.groupNameToUid.keySet().toArray([]).map(name => groupsNameToUid[name]=socialState.groupNameToUid.get(name));
+
+		    var pendingOutgoingUsernames = [];
+		    socialState.pendingOutgoing.toArray([]).map(u => pendingOutgoingUsernames.push(u));
+
 		    that.social = {
-                        pending: social.pendingIncoming.toArray([]),
+		                pendingOutgoing: pendingOutgoingUsernames,
+                        pending: socialState.pendingIncoming.toArray([]),
 			friends: friendNames,
                         followers: followerNames,
                         following: followeeNames,
-                        pendingOutgoing: social.pendingOutgoingFollowRequests.keySet().toArray([]),
-			annotations: annotations
+			annotations: annotations,
+			    groupsNameToUid: groupsNameToUid,
+			    groupsUidToName: groupsUidToName
 		    };
 		    if (callbackFunc != null) {
 		        callbackFunc(true);
@@ -526,16 +539,6 @@ module.exports = {
 		});
 	    }
 	},
-
-        updateFollowerNames: function() {
-            var context = this.getContext();
-            if (context == null || context.username == null)
-                return Promise.resolve([]);
-            var that = this;
-            context.getFollowerNames().thenApply(function(usernames){
-                that.followerNames = usernames.toArray([]);
-            });
-        },
         sharedWithDataUpdate: function() {
             var context = this.getContext();
             if (this.selectedFiles.length != 1 || context == null) {
@@ -611,7 +614,7 @@ module.exports = {
             if (this.supportsStreaming() || size < 50*1024*1024)
                 return downloadFn();
             var sizeMb = (size/1024/1024) | 0;
-            this.warning_message='Are you sure you want to download ' + file.getName() + " of size " + sizeMb +'MB?';
+            this.warning_message='Are you sure you want to download ' + file.getName() + " of size " + sizeMb +'MiB?';
             if(this.detectFirefoxWritableSteams()) {
                 this.warning_body="Firefox has added support for streaming behind a feature flag. To enable streaming; open about:config, enable 'javascript.options.writable_streams' and then open a new tab";
             } else {
@@ -626,7 +629,7 @@ module.exports = {
 	        if (this.supportsStreaming() || size < 50*1024*1024)
 		        return viewFn();
 	        var sizeMb = (size/1024/1024) | 0;
-            this.warning_message='Are you sure you want to view ' + file.getName() + " of size " + sizeMb +'MB?'; 
+            this.warning_message='Are you sure you want to view ' + file.getName() + " of size " + sizeMb +'MiB?';
             if(this.detectFirefoxWritableSteams()) {
                 this.warning_body="Firefox has added support for streaming behind a feature flag. To enable streaming; open about:config, enable 'javascript.options.writable_streams' and then open a new tab";
             } else {
@@ -1465,7 +1468,7 @@ module.exports = {
         },
         showShareWithForProfile: function(field, fieldName) {
             let dirPath = this.getContext().username + "/.profile/";
-            this.showShareWithForFile(dirPath, field, false, true, fieldName);
+            this.showShareWithForFile(dirPath, field, false, false, fieldName);
         },
         showShareWithFromApp: function(app, filename, allowReadWriteSharing, allowCreateSecretLink, nameToDisplay) {
             let dirPath = this.getContext().username + "/.apps/" + app;
@@ -1481,7 +1484,6 @@ module.exports = {
                         return;
                     }
                     that.filesToShare = [file];
-                    that.parentFile = dir.ref;
                     that.pathToFile = dirPath.split('/');
                     let directoryPath = peergos.client.PathUtils.directoryToPath(that.pathToFile);
                     context.getDirectorySharingState(directoryPath).thenApply(function(updatedSharedWithState) {
@@ -1509,7 +1511,6 @@ module.exports = {
             var filename = file.getFileProperties().name;
             let latestFile = this.files.filter(f => f.getName() == filename)[0];
             this.filesToShare = [latestFile];
-            this.parentFile = this.isNotBackground ? this.currentDir : null;
             this.pathToFile = this.path;
             let fileSharedWithState = this.sharedWithState.get(filename);
             let read_usernames = fileSharedWithState.readAccess.toArray([]);
@@ -2186,8 +2187,14 @@ module.exports = {
         },
 
 	followernames: function() {
-	    return this.social.followers.concat(this.social.friends);
+	    return this.social.followers;
 	},
+    friendnames: function() {
+        return this.social.friends;
+    },
+    groups: function() {
+        return {groupsNameToUid: this.social.groupsNameToUid, groupsUidToName: this.social.groupsUidToName};
+    },
 
         username: function() {
             var context = this.getContext();

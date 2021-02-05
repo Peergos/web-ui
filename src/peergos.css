@@ -663,6 +663,11 @@ h3 {word-wrap:break-word; white-space:normal;}
     margin-right: 5px;
 }
 
+.hspace-15 {
+    margin-left: 15px;
+    margin-right: 15px;
+}
+
 .vspace-5 {
     margin-top: 5px;
     margin-bottom: 5px;
