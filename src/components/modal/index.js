@@ -9,15 +9,15 @@ module.exports = {
     created: function() {
         let that = this;
         this.links.forEach(link => {
-            let href = that.buildHref(link);
+            let href = that.buildHref(link, true);
             that.urlLinks.push({id: link.id, fileLink: link.fileLink, href : href, name: link.name
-            , isFile: link.isFile, autoOpen: false});
+            , isFile: link.isFile, autoOpen: true});
         });
     },
     methods: {
-        buildHref: function (link) {
+        buildHref: function (link, autoOpenOverride) {
             let json = {secretLink:true,link:link.fileLink};
-            if (link.autoOpen) {
+            if (autoOpenOverride || link.autoOpen) {
                 json.open = true;
             }
             return window.location.origin + window.location.pathname + "#" + propsToFragment(json);
