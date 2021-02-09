@@ -9,17 +9,23 @@ module.exports = {
     created: function() {
         let that = this;
         this.links.forEach(link => {
-            that.urlLinks.push({id: link.id, origHref: link.href, href: link.href, name: link.name
+            let href = that.buildHref(link);
+            that.urlLinks.push({id: link.id, fileLink: link.fileLink, href : href, name: link.name
             , isFile: link.isFile, autoOpen: false});
         });
     },
     methods: {
+        buildHref: function (link) {
+            let json = {secretLink:true,link:link.fileLink};
+            if (link.autoOpen) {
+                json.open = true;
+            }
+            return window.location.origin + window.location.pathname + "#" + propsToFragment(json);
+        },
         onAutoOpen: function (id) {
             let index = this.urlLinks.findIndex(v => v.id === id);
             let link = this.urlLinks[index];
-            link.href = link.autoOpen ? link.origHref.slice(0, link.origHref.length -3)
-                    + '%2c%22open%22:true' + link.origHref.slice(link.origHref.length -3)
-                    : link.origHref;
+            link.href = this.buildHref(link);
         },
         copyUrlToClipboard: function (clickEvent) {
             var text = clickEvent.srcElement.previousElementSibling.value.toString();

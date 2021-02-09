@@ -52,8 +52,8 @@ module.exports = {
             let props = file.getFileProperties();
             var name = this.displayName;
             let isFile = !props.isDirectory;
-            links.push({href:window.location.origin + window.location.pathname +
-            "#" + propsToFragment({secretLink:true,link:file.toLink()}),
+            links.push({
+                fileLink:file.toLink(),
                 name:name,
                 id:'secret_link_'+name,
                 isFile: isFile});
