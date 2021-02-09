@@ -23,7 +23,6 @@ module.exports = {
         },
         copyUrlToClipboard: function (clickEvent) {
             var text = clickEvent.srcElement.previousElementSibling.value.toString();
-            console.log("copyUrlToClipboard=" + text);
             navigator.clipboard.writeText(text).then(function() {}, function() {
               console.error("Unable to write to clipboard.");
             });
