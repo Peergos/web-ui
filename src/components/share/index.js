@@ -51,10 +51,12 @@ module.exports = {
             var links = [];
             let props = file.getFileProperties();
             var name = this.displayName;
+            let isFile = !props.isDirectory;
             links.push({href:window.location.origin + window.location.pathname +
             "#" + propsToFragment({secretLink:true,link:file.toLink()}),
                 name:name,
-                id:'secret_link_'+name});
+                id:'secret_link_'+name,
+                isFile: isFile});
             var title = links.length > 1 ? "Secret links to files: " : "Secret link to file: ";
             this.showLinkModal(title, links);
         },
