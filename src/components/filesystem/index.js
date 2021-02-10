@@ -101,7 +101,7 @@ module.exports = {
             onUpdateCompletion: [] // methods to invoke when current dir is next refreshed
         };
     },
-    props: ["context", "newsignup", "initPath", "opengallery", "initiateDownload"],
+    props: ["context", "newsignup", "initPath", "openFile", "initiateDownload"],
     created: function() {
         console.debug('Filesystem module created!');
         this.showTour = this.newsignup;
@@ -166,54 +166,59 @@ module.exports = {
     methods: {
 	init: function() {
 	    const that = this;
-            if (this.context != null && this.context.username == null) {
-                // from a secret link
-                this.context.getEntryPath().thenApply(function(linkPath) {
-		    var path = that.initPath == null ? null : decodeURIComponent(that.initPath);
-		    if (path != null &&
-			(path.startsWith(linkPath) || linkPath.startsWith(path)))
-			that.changePath(path);
-		    else
-			that.changePath(linkPath);
-                    if (that.initiateDownload) {
-                        that.context.getByPath(that.getPath())
-                            .thenApply(function(file){file.get().getChildren(that.context.crypto.hasher, that.context.network).thenApply(function(children){
-                                var arr = children.toArray();
-                                if (arr.length == 1)
+        if (this.context != null && this.context.username == null) {
+            // from a secret link
+            this.context.getEntryPath().thenApply(function(linkPath) {
+                var path = that.initPath == null ? null : decodeURIComponent(that.initPath);
+                if (path != null && (path.startsWith(linkPath) || linkPath.startsWith(path))) {
+                    that.changePath(path);
+                } else {
+                    that.changePath(linkPath);
+                    that.context.getByPath(that.getPath())
+                        .thenApply(function(file){file.get().getChildren(that.context.crypto.hasher, that.context.network).thenApply(function(children){
+                            var arr = children.toArray();
+                            if (arr.length == 1) {
+                                if (that.initiateDownload) {
                                     that.downloadFile(arr[0]);
-                            })});
-                    }
-		    that.showGallery = that.opengallery;
-                });
-		
+                                } else if (that.openFile){
+                                    var open = () => {
+                                        that.updateFiles(arr[0].getFileProperties().name);
+                                    };
+                                    that.onUpdateCompletion.push(open);
+                                }
+                            }
+                        })
+                    });
+                }
+            });
+        } else {
+            const props = this.getPropsFromUrl();
+            var pathFromUrl = props == null ? null : props.path;
+            if (pathFromUrl != null) {
+                this.showSpinner = true;
+                const filename = props.filename;
+                const app = props.app;
+                var open = () => {
+                that.openInApp(filename, app);
+                };
+                this.onUpdateCompletion.push(open);
+                this.path = pathFromUrl.split('/').filter(n => n.length > 0);
             } else {
-		const props = this.getPropsFromUrl();
-		var pathFromUrl = props == null ? null : props.path;
-		if (pathFromUrl != null) {
-		    this.showSpinner = true;
-		    const filename = props.filename;
-		    const app = props.app;
-		    var open = () => {
-			that.openInApp(filename, app);
-		    };
-		    this.onUpdateCompletion.push(open);
-		    this.path = pathFromUrl.split('/').filter(n => n.length > 0);
-		} else {
-		    this.path = [this.context.username];
-		    this.updateHistory("filesystem", this.getPath(), "");
-		}
-                this.updateSocial();
-		this.updateUsage();
-		this.updateQuota();
-		this.context.getPendingSpaceRequests().thenApply(reqs => {
-		    that.isAdmin = true;
-		});
-        this.context.getPaymentProperties(false).thenApply(function(paymentProps) {
-            if (paymentProps.isPaid()) {
-                that.paymentProperties = paymentProps;
+                this.path = [this.context.username];
+                this.updateHistory("filesystem", this.getPath(), "");
             }
-        });
-            }
+            this.updateSocial();
+            this.updateUsage();
+            this.updateQuota();
+            this.context.getPendingSpaceRequests().thenApply(reqs => {
+                that.isAdmin = true;
+            });
+            this.context.getPaymentProperties(false).thenApply(function(paymentProps) {
+                if (paymentProps.isPaid()) {
+                    that.paymentProperties = paymentProps;
+                }
+            });
+        }
         this.showPendingServerMessages();
 	},
 	showPendingServerMessages: function() {
