@@ -7,7 +7,8 @@ module.exports = {
             pageEndIndex : 0,
             pageSize: 20,
             requestingMoreResults: false,
-            noMoreResults: false
+            noMoreResults: false,
+            showSocialPostForm: false
         }
     },
     props: ['context','navigateToAction','viewAction', 'messages', 'getFileIconFromFileAndType', 'socialFeed',
@@ -30,6 +31,12 @@ module.exports = {
         });
     },
     methods: {
+        displaySocialPostForm: function() {
+            this.showSocialPostForm = true;
+        },
+        closeSocialPostForm: function() {
+            this.showSocialPostForm = false;
+        },
         handleScrolling: function() {
             let that = this;
             let scrollingDiv = document.getElementById('scroll-area');

@@ -8,7 +8,17 @@
         </div>
 
         <div class="modal-body">
+            <social-post
+                    v-if="showSocialPostForm"
+                    :closeSocialPostForm="closeSocialPostForm"
+                    :socialFeed="socialFeed"
+                    :context="context"
+                    :showMessage="showMessage">
+            </social-post>
             <spinner v-if="showSpinner"></spinner>
+            <button class="btn btn-success" @click="displaySocialPostForm()">
+                Post
+            </button>
             <div id="scroll-area" v-on:scroll="handleScrolling()" style="height: 400px;overflow-y: scroll;">
                 <table class="table table-responsive table-striped table-hover">
                     <tr v-if="data.length==0"><th></th></tr>
