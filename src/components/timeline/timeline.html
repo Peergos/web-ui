@@ -17,10 +17,10 @@
                     :groups="groups">
             </social-post>
             <spinner v-if="showSpinner"></spinner>
-            <button class="btn btn-success" @click="displaySocialPostForm()">
-                Post
-            </button>
             <div id="scroll-area" v-on:scroll="handleScrolling()" style="height: 400px;overflow-y: scroll;">
+                <button class="btn btn-success" @click="displaySocialPostForm()">
+                    Post new Message
+                </button>
                 <table class="table table-responsive table-striped table-hover">
                     <tr v-if="data.length==0"><th></th></tr>
                     <tr v-for="entry in data">
@@ -42,17 +42,17 @@
                             <div v-if="entry.isPost">
                                 <a v-on:click="profile(entry.sharer)" style="cursor: pointer">
                                     <span>{{ entry.sharer }}</span>
-                                </a> sent a message:
+                                </a> {{ entry.info }}
                                 <div class="social-post">
-                                    {{ entry.info }}
+                                    {{ entry.name }}
                                 </div>
                             </div>
                         </td>
                         <td v-if="!entry.isLastEntry">
                             <div v-if="!entry.isPost">
                                 <span class="grid_icon_wrapper fa">
-                                <a v-if="!entry.hasThumbnail" class="picon">
-                                    <span v-on:click="view(entry)" v-bind:class="[entry.isDirectory ? 'dir' : 'file', getFileIconFromFileAndType(entry.file, entry.fileType), 'picon']"> </span>
+                                <a v-if="!entry.hasThumbnail">
+                                    <span style="height:100px" v-on:click="view(entry)" v-bind:class="[entry.isDirectory ? 'dir' : 'file', getFileIconFromFileAndType(entry.file, entry.fileType), 'picon-timeline']"> </span>
                                 </a>
                                 <img v-if="entry.hasThumbnail" v-on:click="view(entry)" v-bind:src="entry.thumbnail" style="cursor: pointer"/>
                                 </span>

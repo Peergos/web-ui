@@ -231,7 +231,8 @@ module.exports = {
             let fileType = isSharedCalendar ? 'calendar' : props.getType();
             let isPost = socialPost != null;
             if (isPost) {
-                info = socialPost.body;
+                info = "sent a message at " + socialPost.postTime.toString().replace('T',' '); + ":";
+                name = socialPost.body;
             }
             let item = {
                 sharer: entry.sharer,
