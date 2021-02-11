@@ -9,12 +9,15 @@ module.exports = {
             post: ""
         }
     },
-    props: ['closeSocialPostForm', 'socialFeed', 'context', 'showMessage'],
+    props: ['closeSocialPostForm', 'socialFeed', 'context', 'showMessage', 'groups'],
     created: function() {
     },
     methods: {
         close: function () {
             this.closeSocialPostForm();
+        },
+        getGroupUid: function(groupName) {
+            return this.groups.groupsNameToUid[groupName];
         },
         submitPost: function() {
             let that = this;
@@ -25,19 +28,24 @@ module.exports = {
             let references = peergos.client.JsUtil.emptyList();
             let previousVersions = peergos.client.JsUtil.emptyList();
             let postTime = peergos.client.JsUtil.now();
-            console.log("post=" + this.post + " with=" + this.shareWith);
+            let groupUid = this.shareWith == 'Friends' ? this.getGroupUid(peergos.shared.user.SocialState.FRIENDS_GROUP_NAME)
+                        : this.getGroupUid(peergos.shared.user.SocialState.FOLLOWERS_GROUP_NAME);
             let socialPost = new peergos.shared.social.SocialPost(this.context.username,
-                                this.post, postTime,
-                                resharingAllowed, isPublic,
+                                this.post, postTime, resharingAllowed, isPublic,
                                 parent, references, previousVersions);
             this.socialFeed.createNewPost(socialPost).thenApply(function(result) {
-                 that.showSpinner = false;
-                 that.close();
+                that.context.shareReadAccessWith(result.left, peergos.client.JsUtil.asSet([groupUid]))
+                .thenApply(function(b) {
+                        that.showSpinner = false;
+                        that.close();
+                    }).exceptionally(function(err) {
+                        that.showSpinner = false;
+                        that.showMessage(err.getMessage());
+                });
              }).exceptionally(function(throwable) {
                  that.showMessage(throwable.getMessage());
                  that.showSpinner = false;
              });
-            //this.postSocialMessage(this.post, this.shareWith);
         }
     }
 }

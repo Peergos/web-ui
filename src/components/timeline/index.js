@@ -12,7 +12,7 @@ module.exports = {
         }
     },
     props: ['context','navigateToAction','viewAction', 'messages', 'getFileIconFromFileAndType', 'socialFeed',
-        'importCalendarFile', 'importSharedCalendar', 'displayProfile'],
+        'importCalendarFile', 'importSharedCalendar', 'displayProfile', 'groups'],
     created: function() {
         let that = this;
         Vue.nextTick(function() {
