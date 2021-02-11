@@ -24,6 +24,7 @@ module.exports = {
             that.showSpinner = true;
             let resharingAllowed = true;
             let isPublic = true;
+            let tags = peergos.client.JsUtil.emptyList();
             let parent = peergos.client.JsUtil.emptyOptional();
             let references = peergos.client.JsUtil.emptyList();
             let previousVersions = peergos.client.JsUtil.emptyList();
@@ -31,7 +32,7 @@ module.exports = {
             let groupUid = this.shareWith == 'Friends' ? this.getGroupUid(peergos.shared.user.SocialState.FRIENDS_GROUP_NAME)
                         : this.getGroupUid(peergos.shared.user.SocialState.FOLLOWERS_GROUP_NAME);
             let socialPost = new peergos.shared.social.SocialPost(this.context.username,
-                                this.post, postTime, resharingAllowed, isPublic,
+                                this.post, tags, postTime, resharingAllowed, isPublic,
                                 parent, references, previousVersions);
             this.socialFeed.createNewPost(socialPost).thenApply(function(result) {
                 that.context.shareReadAccessWith(result.left, peergos.client.JsUtil.asSet([groupUid]))

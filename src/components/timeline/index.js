@@ -31,6 +31,55 @@ module.exports = {
         });
     },
     methods: {
+        getFileSize: function(props) {
+                var low = props.sizeLow();
+                if (low < 0) low = low + Math.pow(2, 32);
+                return low + (props.sizeHigh() * Math.pow(2, 32));
+        },
+        loadPost: function(entry, future) {
+            let that = this;
+            const props = entry.right.getFileProperties();
+            entry.right.getInputStream(this.context.network, this.context.crypto, props.sizeHigh(), props.sizeLow(), function(read){})
+                .thenApply(function(reader) {
+                    var size = that.getFileSize(props);
+                    var data = convertToByteArray(new Int8Array(size));
+                    reader.readIntoArray(data, 0, data.length).thenApply(function(read){
+                        let socialPost = peergos.shared.social.SocialPost.fromByteArray(data);
+                        future.complete(socialPost);
+                    });
+            }).exceptionally(function(throwable) {
+                that.showMessage("error loading post");
+                future.complete(null);
+            });
+        },
+        loadFile: function(entry) {
+            let future = peergos.shared.util.Futures.incomplete();
+            let isPost = entry.left.path.startsWith("/" + entry.left.owner + "/.posts/");
+            if (isPost) {
+                this.loadPost(entry, future);
+            } else {
+                future.complete(null);
+            }
+            return future;
+        },
+        reduceLoadingAllFiles: function(pairs, index, accumulator, future) {
+            let that = this;
+            if (index == pairs.length) {
+                future.complete(accumulator);
+            } else {
+                let currentPair = pairs[index];
+                that.loadFile(currentPair).thenApply(contents => {
+                    that.reduceLoadingAllFiles(pairs, ++index,
+                        accumulator.concat({left: currentPair.left, middle: contents, right: currentPair.right}),
+                        future);
+                })
+            }
+        },
+        loadFiles: function(pairs) {
+            let future = peergos.shared.util.Futures.incomplete();
+            this.reduceLoadingAllFiles(pairs, 0, [], future);
+            return future;
+        },
         displaySocialPostForm: function() {
             this.showSocialPostForm = true;
         },
@@ -50,17 +99,19 @@ module.exports = {
             let allTimelineEntries = [];
             ctx.getFiles(peergos.client.JsUtil.asList(items)).thenApply(function(pairs) {
                 let allPairs = pairs.toArray();
-                let numberOfEntries = allPairs.length;
-                for(var j = 0; j < numberOfEntries; j++) {
-                    let pair = allPairs[j];
-                    let timelineEntry = that.createTimelineEntry(pair.left, pair.right);
-                    if (timelineEntry != null) {
-                        allTimelineEntries.push(timelineEntry);
+                that.loadFiles(allPairs).thenApply(function(triples) {
+                    let numberOfEntries = triples.length;
+                    for(var j = 0; j < numberOfEntries; j++) {
+                        let triple = triples[j];
+                        let timelineEntry = that.createTimelineEntry(triple.left, triple.middle, triple.right);
+                        if (timelineEntry != null) {
+                            allTimelineEntries.push(timelineEntry);
+                        }
                     }
-                }
-                that.data = that.data.concat(allTimelineEntries);
-                that.showSpinner = false;
-                that.requestingMoreResults = false;
+                    that.data = that.data.concat(allTimelineEntries);
+                    that.showSpinner = false;
+                    that.requestingMoreResults = false;
+                });
             }).exceptionally(function(throwable) {
                 that.showMessage(throwable.getMessage());
                 that.showSpinner = false;
@@ -143,7 +194,7 @@ module.exports = {
                 pathParts[3] == 'calendar' &&
                 pathParts[4] == 'data';
         },
-        createTimelineEntry: function(entry, file) {
+        createTimelineEntry: function(entry, socialPost, file) {
             let info = " shared";
             var displayFilename = true;
             if(entry.cap.isWritable() ) {
@@ -178,6 +229,10 @@ module.exports = {
             let path = props.isDirectory ? entry.path : entry.path.substring(0, entry.path.lastIndexOf(props.name) -1);
             let name = props.name.length > 30 ? props.name.substring(0,27) + '...' : props.name;
             let fileType = isSharedCalendar ? 'calendar' : props.getType();
+            let isPost = socialPost != null;
+            if (isPost) {
+                info = socialPost.body;
+            }
             let item = {
                 sharer: entry.sharer,
                 info: info,
@@ -188,10 +243,11 @@ module.exports = {
                 hasThumbnail: props.thumbnail.ref != null,
                 thumbnail: props.thumbnail.ref == null ? null : file.getBase64Thumbnail(),
                 isDirectory: props.isDirectory,
-                file : file,
+                file: file,
                 isLastEntry: false,
                 displayFilename: displayFilename,
-                fileType : fileType
+                fileType: fileType,
+                isPost: isPost
             };
             return item;
         },
@@ -258,16 +314,18 @@ module.exports = {
                     } else {
                         ctx.getFiles(peergos.client.JsUtil.asList(items)).thenApply(function(pairs) {
                             let allPairs = pairs.toArray();
-                            numberOfEntries = allPairs.length;
-                            for(var j = 0; j < numberOfEntries; j++) {
-                                let pair = allPairs[j];
-                                let timelineEntry = that.createTimelineEntry(pair.left, pair.right);
-                                if (timelineEntry != null) {
-                                    allTimelineEntries.push(timelineEntry);
+                            that.loadFiles(allPairs).thenApply(function(triples) {
+                                numberOfEntries = triples.length;
+                                for(var j = 0; j < numberOfEntries; j++) {
+                                    let triple = triples[j];
+                                    let timelineEntry = that.createTimelineEntry(triple.left, triple.middle, triple.right);
+                                    if (timelineEntry != null) {
+                                        allTimelineEntries.push(timelineEntry);
+                                    }
                                 }
-                            }
-                            that.data = allTimelineEntries;
-                            that.showSpinner = false;
+                                that.data = allTimelineEntries;
+                                that.showSpinner = false;
+                            });
                         }).exceptionally(function(throwable) {
                             that.showMessage(throwable.getMessage());
                             that.showSpinner = false;
