@@ -44,7 +44,7 @@ module.exports = {
                     var size = that.getFileSize(props);
                     var data = convertToByteArray(new Int8Array(size));
                     reader.readIntoArray(data, 0, data.length).thenApply(function(read){
-                        let socialPost = peergos.shared.social.SocialPost.fromByteArray(data);
+                        let socialPost = peergos.shared.util.Serialize.parse(data, c => peergos.shared.social.SocialPost.fromCbor(c));
                         future.complete(socialPost);
                     });
             }).exceptionally(function(throwable) {
