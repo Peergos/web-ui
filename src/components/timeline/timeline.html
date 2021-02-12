@@ -18,11 +18,19 @@
             </social-post>
             <spinner v-if="showSpinner"></spinner>
             <button class="btn btn-success" @click="displaySocialPostForm()">
-                Post new Message
+                Create Post
             </button>
             <div id="scroll-area" v-on:scroll="handleScrolling()" style="height: 400px;overflow-y: scroll;">
+	      <center v-if="data.length==0">
+		<h3>
+		  This is your social feed.
+		</h3>
+		<h3>
+		  You can see here all the things that have been shared with you by friends or people you follow.
+		</h3>
+	      </center>
                 <table class="table table-responsive table-striped table-hover">
-                    <tr v-if="data.length==0"><th></th></tr>
+                  <tr v-if="data.length==0"><th></th></tr>
                     <tr v-for="entry in data">
                         <td v-if="entry.isLastEntry">
                             <span>No more entries</span>
