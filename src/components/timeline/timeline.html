@@ -14,11 +14,19 @@
                     :socialFeed="socialFeed"
                     :context="context"
                     :showMessage="showMessage"
-                    :groups="groups">
+                    :groups="groups"
+                    :socialPostAction="socialPostAction"
+                    :currentSocialPostTriple="currentSocialPostTriple">
             </social-post>
             <spinner v-if="showSpinner"></spinner>
-            <button class="btn btn-success" @click="displaySocialPostForm()">
+            <button class="btn btn-success" @click="addNewPost()">
                 Create Post
+            </button>
+            <button v-if="currentSocialPostTriple != null" class="btn btn-success" @click="editPost()">
+                Edit Post
+            </button>
+            <button v-if="currentSocialPostTriple != null" class="btn btn-danger" @click="deletePost()">
+                Delete Post
             </button>
             <div id="scroll-area" v-on:scroll="handleScrolling()" style="height: 400px;overflow-y: scroll;">
 	      <center v-if="data.length==0">
@@ -46,6 +54,9 @@
                                 <a v-if="entry.displayFilename" v-on:click="navigateTo(entry)" style="cursor: pointer">
                                     <span :title="entry.link">{{ entry.name }}</span>
                                 </a>
+                                <span v-if="!entry.isDirectory">
+                                    <button class="btn btn-success" @click="addComment(entry)">Add comment</button>
+                                </span>
                             </div>
                             <div v-if="entry.isPost">
                                 <a v-on:click="profile(entry.sharer)" style="cursor: pointer">
@@ -53,6 +64,9 @@
                                 </a> {{ entry.info }}
                                 <div class="social-post">{{ entry.name }}
                                 </div>
+                                <span>
+                                    <button class="btn btn-success" @click="addReplyToComment(entry)">share comment</button>
+                                </span>
                             </div>
                         </td>
                         <td v-if="!entry.isLastEntry">

@@ -8,7 +8,9 @@ module.exports = {
             pageSize: 20,
             requestingMoreResults: false,
             noMoreResults: false,
-            showSocialPostForm: false
+            showSocialPostForm: false,
+            socialPostAction: '',
+            currentSocialPostTriple: null
         }
     },
     props: ['context','navigateToAction','viewAction', 'messages', 'getFileIconFromFileAndType', 'socialFeed',
@@ -31,6 +33,62 @@ module.exports = {
         });
     },
     methods: {
+        addNewPost: function() {
+            this.socialPostAction = 'add';
+            this.showSocialPostForm = true;
+        },
+        closeSocialPostForm: function(currentSocialPostTriple) {
+            this.currentSocialPostTriple = currentSocialPostTriple;
+            this.showSocialPostForm = false;
+            //todo reload
+        },
+        editPost: function(entry) {
+            this.socialPostAction = 'edit';
+            //temp
+            if (entry != null) {
+                this.currentSocialPostTriple = {left: entry.link + "/" + entry.name, middle: entry.socialPost, right: entry.file};
+            }
+            this.showSocialPostForm = true;
+        },
+        deletePost: function(entry) {
+            let that = this;
+            that.showSpinner = true;
+            let filePath = this.currentSocialPostTriple.left;
+            let file = this.currentSocialPostTriple.right;
+            let parentPath = peergos.client.PathUtils.getParent(filePath);
+            this.context.getByPath(parentPath.toString()).thenApply(function(optParent){
+                file.remove(optParent.get(), filePath, that.context).thenApply(function(b){
+                    that.showSpinner = false;
+                    that.currentSocialPostTriple = null;
+                    //todo reload
+                }).exceptionally(function(throwable) {
+                    that.showMessage("error deleting post");
+                    that.showSpinner = false;
+                });
+            }).exceptionally(function(throwable) {
+                that.showMessage("error retrieving post");
+                that.showSpinner = false;
+            });
+        },
+        getGroupUid: function(groupName) {
+            return this.groups.groupsNameToUid[groupName];
+        },
+        addComment: function(entry) {
+            let that = this;
+            let comment = new peergos.shared.social.SocialPost.Ref(entry.link, entry.cap);
+            console.log("not implemented!");
+            //this.currentSocialPostTriple = {left: entry.link + "/" + entry.name, middle: entry.socialPost, right: entry.file};
+        },
+        addReplyToComment: function(entry) {
+            let that = this;
+            console.log("not implemented!");
+            /*
+            let groupUid = that.getGroupUid(peergos.shared.user.SocialState.FRIENDS_GROUP_NAME);
+            let originalPost = entry.socialPost;
+            let post = originalPost.addComment(comment, groupUid);
+            this.savePost(post);
+            */
+        },
         getFileSize: function(props) {
                 var low = props.sizeLow();
                 if (low < 0) low = low + Math.pow(2, 32);
@@ -79,12 +137,6 @@ module.exports = {
             let future = peergos.shared.util.Futures.incomplete();
             this.reduceLoadingAllFiles(pairs, 0, [], future);
             return future;
-        },
-        displaySocialPostForm: function() {
-            this.showSocialPostForm = true;
-        },
-        closeSocialPostForm: function() {
-            this.showSocialPostForm = false;
         },
         handleScrolling: function() {
             let that = this;
@@ -214,7 +266,7 @@ module.exports = {
                     info = info + " a calendar"; // - " + props.name;
                     displayFilename = false;
                 } else {
-                    info = info + " the directory";
+                    info = info + " the folder";
                 }
             } else if (props.getType() == 'calendar') {
                 info = info + " a calendar event";
@@ -238,6 +290,7 @@ module.exports = {
                 sharer: entry.sharer,
                 info: info,
                 link: entry.path,
+                cap: entry.cap,
                 path: path,
                 name: name,
                 fullName: props.name,
@@ -248,7 +301,8 @@ module.exports = {
                 isLastEntry: false,
                 displayFilename: displayFilename,
                 fileType: fileType,
-                isPost: isPost
+                isPost: isPost,
+                socialPost: socialPost
             };
             return item;
         },
