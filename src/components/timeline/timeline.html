@@ -22,12 +22,6 @@
             <button class="btn btn-success" @click="addNewPost()">
                 Create Post
             </button>
-            <button v-if="currentSocialPostTriple != null" class="btn btn-success" @click="editPost()">
-                Edit Post
-            </button>
-            <button v-if="currentSocialPostTriple != null" class="btn btn-danger" @click="deletePost()">
-                Delete Post
-            </button>
             <div id="scroll-area" v-on:scroll="handleScrolling()" style="height: 400px;overflow-y: scroll;">
 	      <center v-if="data.length==0">
 		<h3>
@@ -59,14 +53,12 @@
                                 </span>
                             </div>
                             <div v-if="entry.isPost">
-                                <a v-on:click="profile(entry.sharer)" style="cursor: pointer">
+                                <a v-if="entry.sharer != context.username" v-on:click="profile(entry.sharer)" style="cursor: pointer">
                                     <span>{{ entry.sharer }}</span>
-                                </a> {{ entry.info }}
+                                </a>
+                                {{ entry.info }}
                                 <div class="social-post">{{ entry.name }}
                                 </div>
-                                <span>
-                                    <button class="btn btn-success" @click="addReplyToComment(entry)">share comment</button>
-                                </span>
                             </div>
                         </td>
                         <td v-if="!entry.isLastEntry">
@@ -79,6 +71,11 @@
                                 </span>
                             </div>
                             <div v-if="entry.isPost">
+                                <span>
+                                    <button v-if="entry.sharer != context.username" class="btn btn-success" @click="addComment(entry)">share comment</button>
+                                    <!-- button v-if="entry.sharer == context.username" class="btn btn-success" @click="editPost()">Edit Post</button -->
+                                    <button v-if="entry.sharer == context.username" class="btn btn-danger" @click="deletePost(entry)">Delete Post</button>
+                                </span>
                             </div>
                         </td>
                     </tr>

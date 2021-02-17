@@ -3,7 +3,7 @@
     Building Peergos and the web UI
   </description>
 
-  <property name="peergos_project_root" location="peergos"/>
+  <property name="peergos_project_root" location="../Peergos"/>
   <property name="server" location="server"/>
   <property name="ui_src" location="src"/>
   <property name="ui" location="${server}/webroot"/>
@@ -225,7 +225,11 @@ Javac-Version: ${javac.version}</echo>
       <arg value="-webcache"/>
       <arg value="false"/>
       <arg value="-max-users"/>
-      <arg value="5"/>
+      <arg value="50"/>
+      <arg value="-run-gateway"/>
+      <arg value="true"/>
+      <arg value="-gateway-port"/>
+      <arg value="9000"/>
       <arg value="peergos.password"/>
       <arg value="testpassword"/>
       <arg value="pki.keygen.password"/>
@@ -237,7 +241,7 @@ Javac-Version: ${javac.version}</echo>
       <arg value="social-sql-file"/>
       <arg value="social.sql"/>
       <arg value="default-quota"/>
-      <arg value="157286400"/>
+      <arg value="1572864000"/>
       <arg value="PEERGOS_PATH"/>
       <arg value="${server}/.peergos"/>
       <arg value="-admin-usernames"/>
