@@ -39,27 +39,32 @@ module.exports = {
             this.socialPostAction = 'add';
             this.showSocialPostForm = true;
         },
+        appendToTimeline: function(newSocialPost, parentPath) {
+            let post = this.createSocialPostTimelineEntry(newSocialPost.left.toString(), newSocialPost.middle, newSocialPost.right)
+            if (parentPath != null) {
+                let index = this.data.findIndex(v => v.link === parentPath);
+                if (index > -1) {
+                    let parentPostIndent = this.data[index].indent;
+                    post.indent = parentPostIndent + 1;
+                    var i = index +1;
+                    for(;i < this.data.length; i++) {
+                        if (!(this.data[i].socialPost != null
+                        && this.data[i].socialPost.parent.ref != null
+                        && this.data[i].socialPost.parent.ref.path == post.socialPost.parent.ref.path)){
+                            break;
+                        }
+                    }
+                    this.data.splice(i, 0, post);
+                }
+            } else {
+                this.data = [post].concat(this.data);
+            }
+        },
         closeSocialPostForm: function(newSocialPost, parentPath) {
             this.showSocialPostForm = false;
             this.currentSocialPostTriple = null;
             if (newSocialPost != null) {
-                let post = this.createOwnSocialTimelineEntry(newSocialPost.left.toString(), newSocialPost.middle, newSocialPost.right)
-                if (parentPath != null) {
-                    let index = this.data.findIndex(v => v.link === parentPath);
-                    if (index > -1) {
-                        var i = index +1;
-                        for(;i < this.data.length; i++) {
-                            if (!(this.data[i].socialPost != null
-                            && this.data[i].socialPost.parent.ref != null
-                            && this.data[i].socialPost.parent.ref.path == post.socialPost.parent.ref.path)){
-                                break;
-                            }
-                        }
-                        this.data.splice(i, 0, post);
-                    }
-                } else {
-                    this.data = [post].concat(this.data);
-                }
+                this.appendToTimeline(newSocialPost, parentPath);
             }
         },
         editPost: function(entry) {
@@ -129,7 +134,7 @@ module.exports = {
             let future = peergos.shared.util.Futures.incomplete();
             let isPost = entry.left.path.startsWith("/" + entry.left.owner + "/.posts/");
             if (isPost) {
-                this.loadPost(entry, future);
+                this.loadPost(entry.right, future, false);
             } else {
                 future.complete(null);
             }
@@ -152,49 +157,38 @@ module.exports = {
             this.reduceLoadingAllFiles(pairs, 0, [], future);
             return future;
         },
-
-        loadPost: function(entry, future) {
+        loadPost: function(file, future, includeFileInResult) {
             let that = this;
-            const props = entry.right.getFileProperties();
-            entry.right.getInputStream(this.context.network, this.context.crypto, props.sizeHigh(), props.sizeLow(), function(read){})
+            const props = file.getFileProperties();
+            file.getInputStream(this.context.network, this.context.crypto, props.sizeHigh(), props.sizeLow(), function(read){})
                 .thenApply(function(reader) {
                     var size = that.getFileSize(props);
                     var data = convertToByteArray(new Int8Array(size));
                     reader.readIntoArray(data, 0, data.length).thenApply(function(read){
                         let socialPost = peergos.shared.util.Serialize.parse(data, c => peergos.shared.social.SocialPost.fromCbor(c));
-                        future.complete(socialPost);
+                        if (includeFileInResult) {
+                            future.complete({post: socialPost, file: file});
+                        } else {
+                            future.complete(socialPost);
+                        }
                     });
             }).exceptionally(function(throwable) {
                 that.showMessage("error loading post");
                 future.complete(null);
             });
         },
-        loadOriginalPost: function(ref) {
+        loadOriginalPost: function(path) {
             let that = this;
             let future = peergos.shared.util.Futures.incomplete();
-            this.context.getByPath(ref.path).thenApply(function(optFile){
-            //this.context.network.getFile(ref.cap, this.context.username).thenApply(function(optFile) {
+            this.context.getByPath(path).thenApply(function(optFile){
                 let file = optFile.get();
                 if (file == null) {
                     future.complete(null);
                 } else {
-                    let isPost = ref.path.startsWith("/" + that.context.username + "/.posts/");
-                    if (!isPost) {
+                    if (path.contains("/.posts/")) {
                         future.complete({post: null, file: file});
                     } else {
-                        const props = file.getFileProperties();
-                        file.getInputStream(that.context.network, that.context.crypto, props.sizeHigh(), props.sizeLow(), function(read){})
-                            .thenApply(function(reader) {
-                                var size = that.getFileSize(props);
-                                var data = convertToByteArray(new Int8Array(size));
-                                reader.readIntoArray(data, 0, data.length).thenApply(function(read){
-                                    let socialPost = peergos.shared.util.Serialize.parse(data, c => peergos.shared.social.SocialPost.fromCbor(c));
-                                    future.complete({post: socialPost, file: file});
-                                });
-                        }).exceptionally(function(throwable) {
-                            that.showMessage("error loading post");
-                            future.complete(null);
-                        });
+                        that.loadPost(file, future, true);
                     }
                 }
             }).exceptionally(function(throwable) {
@@ -202,33 +196,66 @@ module.exports = {
             });
             return future;
         },
-        reduceLoadingOriginalPosts: function(refs, index, accumulator, future) {
+        reduceLoadingOriginalPosts: function(paths, index, accumulator, future) {
             let that = this;
-            if (index == refs.length) {
+            if (index == paths.length) {
                 future.complete(accumulator);
             } else {
-                let ref = refs[index];
-                this.loadOriginalPost(ref).thenApply(result => {
+                let path = paths[index];
+                this.loadOriginalPost(path).thenApply(result => {
                     if (result != null) {
-                        accumulator = accumulator.concat({ref: ref, post: result.post, file: result.file});
+                        accumulator = accumulator.concat({path: path, post: result.post, file: result.file});
                     }
-                    that.reduceLoadingOriginalPosts(refs, ++index, accumulator, future);
+                    that.reduceLoadingOriginalPosts(paths, ++index, accumulator, future);
                 })
             }
         },
-
-        loadOriginalPosts: function(triples) {
+        loadOriginalPosts: function(triples, ourPosts) {
             let future = peergos.shared.util.Futures.incomplete();
-            let refs = [];
+            let paths = [];
             for(var i = 0; i < triples.length; i++) {
                 let post = triples[i].middle;
                 if (post != null && post.parent.ref != null) {
-                    refs.push(post.parent.ref);
+                    let index = ourPosts.findIndex(v => v.path === post.parent.ref.path);
+                    if (index == -1) {
+                        paths.push(post.parent.ref.path);
+                    }
                 }
             }
-            this.reduceLoadingOriginalPosts(refs, 0, [], future);
+            this.reduceLoadingOriginalPosts(paths, 0, [], future);
             return future;
         },
+        loadOurPost: function(file) {
+            let future = peergos.shared.util.Futures.incomplete();
+            this.loadPost(file, future, false);
+            return future;
+        },
+        reduceLoadingOurPosts: function(postFiles, index, accumulator, future) {
+            let that = this;
+            if (index == postFiles.length) {
+                future.complete(accumulator);
+            } else {
+                let path = "/" + that.context.username + "/.posts/2021/2/";
+                let postFile = postFiles[index];
+                this.loadOurPost(postFile).thenApply(socialPost => {
+                    accumulator = accumulator.concat({path: path + postFile.props.name, post: socialPost, file: postFile});
+                    that.reduceLoadingOurPosts(postFiles, ++index, accumulator, future);
+                })
+            }
+        },
+        loadOurPosts: function(triples) {
+            let future = peergos.shared.util.Futures.incomplete();
+            let that = this;
+            this.context.getByPath("/" + this.context.username + "/.posts/2021/2")
+                .thenApply(function(file){file.get().getChildren(that.context.crypto.hasher, that.context.network)
+                    .thenApply(function(children){
+                        var postFiles = children.toArray();
+                        that.reduceLoadingOurPosts(postFiles, 0, [], future);
+                    });
+            });
+            return future;
+        },
+        ////
         handleScrolling: function() {
             let that = this;
             let scrollingDiv = document.getElementById('scroll-area');
@@ -240,10 +267,6 @@ module.exports = {
             var that = this;
             that.buildTimeline(items).thenApply(function(allTimelineEntries) {
                 that.data = that.data.concat(allTimelineEntries);
-                that.showSpinner = false;
-                that.requestingMoreResults = false;
-            }).exceptionally(function(throwable) {
-                that.showMessage(throwable.getMessage());
                 that.showSpinner = false;
                 that.requestingMoreResults = false;
             });
@@ -324,17 +347,22 @@ module.exports = {
                 pathParts[3] == 'calendar' &&
                 pathParts[4] == 'data';
         },
-        createOwnSocialTimelineEntry: function(link, socialPost, file) {
+        indent: function(item) {
+            let calcMargin = (item.indent * 20) + 10;
+            return "" +  calcMargin + "px";
+        },
+        createSocialPostTimelineEntry: function(link, socialPost, file) {
             let info = "you sent a message at " + socialPost.postTime.toString().replace('T',' ');
             let item = {
-                sharer: this.context.username,
+                sharer: file.ownername,
                 info: info,
                 link: link,
                 name: socialPost.body,
                 file: file,
                 isLastEntry: false,
                 isPost: true,
-                socialPost: socialPost
+                socialPost: socialPost,
+                indent: 0
             };
             return item;
         },
@@ -394,7 +422,8 @@ module.exports = {
                 displayFilename: displayFilename,
                 fileType: fileType,
                 isPost: isPost,
-                socialPost: socialPost
+                socialPost: socialPost,
+                indent: 0
             };
             return item;
         },
@@ -443,45 +472,78 @@ module.exports = {
             });
             return future;
 	    },
-        populateTimeline: function(triples, origPosts) {
-            let that = this;
-            let numberOfEntries = triples.length;
+        calcInsertIndex: function(allTimelineEntries, index) {
+            let parent = allTimelineEntries[index];
+            var i = index +1;
+            for(;i < allTimelineEntries.length; i++) {
+                if (!(allTimelineEntries[i].socialPost != null
+                && allTimelineEntries[i].socialPost.parent.ref != null
+                && allTimelineEntries[i].socialPost.parent.ref.path == parent.link
+                && allTimelineEntries[i].socialPost.postTime.compareTo(parent.socialPost.postTime) > 0)){
+                    break;
+                }
+            }
+            return i;
+        },
+        updateIndentation: function(allTimelineEntries, allRemainingSocialPosts) {
+            for(var i = 0; i < allTimelineEntries.length; i++) {
+                let parentPost = allTimelineEntries[i];
+                for(var j = 0; j < allRemainingSocialPosts.length; j++) {
+                    let post = allRemainingSocialPosts[j];
+                    if (post.socialPost.parent.ref.path == parentPost.link) {
+                        post.indent = parentPost.indent + 1;
+                    }
+                }
+            }
+            let allEntries = allTimelineEntries.concat(allRemainingSocialPosts);
+            for(var i = 0; i < allRemainingSocialPosts.length; i++) {
+                let parentPost = allRemainingSocialPosts[i];
+                for(var j = 0; j < allEntries.length; j++) {
+                    let post = allEntries[j];
+                    if (post.socialPost.parent.ref != null && post.socialPost.parent.ref.path == parentPost.link) {
+                        post.indent = parentPost.indent + 1;
+                    }
+                }
+            }
+        },
+        populateTimeline: function(triples, existingPosts) {
             let allTimelineEntries = [];
-            for(var j = 0; j < numberOfEntries; j++) {
+            //todo sort
+            let remainingEntries = [];
+            //our initial posts
+            for(var i = 0; i < existingPosts.length; i++) {
+                let ourPost = existingPosts[i];
+                let timelineEntry = this.createSocialPostTimelineEntry(ourPost.path, ourPost.post, ourPost.file);
+                if (timelineEntry.socialPost.parent.ref == null) {
+                    allTimelineEntries.push(timelineEntry);
+                } else {
+                    remainingEntries.push(timelineEntry);
+                }
+            }
+            //entries from others
+            let remainingOthersEntries = [];
+            for(var j = 0; j < triples.length; j++) {
                 let triple = triples[j];
-                let timelineEntry = that.createTimelineEntry(triple.left, triple.middle, triple.right);
-                if (timelineEntry != null) {
-                    if (triple.middle != null && triple.middle.parent.ref != null) {
-                        let parent = origPosts[origPosts.findIndex(v => v.ref.path === triple.middle.parent.ref.path)];
-                        if (parent == null) {
-                            //todo how to deal with this?
-                        } else {
-                            if (parent.post != null) {
-                                let index = allTimelineEntries.findIndex(v => v.link === parent.ref.path);
-                                if (index == -1) {
-                                    let parentTimelineEntry = that.createOwnSocialTimelineEntry(parent.ref.path, parent.post, parent.file);
-                                    allTimelineEntries.push(parentTimelineEntry);
-                                    allTimelineEntries.push(timelineEntry);
-                                } else {
-                                    var i = index +1;
-                                    for(;i < allTimelineEntries.length; i++) {
-                                        if (!(allTimelineEntries[i].socialPost != null
-                                        && allTimelineEntries[i].socialPost.parent.ref != null
-                                        && allTimelineEntries[i].socialPost.parent.ref.path == parent.ref.path
-                                        && allTimelineEntries[i].socialPost.postTime.compareTo(parent.post.postTime) < 0)){
-                                            break;
-                                        }
-                                    }
-                                    allTimelineEntries.splice(i, 0, timelineEntry);
-                                }
-                            } else {
-                                //todo handle when parent was not a social post
-                                allTimelineEntries.push(timelineEntry);
-                            }
-                        }
+                let timelineEntry = this.createTimelineEntry(triple.left, triple.middle, triple.right);
+                if (timelineEntry.isPost) {
+                    if (timelineEntry.socialPost.parent.ref != null) {
+                        remainingEntries.push(timelineEntry);
                     } else {
                         allTimelineEntries.push(timelineEntry);
                     }
+                } else {
+                    allTimelineEntries.push(timelineEntry);
+                }
+            }
+            let sortedSocialPosts = remainingEntries.sort(function (a, b) {
+                return a.socialPost.postTime.compareTo(b.socialPost.postTime);
+            });
+            this.updateIndentation(allTimelineEntries, sortedSocialPosts);
+            for(var k = 0; k < sortedSocialPosts.length; k++) {
+                let entry = sortedSocialPosts[k];
+                let parentIndex = allTimelineEntries.findIndex(v => v.link === entry.socialPost.parent.ref.path);
+                if (parentIndex != -1) {
+                    allTimelineEntries.splice(this.calcInsertIndex(allTimelineEntries, parentIndex), 0, entry);
                 }
             }
             return allTimelineEntries;
@@ -492,9 +554,12 @@ module.exports = {
             this.context.getFiles(peergos.client.JsUtil.asList(items)).thenApply(function(pairs) {
                 let allPairs = pairs.toArray();
                 that.loadFiles(allPairs).thenApply(function(triples) {
-                    that.loadOriginalPosts(triples).thenApply(function(origPosts) {
-                        let allTimelineEntries = that.populateTimeline(triples, origPosts);
-                        future.complete(allTimelineEntries);
+                    that.loadOurPosts().thenApply(function(ourPosts) {
+                        that.loadOriginalPosts(triples, ourPosts).thenApply(function(origPosts) {
+                            let existingPosts = ourPosts.concat(origPosts);
+                            let allTimelineEntries = that.populateTimeline(triples, existingPosts);
+                            future.complete(allTimelineEntries);
+                        });
                     });
                 });
             });
@@ -516,9 +581,6 @@ module.exports = {
                     } else {
                         that.buildTimeline(items).thenApply(function(timelineEntries) {
                             that.data = timelineEntries;
-                            that.showSpinner = false;
-                        }).exceptionally(function(throwable) {
-                            that.showMessage(throwable.getMessage());
                             that.showSpinner = false;
                         });
                     }
