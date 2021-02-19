@@ -20,7 +20,7 @@
             </social-post>
             <spinner v-if="showSpinner"></spinner>
             <button class="btn btn-success" @click="addNewPost()">
-                Create Post
+                create Post
             </button>
             <div id="scroll-area" v-on:scroll="handleScrolling()" style="height: 400px;overflow-y: scroll;">
 	      <center v-if="data.length==0">
@@ -72,9 +72,9 @@
                             </div>
                             <div v-if="entry.isPost">
                                 <span>
-                                    <button v-if="entry.sharer != context.username" class="btn btn-success" @click="addComment(entry)">share comment</button>
+                                    <button v-if="entry.sharer != context.username" class="btn btn-success" @click="addComment(entry)">comment</button>
                                     <!-- button v-if="entry.sharer == context.username" class="btn btn-success" @click="editPost()">Edit Post</button -->
-                                    <button v-if="entry.sharer == context.username" class="btn btn-danger" @click="deletePost(entry)">Delete Post</button>
+                                    <button v-if="entry.sharer == context.username" class="btn btn-danger" @click="deletePost(entry)">delete</button>
                                 </span>
                             </div>
                         </td>
