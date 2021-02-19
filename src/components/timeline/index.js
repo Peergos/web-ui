@@ -247,15 +247,19 @@ module.exports = {
             let future = peergos.shared.util.Futures.incomplete();
             let that = this;
             this.context.getByPath("/" + this.context.username + "/.posts/2021/2")
-                .thenApply(function(file){file.get().getChildren(that.context.crypto.hasher, that.context.network)
-                    .thenApply(function(children){
-                        var postFiles = children.toArray();
-                        that.reduceLoadingOurPosts(postFiles, 0, [], future);
-                    });
-            });
+                .thenApply(function(file){
+                    if (file.isEmpty()) {
+                        future.complete([]);
+                    } else {
+                        file.get().getChildren(that.context.crypto.hasher, that.context.network)
+                            .thenApply(function(children){
+                                var postFiles = children.toArray();
+                                that.reduceLoadingOurPosts(postFiles, 0, [], future);
+                            });
+                    }
+                });
             return future;
         },
-        ////
         handleScrolling: function() {
             let that = this;
             let scrollingDiv = document.getElementById('scroll-area');
