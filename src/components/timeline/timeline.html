@@ -52,12 +52,12 @@
                                     <button class="btn btn-success" @click="addComment(entry)">Add comment</button>
                                 </span>
                             </div>
-                            <div v-if="entry.isPost">
+                            <div v-if="entry.isPost" v-bind:style="{ marginLeft: indent(entry) }">
                                 <a v-if="entry.sharer != context.username" v-on:click="profile(entry.sharer)" style="cursor: pointer">
                                     <span>{{ entry.sharer }}</span>
                                 </a>
                                 {{ entry.info }}
-                                <div class="social-post" v-bind:style="{ marginLeft: indent(entry) }">{{ entry.name }}</div>
+                                <div class="social-post">{{ entry.name }}</div>
                             </div>
                         </td>
                         <td v-if="!entry.isLastEntry">
