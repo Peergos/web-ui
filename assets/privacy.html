@@ -1,19 +1,32 @@
 <h1>PEERGOS Privacy Policy</h1>
-Version 0.1 dated 19th Feb 2021
-<p>
-  This only applies to accounts created on https://beta.peergos.net. If you have any questions email legal at peergos.org. If this is a Peergos server running on another domain then contact the domain operator for terms. 
+Version 0.11 dated 22 February 2021
+
+<p>This privacy policy forms part of the Peergos Terms of Use and applies to all accounts created on https://beta.peergos.net. In this policy, defined terms have the same meanings as in the Terms of Use.</p>
+
+<p>This privacy policy applies only to the instance of the Peergos encrypted storage platform that we operate.  We are not a data controller or processor with respect to any self-hosted Peergos server. If you are connecting to a self-hosted Peergos server running on another domain then contact the administrator of that instance for details of their terms and privacy policy.</p>
+
 <h3>Data collection</h3>
 
-<h4>General notes</h4>
+<p>Peergos is an encrypted storage platform. This means that we cannot exercise any control over (i) what users choose to store on peergos, (ii) for what purposes data are stored or accessed, or (iii) the purposes or means of processing such data.</p>
+
+<p>We are a data controller with respect to certain limited categories of personal data, as set out below.</p>
+
+<h4>Personal data that you may supply to us</h4>
+
 <ul>
-  <li>when sharing a file/directory that includes the full path - /username/path-to-file</li>
-  <li>usernames are public, and permanent (to prevent impersonation after a deleted account)</li>
+  <li>Usernames are public, unique and cannot be changed. This is to prevent an attacker from impersonating another user who has deleted their account. We will store that username forever. We will also process that username when you login and access the data stored in your account.</li>
 </ul>
 
-  Key:<br/>
+<h4>Data protection by design</h4>
+
+<p>Peergos has been designed to respect your privacy. With limited exceptions (like your username), the data you upload to Peergos is encrypted automatically.  We do not collect or store any personal data except where it is necessary to operate your account, take payments, or maintain the security and integrity of Peergos.  We consider privacy as a core part of our system design and engineering processes. You are left in control of your privacy by requiring you to intervene to determine what data if any is shared, with whom, and for how long.</p>
+
+<h4>Personal data that we may collect from you</h4>
+
+<p><strong>Key:</strong><br/>
 1 = Thing we are collecting<br/>
 2 = Why are we collecting it<br/>
-3 = Retention duration
+3 = Retention duration</p>
 
 <h4>Things we collect directly and store on our servers</h4>
 
@@ -24,29 +37,44 @@ Version 0.1 dated 19th Feb 2021
 </ol>
 
 <ol>
-  <li>feedback messages</li>
-  <li>To improve the service and help users</li>
+  <li>feedback messages (such as feature requests and bug reports) that you send to us</li>
+  <li>to improve the service and help users</li>
   <li>2 years</li>
 </ol>
 
 <ol>
-  <li>current quota (total allowable space usage) and any error returned by taking payment</li>
-  <li>To enforce maximum space usage per user</li>
-  <li>indefinitely</li>
+  <li>current space usage and allowance on your account and any error returned by taking payment</li>
+  <li>to enforce maximum space usage per user</li>
+  <li>until account is deleted by the account owner</li>
 </ol>
 
 <ol>
-  <li>IP address</li>
-  <li>To protect against DOS attacks</li>
+  <li>IP address reported by your device when you access the Peergos server</li>
+  <li>to ensure the security and integrity of Peergos (for example by protecting against DOS attacks or identifying inauthentic requests)</li>
   <li>1 week</li>
+</ol>
+
+<ol>
+    <li>confirmation that you have accepted the Peergos Terms of Use and Privacy Policy, and the time when you did so</li>
+    <li>for legal and record-keeping purposes</li>
+    <li>until 6 years after the deletion of your account</li>
+</ol>
+
+<ol>
+    <li>transmitting encrypted follow requests to you which relate to your account (if you accept a follow request, you will then be able to share data with the requesting user)</li>
+    <li>to allow you to share data with other Peergos users</li>
+    <li>until you reply to or refuse the request</li>
 </ol>
 
 <h4>Things we store on the user's device (e.g. cookies, local data)</h4>
 
-None. 
+<p>None. When you access Peergos via your web browser, we do not set, store or read any cookies or other local data.  Your browser may cache data if you have configured it to do so.</p>
 
-<h4>Indirectly via Stripe (only when submitting payment details)</h4>
-Stripe's privacy policy: https://stripe.com/gb/privacy
+<h4>Peergos Pro: personal data collected if you make payments to Peergos</h4>
+
+<p>All payments are processed by Peergos's payment processor, Stripe (or its affiliate companies) and any personal data you supply will be processed in accordance with Stripe's privacy policy: <a href="https://stripe.com/gb/privacy">https://stripe.com/gb/privacy</a>.</p>
+
+<p>This includes:</p>
 
 <ol>
   <li>Payment information (name, credit or debit card number, purchase amount, date and time of purchase, and payment method, billing address)</li>
@@ -56,12 +84,34 @@ Stripe's privacy policy: https://stripe.com/gb/privacy
 
 <ol>
   <li>email address</li>
-  <li>Contact user about payment failures</li>
-  <li>Indefinitely</li>
+  <li>To contact you about your payment or account (for example about any failure to process the payment, and upcoming renewals)</li>
+  <li>As specified in Stripe's privacy policy</li>
 </ol>
 
 <ol>
   <li>Browser and device data (IP address, device type, operating system name and version, device manufacturer and model, language, plug-ins)</li>
-  <li>Fraud prevention</li>
-  <li>Indefinitely it seems</li>
+  <li>Fraud prevention (both by us and by Stripe)</li>
+  <li>Indefinitely</li>
 </ol>
+
+<p>Where data is stored or processed indefinitely, this is either because it is a requirement of our payment provider to prevent fraud, or technically necessary to ensure the security and integrity of Peergos (e.g. uniqueness of usernames).  However, we will periodically review the data we hold and delete anything that we no longer need.</p>
+
+<h4>Location of processing</h4>
+
+<p>The Peergos hosted instance is hosted on servers located in Germany. We make use of object storage buckets to store encrypted data. Our servers may also be backed up on infrastructure operated by other service providers, including Backblaze S3.</p>
+
+<h4>Security measures</h4>
+
+<p>All data that you supply to us, and that we transmit to you, will be encrypted whilst in transit and during storage.  This includes the categories of data set out above, with the exception of usernames.</p>
+
+<p>We use encryption, digital signatures, peer review of source code, and trust free servers, among other security measures, to ensure the integrity and security of your personal data.</p>
+
+<h4>Your rights</h4>
+
+<p>If your personal data is processed by Peergos (e.g. because you are a Peergos user), you have the right of access to your data, and to rectification and erasure.  You may access, amend and delete any data hosted with Peergos by logging into your account. You may download a copy of your Peergos hosted data (e.g. for purposes of data portability) or <a href="https://book.peergos.org/features/migration.html">migrate</a> your account between Peergos servers and storage providers &mdash; but, because it is encrypted, we cannot access, supply or export your data for you.</p>
+
+<p>You also have the right to restrict or object to processing your personal data by Peergos. You can exercise this right by either (i) deleting the relevant data from your account, (ii) revoking any shared links to your files/directories, (iii) closing your account from your account settings page, or (iv) contacting us for assistance.</p>
+
+<h4>Data protection officer</h4>
+
+<p>If you have a question about your privacy on Peergos or wish to find out more about this policy, please contact our data protection officer at <a href="mailto:legal@peergos.org">privacy@peergos.org</a>.</p>
