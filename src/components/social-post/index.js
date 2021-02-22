@@ -24,6 +24,7 @@ module.exports = {
             }
         }
         if (this.socialPostAction == 'edit') {
+            this.title = "Edit a Post";
             this.post = this.currentSocialPostTriple.middle.body;
             let pathStr = this.currentSocialPostTriple.left;
             let dirWithoutLeadingSlash = pathStr.startsWith("/") ? pathStr.substring(1) : pathStr;
@@ -117,16 +118,10 @@ module.exports = {
         updatePost: function(uuid, socialPost, groupUid) {
            let that = this;
            this.socialFeed.updatePost(uuid, socialPost).thenApply(function(result) {
-               that.context.shareReadAccessWith(result.left, peergos.client.JsUtil.asSet([groupUid])).thenApply(function(b) {
-                       that.showSpinner = false;
-                       that.closeSocialPostForm("update", {action: 'update', left: result.left, middle: socialPost, right: result.right}
-                            , that.currentSocialPostTriple == null ? null : that.currentSocialPostTriple.left);
-                       that.isPosting = false;
-                   }).exceptionally(function(err) {
-                       that.showSpinner = false;
-                       that.showMessage(err.getMessage());
-                       that.isPosting = false;
-               });
+                   that.showSpinner = false;
+                   that.closeSocialPostForm("update", {action: 'update', left: result.left, middle: socialPost, right: result.right}
+                        , that.currentSocialPostTriple == null ? null : that.currentSocialPostTriple.left);
+                   that.isPosting = false;
             }).exceptionally(function(throwable) {
                 that.showMessage(throwable.getMessage());
                 that.showSpinner = false;

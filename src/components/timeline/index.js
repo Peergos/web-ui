@@ -50,6 +50,7 @@ module.exports = {
                 if (index != -1) { //could of been deleted
                     this.data[index].name = newSocialPost.middle.body;
                     this.data[index].socialPost = newSocialPost.middle;
+                    this.data[index].edited = newSocialPost.middle.previousVersions.toArray([]).length > 0 ? "Edited" : "";
                 }
                 this.currentSocialPostTriple = null;
             } else {

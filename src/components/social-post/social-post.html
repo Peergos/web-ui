@@ -18,11 +18,11 @@
                         <label style="font-weight: normal;">Share post with:</label>
                     </div>
                     <div class="hspace-15">
-                        <input type="radio" id="friends-option" value="Friends" v-model="shareWith">
+                        <input :disabled="socialPostAction=='edit'" type="radio" id="friends-option" value="Friends" v-model="shareWith">
                         <label for="friends-option" style="font-weight: normal;">Friends</label>
                     </div>
                     <div class="hspace-15">
-                        <input :disabled="!allowFollowerSharingOption" type="radio" id="followers-option" value="Followers" v-model="shareWith">
+                        <input :disabled="!allowFollowerSharingOption || socialPostAction=='edit'" type="radio" id="followers-option" value="Followers" v-model="shareWith">
                         <label for="followers-option" style="font-weight: normal;">Followers (Includes Friends)</label>
                     </div>
                     <div class="hspace-15">
