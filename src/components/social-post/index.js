@@ -15,15 +15,20 @@ module.exports = {
     created: function() {
         let that = this;
         if (this.currentSocialPostTriple != null && this.currentSocialPostTriple.middle != null) {
-            if (this.currentSocialPostTriple.middle.shareTo == peergos.shared.social.SocialPost.Resharing.Friends) {
-                this.allowFollowerSharingOption = false;
-            } else {
-                this.shareWith = "Followers";
+            if (this.socialPostAction == 'reply') {
+                if (this.currentSocialPostTriple.middle.shareTo == peergos.shared.social.SocialPost.Resharing.Friends) {
+                    this.allowFollowerSharingOption = false;
+                } else {
+                    this.shareWith = "Followers";
+                }
             }
         }
         if (this.socialPostAction == 'edit') {
             this.post = this.currentSocialPostTriple.middle.body;
-            this.context.sharedWith(this.currentSocialPostTriple.left).thenApply(function(sharedWith) {
+            let pathStr = this.currentSocialPostTriple.left;
+            let dirWithoutLeadingSlash = pathStr.startsWith("/") ? pathStr.substring(1) : pathStr;
+            let path = peergos.client.PathUtils.directoryToPath(dirWithoutLeadingSlash.split('/'));
+            this.context.sharedWith(path).thenApply(function(sharedWith) {
                 let readAccess = sharedWith.readAccess.toArray([]);
                 if (readAccess[0] == that.getGroupUid(peergos.shared.user.SocialState.FRIENDS_GROUP_NAME)) {
                     that.shareWith = "Friends";
@@ -32,10 +37,13 @@ module.exports = {
                 }
             });
         }
+        Vue.nextTick(function() {
+                document.getElementById("social-post-text").focus();
+        });
     },
     methods: {
         close: function (result) {
-            this.closeSocialPostForm(null, null);
+            this.closeSocialPostForm("", null, null);
         },
         getGroupUid: function(groupName) {
             return this.groups.groupsNameToUid[groupName];
@@ -71,7 +79,8 @@ module.exports = {
             let postTime = peergos.client.JsUtil.now();
             let references = peergos.client.JsUtil.emptyList();
             let socialPost = this.currentSocialPostTriple.middle.edit(this.post, tags, postTime, references);
-            this.savePost(socialPost, groupUid);
+            let uuid = this.currentSocialPostTriple.left.substring(this.currentSocialPostTriple.left.lastIndexOf("/") + 1);
+            this.updatePost(uuid, socialPost, groupUid);
         },
         replyToPost: function(groupUid, resharingType) {
             let that = this;
@@ -105,12 +114,31 @@ module.exports = {
             }
             return future;
         },
+        updatePost: function(uuid, socialPost, groupUid) {
+           let that = this;
+           this.socialFeed.updatePost(uuid, socialPost).thenApply(function(result) {
+               that.context.shareReadAccessWith(result.left, peergos.client.JsUtil.asSet([groupUid])).thenApply(function(b) {
+                       that.showSpinner = false;
+                       that.closeSocialPostForm("update", {action: 'update', left: result.left, middle: socialPost, right: result.right}
+                            , that.currentSocialPostTriple == null ? null : that.currentSocialPostTriple.left);
+                       that.isPosting = false;
+                   }).exceptionally(function(err) {
+                       that.showSpinner = false;
+                       that.showMessage(err.getMessage());
+                       that.isPosting = false;
+               });
+            }).exceptionally(function(throwable) {
+                that.showMessage(throwable.getMessage());
+                that.showSpinner = false;
+                that.isPosting = false;
+            });
+        },
         savePost: function(socialPost, groupUid) {
            let that = this;
            this.socialFeed.createNewPost(socialPost).thenApply(function(result) {
                that.context.shareReadAccessWith(result.left, peergos.client.JsUtil.asSet([groupUid])).thenApply(function(b) {
                        that.showSpinner = false;
-                       that.closeSocialPostForm({left: result.left, middle: socialPost, right: result.right}
+                       that.closeSocialPostForm("save",{left: result.left, middle: socialPost, right: result.right}
                             , that.currentSocialPostTriple == null ? null : that.currentSocialPostTriple.left);
                        that.isPosting = false;
                    }).exceptionally(function(err) {

@@ -39,22 +39,31 @@ module.exports = {
             this.socialPostAction = 'add';
             this.showSocialPostForm = true;
         },
-        appendToTimeline: function(newSocialPost, parentPath) {
-            this.showMessage("Your message will appear on the timeline when replies are received");
+        appendToTimeline: function(newSocialPost, path) {
+            //nope, not relevant for replies... this.showMessage("Your message will appear on the timeline when replies are received");
         },
-        closeSocialPostForm: function(newSocialPost, parentPath) {
+        closeSocialPostForm: function(action, newSocialPost, path) {
             this.showSocialPostForm = false;
-            this.currentSocialPostTriple = null;
-            if (newSocialPost != null) {
-                this.appendToTimeline(newSocialPost, parentPath);
+            let that = this;
+            if (action == 'update') {
+                var index = this.data.findIndex(v => v.link === path);
+                if (index != -1) { //could of been deleted
+                    this.data[index].name = newSocialPost.middle.body;
+                    this.data[index].socialPost = newSocialPost.middle;
+                }
+                this.currentSocialPostTriple = null;
+            } else {
+                this.currentSocialPostTriple = null;
+                if (newSocialPost != null) {
+                    this.appendToTimeline(newSocialPost, path);
+                }
             }
         },
         editPost: function(entry) {
             this.socialPostAction = 'edit';
             if (entry != null) {
-                //todo not yet implemented
-                //this.currentSocialPostTriple = {left: entry.link + "/" + entry.name, middle: entry.socialPost, right: entry.file};
-                //this.showSocialPostForm = true;
+                this.currentSocialPostTriple = {left: entry.link, middle: entry.socialPost, right: entry.cap};
+                this.showSocialPostForm = true;
             }
         },
         convertToPath: function(dir) {
@@ -301,6 +310,7 @@ module.exports = {
         createSocialPostTimelineEntry: function(link, socialPost, file, isReply) {
             var info = isReply ? "you commented at " : "you posted at ";
             info = info + socialPost.postTime.toString().replace('T',' ');
+            let edited = socialPost.previousVersions.toArray([]).length > 0 ? "Edited" : "";
             let item = {
                 sharer: file.ownername,
                 info: info,
@@ -310,7 +320,8 @@ module.exports = {
                 isLastEntry: false,
                 isPost: true,
                 socialPost: socialPost,
-                indent: 0
+                indent: 0,
+                edited: edited
             };
             return item;
         },
@@ -350,11 +361,15 @@ module.exports = {
             let name = props.name.length > 30 ? props.name.substring(0,27) + '...' : props.name;
             let fileType = isSharedCalendar ? 'calendar' : props.getType();
             let isPost = socialPost != null;
+            var edited = "";
             if (isPost) {
                 let isReply = socialPost.parent.ref != null;
                 info = isReply ? "commented at " : "posted at ";
                 info = info + socialPost.postTime.toString().replace('T',' ');
                 name = socialPost.body;
+                if (socialPost.previousVersions.toArray([]).length > 0) {
+                    edited = "Edited";
+                }
             }
             let item = {
                 sharer: entry.sharer,
@@ -373,7 +388,8 @@ module.exports = {
                 fileType: fileType,
                 isPost: isPost,
                 socialPost: socialPost,
-                indent: 0
+                indent: 0,
+                edited: edited
             };
             return item;
         },
