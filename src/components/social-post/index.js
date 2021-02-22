@@ -6,12 +6,21 @@ module.exports = {
             title: "Post a Message",
             textAreaPlaceholder: "Type in here...",
             shareWith: "Friends",
-            post: ""
+            post: "",
+            isPosting: false,
+            allowFollowerSharingOption: true
         }
     },
     props: ['closeSocialPostForm', 'socialFeed', 'context', 'showMessage', 'groups', 'socialPostAction', 'currentSocialPostTriple'],
     created: function() {
         let that = this;
+        if (this.currentSocialPostTriple != null && this.currentSocialPostTriple.middle != null) {
+            if (this.currentSocialPostTriple.middle.shareTo == peergos.shared.social.SocialPost.Resharing.Friends) {
+                this.allowFollowerSharingOption = false;
+            } else {
+                this.shareWith = "Followers";
+            }
+        }
         if (this.socialPostAction == 'edit') {
             this.post = this.currentSocialPostTriple.middle.body;
             this.context.sharedWith(this.currentSocialPostTriple.left).thenApply(function(sharedWith) {
@@ -32,6 +41,10 @@ module.exports = {
             return this.groups.groupsNameToUid[groupName];
         },
         submitPost: function() {
+            if (this.isPosting) {
+                return;
+            }
+            this.isPosting = true;
             let that = this;
             that.showSpinner = true;
             let groupUid = this.shareWith == 'Friends' ? this.getGroupUid(peergos.shared.user.SocialState.FRIENDS_GROUP_NAME)
@@ -39,17 +52,17 @@ module.exports = {
             let resharingType = this.shareWith == 'Friends' ? peergos.shared.social.SocialPost.Resharing.Friends
                                     : peergos.shared.social.SocialPost.Resharing.Followers;
             if (this.socialPostAction == 'add') {
-                this.addPost(groupUid);
+                this.addPost(groupUid, resharingType);
             } else if(this.socialPostAction == 'edit') {
                 this.editPost(groupUid);
             } else if(this.socialPostAction == 'reply') {
                 this.replyToPost(groupUid, resharingType);
             }
         },
-        addPost: function(groupUid) {
+        addPost: function(groupUid, resharingType) {
            let tags = peergos.client.JsUtil.emptyList();
            let type = peergos.shared.social.SocialPost.Type.Text;
-           let socialPost = new peergos.shared.social.SocialPost.createInitialPost(type, this.context.username, this.post, tags);
+           let socialPost = new peergos.shared.social.SocialPost.createInitialPost(type, this.context.username, this.post, tags, resharingType);
            this.savePost(socialPost, groupUid);
         },
         editPost: function(groupUid) {
@@ -74,7 +87,7 @@ module.exports = {
         },
         generateContentHash: function(entry) {
             let future = peergos.shared.util.Futures.incomplete();
-            let isPost = entry.owner != null;//social post has a .owner, filewrapper has .ownername
+            let isPost = entry.author != null;//social post has a .author, filewrapper has .ownername
             if (isPost) {
                 entry.contentHash(this.context.crypto.hasher).thenApply(function(hash) {
                     future.complete(hash);
@@ -83,7 +96,9 @@ module.exports = {
                 //TODO create hash for files
                let tags = peergos.client.JsUtil.emptyList();
                let type = peergos.shared.social.SocialPost.Type.Text;
-               let dummySocialPost = new peergos.shared.social.SocialPost.createInitialPost(type, this.context.username, "", tags);
+               let resharingWith = peergos.shared.social.SocialPost.Resharing.Followers;
+               let dummySocialPost = new peergos.shared.social.SocialPost.createInitialPost(type, this.context.username,
+                    "", tags, resharingWith);
                 dummySocialPost.contentHash(this.context.crypto.hasher).thenApply(function(hash) {
                     future.complete(hash);
                 });
@@ -97,13 +112,16 @@ module.exports = {
                        that.showSpinner = false;
                        that.closeSocialPostForm({left: result.left, middle: socialPost, right: result.right}
                             , that.currentSocialPostTriple == null ? null : that.currentSocialPostTriple.left);
+                       that.isPosting = false;
                    }).exceptionally(function(err) {
                        that.showSpinner = false;
                        that.showMessage(err.getMessage());
+                       that.isPosting = false;
                });
             }).exceptionally(function(throwable) {
                 that.showMessage(throwable.getMessage());
                 that.showSpinner = false;
+                that.isPosting = false;
             });
         },
     }

@@ -22,7 +22,7 @@
                         <label for="friends-option" style="font-weight: normal;">Friends</label>
                     </div>
                     <div class="hspace-15">
-                        <input type="radio" id="followers-option" value="Followers" v-model="shareWith">
+                        <input :disabled="!allowFollowerSharingOption" type="radio" id="followers-option" value="Followers" v-model="shareWith">
                         <label for="followers-option" style="font-weight: normal;">Followers (Includes Friends)</label>
                     </div>
                     <div class="hspace-15">
