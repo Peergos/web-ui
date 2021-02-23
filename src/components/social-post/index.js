@@ -11,12 +11,12 @@ module.exports = {
             allowFollowerSharingOption: true
         }
     },
-    props: ['closeSocialPostForm', 'socialFeed', 'context', 'showMessage', 'groups', 'socialPostAction', 'currentSocialPostTriple'],
+    props: ['closeSocialPostForm', 'socialFeed', 'context', 'showMessage', 'groups', 'socialPostAction', 'currentSocialPostEntry'],
     created: function() {
         let that = this;
-        if (this.currentSocialPostTriple != null && this.currentSocialPostTriple.middle != null) {
+        if (this.currentSocialPostEntry != null) {
             if (this.socialPostAction == 'reply') {
-                if (this.currentSocialPostTriple.middle.shareTo == peergos.shared.social.SocialPost.Resharing.Friends) {
+                if (this.currentSocialPostEntry.socialPost.shareTo == peergos.shared.social.SocialPost.Resharing.Friends) {
                     this.allowFollowerSharingOption = false;
                 } else {
                     this.shareWith = "Followers";
@@ -25,8 +25,8 @@ module.exports = {
         }
         if (this.socialPostAction == 'edit') {
             this.title = "Edit a Post";
-            this.post = this.currentSocialPostTriple.middle.body;
-            let pathStr = this.currentSocialPostTriple.left;
+            this.post = this.currentSocialPostEntry.socialPost.body;
+            let pathStr = this.currentSocialPostEntry.path;
             let dirWithoutLeadingSlash = pathStr.startsWith("/") ? pathStr.substring(1) : pathStr;
             let path = peergos.client.PathUtils.directoryToPath(dirWithoutLeadingSlash.split('/'));
             this.context.sharedWith(path).thenApply(function(sharedWith) {
@@ -44,7 +44,7 @@ module.exports = {
     },
     methods: {
         close: function (result) {
-            this.closeSocialPostForm("", null, null);
+            this.closeSocialPostForm("", null, null, null, null);
         },
         getGroupUid: function(groupName) {
             return this.groups.groupsNameToUid[groupName];
@@ -79,27 +79,26 @@ module.exports = {
             let tags = peergos.client.JsUtil.emptyList();
             let postTime = peergos.client.JsUtil.now();
             let references = peergos.client.JsUtil.emptyList();
-            let socialPost = this.currentSocialPostTriple.middle.edit(this.post, tags, postTime, references);
-            let uuid = this.currentSocialPostTriple.left.substring(this.currentSocialPostTriple.left.lastIndexOf("/") + 1);
+            let socialPost = this.currentSocialPostEntry.socialPost.edit(this.post, tags, postTime, references);
+            let uuid = this.currentSocialPostEntry.path.substring(this.currentSocialPostEntry.path.lastIndexOf("/") + 1);
             this.updatePost(uuid, socialPost, groupUid);
         },
         replyToPost: function(groupUid, resharingType) {
             let that = this;
             let type = peergos.shared.social.SocialPost.Type.Text;
-            let path = this.currentSocialPostTriple.left;
-            let cap = this.currentSocialPostTriple.right;
-            this.generateContentHash(this.currentSocialPostTriple.middle).thenApply(function(hash) {
+            let path = this.currentSocialPostEntry.path;
+            let cap = this.currentSocialPostEntry.cap;
+            this.generateContentHash().thenApply(function(hash) {
                 let tags = peergos.client.JsUtil.emptyList();
                 let parent = new peergos.shared.social.SocialPost.Ref(path, cap, hash);
                 let replyPost = peergos.shared.social.SocialPost.createComment(parent, resharingType, type, that.context.username, that.post, tags);
                 that.savePost(replyPost, groupUid);
             });
         },
-        generateContentHash: function(entry) {
+        generateContentHash: function() {
             let future = peergos.shared.util.Futures.incomplete();
-            let isPost = entry.author != null;//social post has a .author, filewrapper has .ownername
-            if (isPost) {
-                entry.contentHash(this.context.crypto.hasher).thenApply(function(hash) {
+            if (this.currentSocialPostEntry.socialPost != null) {
+                this.currentSocialPostEntry.socialPost.contentHash(this.context.crypto.hasher).thenApply(function(hash) {
                     future.complete(hash);
                 });
             } else {
@@ -119,8 +118,8 @@ module.exports = {
            let that = this;
            this.socialFeed.updatePost(uuid, socialPost).thenApply(function(result) {
                    that.showSpinner = false;
-                   that.closeSocialPostForm("update", {action: 'update', left: result.left, middle: socialPost, right: result.right}
-                        , that.currentSocialPostTriple == null ? null : that.currentSocialPostTriple.left);
+                   that.closeSocialPostForm("edit", result.left.toString(), socialPost, result.right
+                        , that.currentSocialPostEntry == null ? null : that.currentSocialPostEntry.path);
                    that.isPosting = false;
             }).exceptionally(function(throwable) {
                 that.showMessage(throwable.getMessage());
@@ -133,8 +132,8 @@ module.exports = {
            this.socialFeed.createNewPost(socialPost).thenApply(function(result) {
                that.context.shareReadAccessWith(result.left, peergos.client.JsUtil.asSet([groupUid])).thenApply(function(b) {
                        that.showSpinner = false;
-                       that.closeSocialPostForm("save",{left: result.left, middle: socialPost, right: result.right}
-                            , that.currentSocialPostTriple == null ? null : that.currentSocialPostTriple.left);
+                       that.closeSocialPostForm("save", result.left.toString(), socialPost, result.right
+                            , that.currentSocialPostEntry == null ? null : that.currentSocialPostEntry.path);
                        that.isPosting = false;
                    }).exceptionally(function(err) {
                        that.showSpinner = false;

@@ -10,7 +10,7 @@ module.exports = {
             noMoreResults: false,
             showSocialPostForm: false,
             socialPostAction: '',
-            currentSocialPostTriple: null,
+            currentSocialPostEntry: null,
             currentSocialPostParent: null
         }
     },
@@ -35,37 +35,34 @@ module.exports = {
     },
     methods: {
         addNewPost: function() {
-            this.currentSocialPostTriple = null;
+            this.currentSocialPostEntry = null;
             this.socialPostAction = 'add';
             this.showSocialPostForm = true;
         },
         appendToTimeline: function(newSocialPost, path) {
             //nope, not relevant for replies... this.showMessage("Your message will appear on the timeline when replies are received");
         },
-        closeSocialPostForm: function(action, newSocialPost, path) {
+        closeSocialPostForm: function(action, newPath, newSocialPost, newFile, originalPath) {
             this.showSocialPostForm = false;
+            this.currentSocialPostEntry = null;
             let that = this;
-            if (action == 'update') {
-                var index = this.data.findIndex(v => v.link === path);
+            if (action == 'edit') {
+                var index = this.data.findIndex(v => v.link === originalPath);
                 if (index != -1) { //could of been deleted
-                    this.data[index].name = newSocialPost.middle.body;
-                    this.data[index].socialPost = newSocialPost.middle;
-                    this.data[index].edited = newSocialPost.middle.previousVersions.toArray([]).length > 0 ? "Edited" : "";
+                    this.data[index].name = newSocialPost.body;
+                    this.data[index].socialPost = newSocialPost;
+                    this.data[index].status = newSocialPost.previousVersions.toArray([]).length > 0 ? "Edited" : "";
                 }
-                this.currentSocialPostTriple = null;
             } else {
-                this.currentSocialPostTriple = null;
                 if (newSocialPost != null) {
-                    this.appendToTimeline(newSocialPost, path);
+                    this.appendToTimeline(newSocialPost, originalPath);
                 }
             }
         },
         editPost: function(entry) {
             this.socialPostAction = 'edit';
-            if (entry != null) {
-                this.currentSocialPostTriple = {left: entry.link, middle: entry.socialPost, right: entry.cap};
-                this.showSocialPostForm = true;
-            }
+            this.currentSocialPostEntry = {path: entry.link, socialPost: entry.socialPost};
+            this.showSocialPostForm = true;
         },
         convertToPath: function(dir) {
             let dirWithoutLeadingSlash = dir.startsWith("/") ? dir.substring(1) : dir;
@@ -97,8 +94,7 @@ module.exports = {
         },
         addComment: function(entry) {
             this.socialPostAction = 'reply';
-            let obj = entry.isPost ? entry.socialPost : entry.file;
-            this.currentSocialPostTriple = {left: entry.link, middle: obj, right: entry.cap};
+            this.currentSocialPostEntry = {path: entry.link, socialPost: entry.socialPost, file: entry.file, cap: entry.cap};
             this.showSocialPostForm = true;
         },
         getFileSize: function(props) {
@@ -106,16 +102,16 @@ module.exports = {
                 if (low < 0) low = low + Math.pow(2, 32);
                 return low + (props.sizeHigh() * Math.pow(2, 32));
         },
-        loadPost: function(entry, future) {
+        loadPost: function(file, future) {
             let that = this;
-            const props = entry.right.getFileProperties();
-            entry.right.getInputStream(this.context.network, this.context.crypto, props.sizeHigh(), props.sizeLow(), function(read){})
+            const props = file.getFileProperties();
+            file.getInputStream(this.context.network, this.context.crypto, props.sizeHigh(), props.sizeLow(), function(read){})
                 .thenApply(function(reader) {
                     var size = that.getFileSize(props);
                     var data = convertToByteArray(new Int8Array(size));
                     reader.readIntoArray(data, 0, data.length).thenApply(function(read){
                         let socialPost = peergos.shared.util.Serialize.parse(data, c => peergos.shared.social.SocialPost.fromCbor(c));
-                        future.complete(socialPost);
+                        future.complete({post: socialPost, file: file});
                     });
             }).exceptionally(function(throwable) {
                 that.showMessage("error loading post");
@@ -126,7 +122,7 @@ module.exports = {
             let future = peergos.shared.util.Futures.incomplete();
             let isPost = entry.left.path.startsWith("/" + entry.left.owner + "/.posts/");
             if (isPost) {
-                this.loadPost(entry.right, future, false);
+                this.loadPost(entry.right, future);
             } else {
                 future.complete(null);
             }
@@ -138,8 +134,9 @@ module.exports = {
                 future.complete(accumulator);
             } else {
                 let currentPair = pairs[index];
-                that.loadFile(currentPair).thenApply(contents => {
-                    accumulator = accumulator.concat({left: currentPair.left, middle: contents, right: currentPair.right});
+                that.loadFile(currentPair).thenApply(result => {
+                    let socialPost = result ? result.post : null;
+                    accumulator = accumulator.concat({entry: currentPair.left, socialPost: socialPost, file: currentPair.right});
                     that.reduceLoadingAllFiles(pairs, ++index, accumulator, future);
                 });
             }
@@ -149,26 +146,6 @@ module.exports = {
             this.reduceLoadingAllFiles(pairs, 0, [], future);
             return future;
         },
-        loadPost: function(file, future, includeFileInResult) {
-            let that = this;
-            const props = file.getFileProperties();
-            file.getInputStream(this.context.network, this.context.crypto, props.sizeHigh(), props.sizeLow(), function(read){})
-                .thenApply(function(reader) {
-                    var size = that.getFileSize(props);
-                    var data = convertToByteArray(new Int8Array(size));
-                    reader.readIntoArray(data, 0, data.length).thenApply(function(read){
-                        let socialPost = peergos.shared.util.Serialize.parse(data, c => peergos.shared.social.SocialPost.fromCbor(c));
-                        if (includeFileInResult) {
-                            future.complete({post: socialPost, file: file});
-                        } else {
-                            future.complete(socialPost);
-                        }
-                    });
-            }).exceptionally(function(throwable) {
-                that.showMessage("error loading post");
-                future.complete(null);
-            });
-        },
         loadOriginalPost: function(path) {
             let that = this;
             let future = peergos.shared.util.Futures.incomplete();
@@ -177,40 +154,44 @@ module.exports = {
                 if (file == null) {
                     future.complete(null);
                 } else {
-                    that.loadPost(file, future, true);
+                    if (!path.includes("/.posts/")) {
+                        future.complete({post: null, file: file});
+                    } else {
+                        that.loadPost(file, future);
+                    }
                 }
             }).exceptionally(function(throwable) {
                 future.complete(null);
             });
             return future;
         },
-        reduceLoadingOriginalPosts: function(paths, index, accumulator, future) {
+        reduceLoadingOriginalPosts: function(refs, index, accumulator, future) {
             let that = this;
-            if (index == paths.length) {
+            if (index == refs.length) {
                 future.complete(accumulator);
             } else {
-                let path = paths[index];
-                this.loadOriginalPost(path).thenApply(result => {
+                let ref = refs[index];
+                this.loadOriginalPost(ref.path).thenApply(result => {
                     if (result != null) {
-                        accumulator = accumulator.concat({path: path, post: result.post, file: result.file});
+                        accumulator = accumulator.concat({cap: ref.cap, path: ref.path, post: result.post, file: result.file});
                     }
-                    that.reduceLoadingOriginalPosts(paths, ++index, accumulator, future);
+                    that.reduceLoadingOriginalPosts(refs, ++index, accumulator, future);
                 })
             }
         },
-        loadOriginalPosts: function(triples) {
+        loadOriginalPosts: function(sharedPosts) {
             let future = peergos.shared.util.Futures.incomplete();
-            let paths = [];
-            for(var i = 0; i < triples.length; i++) {
-                let post = triples[i].middle;
+            let refs = [];
+            for(var i = 0; i < sharedPosts.length; i++) {
+                let post = sharedPosts[i].socialPost;
                 if (post != null && post.parent.ref != null) {
-                    let index = triples.findIndex(v => v.middle != null && v.left.path === post.parent.ref.path);
+                    let index = sharedPosts.findIndex(v => v.socialPost != null && v.entry.path === post.parent.ref.path);
                     if (index == -1) {
-                        paths.push(post.parent.ref.path);
+                        refs.push(post.parent.ref);
                     }
                 }
             }
-            this.reduceLoadingOriginalPosts(paths, 0, [], future);
+            this.reduceLoadingOriginalPosts(refs, 0, [], future);
             return future;
         },
         handleScrolling: function() {
@@ -308,21 +289,46 @@ module.exports = {
             let calcMargin = (item.indent * 20) + 10;
             return "" +  calcMargin + "px";
         },
-        createSocialPostTimelineEntry: function(link, socialPost, file, isReply) {
-            var info = isReply ? "you commented at " : "you posted at ";
+        createSocialPostTimelineEntry: function(path, socialPost, file) {
+            var info = "you posted at ";
             info = info + socialPost.postTime.toString().replace('T',' ');
-            let edited = socialPost.previousVersions.toArray([]).length > 0 ? "Edited" : "";
+            let status = socialPost.previousVersions.toArray([]).length > 0 ? "Edited" : "";
             let item = {
-                sharer: file.ownername,
+                sharer: this.context.username,
                 info: info,
-                link: link,
+                link: path,
                 name: socialPost.body,
                 file: file,
                 isLastEntry: false,
                 isPost: true,
                 socialPost: socialPost,
                 indent: 0,
-                edited: edited
+                status: status
+            };
+            return item;
+        },
+        createMediaTimelineEntry: function(filePath, file) {
+            let props = file.props;
+            let path = props.isDirectory ? filePath : filePath.substring(0, filePath.lastIndexOf(props.name) -1);
+            let name = props.name.length > 30 ? props.name.substring(0,27) + '...' : props.name;
+            let item = {
+                sharer: this.context.username,
+                info: "you shared",
+                link: filePath,
+                path: path,
+                name: name,
+                fullName: props.name,
+                hasThumbnail: props.thumbnail.ref != null,
+                thumbnail: props.thumbnail.ref == null ? null : file.getBase64Thumbnail(),
+                isDirectory: props.isDirectory,
+                file: file,
+                isLastEntry: false,
+                displayFilename: true,
+                fileType: props.getType(),
+                isPost: false,
+                socialPost: null,
+                indent: 0,
+                status: ""
             };
             return item;
         },
@@ -362,14 +368,14 @@ module.exports = {
             let name = props.name.length > 30 ? props.name.substring(0,27) + '...' : props.name;
             let fileType = isSharedCalendar ? 'calendar' : props.getType();
             let isPost = socialPost != null;
-            var edited = "";
+            var status = "";
             if (isPost) {
                 let isReply = socialPost.parent.ref != null;
                 info = isReply ? "commented at " : "posted at ";
                 info = info + socialPost.postTime.toString().replace('T',' ');
                 name = socialPost.body;
                 if (socialPost.previousVersions.toArray([]).length > 0) {
-                    edited = "Edited";
+                    status = "Edited";
                 }
             }
             let item = {
@@ -390,7 +396,7 @@ module.exports = {
                 isPost: isPost,
                 socialPost: socialPost,
                 indent: 0,
-                edited: edited
+                status: status
             };
             return item;
         },
@@ -454,24 +460,24 @@ module.exports = {
             }
             return i;
         },
-        populateTimeline: function(triples, origPosts) {
+        populateTimeline: function(sharedPosts, origPosts) {
             let allTimelineEntries = [];
-
-            //entries from others
-            let remainingOthersEntries = [];
-            for(var j = 0; j < triples.length; j++) {
-                let triple = triples[j];
-                let timelineEntry = this.createTimelineEntry(triple.left, triple.middle, triple.right);
-                if (timelineEntry.isPost) {
-                    if (timelineEntry.socialPost.parent.ref != null) {
+            for(var j = 0; j < sharedPosts.length; j++) {
+                let sharedPost = sharedPosts[j];
+                let timelineEntry = this.createTimelineEntry(sharedPost.entry, sharedPost.socialPost, sharedPost.file);
+                if (timelineEntry.isPost && timelineEntry.socialPost.parent.ref != null) {
                         timelineEntry.indent = 1;// reply
-
                         var parentIndex = allTimelineEntries.findIndex(v => v.link === timelineEntry.socialPost.parent.ref.path);
                         if (parentIndex == -1) {
                             let origPostIndex = origPosts.findIndex(v => v.path === timelineEntry.socialPost.parent.ref.path);
                             if (origPostIndex != -1) {
                                 let origPost = origPosts[origPostIndex];
-                                let parentEntry = this.createSocialPostTimelineEntry(origPost.path, origPost.post, origPost.file);
+                                var parentEntry = null;
+                                if (origPost.post != null) {
+                                    parentEntry = this.createSocialPostTimelineEntry(origPost.path, origPost.post, origPost.file);
+                                } else {
+                                    parentEntry = this.createMediaTimelineEntry(origPost.path, origPost.file);
+                                }
                                 allTimelineEntries.push(parentEntry);
                                 parentIndex = allTimelineEntries.findIndex(v => v.link === timelineEntry.socialPost.parent.ref.path);
                             }
@@ -479,9 +485,6 @@ module.exports = {
                         if (parentIndex != -1) { //could of been deleted
                             allTimelineEntries.splice(this.calcInsertIndex(allTimelineEntries, parentIndex, timelineEntry), 0, timelineEntry);
                         }
-                    } else {
-                        allTimelineEntries.push(timelineEntry);
-                    }
                 } else {
                     allTimelineEntries.push(timelineEntry);
                 }
@@ -493,9 +496,9 @@ module.exports = {
             let future = peergos.shared.util.Futures.incomplete();
             this.context.getFiles(peergos.client.JsUtil.asList(items)).thenApply(function(pairs) {
                 let allPairs = pairs.toArray();
-                that.loadFiles(allPairs).thenApply(function(triples) {
-                    that.loadOriginalPosts(triples).thenApply(function(origPosts) {
-                        let allTimelineEntries = that.populateTimeline(triples, origPosts);
+                that.loadFiles(allPairs).thenApply(function(sharedPosts) {
+                    that.loadOriginalPosts(sharedPosts).thenApply(function(origPosts) {
+                        let allTimelineEntries = that.populateTimeline(sharedPosts, origPosts);
                         future.complete(allTimelineEntries);
                     });
                 });

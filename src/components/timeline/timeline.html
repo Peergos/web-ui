@@ -16,7 +16,7 @@
                     :showMessage="showMessage"
                     :groups="groups"
                     :socialPostAction="socialPostAction"
-                    :currentSocialPostTriple="currentSocialPostTriple">
+                    :currentSocialPostEntry="currentSocialPostEntry">
             </social-post>
             <spinner v-if="showSpinner"></spinner>
             <button class="btn btn-success" @click="addNewPost()">
@@ -41,14 +41,14 @@
                         </td>
                         <td v-if="!entry.isLastEntry">
                             <div v-if="!entry.isPost">
-                                <a v-on:click="profile(entry.sharer)" style="cursor: pointer">
+                                <a v-if="entry.sharer != context.username" v-on:click="profile(entry.sharer)" style="cursor: pointer">
                                     <span>{{ entry.sharer }}</span>
                                 </a>
                                 <span>{{ entry.info }}</span>
                                 <a v-if="entry.displayFilename" v-on:click="navigateTo(entry)" style="cursor: pointer">
                                     <span :title="entry.link">{{ entry.name }}</span>
                                 </a>
-                                <span v-if="!entry.isDirectory">
+                                <span v-if="!entry.isDirectory && entry.sharer != context.username">
                                     <button class="btn btn-success" @click="addComment(entry)">Add comment</button>
                                 </span>
                             </div>
@@ -71,9 +71,9 @@
                             </div>
                             <div v-if="entry.isPost">
                                 <span style="margin: 10px;">
-                                    <button v-if="entry.sharer != context.username && entry.indent < 1" class="btn btn-success" @click="addComment(entry)">comment</button>
+                                    <button v-if="entry.sharer != context.username && entry.displayFilename && entry.indent < 1" class="btn btn-success" @click="addComment(entry)">comment</button>
                                     <div v-if="entry.sharer == context.username">
-                                        {{ entry.edited}}
+                                        {{ entry.status}}
                                         <button class="btn btn-success" @click="editPost(entry)">edit</button>
                                         <button class="btn btn-danger" @click="deletePost(entry)">delete</button>
                                     </div>
