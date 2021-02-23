@@ -102,13 +102,7 @@ module.exports = {
                     future.complete(hash);
                 });
             } else {
-                //TODO create hash for files
-               let tags = peergos.client.JsUtil.emptyList();
-               let type = peergos.shared.social.SocialPost.Type.Text;
-               let resharingWith = peergos.shared.social.SocialPost.Resharing.Followers;
-               let dummySocialPost = new peergos.shared.social.SocialPost.createInitialPost(type, this.context.username,
-                    "", tags, resharingWith);
-                dummySocialPost.contentHash(this.context.crypto.hasher).thenApply(function(hash) {
+                this.currentSocialPostEntry.file.getContentHash(this.context.network, this.context.crypto).thenApply(function(hash) {
                     future.complete(hash);
                 });
             }

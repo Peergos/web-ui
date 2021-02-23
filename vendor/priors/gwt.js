@@ -368,6 +368,25 @@ var scryptJS = {
 	    return future;
 	}
 
+	this.streamSha256 = function(asyncReader, fileSize) {
+	    var future = peergos.shared.util.Futures.incomplete();
+        var input = peergos.shared.util.Serialize.newByteArray(fileSize);
+        asyncReader.readIntoArray(input, 0, fileSize).thenApply(function(bytesRead) {
+            window.crypto.subtle.digest(
+            {
+                name: "SHA-256",
+            }, input).then(function(hash){
+                //returns the hash as an ArrayBuffer
+                var data = new Int8Array(hash);
+                var res = convertToByteArray(data.slice(0, 32));
+                future.complete(res);
+            }).catch(function(err){
+                future.completeExceptionally(java.lang.Throwable.of(err));
+            });
+        });
+	    return future;
+	}
+
 	this.blake2b = function(input, outputLength) {
 		var data = new Int8Array(blake2b.blake2b(input, outputLength));
 	    var res = convertToByteArray(data.slice(0, outputLength));
