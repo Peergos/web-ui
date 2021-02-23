@@ -8,7 +8,9 @@ module.exports = {
             shareWith: "Friends",
             post: "",
             isPosting: false,
-            allowFollowerSharingOption: true
+            allowFollowerSharingOption: true,
+            thumbnailImage: "",
+            mediaData: null,
         }
     },
     props: ['closeSocialPostForm', 'socialFeed', 'context', 'showMessage', 'groups', 'socialPostAction', 'currentSocialPostEntry'],
@@ -43,6 +45,48 @@ module.exports = {
         });
     },
     methods: {
+        removeImage: function() {
+            this.thumbnailImage = "";
+            this.mediaData = null;
+        },
+        getThumbnailImage: function() {
+            return this.thumbnailImage;
+        },
+        hasThumbnailImage: function() {
+            return this.thumbnailImage.length > 0;
+        },
+        uploadFile: function(evt) {
+            let files = evt.target.files || evt.dataTransfer.files;
+            let file = files[0];
+            let that = this;
+            let filereader = new FileReader();
+            filereader.file_name = file.name;
+            let thumbnailWidth = 200;
+            let thumbnailHeight = 200;
+            filereader.onload = function(){
+                document.getElementById('uploadInput').value = "";
+                let canvas = document.createElement("canvas");
+                canvas.width = thumbnailWidth;
+                canvas.height = thumbnailHeight;
+                let context = canvas.getContext("2d");
+                let image = new Image();
+                image.onload = function() {
+                    context.drawImage(image, 0, 0, thumbnailWidth, thumbnailHeight);
+                    let binFilereader = new FileReader();
+                    binFilereader.file_name = file.name;
+                    binFilereader.onload = function(){
+                        that.thumbnailImage = canvas.toDataURL();
+                        that.mediaData = convertToByteArray(new Int8Array(this.result));
+                    };
+                    binFilereader.readAsArrayBuffer(file);
+                };
+                image.onerror = function() {
+                    that.showMessage("Unable to read image");
+                };
+                image.src = this.result;
+            };
+            filereader.readAsDataURL(file);
+        },
         close: function (result) {
             this.closeSocialPostForm("", null, null, null, null);
         },
@@ -69,10 +113,26 @@ module.exports = {
             }
         },
         addPost: function(groupUid, resharingType) {
-           let tags = peergos.client.JsUtil.emptyList();
-           let type = peergos.shared.social.SocialPost.Type.Text;
-           let socialPost = new peergos.shared.social.SocialPost.createInitialPost(type, this.context.username, this.post, tags, resharingType);
-           this.savePost(socialPost, groupUid);
+            let that = this;
+            let type = peergos.shared.social.SocialPost.Type.Text;
+            let tags = peergos.client.JsUtil.emptyList();
+            if (this.mediaData != null) {
+                this.showSpinner = true;
+                let postTime = peergos.client.JsUtil.now();
+                let reader = new peergos.shared.user.fs.AsyncReader.ArrayBacked(this.mediaData);
+                this.socialFeed.uploadMediaForPost("images", reader, this.mediaData.byteLength, postTime).thenApply(function(ref) {
+                    let dirWithoutLeadingSlash = ref.path.startsWith("/") ? ref.path.substring(1) : ref.path;
+                    let path = peergos.client.PathUtils.directoryToPath(dirWithoutLeadingSlash.split('/'));
+                    that.context.shareReadAccessWith(path, peergos.client.JsUtil.asSet([groupUid])).thenApply(function(b) {
+                        let comment = peergos.shared.social.SocialPost.createComment(ref, resharingType, type, that.context.username, that.post, tags);
+                        that.showSpinner = false;
+                        that.savePost(comment, groupUid);
+                    });
+                });
+            } else {
+               let socialPost = new peergos.shared.social.SocialPost.createInitialPost(type, this.context.username, this.post, tags, resharingType);
+               this.savePost(socialPost, groupUid);
+           }
         },
         editPost: function(groupUid) {
             let that = this;
