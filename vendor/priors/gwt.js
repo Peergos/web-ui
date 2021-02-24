@@ -376,6 +376,11 @@ var scryptJS = {
 		var priv = {};
 		
 		priv.recurse = function(toRead) {
+		    if (toRead == 0) {
+			var res = peergos.shared.util.Futures.incomplete();
+			res.complete(true);
+			return res;
+		    }
 		    return asyncReader.readIntoArray(buf, 0, Math.min(buf.length, toRead)).thenCompose(function(bytesRead){
 			h.update(bytesRead == buf.length ? buf : buf.slice(0, bytesRead));
 			return priv.recurse(toRead - bytesRead);
