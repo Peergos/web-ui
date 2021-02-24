@@ -370,20 +370,39 @@ var scryptJS = {
 
 	this.streamSha256 = function(asyncReader, fileSize) {
 	    var future = peergos.shared.util.Futures.incomplete();
-        var input = peergos.shared.util.Serialize.newByteArray(fileSize);
-        asyncReader.readIntoArray(input, 0, fileSize).thenApply(function(bytesRead) {
-            window.crypto.subtle.digest(
-            {
-                name: "SHA-256",
-            }, input).then(function(hash){
-                //returns the hash as an ArrayBuffer
-                var data = new Int8Array(hash);
-                var res = convertToByteArray(data.slice(0, 32));
-                future.complete(res);
-            }).catch(function(err){
-                future.completeExceptionally(java.lang.Throwable.of(err));
+	    if (fileSize > 10*1024*1024) {
+		var buf = peergos.shared.util.Serialize.newByteArray(5*1024*1024);
+		var h = new sha256stream([]);
+		var priv = {};
+		
+		priv.recurse = function(toRead) {
+		    return asyncReader.readIntoArray(buf, 0, Math.min(buf.length, toRead)).thenCompose(function(bytesRead){
+			h.update(bytesRead == buf.length ? buf : buf.slice(0, bytesRead));
+			return priv.recurse(toRead - bytesRead);
+		    });
+		}
+		priv.recurse(fileSize).thenApply(function(){
+		    var data = new Int8Array(h.complete());
+		    var res = convertToByteArray(data.slice(0, 32));
+		    future.complete(res);
+		});
+		return future;
+	    }
+	    // load entire file into ram if < 10 MiB (webcrypto is 20x faster)
+            var input = peergos.shared.util.Serialize.newByteArray(fileSize);
+            asyncReader.readIntoArray(input, 0, fileSize).thenApply(function(bytesRead) {
+		window.crypto.subtle.digest(
+		    {
+			name: "SHA-256",
+		    }, input).then(function(hash){
+			//returns the hash as an ArrayBuffer
+			var data = new Int8Array(hash);
+			var res = convertToByteArray(data.slice(0, 32));
+			future.complete(res);
+		    }).catch(function(err){
+			future.completeExceptionally(java.lang.Throwable.of(err));
+		    });
             });
-        });
 	    return future;
 	}
 
