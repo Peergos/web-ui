@@ -71,23 +71,56 @@ module.exports = {
         deletePost: function(entry) {
             let that = this;
             that.showSpinner = true;
-            let filePath = this.convertToPath(entry.link);
-            let parentPath = entry.link.substring(0, entry.link.lastIndexOf('/'));
-            this.context.getByPath(parentPath).thenApply(function(optParent){
-                entry.file.remove(optParent.get(), filePath, that.context).thenApply(function(b){
+            let socialPost = entry.socialPost;
+            if (socialPost.kind == peergos.shared.social.SocialPost.Type.Image
+                || socialPost.kind == peergos.shared.social.SocialPost.Type.Video
+                || socialPost.kind == peergos.shared.social.SocialPost.Type.Audio) {
+                let ref = socialPost.references.toArray([])[0];
+                this.context.network.getFile(ref.cap, this.context.username).thenApply(function(optFile){
+                    let mediaFile = optFile.ref;
+                    let parentPath = entry.link.substring(0, entry.link.lastIndexOf('/'));
+                    that.deleteFile(parentPath + "/" + mediaFile.props.name, mediaFile).thenApply(function(res){
+                        that.deleteFile(entry.link, entry.file).thenApply(function(res){
+                            that.showSpinner = false;
+                            let index = that.data.findIndex(v => v.link === entry.link);
+                            if (index > -1) {
+                                that.data.splice(index, 1);
+                            }
+                        });
+                    }).exceptionally(function(throwable) {
+                        that.showMessage("error deleting media file!");
+                    });
+                });
+            } else {
+                this.deleteFile(entry.link, entry.file).thenApply(function(res){
                     that.showSpinner = false;
                     let index = that.data.findIndex(v => v.link === entry.link);
                     if (index > -1) {
                         that.data.splice(index, 1);
                     }
+                });
+            }
+        },
+        deleteFile: function(filePathStr, file) {
+            let that = this;
+            let future = peergos.shared.util.Futures.incomplete();
+            let filePath = this.convertToPath(filePathStr);
+            let parentPath = filePathStr.substring(0, filePathStr.lastIndexOf('/'));
+            this.context.getByPath(parentPath).thenApply(function(optParent){
+                file.remove(optParent.get(), filePath, that.context).thenApply(function(b){
+                    future.complete(b);
+
                 }).exceptionally(function(throwable) {
                     that.showMessage("error deleting post");
                     that.showSpinner = false;
+                    future.complete(false);
                 });
             }).exceptionally(function(throwable) {
                 that.showMessage("error deleting social post");
                 that.showSpinner = false;
+                future.complete(false);
             });
+            return future;
         },
         getGroupUid: function(groupName) {
             return this.groups.groupsNameToUid[groupName];
@@ -165,18 +198,33 @@ module.exports = {
             });
             return future;
         },
+        extractOwnerFromPath: function(path) {
+            let pathWithoutLeadingSlash = path.startsWith("/") ? path.substring(1) : path;
+            return pathWithoutLeadingSlash.substring(0, pathWithoutLeadingSlash.indexOf("/"));
+        },
         reduceLoadingOriginalPosts: function(refs, index, accumulator, future) {
             let that = this;
             if (index == refs.length) {
                 future.complete(accumulator);
             } else {
                 let ref = refs[index];
-                this.loadOriginalPost(ref.path).thenApply(result => {
-                    if (result != null) {
-                        accumulator = accumulator.concat({cap: ref.cap, path: ref.path, post: result.post, file: result.file});
-                    }
-                    that.reduceLoadingOriginalPosts(refs, ++index, accumulator, future);
-                })
+                if (ref.isMedia) {
+                    let owner = this.extractOwnerFromPath(ref.path);
+                    this.context.network.getFile(ref.cap, owner).thenApply(optFile => {
+                        let mediaFile = optFile.ref;
+                        if (mediaFile != null) {
+                            accumulator = accumulator.concat({cap: ref.cap, path: ref.path, post: null, file: mediaFile});
+                        }
+                        that.reduceLoadingOriginalPosts(refs, ++index, accumulator, future);
+                    })
+                } else {
+                    this.loadOriginalPost(ref.path).thenApply(result => {
+                        if (result != null) {
+                            accumulator = accumulator.concat({cap: ref.cap, path: ref.path, post: result.post, file: result.file});
+                        }
+                        that.reduceLoadingOriginalPosts(refs, ++index, accumulator, future);
+                    })
+                }
             }
         },
         loadOriginalPosts: function(sharedPosts) {
@@ -184,10 +232,19 @@ module.exports = {
             let refs = [];
             for(var i = 0; i < sharedPosts.length; i++) {
                 let post = sharedPosts[i].socialPost;
-                if (post != null && post.parent.ref != null) {
-                    let index = sharedPosts.findIndex(v => v.socialPost != null && v.entry.path === post.parent.ref.path);
-                    if (index == -1) {
-                        refs.push(post.parent.ref);
+                if (post != null) {
+                    if (post.parent.ref != null) {
+                        let index = sharedPosts.findIndex(v => v.socialPost != null && v.entry.path === post.parent.ref.path);
+                        if (index == -1) {
+                            refs.push(post.parent.ref);
+                        }
+                    }
+                    let references = post.references.toArray([]);
+                    if (references.length > 0) {
+                        references.forEach(mediaRef => {
+                            mediaRef.isMedia = true;
+                            refs.push(mediaRef);
+                        }) ;
                     }
                 }
             }
@@ -303,17 +360,18 @@ module.exports = {
                 isPost: true,
                 socialPost: socialPost,
                 indent: 0,
-                status: status
+                status: status,
+                isMedia: false
             };
             return item;
         },
-        createMediaTimelineEntry: function(filePath, file) {
+        createMediaTimelineEntry: function(sharer, filePath, file) {
             let props = file.props;
             let path = props.isDirectory ? filePath : filePath.substring(0, filePath.lastIndexOf(props.name) -1);
             let name = props.name.length > 30 ? props.name.substring(0,27) + '...' : props.name;
             let item = {
-                sharer: this.context.username,
-                info: "you shared",
+                sharer: sharer,
+                info: " shared a media file",
                 link: filePath,
                 path: path,
                 name: name,
@@ -323,12 +381,13 @@ module.exports = {
                 isDirectory: props.isDirectory,
                 file: file,
                 isLastEntry: false,
-                displayFilename: true,
+                displayFilename: false,
                 fileType: props.getType(),
                 isPost: false,
                 socialPost: null,
                 indent: 0,
-                status: ""
+                status: "",
+                isMedia: true
             };
             return item;
         },
@@ -396,7 +455,8 @@ module.exports = {
                 isPost: isPost,
                 socialPost: socialPost,
                 indent: 0,
-                status: status
+                status: status,
+                isMedia: false
             };
             return item;
         },
@@ -465,18 +525,29 @@ module.exports = {
             for(var j = 0; j < sharedPosts.length; j++) {
                 let sharedPost = sharedPosts[j];
                 let timelineEntry = this.createTimelineEntry(sharedPost.entry, sharedPost.socialPost, sharedPost.file);
-                if (timelineEntry.isPost && timelineEntry.socialPost.parent.ref != null) {
+                let references = timelineEntry.socialPost.references.toArray([]);
+                if (timelineEntry.isPost) {
+                    if (timelineEntry.socialPost.parent.ref != null) {
                         timelineEntry.indent = 1;// reply
                         var parentIndex = allTimelineEntries.findIndex(v => v.link === timelineEntry.socialPost.parent.ref.path);
                         if (parentIndex == -1) {
-                            let origPostIndex = origPosts.findIndex(v => v.path === timelineEntry.socialPost.parent.ref.path);
+                            var origPostIndex = origPosts.findIndex(v => v.path === timelineEntry.socialPost.parent.ref.path);
                             if (origPostIndex != -1) {
-                                let origPost = origPosts[origPostIndex];
+                                var origPost = origPosts[origPostIndex];
                                 var parentEntry = null;
                                 if (origPost.post != null) {
                                     parentEntry = this.createSocialPostTimelineEntry(origPost.path, origPost.post, origPost.file);
-                                } else {
-                                    parentEntry = this.createMediaTimelineEntry(origPost.path, origPost.file);
+                                    let myReferences = parentEntry.socialPost.references.toArray([]);
+                                    if (myReferences.length > 0){
+                                        let mediaRef = myReferences[0];
+                                        origPostIndex = origPosts.findIndex(v => v.path === mediaRef.path);
+                                        if (origPostIndex != -1) {
+                                            origPost = origPosts[origPostIndex];
+                                            let sharer = parentEntry.socialPost.author;
+                                            let mediaEntry = this.createMediaTimelineEntry(sharer, origPost.path, origPost.file);
+                                            allTimelineEntries.push(mediaEntry);
+                                        }
+                                    }
                                 }
                                 allTimelineEntries.push(parentEntry);
                                 parentIndex = allTimelineEntries.findIndex(v => v.link === timelineEntry.socialPost.parent.ref.path);
@@ -485,6 +556,17 @@ module.exports = {
                         if (parentIndex != -1) { //could of been deleted
                             allTimelineEntries.splice(this.calcInsertIndex(allTimelineEntries, parentIndex, timelineEntry), 0, timelineEntry);
                         }
+                    } else if (references.length > 0){
+                        let mediaRef = references[0];
+                        let origPostIndex = origPosts.findIndex(v => v.path === mediaRef.path);
+                        if (origPostIndex != -1) {
+                            let origPost = origPosts[origPostIndex];
+                            let sharer = timelineEntry.socialPost.author;
+                            let parentEntry = this.createMediaTimelineEntry(sharer, origPost.path, origPost.file);
+                            allTimelineEntries.push(parentEntry);
+                            allTimelineEntries.push(timelineEntry);
+                        }
+                    }
                 } else {
                     allTimelineEntries.push(timelineEntry);
                 }

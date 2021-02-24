@@ -10,11 +10,8 @@
         <div class="modal-body">
             <spinner v-if="showSpinner"></spinner>
             <div id="social-post-main">
-                <img id="profile-image" v-if="hasThumbnailImage()" style="width:150px; height:150px" v-bind:src="getThumbnailImage()"/>
                 <p>
-                <!-- button v-if="socialPostAction == 'add'" class="btn btn-success" onclick="document.getElementById('uploadInput').click()">Upload Image</button -->
-                <input type="file" id="uploadInput" @change="uploadFile" style="display:none;" accept="image/*" />
-                <button class="btn btn-danger" v-if="hasThumbnailImage()" v-on:click="removeImage()" >Remove Image</button>
+                <input v-if="socialPostAction=='add'" type="file" id="uploadInput" @change="uploadFile" accept="audio/*,video/*,image/*" />
                 </p>
                 <p>
                     <textarea id="social-post-text" style="width:100%;resize: none;" rows=2 :placeholder="textAreaPlaceholder" maxlength="1000" v-model="post"></textarea>

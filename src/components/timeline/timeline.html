@@ -48,7 +48,7 @@
                                 <a v-if="entry.displayFilename" v-on:click="navigateTo(entry)" style="cursor: pointer">
                                     <span :title="entry.link">{{ entry.name }}</span>
                                 </a>
-                                <span v-if="!entry.isDirectory && entry.sharer != context.username">
+                                <span v-if="!entry.isDirectory && entry.sharer != context.username && !entry.isMedia">
                                     <button class="btn btn-success" @click="addComment(entry)">Add comment</button>
                                 </span>
                             </div>
