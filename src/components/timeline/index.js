@@ -76,7 +76,7 @@ module.exports = {
                 || socialPost.kind == peergos.shared.social.SocialPost.Type.Video
                 || socialPost.kind == peergos.shared.social.SocialPost.Type.Audio) {
                 let ref = socialPost.references.toArray([])[0];
-                this.context.network.getFile(ref.cap, this.context.username).thenApply(function(optFile){
+                this.context.getByPath(ref.path).thenApply(function(optFile){
                     let mediaFile = optFile.ref;
                     let parentPath = entry.link.substring(0, entry.link.lastIndexOf('/'));
                     that.deleteFile(parentPath + "/" + mediaFile.props.name, mediaFile).thenApply(function(res){
@@ -86,6 +86,7 @@ module.exports = {
                             if (index > -1) {
                                 that.data.splice(index, 1);
                             }
+                            //TODO handle comment on post that has been deleted!
                         });
                     }).exceptionally(function(throwable) {
                         that.showMessage("error deleting media file!");
@@ -525,8 +526,8 @@ module.exports = {
             for(var j = 0; j < sharedPosts.length; j++) {
                 let sharedPost = sharedPosts[j];
                 let timelineEntry = this.createTimelineEntry(sharedPost.entry, sharedPost.socialPost, sharedPost.file);
-                let references = timelineEntry.socialPost.references.toArray([]);
                 if (timelineEntry.isPost) {
+                    let references = timelineEntry.socialPost.references.toArray([]);
                     if (timelineEntry.socialPost.parent.ref != null) {
                         timelineEntry.indent = 1;// reply
                         var parentIndex = allTimelineEntries.findIndex(v => v.link === timelineEntry.socialPost.parent.ref.path);
@@ -573,11 +574,20 @@ module.exports = {
             }
             return allTimelineEntries;
         },
+        tempFilterOutOurPosts: function(items) {
+            let filteredItems = [];
+            items.forEach(item => {
+                if (item.left.owner != this.context.username) {
+                    filteredItems.push(item);
+                }
+            });
+            return filteredItems;
+        },
         buildTimeline: function(items) {
             let that = this;
             let future = peergos.shared.util.Futures.incomplete();
             this.context.getFiles(peergos.client.JsUtil.asList(items)).thenApply(function(pairs) {
-                let allPairs = pairs.toArray();
+                let allPairs = that.tempFilterOutOurPosts(pairs.toArray());
                 that.loadFiles(allPairs).thenApply(function(sharedPosts) {
                     that.loadOriginalPosts(sharedPosts).thenApply(function(origPosts) {
                         let allTimelineEntries = that.populateTimeline(sharedPosts, origPosts);

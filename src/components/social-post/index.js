@@ -18,6 +18,7 @@ module.exports = {
         let that = this;
         if (this.currentSocialPostEntry != null) {
             if (this.socialPostAction == 'reply') {
+                this.title = "Post a Comment";
                 if (this.currentSocialPostEntry.socialPost.shareTo == peergos.shared.social.SocialPost.Resharing.Friends) {
                     this.allowFollowerSharingOption = false;
                 } else {
