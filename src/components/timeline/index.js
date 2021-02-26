@@ -11,7 +11,7 @@ module.exports = {
             showSocialPostForm: false,
             socialPostAction: '',
             currentSocialPostEntry: null,
-            currentSocialPostParent: null
+            unresolvedSharedItems: []
         }
     },
     props: ['context','navigateToAction','viewAction', 'messages', 'getFileIconFromFileAndType', 'socialFeed',
@@ -550,10 +550,15 @@ module.exports = {
                             level.insertMedia(media);
                             thread.push(level);
                         }
+                        let unresolvedIndex = this.unresolvedSharedItems.findIndex(v => v.path === itemToInsert.path);
+                        if (unresolvedIndex > -1) {
+                            this.unresolvedSharedItems.splice(unresolvedIndex, 1);
+                        }
                         return;
                     }
                 }
             }
+            this.unresolvedSharedItems.push(itemToInsert);
         },
         getMedia: function(mediaMap, item) {
             if (item.socialPost.parent.ref != null) {
@@ -604,7 +609,8 @@ module.exports = {
                 mediaMap.set(post.path, post);
             });
             let entries = [];
-            sharedItems.reverse().forEach(item => {
+            let allSharedItems = this.unresolvedSharedItems.concat(sharedItems);
+            allSharedItems.reverse().forEach(item => {
                 if (item.socialPost == null) {
                     let thread = [];
                     entries.push(thread);
