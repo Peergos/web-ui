@@ -72,7 +72,7 @@
                             <div v-if="entry.isPost">
                                 <span style="margin: 10px;">
                                     <button v-if="entry.sharer != context.username && entry.displayFilename && entry.indent < 1" class="btn btn-success" @click="addComment(entry)">comment</button>
-                                    <div v-if="entry.sharer == context.username">
+                                    <div v-if="entry.sharer == context.username" style="margin-left: 10px;">
                                         {{ entry.status}}
                                         <button class="btn btn-success" @click="editPost(entry)">edit</button>
                                         <button class="btn btn-danger" @click="deletePost(entry)">delete</button>
