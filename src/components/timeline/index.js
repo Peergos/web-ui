@@ -383,6 +383,8 @@ module.exports = {
         createTimelineEntry: function(filePath, entry, socialPost, file) {
             var displayFilename = true;
             let info = " shared";
+            let isMedia = entry== null && socialPost == null ? true : false;
+
             let owner = entry != null ? entry.sharer : this.extractOwnerFromPath(filePath);
             if (owner == this.context.username) {
                 info = "you" + info;
@@ -455,7 +457,7 @@ module.exports = {
                 socialPost: socialPost,
                 indent: 0,
                 status: status,
-                isMedia: false
+                isMedia: isMedia
             };
             return item;
         },
