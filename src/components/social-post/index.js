@@ -19,7 +19,7 @@ module.exports = {
         if (this.currentSocialPostEntry != null) {
             if (this.socialPostAction == 'reply') {
                 this.title = "Post a Comment";
-                if (this.currentSocialPostEntry.socialPost.shareTo == peergos.shared.social.SocialPost.Resharing.Friends) {
+                if (this.currentSocialPostEntry.socialPost != null && this.currentSocialPostEntry.socialPost.shareTo == peergos.shared.social.SocialPost.Resharing.Friends) {
                     this.allowFollowerSharingOption = false;
                 } else {
                     this.shareWith = "Followers";
@@ -42,7 +42,7 @@ module.exports = {
             });
         }
         Vue.nextTick(function() {
-                document.getElementById("social-post-text").focus();
+            document.getElementById("social-post-text").focus();
         });
     },
     methods: {
@@ -95,6 +95,7 @@ module.exports = {
                 }
             } else {
                 let media = peergos.client.JsUtil.emptyList();
+                let type = peergos.shared.social.SocialPost.Type.Text;
                 let socialPost = peergos.shared.social.SocialPost.createInitialPost(type, this.context.username, this.post, tags, media, resharingType);
                this.savePost(socialPost, groupUid);
            }
@@ -103,7 +104,7 @@ module.exports = {
             let that = this;
             let tags = peergos.client.JsUtil.emptyList();
             let postTime = peergos.client.JsUtil.now();
-            let references = peergos.client.JsUtil.emptyList();
+            let references = peergos.client.JsUtil.asList(this.currentSocialPostEntry.socialPost.references.toArray([]));
             let socialPost = this.currentSocialPostEntry.socialPost.edit(this.post, tags, postTime, references);
             let uuid = this.currentSocialPostEntry.path.substring(this.currentSocialPostEntry.path.lastIndexOf("/") + 1);
             this.updatePost(uuid, socialPost, groupUid);
