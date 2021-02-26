@@ -97,6 +97,33 @@ module.exports = {
             let dirWithoutLeadingSlash = dir.startsWith("/") ? dir.substring(1) : dir;
             return peergos.client.PathUtils.directoryToPath(dirWithoutLeadingSlash.split('/'));
         },
+        removeItemFromDisplay: function(entry) {
+            let index = this.data.findIndex(v => v.link === entry.link);
+            if (index > -1) {
+                this.data.splice(index, 1);
+                if (entry.socialPost != null) {
+                    let references = entry.socialPost.references.toArray([]);
+                    if (references.length > 0) {
+                        let refPath = references[0].path;
+                        let refIndex = this.data.findIndex(v => v.link === refPath);
+                        if (refIndex > -1) {
+                            this.data.splice(refIndex, 1);
+                        }
+                    }
+                }
+                var done = false;
+                while (!done) {
+                    let childIndex = this.data.findIndex(v => v.socialPost != null
+                        && v.socialPost.parent.ref != null
+                        && v.socialPost.parent.ref.path === entry.link);
+                    if (childIndex == -1) {
+                        done = true;
+                    } else {
+                        this.data.splice(childIndex, 1);
+                    }
+                }
+            }
+        },
         deletePost: function(entry) {
             let that = this;
             that.showSpinner = true;
@@ -111,11 +138,9 @@ module.exports = {
                     that.deleteFile(parentPath + "/" + mediaFile.props.name, mediaFile).thenApply(function(res){
                         that.deleteFile(entry.link, entry.file).thenApply(function(res){
                             that.showSpinner = false;
-                            let index = that.data.findIndex(v => v.link === entry.link);
-                            if (index > -1) {
-                                that.data.splice(index, 1);
+                            if (res) {
+                                that.removeItemFromDisplay(entry);
                             }
-                            //TODO handle comment on post that has been deleted!
                         });
                     }).exceptionally(function(throwable) {
                         that.showMessage("error deleting media file!");
@@ -125,9 +150,8 @@ module.exports = {
                 this.deleteFile(entry.link, entry.file).thenApply(function(res){
                     that.showSpinner = false;
                     if (res) {
-                        let index = that.data.findIndex(v => v.link === entry.link);
-                        if (index > -1) {
-                            that.data.splice(index, 1);
+                        if (res) {
+                            that.removeItemFromDisplay(entry);
                         }
                     }
                 });
@@ -139,14 +163,18 @@ module.exports = {
             let filePath = this.convertToPath(filePathStr);
             let parentPath = filePathStr.substring(0, filePathStr.lastIndexOf('/'));
             this.context.getByPath(parentPath).thenApply(function(optParent){
-                file.getLatest(that.context.network).thenApply(function(updatedFile){
-                    updatedFile.remove(optParent.get(), filePath, that.context).thenApply(function(b){
-                        future.complete(b);
-                    }).exceptionally(function(throwable) {
-                        that.showMessage("error deleting post");
-                        that.showSpinner = false;
-                        future.complete(false);
-                    });
+                that.context.getByPath(filePathStr).thenApply(function(updatedFileOpt){
+                    if (updatedFileOpt.ref != null) {
+                        updatedFileOpt.ref.remove(optParent.get(), filePath, that.context).thenApply(function(b){
+                            future.complete(b);
+                        }).exceptionally(function(throwable) {
+                            that.showMessage("error deleting post");
+                            that.showSpinner = false;
+                            future.complete(false);
+                        });
+                    } else {
+                        future.complete(true);
+                    }
                 });
             }).exceptionally(function(throwable) {
                 that.showMessage("error deleting social post");
