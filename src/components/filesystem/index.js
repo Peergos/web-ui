@@ -1649,12 +1649,7 @@ module.exports = {
                     this.showTodoBoardViewer = true;
 		}
 		this.updateHistory("todo", this.getPath(), filename);
-            } else if (mimeType === "text/plain") {
-		if (this.isSecretLink) {
-                    this.showCodeEditor = true;
-		}
-		this.updateHistory("editor", this.getPath(), filename);
-	    } else if (mimeType === "application/pdf") {
+            } else if (mimeType === "application/pdf") {
 	        if (this.isSecretLink) {
                     this.showPdfViewer = true;
 		}
@@ -1662,6 +1657,11 @@ module.exports = {
 	    } else if (mimeType === "text/calendar") {
                     this.importICALFile(true);
 		this.updateHistory("calender", this.getPath(), filename);
+	    } else if (mimeType.startsWith("text/")) {
+		if (this.isSecretLink) {
+                    this.showCodeEditor = true;
+		}
+		this.updateHistory("editor", this.getPath(), filename);
 	    } else {
 	        if (this.isSecretLink) {
                     this.showHexViewer = true;
