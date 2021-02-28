@@ -1252,9 +1252,7 @@ module.exports = {
             });
         },
 
-        showRequestStorage: function(toggleMenu) {
-	    if (toggleMenu)
-		this.toggleUserMenu();
+        showRequestStorage: function() {
 	    var that = this;
 	    this.context.getPaymentProperties(false).thenApply(function(paymentProps) {
 		if (paymentProps.isPaid()) {
