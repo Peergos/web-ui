@@ -41,6 +41,7 @@ module.exports = {
         },
         appendToTimeline: function(newPath, newSocialPost, newFile, originalPath) {
             let post = this.createTimelineEntry(newPath, null, newSocialPost, newFile);
+            let references = newSocialPost.references.toArray([]);
             if (originalPath != null) {
                 let index = this.data.findIndex(v => v.link === originalPath);
                 if (index > -1) {
@@ -54,10 +55,19 @@ module.exports = {
                             break;
                         }
                     }
-                    this.data.splice(i, 0, post);
+                    if (references.length > 0) {
+                        let that = this;
+                        let refPath = references[0].path;
+                        this.context.getByPath(refPath).thenApply(function(optFile){
+                            let file = optFile.get();
+                            let media = that.createTimelineEntry(refPath, null, null, file);
+                            that.data.splice(i, 0, media, post);
+                        });
+                    } else {
+                        this.data.splice(i, 0, post);
+                    }
                 }
             } else {
-                let references = newSocialPost.references.toArray([]);
                 if (references.length > 0) {
                     let that = this;
                     let refPath = references[0].path;
@@ -551,12 +561,12 @@ module.exports = {
             }
         },
         getMedia: function(mediaMap, item) {
-            if (item.socialPost.parent.ref != null) {
-                return mediaMap.get(item.socialPost.parent.ref.path);
-            }
             let references = item.socialPost.references.toArray([]);
             if (references.length > 0){
                 return mediaMap.get(references[0].path);
+            }
+            if (item.socialPost.parent.ref != null) {
+                return mediaMap.get(item.socialPost.parent.ref.path);
             }
             return null;
         },

@@ -11,7 +11,7 @@
             <spinner v-if="showSpinner"></spinner>
             <div id="social-post-main">
                 <p>
-                <input v-if="socialPostAction=='add'" type="file" id="uploadInput" @change="uploadFile" accept="audio/*,video/*,image/*" />
+                <input v-if="socialPostAction=='add' || socialPostAction=='reply'" type="file" id="uploadInput" @change="uploadFile" accept="audio/*,video/*,image/*" />
                 </p>
                 <p>
                     <textarea id="social-post-text" style="width:100%;resize: none;" rows=2 :placeholder="textAreaPlaceholder" maxlength="1000" v-model="post"></textarea>

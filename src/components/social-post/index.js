@@ -75,30 +75,58 @@ module.exports = {
                 this.replyToPost(groupUid, resharingType);
             }
         },
-        addPost: function(groupUid, resharingType) {
+        uploadMedia: function() {
             let that = this;
-            let tags = peergos.client.JsUtil.emptyList();
+            let future = peergos.shared.util.Futures.incomplete();
             if (this.mediaFile != null) {
-                this.showSpinner = true;
-                let postTime = peergos.client.JsUtil.now();
                 let reader = new browserio.JSFileReader(this.mediaFile);
                 let java_reader = new peergos.shared.user.fs.BrowserFileReader(reader);
                 if (this.mediaFile.size > 2147483647) {
                     that.showMessage("Media file greater than 2GiB not currently supported");
+                    future.complete(null);
                 } else {
-                    this.socialFeed.uploadMediaForPost("images", java_reader, this.mediaFile.size, postTime).thenApply(function(ref) {
-                        let commentType = peergos.shared.social.SocialPost.Type.Image;
-                        let media = peergos.client.JsUtil.asList([ref]);
-                        let socialPost = peergos.shared.social.SocialPost.createInitialPost(commentType, that.context.username, that.post, tags, media, resharingType);
-                        that.savePost(socialPost, groupUid);
+                    let postTime = peergos.client.JsUtil.now();
+                    this.socialFeed.uploadMediaForPost(java_reader, this.mediaFile.size, postTime).thenApply(function(pair) {
+                        let type = null;
+                        if (pair.left == "image") {
+                            type = peergos.shared.social.SocialPost.Type.Image;
+                        } else if (pair.left == "video") {
+                            type = peergos.shared.social.SocialPost.Type.Video;
+                        } else if (pair.left == "audio") {
+                            type = peergos.shared.social.SocialPost.Type.Audio;
+                        } else {
+                            type = peergos.shared.social.SocialPost.Type.Text; //unknown
+                        }
+                        future.complete({type: type, mediaItem: pair.right});
                     });
                 }
             } else {
-                let media = peergos.client.JsUtil.emptyList();
-                let type = peergos.shared.social.SocialPost.Type.Text;
-                let socialPost = peergos.shared.social.SocialPost.createInitialPost(type, this.context.username, this.post, tags, media, resharingType);
-               this.savePost(socialPost, groupUid);
+                let mediaList = peergos.client.JsUtil.emptyList();
+                future.complete({});
            }
+           return future;
+        },
+        addPost: function(groupUid, resharingType) {
+            let that = this;
+            let tags = peergos.client.JsUtil.emptyList();
+            this.showSpinner = true;
+            this.uploadMedia().thenApply(function(mediaResponse) {
+                if (mediaResponse == null) {
+                    this.showSpinner = false;
+                } else {
+                    let mediaItem = mediaResponse.mediaItem;
+                    if (mediaItem != null) {
+                        let mediaList = peergos.client.JsUtil.asList([mediaItem]);
+                        let socialPost = peergos.shared.social.SocialPost.createInitialPost(mediaResponse.type, that.context.username, that.post, tags, mediaList, resharingType);
+                        that.savePost(socialPost, groupUid);
+                    } else {
+                        let commentType = peergos.shared.social.SocialPost.Type.Text;
+                        let mediaList = peergos.client.JsUtil.emptyList();
+                        let socialPost = peergos.shared.social.SocialPost.createInitialPost(commentType, that.context.username, that.post, tags, mediaList, resharingType);
+                        that.savePost(socialPost, groupUid);
+                   }
+               }
+            });
         },
         editPost: function(groupUid) {
             let that = this;
@@ -111,14 +139,28 @@ module.exports = {
         },
         replyToPost: function(groupUid, resharingType) {
             let that = this;
-            let type = peergos.shared.social.SocialPost.Type.Text;
             let path = this.currentSocialPostEntry.path;
             let cap = this.currentSocialPostEntry.cap;
+            this.showSpinner = true;
             this.generateContentHash().thenApply(function(hash) {
                 let tags = peergos.client.JsUtil.emptyList();
                 let parent = new peergos.shared.social.SocialPost.Ref(path, cap, hash);
-                let replyPost = peergos.shared.social.SocialPost.createComment(parent, resharingType, type, that.context.username, that.post, tags);
-                that.savePost(replyPost, groupUid);
+                that.uploadMedia().thenApply(function(mediaResponse) {
+                    if (mediaResponse == null) {
+                        that.showSpinner = false;
+                    } else {
+                        let mediaItem = mediaResponse.mediaItem;
+                        var hasMedia = false;
+                        var mediaList = peergos.client.JsUtil.emptyList();
+                        if (mediaItem != null) {
+                            mediaList = peergos.client.JsUtil.asList([mediaItem]);
+                            hasMedia = true;
+                        }
+                        let type = hasMedia ? mediaResponse.type : peergos.shared.social.SocialPost.Type.Text;
+                        let replyPost = peergos.shared.social.SocialPost.createComment(parent, resharingType, type, that.context.username, that.post, tags, mediaList);
+                        that.savePost(replyPost, groupUid);
+                    }
+                });
             });
         },
         generateContentHash: function() {
