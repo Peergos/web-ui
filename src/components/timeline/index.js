@@ -521,46 +521,34 @@ module.exports = {
             }
             return i;
         },
-        populateTimeline: function(items) {
+        populateTimeline: function(entries) {
             let allTimelineEntries = [];
-            for(var j = 0; j < items.length; j++) {
-                let thread = items[j];
-                for(var k = 0; k < thread.length; k++) {
-                    let indentLevel = thread[k];
-                    for(var m = 0; m < indentLevel.items.length; m++) {
-                        let item = indentLevel.items[m];
-                        let timelineEntry = this.createTimelineEntry(item.path, item.entry, item.socialPost, item.file);
-                        timelineEntry.indent = k;
-                        allTimelineEntries.push(timelineEntry);
-                    }
+            for(var j = 0; j < entries.length; j++) {
+                let indentedRow = entries[j];
+                let item = indentedRow.item;
+                let media = indentedRow.media;
+                if (media) {
+                    let mediaTimelineEntry = this.createTimelineEntry(media.path, media.entry, media.socialPost, media.file);
+                    mediaTimelineEntry.indent = indentedRow.indent;
+                    allTimelineEntries.push(mediaTimelineEntry);
                 }
+                let timelineEntry = this.createTimelineEntry(item.path, item.entry, item.socialPost, item.file);
+                timelineEntry.indent = indentedRow.indent;
+                allTimelineEntries.push(timelineEntry);
             }
             return allTimelineEntries;
         },
-        insertIntoEntries: function(entries, itemToInsert, media) {
+        insertIntoEntries: function(entryTree, itemToInsert, media) {
             let parentPath = itemToInsert.socialPost.parent.ref.path;
-            for(var m = 0 ; m < entries.length; m++) {
-                let thread = entries[m];
-                for(var n = 0 ; n < thread.length; n++) {
-                    let indentLevel = thread[n];
-                    if (indentLevel.path == parentPath) {
-                        if (n + 1 < thread.length) {
-                            thread[n+1].insertMedia(media);
-                            thread[n+1].appendItem(itemToInsert);
-                        } else {
-                            let level = new this.IndentLevel(itemToInsert);
-                            level.insertMedia(media);
-                            thread.push(level);
-                        }
-                        let unresolvedIndex = this.unresolvedSharedItems.findIndex(v => v.path === itemToInsert.path);
-                        if (unresolvedIndex > -1) {
-                            this.unresolvedSharedItems.splice(unresolvedIndex, 1);
-                        }
-                        return;
-                    }
+            let newNode = entryTree.addChild(parentPath, itemToInsert, media, false);
+            if (newNode == null) {
+                this.unresolvedSharedItems.push(itemToInsert);
+            } else {
+                let unresolvedIndex = this.unresolvedSharedItems.findIndex(v => v.path === itemToInsert.path);
+                if (unresolvedIndex > -1) {
+                    this.unresolvedSharedItems.splice(unresolvedIndex, 1);
                 }
             }
-            this.unresolvedSharedItems.push(itemToInsert);
         },
         getMedia: function(mediaMap, item) {
             if (item.socialPost.parent.ref != null) {
@@ -579,7 +567,7 @@ module.exports = {
                 }
                 //else it references either a. normal timeline entry, or inband media item
                 for(var i = 0; i < entries.length; i++) {
-                    if (entries[i][0].path == item.socialPost.parent.ref.path) {
+                    if (entries[i].path == item.socialPost.parent.ref.path) {
                         return false;
                     }
                 }
@@ -589,19 +577,55 @@ module.exports = {
             }
             return true;
         },
-        IndentLevel: function(item) {
-            this.path = item.path;
-            this.items = [item];
-            this.insertMedia = function(media) {
-                if (media != null) {
-                    this.items.unshift(media);
+        Tree: function(thisRef) {
+            this.methodCtx = thisRef;
+            this.root = new this.methodCtx.TreeNode(null, "", null, null);
+            this.nodeLookupMap = new Map();
+            this.lookup = function(path) {
+                return path == null ? this.root : this.nodeLookupMap.get(path);
+            }
+            this.addChild = function(parentPath, item, media, insertBefore) {
+                let parent = this.lookup(parentPath);
+                if (parent == null) {
+                    return null;
+                }
+                let path = item.path;
+                let node = new this.methodCtx.TreeNode(parent, path, item, media);
+                this.nodeLookupMap.set(path, node);
+                parent.addChild(node, insertBefore);
+                return node;
+            }
+            this.collect = function() {
+                let accumulator = [];
+                this.recurseCollect(this.root, 0, accumulator);
+                return accumulator.slice(1);
+            }
+            this.recurseCollect = function(node, depth, accumulator) {
+                accumulator.push(new this.methodCtx.IndentedRow(depth, node.item, node.media));
+                let that = this;
+                node.children.forEach(each => {
+                    that.recurseCollect(each, depth + 1, accumulator);
+                });
+            }
+        },
+        TreeNode: function(parent, path, item, media) {
+            this.path = path;
+            this.item = item;
+            this.media = media;
+            this.children = [];
+            this.parent = parent;
+            this.addChild = function(node, insertBefore) {
+                if (insertBefore) {
+                    this.children.unshift(node);
+                } else {
+                    this.children.push(node);
                 }
             }
-            this.appendItem = function(item) {
-                if (item != null) {
-                    this.items.push(item);
-                }
-            }
+        },
+        IndentedRow: function(indent, item, media) {
+            this.indent = indent;
+            this.item = item;
+            this.media = media;
         },
         organiseEntries: function(sharedItems, mediaPosts) {
             let that = this;
@@ -610,31 +634,25 @@ module.exports = {
             mediaPosts.forEach(post => {
                 mediaMap.set(post.path, post);
             });
-            let entries = [];
+            let entryTree = new this.Tree(this);
             let allSharedItems = this.unresolvedSharedItems.concat(sharedItems);
             allSharedItems.reverse().forEach(item => {
                 if (item.socialPost == null) {
-                    let thread = [];
-                    entries.push(thread);
-                    thread.push(new this.IndentLevel(item));
+                    entryTree.addChild(null, item, null, true);
                 } else {
                     let media = that.getMedia(mediaMap, item);
                     try {
-                        if (that.isStartOfThread(entries, item)) {
-                            let thread = [];
-                            entries.push(thread);
-                            let level = new this.IndentLevel(item);
-                            level.insertMedia(media);
-                            thread.push(level);
+                        if (that.isStartOfThread(entryTree.root.children, item)) {
+                            entryTree.addChild(null, item, media, true);
                         } else {
-                            that.insertIntoEntries(entries, item, media);
+                            that.insertIntoEntries(entryTree, item, media);
                         }
                     } catch (ex) {
-                        //skip item  due to missing reference due to unsharing
+                        //skip item because of a missing reference due to unsharing/deletion
                     }
                 }
             });
-            return entries.reverse();
+            return entryTree.collect();
         },
         buildTimeline: function(items) {
             let that = this;
