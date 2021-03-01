@@ -9,6 +9,12 @@
       </div>
 
       <div class="modal-body">
+	<message 
+	  v-if="showMessage" 
+	  v-on:remove-message="showMessage=false"
+	  :title="messageTitle" 
+	  :message="message">
+	</message>
 	<center>
 	  By continuing you agree to our <a href="/terms.html" target="_blank" rel="noopener noreferrer">Terms of Service</a>.
           <div v-bind:class="errorClass">
@@ -26,7 +32,7 @@
 	    </div>
 	    <br/>
 	    <br/>
-            <button class="btn btn-success"  v-if="!isPro()" @click="requestStorage(53687091200)" style="height:10em;">
+            <button class="btn btn-success"  v-if="!isPro" @click="requestStorage(53687091200)" style="height:10em;">
               <div style="font-size:x-large">Pro account</div>
 	      <br/>
 	      <div>
@@ -38,7 +44,7 @@
 	      </div>
             </button>
 	    <br/>
-	    <button class="btn btn-danger" v-if="isPro()" @click="cancelPro()" style="height:10em;">
+	    <button class="btn btn-danger" v-if="isPro" @click="cancelPro()" style="height:10em;">
               <div style="font-size:x-large">Cancel Pro subscription</div>
 	      <br/>
 	      <div>
