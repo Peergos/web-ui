@@ -9,8 +9,8 @@ module.exports = {
             error: "",
             isError:false,
             errorClass: "",
-	    message: "Thank you for signing up to a Peergos Pro account!",
-	    messageTitle: "Congratulations",
+	    message: "",
+	    messageTitle: "",
 	    showMessage: false
         };
     },
@@ -43,7 +43,7 @@ module.exports = {
 			that.message = "Thank you for signing up to a Peergos Pro account!";
 		    } else if (bytes == 0) {
 			that.messageTitle = "Sorry";
-			that.message = "Sorry to see you go. We'd love to know what we can do better.";
+			that.message = "Sorry to see you go. We'd love to know what we can do better. Make sure to delete enough data to return within your Basic quota. ";
 		    }
 		    that.showMessage = true;
 		});
