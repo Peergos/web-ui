@@ -11,7 +11,7 @@ module.exports = {
             errorClass: ""
         };
     },
-    props: ['context', 'quota', 'usage', 'paymentProperties', 'updateQuota'],
+    props: ['context', 'quota', 'quotaBytes', 'usage', 'paymentProperties', 'updateQuota'],
     created: function() {
 	this.updateError();
     },
@@ -24,6 +24,14 @@ module.exports = {
             if (this.unit == "GiB")
                 return this.space*1024*1024*1024;
             return this.space*1024*1024;
+        },
+
+        isPro: function() {
+            return this.quotaBytes/(1024*1024) > this.paymentProperties.freeMb() && this.paymentProperties.desiredMb() > 0;
+        },
+
+        cancelPro: function() {
+            this.requestStorage(0);
         },
 
         requestStorage: function(bytes) {
