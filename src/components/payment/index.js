@@ -8,10 +8,13 @@ module.exports = {
 	    showCard:false,
             error: "",
             isError:false,
-            errorClass: ""
+            errorClass: "",
+	    message: "Thank you for signing up to a Peergos Pro account!",
+	    messageTitle: "Congratulations",
+	    showMessage: false
         };
     },
-    props: ['context', 'quota', 'usage', 'paymentProperties', 'updateQuota'],
+    props: ['context', 'quota', 'quotaBytes', 'usage', 'paymentProperties', 'updateQuota'],
     created: function() {
 	this.updateError();
     },
@@ -26,10 +29,24 @@ module.exports = {
             return this.space*1024*1024;
         },
 
+        cancelPro: function() {
+            this.requestStorage(0);
+        },
+
         requestStorage: function(bytes) {
 	    var that = this;
             this.context.requestSpace(bytes).thenApply(x => that.updateQuota())
-		.thenApply(x => that.updateError());
+		.thenApply(x => that.updateError())
+		.thenApply(x => {
+		    if (that.quotaBytes >= bytes && bytes > 0) {
+			that.messageTitle = "Congratulations";
+			that.message = "Thank you for signing up to a Peergos Pro account!";
+		    } else if (bytes == 0) {
+			that.messageTitle = "Sorry";
+			that.message = "Sorry to see you go. We'd love to know what we can do better.";
+		    }
+		    that.showMessage = true;
+		});
         },
 
 	updateError: function() {
@@ -50,6 +67,11 @@ module.exports = {
 
         close: function() {
             this.$emit("hide-payment");
+        }
+    },
+    computed: {
+	isPro: function() {
+            return this.quotaBytes/(1024*1024) > this.paymentProperties.freeMb() && this.paymentProperties.desiredMb() > 0;
         }
     }
 }
