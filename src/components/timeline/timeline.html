@@ -3,11 +3,11 @@
     <div style="height:10%"></div>
     <div class="modal-container" @click.stop style="height:100%">
         <span @click="close" class="close">&times;</span>
-        <div class="modal-header">
+        <div class="modal-header" @click="closeEditMenu($event)">
             <h2>Timeline</h2>
         </div>
 
-        <div class="modal-body">
+        <div class="modal-body" @click="closeEditMenu($event)">
             <social-post
                     v-if="showSocialPostForm"
                     :closeSocialPostForm="closeSocialPostForm"
@@ -39,6 +39,10 @@
 		  You can see here all the things that have been shared with you by friends or people you follow.
 		</h3>
 	      </center>
+	      <ul id="editMenu" v-if="showEditMenu" class="dropdown-menu" v-bind:style="{top:menutop, left:menuleft}" style="cursor:pointer;display:block;min-width:100px;">
+		<li><a @click="editPost(currentRow)">Edit</a></li>
+		<li><a @click="deletePost(currentRow)">Delete</a></li>
+	      </ul>
                 <table class="table table-responsive table-striped table-hover">
                     <tr v-if="data.length==0"><th></th></tr>
                     <tr v-for="entry in blocks">
@@ -79,21 +83,23 @@
                                             </div>
                                         </td>
                                         <td v-if="row.isPost">
-                                            <div v-bind:style="{ marginLeft: indent(row) }">
-                                                <a v-if="row.sharer != context.username" v-on:click="profile(row.sharer)" style="cursor: pointer">
-                                                    <span>{{ row.sharer }}</span>
-                                                </a>
-                                                {{ row.info }}
-                                                <div class="social-post">{{ row.name }}</div>
-                                            </div>
+                                          <div v-bind:style="{ marginLeft: indent(row) }">
+					    <div style="display:flex;">
+                                              <a v-if="row.sharer != context.username" v-on:click="profile(row.sharer)" style="cursor: pointer">
+                                                <span>{{ row.sharer }}&nbsp;</span>
+                                              </a>
+                                              {{ row.info }}
+					      <span style="flex-grow:1;">&nbsp;</span>
+					      <span v-if="row.sharer == context.username" class="fa fa-ellipsis-h" @click="displayEditMenu($event, row)"></span>
+					    </div>
+                                            <div class="social-post">{{ row.name }}</div>
+                                          </div>
                                         </td>
                                         <td v-if="row.isPost">
                                             <div>
                                                 <span style="margin: 10px;">{{ row.status}}
                                                     <div  style="margin-left: 10px;">
                                                         <button class="btn btn-success" @click="addComment(row)">comment</button>
-                                                        <button v-if="row.sharer == context.username" class="btn btn-success" @click="editPost(row)">edit</button>
-                                                        <button v-if="row.sharer == context.username" class="btn btn-danger" @click="deletePost(row)">delete</button>
                                                     </div>
                                                 </span>
                                             </div>

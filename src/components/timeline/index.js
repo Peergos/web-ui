@@ -13,7 +13,11 @@ module.exports = {
             currentSocialPostEntry: null,
             unresolvedSharedItems: [],
             showEmbeddedGallery: false,
-            filesToViewInGallery: []
+            filesToViewInGallery: [],
+	    showEditMenu: false,
+	    menutop:"",
+	    menuleft:"",
+	    currentRow: {}
         }
     },
     props: ['context','navigateToAction','viewAction', 'messages', 'getFileIconFromFileAndType', 'socialFeed',
@@ -103,10 +107,48 @@ module.exports = {
                 }
             }
         },
+        getPosition: function(e) {
+	    var posx = 0;
+	    var posy = 0;
+	    
+	    if (!e) var e = window.event;
+	    
+	    if (e.layerY || e.layerX) {
+		posx = e.layerX;
+		posy = e.layerY;
+	    } else if (e.clientX || e.clientY) {
+		posx = e.clientX + document.body.scrollLeft + 
+                    document.documentElement.scrollLeft;
+		posy = e.clientY + document.body.scrollTop + 
+                    document.documentElement.scrollTop;
+	    }
+	    
+	    return {
+		x: posx,
+		y: posy
+	    }
+	},
+	closeEditMenu: function(e) {
+	    this.showEditMenu = false;
+	    e.stopPropagation();
+	},
+	displayEditMenu: function(event, row) {
+            this.currentRow = row;
+	    var pos = this.getPosition(event);
+	    Vue.nextTick(function() {
+		var top = pos.y + 60;
+		var left = pos.x - 60;
+		this.menutop = top + 'px';
+		this.menuleft = left + 'px';
+	    }.bind(this));
+            this.showEditMenu = true;
+	    event.stopPropagation();
+        },
         editPost: function(entry) {
             this.socialPostAction = 'edit';
             this.currentSocialPostEntry = {path: entry.link, socialPost: entry.socialPost};
             this.showSocialPostForm = true;
+	    this.showEditMenu = false;
         },
         convertToPath: function(dir) {
             let dirWithoutLeadingSlash = dir.startsWith("/") ? dir.substring(1) : dir;
@@ -168,6 +210,7 @@ module.exports = {
                     }
                 });
             }
+	    this.showEditMenu = false;
         },
         deleteFile: function(filePathStr, file) {
             let that = this;
