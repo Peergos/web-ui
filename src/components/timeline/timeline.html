@@ -54,13 +54,13 @@
                         <td v-if="!entry[0].isLastEntry && (entry[0].isPost || entry[0].isMedia)" colspan="2">
                             <div style="border: 1px solid black;border-radius: 11px;">
                                 <table class="table-responsive table-striped table-hover" style="font-size: 1.0em;">
-                                    <tr v-if="row.isMedia" v-for="row in entry">
-                                        <td>
+                                    <tr  v-for="row in entry">
+                                        <td v-if="row.isMedia">
                                             <span v-if="!row.isDirectory && row.sharer != context.username && !row.isMedia">
                                                 <button class="btn btn-success" @click="addComment(row)">Add comment</button>
                                             </span>
                                         </td>
-                                        <td>
+                                        <td v-if="row.isMedia">
                                             <div>
                                                 <span class="grid_icon_wrapper fa">
                                                 <a v-if="!row.hasThumbnail">
@@ -70,9 +70,7 @@
                                                 </span>
                                             </div>
                                         </td>
-                                    </tr>
-                                    <tr v-if="row.isPost" v-for="row in entry">
-                                        <td>
+                                        <td v-if="row.isPost">
                                             <div v-bind:style="{ marginLeft: indent(row) }">
                                                 <a v-if="row.sharer != context.username" v-on:click="profile(row.sharer)" style="cursor: pointer">
                                                     <span>{{ row.sharer }}</span>
@@ -81,7 +79,7 @@
                                                 <div class="social-post">{{ row.name }}</div>
                                             </div>
                                         </td>
-                                        <td>
+                                        <td v-if="row.isPost">
                                             <div>
                                                 <span style="margin: 10px;">{{ row.status}}
                                                     <div  style="margin-left: 10px;">
