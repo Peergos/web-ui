@@ -1335,7 +1335,6 @@ module.exports = {
             ctx.getSocialFeed().thenCompose(function(socialFeed) {
 		return socialFeed.update().thenApply(function(updated) {
                     that.socialFeed = updated;
-                    that.forceSharedRefreshWithUpdate++;
                     that.showTimeline = true;
                     that.showSpinner = false;
 		    that.updateHistory("timeline", that.getPath(), "");

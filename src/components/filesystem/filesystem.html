@@ -107,7 +107,7 @@
   </social>
   <timeline
     v-if="showTimeline"
-    v-on:hide-timeline="showTimeline = false"
+    v-on:hide-timeline="showTimeline = false;forceSharedRefreshWithUpdate++"
     :navigateToAction="navigateToAction"
     :viewAction="viewAction"
     :getFileIconFromFileAndType="getFileIconFromFileAndType"
