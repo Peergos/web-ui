@@ -5,7 +5,7 @@ module.exports = {
             showSpinner: false,
             data: [],
             pageEndIndex : 0,
-            pageSize: 20,
+            pageSize: 25,
             requestingMoreResults: false,
             noMoreResults: false,
             showSocialPostForm: false,
@@ -61,9 +61,11 @@ module.exports = {
                         this.context.getByPath(refPath).thenApply(function(optFile){
                             let file = optFile.get();
                             let media = that.createTimelineEntry(refPath, null, null, file);
+                            media.isStartOfThread = true;
                             that.data.splice(i, 0, media, post);
                         });
                     } else {
+                        post.isStartOfThread = false;
                         this.data.splice(i, 0, post);
                     }
                 }
@@ -74,9 +76,11 @@ module.exports = {
                     this.context.getByPath(refPath).thenApply(function(optFile){
                         let file = optFile.get();
                         let media = that.createTimelineEntry(refPath, null, null, file);
+                        media.isStartOfThread = true;
                         that.data = [media, post].concat(that.data);
                     });
                 } else {
+                    post.isStartOfThread = false;
                     this.data = [post].concat(this.data);
                 }
             }
@@ -538,11 +542,13 @@ module.exports = {
                 let item = indentedRow.item;
                 let media = indentedRow.media;
                 if (media) {
-                    let mediaTimelineEntry = this.createTimelineEntry(media.path, media.entry, media.socialPost, media.file);
+                    let mediaTimelineEntry = this.createTimelineEntry(media.path, null, null, media.file);
+                    mediaTimelineEntry.isStartOfThread = true;
                     mediaTimelineEntry.indent = indentedRow.indent;
                     allTimelineEntries.push(mediaTimelineEntry);
                 }
                 let timelineEntry = this.createTimelineEntry(item.path, item.entry, item.socialPost, item.file);
+                timelineEntry.isStartOfThread = item.isStartOfThread;
                 timelineEntry.indent = indentedRow.indent;
                 allTimelineEntries.push(timelineEntry);
             }
@@ -653,6 +659,7 @@ module.exports = {
                     let media = that.getMedia(mediaMap, item);
                     try {
                         if (that.isStartOfThread(entryTree.root.children, item)) {
+                            item.isStartOfThread = media ? false : true;
                             entryTree.addChild(null, item, media, true);
                         } else {
                             that.insertIntoEntries(entryTree, item, media);
@@ -709,6 +716,37 @@ module.exports = {
         },
         close: function () {
             this.$emit("hide-timeline");
+        }
+    },
+    computed: {
+    	blocks: function() {
+            if (this.data == null || this.data.length == 0) {
+                return [];
+            }
+            let blocks = [];
+            let thread = [];
+            this.data.forEach(timelineEntry => {
+                let isSharedItem = timelineEntry.isLastEntry ? true : !(timelineEntry.socialPost || timelineEntry.isMedia);
+                if (isSharedItem) {
+                    if (thread.length > 0) {
+                        blocks.push(thread);
+                        thread = [];
+                    }
+                    thread.push(timelineEntry);
+                    blocks.push(thread);
+                    thread = [];
+                } else {
+                    if (timelineEntry.isStartOfThread && thread.length > 0) {
+                        blocks.push(thread);
+                        thread = [];
+                    }
+                    thread.push(timelineEntry);
+                }
+            });
+            if (thread.length > 0) {
+                blocks.push(thread);
+            }
+            return blocks;
         }
     }
 }

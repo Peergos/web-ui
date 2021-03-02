@@ -1026,7 +1026,7 @@ module.exports = {
                 ).thenApply(function(res) {
                     var thumbnailAllocation = Math.min(100000, file.size / 10);
                     updateProgressBar({ value_0: thumbnailAllocation});
-                    console.log("uploaded file:" + file.name + " in dir: " + directory);
+                    //console.log("uploaded file:" + file.name + " in dir: " + directory);
                     if (refreshDirectory) {
                         that.showSpinner = true;
                         that.currentDir = res;
@@ -1335,6 +1335,7 @@ module.exports = {
             ctx.getSocialFeed().thenCompose(function(socialFeed) {
 		return socialFeed.update().thenApply(function(updated) {
                     that.socialFeed = updated;
+                    that.forceSharedRefreshWithUpdate++;
                     that.showTimeline = true;
                     that.showSpinner = false;
 		    that.updateHistory("timeline", that.getPath(), "");
