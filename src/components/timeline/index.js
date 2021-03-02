@@ -51,9 +51,7 @@ module.exports = {
                     post.indent = parentPostIndent + 1;
                     var i = index +1;
                     for(;i < this.data.length; i++) {
-                        if (!(this.data[i].socialPost != null
-                        && this.data[i].socialPost.parent.ref != null
-                        && this.data[i].socialPost.parent.ref.path == post.socialPost.parent.ref.path)){
+                        if (this.data[i].indent == null || this.data[i].indent <= parentPostIndent){
                             break;
                         }
                     }
@@ -63,6 +61,7 @@ module.exports = {
                         this.context.getByPath(refPath).thenApply(function(optFile){
                             let file = optFile.get();
                             let media = that.createTimelineEntry(refPath, null, null, file);
+                            media.indent = post.indent;
                             that.data.splice(i, 0, media, post);
                         });
                     } else {
@@ -76,6 +75,7 @@ module.exports = {
                     this.context.getByPath(refPath).thenApply(function(optFile){
                         let file = optFile.get();
                         let media = that.createTimelineEntry(refPath, null, null, file);
+                        media.indent = post.indent;
                         that.data = [media, post].concat(that.data);
                     });
                 } else {
@@ -84,6 +84,9 @@ module.exports = {
             }
         },
         closeSocialPostForm: function(action, newPath, newSocialPost, newFile, originalPath) {
+            if (!newPath.startsWith("/")) {
+                newPath = "/" + newPath;
+            }
             this.showSocialPostForm = false;
             this.currentSocialPostEntry = null;
             let that = this;
@@ -113,6 +116,14 @@ module.exports = {
             let index = this.data.findIndex(v => v.link === entry.link);
             if (index > -1) {
                 this.data.splice(index, 1);
+                var i = index;
+                for(;i < this.data.length;) {
+                    if (this.data[i].indent != null && this.data[i].indent > entry.indent){
+                        this.data.splice(index, 1);
+                    } else {
+                        break;
+                    }
+                }
                 if (entry.socialPost != null) {
                     let references = entry.socialPost.references.toArray([]);
                     if (references.length > 0) {
@@ -121,17 +132,6 @@ module.exports = {
                         if (refIndex > -1) {
                             this.data.splice(refIndex, 1);
                         }
-                    }
-                }
-                var done = false;
-                while (!done) {
-                    let childIndex = this.data.findIndex(v => v.socialPost != null
-                        && v.socialPost.parent.ref != null
-                        && v.socialPost.parent.ref.path === entry.link);
-                    if (childIndex == -1) {
-                        done = true;
-                    } else {
-                        this.data.splice(childIndex, 1);
                     }
                 }
             }
@@ -200,7 +200,11 @@ module.exports = {
         },
         addComment: function(entry) {
             this.socialPostAction = 'reply';
-            this.currentSocialPostEntry = {path: entry.link, socialPost: entry.socialPost, file: entry.file, cap: entry.cap};
+            var cap = entry.cap;
+            if (cap == null) {
+                cap = entry.file.readOnlyPointer();
+            }
+            this.currentSocialPostEntry = {path: entry.link, socialPost: entry.socialPost, file: entry.file, cap: cap};
             this.showSocialPostForm = true;
         },
         getFileSize: function(props) {
@@ -471,7 +475,7 @@ module.exports = {
                 fileType: fileType,
                 isPost: isPost,
                 socialPost: socialPost,
-                indent: 0,
+                indent: 1,
                 status: status,
                 isMedia: isMedia
             };
