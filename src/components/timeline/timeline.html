@@ -18,6 +18,12 @@
                     :socialPostAction="socialPostAction"
                     :currentSocialPostEntry="currentSocialPostEntry">
             </social-post>
+            <gallery
+                    v-if="showEmbeddedGallery"
+                    v-on:hide-gallery="showEmbeddedGallery = false"
+                    :files="filesToViewInGallery"
+                    :context="context">
+            </gallery>
             <spinner v-if="showSpinner"></spinner>
             <button class="btn btn-success" @click="addNewPost()">
                 Write Post

@@ -11,7 +11,9 @@ module.exports = {
             showSocialPostForm: false,
             socialPostAction: '',
             currentSocialPostEntry: null,
-            unresolvedSharedItems: []
+            unresolvedSharedItems: [],
+            showEmbeddedGallery: false,
+            filesToViewInGallery: []
         }
     },
     props: ['context','navigateToAction','viewAction', 'messages', 'getFileIconFromFileAndType', 'socialFeed',
@@ -371,10 +373,14 @@ module.exports = {
                         this.navigateToAction(entry.path);
                         this.close();
                     } else {
-                        this.viewAction(entry.path, entry.fullName);
+                        this.openInGallery(entry);
                     }
                 }
             }
+        },
+        openInGallery: function (entry) {
+            this.filesToViewInGallery = [entry.file];
+            this.showEmbeddedGallery = true;
         },
         profile: function(username) {
             this.displayProfile(username, false);
