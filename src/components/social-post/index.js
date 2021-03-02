@@ -21,8 +21,6 @@ module.exports = {
                 this.title = "Post a Comment";
                 if (this.currentSocialPostEntry.socialPost != null && this.currentSocialPostEntry.socialPost.shareTo == peergos.shared.social.SocialPost.Resharing.Friends) {
                     this.allowFollowerSharingOption = false;
-                } else {
-                    this.shareWith = "Followers";
                 }
             }
         }
