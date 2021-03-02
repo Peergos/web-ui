@@ -25,9 +25,11 @@
                     :context="context">
             </gallery>
             <spinner v-if="showSpinner"></spinner>
-            <button class="btn btn-success" @click="addNewPost()">
+	    <center>
+              <button class="btn btn-success" @click="addNewPost()" style="width:50%;">
                 Write Post
-            </button>
+              </button>
+	    </center>
             <div id="scroll-area" v-on:scroll="handleScrolling()" style="height: 400px;overflow-y: scroll;">
 	      <center v-if="data.length==0">
 		<h3>
