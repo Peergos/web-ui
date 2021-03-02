@@ -84,7 +84,7 @@ module.exports = {
             }
         },
         closeSocialPostForm: function(action, newPath, newSocialPost, newFile, originalPath) {
-            if (!newPath.startsWith("/")) {
+            if (newPath != null && !newPath.startsWith("/")) {
                 newPath = "/" + newPath;
             }
             this.showSocialPostForm = false;
@@ -400,6 +400,12 @@ module.exports = {
             let calcMargin = (item.indent * 20) + 10;
             return "" +  calcMargin + "px";
         },
+        fromUTCtoLocal: function(postTime) {
+            let date = new Date(postTime.toString());
+            let localStr =  date.toISOString().replace('T',' ');
+            let withoutMS = localStr.substring(0, localStr.indexOf('.'));
+            return withoutMS;
+        },
         createTimelineEntry: function(filePath, entry, socialPost, file) {
             var displayFilename = true;
             let info = " shared";
@@ -452,7 +458,7 @@ module.exports = {
 
                 info = isReply ? "commented at " : "posted at ";
                 info = identity + info;
-                info = info + socialPost.postTime.toString().replace('T',' ');
+                info = info + this.fromUTCtoLocal(socialPost.postTime);
                 name = socialPost.body;
                 if (socialPost.previousVersions.toArray([]).length > 0) {
                     status = "Edited";
