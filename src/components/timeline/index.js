@@ -60,8 +60,10 @@ module.exports = {
                     post.indent = parentPostIndent + 1;
                     var i = index +1;
                     for(;i < this.data.length; i++) {
-                        if (this.data[i].indent == null || this.data[i].indent <= parentPostIndent){
-                            break;
+                        if (!this.data[i].isMedia) {
+                            if (this.data[i].indent == null || this.data[i].indent <= parentPostIndent){
+                                break;
+                            }
                         }
                     }
                     if (references.length > 0) {
@@ -71,7 +73,7 @@ module.exports = {
                             let file = optFile.get();
                             let media = that.createTimelineEntry(refPath, null, null, file);
                             media.indent = post.indent;
-                            that.data.splice(i, 0, media, post);
+                            that.data.splice(i, 0, post, media);
                         });
                     } else {
                         this.data.splice(i, 0, post);
@@ -85,7 +87,7 @@ module.exports = {
                         let file = optFile.get();
                         let media = that.createTimelineEntry(refPath, null, null, file);
                         media.indent = post.indent;
-                        that.data = [media, post].concat(that.data);
+                        that.data = [post, media].concat(that.data);
                     });
                 } else {
                     this.data = [post].concat(this.data);
@@ -163,14 +165,6 @@ module.exports = {
             let index = this.data.findIndex(v => v.link === entry.link);
             if (index > -1) {
                 this.data.splice(index, 1);
-                var i = index;
-                for(;i < this.data.length;) {
-                    if (this.data[i].indent != null && this.data[i].indent > entry.indent){
-                        this.data.splice(index, 1);
-                    } else {
-                        break;
-                    }
-                }
                 if (entry.socialPost != null) {
                     let references = entry.socialPost.references.toArray([]);
                     if (references.length > 0) {
@@ -179,6 +173,14 @@ module.exports = {
                         if (refIndex > -1) {
                             this.data.splice(refIndex, 1);
                         }
+                    }
+                }
+                var i = index;
+                for(;i < this.data.length;) {
+                    if (this.data[i].indent != null && this.data[i].indent > entry.indent){
+                        this.data.splice(index, 1);
+                    } else {
+                        break;
                     }
                 }
             }
@@ -596,35 +598,20 @@ module.exports = {
             });
             return future;
 	    },
-        calcInsertIndex: function(allTimelineEntries, index, newEntry) {
-            let parent = allTimelineEntries[index];
-            var i = index +1;
-            for(;i < allTimelineEntries.length; i++) {
-                let entry = allTimelineEntries[i];
-                if (entry.socialPost != null && entry.socialPost.parent.ref != null
-                    && entry.socialPost.parent.ref.path == parent.path) {
-
-                    if (newEntry.socialPost.postTime.compareTo(entry.socialPost.postTime) < 0){
-                        break;
-                    }
-                }
-            }
-            return i;
-        },
         populateTimeline: function(entries) {
             let allTimelineEntries = [];
             for(var j = 0; j < entries.length; j++) {
                 let indentedRow = entries[j];
                 let item = indentedRow.item;
+                let timelineEntry = this.createTimelineEntry(item.path, item.entry, item.socialPost, item.file);
+                timelineEntry.indent = indentedRow.indent;
+                allTimelineEntries.push(timelineEntry);
                 let media = indentedRow.media;
                 if (media) {
                     let mediaTimelineEntry = this.createTimelineEntry(media.path, null, null, media.file);
                     mediaTimelineEntry.indent = indentedRow.indent;
                     allTimelineEntries.push(mediaTimelineEntry);
                 }
-                let timelineEntry = this.createTimelineEntry(item.path, item.entry, item.socialPost, item.file);
-                timelineEntry.indent = indentedRow.indent;
-                allTimelineEntries.push(timelineEntry);
             }
             return allTimelineEntries;
         },
@@ -639,33 +626,6 @@ module.exports = {
                     this.unresolvedSharedItems.splice(unresolvedIndex, 1);
                 }
             }
-        },
-        getMedia: function(mediaMap, item) {
-            let references = item.socialPost.references.toArray([]);
-            if (references.length > 0){
-                return mediaMap.get(references[0].path);
-            }
-            if (item.socialPost.parent.ref != null) {
-                return mediaMap.get(item.socialPost.parent.ref.path);
-            }
-            return null;
-        },
-        isStartOfThread: function(entries, item) {
-            if (item.socialPost.parent.ref != null) {
-                if (item.socialPost.parent.ref.path.includes("/.posts/")) {
-                    return false;
-                }
-                //else it references either a. normal timeline entry, or inband media item
-                for(var i = 0; i < entries.length; i++) {
-                    if (entries[i].path == item.socialPost.parent.ref.path) {
-                        return false;
-                    }
-                }
-                if (item.socialPost.references.toArray([]).length > 0 ) {
-                    throw "reference not found"
-                }
-            }
-            return true;
         },
         Tree: function(thisRef) {
             this.methodCtx = thisRef;
@@ -717,6 +677,17 @@ module.exports = {
             this.item = item;
             this.media = media;
         },
+        isStartOfThread: function(entries, mediaMap, item) {
+            if (item.socialPost.parent.ref != null) {
+                return false;
+            } else {
+                let references = item.socialPost.references.toArray([]);
+                if (references.length > 0 ) {
+                    return false;
+                }
+            }
+            return true;
+        },
         organiseEntries: function(sharedItems, mediaPosts) {
             let that = this;
             let mediaMap = new Map()
@@ -730,9 +701,22 @@ module.exports = {
                 if (item.socialPost == null) {
                     entryTree.addChild(null, item, null, true);
                 } else {
-                    let media = that.getMedia(mediaMap, item);
+                    let wasCommentOnSharedItem = false;
+                    if (item.socialPost.parent.ref != null && !item.socialPost.parent.ref.path.includes("/.posts/")) {
+                        if (entryTree.lookup(item.socialPost.parent.ref.path) == null) {
+                            let sharedItemParent= mediaMap.get(item.socialPost.parent.ref.path);
+                            entryTree.addChild(null, sharedItemParent, null, true);
+                        }
+                        wasCommentOnSharedItem = true;
+                    }
+
+                    let references = item.socialPost.references.toArray([]);
+                    var media = null;
+                    if (references.length > 0){
+                        media = mediaMap.get(references[0].path);
+                    }
                     try {
-                        if (that.isStartOfThread(entryTree.root.children, item)) {
+                        if (!wasCommentOnSharedItem && that.isStartOfThread(entryTree.root.children, mediaMap, item)) {
                             entryTree.addChild(null, item, media, true);
                         } else {
                             that.insertIntoEntries(entryTree, item, media);
@@ -798,10 +782,9 @@ module.exports = {
             }
             let blocks = [];
             let thread = [];
-            let previousTimelineEntry = null;
             this.data.forEach(timelineEntry => {
-                let isSharedItem = timelineEntry.isLastEntry ? true : !(timelineEntry.socialPost || timelineEntry.isMedia);
-                if (isSharedItem) {
+                let isSharedItem = !timelineEntry.isMedia && timelineEntry.entry == null && timelineEntry.socialPost == null;
+                if (isSharedItem || timelineEntry.isLastEntry) {
                     if (thread.length > 0) {
                         blocks.push(thread);
                         thread = [];
@@ -810,13 +793,12 @@ module.exports = {
                     blocks.push(thread);
                     thread = [];
                 } else {
-                    if (previousTimelineEntry != null && !previousTimelineEntry.isMedia && timelineEntry.indent == 1 && thread.length > 0) {
+                    if (timelineEntry.indent == 1 && thread.length > 0) {
                         blocks.push(thread);
                         thread = [];
                     }
                     thread.push(timelineEntry);
                 }
-                previousTimelineEntry = timelineEntry;
             });
             if (thread.length > 0) {
                 blocks.push(thread);
