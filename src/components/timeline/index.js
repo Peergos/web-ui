@@ -793,7 +793,7 @@ module.exports = {
                     blocks.push(thread);
                     thread = [];
                 } else {
-                    if (timelineEntry.indent == 1 && thread.length > 0) {
+                    if (!timelineEntry.isMedia && timelineEntry.indent == 1 && thread.length > 0) {
                         blocks.push(thread);
                         thread = [];
                     }
