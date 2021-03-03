@@ -14,10 +14,15 @@ module.exports = {
             unresolvedSharedItems: [],
             showEmbeddedGallery: false,
             filesToViewInGallery: [],
-	    showEditMenu: false,
-	    menutop:"",
-	    menuleft:"",
-	    currentRow: {}
+            showEditMenu: false,
+            menutop:"",
+            menuleft:"",
+            currentRow: {},
+            showConfirm: false,
+            confirm_message: "",
+            confirm_body: "",
+            confirm_consumer_cancel_func: () => {},
+            confirm_consumer_func: () => {}
         }
     },
     props: ['context','navigateToAction','viewAction', 'messages', 'getFileIconFromFileAndType', 'socialFeed',
@@ -99,7 +104,7 @@ module.exports = {
                 if (index != -1) { //could of been deleted
                     this.data[index].name = newSocialPost.body;
                     this.data[index].socialPost = newSocialPost;
-                    this.data[index].status = newSocialPost.previousVersions.toArray([]).length > 0 ? "Edited" : "";
+                    this.data[index].status = newSocialPost.previousVersions.toArray([]).length > 0 ? "[edited]" : "";
                 }
             } else {
                 if (newSocialPost != null) {
@@ -178,7 +183,23 @@ module.exports = {
                 }
             }
         },
+        confirmDeletePost: function(deletePostFunction, cancelFunction) {
+            this.confirm_message='Are you sure you want to delete the comment?';
+            this.confirm_body='';
+            this.confirm_consumer_cancel_func = cancelFunction;
+            this.confirm_consumer_func = deletePostFunction;
+            this.showConfirm = true;
+        },
         deletePost: function(entry) {
+            let that = this;
+            this.confirmDeletePost(
+                () => { that.showConfirm = false;
+                    that.deleteSocialPost(entry);
+                },
+                () => { that.showConfirm = false;}
+            );
+        },
+        deleteSocialPost: function(entry) {
             let that = this;
             that.showSpinner = true;
             let socialPost = entry.socialPost;
@@ -504,7 +525,7 @@ module.exports = {
                 info = info + this.fromUTCtoLocal(socialPost.postTime);
                 name = socialPost.body;
                 if (socialPost.previousVersions.toArray([]).length > 0) {
-                    status = "Edited";
+                    status = "[edited]";
                 }
             }
             let item = {

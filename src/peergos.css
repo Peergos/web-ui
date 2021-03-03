@@ -677,8 +677,8 @@ h3 {word-wrap:break-word; white-space:normal;}
     white-space:pre-wrap;
     margin-bottom:0;
     line-height: 1.1;
-    background-color: #efeeee;
-    border: solid darkgrey;
+    background-color: #e2e2e2;
+    border: 1px solid black;
     border-radius: 4px;
 }
 .picon-timeline {

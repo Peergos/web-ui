@@ -24,6 +24,14 @@
                     :files="filesToViewInGallery"
                     :context="context">
             </gallery>
+            <confirm
+                    v-if="showConfirm"
+                    v-on:hide-confirm="showConfirm = false"
+                    :confirm_message='confirm_message'
+                    :confirm_body="confirm_body"
+                    :consumer_cancel_func="confirm_consumer_cancel_func"
+                    :consumer_func="confirm_consumer_func">
+            </confirm>
             <spinner v-if="showSpinner"></spinner>
 	    <center>
               <button class="btn btn-success" @click="addNewPost()" style="width:50%;">
@@ -84,20 +92,20 @@
                                         </td>
                                         <td v-if="row.isPost">
                                           <div v-bind:style="{ marginLeft: indent(row) }">
-					    <div style="display:flex;">
+					    <div style="display:flex;font-size: 0.8em;color: #7d7d7d;">
                                               <a v-if="row.sharer != context.username" v-on:click="profile(row.sharer)" style="cursor: pointer">
                                                 <span>{{ row.sharer }}&nbsp;</span>
                                               </a>
                                               {{ row.info }}
 					      <span style="flex-grow:1;">&nbsp;</span>
-					      <span v-if="row.sharer == context.username" class="fa fa-ellipsis-h" @click="displayEditMenu($event, row)"></span>
+					      <span v-if="row.sharer == context.username" class="fa fa-ellipsis-h" @click="displayEditMenu($event, row)">&nbsp;{{ row.status}}</span>
 					    </div>
                                             <div class="social-post">{{ row.name }}</div>
                                           </div>
                                         </td>
                                         <td v-if="row.isPost">
                                             <div>
-                                                <span style="margin: 10px;">{{ row.status}}
+                                                <span style="margin: 10px;">
                                                     <div  style="margin-left: 10px;">
                                                         <button class="btn btn-success" @click="addComment(row)">comment</button>
                                                     </div>
