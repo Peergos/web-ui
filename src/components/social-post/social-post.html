@@ -11,7 +11,10 @@
             <spinner v-if="showSpinner"></spinner>
             <div id="social-post-main">
                 <p>
-                <input v-if="socialPostAction=='add' || socialPostAction=='reply'" type="file" id="uploadInput" @change="uploadFile" accept="audio/*,video/*,image/*" />
+                    <span>
+                    <button v-if="socialPostAction=='add' || socialPostAction=='reply'" class="btn btn-success" onclick="document.getElementById('uploadInput').click()">Upload Media</button>
+                    &nbsp;{{mediaFilenames}}</span>
+                    <input type="file" id="uploadInput" @change="uploadFile" style="display:none;" accept="audio/*,video/*,image/*" />
                 </p>
                 <p>
                     <textarea id="social-post-text" style="width:100%;resize: none;" rows=2 :placeholder="textAreaPlaceholder" maxlength="1000" v-model="post"></textarea>

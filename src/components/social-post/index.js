@@ -11,6 +11,7 @@ module.exports = {
             allowFollowerSharingOption: true,
             thumbnailImage: "",
             mediaFile: null,
+            mediaFilenames: ""
         }
     },
     props: ['closeSocialPostForm', 'socialFeed', 'context', 'showMessage', 'groups', 'socialPostAction', 'currentSocialPostEntry'],
@@ -47,6 +48,7 @@ module.exports = {
         uploadFile: function(evt) {
             let files = evt.target.files || evt.dataTransfer.files;
             this.mediaFile = files[0];
+            this.mediaFilenames = this.mediaFile.name;
         },
         close: function (result) {
             this.closeSocialPostForm("", null, null, null, null);
