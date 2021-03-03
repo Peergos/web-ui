@@ -680,11 +680,6 @@ module.exports = {
         isStartOfThread: function(entries, mediaMap, item) {
             if (item.socialPost.parent.ref != null) {
                 return false;
-            } else {
-                let references = item.socialPost.references.toArray([]);
-                if (references.length > 0 ) {
-                    return false;
-                }
             }
             return true;
         },
