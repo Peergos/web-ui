@@ -11,7 +11,8 @@ module.exports = {
             allowFollowerSharingOption: true,
             thumbnailImage: "",
             mediaFiles: [],
-            mediaFilenames: ""
+            mediaFilenames: "",
+            progressMonitors: []
         }
     },
     props: ['closeSocialPostForm', 'socialFeed', 'context', 'showMessage', 'groups', 'socialPostAction', 'currentSocialPostEntry'],
@@ -79,7 +80,7 @@ module.exports = {
                 this.replyToPost(groupUid, resharingType);
             }
         },
-        uploadMedia: function(mediaFile) {
+        uploadMedia: function(mediaFile, updateProgressBar) {
             let that = this;
             let future = peergos.shared.util.Futures.incomplete();
             let reader = new browserio.JSFileReader(mediaFile);
@@ -89,8 +90,10 @@ module.exports = {
                 future.complete(null);
             } else {
                 let postTime = peergos.client.JsUtil.now();
-                this.socialFeed.uploadMediaForPost(java_reader, mediaFile.size, postTime).thenApply(function(pair) {
+                this.socialFeed.uploadMediaForPost(java_reader, mediaFile.size, postTime, updateProgressBar).thenApply(function(pair) {
                     let type = null;
+                    var thumbnailAllocation = Math.min(100000, mediaFile.size / 10);
+                    updateProgressBar({ value_0: thumbnailAllocation});
                     if (pair.left == "image") {
                         type = peergos.shared.social.SocialPost.Type.Image;
                     } else if (pair.left == "video") {
@@ -105,23 +108,50 @@ module.exports = {
             }
             return future;
         },
-        reduceAllMediaUpload: function(index, accumulator, future) {
+        reduceAllMediaUpload: function(index, accumulator, progressStore, future) {
             let that = this;
             if (index == this.mediaFiles.length) {
+                 progressStore.forEach(progress => {
+                     let idx = that.progressMonitors.indexOf(progress);
+                     if(idx >= 0) {
+                         that.progressMonitors.splice(idx, 1);
+                     }
+                 });
                 future.complete(accumulator);
             } else {
-                this.uploadMedia(this.mediaFiles[index]).thenApply(result => {
+                let progress = progressStore[index];
+                let updateProgressBar = function(len){
+                    progress.done += len.value_0;
+                    if (progress.done >= progress.max) {
+                        progress.show = false;
+                    }
+                };
+                this.uploadMedia(this.mediaFiles[index], updateProgressBar).thenApply(result => {
                     if (result != null) {
                         accumulator.push(result);
                     }
-                    that.reduceAllMediaUpload(index+1, accumulator, future);
+                    that.reduceAllMediaUpload(index+1, accumulator, progressStore, future);
                 });
             }
         },
         uploadAllMedia: function() {
             let that = this;
             let future = peergos.shared.util.Futures.incomplete();
-            that.reduceAllMediaUpload(0, [], future);
+            let progressStore = [];
+            for(var i = 0; i < this.mediaFiles.length; i++) {
+                let file = this.mediaFiles[i];
+                var thumbnailAllocation = Math.min(100000, file.size / 10);
+                var resultingSize = file.size + thumbnailAllocation;
+                var progress = {
+                    show:true,
+                    title:"Encrypting and uploading " + file.name,
+                    done:0,
+                    max:resultingSize
+                };
+                that.progressMonitors.push(progress);
+                progressStore.push(progress);
+            }
+            that.reduceAllMediaUpload(0, [], progressStore, future);
             return future;
         },
         addPost: function(groupUid, resharingType) {
