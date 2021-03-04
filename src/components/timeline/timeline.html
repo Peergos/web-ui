@@ -96,7 +96,7 @@
 					                                <span style="flex-grow:1;">&nbsp&nbsp;{{ row.status}}</span>
 					                                <span v-if="row.sharer == context.username" class="fa fa-ellipsis-h" @click="displayEditMenu($event, row)"></span>
                                                 </div>
-                                            <div class="social-post">{{ row.name }}</div>
+                                            <div class="social-post" v-if="row.name.length > 0">{{ row.name }}</div>
                                           </div>
                                         </td>
                                         <td v-if="row.isPost">
