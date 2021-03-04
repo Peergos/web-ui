@@ -127,9 +127,7 @@ module.exports = {
         addPost: function(groupUid, resharingType) {
             let that = this;
             let tags = peergos.client.JsUtil.emptyList();
-            this.showSpinner = true;
             this.uploadAllMedia().thenApply(function(mediaResponseList) {
-                that.showSpinner = false;
                 if (mediaResponseList.length == 0) {
                     let commentType = peergos.shared.social.SocialPost.Type.Text;
                     let mediaList = peergos.client.JsUtil.emptyList();
@@ -160,12 +158,10 @@ module.exports = {
             let that = this;
             let path = this.currentSocialPostEntry.path;
             let cap = this.currentSocialPostEntry.cap;
-            this.showSpinner = true;
             this.generateContentHash().thenApply(function(hash) {
                 let tags = peergos.client.JsUtil.emptyList();
                 let parent = new peergos.shared.social.SocialPost.Ref(path, cap, hash);
                 that.uploadAllMedia().thenApply(function(mediaResponseList) {
-                    that.showSpinner = false;
                     if (mediaResponseList.length == 0) {
                         let type = peergos.shared.social.SocialPost.Type.Text;
                         let mediaList = peergos.client.JsUtil.emptyList();
