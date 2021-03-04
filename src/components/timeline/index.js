@@ -50,6 +50,27 @@ module.exports = {
             this.socialPostAction = 'add';
             this.showSocialPostForm = true;
         },
+        reduceAllMediaAppend: function(index, references, post, accumulator, future) {
+            let that = this;
+            if (index == references.length) {
+                future.complete(accumulator);
+            } else {
+                let refPath = references[index].path;
+                this.context.getByPath(refPath).thenApply(function(optFile){
+                    let file = optFile.get();
+                    let media = that.createTimelineEntry(refPath, null, null, file);
+                    media.indent = post.indent;
+                    accumulator.push(media);
+                    that.reduceAllMediaAppend(index+1, references, post, accumulator, future);
+                });
+            }
+        },
+        appendMediaForPost: function(post, references) {
+            let that = this;
+            let future = peergos.shared.util.Futures.incomplete();
+            that.reduceAllMediaAppend(0, references, post, [], future);
+            return future;
+        },
         appendToTimeline: function(newPath, newSocialPost, newFile, originalPath) {
             let post = this.createTimelineEntry(newPath, null, newSocialPost, newFile);
             let references = newSocialPost.references.toArray([]);
@@ -68,12 +89,11 @@ module.exports = {
                     }
                     if (references.length > 0) {
                         let that = this;
-                        let refPath = references[0].path;
-                        this.context.getByPath(refPath).thenApply(function(optFile){
-                            let file = optFile.get();
-                            let media = that.createTimelineEntry(refPath, null, null, file);
-                            media.indent = post.indent;
-                            that.data.splice(i, 0, post, media);
+                        this.appendMediaForPost(post, references).thenApply(function(timelineEntries){
+                            that.data.splice(i, 0, post);
+                            for(var j = 0; j < timelineEntries.length; j++) {
+                                that.data.splice(i+1+j, 0, timelineEntries[j]);
+                            }
                         });
                     } else {
                         this.data.splice(i, 0, post);
@@ -82,12 +102,11 @@ module.exports = {
             } else {
                 if (references.length > 0) {
                     let that = this;
-                    let refPath = references[0].path;
-                    this.context.getByPath(refPath).thenApply(function(optFile){
-                        let file = optFile.get();
-                        let media = that.createTimelineEntry(refPath, null, null, file);
-                        media.indent = post.indent;
-                        that.data = [post, media].concat(that.data);
+                    this.appendMediaForPost(post, references).thenApply(function(timelineEntries){
+                        that.data = [post].concat(that.data);
+                        for(var j = 0; j < timelineEntries.length; j++) {
+                            that.data.splice(1+j, 0, timelineEntries[j]);
+                        }
                     });
                 } else {
                     this.data = [post].concat(this.data);
@@ -168,10 +187,12 @@ module.exports = {
                 if (entry.socialPost != null) {
                     let references = entry.socialPost.references.toArray([]);
                     if (references.length > 0) {
-                        let refPath = references[0].path;
-                        let refIndex = this.data.findIndex(v => v.link === refPath);
-                        if (refIndex > -1) {
-                            this.data.splice(refIndex, 1);
+                        for(var j = 0 ; j < references.length; j++) {
+                            let refPath = references[j].path;
+                            let refIndex = this.data.findIndex(v => v.link === refPath);
+                            if (refIndex > -1) {
+                                this.data.splice(refIndex, 1);
+                            }
                         }
                     }
                 }
@@ -201,35 +222,54 @@ module.exports = {
                 () => { that.showConfirm = false;}
             );
         },
+        reduceDeletingAllMediaReferences: function(entry, references, index, future) {
+            let that = this;
+            if (index == references.length) {
+                future.complete(true);
+            } else {
+                let ref = references[index];
+                this.context.getByPath(ref.path).thenApply(function(optFile){
+                    let mediaFile = optFile.ref;
+                    if (mediaFile != null) {
+                        let parentPath = entry.link.substring(0, entry.link.lastIndexOf('/'));
+                        that.deleteFile(parentPath + "/" + mediaFile.props.name, mediaFile).thenApply(function(res){
+                            that.reduceDeletingAllMediaReferences(entry, references, index + 1, future);
+                        }).exceptionally(function(throwable) {
+                            that.showMessage("error deleting media file!");
+                            that.reduceDeletingAllMediaReferences(entry, references, index + 1, future);
+                        });
+                    } else {
+                        that.reduceDeletingAllMediaReferences(entry, references, index + 1, future);
+                    }
+                });
+            }
+        },
+        deleteMediaReferences: function(entry, references) {
+            let future = peergos.shared.util.Futures.incomplete();
+            this.reduceDeletingAllMediaReferences(entry, references, 0, future);
+            return future;
+        },
         deleteSocialPost: function(entry) {
             let that = this;
             that.showSpinner = true;
             let socialPost = entry.socialPost;
             if (socialPost.kind == peergos.shared.social.SocialPost.Type.Image
                 || socialPost.kind == peergos.shared.social.SocialPost.Type.Video
-                || socialPost.kind == peergos.shared.social.SocialPost.Type.Audio) {
-                let ref = socialPost.references.toArray([])[0];
-                this.context.getByPath(ref.path).thenApply(function(optFile){
-                    let mediaFile = optFile.ref;
-                    let parentPath = entry.link.substring(0, entry.link.lastIndexOf('/'));
-                    that.deleteFile(parentPath + "/" + mediaFile.props.name, mediaFile).thenApply(function(res){
-                        that.deleteFile(entry.link, entry.file).thenApply(function(res){
+                || socialPost.kind == peergos.shared.social.SocialPost.Type.Audio
+                || socialPost.kind == peergos.shared.social.SocialPost.Type.Media) {
+                this.deleteMediaReferences(entry, socialPost.references.toArray([])).thenApply(function(result){
+                    that.deleteFile(entry.link, entry.file).thenApply(function(res2){
+                        if (res2) {
                             that.showSpinner = false;
-                            if (res) {
-                                that.removeItemFromDisplay(entry);
-                            }
-                        });
-                    }).exceptionally(function(throwable) {
-                        that.showMessage("error deleting media file!");
+                            that.removeItemFromDisplay(entry);
+                        }
                     });
                 });
             } else {
                 this.deleteFile(entry.link, entry.file).thenApply(function(res){
-                    that.showSpinner = false;
                     if (res) {
-                        if (res) {
-                            that.removeItemFromDisplay(entry);
-                        }
+                        that.showSpinner = false;
+                        that.removeItemFromDisplay(entry);
                     }
                 });
             }
@@ -244,7 +284,7 @@ module.exports = {
                 that.context.getByPath(filePathStr).thenApply(function(updatedFileOpt){
                     if (updatedFileOpt.ref != null) {
                         updatedFileOpt.ref.remove(optParent.get(), filePath, that.context).thenApply(function(b){
-                            future.complete(b);
+                            future.complete(true);
                         }).exceptionally(function(throwable) {
                             that.showMessage("error deleting post");
                             that.showSpinner = false;
@@ -448,6 +488,17 @@ module.exports = {
                 }
             }
         },
+        viewMediaList: function (mediaList, mediaIndex) {
+            let files = [];
+            for(var i = mediaIndex; i < mediaList.length; i++) {
+                files.push(mediaList[i].file);
+            }
+            for(var j = 0; j < mediaIndex; j++) {
+                files.push(mediaList[j].file);
+            }
+            this.filesToViewInGallery = files;
+            this.showEmbeddedGallery = true;
+        },
         openInGallery: function (entry) {
             this.filesToViewInGallery = [entry.file];
             this.showEmbeddedGallery = true;
@@ -606,18 +657,20 @@ module.exports = {
                 let timelineEntry = this.createTimelineEntry(item.path, item.entry, item.socialPost, item.file);
                 timelineEntry.indent = indentedRow.indent;
                 allTimelineEntries.push(timelineEntry);
-                let media = indentedRow.media;
-                if (media) {
-                    let mediaTimelineEntry = this.createTimelineEntry(media.path, null, null, media.file);
-                    mediaTimelineEntry.indent = indentedRow.indent;
-                    allTimelineEntries.push(mediaTimelineEntry);
+                let mediaList = indentedRow.mediaList;
+                if (mediaList.length > 0) {
+                    for(var k=0; k < mediaList.length; k++) {
+                        let mediaTimelineEntry = this.createTimelineEntry(mediaList[k].path, null, null, mediaList[k].file);
+                        mediaTimelineEntry.indent = indentedRow.indent;
+                        allTimelineEntries.push(mediaTimelineEntry);
+                    }
                 }
             }
             return allTimelineEntries;
         },
-        insertIntoEntries: function(entryTree, itemToInsert, media) {
+        insertIntoEntries: function(entryTree, itemToInsert, mediaList) {
             let parentPath = itemToInsert.socialPost.parent.ref.path;
-            let newNode = entryTree.addChild(parentPath, itemToInsert, media, false);
+            let newNode = entryTree.addChild(parentPath, itemToInsert, mediaList, false);
             if (newNode == null) {
                 this.unresolvedSharedItems.push(itemToInsert);
             } else {
@@ -634,13 +687,13 @@ module.exports = {
             this.lookup = function(path) {
                 return path == null ? this.root : this.nodeLookupMap.get(path);
             }
-            this.addChild = function(parentPath, item, media, insertBefore) {
+            this.addChild = function(parentPath, item, mediaList, insertBefore) {
                 let parent = this.lookup(parentPath);
                 if (parent == null) {
                     return null;
                 }
                 let path = item.path;
-                let node = new this.methodCtx.TreeNode(parent, path, item, media);
+                let node = new this.methodCtx.TreeNode(parent, path, item, mediaList);
                 this.nodeLookupMap.set(path, node);
                 parent.addChild(node, insertBefore);
                 return node;
@@ -651,17 +704,17 @@ module.exports = {
                 return accumulator.slice(1);
             }
             this.recurseCollect = function(node, depth, accumulator) {
-                accumulator.push(new this.methodCtx.IndentedRow(depth, node.item, node.media));
+                accumulator.push(new this.methodCtx.IndentedRow(depth, node.item, node.mediaList));
                 let that = this;
                 node.children.forEach(each => {
                     that.recurseCollect(each, depth + 1, accumulator);
                 });
             }
         },
-        TreeNode: function(parent, path, item, media) {
+        TreeNode: function(parent, path, item, mediaList) {
             this.path = path;
             this.item = item;
-            this.media = media;
+            this.mediaList = mediaList;
             this.children = [];
             this.parent = parent;
             this.addChild = function(node, insertBefore) {
@@ -672,10 +725,10 @@ module.exports = {
                 }
             }
         },
-        IndentedRow: function(indent, item, media) {
+        IndentedRow: function(indent, item, mediaList) {
             this.indent = indent;
             this.item = item;
-            this.media = media;
+            this.mediaList = mediaList;
         },
         isStartOfThread: function(entries, mediaMap, item) {
             if (item.socialPost.parent.ref != null) {
@@ -694,30 +747,31 @@ module.exports = {
             let allSharedItems = this.unresolvedSharedItems.concat(sharedItems);
             allSharedItems.reverse().forEach(item => {
                 if (item.socialPost == null) {
-                    entryTree.addChild(null, item, null, true);
+                    entryTree.addChild(null, item, [], true);
                 } else {
                     let wasCommentOnSharedItem = false;
                     if (item.socialPost.parent.ref != null && !item.socialPost.parent.ref.path.includes("/.posts/")) {
                         if (entryTree.lookup(item.socialPost.parent.ref.path) == null) {
                             let sharedItemParent= mediaMap.get(item.socialPost.parent.ref.path);
-                            entryTree.addChild(null, sharedItemParent, null, true);
+                            entryTree.addChild(null, sharedItemParent, [], true);
                         }
                         wasCommentOnSharedItem = true;
                     }
 
                     let references = item.socialPost.references.toArray([]);
-                    var media = null;
+                    var mediaList = [];
                     if (references.length > 0){
-                        media = mediaMap.get(references[0].path);
-                    }
-                    try {
-                        if (!wasCommentOnSharedItem && that.isStartOfThread(entryTree.root.children, mediaMap, item)) {
-                            entryTree.addChild(null, item, media, true);
-                        } else {
-                            that.insertIntoEntries(entryTree, item, media);
+                        for(var j = 0; j < references.length; j++) {
+                            let media = mediaMap.get(references[j].path);
+                            if (media != null) {
+                                mediaList.push(media);
+                            }
                         }
-                    } catch (ex) {
-                        //skip item because of a missing reference due to unsharing/deletion
+                    }
+                    if (!wasCommentOnSharedItem && that.isStartOfThread(entryTree.root.children, mediaMap, item)) {
+                        entryTree.addChild(null, item, mediaList, true);
+                    } else {
+                        that.insertIntoEntries(entryTree, item, mediaList);
                     }
                 }
             });
@@ -777,25 +831,43 @@ module.exports = {
             }
             let blocks = [];
             let thread = [];
+            let associatedMedia = {isMedia: true, mediaList: []};
             this.data.forEach(timelineEntry => {
                 let isSharedItem = !timelineEntry.isMedia && timelineEntry.entry == null && timelineEntry.socialPost == null;
                 if (isSharedItem || timelineEntry.isLastEntry) {
                     if (thread.length > 0) {
+                        thread.push(associatedMedia);
                         blocks.push(thread);
                         thread = [];
                     }
                     thread.push(timelineEntry);
+                    thread.push(associatedMedia);
                     blocks.push(thread);
                     thread = [];
+                    associatedMedia = {isMedia: true, mediaList: []};
                 } else {
-                    if (!timelineEntry.isMedia && timelineEntry.indent == 1 && thread.length > 0) {
-                        blocks.push(thread);
-                        thread = [];
+                    if (!timelineEntry.isMedia) {
+                        if (timelineEntry.indent == 1 && thread.length > 0) {
+                            thread.push(associatedMedia);
+                            blocks.push(thread);
+                            thread = [];
+                            associatedMedia = {isMedia: true, mediaList: []};
+                            thread.push(timelineEntry);
+                        } else {
+                            if (associatedMedia.mediaList.length > 0) {
+                                thread.push(associatedMedia);
+                                associatedMedia = {isMedia: true, mediaList: []};
+                            }
+                            thread.push(timelineEntry);
+                        }
+                    } else {
+                        associatedMedia.indent = timelineEntry.indent;
+                        associatedMedia.mediaList.push(timelineEntry);
                     }
-                    thread.push(timelineEntry);
                 }
             });
             if (thread.length > 0) {
+                thread.push(associatedMedia);
                 blocks.push(thread);
             }
             return blocks;

@@ -98,7 +98,7 @@ module.exports = {
                     } else if (pair.left == "audio") {
                         type = peergos.shared.social.SocialPost.Type.Audio;
                     } else {
-                        type = peergos.shared.social.SocialPost.Type.Text; //unknown
+                        type = peergos.shared.social.SocialPost.Type.Media; //unknown
                     }
                     future.complete({type: type, mediaItem: pair.right});
                 });

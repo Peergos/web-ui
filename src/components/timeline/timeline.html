@@ -78,24 +78,24 @@
                                     <tr  v-for="row in entry">
                                         <td v-if="row.isMedia" colspan="2">
                                             <div v-bind:style="{ marginLeft: indent(row) }">
-                                                <span class="grid_icon_wrapper fa">
-                                                <a v-if="!row.hasThumbnail">
-                                                    <span style="height:100px" v-on:click="view(row)" v-bind:class="[row.isDirectory ? 'dir' : 'file', getFileIconFromFileAndType(row.file, row.fileType), 'picon-timeline']"> </span>
-                                                </a>
-                                                <img v-if="row.hasThumbnail" v-on:click="view(row)" v-bind:src="row.thumbnail" style="cursor: pointer"/>
-                                                </span>
+                                                <div  v-for="(media, mediaIndex) in row.mediaList" class="grid_icon_wrapper fa">
+                                                    <a v-if="!media.hasThumbnail">
+                                                        <span style="height:100px" v-on:click="viewMediaList(row.mediaList, mediaIndex)" v-bind:class="[media.isDirectory ? 'dir' : 'file', getFileIconFromFileAndType(media.file, media.fileType), 'picon-timeline']"> </span>
+                                                    </a>
+                                                    <img v-if="media.hasThumbnail" v-on:click="viewMediaList(row.mediaList, mediaIndex)" v-bind:src="media.thumbnail" style="cursor: pointer"/>
+                                                </div>
                                             </div>
                                         </td>
                                         <td v-if="row.isPost">
                                           <div v-bind:style="{ marginLeft: indent(row) }">
-					    <div style="display:flex;font-size: 0.8em;color: #7d7d7d;">
-                                              <a v-if="row.sharer != context.username" v-on:click="profile(row.sharer)" style="cursor: pointer">
-                                                <span>{{ row.sharer }}&nbsp;</span>
-                                              </a>
-                                              {{ row.info }}
-					      <span style="flex-grow:1;">&nbsp&nbsp;{{ row.status}}</span>
-					      <span v-if="row.sharer == context.username" class="fa fa-ellipsis-h" @click="displayEditMenu($event, row)"></span>
-					    </div>
+					                            <div style="display:flex;font-size: 0.8em;color: #7d7d7d;">
+                                                    <a v-if="row.sharer != context.username" v-on:click="profile(row.sharer)" style="cursor: pointer">
+                                                        <span>{{ row.sharer }}&nbsp;</span>
+                                                    </a>
+                                                    {{ row.info }}
+					                                <span style="flex-grow:1;">&nbsp&nbsp;{{ row.status}}</span>
+					                                <span v-if="row.sharer == context.username" class="fa fa-ellipsis-h" @click="displayEditMenu($event, row)"></span>
+                                                </div>
                                             <div class="social-post">{{ row.name }}</div>
                                           </div>
                                         </td>
