@@ -680,6 +680,7 @@ h3 {word-wrap:break-word; white-space:normal;}
     background-color: #e2e2e2;
     border: 1px solid black;
     border-radius: 4px;
+    padding-left: 5px;
 }
 .picon-timeline {
     font-size: 5em;
