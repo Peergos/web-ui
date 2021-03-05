@@ -681,6 +681,7 @@ h3 {word-wrap:break-word; white-space:normal;}
     border: 1px solid black;
     border-radius: 4px;
     padding: 5px;
+    overflow-wrap: break-word;
 }
 .picon-timeline {
     font-size: 5em;

@@ -5,7 +5,7 @@ module.exports = {
             showSpinner: false,
             data: [],
             pageEndIndex : 0,
-            pageSize: 25,
+            pageSize: 4,
             requestingMoreResults: false,
             noMoreResults: false,
             showSocialPostForm: false,
@@ -31,17 +31,6 @@ module.exports = {
         let that = this;
         Vue.nextTick(function() {
             that.init();
-            //TODO size scroll display area using css!
-            let scrollingArea = document.getElementById('scroll-area');
-            var rect = scrollingArea.getBoundingClientRect();
-            scrollingArea.style["height"] = (window.innerHeight - rect.top) /10 * 9 + "px";
-            let body = document.getElementsByTagName('body');
-            body[0].onresize = function(){
-                var rect = scrollingArea.getBoundingClientRect();
-                var height = (window.innerHeight - rect.top);
-                scrollingArea.style["height"] = height/10 * 9+ "px";
-            };
-
         });
     },
     methods: {
@@ -138,14 +127,13 @@ module.exports = {
 	    var posy = 0;
 	    
 	    if (!e) var e = window.event;
+	    var body = document.getElementById("modal-body");
+	    var feed = document.getElementById("feed")
 	    
-	    if (e.layerY || e.layerX) {
-		posx = e.layerX;
-		posy = e.layerY;
-	    } else if (e.clientX || e.clientY) {
-		posx = e.clientX + document.body.scrollLeft + 
+	    if (e.clientX || e.clientY) {
+		posx = e.clientX - feed.offsetLeft + document.body.scrollLeft + 
                     document.documentElement.scrollLeft;
-		posy = e.clientY + document.body.scrollTop + 
+		posy = e.clientY - body.offsetTop + document.body.scrollTop + 
                     document.documentElement.scrollTop;
 	    }
 	    
@@ -162,8 +150,8 @@ module.exports = {
             this.currentRow = row;
 	    var pos = this.getPosition(event);
 	    Vue.nextTick(function() {
-		var top = pos.y + 60;
-		var left = pos.x - 60;
+		var top = pos.y + 10;
+		var left = pos.x - 100;
 		this.menutop = top + 'px';
 		this.menuleft = left + 'px';
 	    }.bind(this));

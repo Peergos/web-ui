@@ -1,12 +1,12 @@
 <transition name="modal">
-<div class="modal-mask-app" @click="close">
-    <div class="modal-container" @click.stop style="height:100%;width:100%;">
+<div class="modal-mask-app" @click="close" style="position:absolute;">
+    <div class="modal-container" @click.stop style="width:100%;">
         <span @click="close" class="close">&times;</span>
         <div class="modal-header" @click="closeEditMenu($event)">
             <h2>Timeline</h2>
         </div>
 
-        <div class="modal-body" @click="closeEditMenu($event)">
+        <div id="modal-body" class="modal-body" @click="closeEditMenu($event)">
             <social-post
                     v-if="showSocialPostForm"
                     :closeSocialPostForm="closeSocialPostForm"
@@ -38,7 +38,7 @@
                 Write Post
               </button>
 	    </center>
-            <div id="scroll-area" v-on:scroll="handleScrolling()" style="height: 400px;overflow-y: scroll;">
+            <div id="scroll-area" v-on:scroll="handleScrolling()">
 	      <center v-if="data.length==0">
 		<h3>
 		  This is your social feed.
@@ -51,15 +51,12 @@
 		<li><a @click="editPost(currentRow)">Edit</a></li>
 		<li><a @click="deletePost(currentRow)">Delete</a></li>
 	      </ul>
-                <table class="table table-responsive table-striped table-hover">
-                    <tr v-if="data.length==0"><th></th></tr>
-                    <tr v-for="entry in blocks">
-                        <td v-if="entry[0].isLastEntry">
+                <div id="feed" class="table table-responsive table-striped table-hover" style="">
+                    <div v-for="entry in blocks">
+                        <div v-if="entry[0].isLastEntry">
                             <span>No more entries</span>
-                        </td>
-                        <td v-if="entry[0].isLastEntry">
-                        </td>
-                        <td v-if="!entry[0].isLastEntry && !entry[0].isPost && !entry[0].isMedia">
+                        </div>
+                        <div v-if="!entry[0].isLastEntry && !entry[0].isPost && !entry[0].isMedia">
                                 <a v-if="entry[0].sharer != context.username" v-on:click="profile(entry[0].sharer)" style="cursor: pointer">
                                     <span>{{ entry[0].sharer }}</span>
                                 </a>
@@ -70,12 +67,12 @@
                                 <span v-if="!entry[0].isDirectory && entry[0].sharer != context.username && !entry[0].isMedia">
                                     <button class="btn btn-success" @click="addComment(entry[0])">Add comment</button>
                                 </span>
-                        </td>
-                        <td v-if="!entry[0].isLastEntry && (entry[0].isPost || entry[0].isMedia)" colspan="2">
+                        </div>
+                        <div v-if="!entry[0].isLastEntry && (entry[0].isPost || entry[0].isMedia)" colspan="2">
                             <div style="border: 1px solid black;border-radius: 11px; margin-top:5px;">
-                                <table class="table-responsive table-striped table-hover" style="font-size: 1.0em;">
-                                    <tr  v-for="row in entry">
-                                        <td v-if="row.isMedia" colspan="2">
+                                <div class="table-responsive table-striped table-hover" style="font-size: 1.0em;">
+                                    <div v-for="row in entry">
+                                        <div v-if="row.isMedia" colspan="2">
                                             <div v-bind:style="{ marginLeft: indent(row) }">
                                                 <div  v-for="(media, mediaIndex) in row.mediaList" class="grid_icon_wrapper fa">
                                                     <a v-if="!media.hasThumbnail">
@@ -84,34 +81,32 @@
                                                     <img v-if="media.hasThumbnail" v-on:click="viewMediaList(row.mediaList, mediaIndex)" v-bind:src="media.thumbnail" style="cursor: pointer"/>
                                                 </div>
                                             </div>
-                                        </td>
-                                        <td v-if="row.isPost">
+                                        </div>
+                                        <div v-if="row.isPost">
                                           <div v-bind:style="{ marginLeft: indent(row) }">
-					                            <div style="display:flex;font-size: 0.8em;color: #7d7d7d;">
-                                                    <a v-if="row.sharer != context.username" v-on:click="profile(row.sharer)" style="cursor: pointer">
-                                                        <span>{{ row.sharer }}&nbsp;</span>
-                                                    </a>
-                                                    {{ row.info }}
-					                                <span style="flex-grow:1;">&nbsp&nbsp;{{ row.status}}</span>
-					                                <span v-if="row.sharer == context.username" class="fa fa-ellipsis-h" @click="displayEditMenu($event, row)"></span>
-                                                </div>
-                                            <div class="social-post" v-if="row.name.length > 0">{{ row.name }}</div>
-                                          </div>
-                                        </td>
-                                        <td v-if="row.isPost">
-                                            <div>
-                                                <span style="margin: 10px;">
-                                                    <div  style="margin-left: 10px;">
-                                                        <button class="btn btn-success" @click="addComment(row)">comment</button>
-                                                    </div>
-                                                </span>
+					    <div style="display:flex;font-size: 0.8em;color: #7d7d7d;">
+                                              <a v-if="row.sharer != context.username" v-on:click="profile(row.sharer)" style="cursor: pointer">
+                                                <span>{{ row.sharer }}&nbsp;</span>
+                                              </a>
+                                              {{ row.info }}
+					      <span style="flex-grow:1;">&nbsp&nbsp;{{ row.status}}</span>
+					      <span v-if="row.sharer == context.username" class="fa fa-ellipsis-h" @click="displayEditMenu($event, row)"></span>
                                             </div>
-                                        </td>
-                                    </tr>
-                                </table>
+					    <div class="social-post" v-if="row.name.length > 0">{{ row.name }}</div>
+					    <div>
+                                              <span style="margin: 10px;">
+                                                <div>
+                                                  <button class="btn btn-success" @click="addComment(row)">comment</button>
+                                                </div>
+                                              </span>
+                                            </div>			    
+                                          </div>
+                                        </div>
+                                    </div>
+                                </div>
                             </div>
-                        </td>
-                        <td v-if="!entry[0].isLastEntry">
+                        </div>
+                        <div v-if="!entry[0].isLastEntry">
                             <div v-if="!entry[0].isPost && !entry[0].isMedia">
                                 <span class="grid_icon_wrapper fa">
                                 <a v-if="!entry[0].hasThumbnail">
@@ -120,9 +115,12 @@
                                 <img v-if="entry[0].hasThumbnail" v-on:click="view(entry[0])" v-bind:src="entry[0].thumbnail" style="cursor: pointer"/>
                                 </span>
                             </div>
-                        </td>
-                    </tr>
-                </table>
+                        </div>
+                    </div>
+                </div>
+		<center>
+		  <button class="btn btn-success" v-on:click="requestMoreResults()">Show more</button>
+		</center>
             </div>
         </div>
     </div>
