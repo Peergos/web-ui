@@ -526,10 +526,10 @@ module.exports = {
         createTimelineEntry: function(filePath, entry, socialPost, file) {
             var displayFilename = true;
             let info = " shared";
-            let isMedia = entry== null && socialPost == null  && filePath.includes("/media/") ? true : false;
+            let isMedia = entry== null && socialPost == null  && filePath.includes("/.posts/") && filePath.includes("/media/") ? true : false;
 
-            let owner = entry != null ? entry.sharer : this.extractOwnerFromPath(filePath);
-            if (owner == this.context.username) {
+            let sharer = entry != null ? entry.sharer : this.extractOwnerFromPath(filePath);
+            if (sharer == this.context.username) {
                 info = "you" + info;
             }
             if (socialPost == null && filePath.includes("/.posts/")) {
@@ -582,7 +582,7 @@ module.exports = {
                 }
             }
             let item = {
-                sharer: owner, //todo handle re-sharing
+                sharer: sharer,
                 info: info,
                 link: filePath,
                 cap: entry == null ? null : entry.cap,
