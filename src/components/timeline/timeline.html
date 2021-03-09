@@ -1,62 +1,65 @@
 <transition name="modal">
-<div class="modal-mask-app" @click="close" style="position:absolute;">
-    <div class="modal-container" @click.stop style="width:100%;">
-        <span @click="close" class="close">&times;</span>
-        <div class="modal-header" @click="closeEditMenu($event)">
-            <h2>Timeline</h2>
-        </div>
+    <div class="modal-mask-app" @click="close" style="position:absolute;">
+        <div class="modal-container" @click.stop style="width:100%;">
+            <span @click="close" class="close">&times;</span>
+            <div class="modal-header" @click="closeEditMenu($event)">
+                <h2>Social Feed</h2>
+            </div>
 
-        <div id="modal-body" class="modal-body" @click="closeEditMenu($event)">
-            <social-post
-                    v-if="showSocialPostForm"
-                    :closeSocialPostForm="closeSocialPostForm"
-                    :socialFeed="socialFeed"
-                    :context="context"
-                    :showMessage="showMessage"
-                    :groups="groups"
-                    :socialPostAction="socialPostAction"
-                    :currentSocialPostEntry="currentSocialPostEntry">
-            </social-post>
-            <gallery
-                    v-if="showEmbeddedGallery"
-                    v-on:hide-gallery="showEmbeddedGallery = false"
-                    :files="filesToViewInGallery"
-                    :hideGalleryTitle="true"
-                    :context="context">
-            </gallery>
-            <confirm
-                    v-if="showConfirm"
-                    v-on:hide-confirm="showConfirm = false"
-                    :confirm_message='confirm_message'
-                    :confirm_body="confirm_body"
-                    :consumer_cancel_func="confirm_consumer_cancel_func"
-                    :consumer_func="confirm_consumer_func">
-            </confirm>
-            <spinner v-if="showSpinner"></spinner>
-	    <center>
-              <button class="btn btn-success" @click="addNewPost()" style="width:50%; margin-bottom: 10px;">
-                Write Post
-              </button>
-	    </center>
-            <div id="scroll-area" v-on:scroll="handleScrolling()">
-	      <center v-if="data.length==0">
-		<h3>
-		  This is your social feed.
-		</h3>
-		<h3>
-		  You can see here all the things that have been shared with you by friends or people you follow.
-		</h3>
-	      </center>
-	      <ul id="editMenu" v-if="showEditMenu" class="dropdown-menu" v-bind:style="{top:menutop, left:menuleft}" style="cursor:pointer;display:block;min-width:100px;">
-		<li><a @click="editPost(currentRow)">Edit</a></li>
-		<li><a @click="deletePost(currentRow)">Delete</a></li>
-	      </ul>
-                <div id="feed" class="table table-responsive table-striped table-hover" style="">
-                    <div v-for="entry in blocks">
-                        <div v-if="entry[0].isLastEntry">
-                            <span>No more entries</span>
-                        </div>
-                        <div v-if="!entry[0].isLastEntry && !entry[0].isPost && !entry[0].isMedia">
+            <div id="modal-body" class="modal-body" @click="closeEditMenu($event)">
+                <social-post
+                        v-if="showSocialPostForm"
+                        :closeSocialPostForm="closeSocialPostForm"
+                        :socialFeed="socialFeed"
+                        :context="context"
+                        :showMessage="showMessage"
+                        :groups="groups"
+                        :socialPostAction="socialPostAction"
+                        :currentSocialPostEntry="currentSocialPostEntry">
+                </social-post>
+                <gallery
+                        v-if="showEmbeddedGallery"
+                        v-on:hide-gallery="showEmbeddedGallery = false"
+                        :files="filesToViewInGallery"
+                        :hideGalleryTitle="true"
+                        :context="context">
+                </gallery>
+                <confirm
+                        v-if="showConfirm"
+                        v-on:hide-confirm="showConfirm = false"
+                        :confirm_message='confirm_message'
+                        :confirm_body="confirm_body"
+                        :consumer_cancel_func="confirm_consumer_cancel_func"
+                        :consumer_func="confirm_consumer_func">
+                </confirm>
+                <spinner v-if="showSpinner"></spinner>
+                <center>
+                    <button class="btn btn-success" @click="addNewPost()" style="width:50%; margin-bottom: 10px;">
+                        Write Post
+                    </button>
+                </center>
+                <div id="scroll-area" v-on:scroll="handleScrolling()">
+                    <center v-if="data.length==0">
+                        <h3>
+                            This is your social feed.
+                        </h3>
+                        <h3>
+                            You can see here all the things that have been shared with you by friends or people you follow.
+                        </h3>
+                    </center>
+                    <ul id="editMenu" v-if="showEditMenu" class="dropdown-menu" v-bind:style="{top:menutop, left:menuleft}" style="cursor:pointer;display:block;min-width:100px;">
+                        <li><a @click="editPost(currentRow)">Edit</a></li>
+                        <li><a @click="deletePost(currentRow)">Delete</a></li>
+                    </ul>
+                    <table id="feed" class="table table-responsive table-striped table-hover">
+                        <tr v-if="data.length==0"><th></th></tr>
+                        <tr v-for="entry in blocks">
+                            <td v-if="entry[0].isLastEntry">
+                                <span>No more entries</span>
+                            </td>
+                            <td v-if="entry[0].isLastEntry">
+                            </td>
+                            <td v-if="!entry[0].isLastEntry && !entry[0].isPost && !entry[0].isMedia">
                                 <a v-if="entry[0].sharer != context.username" v-on:click="profile(entry[0].sharer)" style="cursor: pointer">
                                     <span>{{ entry[0].sharer }}</span>
                                 </a>
@@ -64,65 +67,74 @@
                                 <a v-if="entry[0].displayFilename" v-on:click="navigateTo(entry[0])" style="cursor: pointer">
                                     <span :title="entry[0].link">{{ entry[0].name }}</span>
                                 </a>
+                                <div>
                                 <span v-if="!entry[0].isDirectory && entry[0].sharer != context.username && !entry[0].isMedia">
                                     <button class="btn btn-success" @click="addComment(entry[0])">Add comment</button>
                                 </span>
-                        </div>
-                        <div v-if="!entry[0].isLastEntry && (entry[0].isPost || entry[0].isMedia)" colspan="2">
-                            <div style="border: 1px solid black;border-radius: 11px; margin-top:5px;">
-                                <div class="table-responsive table-striped table-hover" style="font-size: 1.0em;">
-                                    <div v-for="row in entry">
-                                        <div v-if="row.isMedia" colspan="2">
-                                            <div v-bind:style="{ marginLeft: indent(row) }">
-                                                <div  v-for="(media, mediaIndex) in row.mediaList" class="grid_icon_wrapper fa">
-                                                    <a v-if="!media.hasThumbnail">
-                                                        <span style="height:100px" v-on:click="viewMediaList(row.mediaList, mediaIndex)" v-bind:class="[media.isDirectory ? 'dir' : 'file', getFileIconFromFileAndType(media.file, media.fileType), 'picon-timeline']"> </span>
-                                                    </a>
-                                                    <img v-if="media.hasThumbnail" v-on:click="viewMediaList(row.mediaList, mediaIndex)" v-bind:src="media.thumbnail" style="cursor: pointer"/>
-                                                </div>
-                                            </div>
-                                        </div>
-                                        <div v-if="row.isPost">
-                                          <div v-bind:style="{ marginLeft: indent(row) }">
-					    <div style="display:flex;font-size: 0.8em;color: #7d7d7d;">
-                                              <a v-if="row.sharer != context.username" v-on:click="profile(row.sharer)" style="cursor: pointer">
-                                                <span>{{ row.sharer }}&nbsp;</span>
-                                              </a>
-                                              {{ row.info }}
-					      <span style="flex-grow:1;">&nbsp&nbsp;{{ row.status}}</span>
-					      <span v-if="row.sharer == context.username" class="fa fa-ellipsis-h" @click="displayEditMenu($event, row)"></span>
-                                            </div>
-					    <div class="social-post" v-if="row.name.length > 0">{{ row.name }}</div>
-					    <div>
-                                              <span style="margin: 10px;">
-                                                <div>
-                                                  <button class="btn btn-success" @click="addComment(row)">comment</button>
-                                                </div>
-                                              </span>
-                                            </div>			    
-                                          </div>
-                                        </div>
-                                    </div>
                                 </div>
-                            </div>
-                        </div>
-                        <div v-if="!entry[0].isLastEntry">
-                            <div v-if="!entry[0].isPost && !entry[0].isMedia">
+                            </td>
+                            <td v-if="!entry[0].isLastEntry && (entry[0].isPost || entry[0].isMedia)" colspan="2">
+                                <div style="border: 1px solid black;border-radius: 11px; margin-top:5px;">
+                                    <table class="table-responsive table-striped table-hover" style="font-size: 1.0em;">
+                                        <tr  v-for="(row, rowIndex) in entry">
+                                            <td v-if="row.isMedia" colspan="2">
+                                                <div v-bind:style="{ marginLeft: indent(row) }">
+                                                    <div  v-for="(media, mediaIndex) in row.mediaList" class="grid_icon_wrapper fa">
+                                                        <a v-if="!media.hasThumbnail">
+                                                            <span style="height:100px" v-on:click="viewMediaList(row.mediaList, mediaIndex)" v-bind:class="[media.isDirectory ? 'dir' : 'file', getFileIconFromFileAndType(media.file, media.fileType), 'picon-timeline']"> </span>
+                                                        </a>
+                                                        <img v-if="media.hasThumbnail" v-on:click="viewMediaList(row.mediaList, mediaIndex)" v-bind:src="media.thumbnail" style="cursor: pointer"/>
+                                                    </div>
+                                                </div>
+                                                <div v-bind:style="{ marginLeft: indent(entry[rowIndex-1]) }">
+                                                    <div style="margin-top: 10px; margin-bottom: 10px;">
+                                                    <span>
+                                                            <button class="btn btn-success" @click="addComment(entry[rowIndex-1])">comment</button>
+                                                    </span>
+                                                    </div>
+                                                </div>
+                                            </td>
+                                            <td v-if="row.isPost" colspan="2">
+                                                <div v-bind:style="{ marginLeft: indent(row) }">
+                                                    <div style="display:flex;font-size: 0.8em;color: #7d7d7d;margin-right: 10px;">
+                                                        <a v-if="row.sharer != context.username" v-on:click="profile(row.sharer)" style="cursor: pointer">
+                                                            <span>{{ row.sharer }}&nbsp;</span>
+                                                        </a>
+                                                        {{ row.info }}
+                                                        <span style="flex-grow:1;">&nbsp&nbsp;{{ row.status}}</span>
+                                                        <span v-if="row.sharer == context.username" class="fa fa-ellipsis-h" @click="displayEditMenu($event, row)"></span>
+                                                    </div>
+                                                    <div class="social-post" v-if="row.name.length > 0">{{ row.name }}</div>
+                                                </div>
+                                                <div v-if="!(rowIndex + 1 < entry.length && entry[rowIndex+1].isMedia)" v-bind:style="{ marginLeft: indent(row) }">
+                                                    <div style="margin-top: 10px; margin-bottom: 10px;">
+                                                    <span>
+                                                            <button class="btn btn-success" @click="addComment(row)">comment</button>
+                                                    </span>
+                                                    </div>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    </table>
+                                </div>
+                            </td>
+                            <td v-if="!entry[0].isLastEntry">
+                                <div v-if="!entry[0].isPost && !entry[0].isMedia">
                                 <span class="grid_icon_wrapper fa">
                                 <a v-if="!entry[0].hasThumbnail">
                                     <span style="height:100px" v-on:click="view(entry[0])" v-bind:class="[entry[0].isDirectory ? 'dir' : 'file', getFileIconFromFileAndType(entry[0].file, entry[0].fileType), 'picon-timeline']"> </span>
                                 </a>
                                 <img v-if="entry[0].hasThumbnail" v-on:click="view(entry[0])" v-bind:src="entry[0].thumbnail" style="cursor: pointer"/>
                                 </span>
-                            </div>
-                        </div>
-                    </div>
+                                </div>
+                            </td>
+                        </tr>
+                    </table>
+                    <center>
+                        <button class="btn btn-success" v-on:click="requestMoreResults()">Show more</button>
+                    </center>
                 </div>
-		<center>
-		  <button class="btn btn-success" v-on:click="requestMoreResults()">Show more</button>
-		</center>
             </div>
         </div>
     </div>
-</div>
 </transition>
