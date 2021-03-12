@@ -22,14 +22,17 @@ module.exports = {
             confirm_message: "",
             confirm_body: "",
             confirm_consumer_cancel_func: () => {},
-            confirm_consumer_func: () => {}
+            confirm_consumer_func: () => {},
+            hasLoadedInitialResults: false,
+            socialFeed: null
         }
     },
-    props: ['context','navigateToAction','viewAction', 'messages', 'getFileIconFromFileAndType', 'socialFeed',
-        'importCalendarFile', 'importSharedCalendar', 'displayProfile', 'groups'],
+    props: ['context','navigateToAction','viewAction', 'messages', 'getFileIconFromFileAndType', 'socialFeedInstance',
+        'updateSocialFeedInstance', 'importCalendarFile', 'importSharedCalendar', 'displayProfile', 'groups'],
     created: function() {
         let that = this;
         Vue.nextTick(function() {
+            that.socialFeed = that.socialFeedInstance;
             that.init();
         });
     },
@@ -780,6 +783,34 @@ module.exports = {
             });
             return future;
         },
+        refresh: function() {
+            var that = this;
+            that.showSpinner = true;
+            that.socialFeed.update().thenApply(function(updated) {
+                that.socialFeed = updated;
+                that.updateSocialFeedInstance(that.socialFeed);
+                that.retrieveUnSeen(that.socialFeed.getLastSeenIndex(), that.pageSize, []).thenApply(function(unseenItems) {
+                        let items = that.filterSharedItems(unseenItems.reverse());
+                        if (items.length == 0) {
+                            that.showSpinner = false;
+                            that.requestingMoreResults = false;
+                            that.noMoreResults = true;
+                        } else {
+                            that.buildTimeline(items).thenApply(function(timelineEntries) {
+                                that.data = timelineEntries.concat(that.data);
+                                that.showSpinner = false;
+                                that.requestingMoreResults = false;
+                            });
+                        }
+                }).exceptionally(function(throwable) {
+                    that.showMessage(throwable.getMessage());
+                    that.showSpinner = false;
+                });
+            }).exceptionally(function(throwable) {
+                that.showMessage(throwable.getMessage());
+                that.showSpinner = false;
+            });
+        },
 	    init: function() {
             var that = this;
             that.showSpinner = true;
@@ -797,6 +828,7 @@ module.exports = {
                         that.buildTimeline(items).thenApply(function(timelineEntries) {
                             that.data = timelineEntries;
                             that.showSpinner = false;
+                            that.hasLoadedInitialResults = true;
                         });
                     }
                 }).exceptionally(function(throwable) {

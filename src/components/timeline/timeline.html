@@ -33,11 +33,16 @@
                         :consumer_func="confirm_consumer_func">
                 </confirm>
                 <spinner v-if="showSpinner"></spinner>
-                <center>
-                    <button class="btn btn-success" @click="addNewPost()" style="width:50%; margin-bottom: 10px;">
-                        Write Post
-                    </button>
-                </center>
+
+                <div class="panel-body">
+                    <div>
+                        <button @click="addNewPost()" class="btn btn-success" >Write Post</button>
+                        <button @click="refresh()" class="btn btn-success" style="float: right;" >
+                            <i class="fa fa-sync-alt" aria-hidden="true"></i>&nbsp;Refresh
+                        </button>
+                    </div>
+                </div>
+
                 <div id="scroll-area" v-on:scroll="handleScrolling()">
                     <center v-if="data.length==0">
                         <h3>
@@ -131,7 +136,7 @@
                         </tr>
                     </table>
                     <center>
-                        <button class="btn btn-success" v-on:click="requestMoreResults()">Show more</button>
+                        <button v-if="hasLoadedInitialResults" class="btn btn-success" v-on:click="requestMoreResults()">Show more</button>
                     </center>
                 </div>
             </div>

@@ -1343,7 +1343,9 @@ module.exports = {
                 that.showSpinner = false;
             });
         },
-
+        updateSocialFeedInstance: function(updated) {
+            this.socialFeed = updated;
+        },
         copy: function() {
             if (this.selectedFiles.length != 1)
                 return;
