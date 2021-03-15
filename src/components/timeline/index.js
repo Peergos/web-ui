@@ -5,7 +5,7 @@ module.exports = {
             showSpinner: false,
             data: [],
             pageEndIndex : 0,
-            pageSize: 25,
+            pageSize: 5,
             requestingMoreResults: false,
             noMoreResults: false,
             showSocialPostForm: false,
@@ -716,29 +716,31 @@ module.exports = {
         refresh: function() {
             var that = this;
             that.showSpinner = true;
-            that.socialFeed.update().thenApply(function(updated) {
+            let lastSeenIndex = this.socialFeed.getLastSeenIndex();
+            this.socialFeed.update().thenApply(function(updated) {
                 that.socialFeed = updated;
-                that.updateSocialFeedInstance(that.socialFeed);
-                that.retrieveUnSeen(that.socialFeed.getLastSeenIndex(), that.pageSize, []).thenApply(function(unseenItems) {
-                        let items = that.filterSharedItems(unseenItems.reverse());
-                        if (items.length == 0) {
+                that.retrieveUnSeen(lastSeenIndex, that.pageSize, []).thenApply(function(unseenItems) {
+                    that.retrieveResults(that.pageEndIndex, lastSeenIndex, []).thenApply(function(additionalItems) {
+                        let items = that.filterSharedItems(unseenItems.reverse().concat(additionalItems.reverse()));
+                        var numberOfEntries = items.length;
+                        if (numberOfEntries == 0) {
+                            that.data = [];
                             that.showSpinner = false;
-                            that.requestingMoreResults = false;
-                            that.noMoreResults = true;
                         } else {
+                            that.unresolvedSharedItems = [];
                             that.buildTimeline(items).thenApply(function(timelineEntries) {
-                                that.data = timelineEntries.concat(that.data);
+                                that.data = timelineEntries;
                                 that.showSpinner = false;
-                                that.requestingMoreResults = false;
                             });
                         }
+                    }).exceptionally(function(throwable) {
+                        that.showMessage(throwable.getMessage());
+                        that.showSpinner = false;
+                    });
                 }).exceptionally(function(throwable) {
                     that.showMessage(throwable.getMessage());
                     that.showSpinner = false;
                 });
-            }).exceptionally(function(throwable) {
-                that.showMessage(throwable.getMessage());
-                that.showSpinner = false;
             });
         },
 	    init: function() {

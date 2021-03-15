@@ -60,7 +60,7 @@
                         <tr v-if="data.length==0"><th></th></tr>
                         <tr v-for="entry in blocks">
                             <td v-if="entry[0].isLastEntry">
-                                <span>No more entries</span>
+                                <center><span>No more entries</span></center>
                             </td>
                             <td v-if="entry[0].isLastEntry">
                             </td>
@@ -136,7 +136,7 @@
                         </tr>
                     </table>
                     <center>
-                        <button v-if="hasLoadedInitialResults" class="btn btn-success" v-on:click="requestMoreResults()">Show more</button>
+                        <button v-if="hasLoadedInitialResults && !noMoreResults" class="btn btn-success" v-on:click="requestMoreResults()">Show more</button>
                     </center>
                 </div>
             </div>
