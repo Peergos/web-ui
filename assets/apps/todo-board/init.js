@@ -157,6 +157,7 @@ function buildNewList(index, name, buildNext) {
         orderedList.addEventListener('click', function(ev) {
             if (ev.target.tagName === 'LI' &&  !ev.target.classList.contains('empty-item')) {
                 ev.target.classList.toggle('checked');
+                registerChange();
             }
         }, false);
     }
