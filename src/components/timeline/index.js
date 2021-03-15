@@ -335,13 +335,6 @@ module.exports = {
             this.reduceLoadingMediaPosts(refs, 0, [], future);
             return future;
         },
-        handleScrolling: function() {
-            let that = this;
-            let scrollingDiv = document.getElementById('scroll-area');
-            if (scrollingDiv.offsetHeight + scrollingDiv.scrollTop >= scrollingDiv.scrollHeight) {
-                that.requestMoreResults();
-            }
-        },
         processItems: function(items) {
             var that = this;
             that.buildTimeline(items).thenApply(function(allTimelineEntries) {
