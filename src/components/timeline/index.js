@@ -42,69 +42,6 @@ module.exports = {
             this.socialPostAction = 'add';
             this.showSocialPostForm = true;
         },
-        reduceAllMediaAppend: function(index, references, post, accumulator, future) {
-            let that = this;
-            if (index == references.length) {
-                future.complete(accumulator);
-            } else {
-                let refPath = references[index].path;
-                this.context.getByPath(refPath).thenApply(function(optFile){
-                    let file = optFile.get();
-                    let media = that.createTimelineEntry(refPath, null, null, file);
-                    media.indent = post.indent;
-                    accumulator.push(media);
-                    that.reduceAllMediaAppend(index+1, references, post, accumulator, future);
-                });
-            }
-        },
-        appendMediaForPost: function(post, references) {
-            let that = this;
-            let future = peergos.shared.util.Futures.incomplete();
-            that.reduceAllMediaAppend(0, references, post, [], future);
-            return future;
-        },
-        appendToTimeline: function(newPath, newSocialPost, newFile, originalPath) {
-            let post = this.createTimelineEntry(newPath, null, newSocialPost, newFile);
-            let references = newSocialPost.references.toArray([]);
-            if (originalPath != null) {
-                let index = this.data.findIndex(v => v.link === originalPath);
-                if (index > -1) {
-                    let parentPostIndent = this.data[index].indent;
-                    post.indent = parentPostIndent + 1;
-                    var i = index +1;
-                    for(;i < this.data.length; i++) {
-                        if (!this.data[i].isMedia) {
-                            if (this.data[i].indent == null || this.data[i].indent <= parentPostIndent){
-                                break;
-                            }
-                        }
-                    }
-                    if (references.length > 0) {
-                        let that = this;
-                        this.appendMediaForPost(post, references).thenApply(function(timelineEntries){
-                            that.data.splice(i, 0, post);
-                            for(var j = 0; j < timelineEntries.length; j++) {
-                                that.data.splice(i+1+j, 0, timelineEntries[j]);
-                            }
-                        });
-                    } else {
-                        this.data.splice(i, 0, post);
-                    }
-                }
-            } else {
-                if (references.length > 0) {
-                    let that = this;
-                    this.appendMediaForPost(post, references).thenApply(function(timelineEntries){
-                        that.data = [post].concat(that.data);
-                        for(var j = 0; j < timelineEntries.length; j++) {
-                            that.data.splice(1+j, 0, timelineEntries[j]);
-                        }
-                    });
-                } else {
-                    this.data = [post].concat(this.data);
-                }
-            }
-        },
         closeSocialPostForm: function(action, newPath, newSocialPost, newFile, originalPath) {
             if (newPath != null && !newPath.startsWith("/")) {
                 newPath = "/" + newPath;
@@ -121,7 +58,7 @@ module.exports = {
                 }
             } else {
                 if (newSocialPost != null) {
-                    this.appendToTimeline(newPath, newSocialPost, newFile, originalPath);
+                    this.refresh();
                 }
             }
         },
