@@ -349,6 +349,12 @@ module.exports = {
                             }
                         }) ;
                     }
+                    if (post.parent.ref != null) {
+                        let index = sharedPosts.findIndex(v => v.path === post.parent.ref.path);
+                        if (index == -1) {
+                            refs.push(post.parent.ref);
+                        }
+                    }
                 }
             }
             this.reduceLoadingCommentPosts(refs, 0, [], future);
@@ -766,8 +772,15 @@ module.exports = {
                 that.loadFiles(allPairs).thenApply(function(sharedItems) {
                     that.loadCommentPosts(sharedItems).thenApply(function(commentPosts) {
                         let combinedPosts = commentPosts.concat(sharedItems);
-                        that.loadMediaPosts(combinedPosts).thenApply(function(mediaPosts) {
-                            let entries = that.organiseEntries(combinedPosts, mediaPosts);
+                        let sortedList = combinedPosts.sort(function (a, b) {
+                            let aVal = a.socialPost.postTime != null ? a.socialPost.postTime
+                                : a.file.getFileProperties().modified;
+                            let bVal = b.socialPost.postTime != null ? b.socialPost.postTime
+                                : b.file.getFileProperties().modified;
+                            return bVal.compareTo(aVal);
+                        });
+                        that.loadMediaPosts(sortedList).thenApply(function(mediaPosts) {
+                            let entries = that.organiseEntries(sortedList, mediaPosts);
                             let allTimelineEntries = that.populateTimeline(entries);
                             future.complete(allTimelineEntries);
                         });
