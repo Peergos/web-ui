@@ -342,7 +342,7 @@ module.exports = {
                     let references = post.comments.toArray([]);
                     if (references.length > 0) {
                         references.forEach(ref => {
-                            let index = sharedPosts.findIndex(v => v.path === ref.path);
+                            let index = sharedPosts.findIndex(v => v.path.endsWith(ref.path));
                             if (index == -1) {
                                 //eg we shared a file that another has commented on
                                 refs.push(ref);
