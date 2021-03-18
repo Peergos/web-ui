@@ -56,7 +56,7 @@
                         <li><a @click="editPost(currentRow)">Edit</a></li>
                         <li><a @click="deletePost(currentRow)">Delete</a></li>
                     </ul>
-                    <div id="feed" class="table table-responsive table-striped table-hover" style="">
+                    <div id="feed" class="table table-responsive table-striped table-hover" style="border:none;">
                         <div v-for="entry in blocks">
                             <div v-if="entry[0].isLastEntry">
                                 <center><span>No more entries</span></center>
