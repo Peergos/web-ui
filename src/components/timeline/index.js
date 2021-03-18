@@ -657,7 +657,7 @@ module.exports = {
             return allTimelineEntries;
         },
         insertIntoEntries: function(entryTree, itemToInsert, mediaList) {
-            let parentPath = itemToInsert.socialPost.parent.ref.path;
+            let parentPath = itemToInsert.socialPost.parent.ref.path.startsWith('/') ?  itemToInsert.socialPost.parent.ref.path : '/' + itemToInsert.socialPost.parent.ref.path;
             let newNode = entryTree.addChild(parentPath, itemToInsert, mediaList, false);
             if (newNode == null) {
                 this.unresolvedSharedItems.push(itemToInsert);
@@ -754,10 +754,11 @@ module.exports = {
                 } else {
                     let wasCommentOnSharedItem = false;
                     if (item.socialPost.parent.ref != null && !item.socialPost.parent.ref.path.includes("/.posts/")) {
-                        if (entryTree.lookup(item.socialPost.parent.ref.path) == null) {
-                            var sharedItemParent = mediaMap.get(item.socialPost.parent.ref.path);
+                        let path = item.socialPost.parent.ref.path.startsWith('/') ? item.socialPost.parent.ref.path : '/' + item.socialPost.parent.ref.path;
+                        if (entryTree.lookup(path) == null) {
+                            var sharedItemParent = mediaMap.get(path);
                             if (sharedItemParent == null) {
-                                sharedItemParent = sharedItemsMap.get(item.socialPost.parent.ref.path);
+                                sharedItemParent = sharedItemsMap.get(path);
                                 if (sharedItemParent != null) {
                                     sharedItemsProcessedMap.set(sharedItemParent.path, sharedItemParent);
                                 }
