@@ -350,9 +350,12 @@ module.exports = {
                         }) ;
                     }
                     if (post.parent.ref != null) {
-                        let index = sharedPosts.findIndex(v => v.path === post.parent.ref.path);
-                        if (index == -1) {
-                            refs.push(post.parent.ref);
+                        let isPost = post.parent.ref.path.includes("/.posts/");
+                        if (isPost) {
+                            let index = sharedPosts.findIndex(v => v.path === post.parent.ref.path);
+                            if (index == -1) {
+                                refs.push(post.parent.ref);
+                            }
                         }
                     }
                 }
@@ -725,21 +728,35 @@ module.exports = {
         },
         organiseEntries: function(sharedItems, mediaPosts) {
             let that = this;
-            let mediaMap = new Map()
-            let socialPostReplies = [];
+            let mediaMap = new Map();
             mediaPosts.forEach(post => {
                 mediaMap.set(post.path, post);
             });
+            let sharedItemsMap = new Map();
+            sharedItems.forEach(item => {
+                if (item.socialPost == null) {
+                    sharedItemsMap.set(item.path, item);
+                }
+            });
+            let sharedItemsProcessedMap = new Map();
             let entryTree = new this.Tree(this);
             let allSharedItems = this.unresolvedSharedItems.concat(sharedItems);
             allSharedItems.reverse().forEach(item => {
-                if (item.socialPost == null) {
+                if (sharedItemsProcessedMap.get(item.path) != null) {
+                    //already processed, skip to next
+                } else if (item.socialPost == null) {
                     entryTree.addChild(null, item, [], true);
                 } else {
                     let wasCommentOnSharedItem = false;
                     if (item.socialPost.parent.ref != null && !item.socialPost.parent.ref.path.includes("/.posts/")) {
                         if (entryTree.lookup(item.socialPost.parent.ref.path) == null) {
-                            let sharedItemParent= mediaMap.get(item.socialPost.parent.ref.path);
+                            var sharedItemParent = mediaMap.get(item.socialPost.parent.ref.path);
+                            if (sharedItemParent == null) {
+                                sharedItemParent = sharedItemsMap.get(item.socialPost.parent.ref.path);
+                                if (sharedItemParent != null) {
+                                    sharedItemsProcessedMap.set(sharedItemParent.path, sharedItemParent);
+                                }
+                            }
                             entryTree.addChild(null, sharedItemParent, [], true);
                         }
                         wasCommentOnSharedItem = true;
@@ -764,6 +781,17 @@ module.exports = {
             });
             return entryTree.collect();
         },
+        mergeAndSortPosts: function(sharedItems, commentPosts) {
+            let combinedPosts = commentPosts.concat(sharedItems);
+            let sortedList = combinedPosts.sort(function (a, b) {
+                let aVal = a.socialPost != null ? a.socialPost.postTime
+                    : a.file.getFileProperties().modified;
+                let bVal = b.socialPost != null ? b.socialPost.postTime
+                    : b.file.getFileProperties().modified;
+                return bVal.compareTo(aVal);
+            });
+            return sortedList;
+        },
         buildTimeline: function(items) {
             let that = this;
             let future = peergos.shared.util.Futures.incomplete();
@@ -771,14 +799,7 @@ module.exports = {
                 let allPairs = pairs.toArray();
                 that.loadFiles(allPairs).thenApply(function(sharedItems) {
                     that.loadCommentPosts(sharedItems).thenApply(function(commentPosts) {
-                        let combinedPosts = commentPosts.concat(sharedItems);
-                        let sortedList = combinedPosts.sort(function (a, b) {
-                            let aVal = a.socialPost.postTime != null ? a.socialPost.postTime
-                                : a.file.getFileProperties().modified;
-                            let bVal = b.socialPost.postTime != null ? b.socialPost.postTime
-                                : b.file.getFileProperties().modified;
-                            return bVal.compareTo(aVal);
-                        });
+                        let sortedList = that.mergeAndSortPosts(sharedItems, commentPosts);
                         that.loadMediaPosts(sortedList).thenApply(function(mediaPosts) {
                             let entries = that.organiseEntries(sortedList, mediaPosts);
                             let allTimelineEntries = that.populateTimeline(entries);
