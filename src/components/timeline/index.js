@@ -28,7 +28,8 @@ module.exports = {
         }
     },
     props: ['context','navigateToAction','viewAction', 'messages', 'getFileIconFromFileAndType', 'socialFeedInstance',
-        'updateSocialFeedInstance', 'importCalendarFile', 'importSharedCalendar', 'displayProfile', 'groups'],
+        'updateSocialFeedInstance', 'importCalendarFile', 'importSharedCalendar', 'displayProfile', 'groups',
+        'followingnames', 'friendnames', 'followernames'],
     created: function() {
         let that = this;
         Vue.nextTick(function() {
@@ -262,11 +263,11 @@ module.exports = {
                 future.complete(null);
             });
         },
-        loadFile: function(entry) {
+        loadFile: function(path, file) {
             let future = peergos.shared.util.Futures.incomplete();
-            let isPost = entry.left.path.includes("/.posts/"); //TODO tighten up
+            let isPost = path.includes("/.posts/");
             if (isPost) {
-                this.loadPost(entry.right, future);
+                this.loadPost(file, future);
             } else {
                 future.complete(null);
             }
@@ -278,7 +279,7 @@ module.exports = {
                 future.complete(accumulator);
             } else {
                 let currentPair = pairs[index];
-                that.loadFile(currentPair).thenApply(result => {
+                that.loadFile(currentPair.left.path, currentPair.right).thenApply(result => {
                     let socialPost = result ? result.socialPost : null;
                     let fullPath = currentPair.left.path.startsWith("/") ? currentPair.left.path : "/" + currentPair.left.path;
                     accumulator = accumulator.concat({entry: currentPair.left, path: fullPath, socialPost: socialPost, file: currentPair.right});
@@ -310,6 +311,48 @@ module.exports = {
                     that.reduceLoadingMediaPosts(refs, ++index, accumulator, future);
                 })
             }
+        },
+        reduceLoadingCommentPosts: function(refs, index, accumulator, future) {
+            let that = this;
+            if (index == refs.length) {
+                future.complete(accumulator);
+            } else {
+                let ref = refs[index];
+                let owner = this.extractOwnerFromPath(ref.path);
+                this.context.network.getFile(ref.cap, owner).thenApply(optFile => {
+                    let file = optFile.ref;
+                    if (file != null) {
+                        that.loadFile(ref.path, file).thenApply(result => {
+                            let socialPost = result.socialPost;
+                            accumulator = accumulator.concat({cap: ref.cap, path: ref.path, socialPost: socialPost, file: file});
+                            that.reduceLoadingCommentPosts(refs, ++index, accumulator, future);
+                        });
+                    } else {
+                        that.reduceLoadingCommentPosts(refs, ++index, accumulator, future);
+                    }
+                });
+            }
+        },
+        loadCommentPosts: function(sharedPosts) {
+            let future = peergos.shared.util.Futures.incomplete();
+            let refs = [];
+            for(var i = 0; i < sharedPosts.length; i++) {
+                let post = sharedPosts[i].socialPost;
+                if (post != null) {
+                    let references = post.comments.toArray([]);
+                    if (references.length > 0) {
+                        references.forEach(ref => {
+                            let index = sharedPosts.findIndex(v => v.path === ref.path);
+                            if (index == -1) {
+                                //eg we shared a file that another has commented on
+                                refs.push(ref);
+                            }
+                        }) ;
+                    }
+                }
+            }
+            this.reduceLoadingCommentPosts(refs, 0, [], future);
+            return future;
         },
         loadMediaPosts: function(sharedPosts) {
             let future = peergos.shared.util.Futures.incomplete();
@@ -423,6 +466,16 @@ module.exports = {
         openInGallery: function (entry) {
             this.filesToViewInGallery = [entry.file];
             this.showEmbeddedGallery = true;
+        },
+        canComment: function(item) {
+            let isFriend = this.friendnames.indexOf(item.sharer) > -1;
+            let isFollower = this.followernames.indexOf(item.sharer) > -1;
+            return item.sharer == this.context.username || isFriend || isFollower;
+        },
+        canLoadProfile: function(sharer) {
+            let isFriend = this.friendnames.indexOf(sharer) > -1;
+            let isFollowing = this.followingnames.indexOf(sharer) > -1;
+            return isFriend || isFollowing;
         },
         profile: function(username) {
             this.displayProfile(username, false);
@@ -642,7 +695,14 @@ module.exports = {
                 if (insertBefore) {
                     this.children.unshift(node);
                 } else {
-                    this.children.push(node);
+                    let allChildren = this.children.slice();
+                    allChildren.push(node);
+                    let sortedList = allChildren.sort(function (a, b) {
+                        let aVal = a.item.socialPost.postTime;
+                        let bVal = b.item.socialPost.postTime;
+                        return aVal.compareTo(bVal);
+                    });
+                    this.children = allChildren;
                 }
             }
         },
@@ -704,10 +764,13 @@ module.exports = {
             this.context.getFiles(peergos.client.JsUtil.asList(items)).thenApply(function(pairs) {
                 let allPairs = pairs.toArray();
                 that.loadFiles(allPairs).thenApply(function(sharedItems) {
-                    that.loadMediaPosts(sharedItems).thenApply(function(mediaPosts) {
-                        let entries = that.organiseEntries(sharedItems, mediaPosts);
-                        let allTimelineEntries = that.populateTimeline(entries);
-                        future.complete(allTimelineEntries);
+                    that.loadCommentPosts(sharedItems).thenApply(function(commentPosts) {
+                        let combinedPosts = commentPosts.concat(sharedItems);
+                        that.loadMediaPosts(combinedPosts).thenApply(function(mediaPosts) {
+                            let entries = that.organiseEntries(combinedPosts, mediaPosts);
+                            let allTimelineEntries = that.populateTimeline(entries);
+                            future.complete(allTimelineEntries);
+                        });
                     });
                 });
             });

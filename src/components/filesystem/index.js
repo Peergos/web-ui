@@ -2200,6 +2200,9 @@ module.exports = {
     friendnames: function() {
         return this.social.friends;
     },
+    followingnames: function() {
+        return this.social.following;
+    },
     groups: function() {
         return {groupsNameToUid: this.social.groupsNameToUid, groupsUidToName: this.social.groupsUidToName};
     },

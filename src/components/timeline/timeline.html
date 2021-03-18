@@ -65,15 +65,16 @@
                             <td v-if="entry[0].isLastEntry">
                             </td>
                             <td v-if="!entry[0].isLastEntry && !entry[0].isPost && !entry[0].isMedia">
-                                <a v-if="entry[0].sharer != context.username" v-on:click="profile(entry[0].sharer)" style="cursor: pointer">
+                                <a v-if="entry[0].sharer != context.username && canLoadProfile(entry[0].sharer)" v-on:click="profile(entry[0].sharer)" style="cursor: pointer">
                                     <span>{{ entry[0].sharer }}</span>
                                 </a>
+                                <span v-if="entry[0].sharer != context.username && !canLoadProfile(entry[0].sharer)">{{ entry[0].sharer }}</span>
                                 <span>{{ entry[0].info }}</span>
                                 <a v-if="entry[0].displayFilename" v-on:click="navigateTo(entry[0])" style="cursor: pointer">
                                     <span :title="entry[0].link">{{ entry[0].name }}</span>
                                 </a>
                                 <div>
-                                <span v-if="!entry[0].isDirectory && entry[0].sharer != context.username && !entry[0].isMedia">
+                                <span v-if="!entry[0].isDirectory && entry[0].sharer != context.username && !entry[0].isMedia && canComment(entry[0])">
                                     <button class="btn btn-success" @click="addComment(entry[0])">Add comment</button>
                                 </span>
                                 </div>
@@ -93,7 +94,7 @@
                                                 </div>
                                                 <div v-bind:style="{ marginLeft: indent(entry[rowIndex-1]) }">
                                                     <div style="margin-top: 10px; margin-bottom: 10px;">
-                                                    <span>
+                                                    <span v-if="canComment(entry[rowIndex-1])">
                                                             <button class="btn btn-success" @click="addComment(entry[rowIndex-1])">comment</button>
                                                     </span>
                                                     </div>
@@ -102,9 +103,10 @@
                                             <td v-if="row.isPost" colspan="2">
                                                 <div v-bind:style="{ marginLeft: indent(row) }">
                                                     <div style="display:flex;font-size: 0.8em;color: #7d7d7d;margin-right: 10px;">
-                                                        <a v-if="row.sharer != context.username" v-on:click="profile(row.sharer)" style="cursor: pointer">
+                                                        <a v-if="row.sharer != context.username && canLoadProfile(row.sharer)" v-on:click="profile(row.sharer)" style="cursor: pointer">
                                                             <span>{{ row.sharer }}&nbsp;</span>
                                                         </a>
+                                                        <span v-if="row.sharer!= context.username && !canLoadProfile(row.sharer)">{{ row.sharer }}&nbsp;</span>
                                                         {{ row.info }}
                                                         <span style="flex-grow:1;">&nbsp&nbsp;{{ row.status}}</span>
                                                         <span v-if="row.sharer == context.username" class="fa fa-ellipsis-h" @click="displayEditMenu($event, row)"></span>
@@ -113,7 +115,7 @@
                                                 </div>
                                                 <div v-if="!(rowIndex + 1 < entry.length && entry[rowIndex+1].isMedia)" v-bind:style="{ marginLeft: indent(row) }">
                                                     <div style="margin-top: 10px; margin-bottom: 10px;">
-                                                    <span>
+                                                    <span v-if="canComment(row)">
                                                             <button class="btn btn-success" @click="addComment(row)">comment</button>
                                                     </span>
                                                     </div>
