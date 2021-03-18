@@ -5,7 +5,7 @@ module.exports = {
             showSpinner: false,
             data: [],
             pageEndIndex : 0,
-            pageSize: 5,
+            pageSize: 25,
             requestingMoreResults: false,
             noMoreResults: false,
             showSocialPostForm: false,
@@ -745,6 +745,16 @@ module.exports = {
             });
             let sharedItemsProcessedMap = new Map();
             let entryTree = new this.Tree(this);
+            let copyOfUnresolvedSharedItems = this.unresolvedSharedItems.slice();
+            copyOfUnresolvedSharedItems.forEach(item => {
+                let foundIndex = sharedItems.findIndex(v => v.path === item.path);
+                if (foundIndex > -1) {
+                    let unresolvedIndex = that.unresolvedSharedItems.findIndex(v => v.path === item.path);
+                    if (unresolvedIndex > -1) {
+                        that.unresolvedSharedItems.splice(unresolvedIndex, 1);
+                    }
+                }
+            });
             let allSharedItems = this.unresolvedSharedItems.concat(sharedItems);
             allSharedItems.reverse().forEach(item => {
                 if (sharedItemsProcessedMap.get(item.path) != null) {
