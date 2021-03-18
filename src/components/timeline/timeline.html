@@ -78,7 +78,7 @@
                             </div>
                             <div v-if="!entry[0].isLastEntry && (entry[0].isPost || entry[0].isMedia)" colspan="2">
                                 <div style="border: 1px solid black;border-radius: 11px; margin-top:5px;">
-                                    <div class="table-responsive table-striped table-hover" style="font-size: 1.0em;">
+                                    <div class="table-responsive table-striped table-hover" style="font-size: 1.0em;margin-bottom:0;border:none;">
                                         <div v-for="(row, rowIndex) in entry">
                                             <div v-if="row.isMedia" colspan="2">
                                                 <div v-bind:style="{ marginLeft: indent(row) }">
