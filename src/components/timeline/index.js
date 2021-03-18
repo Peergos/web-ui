@@ -306,7 +306,8 @@ module.exports = {
                 this.context.network.getFile(ref.cap, owner).thenApply(optFile => {
                     let mediaFile = optFile.ref;
                     if (mediaFile != null) {
-                        accumulator = accumulator.concat({cap: ref.cap, path: ref.path, socialPost: null, file: mediaFile});
+                        let fullPath = ref.path.startsWith("/") ? ref.path : "/" + ref.path;
+                        accumulator = accumulator.concat({cap: ref.cap, path: fullPath, socialPost: null, file: mediaFile});
                     }
                     that.reduceLoadingMediaPosts(refs, ++index, accumulator, future);
                 })
@@ -324,7 +325,8 @@ module.exports = {
                     if (file != null) {
                         that.loadFile(ref.path, file).thenApply(result => {
                             let socialPost = result.socialPost;
-                            accumulator = accumulator.concat({cap: ref.cap, path: ref.path, socialPost: socialPost, file: file});
+                            let fullPath = ref.path.startsWith("/") ? ref.path : "/" + ref.path;
+                            accumulator = accumulator.concat({cap: ref.cap, path: fullPath, socialPost: socialPost, file: file});
                             that.reduceLoadingCommentPosts(refs, ++index, accumulator, future);
                         });
                     } else {
@@ -342,7 +344,8 @@ module.exports = {
                     let references = post.comments.toArray([]);
                     if (references.length > 0) {
                         references.forEach(ref => {
-                            let index = sharedPosts.findIndex(v => v.path.endsWith(ref.path));
+                            let path = ref.path.startsWith('/') ? ref.path.substring(1) : ref.path;
+                            let index = sharedPosts.findIndex(v => v.path.endsWith(path));
                             if (index == -1) {
                                 //eg we shared a file that another has commented on
                                 refs.push(ref);
@@ -352,7 +355,8 @@ module.exports = {
                     if (post.parent.ref != null) {
                         let isPost = post.parent.ref.path.includes("/.posts/");
                         if (isPost) {
-                            let index = sharedPosts.findIndex(v => v.path === post.parent.ref.path);
+                            let path = post.parent.ref.path.startsWith('/') ? post.parent.ref.path.substring(1) : post.parent.ref.path;
+                            let index = sharedPosts.findIndex(v => v.path.endsWith(path));
                             if (index == -1) {
                                 refs.push(post.parent.ref);
                             }
@@ -370,7 +374,8 @@ module.exports = {
                 let post = sharedPosts[i].socialPost;
                 if (post != null) {
                     if (post.parent.ref != null) {
-                        let index = sharedPosts.findIndex(v => v.path === post.parent.ref.path);
+                        let path = post.parent.ref.path.startsWith('/') ? post.parent.ref.path.substring(1) : post.parent.ref.path;
+                        let index = sharedPosts.findIndex(v => v.path.endsWith(path));
                         if (index == -1) {
                             //eg we shared a file that another has commented on
                             refs.push(post.parent.ref);
