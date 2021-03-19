@@ -53,8 +53,8 @@ module.exports = {
             if (action == 'edit') {
                 var index = this.data.findIndex(v => v.link === originalPath);
                 if (index != -1) { //could have been deleted
-		    // assume only 1 text item in body for now
-                    this.data[index].name = newSocialPost.body.get(0).inlineText();
+		            // assume only 1 text item in body for now
+                    this.data[index].name = newSocialPost.body.toArray([])[0].inlineText();
                     this.data[index].socialPost = newSocialPost;
                     this.data[index].status = newSocialPost.previousVersions.toArray([]).length > 0 ? "[edited]" : "";
                 }
@@ -442,7 +442,7 @@ module.exports = {
                             }
                         }
                     }
-                    let references = post.references.toArray([]);
+                    let references = post.references().toArray([]);
                     if (references.length > 0) {
                         references.forEach(mediaRef => {
                             refs.push(mediaRef);
@@ -625,7 +625,7 @@ module.exports = {
                 info = isReply ? "commented at " : "posted at ";
                 info = identity + info;
                 info = info + this.fromUTCtoLocal(socialPost.postTime);
-                name = socialPost.body.get(0).inlineText();
+                name = socialPost.body.toArray([])[0].inlineText();
                 if (socialPost.previousVersions.toArray([]).length > 0) {
                     status = "[edited]";
                 }
