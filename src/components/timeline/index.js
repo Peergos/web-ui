@@ -52,8 +52,9 @@ module.exports = {
             let that = this;
             if (action == 'edit') {
                 var index = this.data.findIndex(v => v.link === originalPath);
-                if (index != -1) { //could of been deleted
-                    this.data[index].name = newSocialPost.body;
+                if (index != -1) { //could have been deleted
+		    // assume only 1 text item in body for now
+                    this.data[index].name = newSocialPost.body.get(0).inlineText();
                     this.data[index].socialPost = newSocialPost;
                     this.data[index].status = newSocialPost.previousVersions.toArray([]).length > 0 ? "[edited]" : "";
                 }
@@ -114,7 +115,7 @@ module.exports = {
             if (index > -1) {
                 this.data.splice(index, 1);
                 if (entry.socialPost != null) {
-                    let references = entry.socialPost.references.toArray([]);
+                    let references = entry.socialPost.references().toArray([]);
                     if (references.length > 0) {
                         for(var j = 0 ; j < references.length; j++) {
                             let refPath = references[j].path;
@@ -186,7 +187,7 @@ module.exports = {
                 || socialPost.kind == peergos.shared.social.SocialPost.Type.Video
                 || socialPost.kind == peergos.shared.social.SocialPost.Type.Audio
                 || socialPost.kind == peergos.shared.social.SocialPost.Type.Media) {
-                this.deleteMediaReferences(entry, socialPost.references.toArray([])).thenApply(function(result){
+                this.deleteMediaReferences(entry, socialPost.references().toArray([])).thenApply(function(result){
                     that.deleteFile(entry.link, entry.file).thenApply(function(res2){
                         if (res2) {
                             that.showSpinner = false;
@@ -624,7 +625,7 @@ module.exports = {
                 info = isReply ? "commented at " : "posted at ";
                 info = identity + info;
                 info = info + this.fromUTCtoLocal(socialPost.postTime);
-                name = socialPost.body;
+                name = socialPost.body.get(0).inlineText();
                 if (socialPost.previousVersions.toArray([]).length > 0) {
                     status = "[edited]";
                 }
@@ -821,7 +822,7 @@ module.exports = {
                         wasCommentOnSharedItem = true;
                     }
 
-                    let references = item.socialPost.references.toArray([]);
+                    let references = item.socialPost.references().toArray([]);
                     var mediaList = [];
                     if (references.length > 0){
                         for(var j = 0; j < references.length; j++) {
