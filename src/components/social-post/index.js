@@ -158,18 +158,16 @@ module.exports = {
             let that = this;
             this.uploadAllMedia().thenApply(function(mediaResponseList) {
                 if (mediaResponseList.length == 0) {
-                    let commentType = peergos.shared.social.SocialPost.Type.Text;
-		            let body = peergos.client.JsUtil.asList([new peergos.shared.social.SocialPost.Content.Text(that.post)]);
-                    let socialPost = peergos.shared.social.SocialPost.createInitialPost(commentType, that.context.username, body, resharingType);
+		    let body = peergos.client.JsUtil.asList([new peergos.shared.social.SocialPost.Content.Text(that.post)]);
+                    let socialPost = peergos.shared.social.SocialPost.createInitialPost(that.context.username, body, resharingType);
                     that.savePost(socialPost, groupUid);
                 } else {
-                    let type = mediaResponseList.length == 1 ? mediaResponseList[0].type : peergos.shared.social.SocialPost.Type.Media;
                     let bodyItems = [new peergos.shared.social.SocialPost.Content.Text(that.post)];
                     mediaResponseList.forEach( mediaResponse => {
                         bodyItems.push(new peergos.shared.social.SocialPost.Content.Reference(mediaResponse.mediaItem));
                     });
                     let body = peergos.client.JsUtil.asList(bodyItems);
-                    let socialPost = peergos.shared.social.SocialPost.createInitialPost(type, that.context.username, body, resharingType);
+                    let socialPost = peergos.shared.social.SocialPost.createInitialPost(that.context.username, body, resharingType);
                     that.savePost(socialPost, groupUid);
                 }
             });
@@ -193,18 +191,16 @@ module.exports = {
                 let parent = new peergos.shared.social.SocialPost.Ref(path, cap, hash);
                 that.uploadAllMedia().thenApply(function(mediaResponseList) {
                     if (mediaResponseList.length == 0) {
-                        let type = peergos.shared.social.SocialPost.Type.Text;
                         let body = peergos.client.JsUtil.asList([new peergos.shared.social.SocialPost.Content.Text(that.post)]);
-			            let replyPost = peergos.shared.social.SocialPost.createComment(parent, resharingType, type, that.context.username, body);
+			            let replyPost = peergos.shared.social.SocialPost.createComment(parent, resharingType, that.context.username, body);
                         that.savePost(replyPost, groupUid);
                     } else {
-                        let type = mediaResponseList.length == 1 ? mediaResponseList[0].type : peergos.shared.social.SocialPost.Type.Media;
                         let postItems = [new peergos.shared.social.SocialPost.Content.Text(that.post)];
                         mediaResponseList.forEach( mediaResponse => {
                             postItems.push(new peergos.shared.social.SocialPost.Content.Reference(mediaResponse.mediaItem));
                         });
                         let post = peergos.client.JsUtil.asList(postItems);
-                        let replyPost = peergos.shared.social.SocialPost.createComment(parent, resharingType, type, that.context.username, post);
+                        let replyPost = peergos.shared.social.SocialPost.createComment(parent, resharingType, that.context.username, post);
                         that.savePost(replyPost, groupUid);
                     }
                 });

@@ -183,11 +183,9 @@ module.exports = {
             let that = this;
             that.showSpinner = true;
             let socialPost = entry.socialPost;
-            if (socialPost.kind == peergos.shared.social.SocialPost.Type.Image
-                || socialPost.kind == peergos.shared.social.SocialPost.Type.Video
-                || socialPost.kind == peergos.shared.social.SocialPost.Type.Audio
-                || socialPost.kind == peergos.shared.social.SocialPost.Type.Media) {
-                this.deleteMediaReferences(entry, socialPost.references().toArray([])).thenApply(function(result){
+	    let refs = socialPost.references().toArray([])
+            if (refs.length > 0) {
+                this.deleteMediaReferences(entry, refs).thenApply(function(result){
                     that.deleteFile(entry.link, entry.file).thenApply(function(res2){
                         if (res2) {
                             that.showSpinner = false;
