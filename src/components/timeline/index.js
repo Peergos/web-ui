@@ -428,6 +428,19 @@ module.exports = {
             for(var i = 0; i < sharedPosts.length; i++) {
                 let post = sharedPosts[i].socialPost;
                 if (post != null) {
+                    if (post.parent.ref != null) {
+                        let isPost = post.parent.ref.path.includes("/.posts/");
+                        if (!isPost) {
+                            let path = post.parent.ref.path.startsWith('/') ? post.parent.ref.path.substring(1) : post.parent.ref.path;
+                            let index = sharedPosts.findIndex(v => v.path.endsWith(path));
+                            if (index == -1) {
+                                //eg we shared a file that another has commented on
+                                if (refs.findIndex(v => v.path == post.parent.ref.path) == -1) {
+                                    refs.push(post.parent.ref);
+                                }
+                            }
+                        }
+                    }
                     let references = post.references.toArray([]);
                     if (references.length > 0) {
                         references.forEach(mediaRef => {
@@ -799,9 +812,11 @@ module.exports = {
                                 sharedItemParent = sharedItemsMap.get(path);
                                 if (sharedItemParent != null) {
                                     sharedItemsProcessedMap.set(sharedItemParent.path, sharedItemParent);
+                                    entryTree.addChild(null, sharedItemParent, [], true);
                                 }
+                            } else {
+                                entryTree.addChild(null, sharedItemParent, [], true);
                             }
-                            entryTree.addChild(null, sharedItemParent, [], true);
                         }
                         wasCommentOnSharedItem = true;
                     }
@@ -864,6 +879,7 @@ module.exports = {
             return future;
         },
         refresh: function() {
+            this.seenPosts = new Map();
             var that = this;
             that.showSpinner = true;
             let lastSeenIndex = this.socialFeed.getLastSeenIndex();
