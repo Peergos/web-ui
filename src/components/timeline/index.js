@@ -520,7 +520,12 @@ module.exports = {
                         this.navigateToAction(entry.path);
                         this.close();
                     } else {
-                        this.openInGallery(entry);
+                        let type = entry.file.props.getType();
+                        if(type == "image" || type == "audio" || type == "video") {
+                            this.openInGallery(entry);
+                        } else {
+                            this.viewAction(entry.path, entry.fullName);
+                        }
                     }
                 }
             }
