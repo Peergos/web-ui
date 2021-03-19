@@ -5,13 +5,12 @@ module.exports = {
             showSpinner: false,
             data: [],
             pageEndIndex : 0,
-            pageSize: 25,
+            pageSize: 5,
             requestingMoreResults: false,
             noMoreResults: false,
             showSocialPostForm: false,
             socialPostAction: '',
             currentSocialPostEntry: null,
-            unresolvedSharedItems: [],
             showEmbeddedGallery: false,
             filesToViewInGallery: [],
             showEditMenu: false,
@@ -24,7 +23,8 @@ module.exports = {
             confirm_consumer_cancel_func: () => {},
             confirm_consumer_func: () => {},
             hasLoadedInitialResults: false,
-            socialFeed: null
+            socialFeed: null,
+            seenPosts: new Map()
         }
     },
     props: ['context','navigateToAction','viewAction', 'messages', 'getFileIconFromFileAndType', 'socialFeedInstance',
@@ -279,18 +279,31 @@ module.exports = {
                 future.complete(accumulator);
             } else {
                 let currentPair = pairs[index];
-                that.loadFile(currentPair.left.path, currentPair.right).thenApply(result => {
-                    let socialPost = result ? result.socialPost : null;
-                    let fullPath = currentPair.left.path.startsWith("/") ? currentPair.left.path : "/" + currentPair.left.path;
-                    accumulator = accumulator.concat({entry: currentPair.left, path: fullPath, socialPost: socialPost, file: currentPair.right});
+                if (this.alreadySeen(currentPair.left.path)) {
                     that.reduceLoadingAllFiles(pairs, ++index, accumulator, future);
-                });
+                } else {
+                    that.loadFile(currentPair.left.path, currentPair.right).thenApply(result => {
+                        that.addToSeen(currentPair.left.path);
+                        let socialPost = result ? result.socialPost : null;
+                        let fullPath = currentPair.left.path.startsWith("/") ? currentPair.left.path : "/" + currentPair.left.path;
+                        accumulator = accumulator.concat({entry: currentPair.left, path: fullPath, socialPost: socialPost, file: currentPair.right});
+                        that.reduceLoadingAllFiles(pairs, ++index, accumulator, future);
+                    });
+                }
             }
         },
         loadFiles: function(pairs) {
             let future = peergos.shared.util.Futures.incomplete();
             this.reduceLoadingAllFiles(pairs, 0, [], future);
             return future;
+        },
+        addToSeen: function(path) {
+            let fullPath = path.startsWith("/") ? path : "/" + path;
+            this.seenPosts.set(fullPath, "");
+        },
+        alreadySeen: function(path) {
+            let fullPath = path.startsWith("/") ? path : "/" + path;
+            return this.seenPosts.get(fullPath) != null;
         },
         extractOwnerFromPath: function(path) {
             let pathWithoutLeadingSlash = path.startsWith("/") ? path.substring(1) : path;
@@ -324,10 +337,17 @@ module.exports = {
                     let file = optFile.ref;
                     if (file != null) {
                         that.loadFile(ref.path, file).thenApply(result => {
+                            that.addToSeen(ref.path);
                             let socialPost = result.socialPost;
                             let fullPath = ref.path.startsWith("/") ? ref.path : "/" + ref.path;
                             accumulator = accumulator.concat({cap: ref.cap, path: fullPath, socialPost: socialPost, file: file});
-                            that.reduceLoadingCommentPosts(refs, ++index, accumulator, future);
+                            let references = socialPost.comments.toArray([]);
+                            let additionalRefs = [];
+                            references.forEach(ref => {
+                                additionalRefs.push(ref);
+                            });
+                            let updatedRefs = refs.concat(additionalRefs);
+                            that.reduceLoadingCommentPosts(updatedRefs, ++index, accumulator, future);
                         });
                     } else {
                         that.reduceLoadingCommentPosts(refs, ++index, accumulator, future);
@@ -342,29 +362,64 @@ module.exports = {
                 let post = sharedPosts[i].socialPost;
                 if (post != null) {
                     let references = post.comments.toArray([]);
-                    if (references.length > 0) {
-                        references.forEach(ref => {
-                            let path = ref.path.startsWith('/') ? ref.path.substring(1) : ref.path;
-                            let index = sharedPosts.findIndex(v => v.path.endsWith(path));
-                            if (index == -1) {
-                                //eg we shared a file that another has commented on
-                                refs.push(ref);
-                            }
-                        }) ;
-                    }
-                    if (post.parent.ref != null) {
-                        let isPost = post.parent.ref.path.includes("/.posts/");
-                        if (isPost) {
-                            let path = post.parent.ref.path.startsWith('/') ? post.parent.ref.path.substring(1) : post.parent.ref.path;
-                            let index = sharedPosts.findIndex(v => v.path.endsWith(path));
-                            if (index == -1) {
-                                refs.push(post.parent.ref);
-                            }
+                    references.forEach(ref => {
+                        if (refs.findIndex(v => v.path == ref.path) == -1) {
+                            refs.push(ref);
                         }
-                    }
+                    }) ;
                 }
             }
             this.reduceLoadingCommentPosts(refs, 0, [], future);
+            return future;
+        },
+        reduceLoadingParentPosts: function(sharedPosts, index, accumulator, future) {
+            let that = this;
+            if (index == sharedPosts.length) {
+                future.complete(accumulator);
+            } else {
+                let post = sharedPosts[index].socialPost;
+                if (post.parent.ref != null) {
+                    let isPost = post.parent.ref.path.includes("/.posts/");
+                    if (isPost) {
+                        if (!this.alreadySeen(post.parent.ref.path)) {
+                            let owner = this.extractOwnerFromPath(post.parent.ref.path);
+                            this.context.network.getFile(post.parent.ref.cap, owner).thenApply(optFile => {
+                                let file = optFile.ref;
+                                if (file != null) {
+                                    that.loadFile(post.parent.ref.path, file).thenApply(result => {
+                                        let socialPost = result.socialPost;
+                                        let fullPath = post.parent.ref.path.startsWith("/") ? post.parent.ref.path : "/" + post.parent.ref.path;
+                                        that.addToSeen(fullPath);
+                                        let sharedPost = {cap: post.parent.ref.cap, path: fullPath, socialPost: socialPost, file: file};
+                                        accumulator = accumulator.concat(sharedPost);
+                                        let updatedSharedPosts = sharedPosts.concat(sharedPost);
+                                        that.reduceLoadingParentPosts(updatedSharedPosts, ++index, accumulator, future);
+                                    });
+                                } else {
+                                    that.reduceLoadingParentPosts(sharedPosts, ++index, accumulator, future);
+                                }
+                            });
+                        } else {
+                            that.reduceLoadingParentPosts(sharedPosts, ++index, accumulator, future);
+                        }
+                    } else {
+                        that.reduceLoadingParentPosts(sharedPosts, ++index, accumulator, future);
+                    }
+                } else {
+                    that.reduceLoadingParentPosts(sharedPosts, ++index, accumulator, future);
+                }
+            }
+        },
+        loadParentPosts: function(sharedPosts) {
+            let future = peergos.shared.util.Futures.incomplete();
+            let filteredSharedPosts = [];
+            for(var i = 0; i < sharedPosts.length; i++) {
+                let post = sharedPosts[i].socialPost;
+                if (post != null) {
+                    filteredSharedPosts.push(sharedPosts[i]);
+                }
+            }
+            this.reduceLoadingParentPosts(filteredSharedPosts, 0, [], future);
             return future;
         },
         loadMediaPosts: function(sharedPosts) {
@@ -373,14 +428,6 @@ module.exports = {
             for(var i = 0; i < sharedPosts.length; i++) {
                 let post = sharedPosts[i].socialPost;
                 if (post != null) {
-                    if (post.parent.ref != null) {
-                        let path = post.parent.ref.path.startsWith('/') ? post.parent.ref.path.substring(1) : post.parent.ref.path;
-                        let index = sharedPosts.findIndex(v => v.path.endsWith(path));
-                        if (index == -1) {
-                            //eg we shared a file that another has commented on
-                            refs.push(post.parent.ref);
-                        }
-                    }
                     let references = post.references.toArray([]);
                     if (references.length > 0) {
                         references.forEach(mediaRef => {
@@ -659,14 +706,6 @@ module.exports = {
         insertIntoEntries: function(entryTree, itemToInsert, mediaList) {
             let parentPath = itemToInsert.socialPost.parent.ref.path.startsWith('/') ?  itemToInsert.socialPost.parent.ref.path : '/' + itemToInsert.socialPost.parent.ref.path;
             let newNode = entryTree.addChild(parentPath, itemToInsert, mediaList, false);
-            if (newNode == null) {
-                this.unresolvedSharedItems.push(itemToInsert);
-            } else {
-                let unresolvedIndex = this.unresolvedSharedItems.findIndex(v => v.path === itemToInsert.path);
-                if (unresolvedIndex > -1) {
-                    this.unresolvedSharedItems.splice(unresolvedIndex, 1);
-                }
-            }
         },
         Tree: function(thisRef) {
             this.methodCtx = thisRef;
@@ -745,18 +784,7 @@ module.exports = {
             });
             let sharedItemsProcessedMap = new Map();
             let entryTree = new this.Tree(this);
-            let copyOfUnresolvedSharedItems = this.unresolvedSharedItems.slice();
-            copyOfUnresolvedSharedItems.forEach(item => {
-                let foundIndex = sharedItems.findIndex(v => v.path === item.path);
-                if (foundIndex > -1) {
-                    let unresolvedIndex = that.unresolvedSharedItems.findIndex(v => v.path === item.path);
-                    if (unresolvedIndex > -1) {
-                        that.unresolvedSharedItems.splice(unresolvedIndex, 1);
-                    }
-                }
-            });
-            let allSharedItems = this.unresolvedSharedItems.concat(sharedItems);
-            allSharedItems.reverse().forEach(item => {
+            sharedItems.reverse().forEach(item => {
                 if (sharedItemsProcessedMap.get(item.path) != null) {
                     //already processed, skip to next
                 } else if (item.socialPost == null) {
@@ -797,8 +825,8 @@ module.exports = {
             });
             return entryTree.collect();
         },
-        mergeAndSortPosts: function(sharedItems, commentPosts) {
-            let combinedPosts = commentPosts.concat(sharedItems);
+        mergeAndSortPosts: function(sharedItems, parentPosts, commentPosts) {
+            let combinedPosts = commentPosts.concat(parentPosts).concat(sharedItems);
             let sortedList = combinedPosts.sort(function (a, b) {
                 let aVal = a.socialPost != null ? a.socialPost.postTime
                     : a.file.getFileProperties().modified;
@@ -806,7 +834,14 @@ module.exports = {
                     : b.file.getFileProperties().modified;
                 return bVal.compareTo(aVal);
             });
-            return sortedList;
+            let dedupedItems = [];
+            sortedList.forEach(item => {
+                let foundIndex = dedupedItems.findIndex(v => v.path === item.path);
+                if (foundIndex == -1) {
+                    dedupedItems.push(item);
+                }
+            });
+            return dedupedItems;
         },
         buildTimeline: function(items) {
             let that = this;
@@ -814,12 +849,14 @@ module.exports = {
             this.context.getFiles(peergos.client.JsUtil.asList(items)).thenApply(function(pairs) {
                 let allPairs = pairs.toArray();
                 that.loadFiles(allPairs).thenApply(function(sharedItems) {
-                    that.loadCommentPosts(sharedItems).thenApply(function(commentPosts) {
-                        let sortedList = that.mergeAndSortPosts(sharedItems, commentPosts);
-                        that.loadMediaPosts(sortedList).thenApply(function(mediaPosts) {
-                            let entries = that.organiseEntries(sortedList, mediaPosts);
-                            let allTimelineEntries = that.populateTimeline(entries);
-                            future.complete(allTimelineEntries);
+                    that.loadParentPosts(sharedItems).thenApply(function(parentPosts) {
+                        that.loadCommentPosts(sharedItems.concat(parentPosts)).thenApply(function(commentPosts) {
+                            let sortedList = that.mergeAndSortPosts(sharedItems, parentPosts, commentPosts);
+                            that.loadMediaPosts(sortedList).thenApply(function(mediaPosts) {
+                                let entries = that.organiseEntries(sortedList, mediaPosts);
+                                let allTimelineEntries = that.populateTimeline(entries);
+                                future.complete(allTimelineEntries);
+                            });
                         });
                     });
                 });
@@ -840,7 +877,6 @@ module.exports = {
                             that.data = [];
                             that.showSpinner = false;
                         } else {
-                            that.unresolvedSharedItems = [];
                             that.buildTimeline(items).thenApply(function(timelineEntries) {
                                 that.data = timelineEntries;
                                 that.showSpinner = false;
