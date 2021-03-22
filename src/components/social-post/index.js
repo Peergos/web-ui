@@ -91,19 +91,9 @@ module.exports = {
             } else {
                 let postTime = peergos.client.JsUtil.now();
                 this.socialFeed.uploadMediaForPost(java_reader, mediaFile.size, postTime, updateProgressBar).thenApply(function(pair) {
-                    let type = null;
                     var thumbnailAllocation = Math.min(100000, mediaFile.size / 10);
                     updateProgressBar({ value_0: thumbnailAllocation});
-                    if (pair.left == "image") {
-                        type = peergos.shared.social.SocialPost.Type.Image;
-                    } else if (pair.left == "video") {
-                        type = peergos.shared.social.SocialPost.Type.Video;
-                    } else if (pair.left == "audio") {
-                        type = peergos.shared.social.SocialPost.Type.Audio;
-                    } else {
-                        type = peergos.shared.social.SocialPost.Type.Media; //unknown
-                    }
-                    future.complete({type: type, mediaItem: pair.right});
+                    future.complete({mediaItem: pair.right});
                 });
             }
             return future;
