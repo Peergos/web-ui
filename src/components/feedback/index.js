@@ -29,6 +29,12 @@ module.exports = {
         close: function () {
             this.closeFeedbackForm(this.messageId);
         },
+        fromUTCtoLocal: function(postTime) {
+            let date = new Date(postTime.toString());
+            let localStr =  date.toISOString().replace('T',' ');
+            let withoutMS = localStr.substring(0, localStr.indexOf('.'));
+            return withoutMS;
+        },
         submitFeedback: function() {
             var contents = document.getElementById("feedback-text").value;
             if (contents.length > 0) {

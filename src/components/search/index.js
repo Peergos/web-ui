@@ -240,7 +240,10 @@ module.exports = {
             this.sortBy = prop;
         },
         formatDateTime: function(dateTime) {
-            return dateTime.toString().replace('T',' ');
+            let date = new Date(dateTime.toString());
+            let localStr =  date.toISOString().replace('T',' ');
+            let withoutMS = localStr.substring(0, localStr.indexOf('.'));
+            return withoutMS;
         }
     },
     computed:{

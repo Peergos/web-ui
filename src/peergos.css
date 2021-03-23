@@ -180,7 +180,6 @@ table {
 }
 .table-responsive {
   padding: 2em;
-  padding-left: 4em;
 }
 .navbar-nav {
   margin: 0em;
@@ -673,6 +672,23 @@ h3 {word-wrap:break-word; white-space:normal;}
     margin-bottom: 5px;
 }
 
+.social-post {
+    white-space:pre-wrap;
+    margin-bottom:0;
+    margin-right: 10px;
+    line-height: 1.1;
+    background-color: #e2e2e2;
+    border: 1px solid black;
+    border-radius: 4px;
+    padding: 5px;
+    font-size: 1.2em;
+    overflow-wrap: break-word;
+}
+.picon-timeline {
+    font-size: 5em;
+    word-wrap: break-word;
+    max-width: 5em;
+}
 .flex-container {
     display: flex;
     flex-wrap: wrap;

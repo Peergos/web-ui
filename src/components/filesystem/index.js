@@ -1026,7 +1026,6 @@ module.exports = {
                 ).thenApply(function(res) {
                     var thumbnailAllocation = Math.min(100000, file.size / 10);
                     updateProgressBar({ value_0: thumbnailAllocation});
-                    console.log("uploaded file:" + file.name + " in dir: " + directory);
                     if (refreshDirectory) {
                         that.showSpinner = true;
                         that.currentDir = res;
@@ -1344,7 +1343,9 @@ module.exports = {
                 that.showSpinner = false;
             });
         },
-
+        updateSocialFeedInstance: function(updated) {
+            this.socialFeed = updated;
+        },
         copy: function() {
             if (this.selectedFiles.length != 1)
                 return;
@@ -2031,7 +2032,10 @@ module.exports = {
             this.showSideNav = !this.showSideNav;
         },
         formatDateTime: function(dateTime) {
-            return dateTime.toString().replace('T',' ');
+            let date = new Date(dateTime.toString());
+            let localStr =  date.toISOString().replace('T',' ');
+            let withoutMS = localStr.substring(0, localStr.indexOf('.'));
+            return withoutMS;
         }
     },
     computed: {
@@ -2195,6 +2199,9 @@ module.exports = {
 	},
     friendnames: function() {
         return this.social.friends;
+    },
+    followingnames: function() {
+        return this.social.following;
     },
     groups: function() {
         return {groupsNameToUid: this.social.groupsNameToUid, groupsUidToName: this.social.groupsUidToName};

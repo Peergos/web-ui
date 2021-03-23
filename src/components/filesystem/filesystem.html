@@ -107,15 +107,20 @@
   </social>
   <timeline
     v-if="showTimeline"
-    v-on:hide-timeline="showTimeline = false"
+    v-on:hide-timeline="showTimeline = false;forceSharedRefreshWithUpdate++"
     :navigateToAction="navigateToAction"
     :viewAction="viewAction"
     :getFileIconFromFileAndType="getFileIconFromFileAndType"
     :messages="messages"
-    :socialFeed="socialFeed"
+    :socialFeedInstance="socialFeed"
+    :updateSocialFeedInstance="updateSocialFeedInstance"
     :importCalendarFile="importCalendarFile"
     :importSharedCalendar="importSharedCalendar"
     :displayProfile="displayProfile"
+    :groups="groups"
+    :followingnames="followingnames"
+    :friendnames="friendnames"
+    :followernames="followernames"
     :context="context">
   </timeline>
   <search

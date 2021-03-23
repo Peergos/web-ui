@@ -9,7 +9,7 @@ module.exports = {
 	    pinging: false
         };
     },
-    props: ['files', 'context', 'initialFileName'],
+    props: ['files', 'context', 'initialFileName', 'hideGalleryTitle'],
     created: function() {
         console.debug('Gallery module created!');
 	var showable = this.showableFiles;
@@ -29,6 +29,13 @@ module.exports = {
     },
 
     methods: {
+        showGalleryTitle: function(current) {
+            if (this.hideGalleryTitle) {
+                return "";
+            } else {
+                return current.getFileProperties().name;
+            }
+        },
         close: function() {
 	    this.pinging = false;
             this.$emit("hide-gallery");

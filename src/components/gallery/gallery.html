@@ -4,7 +4,7 @@
         <span @click="close" class="close">&times;</span>
         <spinner v-if="showSpinner"></spinner>
         <center>
-            <h2 v-if="current != null" >{{ current.getFileProperties().name }}</h2>
+            <h2 v-if="current != null" >{{ showGalleryTitle(current) }}</h2>
         </center>
         <center v-if="showableFiles.length > 1">
             <div class="btn-group" style="padding:10px;">

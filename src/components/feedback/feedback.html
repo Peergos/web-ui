@@ -27,14 +27,14 @@
                                     <td>
                                     <span v-if="!message.visible" class="fas fa-angle-up" />
                                     <span v-if="message.visible" class="fas fa-angle-down" />
-                                        {{message.sendTime}}&nbsp;From Server
+                                        {{fromUTCtoLocal(message.sendTime)}}&nbsp;From Server
                                     </td>
                                 </div>
                                 <div v-if="message.from == 'FromUser'">
                                     <td>
                                         <span v-if="!message.visible" class="fas fa-angle-up" />
                                         <span v-if="message.visible" class="fas fa-angle-down" />
-                                        {{message.sendTime}}&nbsp;You replied
+                                        {{fromUTCtoLocal(message.sendTime)}}&nbsp;You replied
                                     </td>
                                 </div>
                         </tr>
