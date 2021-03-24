@@ -382,8 +382,8 @@ var scryptJS = {
 			return res;
 		    }
 		    return asyncReader.readIntoArray(buf, 0, Math.min(buf.length, toRead)).thenCompose(function(bytesRead){
-			h.update(bytesRead == buf.length ? buf : buf.slice(0, bytesRead));
-			return priv.recurse(toRead - bytesRead);
+			h.update(bytesRead.value_0 == buf.length ? buf : buf.slice(0, bytesRead.value_0));
+			return priv.recurse(toRead - bytesRead.value_0);
 		    });
 		}
 		priv.recurse(fileSize).thenApply(function(){
