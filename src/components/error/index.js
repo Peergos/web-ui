@@ -10,7 +10,8 @@ module.exports = {
                             .split("\\%27").join("'")
                             .split("\\%28").join("(")
                             .split("\\%29").join(")")
-                            .split("\\%7E").join("~");
+                            .split("\\%7E").join("~")
+                            .split("+").join("%20");
 
             let str = decodeURIComponent(jsErrorBody);
             let token = 'java.lang.JsException: ';
