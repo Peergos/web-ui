@@ -3,7 +3,7 @@
     Building Peergos and the web UI
   </description>
 
-  <property name="peergos_project_root" location="peergos"/>
+  <property name="peergos_project_root" location="../Peergos"/>
   <property name="server" location="server"/>
   <property name="ui_src" location="src"/>
   <property name="ui" location="${server}/webroot"/>
@@ -52,19 +52,19 @@
   </target>
 
   <target name="js_vendor_prod" description="concat and minify the vendor JS for production">
-    <concat destfile="tmp.js">
+    <concat destfile="${ui}/js/vendor.js">
       <fileset dir="${vendor}/priors" includes="*.js"/>
       <fileset dir="${vendor}/min" includes="*.js"/>
       <fileset dir="${vendor}/common" includes="*.js"/>
     </concat>
-    <exec executable="java" dir="." failonerror="true">
+<!--    <exec executable="java" dir="." failonerror="true">
       <arg value="-jar"/>
       <arg value="yuicompressor-2.4.8.jar"/>
       <arg value="-o"/>
       <arg value="${ui}/js/vendor.js"/>
       <arg value="tmp.js"/>
     </exec>
-    <delete file="tmp.js"/>
+    <delete file="tmp.js"/> -->
   </target>
 
   <target name="css_vendor" description="concat and minify the vendor CSS">
@@ -114,7 +114,7 @@
     </exec>
   </target>
 
-  <target name="ui" depends="init,ui_dev_vendor,assets,css,js" description="build our part of the ui">
+  <target name="ui" depends="init,ui_prod_vendor,assets,css,js" description="build our part of the ui">
   </target>
 
   <taskdef name="watch"
