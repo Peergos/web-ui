@@ -934,11 +934,14 @@ module.exports = {
         },
         buildInitialTimeline: function(items) {
             var that = this;
+            var future = peergos.shared.util.Futures.incomplete();
             that.buildTimeline(items).thenApply(function(timelineEntries) {
                 that.data = timelineEntries;
                 that.showSpinner = false;
                 that.hasLoadedInitialResults = true;
+                future.complete(timelineEntries.length);
             });
+            return future;
         },
 	    init: function() {
             var that = this;
@@ -947,7 +950,11 @@ module.exports = {
             this.retrieveUnSeen(this.pageEndIndex, this.pageSize, []).thenApply(function(unseenItems) {
                 let items = that.filterSharedItems(unseenItems.reverse());
                 if (items.length > 0) {
-                    that.buildInitialTimeline(items);
+                    that.buildInitialTimeline(items).thenApply(function(addedItems) {
+                        if (addedItems == 0) {
+                            that.requestMoreResults();
+                        }
+                    });
                 } else {
                     let startIndex = Math.max(0, that.pageEndIndex - that.pageSize);
                     that.retrieveResults(startIndex, that.pageEndIndex, []).thenApply(function(additionalItems) {
