@@ -909,7 +909,7 @@ module.exports = {
             this.socialFeed.update().thenApply(function(updated) {
                 that.socialFeed = updated;
                 that.updateSocialFeedInstance(updated);
-                that.retrieveUnSeen(lastSeenIndex, that.pageSize, []).thenApply(function(unseenItems) {
+                that.retrieveUnSeen(lastSeenIndex, 100, []).thenApply(function(unseenItems) {
                     that.retrieveResults(that.pageEndIndex, lastSeenIndex, []).thenApply(function(additionalItems) {
                         let items = that.filterSharedItems(unseenItems.reverse().concat(additionalItems.reverse()));
                         var numberOfEntries = items.length;
@@ -932,30 +932,45 @@ module.exports = {
                 });
             });
         },
+        buildInitialTimeline: function(items) {
+            var that = this;
+            var future = peergos.shared.util.Futures.incomplete();
+            that.buildTimeline(items).thenApply(function(timelineEntries) {
+                that.data = timelineEntries;
+                that.showSpinner = false;
+                that.hasLoadedInitialResults = true;
+                future.complete(timelineEntries.length);
+            });
+            return future;
+        },
 	    init: function() {
             var that = this;
             that.showSpinner = true;
             this.pageEndIndex = this.socialFeed.getLastSeenIndex();
-            this.retrieveUnSeen(this.pageEndIndex, this.pageSize, []).thenApply(function(unseenItems) {
-                let startIndex = Math.max(0, that.pageEndIndex - that.pageSize);
-                that.retrieveResults(startIndex, that.pageEndIndex, []).thenApply(function(additionalItems) {
-                    that.pageEndIndex = startIndex;
-                    let items = that.filterSharedItems(unseenItems.reverse().concat(additionalItems.reverse()));
-                    var numberOfEntries = items.length;
-                    if (numberOfEntries == 0) {
-                        that.data = [];
+            this.retrieveUnSeen(this.pageEndIndex, 100, []).thenApply(function(unseenItems) {
+                let items = that.filterSharedItems(unseenItems.reverse());
+                if (items.length > 0) {
+                    that.buildInitialTimeline(items).thenApply(function(addedItems) {
+                        if (addedItems == 0) {
+                            that.requestMoreResults();
+                        }
+                    });
+                } else {
+                    let startIndex = Math.max(0, that.pageEndIndex - that.pageSize);
+                    that.retrieveResults(startIndex, that.pageEndIndex, []).thenApply(function(additionalItems) {
+                        that.pageEndIndex = startIndex;
+                        items = items.concat(that.filterSharedItems(additionalItems.reverse()));
+                        var numberOfEntries = items.length;
+                        if (numberOfEntries == 0 && startIndex > 0) {
+                            that.requestMoreResults();
+                        } else {
+                            that.buildInitialTimeline(items);
+                        }
+                    }).exceptionally(function(throwable) {
+                        that.showMessage(throwable.getMessage());
                         that.showSpinner = false;
-                    } else {
-                        that.buildTimeline(items).thenApply(function(timelineEntries) {
-                            that.data = timelineEntries;
-                            that.showSpinner = false;
-                            that.hasLoadedInitialResults = true;
-                        });
-                    }
-                }).exceptionally(function(throwable) {
-                    that.showMessage(throwable.getMessage());
-                    that.showSpinner = false;
-                });
+                    });
+                }
             }).exceptionally(function(throwable) {
                 that.showMessage(throwable.getMessage());
                 that.showSpinner = false;
