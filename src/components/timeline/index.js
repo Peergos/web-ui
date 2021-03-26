@@ -932,30 +932,38 @@ module.exports = {
                 });
             });
         },
+        buildInitialTimeline: function(items) {
+            var that = this;
+            that.buildTimeline(items).thenApply(function(timelineEntries) {
+                that.data = timelineEntries;
+                that.showSpinner = false;
+                that.hasLoadedInitialResults = true;
+            });
+        },
 	    init: function() {
             var that = this;
             that.showSpinner = true;
             this.pageEndIndex = this.socialFeed.getLastSeenIndex();
             this.retrieveUnSeen(this.pageEndIndex, this.pageSize, []).thenApply(function(unseenItems) {
-                let startIndex = Math.max(0, that.pageEndIndex - that.pageSize);
-                that.retrieveResults(startIndex, that.pageEndIndex, []).thenApply(function(additionalItems) {
-                    that.pageEndIndex = startIndex;
-                    let items = that.filterSharedItems(unseenItems.reverse().concat(additionalItems.reverse()));
-                    var numberOfEntries = items.length;
-                    if (numberOfEntries == 0) {
-                        that.data = [];
+                let items = that.filterSharedItems(unseenItems.reverse());
+                if (items.length > 0) {
+                    that.buildInitialTimeline(items);
+                } else {
+                    let startIndex = Math.max(0, that.pageEndIndex - that.pageSize);
+                    that.retrieveResults(startIndex, that.pageEndIndex, []).thenApply(function(additionalItems) {
+                        that.pageEndIndex = startIndex;
+                        items = items.concat(that.filterSharedItems(additionalItems.reverse()));
+                        var numberOfEntries = items.length;
+                        if (numberOfEntries == 0) {
+                            that.requestMoreResults();
+                        } else {
+                            that.buildInitialTimeline(items);
+                        }
+                    }).exceptionally(function(throwable) {
+                        that.showMessage(throwable.getMessage());
                         that.showSpinner = false;
-                    } else {
-                        that.buildTimeline(items).thenApply(function(timelineEntries) {
-                            that.data = timelineEntries;
-                            that.showSpinner = false;
-                            that.hasLoadedInitialResults = true;
-                        });
-                    }
-                }).exceptionally(function(throwable) {
-                    that.showMessage(throwable.getMessage());
-                    that.showSpinner = false;
-                });
+                    });
+                }
             }).exceptionally(function(throwable) {
                 that.showMessage(throwable.getMessage());
                 that.showSpinner = false;
