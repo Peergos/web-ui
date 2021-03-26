@@ -946,7 +946,7 @@ module.exports = {
 	    init: function() {
             var that = this;
             that.showSpinner = true;
-            this.pageEndIndex = this.socialFeed.getLastSeenIndex();
+            this.pageEndIndex = Math.max(0, this.socialFeed.getLastSeenIndex() -2); //-2 is an optimisation
             this.retrieveUnSeen(this.pageEndIndex, 100, []).thenApply(function(unseenItems) {
                 let items = that.filterSharedItems(unseenItems.reverse());
                 if (items.length > 0) {
@@ -961,7 +961,7 @@ module.exports = {
                         that.pageEndIndex = startIndex;
                         items = items.concat(that.filterSharedItems(additionalItems.reverse()));
                         var numberOfEntries = items.length;
-                        if (numberOfEntries == 0) {
+                        if (numberOfEntries == 0 && startIndex > 0) {
                             that.requestMoreResults();
                         } else {
                             that.buildInitialTimeline(items);
