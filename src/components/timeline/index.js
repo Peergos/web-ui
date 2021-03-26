@@ -5,7 +5,7 @@ module.exports = {
             showSpinner: false,
             data: [],
             pageEndIndex : 0,
-            pageSize: 5,
+            pageSize: 25,
             requestingMoreResults: false,
             noMoreResults: false,
             showSocialPostForm: false,
