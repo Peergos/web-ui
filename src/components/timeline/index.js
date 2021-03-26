@@ -946,7 +946,7 @@ module.exports = {
 	    init: function() {
             var that = this;
             that.showSpinner = true;
-            this.pageEndIndex = Math.max(0, this.socialFeed.getLastSeenIndex() -2); //-2 is an optimisation
+            this.pageEndIndex = this.socialFeed.getLastSeenIndex();
             this.retrieveUnSeen(this.pageEndIndex, 100, []).thenApply(function(unseenItems) {
                 let items = that.filterSharedItems(unseenItems.reverse());
                 if (items.length > 0) {
