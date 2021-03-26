@@ -909,7 +909,7 @@ module.exports = {
             this.socialFeed.update().thenApply(function(updated) {
                 that.socialFeed = updated;
                 that.updateSocialFeedInstance(updated);
-                that.retrieveUnSeen(lastSeenIndex, that.pageSize, []).thenApply(function(unseenItems) {
+                that.retrieveUnSeen(lastSeenIndex, 100, []).thenApply(function(unseenItems) {
                     that.retrieveResults(that.pageEndIndex, lastSeenIndex, []).thenApply(function(additionalItems) {
                         let items = that.filterSharedItems(unseenItems.reverse().concat(additionalItems.reverse()));
                         var numberOfEntries = items.length;
@@ -947,7 +947,7 @@ module.exports = {
             var that = this;
             that.showSpinner = true;
             this.pageEndIndex = this.socialFeed.getLastSeenIndex();
-            this.retrieveUnSeen(this.pageEndIndex, this.pageSize, []).thenApply(function(unseenItems) {
+            this.retrieveUnSeen(this.pageEndIndex, 100, []).thenApply(function(unseenItems) {
                 let items = that.filterSharedItems(unseenItems.reverse());
                 if (items.length > 0) {
                     that.buildInitialTimeline(items).thenApply(function(addedItems) {
