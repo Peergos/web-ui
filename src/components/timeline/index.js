@@ -343,7 +343,9 @@ module.exports = {
                             let references = socialPost.comments.toArray([]);
                             let additionalRefs = [];
                             references.forEach(ref => {
-                                additionalRefs.push(ref);
+                                if (refs.findIndex(v => v.path == ref.path) == -1) {
+                                    additionalRefs.push(ref);
+                                }
                             });
                             let updatedRefs = refs.concat(additionalRefs);
                             that.reduceLoadingCommentPosts(updatedRefs, ++index, accumulator, future);
@@ -453,11 +455,18 @@ module.exports = {
         },
         processItems: function(items) {
             var that = this;
-            that.buildTimeline(items).thenApply(function(allTimelineEntries) {
-                that.data = that.data.concat(allTimelineEntries);
-                that.showSpinner = false;
-                that.requestingMoreResults = false;
-            });
+            var future = peergos.shared.util.Futures.incomplete();
+            if (items.length == 0 ) {
+                future.complete(0);
+            } else {
+                that.buildTimeline(items).thenApply(function(allTimelineEntries) {
+                    that.data = that.data.concat(allTimelineEntries);
+                    that.showSpinner = false;
+                    that.requestingMoreResults = false;
+                    future.complete(allTimelineEntries.length);
+                });
+            }
+            return future;
         },
         filterSharedItems: function(items) {
             let filteredSharedItems = [];
@@ -470,7 +479,7 @@ module.exports = {
             }
             return filteredSharedItems;
         },
-        requestMoreResults: function() {
+        requestMoreResults: function(itemCount) {
             let that = this;
             if (that.noMoreResults || that.requestingMoreResults) {
                 return;
@@ -479,15 +488,21 @@ module.exports = {
             that.requestingMoreResults = true;
             let startIndex = Math.max(0, this.pageEndIndex - this.pageSize);
             this.retrieveResults(startIndex, this.pageEndIndex).thenApply(function(additionalItems) {
-               that.pageEndIndex = that.pageEndIndex - additionalItems.length;
+               that.pageEndIndex = startIndex;
                let items = that.filterSharedItems(additionalItems.reverse());
-               if (items.length == 0) {
+               if (items.length == 0 && that.pageEndIndex == 0) {
                     that.showSpinner = false;
                     that.requestingMoreResults = false;
                     that.noMoreResults = true;
                     that.data = that.data.concat({isLastEntry: true});
                } else {
-                    that.processItems(items);
+                    that.processItems(items).thenApply(function(addedCount) {
+                        let previousCount = itemCount == null ? 0 : itemCount;
+                        let itemsAddedSoFar = addedCount + previousCount;
+                        if (itemsAddedSoFar < that.pageSize) {
+                            that.requestMoreResults(itemsAddedSoFar);
+                        }
+                    });
                }
             }).exceptionally(function(throwable) {
                 that.showMessage(throwable.getMessage());
@@ -889,6 +904,7 @@ module.exports = {
             let lastSeenIndex = this.socialFeed.getLastSeenIndex();
             this.socialFeed.update().thenApply(function(updated) {
                 that.socialFeed = updated;
+                that.updateSocialFeedInstance(updated);
                 that.retrieveUnSeen(lastSeenIndex, that.pageSize, []).thenApply(function(unseenItems) {
                     that.retrieveResults(that.pageEndIndex, lastSeenIndex, []).thenApply(function(additionalItems) {
                         let items = that.filterSharedItems(unseenItems.reverse().concat(additionalItems.reverse()));
@@ -919,7 +935,7 @@ module.exports = {
             this.retrieveUnSeen(this.pageEndIndex, this.pageSize, []).thenApply(function(unseenItems) {
                 let startIndex = Math.max(0, that.pageEndIndex - that.pageSize);
                 that.retrieveResults(startIndex, that.pageEndIndex, []).thenApply(function(additionalItems) {
-                    that.pageEndIndex = that.pageEndIndex - additionalItems.length;
+                    that.pageEndIndex = startIndex;
                     let items = that.filterSharedItems(unseenItems.reverse().concat(additionalItems.reverse()));
                     var numberOfEntries = items.length;
                     if (numberOfEntries == 0) {
