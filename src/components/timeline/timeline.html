@@ -135,7 +135,7 @@
                         </div>
                     </div>
                     <center>
-                        <button v-if="hasLoadedInitialResults && !noMoreResults" class="btn btn-success" v-on:click="requestMoreResults()">Show more</button>
+                        <button :disabled="requestingMoreResults" v-if="hasLoadedInitialResults && !noMoreResults" class="btn btn-success" v-on:click="requestMoreResults()">Show more</button>
                     </center>
                 </div>
             </div>
