@@ -565,6 +565,9 @@ module.exports = {
             this.showEmbeddedGallery = true;
         },
         canComment: function(item) {
+            if (item.isDirectory) {
+                return false;
+            }
             let isFriend = this.friendnames.indexOf(item.sharer) > -1;
             let isFollower = this.followernames.indexOf(item.sharer) > -1;
             return item.sharer == this.context.username || isFriend || isFollower;
@@ -999,9 +1002,6 @@ module.exports = {
                         thread = [];
                     }
                     thread.push(timelineEntry);
-                    thread.push(associatedMedia);
-                    blocks.push(thread);
-                    thread = [];
                     associatedMedia = {isMedia: true, mediaList: []};
                 } else {
                     if (!timelineEntry.isMedia) {
