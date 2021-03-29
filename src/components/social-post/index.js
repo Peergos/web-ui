@@ -9,6 +9,7 @@ module.exports = {
             post: "",
             isPosting: false,
             allowFollowerSharingOption: true,
+            shareWithSharerOnly: false,
             thumbnailImage: "",
             mediaFiles: [],
             mediaFilenames: "",
@@ -24,12 +25,14 @@ module.exports = {
                 this.title = "Post a Comment";
                 if (this.currentSocialPostEntry.socialPost != null) {
                     if (this.currentSocialPostEntry.socialPost.shareTo == peergos.shared.social.SocialPost.Resharing.Author) {
-                        that.shareWith = "Author";
+                        that.shareWith = "Sharer";
+                        that.shareWithSharerOnly = true;
                     } else if (this.currentSocialPostEntry.socialPost.shareTo == peergos.shared.social.SocialPost.Resharing.Friends) {
                         this.allowFollowerSharingOption = false;
                     }
                 } else {
-                    that.shareWith = "Author";
+                    that.shareWith = "Sharer";
+                    that.shareWithSharerOnly = true;
                 }
             }
             this.isReady = true;
@@ -46,7 +49,8 @@ module.exports = {
                 } else if(readAccess[0] == that.getGroupUid(peergos.shared.user.SocialState.FOLLOWERS_GROUP_NAME)) {
                     that.shareWith = "Followers";
                 } else {
-                    that.shareWith = "Author";
+                    that.shareWith = "Sharer";
+                    that.shareWithSharerOnly = true;
                 }
                 that.isReady = true;
             });
@@ -79,7 +83,7 @@ module.exports = {
                 readerToAdd = this.getGroupUid(peergos.shared.user.SocialState.FRIENDS_GROUP_NAME);
             } else if(this.shareWith == 'Followers') {
                 readerToAdd = this.getGroupUid(peergos.shared.user.SocialState.FOLLOWERS_GROUP_NAME);
-            } else if(this.shareWith == 'Author') {
+            } else if(this.shareWith == 'Sharer') {
                 readerToAdd = this.currentSocialPostEntry.sharer;
             }
             return readerToAdd;
@@ -90,7 +94,7 @@ module.exports = {
                 resharingType = peergos.shared.social.SocialPost.Resharing.Friends;
             } else if(this.shareWith == 'Followers') {
                 resharingType = peergos.shared.social.SocialPost.Resharing.Followers;
-            } else if(this.shareWith == 'Author') {
+            } else if(this.shareWith == 'Sharer') {
                 resharingType = peergos.shared.social.SocialPost.Resharing.Author;
             }
             return resharingType;
