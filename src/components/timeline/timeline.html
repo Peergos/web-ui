@@ -99,7 +99,7 @@
                                             </div>
                                             <div v-bind:style="{ marginLeft: indent(entry[rowIndex-1]) }">
                                                 <div style="margin-top: 10px; margin-bottom: 10px;">
-                                          <span v-if="canComment(entry[rowIndex-1])">
+                                          <span v-if="entry[rowIndex-1].sharer != context.username && canComment(entry[rowIndex-1])">
                                             <button class="btn btn-success" @click="addComment(entry[rowIndex-1])">comment</button>
                                           </span>
                                                 </div>
@@ -120,7 +120,7 @@
                                             </div>
                                             <div v-if="!(rowIndex + 1 < entry.length && entry[rowIndex+1].isMedia)" v-bind:style="{ marginLeft: indent(row) }">
                                                 <div style="margin-top: 10px; margin-bottom: 10px;">
-                                          <span v-if="canComment(row)">
+                                          <span v-if="row.sharer != context.username && canComment(row)">
                                             <button class="btn btn-success" @click="addComment(row)">comment</button>
                                           </span>
                                                 </div>

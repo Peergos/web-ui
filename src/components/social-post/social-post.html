@@ -33,7 +33,7 @@
                     </div>
                     <div v-if="shareWithSharerOnly" class="hspace-15">
                         <input :disabled="socialPostAction=='edit'" type="radio" id="sharer-option" value="Sharer" v-model="shareWith">
-                        <label for="sharer-option" style="font-weight: normal;">Sharer</label>
+                        <label for="sharer-option" style="font-weight: normal;">{{currentSocialPostEntry.sharer}}</label>
                     </div>
                     <div v-if="!shareWithSharerOnly" class="hspace-15">
                         <input :disabled="socialPostAction=='edit'" type="radio" id="friends-option" value="Friends" v-model="shareWith">
