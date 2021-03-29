@@ -37,7 +37,7 @@ module.exports = {
                 top: '50%', // Top position relative to parent
                 left: '50%', // Left position relative to parent
                 shadow: false, // Whether to render a shadow
-                hwaccel: false, // Whether to use hardware acceleration
+                hwaccel: true, // Whether to use hardware acceleration
                 position: 'absolute', // Element positioning
             };
             return new Spinner(opts);
