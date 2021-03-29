@@ -5,35 +5,35 @@
             <div class="modal-header" @click="closeEditMenu($event)">
                 <h2>Social Feed</h2>
             </div>
-
+            
             <div id="modal-body" class="modal-body" @click="closeEditMenu($event)">
                 <social-post
-                        v-if="showSocialPostForm"
-                        :closeSocialPostForm="closeSocialPostForm"
-                        :socialFeed="socialFeed"
-                        :context="context"
-                        :showMessage="showMessage"
-                        :groups="groups"
-                        :socialPostAction="socialPostAction"
-                        :currentSocialPostEntry="currentSocialPostEntry">
+                    v-if="showSocialPostForm"
+                    :closeSocialPostForm="closeSocialPostForm"
+                    :socialFeed="socialFeed"
+                    :context="context"
+                    :showMessage="showMessage"
+                    :groups="groups"
+                    :socialPostAction="socialPostAction"
+                    :currentSocialPostEntry="currentSocialPostEntry">
                 </social-post>
                 <gallery
-                        v-if="showEmbeddedGallery"
-                        v-on:hide-gallery="showEmbeddedGallery = false"
-                        :files="filesToViewInGallery"
-                        :hideGalleryTitle="true"
-                        :context="context">
+                    v-if="showEmbeddedGallery"
+                    v-on:hide-gallery="showEmbeddedGallery = false"
+                    :files="filesToViewInGallery"
+                    :hideGalleryTitle="true"
+                    :context="context">
                 </gallery>
                 <confirm
-                        v-if="showConfirm"
-                        v-on:hide-confirm="showConfirm = false"
-                        :confirm_message='confirm_message'
-                        :confirm_body="confirm_body"
-                        :consumer_cancel_func="confirm_consumer_cancel_func"
-                        :consumer_func="confirm_consumer_func">
+                    v-if="showConfirm"
+                    v-on:hide-confirm="showConfirm = false"
+                    :confirm_message='confirm_message'
+                    :confirm_body="confirm_body"
+                    :consumer_cancel_func="confirm_consumer_cancel_func"
+                    :consumer_func="confirm_consumer_func">
                 </confirm>
                 <spinner v-if="showSpinner"></spinner>
-
+                
                 <div class="panel-body">
                     <div>
                         <button @click="addNewPost()" class="btn btn-success" >Write Post</button>
@@ -42,7 +42,7 @@
                         </button>
                     </div>
                 </div>
-
+                
                 <div id="scroll-area">
                     <center v-if="data.length==0">
                         <h3>
@@ -57,35 +57,35 @@
                         <li><a @click="deletePost(currentRow)">Delete</a></li>
                     </ul>
                     <div id="feed" class="table table-responsive table-striped table-hover" style="border:none;">
-                      <div v-for="entry in blocks">
-                        <div v-if="entry[0].isLastEntry">
-                          <center><span>No more entries</span></center>
-                        </div>
+                        <div v-for="entry in blocks">
+                            <div v-if="entry[0].isLastEntry">
+                                <center><span>No more entries</span></center>
+                            </div>
                             <div v-if="!entry[0].isLastEntry && !entry[0].isPost && !entry[0].isMedia" style="border: 1px solid black;border-radius: 11px; margin-top:5px; padding: 2em;">
-                                  <a v-if="entry[0].sharer != context.username && canLoadProfile(entry[0].sharer)" v-on:click="profile(entry[0].sharer)" style="cursor: pointer">
+                                <a v-if="entry[0].sharer != context.username && canLoadProfile(entry[0].sharer)" v-on:click="profile(entry[0].sharer)" style="cursor: pointer">
                                     <span>{{ entry[0].sharer }}</span>
-                                  </a>
-                                  <span v-if="entry[0].sharer != context.username && !canLoadProfile(entry[0].sharer)">{{ entry[0].sharer }}</span>
-                                  <span>{{ entry[0].info }}</span>
-                                  <a v-if="entry[0].displayFilename" v-on:click="navigateTo(entry[0])" style="cursor: pointer">
+                                </a>
+                                <span v-if="entry[0].sharer != context.username && !canLoadProfile(entry[0].sharer)">{{ entry[0].sharer }}</span>
+                                <span>{{ entry[0].info }}</span>
+                                <a v-if="entry[0].displayFilename" v-on:click="navigateTo(entry[0])" style="cursor: pointer">
                                     <span :title="entry[0].link">{{ entry[0].name }}</span>
-                                  </a>
+                                </a>
                                 <div>
                                     <div v-if="!entry[0].isLastEntry">
                                         <div v-if="!entry[0].isPost && !entry[0].isMedia">
                                             <span class="grid_icon_wrapper fa">
-                                              <a v-if="!entry[0].hasThumbnail">
-                                                <span style="height:100px" v-on:click="view(entry[0])" v-bind:class="[entry[0].isDirectory ? 'dir' : 'file', getFileIconFromFileAndType(entry[0].file, entry[0].fileType), 'picon-timeline']"> </span>
-                                              </a>
-                                              <img v-if="entry[0].hasThumbnail" v-on:click="view(entry[0])" v-bind:src="entry[0].thumbnail" style="cursor: pointer"/>
+                                                <a v-if="!entry[0].hasThumbnail">
+                                                    <span style="height:100px" v-on:click="view(entry[0])" v-bind:class="[entry[0].isDirectory ? 'dir' : 'file', getFileIconFromFileAndType(entry[0].file, entry[0].fileType), 'picon-timeline']"> </span>
+                                                </a>
+                                                <img v-if="entry[0].hasThumbnail" v-on:click="view(entry[0])" v-bind:src="entry[0].thumbnail" style="cursor: pointer"/>
                                             </span>
                                         </div>
                                     </div>
-                                        <span v-if="!entry[0].isDirectory && entry[0].sharer != context.username && !entry[0].isMedia && canComment(entry[0])">
-                                          <button class="btn btn-success" @click="addComment(entry[0])">Add comment</button>
-                                        </span>
+                                    <span v-if="!entry[0].isDirectory && entry[0].sharer != context.username && !entry[0].isMedia && canComment(entry[0])">
+                                        <button class="btn btn-success" @click="addComment(entry[0])">Add comment</button>
+                                    </span>
                                 </div>
-
+                                
                                 <div class="table-responsive table-striped table-hover" style="font-size: 1.0em;padding-left:0;margin-bottom:0;border:none;">
                                     <div v-for="(row, rowIndex) in entry">
                                         <div v-if="rowIndex >= 2 && row.isMedia">
@@ -99,9 +99,9 @@
                                             </div>
                                             <div v-bind:style="{ marginLeft: indent(entry[rowIndex-1]) }">
                                                 <div style="margin-top: 10px; margin-bottom: 10px;">
-                                          <span v-if="entry[rowIndex-1].sharer != context.username && canComment(entry[rowIndex-1])">
-                                            <button class="btn btn-success" @click="addComment(entry[rowIndex-1])">comment</button>
-                                          </span>
+                                                    <span v-if="entry[rowIndex-1].sharer != context.username && canComment(entry[rowIndex-1])">
+                                                        <button class="btn btn-success" @click="addComment(entry[rowIndex-1])">comment</button>
+                                                    </span>
                                                 </div>
                                             </div>
                                         </div>
@@ -120,61 +120,61 @@
                                             </div>
                                             <div v-if="!(rowIndex + 1 < entry.length && entry[rowIndex+1].isMedia)" v-bind:style="{ marginLeft: indent(row) }">
                                                 <div style="margin-top: 10px; margin-bottom: 10px;">
-                                          <span v-if="row.sharer != context.username && canComment(row)">
-                                            <button class="btn btn-success" @click="addComment(row)">comment</button>
-                                          </span>
+                                                    <span v-if="row.sharer != context.username && canComment(row)">
+                                                        <button class="btn btn-success" @click="addComment(row)">comment</button>
+                                                    </span>
                                                 </div>
                                             </div>
                                         </div>
                                     </div>
                                 </div>
-
+                                
                             </div>
                             <div v-if="!entry[0].isLastEntry && (entry[0].isPost || entry[0].isMedia)" style="border: 1px solid black;border-radius: 11px; margin-top:5px; padding: 2em;">
                                 <div class="table-responsive table-striped table-hover" style="font-size: 1.0em;padding-left:0;margin-bottom:0;border:none;">
-                                  <div v-for="(row, rowIndex) in entry">
-                                    <div v-if="row.isMedia">
-                                      <div v-bind:style="{ marginLeft: indent(row) }">
-                                        <div  v-for="(media, mediaIndex) in row.mediaList" class="grid_icon_wrapper fa" style="margin:0;margin-top:0.2em;">
-                                          <a v-if="!media.hasThumbnail">
-                                            <span style="height:100px" v-on:click="viewMediaList(row.mediaList, mediaIndex)" v-bind:class="[media.isDirectory ? 'dir' : 'file', getFileIconFromFileAndType(media.file, media.fileType), 'picon-timeline']"> </span>
-                                          </a>
-                                          <img v-if="media.hasThumbnail" v-on:click="viewMediaList(row.mediaList, mediaIndex)" v-bind:src="media.thumbnail" style="cursor: pointer"/>
+                                    <div v-for="(row, rowIndex) in entry">
+                                        <div v-if="row.isMedia">
+                                            <div v-bind:style="{ marginLeft: indent(row) }">
+                                                <div  v-for="(media, mediaIndex) in row.mediaList" class="grid_icon_wrapper fa" style="margin:0;margin-top:0.2em;">
+                                                    <a v-if="!media.hasThumbnail">
+                                                        <span style="height:100px" v-on:click="viewMediaList(row.mediaList, mediaIndex)" v-bind:class="[media.isDirectory ? 'dir' : 'file', getFileIconFromFileAndType(media.file, media.fileType), 'picon-timeline']"> </span>
+                                                    </a>
+                                                    <img v-if="media.hasThumbnail" v-on:click="viewMediaList(row.mediaList, mediaIndex)" v-bind:src="media.thumbnail" style="cursor: pointer"/>
+                                                </div>
+                                            </div>
+                                            <div v-bind:style="{ marginLeft: indent(entry[rowIndex-1]) }">
+                                                <div style="margin-top: 10px; margin-bottom: 10px;">
+                                                    <span v-if="canComment(entry[rowIndex-1])">
+                                                        <button class="btn btn-success" @click="addComment(entry[rowIndex-1])">comment</button>
+                                                    </span>
+                                                </div>
+                                            </div>
                                         </div>
-                                      </div>
-                                      <div v-bind:style="{ marginLeft: indent(entry[rowIndex-1]) }">
-                                        <div style="margin-top: 10px; margin-bottom: 10px;">
-                                          <span v-if="canComment(entry[rowIndex-1])">
-                                            <button class="btn btn-success" @click="addComment(entry[rowIndex-1])">comment</button>
-                                          </span>
+                                        <div v-if="row.isPost">
+                                            <div v-bind:style="{ marginLeft: indent(row) }">
+                                                <div style="display:flex;font-size: 1em;color: #7d7d7d;margin-right: 10px;">
+                                                    <a v-if="row.sharer != context.username && canLoadProfile(row.sharer)" v-on:click="profile(row.sharer)" style="cursor: pointer">
+                                                        <span>{{ row.sharer }}&nbsp;</span>
+                                                    </a>
+                                                    <span v-if="row.sharer!= context.username && !canLoadProfile(row.sharer)">{{ row.sharer }}&nbsp;</span>
+                                                    {{ row.info }}
+                                                    <span style="flex-grow:1;">&nbsp&nbsp;{{ row.status}}</span>
+                                                    <span v-if="row.sharer == context.username" class="fa fa-ellipsis-h" @click="displayEditMenu($event, row)"></span>
+                                                </div>
+                                                <div class="social-post" v-if="row.name.length > 0">{{ row.name }}</div>
+                                            </div>
+                                            <div v-if="!(rowIndex + 1 < entry.length && entry[rowIndex+1].isMedia)" v-bind:style="{ marginLeft: indent(row) }">
+                                                <div style="margin-top: 10px; margin-bottom: 10px;">
+                                                    <span v-if="canComment(row)">
+                                                        <button class="btn btn-success" @click="addComment(row)">comment</button>
+                                                    </span>
+                                                </div>
+                                            </div>
                                         </div>
-                                      </div>
                                     </div>
-                                    <div v-if="row.isPost">
-                                      <div v-bind:style="{ marginLeft: indent(row) }">
-                                        <div style="display:flex;font-size: 1em;color: #7d7d7d;margin-right: 10px;">
-                                          <a v-if="row.sharer != context.username && canLoadProfile(row.sharer)" v-on:click="profile(row.sharer)" style="cursor: pointer">
-                                            <span>{{ row.sharer }}&nbsp;</span>
-                                          </a>
-                                          <span v-if="row.sharer!= context.username && !canLoadProfile(row.sharer)">{{ row.sharer }}&nbsp;</span>
-                                          {{ row.info }}
-                                          <span style="flex-grow:1;">&nbsp&nbsp;{{ row.status}}</span>
-                                          <span v-if="row.sharer == context.username" class="fa fa-ellipsis-h" @click="displayEditMenu($event, row)"></span>
-                                        </div>
-                                        <div class="social-post" v-if="row.name.length > 0">{{ row.name }}</div>
-                                      </div>
-                                      <div v-if="!(rowIndex + 1 < entry.length && entry[rowIndex+1].isMedia)" v-bind:style="{ marginLeft: indent(row) }">
-                                        <div style="margin-top: 10px; margin-bottom: 10px;">
-                                          <span v-if="canComment(row)">
-                                            <button class="btn btn-success" @click="addComment(row)">comment</button>
-                                          </span>
-                                        </div>
-                                      </div>
-                                    </div>
-                                  </div>
                                 </div>
                             </div>
-                      </div>
+                        </div>
                     </div>
                     <center>
                         <button :disabled="requestingMoreResults" v-if="hasLoadedInitialResults && !noMoreResults" class="btn btn-success" v-on:click="requestMoreResults()">Show more</button>
