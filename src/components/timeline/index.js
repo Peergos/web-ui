@@ -14,6 +14,7 @@ module.exports = {
             showEmbeddedGallery: false,
             filesToViewInGallery: [],
             showEditMenu: false,
+            showFriendMenu: false,
             menutop:"",
             menuleft:"",
             currentRow: {},
@@ -84,8 +85,9 @@ module.exports = {
 		y: posy
 	    }
 	},
-	closeEditMenu: function(e) {
+	closeMenus: function(e) {
 	    this.showEditMenu = false;
+            this.showFriendMenu = false;
 	    e.stopPropagation();
 	},
 	displayEditMenu: function(event, row) {
@@ -105,6 +107,30 @@ module.exports = {
             this.currentSocialPostEntry = {path: entry.link, socialPost: entry.socialPost};
             this.showSocialPostForm = true;
 	    this.showEditMenu = false;
+        },
+        sendFriendRequest: function(entry) {
+            let ctx = this.context;
+            ctx.getSocialState().thenCompose(function(social) {
+                var pendingOutgoingUsernames = [];
+		social.pendingOutgoing.toArray([]).map(u => pendingOutgoingUsernames.push(u));
+                if (pendingOutgoingUsernames.indexOf(entry.owner) >= 0)
+                    console.log("Friend request already sent");
+                else
+                    ctx.sendInitialFollowRequest(entry.owner);
+            });
+	    this.showFriendMenu = false;
+        },
+        displayFriendMenu: function(event, row) {
+            this.currentRow = row;
+	    var pos = this.getPosition(event);
+	    Vue.nextTick(function() {
+		var top = pos.y + 10;
+		var left = pos.x - 100;
+		this.menutop = top + 'px';
+		this.menuleft = left + 'px';
+	    }.bind(this));
+            this.showFriendMenu = true;
+	    event.stopPropagation();
         },
         convertToPath: function(dir) {
             let dirWithoutLeadingSlash = dir.startsWith("/") ? dir.substring(1) : dir;
