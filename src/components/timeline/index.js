@@ -238,7 +238,7 @@ module.exports = {
             if (cap == null) {
                 cap = entry.file.readOnlyPointer();
             }
-            this.currentSocialPostEntry = {path: entry.link, socialPost: entry.socialPost, file: entry.file, cap: cap};
+            this.currentSocialPostEntry = {path: entry.link, socialPost: entry.socialPost, file: entry.file, cap: cap, sharer: entry.sharer};
             this.showSocialPostForm = true;
         },
         getFileSize: function(props) {
@@ -603,6 +603,7 @@ module.exports = {
             if (sharer == this.context.username) {
                 info = "you" + info;
             }
+            let owner = entry != null ? entry.owner : this.extractOwnerFromPath(filePath);
             if (socialPost == null && filePath.includes("/.posts/")) {
                 displayFilename = false;
             }
@@ -654,6 +655,7 @@ module.exports = {
             }
             let item = {
                 sharer: sharer,
+                owner: owner,
                 info: info,
                 link: filePath,
                 cap: entry == null ? null : entry.cap,

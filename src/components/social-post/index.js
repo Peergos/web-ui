@@ -12,21 +12,28 @@ module.exports = {
             thumbnailImage: "",
             mediaFiles: [],
             mediaFilenames: "",
-            progressMonitors: []
+            progressMonitors: [],
+            isReady: false
         }
     },
     props: ['closeSocialPostForm', 'socialFeed', 'context', 'showMessage', 'groups', 'socialPostAction', 'currentSocialPostEntry'],
     created: function() {
         let that = this;
-        if (this.currentSocialPostEntry != null) {
-            if (this.socialPostAction == 'reply') {
+        if (this.socialPostAction == 'reply') {
+            if (this.currentSocialPostEntry != null) {
                 this.title = "Post a Comment";
-                if (this.currentSocialPostEntry.socialPost != null && this.currentSocialPostEntry.socialPost.shareTo == peergos.shared.social.SocialPost.Resharing.Friends) {
-                    this.allowFollowerSharingOption = false;
+                if (this.currentSocialPostEntry.socialPost != null) {
+                    if (this.currentSocialPostEntry.socialPost.shareTo == peergos.shared.social.SocialPost.Resharing.Author) {
+                        that.shareWith = "Author";
+                    } else if (this.currentSocialPostEntry.socialPost.shareTo == peergos.shared.social.SocialPost.Resharing.Friends) {
+                        this.allowFollowerSharingOption = false;
+                    }
+                } else {
+                    that.shareWith = "Author";
                 }
             }
-        }
-        if (this.socialPostAction == 'edit') {
+            this.isReady = true;
+        } else if (this.socialPostAction == 'edit') {
             this.title = "Edit a Post";
             this.post = this.currentSocialPostEntry.socialPost.body.toArray([])[0].inlineText();
             let pathStr = this.currentSocialPostEntry.path;
@@ -38,8 +45,13 @@ module.exports = {
                     that.shareWith = "Friends";
                 } else if(readAccess[0] == that.getGroupUid(peergos.shared.user.SocialState.FOLLOWERS_GROUP_NAME)) {
                     that.shareWith = "Followers";
+                } else {
+                    that.shareWith = "Author";
                 }
+                that.isReady = true;
             });
+        } else if (this.socialPostAction == 'add') {
+            this.isReady = true;
         }
         Vue.nextTick(function() {
             document.getElementById("social-post-text").focus();
@@ -61,6 +73,31 @@ module.exports = {
         getGroupUid: function(groupName) {
             return this.groups.groupsNameToUid[groupName];
         },
+        readerToAdd: function() {
+            let readerToAdd = null;
+            if (this.shareWith == 'Friends') {
+                readerToAdd = this.getGroupUid(peergos.shared.user.SocialState.FRIENDS_GROUP_NAME);
+            } else if(this.shareWith == 'Followers') {
+                readerToAdd = this.getGroupUid(peergos.shared.user.SocialState.FOLLOWERS_GROUP_NAME);
+            } else if(this.shareWith == 'Author') {
+                readerToAdd = this.currentSocialPostEntry.sharer;
+            }
+            return readerToAdd;
+        },
+        fromShareWithToResharingType: function() {
+            let resharingType = null;
+            if (this.shareWith == 'Friends') {
+                resharingType = peergos.shared.social.SocialPost.Resharing.Friends;
+            } else if(this.shareWith == 'Followers') {
+                resharingType = peergos.shared.social.SocialPost.Resharing.Followers;
+            } else if(this.shareWith == 'Author') {
+                resharingType = peergos.shared.social.SocialPost.Resharing.Author;
+            }
+            return resharingType;
+        },
+        isPostingAvailable: function() {
+            return this.isReady && !this.isPosting;
+        },
         submitPost: function() {
             if (this.isPosting) {
                 return;
@@ -68,16 +105,13 @@ module.exports = {
             this.isPosting = true;
             let that = this;
             that.showSpinner = true;
-            let groupUid = this.shareWith == 'Friends' ? this.getGroupUid(peergos.shared.user.SocialState.FRIENDS_GROUP_NAME)
-                        : this.getGroupUid(peergos.shared.user.SocialState.FOLLOWERS_GROUP_NAME);
-            let resharingType = this.shareWith == 'Friends' ? peergos.shared.social.SocialPost.Resharing.Friends
-                                    : peergos.shared.social.SocialPost.Resharing.Followers;
+            let resharingType = this.fromShareWithToResharingType();
             if (this.socialPostAction == 'add') {
-                this.addPost(groupUid, resharingType);
+                this.addPost(resharingType);
             } else if(this.socialPostAction == 'edit') {
-                this.editPost(groupUid);
+                this.editPost();
             } else if(this.socialPostAction == 'reply') {
-                this.replyToPost(groupUid, resharingType);
+                this.replyToPost(resharingType);
             }
         },
         uploadMedia: function(mediaFile, updateProgressBar) {
@@ -163,7 +197,7 @@ module.exports = {
             that.reduceAllMediaUpload(0, [], progressStore, future);
             return future;
         },
-        addPost: function(groupUid, resharingType) {
+        addPost: function(resharingType) {
             let that = this;
             this.uploadAllMedia().thenApply(function(mediaResponseList) {
                 if (mediaResponseList == null) {
@@ -172,7 +206,7 @@ module.exports = {
                 } else if (mediaResponseList.length == 0) {
 		            let body = peergos.client.JsUtil.asList([new peergos.shared.social.SocialPost.Content.Text(that.post)]);
                     let socialPost = peergos.shared.social.SocialPost.createInitialPost(that.context.username, body, resharingType);
-                    that.savePost(socialPost, groupUid);
+                    that.savePost(socialPost);
                 } else {
                     let bodyItems = [new peergos.shared.social.SocialPost.Content.Text(that.post)];
                     mediaResponseList.forEach( mediaResponse => {
@@ -180,11 +214,11 @@ module.exports = {
                     });
                     let body = peergos.client.JsUtil.asList(bodyItems);
                     let socialPost = peergos.shared.social.SocialPost.createInitialPost(that.context.username, body, resharingType);
-                    that.savePost(socialPost, groupUid);
+                    that.savePost(socialPost);
                 }
             });
         },
-        editPost: function(groupUid) {
+        editPost: function() {
             let that = this;
             let postTime = peergos.client.JsUtil.now();
             let parts = this.currentSocialPostEntry.socialPost.body.toArray([]);
@@ -193,9 +227,9 @@ module.exports = {
             let body = peergos.client.JsUtil.asList(parts);
             let socialPost = this.currentSocialPostEntry.socialPost.edit(body, postTime);
             let uuid = this.currentSocialPostEntry.path.substring(this.currentSocialPostEntry.path.lastIndexOf("/") + 1);
-            this.updatePost(uuid, socialPost, groupUid);
+            this.updatePost(uuid, socialPost);
         },
-        replyToPost: function(groupUid, resharingType) {
+        replyToPost: function(resharingType) {
             let that = this;
             let path = this.currentSocialPostEntry.path;
             let cap = this.currentSocialPostEntry.cap;
@@ -208,7 +242,7 @@ module.exports = {
                     } else if (mediaResponseList.length == 0) {
                         let body = peergos.client.JsUtil.asList([new peergos.shared.social.SocialPost.Content.Text(that.post)]);
 			            let replyPost = peergos.shared.social.SocialPost.createComment(parent, resharingType, that.context.username, body);
-                        that.savePost(replyPost, groupUid);
+                        that.savePost(replyPost);
                     } else {
                         let postItems = [new peergos.shared.social.SocialPost.Content.Text(that.post)];
                         mediaResponseList.forEach( mediaResponse => {
@@ -216,7 +250,7 @@ module.exports = {
                         });
                         let post = peergos.client.JsUtil.asList(postItems);
                         let replyPost = peergos.shared.social.SocialPost.createComment(parent, resharingType, that.context.username, post);
-                        that.savePost(replyPost, groupUid);
+                        that.savePost(replyPost);
                     }
                 });
             });
@@ -234,7 +268,7 @@ module.exports = {
             }
             return future;
         },
-        updatePost: function(uuid, socialPost, groupUid) {
+        updatePost: function(uuid, socialPost) {
            let that = this;
            this.socialFeed.updatePost(uuid, socialPost).thenApply(function(result) {
                    that.showSpinner = false;
@@ -247,10 +281,11 @@ module.exports = {
                 that.isPosting = false;
             });
         },
-        savePost: function(socialPost, groupUid) {
+        savePost: function(socialPost) {
            let that = this;
+           let readerToAdd = this.readerToAdd();
            this.socialFeed.createNewPost(socialPost).thenApply(function(result) {
-               that.context.shareReadAccessWith(result.left, peergos.client.JsUtil.asSet([groupUid])).thenApply(function(b) {
+               that.context.shareReadAccessWith(result.left, peergos.client.JsUtil.asSet([readerToAdd])).thenApply(function(b) {
                        that.showSpinner = false;
                        that.closeSocialPostForm("save", result.left.toString(), socialPost, result.right
                             , that.currentSocialPostEntry == null ? null : that.currentSocialPostEntry.path);

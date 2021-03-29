@@ -27,7 +27,14 @@
                 <p>
                     <textarea id="social-post-text" style="width:100%;resize: none;" rows=2 :placeholder="textAreaPlaceholder" maxlength="1000" v-model="post"></textarea>
                 </p>
-                <div class="flex-container">
+                <div v-if="isReady && shareWith == 'Author'" class="flex-container">
+                    <div class="hspace-15">
+                        <button :disabled="!isPostingAvailable()" class="btn btn-success" @click="submitPost()">
+                            Post
+                        </button>
+                    </div>
+                </div>
+                <div v-if="isReady && shareWith != 'Author'" class="flex-container">
                     <div class="hspace-15">
                         <label style="font-weight: normal;">Share post with:</label>
                     </div>
@@ -40,7 +47,7 @@
                         <label for="followers-option" style="font-weight: normal;">Followers (Includes Friends)</label>
                     </div>
                     <div class="hspace-15">
-                        <button class="btn btn-success" @click="submitPost()">
+                        <button :disabled="!isPostingAvailable()" class="btn btn-success" @click="submitPost()">
                             Post
                         </button>
                     </div>
