@@ -238,7 +238,7 @@ module.exports = {
             if (cap == null) {
                 cap = entry.file.readOnlyPointer();
             }
-            this.currentSocialPostEntry = {path: entry.link, socialPost: entry.socialPost, file: entry.file, cap: cap};
+            this.currentSocialPostEntry = {path: entry.link, socialPost: entry.socialPost, file: entry.file, cap: cap, sharer: entry.sharer};
             this.showSocialPostForm = true;
         },
         getFileSize: function(props) {
@@ -565,6 +565,9 @@ module.exports = {
             this.showEmbeddedGallery = true;
         },
         canComment: function(item) {
+            if (item.isDirectory) {
+                return false;
+            }
             let isFriend = this.friendnames.indexOf(item.sharer) > -1;
             let isFollower = this.followernames.indexOf(item.sharer) > -1;
             return item.sharer == this.context.username || isFriend || isFollower;
@@ -603,6 +606,7 @@ module.exports = {
             if (sharer == this.context.username) {
                 info = "you" + info;
             }
+            let owner = entry != null ? entry.owner : this.extractOwnerFromPath(filePath);
             if (socialPost == null && filePath.includes("/.posts/")) {
                 displayFilename = false;
             }
@@ -654,6 +658,7 @@ module.exports = {
             }
             let item = {
                 sharer: sharer,
+                owner: owner,
                 info: info,
                 link: filePath,
                 cap: entry == null ? null : entry.cap,
@@ -997,9 +1002,6 @@ module.exports = {
                         thread = [];
                     }
                     thread.push(timelineEntry);
-                    thread.push(associatedMedia);
-                    blocks.push(thread);
-                    thread = [];
                     associatedMedia = {isMedia: true, mediaList: []};
                 } else {
                     if (!timelineEntry.isMedia) {
