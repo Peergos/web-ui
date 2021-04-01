@@ -8,7 +8,10 @@ module.exports = {
     },
     methods: {
         iconCount: function() {
-            return 10 + (this.canUpgrade ? 1 : 0);
+            return 11 + (this.canUpgrade ? 1 : 0);
+        },
+        showChat: function() {
+            this.$emit("chat");
         },
         showTour: function() {
             this.$emit("tour");

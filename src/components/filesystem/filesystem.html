@@ -80,6 +80,7 @@
       v-on:social="showSocialView()"
       v-on:search="openSearch(true)"
       v-on:profile="showProfile(true)"
+      v-on:chat="showChat()"
       v-on:tour="showTourViewer"
       >
   </appgrid>
@@ -173,6 +174,15 @@
     :paymentProperties="paymentProperties"
     :updateQuota="updateQuota">
   </payment>
+  <chat
+    v-if="showChatViewer"
+    :closeChatViewer="closeChatViewer"
+    :context="context"
+    :getFileIconFromFileAndType="getFileIconFromFileAndType"
+    :friendnames="friendnames"
+    :displayProfile="displayProfile"
+    :socialFeed="socialFeed">
+  </chat>
   <feedback
     v-if="showFeedbackForm"
     :closeFeedbackForm="closeFeedbackForm"
