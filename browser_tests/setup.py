@@ -15,7 +15,7 @@ setup(name='peergos-webui-browser-test',
         install_requires=[
             'attrs==16.2.0',
             #'pkg-resources==0.0.0',
-            'py==1.4.31',
+            'py==1.10.0',
             'pytest==3.0.4',
             'selenium==3.0.1',
             ],
