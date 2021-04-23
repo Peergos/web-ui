@@ -1,4 +1,4 @@
-<project name="Peergos web UI" default="update_and_run" basedir="." xmlns:if="ant:if">
+<project name="Peergos web UI" default="update_and_run" basedir=".">
   <description>
     Building Peergos and the web UI
   </description>
