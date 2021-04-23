@@ -1,4 +1,4 @@
-<project name="Peergos web UI" default="update_and_run" basedir=".">
+<project name="Peergos web UI" default="update_and_run" basedir="." xmlns:if="ant:if">
   <description>
     Building Peergos and the web UI
   </description>
@@ -11,7 +11,10 @@
   <property name="vendor" location="vendor"/>
   <property name="timestamp.millis" value="1489731900000"/>
 
-  <target name="peergos_submodule_sync" description="sync. peergos dependency">
+  <available file="peergos/README.md" type="file" property="submodule.present"/>
+  
+  <target name="peergos_submodule_sync" description="sync. peergos dependency" unless="submodule.present">
+          <echo>Initialising peergos submodule...</echo>
           <exec executable="git" dir="." failonerror="true">
                   <arg value="submodule"/>
                   <arg value="init"/>
@@ -164,7 +167,7 @@
     </exec>
   </target>
   
-  <target name="dist" depends="clean, clean_server, compile_server, ui, git.revision, javac_version" description="regenerate the server">
+  <target name="dist" depends="peergos_submodule_sync, clean, clean_server, compile_server, ui, git.revision, javac_version" description="regenerate the server">
     <mkdir dir="${server}"/>
     <mkdir dir="${server}/webroot"/>
 
