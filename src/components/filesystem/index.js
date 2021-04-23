@@ -2034,7 +2034,7 @@ module.exports = {
             this.showSideNav = !this.showSideNav;
         },
         formatDateTime: function(dateTime) {
-            let date = new Date(dateTime.toString() + "+00:00");
+            let date = new Date(dateTime.toString() + "+00:00");//adding UTC TZ in ISO_OFFSET_DATE_TIME ie 2021-12-03T10:25:30+00:00
             let formatted = date.getFullYear() + '-' + (date.getMonth() + 1) + '-' + date.getDate()
                 + ' ' + (date.getHours() < 10 ? '0' : '') + date.getHours()
                 + ':' + (date.getMinutes() < 10 ? '0' : '') + date.getMinutes()
