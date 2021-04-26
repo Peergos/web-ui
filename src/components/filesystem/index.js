@@ -287,10 +287,10 @@ module.exports = {
             if (this.isSecretLink)
 		return;
 	    var that = this;
-	    this.context.getQuota().thenApply(q => {
-	        that.quotaBytes = q
-        }
-        );
+	    return this.context.getQuota().thenApply(q => {
+	        that.quotaBytes = q;
+                return q;
+            });
 	},
 
 	updateHistory: function(app, path, filename) {

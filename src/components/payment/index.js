@@ -35,15 +35,19 @@ module.exports = {
 
         requestStorage: function(bytes) {
 	    var that = this;
-            this.context.requestSpace(bytes).thenApply(x => that.updateQuota())
-		.thenApply(x => that.updateError())
-		.thenApply(x => {
-		    if (that.quotaBytes >= bytes && bytes > 0) {
+            this.context.requestSpace(bytes)
+                .thenCompose(x => that.updateQuota())
+		.thenApply(quotaBytes => {
+                    that.updateError();
+		    if (quotaBytes >= bytes && bytes > 0) {
 			that.messageTitle = "Congratulations";
 			that.message = "Thank you for signing up to a Peergos Pro account!";
 		    } else if (bytes == 0) {
 			that.messageTitle = "Sorry";
 			that.message = "Sorry to see you go. We'd love to know what we can do better. Make sure to delete enough data to return within your Basic quota. ";
+		    } else if (quotaBytes < bytes && bytes > 0 && ! that.isError) {
+			that.messageTitle = "Card details required";
+			that.message = "Add a payment card to complete your upgrade.";
 		    }
 		    that.showMessage = true;
 		});
