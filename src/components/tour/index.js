@@ -60,7 +60,7 @@ module.exports = {
 		},
 		{
 		    headline: "Calendar",
-		    text: "Create events and manage your calendar.",
+		    text: "Manage your schedule - share individual events or entire calendars.",
 		    image: "images/tour/calendar.png"
 		},
 		{
