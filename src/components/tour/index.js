@@ -10,48 +10,63 @@ module.exports = {
 		},
 		{
 		    headline: "Safe storage",
-		    text: "You can store your files in Peergos and arrange them in folders.",
+		    text: "Store your files and arrange them in folders.",
 		    image: "images/tour/upload.png"
 		},
 		{
 		    headline: "Find your friends",
-		    text: "You can add friends by sending them a secure follow request.",
+		    text: "Add friends with a secure follow request.",
 		    image: "images/tour/social.png"
 		},
 		{
 		    headline: "Secure sharing",
-		    text: "You can securely share files or folders with friends in Peergos.",
+		    text: "Securely share files or folders with friends.",
 		    image: "images/tour/share.png"
 		},
 		{
 		    headline: "Secret links",
-		    text: "You can create a secret link to a file or folder to share with anyone.",
+		    text: "Create a secret link to share with anyone.",
 		    image: "images/tour/secret.png"
 		},
 		{
 		    headline: "Photo gallery",
-		    text: "You can store your photos in Peergos and view slideshows of them.",
+		    text: "View slideshows of your photos.",
 		    image: "images/tour/images.png"
 		},
 		{
 		    headline: "Document editing",
-		    text: "You can store your text documents and edit them directly in Peergos. We support text, markdown, and more!",
+		    text: "View and edit your text documents.",
 		    image: "images/tour/text.png"
 		},
 		{
 		    headline: "Music collection",
-		    text: "You can store your music collection in Peergos and play songs back directly.",
+		    text: "Play your music collection.",
 		    image: "images/tour/music.png"
 		},
 		{
 		    headline: "Videos and movies",
-		    text: "You can store your videos and movies and watch them directly from the browser on any device.",
+		    text: "Watch your videos and movies from any device.",
 		    image: "images/tour/video.png"
 		},
 		{
 		    headline: "PDF viewer",
-		    text: "You can store and view PDF documents.",
+		    text: "Safely view PDF documents.",
 		    image: "images/tour/pdf.png"
+		},
+		{
+		    headline: "Planning board",
+		    text: "Organise and plan things with our planning boards.",
+		    image: "images/tour/kanban.png"
+		},
+		{
+		    headline: "Calendar",
+		    text: "Manage your schedule - share individual events or entire calendars.",
+		    image: "images/tour/calendar.png"
+		},
+		{
+		    headline: "Social Feed",
+		    text: "Share posts and comments with your friends and followers.",
+		    image: "images/tour/social-feed.png"
 		},
 	    ],
 	};
