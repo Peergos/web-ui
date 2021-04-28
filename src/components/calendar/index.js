@@ -606,44 +606,46 @@ module.exports = {
         this.confirm_consumer_func = importFunction;
         this.showConfirm = true;
     },
-    reduceRecurringCalendarEvents: function(calendar, calendarIndex, accumulator, future) {
+    getRecurringCalendarEvents: function(calendar) {
         let that = this;
-        if (calendarIndex == that.calendarProperties.calendars.length) {
+        let accumulator = [];
+        let future = peergos.shared.util.Futures.incomplete();
+        if (that.calendarProperties.calendars.length == 0) {
             future.complete(accumulator);
-        } else {
-            let currentCalendar = that.calendarProperties.calendars[calendarIndex];
+        }
+        that.calendarProperties.calendars.forEach(currentCalendar => {
             let dirStr = currentCalendar.directory + "/recurring";
             let directoryPath = peergos.client.PathUtils.directoryToPath(dirStr.split('/'));
             calendar.dirInternal(directoryPath, currentCalendar.owner).thenApply(filenames => {
                 that.getEventsForMonth(calendar, currentCalendar.name, currentCalendar.owner, dirStr, filenames.toArray([])).thenApply(res => {
-                    that.reduceRecurringCalendarEvents(calendar, ++calendarIndex, accumulator.concat(res), future);
+                    accumulator.push(res);
+                    if (accumulator.length == that.calendarProperties.calendars.length) {
+                        future.complete(accumulator.reduce((a, b) => a.concat(b), []));
+                    }
                 })
             });
-        }
-    },
-    getRecurringCalendarEvents: function(calendar) {
-        let future = peergos.shared.util.Futures.incomplete();
-        this.reduceRecurringCalendarEvents(calendar, 0, [], future);
+        });
         return future;
     },
-    reduceCalendarEventsForMonth: function(calendar, year, month, calendarIndex, accumulator, future) {
+    getCalendarEventsForMonth: function(calendar, year, month) {
         let that = this;
-        if (calendarIndex == that.calendarProperties.calendars.length) {
+        let accumulator = [];
+        let future = peergos.shared.util.Futures.incomplete();
+        if (that.calendarProperties.calendars.length == 0) {
             future.complete(accumulator);
-        } else {
-            let currentCalendar = that.calendarProperties.calendars[calendarIndex];
+        }
+        that.calendarProperties.calendars.forEach(currentCalendar => {
             let dirStr = currentCalendar.directory + "/" + year + "/" + month;
             let directoryPath = peergos.client.PathUtils.directoryToPath(dirStr.split('/'));
             calendar.dirInternal(directoryPath, currentCalendar.owner).thenApply(filenames => {
                 that.getEventsForMonth(calendar, currentCalendar.name, currentCalendar.owner, dirStr, filenames.toArray([])).thenApply(res => {
-                    that.reduceCalendarEventsForMonth(calendar, year, month, ++calendarIndex, accumulator.concat(res), future);
+                    accumulator.push(res);
+                    if (accumulator.length == that.calendarProperties.calendars.length) {
+                        future.complete(accumulator.reduce((a, b) => a.concat(b), []));
+                    }
                 })
             });
-        }
-    },
-    getCalendarEventsForMonth: function(calendar, year, month) {
-        let future = peergos.shared.util.Futures.incomplete();
-        this.reduceCalendarEventsForMonth(calendar, year, month, 0, [], future);
+        });
         return future;
     },
     reduceCalendarList: function(calendar, calendarIndex, modifiedList, future) {
@@ -670,39 +672,42 @@ module.exports = {
     },
     getCalendarEventsAroundMonth: function(calendar, year, month) {
         let that = this;
-        let previousMonth = month == 1 ? {year:year -1, month: 12}
-                : {year: year, month:month -1};
-        let currentMonth = {year: year, month: month};
-        let nextMonth = month == 12 ? {year:year +1, month:1}
-                : {year:year, month:month +1};
+        let previousMonth = month == 1 ? {name: 'previous', year:year -1, month: 12}
+                : {name: 'previous', year: year, month:month -1};
+        let currentMonth = {name: 'current', year: year, month: month};
+        let nextMonth = month == 12 ? {name: 'next', year:year +1, month:1}
+                : {name: 'next', year:year, month:month +1};
+
+        let loop = [previousMonth, currentMonth, nextMonth];
         let future = peergos.shared.util.Futures.incomplete();
-        that.getCalendarEventsForMonth(calendar, previousMonth.year, previousMonth.month).thenApply(previous =>
-                that.getCalendarEventsForMonth(calendar, currentMonth.year, currentMonth.month).thenApply(current =>
-                        that.getCalendarEventsForMonth(calendar, nextMonth.year, nextMonth.month).thenApply(next => {
-                                let result = {previous: previous, current: current, next: next};
-                                future.complete(result);
-                        })
-                )
-        );
+        const resultMap = new Map();
+        loop.forEach(currentMonth => {
+            that.getCalendarEventsForMonth(calendar, currentMonth.year, currentMonth.month).thenApply(res => {
+                    resultMap.set(currentMonth.name, res);
+                    if (resultMap.size == 3) {
+                        let result = {previous: resultMap.get('previous'), current: resultMap.get('current'), next: resultMap.get('next')};
+                        future.complete(result);
+                    }
+            })
+        });
         return future;
-    },
-    reduceAllEvents: function(calendar, calendarName, owner, directory, filenames, accumulator, future) {
-        let that = this;
-        let eventFilename = filenames.pop();
-        if (eventFilename == null) {
-            future.complete(accumulator);
-        } else {
-            let filePath = peergos.client.PathUtils.toPath(directory.split('/'), eventFilename);
-            calendar.readInternal(filePath, owner).thenApply(data => {
-                accumulator.push({calendarName: calendarName, data: new TextDecoder().decode(data)});
-                that.reduceAllEvents(calendar, calendarName, owner, directory, filenames, accumulator, future);
-            });
-        }
     },
     getEventsForMonth: function(calendar, calendarName, owner, directory, filenames) {
         let that = this;
+        let accumulator = [];
         let future = peergos.shared.util.Futures.incomplete();
-        that.reduceAllEvents(calendar, calendarName, owner, directory, filenames, [], future);
+        if (filenames.length == 0) {
+            future.complete(accumulator);
+        }
+        filenames.forEach(eventFilename => {
+            let filePath = peergos.client.PathUtils.toPath(directory.split('/'), eventFilename);
+            calendar.readInternal(filePath, owner).thenApply(data => {
+                accumulator.push({calendarName: calendarName, data: new TextDecoder().decode(data)});
+                if (accumulator.length == filenames.length) {
+                    future.complete(accumulator);
+                }
+            });
+        });
         return future;
     },
     downloadEvent: function(calendar, title, event) {
