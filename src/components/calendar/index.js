@@ -648,26 +648,32 @@ module.exports = {
         });
         return future;
     },
-    reduceCalendarList: function(calendar, calendarIndex, modifiedList, future) {
+    updateCalendarList: function(calendar) {
         let that = this;
-        if (calendarIndex == that.calendarProperties.calendars.length) {
-            future.complete(modifiedList);
-        } else {
-            let currentCalendar = that.calendarProperties.calendars[calendarIndex];
+        let modified = [false];
+        let calendarsToDelete = [];
+        let processed = [];
+        let future = peergos.shared.util.Futures.incomplete();
+        if (that.calendarProperties.calendars.length == 0) {
+            future.complete(false);
+        }
+        that.calendarProperties.calendars.forEach(currentCalendar => {
             let directoryPath = peergos.client.PathUtils.directoryToPath(currentCalendar.directory.split('/'));
             calendar.dirInternal(directoryPath, currentCalendar.owner).thenApply(filenames => {
                 if (filenames.isEmpty() && currentCalendar.owner != null) { //unshared or deleted
-                    that.calendarProperties.calendars.splice(calendarIndex, 1);
-                    that.reduceCalendarList(calendar, calendarIndex, true, future);
-                } else {
-                    that.reduceCalendarList(calendar, ++calendarIndex, modifiedList, future);
+                    calendarsToDelete.push(currentCalendar.directory);
+                    modified[0] = true;
+                }
+                processed.push(currentCalendar.name);
+                if (processed.length == that.calendarProperties.calendars.length) {
+                    calendarsToDelete.forEach(directory => {
+                        let index = that.calendarProperties.calendars.findIndex(v => v.directory === directory);
+                        that.calendarProperties.calendars.splice(index, 1);
+                    });
+                    future.complete(modified[0]);
                 }
             });
-        }
-    },
-    updateCalendarList: function(calendar) {
-        let future = peergos.shared.util.Futures.incomplete();
-        this.reduceCalendarList(calendar, 0, false, future);
+        });
         return future;
     },
     getCalendarEventsAroundMonth: function(calendar, year, month) {
