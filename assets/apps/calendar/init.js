@@ -1600,7 +1600,7 @@ function getDataAction(target) {
 
 function setDropdownCalendarType() {
   var calendarTypeName = document.getElementById('calendarTypeName');
-  var calendarTypeIcon = document.getElementById('calendarTypeIcon');
+  //var calendarTypeIcon = document.getElementById('calendarTypeIcon');
   var options = cal.getOptions();
   var type = cal.getViewName();
   var iconClassName;
@@ -1623,7 +1623,7 @@ function setDropdownCalendarType() {
   }
 
   calendarTypeName.innerHTML = type;
-  calendarTypeIcon.className = iconClassName;
+  //calendarTypeIcon.className = iconClassName;
 }
 
 function onClickMenu(e) {
