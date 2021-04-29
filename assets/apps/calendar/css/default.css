@@ -159,7 +159,7 @@ body {
 }
 
 #menu {
-  padding: 16px;
+  padding: 5px;
 }
 
 #dropdownMenu-calendarType {
@@ -167,14 +167,14 @@ body {
 }
 
 #calendarTypeName {
-  min-width: 62px;
+  min-width: 42px;
   display: inline-block;
   text-align: left;
   line-height: 30px;
 }
 
 .move-today {
-  padding: 0 16px;
+  padding: 0 5px;
   line-height: 30px;
 }
 
