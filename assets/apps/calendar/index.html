@@ -18,23 +18,23 @@
     <script src="tui-color-picker.js"></script>
   </head>
   <body>
-    <div id="ui" style="display: none">
+    <div id="ui" class="hidden">
         <div id="calendarModal" class="calendar-modal">
             <div class="calendar-modal-content">
 	      <span class="calendar-modal-close">&times;</span>
                 <div id="color-picker-container">
-                    <div id="color-picker" style="display:none" ></div>
+                    <div id="color-picker" class="hidden"></div>
                 </div>
-                <div id="calendars" style="margin-top: 20px;">
+                <div id="calendars" class="twenty-top">
                     <ul id="calendar-list">
                     </ul>
                 </div>
                 <div id="add-calendar-container">
-                    <button onclick="addCalendar()" style="margin-top: 10px;">Add Calendar</button>
+                    <button onclick="addCalendar()" class="ten-top">Add Calendar</button>
                 </div>
             </div>
         </div>
-      <div id="lnb" style="display: none">
+      <div id="lnb" class="hidden">
 	<div id="lnb-calendars" class="lnb-calendars">
 	  <div>
           <div class="lnb-calendars-item">
@@ -98,7 +98,7 @@
 	  </span>
 	  <span id="renderRange" class="render-range"></span>
 	</div>
-	<div id="calendar" style="min-height: 600px;"></div>
+	<div id="calendar" class="all-calendar"></div>
       </div>
     </div>
     <script src="init.js"></script>
