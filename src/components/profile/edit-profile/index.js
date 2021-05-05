@@ -94,6 +94,9 @@ module.exports = {
         share: function(field, fieldName) {
             this.shareWith(field, fieldName);
         },
+        triggerUpload: function() {
+            document.getElementById('uploadImageInput').click()
+        },
         uploadImageFile: function(evt) {
             let files = evt.target.files || evt.dataTransfer.files;
             let file = files[0];
