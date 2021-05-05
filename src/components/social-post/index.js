@@ -71,6 +71,9 @@ module.exports = {
             };
             this.mediaFilenames = mediaFilenames.join(", ");
         },
+        triggerUpload: function() {
+            document.getElementById('uploadInput').click()
+        },
         close: function (result) {
             this.closeSocialPostForm("", null, null, null, null);
         },

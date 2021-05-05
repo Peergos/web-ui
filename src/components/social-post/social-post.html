@@ -20,7 +20,7 @@
             <div id="social-post-main">
                 <p>
                     <span>
-                    <button v-if="socialPostAction=='add' || socialPostAction=='reply'" class="btn btn-success" onclick="document.getElementById('uploadInput').click()">Upload Media</button>
+                    <button v-if="socialPostAction=='add' || socialPostAction=='reply'" class="btn btn-success" @click="triggerUpload">Upload Media</button>
                     &nbsp;{{mediaFilenames}}</span>
                     <input type="file" id="uploadInput" @change="uploadFile" style="display:none;" multiple accept="audio/*,video/*,image/*" />
                 </p>
