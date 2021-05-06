@@ -1614,7 +1614,9 @@ module.exports = {
                             that.importCalendarPath = null;
                             that.owner = file.getOwnerName();
                             that.loadCalendarAsGuest = isSecretLink;
-                            that.showCalendarViewer = true;
+                            Vue.nextTick(function() {
+                                that.showCalendarViewer = true;
+                            });
                         });
             })
         },

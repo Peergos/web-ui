@@ -23,7 +23,7 @@
 	      </div>
               <div class="flex-image-button-container">
                 <div class="flex-container">
-		  <button class="btn btn-success flex-grow" onclick="document.getElementById('uploadImageInput').click()">Upload Image</button>
+		  <button class="btn btn-success flex-grow" @click="triggerUpload">Upload Image</button>
 		  <input type="file" id="uploadImageInput" @change="uploadImageFile" style="display:none;" accept="image/*" />
 		</div>
                 <div class="flex-container">

@@ -17,20 +17,7 @@
         <script src="js/StreamSaver.js"></script>
     </head>
     <body>
-        <script type="text/javascript">
-function initStart() {
-    var script = document.createElement('script');
-    script.type = 'text/javascript';
-    script.src = 'js/peergos.js';
-    document.body.appendChild(script);
-}
-
-var initJS = {
-    NativeInit: function() {
-        this.init = initStart;
-    }
-};		
-        </script>
+        <script src="js/init.js"></script>
 	<div id="app" class="fillspace">
           <component :is="currentView"></component>
 	</div>

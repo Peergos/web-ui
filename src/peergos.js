@@ -90,6 +90,9 @@ setTimeout(function() {
         el: '#app',
         data: {
             currentView: 'app',
+        },
+        render: function() {
+            with(this){return _c('div',{staticClass:"fillspace",attrs:{"id":"app"}},[_c(currentView,{tag:"component"})],1)}
         }
     });
 }, 500);

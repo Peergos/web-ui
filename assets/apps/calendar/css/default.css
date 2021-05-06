@@ -2499,4 +2499,16 @@ ul li:hover {
   display: inline-block;
 }
 
+.calendar-hidden {
+  display: none;
+}
 
+.twenty-top {
+  margin-top: 20px;
+}
+.ten-top {
+  margin-top: 10px;
+}
+.all-calendar {
+  min-height: 600px;
+}
