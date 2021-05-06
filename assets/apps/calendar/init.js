@@ -62,6 +62,19 @@ var colorpicker = null;
 let colorPalette = ['#181818', '#282828', '#383838', '#585858', '#B8B8B8', '#D8D8D8', '#E8E8E8', '#F8F8F8', '#AB4642', '#DC9656', '#F7CA88', '#A1B56C', '#86C1B9', '#7CAFC2', '#BA8BAF', '#A16946'];
 let colorPickerElement = document.getElementById('color-picker');
 
+let addCalendarButton = document.getElementById('add-calendar-button');
+addCalendarButton.onclick=function(e) {
+    addCalendar();
+};
+let showConfigurationButton = document.getElementById('show-configuration-button');
+showConfigurationButton.onclick=function(e) {
+    showConfigurationPopup();
+};
+let calendarSettingsButton = document.getElementById('calendar-settings');
+calendarSettingsButton.onclick=function(e) {
+    toggleCalendarsView(e);
+};
+
 //--rrule
 //These 2 are only internal for display
 let recurrenceIdSeparatorToken = '|';
@@ -99,7 +112,7 @@ let byDateLabelParts = dateLabels.trim().split(" ");
 
 function buildUI(isCalendarReadonly) {
     let uiDiv = document.getElementById("ui");
-    uiDiv.removeAttribute("style");
+    uiDiv.classList.remove("calendar-hidden");
     if (isCalendarReadonly) {
         let settingsBtn = document.getElementById("calendar-settings");
         settingsBtn.style.display = 'none';
@@ -2042,7 +2055,7 @@ function calendarColorChange(colorChange) {
         mainWindow.postMessage({action:'requestCalendarColorChange', calendarName: calendarName, newColor: newColor}, origin);
         colorChange.targetId = colorChange.newColor = colorChange.oldColor = null;
     }
-    colorPickerElement.style="display:none";
+    colorPickerElement.classList.add("calendar-hidden");
 }
 function appendCalendar(item) {
 
@@ -2139,7 +2152,7 @@ function calendarColorChooser(id, changeCallback){
     let currentColorRGB = toHexString(currentColor);
     colorPalette[0] = currentColorRGB;
 
-    colorPickerElement.style='';
+    colorPickerElement.classList.remove("calendar-hidden");
     colorpicker = tui.colorPicker.create({
         container: colorPickerElement,
         usageStatistics: false,
@@ -2178,7 +2191,7 @@ function destroyColorPicker() {
     if(colorpicker != null) {
         colorpicker.destroy();
         colorpicker = null;
-        colorPickerElement.style.display = "none";
+        colorPickerElement.classList.add("calendar-hidden");
     };
 }
 function toHexString(rdgColourStr) {
@@ -2200,15 +2213,15 @@ function toHex(n) {
 /**
  * Toggle calendar list, when user clicks calendars button
  */
-Window.toggleCalendarsView = function(event) {
+function toggleCalendarsView(event) {
     var cals = document.getElementById("lnb")
-    var visible = cals.style.display != "none";
+    let visible = !cals.classList.contains("calendar-hidden");
     if (visible) {
-	cals.style.display = "none";
-	document.getElementById("right").style.left = "0px"
+        cals.classList.add("calendar-hidden");
+        document.getElementById("right").style.left = "0px"
     } else {
-	cals.style.display = "block";
-	document.getElementById("right").style.left = "200px"
+        cals.classList.remove("calendar-hidden");
+        document.getElementById("right").style.left = "200px"
     }
     event.stopPropagation();
 };

@@ -2499,7 +2499,7 @@ ul li:hover {
   display: inline-block;
 }
 
-.hidden {
+.calendar-hidden {
   display: none;
 }
 
