@@ -1,3 +1,4 @@
+/*Spin.js animations*/
 @keyframes spinner-line-fade-more {
   0%, 100% {
     opacity: 0; /* minimum opacity */

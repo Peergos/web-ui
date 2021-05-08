@@ -72,6 +72,7 @@
 
   <target name="css_vendor" description="concat and minify the vendor CSS">
     <concat destfile="tmp.css">
+      <fileset dir="${vendor}/priors" includes="*.css"/>
       <fileset dir="${vendor}/min" includes="*.css"/>
       <fileset dir="${vendor}/common" includes="*.css"/>
     </concat>
