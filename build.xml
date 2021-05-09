@@ -70,23 +70,15 @@
     <delete file="tmp.js"/>
   </target>
 
-  <target name="css_vendor" description="concat and minify the vendor CSS">
-    <concat destfile="tmp.css">
+  <target name="css_vendor" description="concat the vendor CSS">
+    <concat destfile="${ui}/css/vendor.css">
       <fileset dir="${vendor}/priors" includes="*.css"/>
       <fileset dir="${vendor}/min" includes="*.css"/>
       <fileset dir="${vendor}/common" includes="*.css"/>
     </concat>
-    <exec executable="java" dir="." failonerror="true">
-      <arg value="-jar"/>
-      <arg value="yuicompressor-2.4.8.jar"/>
-      <arg value="-o"/>
-      <arg value="${ui}/css/vendor.css"/>
-      <arg value="tmp.css"/>
-    </exec>
-    <delete file="tmp.css"/>
   </target>
 
-  <target name="css" description="concat and minify the vendor CSS">
+  <target name="css" description="concat and minify the CSS">
     <concat destfile="tmp.css">
       <fileset dir="${ui_src}/" includes="*.css"/>
     </concat>
