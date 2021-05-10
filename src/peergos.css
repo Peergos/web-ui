@@ -1216,3 +1216,17 @@ h3 {word-wrap:break-word; white-space:normal;}
   display: none;
 }
 
+.chat-back-button{
+    color: black;
+    font-size: 20px;
+    margin: 5px;
+}
+
+.chat-hide{
+    display: none;
+}
+
+.chat-full-width{
+    width:100%;
+}
+
