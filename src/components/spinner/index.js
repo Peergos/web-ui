@@ -28,6 +28,8 @@ module.exports = {
                 color: '#337ab7', // #rgb or #rrggbb or array of colors
                 opacity: 0.25, // Opacity of the lines
                 rotate: 0, // The rotation offset
+                animation: 'spinner-line-fade-quick', // The CSS animation name for the lines
+                fadeColor: 'transparent', // CSS color or array of colors
                 direction: 1, // 1: clockwise, -1: counterclockwise
                 speed: 1, // Rounds per second
                 trail: 60, // Afterglow percentage
@@ -40,7 +42,7 @@ module.exports = {
                 hwaccel: true, // Whether to use hardware acceleration
                 position: 'absolute', // Element positioning
             };
-            return new Spinner(opts);
+            return new Spin.Spinner(opts);
         }
     }
 };
