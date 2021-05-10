@@ -1212,11 +1212,17 @@ h3 {word-wrap:break-word; white-space:normal;}
   display: inline-block; // display inline with ability to provide width/height
 }
 
+<<<<<<< HEAD
 .hidden-context-menu-item {
   display: none;
 }
 
-.chat-back-button{
+ .chat-top{
+    position:fixed;
+    z-index:1;
+}
+
+ .chat-back-button{
     color: black;
     font-size: 20px;
     margin: 5px;
