@@ -10,7 +10,7 @@
         <div class="modal-body" style="padding:0;display:flex;flex-grow:1;">
         <spinner v-if="showSpinner" :message="spinnerMessage"></spinner>
         <a id="downloadEventAnchor" style="display:none"></a>
-	  <iframe id="editor" sandbox="allow-scripts allow-forms" src="apps/calendar/index.html" style="width:100%" frameBorder="0"></iframe>
+	  <iframe id="editor" sandbox="allow-scripts allow-forms" src="http://calendar.localhost:8000/apps/calendar/index.html" style="width:100%" frameBorder="0"></iframe>
         </div>
         <choice
                 v-if="showChoice"
