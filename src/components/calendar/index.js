@@ -45,14 +45,16 @@ module.exports = {
         });
     },
     methods: {
-
+    appDomain: function() {
+        return window.location.protocol + "//calendar." + window.location.host + "/apps/calendar/index.html";
+    },
     postMessage: function(obj) {
-	    var iframe = document.getElementById("editor");
+	var iframe = document.getElementById("calendar");
         iframe.contentWindow.postMessage(obj, '*');
     },
     startListener: function(calendar) {
 	    var that = this;
-	    var iframe = document.getElementById("editor");
+	    var iframe = document.getElementById("calendar");
 	    if (iframe == null) {
     		setTimeout(function(){that.startListener(calendar)}, 1000);
 	    	return;
