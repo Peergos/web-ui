@@ -31,10 +31,16 @@ module.exports = {
         this.todoBoardName = this.currentFile == null ? this.newTodoBoardName : this.extractTodoBoardName(this.currentFile.getName());
     },
     methods: {
-    extractTodoBoardName: function(filename) {
-        return filename.endsWith(this.todoExtension) ? filename.substring(0, filename.length - 5) : filename;
-    },
-	startListener: function() {
+        extractTodoBoardName: function(filename) {
+            return filename.endsWith(this.todoExtension) ? filename.substring(0, filename.length - 5) : filename;
+        },
+	frameUrl: function() {
+            return this.frameDomain() + "/apps/todo-board/index.html";
+        },
+        frameDomain: function() {
+            return window.location.protocol + "//todo-board." + window.location.host;
+        },
+        startListener: function() {
 	    var that = this;
 	    var iframe = document.getElementById("editor");
 	    if (iframe == null) {
@@ -50,7 +56,7 @@ module.exports = {
             // header have "null" rather than a valid origin. This means you still
             // have to be careful about accepting data via the messaging API you
             // create. Check that source, and validate those inputs!
-            if (e.origin === "null" && e.source === iframe.contentWindow) {
+            if ((e.origin === "null" || e.origin === that.frameDomain()) && e.source === iframe.contentWindow) {
                 if (e.data.action == 'save') {
                     if (that.expectingSave) {
                         that.expectingSave = false;
