@@ -45,8 +45,11 @@ module.exports = {
         });
     },
     methods: {
-    appDomain: function() {
-        return window.location.protocol + "//calendar." + window.location.host + "/apps/calendar/index.html";
+    frameUrl: function() {
+        return this.frameDomain() + "/apps/calendar/index.html";
+    },
+    frameDomain: function() {
+        return window.location.protocol + "//calendar." + window.location.host;
     },
     postMessage: function(obj) {
 	var iframe = document.getElementById("calendar");
@@ -68,7 +71,7 @@ module.exports = {
             // header have "null" rather than a valid origin. This means you still
             // have to be careful about accepting data via the messaging API you
             // create. Check that source, and validate those inputs!
-            if (e.origin === "null" && e.source === iframe.contentWindow) {
+            if ((e.origin === "null" || e.origin === that.frameDomain()) && e.source === iframe.contentWindow) {
                 if(e.data.type=="save") {
                     that.saveEvent(calendar, e.data);
                 } else if(e.data.type=="saveAll") {
