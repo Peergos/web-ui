@@ -18,7 +18,13 @@ module.exports = {
         this.startListener();
     },
     methods: {
-	startListener: function() {
+	frameUrl: function() {
+            return this.frameDomain() + "/apps/code-editor/index.html";
+        },
+        frameDomain: function() {
+            return window.location.protocol + "//code-editor." + window.location.host;
+        },
+        startListener: function() {
 	    var that = this;
 	    var iframe = document.getElementById("editor");
 	    if (iframe == null) {
@@ -34,7 +40,7 @@ module.exports = {
             // header have "null" rather than a valid origin. This means you still
             // have to be careful about accepting data via the messaging API you
             // create. Check that source, and validate those inputs!
-            if (e.origin === "null" && e.source === iframe.contentWindow) {
+            if ((e.origin === "null" || e.origin === that.frameDomain()) && e.source === iframe.contentWindow) {
                 if (that.expectingSave) {
                     that.expectingSave = false;
                     that.save(e.data.text);

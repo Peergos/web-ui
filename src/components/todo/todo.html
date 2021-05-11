@@ -9,7 +9,7 @@
         </div>
 
         <div class="modal-body" style="padding:0;display:flex;flex-grow:1;">
-	  <iframe id="editor" sandbox="allow-scripts allow-forms" src="apps/todo-board/index.html" style="width:100%" frameBorder="0"></iframe>
+	  <iframe id="editor" :src="frameUrl()" style="width:100%" frameBorder="0"></iframe>
         </div>
 		<spinner v-if="showSpinner" :message="spinnerMessage"></spinner>
 		<warning
