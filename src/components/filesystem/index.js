@@ -158,7 +158,7 @@ module.exports = {
 		this.processPending();
 	    } else {
 		for (var i=0; i < oldFiles.length; i++)
-		    if (! oldFiles[i].equals(newFiles[i]))
+		    if (! oldFiles[i].samePointer(newFiles[i]))
 			return this.processPending();
 	    }
 	}
@@ -1386,7 +1386,7 @@ module.exports = {
                 if (typeof(clipboard) ==  undefined || typeof(clipboard.op) == "undefined")
                     return;
 
-                if(clipboard.fileTreeNode.equals(target)) {
+                if(clipboard.fileTreeNode.samePointer(target)) {
                     return;
                 }
                 that.showSpinner = true;
@@ -2193,7 +2193,7 @@ module.exports = {
                 return false;
             var target = this.selectedFiles[0];
 
-            if(this.clipboard.fileTreeNode.equals(target)) {
+            if(this.clipboard.fileTreeNode.samePointer(target)) {
                 return false;
             }
 
