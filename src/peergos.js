@@ -1,6 +1,7 @@
 var Account         = require('./components/account');
 var Admin           = require('./components/admin');
 var App             = require('./components/app');
+var AppGrid         = require('./components/appgrid');
 var Calendar        = require('./components/calendar');
 var Choice         = require('./components/choice');
 var CodeEditor      = require('./components/code-editor');
@@ -42,6 +43,7 @@ var Warning         = require('./components/warning');
 Vue.component('account', Vue.extend(Account));
 Vue.component('admin', Vue.extend(Admin));
 Vue.component('app', Vue.extend(App));
+Vue.component('appgrid', Vue.extend(AppGrid));
 Vue.component('calendar', Vue.extend(Calendar));
 Vue.component('choice', Vue.extend(Choice));
 Vue.component('code-editor', Vue.extend(Downloader).extend(CodeEditor));

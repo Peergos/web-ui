@@ -2,6 +2,7 @@ module.exports = {
     template: require('filesystem.html'),
     data: function() {
         return {
+            view: "appgrid",
             contextUpdates: 0,
             path: [],
             searchPath: null,
@@ -27,6 +28,7 @@ module.exports = {
 	    usageBytes: 0,
 	    isAdmin: false,
             showAdmin:false,
+            showAppgrid: false,
             showGallery: false,
             showSocial:false,
             showTimeline:false,
@@ -43,7 +45,6 @@ module.exports = {
             showSettingsMenu:false,
             showUploadMenu:false,
             showFeedbackForm: false,
-            showSideNav: false,
             showTodoBoardViewer: false,
             newTodoBoardName: null,
             showCalendarViewer: false,
@@ -104,6 +105,9 @@ module.exports = {
     props: ["context", "newsignup", "initPath", "openFile", "initiateDownload"],
     created: function() {
         console.debug('Filesystem module created!');
+        this.showAppgrid = !this.isSecretLink;
+        if (this.isSecretLink)
+            this.view = "files";
         this.showTour = this.newsignup;
         this.init();
         window.onhashchange = this.onUrlChange;
@@ -250,6 +254,11 @@ module.exports = {
             throwable.printStackTrace();
         });
 	},
+        showFiles: function(data) {
+            this.showAppgrid = false;
+            this.view="files";
+            this.path = data.path;
+        },
     processPending: function() {
         for (var i=0; i < this.onUpdateCompletion.length; i++) {
             this.onUpdateCompletion[i].call();
@@ -1208,9 +1217,7 @@ module.exports = {
         },
 
         showProfile: function(showEditForm) {
-            if(showEditForm) {
-                this.toggleUserMenu();
-            } else {
+            if(! showEditForm) {
                 this.closeMenu();
             }
             let username = showEditForm ? this.context.username : this.selectedFiles[0].getOwnerName();
@@ -2028,12 +2035,11 @@ module.exports = {
             this.ignoreEvent = false;
         },
         toggleNav : function() {
-            if (this.showSideNav) {
-                  document.getElementById("sideMenu").style.width = "0";
-            } else {
-              document.getElementById("sideMenu").style.width = "60px";
-            }
-            this.showSideNav = !this.showSideNav;
+            if (this.showAppgrid)
+                this.view = "files"
+            else
+                this.view = "appgrid"
+            this.showAppgrid = ! this.showAppgrid;
         },
         formatDateTime: function(dateTime) {
             let date = new Date(dateTime.toString() + "+00:00");//adding UTC TZ in ISO_OFFSET_DATE_TIME ie 2021-12-03T10:25:30+00:00

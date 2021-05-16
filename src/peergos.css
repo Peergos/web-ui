@@ -152,7 +152,8 @@ body .grid {
   right:0;
 }
 .top_right_icon {
-  font-size: 1em;
+    font-size: 1em;
+    padding: 3px 12px;
 }
 .dir {
   cursor: pointer;
@@ -569,6 +570,50 @@ table {
 }
 
 h3 {word-wrap:break-word; white-space:normal;}
+
+.appgrid {
+    font-size: 6em;
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: space-evenly;
+}
+
+.app-grid-item {
+    display: flex;
+    flex-direction: column;
+}
+
+@media (max-width: 640px) {
+  .app-grid-item {
+    flex: 1 0 45%;
+  }
+}
+
+@media (min-width: 640px) {
+  .app-grid-item {
+    flex: 1 0 32%;
+  }
+}
+
+@media (min-width: 750px) {
+  .app-grid-item {
+    flex: 1 0 21%;
+  }
+}
+
+.app-icon {
+    margin: .25em;
+    margin-bottom: 0;
+    display: flex;
+    justify-content: center;
+    flex-direction: column;
+    align-items: center;
+}
+
+.app-icon-title {
+    font-size: .3em;
+    text-align: center;
+}
 
 .sidenav {
   height: 100%;

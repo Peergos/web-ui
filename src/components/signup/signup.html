@@ -16,7 +16,7 @@
         <div class="form-group">
           <label v-if="isError">{{ error }}</label>
 	  <div class="flex-row">
-            <input :type="passwordFieldType" name="password1" id="password1" v-on:keyup="validatePassword(true)" class="form-control password flex-grow" v-model="password1" placeholder="Password">
+            <input :type="passwordFieldType" name="password" id="password" v-on:keyup="validatePassword(true)" class="form-control password flex-grow" v-model="password" placeholder="Password">
 	    <div v-bind:class="['fa', 'password' == passwordFieldType ? 'fa-eye password-eye' : 'fa-eye-slash password-eye-slash']" @click="togglePassword1()"></div>
 	  </div>
         </div>
