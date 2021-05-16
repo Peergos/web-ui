@@ -101,7 +101,6 @@ def signup_to_homedir(username=None, password=None):
         signup_page = landing_page.to_signup_page()
         app_page = signup_page.signup(username, password)
         filesystem_page = app_page.go_myfiles()
-        filesystem_page.click_on_file(filesystem_page.username)
         yield filesystem_page
 
 
