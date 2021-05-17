@@ -1,6 +1,6 @@
 <transition name="modal">
 <div class="modal-mask" @click="$emit('hide-tour')">
-    <div class="modal-container" @click.stop style="display:flex;flex-direction: column;padding: 0;max-width:1200px;height: 100%;">
+    <div class="modal-container" @click.stop style="display:flex;flex-direction: column;padding: 0;max-width:1200px;height: 100%; width: 100%;">
 
       <div class="modal-body" style="height:100%;flex:1;padding: 0;">
 	<center>
@@ -11,7 +11,7 @@
 	    <div class="tour-carousel" style="flex:1;">
 	      <div style="flex:1;">
 		<center v-if="image != null">
-		  <img :src="image" style="max-width:100%"/>
+		  <img :src="image" style="max-width:95%"/>
 		</center>
 		<center style="font-size:large;">
 		  <div style="width:80%;">
