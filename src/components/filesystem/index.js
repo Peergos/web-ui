@@ -384,11 +384,13 @@ module.exports = {
         let newPath = directory.startsWith("/") ? directory.substring(1).split('/') : directory.split('/');
         let currentPath = this.path;
         if (newPath.length != currentPath.length) {
-                this.changePath(directory);
+            this.changePath(directory);
+            this.toggleNav();
         } else {
             for (var i=0; i < newPath.length; i++) {
                 if (newPath[i] != currentPath[i]) {
                     this.changePath(directory);
+                    this.toggleNav();
                     return;
                 }
             }
@@ -436,9 +438,6 @@ module.exports = {
         this.showSearch = true;
         this.updateHistory("search", this.getPath(), "");
         this.closeMenu();
-        if (this.showSideNav) {
-            this.toggleNav();
-        }
     },
 	openAppFromFolder: function() {
 	    let path = this.getPath();
@@ -592,11 +591,6 @@ module.exports = {
             } else if (newLevel == this.path.length) {
                 this.currentDirChanged();
             }
-        },
-
-        goHome: function() {
-            this.changePath("/");
-	    this.toggleNav();
         },
 
         askMkdir: function() {
@@ -1269,7 +1263,6 @@ module.exports = {
 	    });
         },
         newTodoBoard: function() {
-            this.toggleNav();
             let that = this;
             this.prompt_placeholder='Todo Board';
             this.prompt_message='Enter a name';
@@ -1291,7 +1284,6 @@ module.exports = {
             this.showPrompt = true;
         },
         showCalendar: function() {
-            this.toggleNav();
             this.importFile = null;
             this.importCalendarPath = null;
             this.owner = this.context.username;
@@ -1335,7 +1327,6 @@ module.exports = {
             if (this.showSpinner) {
                 return;
             }
-	    this.toggleNav();
             this.showSpinner = true;
             this.spinnerMessage = "Building your news feed. This could take a minute...";
             const ctx = this.getContext()

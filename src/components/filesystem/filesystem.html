@@ -67,13 +67,13 @@
       :context="context"
       :social="social"
       v-on:files="showFiles"
-      v-on:news-feed="showAppgrid=false; showTimelineView()"
-      v-on:calendar="showAppgrid=false; showCalendar()"
-      v-on:todo="showAppgrid=false; newTodoBoard()"
-      v-on:social="showAppgrid=false; showSocial = true"
-      v-on:search="showAppgrid=false; openSearch(true)"
-      v-on:profile="showAppgrid=false; showProfile(true)"
-      v-on:tour="showAppgrid=false; showTour = true"
+      v-on:news-feed="showTimelineView()"
+      v-on:calendar="showCalendar()"
+      v-on:todo="newTodoBoard()"
+      v-on:social="showSocial = true"
+      v-on:search="openSearch(true)"
+      v-on:profile="showProfile(true)"
+      v-on:tour="showTour = true"
       >
   </appgrid>
   <share 
