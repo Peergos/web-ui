@@ -581,6 +581,7 @@ h3 {word-wrap:break-word; white-space:normal;}
 .app-grid-item {
     display: flex;
     flex-direction: column;
+    color: #3C5980
 }
 
 @media (max-width: 640px) {
