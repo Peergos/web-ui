@@ -19782,8 +19782,10 @@ ScheduleCreationPopup.prototype._onMouseDown = function(mouseDownEvent) {
     if (popupLayer) {
         return;
     }
-
-    this.hide();
+    var calendarMessageModal = document.getElementById("calendarMessageModal");
+    if (!calendarMessageModal.style.display == "block") {
+        this.hide();
+    }
 };
 
 /**
@@ -20385,6 +20387,7 @@ ScheduleCreationPopup.prototype._validateForm = function(title, startDate, endDa
     }
 
     if (datetime.compare(startDate, endDate) === 1) {
+        showMessagePopup("Event start time is after event end time");
         return false;
     }
 
