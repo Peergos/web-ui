@@ -331,15 +331,15 @@
         </table>
     </div>
     </div>
-    <button id="popup" v-if="!isSecretLink" class="feedback-button" @click="toggleFeedbackForm()"> 
+  </div>
+  <button id="popup" v-if="!isSecretLink" class="feedback-button" @click="toggleFeedbackForm()"> 
       Feedback
-    </button>
-    <error
+  </button>
+  <error
       v-if="showError"
       v-on:hide-error="showError = false"
       :title="errorTitle" 
       :body="errorBody"
       :messageId="messageId">
-    </error>
-  </div>
+  </error>
 </div>
