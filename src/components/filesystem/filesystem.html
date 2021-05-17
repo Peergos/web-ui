@@ -292,8 +292,8 @@
             :date="message.sendTime"
             :contents="message.contents.length > 50 ? message.contents.substring(0,47) + '...' : message.contents" />
   </div>
+  <spinner v-if="showSpinner" :message="spinnerMessage"></spinner>
   <div v-if="view==='files'" id="dnd" @drop="dndDrop($event)" @dragover.prevent v-bind:class="{ fillspace: true, not_owner: isNotMe }" v-on:contextmenu="openMenu($event)">
-    <spinner v-if="showSpinner" :message="spinnerMessage"></spinner>
 
     <div v-if="view==='files'">
     <div class="grid" v-if="grid">
