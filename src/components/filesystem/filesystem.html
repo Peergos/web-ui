@@ -38,14 +38,6 @@
     </ul>
 
   </nav>
-  <div id="sideMenu" class="sidenav">
-    <a><span/>&nbsp</a>
-    <a id="homeButton" @click="goHome()"><span data-toggle="tooltip" data-placement="bottom" title="Global root" class="fas fa-globe-asia" style="cursor: pointer;"/></a>
-    <a id="timelineButton" v-if="isLoggedIn" @click="showTimelineView()"><span data-toggle="tooltip" data-placement="bottom" title="Timeline" class="fas fa-history" style="cursor: pointer;"/></a>
-    <a v-if="isLoggedIn" @click="showCalendar"><span data-toggle="tooltip" data-placement="bottom" title="Calendar" class="fa fa-calendar-alt"/></a>
-    <a v-if="isLoggedIn" @click="newTodoBoard"><span data-toggle="tooltip" data-placement="bottom" title="Todo Board" class="fas fa-tasks"/></a>
-    <a v-if="isLoggedIn" @click="openSearch(true)"><span data-toggle="tooltip" data-placement="bottom" title="Search..." class="fa fa-search" style="cursor: pointer;"/></a>
-  </div>
   <a id="downloadAnchor" style="display:none"></a>
   <div v-if="viewMenu && (isNotHome || isPasteAvailable || isNotBackground)">
     <ul id="right-click-menu" tabindex="-1" v-if="viewMenu && (isNotHome || isPasteAvailable || isNotBackground)" v-on:blur="closeMenu" v-bind:style="{top:top, left:left}">
@@ -75,13 +67,13 @@
       :context="context"
       :social="social"
       v-on:files="showFiles"
-      v-on:news-feed="showAppGrid=false; showTimelineView()"
-      v-on:calendar="showAppGrid=false; showCalendar()"
-      v-on:todo="showAppGrid=false; newTodoBoard()"
-      v-on:social="showAppGrid=false; showSocial = true"
-      v-on:search="showAppGrid=false; openSearch(true)"
-      v-on:profile="showAppGrid=false; showProfile(true)"
-      v-on:tour="showAppGrid=false; showTour = true"
+      v-on:news-feed="showAppgrid=false; showTimelineView()"
+      v-on:calendar="showAppgrid=false; showCalendar()"
+      v-on:todo="showAppgrid=false; newTodoBoard()"
+      v-on:social="showAppgrid=false; showSocial = true"
+      v-on:search="showAppgrid=false; openSearch(true)"
+      v-on:profile="showAppgrid=false; showProfile(true)"
+      v-on:tour="showAppgrid=false; showTour = true"
       >
   </appgrid>
   <share 
