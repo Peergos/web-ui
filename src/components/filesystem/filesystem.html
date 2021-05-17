@@ -1,4 +1,4 @@
-<div class="fillspace">
+<div class="fillspace" style="display:flex;flex-direction:column;justify-content:space-between;">
   <nav class="navbar navbar-inverse navbar-static-top" role="navigation">
     <input type="file" id="uploadFileInput" @change="uploadFiles" style="display:none;" multiple />
     <input type="file" id="uploadDirectoriesInput" @change="uploadFiles" style="display:none;" multiple directory mozDirectory webkitDirectory/>
@@ -308,7 +308,6 @@
 	  Join the revolution!<br/>
 	  <button class="btn btn-lg btn-success" @click="gotoSignup()">Sign up to Peergos</button>
 	</center>
-	<div v-if="!isSecretLink" style="position:absolute;bottom:5px;right:5%;font-size:1.4em;display:flex;align-items:center;"> Usage: {{ usage }} / {{ quota }}&nbsp;&nbsp;<button class="btn btn-sm btn-success" @click="showRequestStorage()">Upgrade</button></div>
     </div>
     <div class="table-responsive" v-if="!grid">
         <table class="table">
@@ -332,6 +331,12 @@
     </div>
     </div>
   </div>
+  <div style="display:flex;justify-content:flex-end;">
+      <div v-if="!isSecretLink" style="font-size:1.4em;display:flex;align-items:center;margin: 5px;">
+          Usage: {{ usage }} / {{ quota }}&nbsp;&nbsp;<button class="btn btn-sm btn-success" @click="showRequestStorage()">Upgrade</button>
+      </div>
+  </div>
+  
   <button id="popup" v-if="!isSecretLink" class="feedback-button" @click="toggleFeedbackForm()"> 
       Feedback
   </button>
