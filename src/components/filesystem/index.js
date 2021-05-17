@@ -1337,7 +1337,7 @@ module.exports = {
             }
 	    this.toggleNav();
             this.showSpinner = true;
-            this.spinnerMessage = "Building your social feed. This could take a minute...";
+            this.spinnerMessage = "Building your news feed. This could take a minute...";
             const ctx = this.getContext()
             ctx.getSocialFeed().thenCompose(function(socialFeed) {
 		return socialFeed.update().thenApply(function(updated) {

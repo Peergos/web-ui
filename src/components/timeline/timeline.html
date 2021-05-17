@@ -3,7 +3,7 @@
         <div class="modal-container" @click.stop style="width:100%;">
             <span @click="close" class="close">&times;</span>
             <div class="modal-header" @click="closeMenus($event)">
-                <h2>Social Feed</h2>
+                <h2>News Feed</h2>
             </div>
             
             <div id="modal-body" class="modal-body" @click="closeMenus($event)">
@@ -46,7 +46,7 @@
                 <div id="scroll-area">
                     <center v-if="data.length==0">
                         <h3>
-                            This is your social feed.
+                            This is your news feed.
                         </h3>
                         <h3>
                             You can see here all the things that have been shared with you by friends or people you follow.
