@@ -152,7 +152,8 @@ body .grid {
   right:0;
 }
 .top_right_icon {
-  font-size: 1em;
+    font-size: 1em;
+    padding: 3px 12px;
 }
 .dir {
   cursor: pointer;
@@ -460,17 +461,16 @@ table {
 
 .pending-badge {
     display: inline-block;
-    min-width: 10px;
-    padding: 3px 7px;
-    font-size: 12px;
+    min-width: 30px;
+    padding: 7px;
+    font-size: 16px;
     font-weight: 700;
     line-height: 1;
-    background-color: #b01e1e;
     white-space: nowrap;
     vertical-align: baseline;
-    background-color: red;
-    color: black;
-    border-radius: 10px;
+    background-color: #26b99a;
+    color: #3c5980;
+    border-radius: 30px;
 }
 
 .column {
@@ -569,6 +569,51 @@ table {
 }
 
 h3 {word-wrap:break-word; white-space:normal;}
+
+.appgrid {
+    font-size: 6em;
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: space-evenly;
+}
+
+.app-grid-item {
+    display: flex;
+    flex-direction: column;
+    color: #3C5980
+}
+
+@media (max-width: 640px) {
+  .app-grid-item {
+    flex: 1 0 45%;
+  }
+}
+
+@media (min-width: 640px) {
+  .app-grid-item {
+    flex: 1 0 32%;
+  }
+}
+
+@media (min-width: 750px) {
+  .app-grid-item {
+    flex: 1 0 21%;
+  }
+}
+
+.app-icon {
+    margin: .25em;
+    margin-bottom: 0;
+    display: flex;
+    justify-content: center;
+    flex-direction: column;
+    align-items: center;
+}
+
+.app-icon-title {
+    font-size: .3em;
+    text-align: center;
+}
 
 .sidenav {
   height: 100%;

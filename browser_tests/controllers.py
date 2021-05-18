@@ -99,9 +99,8 @@ def signup_to_homedir(username=None, password=None):
     with driver_context() as driver:
         landing_page = LoginPage(driver)
         signup_page = landing_page.to_signup_page()
-        filesystem_page = signup_page.signup(username, password)
-        filesystem_page.go_home()
-        filesystem_page.click_on_file(filesystem_page.username)
+        app_page = signup_page.signup(username, password)
+        filesystem_page = app_page.go_myfiles()
         yield filesystem_page
 
 
@@ -326,7 +325,7 @@ class SignupPage(Page):
             As the new user.
         """
         username_input = self.get_unique_xpath("//input[@id='username']")
-        password1_input = self.get_unique_xpath("//input[@id='password1']")
+        password1_input = self.get_unique_xpath("//input[@id='password']")
         password2_input = self.get_unique_xpath("//input[@id='password2']")
 
         if username is None:
@@ -346,8 +345,27 @@ class SignupPage(Page):
         self.d.implicitly_wait(20)  # seconds 
         logout = self.d.find_element_by_id("logoutButton")
         self.d.find_element_by_id('skip-tour-modal-button-id').click()
-        return FileSystemPage(self.d, username, password)
+        return AppPage(self.d, username, password)
 
+class AppPage(Page):
+    """App icon grid."""
+
+    def __init__(self, driver, username, password):
+        super(AppPage, self).__init__(driver)
+        self.username = username
+        self.password = password
+
+    def _is_valid(self):
+        xpaths = [
+            "//a[@id='ourFilesButton']",
+        ]
+        require_unique(self.d, *xpaths)
+        return True
+
+    def go_myfiles(self):
+        self.get_unique_xpath("//a[@id='ourFilesButton']").click()
+        self.d.implicitly_wait(2)  # seconds 
+        return FileSystemPage(self.d, self.username, self.password)
 
 class FileSystemPage(Page):
     """Filesystem view page in grid mode."""
@@ -360,8 +378,8 @@ class FileSystemPage(Page):
     def _is_valid(self):
         xpaths = [
             "//button[@id='logoutButton']",
-            "//li[@id='alternateViewButton']",
-            "//li[@id='userOptionsButton']",
+            #"//li[@id='alternateViewButton']",
+            #"//li[@id='userOptionsButton']",
             #"//a[@id='pathSpan']",
         ]
         require_unique(self.d, *xpaths)

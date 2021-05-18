@@ -1,26 +1,19 @@
-<div class="fillspace">
+<div class="fillspace" style="display:flex;flex-direction:column;justify-content:space-between;">
   <nav class="navbar navbar-inverse navbar-static-top" role="navigation">
     <input type="file" id="uploadFileInput" @change="uploadFiles" style="display:none;" multiple />
     <input type="file" id="uploadDirectoriesInput" @change="uploadFiles" style="display:none;" multiple directory mozDirectory webkitDirectory/>
     <div style="display:block;">
       <ul class="nav navbar-nav">
-	<li id="appButton" @click="toggleNav()" class="navbar-brand nopad"><a><span data-toggle="tooltip" data-placement="bottom" title="Apps" class="pnavbar fas fa-th" style="cursor: pointer;"/></a></li>
-	<li id="alternateViewButton" @click="switchView()" class="navbar-brand nopad"><a><span data-toggle="tooltip" data-placement="bottom" title="Switch view" id="altViewSpan" v-bind:class="['pnavbar', 'fa', 'tour-view', grid ? 'fa-list' : 'fa-th-large']" style="cursor: pointer;"/></a></li>
-	<li id="uploadButton" @click="toggleUploadMenu()" v-if="isWritable" class="navbar-brand nopad"><a><span data-toggle="tooltip" data-placement="bottom" title="Upload" class="pnavbar fa fa-upload" style="cursor: pointer;"/></a></li>
-	<li id="mkdirButton" @click="askMkdir()" v-if="isWritable" class="navbar-brand nopad"><a><span data-toggle="tooltip" data-placement="bottom" title="Create new directory" class="pnavbar fas fa-folder-plus" style="cursor: pointer;"/></a></li>
-
-	<li id="userOptionsButton" v-if="isLoggedIn" @click="showSocialView()" class="navbar-brand nopad">
-	  <a>
-            <span data-toggle="tooltip" data-placement="bottom" title="Sharing options" id="sharingOptionsSpan" class="pnavbar fa fa-user-plus" style="cursor: pointer;"/>
-            <span id="pendingSpan" class="pending-badge" v-if="social != null && social.pending.length > 0">{{ social.pending.length }}</span>
-	  </a>
-	</li>
+	<li id="appButton" v-if="!isSecretLink" @click="toggleNav()" class="navbar-brand nopad"><a><span data-toggle="tooltip" data-placement="bottom" title="Apps" class="pnavbar fas fa-home" style="cursor: pointer;"/></a></li>
+	<li v-if="view==='files'" id="alternateViewButton" @click="switchView()" class="navbar-brand nopad"><a><span data-toggle="tooltip" data-placement="bottom" title="Switch view" id="altViewSpan" v-bind:class="['pnavbar', 'fa', 'tour-view', grid ? 'fa-list' : 'fa-th-large']" style="cursor: pointer;"/></a></li>
+	<li id="uploadButton" @click="toggleUploadMenu()" v-if="isWritable && view==='files'" class="navbar-brand nopad"><a><span data-toggle="tooltip" data-placement="bottom" title="Upload" class="pnavbar fa fa-upload" style="cursor: pointer;"/></a></li>
+	<li id="mkdirButton" @click="askMkdir()" v-if="isWritable && view==='files'" class="navbar-brand nopad"><a><span data-toggle="tooltip" data-placement="bottom" title="Create new directory" class="pnavbar fas fa-folder-plus" style="cursor: pointer;"/></a></li>
       </ul>
     </div>
-    <span data-toggle="tooltip" data-placement="bottom" title="Current location" class="nav navbar-nav pnavbar" style="float:left;display:inline-block;font-size:2.5em;color:#9d9d9d;padding: 0.2em 0.2em 0em;">/</span>
-    <span v-for="(dir, index) in path" class="nav navbar-nav navbar-brand" style="display:inline-block;padding: 0.2em 0.2em 1em;margin-bottom: 0.2em;">
-      <button @click="goBackToLevel(index+1)" class="btn_pnavbar btn">{{dir}}</button>
-      <span class="divider"> </span>
+    <span v-if="view==='files'" data-toggle="tooltip" data-placement="bottom" title="Current location" class="nav navbar-nav pnavbar" style="float:left;display:inline-block;font-size:2.5em;color:#9d9d9d;padding: 0.2em 0.2em 0em;">/</span>
+    <span v-if="view==='files'" v-for="(dir, index) in path" class="nav navbar-nav navbar-brand" style="display:inline-block;padding: 0.2em 0.2em 1em;margin-bottom: 0.2em;">
+        <button @click="goBackToLevel(index+1)" class="btn_pnavbar btn">{{dir}}</button>
+        <span class="divider"> </span>
     </span>
 
     <ul v-if="isLoggedIn" class="nav navbar-right pnavbar_top_right">
@@ -30,10 +23,8 @@
       </button>
       <ul id="settingsMenu" v-if="showSettingsMenu" class="dropdown-menu" aria-labelledby="logoutButton" style="cursor:pointer;display:block;left:auto;right:0;">
         <li v-if="isAdmin"><a @click="showAdminPanel">Admin Panel</a></li>
-        <li><a @click="showProfile(true)">Profile</a></li>
         <li><a @click="showChangePassword">Change Password</a></li>
         <li><a @click="showViewAccount">Delete Account</a></li>
-        <li><a @click="showTour=true;showSettingsMenu=false">Show tour</a></li>
         <li role="separator" class="divider"></li>
         <li><a @click="logout">Log out</a></li>
       </ul>
@@ -47,14 +38,6 @@
     </ul>
 
   </nav>
-  <div id="sideMenu" class="sidenav">
-    <a><span/>&nbsp</a>
-    <a id="homeButton" @click="goHome()"><span data-toggle="tooltip" data-placement="bottom" title="Global root" class="fas fa-globe-asia" style="cursor: pointer;"/></a>
-    <a id="timelineButton" v-if="isLoggedIn" @click="showTimelineView()"><span data-toggle="tooltip" data-placement="bottom" title="Timeline" class="fas fa-history" style="cursor: pointer;"/></a>
-    <a v-if="isLoggedIn" @click="showCalendar"><span data-toggle="tooltip" data-placement="bottom" title="Calendar" class="fa fa-calendar-alt"/></a>
-    <a v-if="isLoggedIn" @click="newTodoBoard"><span data-toggle="tooltip" data-placement="bottom" title="Todo Board" class="fas fa-tasks"/></a>
-    <a v-if="isLoggedIn" @click="openSearch(true)"><span data-toggle="tooltip" data-placement="bottom" title="Search..." class="fa fa-search" style="cursor: pointer;"/></a>
-  </div>
   <a id="downloadAnchor" style="display:none"></a>
   <div v-if="viewMenu && (isNotHome || isPasteAvailable || isNotBackground)">
     <ul id="right-click-menu" tabindex="-1" v-if="viewMenu && (isNotHome || isPasteAvailable || isNotBackground)" v-on:blur="closeMenu" v-bind:style="{top:top, left:left}">
@@ -79,6 +62,20 @@
     v-if="showTour" 
     v-on:hide-tour="showTour = false">
   </tour>
+  <appgrid
+      v-if="showAppgrid" 
+      :context="context"
+      :social="social"
+      v-on:files="showFiles"
+      v-on:news-feed="showTimelineView()"
+      v-on:calendar="showCalendar()"
+      v-on:todo="showTodoBoard()"
+      v-on:social="showSocialView()"
+      v-on:search="openSearch(true)"
+      v-on:profile="showProfile(true)"
+      v-on:tour="showTour = true"
+      >
+  </appgrid>
   <share 
     v-if="showShare" 
     v-on:hide-share-with="showShare = false"
@@ -220,10 +217,19 @@
           v-on:hide-todo-board="closeApps();"
           :context="context"
           :file="selectedFiles[0]"
-          :newTodoBoardName="newTodoBoardName"
+          :currentTodoBoardName="currentTodoBoardName"
           v-on:update-refresh="forceUpdate++"
           :messages="messages">
   </todo-board>
+  <select-create
+          v-if="showSelect"
+          v-on:hide-select="showSelect = false"
+          :select_message= "select_message"
+          :select_placeholder="select_placeholder"
+          :select_items="select_items"
+          :messages="messages"
+          :select_consumer_func="select_consumer_func">
+  </select-create>
   <calendar
           v-if="showCalendarViewer"
           v-on:hide-calendar="closeApps();"
@@ -287,9 +293,10 @@
             :date="message.sendTime"
             :contents="message.contents.length > 50 ? message.contents.substring(0,47) + '...' : message.contents" />
   </div>
-  <div id="dnd" @drop="dndDrop($event)" @dragover.prevent v-bind:class="{ fillspace: true, not_owner: isNotMe }" v-on:contextmenu="openMenu($event)">
-    <spinner v-if="showSpinner" :message="spinnerMessage"></spinner>
-    
+  <spinner v-if="showSpinner" :message="spinnerMessage"></spinner>
+  <div v-if="view==='files'" id="dnd" @drop="dndDrop($event)" @dragover.prevent v-bind:class="{ fillspace: true, not_owner: isNotMe }" v-on:contextmenu="openMenu($event)">
+
+    <div v-if="view==='files'">
     <div class="grid" v-if="grid">
         <span class="column" v-for="(file, itemObjKey) in sortedFiles">
           <span class="grid_icon_wrapper fa" :id="itemObjKey" draggable="true" @dragover.prevent v-on:dragstart="dragStart($event, file)" @drop="drop($event, file)">
@@ -310,7 +317,6 @@
 	  Join the revolution!<br/>
 	  <button class="btn btn-lg btn-success" @click="gotoSignup()">Sign up to Peergos</button>
 	</center>
-	<div v-if="!isSecretLink" style="position:absolute;bottom:5px;right:5%;font-size:1.4em;display:flex;align-items:center;"> Usage: {{ usage }} / {{ quota }}&nbsp;&nbsp;<button class="btn btn-sm btn-success" @click="showRequestStorage()">Upgrade</button></div>
     </div>
     <div class="table-responsive" v-if="!grid">
         <table class="table">
@@ -332,15 +338,22 @@
           </tbody>
         </table>
     </div>
-    <button id="popup" v-if="!isSecretLink" class="feedback-button" @click="toggleFeedbackForm()"> 
+    </div>
+  </div>
+  <div style="display:flex;justify-content:flex-end;">
+      <div v-if="!isSecretLink" style="font-size:1.4em;display:flex;align-items:center;margin: 5px;">
+          Usage: {{ usage }} / {{ quota }}&nbsp;&nbsp;<button class="btn btn-sm btn-success" @click="showRequestStorage()">Upgrade</button>
+      </div>
+  </div>
+  
+  <button id="popup" v-if="!isSecretLink" class="feedback-button" @click="toggleFeedbackForm()"> 
       Feedback
-    </button>
-    <error
+  </button>
+  <error
       v-if="showError"
       v-on:hide-error="showError = false"
       :title="errorTitle" 
       :body="errorBody"
       :messageId="messageId">
-    </error>
-  </div>
+  </error>
 </div>

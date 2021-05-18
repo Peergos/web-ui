@@ -2,8 +2,9 @@ module.exports = {
     template: require('signup.html'),
     data: function() {
         return {
+            username: "",
             passwordFieldType: "password",
-	    password1: "",
+	    password: "",
             password2FieldType: "password",
 	    password2: "",
             checkPassword: false,
@@ -29,9 +30,11 @@ module.exports = {
 	    message: {}
         };
     },
-    props: ["username", "password1", "token", "crypto", "network"],
+    props: ["initialUsername", "password1", "token", "crypto", "network"],
     created: function() {
         console.debug('Signup module created!');
+        this.password = this.password1;
+        this.username = this.initialUsername;
 	var that = this;
 	this.network.instanceAdmin.acceptingSignups().thenApply(function(res) {
 	    if (that.token.length > 0)
@@ -43,8 +46,8 @@ module.exports = {
         Vue.nextTick(function() {
             if (that.username.length == 0)
                 document.getElementById("username").focus();
-            else if (that.password1.length == 0)
-                document.getElementById("password1").focus();
+            else if (that.password.length == 0)
+                document.getElementById("password").focus();
             else
                 document.getElementById("password2").focus();
         });
@@ -83,7 +86,7 @@ module.exports = {
                 this.errorClass = "has-error has-feedback alert alert-danger";
                 this.isError = true;
                 this.error = "You must accept the Terms of Service";
-            } else if (that.password1 != that.password2) {
+            } else if (that.password != that.password2) {
                 this.errorClass = "has-error has-feedback alert alert-danger";
                 this.isError = true;
                 this.error = "Passwords do not match!";
@@ -100,7 +103,7 @@ module.exports = {
                 } else {
                     this.showSpinner = true;
                     this.spinnerMessage = "signing up!";
-                    return peergos.shared.user.UserContext.signUp(that.username, that.password1, that.token, that.network, that.crypto
+                    return peergos.shared.user.UserContext.signUp(that.username, that.password, that.token, that.network, that.crypto
                     , {"accept" : x => that.spinnerMessage = x})
                         .thenApply(function(context) {
                             that.$emit("filesystem", {context: context, signup:true});
@@ -120,7 +123,7 @@ module.exports = {
             if (inFirstField && !this.checkPassword)
                 return;
             // after one failed attempt update the status after each keystroke
-            var passwd = this.password1;
+            var passwd = this.password;
             var index = this.commonPasswords.indexOf(passwd);
             var suffix = ["th", "st", "nd", "rd", "th", "th", "th", "th", "th", "th"][(index+1) % 10];
             if (index != -1) {

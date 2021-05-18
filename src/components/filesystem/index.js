@@ -2,6 +2,7 @@ module.exports = {
     template: require('filesystem.html'),
     data: function() {
         return {
+            view: "appgrid",
             contextUpdates: 0,
             path: [],
             searchPath: null,
@@ -27,6 +28,7 @@ module.exports = {
 	    usageBytes: 0,
 	    isAdmin: false,
             showAdmin:false,
+            showAppgrid: false,
             showGallery: false,
             showSocial:false,
             showTimeline:false,
@@ -43,9 +45,8 @@ module.exports = {
             showSettingsMenu:false,
             showUploadMenu:false,
             showFeedbackForm: false,
-            showSideNav: false,
             showTodoBoardViewer: false,
-            newTodoBoardName: null,
+            currentTodoBoardName: null,
             showCalendarViewer: false,
             showProfileEditForm: false,
             showProfileViewForm: false,
@@ -81,7 +82,7 @@ module.exports = {
             prompt_max_input_size: null,
             prompt_value: '',
             prompt_consumer_func: () => {},
-            showCreate: false,
+            showSelect: false,
             showPrompt: false,
             showWarning: false,
             showReplace: false,
@@ -104,6 +105,9 @@ module.exports = {
     props: ["context", "newsignup", "initPath", "openFile", "initiateDownload"],
     created: function() {
         console.debug('Filesystem module created!');
+        this.showAppgrid = !this.isSecretLink;
+        if (this.isSecretLink)
+            this.view = "files";
         this.showTour = this.newsignup;
         this.init();
         window.onhashchange = this.onUrlChange;
@@ -250,6 +254,11 @@ module.exports = {
             throwable.printStackTrace();
         });
 	},
+        showFiles: function(data) {
+            this.showAppgrid = false;
+            this.view="files";
+            this.path = data.path;
+        },
     processPending: function() {
         for (var i=0; i < this.onUpdateCompletion.length; i++) {
             this.onUpdateCompletion[i].call();
@@ -375,11 +384,13 @@ module.exports = {
         let newPath = directory.startsWith("/") ? directory.substring(1).split('/') : directory.split('/');
         let currentPath = this.path;
         if (newPath.length != currentPath.length) {
-                this.changePath(directory);
+            this.changePath(directory);
+            this.toggleNav();
         } else {
             for (var i=0; i < newPath.length; i++) {
                 if (newPath[i] != currentPath[i]) {
                     this.changePath(directory);
+                    this.toggleNav();
                     return;
                 }
             }
@@ -427,9 +438,6 @@ module.exports = {
         this.showSearch = true;
         this.updateHistory("search", this.getPath(), "");
         this.closeMenu();
-        if (this.showSideNav) {
-            this.toggleNav();
-        }
     },
 	openAppFromFolder: function() {
 	    let path = this.getPath();
@@ -583,11 +591,6 @@ module.exports = {
             } else if (newLevel == this.path.length) {
                 this.currentDirChanged();
             }
-        },
-
-        goHome: function() {
-            this.changePath("/");
-	    this.toggleNav();
         },
 
         askMkdir: function() {
@@ -1208,9 +1211,7 @@ module.exports = {
         },
 
         showProfile: function(showEditForm) {
-            if(showEditForm) {
-                this.toggleUserMenu();
-            } else {
+            if(! showEditForm) {
                 this.closeMenu();
             }
             let username = showEditForm ? this.context.username : this.selectedFiles[0].getOwnerName();
@@ -1261,8 +1262,7 @@ module.exports = {
 		    that.showRequestSpace = true;
 	    });
         },
-        newTodoBoard: function() {
-            this.toggleNav();
+        showTodoBoard: function() {
             let that = this;
             this.prompt_placeholder='Todo Board';
             this.prompt_message='Enter a name';
@@ -1276,15 +1276,49 @@ module.exports = {
                     that.showMessage("Invalid name. Use only alphanumeric characters plus space, dash and underscore");
                     return;
                 }
-                that.newTodoBoardName = res.trim();
+                that.currentTodoBoardName = res.trim();
                 this.selectedFiles = [];
                 that.showTodoBoardViewer = true;
-		        that.updateHistory("todo", that.getPath(), "");
+                that.updateHistory("todo", that.getPath(), "");
             };
             this.showPrompt = true;
+            /*
+            this.select_placeholder='Todo Board';
+            this.select_message='Todo Board';
+            that.showSpinner = true;
+            that.context.getByPath(this.getContext().username).thenApply(homeDir => {
+                homeDir.get().getChildren(that.context.crypto.hasher, that.context.network).thenApply(function(children){
+                    let childrenArray = children.toArray();
+                    let todoBoards = childrenArray.filter(f => f.getName().endsWith('.todo') && f.getFileProperties().mimeType == "application/vnd.peergos-todo");
+                    that.select_items= todoBoards.map(item => {
+                        let name = item.getName();
+                        return name.substring(0, name.length - 5);
+                    }).sort(function(a, b) {
+                      	return a.localeCompare(b);
+                    });
+                    that.select_consumer_func = function(select_result) {
+                        if (select_result === null)
+                            return;
+                        that.currentTodoBoardName = select_result.endsWith('.todo') ?
+                            select_result.substring(0, select_result.length - 5) : select_result;
+                        let foundIndex = todoBoards.findIndex(v => {
+                            let name = v.getName();
+                            return name.substring(0, name.length - 5) === that.currentTodoBoardName;
+                        });
+                        if (foundIndex == -1) {
+                            that.selectedFiles = [];
+                        } else {
+                            that.selectedFiles = [todoBoards[foundIndex]];
+                        }
+                        that.showTodoBoardViewer = true;
+                        that.updateHistory("todo", that.getPath(), "");
+                    };
+                    that.showSpinner = false;
+                    that.showSelect = true;
+                });
+            });*/
         },
         showCalendar: function() {
-            this.toggleNav();
             this.importFile = null;
             this.importCalendarPath = null;
             this.owner = this.context.username;
@@ -1328,9 +1362,8 @@ module.exports = {
             if (this.showSpinner) {
                 return;
             }
-	    this.toggleNav();
             this.showSpinner = true;
-            this.spinnerMessage = "Building your social feed. This could take a minute...";
+            this.spinnerMessage = "Building your news feed. This could take a minute...";
             const ctx = this.getContext()
             ctx.getSocialFeed().thenCompose(function(socialFeed) {
 		return socialFeed.update().thenApply(function(updated) {
@@ -2028,12 +2061,11 @@ module.exports = {
             this.ignoreEvent = false;
         },
         toggleNav : function() {
-            if (this.showSideNav) {
-                  document.getElementById("sideMenu").style.width = "0";
-            } else {
-              document.getElementById("sideMenu").style.width = "60px";
-            }
-            this.showSideNav = !this.showSideNav;
+            if (this.showAppgrid)
+                this.view = "files"
+            else
+                this.view = "appgrid"
+            this.showAppgrid = ! this.showAppgrid;
         },
         formatDateTime: function(dateTime) {
             let date = new Date(dateTime.toString() + "+00:00");//adding UTC TZ in ISO_OFFSET_DATE_TIME ie 2021-12-03T10:25:30+00:00
