@@ -44,8 +44,8 @@
         </a>
         <a @click="showSocial" class="app-grid-item">
             <span class="app-icon">
+                <label class="app-icon-title"><span id="pendingSpan" class="pending-badge" v-if="social != null && social.pending.length > 0">{{ social.pending.length }}</span>Social</label>
                 <span data-toggle="tooltip" data-placement="bottom" title="Social" class="fa fa-user-plus" style="cursor: pointer;"/>
-                <label class="app-icon-title">Social<span id="pendingSpan" class="pending-badge" v-if="social != null && social.pending.length > 0">{{ social.pending.length }}</span></label>
             </span>
         </a>
         <a @click="showTour" class="app-grid-item">
