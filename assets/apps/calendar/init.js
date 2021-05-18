@@ -1997,6 +1997,21 @@ function addExtraFieldsToDetail(eventData) {
     }
 }
 
+function showMessagePopup(msg) {
+    var calendarMessageModal = document.getElementById("calendarMessageModal");
+    calendarMessageModal.style.display = "block";
+    let configurationPopupCloseFunc = function() {
+         calendarMessageModal.style.display = "none";
+    };
+    var calendarModalClose = document.getElementsByClassName("calendar-message-modal-close")[0];
+    calendarModalClose.onclick = configurationPopupCloseFunc;
+    var okButton = document.getElementById("calendar-ok-button");
+    okButton.onclick = configurationPopupCloseFunc;
+
+    var text = document.getElementById("calendar-message-text");
+    text.innerText = msg;
+}
+
 function showConfigurationPopup() {
     var calendarModal = document.getElementById("calendarModal");
     calendarModal.style.display = "block";
