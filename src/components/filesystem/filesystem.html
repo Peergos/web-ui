@@ -69,7 +69,7 @@
       v-on:files="showFiles"
       v-on:news-feed="showTimelineView()"
       v-on:calendar="showCalendar()"
-      v-on:todo="newTodoBoard()"
+      v-on:todo="showTodoBoard()"
       v-on:social="showSocialView()"
       v-on:search="openSearch(true)"
       v-on:profile="showProfile(true)"
@@ -217,10 +217,19 @@
           v-on:hide-todo-board="closeApps();"
           :context="context"
           :file="selectedFiles[0]"
-          :newTodoBoardName="newTodoBoardName"
+          :currentTodoBoardName="currentTodoBoardName"
           v-on:update-refresh="forceUpdate++"
           :messages="messages">
   </todo-board>
+  <select-create
+          v-if="showSelect"
+          v-on:hide-select="showSelect = false"
+          :select_message= "select_message"
+          :select_placeholder="select_placeholder"
+          :select_items="select_items"
+          :messages="messages"
+          :select_consumer_func="select_consumer_func">
+  </select-create>
   <calendar
           v-if="showCalendarViewer"
           v-on:hide-calendar="closeApps();"

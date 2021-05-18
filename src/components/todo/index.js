@@ -23,12 +23,12 @@ module.exports = {
             currentFile: null
         }
     },
-    props: ['context', 'messages', 'newTodoBoardName', 'file'],
+    props: ['context', 'messages', 'currentTodoBoardName', 'file'],
     created: function() {
         this.showSpinner = true;
         this.startListener();
         this.currentFile = this.file;
-        this.todoBoardName = this.currentFile == null ? this.newTodoBoardName : this.extractTodoBoardName(this.currentFile.getName());
+        this.todoBoardName = this.currentFile == null ? this.currentTodoBoardName : this.extractTodoBoardName(this.currentFile.getName());
     },
     methods: {
         extractTodoBoardName: function(filename) {
