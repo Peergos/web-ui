@@ -23,6 +23,7 @@
       </button>
       <ul id="settingsMenu" v-if="showSettingsMenu" class="dropdown-menu" aria-labelledby="logoutButton" style="cursor:pointer;display:block;left:auto;right:0;">
         <li v-if="isAdmin"><a @click="showAdminPanel">Admin Panel</a></li>
+        <li><a @click="showRequestStorage">Account</a></li>
         <li><a @click="showChangePassword">Change Password</a></li>
         <li><a @click="showViewAccount">Delete Account</a></li>
         <li role="separator" class="divider"></li>
@@ -66,8 +67,10 @@
       v-if="showAppgrid" 
       :context="context"
       :social="social"
+      :canUpgrade="canUpgrade"
       v-on:files="showFiles"
       v-on:news-feed="showTimelineView()"
+      v-on:upgrade="showRequestStorage()"
       v-on:calendar="showCalendar()"
       v-on:todo="showTodoBoard()"
       v-on:social="showSocialView()"

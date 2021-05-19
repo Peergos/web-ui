@@ -18,6 +18,12 @@
                 <label class="app-icon-title">News feed</label>
             </span>
         </a>
+        <a v-if="canUpgrade" id="upgradeButton" @click="showUpgrade" class="app-grid-item" style="color:#26b99a;">
+            <span class="app-icon">
+                <span data-toggle="tooltip" data-placement="bottom" title="Upgrade" class="fas fa-money-bill-alt" style="cursor: pointer;"/>
+                <label class="app-icon-title">Upgrade</label>
+            </span>
+        </a>
         <a @click="showCalendar" class="app-grid-item">
             <span class="app-icon">
                 <span data-toggle="tooltip" data-placement="bottom" title="Calendar" class="fa fa-calendar-alt"/>

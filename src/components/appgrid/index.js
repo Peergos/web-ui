@@ -3,7 +3,7 @@ module.exports = {
     data: function() {
         return {};
     },
-    props: ["context", "social"],
+    props: ["context", "social", "canUpgrade"],
     created: function() {
     },
     methods: {
@@ -33,6 +33,9 @@ module.exports = {
         },
         showProfile: function() {
             this.$emit("profile");
+        },
+        showUpgrade: function() {
+            this.$emit("upgrade");
         }
     },
 };
