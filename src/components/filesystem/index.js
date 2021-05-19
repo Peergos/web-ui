@@ -1264,6 +1264,7 @@ module.exports = {
         },
         showTodoBoard: function() {
             let that = this;
+            /*
             this.prompt_placeholder='Todo Board';
             this.prompt_message='Enter a name';
             this.prompt_value='';
@@ -1282,7 +1283,8 @@ module.exports = {
                 that.updateHistory("todo", that.getPath(), "");
             };
             this.showPrompt = true;
-            /*
+            */
+
             this.select_placeholder='Todo Board';
             this.select_message='Todo Board';
             that.showSpinner = true;
@@ -1316,7 +1318,7 @@ module.exports = {
                     that.showSpinner = false;
                     that.showSelect = true;
                 });
-            });*/
+            });
         },
         showCalendar: function() {
             this.importFile = null;
