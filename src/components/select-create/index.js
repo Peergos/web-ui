@@ -2,23 +2,28 @@ module.exports = {
     template: require('select-create.html'),
     data: function() {
         return {
-            select_result: '',
             selected: '',
-            options: []
+            select_result: '',
+            options: [],
+            newEntryToken: "@@@new@@@"
         }
     },
     props: ['select_message', 'select_placeholder', 'select_items', 'messages', 'select_consumer_func'],
     created: function() {
         let that = this;
-        that.options.push({ text: 'Please select', value: '', disabled: true });
-        if(this.select_items != null && this.select_items.length > 0) {
+        let itemsExist = this.select_items != null && this.select_items.length > 0;
+        if(itemsExist) {
+            that.options.push({ text: 'Please select', value: '', disabled: true });
             this.select_items.forEach(function(text){
                 that.options.push({ text: text, value: text });
             });
-	    }
-        let newEntry = { text: 'Create new...', value: '@@@new@@@' }
-        this.options.push(newEntry);
+        }
+        this.options.push({ text: 'Create new...', value: this.newEntryToken });
 	    Vue.nextTick(function() {
+            if (!itemsExist) {
+                that.handleSelection(that.newEntryToken);
+                that.selected = that.newEntryToken;
+            }
             document.getElementById("create-input").focus();
         });
     },
@@ -32,7 +37,10 @@ module.exports = {
         },
         onChange: function (event) {
             let newVal = event.target.value;
-            if(newVal == "@@@new@@@") {
+            this.handleSelection(newVal);
+        },
+        handleSelection: function (newVal) {
+            if(newVal == this.newEntryToken) {
                 document.getElementById("name-input").style.display = '';
                 document.getElementById("name-input-button").style.display = '';
                 document.getElementById("create-input").focus();
