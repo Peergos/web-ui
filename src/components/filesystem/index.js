@@ -41,7 +41,9 @@ module.exports = {
             showAccount:false,
             showRequestSpace:false,
             showBuySpace:false,
-	    paymentProperties:{},
+	    paymentProperties:{
+                isPaid: function() {return false;}
+            },
             showSettingsMenu:false,
             showUploadMenu:false,
             showFeedbackForm: false,
@@ -2077,6 +2079,11 @@ module.exports = {
         }
     },
     computed: {
+        canUpgrade: function() {
+            if (this.paymentProperties === {})
+                return false;
+            return this.paymentProperties.isPaid() && this.quotaBytes/(1024*1024) <= this.paymentProperties.freeMb();
+        },
 	usage: function() {
 	    if (this.usageBytes == 0)
 		return "N/A";
