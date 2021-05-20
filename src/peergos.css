@@ -821,14 +821,5 @@ h3 {word-wrap:break-word; white-space:normal;}
   display: inline-block; // display inline with ability to provide width/height
 }
 
-.flex-container-select {
-  display: flex;
-  align-items: center;
-}
-
-.flex-container-select > div {
-  margin: 10px;
-}
-
 
 
