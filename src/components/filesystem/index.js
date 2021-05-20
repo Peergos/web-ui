@@ -1301,6 +1301,54 @@ module.exports = {
                 });
             });
         },
+        showTextEditor: function() {
+            let that = this;
+            this.select_placeholder='filename';
+            this.select_message='Create or open Text file';
+            that.showSpinner = true;
+            that.context.getByPath(this.getContext().username).thenApply(homeDir => {
+                homeDir.get().getChildren(that.context.crypto.hasher, that.context.network).thenApply(function(children){
+                    let childrenArray = children.toArray();
+                    let textFiles = childrenArray.filter(f => f.getFileProperties().mimeType.startsWith("text/"));
+                    that.select_items = textFiles.map(f => f.getName()).sort(function(a, b) {
+                      	return a.localeCompare(b);
+                    });
+                    that.select_consumer_func = function(select_result) {
+                        if (select_result === null)
+                            return;
+                        let foundIndex = textFiles.findIndex(v => v.getName() === select_result);
+                        if (foundIndex == -1) {
+                            that.showSpinner = true;
+                            let context = that.getContext();
+                            let empty = peergos.shared.user.JavaScriptPoster.emptyArray();
+                            let reader = new peergos.shared.user.fs.AsyncReader.ArrayBacked(empty);
+                            homeDir.get().uploadFileJS(select_result, reader, 0, 0,
+                                false, false, context.network, context.crypto, function(len){},
+                                context.getTransactionService()
+                            ).thenApply(function(updatedDir) {
+                                updatedDir.getChild(select_result, context.crypto.hasher, context.network).thenApply(function(textFileOpt) {
+                                    that.showSpinner = false;
+                                    that.selectedFiles = [textFileOpt.get()];
+                                    that.showCodeEditor = true;
+                                    that.updateHistory("editor", that.getPath(), "");
+                                });
+                            }).exceptionally(function(throwable) {
+                                that.showSpinner = false;
+                                that.errorTitle = 'Error creating file';
+                                that.errorBody = throwable.getMessage();
+                                that.showError = true;
+                            });
+                        } else {
+                            that.selectedFiles = [textFiles[foundIndex]];
+                            that.showCodeEditor = true;
+                            that.updateHistory("editor", that.getPath(), "");
+                        }
+                    };
+                    that.showSpinner = false;
+                    that.showSelect = true;
+                });
+            });
+        },
         showCalendar: function() {
             this.importFile = null;
             this.importCalendarPath = null;

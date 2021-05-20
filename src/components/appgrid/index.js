@@ -25,6 +25,9 @@ module.exports = {
         showTodoBoard: function() {
             this.$emit("todo");
         },
+        showTextEditor: function() {
+            this.$emit("editor");
+        },
         showSearch: function() {
             this.$emit("search");
         },
