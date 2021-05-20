@@ -58,8 +58,8 @@ module.exports = {
                 return;
             if (res == '')
                 return;
-            if (!res.match(/^[a-z\d\-_\s]+$/i)) {
-                this.showMessage("Invalid name. Use only alphanumeric characters plus space, dash and underscore");
+            if (!res.match(/^[a-z\d\-_\.\s]+$/i)) {
+                this.showMessage("Invalid name. Use only alphanumeric characters plus space, dash, dot and underscore");
                 this.close();
                 return;
             }
