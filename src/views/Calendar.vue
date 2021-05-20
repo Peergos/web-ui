@@ -295,6 +295,8 @@ module.exports = {
                     that.loadAdditional(calendar, e.data.year, e.data.month, 'loadAdditional');
                 } else if(e.data.type=="downloadEvent") {
                     that.downloadEvent(calendar, e.data.title, e.data.event);
+                } else if(e.data.type=="emailEvent") {
+                    that.emailEvent(e.data.title, e.data.event);
                 } else if(e.data.type=="shareCalendarEvent") {
                     that.shareCalendarEvent(calendar, e.data.calendarName, e.data.id, e.data.year, e.data.month, e.data.isRecurring);
                 } else if (e.data.action == 'requestRenameCalendar') {
@@ -864,6 +866,7 @@ module.exports = {
             let dirStr = currentCalendar.directory + "/recurring";
             let directoryPath = peergos.client.PathUtils.directoryToPath(dirStr.split('/'));
             calendar.dirInternal(directoryPath, currentCalendar.owner).thenApply(filenames => {
+                that.spinnerMessage = "Loading recurring calendar events from: " + currentCalendar.name;
                 that.getEventsForMonth(calendar, currentCalendar.name, currentCalendar.owner, dirStr, filenames.toArray([])).thenApply(res => {
                     accumulator.push(res);
                     if (accumulator.length == that.calendarProperties.calendars.length) {
@@ -885,6 +888,7 @@ module.exports = {
             let dirStr = currentCalendar.directory + "/" + year + "/" + month;
             let directoryPath = peergos.client.PathUtils.directoryToPath(dirStr.split('/'));
             calendar.dirInternal(directoryPath, currentCalendar.owner).thenApply(filenames => {
+                that.spinnerMessage = "Loading calendar events from: " + currentCalendar.name + " for " + year + "-" + month;
                 that.getEventsForMonth(calendar, currentCalendar.name, currentCalendar.owner, dirStr, filenames.toArray([])).thenApply(res => {
                     accumulator.push(res);
                     if (accumulator.length == that.calendarProperties.calendars.length) {
@@ -977,6 +981,11 @@ module.exports = {
         link.download = 'event - ' + title + '.ics';
         link.click();
         this.removeSpinner();
+    },
+    emailEvent: function(title, event) {
+        console.log("email event");
+        this.$emit("hide-calendar");
+        this.emailCalendarEvent(title, event);
     },
     shareCalendarEvent: function(calendar, calendarName, id, year, month, isRecurring) {
         let calendarDirectory = this.findCalendarDirectory(calendarName);

@@ -940,7 +940,8 @@ function importICSFile(contents, username, isSharedWithUs, loadCalendarAsGuest, 
             let year = dt.year();
             let month = dt.month() + 1;
             let recurringText = schedule.raw.hasRecurrenceRule ? ' (Recurring: ' + schedule.recurrenceRule + ')' : '';
-            let eventSummary = {datetime: moment(schedule.start.toUTCString()).format('YYYY MMMM Do, h:mm:ss a'), title: schedule.title + recurringText };
+            let stateText = schedule.state == CALENDAR_EVENT_CANCELLED ? 'CANCELLED ' : '';
+            let eventSummary = {datetime: moment(schedule.start.toUTCString()).toLocaleString(), title: stateText + schedule.title + recurringText };
             allEvents.push({calendarName: calendarName, year: year, month: month, Id: schedule.id, item:output,
                     summary: eventSummary, isRecurring: schedule.raw.hasRecurrenceRule});
         }
@@ -1205,7 +1206,7 @@ function loadSchedule(schedule, yearMonth) {
             }
         } catch (ex) {
             let msg = "Unable to parse recurring event: "
-                + dt .format('YYYY MMMM Do, h:mm:ss a') + ' - ' + schedule.title
+                + dt.toLocaleString() + ' - ' + schedule.title
                 + " (" + schedule.recurrenceRule + ").";
             console.log(msg);
             console.log(ex);
@@ -1301,11 +1302,11 @@ function deleteSchedule(schedule) {
     mainWindow.postMessage({ calendarName: calendarName, year: year, month: month, Id: Id, isRecurring: schedule.raw.hasRecurrenceRule, type:"delete"}, origin);
 }
 
-function displaySpinner(schedule) {
+function displaySpinner() {
     mainWindow.postMessage({type:"displaySpinner"}, origin);
 }
 
-function removeSpinner(schedule) {
+function removeSpinner() {
     mainWindow.postMessage({type:"removeSpinner"}, origin);
 }
 
@@ -1852,6 +1853,17 @@ function downloadEvent(schedule) {
     let event = serialiseICal(instance, false);
     mainWindow.postMessage({event: event, title: schedule.title, type: 'downloadEvent'}, origin);
 }
+function emailEvent(schedule) {
+    var instance = schedule.raw.parentId != null
+        ? RecurringSchedules[RecurringSchedules.findIndex(v => v.id === schedule.raw.parentId)]
+        : schedule;
+    let event = serialiseICal(instance, false);
+    let test = getCurrentTimeZoneId();
+    let recurringText = schedule.raw.hasRecurrenceRule ? ' (Recurring: ' + schedule.recurrenceRule + ')' : '';
+    let stateText = schedule.state == CALENDAR_EVENT_CANCELLED ? 'CANCELLED ' : '';
+    let title = stateText + schedule.title + ' - ' + moment(schedule.start.toUTCString()).toLocaleString() + recurringText;
+    mainWindow.postMessage({event: event, title: title, type: 'emailEvent'}, origin);
+}
 function shareCalendarEvent(schedule) {
    let dt = moment.utc(schedule.start.toUTCString());
    let year = dt.year();
@@ -1994,8 +2006,20 @@ function buildExtraFieldsToSummary(eventData, that) {
     downloadLink.onclick=function() {
         downloadEvent(eventData.schedule);
     };
-    span1.appendChild(document.createTextNode('\u00A0\u00A0'));
 
+    span1.appendChild(document.createTextNode('\u00A0\u00A0'));
+    var img6 = document.createElement("img");
+    img6.src = "./images/envelope.png";
+    span1.appendChild(img6);
+
+    var emailLink = document.createElement("a");
+    emailLink.style.cursor="pointer";
+    emailLink.style.marginLeft="3px";
+    emailLink.innerText = "Email";
+    span1.appendChild(emailLink);
+    emailLink.onclick=function() {
+        emailEvent(eventData.schedule);
+    };
 
     var div2 = document.createElement("div");
     eventDetails.appendChild(div2);

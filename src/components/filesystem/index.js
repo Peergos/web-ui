@@ -27,6 +27,7 @@ module.exports = {
 	    quotaBytes: 0,
 	    usageBytes: 0,
 	    isAdmin: false,
+            showEmail:false,
             showAdmin:false,
             showAppgrid: false,
             showGallery: false,
@@ -105,6 +106,9 @@ module.exports = {
             spinnerMessage: '',
             onUpdateCompletion: [], // methods to invoke when current dir is next refreshed
             navigationViaTabKey: false
+            icalEventTitle: '',
+            icalEvent: '',
+            isEmailAvailable: false
         };
     },
     props: ["initContext", "newsignup", "initPath", "openFile", "initiateDownload"],
@@ -487,6 +491,11 @@ module.exports = {
             this.updateHistory("filesystem", this.getPath(), "");
 	    this.forceSharedRefreshWithUpdate++;
 	},
+	closeEmail: function() {
+        this.icalEventTitle = '';
+        this.icalEvent = '';
+        this.showEmail = false;
+    },
     navigateToAction: function(directory) {
         let newPath = directory.startsWith("/") ? directory.substring(1).split('/') : directory.split('/');
         let currentPath = this.path;
@@ -653,7 +662,9 @@ module.exports = {
 
 		    var pendingOutgoingUsernames = [];
 		    socialState.pendingOutgoing.toArray([]).map(u => pendingOutgoingUsernames.push(u));
-
+            if(friendNames.includes('bridge')) {
+                that.isEmailAvailable = true;
+            }
 		    that.social = {
 		                pendingOutgoing: pendingOutgoingUsernames,
                         pending: socialState.pendingIncoming.toArray([]),
@@ -1585,6 +1596,16 @@ module.exports = {
             this.buildTabNavigation();
             this.showTour = false
         },
+        showEmailView: function() {
+            this.availableUsernames = this.friendnames;
+            this.showEmail = true;
+        },
+        emailCalendarEvent: function(icalEventTitle, icalEvent) {
+            this.availableUsernames = this.friendnames;
+            this.icalEventTitle = icalEventTitle;
+            this.icalEvent = icalEvent;
+            this.showEmail = true;
+        },
         showSocialView: function(name) {
             this.clearTabNavigation();
             this.showSocial = true;
@@ -1885,6 +1906,15 @@ module.exports = {
                             that.showCalendarViewer = true;
                         });
             })
+        },
+        importCalendarEvent: function(icalText, owner, isSecretLink, confirmImport) {
+            this.importFile = icalText;
+            this.importCalendarPath = null;
+            this.owner = owner;
+            this.loadCalendarAsGuest = isSecretLink;
+            this.confirmImport = confirmImport;
+            let that = this;
+            setTimeout(function(){ that.showCalendarViewer = true;}, 1000);
         },
         importSharedCalendar: function(path, file, isSecretLink, owner) {
             this.importFile = null;

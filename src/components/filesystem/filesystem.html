@@ -71,6 +71,7 @@
       :context="context"
       :social="social"
       :canUpgrade="canUpgrade"
+      :isEmailAvailable="isEmailAvailable"
       v-on:files="showFiles"
       v-on:news-feed="showTimelineView()"
       v-on:upgrade="showRequestStorage()"
@@ -82,6 +83,7 @@
       v-on:profile="showProfile(true)"
       v-on:chat="showChat()"
       v-on:tour="showTourViewer"
+      v-on:email="showEmailView()"
       >
   </appgrid>
   <share 
@@ -131,6 +133,16 @@
     :viewConversations="viewConversations"
     :context="context">
   </timeline>
+  <email
+      v-if="showEmail"
+      v-on:hide-email="closeEmail();"
+      :context="context"
+      :availableUsernames="availableUsernames"
+      :importCalendarEvent="importCalendarEvent"
+      :icalEvent="icalEvent"
+      :icalEventTitle="icalEventTitle"
+      :messages="messages">
+  </email>
   <search
           v-if="showSearch"
           v-on:hide-search="closeSearch"
@@ -269,7 +281,9 @@
           :importCalendarPath="importCalendarPath"
           :owner="owner"
           :loadCalendarAsGuest="loadCalendarAsGuest"
+          :confirmImport="confirmImport"
           :shareWith="showShareWithFromApp"
+          :emailCalendarEvent="emailCalendarEvent"
           :context="context"
           :messages="messages">
   </calendar>

@@ -5,7 +5,7 @@ module.exports = {
             chatIsAvailable: false
         };
     },
-    props: ["context", "social", "canUpgrade"],
+    props: ["context", "social", "canUpgrade", "isEmailAvailable"],
     created: function() {
         const href = window.location.href;
         if (href.includes("?chat=true"))
@@ -54,6 +54,9 @@ module.exports = {
         },
         showUpgrade: function() {
             this.$emit("upgrade");
+        },
+        showEmail: function() {
+            this.$emit("email");
         }
     },
 };
