@@ -1266,27 +1266,8 @@ module.exports = {
         },
         showTodoBoard: function() {
             let that = this;
-            this.prompt_placeholder='Todo Board';
-            this.prompt_message='Enter a name';
-            this.prompt_value='';
-            this.prompt_consumer_func = function(res) {
-                if (res === null)
-                    return;
-                if (res == '')
-                    return;
-                if (!res.match(/^[a-z\d\-_\s]+$/i)) {
-                    that.showMessage("Invalid name. Use only alphanumeric characters plus space, dash and underscore");
-                    return;
-                }
-                that.currentTodoBoardName = res.trim();
-                this.selectedFiles = [];
-                that.showTodoBoardViewer = true;
-                that.updateHistory("todo", that.getPath(), "");
-            };
-            this.showPrompt = true;
-            /*
             this.select_placeholder='Todo Board';
-            this.select_message='Todo Board';
+            this.select_message='Create or open Todo Board';
             that.showSpinner = true;
             that.context.getByPath(this.getContext().username).thenApply(homeDir => {
                 homeDir.get().getChildren(that.context.crypto.hasher, that.context.network).thenApply(function(children){
@@ -1318,7 +1299,7 @@ module.exports = {
                     that.showSpinner = false;
                     that.showSelect = true;
                 });
-            });*/
+            });
         },
         showCalendar: function() {
             this.importFile = null;
