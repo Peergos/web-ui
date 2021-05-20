@@ -819,4 +819,16 @@ h3 {word-wrap:break-word; white-space:normal;}
 .choice-block {
   margin: 5px;
   display: inline-block; // display inline with ability to provide width/height
-}​
+}
+
+.flex-container-select {
+  display: flex;
+}
+
+.flex-container-select > div {
+  margin: 10px;
+  font-size: 30px;
+}
+
+
+
