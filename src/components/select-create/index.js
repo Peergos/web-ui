@@ -11,19 +11,16 @@ module.exports = {
     props: ['select_message', 'select_placeholder', 'select_items', 'messages', 'select_consumer_func'],
     created: function() {
         let that = this;
+        this.options.push({ text: 'Create new...', value: this.newEntryToken });
         let itemsExist = this.select_items != null && this.select_items.length > 0;
         if(itemsExist) {
-            that.options.push({ text: 'Please select', value: '', disabled: true });
             this.select_items.forEach(function(text){
                 that.options.push({ text: text, value: text });
             });
         }
-        this.options.push({ text: 'Create new...', value: this.newEntryToken });
 	    Vue.nextTick(function() {
-            if (!itemsExist) {
-                that.handleSelection(that.newEntryToken);
-                that.selected = that.newEntryToken;
-            }
+            that.handleSelection(that.newEntryToken);
+            that.selected = that.newEntryToken;
             document.getElementById("create-input").focus();
         });
     },

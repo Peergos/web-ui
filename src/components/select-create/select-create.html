@@ -4,7 +4,7 @@
         <div class="modal-container" @click.stop>
 
             <div class="modal-header">
-                <h3>Select&nbsp;{{select_message}}</h3>
+                <h3>{{select_message}}</h3>
             </div>
 
             <div class="modal-body">
@@ -12,7 +12,7 @@
                     <table>
                         <tr>
                             <td style="text-align:right; padding:10px">
-                                <select v-model="selected" @change="onChange($event)">
+                                <select v-model="selected" @change="onChange($event)" class="form-control">
                                     <option v-for="option in options" v-bind:value="option.value" v-bind:disabled="option.disabled">
                                         {{ option.text }}
                                     </option>
