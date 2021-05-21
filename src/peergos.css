@@ -83,10 +83,11 @@ body {
 }
 
 .close {
-    color: #aaaaaa;
+    color: #000;
     float: right;
     font-size: 28px;
     font-weight: bold;
+    opacity: 1;
 }
 
 .close:hover,
