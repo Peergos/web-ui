@@ -22,37 +22,39 @@
         <span class="collapse navbar-collapse">{{username}}</span>
       </button>
       <ul id="settingsMenu" v-if="showSettingsMenu" class="dropdown-menu" aria-labelledby="logoutButton" style="cursor:pointer;display:block;left:auto;right:0;">
-        <li v-if="isAdmin"><a @click="showAdminPanel">Admin Panel</a></li>
-        <li><a @click="showRequestStorage">Account</a></li>
-        <li><a @click="showChangePassword">Change Password</a></li>
-        <li><a @click="showViewAccount">Delete Account</a></li>
+        <li v-if="isAdmin" v-on:keyup.enter="showAdminPanel" tabindex="0"><a @click="showAdminPanel">Admin Panel</a></li>
+        <li><a v-on:keyup.enter="showRequestStorage" tabindex="0" @click="showRequestStorage">Account</a></li>
+        <li><a v-on:keyup.enter="showChangePassword" tabindex="0" @click="showChangePassword">Change Password</a></li>
+        <li><a v-on:keyup.enter="showViewAccount" tabindex="0" @click="showViewAccount">Delete Account</a></li>
         <li role="separator" class="divider"></li>
-        <li><a @click="logout">Log out</a></li>
+        <li><a v-on:keyup.enter="logout" tabindex="0" @click="logout">Log out</a></li>
       </ul>
     </ul>
 
     <ul v-if="isWritable" class="nav">
       <ul id="uploadMenu" v-if="showUploadMenu" class="dropdown-menu" style="cursor:pointer;display:block">
-        <li><a @click="askForFiles">Upload files</a></li>
-        <li><a @click="askForDirectories">Upload directories</a></li>
+        <li tabindex="0" v-on:keyup.enter="askForFiles"><a @click="askForFiles">Upload files</a></li>
+        <li tabindex="0" v-on:keyup.enter="askForDirectories"><a @click="askForDirectories">Upload directories</a></li>
       </ul>
     </ul>
 
   </nav>
   <a id="downloadAnchor" style="display:none"></a>
   <div v-if="viewMenu && (isNotHome || isPasteAvailable || isNotBackground)">
-    <ul id="right-click-menu" tabindex="-1" v-if="viewMenu && (isNotHome || isPasteAvailable || isNotBackground)" v-on:blur="closeMenu" v-bind:style="{top:top, left:left}">
-      <li id='gallery' v-if="canOpen" v-on:click="gallery">View</li>
-      <li id='create-file' v-if="!isNotBackground" v-on:click="createTextFile">Create Text file</li>
-      <li id='open-file' v-if="canOpen" v-on:click="downloadAll">Download</li>
-      <li id='rename-file' v-if="isNotBackground && isWritable" v-on:click="rename">Rename</li>
-      <li id='delete-file' v-if="isNotBackground && isWritable" v-on:click="deleteFiles">Delete</li>
-      <li id='copy-file' v-if="isNotBackground && isWritable" v-on:click="copy">Copy</li>
-      <li id='cut-file' v-if="isNotBackground && isWritable" v-on:click="cut">Cut</li>
-      <li id='paste-file' v-if="isPasteAvailable" v-on:click="paste">Paste</li>
-      <li id='share-file' v-if="(isNotHome || isNotBackground) && isLoggedIn" v-on:click="showShareWith">Share</li>
-      <li id='file-search' v-if="isSearchable" v-on:click="openSearch(false)">Search...</li>
+    <nav>
+    <ul id="right-click-menu" v-if="viewMenu && (isNotHome || isPasteAvailable || isNotBackground)" v-on:blur="closeMenu" v-bind:style="{top:top, left:left}">
+      <li id='gallery' v-on:keyup.enter="gallery" tabindex="0" v-if="canOpen" v-on:click="gallery">View</li>
+      <li id='create-file' v-on:keyup.enter="createTextFile" tabindex="0" v-if="!isNotBackground" v-on:click="createTextFile">Create Text file</li>
+      <li id='open-file' v-on:keyup.enter="downloadAll" tabindex="0" v-if="canOpen" v-on:click="downloadAll">Download</li>
+      <li id='rename-file' v-on:keyup.enter="rename" tabindex="0" v-if="isNotBackground && isWritable" v-on:click="rename">Rename</li>
+      <li id='delete-file' v-on:keyup.enter="deleteFiles" tabindex="0" v-if="isNotBackground && isWritable" v-on:click="deleteFiles">Delete</li>
+      <li id='copy-file' v-on:keyup.enter="copy" tabindex="0" v-if="isNotBackground && isWritable" v-on:click="copy">Copy</li>
+      <li id='cut-file' v-on:keyup.enter="cut" tabindex="0" v-if="isNotBackground && isWritable" v-on:click="cut">Cut</li>
+      <li id='paste-file' v-on:keyup.enter="paste" tabindex="0" v-if="isPasteAvailable" v-on:click="paste">Paste</li>
+      <li id='share-file' v-on:keyup.enter="showShareWith" tabindex="0" v-if="(isNotHome || isNotBackground) && isLoggedIn" v-on:click="showShareWith">Share</li>
+      <li id='file-search' v-on:keyup.enter="openSearch(false)" tabindex="0" v-if="isSearchable" v-on:click="openSearch(false)">Search...</li>
     </ul>
+    </nav>
   </div>
   <div v-if="viewMenu && isProfileViewable()">
     <ul id="right-click-menu-profile" tabindex="-1"  v-on:blur="closeMenu" v-bind:style="{top:top, left:left}">
