@@ -2,7 +2,7 @@
 <div class="modal-mask-app" @click="close">
     <meta http-equiv="content-type" content="text/html; charset=utf-8" />
     <div class="modal-container" @click.stop style="height:100%;overflow-y:auto; max-width:1000px">
-        <span @click="close" class="close">&times;</span>
+        <span @click="close" tabindex="0" v-on:keyup.enter="close" aria-label="close" class="close">&times;</span>
         <confirm
                 v-if="showConfirm"
                 v-on:hide-confirm="showConfirm = false"
@@ -19,7 +19,7 @@
 
             <div class="flex-thumbnail-container">
               <div style="padding:20px;">
-		<img id="profile-image" v-if="hasProfileImage()" style="width:150px; height:150px" v-bind:src="getProfileImage()"/>
+		<img id="profile-image" alt="Profile image" v-if="hasProfileImage()" style="width:150px; height:150px" v-bind:src="getProfileImage()"/>
 	      </div>
               <div class="flex-image-button-container">
                 <div class="flex-container">
@@ -80,7 +80,7 @@
             </div>
             <div class="flex-item">
                 <div style="flex-grow: 2">
-                    <textarea id="profile-biography" class="form-control-profile" style="width: 100%;resize: none;" v-model="biography" placeholder="Biography" rows=3 :maxlength="BIO_MAX_LENGTH"></textarea>
+                    <textarea id="profile-biography" spellcheck="true" class="form-control-profile" style="width: 100%;resize: none;" v-model="biography" placeholder="Biography" rows=3 :maxlength="BIO_MAX_LENGTH"></textarea>
                 </div>
                 <div>
                     <button v-if="biographyReadyToBeShared" class="btn btn-success" @click="share('bio', 'Biography')">Share</button>

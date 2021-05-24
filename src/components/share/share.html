@@ -1,7 +1,7 @@
 <transition name="modal">
 <div class="modal-mask" @click="close">
     <div class="modal-container full-height" @click.stop style="overflow-y:auto; max-width:1000px;">
-        <span @click="close" class="close">&times;</span>
+        <span @click="close" tabindex="0" v-on:keyup.enter="close" aria-label="close" class="close">&times;</span>
         <spinner v-if="showSpinner"></spinner>
         <div class="modal-header">
             <h4>Enter user to share {{ displayName }} with:</h4>

@@ -4,20 +4,20 @@
     <input type="file" id="uploadDirectoriesInput" @change="uploadFiles" style="display:none;" multiple directory mozDirectory webkitDirectory/>
     <div style="display:block;">
       <ul class="nav navbar-nav">
-	<li id="appButton" v-if="!isSecretLink" @click="toggleNav()" class="navbar-brand nopad"><a><span data-toggle="tooltip" data-placement="bottom" title="Apps" class="pnavbar fas fa-home" style="cursor: pointer;"/></a></li>
-	<li v-if="view==='files'" id="alternateViewButton" @click="switchView()" class="navbar-brand nopad"><a><span data-toggle="tooltip" data-placement="bottom" title="Switch view" id="altViewSpan" v-bind:class="['pnavbar', 'fa', 'tour-view', grid ? 'fa-list' : 'fa-th-large']" style="cursor: pointer;"/></a></li>
-	<li id="uploadButton" @click="toggleUploadMenu()" v-if="isWritable && view==='files'" class="navbar-brand nopad"><a><span data-toggle="tooltip" data-placement="bottom" title="Upload" class="pnavbar fa fa-upload" style="cursor: pointer;"/></a></li>
-	<li id="mkdirButton" @click="askMkdir()" v-if="isWritable && view==='files'" class="navbar-brand nopad"><a><span data-toggle="tooltip" data-placement="bottom" title="Create new directory" class="pnavbar fas fa-folder-plus" style="cursor: pointer;"/></a></li>
+	<li id="appButton" tabindex="1" v-if="!isSecretLink" v-on:keyup.enter="toggleNav()" @click="toggleNav()" class="navbar-brand nopad"><a><span data-toggle="tooltip" data-placement="bottom" title="Apps" class="pnavbar fas fa-home" style="cursor: pointer;"/></a></li>
+	<li v-if="view==='files'" tabindex="2" id="alternateViewButton" v-on:keyup.enter="switchView()" @click="switchView()" class="navbar-brand nopad"><a><span data-toggle="tooltip" data-placement="bottom" title="Switch view" id="altViewSpan" v-bind:class="['pnavbar', 'fa', 'tour-view', grid ? 'fa-list' : 'fa-th-large']" style="cursor: pointer;"/></a></li>
+	<li id="uploadButton" tabindex="3" v-on:keyup.enter="toggleUploadMenu()" @click="toggleUploadMenu()" v-if="isWritable && view==='files'" class="navbar-brand nopad"><a><span data-toggle="tooltip" data-placement="bottom" title="Upload" class="pnavbar fa fa-upload" style="cursor: pointer;"/></a></li>
+	<li id="mkdirButton" tabindex="4" v-on:keyup.enter="askMkdir()" @click="askMkdir()" v-if="isWritable && view==='files'" class="navbar-brand nopad"><a><span data-toggle="tooltip" data-placement="bottom" title="Create new directory" class="pnavbar fas fa-folder-plus" style="cursor: pointer;"/></a></li>
       </ul>
     </div>
     <span v-if="view==='files'" data-toggle="tooltip" data-placement="bottom" title="Current location" class="nav navbar-nav pnavbar" style="float:left;display:inline-block;font-size:2.5em;color:#9d9d9d;padding: 0.2em 0.2em 0em;">/</span>
-    <span v-if="view==='files'" v-for="(dir, index) in path" class="nav navbar-nav navbar-brand" style="display:inline-block;padding: 0.2em 0.2em 1em;margin-bottom: 0.2em;">
+    <span v-if="view==='files'" :tabindex="5 + index" v-on:keyup.enter="goBackToLevel(index+1)" v-for="(dir, index) in path" class="nav navbar-nav navbar-brand" style="display:inline-block;padding: 0.2em 0.2em 1em;margin-bottom: 0.2em;">
         <button @click="goBackToLevel(index+1)" class="btn_pnavbar btn">{{dir}}</button>
         <span class="divider"> </span>
     </span>
 
-    <ul v-if="isLoggedIn" class="nav navbar-right pnavbar_top_right">
-      <button id="logoutButton" @click="toggleUserMenu()" class="btn top_right_icon dropdown-toggle" data-toggle="dropdown" aria-haspopup="true" aria-expanded="true">
+    <ul v-if="isLoggedIn" tabindex="19" class="nav navbar-right pnavbar_top_right" v-on:keyup.enter="toggleUserMenu()">
+      <button id="logoutButton"  @click="toggleUserMenu()" class="btn top_right_icon dropdown-toggle" data-toggle="dropdown" aria-haspopup="true" aria-expanded="true">
         <span class="fa fa-cog"></span>
         <span class="collapse navbar-collapse">{{username}}</span>
       </button>
@@ -302,8 +302,8 @@
 
     <div v-if="view==='files'">
     <div class="grid" v-if="grid">
-        <span class="column" v-for="(file, itemObjKey) in sortedFiles">
-          <span class="grid_icon_wrapper fa" :id="itemObjKey" draggable="true" @dragover.prevent v-on:dragstart="dragStart($event, file)" @drop="drop($event, file)">
+        <span class="column" :tabindex="50 + index" v-for="(file, index) in sortedFiles" v-on:keyup.enter="navigateOrMenu($event, file)">
+          <span class="grid_icon_wrapper fa" :id="index" draggable="true" @dragover.prevent v-on:dragstart="dragStart($event, file)" @drop="drop($event, file)">
             <a class="picon" v-bind:id="file.getFileProperties().name" v-on:contextmenu="openMenu($event, file)">
               <span v-if="!file.getFileProperties().thumbnail.isPresent()" v-on:click="navigateOrMenu($event, file)" v-on:contextmenu="openMenu($event, file)"
 		    v-bind:class="[getFileClass(file), getFileIcon(file), 'picon']"> </span>
@@ -333,8 +333,8 @@
             </tr>
           </thead>
           <tbody>
-                <tr v-for="file in sortedFiles">
-                  <td v-bind:id="file.getFileProperties().name" v-on:click="navigateOrMenu($event, file)" v-on:contextmenu="openMenu($event, file)" style="cursor:pointer" v-bind:class="{ shared: isShared(file) }">{{ file.getFileProperties().name }}</td>
+                <tr v-for="(file, index) in sortedFiles" :tabindex="50 + index" v-on:keyup.enter="navigateOrMenu($event, file)">
+                  <td v-bind:id="file.getFileProperties().name"  v-on:click="navigateOrMenu($event, file)" v-on:contextmenu="openMenu($event, file)" style="cursor:pointer" v-bind:class="{ shared: isShared(file) }">{{ file.getFileProperties().name }}</td>
                   <td>{{ getFileSize(file.getFileProperties()) }}</td>
                   <td>{{ file.getFileProperties().getType() }}</td>
                   <td>{{ formatDateTime(file.getFileProperties().modified) }}</td>

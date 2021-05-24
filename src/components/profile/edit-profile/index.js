@@ -29,7 +29,7 @@ module.exports = {
         STATUS_MAX_LENGTH: 50,
         FIRSTNAME_MAX_LENGTH: 25,
         LASTNAME_MAX_LENGTH: 25,
-        PHONE_MAX_LENGTH: 15,
+        PHONE_MAX_LENGTH: 20,
         EMAIL_MAX_LENGTH: 50,
         WEBROOT_MAX_LENGTH: 40,
         showSpinner: false,

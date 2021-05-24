@@ -1,7 +1,7 @@
 <transition name="modal">
 <div class="modal-mask" @click="close">
     <div class="modal-container" @click.stop>
-      <span @click="close" class="close">&times;</span>
+      <span @click="close" tabindex="0" v-on:keyup.enter="close" aria-label="close" class="close">&times;</span>
       <div class="modal-header">
 	<center>
           <h3> Add a card and upgrade your account to get more space</h3>
