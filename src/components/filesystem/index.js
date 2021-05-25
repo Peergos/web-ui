@@ -261,51 +261,53 @@ module.exports = {
             for(var g=0; g < overlayItems.length; g++) {
                 overlayItems[g].setAttribute("tabindex", 0);
             }
+            for(var l=0; l < toolbarItems.length; l++) {
+                toolbarItems[l].setAttribute("tabindex", 0);
+            }
             if (that.showAppgrid) {
-                for(var j=0; j < appGridItems.length; j++) {
-                    appGridItems[j].setAttribute("tabindex", 0);
+                if (that.showUploadMenu || that.showSettingsMenu || that.viewMenu) {
+                    for(var j=0; j < appGridItems.length; j++) {
+                        appGridItems[j].removeAttribute("tabindex");
+                    }
+                } else {
+                    for(var j=0; j < appGridItems.length; j++) {
+                        appGridItems[j].setAttribute("tabindex", 0);
+                    }
                 }
             } else {
-                if (that.showUploadMenu) {
-                    that.showSettingsMenu = false;
+                if (that.showUploadMenu || that.showSettingsMenu || that.viewMenu) {
                     for(var i=0; i < gridItems.length; i++) {
                         gridItems[i].removeAttribute("tabindex");
-                    }
-                    for(var k=0; k < uploadItems.length; k++) {
-                        uploadItems[k].setAttribute("tabindex", 0);
-                    }
-                    for(var l=0; l < toolbarItems.length; l++) {
-                        toolbarItems[l].removeAttribute("tabindex");
-                    }
-                    document.getElementById("uploadButton").setAttribute("tabindex", 0);
-                } else if (that.showSettingsMenu) {
-                    that.showUploadMenu = false;
-                    for(var i=0; i < gridItems.length; i++) {
-                        gridItems[i].removeAttribute("tabindex");
-                    }
-                    for(var m=0; m < settingsItems.length; m++) {
-                        settingsItems[m].setAttribute("tabindex", 0);
-                    }
-                    for(var l=0; l < toolbarItems.length; l++) {
-                        toolbarItems[l].removeAttribute("tabindex");
-                    }
-                    document.getElementById("settings-menu").setAttribute("tabindex", 0);
-                } else if (that.viewMenu) {
-                    that.showSettingsMenu = false;
-                    that.showUploadMenu = false;
-                    for(var i=0; i < gridItems.length; i++) {
-                        gridItems[i].removeAttribute("tabindex");
-                    }
-                    for(var l=0; l < toolbarItems.length; l++) {
-                        toolbarItems[l].removeAttribute("tabindex");
                     }
                 } else {
                     for(var i=0; i < gridItems.length; i++) {
                         gridItems[i].setAttribute("tabindex", 0);
                     }
-                    for(var l=0; l < toolbarItems.length; l++) {
-                        toolbarItems[l].setAttribute("tabindex", 0);
-                    }
+                }
+            }
+            if (that.showUploadMenu) {
+                that.showSettingsMenu = false;
+                for(var k=0; k < uploadItems.length; k++) {
+                    uploadItems[k].setAttribute("tabindex", 0);
+                }
+                for(var l=0; l < toolbarItems.length; l++) {
+                    toolbarItems[l].removeAttribute("tabindex");
+                }
+                document.getElementById("uploadButton").setAttribute("tabindex", 0);
+            } else if (that.showSettingsMenu) {
+                that.showUploadMenu = false;
+                for(var m=0; m < settingsItems.length; m++) {
+                    settingsItems[m].setAttribute("tabindex", 0);
+                }
+                for(var l=0; l < toolbarItems.length; l++) {
+                    toolbarItems[l].removeAttribute("tabindex");
+                }
+                document.getElementById("settings-menu").setAttribute("tabindex", 0);
+            } else if (that.viewMenu) { //context menu
+                that.showSettingsMenu = false;
+                that.showUploadMenu = false;
+                for(var l=0; l < toolbarItems.length; l++) {
+                    toolbarItems[l].removeAttribute("tabindex");
                 }
             }
             if (!that.showUploadMenu) {
@@ -753,6 +755,7 @@ module.exports = {
 
         switchView: function() {
             this.grid = !this.grid;
+            this.buildTabNavigation();
         },
 
         currentDirChanged: function() {
@@ -1508,7 +1511,7 @@ module.exports = {
             });
         },
 
-        showAdminPanel: function(name) {
+        showAdminPanel: function() {
             this.toggleUserMenu();
             const context = this.getContext()
             if (context == null)
