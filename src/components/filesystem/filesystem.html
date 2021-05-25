@@ -23,9 +23,9 @@
       </button>
       <ul id="settingsMenu" v-if="showSettingsMenu" class="dropdown-menu" aria-labelledby="logoutButton" style="cursor:pointer;display:block;left:auto;right:0;">
         <li v-if="isAdmin" v-on:keyup.enter="showAdminPanel" class="settings-item"><a @click="showAdminPanel">Admin Panel</a></li>
-        <li class="settings-item" v-on:keyup.enter="showRequestStorage"><a v-on:keyup.enter="showRequestStorage" @click="showRequestStorage">Account</a></li>
-        <li class="settings-item" v-on:keyup.enter="showChangePassword"><a v-on:keyup.enter="showChangePassword" @click="showChangePassword">Change Password</a></li>
-        <li class="settings-item" v-on:keyup.enter="showViewAccount"><a v-on:keyup.enter="showViewAccount" @click="showViewAccount">Delete Account</a></li>
+        <li class="settings-item" v-on:keyup.enter="showRequestStorage(true)"><a @click="showRequestStorage(true)">Account</a></li>
+        <li class="settings-item" v-on:keyup.enter="showChangePassword"><a @click="showChangePassword">Change Password</a></li>
+        <li class="settings-item" v-on:keyup.enter="showViewAccount"><a @click="showViewAccount">Delete Account</a></li>
         <li role="separator" class="divider"></li>
         <li class="settings-item" v-on:keyup.enter="logout"><a v-on:keyup.enter="logout" @click="logout">Log out</a></li>
       </ul>
@@ -64,7 +64,7 @@
   </div>
   <tour
     v-if="showTour" 
-    v-on:hide-tour="showTour = false">
+    v-on:hide-tour="closeTour">
   </tour>
   <appgrid
       v-if="showAppgrid" 
@@ -80,7 +80,7 @@
       v-on:social="showSocialView()"
       v-on:search="openSearch(true)"
       v-on:profile="showProfile(true)"
-      v-on:tour="showTour = true"
+      v-on:tour="showTourViewer"
       >
   </appgrid>
   <share 
@@ -350,13 +350,13 @@
   <div style="display:flex;justify-content:flex-end;">
       <div v-if="!isSecretLink" style="font-size:1.4em;display:flex;align-items:center;margin: 5px;">
           Usage: {{ usage }} / {{ quota }}&nbsp;&nbsp;
-          <div class="grid-item">
-            <button tabindex="-1" class="btn btn-sm btn-success" @click="showRequestStorage()">Upgrade</button>
+          <div v-on:keyup.enter="showRequestStorage(false)">
+            <button tabindex="-1" class="btn btn-sm btn-success overlay-item" @click="showRequestStorage(false)">Upgrade</button>
           </div>
       </div>
   </div>
-    <button tabindex="-1" id="popup" v-if="!isSecretLink" class="feedback-button" @click="toggleFeedbackForm()">
-      <div class="grid-item">
+    <button tabindex="-1" id="popup" v-if="!isSecretLink" class="feedback-button overlay-item" @click="toggleFeedbackForm()">
+      <div>
         Feedback
       </div>
     </button>

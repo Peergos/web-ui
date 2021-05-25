@@ -234,6 +234,10 @@ module.exports = {
             let gridItems = document.getElementsByClassName('grid-item');
             let appGridItems = document.getElementsByClassName('app-grid-item');
             let toolbarItems = document.getElementsByClassName('toolbar-item');
+            let overlayItems = document.getElementsByClassName('overlay-item');
+            for(var g=0; g < overlayItems.length; g++) {
+                overlayItems[g].removeAttribute("tabindex");
+            }
             for(var i=0; i < gridItems.length; i++) {
                 gridItems[i].removeAttribute("tabindex");
             }
@@ -253,7 +257,10 @@ module.exports = {
             let uploadItems = document.getElementsByClassName('upload-item');
             let toolbarItems = document.getElementsByClassName('toolbar-item');
             let settingsItems = document.getElementsByClassName('settings-item');
-
+            let overlayItems = document.getElementsByClassName('overlay-item');
+            for(var g=0; g < overlayItems.length; g++) {
+                overlayItems[g].setAttribute("tabindex", 0);
+            }
             if (that.showAppgrid) {
                 for(var j=0; j < appGridItems.length; j++) {
                     appGridItems[j].setAttribute("tabindex", 0);
@@ -1152,6 +1159,7 @@ module.exports = {
 
         toggleFeedbackForm: function() { 
             this.showFeedbackForm = !this.showFeedbackForm;
+            this.clearTabNavigation();
         },
 
         popConversation: function(msgId) {
@@ -1233,6 +1241,7 @@ module.exports = {
             this.showFeedbackForm = false;
             this.messageId = null;
             this.popConversation(submittedMsgId);
+            this.buildTabNavigation();
         },
 
         loadMessageThread: function(msgId) {
@@ -1363,9 +1372,13 @@ module.exports = {
             this.showProfileEditForm = false;
             this.showProfileViewForm = false
         },
-        showRequestStorage: function() {
+        showRequestStorage: function(fromMenu) {
             var that = this;
-            this.toggleUserMenu();
+            if (fromMenu) {
+                this.toggleUserMenu();
+            } else {
+                this.clearTabNavigation();
+            }
             this.context.getPaymentProperties(false).thenApply(function(paymentProps) {
             if (paymentProps.isPaid()) {
                 that.paymentProperties = paymentProps;
@@ -1510,10 +1523,22 @@ module.exports = {
             this.showAdmin = false;
             this.buildTabNavigation();
         },
-        showSocialView: function(name) {
+        showTourViewer: function() {
             this.clearTabNavigation();
-            this.showSocial = true;
-            this.externalChange++;
+            this.showTour = true;
+        },
+        closeTour: function() {
+            this.buildTabNavigation();
+            this.showTour = false
+        },
+        showSocialView: function(name) {
+            let that = this;
+            this.showSpinner = true;
+            this.clearTabNavigation();
+            this.updateSocial(function(res) {
+                that.showSpinner = false;
+                that.showSocial = true;
+            });
         },
         closeSocial: function() {
             this.buildTabNavigation();
