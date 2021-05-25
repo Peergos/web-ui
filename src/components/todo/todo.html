@@ -3,8 +3,8 @@
     <div class="modal-container full-height" @click.stop style="width:100%;overflow-y:auto;padding:0;display:flex;flex-flow:column;">
         <div class="modal-header-app">
 	  <span style="position:absolute;top:0;right:5em;">
-	    <span v-if="isWritable" @click="saveTodoBoard" style="color:black;font-size:2.5em;font-weight:bold;cursor:pointer;margin:.3em;" v-bind:class="['fas', saving ? 'fa-hourglass' : 'fa-save']" title="Save"></span>
-	    <span @click="closeTodoBoard" style="color:black;font-size:3em;font-weight:bold;cursor:pointer;">&times;</span>
+	    <span v-if="isWritable" @click="saveTodoBoard" tabindex="0" v-on:keyup.enter="saveTodoBoard" style="color:black;font-size:2.5em;font-weight:bold;cursor:pointer;margin:.3em;" v-bind:class="['fas', saving ? 'fa-hourglass' : 'fa-save']" title="Save"></span>
+	    <span @click="closeTodoBoard" tabindex="0" v-on:keyup.enter="closeTodoBoard" style="color:black;font-size:3em;font-weight:bold;cursor:pointer;">&times;</span>
 	  </span>
         </div>
 

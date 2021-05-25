@@ -4,55 +4,58 @@
     <input type="file" id="uploadDirectoriesInput" @change="uploadFiles" style="display:none;" multiple directory mozDirectory webkitDirectory/>
     <div style="display:block;">
       <ul class="nav navbar-nav">
-	<li id="appButton" v-if="!isSecretLink" @click="toggleNav()" class="navbar-brand nopad"><a><span data-toggle="tooltip" data-placement="bottom" title="Apps" class="pnavbar fas fa-home" style="cursor: pointer;"/></a></li>
-	<li v-if="view==='files'" id="alternateViewButton" @click="switchView()" class="navbar-brand nopad"><a><span data-toggle="tooltip" data-placement="bottom" title="Switch view" id="altViewSpan" v-bind:class="['pnavbar', 'fa', 'tour-view', grid ? 'fa-list' : 'fa-th-large']" style="cursor: pointer;"/></a></li>
-	<li id="uploadButton" @click="toggleUploadMenu()" v-if="isWritable && view==='files'" class="navbar-brand nopad"><a><span data-toggle="tooltip" data-placement="bottom" title="Upload" class="pnavbar fa fa-upload" style="cursor: pointer;"/></a></li>
-	<li id="mkdirButton" @click="askMkdir()" v-if="isWritable && view==='files'" class="navbar-brand nopad"><a><span data-toggle="tooltip" data-placement="bottom" title="Create new directory" class="pnavbar fas fa-folder-plus" style="cursor: pointer;"/></a></li>
+	<li id="appButton" v-if="!isSecretLink" v-on:keyup.enter="toggleNav()" @click="toggleNav()" class="navbar-brand nopad toolbar-item"><a><span data-toggle="tooltip" data-placement="bottom" title="Apps" class="pnavbar fas fa-home" style="cursor: pointer;"/></a></li>
+	<li v-if="view==='files'" id="alternateViewButton" v-on:keyup.enter="switchView()" @click="switchView()" class="navbar-brand nopad toolbar-item"><a><span data-toggle="tooltip" data-placement="bottom" title="Switch view" id="altViewSpan" v-bind:class="['pnavbar', 'fa', 'tour-view', grid ? 'fa-list' : 'fa-th-large']" style="cursor: pointer;"/></a></li>
+	<li id="uploadButton" v-on:keyup.enter="toggleUploadMenu()" @click="toggleUploadMenu()" v-if="isWritable && view==='files'" class="navbar-brand nopad toolbar-item"><a><span data-toggle="tooltip" data-placement="bottom" title="Upload" class="pnavbar fa fa-upload" style="cursor: pointer;"/></a></li>
+	<li id="mkdirButton" v-on:keyup.enter="askMkdir()" @click="askMkdir()" v-if="isWritable && view==='files'" class="navbar-brand nopad toolbar-item"><a><span data-toggle="tooltip" data-placement="bottom" title="Create new directory" class="pnavbar fas fa-folder-plus" style="cursor: pointer;"/></a></li>
       </ul>
     </div>
     <span v-if="view==='files'" data-toggle="tooltip" data-placement="bottom" title="Current location" class="nav navbar-nav pnavbar" style="float:left;display:inline-block;font-size:2.5em;color:#9d9d9d;padding: 0.2em 0.2em 0em;">/</span>
-    <span v-if="view==='files'" v-for="(dir, index) in path" class="nav navbar-nav navbar-brand" style="display:inline-block;padding: 0.2em 0.2em 1em;margin-bottom: 0.2em;">
-        <button @click="goBackToLevel(index+1)" class="btn_pnavbar btn">{{dir}}</button>
+    <span v-if="view==='files'" v-on:keyup.enter="goBackToLevel(index+1)" v-for="(dir, index) in path" class="nav navbar-nav navbar-brand toolbar-item" style="display:inline-block;padding: 0.2em 0.2em 1em;margin-bottom: 0.2em;">
+        <button tabindex="-1" @click="goBackToLevel(index+1)" class="btn_pnavbar btn">{{dir}}</button>
         <span class="divider"> </span>
     </span>
 
-    <ul v-if="isLoggedIn" class="nav navbar-right pnavbar_top_right">
-      <button id="logoutButton" @click="toggleUserMenu()" class="btn top_right_icon dropdown-toggle" data-toggle="dropdown" aria-haspopup="true" aria-expanded="true">
+    <ul id="settings-menu" v-if="isLoggedIn" class="nav navbar-right pnavbar_top_right toolbar-item" v-on:keyup.enter="toggleUserMenu()">
+      <button id="logoutButton" tabindex="-1" @click="toggleUserMenu()" class="btn top_right_icon dropdown-toggle" data-toggle="dropdown" aria-haspopup="true" aria-expanded="true">
         <span class="fa fa-cog"></span>
         <span class="collapse navbar-collapse">{{username}}</span>
       </button>
       <ul id="settingsMenu" v-if="showSettingsMenu" class="dropdown-menu" aria-labelledby="logoutButton" style="cursor:pointer;display:block;left:auto;right:0;">
-        <li v-if="isAdmin"><a @click="showAdminPanel">Admin Panel</a></li>
-        <li><a @click="showRequestStorage">Account</a></li>
-        <li><a @click="showChangePassword">Change Password</a></li>
-        <li><a @click="showViewAccount">Delete Account</a></li>
+        <li v-if="isAdmin" v-on:keyup.enter="showAdminPanel" class="settings-item"><a @click="showAdminPanel">Admin Panel</a></li>
+        <li class="settings-item" v-on:keyup.enter="showRequestStorage(true)"><a @click="showRequestStorage(true)">Account</a></li>
+        <li class="settings-item" v-on:keyup.enter="showChangePassword"><a @click="showChangePassword">Change Password</a></li>
+        <li class="settings-item" v-on:keyup.enter="showViewAccount"><a @click="showViewAccount">Delete Account</a></li>
         <li role="separator" class="divider"></li>
-        <li><a @click="logout">Log out</a></li>
+        <li class="settings-item" v-on:keyup.enter="logout"><a v-on:keyup.enter="logout" @click="logout">Log out</a></li>
       </ul>
     </ul>
 
     <ul v-if="isWritable" class="nav">
       <ul id="uploadMenu" v-if="showUploadMenu" class="dropdown-menu" style="cursor:pointer;display:block">
-        <li><a @click="askForFiles">Upload files</a></li>
-        <li><a @click="askForDirectories">Upload directories</a></li>
+        <li v-on:keyup.enter="askForFiles" class="upload-item"><a @click="askForFiles">Upload files</a></li>
+        <li v-on:keyup.enter="askForDirectories" class="upload-item"><a @click="askForDirectories">Upload directories</a></li>
       </ul>
     </ul>
 
   </nav>
   <a id="downloadAnchor" style="display:none"></a>
   <div v-if="viewMenu && (isNotHome || isPasteAvailable || isNotBackground)">
-    <ul id="right-click-menu" tabindex="-1" v-if="viewMenu && (isNotHome || isPasteAvailable || isNotBackground)" v-on:blur="closeMenu" v-bind:style="{top:top, left:left}">
-      <li id='gallery' v-if="canOpen" v-on:click="gallery">View</li>
-      <li id='create-file' v-if="!isNotBackground" v-on:click="createTextFile">Create Text file</li>
-      <li id='open-file' v-if="canOpen" v-on:click="downloadAll">Download</li>
-      <li id='rename-file' v-if="isNotBackground && isWritable" v-on:click="rename">Rename</li>
-      <li id='delete-file' v-if="isNotBackground && isWritable" v-on:click="deleteFiles">Delete</li>
-      <li id='copy-file' v-if="isNotBackground && isWritable" v-on:click="copy">Copy</li>
-      <li id='cut-file' v-if="isNotBackground && isWritable" v-on:click="cut">Cut</li>
-      <li id='paste-file' v-if="isPasteAvailable" v-on:click="paste">Paste</li>
-      <li id='share-file' v-if="(isNotHome || isNotBackground) && isLoggedIn" v-on:click="showShareWith">Share</li>
-      <li id='file-search' v-if="isSearchable" v-on:click="openSearch(false)">Search...</li>
+    <nav>
+    <ul id="right-click-menu" v-if="viewMenu && (isNotHome || isPasteAvailable || isNotBackground)" v-on:blur="closeMenu" v-bind:style="{top:top, left:left}">
+      <li id='gallery' v-on:keyup.enter="gallery" tabindex="0" v-if="canOpen" v-on:click="gallery">View</li>
+      <li id='create-file' v-on:keyup.enter="createTextFile" tabindex="0" v-if="!isNotBackground" v-on:click="createTextFile">Create Text file</li>
+      <li id='open-file' v-on:keyup.enter="downloadAll" tabindex="0" v-if="canOpen" v-on:click="downloadAll">Download</li>
+      <li id='rename-file' v-on:keyup.enter="rename" tabindex="0" v-if="isNotBackground && isWritable" v-on:click="rename">Rename</li>
+      <li id='delete-file' v-on:keyup.enter="deleteFiles" tabindex="0" v-if="isNotBackground && isWritable" v-on:click="deleteFiles">Delete</li>
+      <li id='copy-file' v-on:keyup.enter="copy" tabindex="0" v-if="isNotBackground && isWritable" v-on:click="copy">Copy</li>
+      <li id='cut-file' v-on:keyup.enter="cut" tabindex="0" v-if="isNotBackground && isWritable" v-on:click="cut">Cut</li>
+      <li id='paste-file' v-on:keyup.enter="paste" tabindex="0" v-if="isPasteAvailable" v-on:click="paste">Paste</li>
+      <li id='share-file' v-on:keyup.enter="showShareWith" tabindex="0" v-if="(isNotHome || isNotBackground) && isLoggedIn" v-on:click="showShareWith">Share</li>
+      <li id='file-search' v-on:keyup.enter="openSearch(false)" tabindex="0" v-if="isSearchable" v-on:click="openSearch(false)">Search...</li>
+      <li v-on:keyup.enter="closeMenu" tabindex="0" v-on:click="closeMenu">Close</li>
     </ul>
+    </nav>
   </div>
   <div v-if="viewMenu && isProfileViewable()">
     <ul id="right-click-menu-profile" tabindex="-1"  v-on:blur="closeMenu" v-bind:style="{top:top, left:left}">
@@ -61,7 +64,7 @@
   </div>
   <tour
     v-if="showTour" 
-    v-on:hide-tour="showTour = false">
+    v-on:hide-tour="closeTour">
   </tour>
   <appgrid
       v-if="showAppgrid" 
@@ -77,12 +80,12 @@
       v-on:social="showSocialView()"
       v-on:search="openSearch(true)"
       v-on:profile="showProfile(true)"
-      v-on:tour="showTour = true"
+      v-on:tour="showTourViewer"
       >
   </appgrid>
   <share 
     v-if="showShare" 
-    v-on:hide-share-with="showShare = false"
+    v-on:hide-share-with="closeShare"
     v-on:update-shared-refresh="forceSharedRefreshWithUpdate++"
     :data="sharedWithData"
     :fromApp="fromApp"
@@ -99,7 +102,7 @@
   </share>
   <social 
     v-if="showSocial" 
-    v-on:hide-social="showSocial = false"
+    v-on:hide-social="closeSocial"
     v-on:external-change="externalChange++"
     :displayProfile="displayProfile"
     :data="social" 
@@ -108,7 +111,7 @@
   </social>
   <timeline
     v-if="showTimeline"
-    v-on:hide-timeline="showTimeline = false;forceSharedRefreshWithUpdate++"
+    v-on:hide-timeline="closeTimeline"
     :navigateToAction="navigateToAction"
     :viewAction="viewAction"
     :getFileIconFromFileAndType="getFileIconFromFileAndType"
@@ -126,7 +129,7 @@
   </timeline>
   <search
           v-if="showSearch"
-          v-on:hide-search="showSearch = false"
+          v-on:hide-search="closeSearch"
           :path="searchPath"
           :navigateToAction="navigateToAction"
           :viewAction="viewAction"
@@ -134,25 +137,25 @@
   </search>
   <admin
     v-if="showAdmin"
-    v-on:hide-admin="showAdmin = false"
+    v-on:hide-admin="closeAdmin"
     :data="admindata"
     :context="context">
   </admin>
   <password
     v-if="showPassword"
-    v-on:hide-password="showPassword = false"
+    v-on:hide-password="closeChangePassword"
     :changepassword="changePassword"
     :username="this.getContext().username">
   </password>
   <account
           v-if="showAccount"
-          v-on:hide-close-account="showAccount = false"
+          v-on:hide-close-account="closeViewAccount"
           :deleteAccount="deleteAccount"
           :username="this.getContext().username">
   </account>
   <space
     v-if="showRequestSpace"
-    v-on:hide-request-space="showRequestSpace = false"
+    v-on:hide-request-space="closeRequestSpace"
     :context="context"
     :quota="quota"
     :usage="usageBytes">
@@ -177,7 +180,7 @@
   </feedback>
   <profile-edit
           v-if="showProfileEditForm"
-          v-on:hide-profile-edit="showProfileEditForm = false"
+          v-on:hide-profile-edit="closeProfile"
           v-on:update-refresh="forceUpdate++"
           :context="context"
           :profile="profile"
@@ -186,7 +189,7 @@
   </profile-edit>
   <profile-view
           v-if="showProfileViewForm"
-          v-on:hide-profile-view="showProfileViewForm = false"
+          v-on:hide-profile-view="closeProfile"
           :profile="profile">
   </profile-view>
   <gallery
@@ -227,7 +230,7 @@
   </todo-board>
   <select-create
           v-if="showSelect"
-          v-on:hide-select="showSelect = false"
+          v-on:hide-select="closeSelect"
           :select_message= "select_message"
           :select_placeholder="select_placeholder"
           :select_items="select_items"
@@ -259,7 +262,7 @@
   </message>
   <prompt 
     v-if="showPrompt" 
-    v-on:hide-prompt="showPrompt = false"
+    v-on:hide-prompt="closePrompt"
     :prompt_message='prompt_message'
     :placeholder="prompt_placeholder"
     :max_input_size="prompt_max_input_size"
@@ -268,7 +271,7 @@
   </prompt>
   <warning 
     v-if="showWarning" 
-    v-on:hide-warning="showWarning = false"
+    v-on:hide-warning="closeWarning"
     :warning_message='warning_message'
     :warning_body="warning_body"
     :consumer_func="warning_consumer_func">
@@ -302,8 +305,8 @@
 
     <div v-if="view==='files'">
     <div class="grid" v-if="grid">
-        <span class="column" v-for="(file, itemObjKey) in sortedFiles">
-          <span class="grid_icon_wrapper fa" :id="itemObjKey" draggable="true" @dragover.prevent v-on:dragstart="dragStart($event, file)" @drop="drop($event, file)">
+        <span class="column grid-item" v-for="file in sortedFiles" v-on:keyup.enter="navigateOrMenu($event, file)">
+          <span class="grid_icon_wrapper fa" draggable="true" @dragover.prevent v-on:dragstart="dragStart($event, file)" @drop="drop($event, file)">
             <a class="picon" v-bind:id="file.getFileProperties().name" v-on:contextmenu="openMenu($event, file)">
               <span v-if="!file.getFileProperties().thumbnail.isPresent()" v-on:click="navigateOrMenu($event, file)" v-on:contextmenu="openMenu($event, file)"
 		    v-bind:class="[getFileClass(file), getFileIcon(file), 'picon']"> </span>
@@ -333,8 +336,8 @@
             </tr>
           </thead>
           <tbody>
-                <tr v-for="file in sortedFiles">
-                  <td v-bind:id="file.getFileProperties().name" v-on:click="navigateOrMenu($event, file)" v-on:contextmenu="openMenu($event, file)" style="cursor:pointer" v-bind:class="{ shared: isShared(file) }">{{ file.getFileProperties().name }}</td>
+                <tr v-for="file in sortedFiles" v-on:keyup.enter="navigateOrMenu($event, file)" class="grid-item">
+                  <td v-bind:id="file.getFileProperties().name"  v-on:click="navigateOrMenu($event, file)" v-on:contextmenu="openMenu($event, file)" style="cursor:pointer" v-bind:class="{ shared: isShared(file) }">{{ file.getFileProperties().name }}</td>
                   <td>{{ getFileSize(file.getFileProperties()) }}</td>
                   <td>{{ file.getFileProperties().getType() }}</td>
                   <td>{{ formatDateTime(file.getFileProperties().modified) }}</td>
@@ -346,13 +349,17 @@
   </div>
   <div style="display:flex;justify-content:flex-end;">
       <div v-if="!isSecretLink" style="font-size:1.4em;display:flex;align-items:center;margin: 5px;">
-          Usage: {{ usage }} / {{ quota }}&nbsp;&nbsp;<button class="btn btn-sm btn-success" @click="showRequestStorage()">Upgrade</button>
+          Usage: {{ usage }} / {{ quota }}&nbsp;&nbsp;
+          <div v-on:keyup.enter="showRequestStorage(false)">
+            <button tabindex="-1" class="btn btn-sm btn-success overlay-item" @click="showRequestStorage(false)">Upgrade</button>
+          </div>
       </div>
   </div>
-  
-  <button id="popup" v-if="!isSecretLink" class="feedback-button" @click="toggleFeedbackForm()"> 
-      Feedback
-  </button>
+    <button tabindex="-1" id="popup" v-if="!isSecretLink" class="feedback-button overlay-item" @click="toggleFeedbackForm()">
+      <div>
+        Feedback
+      </div>
+    </button>
   <error
       v-if="showError"
       v-on:hide-error="showError = false"

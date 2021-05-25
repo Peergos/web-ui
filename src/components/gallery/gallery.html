@@ -1,7 +1,7 @@
 <transition name="modal">
 <div class="modal-mask" @click="close">
     <div class="modal-container full-height" @click.stop style="overflow-y:auto" @keyup.right="next" @keyup.left="previous">
-        <span @click="close" class="close">&times;</span>
+        <span @click="close" tabindex="0" v-on:keyup.enter="close" aria-label="close" class="close">&times;</span>
         <spinner v-if="showSpinner"></spinner>
         <center>
             <h2 v-if="current != null" >{{ showGalleryTitle(current) }}</h2>

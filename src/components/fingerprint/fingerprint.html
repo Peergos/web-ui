@@ -1,13 +1,13 @@
 <transition name="modal">
 <div class="modal-mask" @click="close">
     <div class="modal-container full-height" @click.stop style="overflow-y:auto">
-        <span @click="close" class="close">&times;</span>
+        <span @click="close" tabindex="0" v-on:keyup.enter="close" aria-label="close" class="close">&times;</span>
         <center>
             <h2>Verifying friend: {{ friendname }}</h2>
         </center>
         <center style="font-size:1.6em">
 	  <div class="qrcode-container">
-            <img v-if="stream == null" v-bind:src="QRCodeURL" class="qrcode"></img>
+            <img v-if="stream == null" v-bind:src="QRCodeURL" alt="QR code" class="qrcode"></img>
 	    <video v-if="stream != null" id="video" class="qrcode"></video>
 	  </div>
 	  <div>

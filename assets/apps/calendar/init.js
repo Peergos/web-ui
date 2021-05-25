@@ -1974,6 +1974,7 @@ function addExtraFieldsToDetail(eventData) {
     locTextArea.id = "popup-memo";
     locTextArea.value = eventData.schedule == null ? "" : eventData.schedule.raw.memo;
     locTextArea.rows = 5;
+    locTextArea.spellcheck = true;
     locTextArea.classList.add("memo-field-edit");
 
     var div1 = document.createElement("div");

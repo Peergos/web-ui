@@ -1,7 +1,7 @@
 <transition name="modal">
     <div class="modal-mask-app" @click="close" style="position:absolute;">
         <div class="modal-container" @click.stop style="width:100%;">
-            <span @click="close" class="close">&times;</span>
+            <span @click="close" tabindex="0" v-on:keyup.enter="close" aria-label="close" class="close">&times;</span>
             <div class="modal-header" @click="closeMenus($event)">
                 <h2>News Feed</h2>
             </div>

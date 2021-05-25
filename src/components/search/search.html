@@ -1,7 +1,7 @@
 <transition name="modal">
 <div class="modal-mask" @click="close"> 
     <div class="modal-container full-height" @click.stop style="overflow-y:auto">
-      <span @click="close" class="close">&times;</span>
+      <span @click="close" tabindex="0" v-on:keyup.enter="close" aria-label="close" class="close">&times;</span>
         <div class="modal-header">
             <h2>Search</h2>
         </div>

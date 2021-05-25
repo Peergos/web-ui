@@ -113,6 +113,7 @@ module.exports = {
         this.showTour = this.newsignup;
         this.init();
         window.onhashchange = this.onUrlChange;
+        this.buildTabNavigation();
     },
     watch: {
         // manually encode currentDir dependencies to get around infinite dependency chain issues with async-computed methods
@@ -227,6 +228,100 @@ module.exports = {
         }
         this.showPendingServerMessages();
 	},
+	clearTabNavigation: function() {
+	    let that = this;
+	    Vue.nextTick(function() {
+            let gridItems = document.getElementsByClassName('grid-item');
+            let appGridItems = document.getElementsByClassName('app-grid-item');
+            let toolbarItems = document.getElementsByClassName('toolbar-item');
+            let overlayItems = document.getElementsByClassName('overlay-item');
+            for(var g=0; g < overlayItems.length; g++) {
+                overlayItems[g].removeAttribute("tabindex");
+            }
+            for(var i=0; i < gridItems.length; i++) {
+                gridItems[i].removeAttribute("tabindex");
+            }
+            for(var j=0; j < appGridItems.length; j++) {
+                appGridItems[j].removeAttribute("tabindex");
+            }
+            for(var k=0; k < toolbarItems.length; k++) {
+                toolbarItems[k].removeAttribute("tabindex");
+            }
+	    });
+    },
+	buildTabNavigation: function() {
+	    let that = this;
+	    Vue.nextTick(function() {
+            let gridItems = document.getElementsByClassName('grid-item');
+            let appGridItems = document.getElementsByClassName('app-grid-item');
+            let uploadItems = document.getElementsByClassName('upload-item');
+            let toolbarItems = document.getElementsByClassName('toolbar-item');
+            let settingsItems = document.getElementsByClassName('settings-item');
+            let overlayItems = document.getElementsByClassName('overlay-item');
+            for(var g=0; g < overlayItems.length; g++) {
+                overlayItems[g].setAttribute("tabindex", 0);
+            }
+            for(var l=0; l < toolbarItems.length; l++) {
+                toolbarItems[l].setAttribute("tabindex", 0);
+            }
+            if (that.showAppgrid) {
+                if (that.showUploadMenu || that.showSettingsMenu || that.viewMenu) {
+                    for(var j=0; j < appGridItems.length; j++) {
+                        appGridItems[j].removeAttribute("tabindex");
+                    }
+                } else {
+                    for(var j=0; j < appGridItems.length; j++) {
+                        appGridItems[j].setAttribute("tabindex", 0);
+                    }
+                }
+            } else {
+                if (that.showUploadMenu || that.showSettingsMenu || that.viewMenu) {
+                    for(var i=0; i < gridItems.length; i++) {
+                        gridItems[i].removeAttribute("tabindex");
+                    }
+                } else {
+                    for(var i=0; i < gridItems.length; i++) {
+                        gridItems[i].setAttribute("tabindex", 0);
+                    }
+                }
+            }
+            if (that.showUploadMenu) {
+                that.showSettingsMenu = false;
+                for(var k=0; k < uploadItems.length; k++) {
+                    uploadItems[k].setAttribute("tabindex", 0);
+                }
+                for(var l=0; l < toolbarItems.length; l++) {
+                    toolbarItems[l].removeAttribute("tabindex");
+                }
+                document.getElementById("uploadButton").setAttribute("tabindex", 0);
+            } else if (that.showSettingsMenu) {
+                that.showUploadMenu = false;
+                for(var m=0; m < settingsItems.length; m++) {
+                    settingsItems[m].setAttribute("tabindex", 0);
+                }
+                for(var l=0; l < toolbarItems.length; l++) {
+                    toolbarItems[l].removeAttribute("tabindex");
+                }
+                document.getElementById("settings-menu").setAttribute("tabindex", 0);
+            } else if (that.viewMenu) { //context menu
+                that.showSettingsMenu = false;
+                that.showUploadMenu = false;
+                for(var l=0; l < toolbarItems.length; l++) {
+                    toolbarItems[l].removeAttribute("tabindex");
+                }
+            }
+            if (!that.showUploadMenu) {
+                for(var k=0; k < uploadItems.length; k++) {
+                    uploadItems[k].removeAttribute("tabindex");
+                }
+            }
+            if (!that.showSettingsMenu) {
+                for(var m=0; m < settingsItems.length; m++) {
+                    settingsItems[m].removeAttribute("tabindex");
+                }
+            }
+        });
+	},
 	showPendingServerMessages: function() {
         let context = this.getContext();
         let that = this;
@@ -260,6 +355,7 @@ module.exports = {
             this.showAppgrid = false;
             this.view="files";
             this.path = data.path;
+            this.buildTabNavigation();
         },
     processPending: function() {
         for (var i=0; i < this.onUpdateCompletion.length; i++) {
@@ -441,6 +537,10 @@ module.exports = {
         this.updateHistory("search", this.getPath(), "");
         this.closeMenu();
     },
+    closeSearch: function() {
+        this.showSearch = false;
+        this.buildTabNavigation();
+    },
 	openAppFromFolder: function() {
 	    let path = this.getPath();
 	    let pathItems = path.split('/').filter(n => n.length > 0);
@@ -483,6 +583,7 @@ module.exports = {
                     that.files = arr.filter(function(f){
                         return !f.getFileProperties().isHidden;
                     });
+                    that.buildTabNavigation();
                     if(selectedFilename != null) {
                         that.selectedFiles = that.files.filter(f => f.getName() == selectedFilename);
                         that.gallery();
@@ -618,7 +719,10 @@ module.exports = {
             this.warning_consumer_func = deleteFn;
             this.showWarning = true;
         },
-
+        closeWarning: function() {
+            this.showWarning = false;
+            this.buildTabNavigation();
+        },
         confirmDownload: function(file, downloadFn) {
             var size = this.getFileSize(file.getFileProperties());
             if (this.supportsStreaming() || size < 50*1024*1024)
@@ -651,6 +755,7 @@ module.exports = {
 
         switchView: function() {
             this.grid = !this.grid;
+            this.buildTabNavigation();
         },
 
         currentDirChanged: function() {
@@ -1052,10 +1157,12 @@ module.exports = {
         },
         toggleUserMenu: function() {
             this.showSettingsMenu = !this.showSettingsMenu;
+            this.buildTabNavigation();
         },
 
         toggleFeedbackForm: function() { 
             this.showFeedbackForm = !this.showFeedbackForm;
+            this.clearTabNavigation();
         },
 
         popConversation: function(msgId) {
@@ -1137,6 +1244,7 @@ module.exports = {
             this.showFeedbackForm = false;
             this.messageId = null;
             this.popConversation(submittedMsgId);
+            this.buildTabNavigation();
         },
 
         loadMessageThread: function(msgId) {
@@ -1200,21 +1308,30 @@ module.exports = {
 
         toggleUploadMenu: function() {
             this.showUploadMenu = !this.showUploadMenu;
+            this.buildTabNavigation();
         },
 
         showChangePassword: function() {
             this.toggleUserMenu();
             this.showPassword = true;
         },
-
+        closeChangePassword: function() {
+            this.showPassword = false;
+            this.buildTabNavigation();
+        },
         showViewAccount: function() {
             this.toggleUserMenu();
             this.showAccount = true;
         },
-
+        closeViewAccount: function() {
+            this.showAccount = false;
+            this.buildTabNavigation();
+        },
         showProfile: function(showEditForm) {
             if(! showEditForm) {
                 this.closeMenu();
+            } else {
+                this.clearTabNavigation();
             }
             let username = showEditForm ? this.context.username : this.selectedFiles[0].getOwnerName();
             this.displayProfile(username, showEditForm);
@@ -1253,21 +1370,39 @@ module.exports = {
                 }
             });
         },
-
-        showRequestStorage: function() {
-	    var that = this;
-	    this.context.getPaymentProperties(false).thenApply(function(paymentProps) {
-		if (paymentProps.isPaid()) {
-		    that.paymentProperties = paymentProps;
-		    that.showBuySpace = true;
-		} else
-		    that.showRequestSpace = true;
-	    });
+        closeProfile: function() {
+            this.buildTabNavigation();
+            this.showProfileEditForm = false;
+            this.showProfileViewForm = false
+        },
+        showRequestStorage: function(fromMenu) {
+            var that = this;
+            if (fromMenu) {
+                this.toggleUserMenu();
+            } else {
+                this.clearTabNavigation();
+            }
+            this.context.getPaymentProperties(false).thenApply(function(paymentProps) {
+            if (paymentProps.isPaid()) {
+                that.paymentProperties = paymentProps;
+                that.showBuySpace = true;
+            } else
+                that.showRequestSpace = true;
+            });
+        },
+        closeRequestSpace: function() {
+            this.showRequestSpace = false
+            this.buildTabNavigation();
+        },
+        closeSelect: function() {
+            this.showSelect = false;
+            this.buildTabNavigation();
         },
         showTodoBoard: function() {
             let that = this;
             this.select_placeholder='Todo Board';
             this.select_message='Create or open Todo Board';
+            that.clearTabNavigation();
             that.showSpinner = true;
             that.context.getByPath(this.getContext().username).thenApply(homeDir => {
                 homeDir.get().getChildren(that.context.crypto.hasher, that.context.network).thenApply(function(children){
@@ -1293,6 +1428,7 @@ module.exports = {
                         } else {
                             that.selectedFiles = [todoBoards[foundIndex]];
                         }
+                        that.clearTabNavigation();
                         that.showTodoBoardViewer = true;
                         that.updateHistory("todo", that.getPath(), "");
                     };
@@ -1305,6 +1441,7 @@ module.exports = {
             let that = this;
             this.select_placeholder='filename';
             this.select_message='Create or open Text file';
+            this.clearTabNavigation();
             that.showSpinner = true;
             that.context.getByPath(this.getContext().username).thenApply(homeDir => {
                 homeDir.get().getChildren(that.context.crypto.hasher, that.context.network).thenApply(function(children){
@@ -1329,6 +1466,7 @@ module.exports = {
                                 updatedDir.getChild(select_result, context.crypto.hasher, context.network).thenApply(function(textFileOpt) {
                                     that.showSpinner = false;
                                     that.selectedFiles = [textFileOpt.get()];
+                                    that.clearTabNavigation();
                                     that.showCodeEditor = true;
                                     that.updateHistory("editor", that.getPath(), "");
                                 });
@@ -1350,12 +1488,13 @@ module.exports = {
             });
         },
         showCalendar: function() {
+            this.clearTabNavigation();
             this.importFile = null;
             this.importCalendarPath = null;
             this.owner = this.context.username;
             this.loadCalendarAsGuest = false;
             this.showCalendarViewer = true;
-	    this.updateHistory("calendar", this.getPath(), "");
+	        this.updateHistory("calendar", this.getPath(), "");
         },
         logout: function() {
             this.toggleUserMenu();
@@ -1372,22 +1511,42 @@ module.exports = {
             });
         },
 
-        showAdminPanel: function(name) {
-	    const context = this.getContext()
-	    if (context == null)
-		return;
-	    const that = this;
-	    context.getAndDecodePendingSpaceRequests().thenApply(reqs => {
-		that.admindata.pending = reqs.toArray([]);
-		that.showAdmin = true;
-	    });
+        showAdminPanel: function() {
+            this.toggleUserMenu();
+            const context = this.getContext()
+            if (context == null)
+                return;
+            const that = this;
+            context.getAndDecodePendingSpaceRequests().thenApply(reqs => {
+                that.admindata.pending = reqs.toArray([]);
+                that.showAdmin = true;
+            });
         },
-
+        closeAdmin: function() {
+            this.showAdmin = false;
+            this.buildTabNavigation();
+        },
+        showTourViewer: function() {
+            this.clearTabNavigation();
+            this.showTour = true;
+        },
+        closeTour: function() {
+            this.buildTabNavigation();
+            this.showTour = false
+        },
         showSocialView: function(name) {
-            this.showSocial = true;
-            this.externalChange++;
+            let that = this;
+            this.showSpinner = true;
+            this.clearTabNavigation();
+            this.updateSocial(function(res) {
+                that.showSpinner = false;
+                that.showSocial = true;
+            });
         },
-
+        closeSocial: function() {
+            this.buildTabNavigation();
+            this.showSocial = false;
+        },
         showTimelineView: function() {
             let that = this;
             if (this.showSpinner) {
@@ -1397,17 +1556,23 @@ module.exports = {
             this.spinnerMessage = "Building your news feed. This could take a minute...";
             const ctx = this.getContext()
             ctx.getSocialFeed().thenCompose(function(socialFeed) {
-		return socialFeed.update().thenApply(function(updated) {
+                return socialFeed.update().thenApply(function(updated) {
                     that.socialFeed = updated;
+                    that.clearTabNavigation();
                     that.showTimeline = true;
                     that.showSpinner = false;
                     that.spinnerMessage = "";
-		    that.updateHistory("timeline", that.getPath(), "");
-		});
+                    that.updateHistory("timeline", that.getPath(), "");
+                });
             }).exceptionally(function(throwable) {
                 that.showMessage(throwable.getMessage());
                 that.showSpinner = false;
             });
+        },
+        closeTimeline: function() {
+            this.showTimeline = false;
+            this.buildTabNavigation();
+            this.forceSharedRefreshWithUpdate++;
         },
         updateSocialFeedInstance: function(updated) {
             this.socialFeed = updated;
@@ -1422,7 +1587,7 @@ module.exports = {
                 op: "copy",
                 path: this.getPath()
             };
-            this.closeMenu();
+            this.closeMenu(true);
         },
 
         cut: function() {
@@ -1436,7 +1601,7 @@ module.exports = {
                 op: "cut",
                 path: this.getPath()
             };
-            this.closeMenu();
+            this.closeMenu(true);
         },
 
         paste: function() {
@@ -1593,7 +1758,10 @@ module.exports = {
             this.allowCreateSecretLink = true;
             this.showShare = true;
         },
-
+        closeShare: function() {
+            this.showShare = false;
+            this.buildTabNavigation();
+        },
         setSortBy: function(prop) {
             if (this.sortBy == prop)
                 this.normalSortOrder = !this.normalSortOrder;
@@ -1651,7 +1819,7 @@ module.exports = {
         downloadAll: function() {
             if (this.selectedFiles.length == 0)
                 return;
-            this.closeMenu();
+            this.closeMenu(true);
             for (var i=0; i < this.selectedFiles.length; i++) {
                 var file = this.selectedFiles[i];
                 this.navigateOrDownload(file);
@@ -1714,7 +1882,7 @@ module.exports = {
             });
 	    } else if (mimeType === "application/vnd.peergos-todo") {
 		if (this.isSecretLink) {
-                    this.showTodoBoardViewer = true;
+            this.showTodoBoardViewer = true;
 		}
 		this.updateHistory("todo", this.getPath(), filename);
             } else if (mimeType === "application/pdf") {
@@ -1741,23 +1909,24 @@ module.exports = {
 	navigateOrDownload: function(file) {
             if (this.showSpinner) // disable user input whilst refreshing
                 return;
-            this.closeMenu();
-            if (file.isDirectory())
+            this.buildTabNavigation();
+            if (file.isDirectory()) {
                 this.navigateToSubdir(file.getFileProperties().name);
-            else {
-		var that = this;
-		this.confirmDownload(file, () => {that.downloadFile(file);});
-	    }
+            } else {
+		        var that = this;
+		        this.confirmDownload(file, () => {that.downloadFile(file);});
+	        }
         },
 
         navigateOrMenu: function(event, file) {
             if (this.showSpinner) // disable user input whilst refreshing
                 return;
             this.closeMenu();
-            if (file.isDirectory())
+            if (file.isDirectory()) {
                 this.navigateToSubdir(file.getFileProperties().name);
-            else
+            } else {
                 this.openMenu(event, file);
+            }
         },
 
         navigateToSubdir: function(name) {
@@ -1910,6 +2079,7 @@ module.exports = {
                     this.selectedFiles = [file];
                 }
                 this.viewMenu = true;
+                this.buildTabNavigation();
                 Vue.nextTick(function() {
                     var menu = document.getElementById("right-click-menu-profile");
                     if (menu != null)
@@ -1937,7 +2107,7 @@ module.exports = {
             }
         },
         createTextFile: function() {
-            this.closeMenu();
+            this.closeMenu(true);
             this.prompt_placeholder='File name';
             this.prompt_message='Enter a file name';
             this.prompt_value='';
@@ -2018,7 +2188,10 @@ module.exports = {
             };
             this.showPrompt =  true;
         },
-
+        closePrompt: function() {
+            this.showPrompt = false;
+            this.buildTabNavigation();
+        },
         deleteFiles: function() {
             var selectedCount = this.selectedFiles.length;
             if (selectedCount == 0)
@@ -2027,10 +2200,13 @@ module.exports = {
 
             for (var i=0; i < selectedCount; i++) {
                 var file = this.selectedFiles[i];
-		var that = this;
-		var parent = this.currentDir;
-		var context = this.getContext();
-                this.confirmDelete(file, () => that.deleteOne(file, parent, context));
+                var that = this;
+                var parent = this.currentDir;
+                var context = this.getContext();
+                this.confirmDelete(file, () => {
+                    that.deleteOne(file, parent, context);
+                    that.buildTabNavigation();
+                });
             }
         },
 
@@ -2087,9 +2263,14 @@ module.exports = {
                 return false;
             return this.sharedWithState.isShared(file.getFileProperties().name);
         },
-        closeMenu: function() {
+        closeMenu: function(ignoreClearTabNavigation) {
             this.viewMenu = false;
             this.ignoreEvent = false;
+            if (ignoreClearTabNavigation) {
+                this.buildTabNavigation();
+            } else {
+                this.clearTabNavigation();
+            }
         },
         toggleNav : function() {
             if (this.showAppgrid)
@@ -2097,6 +2278,7 @@ module.exports = {
             else
                 this.view = "appgrid"
             this.showAppgrid = ! this.showAppgrid;
+            this.buildTabNavigation();
         },
         formatDateTime: function(dateTime) {
             let date = new Date(dateTime.toString() + "+00:00");//adding UTC TZ in ISO_OFFSET_DATE_TIME ie 2021-12-03T10:25:30+00:00

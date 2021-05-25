@@ -1,66 +1,66 @@
 <div class="fillspace">
     <div class="appgrid">
-        <a id="ourFilesButton" @click="showOurFiles" class="app-grid-item">
+        <a id="ourFilesButton" @click="showOurFiles" class="app-grid-item" v-on:keyup.enter="showOurFiles">
             <span class="app-icon">
                 <span data-toggle="tooltip" data-placement="bottom" title="Your files" class="fas fa-folder-open" style="cursor: pointer;"/>
                 <label class="app-icon-title">My files</label>
             </span>
         </a>
-        <a id="friendsFilesButton" @click="showFriendsFiles" class="app-grid-item">
+        <a id="friendsFilesButton" @click="showFriendsFiles" class="app-grid-item" v-on:keyup.enter="showFriendsFiles">
             <span class="app-icon">
                 <span data-toggle="tooltip" data-placement="bottom" title="Friends' files" class="fas fa-user-friends" style="cursor: pointer;"/>
                 <label class="app-icon-title">All files</label>
             </span>
         </a>
-        <a @click="showFeed" class="app-grid-item">
+        <a @click="showFeed" class="app-grid-item"  v-on:keyup.enter="showFeed">
             <span class="app-icon">
                 <span data-toggle="tooltip" data-placement="bottom" title="Social Feed" class="fa fa-newspaper"/>
                 <label class="app-icon-title">News feed</label>
             </span>
         </a>
-        <a v-if="canUpgrade" id="upgradeButton" @click="showUpgrade" class="app-grid-item" style="color:#26b99a;">
+        <a v-if="canUpgrade" id="upgradeButton" @click="showUpgrade" class="app-grid-item" style="color:#26b99a;" v-on:keyup.enter="showUpgrade">
             <span class="app-icon">
                 <span data-toggle="tooltip" data-placement="bottom" title="Upgrade" class="fas fa-trophy" style="cursor: pointer;"/>
                 <label class="app-icon-title">Upgrade</label>
             </span>
         </a>
-        <a @click="showCalendar" class="app-grid-item">
+        <a @click="showCalendar" class="app-grid-item" v-on:keyup.enter="showCalendar">
             <span class="app-icon">
                 <span data-toggle="tooltip" data-placement="bottom" title="Calendar" class="fa fa-calendar-alt"/>
                 <label class="app-icon-title">Calendar</label>
             </span>
         </a>
-        <a @click="showTodoBoard" class="app-grid-item">
+        <a @click="showTodoBoard" class="app-grid-item" v-on:keyup.enter="showTodoBoard">
             <span class="app-icon">
                 <span data-toggle="tooltip" data-placement="bottom" title="Todo Board" class="fas fa-tasks"/>
                 <label class="app-icon-title">Todo board</label>
             </span>
         </a>
-        <a @click="showTextEditor" class="app-grid-item">
+        <a @click="showTextEditor" class="app-grid-item" v-on:keyup.enter="showTextEditor">
             <span class="app-icon">
                 <span data-toggle="tooltip" data-placement="bottom" title="Text Editor" class="fa fa-file-alt"/>
                 <label class="app-icon-title">Text Editor</label>
             </span>
         </a>
-        <a @click="showSearch(true)" class="app-grid-item">
+        <a @click="showSearch(true)" class="app-grid-item" v-on:keyup.enter="showSearch(true)">
             <span class="app-icon">
                 <span data-toggle="tooltip" data-placement="bottom" title="Search..." class="fa fa-search" style="cursor: pointer;"/>
                 <label class="app-icon-title">Search</label>
             </span>
         </a>
-        <a @click="showProfile" class="app-grid-item">
+        <a @click="showProfile" class="app-grid-item" v-on:keyup.enter="showProfile">
             <span class="app-icon">
                 <span data-toggle="tooltip" data-placement="bottom" title="Profile" class="fas fa-user-circle"/>
                 <label class="app-icon-title">Profile</label>
             </span>
         </a>
-        <a @click="showSocial" class="app-grid-item">
+        <a @click="showSocial" class="app-grid-item" v-on:keyup.enter="showSocial">
              <span class="app-icon">
                 <span data-toggle="tooltip" data-placement="bottom" title="Social" class="fa fa-user-plus" style="cursor: pointer;"/>
                 <label class="app-icon-title">Social<span id="pendingSpan" class="pending-badge" v-if="social != null && social.pending.length > 0">{{ social.pending.length }}</span></label>
              </span>
         </a>
-        <a @click="showTour" class="app-grid-item">
+        <a @click="showTour" class="app-grid-item" v-on:keyup.enter="showTour">
             <span class="app-icon">
                 <span data-toggle="tooltip" data-placement="bottom" title="Tour" class="fas fa-road"/>
                 <label class="app-icon-title">Tour</label>

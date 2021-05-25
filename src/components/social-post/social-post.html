@@ -3,7 +3,7 @@
     <meta http-equiv="content-type" content="text/html; charset=utf-8" />
     <div style="height:20%"></div>
     <div class="modal-container" @click.stop style="height:70%;overflow-y:auto;width:60%;">
-        <span @click="close()" class="close">&times;</span>
+        <span @click="close()" tabindex="0" v-on:keyup.enter="close()" aria-label="close" class="close">&times;</span>
         <div class="modal-header">
                 <h2>{{title}}</h2>
         </div>
