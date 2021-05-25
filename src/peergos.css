@@ -588,17 +588,44 @@ h3 {word-wrap:break-word; white-space:normal;}
   .app-grid-item {
     flex: 1 0 45%;
   }
+  .app-grid-filler-2 {
+      display: block;
+  }
+  .app-grid-filler-3 {
+      display: none;
+  }
+  .app-grid-filler-4 {
+      display: none;
+  }
 }
 
 @media (min-width: 640px) {
   .app-grid-item {
     flex: 1 0 32%;
   }
+  .app-grid-filler-2 {
+      display: none;
+  }
+  .app-grid-filler-3 {
+      display: block;
+  }
+  .app-grid-filler-4 {
+      display: none;
+  }
 }
 
 @media (min-width: 750px) {
   .app-grid-item {
     flex: 1 0 21%;
+  }
+  .app-grid-filler-2 {
+      display: none;
+  }
+  .app-grid-filler-3 {
+      display: none;
+  }
+  .app-grid-filler-4 {
+      display: block;
   }
 }
 
