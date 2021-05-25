@@ -1318,6 +1318,8 @@ module.exports = {
         showProfile: function(showEditForm) {
             if(! showEditForm) {
                 this.closeMenu();
+            } else {
+                this.clearTabNavigation();
             }
             let username = showEditForm ? this.context.username : this.selectedFiles[0].getOwnerName();
             this.displayProfile(username, showEditForm);
@@ -1356,7 +1358,11 @@ module.exports = {
                 }
             });
         },
-
+        closeProfile: function() {
+            this.buildTabNavigation();
+            this.showProfileEditForm = false;
+            this.showProfileViewForm = false
+        },
         showRequestStorage: function() {
             var that = this;
             this.toggleUserMenu();
@@ -1372,10 +1378,15 @@ module.exports = {
             this.showRequestSpace = false
             this.buildTabNavigation();
         },
+        closeSelect: function() {
+            this.showSelect = false;
+            this.buildTabNavigation();
+        },
         showTodoBoard: function() {
             let that = this;
             this.select_placeholder='Todo Board';
             this.select_message='Create or open Todo Board';
+            that.clearTabNavigation();
             that.showSpinner = true;
             that.context.getByPath(this.getContext().username).thenApply(homeDir => {
                 homeDir.get().getChildren(that.context.crypto.hasher, that.context.network).thenApply(function(children){
@@ -1401,6 +1412,7 @@ module.exports = {
                         } else {
                             that.selectedFiles = [todoBoards[foundIndex]];
                         }
+                        that.clearTabNavigation();
                         that.showTodoBoardViewer = true;
                         that.updateHistory("todo", that.getPath(), "");
                     };
@@ -1413,6 +1425,7 @@ module.exports = {
             let that = this;
             this.select_placeholder='filename';
             this.select_message='Create or open Text file';
+            this.clearTabNavigation();
             that.showSpinner = true;
             that.context.getByPath(this.getContext().username).thenApply(homeDir => {
                 homeDir.get().getChildren(that.context.crypto.hasher, that.context.network).thenApply(function(children){
@@ -1437,6 +1450,7 @@ module.exports = {
                                 updatedDir.getChild(select_result, context.crypto.hasher, context.network).thenApply(function(textFileOpt) {
                                     that.showSpinner = false;
                                     that.selectedFiles = [textFileOpt.get()];
+                                    that.clearTabNavigation();
                                     that.showCodeEditor = true;
                                     that.updateHistory("editor", that.getPath(), "");
                                 });
@@ -1458,12 +1472,13 @@ module.exports = {
             });
         },
         showCalendar: function() {
+            this.clearTabNavigation();
             this.importFile = null;
             this.importCalendarPath = null;
             this.owner = this.context.username;
             this.loadCalendarAsGuest = false;
             this.showCalendarViewer = true;
-	    this.updateHistory("calendar", this.getPath(), "");
+	        this.updateHistory("calendar", this.getPath(), "");
         },
         logout: function() {
             this.toggleUserMenu();
@@ -1496,10 +1511,14 @@ module.exports = {
             this.buildTabNavigation();
         },
         showSocialView: function(name) {
+            this.clearTabNavigation();
             this.showSocial = true;
             this.externalChange++;
         },
-
+        closeSocial: function() {
+            this.buildTabNavigation();
+            this.showSocial = false;
+        },
         showTimelineView: function() {
             let that = this;
             if (this.showSpinner) {
@@ -1509,17 +1528,23 @@ module.exports = {
             this.spinnerMessage = "Building your news feed. This could take a minute...";
             const ctx = this.getContext()
             ctx.getSocialFeed().thenCompose(function(socialFeed) {
-		return socialFeed.update().thenApply(function(updated) {
+                return socialFeed.update().thenApply(function(updated) {
                     that.socialFeed = updated;
+                    that.clearTabNavigation();
                     that.showTimeline = true;
                     that.showSpinner = false;
                     that.spinnerMessage = "";
-		    that.updateHistory("timeline", that.getPath(), "");
-		});
+                    that.updateHistory("timeline", that.getPath(), "");
+                });
             }).exceptionally(function(throwable) {
                 that.showMessage(throwable.getMessage());
                 that.showSpinner = false;
             });
+        },
+        closeTimeline: function() {
+            this.showTimeline = false;
+            this.buildTabNavigation();
+            this.forceSharedRefreshWithUpdate++;
         },
         updateSocialFeedInstance: function(updated) {
             this.socialFeed = updated;
@@ -1829,7 +1854,7 @@ module.exports = {
             });
 	    } else if (mimeType === "application/vnd.peergos-todo") {
 		if (this.isSecretLink) {
-                    this.showTodoBoardViewer = true;
+            this.showTodoBoardViewer = true;
 		}
 		this.updateHistory("todo", this.getPath(), filename);
             } else if (mimeType === "application/pdf") {

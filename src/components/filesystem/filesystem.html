@@ -102,7 +102,7 @@
   </share>
   <social 
     v-if="showSocial" 
-    v-on:hide-social="showSocial = false"
+    v-on:hide-social="closeSocial"
     v-on:external-change="externalChange++"
     :displayProfile="displayProfile"
     :data="social" 
@@ -111,7 +111,7 @@
   </social>
   <timeline
     v-if="showTimeline"
-    v-on:hide-timeline="showTimeline = false;forceSharedRefreshWithUpdate++"
+    v-on:hide-timeline="closeTimeline"
     :navigateToAction="navigateToAction"
     :viewAction="viewAction"
     :getFileIconFromFileAndType="getFileIconFromFileAndType"
@@ -180,7 +180,7 @@
   </feedback>
   <profile-edit
           v-if="showProfileEditForm"
-          v-on:hide-profile-edit="showProfileEditForm = false"
+          v-on:hide-profile-edit="closeProfile"
           v-on:update-refresh="forceUpdate++"
           :context="context"
           :profile="profile"
@@ -189,7 +189,7 @@
   </profile-edit>
   <profile-view
           v-if="showProfileViewForm"
-          v-on:hide-profile-view="showProfileViewForm = false"
+          v-on:hide-profile-view="closeProfile"
           :profile="profile">
   </profile-view>
   <gallery
@@ -230,7 +230,7 @@
   </todo-board>
   <select-create
           v-if="showSelect"
-          v-on:hide-select="showSelect = false"
+          v-on:hide-select="closeSelect"
           :select_message= "select_message"
           :select_placeholder="select_placeholder"
           :select_items="select_items"
