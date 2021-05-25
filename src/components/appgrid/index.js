@@ -7,6 +7,9 @@ module.exports = {
     created: function() {
     },
     methods: {
+        iconCount: function() {
+            return 10 + (this.canUpgrade ? 1 : 0);
+        },
         showTour: function() {
             this.$emit("tour");
         },

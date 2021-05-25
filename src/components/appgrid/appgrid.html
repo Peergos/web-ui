@@ -59,7 +59,6 @@
                 <span data-toggle="tooltip" data-placement="bottom" title="Social" class="fa fa-user-plus" style="cursor: pointer;"/>
                 <label class="app-icon-title">Social<span id="pendingSpan" class="pending-badge" v-if="social != null && social.pending.length > 0">{{ social.pending.length }}</span></label>
              </span>
-
         </a>
         <a @click="showTour" class="app-grid-item">
             <span class="app-icon">
@@ -67,5 +66,11 @@
                 <label class="app-icon-title">Tour</label>
             </span>
         </a>
+        <div v-if="this.iconCount() % 2 == 1" class="app-grid-item app-grid-filler-2"></div>
+        <div v-if="this.iconCount() % 3 == 1" class="app-grid-item app-grid-filler-3"></div>
+        <div v-if="this.iconCount() % 3 == 2 || this.iconCount() % 3 == 1" class="app-grid-item app-grid-filler-3"></div>
+        <div v-if="this.iconCount() % 4 == 1" class="app-grid-item app-grid-filler-4"></div>
+        <div v-if="this.iconCount() % 4 == 2 || this.iconCount() % 4 == 1" class="app-grid-item app-grid-filler-4"></div>
+        <div v-if="this.iconCount() % 4 == 3 || this.iconCount() % 4 == 2 || this.iconCount() % 4 == 1" class="app-grid-item app-grid-filler-4"></div>
     </div>
 </div>
