@@ -101,7 +101,8 @@ module.exports = {
             showError:false,
             showSpinner: true,
             spinnerMessage: '',
-            onUpdateCompletion: [] // methods to invoke when current dir is next refreshed
+            onUpdateCompletion: [], // methods to invoke when current dir is next refreshed
+            navigationViaTabKey: false
         };
     },
     props: ["context", "newsignup", "initPath", "openFile", "initiateDownload"],
@@ -1919,13 +1920,16 @@ module.exports = {
         },
 
         navigateOrMenu: function(event, file) {
+            this.navigateOrMenuTab(event, file, false)
+        },
+        navigateOrMenuTab: function(event, file, fromTabKey) {
             if (this.showSpinner) // disable user input whilst refreshing
                 return;
             this.closeMenu();
             if (file.isDirectory()) {
                 this.navigateToSubdir(file.getFileProperties().name);
             } else {
-                this.openMenu(event, file);
+                this.openMenu(event, file, fromTabKey);
             }
         },
 
@@ -2063,7 +2067,7 @@ module.exports = {
                return false;
            }
         },
-        openMenu: function(e, file) {
+        openMenu: function(e, file, fromTabKey) {
             if (this.ignoreEvent) {
                 e.preventDefault();
                 return;
@@ -2078,8 +2082,7 @@ module.exports = {
 		        if (file != null) {
                     this.selectedFiles = [file];
                 }
-                this.viewMenu = true;
-                this.buildTabNavigation();
+                this.setContextMenu(true);
                 Vue.nextTick(function() {
                     var menu = document.getElementById("right-click-menu-profile");
                     if (menu != null)
@@ -2095,15 +2098,36 @@ module.exports = {
                     this.isNotBackground = false;
                     this.selectedFiles = [this.currentDir];
                 }
-                this.viewMenu = true;
-
+                this.setContextMenu(true);
                 Vue.nextTick(function() {
                     var menu = document.getElementById("right-click-menu");
-                    if (menu != null)
-                    menu.focus();
+                    if (menu != null) {
+                        if (fromTabKey === true) {
+                            this.navigationViaTabKey = true;
+                            menu.removeAttribute("tabindex");
+                            let contextMenuItems = document.getElementsByClassName('context-menu-item');
+                            for(var g=0; g < contextMenuItems.length; g++) {
+                                contextMenuItems[g].setAttribute("tabindex", 0);
+                            }
+                            let closeItem = document.getElementById('close-context-menu-item');
+                            if (closeItem) {
+                                closeItem.classList.remove("hidden-context-menu-item");
+                            }
+                        } else {
+                            this.navigationViaTabKey = false;
+                            menu.setAttribute("tabindex", -1);
+                            menu.focus();
+                        }
+                    }
                     this.setMenu(e.y, e.x, "right-click-menu")
                 }.bind(this));
                 e.preventDefault();
+            }
+        },
+        setContextMenu: function(val) {
+            this.viewMenu = val;
+            if (val) {
+                this.buildTabNavigation();
             }
         },
         createTextFile: function() {
@@ -2264,13 +2288,26 @@ module.exports = {
             return this.sharedWithState.isShared(file.getFileProperties().name);
         },
         closeMenu: function(ignoreClearTabNavigation) {
-            this.viewMenu = false;
+            this.setContextMenu(false);
             this.ignoreEvent = false;
             if (ignoreClearTabNavigation) {
                 this.buildTabNavigation();
             } else {
                 this.clearTabNavigation();
             }
+            let menu = document.getElementById('right-click-menu');
+            if (menu) {
+                menu.setAttribute("tabindex", -1);
+                let contextMenuItems = document.getElementsByClassName('context-menu-item');
+                for(var g=0; g < contextMenuItems.length; g++) {
+                    contextMenuItems[g].removeAttribute("tabindex");
+                }
+                let closeItem = document.getElementById('close-context-menu-item');
+                if (closeItem) {
+                    closeItem.classList.add("hidden-context-menu-item");
+                }
+            }
+            this.navigationViaTabKey = false;
         },
         toggleNav : function() {
             if (this.showAppgrid)
