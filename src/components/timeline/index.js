@@ -298,28 +298,26 @@ module.exports = {
             }
             return future;
         },
-        reduceLoadingAllFiles: function(pairs, index, accumulator, future) {
+        loadFiles: function(incomingPairs) {
+            let future = peergos.shared.util.Futures.incomplete();
             let that = this;
-            if (index == pairs.length) {
+            let accumulator = [];
+            let pairs = incomingPairs.filter(pair => !that.alreadySeen(pair.left.path));
+            if (pairs.length == 0) {
                 future.complete(accumulator);
             } else {
-                let currentPair = pairs[index];
-                if (this.alreadySeen(currentPair.left.path)) {
-                    that.reduceLoadingAllFiles(pairs, ++index, accumulator, future);
-                } else {
+                pairs.forEach(currentPair => {
                     that.loadFile(currentPair.left.path, currentPair.right).thenApply(result => {
                         that.addToSeen(currentPair.left.path);
                         let socialPost = result ? result.socialPost : null;
                         let fullPath = currentPair.left.path.startsWith("/") ? currentPair.left.path : "/" + currentPair.left.path;
                         accumulator = accumulator.concat({entry: currentPair.left, path: fullPath, socialPost: socialPost, file: currentPair.right});
-                        that.reduceLoadingAllFiles(pairs, ++index, accumulator, future);
+                        if (accumulator.length == pairs.length) {
+                            future.complete(accumulator);
+                        }
                     });
-                }
+                });
             }
-        },
-        loadFiles: function(pairs) {
-            let future = peergos.shared.util.Futures.incomplete();
-            this.reduceLoadingAllFiles(pairs, 0, [], future);
             return future;
         },
         addToSeen: function(path) {
