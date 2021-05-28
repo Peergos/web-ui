@@ -1536,13 +1536,9 @@ module.exports = {
             this.showTour = false
         },
         showSocialView: function(name) {
-            let that = this;
-            this.showSpinner = true;
             this.clearTabNavigation();
-            this.updateSocial(function(res) {
-                that.showSpinner = false;
-                that.showSocial = true;
-            });
+            this.showSocial = true;
+            this.externalChange++;
         },
         closeSocial: function() {
             this.buildTabNavigation();
