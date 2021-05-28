@@ -2675,7 +2675,7 @@ function changeMonthlyBy(startDate) {
     let val = "";
     var updatedRRule = rrule;
     if (by == "BYDAY") {
-        val = "1MO";
+        val = calculateCurrentMonthlyByDay(startDate);
         updatedRRule = removePart("BYMONTHDAY", rrule);
     } else if(by == "BYMONTHDAY") {
         val = startDate.date();
@@ -2683,6 +2683,23 @@ function changeMonthlyBy(startDate) {
     }
     rrule = updatedRRule + by + "=" + val;
     processRRULE(startDate);
+}
+function calculateCurrentMonthlyByDay(startDate) {
+
+    let dayOfMonth = startDate.date();
+    let dayOfWeek = startDate.day();
+    let localDate = startDate.clone();
+    let counter = 1;
+    let current = startDate.clone().subtract(dayOfMonth-1, 'days');
+    while (current.isBefore(localDate)) {
+        let currentDayOfWeek = current.day();
+        let localDateDayOfWeek = localDate.day();
+        if (currentDayOfWeek == localDateDayOfWeek) {
+            counter++;
+        }
+        current = current.add(1, 'days');
+    }
+    return "" + counter + byDayLabelParts[dayOfWeek];
 }
 function removePart(paramName, recurringRule) {
     let remainingPartsBuffer = "";
@@ -3242,7 +3259,7 @@ function processRRULE(startDate) {
             document.getElementById('monthly-frequency-' + interval).selected = true;
             if (hasByDay) {
                 initSelect('monthly-day', "BYDAY", function() {
-                    return "1MO";
+                    return calculateCurrentMonthlyByDay(startDate);
                 });
             } else if (hasByDate) {
                 initSelect('monthly-date', "BYMONTHDAY", function() {
@@ -3291,7 +3308,7 @@ function processRRULE(startDate) {
             });
             if (hasByDay) {
                 initSelect('monthly-day', "BYDAY", function() {
-                    return "1MO";
+                    return calculateCurrentMonthlyByDay(startDate);
                 });
             } else if (hasByDate) {
                 initSelect('monthly-date', "BYMONTHDAY", function() {
