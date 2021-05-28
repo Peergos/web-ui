@@ -396,19 +396,26 @@ module.exports = {
                 var loadCount = 0;
                 refs.forEach(ref => {
                     that.loadFileFromRef(ref).thenApply(result => {
-                        that.addToSeen(ref.path);
-                        let socialPost = result.socialPost;
-                        let fullPath = ref.path.startsWith("/") ? ref.path : "/" + ref.path;
-                        accumulator = accumulator.concat({cap: ref.cap, path: fullPath, socialPost: socialPost, file: result.file});
-                        let references = socialPost.comments.toArray([]);
-                        let future2 = peergos.shared.util.Futures.incomplete();
-                        that.loadAllCommentPosts(references.slice(), future2);
-                        future2.thenApply(result => {
+                        if (result == null) {
                             loadCount++;
                             if (loadCount == refs.length) {
-                                future.complete(accumulator.concat(result));
+                                future.complete(accumulator);
                             }
-                        });
+                        } else {
+                            that.addToSeen(ref.path);
+                            let socialPost = result.socialPost;
+                            let fullPath = ref.path.startsWith("/") ? ref.path : "/" + ref.path;
+                            accumulator = accumulator.concat({cap: ref.cap, path: fullPath, socialPost: socialPost, file: result.file});
+                            let references = socialPost.comments.toArray([]);
+                            let future2 = peergos.shared.util.Futures.incomplete();
+                            that.loadAllCommentPosts(references.slice(), future2);
+                            future2.thenApply(result => {
+                                loadCount++;
+                                if (loadCount == refs.length) {
+                                    future.complete(accumulator.concat(result));
+                                }
+                            });
+                        }
                     });
                 });
             }
@@ -424,7 +431,7 @@ module.exports = {
                         future.complete(result);
                     });
                 } else {
-                    future.complete(result);
+                    future.complete(null);
                 }
             });
             return future;
@@ -462,19 +469,26 @@ module.exports = {
                 sharedPosts.forEach(sharedPost => {
                     let post = sharedPost.socialPost;
                     that.loadFileFromRef(post.parent.ref).thenApply(result => {
-                        let fullPath = post.parent.ref.path.startsWith("/") ? post.parent.ref.path : "/" + post.parent.ref.path;
-                        that.addToSeen(fullPath);
-                        let sharedPost = {cap: post.parent.ref.cap, path: fullPath, socialPost: result.socialPost, file: result.file};
-                        accumulator = accumulator.concat(sharedPost);
-
-                        let future2 = peergos.shared.util.Futures.incomplete();
-                        that.loadAllParentPosts([sharedPost], future2);
-                        future2.thenApply(result => {
+                        if (result == null) {
                             loadCount++;
                             if (loadCount == sharedPosts.length) {
-                                future.complete(accumulator.concat(result));
+                                future.complete(accumulator);
                             }
-                        });
+                        } else {
+                            let fullPath = post.parent.ref.path.startsWith("/") ? post.parent.ref.path : "/" + post.parent.ref.path;
+                            that.addToSeen(fullPath);
+                            let sharedPost = {cap: post.parent.ref.cap, path: fullPath, socialPost: result.socialPost, file: result.file};
+                            accumulator = accumulator.concat(sharedPost);
+
+                            let future2 = peergos.shared.util.Futures.incomplete();
+                            that.loadAllParentPosts([sharedPost], future2);
+                            future2.thenApply(result => {
+                                loadCount++;
+                                if (loadCount == sharedPosts.length) {
+                                    future.complete(accumulator.concat(result));
+                                }
+                            });
+                        }
                     });
                 });
             }
