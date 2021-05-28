@@ -127,9 +127,6 @@ module.exports = {
 		this.updateUsage();
 		this.updateQuota();
 		const that = this;
-		newContext.getPendingSpaceRequests().thenApply(reqs => {
-		    that.isAdmin = true;
-		});
 	    }
         },
 
@@ -220,13 +217,14 @@ module.exports = {
             this.updateSocial();
             this.updateUsage();
             this.updateQuota();
-            this.context.getPendingSpaceRequests().thenApply(reqs => {
-                that.isAdmin = true;
-            });
             this.context.getPaymentProperties(false).thenApply(function(paymentProps) {
                 if (paymentProps.isPaid()) {
                     that.paymentProperties = paymentProps;
-                }
+                } else
+                    that.context.getPendingSpaceRequests().thenApply(reqs => {
+                        if (reqs.toArray([]).length > 0)
+                            that.isAdmin = true;
+                    });
             });
         }
         this.showPendingServerMessages();
