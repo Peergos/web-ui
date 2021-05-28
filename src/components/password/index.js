@@ -3,7 +3,7 @@ module.exports = {
     data: function() {
         return {
             existing: "",
-            password1: "",
+            password: "",
             password2: "",
             passwordFieldType: "password",
 	    password2FieldType: "password",
@@ -30,7 +30,7 @@ module.exports = {
             if (inFirstField && !this.checkPassword)
                 return;
             // after one failed attempt update the status after each keystroke
-            var passwd = this.password1;
+            var passwd = this.password;
             var index = this.commonPasswords.indexOf(passwd);
             var suffix = ["th", "st", "nd", "rd", "th", "th", "th", "th", "th", "th"][(index+1) % 10];
 	    console.log(this.username);
@@ -56,13 +56,13 @@ module.exports = {
         },
 
 	updatePassword: function () {
-            if(this.existing.length == 0 || this.password1.length == 0 || this.password2.length == 0) {
+            if(this.existing.length == 0 || this.password.length == 0 || this.password2.length == 0) {
                 this.isError = true;
                 this.errorClass = "has-error has-feedback alert alert-danger";
                 this.error = "All fields must be populated!";
             } else {
-                if (this.password1 == this.password2) {
-                    this.changepassword(this.existing, this.password1);
+                if (this.password == this.password2) {
+                    this.changepassword(this.existing, this.password);
                     this.show = false;
                 } else {
                     this.isError = true;
