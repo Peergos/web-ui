@@ -3,6 +3,7 @@ module.exports = {
     data: function() {
         return {
             view: "appgrid",
+            context: null,
             contextUpdates: 0,
             path: [],
             searchPath: null,
@@ -105,9 +106,10 @@ module.exports = {
             navigationViaTabKey: false
         };
     },
-    props: ["context", "newsignup", "initPath", "openFile", "initiateDownload"],
+    props: ["initContext", "newsignup", "initPath", "openFile", "initiateDownload"],
     created: function() {
         console.debug('Filesystem module created!');
+        this.context = this.initContext;
         this.showAppgrid = !this.isSecretLink;
         if (this.isSecretLink)
             this.view = "files";
