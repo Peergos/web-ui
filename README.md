@@ -9,7 +9,7 @@ Requires [ant](http://ant.apache.org/) and Java 11.
 
 NB: all other dependencies are checked into the repo, or into the submodule peergos repo.
 
-### eg. on debian/ubuntu derivatives
+### debian/ubuntu derivatives
 
 ```
 sudo apt install openjdk-11-jdk ant
