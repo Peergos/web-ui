@@ -14,7 +14,12 @@ NB: all other dependencies are checked into the repo, or into the submodule peer
 ```
 sudo apt install openjdk-11-jdk ant
 ```
-
+#### On macOS
+```shell
+brew install ant # installs openjdk as a dependency
+ant -version
+Apache Ant(TM) version 1.10.8 compiled on May 10 2020
+```
 ### project setup
 
 To get started following script will:
