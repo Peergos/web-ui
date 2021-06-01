@@ -4,7 +4,6 @@ module.exports = {
         return {
             view: "appgrid",
             context: null,
-            contextUpdates: 0,
             path: [],
             searchPath: null,
             currentDir: null,
@@ -121,7 +120,6 @@ module.exports = {
     watch: {
         // manually encode currentDir dependencies to get around infinite dependency chain issues with async-computed methods
         context: function(newContext, oldContext) {
-	    this.contextUpdates++;
             this.updateCurrentDir();
 	    if (newContext != null && newContext.username != null) {
 		this.updateUsage();
@@ -673,7 +671,6 @@ module.exports = {
             this.sharedWithData = {read_shared_with_users:read_usernames, edit_shared_with_users:edit_usernames};
         },
         getContext: function() {
-            var x = this.contextUpdates;
             return this.context;
         },
 
@@ -1563,6 +1560,7 @@ module.exports = {
                 });
             }).exceptionally(function(throwable) {
                 that.showMessage(throwable.getMessage());
+                that.spinnerMessage = "";
                 that.showSpinner = false;
             });
         },
@@ -1764,21 +1762,9 @@ module.exports = {
                 this.normalSortOrder = !this.normalSortOrder;
             this.sortBy = prop;
         },
-
-        changePassword: function(oldPassword, newPassword) {
-            console.log("Changing password");
-            this.showSpinner = true;
-            var that = this;
-            this.getContext().changePassword(oldPassword, newPassword).thenApply(function(newContext){
-                this.contextUpdates++;
-                this.context = newContext;
-                this.showMessage("Password changed!");
-                that.onUpdateCompletion.push(function() {
-                    that.showSpinner = false;
-                });
-            }.bind(this));
+        updateContext: function(newContext) {
+            this.context = newContext;
         },
-
         deleteAccount: function(password) {
             console.log("Deleting Account");
             this.showSpinner = true;
