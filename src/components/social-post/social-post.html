@@ -7,6 +7,7 @@
         <div class="modal-header">
                 <h2>{{title}}</h2>
         </div>
+        <spinner v-if="showSpinner"></spinner>
         <div class="modal-body">
             <div v-if="progressMonitors.length>0" class="progressholder">
                 <progressbar
@@ -16,7 +17,6 @@
                         :done="progress.done"
                         :max="progress.max" />
             </div>
-            <spinner v-if="showSpinner"></spinner>
             <div id="social-post-main">
                 <p>
                     <span>

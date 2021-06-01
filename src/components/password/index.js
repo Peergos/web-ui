@@ -11,11 +11,15 @@ module.exports = {
             checkPassword: false,
             error: "",
             isError:false,
-            errorClass: ""
+            errorClass: "",
+            showSpinner: false,
+            spinnerMessage: '',
+            currentContext: null
         };
     },
-    props: ['changepassword', 'username'],
+    props: ['context', 'updateContext', 'messages'],
     created: function() {
+        this.currentContext = this.context;
     },
     methods: {
         togglePassword1: function() {
@@ -33,8 +37,8 @@ module.exports = {
             var passwd = this.password;
             var index = this.commonPasswords.indexOf(passwd);
             var suffix = ["th", "st", "nd", "rd", "th", "th", "th", "th", "th", "th"][(index+1) % 10];
-	    console.log(this.username);
-            if (passwd === this.username) {
+	    console.log(this.currentContext.username);
+            if (passwd === this.currentContext.username) {
                 this.checkPassword = true;
                 this.isError = true;
                 this.errorClass = "has-error has-feedback alert alert-danger";
@@ -62,14 +66,33 @@ module.exports = {
                 this.error = "All fields must be populated!";
             } else {
                 if (this.password == this.password2) {
-                    this.changepassword(this.existing, this.password);
-                    this.show = false;
+                    this.showSpinner = true;
+                    let that = this;
+                    this.currentContext.changePassword(this.existing, this.password).thenApply(function(newContext){
+                        that.currentContext = newContext;
+                        that.showMessage("Password changed!");
+                        that.showSpinner = false;
+                        that.updateContext(newContext);
+                        that.close();
+                    }).exceptionally(function(throwable) {
+                        that.isError = true;
+                        that.errorClass = "has-error has-feedback alert alert-danger";
+                        that.error = throwable.getMessage();
+                        that.showSpinner = false;
+                    });
                 } else {
                     this.isError = true;
                     this.errorClass = "has-error has-feedback alert alert-danger";
                     this.error = "Passwords do not match!";
                 }
             }
+        },
+        showMessage: function(title, message) {
+            this.messages.push({
+                title: title,
+                body: message,
+                show: true
+            });
         },
         close: function () {
             this.$emit("hide-password");
