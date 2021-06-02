@@ -3,61 +3,45 @@ The Web interface for Peergos
 
 # building
 
-## install 
+## Setup
 
 Requires [ant](http://ant.apache.org/) and Java 11.
 
 NB: all other dependencies are checked into the repo, or into the submodule peergos repo.
 
-### debian/ubuntu derivatives
+### Debian/Ubuntu/Mint
 
 ```
 sudo apt install openjdk-11-jdk ant
 ```
-#### On macOS
+### MacOS
 ```shell
 brew install ant # installs openjdk as a dependency
 ant -version
 Apache Ant(TM) version 1.10.8 compiled on May 10 2020
 ```
-### project setup
-
-To get started following script will:
-* checkout the project 
-* build the server
-* build the web-ui
-* start a local Peergos server on http://localhost:8000 for web-ui development in which all writes are local on an ephemeral instance
-
-```
-git clone https://github.com/peergos/web-ui.git
-cd web-ui
-ant update_and_run
-```
+## Running
 
 ### Server
-
 ```
-# To update the local server deployment (assumes Peergos is in ../Peergos)
-ant update_server
-
-# To run the server (after updating)
-ant run
-
-# or in a single command
+# Build and run an ephemeral local Peergos server on http://localhost:8000
 ant update_and_run
+
+# or in dev mode - this disables CSP headers and vue template precompilation
+ant update_and_run_dev
 ```
 
 ### Web Interface
 ```
-# This builds our dependencies
-ant vendor
-
-# This builds our files
+# This builds the ui in prod mode
 ant ui
 
-# This continuously builds our files whenever a file changes or is added
+# This builds the ui in dev mode
+ant ui_dev
+
+# This rebuilds the ui in dev mode whenever a file changes or is added in assets, vendor or src
 ant watch_ui
 ```
 
-##  Browser-based tests
+##  Browser tests
 [README](browser_tests/README.md) 
