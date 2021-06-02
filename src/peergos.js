@@ -38,7 +38,7 @@ var Timeline        = require('./components/timeline');
 var Todo            = require('./components/todo');
 var Tour            = require('./components/tour');
 var Confirm         = require('./components/confirm');
-var Warning         = require('./components/warning');
+var Warning         = require('./components/warning.vue');
 
 // Loading components
 Vue.component('account', Vue.extend(Account));
