@@ -1,7 +1,9 @@
 # peergos-ui-web
 The Web interface for Peergos
 
-We avoid JS based build tools and managers like npm, webpack etc. to maintain greater control over the build process. This allows us to achieve cross-platform reproducible builds. All our assets are vendored and served from a single domain, for improved privacy, security and reliability. We use a very simple custom replacement for webpack written in Java which can handle vue components, called [JPack](https://github.com/ianopolous/jpack). 
+We avoid JS based build tools and managers like npm, webpack etc. to maintain greater control over the build process. This allows us to achieve cross-platform reproducible builds. The one exception to this is precompiling vue js templates which is done using vue-template-compiler run in a vendored copy of [GraalJS](https://www.graalvm.org/reference-manual/js/).
+
+All our assets are vendored and served from a single domain, for improved privacy, security and reliability. We use a very simple custom replacement for webpack written in Java which can handle vue components, called [JPack](https://github.com/ianopolous/jpack). 
 
 Most of the complex logic around encryption etc. is implemented in Java in the peergos [submodule](https://github.com/peergos/peergos). This is all cross-compiled to JS using [GWT](http://www.gwtproject.org/) during the *compile_server* target. We plan to upgrade this to [J2CL](https://github.com/google/j2cl) when time and resources permit. Components are implemented as Vue 2 components in [src/components](https://github.com/peergos/web-ui/tree/master/src/components). 
 
