@@ -110,19 +110,36 @@
     </exec>
   </target>
 
+  <target name="js_dev" description="bundle all our vuejs components into js without precompiling vue templates">
+    <exec executable="java" dir="." failonerror="true" >
+      <arg value="-jar"/>
+      <arg value="JPack.jar"/>
+      <arg value="-root"/>
+      <arg value="${ui_src}/peergos.js"/>
+      <arg value="-out"/>
+      <arg value="${ui}/js/peergos.js"/>
+      <arg value="-compile-templates"/>
+      <arg value="false"/>
+    </exec>
+  </target>
+
   <target name="ui" depends="init,ui_dev_vendor,assets,css,js" description="build our part of the ui">
+  </target>
+
+  <target name="ui_dev" depends="init,ui_dev_vendor,assets,css,js_dev" description="build our part of the ui in dev mode">
   </target>
 
   <taskdef name="watch"
            classname="org.apache.tools.ant.taskdefs.optional.watch.WatchTask"
            classpath="lib/watch-task-1.0.jar" />
 
-  <target name="watch_ui" depends="ui_dev_vendor,ui">
+  <target name="watch_ui" depends="ui_dev_vendor,ui_dev">
     <watch>
       <when>
-        <target name="ui"/>
+        <target name="ui_dev"/>
         <fileset dir="${ui_src}" includes="**/*"/>
 	<fileset dir="${assets}" includes="**/*"/>
+        <fileset dir="${vendor}" includes="**/*"/>
       </when>
     </watch>
   </target>
@@ -212,7 +229,7 @@ Javac-Version: ${javac.version}</echo>
       <arg value="-jar"/>
       <arg value="Peergos.jar"/>
       <arg value="pki-init"/>
-      <arg value="-logToConsole"/>
+      <arg value="-log-to-console"/>
       <arg value="true"/>
       <arg value="-useIPFS"/>
       <arg value="false"/>
@@ -228,10 +245,6 @@ Javac-Version: ${javac.version}</echo>
       <arg value="testpkipassword"/>
       <arg value="pki.keyfile.password"/>
       <arg value="testpkifilepassword"/>
-      <arg value="mutable-pointers-file"/>
-      <arg value="mutable.sql"/>
-      <arg value="social-sql-file"/>
-      <arg value="social.sql"/>
       <arg value="default-quota"/>
       <arg value="157286400"/>
       <arg value="PEERGOS_PATH"/>
@@ -251,9 +264,66 @@ Javac-Version: ${javac.version}</echo>
       <arg value="/ip4/127.0.0.1/tcp/6000"/>
       !-->
     </exec>
-  </target> 
+  </target>
+
+  <target name="run_dev" depends="">
+    <echo>
+***********************************
+***********************************
+***********************************
+      Starting Peergos Server
+           Please wait...
+***********************************
+***********************************
+***********************************
+    </echo>     
+    <exec executable="java" dir="${server}">
+      <arg value="-jar"/>
+      <arg value="Peergos.jar"/>
+      <arg value="pki-init"/>
+      <arg value="-log-to-console"/>
+      <arg value="true"/>
+      <arg value="-useIPFS"/>
+      <arg value="false"/>
+      <arg value="-webroot"/>
+      <arg value="webroot"/>
+      <arg value="-webcache"/>
+      <arg value="false"/>
+      <arg value="-max-users"/>
+      <arg value="5"/>
+      <arg value="peergos.password"/>
+      <arg value="testpassword"/>
+      <arg value="pki.keygen.password"/>
+      <arg value="testpkipassword"/>
+      <arg value="pki.keyfile.password"/>
+      <arg value="testpkifilepassword"/>
+      <arg value="default-quota"/>
+      <arg value="157286400"/>
+      <arg value="PEERGOS_PATH"/>
+      <arg value="${server}/.peergos"/>
+      <arg value="-admin-usernames"/>
+      <arg value="peergos"/>
+      <arg value="-collect-metrics"/>
+      <arg value="true"/>
+      <arg value="-enable-wait-list"/>
+      <arg value="true"/>
+      <arg value="-max-daily-signups"/>
+      <arg value="1000"/>
+      <arg value="-generate-token"/>
+      <arg value="true"/>
+      <arg value="-include-csp"/>
+      <arg value="false"/>
+      <!-- uncomment these to test payments!
+      <arg value="quota-admin-address"/>
+      <arg value="/ip4/127.0.0.1/tcp/6000"/>
+      !-->
+    </exec>
+  </target>
 
   <target name="update_and_run" depends="peergos_submodule_sync,dist,run">
+  </target>
+
+  <target name="update_and_run_dev" depends="peergos_submodule_sync,dist,run_dev">
   </target>
 
   <target name="test" depends="">
