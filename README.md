@@ -1,7 +1,7 @@
 # peergos-ui-web
 The Web interface for Peergos
 
-We avoid JS based build tools and managers like npm, webpack etc. to maintain greater control over the build process. This allows us to achieve cross-platform reproducible builds. The one exception to this is precompiling vue js templates which is done using vue-template-compiler run in a vendored copy of [GraalJS](https://www.graalvm.org/reference-manual/js/).
+We avoid JS based build tools and managers like npm, webpack etc. to maintain greater control over the build process. This allows us to achieve cross-platform reproducible builds and future proof our build system (we should be able to build any commit any number of years into the future with only a JVM). The one exception to this is precompiling vue.js templates, which is done using vue-template-compiler run in a vendored copy of [GraalJS](https://www.graalvm.org/reference-manual/js/).
 
 All our assets are vendored and served from a single domain, for improved privacy, security and reliability. We use a very simple custom replacement for webpack written in Java which can handle vue components, called [JPack](https://github.com/ianopolous/jpack). 
 
