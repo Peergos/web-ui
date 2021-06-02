@@ -1,7 +1,7 @@
 # peergos-ui-web
 The Web interface for Peergos
 
-# building
+We avoid JS based build tools and managers like npm, webpack etc. to maintain greater control over the build process. This allows us to achieve cross-platform reproducible builds. All our assets are vendored and served from a single domain, for improved privacy, security and reliability. We use a very simple custom replacement for webpack written in Java which can handle vue components, called [JPack](https://github.com/ianopolous/jpack). 
 
 ## Setup
 
