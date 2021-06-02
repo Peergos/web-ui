@@ -1,6 +1,47 @@
+<template>
+<div class="container form-signin">
+    <spinner v-if="showSpinner" :message="spinnerMessage"></spinner>
+    <div class="alert alert-danger" v-if="displayDemoWarning()">
+      <strong>WARNING:</strong>This is a demo server and all data will be occasionally cleared.
+      <br/>
+      <br/>
+      If you want to create a <i>permanent</i> account,
+      <br/>
+      please go to our <a href="https://alpha.peergos.net?signup=true">alpha network</a>
+    </div>
+    <h2>Peergos</h2>
+    <center>
+        <img src="images/logo.png" class="image">
+    </center>
+    <div>
+        <h4>Please log in</h4>
+        <div class="form-group flex-container">
+            <input type="text" name="username" id="username" class="form-control flex-grow" style="text-transform: lowercase;" v-model="username" placeholder="Username">
+        </div>
+        <div class="form-group flex-row">
+          <input :type="passwordFieldType" name="password" class="password form-control flex-grow" v-model="password" placeholder="Password" v-on:keyup.enter="login()">
+	  <div v-bind:class="['fa', 'password' == passwordFieldType ? 'fa-eye password-eye' : 'fa-eye-slash password-eye-slash']" @click="togglePassword()"></div>
+        </div>
+        <button @click="login()" class="btn btn-large btn-block btn-success">Login</button>
+        <center>
+            <h4><i>or</i></h4>
+        </center>
+        <div>
+            <button @click="showSignup()" class="btn btn-large btn-block btn-primary">Sign Up</button>
+        </div>
+    </div>
+    <error
+        v-if="showError"
+        v-on:hide-error="showError = false"
+        :title="errorTitle" 
+        :body="errorBody">
+    </error>
+</div>
+</template>
+
+<script>
 var isDemo = window.location.hostname == "demo.peergos.net";
 module.exports = {
-    template: require('login.html'),
     data: function() {
         return {
             username: "",
@@ -76,3 +117,4 @@ module.exports = {
         }
     }
 };
+</script>

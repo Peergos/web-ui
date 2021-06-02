@@ -107,7 +107,18 @@
       <arg value="${ui_src}/peergos.js"/>
       <arg value="-out"/>
       <arg value="${ui}/js/peergos.js"/>
+      <arg value="-css-out"/>
+      <arg value="tmp.css"/>
     </exec>
+    <concat destfile="peergos.css">
+      <fileset dir="${ui}/css/" includes="peergos.css"/>
+      <fileset dir="." includes="tmp.css"/>
+    </concat>
+    <copy todir="${ui}/css/" overwrite="true">
+      <fileset dir="." includes="peergos.css"/>
+    </copy>
+    <delete file="tmp.css"/>
+    <delete file="peergos.css"/>
   </target>
 
   <target name="js_dev" description="bundle all our vuejs components into js without precompiling vue templates">
@@ -120,7 +131,18 @@
       <arg value="${ui}/js/peergos.js"/>
       <arg value="-compile-templates"/>
       <arg value="false"/>
+      <arg value="-css-out"/>
+      <arg value="tmp.css"/>
     </exec>
+    <concat destfile="peergos.css">
+      <fileset dir="${ui}/css/" includes="peergos.css"/>
+      <fileset dir="." includes="tmp.css"/>
+    </concat>
+    <copy todir="${ui}/css/" overwrite="true">
+      <fileset dir="." includes="peergos.css"/>
+    </copy>
+    <delete file="tmp.css"/>
+    <delete file="peergos.css"/>
   </target>
 
   <target name="ui" depends="init,ui_dev_vendor,assets,css,js" description="build our part of the ui">
