@@ -40,7 +40,7 @@ ant update_and_run_dev
 # This builds the ui in prod mode
 ant ui
 
-# This builds the ui in dev mode
+# This builds the ui in dev mode, this only works with the server in dev mode, otherwise vue is blocked by our CSP. 
 ant ui_dev
 
 # This rebuilds the ui in dev mode whenever a file changes or is added in assets, vendor or src
