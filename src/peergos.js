@@ -12,7 +12,7 @@ var Filesystem      = require('./components/filesystem');
 var Fingerprint     = require('./components/fingerprint');
 var Gallery         = require('./components/gallery');
 var Hex             = require('./components/viewers/hex');
-var Login           = require('./components/login');
+var Login           = require('./components/login.vue');
 var Message         = require('./components/message');
 var Modal           = require('./components/modal');
 var Password        = require('./components/password');
@@ -38,7 +38,7 @@ var Timeline        = require('./components/timeline');
 var Todo            = require('./components/todo');
 var Tour            = require('./components/tour');
 var Confirm         = require('./components/confirm');
-var Warning         = require('./components/warning');
+var Warning         = require('./components/warning.vue');
 
 // Loading components
 Vue.component('account', Vue.extend(Account));
