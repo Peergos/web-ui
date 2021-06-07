@@ -253,7 +253,7 @@ module.exports = {
             let path = this.currentSocialPostEntry.path;
             let cap = this.currentSocialPostEntry.cap;
             this.generateContentHash().thenApply(function(hash) {
-                let parent = new peergos.shared.social.SocialPost.Ref(path, cap, hash);
+                let parent = new peergos.shared.display.FileRef(path, cap, hash);
                 that.uploadAllMedia().thenApply(function(mediaResponseList) {
                     if (mediaResponseList == null) {
                        that.showSpinner = false;

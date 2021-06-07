@@ -196,7 +196,7 @@
                                         <i class="fa fa-paper-plane" aria-hidden="true"></i>
                                     </button>
                                     <input type="file" id="uploadInput" @change="addAttachment" style="display:none;" accept="audio/*,video/*,image/*" />
-                                    <button :disabled="selectedConversationId == null || savingNewMsg" class="chat-btn btn-success attachment-btn" type="button" onclick="document.getElementById('uploadInput').click()">
+                                    <button :disabled="selectedConversationId == null || savingNewMsg" class="chat-btn btn-success attachment-btn" type="button" @click="launchUploadDialog()">
                                         <i class="fa fa-paperclip" aria-hidden="true"></i>
                                     </button>
                                 </span>
