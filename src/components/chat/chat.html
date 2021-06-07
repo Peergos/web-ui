@@ -103,7 +103,7 @@
                                 <div v-if="message.parentMessage == null">
                                     <div v-if="!message.isStatusMsg && message.sender != context.username" class="received-message-container">
                                         <div class="received-message">
-                                            <center v-if="message.file != null && message.hasThumbnail"><img v-on:click="view(message)" v-bind:src="message.thumbnail" style="cursor: pointer; margin-bottom: 10px;"/></center>
+                                            <center v-if="message.file != null && message.hasThumbnail"><img v-on:click="view(message)" v-bind:src="message.thumbnail" style="cursor: pointer; margin-bottom: 10px; margin-top: 10px;"/></center>
                                             <center v-if="message.file != null && !message.hasThumbnail"><span style="height:100px;cursor: pointer" v-on:click="view(message)" v-bind:class="['file', 'fa', getFileIconFromFileAndType(message.file, message.fileType), 'picon-timeline']"> </span></center>
                                             <p v-if="message.contents.length > 0">{{message.contents}}</p>
                                             <span class="chat-message-info"><i class="fa fa-reply" @click="reply(message)" style="cursor: pointer"></i> | {{message.sender}} | {{formatDateTime(message.sendTime)}} <i v-if="message.edited && !message.deleted">&nbsp; [edited]</i></span>
@@ -111,7 +111,7 @@
                                     </div>
                                     <div v-if="!message.isStatusMsg && message.sender == context.username" class="sent-message-container">
                                         <div class="sent-message">
-                                            <center v-if="message.file != null && message.hasThumbnail"><img v-on:click="view(message)" v-bind:src="message.thumbnail" style="cursor: pointer; margin-bottom: 10px;"/></center>
+                                            <center v-if="message.file != null && message.hasThumbnail"><img v-on:click="view(message)" v-bind:src="message.thumbnail" style="cursor: pointer; margin-bottom: 10px; margin-top: 10px;"/></center>
                                             <center v-if="message.file != null && !message.hasThumbnail"><span style="height:100px;cursor: pointer" v-on:click="view(message)" v-bind:class="['file', 'fa', getFileIconFromFileAndType(message.file, message.fileType), 'picon-timeline']"> </span></center>
                                             <p v-if="message.contents.length > 0">{{message.contents}}</p>
                                             <span class="chat-message-info"><i class="fa fa-reply" @click="reply(message)" style="cursor: pointer"></i> <b>|</b> {{message.sender}} <b>|</b>  {{formatDateTime(message.sendTime)}} <b v-if="!message.deleted">|</b> <i v-if="!message.deleted" class="fa fa-edit" @click="edit(message)" style="cursor: pointer"></i> <b v-if="!message.deleted">|</b> <i v-if="!message.deleted" class="fa fa-trash-alt" @click="deleteMessage(message)" style="cursor: pointer"></i><i v-if="message.edited && !message.deleted">&nbsp; [edited]</i></span>
@@ -123,7 +123,7 @@
                                         <div class="parent-message">
                                             <div v-bind:class="[message.parentMessage.sender == context.username ? 'sent-message-container' : 'received-message-container']">
                                                 <div v-bind:class="['parent-message', message.parentMessage.sender == context.username ? 'sent-message' : 'received-message']">
-                                                    <center v-if="message.parentMessage.file != null && message.parentMessage.hasThumbnail"><img v-on:click="view(message.parentMessage)" v-bind:src="message.parentMessage.thumbnail" style="cursor: pointer; margin-bottom: 10px;"/></center>
+                                                    <center v-if="message.parentMessage.file != null && message.parentMessage.hasThumbnail"><img v-on:click="view(message.parentMessage)" v-bind:src="message.parentMessage.thumbnail" style="cursor: pointer; margin-bottom: 10px; margin-top: 10px;"/></center>
                                                     <center v-if="message.parentMessage.file != null && !message.parentMessage.hasThumbnail"><span style="height:100px;cursor: pointer" v-on:click="view(message.parentMessage)" v-bind:class="['file', 'fa', getFileIconFromFileAndType(message.parentMessage.file, message.parentMessage.fileType), 'picon-timeline']"> </span></center>
                                                     <p v-if="message.parentMessage.contents.length > 0" v-bind:class="[message.parentMessage.sender == context.username ? 'reply-to-own-message' : 'reply-to-others-message']">{{message.parentMessage.contents}}</p>
                                                     <span class="chat-message-info">Original message: {{message.parentMessage.sender}} | {{formatDateTime(message.parentMessage.sendTime)}}  <i v-if="message.parentMessage.edited && !message.parentMessage.deleted">&nbsp; [edited]</i></span>
@@ -131,7 +131,7 @@
                                             </div>
                                             <div class="received-message-container">
                                                 <div class="received-message">
-                                                    <center v-if="message.file != null && message.hasThumbnail"><img v-on:click="view(message)" v-bind:src="message.thumbnail" style="cursor: pointer; margin-bottom: 10px;"/></center>
+                                                    <center v-if="message.file != null && message.hasThumbnail"><img v-on:click="view(message)" v-bind:src="message.thumbnail" style="cursor: pointer; margin-bottom: 10px; margin-top: 10px;"/></center>
                                                     <center v-if="message.file != null && !message.hasThumbnail"><span style="height:100px;cursor: pointer" v-on:click="view(message)" v-bind:class="['file', 'fa', getFileIconFromFileAndType(message.file, message.fileType), 'picon-timeline']"> </span></center>
                                                     <p v-if="message.contents.length > 0">{{message.contents}}</p>
                                                     <span class="chat-message-info"><i class="fa fa-reply" @click="reply(message)" style="cursor: pointer"></i> | {{message.sender}} | {{formatDateTime(message.sendTime)}} <i v-if="message.edited && !message.deleted">&nbsp; [edited]</i></span>
@@ -143,7 +143,7 @@
                                         <div class="parent-message">
                                             <div v-bind:class="[message.parentMessage.sender == context.username ? 'sent-message-container' : 'received-message-container']">
                                                 <div v-bind:class="['parent-message', message.parentMessage.sender == context.username ? 'sent-message' : 'received-message']">
-                                                    <center v-if="message.parentMessage.file != null && message.parentMessage.hasThumbnail"><img v-on:click="view(message.parentMessage)" v-bind:src="message.parentMessage.thumbnail" style="cursor: pointer; margin-bottom: 10px;"/></center>
+                                                    <center v-if="message.parentMessage.file != null && message.parentMessage.hasThumbnail"><img v-on:click="view(message.parentMessage)" v-bind:src="message.parentMessage.thumbnail" style="cursor: pointer; margin-bottom: 10px; margin-top: 10px;"/></center>
                                                     <center v-if="message.parentMessage.file != null && !message.parentMessage.hasThumbnail"><span style="height:100px;cursor: pointer" v-on:click="view(message.parentMessage)" v-bind:class="['file', 'fa', getFileIconFromFileAndType(message.parentMessage.file, message.parentMessage.fileType), 'picon-timeline']"> </span></center>
                                                     <p v-if="message.parentMessage.contents.length > 0" v-bind:class="[message.parentMessage.sender == context.username ? 'reply-to-own-message' : 'reply-to-others-message']">{{message.parentMessage.contents}}</p>
                                                     <span class="chat-message-info">Original message: {{message.parentMessage.sender}} |  {{formatDateTime(message.parentMessage.sendTime)}} <i v-if="message.parentMessage.edited && !message.parentMessage.deleted">&nbsp; [edited]</i></span>
@@ -151,7 +151,7 @@
                                             </div>
                                             <div class="sent-message-container">
                                                 <div class="sent-message">
-                                                    <center v-if="message.file != null && message.hasThumbnail"><img v-on:click="view(message)" v-bind:src="message.thumbnail" style="cursor: pointer; margin-bottom: 10px;"/></center>
+                                                    <center v-if="message.file != null && message.hasThumbnail"><img v-on:click="view(message)" v-bind:src="message.thumbnail" style="cursor: pointer; margin-bottom: 10px; margin-top: 10px;"/></center>
                                                     <center v-if="message.file != null && !message.hasThumbnail"><span style="height:100px;cursor: pointer" v-on:click="view(message)" v-bind:class="['file', 'fa', getFileIconFromFileAndType(message.file, message.fileType), 'picon-timeline']"> </span></center>
                                                     <p v-if="message.contents.length > 0">{{message.contents}}</p>
                                                     <span class="chat-message-info"><i class="fa fa-reply" @click="reply(message)" style="cursor: pointer"></i> <b>|</b> {{message.sender}} <b>|</b>  {{formatDateTime(message.sendTime)}} <b v-if="!message.deleted">|</b> <i v-if="!message.deleted" class="fa fa-edit" @click="edit(message)" style="cursor: pointer"></i> <b v-if="!message.deleted">|</b> <i v-if="!message.deleted" class="fa fa-trash-alt" @click="deleteMessage(message)" style="cursor: pointer"></i><i v-if="message.edited && !message.deleted">&nbsp; [edited]</i></span>
