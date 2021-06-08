@@ -26,20 +26,20 @@
                   <input id="friend-name-input" v-model="targetUsername" type="text" class="token-input"></input>
                 </div>
                 <div style="padding:5px; display:flex;">
-                  <button :disabled="this.targetUsernames.slice().length == 0" class="btn btn-success" @click="addUsersToGroup()">Add to Group</button>
+                  <button :disabled="this.targetUsernames.slice().length == 0" class="btn btn-success" @click="addUsersToGroup()"> {{ addLabel }}</button>
                 </div>
               </div>
             </div>
             <div class="modal-body modal-prominent">
                 <div class="container" v-if="existingGroupMembers.length > 0"><p style="word-wrap;break-all;">
-                    Group Members:</p>
+                    Members:</p>
                     <div v-for="user in existingGroupMembers">
                         <input type="checkbox" v-bind:id="user" v-bind:value="user" v-model="membersToRemove">&nbsp;<span>{{ user }}</span>
                     </div>
                     <button :disabled="this.membersToRemove.length == 0" class="btn btn-success" v-on:click="removeUserFromGroup()">Revoke</button>
                 </div>
                 <div class="container" v-if="existingGroupMembers.length == 0"><p style="word-wrap;break-all;">
-                    Group Members:    None</p>
+                    Members:    None</p>
                 </div>
             </div>
             <error
@@ -52,7 +52,7 @@
         <div class="modal-footer">
             <slot name="footer">
                 <button class="btn btn-success" @click="updateGroupMembership">
-                    Update
+                    {{ updateLabel }}
                 </button>
             </slot>
         </div>

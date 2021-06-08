@@ -15,18 +15,24 @@ module.exports = {
             prompt_max_input_size: null,
             prompt_value: '',
             prompt_consumer_func: () => {},
-            displayedTitle: ""
+            displayedTitle: "",
+            updateLabel: "Update",
+            addLabel: "Add to Chat",
+            genericLabel: "chat"
         }
     },
     props: ['existingGroups', 'groupId', 'groupTitle', 'existingGroupMembers', 'friendNames', 'context', 'messages', 'updatedGroupMembership'],
     created: function() {
         this.displayedTitle = this.groupTitle;
+        if (this.groupId == "") {
+            this.updateLabel = "Create";
+        }
         Vue.nextTick(this.setTypeAhead);
     },
     methods: {
         updateGroupMembership: function () {
             if (this.groupId == "" && this.displayedTitle == this.groupTitle) {
-                this.showMessage("Click on title to set group name");
+                this.showMessage("Click on title to set " + this.genericLabel + " name");
             } else {
                 this.updatedGroupMembership(this.groupId, this.displayedTitle, this.existingGroupMembers.slice());
                 this.close();
@@ -34,7 +40,7 @@ module.exports = {
         },
         changeGroupTitle: function () {
             let that = this;
-            this.prompt_placeholder = 'New Group name';
+            this.prompt_placeholder = 'New ' + this.genericLabel + ' name';
             this.prompt_value = this.displayedTitle;
             this.prompt_message = 'Enter a name';
             this.prompt_max_input_size = 20;
@@ -49,7 +55,7 @@ module.exports = {
                 if (newName === '.' || newName === '..')
                     return;
                 if (!newName.match(/^[a-z\d\-_\s]+$/i)) {
-                    that.showMessage("Invalid group name. Use only alphanumeric characters plus space, dash and underscore");
+                    that.showMessage("Invalid " + that.genericLabel + " name. Use only alphanumeric characters plus space, dash and underscore");
                     return;
                 }
                 setTimeout(function(){
@@ -57,7 +63,7 @@ module.exports = {
                     for (var i=0;i < that.existingGroups.length; i++) {
                         let existingGroupName = that.existingGroups[i];
                         if (existingGroupName == newName) {
-                            that.showMessage("Duplicate group name");
+                            that.showMessage("Duplicate " + that.genericLabel + " name");
                             return;
                         }
                     }
@@ -106,7 +112,7 @@ module.exports = {
                 }
             }
             if (usersToAdd.length == 0) {
-                that.errorTitle = "Already in group!";
+                that.errorTitle = "Already a member!";
                 that.errorBody = "";
                 that.showError = true;
                 return;

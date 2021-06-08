@@ -185,7 +185,7 @@
                                 <p class="reply-to-delete-draft fa fa-trash-alt" @click="deleteEdit()" style="cursor: pointer"></p>
                             </div>
                         </div>
-                        <div class="new-message-container">
+                        <div id="new-message-id" class="new-message-container chat-hide">
                             <div class="new-message">
                                 <span>
                                     <input id='message-input' type="text" v-model="newMessageText" :maxlength="100"  v-on:keyup.enter="send()" placeholder="Type a message">

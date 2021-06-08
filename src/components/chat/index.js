@@ -477,7 +477,7 @@ module.exports = {
             let conversation = this.allConversations.get(conversationId);
             this.spinner(true);
             if (conversation == null) {
-                this.spinnerMessage = "creating new chat";
+                this.spinnerMessage = "Creating new chat";
                 this.messenger.createChat().thenApply(function(controller){
                     let conversationId = controller.chatUuid;
                     that.allChatControllers.set(controller.chatUuid,
@@ -523,7 +523,7 @@ module.exports = {
         newConversation: function() {
             let that = this;
             that.groupId = "";
-            that.groupTitle = "New Group";
+            that.groupTitle = "New Chat";
             that.friendNames = that.friendnames;
             that.messages = that.messages;
             that.existingGroups = that.getExistingConversationTitles();
@@ -818,25 +818,38 @@ module.exports = {
         buildConversations: function() {
             let conversationList = [];
             let conversationIconCandidates = [];
-            this.allConversations.forEach((val, key) => {
-                let filterText = this.filterText.toLowerCase();
-                let index = this.filterText.length == 0 ? 0 : val.participants.findIndex(v => v.indexOf(filterText) > -1);
-                if (index > -1) {
+            var newMessageArea = document.getElementById("new-message-id");
+            if (this.allConversations.size == 0) {
+                newMessageArea.classList.add("chat-hide");
+            } else {
+                newMessageArea.classList.remove("chat-hide");
+                this.allConversations.forEach((val, key) => {
+                    let filterText = this.filterText.toLowerCase();
+
                     let messageThread = this.allMessageThreads.get(key);
-                    if (messageThread != null && messageThread.length > 0) {
-                        let latestMessage = messageThread[messageThread.length -1];
-                        val.blurb = latestMessage.contents;
-                        val.lastModified = latestMessage.sendTime;
-                    } else {
-                        val.blurb = "";
-                        val.lastModified = "";
+                    let latestMessage = messageThread != null && messageThread.length > 0
+                        ? messageThread[messageThread.length -1] : null;
+
+                    var index = this.filterText.length == 0 ? 0
+                        : (val.participants.findIndex(v => v.toLowerCase().indexOf(filterText) > -1) || val.title.toLowerCase().indexOf(filterText) > -1);
+                    if (index == -1) {
+                        index = val.title.toLowerCase().indexOf(filterText);
                     }
-                    conversationList.push(val);
-                }
-                if (val.participants.length == 1 && val.profileImage == null && !val.profileImageNA) {
-                    conversationIconCandidates.push(val);
-                }
-            });
+                    if (index > -1) {
+                        if (latestMessage != null) {
+                            val.blurb = latestMessage.contents;
+                            val.lastModified = latestMessage.sendTime;
+                        } else {
+                            val.blurb = "";
+                            val.lastModified = "";
+                        }
+                        conversationList.push(val);
+                    }
+                    if (val.participants.length == 1 && val.profileImage == null && !val.profileImageNA) {
+                        conversationIconCandidates.push(val);
+                    }
+                });
+            }
             conversationList.sort(function(aVal, bVal){
                 return bVal.lastModified.localeCompare(aVal.lastModified)
             });
@@ -856,7 +869,10 @@ module.exports = {
             if (conversationId != null) {
                 let conversation = this.allConversations.get(conversationId);
                 var title = this.truncateText(conversation.title, 20);
-                let participants = " - " + this.truncateText(this.formatParticipants(conversation.participants), 20);
+                var participants = this.truncateText(this.formatParticipants(conversation.participants), 20);
+                if (participants.length > 0) {
+                    participants = " - " + participants;
+                }
                 title = title + participants;
                 this.chatTitle = title;
                 this.selectedConversationId = conversationId;
