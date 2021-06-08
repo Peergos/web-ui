@@ -1066,6 +1066,10 @@ h3 {word-wrap:break-word; white-space:normal;}
   text-align: center;
 }
 
+.status-message-bold {
+    font-size: 1.7em
+}
+
 .chat-message-info {
   color: #747474;
   display: block;

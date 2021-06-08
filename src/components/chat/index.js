@@ -6,6 +6,7 @@ module.exports = {
             spinnerMessage: '',
             conversations: [],
             messageThread: [],
+            statusMessages: [],
             selectedConversationId: null,
             newMessageText: "",
             allConversations: new Map(),
@@ -821,7 +822,9 @@ module.exports = {
             var newMessageArea = document.getElementById("new-message-id");
             if (this.allConversations.size == 0) {
                 newMessageArea.classList.add("chat-hide");
+                this.statusMessages.push("Welcome to Peergos Chat!");
             } else {
+                this.statusMessages = [];
                 newMessageArea.classList.remove("chat-hide");
                 this.allConversations.forEach((val, key) => {
                     let filterText = this.filterText.toLowerCase();

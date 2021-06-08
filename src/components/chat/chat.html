@@ -94,6 +94,14 @@
                     </div>
                     <div class="chat-messages" id="dnd-chat" @drop="dndChatDrop($event)" @dragover.prevent>
                         <div id="message-scroll-area" class="chat-messages-container">
+
+                            <div v-for="status in statusMessages">
+                                <div class="status-message-container">
+                                    <div class="status-message status-message-bold">
+                                        <p>{{status}}</p>
+                                    </div>
+                                </div>
+                            </div>
                             <div v-for="message in messageThread">
                                 <div v-if="message.isStatusMsg" class="status-message-container">
                                     <div class="status-message">
