@@ -822,6 +822,7 @@ module.exports = {
             var newMessageArea = document.getElementById("new-message-id");
             if (this.allConversations.size == 0) {
                 newMessageArea.classList.add("chat-hide");
+                this.statusMessages = [];
                 this.statusMessages.push("Welcome to Peergos Chat!");
             } else {
                 this.statusMessages = [];
