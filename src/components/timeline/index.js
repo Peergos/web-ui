@@ -30,7 +30,7 @@ module.exports = {
     },
     props: ['context','navigateToAction','viewAction', 'messages', 'getFileIconFromFileAndType', 'socialFeedInstance',
         'updateSocialFeedInstance', 'importCalendarFile', 'importSharedCalendar', 'displayProfile', 'groups',
-        'followingnames', 'friendnames', 'followernames'],
+        'followingnames', 'friendnames', 'followernames', 'checkAvailableSpace', 'convertBytesToHumanReadable'],
     created: function() {
         let that = this;
         Vue.nextTick(function() {
