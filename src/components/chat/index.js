@@ -39,7 +39,8 @@ module.exports = {
             displayingMessages: false
         }
     },
-    props: ['context', 'closeChatViewer', 'friendnames', 'socialFeed', 'socialState', 'getFileIconFromFileAndType', 'displayProfile'],
+    props: ['context', 'closeChatViewer', 'friendnames', 'socialFeed', 'socialState', 'getFileIconFromFileAndType'
+        , 'displayProfile', 'checkAvailableSpace', 'convertBytesToHumanReadable'],
     created: function() {
         let that = this;
         this.messenger = new peergos.shared.messaging.Messenger(this.context);
@@ -64,6 +65,13 @@ module.exports = {
         });
     },
     methods: {
+        showMessage: function(title, message) {
+            this.messages.push({
+                title: title,
+                body: message,
+                show: true
+            });
+        },
         resizeHandler: function() {
             var left = document.getElementById("chat-left-panel");
             var right = document.getElementById("dnd-chat");
@@ -263,7 +271,22 @@ module.exports = {
                 return;
             }
             let files = evt.target.files || evt.dataTransfer.files;
-            this.addAllAttachments(0, files);
+            let totalSize = 0;
+            for(var i=0; i < files.length; i++) {
+                totalSize += files[i].size;
+            }
+            let that = this;
+            for(var i=0; i < that.attachmentList.length; i++) {
+                totalSize += that.attachmentList[i].mediaFile.getFileProperties().sizeLow();
+            }
+            let spaceAfterOperation = this.checkAvailableSpace(totalSize);
+            if (spaceAfterOperation < 0) {
+                document.getElementById('uploadInput').value = "";
+                that.showMessage("Attachment(s) exceeds available Space",
+                    "Please free up " + this.convertBytesToHumanReadable('' + -spaceAfterOperation) + " and try again");
+            } else {
+                this.addAllAttachments(0, files);
+            }
         },
         uploadFile: function(mediaFile) {
             let future = peergos.shared.util.Futures.incomplete();
