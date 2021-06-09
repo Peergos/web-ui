@@ -1015,11 +1015,15 @@ h3 {word-wrap:break-word; white-space:normal;}
     color:#fff !important;
     white-space:pre-wrap;
 }
+.attachment-view-container {
+  display: inline-block;
+  vertical-align: middle;
+}
 
 .attachment-container {
   display: inline-block;
-  vertical-align: top;
-  width: 40%;
+  vertical-align: middle;
+  margin-right: 20px;
 }
 
 .attachment {
@@ -1030,8 +1034,6 @@ h3 {word-wrap:break-word; white-space:normal;}
 }
 
 .attachment-delete-btn {
-    left: 61%;
-    position: absolute;
     color: #000;
 }
 

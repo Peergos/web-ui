@@ -32,7 +32,7 @@ module.exports = {
             filesToViewInGallery: [],
             replyToMessage: null,
             editMessage: null,
-            attachment: null,
+            attachmentList: [],
             emojiChooserBtn: null,
             emojiPicker: null,
             messenger: null,
@@ -144,12 +144,17 @@ module.exports = {
         launchEmojiPicker: function() {
             this.emojiPicker.togglePicker(this.emojiChooserBtn);
         },
-        deleteAttachment: function() {
+        deleteAttachment: function(attachment) {
             let that = this;
             this.spinner(true);
-            this.deleteFile(this.attachment).thenApply(function(res){
+            this.deleteFile(attachment).thenApply(function(res){
                 that.spinner(false);
-                that.attachment = null;
+                if (res) {
+                    let idx = that.attachmentList.findIndex(v => v.mediaItem.path === attachment.mediaItem.path);
+                    if (idx > -1) {
+                        that.attachmentList.splice(idx, 1);
+                    }
+                }
             });
         },
         deleteReply: function() {
@@ -204,8 +209,16 @@ module.exports = {
             }
             this.uploadFile(evt.dataTransfer.files[0]);
         },
-        view: function (message) {
-            this.filesToViewInGallery = [message.file];
+        view: function (message, mediaIndex) {
+            let mediaList = message.mediaFiles;
+            let files = [];
+            for(var i = mediaIndex; i < mediaList.length; i++) {
+                files.push(mediaList[i].file);
+            }
+            for(var j = 0; j < mediaIndex; j++) {
+                files.push(mediaList[j].file);
+            }
+            this.filesToViewInGallery = files;
             this.showEmbeddedGallery = true;
         },
         uploadMedia: function(mediaFile, updateProgressBar) {
@@ -230,15 +243,30 @@ module.exports = {
             }
             return future;
         },
-        addAttachment: function(evt) {
-            let files = evt.target.files || evt.dataTransfer.files;
-            let mediaFile = files[0];
-            this.uploadFile(mediaFile);
+        addAllAttachments: function(index, files) {
+            let that = this;
+            if (index == files.length) {
+                document.getElementById('uploadInput').value = "";
+            } else {
+                let mediaFile = files[index];
+                this.uploadFile(mediaFile).thenApply(function(res){
+                    that.addAllAttachments(++index, files);
+                }).exceptionally(function(throwable) {
+                    console.log(throwable.getMessage());
+                    that.showMessage("error uploading attachment");
+                    document.getElementById('uploadInput').value = "";
+                });
+            }
         },
-        uploadFile: function(mediaFile) {
+        addAttachments: function(evt) {
             if (this.savingNewMsg || this.selectedConversationId == null ) {
                 return;
             }
+            let files = evt.target.files || evt.dataTransfer.files;
+            this.addAllAttachments(0, files);
+        },
+        uploadFile: function(mediaFile) {
+            let future = peergos.shared.util.Futures.incomplete();
             this.savingNewMsg = true;
             let that = this;
             var thumbnailAllocation = Math.min(100000, mediaFile.size / 10);
@@ -257,11 +285,19 @@ module.exports = {
                 }
             };
             this.uploadMedia(mediaFile, updateProgressBar).thenApply(function(mediaResponse) {
-                that.attachment = mediaResponse;
-                that.progressMonitors.splice(0, 1);
-                document.getElementById('uploadInput').value = "";
+                that.attachmentList.push(mediaResponse);
+                let idx = that.progressMonitors.indexOf(progress);
+                if(idx >= 0) {
+                    that.progressMonitors.splice(idx, 1);
+                }
                 that.savingNewMsg = false;
+                future.complete(true);
+            }).exceptionally(function(throwable) {
+                console.log(throwable.getMessage());
+                that.showMessage("error uploading attachment");
+                future.complete(false);
             });
+            return future;
         },
         displayTitle: function(conversation) {
             return this.truncateText(conversation.title, 15);
@@ -774,12 +810,14 @@ module.exports = {
                 let chatEnvelope = messages[j];
                 let payload = chatEnvelope.payload;
                 let type = payload.type().toString();
-                if (type == 'Application') {
-                    let body = payload.body.toArray();
-                    if (body.length == 2) {
-                        let mediaRef = body[1].reference().ref;
-                        if (refs.findIndex(v => v.path == mediaRef.path) == -1) {
-                            refs.push(mediaRef);
+                if (type == 'Application' || type == 'ReplyTo') {
+                    let body = type == 'Application' ? payload.body.toArray() : payload.content.body.toArray();
+                    if (body.length > 1) {
+                        for(var i = 1; i < body.length; i++) {
+                            let mediaRef = body[i].reference().ref;
+                            if (refs.findIndex(v => v.path == mediaRef.path) == -1) {
+                                refs.push(mediaRef);
+                            }
                         }
                     }
                 }
@@ -899,28 +937,32 @@ module.exports = {
                 return;
             }
             that.savingNewMsg = true;
-            let attachment = this.attachment == null ? null : this.attachment.mediaItem;
             if (this.editMessage != null) {
                 if (this.editMessage.sender != this.context.username) {
                     return;
                 }
-                this.editExistingMessage(conversationId, this.editMessage.envelope, text, attachment).thenApply(function(result) {
+                this.editExistingMessage(conversationId, this.editMessage.envelope, text).thenApply(function(result) {
                     that.refreshConversation(conversationId);
                 });
             } else if (this.replyToMessage != null) {
-                this.replyTo(conversationId, this.replyToMessage.envelope, text, attachment).thenApply(function(result) {
+                this.replyTo(conversationId, this.replyToMessage.envelope, text).thenApply(function(result) {
                     that.refreshConversation(conversationId);
                 });
             } else {
-                this.newMessage(conversationId, text, attachment).thenApply(function(result) {
+                this.newMessage(conversationId, text).thenApply(function(result) {
                     that.refreshConversation(conversationId);
                 });
             }
         },
-        editExistingMessage: function(conversationId, editMessage, text, attachment) {
+        buildAttachmentFileRefSet: function() {
+            let fileRefList = this.attachmentList.map(i => i.mediaItem);
+            let fileRefSet = peergos.client.JsUtil.asSet(fileRefList);
+            return fileRefSet;
+        },
+        editExistingMessage: function(conversationId, editMessage, text) {
             let future = peergos.shared.util.Futures.incomplete();
-            if (attachment != null) {
-                let msg = peergos.shared.messaging.messages.ApplicationMessage.attachment(text, attachment);
+            if (this.attachmentList.length > 0) {
+                let msg = peergos.shared.messaging.messages.ApplicationMessage.attachment(text, this.buildAttachmentFileRefSet());
                 this.sendEditMessage(conversationId, editMessage, msg, future);
             } else {
                 let msg = peergos.shared.messaging.messages.ApplicationMessage.text(text);
@@ -928,10 +970,10 @@ module.exports = {
             }
             return future;
         },
-        replyTo: function(conversationId, replyToMessage, text, attachment) {
+        replyTo: function(conversationId, replyToMessage, text) {
             let future = peergos.shared.util.Futures.incomplete();
-            if (attachment != null) {
-                let msg = peergos.shared.messaging.messages.ApplicationMessage.attachment(text, attachment);
+            if (this.attachmentList.length > 0) {
+                let msg = peergos.shared.messaging.messages.ApplicationMessage.attachment(text, this.buildAttachmentFileRefSet());
                 this.sendReplyTo(conversationId, replyToMessage, msg, future);
             } else {
                 let msg = peergos.shared.messaging.messages.ApplicationMessage.text(text);
@@ -939,10 +981,10 @@ module.exports = {
             }
             return future;
         },
-        newMessage: function(conversationId, text, attachment) {
+        newMessage: function(conversationId, text) {
             let future = peergos.shared.util.Futures.incomplete();
-            if (attachment != null) {
-                let msg = peergos.shared.messaging.messages.ApplicationMessage.attachment(text, attachment);
+            if (this.attachmentList.length > 0) {
+                let msg = peergos.shared.messaging.messages.ApplicationMessage.attachment(text, this.buildAttachmentFileRefSet());
                 this.sendNewMessage(conversationId, msg, future);
             } else {
                 let msg = peergos.shared.messaging.messages.ApplicationMessage.text(text);
@@ -988,7 +1030,7 @@ module.exports = {
                 that.savingNewMsg = false;
                 that.replyToMessage = null;
                 that.editMessage = null;
-                that.attachment = null;
+                that.attachmentList = [];
                 that.spinner(false);
                 future.complete(true);
             }).exceptionally(function(throwable) {
@@ -1016,13 +1058,18 @@ module.exports = {
         },
         createMessage: function(author, messageEnvelope, body, attachmentMap, parentMessage) {
             let content = body[0].inlineText();
-            let mediaFile = body.length == 1 ? null : attachmentMap.get(body[1].reference().ref.path);
+            let mediaFiles = [];
+            for(var i = 1; i < body.length; i++) {
+                let mediaFile = attachmentMap.get(body[i].reference().ref.path);
+                if (mediaFile != null) {
+                    let fileType = mediaFile.getFileProperties().getType();
+                    let thumbnail = mediaFile.getFileProperties().thumbnail.ref != null ? mediaFile.getBase64Thumbnail() : "";
+                    mediaFiles.push({file: mediaFile, fileType: fileType, thumbnail: thumbnail, hasThumbnail: thumbnail.length > 0});
+                }
+            }
             let timestamp = messageEnvelope.creationTime;
-            let fileType = mediaFile == null ? "" : mediaFile.getFileProperties().getType();
-            let thumbnail = (mediaFile != null && mediaFile.getFileProperties().thumbnail.ref != null) ? mediaFile.getBase64Thumbnail() : "";
-            let entry = {isStatusMsg: false, file: mediaFile, fileType: fileType,
-                sender: author, hasThumbnail: thumbnail.length > 0, thumbnail: thumbnail
-                , sendTime: timestamp.toString(), contents: content
+            let entry = {isStatusMsg: false, mediaFiles: mediaFiles,
+                sender: author, sendTime: timestamp.toString(), contents: content
                 , envelope: messageEnvelope, parentMessage: parentMessage, edited: false, deleted : false};
             return entry;
         },
