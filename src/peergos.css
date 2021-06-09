@@ -837,6 +837,10 @@ h3 {word-wrap:break-word; white-space:normal;}
     margin-bottom: 10px;
 }
 /* chat - start */
+.prevent-resize{
+    resize: none
+}
+
 .chat-container{
   max-width:1170px;
   margin:auto;
@@ -959,6 +963,7 @@ h3 {word-wrap:break-word; white-space:normal;}
   margin: 0;
   padding: 5px 10px 5px 12px;
   width: 100%;
+  white-space:pre-wrap;
 }
 /*
 .received-message img {
@@ -1003,10 +1008,12 @@ h3 {word-wrap:break-word; white-space:normal;}
 .reply-to-others-message {
     background: #ebebeb none repeat scroll 0 0 !important;
     color: #000000 !important;
+    white-space:pre-wrap;
 }
 .reply-to-own-message {
     background: #26b99a none repeat scroll 0 0 !important;
     color:#fff !important;
+    white-space:pre-wrap;
 }
 
 .attachment-container {
@@ -1101,6 +1108,7 @@ h3 {word-wrap:break-word; white-space:normal;}
   margin: 0; color:#fff;
   padding: 5px 10px 5px 12px;
   width:100%;
+  white-space:pre-wrap;
 }
 /*
 .sent-message img {
@@ -1117,7 +1125,7 @@ h3 {word-wrap:break-word; white-space:normal;}
   margin:26px 0 26px;
 }
 
-.new-message input {
+.new-message textarea {
   background: rgba(0, 0, 0, 0) none repeat scroll 0 0;
   border: medium none;
   color: #4c4c4c;

@@ -196,7 +196,7 @@
                         <div id="new-message-id" class="new-message-container chat-hide">
                             <div class="new-message">
                                 <span>
-                                    <input id='message-input' type="text" v-model="newMessageText" :maxlength="100"  v-on:keyup.enter="send()" placeholder="Type a message">
+                                    <textarea id='message-input' rows="1" v-model="newMessageText" :maxlength="200"  v-on:keyup.enter="send()" placeholder="Type a message" class="prevent-resize"></textarea>
                                     <button id="emoji-chooser" class="chat-btn btn-success emoji-btn" type="button" @click="launchEmojiPicker()">
                                         <i class="fa fa-smile" aria-hidden="true"></i>
                                     </button>
