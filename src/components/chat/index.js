@@ -197,25 +197,27 @@ module.exports = {
         },
         dndChatDrop: function(evt) {
             evt.preventDefault();
-            let entries = evt.dataTransfer.items;
-            if (entries.length != 1) {
-                this.showMessage("Only 1 item can be dragged and dropped");
-                return;
-            }
-            let mimeType = entries[0].type;
-            if (!(mimeType.startsWith("image") || mimeType.startsWith("audio") || mimeType.startsWith("video"))) {
-                this.showMessage("Only media files can be dragged and dropped");
-            }
-            let entry = entries[0].webkitGetAsEntry();
-            if (entry.isDirectory || !entry.isFile) {
-                this.showMessage("Only files can be dragged and dropped");
+            if (this.selectedConversationId == null) {
+                this.showMessage("Select chat before adding media");
                 return;
             }
             if (this.savingNewMsg) {
                 this.showMessage("Unable to drag and drop while busy");
                 return;
             }
-            this.uploadFile(evt.dataTransfer.files[0]);
+            let entries = evt.dataTransfer.items;
+            for(var i=0; i < entries.length; i++) {
+                let mimeType = entries[i].type;
+                if (!(mimeType.startsWith("image") || mimeType.startsWith("audio") || mimeType.startsWith("video"))) {
+                    this.showMessage("Only media files can be dragged and dropped");
+                }
+                let entry = entries[i].webkitGetAsEntry();
+                if (entry.isDirectory || !entry.isFile) {
+                    this.showMessage("Only files can be dragged and dropped");
+                    return;
+                }
+            }
+            this.uploadAttachments(evt.dataTransfer.files);
         },
         view: function (message, mediaIndex) {
             let mediaList = message.mediaFiles;
@@ -251,14 +253,14 @@ module.exports = {
             }
             return future;
         },
-        addAllAttachments: function(index, files) {
+        uploadAllAttachments: function(index, files) {
             let that = this;
             if (index == files.length) {
                 document.getElementById('uploadInput').value = "";
             } else {
                 let mediaFile = files[index];
                 this.uploadFile(mediaFile).thenApply(function(res){
-                    that.addAllAttachments(++index, files);
+                    that.uploadAllAttachments(++index, files);
                 }).exceptionally(function(throwable) {
                     console.log(throwable.getMessage());
                     that.showMessage("error uploading attachment");
@@ -271,6 +273,9 @@ module.exports = {
                 return;
             }
             let files = evt.target.files || evt.dataTransfer.files;
+            this.uploadAttachments(files);
+        },
+        uploadAttachments: function(files) {
             let totalSize = 0;
             for(var i=0; i < files.length; i++) {
                 totalSize += files[i].size;
@@ -285,7 +290,7 @@ module.exports = {
                 that.showMessage("Attachment(s) exceeds available Space",
                     "Please free up " + this.convertBytesToHumanReadable('' + -spaceAfterOperation) + " and try again");
             } else {
-                this.addAllAttachments(0, files);
+                this.uploadAllAttachments(0, files);
             }
         },
         uploadFile: function(mediaFile) {
