@@ -17,7 +17,8 @@ module.exports = {
             isReady: false
         }
     },
-    props: ['closeSocialPostForm', 'socialFeed', 'context', 'showMessage', 'groups', 'socialPostAction', 'currentSocialPostEntry'],
+    props: ['closeSocialPostForm', 'socialFeed', 'context', 'showMessage', 'groups', 'socialPostAction'
+        , 'currentSocialPostEntry', 'checkAvailableSpace', 'convertBytesToHumanReadable'],
     created: function() {
         let that = this;
         if (this.socialPostAction == 'reply') {
@@ -62,14 +63,25 @@ module.exports = {
         });
     },
     methods: {
-        uploadFile: function(evt) {
+        uploadFiles: function(evt) {
             let files = evt.target.files || evt.dataTransfer.files;
-            this.mediaFiles = files;
-            let mediaFilenames = [];
-            for(var i = 0; i < files.length; i++) {
-                mediaFilenames.push(files[i].name);
-            };
-            this.mediaFilenames = mediaFilenames.join(", ");
+            let totalSize = 0;
+            for(var i=0; i < files.length; i++) {
+                totalSize += files[i].size;
+            }
+            let spaceAfterOperation = this.checkAvailableSpace(totalSize);
+            if (spaceAfterOperation < 0) {
+                document.getElementById('uploadInput').value = "";
+                this.showMessage("Media File(s) exceed available Space",
+                    "Please free up " + this.convertBytesToHumanReadable('' + -spaceAfterOperation) + " and try again");
+            } else {
+                this.mediaFiles = files;
+                let mediaFilenames = [];
+                for(var i = 0; i < files.length; i++) {
+                    mediaFilenames.push(files[i].name);
+                };
+                this.mediaFilenames = mediaFilenames.join(", ");
+            }
         },
         triggerUpload: function() {
             document.getElementById('uploadInput').click()
