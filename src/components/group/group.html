@@ -14,7 +14,7 @@
         </prompt>
         <div class="modal-header">
             <span>
-                <h4 style="text-align: center;" @click="changeGroupTitle()">{{ displayedTitle }}&nbsp;&nbsp;<i @click="changeGroupTitle()" class="fa fa-edit" aria-hidden="true"></i></h4>
+                <h4 style="text-align: center;" @click="changeGroupTitle()">{{ displayedTitle }}&nbsp;&nbsp;<i v-if="isAdmin" @click="changeGroupTitle()" class="fa fa-edit" aria-hidden="true"></i></h4>
 
             </span>
         </div>
@@ -33,13 +33,20 @@
             <div class="modal-body modal-prominent">
                 <div class="container" v-if="existingGroupMembers.length > 0"><p style="word-wrap;break-all;">
                     Members:</p>
-                    <div v-for="user in existingGroupMembers">
-                        <input type="checkbox" v-bind:id="user" v-bind:value="user" v-model="membersToRemove">&nbsp;<span>{{ user }}</span>
+                    <div v-if="!haveRemovedSelf">
+                        <input :disabled="isAdmin" v-if="!haveRemovedSelf" type="checkbox" v-bind:value="context.username" v-model="removeSelf"><span  v-if="!haveRemovedSelf" style="margin-left:10px">{{ context.username }}</span>
                     </div>
-                    <button :disabled="this.membersToRemove.length == 0" class="btn btn-success" v-on:click="removeUserFromGroup()">Revoke</button>
+                    <div v-for="user in existingGroupMembers">
+                        <input :disabled="!isAdmin"  type="checkbox" v-bind:id="user" v-bind:value="user" v-model="membersToRemove"><span style="margin-left:10px">{{ user }}</span>
+                    </div>
+                    <button :disabled="this.membersToRemove.length == 0 && this.removeSelf.length == 0" class="btn btn-success" v-on:click="removeUserFromGroup()">Revoke</button>
                 </div>
                 <div class="container" v-if="existingGroupMembers.length == 0"><p style="word-wrap;break-all;">
-                    Members:    None</p>
+                    Members:</p>
+                    <div v-if="!haveRemovedSelf">
+                        <input :disabled="isAdmin" v-if="!haveRemovedSelf" type="checkbox" v-bind:value="context.username" v-model="removeSelf"><span  v-if="!haveRemovedSelf" style="margin-left:10px">{{ context.username }}</span>
+                    </div>
+                    <button v-if="!haveRemovedSelf" :disabled="this.removeSelf.length == 0" class="btn btn-success" v-on:click="removeUserFromGroup()">Revoke</button>
                 </div>
             </div>
             <error

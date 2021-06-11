@@ -25,6 +25,7 @@ module.exports = {
             groupTitle: "",
             showGroupMembership: false,
             existingGroupMembers: [],
+            existingAdmins: [],
             messages: [],
             progressMonitors: [],
             showEmbeddedGallery: false,
@@ -38,7 +39,8 @@ module.exports = {
             displayingMessages: false,
             commandQueue: [],
             executingCommands: false,
-            draftMessages: []
+            draftMessages: [],
+            selectedConversationIsReadOnly: true
         }
     },
     props: ['context', 'closeChatViewer', 'friendnames', 'socialFeed', 'socialState', 'getFileIconFromFileAndType'
@@ -436,7 +438,12 @@ module.exports = {
                 let messageHash = messagePairs[j].hash;
                 let payload = chatEnvelope.payload;
                 let type = payload.type().toString();
-                let author = chatController.controller.getAuthorUsername(chatEnvelope);
+                let author = "REMOVED";
+                try {
+                    author = chatController.controller.getUsername(chatEnvelope.author);
+                } catch(ex) {
+                    //this means a message from a user who has subsequently been removed
+                }
                 if (type == 'GroupState') {//type
                     if(payload.key == "title") {
                         messageThread.push(this.createStatusMessage(chatEnvelope.creationTime, "Chat name changed to " + payload.value));
@@ -446,6 +453,9 @@ module.exports = {
                 } else if(type == 'Invite') {
                     let username = chatEnvelope.payload.username;
                     messageThread.push(this.createStatusMessage(chatEnvelope.creationTime, author + " invited " + username));
+                } else if(type == 'RemoveMember') {
+                    let username = chatController.controller.getUsername(chatEnvelope.payload.memberToRemove);
+                    messageThread.push(this.createStatusMessage(chatEnvelope.creationTime, author + " removed " + username));
                 } else if(type == 'Join') {
                     let username = chatEnvelope.payload.username;
                     messageThread.push(this.createStatusMessage(chatEnvelope.creationTime, username + " joined the chat"));
@@ -651,14 +661,14 @@ module.exports = {
             });
             return removedParticipants;
         },
-        updatedGroupMembership: function(conversationId, updatedGroupTitle, updatedMembers) {
+        updatedGroupMembership: function(conversationId, updatedGroupTitle, updatedMembers, haveRemovedSelf) {
             let that = this;
-            function command(conversationId, updatedGroupTitle, updatedMembers) {
-                return that.executeUpdatedGroupMembership(conversationId, updatedGroupTitle, updatedMembers);
+            function command(conversationId, updatedGroupTitle, updatedMembers, haveRemovedSelf) {
+                return that.executeUpdatedGroupMembership(conversationId, updatedGroupTitle, updatedMembers, haveRemovedSelf);
             }
-            this.drainCommandQueue(() => command(conversationId, updatedGroupTitle, updatedMembers));
+            this.drainCommandQueue(() => command(conversationId, updatedGroupTitle, updatedMembers, haveRemovedSelf));
         },
-        executeUpdatedGroupMembership: function(conversationId, updatedGroupTitle, updatedMembers) {
+        executeUpdatedGroupMembership: function(conversationId, updatedGroupTitle, updatedMembers, haveRemovedSelf) {
             let that = this;
             let conversation = this.allConversations.get(conversationId);
             this.spinner(true);
@@ -692,6 +702,9 @@ module.exports = {
                 }
                 let added = this.extractAddedParticipants(conversation.participants, updatedMembers);
                 let removed = this.extractRemovedParticipants(conversation.participants, updatedMembers);
+                if (haveRemovedSelf) {
+                    removed.push(this.context.username);
+                }
                 conversation.participants = updatedMembers.slice();
                 that.inviteNewParticipants(conversationId, added).thenApply(function(res1) {
                     that.unInviteParticipants(conversationId, removed).thenApply(function(res2) {
@@ -723,19 +736,14 @@ module.exports = {
             that.messages = that.messages;
             that.existingGroups = that.getExistingConversationTitles();
             this.existingGroupMembers = [];
+            this.existingAdmins = [this.context.username];
             that.showGroupMembership = true;
         },
         editCurrentConversation: function() {
             if (this.selectedConversationId == null) {
                 return;
             }
-            if (this.extractChatOwner(this.selectedConversationId) != this.context.username) {
-                return;
-            }
             let conversation = this.allConversations.get(this.selectedConversationId);
-            this.editConversation(conversation);
-        },
-        editConversation: function(conversation) {
             if (conversation != null) {
                 this.groupId = this.selectedConversationId;
                 this.groupTitle = conversation.title;
@@ -743,6 +751,10 @@ module.exports = {
                 this.messages = this.messages;
                 this.existingGroups = this.getExistingConversationTitles();
                 this.existingGroupMembers = conversation.participants.slice();
+                //todo
+                //let chatController = this.allChatControllers.get(this.selectedConversationId);
+                //this.existingAdmins = chatController.controller.getAdmins().toArray([]);
+                this.existingAdmins = [this.extractChatOwner(this.selectedConversationId)];
                 this.showGroupMembership = true;
             }
         },
@@ -819,9 +831,25 @@ module.exports = {
             return future;
         },
         reduceRemovingInvitations: function(conversationId, membersToRemove, index, future) {
-            future.complete(true);
-            /* not implemented yet!
-            */
+            let that = this;
+            if (index == membersToRemove.length) {
+                future.complete(true);
+            } else {
+                let username = membersToRemove[index];
+                let chatController = this.allChatControllers.get(conversationId);
+                this.spinnerMessage = "removing " + username + " from chat";
+                this.messenger.removeMember(chatController.controller, username).thenApply(updatedController => {
+                    that.spinnerMessage = "";
+                    chatController.controller = updatedController;
+                    that.reduceRemovingInvitations(conversationId, membersToRemove, ++index, future);
+                }).exceptionally(function(throwable) {
+                    that.spinnerMessage = "";
+                    console.log(throwable);
+                    that.showMessage("Unable to remove " + username + " from chat");
+                    that.reduceRemovingInvitations(conversationId, membersToRemove, ++index, future);
+                });
+            }
+            return future;
         },
         unInviteParticipants: function(conversationId, membersToRemove) {
             let that = this;
@@ -855,8 +883,9 @@ module.exports = {
                 chatController = {controller:controller, startIndex: 0, owner: chatOwner};
                 that.allChatControllers.set(controller.chatUuid, chatController);
                 that.allMessageThreads.set(controller.chatUuid, []);
-                let participants = that.removeSelfFromParticipants(controller.getMemberNames().toArray());
-                let conversation = {id: controller.chatUuid, participants: participants};
+                let origParticipants = controller.getMemberNames().toArray();
+                let participants = that.removeSelfFromParticipants(origParticipants);
+                let conversation = {id: controller.chatUuid, participants: participants, readonly: origParticipants.length == participants.length};
                 if (participants.length == 1) {
                     conversation.profileImageNA = false;
                 }
@@ -866,8 +895,10 @@ module.exports = {
             let conversation = this.allConversations.get(controller.chatUuid);
             that.messenger.mergeAllUpdates(controller, this.socialState).thenApply(updatedController => {
                 chatController.controller = updatedController;
-                let participants = that.removeSelfFromParticipants(updatedController.getMemberNames().toArray());
+                let origParticipants = updatedController.getMemberNames().toArray();
+                let participants = that.removeSelfFromParticipants(origParticipants);
                 conversation.participants = participants;
+                conversation.readonly = origParticipants.length == participants.length;
                 if (participants.length == 1) {
                     conversation.profileImageNA = false;
                 }
@@ -1026,9 +1057,11 @@ module.exports = {
                 } else {
                     this.messageThread = [];
                 }
+                this.selectedConversationIsReadOnly = conversation.readonly;
             } else {
                 this.chatTitle = "";
                 this.messageThread = [];
+                this.selectedConversationIsReadOnly = true;
             }
         },
         send: function() {
@@ -1036,7 +1069,7 @@ module.exports = {
             let text = this.newMessageText;
             let conversationId = this.selectedConversationId;
             let msg = this.attachmentList.length > 0 ?
-                peergos.shared.messaging.messages.ApplicationMessage.attachment(text, this.buildAttachmentFileRefSet())
+                peergos.shared.messaging.messages.ApplicationMessage.attachment(text, this.buildAttachmentFileRefList())
                 : peergos.shared.messaging.messages.ApplicationMessage.text(text);
             let attachmentMap = new Map();
             for(var i = 0; i < this.attachmentList.length; i++) {
@@ -1116,10 +1149,10 @@ module.exports = {
             }
             return future;
         },
-        buildAttachmentFileRefSet: function() {
-            let fileRefList = this.attachmentList.map(i => i.mediaItem);
-            let fileRefSet = peergos.client.JsUtil.asSet(fileRefList);
-            return fileRefSet;
+        buildAttachmentFileRefList: function() {
+            let fileRefs = this.attachmentList.map(i => i.mediaItem);
+            let fileRefList = peergos.client.JsUtil.asList(fileRefs);
+            return fileRefList;
         },
         deleteChatMessage: function(message) {
             let that = this;

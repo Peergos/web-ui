@@ -29,6 +29,7 @@
                 :groupId="groupId"
                 :groupTitle="groupTitle"
                 :existingGroupMembers="existingGroupMembers"
+                :existingAdmins="existingAdmins"
                 :context="context"
                 :friendNames="friendnames"
                 :updatedGroupMembership="updatedGroupMembership"
@@ -226,7 +227,7 @@
                                         <i class="fa fa-paper-plane" aria-hidden="true"></i>
                                     </button>
                                     <input type="file" id="uploadInput" @change="addAttachments" style="display:none;" multiple accept="audio/*,video/*,image/*" />
-                                    <button :disabled="selectedConversationId == null" class="chat-btn btn-success attachment-btn" type="button" @click="launchUploadDialog()">
+                                    <button :disabled="selectedConversationId == null || selectedConversationIsReadOnly" class="chat-btn btn-success attachment-btn" type="button" @click="launchUploadDialog()">
                                         <i class="fa fa-paperclip" aria-hidden="true"></i>
                                     </button>
                                 </span>

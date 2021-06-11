@@ -9,6 +9,7 @@ module.exports = {
             errorBody:'',
             showError:false,
             membersToRemove: [],
+            removeSelf: [],
             showPrompt: false,
             prompt_message: '',
             prompt_placeholder: '',
@@ -18,15 +19,19 @@ module.exports = {
             displayedTitle: "",
             updateLabel: "Update",
             addLabel: "Add to Chat",
-            genericLabel: "chat"
+            genericLabel: "chat",
+            isAdmin: false,
+            haveRemovedSelf: false
         }
     },
-    props: ['existingGroups', 'groupId', 'groupTitle', 'existingGroupMembers', 'friendNames', 'context', 'messages', 'updatedGroupMembership'],
+    props: ['existingGroups', 'groupId', 'groupTitle', 'existingGroupMembers', 'friendNames', 'context', 'messages'
+        , 'updatedGroupMembership', 'existingAdmins'],
     created: function() {
         this.displayedTitle = this.groupTitle;
         if (this.groupId == "") {
             this.updateLabel = "Create";
         }
+        this.isAdmin = this.existingAdmins.findIndex(v => v === this.context.username) > -1;
         Vue.nextTick(this.setTypeAhead);
     },
     methods: {
@@ -34,11 +39,14 @@ module.exports = {
             if (this.groupId == "" && this.displayedTitle == this.groupTitle) {
                 this.showMessage("Click on title to set " + this.genericLabel + " name");
             } else {
-                this.updatedGroupMembership(this.groupId, this.displayedTitle, this.existingGroupMembers.slice());
+                this.updatedGroupMembership(this.groupId, this.displayedTitle, this.existingGroupMembers.slice(), this.haveRemovedSelf);
                 this.close();
             }
         },
         changeGroupTitle: function () {
+            if (!this.isAdmin) {
+                return;
+            }
             let that = this;
             this.prompt_placeholder = 'New ' + this.genericLabel + ' name';
             this.prompt_value = this.displayedTitle;
@@ -83,6 +91,9 @@ module.exports = {
             });
         },
         removeUserFromGroup : function () {
+            if(this.removeSelf.length > 0) {
+                this.haveRemovedSelf = true;
+            }
             for (var i = 0; i < this.membersToRemove.length; i++) {
                 let targetUsername = this.membersToRemove[i];
                 let index = this.existingGroupMembers.indexOf(targetUsername);
