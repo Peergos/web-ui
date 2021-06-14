@@ -245,6 +245,9 @@ module.exports = {
             this.newMessageText = "";
         },
         reply: function(message) {
+            if (message.sendTime.length == 0) {
+                return;
+            }
             this.replyToMessage = message;
             this.editMessage = null;
             this.focus();
@@ -254,6 +257,9 @@ module.exports = {
             this.newMessageText = "";
         },
         edit: function(message) {
+            if (message.sendTime.length == 0) {
+                return;
+            }
             this.replyToMessage = null;
             this.editMessage = message;
             this.newMessageText = message.contents;
@@ -425,6 +431,9 @@ module.exports = {
                 this.updateMessageThread(allChats[i].conversationId, messagePairs, attachmentMap);
             }
         },
+        isInList: function(list, value) {
+            return list.findIndex(v => v == value) > -1;
+        },
         updateMessageThread: function (conversationId, messagePairs, attachmentMap) {
             let messageThread = this.allMessageThreads.get(conversationId);
             var hashToIndex = this.allThreadsHashToIndex.get(conversationId);
@@ -433,18 +442,25 @@ module.exports = {
                 this.allThreadsHashToIndex.set(conversationId, hashToIndex);
             }
             let chatController = this.allChatControllers.get(conversationId);
+
+            //todo incorrect result let participants = chatController.controller.getMemberNames().toArray();
+
+            let conversation = this.allConversations.get(conversationId);
+            let currentAdmins = conversation.currentAdmins;
+            let currentMembers = conversation.currentMembers;
             for(var j = 0; j < messagePairs.length; j++) {
                 let chatEnvelope = messagePairs[j].message;
                 let messageHash = messagePairs[j].hash;
                 let payload = chatEnvelope.payload;
                 let type = payload.type().toString();
-                let author = "REMOVED";
-                try {
-                    author = chatController.controller.getUsername(chatEnvelope.author);
-                } catch(ex) {
-                    //this means a message from a user who has subsequently been removed
+                let author = chatController.controller.getUsername(chatEnvelope.author);
+                if (!this.isInList(currentMembers, author)) {
+                    break;
                 }
                 if (type == 'GroupState') {//type
+                    if (!this.isInList(currentAdmins, author)) {
+                        break;
+                    }
                     if(payload.key == "title") {
                         messageThread.push(this.createStatusMessage(chatEnvelope.creationTime, "Chat name changed to " + payload.value));
                         let conversation = this.allConversations.get(conversationId);
@@ -452,13 +468,16 @@ module.exports = {
                     } else if(payload.key == "admins") {
                         messageThread.push(this.createStatusMessage(chatEnvelope.creationTime, "Chat admins changed to " + payload.value));
                         let conversation = this.allConversations.get(conversationId);
+                        currentAdmins = payload.value.split(",");
                     }
                 } else if(type == 'Invite') {
                     let username = chatEnvelope.payload.username;
                     messageThread.push(this.createStatusMessage(chatEnvelope.creationTime, author + " invited " + username));
+                    currentMembers.push(username);
                 } else if(type == 'RemoveMember') {
                     let username = chatController.controller.getUsername(chatEnvelope.payload.memberToRemove);
                     messageThread.push(this.createStatusMessage(chatEnvelope.creationTime, author + " removed " + username));
+                    currentMembers.splice(currentMembers.findIndex(v => v === username), 1);
                 } else if(type == 'Join') {
                     let username = chatEnvelope.payload.username;
                     messageThread.push(this.createStatusMessage(chatEnvelope.creationTime, username + " joined the chat"));
@@ -682,14 +701,15 @@ module.exports = {
                     let conversationId = controller.chatUuid;
                     that.allChatControllers.set(controller.chatUuid,
                         {controller: controller, owner: that.context.username, startIndex: 0});
-                    let item = {id: conversationId, title: updatedGroupTitle, participants: updatedMembers};
+                    let item = {id: conversationId, title: updatedGroupTitle, participants: updatedMembers
+                        , readonly: false, currentAdmins: [that.context.username], currentMembers: [that.context.username]};
                     if (updatedMembers.length == 1) {
                         item.profileImageNA = false;
                     }
                     that.allConversations.set(conversationId, item);
                     that.allMessageThreads.set(conversationId, []);
 
-                    let addedAdmins = that.extractAddedParticipants(controller.getAdmins().toArray([]), updatedAdmins);
+                    let addedAdmins = that.extractAddedParticipants(controller.getAdmins().toArray(), updatedAdmins);
 
                     that.changeTitle(conversationId, updatedGroupTitle).thenApply(function(res1) {
                         that.inviteNewParticipants(conversationId, updatedMembers).thenApply(function(res2) {
@@ -713,7 +733,7 @@ module.exports = {
                     removed.push(this.context.username);
                 }
                 let chatController = this.allChatControllers.get(conversationId);
-                let existingAdmins = chatController.controller.getAdmins().toArray([]);
+                let existingAdmins = chatController.controller.getAdmins().toArray();
                 let addedAdmins = this.extractAddedParticipants(existingAdmins, updatedAdmins);
                 let removedAdmins = this.extractRemovedParticipants(existingAdmins, updatedAdmins);
 
@@ -769,7 +789,7 @@ module.exports = {
                 this.existingGroups = this.getExistingConversationTitles();
                 this.existingGroupMembers = conversation.participants.slice();
                 let chatController = this.allChatControllers.get(this.selectedConversationId);
-                this.existingAdmins = chatController.controller.getAdmins().toArray([]);
+                this.existingAdmins = chatController.controller.getAdmins().toArray();
                 this.showGroupMembership = true;
             }
         },
@@ -786,6 +806,9 @@ module.exports = {
             this.showConfirm = true;
         },
         deleteMessage: function(message) {
+            if (message.sendTime.length == 0) {
+                return;
+            }
             let that = this;
             if (message.sender != this.context.username) {
                 return;
@@ -964,7 +987,8 @@ module.exports = {
                 that.allMessageThreads.set(controller.chatUuid, []);
                 let origParticipants = controller.getMemberNames().toArray();
                 let participants = that.removeSelfFromParticipants(origParticipants);
-                let conversation = {id: controller.chatUuid, participants: participants, readonly: origParticipants.length == participants.length, title: ""};
+                let conversation = {id: controller.chatUuid, participants: participants, readonly: origParticipants.length == participants.length
+                    , title: "", currentAdmins: [chatOwner], currentMembers: [chatOwner]};
                 if (participants.length == 1) {
                     conversation.profileImageNA = false;
                 }
