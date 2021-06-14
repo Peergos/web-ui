@@ -449,6 +449,9 @@ module.exports = {
                         messageThread.push(this.createStatusMessage(chatEnvelope.creationTime, "Chat name changed to " + payload.value));
                         let conversation = this.allConversations.get(conversationId);
                         conversation.title = payload.value;
+                    } else if(payload.key == "admins") {
+                        messageThread.push(this.createStatusMessage(chatEnvelope.creationTime, "Chat admins changed to " + payload.value));
+                        let conversation = this.allConversations.get(conversationId);
                     }
                 } else if(type == 'Invite') {
                     let username = chatEnvelope.payload.username;
@@ -661,14 +664,14 @@ module.exports = {
             });
             return removedParticipants;
         },
-        updatedGroupMembership: function(conversationId, updatedGroupTitle, updatedMembers, haveRemovedSelf) {
+        updatedGroupMembership: function(conversationId, updatedGroupTitle, updatedMembers, updatedAdmins, haveRemovedSelf) {
             let that = this;
-            function command(conversationId, updatedGroupTitle, updatedMembers, haveRemovedSelf) {
-                return that.executeUpdatedGroupMembership(conversationId, updatedGroupTitle, updatedMembers, haveRemovedSelf);
+            function command(conversationId, updatedGroupTitle, updatedMembers, updatedAdmins, haveRemovedSelf) {
+                return that.executeUpdatedGroupMembership(conversationId, updatedGroupTitle, updatedMembers, updatedAdmins, haveRemovedSelf);
             }
-            this.drainCommandQueue(() => command(conversationId, updatedGroupTitle, updatedMembers, haveRemovedSelf));
+            this.drainCommandQueue(() => command(conversationId, updatedGroupTitle, updatedMembers, updatedAdmins, haveRemovedSelf));
         },
-        executeUpdatedGroupMembership: function(conversationId, updatedGroupTitle, updatedMembers, haveRemovedSelf) {
+        executeUpdatedGroupMembership: function(conversationId, updatedGroupTitle, updatedMembers, updatedAdmins, haveRemovedSelf) {
             let that = this;
             let conversation = this.allConversations.get(conversationId);
             this.spinner(true);
@@ -686,12 +689,16 @@ module.exports = {
                     that.allConversations.set(conversationId, item);
                     that.allMessageThreads.set(conversationId, []);
 
+                    let addedAdmins = that.extractAddedParticipants(controller.getAdmins().toArray([]), updatedAdmins);
+
                     that.changeTitle(conversationId, updatedGroupTitle).thenApply(function(res1) {
                         that.inviteNewParticipants(conversationId, updatedMembers).thenApply(function(res2) {
-                            that.spinnerMessage = "";
-                            that.refreshConversation(conversationId).thenApply(function(res3) {
-                                that.spinner(false);
-                                future.complete(true);
+                            that.inviteNewAdmins(conversationId, addedAdmins).thenApply(function(res3) {
+                                that.spinnerMessage = "";
+                                that.refreshConversation(conversationId).thenApply(function(res4) {
+                                    that.spinner(false);
+                                    future.complete(true);
+                                });
                             });
                         });
                     });
@@ -705,24 +712,34 @@ module.exports = {
                 if (haveRemovedSelf) {
                     removed.push(this.context.username);
                 }
+                let chatController = this.allChatControllers.get(conversationId);
+                let existingAdmins = chatController.controller.getAdmins().toArray([]);
+                let addedAdmins = this.extractAddedParticipants(existingAdmins, updatedAdmins);
+                let removedAdmins = this.extractRemovedParticipants(existingAdmins, updatedAdmins);
+
+
                 conversation.participants = updatedMembers.slice();
                 that.inviteNewParticipants(conversationId, added).thenApply(function(res1) {
                     that.unInviteParticipants(conversationId, removed).thenApply(function(res2) {
-                        that.spinnerMessage = "";
-                        if (conversation.title != updatedGroupTitle) {
-                            conversation.title = updatedGroupTitle;
-                            that.changeTitle(conversationId, updatedGroupTitle).thenApply(function(res3) {
-                                that.refreshConversation(conversationId).thenApply(function(res4) {
-                                    that.spinner(false);
-                                    future.complete(true);
-                                });
+                        that.inviteNewAdmins(conversationId, addedAdmins).thenApply(function(res3) {
+                            that.removeAdmins(conversationId, removedAdmins).thenApply(function(res4) {
+                                that.spinnerMessage = "";
+                                if (conversation.title != updatedGroupTitle) {
+                                    conversation.title = updatedGroupTitle;
+                                    that.changeTitle(conversationId, updatedGroupTitle).thenApply(function(res5) {
+                                        that.refreshConversation(conversationId).thenApply(function(res6) {
+                                            that.spinner(false);
+                                            future.complete(true);
+                                        });
+                                    });
+                                } else {
+                                    that.refreshConversation(conversationId).thenApply(function(res3) {
+                                        that.spinner(false);
+                                        future.complete(true);
+                                    });
+                                }
                             });
-                        } else {
-                            that.refreshConversation(conversationId).thenApply(function(res3) {
-                                that.spinner(false);
-                                future.complete(true);
-                            });
-                        }
+                        });
                     });
                 });
             }
@@ -751,10 +768,8 @@ module.exports = {
                 this.messages = this.messages;
                 this.existingGroups = this.getExistingConversationTitles();
                 this.existingGroupMembers = conversation.participants.slice();
-                //todo
-                //let chatController = this.allChatControllers.get(this.selectedConversationId);
-                //this.existingAdmins = chatController.controller.getAdmins().toArray([]);
-                this.existingAdmins = [this.extractChatOwner(this.selectedConversationId)];
+                let chatController = this.allChatControllers.get(this.selectedConversationId);
+                this.existingAdmins = chatController.controller.getAdmins().toArray([]);
                 this.showGroupMembership = true;
             }
         },
@@ -862,6 +877,70 @@ module.exports = {
             });
             return future2;
         },
+        reduceAddingAdmins: function(conversationId, adminsToAdd, index, future) {
+            let that = this;
+            if (index == adminsToAdd.length) {
+                future.complete(true);
+            } else {
+                let username = adminsToAdd[index];
+                let chatController = this.allChatControllers.get(conversationId);
+                this.spinnerMessage = "adding " + username + " as chat admin";
+                chatController.controller.addAdmin(username).thenApply(updatedController => {
+                    that.spinnerMessage = "";
+                    chatController.controller = updatedController;
+                    that.reduceAddingAdmins(conversationId, adminsToAdd, ++index, future);
+                }).exceptionally(function(throwable) {
+                    that.spinnerMessage = "";
+                    console.log(throwable);
+                    that.showMessage("Unable to add " + username + " as chat admin");
+                    that.reduceAddingAdmins(conversationId, adminsToAdd, ++index, future);
+                });
+            }
+            return future;
+        },
+        inviteNewAdmins: function(conversationId, adminsToAdd) {
+            let that = this;
+            let future = peergos.shared.util.Futures.incomplete();
+            this.reduceAddingAdmins(conversationId, adminsToAdd, 0, future);
+
+            let future2 = peergos.shared.util.Futures.incomplete();
+            future.thenApply(done => {
+                future2.complete(true);
+            });
+            return future2;
+        },
+        reduceRemovingAdmins: function(conversationId, adminsToRemove, index, future) {
+            let that = this;
+            if (index == adminsToRemove.length) {
+                future.complete(true);
+            } else {
+                let username = adminsToRemove[index];
+                let chatController = this.allChatControllers.get(conversationId);
+                this.spinnerMessage = "removing " + username + " as chat admin";
+                chatController.controller.removeAdmin(username).thenApply(updatedController => {
+                    that.spinnerMessage = "";
+                    chatController.controller = updatedController;
+                    that.reduceRemovingAdmins(conversationId, adminsToRemove, ++index, future);
+                }).exceptionally(function(throwable) {
+                    that.spinnerMessage = "";
+                    console.log(throwable);
+                    that.showMessage("Unable to remove " + username + " as chat admin");
+                    that.reduceRemovingAdmins(conversationId, adminsToRemove, ++index, future);
+                });
+            }
+            return future;
+        },
+        removeAdmins: function(conversationId, adminsToRemove) {
+            let that = this;
+            let future = peergos.shared.util.Futures.incomplete();
+            this.reduceRemovingAdmins(conversationId, adminsToRemove, 0, future);
+
+            let future2 = peergos.shared.util.Futures.incomplete();
+            future.thenApply(done => {
+                future2.complete(true);
+            });
+            return future2;
+        },
         removeSelfFromParticipants: function(participants) {
             let copyOfParticipants = participants.slice();
             let selfIndex = copyOfParticipants.findIndex(v => v === this.context.username);
@@ -885,7 +964,7 @@ module.exports = {
                 that.allMessageThreads.set(controller.chatUuid, []);
                 let origParticipants = controller.getMemberNames().toArray();
                 let participants = that.removeSelfFromParticipants(origParticipants);
-                let conversation = {id: controller.chatUuid, participants: participants, readonly: origParticipants.length == participants.length};
+                let conversation = {id: controller.chatUuid, participants: participants, readonly: origParticipants.length == participants.length, title: ""};
                 if (participants.length == 1) {
                     conversation.profileImageNA = false;
                 }

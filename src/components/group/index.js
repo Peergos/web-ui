@@ -9,6 +9,7 @@ module.exports = {
             errorBody:'',
             showError:false,
             membersToRemove: [],
+            adminsToRemove: [],
             removeSelf: [],
             showPrompt: false,
             prompt_message: '',
@@ -21,7 +22,8 @@ module.exports = {
             addLabel: "Add to Chat",
             genericLabel: "chat",
             isAdmin: false,
-            haveRemovedSelf: false
+            haveRemovedSelf: false,
+            memberAccess: "Member"
         }
     },
     props: ['existingGroups', 'groupId', 'groupTitle', 'existingGroupMembers', 'friendNames', 'context', 'messages'
@@ -39,7 +41,8 @@ module.exports = {
             if (this.groupId == "" && this.displayedTitle == this.groupTitle) {
                 this.showMessage("Click on title to set " + this.genericLabel + " name");
             } else {
-                this.updatedGroupMembership(this.groupId, this.displayedTitle, this.existingGroupMembers.slice(), this.haveRemovedSelf);
+                this.updatedGroupMembership(this.groupId, this.displayedTitle, this.existingGroupMembers.slice()
+                    , this.existingAdmins.slice(), this.haveRemovedSelf);
                 this.close();
             }
         },
@@ -100,8 +103,25 @@ module.exports = {
                 if (index > -1) {
                     this.existingGroupMembers.splice(index, 1);
                 }
+                index = this.existingAdmins.indexOf(targetUsername);
+                if (index > -1) {
+                    this.existingAdmins.splice(index, 1);
+                }
             }
             this.membersToRemove = [];
+        },
+        removeAdminFromGroup : function () {
+            if (!this.isAdmin) {
+                return;
+            }
+            for (var i = 0; i < this.adminsToRemove.length; i++) {
+                let targetUsername = this.adminsToRemove[i];
+                let index = this.existingAdmins.indexOf(targetUsername);
+                if (index > -1) {
+                    this.existingAdmins.splice(index, 1);
+                }
+            }
+            this.adminsToRemove = [];
         },
         resetTypeahead: function() {
             this.targetUsernames = [];
@@ -109,11 +129,19 @@ module.exports = {
             $('#friend-name-input').tokenfield('setTokens', []);
         },
         addUsersToGroup: function() {
-            var that = this;
             var usersToAdd = this.targetUsernames.slice();
             if (usersToAdd.length == 0) {
                 return;
             }
+            if (this.memberAccess == "Member") {
+                this.addMembersToGroup(usersToAdd);
+            } else {
+                this.addAdminsToGroup(usersToAdd);
+            }
+            this.resetTypeahead();
+        },
+        addMembersToGroup: function(usersToAdd) {
+            var that = this;
             for (var i = usersToAdd.length - 1; i >= 0; i--) {
                 let targetUsername = usersToAdd[i];
                 if(this.existingGroupMembers.indexOf(targetUsername) > -1) {
@@ -128,7 +156,36 @@ module.exports = {
                 that.showError = true;
                 return;
             }
-            that.resetTypeahead();
+        },
+        addAdminsToGroup: function(usersToAdd) {
+            if (!this.isAdmin) {
+                return;
+            }
+            var that = this;
+            for (var i = 0; i < usersToAdd.length; i++) {
+                let targetUsername = usersToAdd[i];
+                if(this.existingGroupMembers.indexOf(targetUsername) == -1) {
+                    that.errorTitle = targetUsername + " not a member!";
+                    that.errorBody = "";
+                    that.showError = true;
+                    return;
+                }
+            }
+
+            for (var i = usersToAdd.length - 1; i >= 0; i--) {
+                let targetUsername = usersToAdd[i];
+                if(this.existingAdmins.indexOf(targetUsername) > -1) {
+                    usersToAdd.splice(i, 1);
+                } else {
+                    this.existingAdmins.push(targetUsername);
+                }
+            }
+            if (usersToAdd.length == 0) {
+                that.errorTitle = "Already an Admin!";
+                that.errorBody = "";
+                that.showError = true;
+                return;
+            }
         },
 	    setTypeAhead: function() {
             let allNames = this.friendNames;
