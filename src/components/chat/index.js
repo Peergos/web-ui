@@ -442,9 +442,6 @@ module.exports = {
                 this.allThreadsHashToIndex.set(conversationId, hashToIndex);
             }
             let chatController = this.allChatControllers.get(conversationId);
-
-            //todo incorrect result let participants = chatController.controller.getMemberNames().toArray();
-
             let conversation = this.allConversations.get(conversationId);
             let currentAdmins = conversation.currentAdmins;
             let currentMembers = conversation.currentMembers;
@@ -570,6 +567,11 @@ module.exports = {
                 let allChats = chats.toArray();
                 that.loadChatMessages(allChats).thenApply(function(allChats) {
                     that.updateMessageThreads(allChats);
+                    for(var i = 0; i < allChats.length; i++) {
+                        if (allChats[i].toBeDeleted) {
+                            that.removeConversation(allChats[i].conversationId);
+                        }
+                    }
                     that.buildConversations();
                     let conversationId = null;
                     if (that.selectedConversationId != null) {
@@ -620,8 +622,25 @@ module.exports = {
                     that.updateScrollPane();
                     future.complete(true);
                 });
+            }).exceptionally(function(throwable) {
+                if (throwable.getMessage() == "You have been removed from the chat.") {
+                    that.buildMessageThread(null);
+                    that.removeConversation(conversationId);
+                    that.buildConversations();
+                    that.updateScrollPane();
+                }
+                future.complete(false);
             });
             return future;
+        },
+        removeConversation: function(conversationId) {
+            this.allMessageThreads.delete(conversationId);
+            this.allThreadsHashToIndex.delete(conversationId);
+            this.allChatControllers.delete(conversationId);
+            this.allConversations.delete(conversationId);
+            if (conversationId == this.selectedConversationId) {
+                this.selectedConversationId = null;
+            }
         },
         reduceGetAllMessages: function(chatController, messages, future) {
             let that = this;
@@ -702,7 +721,8 @@ module.exports = {
                     that.allChatControllers.set(controller.chatUuid,
                         {controller: controller, owner: that.context.username, startIndex: 0});
                     let item = {id: conversationId, title: updatedGroupTitle, participants: updatedMembers
-                        , readonly: false, currentAdmins: [that.context.username], currentMembers: [that.context.username]};
+                        , readonly: false, currentAdmins: [that.context.username], currentMembers: [that.context.username]
+                        , hasUnreadMessages: false};
                     if (updatedMembers.length == 1) {
                         item.profileImageNA = false;
                     }
@@ -715,7 +735,7 @@ module.exports = {
                         that.inviteNewParticipants(conversationId, updatedMembers).thenApply(function(res2) {
                             that.inviteNewAdmins(conversationId, addedAdmins).thenApply(function(res3) {
                                 that.spinnerMessage = "";
-                                that.refreshConversation(conversationId).thenApply(function(res4) {
+                                that.initialConversation(conversationId).thenApply(function(res4) {
                                     that.spinner(false);
                                     future.complete(true);
                                 });
@@ -765,6 +785,19 @@ module.exports = {
             }
             return future;
         },
+        initialConversation: function(conversationId) {
+            var that = this;
+            let future = peergos.shared.util.Futures.incomplete();
+            let chatController = this.allChatControllers.get(conversationId);
+            this.retrieveChatMessages(chatController).thenApply(messages => {
+                that.updateMessageThread(conversationId, messages.messagePairs, messages.attachmentMap);
+                that.buildConversations();
+                that.buildMessageThread(conversationId);
+                that.updateScrollPane();
+                future.complete(true);
+            });
+            return future;
+        },
         newConversation: function() {
             let that = this;
             that.groupId = "";
@@ -792,11 +825,6 @@ module.exports = {
                 this.existingAdmins = chatController.controller.getAdmins().toArray();
                 this.showGroupMembership = true;
             }
-        },
-        deleteConversation: function(conversation) {
-            this.allConversations.delete(conversation.id);
-            this.buildConversations();
-            this.buildMessageThread(this.conversations.length == 0 ? null : this.conversations[0].id);
         },
         confirmDeleteMessage: function(deleteMessageFunction, cancelFunction) {
             this.confirm_message='Are you sure you want to delete the message?';
@@ -988,7 +1016,7 @@ module.exports = {
                 let origParticipants = controller.getMemberNames().toArray();
                 let participants = that.removeSelfFromParticipants(origParticipants);
                 let conversation = {id: controller.chatUuid, participants: participants, readonly: origParticipants.length == participants.length
-                    , title: "", currentAdmins: [chatOwner], currentMembers: [chatOwner]};
+                    , title: "", currentAdmins: [chatOwner], currentMembers: [chatOwner], hasUnreadMessages: false};
                 if (participants.length == 1) {
                     conversation.profileImageNA = false;
                 }
@@ -1005,10 +1033,22 @@ module.exports = {
                 if (participants.length == 1) {
                     conversation.profileImageNA = false;
                 }
+                let firstGet = chatController.startIndex == 0;
                 that.retrieveChatMessages(chatController).thenApply(messages => {
+                    if (!firstGet && messages.messagePairs.length > 0) {
+                        conversation.hasUnreadMessages = true;
+                    }
                     future.complete({conversationId: controller.chatUuid, messagePairs: messages.messagePairs
                                     , attachmentMap: messages.attachmentMap});
                 });
+            }).exceptionally(function(throwable) {
+                if (throwable.getMessage() == "You have been removed from the chat.") {
+                    conversation.readonly = true;
+                    future.complete({conversationId: controller.chatUuid, messagePairs: []
+                                    , attachmentMap: new Map(), toBeDeleted: true});
+                } else {
+                    future.complete({conversationId: controller.chatUuid, messagePairs: [], attachmentMap: new Map()});
+                }
             });
             return future;
         },
@@ -1146,6 +1186,7 @@ module.exports = {
         buildMessageThread: function (conversationId) {
             if (conversationId != null) {
                 let conversation = this.allConversations.get(conversationId);
+                conversation.hasUnreadMessages = false;
                 var title = this.truncateText(conversation.title, 20);
                 var participants = this.truncateText(this.formatParticipants(conversation.participants), 20);
                 if (participants.length > 0) {
