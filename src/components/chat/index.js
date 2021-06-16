@@ -41,7 +41,8 @@ module.exports = {
             executingCommands: false,
             draftMessages: [],
             selectedConversationIsReadOnly: true,
-            closedChat: false
+            closedChat: false,
+            isInitialised: false
         }
     },
     props: ['context', 'closeChatViewer', 'friendnames', 'socialFeed', 'socialState', 'getFileIconFromFileAndType'
@@ -335,7 +336,6 @@ module.exports = {
             this.drainCommandQueue(() => command(files));
         },
         executeUploadAllAttachments: function(files) {
-            this.spinner(true);
             let future = peergos.shared.util.Futures.incomplete();
             this.reduceUploadAllAttachments(0, files, future);
             return future;
@@ -344,7 +344,6 @@ module.exports = {
             let that = this;
             if (index == files.length) {
                 document.getElementById('uploadInput').value = "";
-                that.spinner(false);
                 future.complete(true);
             } else {
                 let mediaFile = files[index];
@@ -352,7 +351,6 @@ module.exports = {
                     if (res) {
                         that.reduceUploadAllAttachments(++index, files, future);
                     } else {
-                        that.spinner(false);
                         future.complete(false);
                     }
                 });
@@ -567,6 +565,9 @@ module.exports = {
             setTimeout(intervalFunc, 10 * 1000);
         },
         executeInit: function(updateSpinner, periodicInit) {
+            if (this.closedChat) {
+                return;
+            }
             var that = this;
             if (updateSpinner) {
                 this.spinner(true);
@@ -574,6 +575,11 @@ module.exports = {
             let future = peergos.shared.util.Futures.incomplete();
             this.messenger.listChats().thenApply(function(chats) {
                 let allChats = chats.toArray();
+                if (!that.isInitialised) {
+                    that.isInitialised = true;
+                    that.initialiseChats(allChats);
+                    that.buildConversations();
+                }
                 that.loadChatMessages(allChats).thenApply(function(allChats) {
                     that.updateMessageThreads(allChats);
                     for(var i = 0; i < allChats.length; i++) {
@@ -1044,11 +1050,9 @@ module.exports = {
             let withoutPrefix = chatUuid.substring(5);//chat:
             return withoutPrefix.substring(0,withoutPrefix.indexOf(":"));
         },
-        readChatMessages: function(controller) {
+        initialiseChats: function(controllers) {
             let that = this;
-            let future = peergos.shared.util.Futures.incomplete();
-            let chatController = that.allChatControllers.get(controller.chatUuid);
-            if (chatController == null) {
+            controllers.forEach(controller => {
                 let chatOwner = this.extractChatOwner(controller.chatUuid);
                 chatController = {controller:controller, startIndex: 0, owner: chatOwner};
                 that.allChatControllers.set(controller.chatUuid, chatController);
@@ -1061,8 +1065,11 @@ module.exports = {
                     conversation.profileImageNA = false;
                 }
                 that.allConversations.set(controller.chatUuid, conversation);
-            }
-            chatController.controller = controller;
+            });
+        },
+        readChatMessages: function(controller) {
+            let that = this;
+            let future = peergos.shared.util.Futures.incomplete();
             let conversation = this.allConversations.get(controller.chatUuid);
             that.messenger.mergeAllUpdates(controller, this.socialState).thenApply(updatedController => {
                 chatController.controller = updatedController;
