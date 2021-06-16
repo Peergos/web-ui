@@ -62,8 +62,9 @@
                         <div class="chat-actions">
                             <div class="chat-action-heading">
                                 <h4>
-                                    <button class="btn btn-success" @click="fullRefresh()" >
-                                        <i  class="fa fa-sync-alt" aria-hidden="true"></i>&nbsp;
+                                    <button :disabled="executingCommands" class="btn btn-success" @click="fullRefresh()" >
+                                        <i v-if="executingCommands" class="fa fa-sync-alt fa-spin" aria-hidden="true"></i>
+                                        <i v-if="!executingCommands" class="fa fa-sync-alt" aria-hidden="true"></i>
                                     </button>
                                     <button class="btn btn-success" @click="newConversation()" >
                                         <i class="fa fa-user-plus" aria-hidden="true"></i>

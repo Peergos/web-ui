@@ -40,7 +40,8 @@ module.exports = {
             commandQueue: [],
             executingCommands: false,
             draftMessages: [],
-            selectedConversationIsReadOnly: true
+            selectedConversationIsReadOnly: true,
+            closedChat: false
         }
     },
     props: ['context', 'closeChatViewer', 'friendnames', 'socialFeed', 'socialState', 'getFileIconFromFileAndType'
@@ -48,7 +49,7 @@ module.exports = {
     created: function() {
         let that = this;
         this.messenger = new peergos.shared.messaging.Messenger(this.context);
-        this.init(true);
+        this.init(true, true);
         Vue.nextTick(function() {
             let element = document.getElementById('filter-conversations');
             element.addEventListener('keyup', function() {
@@ -66,19 +67,9 @@ module.exports = {
                 that.newMessageText += emoji;
             });
             that.emojiPicker = emojiPicker;
-            /* todo
-            let intervalFunc = function() {
-                window.setInterval(() => {
-                    console.log("starting full refresh");
-                    that.init(false);
-                    console.log("finished full refresh");
-                }, 30 * 1000);
-            };
-            setTimeout(intervalFunc, 30 * 1000);*/
         });
     },
     methods: {
-        //todo make robust
         reduceCommands: function(future) {
             let that = this;
             let command = this.commandQueue.shift();
@@ -94,16 +85,14 @@ module.exports = {
         drainCommandQueue: function(newCommand) {
             this.commandQueue.push(newCommand);
             let that = this;
-            Vue.nextTick(function() {
-                if (!that.executingCommands) {
-                    that.executingCommands = true;
-                    let future = peergos.shared.util.Futures.incomplete();
-                    that.reduceCommands(future);
-                    future.thenApply(res => {
-                        that.executingCommands = false;
-                    });
-                }
-            });
+            if (!that.executingCommands) {
+                that.executingCommands = true;
+                let future = peergos.shared.util.Futures.incomplete();
+                that.reduceCommands(future);
+                future.thenApply(res => {
+                    that.executingCommands = false;
+                });
+            }
         },
         showMessage: function(title, message) {
             this.messages.push({
@@ -325,7 +314,15 @@ module.exports = {
                     that.context.getByPath(pair.right.path).thenApply(function(fileOpt){
                         let file = fileOpt.ref;
                         future.complete({mediaItem: pair.right, mediaFile: file});
+                    }).exceptionally(err => {
+                        that.showMessage("unable to get uploaded media");
+                        console.log(err);
+                        future.complete(null);
                     });
+                }).exceptionally(err => {
+                    that.showMessage("unable to upload media");
+                    console.log(err);
+                    future.complete(null);
                 });
             }
             return future;
@@ -355,6 +352,7 @@ module.exports = {
                     if (res) {
                         that.reduceUploadAllAttachments(++index, files, future);
                     } else {
+                        that.spinner(false);
                         future.complete(false);
                     }
                 });
@@ -405,16 +403,16 @@ module.exports = {
                 }
             };
             this.uploadMedia(mediaFile, updateProgressBar).thenApply(function(mediaResponse) {
-                that.attachmentList.push(mediaResponse);
-                let idx = that.progressMonitors.indexOf(progress);
-                if(idx >= 0) {
-                    that.progressMonitors.splice(idx, 1);
+                if (mediaResponse == null) {
+                    future.complete(false);
+                } else {
+                    that.attachmentList.push(mediaResponse);
+                    let idx = that.progressMonitors.indexOf(progress);
+                    if(idx >= 0) {
+                        that.progressMonitors.splice(idx, 1);
+                    }
+                    future.complete(true);
                 }
-                future.complete(true);
-            }).exceptionally(function(throwable) {
-                console.log(throwable.getMessage());
-                that.showMessage("error uploading attachment");
-                future.complete(false);
             });
             return future;
         },
@@ -548,16 +546,27 @@ module.exports = {
             this.showSpinner = val;
         },
         fullRefresh: function() {
-            this.init(true);
+            this.init(true, false);
         },
-        init: function(updateSpinner) {
+        init: function(updateSpinner, periodicInit) {
             let that = this;
-            function command(updateSpinner) {
-                return that.executeInit(updateSpinner);
+            function command(updateSpinner, periodicInit) {
+                return that.executeInit(updateSpinner, periodicInit);
             }
-            this.drainCommandQueue(() => command(updateSpinner));
+            this.drainCommandQueue(() => command(updateSpinner, periodicInit));
         },
-        executeInit: function(updateSpinner) {
+        setupAutomaticRefresh: function() {
+            if (this.closedChat) {
+                return;
+            }
+            let that = this;
+            let intervalFunc = function() {
+                console.log("full refresh");
+                that.init(false, true);
+            };
+            setTimeout(intervalFunc, 10 * 1000);
+        },
+        executeInit: function(updateSpinner, periodicInit) {
             var that = this;
             if (updateSpinner) {
                 this.spinner(true);
@@ -586,8 +595,23 @@ module.exports = {
                     if (updateSpinner) {
                         that.spinner(false);
                     }
+                    if (periodicInit) {
+                        that.setupAutomaticRefresh();
+                    }
                     future.complete(true);
                 });
+            }).exceptionally(err => {
+                if (updateSpinner) {
+                    that.spinner(false);
+                }
+                if (that.messages.length == 0) {
+                    that.showMessage("Unable to list chats. Lost network connectivity?");
+                }
+                console.log(err);
+                if (periodicInit) {
+                    that.setupAutomaticRefresh();
+                }
+                future.complete(false);
             });
             return future;
         },
@@ -653,6 +677,12 @@ module.exports = {
                 } else {
                     that.reduceGetAllMessages(chatController, messages.concat(newMessages), future);
                 }
+            }).exceptionally(err => {
+                if(that.messages.length == 0) {
+                    that.showMessage("Unable to retrieve messages. Lost network connectivity?");
+                }
+                console.log(err);
+                future.complete(messages);
             });
         },
         getAllMessages: function(chatController) {
@@ -661,6 +691,7 @@ module.exports = {
             return future;
         },
         close: function () {
+            this.closedChat = true;
             if (this.emojiPicker != null) {
                 try {
                 this.emojiPicker.hidePicker();
@@ -742,6 +773,11 @@ module.exports = {
                             });
                         });
                     });
+                }).exceptionally(err => {
+                    that.showMessage("Unable to create chat");
+                    that.spinner(false);
+                    console.log(err);
+                    future.complete(false);
                 });
             } else {
                 if (updatedMembers.length == 1) {
@@ -891,6 +927,10 @@ module.exports = {
                     that.messenger.invite(chatController.controller, usernames, pkhList).thenApply(updatedController => {
                         chatController.controller = updatedController;
                         future.complete(true);
+                    }).exceptionally(err => {
+                        that.showMessage("Unable to add members to chat");
+                        console.log(err);
+                        future.complete(false);
                     });
                 });
             }
@@ -1075,6 +1115,9 @@ module.exports = {
                         if (loadedCount == refs.length) {
                             future.complete(attachmentMap);
                         }
+                    }).exceptionally(err => {
+                        console.log(err);
+                        loadedCount++;
                     });
                 });
             }
