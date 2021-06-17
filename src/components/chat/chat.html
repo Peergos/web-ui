@@ -231,7 +231,7 @@
                                     <button :disabled="newMessageText.length == 0 || selectedConversationId == null || selectedConversationIsReadOnly" class="chat-btn btn-success send-new-message-btn" type="button" @click="send()">
                                         <i class="fa fa-paper-plane" aria-hidden="true"></i>
                                     </button>
-                                    <input type="file" id="uploadInput" @change="addAttachments" style="display:none;" multiple accept="audio/*,video/*,image/*" />
+                                    <input type="file" id="uploadInput" @change="addAttachments" style="display:none;" multiple />
                                     <button :disabled="selectedConversationId == null || selectedConversationIsReadOnly" class="chat-btn btn-success attachment-btn" type="button" @click="launchUploadDialog()">
                                         <i class="fa fa-paperclip" aria-hidden="true"></i>
                                     </button>

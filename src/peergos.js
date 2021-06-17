@@ -48,7 +48,7 @@ Vue.component('admin', Vue.extend(Admin));
 Vue.component('app', Vue.extend(App));
 Vue.component('appgrid', Vue.extend(AppGrid));
 Vue.component('calendar', Vue.extend(Calendar));
-Vue.component('chat', Vue.extend(Chat));
+Vue.component('chat', Vue.extend(Downloader).extend(Chat));
 Vue.component('choice', Vue.extend(Choice));
 Vue.component('code-editor', Vue.extend(Downloader).extend(CodeEditor));
 Vue.component('error', Vue.extend(Error));

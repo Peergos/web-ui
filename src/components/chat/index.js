@@ -46,7 +46,7 @@ module.exports = {
         }
     },
     props: ['context', 'closeChatViewer', 'friendnames', 'socialFeed', 'socialState', 'getFileIconFromFileAndType'
-        , 'displayProfile', 'checkAvailableSpace', 'convertBytesToHumanReadable'],
+        , 'displayProfile', 'checkAvailableSpace', 'convertBytesToHumanReadable', 'importCalendarFile','viewAction'],
     created: function() {
         let that = this;
         this.messenger = new peergos.shared.messaging.Messenger(this.context);
@@ -71,6 +71,9 @@ module.exports = {
         });
     },
     methods: {
+        getContext: function() {
+            return this.context;
+        },
         getFileIcon: function(file, fileType) {
             if (file == null) {
                 return 'fa-file';
@@ -169,9 +172,6 @@ module.exports = {
                             }
                             entry.mediaFilePaths = [];
                         }
-                    }
-                    if (conversation.id == this.selectedConversationId) {
-                        that.messageThread = currentMessageThread.slice();
                     }
                 });
             }
@@ -309,10 +309,6 @@ module.exports = {
             }
             let entries = evt.dataTransfer.items;
             for(var i=0; i < entries.length; i++) {
-                let mimeType = entries[i].type;
-                if (!(mimeType.startsWith("image") || mimeType.startsWith("audio") || mimeType.startsWith("video"))) {
-                    this.showMessage("Only media files can be dragged and dropped");
-                }
                 let entry = entries[i].webkitGetAsEntry();
                 if (entry.isDirectory || !entry.isFile) {
                     this.showMessage("Only files can be dragged and dropped");
@@ -321,17 +317,41 @@ module.exports = {
             }
             this.uploadAttachments(evt.dataTransfer.files);
         },
+        isViewableMediaType: function(mediaItem) {
+            if (mediaItem.fileType == 'image' || mediaItem.fileType == 'audio' || mediaItem.fileType == 'video') {
+                return true;
+            }
+            return false;
+        },
         view: function (message, mediaIndex) {
             let mediaList = message.mediaFiles;
-            let files = [];
-            for(var i = mediaIndex; i < mediaList.length; i++) {
-                files.push(mediaList[i].file);
+            let currentMediaItem = mediaList[mediaIndex];
+            if (this.isViewableMediaType(currentMediaItem)) {
+                let files = [];
+                for(var i = mediaIndex; i < mediaList.length; i++) {
+                    if (this.isViewableMediaType(mediaList[i])) {
+                        files.push(mediaList[i].file);
+                    }
+                }
+                for(var j = 0; j < mediaIndex; j++) {
+                    if (this.isViewableMediaType(mediaList[j])) {
+                        files.push(mediaList[j].file);
+                    }
+                }
+                this.filesToViewInGallery = files;
+                this.showEmbeddedGallery = true;
+            } else if(currentMediaItem.fileType == 'calendar'){
+                this.importCalendarFile(false, currentMediaItem.file);
+            } else {
+                let slash = currentMediaItem.path.lastIndexOf('/');
+                let dir = currentMediaItem.path.substring(0, slash);
+                let filename = currentMediaItem.path.substring(slash +1);
+                if(currentMediaItem.fileType == 'pdf' || currentMediaItem.fileType == 'text'){
+                    this.viewAction(dir, filename);
+                } else {
+                    this.downloadFile(currentMediaItem.file);
+                }
             }
-            for(var j = 0; j < mediaIndex; j++) {
-                files.push(mediaList[j].file);
-            }
-            this.filesToViewInGallery = files;
-            this.showEmbeddedGallery = true;
         },
         uploadMedia: function(mediaFile, updateProgressBar) {
             let that = this;
@@ -342,9 +362,14 @@ module.exports = {
                 that.showMessage("Media file greater than 2GiB not currently supported!");
                 future.complete(null);
             } else {
+                let fileExtension = "";
+                let dotIndex = mediaFile.name.lastIndexOf('.');
+                if (dotIndex > -1 && dotIndex <= mediaFile.name.length -1) {
+                    fileExtension = mediaFile.name.substring(dotIndex + 1);
+                }
                 let postTime = peergos.client.JsUtil.now();
                 let chatController = this.allChatControllers.get(this.selectedConversationId);
-                this.messenger.uploadMedia(chatController.controller, java_reader, mediaFile.size, postTime, updateProgressBar).thenApply(function(pair) {
+                this.messenger.uploadMedia(chatController.controller, java_reader, fileExtension, mediaFile.size, postTime, updateProgressBar).thenApply(function(pair) {
                     var thumbnailAllocation = Math.min(100000, mediaFile.size / 10);
                     updateProgressBar({ value_0: thumbnailAllocation});
                     that.context.getByPath(pair.right.path).thenApply(function(fileOpt){
