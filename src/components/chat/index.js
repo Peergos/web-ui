@@ -565,14 +565,16 @@ module.exports = {
             setTimeout(intervalFunc, 10 * 1000);
         },
         executeInit: function(updateSpinner, periodicInit) {
+            let future = peergos.shared.util.Futures.incomplete();
             if (this.closedChat) {
-                return;
+                future.complete(false);
+                return future;
             }
             var that = this;
             if (updateSpinner) {
                 this.spinner(true);
             }
-            let future = peergos.shared.util.Futures.incomplete();
+
             this.messenger.listChats().thenApply(function(chats) {
                 let allChats = chats.toArray();
                 if (!that.isInitialised) {
@@ -1071,6 +1073,7 @@ module.exports = {
             let that = this;
             let future = peergos.shared.util.Futures.incomplete();
             let conversation = this.allConversations.get(controller.chatUuid);
+            let chatController = this.allChatControllers.get(controller.chatUuid);
             that.messenger.mergeAllUpdates(controller, this.socialState).thenApply(updatedController => {
                 chatController.controller = updatedController;
                 let origParticipants = updatedController.getMemberNames().toArray();
@@ -1221,7 +1224,9 @@ module.exports = {
             conversationList.sort(function(aVal, bVal){
                 return bVal.lastModified.localeCompare(aVal.lastModified)
             });
-            this.conversations = conversationList;
+            Vue.nextTick(function() {
+                that.conversations = conversationList;
+            });
             let that = this;
             if (conversationIconCandidates.length > 0) {
                 Vue.nextTick(function() {
@@ -1243,14 +1248,17 @@ module.exports = {
                     participants = " - " + participants;
                 }
                 title = title + participants;
-                this.chatTitle = title;
-                this.selectedConversationId = conversationId;
-                let currentMessageThread = this.allMessageThreads.get(conversationId);
-                if (currentMessageThread != null) {
-                    this.messageThread = currentMessageThread.slice();
-                } else {
-                    this.messageThread = [];
-                }
+                let that = this;
+                Vue.nextTick(function() {
+                    that.chatTitle = title;
+                    that.selectedConversationId = conversationId;
+                    let currentMessageThread = that.allMessageThreads.get(conversationId);
+                    if (currentMessageThread != null) {
+                        that.messageThread = currentMessageThread.slice();
+                    } else {
+                        that.messageThread = [];
+                    }
+                });
                 this.selectedConversationIsReadOnly = conversation.readonly;
             } else {
                 this.chatTitle = "";
