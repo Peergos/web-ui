@@ -1301,6 +1301,12 @@ module.exports = {
                 newMessageArea.classList.add("chat-hide");
                 this.statusMessages = [];
                 this.statusMessages.push("Welcome to Peergos Chat!");
+                this.statusMessages.push("");
+                this.statusMessages.push("");
+                this.statusMessages.push("");
+                this.statusMessages.push("");
+                this.statusMessages.push("");
+                this.statusMessages.push("Chat invitations will appear on your news feed");
             } else {
                 this.statusMessages = [];
                 newMessageArea.classList.remove("chat-hide");
