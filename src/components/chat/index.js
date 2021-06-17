@@ -1096,7 +1096,7 @@ module.exports = {
                 let origParticipants = controller.getMemberNames().toArray();
                 let participants = that.removeSelfFromParticipants(origParticipants);
                 let conversation = {id: controller.chatUuid, participants: participants, readonly: origParticipants.length == participants.length
-                    , title: "", currentAdmins: [chatOwner], currentMembers: [chatOwner], hasUnreadMessages: false};
+                    , title: controller.getTitle(), currentAdmins: [chatOwner], currentMembers: [chatOwner], hasUnreadMessages: false};
                 if (participants.length == 1) {
                     conversation.profileImageNA = false;
                 }
