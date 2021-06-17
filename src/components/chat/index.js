@@ -71,6 +71,12 @@ module.exports = {
         });
     },
     methods: {
+        getFileIcon: function(file, fileType) {
+            if (file == null) {
+                return 'fa-file';
+            }
+            return this.getFileIconFromFileAndType(file, fileType);
+        },
         reduceCommands: function(future) {
             let that = this;
             let command = this.commandQueue.shift();
@@ -138,8 +144,37 @@ module.exports = {
         selectConversation: function (conversation) {
             this.displayingMessages = true;
             this.resizeHandler();
-            this.buildMessageThread(conversation.id);
-            this.updateScrollPane();
+
+            let that = this;
+            that.buildMessageThread(conversation.id);
+            that.updateScrollPane();
+
+            let chatController = this.allChatControllers.get(conversation.id);
+            if (chatController.pendingAttachmentRefs.length > 0) {
+                this.loadAttachments(chatController).thenApply(attachmentMap => {
+                    let currentMessageThread = that.allMessageThreads.get(conversation.id);
+                    for(var i = 0; i < currentMessageThread.length; i++) {
+                        let entry = currentMessageThread[i];
+                        if (entry.mediaFilePaths != null && entry.mediaFilePaths.length > 0) {
+                            let mediaFilePaths = entry.mediaFilePaths;
+                            entry.mediaFiles = [];
+                            for(var j = 0; j < mediaFilePaths.length; j++) {
+                                let path = mediaFilePaths[j];
+                                let mediaFile = attachmentMap.get(path);
+                                if (mediaFile != null) {
+                                    let fileType = mediaFile.getFileProperties().getType();
+                                    let thumbnail = mediaFile.getFileProperties().thumbnail.ref != null ? mediaFile.getBase64Thumbnail() : "";
+                                    entry.mediaFiles.push({path: path, file: mediaFile, fileType: fileType, thumbnail: thumbnail, hasThumbnail: thumbnail.length > 0});
+                                }
+                            }
+                            entry.mediaFilePaths = [];
+                        }
+                    }
+                    //Vue.nextTick(function() {
+                        that.messageThread = currentMessageThread.slice();
+                    //});
+                });
+            }
         },
         toBase64Image: function(data) {
             var str = "";
@@ -582,6 +617,11 @@ module.exports = {
                     that.initialiseChats(allChats);
                     that.buildConversations();
                 }
+                if(that.selectedConversationId == null && that.conversations.length > 0){
+                    that.selectedConversationId = that.conversations[that.conversations.length -1].id;
+                }
+                let conversationId = that.selectedConversationId;
+
                 that.loadChatMessages(allChats).thenApply(function(allChats) {
                     that.updateMessageThreads(allChats);
                     for(var i = 0; i < allChats.length; i++) {
@@ -590,12 +630,6 @@ module.exports = {
                         }
                     }
                     that.buildConversations();
-                    let conversationId = null;
-                    if (that.selectedConversationId != null) {
-                        conversationId = that.selectedConversationId;
-                    } else if(that.conversations.length > 0){
-                        conversationId = that.conversations[0].id;
-                    }
                     that.buildMessageThread(conversationId);
                     if (conversationId != null) {
                         that.updateScrollPane();
@@ -647,7 +681,7 @@ module.exports = {
             let chatController = this.allChatControllers.get(conversationId);
             that.messenger.mergeAllUpdates(chatController.controller, this.socialState).thenApply(latestController => {
                 chatController.controller = latestController;
-                that.retrieveChatMessages(chatController).thenApply(messages => {
+                that.retrieveChatMessages(chatController, true).thenApply(messages => {
                     that.updateMessageThread(conversationId, messages.messagePairs, messages.attachmentMap);
                     that.buildConversations();
                     that.buildMessageThread(conversationId);
@@ -758,7 +792,7 @@ module.exports = {
                 this.messenger.createChat().thenApply(function(controller){
                     let conversationId = controller.chatUuid;
                     that.allChatControllers.set(controller.chatUuid,
-                        {controller: controller, owner: that.context.username, startIndex: 0});
+                        {controller: controller, owner: that.context.username, startIndex: 0, pendingAttachmentRefs: []});
                     let item = {id: conversationId, title: updatedGroupTitle, participants: updatedMembers
                         , readonly: false, currentAdmins: [that.context.username], currentMembers: [that.context.username]
                         , hasUnreadMessages: false};
@@ -833,7 +867,7 @@ module.exports = {
             var that = this;
             let future = peergos.shared.util.Futures.incomplete();
             let chatController = this.allChatControllers.get(conversationId);
-            this.retrieveChatMessages(chatController).thenApply(messages => {
+            this.retrieveChatMessages(chatController, false).thenApply(messages => {
                 that.updateMessageThread(conversationId, messages.messagePairs, messages.attachmentMap);
                 that.buildConversations();
                 that.buildMessageThread(conversationId);
@@ -1056,7 +1090,7 @@ module.exports = {
             let that = this;
             controllers.forEach(controller => {
                 let chatOwner = this.extractChatOwner(controller.chatUuid);
-                chatController = {controller:controller, startIndex: 0, owner: chatOwner};
+                chatController = {controller:controller, startIndex: 0, owner: chatOwner, pendingAttachmentRefs: []};
                 that.allChatControllers.set(controller.chatUuid, chatController);
                 that.allMessageThreads.set(controller.chatUuid, []);
                 let origParticipants = controller.getMemberNames().toArray();
@@ -1084,7 +1118,8 @@ module.exports = {
                     conversation.profileImageNA = false;
                 }
                 let firstGet = chatController.startIndex == 0;
-                that.retrieveChatMessages(chatController).thenApply(messages => {
+                let loadAttachments = controller.chatUuid == that.selectedConversationId;
+                that.retrieveChatMessages(chatController, loadAttachments).thenApply(messages => {
                     if (!firstGet && messages.messagePairs.length > 0) {
                         conversation.hasUnreadMessages = true;
                     }
@@ -1106,9 +1141,10 @@ module.exports = {
             let pathWithoutLeadingSlash = path.startsWith("/") ? path.substring(1) : path;
             return pathWithoutLeadingSlash.substring(0, pathWithoutLeadingSlash.indexOf("/"));
         },
-        loadAllAttachments: function(refs, future) {
+        loadAllAttachments: function(chatController, future) {
             let that = this;
             let attachmentMap = new Map();
+            let refs = chatController.pendingAttachmentRefs;
             if (refs.length == 0) {
                 future.complete(attachmentMap);
             } else {
@@ -1123,6 +1159,7 @@ module.exports = {
                             attachmentMap.set(fullPath, mediaFile);
                         }
                         if (loadedCount == refs.length) {
+                            chatController.pendingAttachmentRefs = [];
                             future.complete(attachmentMap);
                         }
                     }).exceptionally(err => {
@@ -1132,9 +1169,13 @@ module.exports = {
                 });
             }
         },
-        loadAttachments: function(messages) {
+        loadAttachments: function(chatController) {
             let future = peergos.shared.util.Futures.incomplete();
-            let refs = [];
+            this.loadAllAttachments(chatController, future);
+            return future;
+        },
+        addPendingAttachments: function(chatController, messages) {
+            let refs = chatController.pendingAttachmentRefs;
             for(var j = 0; j < messages.length; j++) {
                 let chatEnvelope = messages[j];
                 let payload = chatEnvelope.payload;
@@ -1151,17 +1192,21 @@ module.exports = {
                     }
                 }
             }
-            this.loadAllAttachments(refs, future);
-            return future;
         },
-        retrieveChatMessages: function(chatController) {
+
+        retrieveChatMessages: function(chatController, loadAttachments) {
             let future = peergos.shared.util.Futures.incomplete();
             let that = this;
             that.getAllMessages(chatController).thenApply(messages => {
                 that.generateMessageHashes(chatController, messages).thenApply(messagePairs => {
-                    that.loadAttachments(messages).thenApply(attachmentMap => {
-                        future.complete({attachmentMap: attachmentMap, messagePairs: messagePairs});
-                    });
+                    that.addPendingAttachments(chatController, messages);
+                    if (loadAttachments) {
+                        that.loadAttachments(chatController).thenApply(attachmentMap => {
+                            future.complete({attachmentMap: attachmentMap, messagePairs: messagePairs});
+                        });
+                    } else {
+                        future.complete({attachmentMap: new Map(), messagePairs: messagePairs});
+                    }
                 });
             });
             return future;
@@ -1224,9 +1269,7 @@ module.exports = {
             conversationList.sort(function(aVal, bVal){
                 return bVal.lastModified.localeCompare(aVal.lastModified)
             });
-            Vue.nextTick(function() {
-                that.conversations = conversationList;
-            });
+            this.conversations = conversationList;
             let that = this;
             if (conversationIconCandidates.length > 0) {
                 Vue.nextTick(function() {
@@ -1249,16 +1292,14 @@ module.exports = {
                 }
                 title = title + participants;
                 let that = this;
-                Vue.nextTick(function() {
-                    that.chatTitle = title;
-                    that.selectedConversationId = conversationId;
-                    let currentMessageThread = that.allMessageThreads.get(conversationId);
-                    if (currentMessageThread != null) {
-                        that.messageThread = currentMessageThread.slice();
-                    } else {
-                        that.messageThread = [];
-                    }
-                });
+                that.chatTitle = title;
+                that.selectedConversationId = conversationId;
+                let currentMessageThread = that.allMessageThreads.get(conversationId);
+                if (currentMessageThread != null) {
+                    that.messageThread = currentMessageThread.slice();
+                } else {
+                    that.messageThread = [];
+                }
                 this.selectedConversationIsReadOnly = conversation.readonly;
             } else {
                 this.chatTitle = "";
@@ -1365,13 +1406,14 @@ module.exports = {
         },
         executeDeleteChatMessage: function(message) {
             let that = this;
-            let chatController = this.allChatControllers.get(this.selectedConversationId);
+            let conversationId = this.selectedConversationId;
+            let chatController = this.allChatControllers.get(conversationId);
             this.spinner(true);
             let future = peergos.shared.util.Futures.incomplete();
             chatController.controller.generateHash(message.envelope).thenApply(messageRef => {
                 let msg = new peergos.shared.messaging.messages.DeleteMessage(messageRef);
-                that.sendMessage(that.selectedConversationId, msg).thenApply(res => {
-                    that.refreshConversation(that.selectedConversationId).thenApply(res2 => {
+                that.sendMessage(conversationId, msg).thenApply(res => {
+                    that.refreshConversation(conversationId).thenApply(res2 => {
                         that.spinner(false);
                         future.complete(true);
                     });
@@ -1424,6 +1466,7 @@ module.exports = {
         createMessage: function(author, messageEnvelope, body, attachmentMap, parentMessage) {
             let content = body[0].inlineText();
             let mediaFiles = [];
+            let mediaFilePaths = [];
             for(var i = 1; i < body.length; i++) {
                 let path = body[i].reference().ref.path;
                 let mediaFile = attachmentMap.get(path);
@@ -1431,10 +1474,13 @@ module.exports = {
                     let fileType = mediaFile.getFileProperties().getType();
                     let thumbnail = mediaFile.getFileProperties().thumbnail.ref != null ? mediaFile.getBase64Thumbnail() : "";
                     mediaFiles.push({path: path, file: mediaFile, fileType: fileType, thumbnail: thumbnail, hasThumbnail: thumbnail.length > 0});
+                } else {
+                    mediaFilePaths.push(path);
+                    mediaFiles.push({path: path, file: null, fileType: null, thumbnail: "", hasThumbnail: false});
                 }
             }
             let timestamp = messageEnvelope == null ? "" : this.fromUTCtoLocal(messageEnvelope.creationTime);
-            let entry = {isStatusMsg: false, mediaFiles: mediaFiles,
+            let entry = {isStatusMsg: false, mediaFiles: mediaFiles, mediaFilePaths: mediaFilePaths,
                 sender: author, sendTime: timestamp, contents: content
                 , envelope: messageEnvelope, parentMessage: parentMessage, edited: false, deleted : false};
             return entry;

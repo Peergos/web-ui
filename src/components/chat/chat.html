@@ -119,7 +119,7 @@
                                         <div class="received-message">
                                             <div v-for="(mediaFile, idx) in message.mediaFiles" class="attachment-view-container">
                                                 <img v-if="mediaFile.hasThumbnail" v-on:click="view(message, idx)" v-bind:src="mediaFile.thumbnail" style="cursor: pointer; margin-bottom: 10px; margin-top: 10px;"/>
-                                                <span v-if="!mediaFile.hasThumbnail" style="height:100px;cursor: pointer" v-on:click="view(message, idx)" v-bind:class="['file', 'fa', getFileIconFromFileAndType(mediaFile.file, mediaFile.fileType), 'picon-timeline']"> </span>
+                                                <span v-if="!mediaFile.hasThumbnail" style="height:100px;cursor: pointer" v-on:click="view(message, idx)" v-bind:class="['file', 'fa', getFileIcon(mediaFile.file, mediaFile.fileType), 'picon-timeline']"> </span>
                                             </div>
                                             <p v-if="message.contents.length > 0">{{message.contents}}</p>
                                             <span v-if="message.sendTime.length == 0" class="chat-message-info"><i class="fa fa-reply" @click="reply(message)" style="cursor: pointer"></i> | {{message.sender}} | <i class="fa fa-spinner fa-spin"></i> <i v-if="message.edited && !message.deleted">&nbsp; [edited]</i></span>
@@ -130,7 +130,7 @@
                                         <div class="sent-message">
                                             <div v-for="(mediaFile, idx) in message.mediaFiles" class="attachment-view-container">
                                                 <img v-if="mediaFile.hasThumbnail" v-on:click="view(message, idx)" v-bind:src="mediaFile.thumbnail" style="cursor: pointer; margin-bottom: 10px; margin-top: 10px;"/>
-                                                <span v-if="!mediaFile.hasThumbnail" style="height:100px;cursor: pointer" v-on:click="view(message, idx)" v-bind:class="['file', 'fa', getFileIconFromFileAndType(mediaFile.file, mediaFile.fileType), 'picon-timeline']"> </span>
+                                                <span v-if="!mediaFile.hasThumbnail" style="height:100px;cursor: pointer" v-on:click="view(message, idx)" v-bind:class="['file', 'fa', getFileIcon(mediaFile.file, mediaFile.fileType), 'picon-timeline']"> </span>
                                             </div>
                                             <p v-if="message.contents.length > 0">{{message.contents}}</p>
                                             <span v-if="message.sendTime.length == 0" class="chat-message-info"><i class="fa fa-reply" @click="reply(message)" style="cursor: pointer"></i> <b>|</b> {{message.sender}} <b>|</b> <i class="fa fa-spinner fa-spin"></i> <b v-if="!message.deleted">|</b> <i v-if="!message.deleted" class="fa fa-edit" @click="edit(message)" style="cursor: pointer"></i> <b v-if="!message.deleted">|</b> <i v-if="!message.deleted" class="fa fa-trash-alt" @click="deleteMessage(message)" style="cursor: pointer"></i><i v-if="message.edited && !message.deleted">&nbsp; [edited]</i></span>
@@ -145,7 +145,7 @@
                                                 <div v-bind:class="['parent-message', message.parentMessage.sender == context.username ? 'sent-message' : 'received-message']">
                                                     <div v-for="(mediaFile, idx) in message.parentMessage.mediaFiles" class="attachment-view-container">
                                                         <img v-if="mediaFile.hasThumbnail" v-on:click="view(message.parentMessage, idx)" v-bind:src="mediaFile.thumbnail" style="cursor: pointer; margin-bottom: 10px; margin-top: 10px;"/>
-                                                        <span v-if="!mediaFile.hasThumbnail" style="height:100px;cursor: pointer" v-on:click="view(message.parentMessage, idx)" v-bind:class="['file', 'fa', getFileIconFromFileAndType(mediaFile.file, mediaFile.fileType), 'picon-timeline']"> </span>
+                                                        <span v-if="!mediaFile.hasThumbnail" style="height:100px;cursor: pointer" v-on:click="view(message.parentMessage, idx)" v-bind:class="['file', 'fa', getFileIcon(mediaFile.file, mediaFile.fileType), 'picon-timeline']"> </span>
                                                     </div>
                                                     <p v-if="message.parentMessage.contents.length > 0" v-bind:class="[message.parentMessage.sender == context.username ? 'reply-to-own-message' : 'reply-to-others-message']">{{message.parentMessage.contents}}</p>
                                                     <span v-if="message.parentMessage.sendTime.length == 0" class="chat-message-info">Original message: {{message.parentMessage.sender}} | <i class="fa fa-spinner fa-spin"></i>  <i v-if="message.parentMessage.edited && !message.parentMessage.deleted">&nbsp; [edited]</i></span>
@@ -156,7 +156,7 @@
                                                 <div class="received-message">
                                                     <div v-for="(mediaFile, idx) in message.mediaFiles" class="attachment-view-container">
                                                         <img v-if="mediaFile.hasThumbnail" v-on:click="view(message, idx)" v-bind:src="mediaFile.thumbnail" style="cursor: pointer; margin-bottom: 10px; margin-top: 10px;"/>
-                                                        <span v-if="!mediaFile.hasThumbnail" style="height:100px;cursor: pointer" v-on:click="view(message, idx)" v-bind:class="['file', 'fa', getFileIconFromFileAndType(mediaFile.file, mediaFile.fileType), 'picon-timeline']"> </span>
+                                                        <span v-if="!mediaFile.hasThumbnail" style="height:100px;cursor: pointer" v-on:click="view(message, idx)" v-bind:class="['file', 'fa', getFileIcon(mediaFile.file, mediaFile.fileType), 'picon-timeline']"> </span>
                                                     </div>
                                                     <p v-if="message.contents.length > 0">{{message.contents}}</p>
                                                     <span v-if="message.sendTime.length == 0" class="chat-message-info"><i class="fa fa-reply" @click="reply(message)" style="cursor: pointer"></i> | {{message.sender}} | <i class="fa fa-spinner fa-spin"></i> <i v-if="message.edited && !message.deleted">&nbsp; [edited]</i></span>
@@ -171,7 +171,7 @@
                                                 <div v-bind:class="['parent-message', message.parentMessage.sender == context.username ? 'sent-message' : 'received-message']">
                                                     <div v-for="(mediaFile, idx) in message.parentMessage.mediaFiles" class="attachment-view-container">
                                                         <img v-if="mediaFile.hasThumbnail" v-on:click="view(message.parentMessage, idx)" v-bind:src="mediaFile.thumbnail" style="cursor: pointer; margin-bottom: 10px; margin-top: 10px;"/>
-                                                        <span v-if="!mediaFile.hasThumbnail" style="height:100px;cursor: pointer" v-on:click="view(message.parentMessage, idx)" v-bind:class="['file', 'fa', getFileIconFromFileAndType(mediaFile.file, mediaFile.fileType), 'picon-timeline']"> </span>
+                                                        <span v-if="!mediaFile.hasThumbnail" style="height:100px;cursor: pointer" v-on:click="view(message.parentMessage, idx)" v-bind:class="['file', 'fa', getFileIcon(mediaFile.file, mediaFile.fileType), 'picon-timeline']"> </span>
                                                     </div>
                                                     <p v-if="message.parentMessage.contents.length > 0" v-bind:class="[message.parentMessage.sender == context.username ? 'reply-to-own-message' : 'reply-to-others-message']">{{message.parentMessage.contents}}</p>
                                                     <span v-if="message.parentMessage.sendTime.length == 0" class="chat-message-info">Original message: {{message.parentMessage.sender}} | <i class="fa fa-spinner fa-spin"></i> <i v-if="message.parentMessage.edited && !message.parentMessage.deleted">&nbsp; [edited]</i></span>
@@ -182,7 +182,7 @@
                                                 <div class="sent-message">
                                                     <div v-for="(mediaFile, idx) in message.mediaFiles" class="attachment-view-container">
                                                         <img v-if="mediaFile.hasThumbnail" v-on:click="view(message, idx)" v-bind:src="mediaFile.thumbnail" style="cursor: pointer; margin-bottom: 10px; margin-top: 10px;"/>
-                                                        <span v-if="!mediaFile.hasThumbnail" style="height:100px;cursor: pointer" v-on:click="view(message, idx)" v-bind:class="['file', 'fa', getFileIconFromFileAndType(mediaFile.file, mediaFile.fileType), 'picon-timeline']"> </span>
+                                                        <span v-if="!mediaFile.hasThumbnail" style="height:100px;cursor: pointer" v-on:click="view(message, idx)" v-bind:class="['file', 'fa', getFileIcon(mediaFile.file, mediaFile.fileType), 'picon-timeline']"> </span>
                                                     </div>
                                                     <p v-if="message.contents.length > 0">{{message.contents}}</p>
                                                     <span v-if="message.sendTime.length == 0" class="chat-message-info"><i class="fa fa-reply" @click="reply(message)" style="cursor: pointer"></i> <b>|</b> {{message.sender}} <b>|</b> <i class="fa fa-spinner fa-spin"></i> <b v-if="!message.deleted">|</b> <i v-if="!message.deleted" class="fa fa-edit" @click="edit(message)" style="cursor: pointer"></i> <b v-if="!message.deleted">|</b> <i v-if="!message.deleted" class="fa fa-trash-alt" @click="deleteMessage(message)" style="cursor: pointer"></i><i v-if="message.edited && !message.deleted">&nbsp; [edited]</i></span>
@@ -198,7 +198,7 @@
                             <div class="reply-draft-message">
                                 <div v-for="(mediaFile, idx) in replyToMessage.mediaFiles" class="attachment-view-container">
                                     <img v-if="mediaFile.hasThumbnail" v-on:click="view(replyToMessage, idx)" v-bind:src="mediaFile.thumbnail" style="cursor: pointer; margin-bottom: 10px; margin-top: 10px;"/>
-                                    <span v-if="!mediaFile.hasThumbnail" style="height:100px;cursor: pointer" v-on:click="view(replyToMessage, idx)" v-bind:class="['file', 'fa', getFileIconFromFileAndType(mediaFile.file, mediaFile.fileType), 'picon-timeline']"> </span>
+                                    <span v-if="!mediaFile.hasThumbnail" style="height:100px;cursor: pointer" v-on:click="view(replyToMessage, idx)" v-bind:class="['file', 'fa', getFileIcon(mediaFile.file, mediaFile.fileType), 'picon-timeline']"> </span>
                                 </div>
                                 <p v-if="replyToMessage.contents.length > 0" v-bind:class="[replyToMessage.sender == context.username ? 'reply-to-own-message' : 'reply-to-others-message']">{{replyToMessage.contents}}</p>
                                 <span v-if="replyToMessage.sendTime.length == 0" class="chat-message-info">{{replyToMessage.sender}} | <i class="fa fa-spinner fa-spin"></i> <i v-if="replyToMessage.edited && !replyToMessage.deleted">&nbsp; [edited]</i></span>
