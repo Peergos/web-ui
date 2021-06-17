@@ -170,9 +170,9 @@ module.exports = {
                             entry.mediaFilePaths = [];
                         }
                     }
-                    //Vue.nextTick(function() {
+                    if (conversation.id == this.selectedConversationId) {
                         that.messageThread = currentMessageThread.slice();
-                    //});
+                    }
                 });
             }
         },
@@ -556,6 +556,36 @@ module.exports = {
                 }
             }
         },
+        decodeLatestMessage: function (message) {
+            let chatEnvelope = message;
+            let payload = chatEnvelope.payload;
+            let type = payload.type().toString();
+            let author = chatController.controller.getUsername(chatEnvelope.author);
+            if (type == 'GroupState') {//type
+                if(payload.key == "title") {
+                    return "Chat name changed to " + payload.value;
+                } else if(payload.key == "admins") {
+                    return "Chat admins changed to " + payload.value;
+                }
+            } else if(type == 'Invite') {
+                let username = chatEnvelope.payload.username;
+                return author + " invited " + username;
+            } else if(type == 'RemoveMember') {
+                let username = chatController.controller.getUsername(chatEnvelope.payload.memberToRemove);
+                return author + " removed " + username;
+            } else if(type == 'Join') {
+                let username = chatEnvelope.payload.username;
+                return username + " joined the chat";
+            } else if(type == 'Application') {
+                return payload.body.toArray()[0].inlineText();
+            } else if(type == 'Edit') {
+                return payload.content.body.toArray()[0].inlineText();
+            } else if(type == 'Delete') {
+                return "[Message Deleted]";
+            } else if(type == 'ReplyTo') {
+                return payload.content.body.toArray()[0].inlineText();
+            }
+        },
         msgKey: function(msg) {
             if (msg == null) {
                 return null;
@@ -618,7 +648,7 @@ module.exports = {
                     that.buildConversations();
                 }
                 if(that.selectedConversationId == null && that.conversations.length > 0){
-                    that.selectedConversationId = that.conversations[that.conversations.length -1].id;
+                    that.selectedConversationId = that.conversations[0].id;
                 }
                 let conversationId = that.selectedConversationId;
 
@@ -1095,10 +1125,20 @@ module.exports = {
                 that.allMessageThreads.set(controller.chatUuid, []);
                 let origParticipants = controller.getMemberNames().toArray();
                 let participants = that.removeSelfFromParticipants(origParticipants);
+
                 let conversation = {id: controller.chatUuid, participants: participants, readonly: origParticipants.length == participants.length
                     , title: controller.getTitle(), currentAdmins: [chatOwner], currentMembers: [chatOwner], hasUnreadMessages: false};
                 if (participants.length == 1) {
                     conversation.profileImageNA = false;
+                }
+                let recentMessages = controller.getRecent().toArray();
+                let latestMessage = recentMessages.length == 0 ? null : recentMessages[recentMessages.length-1];
+                if (latestMessage != null) {
+                    conversation.blurb = that.decodeLatestMessage(latestMessage);
+                    conversation.lastModified = that.fromUTCtoLocal(latestMessage.creationTime);
+                } else {
+                    conversation.blurb = "";
+                    conversation.lastModified = "";
                 }
                 that.allConversations.set(controller.chatUuid, conversation);
             });
@@ -1255,9 +1295,6 @@ module.exports = {
                         if (latestMessage != null) {
                             val.blurb = latestMessage.contents;
                             val.lastModified = latestMessage.sendTime;
-                        } else {
-                            val.blurb = "";
-                            val.lastModified = "";
                         }
                         conversationList.push(val);
                     }
