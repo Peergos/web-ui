@@ -403,19 +403,34 @@ module.exports = {
         },
         executeUploadAllAttachments: function(files) {
             let future = peergos.shared.util.Futures.incomplete();
-            this.reduceUploadAllAttachments(0, files, future);
+            let progressBars = [];
+            for(var i=0; i < files.length; i++) {
+                let mediaFile = files[i];
+                var thumbnailAllocation = Math.min(100000, mediaFile.size / 10);
+                var resultingSize = mediaFile.size + thumbnailAllocation;
+                var progress = {
+                    show:true,
+                    title:"Encrypting and uploading " + mediaFile.name,
+                    done:0,
+                    max:resultingSize
+                };
+                this.progressMonitors.push(progress);
+                progressBars.push(progress);
+            }
+            this.reduceUploadAllAttachments(0, files, progressBars, future);
             return future;
         },
-        reduceUploadAllAttachments: function(index, files, future) {
+        reduceUploadAllAttachments: function(index, files, progressBars, future) {
             let that = this;
             if (index == files.length) {
                 document.getElementById('uploadInput').value = "";
                 future.complete(true);
             } else {
                 let mediaFile = files[index];
-                this.uploadFile(mediaFile).thenApply(function(res){
+                let progress = progressBars[index];
+                this.uploadFile(mediaFile, progress).thenApply(function(res){
                     if (res) {
-                        that.reduceUploadAllAttachments(++index, files, future);
+                        that.reduceUploadAllAttachments(++index, files, progressBars, future);
                     } else {
                         future.complete(false);
                     }
@@ -448,18 +463,9 @@ module.exports = {
                 this.uploadAllAttachments(files);
             }
         },
-        uploadFile: function(mediaFile) {
+        uploadFile: function(mediaFile, progress) {
             let future = peergos.shared.util.Futures.incomplete();
             let that = this;
-            var thumbnailAllocation = Math.min(100000, mediaFile.size / 10);
-            var resultingSize = mediaFile.size + thumbnailAllocation;
-            var progress = {
-                show:true,
-                title:"Encrypting and uploading " + mediaFile.name,
-                done:0,
-                max:resultingSize
-            };
-            this.progressMonitors.push(progress);
             let updateProgressBar = function(len){
                 progress.done += len.value_0;
                 if (progress.done >= progress.max) {
