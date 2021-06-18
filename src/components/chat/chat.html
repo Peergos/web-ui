@@ -1,7 +1,7 @@
 <transition name="modal">
 
 <div class="modal-mask-app" @click="close" style="position:absolute;">
-    <div class="modal-container" style="background-color: #fff;width:100%;height: 100%;" @click.stop >
+    <div class="modal-container" style="width:100%;height: 100%;" @click.stop >
         <span @click="close" class="close">&times;</span>
         <div class="header">
             <h1 v-if="chatTitle.length == 0" >&nbsp;</h1>
@@ -78,7 +78,7 @@
                                 </span>
                             </div>
                         </div>
-                        <div class="conversations">
+                        <div id="conversations-container" class="conversations">
                             <div v-for="(status, idx) in statusMessages">
                                 <div v-if="idx > 0" class="status-message-container">
                                     <div class="status-message">

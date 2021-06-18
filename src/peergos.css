@@ -842,7 +842,6 @@ h3 {word-wrap:break-word; white-space:normal;}
 }
 
 .chat-container{
-  max-width:1170px;
   margin:auto;
 }
 
@@ -937,7 +936,6 @@ h3 {word-wrap:break-word; white-space:normal;}
 }
 
 .conversations {
-  height: 450px;
   overflow-y: scroll;
 }
 
@@ -1027,8 +1025,11 @@ h3 {word-wrap:break-word; white-space:normal;}
 }
 
 .attachment {
-    border: 3px solid #c4c4c4;
-    border-radius: 3px;
+    position: fixed;
+    background-color: white;
+    bottom: 80px;
+    border: 1px solid #c4c4c4;
+    border-radius: 5px;
     margin-bottom: 15px;
     padding: 5px;
 }
@@ -1039,16 +1040,17 @@ h3 {word-wrap:break-word; white-space:normal;}
 
 .reply-draft-container {
   overflow:hidden;
-  margin:26px 0 26px;
 }
 
 .reply-draft-message {
-  float: right;
-  width: 50%;
-  border: 3px solid #c4c4c4;
-  border-radius: 3px;
+  position: fixed;
+  background-color: white;
+  bottom: 80px;
+  right: 100px;
+  border: 1px solid #c4c4c4;
+  border-radius: 5px;
   margin-bottom: 15px;
-  padding: 5px;
+  padding: 10px;
 }
 
 .reply-draft-message p {
@@ -1194,11 +1196,10 @@ h3 {word-wrap:break-word; white-space:normal;}
 }
 
 .chat-messaging {
-  padding: 0 0 50px 0;
+  padding: 0 0 0px 0;
 }
 
 .chat-messages-container {
-  height: 416px;
   overflow-y: auto;
 }
 /* chat - end */

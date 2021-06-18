@@ -114,6 +114,12 @@ module.exports = {
         resizeHandler: function() {
             var left = document.getElementById("chat-left-panel");
             var right = document.getElementById("dnd-chat");
+
+            var conversationsContainer = document.getElementById("conversations-container");
+            conversationsContainer.style.height = window.innerHeight - 160 + 'px';
+            var chatContainer = document.getElementById("message-scroll-area");
+            chatContainer.style.height = window.innerHeight - 200 + 'px';
+
             let closeConversationEl = document.getElementById('chat-back-button');
             if (this.displayingMessages) {
                 left.classList.remove("chat-full-width");
@@ -652,7 +658,7 @@ module.exports = {
                 console.log("full refresh");
                 that.init(false, true);
             };
-            setTimeout(intervalFunc, 10 * 1000);
+            setTimeout(intervalFunc, 30 * 1000);
         },
         executeInit: function(updateSpinner, periodicInit) {
             let future = peergos.shared.util.Futures.incomplete();
