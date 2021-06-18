@@ -761,12 +761,14 @@ module.exports = {
             return future;
         },
         removeConversation: function(conversationId) {
+            this.allMessageThreads.set(conversationId, []);
             this.allMessageThreads.delete(conversationId);
             this.allThreadsHashToIndex.delete(conversationId);
             this.allChatControllers.delete(conversationId);
             this.allConversations.delete(conversationId);
             if (conversationId == this.selectedConversationId) {
                 this.selectedConversationId = null;
+                this.buildMessageThread();
             }
         },
         reduceGetAllMessages: function(chatController, messages, future) {
@@ -1356,7 +1358,7 @@ module.exports = {
             return list;
         },
         buildMessageThread: function (conversationId) {
-            if (conversationId != null) {
+            if (conversationId != null && this.allConversations.get(conversationId) != null) {
                 let conversation = this.allConversations.get(conversationId);
                 conversation.hasUnreadMessages = false;
                 var title = this.truncateText(conversation.title, 20);
