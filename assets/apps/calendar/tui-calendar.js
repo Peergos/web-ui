@@ -20327,7 +20327,7 @@ ScheduleCreationPopup.prototype._createDatepicker = function(start, end, isAllDa
         timepicker: isAllDay ? null : {
             showMeridiem: false,
             usageStatistics: this._usageStatistics,
-            minuteStep: 15,
+            minuteStep: 5,
             inputType: 'spinbox',
             layoutType: 'tab'
         },
