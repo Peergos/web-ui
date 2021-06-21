@@ -95,11 +95,17 @@
                                     </div>
                                     <div class="conversation" v-if="conversation.hasUnreadMessages">
                                         <h5><b>{{displayTitle(conversation)}}</b><span>{{conversation.lastModified}}</span></h5>
-                                        <p>{{truncateText(conversation.blurb,40)}}</p>
+                                        <p v-if="!conversation.readonly">{{truncateText(conversation.blurb,40)}}</p>
+                                        <p v-if="conversation.readonly">Access Revoked
+                                            <button class="btn btn-danger" @click="removeConversation(conversation.id)" >Delete</button>
+                                        </p>
                                     </div>
                                     <div class="conversation" v-if="!conversation.hasUnreadMessages">
                                         <h5>{{displayTitle(conversation)}}<span>{{conversation.lastModified}}</span></h5>
-                                        <p>{{truncateText(conversation.blurb,40)}}</p>
+                                        <p v-if="!conversation.readonly">{{truncateText(conversation.blurb,40)}}</p>
+                                        <p v-if="conversation.readonly">Access Revoked
+                                            <button class="btn btn-danger" @click="removeConversation(conversation.id)" >Delete</button>
+                                        </p>
                                     </div>
                                 </div>
                             </div>

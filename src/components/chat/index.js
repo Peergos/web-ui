@@ -9,7 +9,7 @@ module.exports = {
             statusMessages: [],
             selectedConversationId: null,
             newMessageText: "",
-            newMessageMaxLength: 500,
+            newMessageMaxLength: 1000,
             allConversations: new Map(),
             allChatControllers: new Map(),
             allMessageThreads: new Map(),
@@ -699,11 +699,6 @@ module.exports = {
 
                 that.loadChatMessages(allChats).thenApply(function(allChats) {
                     that.updateMessageThreads(allChats);
-                    for(var i = 0; i < allChats.length; i++) {
-                        if (allChats[i].toBeDeleted) {
-                            that.removeConversation(allChats[i].conversationId);
-                        }
-                    }
                     that.buildConversations();
                     that.buildMessageThread(conversationId);
                     if (conversationId != null) {
@@ -765,14 +760,17 @@ module.exports = {
                 });
             }).exceptionally(function(throwable) {
                 if (throwable.getMessage() == "You have been removed from the chat.") {
-                    that.buildMessageThread(null);
-                    that.removeConversation(conversationId);
+                    let conversation = that.allConversations.get(conversationId);
+                    conversation.readonly = true;
+                    that.buildMessageThread(conversationId);
                     that.buildConversations();
-                    that.updateScrollPane();
                 }
                 future.complete(false);
             });
             return future;
+        },
+        temp: function(conversationId) {
+            //that.removeConversation(allChats[i].conversationId);
         },
         removeConversation: function(conversationId) {
             this.allMessageThreads.set(conversationId, []);
@@ -1193,8 +1191,8 @@ module.exports = {
         readChatMessages: function(controller) {
             let that = this;
             let future = peergos.shared.util.Futures.incomplete();
-            let conversation = this.allConversations.get(controller.chatUuid);
             let chatController = this.allChatControllers.get(controller.chatUuid);
+            let conversation = this.allConversations.get(controller.chatUuid);
             that.messenger.mergeAllUpdates(controller, this.socialState).thenApply(updatedController => {
                 chatController.controller = updatedController;
                 let origParticipants = updatedController.getMemberNames().toArray();
@@ -1216,8 +1214,11 @@ module.exports = {
             }).exceptionally(function(throwable) {
                 if (throwable.getMessage() == "You have been removed from the chat.") {
                     conversation.readonly = true;
-                    future.complete({conversationId: controller.chatUuid, messagePairs: []
-                                    , attachmentMap: new Map(), toBeDeleted: true});
+                    let loadAttachments = controller.chatUuid == that.selectedConversationId;
+                    that.retrieveChatMessages(chatController, loadAttachments).thenApply(messages => {
+                        future.complete({conversationId: controller.chatUuid, messagePairs: messages.messagePairs
+                                        , attachmentMap: messages.attachmentMap});
+                    });
                 } else {
                     future.complete({conversationId: controller.chatUuid, messagePairs: [], attachmentMap: new Map()});
                 }
