@@ -9,6 +9,7 @@ module.exports = {
             statusMessages: [],
             selectedConversationId: null,
             newMessageText: "",
+            newMessageMaxLength: 500,
             allConversations: new Map(),
             allChatControllers: new Map(),
             allMessageThreads: new Map(),
@@ -73,6 +74,13 @@ module.exports = {
     methods: {
         getContext: function() {
             return this.context;
+        },
+        checkMessageLength: function(e) {
+            let newMessageValue = e.target.value;
+            if (newMessageValue.length > this.newMessageMaxLength) {
+                this.newMessageText = this.truncateText(newMessageValue, this.newMessageMaxLength);
+                this.showMessage("Message has been truncated to " + this.newMessageMaxLength + " characters");
+            }
         },
         getFileIcon: function(file, fileType) {
             if (file == null) {

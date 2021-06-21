@@ -231,7 +231,7 @@
                         <div id="new-message-id" class="new-message-container chat-hide">
                             <div class="new-message">
                                 <span>
-                                    <textarea id='message-input' rows="1" v-model="newMessageText" :maxlength="200"  v-on:keyup.enter="send()" placeholder="Type a message" class="prevent-resize"></textarea>
+                                    <textarea id='message-input' rows="1" v-model="newMessageText"  v-on:keyup.enter="send()" placeholder="Type a message" class="prevent-resize"  @input="checkMessageLength"></textarea>
                                     <button id="emoji-chooser" :disabled="selectedConversationId == null || selectedConversationIsReadOnly" class="chat-btn btn-success emoji-btn" type="button" @click="launchEmojiPicker()">
                                         <i class="fa fa-smile" aria-hidden="true"></i>
                                     </button>
