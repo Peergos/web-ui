@@ -159,6 +159,9 @@ module.exports = {
             this.resizeHandler();
         },
         selectConversation: function (conversation) {
+            if (this.executingCommands) {
+                return;
+            }
             this.displayingMessages = true;
             this.resizeHandler();
 
