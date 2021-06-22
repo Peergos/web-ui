@@ -772,19 +772,69 @@ module.exports = {
             });
             return future;
         },
-        temp: function(conversationId) {
-            //that.removeConversation(allChats[i].conversationId);
-        },
         removeConversation: function(conversationId) {
-            this.allMessageThreads.set(conversationId, []);
-            this.allMessageThreads.delete(conversationId);
-            this.allThreadsHashToIndex.delete(conversationId);
-            this.allChatControllers.delete(conversationId);
-            this.allConversations.delete(conversationId);
-            if (conversationId == this.selectedConversationId) {
-                this.selectedConversationId = null;
-                this.buildMessageThread();
+            let that = this;
+            let conversation = this.allConversations.get(conversationId);
+            let title = conversation.title;
+            function command(conversationId) {
+                return that.executeDeleteConversation(conversationId);
             }
+            this.confirmDeleteConversation(title,
+                () => { that.showConfirm = false;
+                    that.drainCommandQueue(() => command(conversationId));
+                },
+                () => { that.showConfirm = false;}
+            );
+        },
+        executeDeleteConversation: function(conversationId) {
+            let that = this;
+            this.spinner(true);
+            let filePathStr = this.context.username + "/.messaging/" + conversationId;
+            let filePath = this.convertToPath(filePathStr);
+            let parentPath = filePathStr.substring(0, filePathStr.lastIndexOf('/'));
+            let future = peergos.shared.util.Futures.incomplete();
+            this.context.getByPath(filePathStr).thenApply(function(chatDir){
+                that.context.getByPath(parentPath).thenApply(function(optParent){
+                    chatDir.get().remove(optParent.get(), filePath, that.context).thenApply(function(b){
+                        future.complete(true);
+                    }).exceptionally(function(throwable) {
+                        console.log(throwable);
+                        that.showMessage("error deleting chat");
+                        future.complete(false);
+                    });
+                }).exceptionally(function(throwable) {
+                    console.log(throwable);
+                    that.showMessage("error finding chats directory");
+                    future.complete(false);
+                });
+            }).exceptionally(function(throwable) {
+                console.log(throwable);
+                that.showMessage("error finding chat directory");
+                future.complete(false);
+            });
+            let delFuture = peergos.shared.util.Futures.incomplete();
+            future.thenApply(res => {
+                that.allMessageThreads.set(conversationId, []);
+                that.allMessageThreads.delete(conversationId);
+                that.allThreadsHashToIndex.delete(conversationId);
+                that.allChatControllers.delete(conversationId);
+                that.allConversations.delete(conversationId);
+                if (conversationId == that.selectedConversationId) {
+                    that.selectedConversationId = null;
+                    that.buildMessageThread();
+                    that.buildConversations();
+                }
+                that.spinner(false);
+                delFuture.complete(true);
+            });
+            return delFuture;
+        },
+        confirmDeleteConversation: function(title, deleteConversationFunction, cancelFunction) {
+            this.confirm_message='Are you sure you want to delete the Chat: ' + title + ' ?';
+            this.confirm_body='';
+            this.confirm_consumer_cancel_func = cancelFunction;
+            this.confirm_consumer_func = deleteConversationFunction;
+            this.showConfirm = true;
         },
         reduceGetAllMessages: function(chatController, messages, future) {
             let that = this;

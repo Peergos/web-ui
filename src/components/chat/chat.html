@@ -97,7 +97,7 @@
                                         <h5><b>{{displayTitle(conversation)}}</b><span>{{conversation.lastModified}}</span></h5>
                                         <p v-if="!conversation.readonly">{{truncateText(conversation.blurb,40)}}</p>
                                         <p v-if="conversation.readonly">Access Revoked
-                                            <button class="btn btn-danger" @click="removeConversation(conversation.id)" >Delete</button>
+                                            <button :disabled="executingCommands" class="btn btn-danger" @click="removeConversation(conversation.id)" >Delete</button>
                                         </p>
                                     </div>
                                     <div class="conversation" v-if="!conversation.hasUnreadMessages">
