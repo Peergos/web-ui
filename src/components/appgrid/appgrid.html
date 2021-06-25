@@ -66,7 +66,7 @@
                 <label class="app-icon-title">Tour</label>
             </span>
         </a>
-        <a @click="showChat" class="app-grid-item" v-on:keyup.enter="showChat">
+        <a v-if="chatIsAvailable" @click="showChat" class="app-grid-item" v-on:keyup.enter="showChat">
             <span class="app-icon">
                 <span data-toggle="tooltip" data-placement="bottom" title="Chat" class="fa fa-comments"/>
                 <label class="app-icon-title">Chat</label>
