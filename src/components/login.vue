@@ -9,12 +9,21 @@
       <br/>
       please go to our <a href="https://alpha.peergos.net?signup=true">alpha network</a>
     </div>
-    <h2>Peergos</h2>
-    <center>
-        <img src="images/logo.png" class="image">
-    </center>
-    <div>
+
+	<!-- <h2>Peergos</h2> -->
+	<AppIcon icon="logo-full" class="sprite-test"/>
+
+	<div>
         <h4>Please log in</h4>
+		<!-- <AppButton
+			class="toggle-button--mobile"
+			size="small"
+			round
+		>
+			test
+			<AppIcon icon="dots-menu" />
+		</AppButton> -->
+
         <div class="form-group flex-container">
             <input type="text" name="username" id="username" class="form-control flex-grow" style="text-transform: lowercase;" v-model="username" placeholder="Username">
         </div>
@@ -33,7 +42,7 @@
     <error
         v-if="showError"
         v-on:hide-error="showError = false"
-        :title="errorTitle" 
+        :title="errorTitle"
         :body="errorBody">
     </error>
 </div>
@@ -81,7 +90,7 @@ module.exports = {
                 return false;
             }
         },
-        
+
         login : function() {
             const creationStart = Date.now();
             const that = this;
@@ -118,3 +127,10 @@ module.exports = {
     }
 };
 </script>
+<style>
+.form-signin .sprite-test{
+	display: block;
+	height: 48px;
+	margin: var(--app-margin) auto;
+}
+</style>

@@ -40,7 +40,12 @@ var Timeline        = require('./components/timeline');
 var Todo            = require('./components/todo');
 var Tour            = require('./components/tour');
 var Confirm         = require('./components/confirm');
-var Warning         = require('./components/warning.vue');
+var Warning = require('./components/warning.vue');
+
+var AppButton = require('./components/AppButton.vue');
+var AppIcon = require('./components/AppIcon.vue');
+
+
 
 // Loading components
 Vue.component('account', Vue.extend(Account));
@@ -85,6 +90,11 @@ Vue.component('tour', Vue.extend(Tour));
 Vue.component('confirm', Vue.extend(Confirm));
 Vue.component('warning', Vue.extend(Warning));
 
+Vue.component('AppButton', Vue.extend(AppButton));
+Vue.component('AppIcon', Vue.extend(AppIcon));
+
+
+
 Vue.directive('focus', {
   inserted: function (el) {
     // Focus the element
@@ -93,6 +103,7 @@ Vue.directive('focus', {
 })
 
 Vue.config.productionTip = false;
+
 Vue.use(Vuex);
 
 // TODO: move store to store folder
@@ -135,7 +146,7 @@ setTimeout(function() {
         data: {
             currentView: 'app',
 		},
-        render: function() {
+		render: function () {
             with(this){return _c('div',{staticClass:"fillspace",attrs:{"id":"app"}},[_c(currentView,{tag:"component"})],1)}
         }
     });
