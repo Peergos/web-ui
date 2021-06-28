@@ -916,7 +916,11 @@ module.exports = {
             if (fromDnd) {
                 return dir.fullPath.substring(1).split('/');
             } else {
-                return dir.webkitRelativePath.split('/');
+                if (dir.webkitRelativePath == null) {
+                    return [""];
+                } else {
+                    return dir.webkitRelativePath.split('/');
+                }
             }
         },
         traverseDirectories: function(origDir, currentDir, dirs, dirIndex, items, itemIndex, fromDnd, uploadParams, future) {
