@@ -9,7 +9,7 @@ module.exports = {
             statusMessages: [],
             selectedConversationId: null,
             newMessageText: "",
-            newMessageMaxLength: 1000,
+            newMessageMaxLength: 2000,
             allConversations: new Map(),
             allChatControllers: new Map(),
             allMessageThreads: new Map(),
@@ -167,7 +167,7 @@ module.exports = {
 
             let that = this;
             that.buildMessageThread(conversation.id);
-            that.updateScrollPane();
+            that.updateScrollPane(true);
 
             let chatController = this.allChatControllers.get(conversation.id);
             if (chatController.pendingAttachmentRefs.length > 0) {
@@ -332,7 +332,7 @@ module.exports = {
                     return;
                 }
             }
-            this.uploadAttachments(evt.dataTransfer.files);
+            this.uploadAttachments(evt.dataTransfer.files, this.selectedConversationId);
         },
         isViewableMediaType: function(mediaItem) {
             if (mediaItem.fileType == 'image' || mediaItem.fileType == 'audio' || mediaItem.fileType == 'video') {
@@ -370,7 +370,7 @@ module.exports = {
                 }
             }
         },
-        uploadMedia: function(mediaFile, updateProgressBar) {
+        uploadMedia: function(mediaFile, updateProgressBar, conversationId) {
             let that = this;
             let future = peergos.shared.util.Futures.incomplete();
             let reader = new browserio.JSFileReader(mediaFile);
@@ -385,7 +385,7 @@ module.exports = {
                     fileExtension = mediaFile.name.substring(dotIndex + 1);
                 }
                 let postTime = peergos.client.JsUtil.now();
-                let chatController = this.allChatControllers.get(this.selectedConversationId);
+                let chatController = this.allChatControllers.get(conversationId);
                 this.messenger.uploadMedia(chatController.controller, java_reader, fileExtension, mediaFile.size, postTime, updateProgressBar).thenApply(function(pair) {
                     var thumbnailAllocation = Math.min(100000, mediaFile.size / 10);
                     updateProgressBar({ value_0: thumbnailAllocation});
@@ -405,14 +405,14 @@ module.exports = {
             }
             return future;
         },
-        uploadAllAttachments: function(files) {
+        uploadAllAttachments: function(files, conversationId) {
             let that = this;
-            function command(files) {
-                return that.executeUploadAllAttachments(files);
+            function command(files, conversationId) {
+                return that.executeUploadAllAttachments(files, conversationId);
             }
-            this.drainCommandQueue(() => command(files));
+            this.drainCommandQueue(() => command(files, conversationId));
         },
-        executeUploadAllAttachments: function(files) {
+        executeUploadAllAttachments: function(files, conversationId) {
             let future = peergos.shared.util.Futures.incomplete();
             let progressBars = [];
             for(var i=0; i < files.length; i++) {
@@ -428,10 +428,10 @@ module.exports = {
                 this.progressMonitors.push(progress);
                 progressBars.push(progress);
             }
-            this.reduceUploadAllAttachments(0, files, progressBars, future);
+            this.reduceUploadAllAttachments(0, files, progressBars, future, conversationId);
             return future;
         },
-        reduceUploadAllAttachments: function(index, files, progressBars, future) {
+        reduceUploadAllAttachments: function(index, files, progressBars, future, conversationId) {
             let that = this;
             if (index == files.length) {
                 document.getElementById('uploadInput').value = "";
@@ -439,9 +439,9 @@ module.exports = {
             } else {
                 let mediaFile = files[index];
                 let progress = progressBars[index];
-                this.uploadFile(mediaFile, progress).thenApply(function(res){
+                this.uploadFile(mediaFile, progress, conversationId).thenApply(function(res){
                     if (res) {
-                        that.reduceUploadAllAttachments(++index, files, progressBars, future);
+                        that.reduceUploadAllAttachments(++index, files, progressBars, future, conversationId);
                     } else {
                         future.complete(false);
                     }
@@ -454,9 +454,9 @@ module.exports = {
                 return;
             }
             let files = evt.target.files || evt.dataTransfer.files;
-            this.uploadAttachments(files);
+            this.uploadAttachments(files, this.selectedConversationId);
         },
-        uploadAttachments: function(files) {
+        uploadAttachments: function(files, conversationId) {
             let totalSize = 0;
             for(var i=0; i < files.length; i++) {
                 totalSize += files[i].size;
@@ -471,10 +471,10 @@ module.exports = {
                 that.showMessage("Attachment(s) exceeds available Space",
                     "Please free up " + this.convertBytesToHumanReadable('' + -spaceAfterOperation) + " and try again");
             } else {
-                this.uploadAllAttachments(files);
+                this.uploadAllAttachments(files, conversationId);
             }
         },
-        uploadFile: function(mediaFile, progress) {
+        uploadFile: function(mediaFile, progress, conversationId) {
             let future = peergos.shared.util.Futures.incomplete();
             let that = this;
             let updateProgressBar = function(len){
@@ -483,7 +483,7 @@ module.exports = {
                     progress.show = false;
                 }
             };
-            this.uploadMedia(mediaFile, updateProgressBar).thenApply(function(mediaResponse) {
+            this.uploadMedia(mediaFile, updateProgressBar, conversationId).thenApply(function(mediaResponse) {
                 if (mediaResponse == null) {
                     future.complete(false);
                 } else {
@@ -583,6 +583,8 @@ module.exports = {
                     if (author == message.sender) {
                         message.contents = "[Message Deleted]";
                         message.deleted = true;
+                        message.mediaFiles = [];
+                        message.mediaFilePaths = [];
                         message.file = null;
                     }
                 } else if(type == 'ReplyTo') {
@@ -647,10 +649,13 @@ module.exports = {
                         , parentMessage: this.msgKey(msg.parentMessage)};
             return JSON.stringify(key);
         },
-        updateScrollPane: function(val) {
+        updateScrollPane: function(forceUpdate) {
            Vue.nextTick(function() {
                let scrollArea = document.getElementById("message-scroll-area");
-               scrollArea.scrollTop = scrollArea.scrollHeight;
+               //handle the case where purposefully looking at history of chat
+               if (forceUpdate || Math.abs(scrollArea.scrollTop - scrollArea.scrollHeight) < 1000) {
+                    scrollArea.scrollTop = scrollArea.scrollHeight;
+               }
            });
         },
         spinner: function(val) {
@@ -705,7 +710,7 @@ module.exports = {
                     that.buildConversations();
                     that.buildMessageThread(conversationId);
                     if (conversationId != null) {
-                        that.updateScrollPane();
+                        that.updateScrollPane(updateSpinner);
                     }
                     if (updateSpinner) {
                         that.spinner(false);
@@ -758,7 +763,7 @@ module.exports = {
                     that.updateMessageThread(conversationId, messages.messagePairs, messages.attachmentMap);
                     that.buildConversations();
                     that.buildMessageThread(conversationId);
-                    that.updateScrollPane();
+                    that.updateScrollPane(true);
                     future.complete(true);
                 });
             }).exceptionally(function(throwable) {
@@ -999,7 +1004,7 @@ module.exports = {
                 that.updateMessageThread(conversationId, messages.messagePairs, messages.attachmentMap);
                 that.buildConversations();
                 that.buildMessageThread(conversationId);
-                that.updateScrollPane();
+                that.updateScrollPane(true);
                 future.complete(true);
             });
             return future;
@@ -1047,9 +1052,10 @@ module.exports = {
             if (message.sender != this.context.username) {
                 return;
             }
+            let conversationId = this.selectedConversationId;
             this.confirmDeleteMessage(
                 () => { that.showConfirm = false;
-                    that.deleteChatMessage(message);
+                    that.deleteChatMessage(message, conversationId);
                 },
                 () => { that.showConfirm = false;}
             );
@@ -1454,6 +1460,10 @@ module.exports = {
         send: function() {
             let that = this;
             let text = this.newMessageText;
+            if (text.length == 1 && text == '\n') {
+                this.newMessageText = '';
+                return;
+            }
             let conversationId = this.selectedConversationId;
             let msg = this.attachmentList.length > 0 ?
                 peergos.shared.messaging.messages.ApplicationMessage.attachment(text, this.buildAttachmentFileRefList())
@@ -1541,16 +1551,15 @@ module.exports = {
             let fileRefList = peergos.client.JsUtil.asList(fileRefs);
             return fileRefList;
         },
-        deleteChatMessage: function(message) {
+        deleteChatMessage: function(message, conversationId) {
             let that = this;
-            function command(message) {
-                return that.executeDeleteChatMessage(message);
+            function command(message, conversationId) {
+                return that.executeDeleteChatMessage(message, conversationId);
             }
-            this.drainCommandQueue(() => command(message));
+            this.drainCommandQueue(() => command(message, conversationId));
         },
-        executeDeleteChatMessage: function(message) {
+        executeDeleteChatMessage: function(message, conversationId) {
             let that = this;
-            let conversationId = this.selectedConversationId;
             let chatController = this.allChatControllers.get(conversationId);
             this.spinner(true);
             let future = peergos.shared.util.Futures.incomplete();
@@ -1605,7 +1614,7 @@ module.exports = {
             this.draftMessages.push({key: this.msgKey(draftMsg), index:messageThread.length});
             messageThread.push(draftMsg);
             this.buildMessageThread(conversationId);
-            this.updateScrollPane();
+            this.updateScrollPane(true);
         },
         createMessage: function(author, messageEnvelope, body, attachmentMap, parentMessage) {
             let content = body[0].inlineText();
