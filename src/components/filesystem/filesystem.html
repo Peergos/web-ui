@@ -308,8 +308,8 @@
 
     <div v-if="view==='files'">
     <div class="grid" v-if="grid">
-        <span class="column grid-item" v-for="file in sortedFiles" v-on:keyup.enter="navigateOrMenuTab($event, file, true)">
-          <span class="grid_icon_wrapper fa" draggable="true" @dragover.prevent v-on:dragstart="dragStart($event, file)" @drop="drop($event, file)">
+        <span class="column grid-item" v-for="(file, index) in sortedFiles" v-on:keyup.enter="navigateOrMenuTab($event, file, true)">
+          <span class="grid_icon_wrapper fa" :id="index" draggable="true" @dragover.prevent v-on:dragstart="dragStart($event, file)" @drop="drop($event, file)">
             <a class="picon" v-bind:id="file.getFileProperties().name" v-on:contextmenu="openMenu($event, file)">
               <span v-if="!file.getFileProperties().thumbnail.isPresent()" v-on:click="navigateOrMenu($event, file)" v-on:contextmenu="openMenu($event, file)"
 		    v-bind:class="[getFileClass(file), getFileIcon(file), 'picon']"> </span>
