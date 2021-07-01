@@ -1420,7 +1420,11 @@ module.exports = {
                 var title = this.truncateText(conversation.title, 20);
                 var participants = this.truncateText(this.formatParticipants(conversation.participants), 20);
                 if (participants.length > 0) {
-                    participants = " - " + participants;
+                    if (conversation.readonly) {
+                        participants = " - " + participants;
+                    } else {
+                        participants = " - you, " + participants;
+                    }
                 }
                 title = title + participants;
                 let that = this;
