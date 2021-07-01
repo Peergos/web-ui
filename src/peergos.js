@@ -44,7 +44,7 @@ var Warning = require('./components/warning.vue');
 
 var AppButton = require('./components/AppButton.vue');
 var AppIcon = require('./components/AppIcon.vue');
-
+// var SvgSprite = require('./components/SvgSprite.vue');
 
 
 // Loading components
@@ -92,6 +92,7 @@ Vue.component('warning', Vue.extend(Warning));
 
 Vue.component('AppButton', Vue.extend(AppButton));
 Vue.component('AppIcon', Vue.extend(AppIcon));
+// Vue.component('SvgSprite', Vue.extend(SvgSprite));
 
 
 
@@ -106,37 +107,7 @@ Vue.config.productionTip = false;
 
 Vue.use(Vuex);
 
-// TODO: move store to store folder
-const store = new Vuex.Store({
-	state: {
-		view: "Files",
-		isDark: false,
-		isSidebarOpen: false,
-	},
-	getters: {
-		currentTheme: (state) => {
-			return state.isDark ? "dark-mode" : "";
-		},
-	},
-	mutations: {
-		SET_VIEW(state, payload) {
-			state.view = payload;
-		},
-		SET_THEME(state, payload) {
-			state.isDark = payload;
-		},
-		TOGGLE_THEME(state) {
-			state.isDark = !state.isDark;
-		},
-		SET_SIDEBAR(state, payload) {
-			state.isSidebarOpen = payload;
-		},
-		TOGGLE_SIDEBAR(state) {
-			state.isSidebarOpen = !state.isSidebarOpen;
-		},
-	},
-})
-
+var store = require('./store/index.js');
 
 // Initializing Vue after GWT has finished
 setTimeout(function() {
