@@ -8,9 +8,9 @@ module.exports = {
             errorTitle:'',
             errorBody:'',
             showError:false,
-            membersToRemove: [],
+            membersSelected: [],
             adminsToRemove: [],
-            removeSelf: [],
+            selectSelf: [],
             showPrompt: false,
             prompt_message: '',
             prompt_placeholder: '',
@@ -18,7 +18,7 @@ module.exports = {
             prompt_value: '',
             prompt_consumer_func: () => {},
             displayedTitle: "",
-            updateLabel: "Update",
+            updateLabel: "Apply Changes",
             addLabel: "Invite to Chat",
             genericLabel: "chat",
             isAdmin: false,
@@ -94,11 +94,11 @@ module.exports = {
             });
         },
         removeUserFromGroup : function () {
-            if(this.removeSelf.length > 0) {
+            if(this.selectSelf.length > 0) {
                 this.haveRemovedSelf = true;
             }
-            for (var i = 0; i < this.membersToRemove.length; i++) {
-                let targetUsername = this.membersToRemove[i];
+            for (var i = 0; i < this.membersSelected.length; i++) {
+                let targetUsername = this.membersSelected[i];
                 let index = this.existingGroupMembers.indexOf(targetUsername);
                 if (index > -1) {
                     this.existingGroupMembers.splice(index, 1);
@@ -108,7 +108,19 @@ module.exports = {
                     this.existingAdmins.splice(index, 1);
                 }
             }
-            this.membersToRemove = [];
+            this.membersSelected = [];
+        },
+        promoteToGroupAdmin : function () {
+            let usersToAdd = [];
+            if(this.selectSelf.length > 0) {
+                usersToAdd.push(this.context.username);
+            }
+            for (var i = 0; i < this.membersSelected.length; i++) {
+                let targetUsername = this.membersSelected[i];
+                usersToAdd.push(targetUsername);
+            }
+            this.addAdminsToGroup(usersToAdd);
+            this.membersSelected = [];
         },
         removeAdminFromGroup : function () {
             if (!this.isAdmin) {
