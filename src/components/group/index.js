@@ -19,7 +19,7 @@ module.exports = {
             prompt_consumer_func: () => {},
             displayedTitle: "",
             updateLabel: "Update",
-            addLabel: "Add to Chat",
+            addLabel: "Invite to Chat",
             genericLabel: "chat",
             isAdmin: false,
             haveRemovedSelf: false,

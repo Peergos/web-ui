@@ -5,7 +5,7 @@
         <span @click="close" class="close">&times;</span>
         <div class="header">
             <h1 v-if="chatTitle.length == 0" >&nbsp;</h1>
-            <h1 v-if="chatTitle.length > 0" style="text-align: center;cursor: pointer;" v-on:click="editCurrentConversation()">{{ chatTitle }} </h1>
+            <h1 v-if="chatTitle.length > 0" style="text-align: center;cursor: pointer;" v-on:click="editCurrentConversation()"><i class="fa fa-ellipsis-v" aria-hidden="true" style="font-size: 20px;"></i>&nbsp;{{ chatTitle }} </h1>
         </div>
         <div v-if="progressMonitors.length>0" class="progressholder">
             <progressbar
