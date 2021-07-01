@@ -650,13 +650,12 @@ module.exports = {
             return JSON.stringify(key);
         },
         updateScrollPane: function(forceUpdate) {
-           Vue.nextTick(function() {
-               let scrollArea = document.getElementById("message-scroll-area");
-               //handle the case where purposefully looking at history of chat
-               if (forceUpdate || Math.abs(scrollArea.scrollTop - scrollArea.scrollHeight) < 1000) {
+           if (forceUpdate) {
+               Vue.nextTick(function() {
+                    let scrollArea = document.getElementById("message-scroll-area");
                     scrollArea.scrollTop = scrollArea.scrollHeight;
-               }
-           });
+               });
+           }
         },
         spinner: function(val) {
             this.showSpinner = val;
