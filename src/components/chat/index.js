@@ -759,20 +759,29 @@ module.exports = {
             let chatController = this.allChatControllers.get(conversationId);
             that.messenger.mergeAllUpdates(chatController.controller, this.socialState).thenApply(latestController => {
                 chatController.controller = latestController;
-                that.retrieveChatMessages(chatController, true).thenApply(messages => {
-                    that.updateMessageThread(conversationId, messages.messagePairs, messages.attachmentMap);
-                    that.buildConversations();
-                    that.buildMessageThread(conversationId);
-                    that.updateScrollPane(true);
-                    future.complete(true);
-                });
-            }).exceptionally(function(throwable) {
-                if (throwable.getMessage() == "You have been removed from the chat.") {
-                    let conversation = that.allConversations.get(conversationId);
-                    conversation.readonly = true;
-                    that.buildMessageThread(conversationId);
-                    that.buildConversations();
+                let origParticipants = latestController.getMemberNames().toArray();
+                let participants = that.removeSelfFromParticipants(origParticipants);
+                let conversation = that.allConversations.get(conversationId);
+                conversation.participants = participants;
+                conversation.readonly = origParticipants.length == participants.length;
+                if (participants.length == 1) {
+                    conversation.profileImageNA = false;
                 }
+                if (conversation.readonly) {
+                    that.buildConversations();
+                    that.buildMessageThread(conversationId);
+                    future.complete(false);
+                } else {
+                    that.retrieveChatMessages(chatController, true).thenApply(messages => {
+                        that.updateMessageThread(conversationId, messages.messagePairs, messages.attachmentMap);
+                        that.buildConversations();
+                        that.buildMessageThread(conversationId);
+                        that.updateScrollPane(true);
+                        future.complete(true);
+                    });
+                }
+            }).exceptionally(function(throwable) {
+                console.log(throwable.toString());
                 future.complete(false);
             });
             return future;
@@ -794,31 +803,9 @@ module.exports = {
         executeDeleteConversation: function(conversationId) {
             let that = this;
             this.spinner(true);
-            let filePathStr = this.context.username + "/.messaging/" + conversationId;
-            let filePath = this.convertToPath(filePathStr);
-            let parentPath = filePathStr.substring(0, filePathStr.lastIndexOf('/'));
             let future = peergos.shared.util.Futures.incomplete();
-            this.context.getByPath(filePathStr).thenApply(function(chatDir){
-                that.context.getByPath(parentPath).thenApply(function(optParent){
-                    chatDir.get().remove(optParent.get(), filePath, that.context).thenApply(function(b){
-                        future.complete(true);
-                    }).exceptionally(function(throwable) {
-                        console.log(throwable);
-                        that.showMessage("error deleting chat");
-                        future.complete(false);
-                    });
-                }).exceptionally(function(throwable) {
-                    console.log(throwable);
-                    that.showMessage("error finding chats directory");
-                    future.complete(false);
-                });
-            }).exceptionally(function(throwable) {
-                console.log(throwable);
-                that.showMessage("error finding chat directory");
-                future.complete(false);
-            });
-            let delFuture = peergos.shared.util.Futures.incomplete();
-            future.thenApply(res => {
+            let chatController = this.allChatControllers.get(conversationId);
+            this.messenger.deleteChat(chatController.controller).thenApply(res => {
                 that.allMessageThreads.set(conversationId, []);
                 that.allMessageThreads.delete(conversationId);
                 that.allThreadsHashToIndex.delete(conversationId);
@@ -830,9 +817,13 @@ module.exports = {
                     that.buildConversations();
                 }
                 that.spinner(false);
-                delFuture.complete(true);
+                future.complete(true);
+            }).exceptionally(function(throwable) {
+                console.log(throwable);
+                that.showMessage("error deleting chat");
+                future.complete(false);
             });
-            return delFuture;
+            return future;
         },
         confirmDeleteConversation: function(title, deleteConversationFunction, cancelFunction) {
             this.confirm_message='Are you sure you want to delete the Chat: ' + title + ' ?';
@@ -1271,16 +1262,8 @@ module.exports = {
                                     , attachmentMap: messages.attachmentMap});
                 });
             }).exceptionally(function(throwable) {
-                if (throwable.getMessage() == "You have been removed from the chat.") {
-                    conversation.readonly = true;
-                    let loadAttachments = controller.chatUuid == that.selectedConversationId;
-                    that.retrieveChatMessages(chatController, loadAttachments).thenApply(messages => {
-                        future.complete({conversationId: controller.chatUuid, messagePairs: messages.messagePairs
-                                        , attachmentMap: messages.attachmentMap});
-                    });
-                } else {
-                    future.complete({conversationId: controller.chatUuid, messagePairs: [], attachmentMap: new Map()});
-                }
+                console.log(throwable.toString());
+                future.complete({conversationId: controller.chatUuid, messagePairs: [], attachmentMap: new Map()});
             });
             return future;
         },
