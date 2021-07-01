@@ -31,7 +31,7 @@
                   </div>
                   <div class="hspace-5" v-if="isAdmin">
                       <input type="radio" id="admin-access" value="Admin" v-model="memberAccess">
-                      <label for="admin-access" style="font-weight: normal;">Admin</label>
+                      <label for="admin-access" style="font-weight: normal;" data-toggle="tooltip" data-placement="bottom" title="Admins can change chat title and membership">Admin</label>
                   </div>
                 <div style="padding:5px; display:flex;">
                   <button :disabled="this.targetUsernames.slice().length == 0" class="btn btn-success" @click="addUsersToGroup()"> {{ addLabel }}</button>
