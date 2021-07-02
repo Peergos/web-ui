@@ -1,0 +1,86 @@
+<transition name="modal">
+<div class="modal-mask" @click="close">
+    <div class="modal-container full-height" @click.stop style="overflow-y:auto; max-width:1000px;">
+        <span @click="close" class="close">&times;</span>
+        <spinner v-if="showSpinner"></spinner>
+        <prompt
+                v-if="showPrompt"
+                v-on:hide-prompt="showPrompt = false"
+                :prompt_message='prompt_message'
+                :placeholder="prompt_placeholder"
+                :max_input_size="prompt_max_input_size"
+                :value="prompt_value"
+                :consumer_func="prompt_consumer_func">
+        </prompt>
+        <div class="modal-header">
+            <span>
+                <h4 style="text-align: center;" @click="changeGroupTitle()">{{ displayedTitle }}&nbsp;&nbsp;<i v-if="isAdmin" @click="changeGroupTitle()" class="fa fa-edit" aria-hidden="true"></i></h4>
+
+            </span>
+        </div>
+
+        <div class="modal-body">
+            <div class="container">
+              <div class="flex-container">
+                <div style="flex-grow:1; max-width:300px;">
+                  <input id="friend-name-input" v-model="targetUsername" type="text" class="token-input"></input>
+                </div>
+                  <div class="hspace-5" v-if="isAdmin">
+                      <input type="radio" id="member-access" value="Member" v-model="memberAccess">
+                      <label for="member-access" style="font-weight: normal;">Member</label>
+                  </div>
+                  <div class="hspace-5" v-if="isAdmin">
+                      <input type="radio" id="admin-access" value="Admin" v-model="memberAccess">
+                      <label for="admin-access" style="font-weight: normal;" data-toggle="tooltip" data-placement="bottom" title="Admins can change chat title and membership">Admin</label>
+                  </div>
+                <div style="padding:5px; display:flex;">
+                  <button :disabled="this.targetUsernames.slice().length == 0" class="btn btn-success" @click="addUsersToGroup()"> {{ addLabel }}</button>
+                </div>
+              </div>
+            </div>
+            <div v-if="isAdmin" class="modal-body modal-prominent">
+                <div class="container" ><p style="word-wrap;break-all;">
+                    Admins:</p>
+                    <div v-for="user in existingAdmins">
+                        <input :disabled="existingAdmins.length <= 1" type="checkbox" v-bind:id="user" v-bind:value="user" v-model="adminsToRemove"><span style="margin-left:10px">{{ user }}</span>
+                    </div>
+                    <button :disabled="existingAdmins.length <= 1 || adminsToRemove.length == 0" class="btn btn-success" v-on:click="removeAdminFromGroup()">Remove</button>
+                </div>
+            </div>
+            <div class="modal-body modal-prominent">
+                <div class="container" v-if="existingGroupMembers.length > 0"><p style="word-wrap;break-all;">
+                    Members:</p>
+                    <div v-if="!haveRemovedSelf">
+                        <input :disabled="isAdmin" v-if="!haveRemovedSelf" type="checkbox" v-bind:value="context.username" v-model="selectSelf"><span  v-if="!haveRemovedSelf" style="margin-left:10px">{{ context.username }}</span>
+                    </div>
+                    <div v-for="user in existingGroupMembers">
+                        <input :disabled="!isAdmin"  type="checkbox" v-bind:id="user" v-bind:value="user" v-model="membersSelected"><span style="margin-left:10px">{{ user }}</span>
+                    </div>
+                    <button :disabled="this.membersSelected.length == 0 && this.selectSelf.length == 0" class="btn btn-success" v-on:click="removeUserFromGroup()">Remove</button>
+                    <button v-if="isAdmin" :disabled="this.membersSelected.length == 0 && this.selectSelf.length == 0" class="btn btn-info" v-on:click="promoteToGroupAdmin()">Promote to Admin</button>
+                </div>
+                <div class="container" v-if="existingGroupMembers.length == 0"><p style="word-wrap;break-all;">
+                    Members:</p>
+                    <div v-if="!haveRemovedSelf">
+                        <input :disabled="isAdmin" v-if="!haveRemovedSelf" type="checkbox" v-bind:value="context.username" v-model="selectSelf"><span  v-if="!haveRemovedSelf" style="margin-left:10px">{{ context.username }}</span>
+                    </div>
+                    <button v-if="!haveRemovedSelf" :disabled="this.selectSelf.length == 0" class="btn btn-success" v-on:click="removeUserFromGroup()">Remove</button>
+                </div>
+            </div>
+            <error
+                    v-if="showError"
+                    v-on:hide-error="showError = false"
+                    :title="errorTitle"
+                    :body="errorBody">
+            </error>
+        </div>
+        <div class="modal-footer">
+            <slot name="footer">
+                <button class="btn btn-success" @click="updateGroupMembership">
+                    {{ updateLabel }}
+                </button>
+            </slot>
+        </div>
+    </div>
+</div>
+</transition>

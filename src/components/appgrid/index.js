@@ -1,14 +1,23 @@
 module.exports = {
     template: require('appgrid.html'),
     data: function() {
-        return {};
+        return {
+            chatIsAvailable: true
+        };
     },
     props: ["context", "social", "canUpgrade"],
     created: function() {
     },
     methods: {
         iconCount: function() {
-            return 10 + (this.canUpgrade ? 1 : 0);
+            var appCount = 10;
+            if (this.chatIsAvailable) {
+                appCount++;
+            }
+            return appCount + (this.canUpgrade ? 1 : 0);
+        },
+        showChat: function() {
+            this.$emit("chat");
         },
         showTour: function() {
             this.$emit("tour");

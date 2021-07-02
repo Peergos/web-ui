@@ -47,6 +47,7 @@ module.exports = {
             showSettingsMenu:false,
             showUploadMenu:false,
             showFeedbackForm: false,
+            showChatViewer: false,
             showTodoBoardViewer: false,
             currentTodoBoardName: null,
             showCalendarViewer: false,
@@ -367,7 +368,7 @@ module.exports = {
 	    return Math.round(x * 100)/100;
 	},
 
-        convertBytesToHumanReadable: function(bytesAsString) {
+    convertBytesToHumanReadable: function(bytesAsString) {
         let bytes = Number(bytesAsString);
 	    if (bytes < 1024)
 		return bytes + " Bytes";
@@ -1213,7 +1214,6 @@ module.exports = {
                 that.showSpinner = false;
             });
         },
-
         sendMessage: function(msgId, contents) {
             let that = this;
             let message = this.getMessage(msgId);
@@ -1247,6 +1247,32 @@ module.exports = {
             this.messageId = null;
             this.popConversation(submittedMsgId);
             this.buildTabNavigation();
+        },
+        viewConversations: function() {
+            let that = this;
+            const ctx = this.getContext()
+            this.showSpinner = true;
+            ctx.getSocialFeed().thenApply(function(socialFeed) {
+                ctx.getSocialState().thenApply(function(socialState){
+                    that.socialState = socialState;
+                    that.socialFeed = socialFeed;
+                    that.showSpinner = false;
+                    that.showChatViewer = true;
+                });
+            }).exceptionally(function(throwable) {
+                that.showMessage(throwable.getMessage());
+                that.showSpinner = false;
+            });
+        },
+        showChat: function() {
+            if (this.showSpinner) {
+                return;
+            }
+            this.toggleNav();
+            this.viewConversations();
+        },
+        closeChatViewer: function() {
+            this.showChatViewer = false;
         },
 
         loadMessageThread: function(msgId) {

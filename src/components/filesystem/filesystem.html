@@ -80,6 +80,7 @@
       v-on:social="showSocialView()"
       v-on:search="openSearch(true)"
       v-on:profile="showProfile(true)"
+      v-on:chat="showChat()"
       v-on:tour="showTourViewer"
       >
   </appgrid>
@@ -127,6 +128,7 @@
     :followernames="followernames"
     :checkAvailableSpace="checkAvailableSpace"
     :convertBytesToHumanReadable="convertBytesToHumanReadable"
+    :viewConversations="viewConversations"
     :context="context">
   </timeline>
   <search
@@ -173,6 +175,20 @@
     :paymentProperties="paymentProperties"
     :updateQuota="updateQuota">
   </payment>
+  <chat
+    v-if="showChatViewer"
+    :closeChatViewer="closeChatViewer"
+    :context="context"
+    :getFileIconFromFileAndType="getFileIconFromFileAndType"
+    :friendnames="friendnames"
+    :displayProfile="displayProfile"
+    :socialFeed="socialFeed"
+    :socialState="socialState"
+    :checkAvailableSpace="checkAvailableSpace"
+    :convertBytesToHumanReadable="convertBytesToHumanReadable"
+    :importCalendarFile="importCalendarFile"
+    :viewAction="viewAction">
+  </chat>
   <feedback
     v-if="showFeedbackForm"
     :closeFeedbackForm="closeFeedbackForm"
