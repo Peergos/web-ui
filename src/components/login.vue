@@ -15,14 +15,6 @@
 
 	<div>
         <h4>Please log in</h4>
-		<!-- <AppButton
-			class="toggle-button--mobile"
-			size="small"
-			round
-		>
-			test
-			<AppIcon icon="dots-menu" />
-		</AppButton> -->
 
         <div class="form-group flex-container">
             <input type="text" name="username" id="username" class="form-control flex-grow" style="text-transform: lowercase;" v-model="username" placeholder="Username">
@@ -51,12 +43,12 @@
 <script>
 var isDemo = window.location.hostname == "demo.peergos.net";
 module.exports = {
-    data: function() {
+    data() {
         return {
             username: "",
             passwordFieldType: "password",
             password: [],
-	    token: "",
+	   		token: "",
             demo: isDemo,
             showSpinner: false,
             showError:false,
@@ -130,7 +122,55 @@ module.exports = {
 <style>
 .form-signin .sprite-test{
 	display: block;
+	width:200px;
 	height: 48px;
 	margin: var(--app-margin) auto;
+}
+
+.modal:nth-of-type(even) {
+        z-index: 1040 !important;
+}
+.modal-backdrop.in:nth-of-type(even) {
+    z-index: 1042 !important;
+}
+
+.form-change-password {
+        max-width: 330px;
+        padding: 15px;
+        margin: 0 auto;
+}
+
+.form-signin {
+        max-width: 450px;
+        padding: 15px;
+        margin: 0 auto;
+}
+
+
+
+.form-signin input[type="email"] {
+        margin-bottom: -1px;
+        border-bottom-right-radius: 0;
+        border-bottom-left-radius: 0;
+}
+.form-signin input[type="password"] {
+        border-top-left-radius: 0;
+        border-top-right-radius: 0;
+	display: inherit;
+	width: auto;
+}
+
+.form-signin .form-control {
+        position: relative;
+        height: auto;
+        -webkit-box-sizing: border-box;
+        -moz-box-sizing: border-box;
+        box-sizing: border-box;
+        padding: 10px;
+        font-size: 16px;
+}
+
+h2{
+    text-align: center;
 }
 </style>

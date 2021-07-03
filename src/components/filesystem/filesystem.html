@@ -1,5 +1,5 @@
 <div class="fillspace" style="display:flex;flex-direction:column;justify-content:space-between;">
-  <nav class="navbar navbar-inverse navbar-static-top" role="navigation">
+  <nav class="navbar  navbar-static-top" role="navigation">
     <input type="file" id="uploadFileInput" @change="uploadFiles" style="display:none;" multiple />
     <input type="file" id="uploadDirectoriesInput" @change="uploadFiles" style="display:none;" multiple directory mozDirectory webkitDirectory/>
     <div style="display:block;">
@@ -63,11 +63,11 @@
     </ul>
   </div>
   <tour
-    v-if="showTour" 
+    v-if="showTour"
     v-on:hide-tour="closeTour">
   </tour>
   <appgrid
-      v-if="showAppgrid" 
+      v-if="showAppgrid"
       :context="context"
       :social="social"
       :canUpgrade="canUpgrade"
@@ -84,8 +84,8 @@
       v-on:tour="showTourViewer"
       >
   </appgrid>
-  <share 
-    v-if="showShare" 
+  <share
+    v-if="showShare"
     v-on:hide-share-with="closeShare"
     v-on:update-shared-refresh="forceSharedRefreshWithUpdate++"
     :data="sharedWithData"
@@ -95,19 +95,19 @@
     :allowCreateSecretLink="allowCreateSecretLink"
     :files="filesToShare"
     :path="pathToFile"
-    :context="context" 
+    :context="context"
     :followernames="followernames"
     :friendnames="friendnames"
     :groups="groups"
     :messages="messages">
   </share>
-  <social 
-    v-if="showSocial" 
+  <social
+    v-if="showSocial"
     v-on:hide-social="closeSocial"
     v-on:external-change="externalChange++"
     :displayProfile="displayProfile"
-    :data="social" 
-    :context="context" 
+    :data="social"
+    :context="context"
     :messages="messages">
   </social>
   <timeline
@@ -268,19 +268,19 @@
           :messages="messages">
   </calendar>
   <text-viewer
-    v-if="showTextViewer" 
+    v-if="showTextViewer"
     v-on:hide-text-viewer="closeApps()"
-    :file="selectedFiles[0]" 
+    :file="selectedFiles[0]"
     :context="context">
   </text-viewer>
-  <message 
-    v-for="message in messages" 
+  <message
+    v-for="message in messages"
     v-on:remove-message="messages.splice(messages.indexOf(message), 1)"
-    :title="message.title" 
+    :title="message.title"
     :message="message.body">
   </message>
-  <prompt 
-    v-if="showPrompt" 
+  <prompt
+    v-if="showPrompt"
     v-on:hide-prompt="closePrompt"
     :prompt_message='prompt_message'
     :placeholder="prompt_placeholder"
@@ -288,8 +288,8 @@
     :value="prompt_value"
     :consumer_func="prompt_consumer_func">
   </prompt>
-  <warning 
-    v-if="showWarning" 
+  <warning
+    v-if="showWarning"
     v-on:hide-warning="closeWarning"
     :warning_message='warning_message'
     :warning_body="warning_body"
@@ -305,10 +305,10 @@
           :showApplyAll=replace_showApplyAll>
   </replace>
   <div v-if="progressMonitors.length>0" class="progressholder">
-    <progressbar 
+    <progressbar
         v-for="progress in progressMonitors" v-if="progress.show"
       v-on:hide-progress="progressMonitors.splice(progressMonitors.indexOf(progress), 1)"
-      :title="progress.title" 
+      :title="progress.title"
       :done="progress.done"
       :max="progress.max" />
   </div>
@@ -382,7 +382,7 @@
   <error
       v-if="showError"
       v-on:hide-error="showError = false"
-      :title="errorTitle" 
+      :title="errorTitle"
       :body="errorBody"
       :messageId="messageId">
   </error>

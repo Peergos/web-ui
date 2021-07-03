@@ -1,6 +1,5 @@
 var Account         = require('./components/account');
 var Admin           = require('./components/admin');
-var App             = require('./components/app');
 var AppGrid         = require('./components/appgrid');
 var Calendar        = require('./components/calendar');
 var Chat            = require('./components/chat');
@@ -44,7 +43,7 @@ var Warning = require('./components/warning.vue');
 
 var AppButton = require('./components/AppButton.vue');
 var AppIcon = require('./components/AppIcon.vue');
-// var SvgSprite = require('./components/SvgSprite.vue');
+var App  = require('./components/app.vue');
 
 
 // Loading components
@@ -92,7 +91,7 @@ Vue.component('warning', Vue.extend(Warning));
 
 Vue.component('AppButton', Vue.extend(AppButton));
 Vue.component('AppIcon', Vue.extend(AppIcon));
-// Vue.component('SvgSprite', Vue.extend(SvgSprite));
+
 
 
 

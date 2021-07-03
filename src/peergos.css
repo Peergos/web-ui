@@ -451,7 +451,8 @@ table {
     flex-direction: column;
     flex-grow: 1;
     left: 0;
-    right: 0; }
+    right: 0;
+}
 
 
 @media (max-width: 600px) {
