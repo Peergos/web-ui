@@ -132,14 +132,27 @@ module.exports = {
             if (this.displayingMessages) {
                 left.classList.remove("chat-full-width");
                 right.classList.remove("chat-hide");
+
+                let emojiBtn = document.getElementById('emojiBtn');
+                let attachmentBtn = document.getElementById('attachmentBtn');
+                let sendNewMessageBtn = document.getElementById('sendNewMessageBtn');
+
                 if(window.innerWidth >= 900) {
                     left.classList.remove("chat-hide");
                     right.classList.remove("chat-full-width");
                     closeConversationEl.style.display = 'none';
+
+                    emojiBtn.style.position ='absolute';
+                    attachmentBtn.style.position ='absolute';
+                    sendNewMessageBtn.style.position ='absolute';
                 } else if(window.innerWidth <= 900) {
                     left.classList.add("chat-hide");
                     right.classList.add("chat-full-width");
                     closeConversationEl.style.display = '';
+
+                    emojiBtn.style.position ='inherit';
+                    attachmentBtn.style.position ='inherit';
+                    sendNewMessageBtn.style.position ='inherit';
                 }
             } else {
                 right.classList.remove("chat-full-width");
