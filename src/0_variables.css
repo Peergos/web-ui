@@ -1,0 +1,84 @@
+:root {
+	/* Design tokens */
+
+	--font-stack: "Inter", sans-serif;
+	--bold: 600;
+	--regular: 400;
+
+	--title: 28px;
+	--title-height: 1.2;
+
+	--text: 16px;
+	--text-height: 1.4;
+
+	--text-small: 14px;
+	--text-mini: 11px;
+
+	--app-margin: 48px;
+	--app-margin-small: 24px;
+	--app-margin-mini: 16px;
+
+	/* Colors */
+
+	--white: #ffffff;
+	--light-gray-blue: #f5f9fd;
+
+	--gray-1: #f6f6f6;
+	--gray-2: #e1e1e1;
+	--gray-3: #b6bcc1;
+
+	--green-accent: #3fdb9c;
+	--green-200: #63e3bd;
+	--green-500: #26b99a;
+	--green-900: #0a4533;
+
+	--blue-accent: #3495f5;
+	--blue-200: #8fd2e8;
+	--blue-500: #3b73ab;
+	--blue-800: #2c3e50;
+	--blue-900: #283744;
+
+	--text-color: #566571;
+
+	/* Light-mode */
+
+	--color: var(--text-color);
+	--color-hover: var(--blue-800);
+	--color-2: var(--gray-3);
+
+	--bg: var(--white);
+	--bg-hover: var(--gray-1);
+
+	--bg-2: var(--gray-1);
+	--bg-2-hover: var(--white);
+
+	--border-color: var(--gray-2);
+}
+
+[data-theme="dark-mode"] {
+	/* Dark mode */
+
+	--color: var(--white);
+	--color-hover: var(--white);
+	--color-2: var(--gray-3);
+
+	--bg: var(--blue-800);
+	--bg-hover: var(--blue-900);
+
+	--bg-2: var(--blue-900);
+	--bg-2-hover: var(--blue-800);
+
+	--border-color: var(--text-color);
+}
+
+@media (max-width: 1024px) {
+	:root {
+		--app-margin: var(--app-margin-small);
+	}
+}
+
+@media (max-width: 480px) {
+	:root {
+		--app-margin: var(--app-margin-mini);
+	}
+}

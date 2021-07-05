@@ -1,6 +1,6 @@
 var Account         = require('./components/account');
 var Admin           = require('./components/admin');
-var App             = require('./components/app');
+// var App             = require('./components/app');
 var AppGrid         = require('./components/appgrid');
 var Calendar        = require('./components/calendar');
 var Chat            = require('./components/chat');
@@ -42,10 +42,16 @@ var Tour            = require('./components/tour');
 var Confirm         = require('./components/confirm');
 var Warning         = require('./components/warning.vue');
 
+var AppButton 		= require('./components/AppButton.vue');
+var AppIcon 		= require('./components/AppIcon.vue');
+var AppModal 		= require('./components/modal/AppModal.vue');
+var App  			= require('./components/App.vue');
+var Filesystem  	= require('./components/Filesystem.vue');
+
 // Loading components
 Vue.component('account', Vue.extend(Account));
 Vue.component('admin', Vue.extend(Admin));
-Vue.component('app', Vue.extend(App));
+// Vue.component('app', Vue.extend(App));
 Vue.component('appgrid', Vue.extend(AppGrid));
 Vue.component('calendar', Vue.extend(Calendar));
 Vue.component('chat', Vue.extend(Downloader).extend(Chat));
@@ -85,6 +91,14 @@ Vue.component('tour', Vue.extend(Tour));
 Vue.component('confirm', Vue.extend(Confirm));
 Vue.component('warning', Vue.extend(Warning));
 
+Vue.component('App', Vue.extend(App));
+Vue.component('AppButton', Vue.extend(AppButton));
+Vue.component('AppIcon', Vue.extend(AppIcon));
+Vue.component('AppModal', Vue.extend(AppModal));
+Vue.component('Filesystem', Vue.extend(Downloader).extend(Filesystem));
+
+
+
 Vue.directive('focus', {
   inserted: function (el) {
     // Focus the element
@@ -92,12 +106,19 @@ Vue.directive('focus', {
   }
 })
 
+Vue.config.productionTip = false;
+
+Vue.use(Vuex);
+
+var store = require('./store/index.js');
+
 // Initializing Vue after GWT has finished
 setTimeout(function() {
     var vueRoot = new Vue({
-        el: '#app',
+		el: '#app',
+		store,
         data: {
-            currentView: 'app',
+            currentView: 'App',
         },
         render: function() {
             with(this){return _c('div',{staticClass:"fillspace",attrs:{"id":"app"}},[_c(currentView,{tag:"component"})],1)}

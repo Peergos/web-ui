@@ -6,7 +6,10 @@ body {
     height: 100%;
     display: flex;
     flex-direction: column;
-    font-family: 'Montserrat', Sans-Serif;
+
+	color: var(--color);
+	background-color: var(--bg);
+	transition: background-color 0.3s;
 }
 
 .token-input {
@@ -129,14 +132,14 @@ body .grid {
   margin-bottom: 0.1em;
 }
 .filename {
-  font-family: 'Montserrat', Sans-Serif;
+  /* font-family: 'Montserrat', Sans-Serif; */
   font-size: 1.2em;
   word-wrap: break-word;
   max-width: 5em;
   margin: 0.5em;
 }
 .btn_pnavbar {
-    font-family: 'Montserrat', Sans-Serif;
+    /* font-family: 'Montserrat', Sans-Serif; */
     color:#333;
     font-size: 1.7em;
     padding: 2px 6px;
@@ -215,23 +218,23 @@ table {
 }
 
 .feedback-button{
-    height:40px; 
-    border:solid 3px #CCCCCC; 
+    height:40px;
+    border:solid 3px #CCCCCC;
     background:#333;
-    width:120px; 
-    line-height:32px; 
+    width:120px;
+    line-height:32px;
     -webkit-transform:rotate(-90deg);
-    font-weight:600; 
-    color:white; 
+    font-weight:600;
+    color:white;
     transform:rotate(-90deg);
     -ms-transform:rotate(-90deg);
     -moz-transform:rotate(-90deg);
-    text-align:center; 
-    font-size:17px; 
-    position:fixed; 
-    right:-40px; 
+    text-align:center;
+    font-size:17px;
+    position:fixed;
+    right:-40px;
     top:45%;
-    z-index:999; 
+    z-index:999;
 }
 
 #right-click-menu{
@@ -382,7 +385,7 @@ table {
     border-radius: 2px;
     box-shadow: 0 2px 8px rgba(0, 0, 0, .33);
     transition: all .3s ease;
-    font-family: Helvetica, Arial, sans-serif;
+    /* font-family: Helvetica, Arial, sans-serif; */
 }
 
 @media (max-width: 600px) {
@@ -451,7 +454,8 @@ table {
     flex-direction: column;
     flex-grow: 1;
     left: 0;
-    right: 0; }
+    right: 0;
+}
 
 
 @media (max-width: 600px) {
@@ -714,7 +718,7 @@ h3 {word-wrap:break-word; white-space:normal;}
     border-radius: 2px;
     box-shadow: 0 2px 8px rgba(0,0,0,.33);
     transition: all .3s ease;
-    font-family: Helvetica,Arial,sans-serif;
+    /* font-family: Helvetica,Arial,sans-serif; */
 }
 
 .profile-span {
