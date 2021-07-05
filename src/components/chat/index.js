@@ -566,7 +566,11 @@ module.exports = {
                     currentMembers.push(username);
                 } else if(type == 'RemoveMember') {
                     let username = chatController.controller.getUsername(chatEnvelope.payload.memberToRemove);
-                    messageThread.push(this.createStatusMessage(chatEnvelope.creationTime, username + " left"));
+                    if (author == username) {
+                        messageThread.push(this.createStatusMessage(chatEnvelope.creationTime, username + " left"));
+                    } else {
+                        messageThread.push(this.createStatusMessage(chatEnvelope.creationTime, author + " removed " + username));
+                    }
                     currentMembers.splice(currentMembers.findIndex(v => v === username), 1);
                 } else if(type == 'Join') {
                     let username = chatEnvelope.payload.username;
