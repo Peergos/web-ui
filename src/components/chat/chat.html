@@ -244,12 +244,12 @@
                                         <button id="emojiBtn" :disabled="selectedConversationId == null || selectedConversationIsReadOnly" class="chat-btn btn-success emoji-btn" type="button" @click="launchEmojiPicker()">
                                             <i class="fa fa-smile" aria-hidden="true"></i>
                                         </button>
-                                        <button id="sendNewMessageBtn" :disabled="newMessageText.length == 0 || selectedConversationId == null || selectedConversationIsReadOnly" class="chat-btn btn-success send-new-message-btn" type="button" @click="send()">
-                                            <i class="fa fa-paper-plane" aria-hidden="true"></i>
-                                        </button>
                                         <input type="file" id="uploadInput" @change="addAttachments" style="display:none;" multiple />
                                         <button id="attachmentBtn" :disabled="selectedConversationId == null || selectedConversationIsReadOnly" class="chat-btn btn-success attachment-btn" type="button" @click="launchUploadDialog()">
                                             <i class="fa fa-paperclip" aria-hidden="true"></i>
+                                        </button>
+                                        <button id="sendNewMessageBtn" :disabled="newMessageText.length == 0 || selectedConversationId == null || selectedConversationIsReadOnly" class="chat-btn btn-success send-new-message-btn" type="button" @click="send()">
+                                            <i class="fa fa-paper-plane" aria-hidden="true"></i>
                                         </button>
                                     </span>
                                 </div>
