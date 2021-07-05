@@ -43,7 +43,8 @@ module.exports = {
             draftMessages: [],
             selectedConversationIsReadOnly: true,
             closedChat: false,
-            isInitialised: false
+            isInitialised: false,
+            chatVisibilityWarningDisplayed: false
         }
     },
     props: ['context', 'closeChatViewer', 'friendnames', 'socialFeed', 'socialState', 'getFileIconFromFileAndType'
@@ -388,8 +389,8 @@ module.exports = {
             let future = peergos.shared.util.Futures.incomplete();
             let reader = new browserio.JSFileReader(mediaFile);
             let java_reader = new peergos.shared.user.fs.BrowserFileReader(reader);
-            if (mediaFile.size > 2147483647) {
-                that.showMessage("Media file greater than 2GiB not currently supported!");
+            if (mediaFile.size > 200 * 1024 * 1024) {
+                that.showMessage("Media file greater than 200 MiB not currently supported!", "Instead, you can upload a larger file to your drive and share it with a secret link here");
                 future.complete(null);
             } else {
                 let fileExtension = "";
@@ -765,6 +766,17 @@ module.exports = {
             }
             return future;
         },
+        checkChatState: function(conversation) {
+            let chatOwner = this.extractChatOwner(conversation.id);
+            if (chatOwner != this.context.username && !conversation.readonly && ! this.chatVisibilityWarningDisplayed) {
+                let participants = conversation.participants;
+                let friendsInChat = this.friendnames.filter(friend => participants.findIndex(v => v === friend) > -1);
+                if (friendsInChat.length == 0) {
+                    this.chatVisibilityWarningDisplayed = true;
+                    this.showMessage("Chat no longer contains any of your friends. Your messages will not be seen by others");
+                }
+            }
+        },
         refreshConversation: function(conversationId) {
             var that = this;
             let future = peergos.shared.util.Futures.incomplete();
@@ -776,6 +788,7 @@ module.exports = {
                 let conversation = that.allConversations.get(conversationId);
                 conversation.participants = participants;
                 conversation.readonly = origParticipants.length == participants.length;
+                that.checkChatState(conversation);
                 if (participants.length == 1) {
                     conversation.profileImageNA = false;
                 }
@@ -1261,6 +1274,7 @@ module.exports = {
                 let participants = that.removeSelfFromParticipants(origParticipants);
                 conversation.participants = participants;
                 conversation.readonly = origParticipants.length == participants.length;
+                that.checkChatState(conversation);
                 if (participants.length == 1) {
                     conversation.profileImageNA = false;
                 }
