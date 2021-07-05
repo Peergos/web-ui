@@ -14,7 +14,7 @@ ol {
 ol li {
   counter-increment: step-counter;
   position: relative;
-  padding: 12px 8px 12px 40px;
+  padding: 12px 8px 12px 0px;
   background: #eee;
   transition: 0.2s;
   /* make the list items unselectable */
@@ -30,7 +30,7 @@ ol li::before {
     content: "\2e2c     "counter(step-counter)".";
     cursor: pointer;
     position: relative;
-    right: 6em;
+    right: 3em;
     padding-top: 12px;
     padding-bottom: 12px;
 }
