@@ -377,7 +377,7 @@ module.exports = {
             let reader = new browserio.JSFileReader(mediaFile);
             let java_reader = new peergos.shared.user.fs.BrowserFileReader(reader);
             if (mediaFile.size > 200 * 1024 * 1024) {
-                that.showMessage("Media file greater than 200 MiB not currently supported!");
+                that.showMessage("Media file greater than 200 MiB not currently supported!", "Instead, you can upload a larger file to your drive and share it with a secret link here");
                 future.complete(null);
             } else {
                 let fileExtension = "";
