@@ -376,8 +376,8 @@ module.exports = {
             let future = peergos.shared.util.Futures.incomplete();
             let reader = new browserio.JSFileReader(mediaFile);
             let java_reader = new peergos.shared.user.fs.BrowserFileReader(reader);
-            if (mediaFile.size > 200 * 1024 * 1024) {
-                that.showMessage("Media file greater than 200 MiB not currently supported!");
+            if (mediaFile.size > 100 * 1024 * 1024) {
+                that.showMessage("Media file greater than 100 MiB not currently supported!");
                 future.complete(null);
             } else {
                 let fileExtension = "";
@@ -754,7 +754,8 @@ module.exports = {
             return future;
         },
         checkChatState: function(conversation) {
-            if (!conversation.readonly && ! this.chatVisibilityWarningDisplayed) {
+            let chatOwner = this.extractChatOwner(conversation.id);
+            if (chatOwner != this.context.username && !conversation.readonly && ! this.chatVisibilityWarningDisplayed) {
                 let participants = conversation.participants;
                 let friendsInChat = this.friendnames.filter(friend => participants.findIndex(v => v === friend) > -1);
                 if (friendsInChat.length == 0) {
