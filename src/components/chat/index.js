@@ -43,8 +43,7 @@ module.exports = {
             draftMessages: [],
             selectedConversationIsReadOnly: true,
             closedChat: false,
-            isInitialised: false,
-            chatVisibilityWarningDisplayed: false
+            isInitialised: false
         }
     },
     props: ['context', 'closeChatViewer', 'friendnames', 'socialFeed', 'socialState', 'getFileIconFromFileAndType'
@@ -182,6 +181,7 @@ module.exports = {
             let that = this;
             that.buildMessageThread(conversation.id);
             that.updateScrollPane(true);
+            that.checkChatState(conversation);
 
             let chatController = this.allChatControllers.get(conversation.id);
             if (chatController.pendingAttachmentRefs.length > 0) {
@@ -566,7 +566,11 @@ module.exports = {
                     currentMembers.push(username);
                 } else if(type == 'RemoveMember') {
                     let username = chatController.controller.getUsername(chatEnvelope.payload.memberToRemove);
-                    messageThread.push(this.createStatusMessage(chatEnvelope.creationTime, author + " removed " + username));
+                    if (author == username) {
+                        messageThread.push(this.createStatusMessage(chatEnvelope.creationTime, username + " left"));
+                    } else {
+                        messageThread.push(this.createStatusMessage(chatEnvelope.creationTime, author + " removed " + username));
+                    }
                     currentMembers.splice(currentMembers.findIndex(v => v === username), 1);
                 } else if(type == 'Join') {
                     let username = chatEnvelope.payload.username;
@@ -717,13 +721,14 @@ module.exports = {
                     that.selectedConversationId = that.conversations[0].id;
                 }
                 let conversationId = that.selectedConversationId;
-
                 that.loadChatMessages(allChats).thenApply(function(allChats) {
                     that.updateMessageThreads(allChats);
                     that.buildConversations();
                     that.buildMessageThread(conversationId);
                     if (conversationId != null) {
                         that.updateScrollPane(updateSpinner);
+                        let conversation = that.allConversations.get(conversationId);
+                        that.checkChatState(conversation);
                     }
                     if (updateSpinner) {
                         that.spinner(false);
@@ -768,11 +773,11 @@ module.exports = {
         },
         checkChatState: function(conversation) {
             let chatOwner = this.extractChatOwner(conversation.id);
-            if (chatOwner != this.context.username && !conversation.readonly && ! this.chatVisibilityWarningDisplayed) {
+            if (chatOwner != this.context.username && !conversation.readonly && ! conversation.chatVisibilityWarningDisplayed) {
                 let participants = conversation.participants;
                 let friendsInChat = this.friendnames.filter(friend => participants.findIndex(v => v === friend) > -1);
                 if (friendsInChat.length == 0) {
-                    this.chatVisibilityWarningDisplayed = true;
+                    conversation.chatVisibilityWarningDisplayed = true;
                     this.showMessage("Chat no longer contains any of your friends. Your messages will not be seen by others");
                 }
             }
@@ -944,7 +949,7 @@ module.exports = {
                         {controller: controller, owner: that.context.username, startIndex: 0, pendingAttachmentRefs: []});
                     let item = {id: conversationId, title: updatedGroupTitle, participants: updatedMembers
                         , readonly: false, currentAdmins: [that.context.username], currentMembers: [that.context.username]
-                        , hasUnreadMessages: false};
+                        , hasUnreadMessages: false, chatVisibilityWarningDisplayed: false};
                     if (updatedMembers.length == 1) {
                         item.profileImageNA = false;
                     }
@@ -1247,7 +1252,8 @@ module.exports = {
                 let participants = that.removeSelfFromParticipants(origParticipants);
 
                 let conversation = {id: controller.chatUuid, participants: participants, readonly: origParticipants.length == participants.length
-                    , title: controller.getTitle(), currentAdmins: [chatOwner], currentMembers: [chatOwner], hasUnreadMessages: false};
+                    , title: controller.getTitle(), currentAdmins: [chatOwner], currentMembers: [chatOwner], hasUnreadMessages: false
+                    , chatVisibilityWarningDisplayed: false};
                 if (participants.length == 1) {
                     conversation.profileImageNA = false;
                 }
@@ -1274,7 +1280,6 @@ module.exports = {
                 let participants = that.removeSelfFromParticipants(origParticipants);
                 conversation.participants = participants;
                 conversation.readonly = origParticipants.length == participants.length;
-                that.checkChatState(conversation);
                 if (participants.length == 1) {
                     conversation.profileImageNA = false;
                 }
