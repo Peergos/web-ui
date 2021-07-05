@@ -174,13 +174,11 @@ module.exports = {
                 return;
             }
             var that = this;
+            let membersToAdd = [];
             for (var i = 0; i < usersToAdd.length; i++) {
                 let targetUsername = usersToAdd[i];
                 if(this.existingGroupMembers.indexOf(targetUsername) == -1) {
-                    that.errorTitle = targetUsername + " not a member!";
-                    that.errorBody = "";
-                    that.showError = true;
-                    return;
+                    membersToAdd.push(targetUsername);
                 }
             }
 
@@ -197,6 +195,8 @@ module.exports = {
                 that.errorBody = "";
                 that.showError = true;
                 return;
+            } else {
+                this.addMembersToGroup(membersToAdd);
             }
         },
 	    setTypeAhead: function() {
