@@ -1561,16 +1561,16 @@ module.exports = {
             return future;
         },
         sendMessage: function(conversationId, msg) {
-            let future = peergos.shared.util.Futures.incomplete();
             let that = this;
+            that.newMessageText = "";
+            that.replyToMessage = null;
+            that.editMessage = null;
+            that.attachmentList = [];
+            let future = peergos.shared.util.Futures.incomplete();
             let chatController = this.allChatControllers.get(conversationId);
             let controller = chatController.controller;
             this.messenger.sendMessage(controller, msg).thenApply(function(updatedController) {
                 chatController.controller = updatedController;
-                that.newMessageText = "";
-                that.replyToMessage = null;
-                that.editMessage = null;
-                that.attachmentList = [];
                 future.complete(true);
             }).exceptionally(function(throwable) {
                 console.log(throwable);
