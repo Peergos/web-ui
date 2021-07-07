@@ -1027,7 +1027,7 @@ h3 {word-wrap:break-word; white-space:normal;}
 .attachment {
     position: fixed;
     background-color: white;
-    bottom: 80px;
+    bottom: 100px;
     border: 1px solid #c4c4c4;
     border-radius: 5px;
     margin-bottom: 15px;
@@ -1045,7 +1045,7 @@ h3 {word-wrap:break-word; white-space:normal;}
 .reply-draft-message {
   position: fixed;
   background-color: white;
-  bottom: 80px;
+  bottom: 100px;
   right: 100px;
   border: 1px solid #c4c4c4;
   border-radius: 5px;
