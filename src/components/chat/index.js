@@ -247,6 +247,8 @@ module.exports = {
         },
         launchEmojiPicker: function() {
             this.emojiPicker.togglePicker(this.emojiChooserBtn);
+            var emojiElement = document.getElementsByClassName("wrapper");
+            emojiElement[0].classList.add("emoji-position");
         },
         deleteAttachment: function(attachment) {
             let that = this;

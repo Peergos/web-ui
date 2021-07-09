@@ -837,6 +837,11 @@ h3 {word-wrap:break-word; white-space:normal;}
     margin-bottom: 10px;
 }
 /* chat - start */
+.emoji-position {
+    position: absolute;
+    bottom: 40px;
+    right: 160px;
+}
 .prevent-resize{
     resize: none
 }
