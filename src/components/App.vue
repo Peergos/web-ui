@@ -4,10 +4,11 @@
 		<component :is="currentModal"></component>
 
 		<!-- navigation -->
-		<AppSidebar v-if="!showLogin"/>
+		<AppSidebar v-if="loggedIn"/>
 
 		<!-- mobile menu trigger -->
 		<AppButton
+			v-if="loggedIn"
 			class="toggle-button--mobile mobile"
 			size="small"
 			round
@@ -17,38 +18,38 @@
 		</AppButton>
 
 		<!-- needs restyle -->
-		<div v-if="isSecretLink">
-			<h2>Peergos</h2>
-			<center>
-				<img
-					src="images/logo.png"
-					alt="Peergos logo"
-					class="image"
-				/>
-			</center>
+		<section v-if="isSecretLink">
+			<AppIcon icon="logo-full" class="sprite-test"/>
 			<h2>Loading secret link...</h2>
-		</div>
+		</section>
 
-		<login
-			v-if="showLogin"
-			@hide-login="showLogin = false"
-			:network="network"
-			@signup="signup"
-			@filesystem="filesystem"
-		>
-   		</login>
+		<section class="login-register" v-if="!loggedIn">
+			<AppIcon icon="logo-full" class="sprite-test"/>
 
-		<!-- Still WIP -->
-		<signup
-			v-if="showSignup"
-			@filesystem="filesystem"
-			:initialUsername="data.username"
-			:password1="data.password1"
-			:token="data.token"
-			:crypto="crypto"
-			:network="network"
-		>
-		</signup>
+			<AppTabs>
+				<AppTab title="Login">
+					<login
+						@hide-login="loggedIn = true"
+						:network="network"
+						@signup="signup"
+						@filesystem="filesystem"
+					>
+					</login>
+				</AppTab>
+				<AppTab title="Signup">
+					<!-- <signup
+					@filesystem="filesystem"
+					:initialUsername="data.username"
+					:password1="data.password1"
+					:token="data.token"
+					:crypto="crypto"
+					:network="network"
+				>
+				</signup> -->
+				</AppTab>
+			</AppTabs>
+		</section>
+
 
 		<!-- Main view container -->
 		<main class="content" :class="{ 'sidebar-margin': isSidebarOpen }">
@@ -56,7 +57,7 @@
 			<!-- App views (pages) ex-filesystem-->
 			<transition name="fade" mode="out-in">
 				<component
-					v-if="!showLogin"
+					v-if="loggedIn"
 					:is="currentView"
 					:initContext="data.context"
 					:initPath="data.initPath"
@@ -76,28 +77,20 @@
 			</filesystem> -->
 		</main>
 
-		<!-- needs restyle -->
-		<error
-			v-if="showError"
-			@hide-error="showError = false"
-			:title="errorTitle"
-			:body="errorBody"
-		>
-		</error>
-
 	</div>
 </template>
 
 <script>
 const AppSidebar = require("./sidebar/AppSidebar.vue");
-
 const ModalSpace = require("./modal/ModalSpace.vue");
+const AppTab = require("./tabs/AppTab.vue");
+const AppTabs = require("./tabs/AppTabs.vue");
 
-const Calendar = require("./views/Calendar.vue");
-const Drive = require("./views/Drive.vue");
-const NewsFeed = require("./views/NewsFeed.vue");
-const Social = require("./views/Social.vue");
-const Tasks = require("./views/Tasks.vue");
+const Calendar = require("../views/Calendar.vue");
+const Drive = require("../views/Drive.vue");
+const NewsFeed = require("../views/NewsFeed.vue");
+const Social = require("../views/Social.vue");
+const Tasks = require("../views/Tasks.vue");
 
 
 var isLocalhost = window.location.hostname == "localhost";
@@ -110,19 +103,19 @@ module.exports = {
 		Drive,
 		NewsFeed,
 		Social,
-		Tasks
+		Tasks,
+		AppTab,
+		AppTabs
 	},
 
 	data() {
 		return {
+			loggedIn:false,
 			showLogin: true,
 			showSignup: false,
 			network: null,
 			isSecretLink: false,
 			token: "",
-			showError: false,
-			errorTitle: "",
-			errorBody: "",
 			data: {
 				context: null,
 			},
@@ -201,7 +194,6 @@ module.exports = {
 		this.updateNetwork();
 	},
 
-
 	methods: {
 		toggleTheme() {
 			this.$store.commit("TOGGLE_THEME");
@@ -259,11 +251,14 @@ module.exports = {
 					};
 
 					req.onerror = function (e) {
-						that.errorTitle = "Unblock domain";
-						that.errorBody =
-							"Please unblock the following domain for Peergos to function correctly: " +
-							domainOpt.get();
-						that.showError = true;
+						that.$toast.error(
+							'Please unblock the following domain for Peergos to function correctly: ' + domainOpt.get()
+						)
+						// that.errorTitle = "Unblock domain";
+						// that.errorBody =
+						// 	"Please unblock the following domain for Peergos to function correctly: " +
+						// 	domainOpt.get();
+						// that.showError = true;
 					};
 
 					req.send();
@@ -290,10 +285,7 @@ module.exports = {
 				that.isSecretLink = false;
 			})
 			.exceptionally(function (throwable) {
-				that.errorTitle = "Secret link not found!";
-				that.errorBody = "Url copy/paste error?";
-				that.showSpinner = false;
-				that.showError = true;
+				that.$toast.error('Secret link not found! Url copy/paste error?')
 			});
 		},
 	},
@@ -308,6 +300,16 @@ module.exports = {
 	text-align: center;
 }
 
+.layout{
+}
+
+
+.icon.sprite-test{
+	display: block;
+	width:200px;
+	height: 48px;
+	margin: var(--app-margin) auto;
+}
 
 
 .toggle-button--mobile {
@@ -320,6 +322,12 @@ module.exports = {
 .toggle-button--mobile svg {
 	width: 24px;
 	height: 24px;
+}
+
+section.login-register{
+	min-height: 100vh;
+	padding: var(--app-margin);
+	background-color: var(--bg-2);
 }
 
 main.content{

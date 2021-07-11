@@ -134,7 +134,7 @@
 
 <script>
 
-const mixins = require("../../mixins.js");
+const mixins = require("../mixins.js");
 
 module.exports = {
 	data() {

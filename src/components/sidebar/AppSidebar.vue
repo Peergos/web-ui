@@ -27,7 +27,7 @@
 			size="small"
 			@click="toggleSidebar"
 		>
-			<AppIcon :icon="isOpen ? 'arrow-left' : 'arrow-right'"
+			<AppIcon :icon="isOpen ? 'chevron-left' : 'chevron-right'"
 		/></AppButton>
 
 		<ul class="nav-list">

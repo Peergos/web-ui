@@ -109,8 +109,9 @@ Vue.directive('focus', {
 Vue.config.productionTip = false;
 
 Vue.use(Vuex);
-
 var store = require('./store/index.js');
+
+Vue.use(VueToastification.default);
 
 // Initializing Vue after GWT has finished
 setTimeout(function() {

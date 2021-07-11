@@ -1,5 +1,5 @@
 <template>
-	<svg class="icon" :class="{ 'icon--flip': flip }">
+	<svg class="icon" :class="{ 'icon--flip': flip }" :width="width" :height="height">
 		<use :xlink:href="`#${icon}`" />
 	</svg>
 </template>
@@ -17,17 +17,23 @@ module.exports = {
 			type: Boolean,
 			default: false,
 		},
+		width:{
+			type: Number,
+			default: 32,
+		},
+		height:{
+			type: Number,
+			default: 32,
+		}
 	},
 };
 </script>
 
 <style>
 svg.icon {
+	display: inline-block;
 	fill: currentColor;
-	height: 32px;
-	margin-bottom: 0.125em;
 	vertical-align: middle;
-	width: 32px;
 }
 
 svg.icon .icon--flip {
