@@ -1304,6 +1304,11 @@ module.exports = {
             let pathWithoutLeadingSlash = path.startsWith("/") ? path.substring(1) : path;
             return pathWithoutLeadingSlash.substring(0, pathWithoutLeadingSlash.indexOf("/"));
         },
+        replaceOwnerInPath: function(owner, path) {
+            let pathWithoutLeadingSlash = path.startsWith("/") ? path.substring(1) : path;
+            let pathWithoutOwner = pathWithoutLeadingSlash.substring(pathWithoutLeadingSlash.indexOf("/"));
+            return owner + pathWithoutOwner;
+        },
         loadAllAttachments: function(chatController, future) {
             let that = this;
             let attachmentMap = new Map();
@@ -1313,17 +1318,38 @@ module.exports = {
             } else {
                 var loadedCount = 0;
                 refs.forEach(ref => {
-                    let owner = that.extractOwnerFromPath(ref.path);
-                    that.context.network.getFile(ref.cap, owner).thenApply(optFile => {
+                    //Load media from local mirror
+                    let mirrorPath = that.replaceOwnerInPath(that.context.username, ref.path);
+                    that.context.getByPath(mirrorPath).thenApply(function(optFile) {
                         loadedCount++;
                         let mediaFile = optFile.ref;
                         if (mediaFile != null) {
                             let fullPath = ref.path.startsWith("/") ? ref.path : "/" + ref.path;
                             attachmentMap.set(fullPath, mediaFile);
-                        }
-                        if (loadedCount == refs.length) {
-                            chatController.pendingAttachmentRefs = [];
-                            future.complete(attachmentMap);
+                            if (loadedCount == refs.length) {
+                                chatController.pendingAttachmentRefs = [];
+                                future.complete(attachmentMap);
+                            }
+                        } else {
+                            //fallback to attachment sender
+                            let owner = that.extractOwnerFromPath(ref.path);
+                            that.context.network.getFile(ref.cap, owner).thenApply(optFile => {
+                               let mediaFile = optFile.ref;
+                               if (mediaFile != null) {
+                                   let fullPath = ref.path.startsWith("/") ? ref.path : "/" + ref.path;
+                                   attachmentMap.set(fullPath, mediaFile);
+                               }
+                               if (loadedCount == refs.length) {
+                                   chatController.pendingAttachmentRefs = [];
+                                   future.complete(attachmentMap);
+                               }
+                            }).exceptionally(err => {
+                                console.log(err);
+                                if (loadedCount == refs.length) {
+                                    chatController.pendingAttachmentRefs = [];
+                                    future.complete(attachmentMap);
+                                }
+                            });
                         }
                     }).exceptionally(err => {
                         console.log(err);
