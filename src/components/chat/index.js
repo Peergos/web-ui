@@ -1318,6 +1318,7 @@ module.exports = {
             } else {
                 var loadedCount = 0;
                 refs.forEach(ref => {
+                    //Load media from local mirror
                     let mirrorPath = that.replaceOwnerInPath(that.context.username, ref.path);
                     that.context.getByPath(mirrorPath).thenApply(function(optFile) {
                         loadedCount++;
@@ -1330,6 +1331,7 @@ module.exports = {
                                 future.complete(attachmentMap);
                             }
                         } else {
+                            //fallback to attachment sender
                             let owner = that.extractOwnerFromPath(ref.path);
                             that.context.network.getFile(ref.cap, owner).thenApply(optFile => {
                                let mediaFile = optFile.ref;
