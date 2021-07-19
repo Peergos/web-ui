@@ -788,7 +788,9 @@ module.exports = {
                 let participants = that.removeSelfFromParticipants(origParticipants);
                 let conversation = that.allConversations.get(conversationId);
                 conversation.participants = participants;
-                conversation.readonly = origParticipants.length == participants.length;
+                let chatOwner = that.extractChatOwner(conversationId);
+                conversation.readonly = chatOwner != that.context.username &&
+                    (origParticipants.length == participants.length || participants.length == 0);
                 that.checkChatState(conversation);
                 if (participants.length == 1) {
                     conversation.profileImageNA = false;
@@ -1246,8 +1248,9 @@ module.exports = {
                 that.allMessageThreads.set(controller.chatUuid, []);
                 let origParticipants = controller.getMemberNames().toArray();
                 let participants = that.removeSelfFromParticipants(origParticipants);
-
-                let conversation = {id: controller.chatUuid, participants: participants, readonly: origParticipants.length == participants.length
+                let readonly = chatOwner != that.context.username
+                    && (origParticipants.length == participants.length || participants.length == 0);
+                let conversation = {id: controller.chatUuid, participants: participants, readonly: readonly
                     , title: controller.getTitle(), currentAdmins: [chatOwner], currentMembers: [chatOwner], hasUnreadMessages: false
                     , chatVisibilityWarningDisplayed: false};
                 if (participants.length == 1) {
@@ -1275,7 +1278,9 @@ module.exports = {
                 let origParticipants = updatedController.getMemberNames().toArray();
                 let participants = that.removeSelfFromParticipants(origParticipants);
                 conversation.participants = participants;
-                conversation.readonly = origParticipants.length == participants.length;
+                let chatOwner = that.extractChatOwner(controller.chatUuid);
+                conversation.readonly = chatOwner != that.context.username &&
+                    (origParticipants.length == participants.length || participants.length == 0);
                 if (participants.length == 1) {
                     conversation.profileImageNA = false;
                 }
@@ -1477,7 +1482,7 @@ module.exports = {
                     if (conversation.readonly) {
                         participants = " - " + participants;
                     } else {
-                        participants = " - you, " + participants;
+                        participants = " - you," + participants;
                     }
                 }
                 title = title + participants;
