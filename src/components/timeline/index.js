@@ -588,7 +588,8 @@ module.exports = {
             that.showSpinner = true;
             this.messenger.cloneLocallyAndJoin(entry.file).thenApply(res => {
                 that.showSpinner = false;
-                that.refresh();
+                that.close();
+                that.viewConversations();
             }).exceptionally(function(throwable) {
                 console.log("Unable to join Chat. Error:" + throwable.getMessage());
                 that.showMessage("Unable to join Chat");

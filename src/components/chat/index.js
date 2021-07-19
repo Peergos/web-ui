@@ -546,13 +546,7 @@ module.exports = {
                 let payload = chatEnvelope.payload;
                 let type = payload.type().toString();
                 let author = chatController.controller.getUsername(chatEnvelope.author);
-                if (!this.isInList(currentMembers, author)) {
-                    break;
-                }
                 if (type == 'GroupState') {//type
-                    if (!this.isInList(currentAdmins, author)) {
-                        break;
-                    }
                     if(payload.key == "title") {
                         messageThread.push(this.createStatusMessage(chatEnvelope.creationTime, "Chat name changed to " + payload.value));
                         let conversation = this.allConversations.get(conversationId);
