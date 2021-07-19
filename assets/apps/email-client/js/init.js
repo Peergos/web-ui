@@ -102,23 +102,12 @@ function setTypeAhead(availableUsernames, fieldId, selectedUsernames) {
     }
     let that = this;
     $('#' + fieldId).on('tokenfield:createtoken', function (event) {
-        //only select from available items
-        var available_tokens = allNames;
-        var exists = true;
-        $.each(available_tokens, function(index, token) {
-            if (token === event.attrs.value)
-                exists = false;
+        //do not allow duplicates in selection
+        var existingTokens = $(this).tokenfield('getTokens');
+        $.each(existingTokens, function(index, token) {
+            if (token.value === event.attrs.value)
+                event.preventDefault();
         });
-        if(exists === true) {
-            event.preventDefault();
-        } else {
-            //do not allow duplicates in selection
-            var existingTokens = $(this).tokenfield('getTokens');
-            $.each(existingTokens, function(index, token) {
-                if (token.value === event.attrs.value)
-                    event.preventDefault();
-            });
-        }
     });
     $('#' + fieldId).on('tokenfield:createdtoken', function (event) {
         selectedUsernames.push(event.attrs.value);
@@ -309,11 +298,22 @@ function filterEmails() {
         } else if (item.content.toLowerCase().indexOf(that.searchText) > -1) {
             newFilteredEmails.push(item);
         } else {
+            var added = false;
             item.attachments.forEach(attachment => {
                 if (attachment.filename.toLowerCase().indexOf(that.searchText) > -1) {
                     newFilteredEmails.push(item);
+                    added = true;
                 }
             });
+            if (!added) {
+                let allEmails = item.to.concat(item.cc).concat(item.bcc);
+                allEmails.forEach(email => {
+                    if (!added && email.toLowerCase().indexOf(that.searchText) > -1) {
+                        newFilteredEmails.push(item);
+                        added = true;
+                    }
+                });
+            }
         }
     });
     filteredEmails = newFilteredEmails;
@@ -616,8 +616,14 @@ function addEmailToUI(email) {
     let from = document.getElementById("fromId");
     from.innerText = email.from;
 
+    let to = document.getElementById("toId");
+    to.innerText = fromList(email.to);
+
     let cc = document.getElementById("ccId");
     cc.innerText = fromList(email.cc);
+
+    let bcc = document.getElementById("bccId");
+    bcc.innerText = fromList(email.bcc);
 
     let dateTime = document.getElementById("dateTimeId");
     dateTime.innerText = formatDateTime(email.timestamp);
@@ -704,7 +710,6 @@ function appendItemsToArray(newItems, existingItems) {
     let sorted = updatedArray.sort(function (a, b) {
             let aDate = new Date(a.timestamp);
             let bDate = new Date(b.timestamp);
-            let res = aDate < bDate;
             return bDate - aDate;
         });
     return sorted;
@@ -757,24 +762,24 @@ function respondToDeleteEmail(email, fromFolder) {
 }
 function respondToMoveEmails(emails, toFolder) {
     if (isFolderLoaded(toFolder)) {
-        let trash = folderEmails.get(toFolder);
-        let updatedTrash = appendItemsToArray(emails, trash);
-        folderEmails.set(toFolder, updatedTrash);
+        let folder = folderEmails.get(toFolder);
+        let updatedFolder = appendItemsToArray(emails, folder);
+        folderEmails.set(toFolder, updatedFolder);
     }
-    let folder = folderEmails.get(currentFolder);
-    removeItemsFromArray(emails, folder);
+    let folderItems = folderEmails.get(currentFolder);
+    removeItemsFromArray(emails, folderItems);
     toggleSelectAll();
     loadFolder(currentFolder);
 }
 
 function respondToMoveEmail(email, toFolder) {
     if (isFolderLoaded(toFolder)) {
-        let trash = folderEmails.get(toFolder);
-        let updatedTrash = appendItemsToArray([email], trash);
-        folderEmails.set(toFolder, updatedTrash);
+        let folder = folderEmails.get(toFolder);
+        let updatedFolder = appendItemsToArray([email], folder);
+        folderEmails.set(toFolder, updatedFolder);
     }
-    let folder = folderEmails.get(currentFolder);
-    removeItemsFromArray([email], folder);
+    let folderItems = folderEmails.get(currentFolder);
+    removeItemsFromArray([email], folderItems);
     loadFolder(currentFolder);
 }
 
@@ -875,6 +880,37 @@ function splitAndAppend(str, deliminator, uniqueList) {
         }
     });
 }
+function findDuplicate(list1, list2) {
+    if (list1.length == 0) {
+        let tempList = list1;
+        list1 = list2;
+        list2 = tempList;
+    }
+    var found = false;
+    list1.forEach(item1 => {
+        list2.forEach(item2 => {
+            if (!found && item1.toLowerCase() == item2.toLowerCase()) {
+                found = true;
+            }
+        });
+    });
+    return found;
+}
+//from https://owasp.org/www-community/OWASP_Validation_Regex_Repository
+function validateEmailAddress(address)
+{
+    let result = /^[a-zA-Z0-9_+&*-]+(?:\.[a-zA-Z0-9_+&*-]+)*@(?:[a-zA-Z0-9-]+\.)+[a-zA-Z]{2,7}$/.test(address);
+    return result;
+}
+function validateEmailAddresses(addresses) {
+    var ok = true;
+    addresses.forEach(item => {
+        if (ok && !validateEmailAddress(item)) {
+            ok = false;
+        }
+    });
+    return ok;
+}
 function sendEmail() {
 
     let to = toList(document.getElementById("to").value.trim());
@@ -895,7 +931,30 @@ function sendEmail() {
         requestShowMessage("Message has no content!");
         return;
     }
-
+    if (findDuplicate(to, cc)) {
+        requestShowMessage("CC contains address also found in TO field");
+        return;
+    }
+    if (findDuplicate(to, bcc)) {
+        requestShowMessage("BCC contains address also found in TO field");
+        return;
+    }
+    if (findDuplicate(cc, bcc)) {
+        requestShowMessage("CC contains address also found in BCC field");
+        return;
+    }
+    if (!validateEmailAddresses(to)) {
+        requestShowMessage("TO contains invalid email address");
+        return;
+    }
+    if (!validateEmailAddresses(cc)) {
+        requestShowMessage("CC contains invalid email address");
+        return;
+    }
+    if (!validateEmailAddresses(bcc)) {
+        requestShowMessage("BCC contains invalid email address");
+        return;
+    }
     let allTasks = [];
     for(var i = 0; i < currentAttachmentFiles.length; i++) {
         allTasks.push(uploadFile(currentAttachmentFiles[i]));

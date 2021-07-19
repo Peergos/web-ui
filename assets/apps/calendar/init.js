@@ -1858,7 +1858,6 @@ function emailEvent(schedule) {
         ? RecurringSchedules[RecurringSchedules.findIndex(v => v.id === schedule.raw.parentId)]
         : schedule;
     let event = serialiseICal(instance, false);
-    let test = getCurrentTimeZoneId();
     let recurringText = schedule.raw.hasRecurrenceRule ? ' (Recurring: ' + schedule.recurrenceRule + ')' : '';
     let stateText = schedule.state == CALENDAR_EVENT_CANCELLED ? 'CANCELLED ' : '';
     let title = stateText + schedule.title + ' - ' + moment(schedule.start.toUTCString()).toLocaleString() + recurringText;

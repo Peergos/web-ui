@@ -1914,7 +1914,7 @@ module.exports = {
             this.loadCalendarAsGuest = isSecretLink;
             this.confirmImport = confirmImport;
             let that = this;
-            setTimeout(function(){ that.showCalendarViewer = true;}, 1000);
+            setTimeout(function(){ that.showCalendarViewer = true;}, 2000);
         },
         importSharedCalendar: function(path, file, isSecretLink, owner) {
             this.importFile = null;

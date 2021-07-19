@@ -3,9 +3,9 @@
   <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
-    <link rel="stylesheet" type="text/css" href="css/bootstrap-1.css">
-    <link rel="stylesheet" type="text/css" href="css/font-awesome-1.css">
-    <link rel="stylesheet" type="text/css" href="css/style-1.css">
+    <link rel="stylesheet" type="text/css" href="css/bootstrap.css">
+    <link rel="stylesheet" type="text/css" href="css/font-awesome.css">
+    <link rel="stylesheet" type="text/css" href="css/style.css">
     <link rel="stylesheet" type="text/css" href="css/bootstrap-tokenfield.min.css">
     <link rel="stylesheet" type="text/css" href="css/typeahead.css">
 
@@ -51,7 +51,7 @@
         <main id="email-list" class="inbox">
           <div class="toolbar">
             <div class="btn-group">
-              <button id="refreshButtonId" type="button" class="btn btn-light">
+              <button id="refreshButtonId" type="button" class="btn btn-light" title="Refresh" >
                 <span id='refreshInboxButton'><img src="./images/refresh.svg" class="fa-icon"></img></span>
               </button>
               <h3 id="currentFolderId" class="current-folder"></h3>
@@ -59,28 +59,28 @@
             <div class="btn-group float-right">
               <form>
                 <input id="searchText" type="text" placeholder="Search..." class="sr-input" maxlength="20">&nbsp;
-                <button type="button" class="btn sr-btn" data-original-title="" title="" id='searchButton'><img src="./images/search.svg" class="fa-icon"></img></button>
+                <button type="button" class="btn sr-btn" data-original-title="" title="Search folder" id='searchButton'><img src="./images/search.svg" class="fa-icon"></img></button>
               </form>
             </div>
           </div>
           <div class="toolbar">
-            <button type="button" class="btn btn-light" id='toggleSelectAllButton'>
+            <button type="button" class="btn btn-light" id='toggleSelectAllButton' title="Select all">
               <span><img id="selectAll" src="./images/square-o.svg" class="fa-icon"></span>
             </button>
-            <button id="toolbarInboxId" type="button" class="btn btn-light" class="hide">
+            <button id="toolbarInboxId" type="button" class="btn btn-light" class="hide" title="Inbox">
               <span><img src="./images/inbox.svg" class="fa-icon"></span>
             </button>
-            <button type="button" class="btn btn-light" id='deleteMessagesButton'>
+            <button type="button" class="btn btn-light" id='deleteMessagesButton' title="Trash">
               <span><img src="./images/trash-o.svg" class="fa-icon"></span>
             </button>
-            <button id="toolbarSpamId" type="button" class="btn btn-light">
+            <button id="toolbarSpamId" type="button" class="btn btn-light" title="Spam">
               <span><img src="./images/ban.svg" class="fa-icon"></span>
             </button>
-            <button id="toolbarArchiveId" type="button" class="btn btn-light">
+            <button id="toolbarArchiveId" type="button" class="btn btn-light" title="Archive">
               <span><img src="./images/archive.svg" class="fa-icon"></span>
             </button>
             <div class="btn-group">
-              <button type="button" class="btn btn-light dropdown-toggle" data-toggle="dropdown">
+              <button type="button" class="btn btn-light dropdown-toggle" data-toggle="dropdown" title="Folders">
                 <span><img src="./images/folder.svg" class="fa-icon"></img></span>
                 <span class="caret"></span>
               </button>
@@ -126,11 +126,11 @@
             <div class="col-sm-11 ml-auto">
               <div class="toolbar" role="toolbar">
                 <div id="icalEvent" class="hide">
-                  <button type="button" class="btn btn-info" id='calendarEventId'>
-                    <span><img src="./images/envelope.svg" class="fa-icon filter-white"></img></span>
+                  <button type="button" class="btn btn-info" id='calendarEventId' title="Calendar event">
+                    <span><img src="./images/calendar.svg" class="fa-icon filter-white"></img></span>
                   </button><p id="icalEventTitleId"></p>
                 </div>
-                <button type="button" class="btn btn-info" id='openUploadDialogButton'>
+                <button type="button" class="btn btn-info" id='openUploadDialogButton' title="Attachment">
                   <span><img src="./images/paperclip.svg" class="fa-icon filter-white"></img></span>
                 </button><p id="attachmentId"></p>
                 <input type="file" id="uploadInput" class="hide" multiple />
@@ -139,8 +139,8 @@
                 <textarea class="form-control" id="message" name="body" rows="6" placeholder=""></textarea>
               </div>
               <div class="form-group">
-                <button type="submit" class="btn btn-success" id="addSendEmailButton">Send</button>
-                <button type="submit" class="btn btn-danger" id="addDiscardEmailButton">Discard</button>
+                <button type="submit" class="btn btn-success" id="addSendEmailButton" title="Send email">Send</button>
+                <button type="submit" class="btn btn-danger" id="addDiscardEmailButton" title="Discard email">Discard</button>
               </div>
             </div>
           </div>
@@ -153,27 +153,27 @@
           </div>
           <div class="toolbar">
             <div class="btn-group">
-              <button id="replyToId" type="button" class="btn btn-light">
+              <button id="replyToId" type="button" class="btn btn-light" title="Reply">
                 <span><img src="./images/mail-reply.svg" class="fa-icon"></span>
               </button>
-              <button id="replyToAll" type="button" class="btn btn-light">
+              <button id="replyToAll" type="button" class="btn btn-light" title="Reply all">
                 <span><img src="./images/mail-reply-all.svg" class="fa-icon"></span>
               </button>
-              <button id="forwardTo" type="button" class="btn btn-light">
+              <button id="forwardTo" type="button" class="btn btn-light" title="Forward to">
                 <span><img src="./images/mail-forward.svg" class="fa-icon"></span>
               </button>
             </div>
-            <button id="moveToTrashId" type="button" class="btn btn-light">
+            <button id="moveToTrashId" type="button" class="btn btn-light" title="Trash">
               <span><img src="./images/trash-o.svg" class="fa-icon"></span>
             </button>
-            <button id="moveToSpamId" type="button" class="btn btn-light">
+            <button id="moveToSpamId" type="button" class="btn btn-light" title="Spam">
               <span><img src="./images/ban.svg" class="fa-icon"></span>
             </button>
-            <button id="moveToArchiveId" type="button" class="btn btn-light">
+            <button id="moveToArchiveId" type="button" class="btn btn-light" title="Archive">
               <span><img src="./images/archive.svg" class="fa-icon"></span>
             </button>
             <div class="btn-group">
-              <button type="button" class="btn btn-light dropdown-toggle" data-toggle="dropdown">
+              <button type="button" class="btn btn-light dropdown-toggle" data-toggle="dropdown" title="Folders">
                 <span><img src="./images/folder.svg" class="fa-icon"></img></span>
                 <span class="caret"></span>
               </button>
@@ -188,8 +188,10 @@
             <div id="emailSubjectId" class="subject"></div>
             <div class="header">
               <div class="from">
-                <span ><text>From:</text><text id="fromId" class="from-field"></text></span>
-                <span ><text>Cc:</text><text id="ccId" class="from-field"></text></span>
+                <span><text>From:</text><text id="fromId" class="address-field"></text></span>
+                <span><text>To:</text><text id="toId" class="address-field"></text></span>
+                <span><text>Cc:</text><text id="ccId" class="address-field"></text></span>
+                <span><text>Bcc:</text><text id="bccId" class="address-field"></text></span>
               </div>
               <div class="date" id="dateTimeId"></div>
             </div>
@@ -198,7 +200,7 @@
               </p>
             </div>
             <div class="attachments">
-              <h5 id="icalId" class="hide"> <img src="./images/calendar.svg" class="fa-icon"></img>
+              <h5 id="icalId" class="hide"> <img src="./images/calendar.svg" class="fa-icon" title="Calendar event"></img>
                 <span class="attachment-menu" >
                   <a href="#" id="importCalendarEventId">Import event</a>
                 </span>

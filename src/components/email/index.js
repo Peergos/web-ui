@@ -20,7 +20,8 @@ module.exports = {
             confirm_body: "",
             confirm_consumer_cancel_func: () => {},
             confirm_consumer_func: () => {},
-            messageToTimestamp: new Map()
+            messageToTimestamp: new Map(),
+            emailHostDomainIdentifier: '@peergos.net'
         }
     },
     props: ['context', 'messages', 'availableUsernames', 'importCalendarEvent', 'icalEventTitle', 'icalEvent'],
@@ -46,6 +47,10 @@ module.exports = {
                 let directoryPath = peergos.client.PathUtils.directoryToPath(dirStr.split('/'));
                 email.createDirectoryInternal(directoryPath).thenApply(function(res) {
                     that.reduceCreatingDirectories(email, ++index, directoriesToCreate, future);
+                }).exceptionally(function(throwable) {
+                    console.log('Unable to create directory:' + dirStr);
+                    that.showMessage("Unable to to create directory:" + dirStr);
+                    future.complete(false);
                 });
             }
         },
@@ -66,20 +71,22 @@ module.exports = {
                 } else {
                     that.displaySpinner("Creating email directories");
                     let pendingIndex = requiredDirs.findIndex(v => v === 'pending');
-                    if (pendingIndex >= -1) {
+                    if (pendingIndex == -1) {
                         requiredDirs.push('pending/inbox');
                         requiredDirs.push('pending/outbox');
                     }
                     let future2 = peergos.shared.util.Futures.incomplete();
                     that.reduceCreatingDirectories(email, 0, requiredDirs, future2);
                     future2.thenApply(done => {
-                        let sharees = peergos.client.JsUtil.asSet(['email-bridge']);
-                        let dirStr = that.context.username + '/.apps/email/data/pending';
-                        let directoryPath = peergos.client.PathUtils.directoryToPath(dirStr.split('/'));
-                        that.context.shareWriteAccessWith(directoryPath, sharees).thenApply(function(b) {
-                            that.removeSpinner();
-                            future.complete(true);
-                        });
+                        if (done) {
+                            let sharees = peergos.client.JsUtil.asSet(['email-bridge']);
+                            let dirStr = that.context.username + '/.apps/email/data/pending';
+                            let directoryPath = peergos.client.PathUtils.directoryToPath(dirStr.split('/'));
+                            that.context.shareWriteAccessWith(directoryPath, sharees).thenApply(function(b) {
+                                that.removeSpinner();
+                                future.complete(true);
+                            });
+                        }
                     });
                 }
             });
@@ -150,8 +157,10 @@ module.exports = {
             this.load(email);
         },
         postMessage: function(obj) {
-            var iframe = document.getElementById("email-client");
-            iframe.contentWindow.postMessage(obj, '*');
+            Vue.nextTick(function() {
+                var iframe = document.getElementById("email-client");
+                iframe.contentWindow.postMessage(obj, '*');
+            });
         },
         reduceDeletingEmails: function(email, data, folder, index, future) {
             let that = this;
@@ -232,7 +241,7 @@ module.exports = {
                 that.removeEmail(email, fromFolder, data.id).thenApply(function(res) {
                     future.complete(true);
                 }).exceptionally(function(throwable) {
-                    that.showMessage("Unable to delete moved email");
+                    that.showMessage("Unable to delete moved email from source folder");
                     console.log(throwable.getMessage());
                     future.complete(false);
                 });
@@ -332,7 +341,7 @@ module.exports = {
             let uuid = ([1e7]+-1e3+-4e3+-8e3+-1e11).replace(/[018]/g, c =>
                 (c ^ crypto.getRandomValues(new Uint8Array(1))[0] & 15 >> c / 4).toString(16)
             ).split("-").join("");
-            return "<" + uuid + "@Peergos.net>";
+            return "<" + uuid + this.emailHostDomainIdentifier + ">";
         },
         getPropertiesFile: function(email) {
             let that = this;
@@ -363,7 +372,6 @@ module.exports = {
                 let sorted = accumulator.sort(function (a, b) {
                         let aDate = new Date(a.timestamp);
                         let bDate = new Date(b.timestamp);
-                        let res = aDate < bDate;
                         return bDate - aDate;
                     });
                 future.complete(sorted);
@@ -420,13 +428,11 @@ module.exports = {
                 let folder = that.emailClientProperties.userFolders[i];
                 userFolders.push({name: folder.name, path: folder.path});
             }
-            Vue.nextTick(function() {
-                that.postMessage({type: 'load', availableUsernames: that.availableUsernames,
-                        userFolders: userFolders, username: that.context.username,
-                        icalEventTitle: that.icalEventTitle, icalEvent: that.icalEvent
-                        });
-                that.removeSpinner();
+            that.postMessage({type: 'load', availableUsernames: that.availableUsernames,
+                userFolders: userFolders, username: that.context.username,
+                icalEventTitle: that.icalEventTitle, icalEvent: that.icalEvent
             });
+            that.removeSpinner();
         },
         requestLoadFolder: function(email, folderName) {
             let that = this;
