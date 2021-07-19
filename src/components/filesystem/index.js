@@ -105,7 +105,7 @@ module.exports = {
             showSpinner: true,
             spinnerMessage: '',
             onUpdateCompletion: [], // methods to invoke when current dir is next refreshed
-            navigationViaTabKey: false
+            navigationViaTabKey: false,
             icalEventTitle: '',
             icalEvent: '',
             isEmailAvailable: false
