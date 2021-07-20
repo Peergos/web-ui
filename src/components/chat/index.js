@@ -538,7 +538,6 @@ module.exports = {
             }
             let chatController = this.allChatControllers.get(conversationId);
             let conversation = this.allConversations.get(conversationId);
-            let currentAdmins = conversation.currentAdmins;
             let currentMembers = conversation.currentMembers;
             for(var j = 0; j < messagePairs.length; j++) {
                 let chatEnvelope = messagePairs[j].message;
@@ -554,7 +553,7 @@ module.exports = {
                     } else if(payload.key == "admins") {
                         messageThread.push(this.createStatusMessage(chatEnvelope.creationTime, "Chat admins changed to " + payload.value));
                         let conversation = this.allConversations.get(conversationId);
-                        currentAdmins = payload.value.split(",");
+                        conversation.currentAdmins = payload.value.split(",");
                     }
                 } else if(type == 'Invite') {
                     let username = chatEnvelope.payload.username;
@@ -768,8 +767,7 @@ module.exports = {
             return future;
         },
         checkChatState: function(conversation) {
-            let chatOwner = this.extractChatOwner(conversation.id);
-            if (chatOwner != this.context.username && !conversation.readonly && ! conversation.chatVisibilityWarningDisplayed) {
+            if (!conversation.readonly && ! conversation.chatVisibilityWarningDisplayed) {
                 let participants = conversation.participants;
                 let friendsInChat = this.friendnames.filter(friend => participants.findIndex(v => v === friend) > -1);
                 if (friendsInChat.length == 0) {
@@ -777,6 +775,17 @@ module.exports = {
                     this.showMessage("Chat no longer contains any of your friends. Your messages will not be seen by others");
                 }
             }
+        },
+        displayChatAccessRemoved: function(conversation) {
+            if (this.showSpinner) {
+                return false;
+            }
+            let currentAdmins = conversation.currentAdmins;
+            if (currentAdmins.length == 0 || (currentAdmins.length == 1 && currentAdmins[0] == this.context.username
+                && conversation.participants.length == 0)) {
+                return false;
+            }
+            return conversation.readonly;
         },
         refreshConversation: function(conversationId) {
             var that = this;
@@ -788,7 +797,7 @@ module.exports = {
                 let participants = that.removeSelfFromParticipants(origParticipants);
                 let conversation = that.allConversations.get(conversationId);
                 conversation.participants = participants;
-                conversation.readonly = origParticipants.length == participants.length;
+                conversation.readonly = origParticipants.length == participants.length || participants.length == 0;
                 that.checkChatState(conversation);
                 if (participants.length == 1) {
                     conversation.profileImageNA = false;
@@ -942,7 +951,7 @@ module.exports = {
                 this.messenger.createChat().thenApply(function(controller){
                     let conversationId = controller.chatUuid;
                     that.allChatControllers.set(controller.chatUuid,
-                        {controller: controller, owner: that.context.username, startIndex: 0, pendingAttachmentRefs: []});
+                        {controller: controller, startIndex: 0, pendingAttachmentRefs: []});
                     let item = {id: conversationId, title: updatedGroupTitle, participants: updatedMembers
                         , readonly: false, currentAdmins: [that.context.username], currentMembers: [that.context.username]
                         , hasUnreadMessages: false, chatVisibilityWarningDisplayed: false};
@@ -1043,6 +1052,9 @@ module.exports = {
             }
             let conversation = this.allConversations.get(this.selectedConversationId);
             if (conversation != null) {
+                if (this.displayChatAccessRemoved(conversation)) {
+                    return;
+                }
                 this.groupId = this.selectedConversationId;
                 this.groupTitle = conversation.title;
                 this.friendNames = this.friendnames;
@@ -1233,22 +1245,17 @@ module.exports = {
             }
             return copyOfParticipants;
         },
-        extractChatOwner: function(chatUuid) {
-            let withoutPrefix = chatUuid.substring(5);//chat:
-            return withoutPrefix.substring(0,withoutPrefix.indexOf(":"));
-        },
         initialiseChats: function(controllers) {
             let that = this;
             controllers.forEach(controller => {
-                let chatOwner = this.extractChatOwner(controller.chatUuid);
-                chatController = {controller:controller, startIndex: 0, owner: chatOwner, pendingAttachmentRefs: []};
+                chatController = {controller:controller, startIndex: 0, pendingAttachmentRefs: []};
                 that.allChatControllers.set(controller.chatUuid, chatController);
                 that.allMessageThreads.set(controller.chatUuid, []);
                 let origParticipants = controller.getMemberNames().toArray();
                 let participants = that.removeSelfFromParticipants(origParticipants);
-
-                let conversation = {id: controller.chatUuid, participants: participants, readonly: origParticipants.length == participants.length
-                    , title: controller.getTitle(), currentAdmins: [chatOwner], currentMembers: [chatOwner], hasUnreadMessages: false
+                let readonly = origParticipants.length == participants.length || participants.length == 0;
+                let conversation = {id: controller.chatUuid, participants: participants, readonly: readonly
+                    , title: controller.getTitle(), currentAdmins: [], currentMembers: [], hasUnreadMessages: false
                     , chatVisibilityWarningDisplayed: false};
                 if (participants.length == 1) {
                     conversation.profileImageNA = false;
@@ -1275,7 +1282,7 @@ module.exports = {
                 let origParticipants = updatedController.getMemberNames().toArray();
                 let participants = that.removeSelfFromParticipants(origParticipants);
                 conversation.participants = participants;
-                conversation.readonly = origParticipants.length == participants.length;
+                conversation.readonly = origParticipants.length == participants.length || participants.length == 0;
                 if (participants.length == 1) {
                     conversation.profileImageNA = false;
                 }
@@ -1477,7 +1484,7 @@ module.exports = {
                     if (conversation.readonly) {
                         participants = " - " + participants;
                     } else {
-                        participants = " - you, " + participants;
+                        participants = " - you," + participants;
                     }
                 }
                 title = title + participants;
