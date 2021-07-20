@@ -34,7 +34,7 @@ Vue.component('admin', Vue.extend(Admin));
 Vue.component('appgrid', Vue.extend(AppGrid));
 Vue.component('choice', Vue.extend(Choice));
 Vue.component('code-editor', Vue.extend(Downloader).extend(CodeEditor));
-Vue.component('email', Vue.extend(Email));
+Vue.component('email', Vue.extend(Downloader).extend(Email));
 Vue.component('error', Vue.extend(Error));
 Vue.component('fingerprint', Vue.extend(Fingerprint));
 Vue.component('hex', Vue.extend(Downloader).extend(Hex));

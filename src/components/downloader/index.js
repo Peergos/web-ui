@@ -45,14 +45,15 @@ module.exports = {
             link.click();
 	},
 	
-	downloadFile: function(file) {
+	downloadFile: function(file, fileLabel) {
             console.log("downloading " + file.getFileProperties().name);
             var props = file.getFileProperties();
             var that = this;
             var resultingSize = this.getFileSize(props);
+            let filename = fileLabel != null ? fileLabel : props.name;
             var progress = {
 		show:true,
-		title:"Downloading and decrypting " + props.name,
+		title:"Downloading and decrypting " + filename,
 		done:0,
 		max:resultingSize
             };
@@ -80,9 +81,9 @@ module.exports = {
                     var maxBlockSize = 1024 * 1024 * 5;
                     var blockSize = size > maxBlockSize ? maxBlockSize : size;
 		    
-                    console.log("saving data of length " + size + " to " + props.name);
+                    console.log("saving data of length " + size + " to " + filename);
                     let result = peergos.shared.util.Futures.incomplete();
-                    let fileStream = streamSaver.createWriteStream(props.name, props.mimeType,
+                    let fileStream = streamSaver.createWriteStream(filename, props.mimeType,
 								   function(url) {
 								       let link = document.createElement('a')
 								       let click = new MouseEvent('click')
@@ -111,7 +112,7 @@ module.exports = {
                     var size = that.getFileSize(props);
                     var data = convertToByteArray(new Int8Array(size));
                     return reader.readIntoArray(data, 0, data.length)
-			.thenApply(function(read){that.openItem(props.name, data, props.mimeType)});
+			.thenApply(function(read){that.openItem(filename, data, props.mimeType)});
 		}
             }).exceptionally(function(throwable) {
 		progress.show = false;
