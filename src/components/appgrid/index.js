@@ -17,6 +17,9 @@ module.exports = {
             if (this.chatIsAvailable) {
                 appCount++;
             }
+            if (this.isEmailAvailable) {
+                appCount++;
+            }
             return appCount + (this.canUpgrade ? 1 : 0);
         },
         showChat: function() {
