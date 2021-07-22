@@ -781,7 +781,7 @@ module.exports = {
             if (dotIndex > -1 && dotIndex <= file.filename.length -1) {
                 fileExtension = file.filename.substring(dotIndex + 1);
             }
-            peergos.shared.email.EmailAttachmentHelper.upload(this.context, reader, fileExtension, file.size, updateProgressBar).thenApply(function(pair) {
+            peergos.shared.email.EmailAttachmentHelper.upload(this.context, this.context.username, reader, fileExtension, file.size, updateProgressBar).thenApply(function(pair) {
                 var thumbnailAllocation = Math.min(100000, file.size / 10);
                 updateProgressBar({ value_0: thumbnailAllocation});
                 future.complete(pair.right);
