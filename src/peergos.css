@@ -71,7 +71,7 @@ body {
     display: flex;
 }
 
-.password-eye {
+/* .password-eye {
     font-size: 1.5em;
     align-self: center;
 }
@@ -84,7 +84,7 @@ body {
 .password {
     position: inherit;
 }
-
+*/
 .close {
     color: #000;
     float: right;

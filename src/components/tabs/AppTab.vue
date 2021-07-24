@@ -25,6 +25,7 @@ module.exports = {
 <style>
 
 .app-tabs .tab {
+	display: block;
 	width: 100%;
 	padding: var(--app-margin);
 }

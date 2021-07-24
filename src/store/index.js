@@ -1,5 +1,6 @@
 module.exports = new Vuex.Store({
 	state: {
+		userIsLoggedIn: false,
 		currentView: null,
 		isDark: false,
 		isSidebarOpen: false,
@@ -9,8 +10,9 @@ module.exports = new Vuex.Store({
 		usageBytes: 0,
 		// isSecretLink: false,
 
-
-
+		crypto: null,
+		network: null,
+		userContext:null,
 	},
 
 	getters: {
@@ -45,11 +47,24 @@ module.exports = new Vuex.Store({
 			state.currentModal = payload;
 			state.showModal = true;
 		},
+		USER_LOGIN(state, payload) {
+			state.userIsLoggedIn = payload;
+		},
 
 		CURRENT_VIEW(state, payload) {
 			state.currentView = payload;
 		},
 
+		// settings
+		SET_CRYPTO(state, payload) {
+			state.crypto = payload;
+		},
+		SET_NETWORK(state, payload) {
+			state.network = payload;
+		},
+		SET_USER_CONTEXT(state, payload) {
+			state.userContext = payload;
+		},
 
 		// usage
 		SET_QUOTA(state, payload) {
@@ -59,4 +74,6 @@ module.exports = new Vuex.Store({
 			state.usageBytes = payload;
 		},
 	},
+
+	//
 });

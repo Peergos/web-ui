@@ -4,11 +4,11 @@
 		<component :is="currentModal"></component>
 
 		<!-- navigation -->
-		<AppSidebar v-if="loggedIn"/>
+		<AppSidebar v-if="userIsLoggedIn"/>
 
 		<!-- mobile menu trigger -->
 		<AppButton
-			v-if="loggedIn"
+			v-if="userIsLoggedIn"
 			class="toggle-button--mobile mobile"
 			size="small"
 			round
@@ -23,29 +23,19 @@
 			<h2>Loading secret link...</h2>
 		</section>
 
-		<section class="login-register" v-if="!loggedIn">
+		<section class="login-register" v-if="!userIsLoggedIn">
 			<AppIcon icon="logo-full" class="sprite-test"/>
 
 			<AppTabs>
 				<AppTab title="Login">
-					<login
-						@hide-login="loggedIn = true"
-						:network="network"
-						@signup="signup"
-						@filesystem="filesystem"
-					>
-					</login>
+					<Login/>
 				</AppTab>
 				<AppTab title="Signup">
-					<!-- <signup
-					@filesystem="filesystem"
-					:initialUsername="data.username"
-					:password1="data.password1"
-					:token="data.token"
-					:crypto="crypto"
-					:network="network"
-				>
-				</signup> -->
+
+					<Signup
+						:token="token"
+					/>
+
 				</AppTab>
 			</AppTabs>
 		</section>
@@ -56,10 +46,11 @@
 
 			<!-- App views (pages) ex-filesystem-->
 			<transition name="fade" mode="out-in">
+
+				<!-- :initContext="data.context" -->
 				<component
-					v-if="loggedIn"
+					v-if="userIsLoggedIn"
 					:is="currentView"
-					:initContext="data.context"
 					:initPath="data.initPath"
 					:initiateDownload="data.download"
 					:openFile="data.open">
@@ -86,6 +77,9 @@ const ModalSpace = require("./modal/ModalSpace.vue");
 const AppTab = require("./tabs/AppTab.vue");
 const AppTabs = require("./tabs/AppTabs.vue");
 
+const Login = require("./Login.vue");
+const Signup = require("./Signup.vue");
+
 const Calendar = require("../views/Calendar.vue");
 const Drive = require("../views/Drive.vue");
 const NewsFeed = require("../views/NewsFeed.vue");
@@ -105,17 +99,18 @@ module.exports = {
 		Social,
 		Tasks,
 		AppTab,
-		AppTabs
+		AppTabs,
+		Login,
+		Signup
 	},
 
 	data() {
 		return {
-			loggedIn:false,
-			showLogin: true,
-			showSignup: false,
-			network: null,
+			// showLogin: true,
+			// showSignup: false,
+			// network: null,
 			isSecretLink: false,
-			token: "",
+			token: '',
 			data: {
 				context: null,
 			},
@@ -124,17 +119,18 @@ module.exports = {
 
 	computed: {
 		...Vuex.mapState([
+			'userIsLoggedIn',
 			'isDark',
 			'isSidebarOpen',
 			'currentModal',
-			'currentView'
+			'currentView',
+			'crypto',
+			'network',
+			'userContext'
 		]),
 		...Vuex.mapGetters([
 			'currentTheme',
 		]),
-		crypto() {
-			return peergos.shared.Crypto.initJS();
-		},
 	},
 
 	watch: {
@@ -172,15 +168,22 @@ module.exports = {
 				if (href.includes("token=")) {
 					var urlParams = new URLSearchParams(window.location.search);
 					this.token = urlParams.get("token");
+					console.log(this.token, 'this.token 1')
 				}
-				this.signup({ token: this.token, username: "" });
+				// this.signup({ token: this.token, username: "" });
+				console.log(this.token, 'this.token 2')
 			} else if (props.secretLink) {
 				// this is a secret link
 				console.log("Navigating to secret link...");
 				this.gotoSecretLink(props);
-			} else this.login();
+			} // else this.login();
 			this.checkIfDomainNeedsUnblocking();
 		},
+	},
+
+	created() {
+		this.$store.commit('SET_CRYPTO', peergos.shared.Crypto.initJS() )
+		this.updateNetwork();
 	},
 
 	mounted() {
@@ -188,10 +191,6 @@ module.exports = {
 		document.documentElement.setAttribute("data-theme", localTheme);
 
 		this.$store.commit("SET_THEME", localTheme == "dark-mode");
-	},
-
-	created() {
-		this.updateNetwork();
 	},
 
 	methods: {
@@ -209,32 +208,31 @@ module.exports = {
 			this.$store.commit("TOGGLE_SIDEBAR");
 		},
 
+		// login(data) {
+		// 	// this.currentView = "login";
+		// 	// this.$store.commit("CURRENT_VIEW", 'login');
+		// 	this.data = data;
+		// },
+		// signup(data) {
+		// 	// this.currentView = "signup";
+		// 	// this.$store.commit("CURRENT_VIEW", 'signup');
+		// 	this.data = data;
+		// },
 
-
-		login(data) {
-			// this.currentView = "login";
-			// this.$store.commit("CURRENT_VIEW", 'login');
-			this.data = data;
-		},
-		signup(data) {
-			// this.currentView = "signup";
-			// this.$store.commit("CURRENT_VIEW", 'signup');
-			this.data = data;
-		},
-		filesystem(data) {
-			console.log(data)
-			// this.currentView = "Drive";
-			this.$store.commit("CURRENT_VIEW", 'Drive');
-			this.data = data;
-		},
+		// filesystem(data) {
+		// 	console.log(data)
+		// 	// this.currentView = "Drive";
+		// 	this.data = data;
+		// },
 
 		updateNetwork() {
-			var that = this;
+			let that = this;
 			peergos.shared.NetworkAccess.buildJS(
 				"QmVdFZgHnEgcedCS2G2ZNiEN59LuVrnRm7z3yXtEBv2XiF",
 				!isLocalhost
 			).thenApply(function (network) {
-				that.network = network;
+				// that.network = network;
+				that.$store.commit("SET_NETWORK", network);
 			});
 		},
 		checkIfDomainNeedsUnblocking() {
@@ -254,23 +252,20 @@ module.exports = {
 						that.$toast.error(
 							'Please unblock the following domain for Peergos to function correctly: ' + domainOpt.get()
 						)
-						// that.errorTitle = "Unblock domain";
-						// that.errorBody =
-						// 	"Please unblock the following domain for Peergos to function correctly: " +
-						// 	domainOpt.get();
-						// that.showError = true;
 					};
 
 					req.send();
 				}
 			});
 		},
+
+		// still need to check this
 		gotoSecretLink(props) {
 			var that = this;
 			this.isSecretLink = true;
 			peergos.shared.user.UserContext.fromSecretLink(
 				props.link,
-				this.network,
+				that.network,
 				that.crypto
 			)
 			.thenApply(function (context) {
@@ -298,9 +293,6 @@ module.exports = {
 	top: 0;
 	min-height: 100vh;
 	text-align: center;
-}
-
-.layout{
 }
 
 

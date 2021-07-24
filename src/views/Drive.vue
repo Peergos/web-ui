@@ -134,7 +134,7 @@
 
 <script>
 
-const mixins = require("../mixins.js");
+const mixins = require("../mixins/mixins.js");
 
 module.exports = {
 	data() {
@@ -242,7 +242,7 @@ module.exports = {
 			navigationViaTabKey: false
 		};
 	},
-	props: ["initContext", "initPath", "openFile", "initiateDownload"],
+	props: ["initPath", "openFile", "initiateDownload"],
 
 	computed: {
 		...Vuex.mapState([
@@ -405,7 +405,9 @@ module.exports = {
 	},
 	created() {
 		console.debug('Filesystem module created!');
-		this.context = this.initContext;
+		// this.context = this.initContext;
+		this.context = this.$store.state.userContext;
+
 		this.showAppgrid = !this.isSecretLink;
 		if (this.isSecretLink)
 			this.view = "files";

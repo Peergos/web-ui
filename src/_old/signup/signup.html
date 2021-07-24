@@ -1,0 +1,59 @@
+<div id="signup">
+	<template v-if="acceptingSignups">
+		<!-- <input type="text" name="username" id="username" class="form-control" v-on:keyup="lowercaseUsername()"
+				v-model="username" placeholder="Public username"> -->
+		<input
+			type="text"
+			autofocus
+			name="username"
+			v-model="username"
+			placeholder="Public username"
+		/>
+		<button @click="generatePassword()" class="btn btn-large btn-block btn-success">Generate password</button>
+		<br />
+		<div v-bind:class="errorClass">
+			<div class="form-group">
+				<label v-if="isError">{{ error }}</label>
+				<div class="flex-row">
+					<input :type="passwordFieldType" name="password" id="password" v-on:keyup="validatePassword(true)"
+						class="form-control password flex-grow" v-model="password" placeholder="Password">
+					<div v-bind:class="['fa', 'password' == passwordFieldType ? 'fa-eye password-eye' : 'fa-eye-slash password-eye-slash']"
+						@click="togglePassword1()"></div>
+				</div>
+			</div>
+			<div class="form-group flex-row">
+				<input :type="password2FieldType" name="password2" id="password2" v-on:focus="validatePassword(false)"
+					class="form-control password flex-grow" v-model="password2" placeholder="Re-enter password">
+				<div v-bind:class="['fa', 'password' == password2FieldType ? 'fa-eye password-eye' : 'fa-eye-slash password-eye-slash']"
+					@click="togglePassword2()"></div>
+			</div>
+			<div class="form-group" style="font-weight: bold;">
+				<input type="checkbox" name="safePassword" id="safePassword" v-model="safePassword"
+					placeholder="Safely store your password"> I understand that passwords cannot be reset or recovered -
+				if I forget my password, then I will lose access to my account and data. If I enter my password into a
+				malicious website then I will lose control of my account.
+			</div>
+			<div class="form-group" style="font-weight: bold;">
+				<input type="checkbox" name="tosAccepted" id="tosAccepted" v-model="tosAccepted"
+					placeholder="Accept Terms of Service">&nbsp;I accept the <a href="/terms.html" target="_blank"
+					rel="noopener noreferrer">Terms of Service</a> and <a href="/privacy.html" target="_blank"
+					rel="noopener noreferrer">Privacy Policy</a>
+			</div>
+		</div>
+		<button @click="signup()" class="btn btn-large btn-block btn-success">Sign up</button>
+	</template>
+
+	<template v-else>
+		<h4>This server is currently not accepting signups</h4>
+		Join the waiting list to be notified when there are more places.
+		<div class="form-group">
+			<input type="text" name="email" id="email" class="form-control" v-model="email" placeholder="Email">
+		</div>
+		<button @click="addToWaitList()" class="btn btn-large btn-block btn-success">Join waiting list</button>
+		<message v-if="showMessage" v-on:remove-message="showMessage= false;" :title="message.title"
+			:message="message.body">
+		</message>
+	</template>
+	<!-- <error v-if="showError" v-on:hide-error="showError = false" :title="errorTitle" :body="errorBody">
+	</error> -->
+</div>

@@ -393,7 +393,7 @@
 </template>
 
 <script>
-const mixins = require("../mixins.js");
+const mixins = require("../mixins/mixins.js");
 
 module.exports = {
     data() {

@@ -1,6 +1,5 @@
 var Account         = require('./components/account');
 var Admin           = require('./components/admin');
-// var App             = require('./components/app');
 var AppGrid         = require('./components/appgrid');
 var Calendar        = require('./components/calendar');
 var Chat            = require('./components/chat');
@@ -14,7 +13,6 @@ var Fingerprint     = require('./components/fingerprint');
 var Gallery         = require('./components/gallery');
 var Group           = require('./components/group');
 var Hex             = require('./components/viewers/hex');
-var Login           = require('./components/login.vue');
 var Message         = require('./components/message');
 var Modal           = require('./components/modal');
 var Password        = require('./components/password');
@@ -30,7 +28,6 @@ var Replace         = require('./components/replace');
 var Search          = require('./components/search');
 var SelectCreate    = require('./components/select-create');
 var Share           = require('./components/share');
-var Signup          = require('./components/signup');
 var Social          = require('./components/social');
 var SocialPost      = require('./components/social-post');
 var Space           = require('./components/space');
@@ -46,12 +43,16 @@ var AppButton 		= require('./components/AppButton.vue');
 var AppIcon 		= require('./components/AppIcon.vue');
 var AppModal 		= require('./components/modal/AppModal.vue');
 var App  			= require('./components/App.vue');
-var Filesystem  	= require('./components/Filesystem.vue');
+var Filesystem 		= require('./components/Filesystem.vue');
+
+// var Login        = equire('./components/Login.vue');
+// var Signup          = equire('./components/Signup.vue');
+var FormPassword 	= require("./components/form/FormPassword.vue");
+
 
 // Loading components
 Vue.component('account', Vue.extend(Account));
 Vue.component('admin', Vue.extend(Admin));
-// Vue.component('app', Vue.extend(App));
 Vue.component('appgrid', Vue.extend(AppGrid));
 Vue.component('calendar', Vue.extend(Calendar));
 Vue.component('chat', Vue.extend(Downloader).extend(Chat));
@@ -64,7 +65,6 @@ Vue.component('fingerprint', Vue.extend(Fingerprint));
 Vue.component('gallery', Vue.extend(Downloader).extend(Gallery));
 Vue.component('group', Vue.extend(Group));
 Vue.component('hex', Vue.extend(Downloader).extend(Hex));
-Vue.component('login', Vue.extend(Login));
 Vue.component('message', Vue.extend(Message));
 Vue.component('modal', Vue.extend(Modal));
 Vue.component('password', Vue.extend(PasswordUtil).extend(Password));
@@ -78,7 +78,6 @@ Vue.component('prompt', Vue.extend(Prompt));
 Vue.component('replace', Vue.extend(Replace));
 Vue.component('search', Vue.extend(Search));
 Vue.component('select-create', Vue.extend(SelectCreate));
-Vue.component('signup', Vue.extend(PasswordUtil).extend(Signup));
 Vue.component('share', Vue.extend(Share));
 Vue.component('social', Vue.extend(Social));
 Vue.component('social-post', Vue.extend(SocialPost));
@@ -96,6 +95,12 @@ Vue.component('AppButton', Vue.extend(AppButton));
 Vue.component('AppIcon', Vue.extend(AppIcon));
 Vue.component('AppModal', Vue.extend(AppModal));
 Vue.component('Filesystem', Vue.extend(Downloader).extend(Filesystem));
+// Vue.component('Login', Vue.extend(Login));
+// Vue.component('Signup', Vue.extend(PasswordUtil).extend(Signup));
+
+// TODO impor this only on login and singup
+Vue.component('FormPassword', Vue.extend(FormPassword));
+
 
 
 
@@ -111,7 +116,12 @@ Vue.config.productionTip = false;
 Vue.use(Vuex);
 var store = require('./store/index.js');
 
-Vue.use(VueToastification.default);
+const ToastOptions = {
+	hideProgressBar: true,
+	showCloseButtonOnHover: true
+};
+
+Vue.use( VueToastification.default, ToastOptions);
 
 // Initializing Vue after GWT has finished
 setTimeout(function() {
