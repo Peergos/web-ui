@@ -36,7 +36,7 @@ module.exports = {
 	},
 	data() {
 		return {
-			passwordIsVisible: false,
+			passwordIsVisible: true,
 			passwordThreshold: 12,
 		}
 	},
