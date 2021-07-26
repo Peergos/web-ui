@@ -16,9 +16,9 @@
 			<AppIcon :width="24" :height="24" icon="arrow-right"/>
 		</AppButton>
 
-		<p class="demo--warning" v-if="!isDemo">
+		<!-- <p class="demo--warning" v-if="!isDemo">
 			<strong>WARNING:</strong> This is a demo server and all data will be occasionally cleared. If you want to create a <i>permanent</i> account, please go to our <a class="line" href="https://alpha.peergos.net?signup=true">alpha network</a>
-		</p>
+		</p> -->
 
 	</div>
 </template>
@@ -43,10 +43,6 @@ module.exports = {
 			'crypto',
 			'network'
 		]),
-		isDemo() {
-			// return this.demo == true && this.isSecretLink === false;
-			return window.location.hostname == "demo.peergos.net";
-		}
 	},
 
 	methods: {

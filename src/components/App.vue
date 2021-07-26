@@ -38,6 +38,9 @@
 
 				</AppTab>
 			</AppTabs>
+			<p class="demo--warning" v-if="isDemo">
+				<strong>WARNING:</strong> This is a demo server and all data will be occasionally cleared. If you want to create a <i>permanent</i> account, please go to our <a class="line" href="https://alpha.peergos.net?signup=true">alpha network</a>
+			</p>
 		</section>
 
 
@@ -131,6 +134,10 @@ module.exports = {
 		...Vuex.mapGetters([
 			'currentTheme',
 		]),
+		isDemo() {
+			// return this.demo == true && this.isSecretLink === false;
+			return window.location.hostname == "demo.peergos.net";
+		}
 	},
 
 	watch: {
@@ -320,6 +327,15 @@ section.login-register{
 	min-height: 100vh;
 	padding: var(--app-margin);
 	background-color: var(--bg-2);
+}
+
+section.login-register .demo--warning{
+	padding: 0 var(--app-margin) var(--app-margin);
+	max-width:400px;
+	margin: 0 auto;
+	color: var(--color);
+	background-color: var(--bg);
+	text-align: left;
 }
 
 main.content{
