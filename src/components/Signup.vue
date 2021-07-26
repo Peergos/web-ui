@@ -81,13 +81,15 @@
 </template>
 
 <script>
+const FormPassword 	= require("./form/FormPassword.vue");
+
 const Bip39 = require('../mixins/password/bip-0039-english.json');
 const BannedUsernames = require('../mixins/password/bannedUsernames.json');
 
 module.exports = {
-	// components: {
-	// 	FormPassword,
-	// },
+	components: {
+		FormPassword,
+	},
 
 	props: {
 		token: {

@@ -47,7 +47,7 @@ var Filesystem 		= require('./components/Filesystem.vue');
 
 // var Login        = equire('./components/Login.vue');
 // var Signup          = equire('./components/Signup.vue');
-var FormPassword 	= require("./components/form/FormPassword.vue");
+// var FormPassword 	= require("./components/form/FormPassword.vue");
 
 
 // Loading components
@@ -98,8 +98,8 @@ Vue.component('Filesystem', Vue.extend(Downloader).extend(Filesystem));
 // Vue.component('Login', Vue.extend(Login));
 // Vue.component('Signup', Vue.extend(PasswordUtil).extend(Signup));
 
-// TODO impor this only on login and singup
-Vue.component('FormPassword', Vue.extend(FormPassword));
+// TODO import this only on login and singup
+// Vue.component('FormPassword', Vue.extend(FormPassword));
 
 
 
