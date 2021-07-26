@@ -150,7 +150,7 @@ module.exports = {
 			wordIndices[i] = bytes[2*i]*8 + (bytes[2*i + 1] & 7);
 			let password = wordIndices.map(j => Bip39[j]).join("-");
 			this.password = password;
-			this.password2 = password;
+
         },
         signup() {
             const creationStart = Date.now();
@@ -223,6 +223,7 @@ module.exports = {
 
 .app-signup .checkbox__group{
 	display:flex;
+	align-items: flex-start;
 }
 .app-signup .checkbox__group label{
 	font-weight: var(--regular);
