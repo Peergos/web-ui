@@ -49,7 +49,7 @@
 				Sign up
 				<AppIcon :width="24" :height="24" icon="arrow-right"/>
 			</AppButton>
-		<!-- template temp fix --></template>
+		</template>
 
 		<template v-else><h4>This server is currently not accepting signups</h4>
 			Join the waiting list to be notified when there are more places.
@@ -76,7 +76,7 @@
 				:message="message.body"
 			>
 			</message>
-		<!-- template temp fix --></template>
+		</template>
 	</div>
 </template>
 
