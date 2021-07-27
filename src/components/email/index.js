@@ -23,7 +23,8 @@ module.exports = {
             messageToTimestamp: new Map(),
             emailHostDomainIdentifier: '@peergos.net',
             attachmentReferences: new Map(),
-            progressMonitors: []
+            progressMonitors: [],
+            directoryPrefix: 'default'
         }
     },
     props: ['context', 'messages', 'availableUsernames', 'importCalendarEvent', 'icalEventTitle', 'icalEvent', 'checkAvailableSpace'],
@@ -43,15 +44,15 @@ module.exports = {
         getContext: function() {
             return this.context;
         },
-        reduceCreatingDirectories: function(email, index, directoriesToCreate, future) {
+        reduceCreatingDirectories: function(email, prefix, index, directoriesToCreate, future) {
             let that = this;
             if (index >= directoriesToCreate.length) {
                 future.complete(true);
             } else {
-                let dirStr = directoriesToCreate[index];
+                let dirStr = prefix + "/" + directoriesToCreate[index];
                 let directoryPath = peergos.client.PathUtils.directoryToPath(dirStr.split('/'));
                 email.createDirectoryInternal(directoryPath).thenApply(function(res) {
-                    that.reduceCreatingDirectories(email, ++index, directoriesToCreate, future);
+                    that.reduceCreatingDirectories(email, prefix, ++index, directoriesToCreate, future);
                 }).exceptionally(function(throwable) {
                     console.log('Unable to create directory:' + dirStr);
                     that.showMessage("Unable to to create directory:" + dirStr);
@@ -62,8 +63,37 @@ module.exports = {
         setupDirectories: function(email) {
             let that = this;
             let future = peergos.shared.util.Futures.incomplete();
+            let prefix = this.directoryPrefix;
+            email.dirInternal(null).thenApply(dataDir => {
+                let dataSubDirs = dataDir.toArray([]);
+                if (dataSubDirs.length == 0) {
+                    let directoryPath = peergos.client.PathUtils.directoryToPath([prefix]);
+                    email.createDirectoryInternal(directoryPath).thenApply(function(res) {
+                        future.complete(true);
+                    }).exceptionally(function(throwable) {
+                        console.log('Unable to create directory:' + prefix);
+                        that.showMessage("Unable to to create directory:" + prefix);
+                        future.complete(false);
+                    });
+                } else {
+                    future.complete(true);
+                }
+            });
+            let future2 = peergos.shared.util.Futures.incomplete();
+            future.thenApply(done => {
+                that.setupDefaultDirectories(email).thenApply(done => {
+                    future2.complete(done);
+                });
+            });
+            return future2;
+        },
+        setupDefaultDirectories: function(email) {
+            let that = this;
+            let future = peergos.shared.util.Futures.incomplete();
             let requiredDirs = ['inbox','sent','pending', 'attachments'];
-            email.dirInternal(null).thenApply(dirNames => {
+            let prefix = this.directoryPrefix;
+            let prefixPath = peergos.client.PathUtils.directoryToPath([this.directoryPrefix]);
+            email.dirInternal(prefixPath).thenApply(dirNames => {
                 let folders = dirNames.toArray([]);
                 folders.forEach(folder => {
                     let index = requiredDirs.findIndex(v => v === folder);
@@ -76,24 +106,20 @@ module.exports = {
                 } else {
                     that.displaySpinner("Creating email directories");
                     let pendingIndex = requiredDirs.findIndex(v => v === 'pending');
-                    if (pendingIndex == -1) {
+                    if (pendingIndex => 0) {
                         requiredDirs.push('pending/inbox');
                         requiredDirs.push('pending/outbox');
                     }
                     let future2 = peergos.shared.util.Futures.incomplete();
-                    that.reduceCreatingDirectories(email, 0, requiredDirs, future2);
+                    that.reduceCreatingDirectories(email, prefix, 0, requiredDirs, future2);
                     future2.thenApply(done => {
                         if (done) {
                             let sharees = peergos.client.JsUtil.asSet(['email-bridge']);
-                            let dirStr = that.context.username + '/.apps/email/data/pending';
+                            let dirStr = that.context.username + '/.apps/email/data/' + prefix;
                             let directoryPath = peergos.client.PathUtils.directoryToPath(dirStr.split('/'));
                             that.context.shareWriteAccessWith(directoryPath, sharees).thenApply(function(b) {
-                                let dirAttachmentStr = that.context.username + '/.apps/email/data/attachments';
-                                let directoryAttachmentPath = peergos.client.PathUtils.directoryToPath(dirAttachmentStr.split('/'));
-                                that.context.shareWriteAccessWith(directoryAttachmentPath, sharees).thenApply(function(b) {
-                                    that.removeSpinner();
-                                    future.complete(true);
-                                });
+                                that.removeSpinner();
+                                future.complete(true);
                             });
                         }
                     });
@@ -177,7 +203,7 @@ module.exports = {
                 future.complete(true);
             } else {
                 let item = data[index];
-                this.removeEmail(email, folder, item).thenApply(function(res) {
+                this.removeEmail(email, folder, item, true).thenApply(function(res) {
                     that.reduceDeletingEmails(email, data, folder, ++index, future);
                 });
             }
@@ -197,7 +223,7 @@ module.exports = {
         requestDeleteEmail: function(email, data, folder) {
             const that = this;
             that.displaySpinner();
-            this.removeEmail(email, folder, data).thenApply(function(done) {
+            this.removeEmail(email, folder, data, true).thenApply(function(done) {
                 that.removeSpinner();
                 if (done) {
                     that.postMessage({type: 'respondToDeleteEmail', data: data, folder: folder});
@@ -239,23 +265,28 @@ module.exports = {
         },
         removeEmailFromPending: function(email, id) {
             let filename = id + this.EMAIL_FILE_EXTENSION;
-            let folder = 'pending/inbox';
+            let folder = this.directoryPrefix + '/pending/inbox';
             let filePath = peergos.client.PathUtils.toPath(folder.split('/'), filename);
             return email.deleteInternal(filePath);
         },
-        removeEmail: function(email, folder, data) {
+        removeEmail: function(email, folder, data, deleteAttachment) {
             let that = this;
             let filename = data.id + this.EMAIL_FILE_EXTENSION;
-            let filePath = peergos.client.PathUtils.toPath(folder.split('/'), filename);
+            let fullFolderPath = this.directoryPrefix + '/' + folder;
+            let filePath = peergos.client.PathUtils.toPath(fullFolderPath.split('/'), filename);
             let future = peergos.shared.util.Futures.incomplete();
             email.deleteInternal(filePath).thenApply( res => {
-                let future2 = peergos.shared.util.Futures.incomplete();
-                that.reduceDeletingAttachments(email, data.attachments, 0, future2);
-                future2.thenApply(done => {
+                if (deleteAttachment) {
+                    let future2 = peergos.shared.util.Futures.incomplete();
+                    that.reduceDeletingAttachments(email, data.attachments, 0, future2);
+                    future2.thenApply(done => {
+                        future.complete(true);
+                    }).exceptionally(function(throwable) {
+                        future.complete(false);
+                    });
+                } else {
                     future.complete(true);
-                }).exceptionally(function(throwable) {
-                    future.complete(false);
-                });
+                }
             }).exceptionally(function(throwable) {
                 that.showMessage("Unable to delete email");
                 console.log(throwable.getMessage());
@@ -270,7 +301,7 @@ module.exports = {
             } else {
                 let attachment = attachments[index];
                 this.attachmentReferences.delete(attachment.path);
-                let prefix = '/' + this.context.username + "/.apps/email/data/";
+                let prefix = '/' + this.context.username + "/.apps/email/data";
                 let relativePath = attachment.path.substring(prefix.length);
                 let filePath = peergos.client.PathUtils.directoryToPath(relativePath.split('/'));
                 email.deleteInternal(filePath).thenApply( res => {
@@ -291,7 +322,7 @@ module.exports = {
             let future = peergos.shared.util.Futures.incomplete();
             let bytes = that.buildEmailBytes(data);
             that.saveEmail(email, toFolder, bytes, data.id).thenApply(function(res2) {
-                that.removeEmail(email, fromFolder, data).thenApply(function(res) {
+                that.removeEmail(email, fromFolder, data, false).thenApply(function(res) {
                     future.complete(true);
                 }).exceptionally(function(throwable) {
                     that.showMessage("Unable to delete moved email from source folder");
@@ -329,11 +360,11 @@ module.exports = {
             });
         },
         buildEmailBytes: function(data) {
-            let email = this.buildEmail(data);
+            let email = this.buildEmail(data, true);
             return email.toBytes();
         },
 
-        buildEmail: function(data) {
+        buildEmail: function(data, recurse) {
             let that = this;
             let allAttachments = [];
             data.attachments.forEach(item => {
@@ -349,20 +380,22 @@ module.exports = {
 
             let createdTimestamp = this.messageToTimestamp.get(data.id);
 
-            let replyingToEmail = data.replyingToEmail == null ? peergos.client.JsUtil.emptyOptional()
-                : peergos.client.JsUtil.optionalOf(this.buildEmail(data.replyingToEmail));
+            let replyingToEmail = data.replyingToEmail == null || !recurse ? peergos.client.JsUtil.emptyOptional()
+                : peergos.client.JsUtil.optionalOf(this.buildEmail(data.replyingToEmail, false));
 
-            let forwardingToEmail = data.forwardingToEmail == null ? peergos.client.JsUtil.emptyOptional()
-                : peergos.client.JsUtil.optionalOf(this.buildEmail(data.forwardingToEmail));
+            let forwardingToEmail = data.forwardingToEmail == null || !recurse ? peergos.client.JsUtil.emptyOptional()
+                : peergos.client.JsUtil.optionalOf(this.buildEmail(data.forwardingToEmail, false));
 
+            let sendError = peergos.client.JsUtil.emptyOptional();
             let emailJava = new peergos.shared.email.EmailMessage(data.id, data.from, data.subject,
                  createdTimestamp, to, cc, bcc,
                  data.content, data.unread, data.star, attachments, data.icalEvent,
-                 replyingToEmail, forwardingToEmail);
+                 replyingToEmail, forwardingToEmail, sendError);
             return emailJava;
         },
         saveEmail: function(email, folder, bytes, id) {
-            let folderDirs = folder.split('/');
+            let fullFolderPath = this.directoryPrefix + "/" + folder;
+            let folderDirs = fullFolderPath.split('/');
             let filePath = peergos.client.PathUtils.directoryToPath(folderDirs.concat(
                     [id + this.EMAIL_FILE_EXTENSION]));
             return email.writeInternal(filePath, bytes);
@@ -370,41 +403,33 @@ module.exports = {
         requestSendEmail: function(email, data) {
             let that = this;
             this.displaySpinner();
-            data.from = this.context.username + "@peergos.me";
-            data.id = this.createMsgId();
+            //Note: id, timestamp and from email address are replaced serverside for security
+            data.id = this.createUUID();
+            data.from = "";
             let timestamp = peergos.client.JsUtil.now();
             this.messageToTimestamp.set(data.id, timestamp);
             data.timestamp = timestamp.toString();
             this.uploadAttachments(data).thenApply(attachments => {
                 let bytes = that.buildEmailBytes(data);
-                that.saveEmail(email, 'sent', bytes, data.id).thenApply(done => {
-                    if (done) {
-                        that.postMessage({type: 'respondToSendEmail', data: data});
-                        that.saveEmail(email, 'pending/outbox', bytes, data.id).thenApply(copiedToOutbox => {
-                            that.removeSpinner();
-                            if (copiedToOutbox) {
-                                data.selected = false;
-                                that.postMessage({type: 'respondToSendEmail', data: data});
-                            } else {
-                                that.showMessage("Unable to Send Email to outbox");
-                            }
-                        });
+                that.saveEmail(email, 'pending/outbox', bytes, data.id).thenApply(copiedToOutbox => {
+                    that.removeSpinner();
+                    if (copiedToOutbox) {
+                        that.postMessage({type: 'respondToSendEmail'});
                     } else {
-                        that.removeSpinner();
-                        that.showMessage("Unable to Send Email");
+                        that.showMessage("Unable to Send Email to pending outbox");
                     }
                 });
             });
         },
-        createMsgId: function() { //todo confirm must use rfc5322 msg-id format standard
+        createUUID: function() {
             let uuid = ([1e7]+-1e3+-4e3+-8e3+-1e11).replace(/[018]/g, c =>
                 (c ^ crypto.getRandomValues(new Uint8Array(1))[0] & 15 >> c / 4).toString(16)
             ).split("-").join("");
-            return "<" + uuid + this.emailHostDomainIdentifier + ">";
+            return uuid;
         },
         getPropertiesFile: function(email) {
             let that = this;
-            let filePath = peergos.client.PathUtils.directoryToPath([this.CONFIG_FILENAME]);
+            let filePath = peergos.client.PathUtils.directoryToPath([this.directoryPrefix, this.CONFIG_FILENAME]);
             return email.readInternal(filePath).thenApply(data => {
                 return JSON.parse(new TextDecoder().decode(data));
             }).exceptionally(function(throwable) {//File not found
@@ -418,7 +443,7 @@ module.exports = {
             });
         },
         updatePropertiesFile: function(email, json) {
-            let filePath = peergos.client.PathUtils.directoryToPath([this.CONFIG_FILENAME]);
+            let filePath = peergos.client.PathUtils.directoryToPath([this.directoryPrefix, this.CONFIG_FILENAME]);
             let encoder = new TextEncoder();
             let uint8Array = encoder.encode(JSON.stringify(json));
             let bytes = convertToByteArray(uint8Array);
@@ -497,9 +522,10 @@ module.exports = {
         requestLoadFolder: function(email, folderName) {
             let that = this;
             this.displaySpinner();
-            let directoryPath = peergos.client.PathUtils.directoryToPath(folderName.split('/'));
+            let fullFolderPath = this.directoryPrefix + '/' + folderName;
+            let directoryPath = peergos.client.PathUtils.directoryToPath(fullFolderPath.split('/'));
             email.dirInternal(directoryPath, this.context.username).thenApply(filenames => {
-                that.loadEmails(email, folderName, filenames.toArray()).thenApply(results => {
+                that.loadEmails(email, fullFolderPath, filenames.toArray()).thenApply(results => {
                     that.postMessage({type: 'respondToLoadFolder', data: results, folderName: folderName});
                     that.removeSpinner();
                 });
@@ -583,7 +609,7 @@ module.exports = {
                 () => { that.showConfirm = false;
                     that.displaySpinner();
                     let dirPath = peergos.client.PathUtils.directoryToPath(
-                        [that.findFolderDirectory(folderName)]);
+                        [that.directoryPrefix, that.findFolderDirectory(folderName)]);
                     email.deleteInternal(dirPath).thenApply(function(res) {
                         that.postDeleteFolder(email, folderName);
                     }).exceptionally(function(throwable) {
@@ -627,7 +653,7 @@ module.exports = {
         requestRefreshInbox: function(email) {
             let that = this;
             this.displaySpinner();
-            let directoryPath = peergos.client.PathUtils.directoryToPath(['pending', 'inbox']);
+            let directoryPath = peergos.client.PathUtils.directoryToPath([this.directoryPrefix, 'pending', 'inbox']);
             email.dirInternal(directoryPath).thenApply(filenames => {
                 let emailsToRead = filenames.toArray([]);
                 let future = peergos.shared.util.Futures.incomplete();
@@ -644,7 +670,7 @@ module.exports = {
                 future.complete(true);
             } else {
                 let filename = emailsToRead[index];
-                let dirStr = 'pending/inbox/' + filename;
+                let dirStr = this.directoryPrefix + '/pending/inbox/' + filename;
                 let filePath = peergos.client.PathUtils.directoryToPath(dirStr.split('/'));
                 email.readInternal(filePath).thenApply(bytes => {
                     let id = filename.substring(0, filename.lastIndexOf('.'));
@@ -781,7 +807,7 @@ module.exports = {
             if (dotIndex > -1 && dotIndex <= file.filename.length -1) {
                 fileExtension = file.filename.substring(dotIndex + 1);
             }
-            peergos.shared.email.EmailAttachmentHelper.upload(this.context, this.context.username, reader, fileExtension, file.size, updateProgressBar).thenApply(function(pair) {
+            peergos.shared.email.EmailAttachmentHelper.upload(this.context, this.context.username, this.directoryPrefix, reader, fileExtension, file.size, updateProgressBar).thenApply(function(pair) {
                 var thumbnailAllocation = Math.min(100000, file.size / 10);
                 updateProgressBar({ value_0: thumbnailAllocation});
                 future.complete(pair.right);

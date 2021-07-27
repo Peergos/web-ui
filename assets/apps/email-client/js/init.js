@@ -18,7 +18,7 @@ let handler = function (e) {
         load(e.data.availableUsernames, e.data.userFolders, e.data.username
             , e.data.icalEventTitle, e.data.icalEvent);
     } else if (e.data.type == "respondToSendEmail") {
-        respondToSendEmail(e.data.data);
+        respondToSendEmail();
     } else if (e.data.type == "respondToLoadFolder") {
         respondToLoadFolder(e.data.data, e.data.folderName);
     } else if (e.data.type == "respondToMoveEmail") {
@@ -145,7 +145,7 @@ addGotoArchiveButton.onclick=function(e) {
 
 let addRefreshInboxButton = document.getElementById('refreshInboxButton');
 addRefreshInboxButton.onclick=function(e) {
-    refreshInbox();
+    refreshFolder();
 };
 
 let addSearchButton = document.getElementById('searchButton');
@@ -264,7 +264,8 @@ function load(availableUsernames, folders, user, icalEventTitle, icalEvent) {
     currentFolder = 'inbox';
     icalTitle = icalEventTitle;
     icalText = icalEvent;
-    let emailAddresses = availableUsernames.map(u => u + '@peergos.me');
+    //TODO let emailAddresses = availableUsernames.map(u => u + '@peergos.me');
+    let emailAddresses = [];
     setTypeAhead(emailAddresses, 'to', toUsernames);
     setTypeAhead(emailAddresses, 'cc', ccUsernames);
     setTypeAhead(emailAddresses, 'bcc', bccUsernames);
@@ -331,6 +332,13 @@ function toggleSelectAll() {
     } else {
         selectAllElement.src = "./images/check-square-o.svg";
         selectAll(true);
+    }
+}
+function clearSelectAllIcon() {
+    let selectAllElement = document.getElementById("selectAll");
+    if (selectAllElement.src.endsWith("check-square-o.svg")) {
+        selectAllElement.src = "./images/square-o.svg";
+        selectAll(false);
     }
 }
 function selectAll(value) {
@@ -564,8 +572,7 @@ function requestUpdateEmail(email) {
     mainWindow.postMessage({action: "requestUpdateEmail", data: email, folder: currentFolder}, origin);
 }
 function respondToUpdateEmail() {
-    updateValue("unreadEmailsTotal", unreadEmails);
-    updateValue("starredEmailsTotal", starredEmails);
+    updateEmailTotals();
 }
 function formatDateTime(dateTime) {
     let date = new Date(dateTime + "+00:00");//adding UTC TZ in ISO_OFFSET_DATE_TIME ie 2021-12-03T10:25:30+00:00
@@ -677,6 +684,13 @@ function addEmailToUI(email) {
 function importCalendarEvent(icalEvent) {
     mainWindow.postMessage({action: "requestImportCalendarEvent", icalEvent: icalEvent}, origin);
 }
+function refreshFolder() {
+    if (currentFolder == 'inbox') {
+        refreshInbox();
+    } else if (currentFolder == 'sent'){
+        requestLoadFolder('sent');
+    }
+}
 function refreshInbox() {
     mainWindow.postMessage({action: "requestRefreshInbox"}, origin);
 }
@@ -727,31 +741,39 @@ function deleteMessages() {
 function requestMoveEmails(emails, fromFolder, toFolder) {
     emails.forEach( item => {
         item.selected = false;
+        item.unread = false;
+        item.star = false;
     });
     mainWindow.postMessage({action: "requestMoveEmails", data: emails,
         fromFolder: fromFolder, toFolder: toFolder}, origin);
 }
 function requestMoveEmail(email, fromFolder, toFolder) {
     email.selected = false;
+    email.unread = false;
+    email.star = false;
     mainWindow.postMessage({action: "requestMoveEmail", data: email,
         fromFolder: fromFolder, toFolder: toFolder}, origin);
 }
 function requestDeleteEmails(emails, folder) {
     emails.forEach( item => {
         item.selected = false;
+        item.unread = false;
+        item.star = false;
     });
     mainWindow.postMessage({action: "requestDeleteEmails", data: emails,
         folder: folder}, origin);
 }
 function requestDeleteEmail(email, folder) {
     email.selected = false;
+    email.unread = false;
+    email.star = false;
     mainWindow.postMessage({action: "requestDeleteEmail", data: email,
         folder: folder}, origin);
 }
 function respondToDeleteEmails(emails, fromFolder) {
     let folder = folderEmails.get(fromFolder);
     removeItemsFromArray(emails, folder);
-    toggleSelectAll();
+    clearSelectAllIcon();
     loadFolder(fromFolder);
 }
 
@@ -768,7 +790,7 @@ function respondToMoveEmails(emails, toFolder) {
     }
     let folderItems = folderEmails.get(currentFolder);
     removeItemsFromArray(emails, folderItems);
-    toggleSelectAll();
+    clearSelectAllIcon();
     loadFolder(currentFolder);
 }
 
@@ -947,20 +969,44 @@ function sendEmail() {
         requestShowMessage("TO contains invalid email address");
         return;
     }
+    if (to.length > 500) {
+        requestShowMessage("too many TO addresses");
+        return;
+    }
     if (!validateEmailAddresses(cc)) {
         requestShowMessage("CC contains invalid email address");
+        return;
+    }
+    if (cc.length > 500) {
+        requestShowMessage("too many CC addresses");
         return;
     }
     if (!validateEmailAddresses(bcc)) {
         requestShowMessage("BCC contains invalid email address");
         return;
     }
+    if (bcc.length > 500) {
+        requestShowMessage("too many BCC addresses");
+        return;
+    }
     let allTasks = [];
+    if (currentAttachmentFiles.length > 10) {
+        requestShowMessage("Email exceeds attachment limit of 10 items");
+        return;
+    }
     for(var i = 0; i < currentAttachmentFiles.length; i++) {
         allTasks.push(uploadFile(currentAttachmentFiles[i]));
     }
     Promise.all(allTasks)
         .then(attachments => {
+                var size = body.length;
+                for(var x = 0; x < attachments.length; x++) {
+                    size += attachments[x].size;
+                }
+                if (size > 25 * 1024 * 1024) {
+                    requestShowMessage("Email plus attachments greater than 20 MiB");
+                    return;
+                }
                 let data =
                 {   subject: subject
                     , to: to, cc: cc, bcc: bcc
@@ -989,11 +1035,7 @@ function uploadFile(file) {
 function requestSendEmail(data) {
     mainWindow.postMessage({action: "requestSendEmail", data: data}, origin);
 }
-function respondToSendEmail(data) {
-    if (isFolderLoaded('sent')) {
-        let sendFolder = folderEmails.get('sent');
-        sendFolder.unshift(data);
-    }
+function respondToSendEmail() {
     clearEmailFields(false);
     gotoInbox();
 }
@@ -1013,14 +1055,14 @@ function replyTo(email) {
     composeEmail([email.from], email.cc, [], email, null);
     document.getElementById("to").value = email.from;
     document.getElementById("subject").value = "Re:" + email.subject;
-    document.getElementById("message").value = email.content;
+    //document.getElementById("message").value = email.content;
 }
 function replyToAll(email) {
     composeEmail([email.from], email.cc, [], email, null);
     document.getElementById("to").value = email.from;
     document.getElementById("cc").value = email.cc;
     document.getElementById("subject").value = "Re:" + email.subject;
-    document.getElementById("message").value = email.content;
+    //document.getElementById("message").value = email.content;
 }
 function forwardTo(email) {
     composeEmail([], [], [], null, email);
@@ -1090,6 +1132,10 @@ function composeEmail(toList, ccList, bccList, replyingTo, forwardingTo) {
 }
 
 function openEmail(email) {
+    if (email.unread) {
+        email.unread = false;
+        requestUpdateEmail(email);
+    }
     let emailList = document.getElementById("email-list");
     emailList.classList.add("hide");
     emailList.classList.remove("display-block");
@@ -1116,20 +1162,22 @@ function capitalise(text) {
 function respondToLoadFolder(emails, folderName) {
     folderEmails.set(folderName, emails);
     setFolderLoaded(folderName);
-    loadFolder(folderName);
+    loadFolder(folderName, true);
     if (folderName == 'inbox') {
-        updateEmailTotals();
         if (icalText.length > 0) {
             composeEmail([], [], [], null, null);
         }
     }
 }
 
-function loadFolder(folderName) {
+function loadFolder(folderName, isResponse) {
     currentEmail = null;
     resetSearch();
     currentFolder = folderName;
-    if(isFolderLoaded(folderName)) {
+    updateEmailTotals();
+    if (!isResponse && folderName == 'sent') {
+        requestLoadFolder(folderName);
+    } else if(isFolderLoaded(folderName)) {
 
         let emailList = document.getElementById("email-list");
         emailList.classList.remove("hide");
@@ -1150,7 +1198,7 @@ function loadFolder(folderName) {
         folderNameElement.innerText = capitalise(folderName);
         let refreshButtonElement = document.getElementById("refreshButtonId");
         let toolbarInboxElement = document.getElementById("toolbarInboxId");
-        if (folderName == 'inbox') {
+        if (folderName == 'inbox' || folderName == 'sent') {
             refreshButtonElement.classList.remove("hide");
             refreshButtonElement.classList.add("display-block");
             toolbarInboxElement.classList.add("hide");
