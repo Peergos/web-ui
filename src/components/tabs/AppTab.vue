@@ -1,5 +1,5 @@
 <template>
-	<transition name="fade" mode="out-in">
+	<transition >
 		<div class="tab" v-if="isActive">
 			<slot></slot>
 		</div>
@@ -22,11 +22,4 @@ module.exports = {
 };
 </script>
 
-<style>
-
-.app-tabs .tab {
-	display: block;
-	width: 100%;
-	padding: var(--app-margin);
-}
-</style>
+<style></style>

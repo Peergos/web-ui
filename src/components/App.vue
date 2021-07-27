@@ -109,14 +109,8 @@ module.exports = {
 
 	data() {
 		return {
-			// showLogin: true,
-			// showSignup: false,
-			// network: null,
 			isSecretLink: false,
 			token: '',
-			data: {
-				context: null,
-			},
 		};
 	},
 

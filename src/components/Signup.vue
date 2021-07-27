@@ -18,7 +18,28 @@
 
 			<FormPassword v-model="password2"/>
 
-			<div class="checkbox__group">
+			<label class="checkbox__group">
+				I understand that passwords cannot be reset or recovered - if I forget my password, then I will lose access to my
+				account and data. If I enter my password into a malicious website then I will lose control of my account.
+				<input
+					type="checkbox"
+					name="safePassword"
+					v-model="safePassword"
+				/>
+				<span class="checkmark"></span>
+			</label>
+
+			<label class="checkbox__group">
+				I accept the <a href="/terms.html" target="_blank" rel="noopener noreferrer">Terms of Service</a> and <a href="/privacy.html" target="_blank" rel="noopener noreferrer">Privacy Policy</a>
+				<input
+					type="checkbox"
+					name="tosAccepted"
+					v-model="tosAccepted"
+				/>
+				<span class="checkmark"></span>
+			</label>
+
+			<!-- <div class="checkbox__group">
 				<input
 					type="checkbox"
 					name="safePassword"
@@ -43,7 +64,7 @@
 				<label for="tosAccepted">
 					I accept the <a href="/terms.html" target="_blank" rel="noopener noreferrer">Terms of Service</a> and <a href="/privacy.html" target="_blank" rel="noopener noreferrer">Privacy Policy</a>
 				</label>
-			</div>
+			</div> -->
 
 			<AppButton class="signup" @click="signup()">
 				Sign up
@@ -83,11 +104,12 @@
 <script>
 const Bip39 = require('../mixins/password/bip-0039-english.json');
 const BannedUsernames = require('../mixins/password/bannedUsernames.json');
+const FormPassword = require("./form/FormPassword.vue");
 
 module.exports = {
-	// components: {
-	// 	FormPassword,
-	// },
+	components: {
+		FormPassword,
+	},
 
 	props: {
 		token: {
@@ -221,14 +243,83 @@ module.exports = {
 	background-color: var(--color-hover);
 }
 
-.app-signup .checkbox__group{
-	display:flex;
-	align-items: flex-start;
-}
-.app-signup .checkbox__group label{
+/* Checkboxs */
+.app-signup .checkbox__group {
+	display: block;
+	position: relative;
+	padding-left: 32px;
+	margin-bottom: 16px;
+	cursor: pointer;
+	-webkit-user-select: none;
+	-moz-user-select: none;
+	-ms-user-select: none;
+	user-select: none;
+
 	font-weight: var(--regular);
+	font-size: 14px;
 	text-align: left;
-	margin-left:8px;
+}
+
+.app-signup .checkbox__group a{
+	text-decoration: underline;
+}
+.app-signup .checkbox__group a:hover{
+	color:var(--color);
+}
+
+/* Hide the browser's default checkbox */
+.checkbox__group input {
+  position: absolute;
+  opacity: 0;
+  cursor: pointer;
+  height: 0;
+  width: 0;
+}
+
+/* Create a custom checkbox */
+.checkmark {
+  position: absolute;
+  top: 0;
+  left: 0;
+  height: 20px;
+  width: 20px;
+  border-radius: 4px;
+  background-color: var(--bg);
+  border: 2px solid var(--green-500);
+
+}
+.checkbox__group:hover input ~ .checkmark {
+	background-color: var(--bg-2);
+}
+
+/* When the checkbox is checked, add a blue background */
+.checkbox__group input:checked ~ .checkmark {
+	background-color: var(--green-500);
+}
+
+/* Create the checkmark (hidden when not checked) */
+.checkmark:after {
+  content: "";
+  position: absolute;
+  display: none;
+}
+
+/* Show the checkmark when checked */
+.checkbox__group input:checked ~ .checkmark:after {
+  display: block;
+}
+
+/* Style the checkmark */
+.checkbox__group .checkmark:after {
+	left: 6px;
+	top: 2px;
+	width: 5px;
+	height: 10px;
+	border: solid white;
+	border-width: 0 2px 2px 0;
+	-webkit-transform: rotate(45deg);
+	-ms-transform: rotate(45deg);
+	transform: rotate(45deg);
 }
 
 </style>

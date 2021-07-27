@@ -15,21 +15,16 @@
 			Sign in
 			<AppIcon :width="24" :height="24" icon="arrow-right"/>
 		</AppButton>
-
-		<!-- <p class="demo--warning" v-if="!isDemo">
-			<strong>WARNING:</strong> This is a demo server and all data will be occasionally cleared. If you want to create a <i>permanent</i> account, please go to our <a class="line" href="https://alpha.peergos.net?signup=true">alpha network</a>
-		</p> -->
-
 	</div>
 </template>
 
 <script>
-// const FormPassword = require("./form/FormPassword.vue");
+const FormPassword = require("./form/FormPassword.vue");
 
 module.exports = {
-	// components: {
-	// 	FormPassword,
-	// },
+	components: {
+		FormPassword,
+	},
 	data() {
 		return {
 			username: '',
@@ -78,7 +73,9 @@ module.exports = {
 };
 </script>
 <style>
-
+.login-register .tab{
+	padding: calc(var(--app-margin) / 2);
+}
 
 .login-register input[type=text],
 .login-register input[type=password] {

@@ -78,6 +78,7 @@ module.exports = {
 	position: absolute;
 	right:4px;
 	top:14px;
+	background-color: var(--bg);
 }
 .password__wrapper .eye:focus{
 	outline:none;
