@@ -1061,13 +1061,13 @@ function replyToAll(email) {
     composeEmail([email.from], email.cc, [], email, null);
     document.getElementById("to").value = email.from;
     document.getElementById("cc").value = email.cc;
-    document.getElementById("subject").value = "Re:" + email.subject;
+    document.getElementById("subject").value = "Re: " + email.subject;
     //document.getElementById("message").value = email.content;
 }
 function forwardTo(email) {
     composeEmail([], [], [], null, email);
-    document.getElementById("subject").value = "Fwd:" + email.subject;
-    document.getElementById("message").value = email.content;
+    document.getElementById("subject").value = "Fwd: " + email.subject;
+    //document.getElementById("message").value = email.content;
 }
 function moveEmailToTrash(email) {
     if (currentFolder == 'trash') {
