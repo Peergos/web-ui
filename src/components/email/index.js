@@ -21,13 +21,12 @@ module.exports = {
             confirm_consumer_cancel_func: () => {},
             confirm_consumer_func: () => {},
             messageToTimestamp: new Map(),
-            emailHostDomainIdentifier: '@peergos.net',
             attachmentReferences: new Map(),
             progressMonitors: [],
             directoryPrefix: 'default'
         }
     },
-    props: ['context', 'messages', 'availableUsernames', 'importCalendarEvent', 'icalEventTitle', 'icalEvent', 'checkAvailableSpace'],
+    props: ['context', 'messages', 'importCalendarEvent', 'icalEventTitle', 'icalEvent', 'checkAvailableSpace'],
     created: function() {
         this.displaySpinner();
         let that = this;
@@ -176,6 +175,8 @@ module.exports = {
                         that.requestShowMessage(e.data.message);
                     } else if(e.data.type=="requestConfirmAction") {
                         that.requestConfirmAction(e.data.action, e.data.message);
+                    } else if(e.data.action=="requestImportCalendarAttachment") {
+                        that.requestImportCalendarAttachment(e.data.attachment);
                     } else if(e.data.action=="requestDownloadAttachment") {
                         that.requestDownloadAttachment(e.data.attachment);
                     } else if(e.data.action=="requestImportCalendarEvent") {
@@ -359,6 +360,29 @@ module.exports = {
                 }
             });
         },
+        requestImportCalendarAttachment: function(attachment) {
+            let ref = this.attachmentReferences.get(attachment.path);
+            let that = this;
+            this.context.network.getFile(ref.cap, this.context.username).thenApply(optFile => {
+                if (optFile.ref != null) {
+                    let file = optFile.ref;
+                    const props = file.getFileProperties();
+                    file.getInputStream(that.context.network, that.context.crypto, props.sizeHigh(), props.sizeLow(), function(read){})
+                        .thenApply(function(reader) {
+                            var size = that.getFileSize(props);
+                            var data = convertToByteArray(new Int8Array(size));
+                            reader.readIntoArray(data, 0, data.length).thenApply(function(read){
+                                let text = new TextDecoder().decode(data);
+                                that.requestImportCalendarEvent(text);
+                            });
+                    }).exceptionally(function(throwable) {
+                        that.showMessage("Error loading calendar event");
+                    });
+                } else {
+                    that.showMessage("Unable to find calendar event:" + attachment.filename);
+                }
+            });
+        },
         buildEmailBytes: function(data) {
             let email = this.buildEmail(data, true);
             return email.toBytes();
@@ -513,7 +537,7 @@ module.exports = {
                 let folder = that.emailClientProperties.userFolders[i];
                 userFolders.push({name: folder.name, path: folder.path});
             }
-            that.postMessage({type: 'load', availableUsernames: that.availableUsernames,
+            that.postMessage({type: 'load',
                 userFolders: userFolders, username: that.context.username,
                 icalEventTitle: that.icalEventTitle, icalEvent: that.icalEvent
             });

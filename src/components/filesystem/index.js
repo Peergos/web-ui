@@ -1597,7 +1597,6 @@ module.exports = {
             this.showTour = false
         },
         showEmailView: function() {
-            this.availableUsernames = this.friendnames;
             this.showEmail = true;
         },
         emailCalendarEvent: function(icalEventTitle, icalEvent) {

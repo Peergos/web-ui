@@ -15,7 +15,7 @@ let handler = function (e) {
     origin = e.origin;
 
     if (e.data.type == "load") {
-        load(e.data.availableUsernames, e.data.userFolders, e.data.username
+        load(e.data.userFolders, e.data.username
             , e.data.icalEventTitle, e.data.icalEvent);
     } else if (e.data.type == "respondToSendEmail") {
         respondToSendEmail();
@@ -66,7 +66,18 @@ var currentlyForwardingTo = null;
 let toUsernames = [];
 let ccUsernames = [];
 let bccUsernames = [];
+let uniqueEmailAddresses = new Map();
+var haveSetupTypeAhead = false;
 
+function setupTypeAhead() {
+    if (haveSetupTypeAhead) {
+        return;
+    }
+    haveSetupTypeAhead = true;
+    let emailAddresses = [];
+    uniqueEmailAddresses.forEach((val,key, map) => emailAddresses.push(key));
+    initialiseTypeAhead(emailAddresses);
+}
 
 function resetTypeahead(fieldId, values) {
     $('#' + fieldId).tokenfield('setTokens', values);
@@ -116,6 +127,11 @@ function setTypeAhead(availableUsernames, fieldId, selectedUsernames) {
     $('#' + fieldId).on('tokenfield:removedtoken', function (event) {
         selectedUsernames.pop(event.attrs.value);
     });
+}
+function initialiseTypeAhead(emailAddresses) {
+    setTypeAhead(emailAddresses, 'to', toUsernames);
+    setTypeAhead(emailAddresses, 'cc', ccUsernames);
+    setTypeAhead(emailAddresses, 'bcc', bccUsernames);
 }
 
 let addGotoInboxButton = document.getElementById('gotoInboxButton');
@@ -259,16 +275,10 @@ function updateEmailTotals() {
     updateValue("unreadEmailsTotal", unreadEmails);
     updateValue("starredEmailsTotal", starredEmails);
 }
-
-function load(availableUsernames, folders, user, icalEventTitle, icalEvent) {
+function load(folders, user, icalEventTitle, icalEvent) {
     currentFolder = 'inbox';
     icalTitle = icalEventTitle;
     icalText = icalEvent;
-    //TODO let emailAddresses = availableUsernames.map(u => u + '@peergos.me');
-    let emailAddresses = [];
-    setTypeAhead(emailAddresses, 'to', toUsernames);
-    setTypeAhead(emailAddresses, 'cc', ccUsernames);
-    setTypeAhead(emailAddresses, 'bcc', bccUsernames);
 
     userFolders = folders.sort(function (a, b) { return a.name.localeCompare(b.name);});
     for(var i = 0; i < userFolders.length; i++) {
@@ -320,7 +330,15 @@ function filterEmails() {
     filteredEmails = newFilteredEmails;
     addEmailsToUI();
 }
-function truncateText(text, size) {
+function truncateText(origText, size, lines) {
+    let multipleLines = origText.split("\n");
+    var text = "";
+    for(var i=0; i < lines && i < multipleLines.length; i++) {
+        text = text + multipleLines[i] + "\n";
+    }
+    if (multipleLines.length > lines && text.length > 2) {
+        text =  text.substring(text, text.length -2) + "...";
+    }
     return text.length > size ? text.substring(0,size-3) + '...' : text;
 }
 function toggleSelectAll() {
@@ -563,7 +581,7 @@ function addEmailsToUI() {
         var description = document.createElement("div");
         listItem.appendChild(description);
         description.className = "description";
-        description.innerText = truncateText(email.content, 50);
+        description.innerText = truncateText(email.content, 50, 3);
 
         messageList.appendChild(item);
     });
@@ -677,6 +695,15 @@ function addEmailToUI(email) {
             downloadAttachment(attachment);
         }
         attachmentMenu.appendChild(download);
+        if (attachment.filename != null && attachment.filename.toLowerCase().endsWith(".ics")) {
+            var importICS = document.createElement("a");
+            importICS.innerText = 'Import Event';
+            importICS.href="#";
+            importICS.onclick = function() {
+                importCalendarAttachment(attachment);
+            }
+            attachmentMenu.appendChild(importICS);
+        }
 
         attachments.appendChild(item);
     });
@@ -1086,6 +1113,9 @@ function moveEmailToFolder(folder) {
     requestMoveEmail(currentEmail, currentFolder, folder.name);
 }
 
+function importCalendarAttachment(attachment) {
+    mainWindow.postMessage({action: "requestImportCalendarAttachment", attachment: attachment}, origin);
+}
 function downloadAttachment(attachment) {
     mainWindow.postMessage({action: "requestDownloadAttachment", attachment: attachment}, origin);
 }
@@ -1094,7 +1124,7 @@ function composeNewEmail() {
 }
 
 function composeEmail(toList, ccList, bccList, replyingTo, forwardingTo) {
-
+    setupTypeAhead();
     let icalEvent = document.getElementById('icalEvent');
     if (icalText.length > 0) {
         clearEmailFields(true);
@@ -1159,7 +1189,23 @@ function capitalise(text) {
     return firstLetter + text.substring(1);
 }
 
+function extractUniqueEmailAddresses(emails) {
+    emails.forEach(email => {
+        uniqueEmailAddresses.set(email.from.trim(), email.from);
+        email.to.forEach(addr => {
+            uniqueEmailAddresses.set(addr.trim(), addr);
+        });
+        email.cc.forEach(addr => {
+            uniqueEmailAddresses.set(addr.trim(), addr);
+        });
+        email.bcc.forEach(addr => {
+            uniqueEmailAddresses.set(addr.trim(), addr);
+        });
+    });
+}
+
 function respondToLoadFolder(emails, folderName) {
+    extractUniqueEmailAddresses(emails);
     folderEmails.set(folderName, emails);
     setFolderLoaded(folderName);
     loadFolder(folderName, true);
