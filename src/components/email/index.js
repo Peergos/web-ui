@@ -108,17 +108,22 @@ module.exports = {
                     if (pendingIndex => 0) {
                         requiredDirs.push('pending/inbox');
                         requiredDirs.push('pending/outbox');
+                        requiredDirs.push('pending/sent');
                     }
                     let future2 = peergos.shared.util.Futures.incomplete();
                     that.reduceCreatingDirectories(email, prefix, 0, requiredDirs, future2);
                     future2.thenApply(done => {
                         if (done) {
                             let sharees = peergos.client.JsUtil.asSet(['email-bridge']);
-                            let dirStr = that.context.username + '/.apps/email/data/' + prefix;
+                            let dirStr = that.context.username + '/.apps/email/data/' + prefix + '/pending';
                             let directoryPath = peergos.client.PathUtils.directoryToPath(dirStr.split('/'));
                             that.context.shareWriteAccessWith(directoryPath, sharees).thenApply(function(b) {
-                                that.removeSpinner();
-                                future.complete(true);
+                                let attachmentDirStr = that.context.username + '/.apps/email/data/' + prefix + '/attachments';
+                                let attachmentDirectoryPath = peergos.client.PathUtils.directoryToPath(attachmentDirStr.split('/'));
+                                that.context.shareWriteAccessWith(attachmentDirectoryPath, sharees).thenApply(function(b) {
+                                    that.removeSpinner();
+                                    future.complete(true);
+                                });
                             });
                         }
                     });
@@ -183,6 +188,8 @@ module.exports = {
                         that.requestImportCalendarEvent(e.data.icalEvent);
                     } else if(e.data.action=="requestRefreshInbox") {
                         that.requestRefreshInbox(email);
+                    } else if(e.data.action=="requestRefreshSent") {
+                        that.requestRefreshSent(email);
                     }
                 }
             });
@@ -264,9 +271,12 @@ module.exports = {
                 }
             });
         },
-        removeEmailFromPending: function(email, id) {
+        removeEmailFromFolder: function(email, id, folderName) {
             let filename = id + this.EMAIL_FILE_EXTENSION;
-            let folder = this.directoryPrefix + '/pending/inbox';
+            var folder = this.directoryPrefix + folderName;
+            if (folder.endsWith('/')) {
+                folder = folder.substring(0, folder.length - 1);
+            }
             let filePath = peergos.client.PathUtils.toPath(folder.split('/'), filename);
             return email.deleteInternal(filePath);
         },
@@ -674,6 +684,20 @@ module.exports = {
                 that.importCalendarEvent(icalEvent, that.context.username, false, true);
             });
         },
+        requestRefreshSent: function(email) {
+            let that = this;
+            this.displaySpinner();
+            let directoryPath = peergos.client.PathUtils.directoryToPath([this.directoryPrefix, 'pending', 'sent']);
+            email.dirInternal(directoryPath).thenApply(filenames => {
+                let emailsToRead = filenames.toArray([]);
+                let future = peergos.shared.util.Futures.incomplete();
+                that.reduceMovingEmailsToFolder(email, emailsToRead, 0, future, '/pending/sent/', 'sent');
+                future.thenApply(done => {
+                    that.removeSpinner();
+                    that.requestLoadFolder(email, 'sent');
+                });
+            });
+        },
         requestRefreshInbox: function(email) {
             let that = this;
             this.displaySpinner();
@@ -681,34 +705,35 @@ module.exports = {
             email.dirInternal(directoryPath).thenApply(filenames => {
                 let emailsToRead = filenames.toArray([]);
                 let future = peergos.shared.util.Futures.incomplete();
-                that.reduceMovingEmailsToInbox(email, emailsToRead, 0, future);
+                that.reduceMovingEmailsToFolder(email, emailsToRead, 0, future, '/pending/inbox/', 'inbox');
                 future.thenApply(done => {
                     that.removeSpinner();
                     that.requestLoadFolder(email, 'inbox');
                 });
             });
         },
-        reduceMovingEmailsToInbox: function(email, emailsToRead, index, future) {
+        reduceMovingEmailsToFolder: function(email, emailsToRead, index, future, srcFolderName, destFolderName) {
             let that = this;
             if (index >= emailsToRead.length) {
                 future.complete(true);
             } else {
                 let filename = emailsToRead[index];
-                let dirStr = this.directoryPrefix + '/pending/inbox/' + filename;
+                let dirStr = this.directoryPrefix + srcFolderName + filename;
                 let filePath = peergos.client.PathUtils.directoryToPath(dirStr.split('/'));
                 email.readInternal(filePath).thenApply(bytes => {
                     let id = filename.substring(0, filename.lastIndexOf('.'));
-                    that.moveEmailToInbox(email, bytes, id).thenApply(res => {
-                        that.reduceMovingEmailsToInbox(email, emailsToRead, ++index, future);
+                    that.moveEmailToFolder(email, bytes, id, srcFolderName, destFolderName).thenApply(res => {
+                        that.reduceMovingEmailsToFolder(email, emailsToRead, ++index, future,
+                            srcFolderName, destFolderName);
                     });
                 });
             }
         },
-        moveEmailToInbox: function(email, bytes, id) {
+        moveEmailToFolder: function(email, bytes, id, srcFolderName, destFolderName) {
             const that = this;
             let future = peergos.shared.util.Futures.incomplete();
-            that.saveEmail(email, 'inbox', bytes, id).thenApply(function(res2) {
-                that.removeEmailFromPending(email, id).thenApply(function(res) {
+            that.saveEmail(email, destFolderName, bytes, id).thenApply(function(res2) {
+                that.removeEmailFromFolder(email, id, srcFolderName).thenApply(function(res) {
                     future.complete(true);
                 }).exceptionally(function(throwable) {
                     that.showMessage("Unable to import email");
@@ -716,7 +741,7 @@ module.exports = {
                     future.complete(false);
                 });
             }).exceptionally(function(throwable) {
-                that.showMessage("Unable to import email to inbox");
+                that.showMessage("Unable to import email to " + destFolderName);
                 console.log(throwable.getMessage());
                 future.complete(false);
             });

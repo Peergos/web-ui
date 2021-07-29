@@ -715,11 +715,14 @@ function refreshFolder() {
     if (currentFolder == 'inbox') {
         refreshInbox();
     } else if (currentFolder == 'sent'){
-        requestLoadFolder('sent');
+        refreshSent();
     }
 }
 function refreshInbox() {
     mainWindow.postMessage({action: "requestRefreshInbox"}, origin);
+}
+function refreshSent() {
+    mainWindow.postMessage({action: "requestRefreshSent"}, origin);
 }
 function onSubmit(e) {
   e.preventDefault();
