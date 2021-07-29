@@ -39,33 +39,6 @@
 				<span class="checkmark"></span>
 			</label>
 
-			<!-- <div class="checkbox__group">
-				<input
-					type="checkbox"
-					name="safePassword"
-					id="safePassword"
-					v-model="safePassword"
-					placeholder="Safely store your password"
-				>
-				<label for="safePassword">I understand that passwords cannot be reset or recovered - if I forget my password, then I will lose access to my
-				account and data. If I enter my password into a malicious
-				website then I will lose control of my account.
-				</label>
-			</div>
-
-			<div class="checkbox__group">
-				<input
-					type="checkbox"
-					name="tosAccepted"
-					id="tosAccepted"
-					v-model="tosAccepted"
-					placeholder="Accept Terms of Service"
-				/>
-				<label for="tosAccepted">
-					I accept the <a href="/terms.html" target="_blank" rel="noopener noreferrer">Terms of Service</a> and <a href="/privacy.html" target="_blank" rel="noopener noreferrer">Privacy Policy</a>
-				</label>
-			</div> -->
-
 			<AppButton class="signup" @click="signup()">
 				Sign up
 				<AppIcon :width="24" :height="24" icon="arrow-right"/>
@@ -266,7 +239,10 @@ module.exports = {
 .app-signup .checkbox__group a:hover{
 	color:var(--color);
 }
-
+.app-signup .checkbox__group a:focus{
+	outline: none;
+	background-color: var(--bg-2);
+}
 /* Hide the browser's default checkbox */
 .checkbox__group input {
   position: absolute;
@@ -288,7 +264,9 @@ module.exports = {
   border: 2px solid var(--green-500);
 
 }
-.checkbox__group:hover input ~ .checkmark {
+.checkbox__group:hover input ~ .checkmark,
+.checkbox__group input:focus ~ .checkmark {
+
 	background-color: var(--bg-2);
 }
 
