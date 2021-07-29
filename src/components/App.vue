@@ -26,7 +26,7 @@
 		<section class="login-register" v-if="!userIsLoggedIn">
 			<AppIcon icon="logo-full" class="sprite-test"/>
 
-			<AppTabs>
+			<AppTabs ref="tabs">
 				<AppTab title="Login">
 					<Login/>
 				</AppTab>
@@ -45,12 +45,10 @@
 
 
 		<!-- Main view container -->
-		<main class="content" :class="{ 'sidebar-margin': isSidebarOpen }">
+		<section class="content" :class="{ 'sidebar-margin': isSidebarOpen }">
 
 			<!-- App views (pages) ex-filesystem-->
 			<transition name="fade" mode="out-in">
-
-				<!-- :initContext="data.context" -->
 				<component
 					v-if="userIsLoggedIn"
 					:is="currentView"
@@ -69,7 +67,7 @@
 				:openFile="data.open"
 			>
 			</filesystem> -->
-		</main>
+		</section>
 
 	</div>
 </template>
@@ -88,9 +86,6 @@ const Drive = require("../views/Drive.vue");
 const NewsFeed = require("../views/NewsFeed.vue");
 const Social = require("../views/Social.vue");
 const Tasks = require("../views/Tasks.vue");
-
-
-var isLocalhost = window.location.hostname == "localhost";
 
 module.exports = {
 	components: {
@@ -129,8 +124,10 @@ module.exports = {
 			'currentTheme',
 		]),
 		isDemo() {
-			// return this.demo == true && this.isSecretLink === false;
-			return window.location.hostname == "demo.peergos.net";
+			return window.location.hostname == "demo.peergos.net" && this.isSecretLink === false
+		},
+		isLocalhost(){
+			return window.location.hostname == "localhost"
 		}
 	},
 
@@ -166,6 +163,9 @@ module.exports = {
 				}
 			}
 			if (href.includes("?signup=true")) {
+
+				this.$refs.tabs.selectTab(1)
+
 				if (href.includes("token=")) {
 					var urlParams = new URLSearchParams(window.location.search);
 					this.token = urlParams.get("token");
@@ -190,7 +190,6 @@ module.exports = {
 	mounted() {
 		let localTheme = localStorage.getItem("theme");
 		document.documentElement.setAttribute("data-theme", localTheme);
-
 		this.$store.commit("SET_THEME", localTheme == "dark-mode");
 	},
 
@@ -230,9 +229,8 @@ module.exports = {
 			let that = this;
 			peergos.shared.NetworkAccess.buildJS(
 				"QmVdFZgHnEgcedCS2G2ZNiEN59LuVrnRm7z3yXtEBv2XiF",
-				!isLocalhost
+				!that.isLocalhost
 			).thenApply(function (network) {
-				// that.network = network;
 				that.$store.commit("SET_NETWORK", network);
 			});
 		},
@@ -332,14 +330,14 @@ section.login-register .demo--warning{
 	text-align: left;
 }
 
-main.content{
+section.content{
 	position: absolute;
 	right:0;
 	top:100px;
 	width: calc(100% - 96px);
 }
 
-main.content.sidebar-margin {
+section.content.sidebar-margin {
 	/* margin-left: 256px; */
 	width: calc(100% - 240px);
 }

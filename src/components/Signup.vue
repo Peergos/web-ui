@@ -45,31 +45,21 @@
 			</AppButton>
 		</template>
 
-		<template v-else><h4>This server is currently not accepting signups</h4>
-			Join the waiting list to be notified when there are more places.
-			<div class="form-group">
-				<input
-					type="text"
-					name="email"
-					id="email"
-					class="form-control"
-					v-model="email"
-					placeholder="Email"
-				/>
-			</div>
-			<button
+		<template v-else>
+			<h2>This server is currently not accepting signups</h2>
+			<p>Join the waiting list to be notified when there are more places.</p>
+			<input
+				type="text"
+				name="email"
+				v-model="email"
+				placeholder="Email"
+			/>
+			<AppButton
 				@click="addToWaitList()"
-				class="btn btn-large btn-block btn-success"
+				class="waiting-list"
 			>
 				Join waiting list
-			</button>
-			<message
-				v-if="showMessage"
-				v-on:remove-message="showMessage = false"
-				:title="message.title"
-				:message="message.body"
-			>
-			</message>
+			</AppButton>
 		</template>
 	</div>
 </template>
@@ -91,27 +81,23 @@ module.exports = {
 		},
 	},
 
-    data() {
-        return {
+	data() {
+		return {
 			username: '',
 			password: '',
 			password2: '',
+			email: '',
 			acceptingSignups: true,
-			email: [],
 			tosAccepted:false,
 			safePassword:false,
-        };
-    },
+		};
+	},
 
 	computed: {
 		...Vuex.mapState([
 			'crypto',
 			'network'
 		]),
-
-		// host() {
-		// 	return window.location.origin;
-		// }
     },
 	mounted() {
 		let that = this;
@@ -124,19 +110,19 @@ module.exports = {
 
     methods: {
 		lowercaseUsername(){
-			console.log('lowercaseUsername', this.username,	this.username.toLowerCase())
-
-
 			this.username.toLowerCase()
 		},
-
 		addToWaitList() {
 			var that = this;
-			this.network.instanceAdmin.addToWaitList(this.email).thenApply(function(res) {
-			that.message.title = "Congratulations";
-			that.message.body = "You have joined the waiting list";
-			that.showMessage = true;
+			// let emailRegEx = /^(([^<>()\[\]\\.,;:\s@"]+(\.[^<>()\[\]\\.,;:\s@"]+)*)|(".+"))@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}])|(([a-zA-Z\-0-9]+\.)+[a-zA-Z]{2,24}))$/ ;
+			// if(!emailRegEx.test(that.email)) {
+			// 	that.$toast.error('Invalid email.',{timeout:false})
+			// }
+			this.network.instanceAdmin.addToWaitList(that.email).thenApply(function(res) {
+				that.email='';
+				that.$toast.info('Congratulations, you have joined the waiting list')
 			});
+
 		},
 		generatePassword() {
 			let bytes = nacl.randomBytes(16);
@@ -194,7 +180,8 @@ module.exports = {
 
 <style>
 .app-signup .generate-password,
-.app-signup .signup{
+.app-signup .signup,
+.app-signup .waiting-list{
 	width:100%;
 	margin: 8px 0;
 
@@ -205,13 +192,15 @@ module.exports = {
 }
 
 .app-signup .generate-password:hover,
-.app-signup .signup:hover{
+.app-signup .signup:hover,
+.app-signup .waiting-list:hover{
 	color: var(--bg);
 	background-color: var(--green-200);
 }
 
 .app-signup .generate-password:focus,
-.app-signup .signup:focus{
+.app-signup .signup:focus,
+.app-signup .waiting-list:focus{
 	outline:none;
 	background-color: var(--color-hover);
 }
@@ -300,4 +289,15 @@ module.exports = {
 	transform: rotate(45deg);
 }
 
+/* Waiting list */
+.app-signup h2{
+	margin-bottom: 28px;
+	font-size: var(--title);
+	line-height: var(--title-height);
+	font-weight: var(--bold);
+	text-align: left;
+}
+.app-signup p{
+	text-align: left;
+}
 </style>

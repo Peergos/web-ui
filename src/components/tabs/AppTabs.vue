@@ -31,6 +31,7 @@ module.exports = {
 	},
 	methods: {
 		selectTab(i) {
+			console.log(i)
 			this.selectedIndex = i;
 
 			this.tabs.forEach((tab, index) => {
@@ -64,7 +65,7 @@ module.exports = {
 	cursor: pointer;
 	flex-grow: 1;
 	font-weight: var(--bold);
-	font-size: 18px;
+	font-size: var(--text);
 	background-color: var(--bg-2);
 }
 
