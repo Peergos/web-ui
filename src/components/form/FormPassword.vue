@@ -31,13 +31,14 @@ module.exports = {
 		firstOfTwo:{
 			type:Boolean,
 			default:false
-		}
+		},
 
 	},
 	data() {
 		return {
 			passwordIsVisible: true,
 			passwordThreshold: 12,
+			passwordUpdate: false
 		}
 	},
 
@@ -47,9 +48,7 @@ module.exports = {
 		},
 
 		validatePassword() {
-			// console.log('validatePassword:', this.value)
-
-			if (!this.firstOfTwo)
+			if (!this.firstOfTwo || this.value == '')
 				return
 
 			let passwd = this.value
@@ -57,11 +56,16 @@ module.exports = {
 			let suffix = ["th", "st", "nd", "rd", "th", "th", "th", "th", "th", "th"][(index+1) % 10];
 
 			if (index != -1) {
-				this.$toast.warning(`your password is the ${index+1} ${suffix} most common password!`, {timeout:false})
+				this.$toast.error(`your password is the ${index+1} ${suffix} most common password!`,{ id: 'password', timeout:false });
+				this.passwordUpdate = true
 			} else if (passwd.length < this.passwordThreshold) {
-				this.$toast.warning(`passwords less than ${this.passwordThreshold} characters are considered unsafe.`)
+				this.$toast.error(`passwords less than ${this.passwordThreshold} characters are considered unsafe.`,{ id: 'password', timeout:false });
+				this.passwordUpdate = true
+			}else{
+				if (this.passwordUpdate)
+					this.$toast.error(`That's a better password.`,{ id: 'password', timeout:4000 });
 			}
-        }
+		}
 	},
 }
 </script>

@@ -31,7 +31,6 @@ module.exports = {
 	},
 	methods: {
 		selectTab(i) {
-			console.log(i)
 			this.selectedIndex = i;
 
 			this.tabs.forEach((tab, index) => {
