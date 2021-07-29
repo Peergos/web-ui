@@ -1506,10 +1506,13 @@ module.exports = {
         },
         send: function() {
             let that = this;
-            let text = this.newMessageText;
-            if (text.length == 1 && text == '\n') {
-                this.newMessageText = '';
-                return;
+            var text = this.newMessageText;
+            that.newMessageText = "";
+            while (text.endsWith("\n")) {
+                text = text.substring(0, text.length - 1);
+                if (text.length == 0) {
+                    return;
+                }
             }
             let conversationId = this.selectedConversationId;
             let msg = this.attachmentList.length > 0 ?
@@ -1520,8 +1523,11 @@ module.exports = {
                 let path = this.attachmentList[i].mediaItem.path;
                 attachmentMap.set(path, this.attachmentList[i].mediaFile);
             }
+            that.attachmentList = [];
             let editMessage = this.editMessage;
+            that.editMessage = null;
             let replyToMessage = this.replyToMessage;
+            that.replyToMessage = null;
             var showProgress = false;
             if (editMessage != null) {
                 if (editMessage.envelope == null) {
@@ -1623,10 +1629,6 @@ module.exports = {
         },
         sendMessage: function(conversationId, msg) {
             let that = this;
-            that.newMessageText = "";
-            that.replyToMessage = null;
-            that.editMessage = null;
-            that.attachmentList = [];
             let future = peergos.shared.util.Futures.incomplete();
             let chatController = this.allChatControllers.get(conversationId);
             let controller = chatController.controller;
