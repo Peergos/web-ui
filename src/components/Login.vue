@@ -54,9 +54,12 @@ module.exports = {
 				that.network,
 				that.crypto,
 				// { accept: (x) => (that.spinnerMessage = x) }
-				 { accept: (x) => (that.$toast.info(x)) }
+				 { accept: (x) => (that.$toast.info(x,{ id: 'login' })) }
 				)
 				.thenApply(function (context) {
+
+					that.$toast.dismiss('login');
+
 					console.log("Switching to Drive");
 					that.$store.commit("CURRENT_VIEW", 'Drive');
 					that.$store.commit("SET_USER_CONTEXT", context);
@@ -65,7 +68,7 @@ module.exports = {
 					console.log("Signing in/up took " + (Date.now()-creationStart)+" mS from function call");
 				})
 				.exceptionally(function (throwable) {
-					that.$toast.error(throwable.getMessage())
+					that.$toast.error(throwable.getMessage(), {timeout:false, id: 'login'})
 				});
 		},
 	}

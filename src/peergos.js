@@ -109,7 +109,8 @@ var store = require('./store/index.js');
 
 const ToastOptions = {
 	hideProgressBar: true,
-	showCloseButtonOnHover: true
+	showCloseButtonOnHover: true,
+	position: 'bottom-right'
 };
 
 Vue.use( VueToastification.default, ToastOptions);

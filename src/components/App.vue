@@ -106,6 +106,7 @@ module.exports = {
 		return {
 			isSecretLink: false,
 			token: '',
+			data: {},
 		};
 	},
 
