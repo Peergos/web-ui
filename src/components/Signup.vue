@@ -138,20 +138,22 @@ module.exports = {
             const that = this;
 
             if(!that.safePassword) {
-			 	this.$toast.error('You must accept the password safety warning')
-		 	}else if (!that.tosAccepted) {
-				this.$toast.error('You must accept the Terms of Service')
+			 	this.$toast.error('You must accept the password safety warning', {id:'signup'})
+		 	} else if (!that.tosAccepted) {
+				this.$toast.error('You must accept the Terms of Service',{id:'signup'})
             } else if (that.password != that.password2) {
-				this.$toast.error('Passwords do not match!')
+				this.$toast.error('Passwords do not match!',{id:'signup'})
+			} else if (that.password == '') {
+				this.$toast.error('Please generate your password',{id:'signup'})
             } else {
                 let usernameRegEx = /^[a-z0-9](?:[a-z0-9]|[_-](?=[a-z0-9])){0,31}$/;
 
 				if(!usernameRegEx.test(that.username)) {
-					that.$toast.error('Invalid username. Usernames must consist of between 1 and 32 characters, containing only digits, lowercase letters, underscore and hyphen. They also cannot have two consecutive hyphens or underscores, or start or end with a hyphen or underscore.',{timeout:false})
+					that.$toast.error('Invalid username. Usernames must consist of between 1 and 32 characters, containing only digits, lowercase letters, underscore and hyphen. They also cannot have two consecutive hyphens or underscores, or start or end with a hyphen or underscore.',{id:'signup',timeout:false})
                 } else if (BannedUsernames.includes(that.username)) {
-					that.$toast.error(`Banned username: ${that.username}`,{timeout:false})
+					that.$toast.error(`Banned username: ${that.username}`,{id:'signup', timeout:false})
                 } else {
-                   	that.$toast.info('signing up!')
+                   	that.$toast.info('signing up!', {id:'signup'})
                     return peergos.shared.user.UserContext.signUp(
 						that.username,
 						that.password,
@@ -159,9 +161,12 @@ module.exports = {
 						that.network,
 						that.crypto,
                     	// {"accept" : x => that.spinnerMessage = x}
-						{"accept" : x => that.$toast.info(x)}
+						{"accept" : x => that.$toast.info(x, {id:'signup'})}
 						)
                         .thenApply(function(context) {
+
+							that.$toast.dismiss('signup');
+
                             // that.$emit("filesystem", {context: context, signup:true});
 							that.$store.commit("CURRENT_VIEW", 'Drive');
 							that.$store.commit("SET_USER_CONTEXT", context);
@@ -169,7 +174,7 @@ module.exports = {
                             console.log("Signing in/up took " + (Date.now()-creationStart)+" mS from function call");
                         })
 						.exceptionally(function(throwable) {
-                           that.$toast.error(throwable.getMessage(),{timeout:false})
+                           that.$toast.error(throwable.getMessage(),{timeout:false, id: 'signup'})
                         });
                 }
             }
