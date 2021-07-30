@@ -72,7 +72,7 @@ module.exports = {
 
 <style>
 .password__wrapper {
-	margin: 16px 0;
+	margin: 8px 0;
 	position: relative;
 }
 .password__wrapper input{

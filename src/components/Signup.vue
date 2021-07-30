@@ -11,7 +11,7 @@
 				@input="(val) => (username = username.toLowerCase())"
 			/>
 
-			<AppButton class="generate-password" @click="generatePassword()">
+			<AppButton class="generate-password" type="primary" @click="generatePassword()">
 				Generate password
 			</AppButton>
 
@@ -40,7 +40,7 @@
 				<span class="checkmark"></span>
 			</label>
 
-			<AppButton class="signup" @click="signup()">
+			<AppButton class="signup" type="primary" @click="signup()">
 				Sign up
 				<AppIcon :width="24" :height="24" icon="arrow-right"/>
 			</AppButton>
@@ -58,6 +58,7 @@
 			<AppButton
 				@click="addToWaitList()"
 				class="waiting-list"
+				type="primary"
 			>
 				Join waiting list
 			</AppButton>
@@ -189,27 +190,7 @@ module.exports = {
 .app-signup .generate-password,
 .app-signup .signup,
 .app-signup .waiting-list{
-	width:100%;
 	margin: 8px 0;
-
-	background-color: var(--green-500);
-	text-align: center;
-	line-height: 32px;
-	color: var(--bg);
-}
-
-.app-signup .generate-password:hover,
-.app-signup .signup:hover,
-.app-signup .waiting-list:hover{
-	color: var(--bg);
-	background-color: var(--green-200);
-}
-
-.app-signup .generate-password:focus,
-.app-signup .signup:focus,
-.app-signup .waiting-list:focus{
-	outline:none;
-	background-color: var(--color-hover);
 }
 
 /* Checkboxs */

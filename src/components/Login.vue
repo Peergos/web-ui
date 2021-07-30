@@ -12,7 +12,7 @@
 
 		<FormPassword v-model="password" @keyup.native.enter="login()"/>
 
-		<AppButton class="login" @click="login()" :icon="true">
+		<AppButton class="login" @click="login()" type="primary" :icon="true">
 			Sign in
 			<AppIcon :width="24" :height="24" icon="arrow-right"/>
 		</AppButton>
@@ -74,7 +74,7 @@ module.exports = {
 					that.$toast.dismiss('login');
 
 					console.log("Switching to Drive");
-					that.$store.commit("CURRENT_VIEW", 'Drive');
+					that.$store.commit("CURRENT_VIEW", 'Calendar');
 					that.$store.commit("SET_USER_CONTEXT", context);
 					that.$store.commit('USER_LOGIN', true);
 					// that.$emit("filesystem", { context: context });
@@ -91,6 +91,11 @@ module.exports = {
 <style>
 .login-register .tab{
 	padding: calc(var(--app-margin) / 2);
+}
+
+.login-register .login{
+	line-height: 48px;
+	margin-top: 8px;
 }
 
 .login-register input[type=text],
@@ -139,25 +144,6 @@ module.exports = {
 
 .login-register input[name="username"]{
 	text-transform:lowercase;
-}
-
-
-.login-register .login{
-	width:100%;
-	line-height: 48px;
-	background-color: var(--green-500);
-	text-align: center;
-	color: var(--bg);
-}
-
-.app-login .login:hover{
-	color: var(--bg);
-	background-color: var(--green-200);
-}
-
-.app-login .login:focus{
-	outline:none;
-	background-color: var(--color-hover);
 }
 
 .app-login .demo--warning{

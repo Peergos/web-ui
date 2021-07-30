@@ -65,6 +65,7 @@ module.exports = {
 	flex-grow: 1;
 	font-weight: var(--bold);
 	font-size: var(--text);
+	text-align: center;
 	background-color: var(--bg-2);
 }
 

@@ -209,16 +209,6 @@ module.exports = {
 			this.$store.commit("TOGGLE_SIDEBAR");
 		},
 
-		// login(data) {
-		// 	// this.currentView = "login";
-		// 	// this.$store.commit("CURRENT_VIEW", 'login');
-		// 	this.data = data;
-		// },
-		// signup(data) {
-		// 	// this.currentView = "signup";
-		// 	// this.$store.commit("CURRENT_VIEW", 'signup');
-		// 	this.data = data;
-		// },
 
 		// filesystem(data) {
 		// 	console.log(data)
@@ -276,7 +266,7 @@ module.exports = {
 					initPath: props.path,
 				};
 				// that.currentView = "filesystem";
-				this.$store.commit("CURRENT_VIEW", 'filesystem');
+				that.$store.commit("CURRENT_VIEW", 'Drive');
 				that.isSecretLink = false;
 			})
 			.exceptionally(function (throwable) {
@@ -292,7 +282,6 @@ module.exports = {
 	position: relative;
 	top: 0;
 	min-height: 100vh;
-	text-align: center;
 }
 
 

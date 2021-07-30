@@ -18,8 +18,6 @@
 </template>
 
 <script>
-
-// export default {
 module.exports = {
 	props: {
 		tag: {
@@ -66,8 +64,6 @@ module.exports = {
 <style>
 .app-button {
 	display: inline-block;
-	/* width: auto; */
-
 	border: none;
 	border-radius: 4px;
 
@@ -135,13 +131,20 @@ module.exports = {
 /* Types */
 
 .app-button.primary {
-	background-color: var(--green-accent);
-	color: white;
+	width:100%;
+	line-height: 32px;
+	background-color: var(--green-500);
+	text-align: center;
+	color: var(--bg);
 }
 
 .app-button.primary:hover {
-	color: white;
-	background-color: var(--green-500);
+	color: var(--bg);
+	background-color: var(--green-200);
+}
+.app-button.primary:focus{
+	outline:none;
+	background-color: var(--color-hover);
 }
 
 @media (max-width: 1024px) {
