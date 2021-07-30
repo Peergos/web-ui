@@ -1,8 +1,8 @@
 <template>
 	<transition name="fade">
-		<div v-if="showModal" class="app-modal app-modal__overlay" @click="closeModal()">
+		<div v-if="showModal" class="app-modal app-modal__overlay" @click="closeModal($event)">
 			 <div class="app-modal__container">
-				<header><slot name="header"></slot> </header>
+				<header><slot name="header"></slot></header>
 				<section><slot name="body"></slot></section>
 				<footer><slot name="footer"></slot></footer>
 			 </div>
@@ -19,8 +19,10 @@ module.exports = {
         }
 	},
 	methods: {
-		closeModal() {
-			this.$store.commit("SET_MODAL", false);
+		closeModal(e) {
+			if(e.target.classList.contains('app-modal')){
+				this.$store.commit("SET_MODAL", false);
+			}
 		}
 	},
 }
@@ -30,7 +32,7 @@ module.exports = {
 .app-modal__overlay{
 	position: fixed;
 	/* TODO: fix global z-index strategy */
- 	z-index: 2500;
+ 	z-index: 100;
   	top: 0;
   	left: 0;
   	width: 100%;
@@ -43,13 +45,14 @@ module.exports = {
 	right:0;
 	width:50%;
 	min-height:100vh;
+
 	display:flex;
 	flex-direction: column;
+
 	padding: var(--app-margin);
 	color: var(--color);
 	background-color: var(--bg);
 	transition: background-color 0.3s;
-	pointer-events: none;
 }
 
 .app-modal__container header{
