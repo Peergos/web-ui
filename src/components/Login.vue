@@ -42,8 +42,18 @@ module.exports = {
 	},
 	mounted() {
 		this.$refs.username.focus()
+		// :)
+		setTimeout(() => this.loginDEV(), 100);
 	},
 	methods: {
+		loginDEV() {
+			// bypass login on DEV
+			if( window.location.hostname == "localhost"){
+				this.username = 'peergos'
+				this.password = 'testpassword'
+				this.login()
+			}
+		},
 		togglePassword() {
 			this.passwordIsVisible = !this.passwordIsVisible
 		},
