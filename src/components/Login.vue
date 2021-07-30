@@ -6,10 +6,11 @@
 			name="username"
 			v-model="username"
 			placeholder="Username"
+			ref="username"
 			@input="(val) => (username = username.toLowerCase())"
 		/>
 
-		<FormPassword v-model="password" />
+		<FormPassword v-model="password" @keyup.native.enter="login()"/>
 
 		<AppButton class="login" @click="login()" :icon="true">
 			Sign in
@@ -39,7 +40,9 @@ module.exports = {
 			'network'
 		]),
 	},
-
+	mounted() {
+		this.$refs.username.focus()
+	},
 	methods: {
 		togglePassword() {
 			this.passwordIsVisible = !this.passwordIsVisible

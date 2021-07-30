@@ -6,6 +6,7 @@
 				autofocus
 				name="username"
 				v-model="username"
+				ref="username"
 				placeholder="Public username"
 				@input="(val) => (username = username.toLowerCase())"
 			/>
@@ -16,7 +17,7 @@
 
 			<FormPassword v-model="password" firstOfTwo />
 
-			<FormPassword v-model="password2"/>
+			<FormPassword v-model="password2" @keyup.native.enter="signup()"/>
 
 			<label class="checkbox__group">
 				I understand that passwords cannot be reset or recovered - if I forget my password, then I will lose access to my
@@ -100,6 +101,7 @@ module.exports = {
 		]),
     },
 	mounted() {
+		this.$refs.username.focus()
 		let that = this;
 		this.network.instanceAdmin.acceptingSignups().thenApply(function(res) {
 			if (that.token.length > 0) return;
