@@ -48,7 +48,7 @@
       <li id='open-file' class="context-menu-item" v-on:keyup.enter="downloadAll" v-if="canOpen" v-on:click="downloadAll">Download</li>
       <li id='rename-file' class="context-menu-item" v-on:keyup.enter="rename" v-if="isNotBackground && isWritable" v-on:click="rename">Rename</li>
       <li id='delete-file' class="context-menu-item" v-on:keyup.enter="deleteFiles" v-if="isNotBackground && isWritable" v-on:click="deleteFiles">Delete</li>
-      <li id='copy-file' class="context-menu-item" v-on:keyup.enter="copy" v-if="isNotBackground && isWritable" v-on:click="copy">Copy</li>
+      <li id='copy-file' class="context-menu-item" v-on:keyup.enter="copy" v-if="isNotBackground" v-on:click="copy">Copy</li>
       <li id='cut-file' class="context-menu-item" v-on:keyup.enter="cut" v-if="isNotBackground && isWritable" v-on:click="cut">Cut</li>
       <li id='paste-file' class="context-menu-item" v-on:keyup.enter="paste" v-if="isPasteAvailable" v-on:click="paste">Paste</li>
       <li id='share-file' class="context-menu-item" v-on:keyup.enter="showShareWith" v-if="(isNotHome || isNotBackground) && isLoggedIn" v-on:click="showShareWith">Share</li>
