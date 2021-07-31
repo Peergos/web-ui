@@ -588,6 +588,7 @@ module.exports = {
                         that.selectedFiles = that.files.filter(f => f.getName() == selectedFilename);
                         that.gallery();
                     } else {
+                        that.selectedFiles = [];
                         that.sharedWithDataUpdate();
                         that.openAppFromFolder();
                     }
