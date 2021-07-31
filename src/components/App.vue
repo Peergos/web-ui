@@ -321,14 +321,16 @@ section.login-register .demo--warning{
 }
 
 section.content{
-	position: absolute;
+	position: relative;
 	right:0;
-	top:100px;
-	width: calc(100% - 96px);
+	top:0;
+	margin-left:96px;
+	/* width: calc(100% - 96px); */
+	min-height: 100vh;
 }
 
 section.content.sidebar-margin {
-	/* margin-left: 256px; */
-	width: calc(100% - 240px);
+	margin-left: 256px;
+	/* width: calc(100% - 240px); */
 }
 </style>

@@ -45,6 +45,9 @@ var AppModal 		= require('./components/modal/AppModal.vue');
 var App  			= require('./components/App.vue');
 var Filesystem 		= require('./components/Filesystem.vue');
 
+// var ModalSpace 		= require('./components/modal/ModalSpace.vue');
+
+
 // Loading components
 Vue.component('account', Vue.extend(Account));
 Vue.component('admin', Vue.extend(Admin));
@@ -90,8 +93,8 @@ Vue.component('AppButton', Vue.extend(AppButton));
 Vue.component('AppIcon', Vue.extend(AppIcon));
 Vue.component('AppModal', Vue.extend(AppModal));
 Vue.component('Filesystem', Vue.extend(Downloader).extend(Filesystem));
-// Vue.component('Login', Vue.extend(Login));
-// Vue.component('Signup', Vue.extend(PasswordUtil).extend(Signup));
+
+// Vue.component('ModalSpace', Vue.extend(ModalSpace));
 
 
 

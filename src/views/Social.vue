@@ -1,7 +1,7 @@
 <template>
-	<div>
+	<main class="app-temp">
 		<h1>Social view</h1>
-	</div>
+	</main>
 </template>
 
 <script>
@@ -12,5 +12,13 @@ module.exports = {
 </script>
 
 <style>
-
+.app-temp{
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	min-height: 100vh;
+}
+.app-temp h1{
+	text-align: center;
+}
 </style>
