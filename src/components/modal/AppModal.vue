@@ -1,11 +1,15 @@
 <template>
-	<transition name="fade">
+	<transition name="modal" appear>
 		<div v-if="showModal" class="app-modal app-modal__overlay" @click="closeModal($event)">
-			 <div class="app-modal__container">
-				<header><slot name="header"></slot></header>
-				<section><slot name="body"></slot></section>
-				<footer><slot name="footer"></slot></footer>
-			 </div>
+
+			<transition name="modal-content" appear>
+				<div v-if="showModal" class="app-modal__container">
+					<header><slot name="header"></slot></header>
+					<section><slot name="body"></slot></section>
+					<footer><slot name="footer"></slot></footer>
+				</div>
+			</transition>
+
 		</div>
 	</transition>
 </template>
@@ -37,7 +41,10 @@ module.exports = {
   	left: 0;
   	width: 100%;
   	height: 100%;
-  	background-color: rgba(0, 0, 0, .2);
+  	background-color: rgba(0, 0, 0, .4);
+	overflow-y: auto;
+	overflow-x: hidden;
+
 }
 
 .app-modal__container{
@@ -52,7 +59,6 @@ module.exports = {
 	padding: var(--app-margin);
 	color: var(--color);
 	background-color: var(--bg);
-	transition: background-color 0.3s;
 }
 
 .app-modal__container header{
@@ -64,7 +70,37 @@ module.exports = {
 }
 
 .app-modal__container footer{
-	min-height: 100px;
+	min-height: auto;
+}
+
+/* modal overlay transition */
+.modal-enter-active{
+  transition: opacity 0.5s ease-out;
+}
+.modal-leave-active{
+	transition: opacity 0.2s ease-in;
+}
+.modal-enter,
+.modal-leave-to {
+  opacity: 0;
+}
+
+/* modal-content transtion */
+.modal-content-enter-active{
+	transition: transform 0.5s ease-out,
+				opacity 0.2s ease-out;
+	transform: translateX(0);
+}
+.modal-content-enter,
+.modal-content-leave-to {
+	opacity: 0;
+	transform: translateX(100px);
+}
+
+@media (max-width: 1024px) {
+	.app-modal__container{
+		width: 100%;
+	}
 }
 
 </style>
