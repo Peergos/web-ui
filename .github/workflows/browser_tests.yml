@@ -22,7 +22,7 @@ jobs:
     - name: chrome-version
       run: google-chrome --version
       shell: bash
-    - name: browser-tests
-      working-directory: browser_tests
-      run: ./setup_and_run_browser_tests.sh
-      timeout-minutes: 90
+#    - name: browser-tests
+#      working-directory: browser_tests
+#      run: ./setup_and_run_browser_tests.sh
+#      timeout-minutes: 90
