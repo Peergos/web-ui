@@ -38,6 +38,14 @@ a {
 	background-color: var(--bg-2);
 }
 
+
+h1, h2, h3{
+	font-size: var(--title);
+	font-weight: var(--bold);
+	line-height: var(--title-height)
+}
+
+
 /* Fade transition  */
 
 .fade-enter-active, .fade-leave-active {

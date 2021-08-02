@@ -1,9 +1,12 @@
 <template>
 	<transition name="modal" appear>
-		<div v-if="showModal" class="app-modal app-modal__overlay" @click="closeModal($event)">
+		<div v-if="showModal" class="app-modal app-modal__overlay" @click="closeModalOverlay($event)">
 
 			<transition name="modal-content" appear>
 				<div v-if="showModal" class="app-modal__container">
+					<AppButton class="close" @click="closeModal()">
+						<AppIcon icon="close" />
+					</AppButton>
 					<header><slot name="header"></slot></header>
 					<section><slot name="body"></slot></section>
 					<footer><slot name="footer"></slot></footer>
@@ -23,10 +26,14 @@ module.exports = {
         }
 	},
 	methods: {
-		closeModal(e) {
+		closeModalOverlay(e) {
+			console.log(e.target)
 			if(e.target.classList.contains('app-modal')){
 				this.$store.commit("SET_MODAL", false);
 			}
+		},
+		closeModal() {
+			this.$store.commit("SET_MODAL", false);
 		}
 	},
 }
@@ -61,8 +68,18 @@ module.exports = {
 	background-color: var(--bg);
 }
 
+.app-modal__container .close{
+	position:absolute;
+	right:var(--app-margin);
+	top:var(--app-margin);
+}
+
 .app-modal__container header{
-	min-height: 100px;
+	padding-right: 50px;
+}
+
+.app-modal__container header > *{
+	margin-top: 0;
 }
 
 .app-modal__container section{

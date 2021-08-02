@@ -6,7 +6,7 @@
 		<template #body>
 			<p>By continuing you agree to our <a href="/terms.html" target="_blank" rel="noopener noreferrer">Terms of Service</a>.</p>
 
-			<div v-if="!isPro">
+			<div v-if="!isPro" class="card__meta">
 				<h3>Pro Account</h3>
 				<ul>
 					<li>50 GB of hyper secure storage</li>
@@ -117,5 +117,33 @@ module.exports = {
 </script>
 <style>
 
+.app-modal__container h2{
+	font-size: var(--title);
+	font-weight: var(--bold);
+}
+.app-modal__container .card__meta{
+	background-color: var(--bg-2);
+	border-radius: 4px;
+	padding: 16px;
+	margin-top:var(--app-margin);
+	text-align: center;
+}
+.app-modal__container .card__meta > *{
+	margin-top: 0;
+}
+.app-modal__container .card__meta ul{
+	list-style:none;
+	padding: 0px;
+	text-align: left;
+	margin:16px 0;
+}
+.app-modal__container .card__meta li{
+	color: var(--color);
+	line-height: 32px;
+	background: url('data:image/svg+xml;utf8,<svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M19.5224 6.16169L9.17909 16.505L4.4776 11.8035" stroke="mediumaquamarine" stroke-width="2"/></svg>') center center no-repeat;
+	background-size: 24px auto;
+    background-position: left center;
+    padding-left: 32px;
+}
 
 </style>
