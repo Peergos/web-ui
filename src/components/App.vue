@@ -28,7 +28,7 @@
 
 			<AppTabs ref="tabs">
 				<AppTab title="Login">
-					<Login/>
+					<Login @initApp="init()"/>
 				</AppTab>
 				<AppTab title="Signup">
 
@@ -107,6 +107,7 @@ module.exports = {
 			isSecretLink: false,
 			token: '',
 			data: {},
+			onUpdateCompletion: [], // methods to invoke when current dir is next refreshed
 		};
 	},
 
@@ -124,6 +125,7 @@ module.exports = {
 		...Vuex.mapGetters([
 			'currentTheme',
 		]),
+
 		isDemo() {
 			return window.location.hostname == "demo.peergos.net" && this.isSecretLink === false
 		},
@@ -170,10 +172,8 @@ module.exports = {
 				if (href.includes("token=")) {
 					var urlParams = new URLSearchParams(window.location.search);
 					this.token = urlParams.get("token");
-					console.log(this.token, 'this.token 1')
 				}
 				// this.signup({ token: this.token, username: "" });
-				console.log(this.token, 'this.token 2')
 			} else if (props.secretLink) {
 				// this is a secret link
 				console.log("Navigating to secret link...");
@@ -195,6 +195,62 @@ module.exports = {
 	},
 
 	methods: {
+		...Vuex.mapActions([
+			'updateQuota',
+			'updateUsage'
+		]),
+
+		init() {
+			console.log('init app')
+			const that = this;
+			if (this.userContext != null && this.userContext.username == null) {
+				// from a secret link
+				// this.context.getEntryPath().thenApply(function (linkPath) {
+				// 	var path = that.initPath == null ? null : decodeURIComponent(that.initPath);
+				// 	if (path != null && (path.startsWith(linkPath) || linkPath.startsWith(path))) {
+				// 		that.changePath(path);
+				// 	} else {
+				// 		that.changePath(linkPath);
+				// 		that.context.getByPath(that.getPath())
+				// 			.thenApply(function (file) {
+				// 				file.get().getChildren(that.context.crypto.hasher, that.context.network).thenApply(function (children) {
+				// 					var arr = children.toArray();
+				// 					if (arr.length == 1) {
+				// 						if (that.initiateDownload) {
+				// 							that.downloadFile(arr[0]);
+				// 						} else if (that.openFile) {
+				// 							var open = () => {
+				// 								that.updateFiles(arr[0].getFileProperties().name);
+				// 							};
+				// 							that.onUpdateCompletion.push(open);
+				// 						}
+				// 					}
+				// 				})
+				// 			});
+				// 	}
+				// });
+			} else {
+
+				this.updateUsage();
+				this.updateQuota();
+
+				this.userContext.getPaymentProperties(false).thenApply(function (paymentProps) {
+					// console.log(paymentProps,'paymentProps')
+					that.$store.commit("SET_PAYMENT_PROPERTIES", paymentProps);
+					// if (paymentProps.isPaid()) {
+					// 	console.log('isPaid')
+					// 	that.$store.commit("SET_PAYMENT_PROPERTIES", paymentProps);
+					// }
+					// else
+					// 	that.userContext.getPendingSpaceRequests().thenApply(reqs => {
+					// 		if (reqs.toArray([]).length > 0)
+					// 			that.isAdmin = true;
+					// });
+				});
+			}
+			// this.showPendingServerMessages();
+		},
+
 		toggleTheme() {
 			this.$store.commit("TOGGLE_THEME");
 
@@ -209,13 +265,6 @@ module.exports = {
 			this.$store.commit("TOGGLE_SIDEBAR");
 		},
 
-
-		// filesystem(data) {
-		// 	console.log(data)
-		// 	// this.currentView = "Drive";
-		// 	this.data = data;
-		// },
-
 		updateNetwork() {
 			let that = this;
 			peergos.shared.NetworkAccess.buildJS(
@@ -225,6 +274,7 @@ module.exports = {
 				that.$store.commit("SET_NETWORK", network);
 			});
 		},
+
 		checkIfDomainNeedsUnblocking() {
 			if (this.network == null) return;
 			var that = this;
@@ -239,9 +289,7 @@ module.exports = {
 					};
 
 					req.onerror = function (e) {
-						that.$toast.error(
-							'Please unblock the following domain for Peergos to function correctly: ' + domainOpt.get()
-						)
+						that.$toast.error('Please unblock the following domain for Peergos to function correctly: ' + domainOpt.get())
 					};
 
 					req.send();

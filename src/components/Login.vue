@@ -77,6 +77,10 @@ module.exports = {
 					that.$store.commit("CURRENT_VIEW", 'Calendar');
 					that.$store.commit("SET_USER_CONTEXT", context);
 					that.$store.commit('USER_LOGIN', true);
+
+					// temp test
+					that.$emit("initApp")
+
 					// that.$emit("filesystem", { context: context });
 					console.log("Signing in/up took " + (Date.now()-creationStart)+" mS from function call");
 				})

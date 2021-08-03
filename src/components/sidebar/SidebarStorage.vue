@@ -1,37 +1,21 @@
 <template>
 	<div class="sidebar-storage">
 		<div class="storage">{{ usage }} / {{ quota }}</div>
-		<AppButton class="upgrade" size="small" v-if="!isPremium" @click="showRequestStorage()">
+		<AppButton class="upgrade" size="small" v-if="!isPro" @click="showRequestStorage()">
 			Upgrade
 		</AppButton>
 	</div>
 </template>
 
 <script>
-const mixins = require("../../mixins/mixins.js");
 module.exports = {
 	props: {
-		isPremium: {
+		isPro: {
 			type: Boolean,
 			default: false,
 		},
-		maxStorage: {
-			type: Number,
-			default: 200,
-		},
-		usedStorage: {
-			type: Number,
-			default: 0,
-		},
 	},
-
-	mixins:[mixins],
-
 	computed: {
-		...Vuex.mapState([
-			'usageBytes',
-			'quotaBytes',
-		]),
 		...Vuex.mapGetters([
 			'quota',
 			'usage'

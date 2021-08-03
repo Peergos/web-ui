@@ -47,32 +47,36 @@ module.exports = {
 	computed: {
 		...Vuex.mapState([
 			'userContext',
-			// 'quotaBytes',
+			'quotaBytes',
 			'usageBytes',
+			'paymentProperties'
 		]),
 		...Vuex.mapGetters([
 			'quota',
 			'usage'
 		]),
-		quotaBytes:{
-			get () {
-				return this.$store.state.quotaBytes
-			},
-			set (value) {
-				this.$store.commit('updateQuota', value)
-			}
-		},
+		// quotaBytes:{
+		// 	get () {
+		// 		return this.$store.state.quotaBytes
+		// 	},
+		// 	set (value) {
+		// 		this.$store.commit('updateQuota', value)
+		// 	}
+		// },
 		isPro() {
-            // return this.quotaBytes/(1024*1024) > this.paymentProperties.freeMb() && this.paymentProperties.desiredMb() > 0;
-			return false;
+            return this.quotaBytes/(1024*1024) > this.paymentProperties.freeMb() && this.paymentProperties.desiredMb() > 0;
+			// return false;
 		}
     },
 
 	// props: ['context', 'quota', 'quotaBytes', 'usage', 'paymentProperties', 'updateQuota'],
-	props: ['paymentProperties'],
 
 
 	methods: {
+		...Vuex.mapActions([
+			'updateQuota',
+		]),
+
 		// space
 
         // getRequestedBytes() {
@@ -119,15 +123,6 @@ module.exports = {
 		// 	this.requestStorage(0);
 		// },
 
-		updateQuota() {
-			if (this.isSecretLink)
-				return;
-			return this.userContext.getQuota().thenApply(q => {
-				this.$store.commit("SET_QUOTA", q);
-				return q;
-			});
-		},
-
 		requestStorage(bytes) {
 			console.log('requestStorage:', bytes)
 			var that = this;
@@ -137,8 +132,8 @@ module.exports = {
 			this.userContext.requestSpace(bytes)
 				.thenCompose(x => {
 					console.log('quota: ',quota)
-					// that.updateQuota()
-					console.log('upadted quota: ',quota)
+					that.updateQuota()
+					console.log('updated quota: ',quota)
 				})
 				.thenApply(quotaBytes => {
 							that.updateError();

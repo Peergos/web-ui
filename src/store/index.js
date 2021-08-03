@@ -10,13 +10,15 @@ module.exports = new Vuex.Store({
 		isSidebarOpen: false,
 		showModal: false,
 		currentModal: 'AppModal', // 'ModalSpace'
+
 		quotaBytes: 0,
 		usageBytes: 0,
-		// isSecretLink: false,
+		isSecretLink: false,
 
 		crypto: null,
 		network: null,
-		userContext:null,
+		userContext: null,
+		paymentProperties: null
 	},
 
 	getters: {
@@ -81,6 +83,9 @@ module.exports = new Vuex.Store({
 		SET_USER_CONTEXT(state, payload) {
 			state.userContext = payload;
 		},
+		SET_PAYMENT_PROPERTIES(state, payload) {
+			state.paymentProperties = payload;
+		},
 
 		// Storage
 		SET_QUOTA(state, payload) {
@@ -89,14 +94,26 @@ module.exports = new Vuex.Store({
 		SET_USAGE(state, payload) {
 			state.usageBytes = payload;
 		},
-
 	},
 
 	// Async
 	actions: {
+		updateQuota({ commit, state }) {
+			if (state.isSecretLink)
+				return;
+			return state.userContext.getQuota().thenApply(q => {
+				commit('SET_QUOTA', q)
+			});
+		},
 
+		updateUsage({ commit, state }) {
+			if (state.isSecretLink)
+				return;
 
-
+			return state.userContext.getSpaceUsage().thenApply(u => {
+				commit("SET_USAGE", u);
+			});
+		},
 	}
 
 });
