@@ -275,14 +275,8 @@ module.exports = {
             if (folder.endsWith('/')) {
                 folder = folder.substring(0, folder.length - 1);
             }
-            let future = peergos.shared.util.Futures.incomplete();
             let filePath = peergos.client.PathUtils.toPath(folder.split('/'), filename);
-            email.deleteInternal(filePath).thenApply( res => {
-                future.complete(true);
-            }).exceptionally(function(throwable) {
-                future.complete(false);
-            });
-            return future;
+            return email.deleteInternal(filePath);
         },
         removeEmail: function(email, folder, data, deleteAttachment) {
             let that = this;
@@ -747,7 +741,7 @@ module.exports = {
                     let destFilePath = peergos.client.PathUtils.directoryToPath(destDirStr.split('/'));
                     email.writeInternal(destFilePath, bytes).thenApply(res => {
                         email.deleteInternal(srcFilePath).thenApply(bool => {
-                            that.reduceMovingEmailsToFolder(email, attachments, ++index, future, srcFolderName);
+                            that.reduceMovingAttachmentToFolder(email, attachments, ++index, future, srcFolderName);
                         }).exceptionally(function(throwable) {
                             that.showMessage("Unable to delete moved attachment:" + srcFilePath);
                             console.log(throwable.getMessage());
@@ -769,13 +763,14 @@ module.exports = {
             let future = peergos.shared.util.Futures.incomplete();
             let attachments = emailMessage.attachments.toArray([]);
             this.reduceMovingAttachmentToFolder(email, attachments, 0, future, srcFolderName);
+            return future;
         },
         moveEmailToFolder: function(email, emailMessage, bytes, id, srcFolderName, destFolderName) {
             const that = this;
             let future = peergos.shared.util.Futures.incomplete();
-            that.saveEmail(email, destFolderName, bytes, id).thenApply(function(res2) {
-                that.removeEmailFromFolder(email, id, srcFolderName).thenApply(function(res) {
-                    that.moveAttachmentsToFolder(email, emailMessage, srcFolderName).thenApply(function(res) {
+            that.saveEmail(email, destFolderName, bytes, id).thenApply(function(res) {
+                that.removeEmailFromFolder(email, id, srcFolderName).thenApply(function(res2) {
+                    that.moveAttachmentsToFolder(email, emailMessage, srcFolderName).thenApply(function(res3) {
                         future.complete(true);
                     }).exceptionally(function(throwable) {
                         that.showMessage("Unable to import attachments");
@@ -818,13 +813,12 @@ module.exports = {
             this.$emit("hide-email");
         },
         uploadForwardedAttachments: function(email, data) {
-            if (data.forwardingToEmail == null) {
-                let nothingToDoFut = peergos.shared.util.Futures.incomplete();
-                nothingToDoFut.complete(true);
-                return nothingToDoFut;
-            }
             let future = peergos.shared.util.Futures.incomplete();
-            this.reduceMovingForwardedAttachments(email, data.forwardingToEmail.attachments, 0, future);
+            if (data.forwardingToEmail == null) {
+                future.complete(true);
+            } else {
+                this.reduceMovingForwardedAttachments(email, data.forwardingToEmail.attachments, 0, future);
+            }
             return future;
         },
         reduceMovingForwardedAttachments: function(email, attachments, index, future) {
@@ -901,7 +895,6 @@ module.exports = {
                     }
                 });
             }
-            return future;
         },
         uploadAttachment: function(attachment, progress) {
             let future = peergos.shared.util.Futures.incomplete();
