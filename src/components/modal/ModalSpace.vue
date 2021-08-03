@@ -4,7 +4,7 @@
 			<h2>Upgrade your account to get more space</h2>
 		</template>
 		<template #body>
-			<p>By continuing you agree to our <a href="/terms.html" target="_blank" rel="noopener noreferrer">Terms of Service</a>.</p>
+			<p> Current space: {{ quota }}</p>
 
 			<div v-if="!isPro" class="card__meta">
 				<h3>Pro Account</h3>
@@ -24,6 +24,8 @@
 
 		</template>
 		<template #footer>
+			<p>By continuing you agree to our <a href="/terms.html" target="_blank" rel="noopener noreferrer">Terms of Service</a>.</p>
+
 			<AppButton v-if="!isPro" @click="requestStorage(53687091200)" type="primary">Upgrade account</AppButton>
 			<AppButton v-else @click="cancelPro()">Cancel Pro subscription</AppButton>
 		</template>
@@ -40,78 +42,130 @@ module.exports = {
 			space:"",
 			paymentUrl:null,
 			showCard:false,
-			error: "",
-			isError:false,
-			errorClass: "",
-			message: "",
-			messageTitle: "",
-			showMessage: false
         };
     },
 	computed: {
+		...Vuex.mapState([
+			'userContext',
+			// 'quotaBytes',
+			'usageBytes',
+		]),
+		...Vuex.mapGetters([
+			'quota',
+			'usage'
+		]),
+		quotaBytes:{
+			get () {
+				return this.$store.state.quotaBytes
+			},
+			set (value) {
+				this.$store.commit('updateQuota', value)
+			}
+		},
 		isPro() {
             // return this.quotaBytes/(1024*1024) > this.paymentProperties.freeMb() && this.paymentProperties.desiredMb() > 0;
 			return false;
 		}
     },
 
-	props: ['context', 'quota', 'quotaBytes', 'usage', 'paymentProperties', 'updateQuota'],
+	// props: ['context', 'quota', 'quotaBytes', 'usage', 'paymentProperties', 'updateQuota'],
+	props: ['paymentProperties'],
+
 
 	methods: {
-		getQuota() {
-			return this.quota;
-		},
+		// space
 
-		getRequestedBytes() {
-			if (this.unit == "GiB")
-				return this.space*1024*1024*1024;
-			return this.space*1024*1024;
-		},
+        // getRequestedBytes() {
+        //     if (this.unit == "GiB")
+        //         return this.space*1024*1024*1024;
+        //     return this.space*1024*1024;
+        // },
 
-		cancelPro() {
-			this.requestStorage(0);
+        // validateSpace() {
+        //     var bytes = parseInt(this.getRequestedBytes())
+        //     if (bytes != this.getRequestedBytes()) {
+        //         this.isError = true;
+        //         this.error = "Space must be a positive integer!";
+        //         this.errorClass = "has-error has-feedback alert alert-danger";
+        //         return false;
+        //     }
+        //     if (bytes < this.usage) {
+        //         this.isError = true;
+        //         this.error = "You can't request space smaller than your current usage, please delete some files and try again.";
+        //         this.errorClass = "has-error has-feedback alert alert-danger";
+        //         return false;
+        //     }
+        //     this.isError = false;
+        //     this.errorClass = "";
+        //     return true;
+        // },
+
+        // requestStorage() {
+        //     if (! this.validateSpace())
+        //         return;
+        //     const that = this;
+        //     this.context.requestSpace(this.getRequestedBytes()).thenApply(x => that.close())
+        // },
+
+
+		// Payment
+		// getRequestedBytes() {
+		// 	if (this.unit == "GiB")
+		// 		return this.space*1024*1024*1024;
+		// 	return this.space*1024*1024;
+		// },
+
+		// cancelPro() {
+		// 	this.requestStorage(0);
+		// },
+
+		updateQuota() {
+			if (this.isSecretLink)
+				return;
+			return this.userContext.getQuota().thenApply(q => {
+				this.$store.commit("SET_QUOTA", q);
+				return q;
+			});
 		},
 
 		requestStorage(bytes) {
+			console.log('requestStorage:', bytes)
 			var that = this;
-			this.context.requestSpace(bytes)
-				.thenCompose(x => that.updateQuota())
+			// this.context.requestSpace(bytes)
+			console.log(this.userContext,'this.userContext')
+
+			this.userContext.requestSpace(bytes)
+				.thenCompose(x => {
+					console.log('quota: ',quota)
+					// that.updateQuota()
+					console.log('upadted quota: ',quota)
+				})
 				.thenApply(quotaBytes => {
 							that.updateError();
 					if (quotaBytes >= bytes && bytes > 0) {
-					that.messageTitle = "Congratulations";
-					that.message = "Thank you for signing up to a Peergos Pro account!";
+						that.$toast.info('Thank you for signing up to a Peergos Pro account!')
 					} else if (bytes == 0) {
-					that.messageTitle = "Sorry";
-					that.message = "Sorry to see you go. We'd love to know what we can do better. Make sure to delete enough data to return within your Basic quota. ";
-					} else if (quotaBytes < bytes && bytes > 0 && ! that.isError) {
-					that.messageTitle = "Card details required";
-					that.message = "Add a payment card to complete your upgrade.";
+						that.$toast.error(`Sorry to see you go. We'd love to know what we can do better. Make sure to delete enough data to return within your Basic quota. `)
+					} else if (quotaBytes < bytes && bytes > 0 ) {
+						that.$toast.error(`Card details required. Add a payment card to complete your upgrade. `)
 					}
-					that.showMessage = true;
 				});
 		},
 
 		updateError() {
 			if (this.paymentProperties.hasError()) {
-			this.isError = true;
-			this.error = this.paymentProperties.getError();
-			} else
-			this.isError = false;
+				that.$toast.error(this.paymentProperties.getError())
+			}
 		},
 
         updateCard() {
 			var that = this;
-			this.context.getPaymentProperties(true).thenApply(function(props) {
-			that.paymentUrl = props.getUrl() + "&username=" + that.context.username + "&client_secret=" + props.getClientSecret();
-			that.showCard = true;
+			this.userContext.getPaymentProperties(true).thenApply(function(props) {
+				that.paymentUrl = props.getUrl() + "&username=" + that.userContext.username + "&client_secret=" + props.getClientSecret();
+				that.showCard = true;
 			});
-        },
-
-        close() {
-            this.$emit("hide-payment");
-        }
-    },
+		},
+	},
 
 };
 </script>
@@ -140,9 +194,8 @@ module.exports = {
 .app-modal__container .card__meta li{
 	color: var(--color);
 	line-height: 32px;
-	background: url('data:image/svg+xml;utf8,<svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M19.5224 6.16169L9.17909 16.505L4.4776 11.8035" stroke="mediumaquamarine" stroke-width="2"/></svg>') center center no-repeat;
+	background: url('data:image/svg+xml;utf8,<svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M19.5224 6.16169L9.17909 16.505L4.4776 11.8035" stroke="mediumaquamarine" stroke-width="2"/></svg>') left center no-repeat;
 	background-size: 24px auto;
-    background-position: left center;
     padding-left: 32px;
 }
 

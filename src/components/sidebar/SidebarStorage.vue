@@ -32,16 +32,10 @@ module.exports = {
 			'usageBytes',
 			'quotaBytes',
 		]),
-		usage(){
-			if (this.usageBytes == 0)
-				return "N/A";
-			return this.convertBytesToHumanReadable(this.usageBytes.toString());
-		},
-		quota() {
-			if (this.quotaBytes == 0)
-				return "N/A";
-			return this.convertBytesToHumanReadable(this.quotaBytes.toString());
-		},
+		...Vuex.mapGetters([
+			'quota',
+			'usage'
+		]),
 	},
 	methods: {
 		showRequestStorage() {

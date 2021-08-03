@@ -27,7 +27,6 @@ module.exports = {
 	},
 	methods: {
 		closeModalOverlay(e) {
-			console.log(e.target)
 			if(e.target.classList.contains('app-modal')){
 				this.$store.commit("SET_MODAL", false);
 			}

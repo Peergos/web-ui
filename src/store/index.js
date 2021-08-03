@@ -1,3 +1,7 @@
+// TODO: split store in modules (UI, Settings, Storage, Drive,...)
+
+const helpers = require("../mixins/storage/index.js");
+
 module.exports = new Vuex.Store({
 	state: {
 		userIsLoggedIn: false,
@@ -19,12 +23,24 @@ module.exports = new Vuex.Store({
 		currentTheme: (state) => {
 			return state.isDark ? "dark-mode" : "";
 		},
-		// currentView:(state) => {
-		// 	return state.currentView;
-		// }
+
+		quota: (state) => {
+			if (state.quotaBytes == 0)
+				return "N/A";
+
+			return helpers.convertBytesToHumanReadable(state.quotaBytes.toString());
+		},
+		usage: (state) => {
+			if (state.usageBytes == 0)
+				return "N/A";
+
+			return helpers.convertBytesToHumanReadable(state.usageBytes.toString());
+		}
 	},
 
+	// Sync
 	mutations: {
+		// UI
 		SET_VIEW(state, payload) {
 			state.view = payload;
 		},
@@ -55,7 +71,7 @@ module.exports = new Vuex.Store({
 			state.currentView = payload;
 		},
 
-		// settings
+		// Settings
 		SET_CRYPTO(state, payload) {
 			state.crypto = payload;
 		},
@@ -66,14 +82,21 @@ module.exports = new Vuex.Store({
 			state.userContext = payload;
 		},
 
-		// usage
+		// Storage
 		SET_QUOTA(state, payload) {
 			state.quotaBytes = payload;
 		},
 		SET_USAGE(state, payload) {
 			state.usageBytes = payload;
 		},
+
 	},
 
-	//
+	// Async
+	actions: {
+
+
+
+	}
+
 });
