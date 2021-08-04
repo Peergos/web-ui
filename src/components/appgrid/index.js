@@ -2,14 +2,17 @@ module.exports = {
     template: require('appgrid.html'),
     data: function() {
         return {
-            chatIsAvailable: false
+            chatIsAvailable: false,
+            emailIsAvailable: false
         };
     },
-    props: ["context", "social", "canUpgrade", "isEmailAvailable"],
+    props: ["context", "social", "canUpgrade"],
     created: function() {
         const href = window.location.href;
         if (href.includes("?chat=true"))
             this.chatIsAvailable = true;
+        if (href.includes("?email=true"))
+            this.emailIsAvailable = true;
     },
     methods: {
         iconCount: function() {
@@ -17,7 +20,7 @@ module.exports = {
             if (this.chatIsAvailable) {
                 appCount++;
             }
-            if (this.isEmailAvailable) {
+            if (this.emailIsAvailable) {
                 appCount++;
             }
             return appCount + (this.canUpgrade ? 1 : 0);

@@ -25,16 +25,44 @@ module.exports = {
             directoryPrefix: 'default'
         }
     },
-    props: ['context', 'messages', 'importCalendarEvent', 'icalEventTitle', 'icalEvent', 'checkAvailableSpace'],
+    props: ['context', 'messages', 'importCalendarEvent', 'icalEventTitle', 'icalEvent', 'checkAvailableSpace', 'friendnames'],
     created: function() {
         this.displaySpinner();
         let that = this;
         peergos.shared.user.App.init(that.context, "email").thenCompose(email => {
             that.getPropertiesFile(email).thenApply(props => {
-                that.setupDirectories(email).thenApply(done => {
-                    that.emailClientProperties = props;
-                    that.startListener(email)
-                });
+                that.emailClientProperties = props;
+                if (props.emailBridgeUser.length == 0) {
+                    that.askForEmailBridgeUser(email);
+                } else {
+                    let index = that.friendnames.findIndex(v => v === props.emailBridgeUser);
+                    if (index == -1 ) {
+                        that.showMessage("Awaiting approval from Email Administrator");
+                        that.close();
+                    } else {
+                        that.setupDirectories(email).thenApply(done => {
+                            if (!props.sharedPendingDirectory) {
+                                let emailBridgeUser = that.emailClientProperties.emailBridgeUser;
+                                let sharees = peergos.client.JsUtil.asSet([emailBridgeUser]);
+                                let dirStr = that.context.username + '/.apps/email/data/' + that.directoryPrefix + '/pending';
+                                let directoryPath = peergos.client.PathUtils.directoryToPath(dirStr.split('/'));
+                                that.context.shareWriteAccessWith(directoryPath, sharees).thenApply(function(b) {
+                                    that.emailClientProperties.sharedPendingDirectory = true;
+                                    that.updatePropertiesFile(email, that.emailClientProperties).thenApply(res => {
+                                        that.removeSpinner();
+                                        that.startListener(email)
+                                    });
+                                }).exceptionally(function(throwable) {
+                                    console.log('Unable to setup email service:' + throwable.getMessage());
+                                    that.showMessage("Unable to setup email service");
+                                    that.close();
+                                });
+                            } else {
+                                that.startListener(email)
+                            }
+                        });
+                    }
+                }
             });
         });
     },
@@ -85,6 +113,61 @@ module.exports = {
             });
             return future2;
         },
+        askForEmailBridgeUser: function(email) {
+            let that = this;
+            this.prompt_placeholder='Email Bridge username';
+            this.prompt_message='Setup Email Bridge';
+            this.prompt_value='';
+            this.prompt_consumer_func = function(prompt_result) {
+                var valid = true;
+                let username = null;
+                if (prompt_result === null) {
+                    valid = false;
+                } else {
+                    username = prompt_result.trim().toLowerCase();
+                    let knownUsers = this.context.network.usernames.toArray([]);
+                    let index = knownUsers.findIndex(v => v === username);
+                    if (index == -1 ) {
+                        valid = false;
+                    }
+                }
+                if (! valid) {
+                    that.showMessage("Invalid username:" + username);
+                    that.close();
+                } else {
+                    that.sendFriendRequestToEmailUser(username).thenApply(ok => {
+                        if (!ok) {
+                            that.close();
+                        } else {
+                            that.emailClientProperties.emailBridgeUser = username;
+                            that.updatePropertiesFile(email, that.emailClientProperties).thenApply(res => {
+                                that.setupDirectories(email).thenApply(done => {
+                                    that.showMessage("Awaiting approval from Email Administrator");
+                                    that.close();
+                                });
+                            });
+                        }
+                    });
+                }
+            }.bind(this);
+            this.showPrompt = true;
+        },
+        sendFriendRequestToEmailUser: function(username) {
+            let that = this;
+            let future = peergos.shared.util.Futures.incomplete();
+            this.context.sendInitialFollowRequest(username).thenApply(function(success) {
+                if(success) {
+                    future.complete(true);
+                } else {
+                    that.showMessage("Unable to send follow request to Email user");
+                    future.complete(false);
+                }
+            }).exceptionally(function(throwable) {
+                that.showMessage(throwable.getMessage());
+                future.complete(false);
+            });
+            return future;
+        },
         setupDefaultDirectories: function(email) {
             let that = this;
             let future = peergos.shared.util.Futures.incomplete();
@@ -116,13 +199,8 @@ module.exports = {
                     that.reduceCreatingDirectories(email, prefix, 0, requiredDirs, future2);
                     future2.thenApply(done => {
                         if (done) {
-                            let sharees = peergos.client.JsUtil.asSet(['email-bridge']);
-                            let dirStr = that.context.username + '/.apps/email/data/' + prefix + '/pending';
-                            let directoryPath = peergos.client.PathUtils.directoryToPath(dirStr.split('/'));
-                            that.context.shareWriteAccessWith(directoryPath, sharees).thenApply(function(b) {
-                                that.removeSpinner();
-                                future.complete(true);
-                            });
+                            that.removeSpinner();
+                            future.complete(true);
                         }
                     });
                 }
@@ -469,6 +547,7 @@ module.exports = {
                 if (throwable.detailMessage.startsWith("File not found")) {
                     let props = new Object();
                     props.userFolders = [];
+                    props.emailBridgeUser = '';
                     return props;
                 } else {
                     that.showMessage("Unable to load file","Please close email client and try again");

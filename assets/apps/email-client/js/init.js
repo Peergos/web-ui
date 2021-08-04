@@ -1088,9 +1088,15 @@ function replyTo(email) {
     //document.getElementById("message").value = email.content;
 }
 function replyToAll(email) {
-    composeEmail([email.from], email.cc, [], email, null);
+    let ccList = email.cc.concat(email.to);
+    /* client does not know own email address!
+    let index = ccList.findIndex(v => v === email.me);
+    if (index > -1) {
+        ccList.splice(index, 1);
+    }*/
+    composeEmail([email.from], ccList, [], email, null);
     document.getElementById("to").value = email.from;
-    document.getElementById("cc").value = email.cc;
+    document.getElementById("cc").value = ccList;
     document.getElementById("subject").value = "Re: " + email.subject;
     //document.getElementById("message").value = email.content;
 }

@@ -107,8 +107,7 @@ module.exports = {
             onUpdateCompletion: [], // methods to invoke when current dir is next refreshed
             navigationViaTabKey: false,
             icalEventTitle: '',
-            icalEvent: '',
-            isEmailAvailable: false
+            icalEvent: ''
         };
     },
     props: ["initContext", "newsignup", "initPath", "openFile", "initiateDownload"],
@@ -662,9 +661,6 @@ module.exports = {
 
 		    var pendingOutgoingUsernames = [];
 		    socialState.pendingOutgoing.toArray([]).map(u => pendingOutgoingUsernames.push(u));
-            if(friendNames.includes('email-bridge')) {
-                that.isEmailAvailable = true;
-            }
 		    that.social = {
 		                pendingOutgoing: pendingOutgoingUsernames,
                         pending: socialState.pendingIncoming.toArray([]),
