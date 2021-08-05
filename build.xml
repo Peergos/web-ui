@@ -3,7 +3,7 @@
     Building Peergos and the web UI
   </description>
 
-  <property name="peergos_project_root" location="../Peergos"/>
+  <property name="peergos_project_root" location="peergos"/>
   <property name="server" location="server"/>
   <property name="ui_src" location="src"/>
   <property name="ui" location="${server}/webroot"/>
@@ -260,7 +260,7 @@ Javac-Version: ${javac.version}</echo>
       <arg value="-webcache"/>
       <arg value="false"/>
       <arg value="-max-users"/>
-      <arg value="50"/>
+      <arg value="5"/>
       <arg value="peergos.password"/>
       <arg value="testpassword"/>
       <arg value="pki.keygen.password"/>
