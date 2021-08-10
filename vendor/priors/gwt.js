@@ -511,12 +511,16 @@ function generateThumbnailProm(asyncReader, fileSize, fileName) {
         var ctx = canvas.getContext('2d');
         var img = new Image();
         img.onload = function(){
-            var w = 100, h = 100;
+            var w = 400, h = 400;
             canvas.width = w;
             canvas.height = h;
             ctx.drawImage(img,0,0,img.width, img.height, 0, 0, w, h);
-            var b64Thumb = canvas.toDataURL().substring("data:image/png;base64,".length);
-            future.complete(b64Thumb);
+            var dataUrl = canvas.toDataURL("image/webp");
+            if (dataUrl.startsWith("data:image/png")) {
+                // browser doesn't support webp
+                dataUrl = canvas.toDataURL("image/jpeg");
+            }
+            future.complete(dataUrl);
         }
 	img.onerror = function(e) {
 	    console.log(e);
@@ -551,7 +555,7 @@ function createVideoThumbnailProm(future, asyncReader, fileSize, fileName) {
     asyncReader.readIntoArray(bytes, 0, fileSize).thenApply(function(bytesRead) {
         var increment = 0;
         var currentIncrement = 0;                                                   
-        let width = 100, height = 100;   
+        let width = 400, height = 400;   
         let video = document.createElement('video');
         video.onloadedmetadata = function(){
             let thumbnailGenerator = () => {
@@ -598,8 +602,10 @@ function captureThumbnail(width, height, currentIncrement, video){
             context.drawImage(video, 0, 0, width, height);
             let imageData = context.getImageData(0, 0, width, height);
             if(isLikelyValidImage(imageData, blackWhiteThreshold)) {
-                let b64Thumb = canvas.toDataURL().substring("data:image/png;base64,".length);
-                capturingFuture.complete(b64Thumb);
+                var thumbUrl = canvas.toDataURL("image/webp")
+                if (thumbUrl.startsWith("data:image/png"))
+                    thumbUrl = canvas.toDataURL("image/jpeg")
+                capturingFuture.complete(thumbUrl);
             }else {
                 capturingFuture.complete("");
             }
@@ -669,7 +675,7 @@ function createVideoThumbnailStreamingProm(future, asyncReader, size, filename, 
     }
     const context = new Context(asyncReader, 0, size);
     let fileStream = streamSaver.createWriteStream("media-" + filename, mimeType, function(url){
-        let width = 100, height = 100;
+        let width = 400, height = 400;
         let video = document.createElement('video');
         let canvas = document.createElement('canvas');
         canvas.width = width;
@@ -704,8 +710,10 @@ function createVideoThumbnailStreamingProm(future, asyncReader, size, filename, 
                             let imageData = context.getImageData(0, 0, width, height);
                             if (isLikelyValidImage(imageData, blackWhiteThreshold)) {
                                 result.done = true;
-                                let b64Thumb = canvas.toDataURL().substring("data:image/png;base64,".length);
-                                future.complete(b64Thumb);
+                                var thumbUrl = canvas.toDataURL("image/webp")
+                                if (thumbUrl.startsWith("data:image/png"))
+                                    thumbUrl = canvas.toDataURL("image/jpeg")
+                                future.complete(thumbUrl);
                             } else {
                                 if (! result.done) {
                                     setTimeout(function(){thumbnailGenerator();}, 1000);
