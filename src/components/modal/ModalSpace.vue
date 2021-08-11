@@ -69,9 +69,6 @@ module.exports = {
 		}
     },
 
-	// props: ['context', 'quota', 'quotaBytes', 'usage', 'paymentProperties', 'updateQuota'],
-
-
 	methods: {
 		...Vuex.mapActions([
 			'updateQuota',
@@ -126,17 +123,16 @@ module.exports = {
 		requestStorage(bytes) {
 			console.log('requestStorage:', bytes)
 			var that = this;
-			// this.context.requestSpace(bytes)
+
 			console.log(this.userContext,'this.userContext')
 
 			this.userContext.requestSpace(bytes)
-				.thenCompose(x => {
-					console.log('quota: ',quota)
-					that.updateQuota()
-					console.log('updated quota: ',quota)
-				})
+				.thenCompose(x => that.updateQuota())
 				.thenApply(quotaBytes => {
-							that.updateError();
+
+					console.log(quotaBytes,'quotaBytes')
+					that.updateError();
+
 					if (quotaBytes >= bytes && bytes > 0) {
 						that.$toast.info('Thank you for signing up to a Peergos Pro account!')
 					} else if (bytes == 0) {

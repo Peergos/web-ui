@@ -1,62 +1,55 @@
 <template>
 	<div>
-		<input type="file" id="uploadFileInput" @change="uploadFiles" style="display:none;" multiple />
-		<input type="file" id="uploadDirectoriesInput" @change="uploadFiles" style="display:none;" multiple directory mozDirectory webkitDirectory/>
+		<nav class="navbar navbar-inverse navbar-static-top" role="navigation">
+			<input type="file" id="uploadFileInput" @change="uploadFiles" style="display:none;" multiple />
+			<input type="file" id="uploadDirectoriesInput" @change="uploadFiles" style="display:none;" multiple directory mozDirectory webkitDirectory/>
+			<div style="display:block;">
+				<ul class="nav navbar-nav">
+					<li id="appButton" v-if="!isSecretLink" v-on:keyup.enter="toggleNav()" @click="toggleNav()" class="navbar-brand nopad toolbar-item"><a><span data-toggle="tooltip" data-placement="bottom" title="Apps" class="pnavbar fas fa-home" style="cursor: pointer;"/></a></li>
+					<li v-if="view==='files'" id="alternateViewButton" v-on:keyup.enter="switchView()" @click="switchView()" class="navbar-brand nopad toolbar-item"><a><span data-toggle="tooltip" data-placement="bottom" title="Switch view" id="altViewSpan" v-bind:class="['pnavbar', 'fa', 'tour-view', grid ? 'fa-list' : 'fa-th-large']" style="cursor: pointer;"/></a></li>
+					<li id="uploadButton" v-on:keyup.enter="toggleUploadMenu()" @click="toggleUploadMenu()" v-if="isWritable && view==='files'" class="navbar-brand nopad toolbar-item"><a><span data-toggle="tooltip" data-placement="bottom" title="Upload" class="pnavbar fa fa-upload" style="cursor: pointer;"/></a></li>
+					<li id="mkdirButton" v-on:keyup.enter="askMkdir()" @click="askMkdir()" v-if="isWritable && view==='files'" class="navbar-brand nopad toolbar-item"><a><span data-toggle="tooltip" data-placement="bottom" title="Create new directory" class="pnavbar fas fa-folder-plus" style="cursor: pointer;"/></a></li>
+				</ul>
+			</div>
 
-		<DriveHeader
-			:gridView="isGrid"
-			:isWritable="isWritable"
-			:path="path"
-			@switchView="switchView()"
-			@goBackToLevel="goBackToLevel()"
-			@askForFiles="askForFiles()"
-			@askForDirectories="askForDirectories()"
-			@askMkdir="askMkdir()"
-		/>
+			<span v-if="view==='files'" data-toggle="tooltip" data-placement="bottom" title="Current location" class="nav navbar-nav pnavbar" style="float:left;display:inline-block;font-size:2.5em;color:#9d9d9d;padding: 0.2em 0.2em 0em;">/</span>
+			<span v-if="view==='files'" v-on:keyup.enter="goBackToLevel(index+1)" v-for="(dir, index) in path" class="nav navbar-nav navbar-brand toolbar-item" style="display:inline-block;padding: 0.2em 0.2em 1em;margin-bottom: 0.2em;">
+				<button tabindex="-1" @click="goBackToLevel(index+1)" class="btn_pnavbar btn">{{dir}}</button>
+				<span class="divider"> </span>
+			</span>
 
-
-
-		<a id="downloadAnchor" style="display:none"></a>
-
-
-		<div v-if="viewMenu && (isNotHome || isPasteAvailable || isNotBackground)">
-			<nav>
-			<ul id="right-click-menu" tabindex="-1" v-if="viewMenu && (isNotHome || isPasteAvailable || isNotBackground)" @blur="closeMenu" v-bind:style="{top:top, left:left}">
-			<li id='gallery' class="context-menu-item" @keyup.enter="gallery" v-if="canOpen" @click="gallery">View</li>
-			<li id='create-file' class="context-menu-item" @keyup.enter="createTextFile" v-if="!isNotBackground" @click="createTextFile">Create Text file</li>
-			<li id='open-file' class="context-menu-item" @keyup.enter="downloadAll" v-if="canOpen" @click="downloadAll">Download</li>
-			<li id='rename-file' class="context-menu-item" @keyup.enter="rename" v-if="isNotBackground && isWritable" @click="rename">Rename</li>
-			<li id='delete-file' class="context-menu-item" @keyup.enter="deleteFiles" v-if="isNotBackground && isWritable" @click="deleteFiles">Delete</li>
-			<li id='copy-file' class="context-menu-item" @keyup.enter="copy" v-if="isNotBackground && isWritable" @click="copy">Copy</li>
-			<li id='cut-file' class="context-menu-item" @keyup.enter="cut" v-if="isNotBackground && isWritable" @click="cut">Cut</li>
-			<li id='paste-file' class="context-menu-item" @keyup.enter="paste" v-if="isPasteAvailable" @click="paste">Paste</li>
-			<li id='share-file' class="context-menu-item" @keyup.enter="showShareWith" v-if="(isNotHome || isNotBackground) && isLoggedIn" @click="showShareWith">Share</li>
-			<li id='file-search' class="context-menu-item" @keyup.enter="openSearch(false)" v-if="isSearchable" @click="openSearch(false)">Search...</li>
-			<li id='close-context-menu-item' class="context-menu-item hidden-context-menu-item" @keyup.enter="closeMenu" @click="closeMenu">Close</li>
+			<ul v-if="isWritable" class="nav">
+				<ul id="uploadMenu" v-if="showUploadMenu" class="dropdown-menu" style="cursor:pointer;display:block">
+					<li v-on:keyup.enter="askForFiles" class="upload-item"><a @click="askForFiles">Upload files</a></li>
+					<li v-on:keyup.enter="askForDirectories" class="upload-item"><a @click="askForDirectories">Upload directories</a></li>
+				</ul>
 			</ul>
-			</nav>
-		</div>
+		</nav>
 
-		<gallery
-			v-if="showGallery"
-			@hide-gallery="closeApps()"
-			:files="sortedFiles"
+		<!-- <a id="downloadAnchor" style="display:none"></a> -->
+
+		<pdf
+			v-if="showPdfViewer"
+			v-on:hide-pdf-viewer="closeApps()"
+			:file="selectedFiles[0]"
+			:context="context">
+		</pdf>
+
+		<code-editor
+			v-if="showCodeEditor"
+			v-on:hide-code-editor="closeApps(); updateCurrentDir();"
+			v-on:update-refresh="forceUpdate++"
+			:file="selectedFiles[0]"
 			:context="context"
-			:initial-file-name="selectedFiles[0] == null ? '' : selectedFiles[0].getFileProperties().name">
-		</gallery>
-
-		<!-- <div v-if="viewMenu && isProfileViewable()">
-			<ul id="right-click-menu-profile" tabindex="-1"  @blur="closeMenu" v-bind:style="{top:top, left:left}">
-			<li id='profile-view' @click="showProfile(false)">Show Profile</li>
-			</ul>
-		</div> -->
+			:messages="messages">
+		</code-editor>
 
 		<div v-if="progressMonitors.length>0" class="progressholder">
 			<progressbar
 				v-for="progress in progressMonitors"
 				v-if="progress.show"
 				:key="progress.title"
-				@hide-progress="progressMonitors.splice(progressMonitors.indexOf(progress), 1)"
+				v-on:hide-progress="progressMonitors.splice(progressMonitors.indexOf(progress), 1)"
 				:title="progress.title"
 				:done="progress.done"
 				:max="progress.max"
@@ -76,41 +69,30 @@
 
 		<spinner v-if="showSpinner" :message="spinnerMessage"></spinner>
 
+		<div v-if="view==='files'" id="dnd" @drop="dndDrop($event)" @dragover.prevent v-bind:class="{ fillspace: true, not_owner: isNotMe }" v-on:contextmenu="openMenu($event)">
+			<div v-if="view==='files'">
 
-
-
-		<div  id="dnd" @drop="dndDrop($event)" @dragover.prevent v-bind:class="{ fillspace: true, not_owner: isNotMe }" @contextmenu="openMenu($event)">
-			<div>
-
-				<DriveGrid v-if="isGrid">
-					<DriveGridCard v-for="(file, index) in sortedFiles" :key="file.getFileProperties().name" :filename="file.getFileProperties().name" :src="getThumbnailURL(file)" />
-				</DriveGrid>
-
-
-				<!-- <div class="grid" v-if="isGrid">
-
-					<span class="column grid-item" v-for="(file, index) in sortedFiles" @keyup.enter="navigateOrMenuTab($event, file, true)">
-						<span class="grid_icon_wrapper fa" :id="index" draggable="true" @dragover.prevent @dragstart="dragStart($event, file)" @drop="drop($event, file)">
-							<a class="picon" v-bind:id="file.getFileProperties().name" @contextmenu="openMenu($event, file)">
-								<span v-if="!file.getFileProperties().thumbnail.isPresent()" @click="navigateOrMenu($event, file)" @contextmenu="openMenu($event, file)" v-bind:class="[getFileClass(file), getFileIcon(file), 'picon']"> </span>
-								<img id="thumbnail" v-if="file.getFileProperties().thumbnail.isPresent()" @click="navigateOrMenu($event, file)" @contextmenu="openMenu($event, file)" v-bind:src="getThumbnailURL(file)"/>
+				<div class="grid" v-if="grid">
+					<span class="column grid-item" v-for="(file, index) in sortedFiles" v-on:keyup.enter="navigateOrMenuTab($event, file, true)">
+						<span class="grid_icon_wrapper fa" :id="index" draggable="true" @dragover.prevent v-on:dragstart="dragStart($event, file)" @drop="drop($event, file)">
+							<a class="picon" v-bind:id="file.getFileProperties().name" v-on:contextmenu="openMenu($event, file)">
+								<span v-if="!file.getFileProperties().thumbnail.isPresent()" v-on:click="navigateOrMenu($event, file)" v-on:contextmenu="openMenu($event, file)" v-bind:class="[getFileClass(file), getFileIcon(file), 'picon']"> </span>
+								<img id="thumbnail" v-if="file.getFileProperties().thumbnail.isPresent()" v-on:click="navigateOrMenu($event, file)" v-on:contextmenu="openMenu($event, file)" v-bind:src="getThumbnailURL(file)"/>
 							</a>
 							<div class="content filename" >
 								<div v-bind:class="{ noselect: true, shared: isShared(file) }">{{ file.getFileProperties().name }}</div>
 							</div>
 						</span>
 					</span>
-
 					<div v-if="sortedFiles.length==0 && currentDir != null && currentDir.isWritable()" class="instruction">
 						Upload a file by dragging and dropping here or clicking the <span class="fa fa-upload"/> icon
 					</div>
-
 					<center v-if="isSecretLink" class="bottom-message">Join the revolution!<br/>
 						<button class="btn btn-lg btn-success" @click="gotoSignup()">Sign up to Peergos</button>
 					</center>
-				</div> -->
+				</div>
 
-				<div class="table-responsive" v-if="!isGrid">
+				<div class="table-responsive" v-if="!grid">
 					<table class="table">
 						<thead>
 							<tr style="cursor:pointer;">
@@ -121,10 +103,9 @@
 							</tr>
 						</thead>
 						<tbody>
-							<tr v-for="file in sortedFiles" @keyup.enter="navigateOrMenuTab($event, file, true)" class="grid-item">
-							<td v-bind:id="file.getFileProperties().name"  @click="navigateOrMenu($event, file)" @contextmenu="openMenu($event, file)" style="cursor:pointer" v-bind:class="{ shared: isShared(file) }">{{ file.getFileProperties().name }}</td>
-							<td> {{ getFileSize(file.getFileProperties()) }} </td>
-							<!-- <td> </td> -->
+							<tr v-for="file in sortedFiles" v-on:keyup.enter="navigateOrMenuTab($event, file, true)" class="grid-item">
+							<td v-bind:id="file.getFileProperties().name"  v-on:click="navigateOrMenu($event, file)" v-on:contextmenu="openMenu($event, file)" style="cursor:pointer" v-bind:class="{ shared: isShared(file) }">{{ file.getFileProperties().name }}</td>
+							<td>{{ getFileSize(file.getFileProperties()) }}</td>
 							<td>{{ file.getFileProperties().getType() }}</td>
 							<td>{{ formatDateTime(file.getFileProperties().modified) }}</td>
 							</tr>
@@ -136,7 +117,7 @@
 
 		<error
 			v-if="showError"
-			@hide-error="showError = false"
+			v-on:hide-error="showError = false"
 			:title="errorTitle"
 			:body="errorBody"
 			:messageId="messageId">
@@ -146,28 +127,19 @@
 </template>
 
 <script>
-const DriveHeader = require("../components/drive/DriveHeader.vue");
-const DriveGrid = require("../components/drive/DriveGrid.vue");
-const DriveGridCard = require("../components/drive/DriveGridCard.vue");
 
-const mixins = require("../mixins/downloader/index.js");
+const mixins = require("../mixins/mixins.js");
 
 module.exports = {
-	components: {
-		DriveHeader,
-		DriveGrid,
-		DriveGridCard
-	},
 	data() {
 		return {
-
-			isGrid: true,
-			view: "files",
+			view: "appgrid",
 			context: null,
 			path: [],
 			searchPath: null,
 			currentDir: null,
 			files: [],
+			grid: true,
 			sortBy: "name",
 			normalSortOrder: true,
 			clipboard: {},
@@ -183,7 +155,8 @@ module.exports = {
 			sharedWithData: { "edit_shared_with_users": [], "read_shared_with_users": [] },
 			forceSharedRefreshWithUpdate: 0,
 			isNotBackground: true,
-
+			// quotaBytes: 0,
+			// usageBytes: 0,
 			isAdmin: false,
 			showAdmin: false,
 			showAppgrid: false,
@@ -264,8 +237,6 @@ module.exports = {
 		};
 	},
 	props: ["initPath", "openFile", "initiateDownload"],
-
-	mixins:[mixins],
 
 	computed: {
 		...Vuex.mapState([
@@ -426,9 +397,6 @@ module.exports = {
 			return context.username;
 		}
 	},
-
-
-
 	created() {
 		console.debug('Filesystem module created!');
 		// this.context = this.initContext;
@@ -493,10 +461,12 @@ module.exports = {
 			}
 		}
 	},
-
-
-
 	methods: {
+
+		// ...mapMutations([
+		// 	'SET_QUOTA',
+		// 	'SET_USAGE'
+		// ]),
 
 		init() {
 			const that = this;
@@ -557,6 +527,7 @@ module.exports = {
 			}
 			this.showPendingServerMessages();
 		},
+
 
 		clearTabNavigation() {
 			let that = this;
@@ -623,7 +594,7 @@ module.exports = {
 					for (var l = 0; l < toolbarItems.length; l++) {
 						toolbarItems[l].removeAttribute("tabindex");
 					}
-					// document.getElementById("uploadButton").setAttribute("tabindex", 0);
+					document.getElementById("uploadButton").setAttribute("tabindex", 0);
 				} else if (that.showSettingsMenu) {
 					that.showUploadMenu = false;
 					for (var m = 0; m < settingsItems.length; m++) {
@@ -1073,7 +1044,7 @@ module.exports = {
 		},
 
 		switchView() {
-			this.isGrid = !this.isGrid;
+			this.grid = !this.grid;
 			this.buildTabNavigation();
 		},
 
@@ -1116,12 +1087,12 @@ module.exports = {
 		},
 
 		askForFiles() {
-			// this.toggleUploadMenu();
+			this.toggleUploadMenu();
 			document.getElementById('uploadFileInput').click();
 		},
 
 		askForDirectories() {
-			// this.toggleUploadMenu();
+			this.toggleUploadMenu();
 			document.getElementById('uploadDirectoriesInput').click();
 		},
 
@@ -1510,7 +1481,7 @@ module.exports = {
 		},
 
 		toggleUploadMenu() {
-			// this.showUploadMenu = !this.showUploadMenu;
+			this.showUploadMenu = !this.showUploadMenu;
 			this.buildTabNavigation();
 		},
 

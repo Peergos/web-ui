@@ -1,0 +1,85 @@
+
+<template>
+	<div class="app-dropdown upload">
+		<AppButton
+			type="primary"
+			@click="toggleDropdown()"
+		>
+			<AppIcon :icon="icon" />
+		</AppButton>
+		<transition name="drop">
+			<div v-if="isActive" class="dropdown__content" >
+				<slot />
+			</div>
+		</transition>
+	</div>
+</template>
+
+<script>
+module.exports = {
+	props: {
+		icon: {
+			type: String,
+			default: "",
+		},
+	},
+	data() {
+		return {
+			isActive: false,
+		};
+	},
+	methods: {
+		toggleDropdown() {
+			this.isActive = !this.isActive;
+		},
+
+	},
+};
+</script>
+
+<style>
+.app-dropdown {
+	position: relative;
+	background-color: var(--green-500);
+	z-index:100;
+	line-height: 32px;
+	border-radius: 4px;
+}
+
+.app-dropdown .dropdown__content {
+
+	position: absolute;
+	top: calc(100% + 8px);
+	left: 0;
+
+	/* padding: 16px; */
+	min-width: 200px;
+	border-radius: 4px;
+	color: var(--color);
+	background-color:var(--bg);
+	box-shadow: 0 6px 16px rgba(0,0,0,0.15);
+
+}
+.app-dropdown ul {
+	list-style: none;
+	padding-left: 0;
+	margin: 0;
+}
+.app-dropdown li {
+	padding: 8px  16px;
+	cursor: pointer;
+	font-size: var(--text-small)
+}
+.app-dropdown li:hover {
+	background-color: var(--bg-2);
+}
+
+.drop-enter-active, .drop-leave-active  {
+  transition: all 0.2s ease-out;
+}
+
+.drop-enter, .drop-leave-to {
+	opacity: 0;
+	transform: translateY(-10px)
+}
+</style>

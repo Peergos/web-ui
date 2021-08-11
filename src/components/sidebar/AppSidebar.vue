@@ -20,16 +20,6 @@
 			<AppIcon :icon="isDark ? 'sun' : 'moon'" />
 		</AppButton>
 
-		<AppButton
-			class="toggle-button desktop"
-			round
-			icon
-			size="small"
-			@click="toggleSidebar"
-		>
-			<AppIcon :icon="isOpen ? 'chevron-left' : 'chevron-right'"
-		/></AppButton>
-
 		<ul class="nav-list">
 			<MenuItem label="Files" icon="files" view="Drive" />
 			<MenuItem label="Newsfeed" icon="news" view="NewsFeed" />
@@ -123,18 +113,7 @@ module.exports = {
 	padding: 0;
 }
 
-.sidebar .toggle-button {
-	position: absolute;
-	width: 32px;
-	right: -48px;
-	top: 16px;
-	background-color: var(--bg-2);
-}
 
-.sidebar .toggle-button svg {
-	width: 100%;
-	height: 100%;
-}
 
 .sidebar .toggle-button--mobile svg,
 .sidebar .toggle-theme--mobile svg {

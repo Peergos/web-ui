@@ -49,7 +49,7 @@ module.exports = {
 		loginDEV() {
 			// bypass login on DEV
 			if( window.location.hostname == "localhost"){
-				this.username = 'peergos'
+				this.username = 'manuelehrenfeld'
 				this.password = 'testpassword'
 				this.login()
 			}
@@ -73,8 +73,7 @@ module.exports = {
 
 					that.$toast.dismiss('login');
 
-					console.log("Switching to Drive");
-					that.$store.commit("CURRENT_VIEW", 'Calendar');
+					that.$store.commit("CURRENT_VIEW", 'Drive');
 					that.$store.commit("SET_USER_CONTEXT", context);
 					that.$store.commit('USER_LOGIN', true);
 
