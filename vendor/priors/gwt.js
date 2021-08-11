@@ -507,30 +507,39 @@ function generateThumbnailProm(asyncReader, fileSize, fileName) {
     var future = peergos.shared.util.Futures.incomplete();
     var bytes = peergos.shared.util.Serialize.newByteArray(fileSize);
     asyncReader.readIntoArray(bytes, 0, fileSize).thenApply(function(bytesRead) {
-        var canvas = document.createElement('canvas');
-        var ctx = canvas.getContext('2d');
-        var img = new Image();
-        img.onload = function(){
-            var w = 400, h = 400;
-            canvas.width = w;
-            canvas.height = h;
-            ctx.drawImage(img,0,0,img.width, img.height, 0, 0, w, h);
-            var dataUrl = canvas.toDataURL("image/webp");
-            if (dataUrl.startsWith("data:image/png")) {
-                // browser doesn't support webp
-                dataUrl = canvas.toDataURL("image/jpeg");
-            }
-            future.complete(dataUrl);
-        }
-	img.onerror = function(e) {
-	    console.log(e);
-	    future.complete("");
-	}
-        var blob = new Blob([new Uint8Array(bytes)], {type: "octet/stream"});
-        var url = window.URL.createObjectURL(blob);
-        img.src = url;
+        renderThumbnail(bytes, future, 400);
     });
     return future;
+}
+
+function renderThumbnail(bytes, future, size) {
+    var canvas = document.createElement('canvas');
+    var ctx = canvas.getContext('2d');
+    var img = new Image();
+    img.onload = function(){
+        var w = size, h = size;
+        canvas.width = w;
+        canvas.height = h;
+        ctx.drawImage(img,0,0,img.width, img.height, 0, 0, w, h);
+        var dataUrl = canvas.toDataURL("image/webp");
+        if (dataUrl.startsWith("data:image/png")) {
+            // browser doesn't support webp
+            dataUrl = canvas.toDataURL("image/jpeg");
+        }
+        let byteSize = dataUrl.substring(dataUrl.indexOf(",")+1).length / 2;
+        if (byteSize < 100*1024) {
+            future.complete(dataUrl);
+            return;
+        }
+        return renderThumbnail(bytes, future, size*.75);
+    }
+    img.onerror = function(e) {
+	console.log(e);
+	future.complete("");
+    }
+    var blob = new Blob([new Uint8Array(bytes)], {type: "octet/stream"});
+    var url = window.URL.createObjectURL(blob);
+    img.src = url;
 }
 
 function supportsStreaming() {
