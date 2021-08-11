@@ -507,26 +507,44 @@ function generateThumbnailProm(asyncReader, fileSize, fileName) {
     var future = peergos.shared.util.Futures.incomplete();
     var bytes = peergos.shared.util.Serialize.newByteArray(fileSize);
     asyncReader.readIntoArray(bytes, 0, fileSize).thenApply(function(bytesRead) {
-        var canvas = document.createElement('canvas');
-        var ctx = canvas.getContext('2d');
-        var img = new Image();
-        img.onload = function(){
-            var w = 100, h = 100;
-            canvas.width = w;
-            canvas.height = h;
-            ctx.drawImage(img,0,0,img.width, img.height, 0, 0, w, h);
-            var b64Thumb = canvas.toDataURL().substring("data:image/png;base64,".length);
-            future.complete(b64Thumb);
-        }
-	img.onerror = function(e) {
-	    console.log(e);
-	    future.complete("");
-	}
-        var blob = new Blob([new Uint8Array(bytes)], {type: "octet/stream"});
-        var url = window.URL.createObjectURL(blob);
-        img.src = url;
+        renderThumbnail(bytes, future, 400);
     });
     return future;
+}
+
+function renderThumbnail(bytes, future, size) {
+    var canvas = document.createElement('canvas');
+    var ctx = canvas.getContext('2d');
+    var img = new Image();
+    img.onload = function(){
+        getThumbnailFromCanvas(canvas, img, img.width, img.height, size, future);
+    }
+    img.onerror = function(e) {
+	console.log(e);
+	future.complete("");
+    }
+    var blob = new Blob([new Uint8Array(bytes)], {type: "octet/stream"});
+    var url = window.URL.createObjectURL(blob);
+    img.src = url;
+}
+
+function getThumbnailFromCanvas(canvas, img, width, height, size, future) {
+    if (img != null) {
+        canvas.width = size;
+        canvas.height = size;
+        canvas.getContext('2d').drawImage(img, 0, 0, width, height, 0, 0, size, size);
+    }
+    var dataUrl = canvas.toDataURL("image/webp");
+    if (dataUrl.startsWith("data:image/png")) {
+        // browser doesn't support webp
+        dataUrl = canvas.toDataURL("image/jpeg");
+    }
+    let byteSize = dataUrl.substring(dataUrl.indexOf(",")+1).length * 3 / 4;
+    if (byteSize < 100*1024) {
+        future.complete(dataUrl);
+        return;
+    }
+    return getThumbnailFromCanvas(canvas, img, width, height, size/2, future);
 }
 
 function supportsStreaming() {
@@ -551,7 +569,7 @@ function createVideoThumbnailProm(future, asyncReader, fileSize, fileName) {
     asyncReader.readIntoArray(bytes, 0, fileSize).thenApply(function(bytesRead) {
         var increment = 0;
         var currentIncrement = 0;                                                   
-        let width = 100, height = 100;   
+        let width = 400, height = 400;   
         let video = document.createElement('video');
         video.onloadedmetadata = function(){
             let thumbnailGenerator = () => {
@@ -598,9 +616,8 @@ function captureThumbnail(width, height, currentIncrement, video){
             context.drawImage(video, 0, 0, width, height);
             let imageData = context.getImageData(0, 0, width, height);
             if(isLikelyValidImage(imageData, blackWhiteThreshold)) {
-                let b64Thumb = canvas.toDataURL().substring("data:image/png;base64,".length);
-                capturingFuture.complete(b64Thumb);
-            }else {
+                getThumbnailFromCanvas(canvas, null, width, height, width, capturingFuture);
+            } else {
                 capturingFuture.complete("");
             }
     }, 1000);
@@ -669,7 +686,7 @@ function createVideoThumbnailStreamingProm(future, asyncReader, size, filename, 
     }
     const context = new Context(asyncReader, 0, size);
     let fileStream = streamSaver.createWriteStream("media-" + filename, mimeType, function(url){
-        let width = 100, height = 100;
+        let width = 400, height = 400;
         let video = document.createElement('video');
         let canvas = document.createElement('canvas');
         canvas.width = width;
@@ -704,8 +721,7 @@ function createVideoThumbnailStreamingProm(future, asyncReader, size, filename, 
                             let imageData = context.getImageData(0, 0, width, height);
                             if (isLikelyValidImage(imageData, blackWhiteThreshold)) {
                                 result.done = true;
-                                let b64Thumb = canvas.toDataURL().substring("data:image/png;base64,".length);
-                                future.complete(b64Thumb);
+                                getThumbnailFromCanvas(canvas, null, width, height, width, future);
                             } else {
                                 if (! result.done) {
                                     setTimeout(function(){thumbnailGenerator();}, 1000);

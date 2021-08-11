@@ -2,11 +2,14 @@ module.exports = {
     template: require('appgrid.html'),
     data: function() {
         return {
-            chatIsAvailable: true
+            chatIsAvailable: false
         };
     },
     props: ["context", "social", "canUpgrade"],
     created: function() {
+        const href = window.location.href;
+        if (href.includes("?chat=true"))
+            this.chatIsAvailable = true;
     },
     methods: {
         iconCount: function() {

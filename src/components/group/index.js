@@ -153,6 +153,9 @@ module.exports = {
             this.resetTypeahead();
         },
         addMembersToGroup: function(usersToAdd) {
+            if (usersToAdd.length == 0) {
+                return;
+            }
             var that = this;
             for (var i = usersToAdd.length - 1; i >= 0; i--) {
                 let targetUsername = usersToAdd[i];

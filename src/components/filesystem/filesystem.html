@@ -48,7 +48,7 @@
       <li id='open-file' class="context-menu-item" v-on:keyup.enter="downloadAll" v-if="canOpen" v-on:click="downloadAll">Download</li>
       <li id='rename-file' class="context-menu-item" v-on:keyup.enter="rename" v-if="isNotBackground && isWritable" v-on:click="rename">Rename</li>
       <li id='delete-file' class="context-menu-item" v-on:keyup.enter="deleteFiles" v-if="isNotBackground && isWritable" v-on:click="deleteFiles">Delete</li>
-      <li id='copy-file' class="context-menu-item" v-on:keyup.enter="copy" v-if="isNotBackground && isWritable" v-on:click="copy">Copy</li>
+      <li id='copy-file' class="context-menu-item" v-on:keyup.enter="copy" v-if="isNotBackground" v-on:click="copy">Copy</li>
       <li id='cut-file' class="context-menu-item" v-on:keyup.enter="cut" v-if="isNotBackground && isWritable" v-on:click="cut">Cut</li>
       <li id='paste-file' class="context-menu-item" v-on:keyup.enter="paste" v-if="isPasteAvailable" v-on:click="paste">Paste</li>
       <li id='share-file' class="context-menu-item" v-on:keyup.enter="showShareWith" v-if="(isNotHome || isNotBackground) && isLoggedIn" v-on:click="showShareWith">Share</li>
@@ -329,7 +329,7 @@
             <a class="picon" v-bind:id="file.getFileProperties().name" v-on:contextmenu="openMenu($event, file)">
               <span v-if="!file.getFileProperties().thumbnail.isPresent()" v-on:click="navigateOrMenu($event, file)" v-on:contextmenu="openMenu($event, file)"
 		    v-bind:class="[getFileClass(file), getFileIcon(file), 'picon']"> </span>
-              <img id="thumbnail" v-if="file.getFileProperties().thumbnail.isPresent()" v-on:click="navigateOrMenu($event, file)" v-on:contextmenu="openMenu($event, file)" v-bind:src="getThumbnailURL(file)"/>
+              <img id="thumbnail" v-if="file.getFileProperties().thumbnail.isPresent()" v-on:click="navigateOrMenu($event, file)" v-on:contextmenu="openMenu($event, file)" v-bind:src="getThumbnailURL(file)" style="width:100px;height:100px;"/>
                 </a>
             <div class="content filename" >
               <div v-bind:class="{ noselect: true, shared: isShared(file) }">{{ file.getFileProperties().name }}</div>

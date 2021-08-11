@@ -247,6 +247,8 @@ module.exports = {
         },
         launchEmojiPicker: function() {
             this.emojiPicker.togglePicker(this.emojiChooserBtn);
+            var emojiElement = document.getElementsByClassName("wrapper");
+            emojiElement[0].classList.add("emoji-position");
         },
         deleteAttachment: function(attachment) {
             let that = this;
@@ -536,7 +538,6 @@ module.exports = {
             }
             let chatController = this.allChatControllers.get(conversationId);
             let conversation = this.allConversations.get(conversationId);
-            let currentAdmins = conversation.currentAdmins;
             let currentMembers = conversation.currentMembers;
             for(var j = 0; j < messagePairs.length; j++) {
                 let chatEnvelope = messagePairs[j].message;
@@ -544,13 +545,7 @@ module.exports = {
                 let payload = chatEnvelope.payload;
                 let type = payload.type().toString();
                 let author = chatController.controller.getUsername(chatEnvelope.author);
-                if (!this.isInList(currentMembers, author)) {
-                    break;
-                }
                 if (type == 'GroupState') {//type
-                    if (!this.isInList(currentAdmins, author)) {
-                        break;
-                    }
                     if(payload.key == "title") {
                         messageThread.push(this.createStatusMessage(chatEnvelope.creationTime, "Chat name changed to " + payload.value));
                         let conversation = this.allConversations.get(conversationId);
@@ -558,7 +553,7 @@ module.exports = {
                     } else if(payload.key == "admins") {
                         messageThread.push(this.createStatusMessage(chatEnvelope.creationTime, "Chat admins changed to " + payload.value));
                         let conversation = this.allConversations.get(conversationId);
-                        currentAdmins = payload.value.split(",");
+                        conversation.currentAdmins = payload.value.split(",");
                     }
                 } else if(type == 'Invite') {
                     let username = chatEnvelope.payload.username;
@@ -772,8 +767,7 @@ module.exports = {
             return future;
         },
         checkChatState: function(conversation) {
-            let chatOwner = this.extractChatOwner(conversation.id);
-            if (chatOwner != this.context.username && !conversation.readonly && ! conversation.chatVisibilityWarningDisplayed) {
+            if (!conversation.readonly && ! conversation.chatVisibilityWarningDisplayed) {
                 let participants = conversation.participants;
                 let friendsInChat = this.friendnames.filter(friend => participants.findIndex(v => v === friend) > -1);
                 if (friendsInChat.length == 0) {
@@ -781,6 +775,17 @@ module.exports = {
                     this.showMessage("Chat no longer contains any of your friends. Your messages will not be seen by others");
                 }
             }
+        },
+        displayChatAccessRemoved: function(conversation) {
+            if (this.showSpinner) {
+                return false;
+            }
+            let currentAdmins = conversation.currentAdmins;
+            if (currentAdmins.length == 0 || (currentAdmins.length == 1 && currentAdmins[0] == this.context.username
+                && conversation.participants.length == 0)) {
+                return false;
+            }
+            return conversation.readonly;
         },
         refreshConversation: function(conversationId) {
             var that = this;
@@ -792,7 +797,7 @@ module.exports = {
                 let participants = that.removeSelfFromParticipants(origParticipants);
                 let conversation = that.allConversations.get(conversationId);
                 conversation.participants = participants;
-                conversation.readonly = origParticipants.length == participants.length;
+                conversation.readonly = origParticipants.length == participants.length || participants.length == 0;
                 that.checkChatState(conversation);
                 if (participants.length == 1) {
                     conversation.profileImageNA = false;
@@ -946,7 +951,7 @@ module.exports = {
                 this.messenger.createChat().thenApply(function(controller){
                     let conversationId = controller.chatUuid;
                     that.allChatControllers.set(controller.chatUuid,
-                        {controller: controller, owner: that.context.username, startIndex: 0, pendingAttachmentRefs: []});
+                        {controller: controller, startIndex: 0, pendingAttachmentRefs: []});
                     let item = {id: conversationId, title: updatedGroupTitle, participants: updatedMembers
                         , readonly: false, currentAdmins: [that.context.username], currentMembers: [that.context.username]
                         , hasUnreadMessages: false, chatVisibilityWarningDisplayed: false};
@@ -1047,6 +1052,9 @@ module.exports = {
             }
             let conversation = this.allConversations.get(this.selectedConversationId);
             if (conversation != null) {
+                if (this.displayChatAccessRemoved(conversation)) {
+                    return;
+                }
                 this.groupId = this.selectedConversationId;
                 this.groupTitle = conversation.title;
                 this.friendNames = this.friendnames;
@@ -1237,22 +1245,17 @@ module.exports = {
             }
             return copyOfParticipants;
         },
-        extractChatOwner: function(chatUuid) {
-            let withoutPrefix = chatUuid.substring(5);//chat:
-            return withoutPrefix.substring(0,withoutPrefix.indexOf(":"));
-        },
         initialiseChats: function(controllers) {
             let that = this;
             controllers.forEach(controller => {
-                let chatOwner = this.extractChatOwner(controller.chatUuid);
-                chatController = {controller:controller, startIndex: 0, owner: chatOwner, pendingAttachmentRefs: []};
+                chatController = {controller:controller, startIndex: 0, pendingAttachmentRefs: []};
                 that.allChatControllers.set(controller.chatUuid, chatController);
                 that.allMessageThreads.set(controller.chatUuid, []);
                 let origParticipants = controller.getMemberNames().toArray();
                 let participants = that.removeSelfFromParticipants(origParticipants);
-
-                let conversation = {id: controller.chatUuid, participants: participants, readonly: origParticipants.length == participants.length
-                    , title: controller.getTitle(), currentAdmins: [chatOwner], currentMembers: [chatOwner], hasUnreadMessages: false
+                let readonly = origParticipants.length == participants.length || participants.length == 0;
+                let conversation = {id: controller.chatUuid, participants: participants, readonly: readonly
+                    , title: controller.getTitle(), currentAdmins: [], currentMembers: [], hasUnreadMessages: false
                     , chatVisibilityWarningDisplayed: false};
                 if (participants.length == 1) {
                     conversation.profileImageNA = false;
@@ -1279,7 +1282,7 @@ module.exports = {
                 let origParticipants = updatedController.getMemberNames().toArray();
                 let participants = that.removeSelfFromParticipants(origParticipants);
                 conversation.participants = participants;
-                conversation.readonly = origParticipants.length == participants.length;
+                conversation.readonly = origParticipants.length == participants.length || participants.length == 0;
                 if (participants.length == 1) {
                     conversation.profileImageNA = false;
                 }
@@ -1302,6 +1305,11 @@ module.exports = {
             let pathWithoutLeadingSlash = path.startsWith("/") ? path.substring(1) : path;
             return pathWithoutLeadingSlash.substring(0, pathWithoutLeadingSlash.indexOf("/"));
         },
+        replaceOwnerInPath: function(owner, path) {
+            let pathWithoutLeadingSlash = path.startsWith("/") ? path.substring(1) : path;
+            let pathWithoutOwner = pathWithoutLeadingSlash.substring(pathWithoutLeadingSlash.indexOf("/"));
+            return owner + pathWithoutOwner;
+        },
         loadAllAttachments: function(chatController, future) {
             let that = this;
             let attachmentMap = new Map();
@@ -1311,17 +1319,38 @@ module.exports = {
             } else {
                 var loadedCount = 0;
                 refs.forEach(ref => {
-                    let owner = that.extractOwnerFromPath(ref.path);
-                    that.context.network.getFile(ref.cap, owner).thenApply(optFile => {
+                    //Load media from local mirror
+                    let mirrorPath = that.replaceOwnerInPath(that.context.username, ref.path);
+                    that.context.getByPath(mirrorPath).thenApply(function(optFile) {
                         loadedCount++;
                         let mediaFile = optFile.ref;
                         if (mediaFile != null) {
                             let fullPath = ref.path.startsWith("/") ? ref.path : "/" + ref.path;
                             attachmentMap.set(fullPath, mediaFile);
-                        }
-                        if (loadedCount == refs.length) {
-                            chatController.pendingAttachmentRefs = [];
-                            future.complete(attachmentMap);
+                            if (loadedCount == refs.length) {
+                                chatController.pendingAttachmentRefs = [];
+                                future.complete(attachmentMap);
+                            }
+                        } else {
+                            //fallback to attachment sender
+                            let owner = that.extractOwnerFromPath(ref.path);
+                            that.context.network.getFile(ref.cap, owner).thenApply(optFile => {
+                               let mediaFile = optFile.ref;
+                               if (mediaFile != null) {
+                                   let fullPath = ref.path.startsWith("/") ? ref.path : "/" + ref.path;
+                                   attachmentMap.set(fullPath, mediaFile);
+                               }
+                               if (loadedCount == refs.length) {
+                                   chatController.pendingAttachmentRefs = [];
+                                   future.complete(attachmentMap);
+                               }
+                            }).exceptionally(err => {
+                                console.log(err);
+                                if (loadedCount == refs.length) {
+                                    chatController.pendingAttachmentRefs = [];
+                                    future.complete(attachmentMap);
+                                }
+                            });
                         }
                     }).exceptionally(err => {
                         console.log(err);
@@ -1455,7 +1484,7 @@ module.exports = {
                     if (conversation.readonly) {
                         participants = " - " + participants;
                     } else {
-                        participants = " - you, " + participants;
+                        participants = " - you," + participants;
                     }
                 }
                 title = title + participants;
@@ -1477,10 +1506,13 @@ module.exports = {
         },
         send: function() {
             let that = this;
-            let text = this.newMessageText;
-            if (text.length == 1 && text == '\n') {
-                this.newMessageText = '';
-                return;
+            var text = this.newMessageText;
+            that.newMessageText = "";
+            while (text.endsWith("\n")) {
+                text = text.substring(0, text.length - 1);
+                if (text.length == 0) {
+                    return;
+                }
             }
             let conversationId = this.selectedConversationId;
             let msg = this.attachmentList.length > 0 ?
@@ -1491,8 +1523,11 @@ module.exports = {
                 let path = this.attachmentList[i].mediaItem.path;
                 attachmentMap.set(path, this.attachmentList[i].mediaFile);
             }
+            that.attachmentList = [];
             let editMessage = this.editMessage;
+            that.editMessage = null;
             let replyToMessage = this.replyToMessage;
+            that.replyToMessage = null;
             var showProgress = false;
             if (editMessage != null) {
                 if (editMessage.envelope == null) {
@@ -1594,10 +1629,6 @@ module.exports = {
         },
         sendMessage: function(conversationId, msg) {
             let that = this;
-            that.newMessageText = "";
-            that.replyToMessage = null;
-            that.editMessage = null;
-            that.attachmentList = [];
             let future = peergos.shared.util.Futures.incomplete();
             let chatController = this.allChatControllers.get(conversationId);
             let controller = chatController.controller;

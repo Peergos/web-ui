@@ -749,7 +749,7 @@ h3 {word-wrap:break-word; white-space:normal;}
     margin-bottom: 5px;
 }
 
-.social-post {
+.post-content {
     white-space:pre-wrap;
     margin-bottom:0;
     margin-right: 10px;
@@ -841,6 +841,11 @@ h3 {word-wrap:break-word; white-space:normal;}
     margin-bottom: 10px;
 }
 /* chat - start */
+.emoji-position {
+    position: absolute;
+    bottom: 40px;
+    right: 160px;
+}
 .prevent-resize{
     resize: none
 }
@@ -1031,7 +1036,7 @@ h3 {word-wrap:break-word; white-space:normal;}
 .attachment {
     position: fixed;
     background-color: white;
-    bottom: 80px;
+    bottom: 100px;
     border: 1px solid #c4c4c4;
     border-radius: 5px;
     margin-bottom: 15px;
@@ -1049,7 +1054,7 @@ h3 {word-wrap:break-word; white-space:normal;}
 .reply-draft-message {
   position: fixed;
   background-color: white;
-  bottom: 80px;
+  bottom: 100px;
   right: 100px;
   border: 1px solid #c4c4c4;
   border-radius: 5px;
@@ -1237,7 +1242,6 @@ h3 {word-wrap:break-word; white-space:normal;}
 
  .chat-top{
     position:fixed;
-    z-index:1;
 }
 
  .chat-back-button{

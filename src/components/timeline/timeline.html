@@ -121,7 +121,7 @@
                                                     <span style="flex-grow:1;">&nbsp&nbsp;{{ row.status}}</span>
                                                     <span v-if="row.sharer == context.username" class="fa fa-ellipsis-h" @click="displayEditMenu($event, row)"></span>
                                                 </div>
-                                                <div class="social-post" v-if="row.name.length > 0">{{ row.name }}</div>
+                                                <div class="post-content" v-if="row.name.length > 0">{{ row.name }}</div>
                                             </div>
                                             <div v-if="!(rowIndex + 1 < entry.length && entry[rowIndex+1].isMedia)" v-bind:style="{ marginLeft: indent(row) }">
                                                 <div style="margin-top: 10px; margin-bottom: 10px;">
@@ -171,7 +171,7 @@
                                                     <span style="flex-grow:1;">&nbsp&nbsp;{{ row.status}}</span>
                                                     <span v-if="row.sharer == context.username" class="fa fa-ellipsis-h" @click="displayEditMenu($event, row)"></span>
                                                 </div>
-                                                <div class="social-post" v-if="row.name.length > 0">{{ row.name }}</div>
+                                                <div class="post-content" v-if="row.name.length > 0">{{ row.name }}</div>
                                             </div>
                                             <div v-if="!(rowIndex + 1 < entry.length && entry[rowIndex+1].isMedia)" v-bind:style="{ marginLeft: indent(row) }">
                                                 <div style="margin-top: 10px; margin-bottom: 10px;">

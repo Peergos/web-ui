@@ -4,8 +4,15 @@
     <div class="modal-container" style="width:100%;height: 100%;" @click.stop >
         <span @click="close" class="close">&times;</span>
         <div class="header">
-            <h3 v-if="chatTitle.length == 0" >&nbsp;</h3>
-            <h3 v-if="chatTitle.length > 0" style="text-align: center;cursor: pointer;" v-on:click="editCurrentConversation()">{{ chatTitle }} &nbsp;<i class="fa fa-ellipsis-v" aria-hidden="true" style="font-size: 20px;"></i></h3>
+            <span>
+                <div id="chat-back-button" class="chat-top" style="display:none;">
+                    <div>
+                        <a @click="closeConversation()" style="cursor: pointer;"><i class="fa fa-arrow-left chat-back-button"></i></a>
+                    </div>
+                </div>
+                <h3 v-if="chatTitle.length == 0" >&nbsp;</h3>
+                <h3 v-if="chatTitle.length > 0" style="text-align: center;cursor: pointer;" v-on:click="editCurrentConversation()">{{ chatTitle }} &nbsp;<i class="fa fa-ellipsis-v" aria-hidden="true" style="font-size: 20px;"></i></h3>
+            </span>
         </div>
         <div v-if="progressMonitors.length>0" class="progressholder">
             <progressbar
@@ -51,11 +58,6 @@
         </gallery>
         <spinner v-if="showSpinner" :message="spinnerMessage"></spinner>
         <div class="chat-container">
-            <div id="chat-back-button" class="chat-top" style="display:none;">
-                <div>
-                    <a @click="closeConversation()"><i class="fa fa-arrow-left chat-back-button"></i></a>
-                </div>
-            </div>
             <div class="chat-messaging">
                 <div class="chat-border">
                     <div id="chat-left-panel" class="chat-left-panel">
@@ -96,15 +98,15 @@
                                     <div class="conversation" v-if="conversation.hasUnreadMessages">
                                         <h5><b>{{displayTitle(conversation)}}</b><span>{{conversation.lastModified}}</span></h5>
                                         <p v-if="!conversation.readonly">{{truncateText(conversation.blurb,40)}}</p>
-                                        <p v-if="conversation.readonly">Access Revoked
-                                            <button :disabled="executingCommands" class="btn btn-danger" @click="removeConversation(conversation.id)" >Delete</button>
+                                        <p><b v-if="displayChatAccessRemoved(conversation)">Access Removed</b>
+                                            <button :disabled="executingCommands" v-if="conversation.readonly" class="btn btn-danger" @click="removeConversation(conversation.id)" >Delete</button>
                                         </p>
                                     </div>
                                     <div class="conversation" v-if="!conversation.hasUnreadMessages">
                                         <h5>{{displayTitle(conversation)}}<span>{{conversation.lastModified}}</span></h5>
                                         <p v-if="!conversation.readonly">{{truncateText(conversation.blurb,40)}}</p>
-                                        <p v-if="conversation.readonly">Access Revoked
-                                            <button class="btn btn-danger" @click="removeConversation(conversation.id)" >Delete</button>
+                                        <p><b v-if="displayChatAccessRemoved(conversation)">Access Removed</b>
+                                            <button v-if="conversation.readonly" class="btn btn-danger" @click="removeConversation(conversation.id)" >Delete</button>
                                         </p>
                                     </div>
                                 </div>
