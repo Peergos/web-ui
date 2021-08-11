@@ -517,21 +517,7 @@ function renderThumbnail(bytes, future, size) {
     var ctx = canvas.getContext('2d');
     var img = new Image();
     img.onload = function(){
-        var w = size, h = size;
-        canvas.width = w;
-        canvas.height = h;
-        ctx.drawImage(img,0,0,img.width, img.height, 0, 0, w, h);
-        var dataUrl = canvas.toDataURL("image/webp");
-        if (dataUrl.startsWith("data:image/png")) {
-            // browser doesn't support webp
-            dataUrl = canvas.toDataURL("image/jpeg");
-        }
-        let byteSize = dataUrl.substring(dataUrl.indexOf(",")+1).length / 2;
-        if (byteSize < 100*1024) {
-            future.complete(dataUrl);
-            return;
-        }
-        return renderThumbnail(bytes, future, size*.75);
+        getThumbnailFromCanvas(canvas, img, img.width, img.height, size, future);
     }
     img.onerror = function(e) {
 	console.log(e);
@@ -540,6 +526,25 @@ function renderThumbnail(bytes, future, size) {
     var blob = new Blob([new Uint8Array(bytes)], {type: "octet/stream"});
     var url = window.URL.createObjectURL(blob);
     img.src = url;
+}
+
+function getThumbnailFromCanvas(canvas, img, width, height, size, future) {
+    if (img != null) {
+        canvas.width = size;
+        canvas.height = size;
+        canvas.getContext('2d').drawImage(img, 0, 0, width, height, 0, 0, size, size);
+    }
+    var dataUrl = canvas.toDataURL("image/webp");
+    if (dataUrl.startsWith("data:image/png")) {
+        // browser doesn't support webp
+        dataUrl = canvas.toDataURL("image/jpeg");
+    }
+    let byteSize = dataUrl.substring(dataUrl.indexOf(",")+1).length * 3 / 4;
+    if (byteSize < 100*1024) {
+        future.complete(dataUrl);
+        return;
+    }
+    return getThumbnailFromCanvas(canvas, img, width, height, size/2, future);
 }
 
 function supportsStreaming() {
@@ -611,11 +616,8 @@ function captureThumbnail(width, height, currentIncrement, video){
             context.drawImage(video, 0, 0, width, height);
             let imageData = context.getImageData(0, 0, width, height);
             if(isLikelyValidImage(imageData, blackWhiteThreshold)) {
-                var thumbUrl = canvas.toDataURL("image/webp")
-                if (thumbUrl.startsWith("data:image/png"))
-                    thumbUrl = canvas.toDataURL("image/jpeg")
-                capturingFuture.complete(thumbUrl);
-            }else {
+                getThumbnailFromCanvas(canvas, null, width, height, width, capturingFuture);
+            } else {
                 capturingFuture.complete("");
             }
     }, 1000);
@@ -719,10 +721,7 @@ function createVideoThumbnailStreamingProm(future, asyncReader, size, filename, 
                             let imageData = context.getImageData(0, 0, width, height);
                             if (isLikelyValidImage(imageData, blackWhiteThreshold)) {
                                 result.done = true;
-                                var thumbUrl = canvas.toDataURL("image/webp")
-                                if (thumbUrl.startsWith("data:image/png"))
-                                    thumbUrl = canvas.toDataURL("image/jpeg")
-                                future.complete(thumbUrl);
+                                getThumbnailFromCanvas(canvas, null, width, height, width, future);
                             } else {
                                 if (! result.done) {
                                     setTimeout(function(){thumbnailGenerator();}, 1000);
