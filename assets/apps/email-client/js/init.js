@@ -15,7 +15,7 @@ let handler = function (e) {
     origin = e.origin;
 
     if (e.data.type == "load") {
-        load(e.data.userFolders, e.data.username
+        load(e.data.userFolders, e.data.username, e.data.emailAddress
             , e.data.icalEventTitle, e.data.icalEvent);
     } else if (e.data.type == "respondToSendEmail") {
         respondToSendEmail();
@@ -58,6 +58,7 @@ var searchText = "";
 var currentFolder = 'inbox';
 var icalText = '';
 var icalTitle = '';
+var emailAddress = '';
 var currentEmail = null;
 var currentAttachmentFiles = [];
 var currentlyReplyingTo = null;
@@ -275,10 +276,11 @@ function updateEmailTotals() {
     updateValue("unreadEmailsTotal", unreadEmails);
     updateValue("starredEmailsTotal", starredEmails);
 }
-function load(folders, user, icalEventTitle, icalEvent) {
+function load(folders, user, ownEmailAddress, icalEventTitle, icalEvent) {
     currentFolder = 'inbox';
     icalTitle = icalEventTitle;
     icalText = icalEvent;
+    emailAddress = ownEmailAddress.toLowerCase();
 
     userFolders = folders.sort(function (a, b) { return a.name.localeCompare(b.name);});
     for(var i = 0; i < userFolders.length; i++) {
@@ -1034,7 +1036,7 @@ function sendEmail() {
                     size += attachments[x].size;
                 }
                 if (size > 25 * 1024 * 1024) {
-                    requestShowMessage("Email plus attachments greater than 20 MiB");
+                    requestShowMessage("Email plus attachments greater than 25 MiB");
                     return;
                 }
                 let data =
@@ -1089,11 +1091,10 @@ function replyTo(email) {
 }
 function replyToAll(email) {
     let ccList = email.cc.concat(email.to);
-    /* client does not know own email address!
-    let index = ccList.findIndex(v => v === email.me);
+    let index = ccList.findIndex(v => v.toLowerCase() === emailAddress);
     if (index > -1) {
         ccList.splice(index, 1);
-    }*/
+    }
     composeEmail([email.from], ccList, [], email, null);
     document.getElementById("to").value = email.from;
     document.getElementById("cc").value = ccList;
