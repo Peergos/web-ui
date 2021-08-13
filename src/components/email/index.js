@@ -278,9 +278,8 @@ module.exports = {
                 future.complete(true);
             } else {
                 let attachment = attachments[index];
-                let prefix = '/' + this.context.username + "/.apps/email/data";
-                let relativePath = attachment.path.substring(prefix.length);
-                let filePath = peergos.client.PathUtils.directoryToPath(relativePath.split('/'));
+                let fullFolderPath = this.directoryPrefix + '/attachments';
+                let filePath = peergos.client.PathUtils.toPath(fullFolderPath.split('/'), attachment.uuid);
                 email.deleteInternal(filePath).thenApply( res => {
                     that.reduceDeletingAttachments(email, attachments, ++index, future);
                 }).exceptionally(function(throwable) {
@@ -409,7 +408,7 @@ module.exports = {
             data.timestamp = timestamp.toString();
             this.uploadForwardedAttachments(email, data).thenApply(forwardedAttachments => {
                 that.uploadAttachments(emailClient, data).thenApply(attachments => {
-                    let javaEmail = that.buildEmail(data);
+                    let javaEmail = that.buildEmail(data, true);
                     emailClient.send(javaEmail).thenApply(copiedToOutbox => {
                         that.removeSpinner();
                         if (copiedToOutbox) {

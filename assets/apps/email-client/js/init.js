@@ -692,7 +692,7 @@ function addEmailToUI(email) {
 
         var download = document.createElement("a");
         download.innerText = 'Download';
-        download.href="#";
+        download.href="#attachment-list";
         download.onclick = function() {
             downloadAttachment(attachment);
         }
@@ -857,8 +857,11 @@ function respondToDeleteFolder(folderName) {
     let index = userFolders.findIndex(v => v.name === folderName);
     if (index > -1) {
         userFolders.splice(index, 1);
-        folderEmails.delete(folderName)
-        loadedFolderEmails.delete(folderName)
+        folderEmails.delete(folderName);
+        loadedFolderEmails.delete(folderName);
+        if (currentFolder == folderName) {
+            gotoInbox();
+        }
     }
     addFoldersToNavBar();
     addUserFoldersToDropdown(true);
