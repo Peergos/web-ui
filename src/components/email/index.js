@@ -35,7 +35,7 @@ module.exports = {
                     that.askForEmailBridgeUser(emailApp);
                 } else {
                     peergos.shared.email.EmailClient.load(emailApp, that.context.crypto, that.context).thenApply(emailClient => {
-                        emailClient.getEmailAddress().thenApply(emailAddress => {
+                        emailClient.getEmailAddress(that.context).thenApply(emailAddress => {
                             if (emailAddress.ref == null) {
                                 that.showMessage("Awaiting approval from Email Administrator");
                                 that.close();
@@ -87,8 +87,8 @@ module.exports = {
                     that.close();
                 } else {
                     that.displaySpinner("Creating email directories");
-                    peergos.shared.email.EmailClient.load(email, that.context.crypto, that.context).thenApply(client => {
-                        client.connectToBridge(bridgeUsername).thenApply(res => {
+                    peergos.shared.email.EmailClient.load(email, that.context.crypto).thenApply(client => {
+                        client.connectToBridge(that.context, bridgeUsername).thenApply(res => {
                             that.removeSpinner();
                             that.showMessage("Awaiting approval from Email Administrator");
                             that.close();
@@ -324,9 +324,13 @@ module.exports = {
                 console.log(throwable.getMessage());
             });
         },
+        retrieveAttachment: function(uuid) {
+            let path = this.context.username + '/.apps/email/data/default/attachments/' + uuid;
+            return this.context.getByPath(path);
+        },
         requestDownloadAttachment: function(emailClient, attachment) {
             let that = this;
-            emailClient.retrieveAttachment(attachment.uuid).thenApply(function(optFile) {
+            this.retrieveAttachment(attachment.uuid).thenApply(function(optFile) {
                     if (optFile.ref != null) {
                         that.downloadFile(optFile.ref, attachment.filename);
                     } else {
@@ -336,7 +340,7 @@ module.exports = {
         },
         requestImportCalendarAttachment: function(emailClient, attachment) {
             let that = this;
-            emailClient.retrieveAttachment(attachment.uuid).thenApply(function(optFile) {
+            this.retrieveAttachment(attachment.uuid).thenApply(function(optFile) {
                 if (optFile.ref != null) {
                     let file = optFile.ref;
                     const props = file.getFileProperties();
@@ -835,7 +839,7 @@ module.exports = {
             if (dotIndex > -1 && dotIndex <= file.filename.length -1) {
                 fileExtension = file.filename.substring(dotIndex + 1);
             }
-            emailClient.uploadAttachment(reader, fileExtension, file.size, updateProgressBar).thenApply(function(uuid) {
+            emailClient.uploadAttachment(that.context, reader, fileExtension, file.size, updateProgressBar).thenApply(function(uuid) {
                     var thumbnailAllocation = Math.min(100000, file.size / 10);
                     updateProgressBar({ value_0: thumbnailAllocation});
                     future.complete(uuid);

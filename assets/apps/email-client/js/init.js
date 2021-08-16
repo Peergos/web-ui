@@ -1089,7 +1089,7 @@ function respondToConfirmAction(action, response) {
 function replyTo(email) {
     composeEmail([email.from], email.cc, [], email, null);
     document.getElementById("to").value = email.from;
-    document.getElementById("subject").value = "Re:" + email.subject;
+    document.getElementById("subject").value = "Re: " + email.subject;
     //document.getElementById("message").value = email.content;
 }
 function replyToAll(email) {
