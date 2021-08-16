@@ -8,7 +8,7 @@
 				small
 				@click="toggleSidebar"
 			>
-				<AppIcon :icon="isOpen ? 'chevron-left' : 'chevron-right'"/>
+				<AppIcon icon="chevron-down" :class="{active : isOpen}"/>
 			</AppButton>
 
 			<h2>My files</h2>
@@ -30,7 +30,7 @@
 
 			<AppDropdown
 				v-if="isWritable"
-				icon="add"
+				icon="plus"
 				aria-label="Upload"
 			>
 				<ul>
@@ -107,6 +107,12 @@ module.exports = {
 .drive-header .toggle-button svg {
 	width: 100%;
 	height: 100%;
+	transform: rotate(-90deg);
+	transition: transform 0.5s;
+
+}
+.drive-header .toggle-button svg.active {
+	transform: rotate(90deg);
 }
 
 </style>
