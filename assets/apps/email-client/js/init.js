@@ -263,16 +263,18 @@ function updateEmailTotals() {
     unreadEmails = 0;
     starredEmails = 0;
     let inboxEmails = folderEmails.get('inbox');
-    inboxEmails.forEach(email => {
-        if (email.unread) {
-            unreadEmails++;
-        }
-    });
-    inboxEmails.forEach(email => {
-        if (email.star) {
-            starredEmails++;
-        }
-    });
+    if (inboxEmails != null) {
+        inboxEmails.forEach(email => {
+            if (email.unread) {
+                unreadEmails++;
+            }
+        });
+        inboxEmails.forEach(email => {
+            if (email.star) {
+                starredEmails++;
+            }
+        });
+    }
     updateValue("unreadEmailsTotal", unreadEmails);
     updateValue("starredEmailsTotal", starredEmails);
 }
@@ -1234,7 +1236,7 @@ function loadFolder(folderName, isResponse) {
     resetSearch();
     currentFolder = folderName;
     updateEmailTotals();
-    if (!isResponse && folderName == 'sent') {
+    if (!isResponse && (folderName == 'sent' || folderName == 'inbox')) {
         requestLoadFolder(folderName);
     } else if(isFolderLoaded(folderName)) {
 

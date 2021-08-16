@@ -82,7 +82,7 @@ module.exports = {
                     }
                 }
                 if (! valid) {
-                    that.showMessage("Invalid Username:" + bridgeUsername);
+                    that.showMessage("Username does not exist:" + bridgeUsername);
                     that.close();
                 } else {
                     that.displaySpinner("Creating email directories");
@@ -137,7 +137,13 @@ module.exports = {
                     } else if(e.data.action=="requestDeleteEmail") {
                         that.requestDeleteEmail(email, e.data.data, e.data.folder);
                     } else if(e.data.action=="requestLoadFolder") {
-                        that.requestLoadFolder(email, e.data.folderName);
+                        if(e.data.folderName == "inbox") {
+                            that.requestRefreshInbox(email, emailClient);
+                        } else if(e.data.folderName == "sent") {
+                            that.requestRefreshSent(email, emailClient);
+                        } else {
+                            that.requestLoadFolder(email, e.data.folderName);
+                        }
                     } else if(e.data.action=="requestNewFolder") {
                         that.requestNewFolder(email);
                     } else if(e.data.action=="requestDeleteFolder") {
