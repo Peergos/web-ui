@@ -21,7 +21,6 @@ module.exports = {
             confirm_consumer_cancel_func: () => {},
             confirm_consumer_func: () => {},
             messageToTimestamp: new Map(),
-            progressMonitors: [],
             directoryPrefix: 'default'
         }
     },
@@ -35,7 +34,7 @@ module.exports = {
                     that.askForEmailBridgeUser(emailApp);
                 } else {
                     peergos.shared.email.EmailClient.load(emailApp, that.context.crypto, that.context).thenApply(emailClient => {
-                        emailClient.getEmailAddress(that.context).thenApply(emailAddress => {
+                        emailClient.getEmailAddress().thenApply(emailAddress => {
                             if (emailAddress.ref == null) {
                                 that.showMessage("Awaiting approval from Email Administrator");
                                 that.close();
@@ -538,7 +537,7 @@ module.exports = {
             this.prompt_placeholder = 'New Folder name';
             this.prompt_value = "";
             this.prompt_message = 'Enter a new folder name';
-            this.prompt_max_input_size = 8;
+            this.prompt_max_input_size = 10;
             this.prompt_consumer_func = function(prompt_result) {
                 if (prompt_result === null)
                     return;
@@ -768,80 +767,47 @@ module.exports = {
                 return;
             }
             let future = peergos.shared.util.Futures.incomplete();
-            let progressBars = [];
-            for(var i=0; i < data.attachments.length; i++) {
-                let attachment = data.attachments[i];
-                var thumbnailAllocation = Math.min(100000, attachment.size / 10);
-                var resultingSize = attachment.size + thumbnailAllocation;
-                var progress = {
-                    show:true,
-                    title:"Encrypting and uploading " + attachment.filename,
-                    done:0,
-                    max:resultingSize
-                };
-                this.progressMonitors.push(progress);
-                progressBars.push(progress);
-            }
-            this.reduceUploadAllAttachments(emailClient, 0, data.attachments, progressBars, future);
+            this.reduceUploadAllAttachments(emailClient, 0, data.attachments, future);
             let future2 = peergos.shared.util.Futures.incomplete();
             future.thenApply(done => {
                 future2.complete(true);
             });
             return future2;
         },
-        reduceUploadAllAttachments: function(emailClient, index, files, progressBars, future) {
+        reduceUploadAllAttachments: function(emailClient, index, files, future) {
             let that = this;
             if (index == files.length) {
                 future.complete(true);
             } else {
                 let attachment = files[index];
-                let progress = progressBars[index];
-                this.uploadAttachment(emailClient, attachment, progress).thenApply(function(res){
+                this.uploadAttachment(emailClient, attachment).thenApply(function(res){
                     if (res) {
-                        that.reduceUploadAllAttachments(emailClient, ++index, files, progressBars, future);
+                        that.reduceUploadAllAttachments(emailClient, ++index, files, future);
                     } else {
                         future.complete(false);
                     }
                 });
             }
         },
-        uploadAttachment: function(emailClient, attachment, progress) {
+        uploadAttachment: function(emailClient, attachment) {
             let future = peergos.shared.util.Futures.incomplete();
             let that = this;
-            let updateProgressBar = function(len){
-                progress.done += len.value_0;
-                if (progress.done >= progress.max) {
-                    progress.show = false;
-                }
-            };
-            this.uploadFile(emailClient, attachment, updateProgressBar).thenApply(function(result) {
+            this.uploadFile(emailClient, attachment).thenApply(function(result) {
                 if (result == null) {
                     future.complete(false);
                 } else {
                     attachment.uuid = result;
                     attachment.data = null;
-                    let idx = that.progressMonitors.indexOf(progress);
-                    if(idx >= 0) {
-                        that.progressMonitors.splice(idx, 1);
-                    }
                     future.complete(true);
                 }
             });
             return future;
         },
-        uploadFile: function(emailClient, file, updateProgressBar) {
+        uploadFile: function(emailClient, file) {
             let that = this;
             let future = peergos.shared.util.Futures.incomplete();
             var data = convertToByteArray(file.data);
-            let reader = new peergos.shared.user.fs.AsyncReader.ArrayBacked(data);
-            let fileExtension = "";
-            let dotIndex = file.filename.lastIndexOf('.');
-            if (dotIndex > -1 && dotIndex <= file.filename.length -1) {
-                fileExtension = file.filename.substring(dotIndex + 1);
-            }
-            emailClient.uploadAttachment(that.context, reader, fileExtension, file.size, updateProgressBar).thenApply(function(uuid) {
-                    var thumbnailAllocation = Math.min(100000, file.size / 10);
-                    updateProgressBar({ value_0: thumbnailAllocation});
+            emailClient.uploadAttachment(data).thenApply(function(uuid) {
                     future.complete(uuid);
             }).exceptionally(err => {
                 that.showMessage("unable to upload file:" + file.filename);
