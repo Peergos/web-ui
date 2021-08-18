@@ -20,7 +20,7 @@ let handler = function (e) {
     } else if (e.data.type == "respondToSendEmail") {
         respondToSendEmail();
     } else if (e.data.type == "respondToLoadFolder") {
-        respondToLoadFolder(e.data.data, e.data.folderName);
+        respondToLoadFolder(e.data.data, e.data.folderName, e.data.filterStarredEmails);
     } else if (e.data.type == "respondToMoveEmail") {
         respondToMoveEmail(e.data.data, e.data.toFolder);
     } else if (e.data.type == "respondToMoveEmails") {
@@ -158,6 +158,11 @@ addGotoSpamButton.onclick=function(e) {
 let addGotoArchiveButton = document.getElementById('gotoArchiveButton');
 addGotoArchiveButton.onclick=function(e) {
     gotoArchive();
+};
+
+let addGotoStarredButton = document.getElementById('gotoStarredButton');
+addGotoStarredButton.onclick=function(e) {
+    gotoStarredFolder();
 };
 
 let addRefreshInboxButton = document.getElementById('refreshInboxButton');
@@ -332,7 +337,7 @@ function filterEmails() {
         }
     });
     filteredEmails = newFilteredEmails;
-    addEmailsToUI();
+    addEmailsToUI(false);
 }
 function truncateText(origText, size, lines) {
     let multipleLines = origText.split("\n");
@@ -456,10 +461,11 @@ function addFoldersToNavBar() {
 function fromList(array) {
     return array.join(", ");
 }
-function addEmailsToUI() {
+function addEmailsToUI(filterStarredEmails) {
     addUserFoldersToDropdown(false);
     let messageList = document.getElementById("messages");
     messageList.replaceChildren();
+    filteredEmails = filterStarredEmails ? filteredEmails.filter(email => email.star) : filteredEmails;
     filteredEmails.forEach(email => {
         var item = document.createElement("li");
         let itemClassNames = email.unread ? 'message unread' : 'message';
@@ -737,7 +743,7 @@ function search() {
     searchText = document.getElementById("searchText").value.trim().toLowerCase();
     if (searchText.length == 0) {
         filteredEmails = folderEmails.get(currentFolder);
-        addEmailsToUI();
+        addEmailsToUI(false);
     } else {
         filterEmails();
     }
@@ -1219,25 +1225,27 @@ function extractUniqueEmailAddresses(emails) {
     });
 }
 
-function respondToLoadFolder(emails, folderName) {
+function respondToLoadFolder(emails, folderName, filterStarredEmails) {
     extractUniqueEmailAddresses(emails);
     folderEmails.set(folderName, emails);
     setFolderLoaded(folderName);
-    loadFolder(folderName, true);
+    loadFolderInternal(folderName, true, filterStarredEmails);
     if (folderName == 'inbox') {
         if (icalText.length > 0) {
             composeEmail([], [], [], null, null);
         }
     }
 }
-
-function loadFolder(folderName, isResponse) {
+function loadFolder(folderName) {
+    loadFolderInternal(folderName, false, false);
+}
+function loadFolderInternal(folderName, isResponse, filterStarredEmails) {
     currentEmail = null;
     resetSearch();
     currentFolder = folderName;
     updateEmailTotals();
     if (!isResponse && (folderName == 'sent' || folderName == 'inbox')) {
-        requestLoadFolder(folderName);
+        requestLoadFolder(folderName, filterStarredEmails);
     } else if(isFolderLoaded(folderName)) {
 
         let emailList = document.getElementById("email-list");
@@ -1256,7 +1264,7 @@ function loadFolder(folderName, isResponse) {
         scrollAnchor.click();
 
         let folderNameElement = document.getElementById("currentFolderId");
-        folderNameElement.innerText = capitalise(folderName);
+        folderNameElement.innerText = filterStarredEmails ? 'Starred' : capitalise(folderName);
         let refreshButtonElement = document.getElementById("refreshButtonId");
         let toolbarInboxElement = document.getElementById("toolbarInboxId");
         if (folderName == 'inbox' || folderName == 'sent') {
@@ -1282,13 +1290,13 @@ function loadFolder(folderName, isResponse) {
         }
 
         filteredEmails = folderEmails.get(folderName);
-        addEmailsToUI();
+        addEmailsToUI(filterStarredEmails);
     } else {
-        requestLoadFolder(folderName);
+        requestLoadFolder(folderName, filterStarredEmails);
     }
 }
-function requestLoadFolder(folderName) {
-  mainWindow.postMessage({action: "requestLoadFolder", folderName: folderName}, origin);
+function requestLoadFolder(folderName, filterStarredEmails) {
+  mainWindow.postMessage({action: "requestLoadFolder", folderName: folderName, filterStarredEmails: filterStarredEmails}, origin);
 }
 
 function requestShowMessage(message) {
@@ -1309,6 +1317,10 @@ function gotoTrash() {
 
 function gotoSpam() {
     loadFolder('spam');
+}
+
+function gotoStarredFolder() {
+    loadFolderInternal('inbox', false, true);
 }
 
 function gotoArchive() {

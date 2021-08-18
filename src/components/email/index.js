@@ -138,11 +138,11 @@ module.exports = {
                         that.requestDeleteEmail(email, e.data.data, e.data.folder);
                     } else if(e.data.action=="requestLoadFolder") {
                         if(e.data.folderName == "inbox") {
-                            that.requestRefreshInbox(email, emailClient);
+                            that.requestRefreshInbox(email, emailClient, e.data.filterStarredEmails);
                         } else if(e.data.folderName == "sent") {
-                            that.requestRefreshSent(email, emailClient);
+                            that.requestRefreshSent(email, emailClient, e.data.filterStarredEmails);
                         } else {
-                            that.requestLoadFolder(email, e.data.folderName);
+                            that.requestLoadFolder(email, e.data.folderName, e.data.filterStarredEmails);
                         }
                     } else if(e.data.action=="requestNewFolder") {
                         that.requestNewFolder(email);
@@ -159,9 +159,9 @@ module.exports = {
                     } else if(e.data.action=="requestImportCalendarEvent") {
                         that.requestImportCalendarEvent(e.data.icalEvent);
                     } else if(e.data.action=="requestRefreshInbox") {
-                        that.requestRefreshInbox(email, emailClient);
+                        that.requestRefreshInbox(email, emailClient, false);
                     } else if(e.data.action=="requestRefreshSent") {
-                        that.requestRefreshSent(email, emailClient);
+                        that.requestRefreshSent(email, emailClient, false);
                     }
                 }
             });
@@ -526,14 +526,14 @@ module.exports = {
             });
             that.removeSpinner();
         },
-        requestLoadFolder: function(email, folderName) {
+        requestLoadFolder: function(email, folderName, filterStarredEmails) {
             let that = this;
             this.displaySpinner();
             let fullFolderPath = this.directoryPrefix + '/' + folderName;
             let directoryPath = peergos.client.PathUtils.directoryToPath(fullFolderPath.split('/'));
             email.dirInternal(directoryPath, this.context.username).thenApply(filenames => {
                 that.loadEmails(email, fullFolderPath, filenames.toArray()).thenApply(results => {
-                    that.postMessage({type: 'respondToLoadFolder', data: results, folderName: folderName});
+                    that.postMessage({type: 'respondToLoadFolder', data: results, folderName: folderName, filterStarredEmails: filterStarredEmails});
                     that.removeSpinner();
                 });
             });
@@ -657,7 +657,7 @@ module.exports = {
                 that.importCalendarEvent(icalEvent, that.context.username, false, true);
             });
         },
-        requestRefreshSent: function(emailApp, emailClient) {
+        requestRefreshSent: function(emailApp, emailClient, filterStarredEmails) {
             let that = this;
             this.displaySpinner();
             emailClient.getNewSent().thenApply(emails => {
@@ -666,7 +666,7 @@ module.exports = {
                 that.reduceMovingEmailsToSentFolder(emailClient, emailsToRead, 0, future);
                 future.thenApply(done => {
                     that.removeSpinner();
-                    that.requestLoadFolder(emailApp, 'sent');
+                    that.requestLoadFolder(emailApp, 'sent', filterStarredEmails);
                 });
             });
         },
@@ -680,7 +680,7 @@ module.exports = {
                 });
             }
         },
-        requestRefreshInbox: function(emailApp, emailClient) {
+        requestRefreshInbox: function(emailApp, emailClient, filterStarredEmails) {
             let that = this;
             this.displaySpinner();
             emailClient.getNewIncoming().thenApply(emails => {
@@ -689,7 +689,7 @@ module.exports = {
                 that.reduceMovingEmailsToInboxFolder(emailClient, emailsToRead, 0, future);
                 future.thenApply(done => {
                     that.removeSpinner();
-                    that.requestLoadFolder(emailApp, 'inbox');
+                    that.requestLoadFolder(emailApp, 'inbox', filterStarredEmails);
                 });
             });
         },
