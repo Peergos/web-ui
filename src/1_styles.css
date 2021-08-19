@@ -46,6 +46,54 @@ h1, h2, h3{
 }
 
 
+
+/* Forms */
+
+input[type=text] {
+	width:100%;
+	margin: 8px 0;
+	padding: 0 16px;
+
+	font-size: var(--text);
+	/* text-transform: lowercase; */
+	line-height: 48px;
+	border-radius: 4px;
+
+	-webkit-appearance:none;
+    -moz-appearance:none;
+    appearance: none;
+
+	outline: none;
+	box-shadow: none;
+
+	border: 2px solid var(--green-500);
+	color: var(--color);
+    background-color: var(--bg);
+}
+input:focus,
+input:active,
+input:focus-visible{
+	outline:none;
+	border: 2px solid var(--green-500)!important;
+}
+/* TODO: quick reset, we shopuld properly remove other styles */
+input:-webkit-autofill,
+input:-webkit-autofill:hover,
+input:-webkit-autofill:focus,
+input:-webkit-autofill:active,
+input:focus,
+input:active,
+input:focus-visible{
+	color:var(--color);
+	font-size: var(--text);
+	box-shadow:none;
+	-webkit-text-fill-color: var(--color);
+	-webkit-box-shadow:0 0 0 30px var(--bg-2) inset;
+	border-color: var(--bg-2);
+}
+
+
+
 /* Fade transition  */
 
 .fade-enter-active, .fade-leave-active {

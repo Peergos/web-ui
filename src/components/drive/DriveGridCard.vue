@@ -7,7 +7,7 @@
 			class="background"
 		/>
 		<AppIcon v-else :icon="extension" />
-		<figcaption>{{ filename }}</figcaption>
+		<figcaption> {{ filename }}</figcaption>
 	</figure>
 </template>
 
@@ -17,10 +17,12 @@ module.exports = {
 		filename: {
 			type: String,
 			default: "",
+			required:true
 		},
 		src: {
 			type: String,
 			default: "",
+			required:true
 		},
 		alt: {
 			type: String,
@@ -41,15 +43,16 @@ module.exports = {
 <style>
 .grid-card {
 	position: relative;
+	display: flex;
+	align-items: center;
+	justify-content: center;
 
 	height: 220px;
 	border-radius: 6px;
 	overflow: hidden;
 	background-color: var(--bg-2);
 
-	display: flex;
-	align-items: center;
-	justify-content: center;
+
 
 	cursor: pointer;
 }
@@ -61,9 +64,13 @@ module.exports = {
 }
 
 .grid-card .background {
-	width: 100%;
-	height: 100%;
-	object-fit: cover;
+	position: absolute;
+	top: 0;
+	left: 0;
+	right:0;
+	bottom:0;
+	width:100%;
+	object-fit: contain;
 	transform: scale(1);
 	transition: transform 0.3s;
 }
@@ -83,6 +90,6 @@ module.exports = {
 
 .grid-card:hover .background,
 .grid-card:hover svg {
-	transform: scale(1.1);
+	transform: scale(1.05);
 }
 </style>

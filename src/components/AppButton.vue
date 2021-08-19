@@ -124,15 +124,12 @@ module.exports = {
 	padding: 0;
 }
 
-.app-button.large {
-	padding: 16px;
-}
 
 /* Types */
 
 .app-button.primary {
-	width:100%;
 	line-height: 32px;
+	padding: 8px 16px;
 	background-color: var(--green-500);
 	text-align: center;
 	color: var(--bg);

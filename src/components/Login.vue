@@ -12,7 +12,7 @@
 
 		<FormPassword v-model="password" @keyup.native.enter="login()"/>
 
-		<AppButton class="login" @click="login()" type="primary" :icon="true">
+		<AppButton class="login" @click="login()" type="primary" block :icon="true">
 			Sign in
 			<AppIcon :width="24" :height="24" icon="arrow-right"/>
 		</AppButton>
@@ -49,7 +49,7 @@ module.exports = {
 		loginDEV() {
 			// bypass login on DEV
 			if( window.location.hostname == "localhost"){
-				this.username = 'manuelehrenfeld'
+				this.username = 'peergos'
 				this.password = 'testpassword'
 				this.login()
 			}
@@ -97,52 +97,7 @@ module.exports = {
 }
 
 .login-register .login{
-	line-height: 48px;
 	margin-top: 8px;
-}
-
-.login-register input[type=text],
-.login-register input[type=password] {
-	width:100%;
-	margin: 8px 0;
-	padding: 0 16px;
-
-	font-size: var(--text);
-	/* text-transform: lowercase; */
-	line-height: 48px;
-	border-radius: 4px;
-
-	-webkit-appearance:none;
-    -moz-appearance:none;
-    appearance: none;
-
-	outline: none;
-	box-shadow: none;
-
-	border: 2px solid var(--green-500);
-	color: var(--color);
-    background-color: var(--bg) ;
-}
-.login-register input:focus,
-.login-register input:active,
-.login-register input:focus-visible{
-	outline:none;
-	border: 2px solid var(--green-500)!important;
-}
-/* TODO: quick reset, we shopuld properly remove other styles */
-.login-register input:-webkit-autofill,
-.login-register input:-webkit-autofill:hover,
-.login-register input:-webkit-autofill:focus,
-.login-register input:-webkit-autofill:active,
-.login-register input:focus,
-.login-register input:active,
-.login-register input:focus-visible{
-	color:var(--color);
-	font-size: var(--text);
-	box-shadow:none;
-	-webkit-text-fill-color: var(--color);
-	-webkit-box-shadow:0 0 0 30px var(--bg-2) inset;
-	border-color: var(--bg-2);
 }
 
 .login-register input[name="username"]{

@@ -35,8 +35,8 @@
 			>
 				<ul>
 					<li @click="$emit('askForFiles')">upload file</li>
-					<li @click="$emit('askForDirectories')">upload directory</li>
-					<li @click="$emit('askMkdir')">create new folder</li>
+					<li @click="$emit('askForDirectories')">Upload directory</li>
+					<li @click="$emit('askMkdir')">Add folder</li>
 				</ul>
 			</AppDropdown>
 

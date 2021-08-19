@@ -1,9 +1,9 @@
 <template>
 	<transition name="modal" appear>
-		<div v-if="showModal" class="app-modal app-modal__overlay" @click="closeModalOverlay($event)">
+		<div v-if="showModal" class="app-modal app-modal__overlay" @click="closeModal()">
 
 			<transition name="modal-content" appear>
-				<div v-if="showModal" class="app-modal__container">
+				<div v-if="showModal" class="app-modal__container" @click.stop>
 					<AppButton class="close" @click="closeModal()">
 						<AppIcon icon="close" />
 					</AppButton>
@@ -26,11 +26,6 @@ module.exports = {
         }
 	},
 	methods: {
-		closeModalOverlay(e) {
-			if(e.target.classList.contains('app-modal')){
-				this.$store.commit("SET_MODAL", false);
-			}
-		},
 		closeModal() {
 			this.$store.commit("SET_MODAL", false);
 		}

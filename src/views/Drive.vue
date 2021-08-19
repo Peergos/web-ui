@@ -74,6 +74,19 @@
 			/>
 		</div>
 
+
+
+		<AppPrompt
+			v-if="showPrompt"
+			v-on:hide-prompt="closePrompt"
+			:prompt_message='prompt_message'
+			:placeholder="prompt_placeholder"
+			:max_input_size="prompt_max_input_size"
+			:value="prompt_value"
+			:consumer_func="prompt_consumer_func"
+		>
+		</AppPrompt>
+
 		<spinner v-if="showSpinner" :message="spinnerMessage"></spinner>
 
 
@@ -83,7 +96,7 @@
 			<div>
 
 				<DriveGrid v-if="isGrid">
-					<DriveGridCard v-for="(file, index) in sortedFiles" :key="file.getFileProperties().name" :filename="file.getFileProperties().name" :src="getThumbnailURL(file)" />
+					<DriveGridCard v-for="(file, index) in sortedFiles" :key="file.getFileProperties().name" :filename="file.getFileProperties().name" :src="getThumbnailURL(file)" :extension=" file.getFileProperties().getType()"/>
 				</DriveGrid>
 
 
@@ -150,13 +163,16 @@ const DriveHeader = require("../components/drive/DriveHeader.vue");
 const DriveGrid = require("../components/drive/DriveGrid.vue");
 const DriveGridCard = require("../components/drive/DriveGridCard.vue");
 
+const AppPrompt = require("../components/prompt/AppPrompt.vue");
+
 const mixins = require("../mixins/downloader/index.js");
 
 module.exports = {
 	components: {
 		DriveHeader,
 		DriveGrid,
-		DriveGridCard
+		DriveGridCard,
+		AppPrompt
 	},
 	data() {
 		return {
@@ -497,6 +513,10 @@ module.exports = {
 
 
 	methods: {
+		...Vuex.mapActions([
+			'updateQuota',
+			'updateUsage'
+		]),
 
 		init() {
 			const that = this;
@@ -696,26 +716,6 @@ module.exports = {
 				this.onUpdateCompletion[i].call();
 			}
 			this.onUpdateCompletion = [];
-		},
-
-
-		updateUsage() {
-			if (this.isSecretLink)
-				return;
-
-			this.getContext().getSpaceUsage().thenApply(u => {
-				console.log(u);
-				this.$store.commit("SET_USAGE", u);
-			});
-		},
-
-		updateQuota() {
-			if (this.isSecretLink)
-				return;
-			return this.getContext().getQuota().thenApply(q => {
-				this.$store.commit("SET_QUOTA", q);
-				return q;
-			});
 		},
 
 		updateHistory(app, path, filename) {
@@ -1017,7 +1017,7 @@ module.exports = {
 
 		askMkdir() {
 			this.prompt_placeholder = 'Folder name';
-			this.prompt_message = 'Enter a new folder name';
+			this.prompt_message = 'Create folder';
 			this.prompt_value = '';
 			this.prompt_consumer_func = function (prompt_result) {
 				if (prompt_result === null)
@@ -1031,6 +1031,7 @@ module.exports = {
 			}.bind(this);
 			this.showPrompt = true;
 		},
+
 		confirmDelete(file, deleteFn) {
 			var extra = file.isDirectory() ? " and all its contents" : "";
 			this.warning_message = 'Are you sure you want to delete ' + file.getName() + extra + '?';
@@ -1107,9 +1108,12 @@ module.exports = {
 					});
 					that.updateUsage();
 				}.bind(this)).exceptionally(function (throwable) {
-					that.errorTitle = 'Error creating directory: ' + name;
-					that.errorBody = throwable.getMessage();
-					that.showError = true;
+
+					that.$toast.error(throwable.getMessage(), {timeout:false, id: 'mkdir'})
+
+					// that.errorTitle = 'Error creating directory: ' + name;
+					// that.errorBody = throwable.getMessage();
+					// that.showError = true;
 					that.showSpinner = false;
 					that.updateUsage();
 				});

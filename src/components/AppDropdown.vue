@@ -8,7 +8,7 @@
 			<AppIcon :icon="icon" />
 		</AppButton>
 		<transition name="drop">
-			<div v-if="isActive" class="dropdown__content" >
+			<div v-if="isActive" class="dropdown__content" @click="toggleDropdown()">
 				<slot />
 			</div>
 		</transition>
