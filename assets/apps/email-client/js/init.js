@@ -13,8 +13,9 @@ let handler = function (e) {
 
     mainWindow = e.source;
     origin = e.origin;
-
-    if (e.data.type == "load") {
+    if (e.data.type == "ping") {
+	    mainWindow.postMessage({action:'pong'}, e.origin);
+    } else if (e.data.type == "load") {
         load(e.data.userFolders, e.data.username, e.data.emailAddress
             , e.data.icalEventTitle, e.data.icalEvent);
     } else if (e.data.type == "respondToSendEmail") {

@@ -21,7 +21,8 @@ module.exports = {
             confirm_consumer_cancel_func: () => {},
             confirm_consumer_func: () => {},
             messageToTimestamp: new Map(),
-            directoryPrefix: 'default'
+            directoryPrefix: 'default',
+            isIframeInitialised: false
         }
     },
     props: ['context', 'messages', 'importCalendarEvent', 'icalEventTitle', 'icalEvent', 'checkAvailableSpace', 'friendnames'],
@@ -120,7 +121,9 @@ module.exports = {
                 // have to be careful about accepting data via the messaging API you
                 // create. Check that source, and validate those inputs!
                 if ((e.origin === "null" || e.origin === that.frameDomain()) && e.source === iframe.contentWindow) {
-                    if(e.data.type=="displaySpinner") {
+                    if (e.data.action == 'pong') {
+                        that.isIframeInitialised = true;
+                    } else if(e.data.type=="displaySpinner") {
                         that.displaySpinner();
                     } else if(e.data.type=="removeSpinner") {
                         that.removeSpinner();
@@ -169,13 +172,23 @@ module.exports = {
             // origin. Sandboxed iframes which lack the 'allow-same-origin' header
             // don't have an origin which you can target: you'll have to send to any
             // origin, which might alow some esoteric attacks. Validate your output!
-            this.load(email, emailAddress);
+            let func = function() {
+                that.load(email, emailAddress);
+            };
+            that.setupIFrameMessaging(iframe, func);
+        },
+        setupIFrameMessaging: function(iframe, func) {
+            if (this.isIframeInitialised) {
+                func();
+            } else {
+                iframe.contentWindow.postMessage({type: 'ping'}, '*');
+                let that = this;
+                window.setTimeout(function() {that.setupIFrameMessaging(iframe, func);}, 20);
+            }
         },
         postMessage: function(obj) {
-            Vue.nextTick(function() {
-                var iframe = document.getElementById("email-client");
-                iframe.contentWindow.postMessage(obj, '*');
-            });
+            var iframe = document.getElementById("email-client");
+            iframe.contentWindow.postMessage(obj, '*');
         },
         reduceDeletingEmails: function(email, data, folder, index, future) {
             let that = this;
