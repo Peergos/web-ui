@@ -14,7 +14,7 @@ module.exports = {
 .drive-grid {
 	display: grid;
 	grid-gap: 32px;
-	grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+	grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
 
 	width: 100%;
 	padding: 0 var(--app-margin);

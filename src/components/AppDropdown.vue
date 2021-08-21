@@ -2,10 +2,12 @@
 <template>
 	<div class="app-dropdown upload">
 		<AppButton
-			type="primary"
+			:type="type"
+			:accent="accent"
+			:area-expanded="isActive"
+			:icon="icon"
 			@click="toggleDropdown()"
 		>
-			<AppIcon :icon="icon" />
 		</AppButton>
 		<transition name="drop">
 			<div v-if="isActive" class="dropdown__content" @click="toggleDropdown()">
@@ -22,6 +24,14 @@ module.exports = {
 			type: String,
 			default: "",
 		},
+		type: {
+			type: String,
+			default: "",
+		},
+		accent:{
+			type: Boolean,
+			default:false,
+		}
 	},
 	data() {
 		return {
@@ -40,7 +50,6 @@ module.exports = {
 <style>
 .app-dropdown {
 	position: relative;
-	background-color: var(--green-500);
 	z-index:100;
 	line-height: 32px;
 	border-radius: 4px;

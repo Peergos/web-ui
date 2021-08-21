@@ -14,26 +14,23 @@
 			@askMkdir="askMkdir()"
 		/>
 
-
-
 		<a id="downloadAnchor" style="display:none"></a>
-
 
 		<div v-if="viewMenu && (isNotHome || isPasteAvailable || isNotBackground)">
 			<nav>
-			<ul id="right-click-menu" tabindex="-1" v-if="viewMenu && (isNotHome || isPasteAvailable || isNotBackground)" @blur="closeMenu" v-bind:style="{top:top, left:left}">
-			<li id='gallery' class="context-menu-item" @keyup.enter="gallery" v-if="canOpen" @click="gallery">View</li>
-			<li id='create-file' class="context-menu-item" @keyup.enter="createTextFile" v-if="!isNotBackground" @click="createTextFile">Create Text file</li>
-			<li id='open-file' class="context-menu-item" @keyup.enter="downloadAll" v-if="canOpen" @click="downloadAll">Download</li>
-			<li id='rename-file' class="context-menu-item" @keyup.enter="rename" v-if="isNotBackground && isWritable" @click="rename">Rename</li>
-			<li id='delete-file' class="context-menu-item" @keyup.enter="deleteFiles" v-if="isNotBackground && isWritable" @click="deleteFiles">Delete</li>
-			<li id='copy-file' class="context-menu-item" @keyup.enter="copy" v-if="isNotBackground && isWritable" @click="copy">Copy</li>
-			<li id='cut-file' class="context-menu-item" @keyup.enter="cut" v-if="isNotBackground && isWritable" @click="cut">Cut</li>
-			<li id='paste-file' class="context-menu-item" @keyup.enter="paste" v-if="isPasteAvailable" @click="paste">Paste</li>
-			<li id='share-file' class="context-menu-item" @keyup.enter="showShareWith" v-if="(isNotHome || isNotBackground) && isLoggedIn" @click="showShareWith">Share</li>
-			<li id='file-search' class="context-menu-item" @keyup.enter="openSearch(false)" v-if="isSearchable" @click="openSearch(false)">Search...</li>
-			<li id='close-context-menu-item' class="context-menu-item hidden-context-menu-item" @keyup.enter="closeMenu" @click="closeMenu">Close</li>
-			</ul>
+				<ul id="right-click-menu" tabindex="-1" v-if="viewMenu && (isNotHome || isPasteAvailable || isNotBackground)" @blur="closeMenu" v-bind:style="{top:top, left:left}">
+					<li id='gallery' class="context-menu-item" @keyup.enter="gallery" v-if="canOpen" @click="gallery">View</li>
+					<li id='create-file' class="context-menu-item" @keyup.enter="createTextFile" v-if="!isNotBackground" @click="createTextFile">Create Text file</li>
+					<li id='open-file' class="context-menu-item" @keyup.enter="downloadAll" v-if="canOpen" @click="downloadAll">Download</li>
+					<li id='rename-file' class="context-menu-item" @keyup.enter="rename" v-if="isNotBackground && isWritable" @click="rename">Rename</li>
+					<li id='delete-file' class="context-menu-item" @keyup.enter="deleteFiles" v-if="isNotBackground && isWritable" @click="deleteFiles">Delete</li>
+					<li id='copy-file' class="context-menu-item" @keyup.enter="copy" v-if="isNotBackground && isWritable" @click="copy">Copy</li>
+					<li id='cut-file' class="context-menu-item" @keyup.enter="cut" v-if="isNotBackground && isWritable" @click="cut">Cut</li>
+					<li id='paste-file' class="context-menu-item" @keyup.enter="paste" v-if="isPasteAvailable" @click="paste">Paste</li>
+					<li id='share-file' class="context-menu-item" @keyup.enter="showShareWith" v-if="(isNotHome || isNotBackground) && isLoggedIn" @click="showShareWith">Share</li>
+					<li id='file-search' class="context-menu-item" @keyup.enter="openSearch(false)" v-if="isSearchable" @click="openSearch(false)">Search...</li>
+					<li id='close-context-menu-item' class="context-menu-item hidden-context-menu-item" @keyup.enter="closeMenu" @click="closeMenu">Close</li>
+				</ul>
 			</nav>
 		</div>
 
@@ -75,10 +72,9 @@
 		</div>
 
 
-
 		<AppPrompt
 			v-if="showPrompt"
-			v-on:hide-prompt="closePrompt"
+			@hide-prompt="closePrompt()"
 			:prompt_message='prompt_message'
 			:placeholder="prompt_placeholder"
 			:max_input_size="prompt_max_input_size"
@@ -92,58 +88,66 @@
 
 
 
-		<div  id="dnd" @drop="dndDrop($event)" @dragover.prevent v-bind:class="{ fillspace: true, not_owner: isNotMe }" @contextmenu="openMenu($event)">
-			<div>
+		<div id="dnd"
+			@drop="dndDrop($event)"
+			@dragover.prevent
+			:class="{ not_owner: isNotMe }"
+			@contextmenu="openMenu($event)"
+		>
 
-				<DriveGrid v-if="isGrid">
-					<DriveGridCard v-for="(file, index) in sortedFiles" :key="file.getFileProperties().name" :filename="file.getFileProperties().name" :src="getThumbnailURL(file)" :extension=" file.getFileProperties().getType()"/>
-				</DriveGrid>
+			<DriveGrid v-if="isGrid">
+				<DriveGridCard v-for="(file, index) in sortedFiles"
+					:key="file.getFileProperties().name"
+					:filename="file.getFileProperties().name"
+					:src="getThumbnailURL(file)"
+					:type="file.getFileProperties().getType()"
+					@click="navigateOrMenuTab($event, file, true)"
+				/>
+			</DriveGrid>
 
 
-				<!-- <div class="grid" v-if="isGrid">
+			<!-- <div class="grid" v-if="isGrid">
 
-					<span class="column grid-item" v-for="(file, index) in sortedFiles" @keyup.enter="navigateOrMenuTab($event, file, true)">
-						<span class="grid_icon_wrapper fa" :id="index" draggable="true" @dragover.prevent @dragstart="dragStart($event, file)" @drop="drop($event, file)">
-							<a class="picon" v-bind:id="file.getFileProperties().name" @contextmenu="openMenu($event, file)">
-								<span v-if="!file.getFileProperties().thumbnail.isPresent()" @click="navigateOrMenu($event, file)" @contextmenu="openMenu($event, file)" v-bind:class="[getFileClass(file), getFileIcon(file), 'picon']"> </span>
-								<img id="thumbnail" v-if="file.getFileProperties().thumbnail.isPresent()" @click="navigateOrMenu($event, file)" @contextmenu="openMenu($event, file)" v-bind:src="getThumbnailURL(file)"/>
-							</a>
-							<div class="content filename" >
-								<div v-bind:class="{ noselect: true, shared: isShared(file) }">{{ file.getFileProperties().name }}</div>
-							</div>
-						</span>
+				<span class="column grid-item" v-for="(file, index) in sortedFiles" @keyup.enter="navigateOrMenuTab($event, file, true)">
+					<span class="grid_icon_wrapper fa" :id="index" draggable="true" @dragover.prevent @dragstart="dragStart($event, file)" @drop="drop($event, file)">
+						<a class="picon" v-bind:id="file.getFileProperties().name" @contextmenu="openMenu($event, file)">
+							<span v-if="!file.getFileProperties().thumbnail.isPresent()" @click="navigateOrMenu($event, file)" @contextmenu="openMenu($event, file)" v-bind:class="[getFileClass(file), getFileIcon(file), 'picon']"> </span>
+							<img id="thumbnail" v-if="file.getFileProperties().thumbnail.isPresent()" @click="navigateOrMenu($event, file)" @contextmenu="openMenu($event, file)" v-bind:src="getThumbnailURL(file)"/>
+						</a>
+						<div class="content filename" >
+							<div v-bind:class="{ noselect: true, shared: isShared(file) }">{{ file.getFileProperties().name }}</div>
+						</div>
 					</span>
+				</span>
 
-					<div v-if="sortedFiles.length==0 && currentDir != null && currentDir.isWritable()" class="instruction">
-						Upload a file by dragging and dropping here or clicking the <span class="fa fa-upload"/> icon
-					</div>
+				<div v-if="sortedFiles.length==0 && currentDir != null && currentDir.isWritable()" class="instruction">
+					Upload a file by dragging and dropping here or clicking the <span class="fa fa-upload"/> icon
+				</div>
 
-					<center v-if="isSecretLink" class="bottom-message">Join the revolution!<br/>
-						<button class="btn btn-lg btn-success" @click="gotoSignup()">Sign up to Peergos</button>
-					</center>
-				</div> -->
+				<center v-if="isSecretLink" class="bottom-message">Join the revolution!<br/>
+					<button class="btn btn-lg btn-success" @click="gotoSignup()">Sign up to Peergos</button>
+				</center>
+			</div> -->
 
-				<div class="table-responsive" v-if="!isGrid">
-					<table class="table">
-						<thead>
-							<tr style="cursor:pointer;">
+			<div class="table-responsive" v-if="!isGrid">
+				<table class="table">
+					<thead>
+						<tr style="cursor:pointer;">
 							<th @click="setSortBy('name')">Name <span v-if="sortBy=='name'" v-bind:class="['fas', normalSortOrder ? 'fa-angle-down' : 'fa-angle-up']"/></th>
 							<th @click="setSortBy('size')">Size <span v-if="sortBy=='size'" v-bind:class="['fas', normalSortOrder ? 'fa-angle-down' : 'fa-angle-up']"/></th>
 							<th @click="setSortBy('type')">Type <span v-if="sortBy=='type'" v-bind:class="['fas', normalSortOrder ? 'fa-angle-down' : 'fa-angle-up']"/></th>
 							<th @click="setSortBy('modified')">Modified <span v-if="sortBy=='modified'" v-bind:class="['fas', normalSortOrder ? 'fa-angle-down' : 'fa-angle-up']"/></th>
-							</tr>
-						</thead>
-						<tbody>
-							<tr v-for="file in sortedFiles" @keyup.enter="navigateOrMenuTab($event, file, true)" class="grid-item">
-							<td v-bind:id="file.getFileProperties().name"  @click="navigateOrMenu($event, file)" @contextmenu="openMenu($event, file)" style="cursor:pointer" v-bind:class="{ shared: isShared(file) }">{{ file.getFileProperties().name }}</td>
+						</tr>
+					</thead>
+					<tbody>
+						<tr v-for="file in sortedFiles" @keyup.enter="navigateOrMenuTab($event, file, true)" class="grid-item">
+							<td :id="file.getFileProperties().name"  @click="navigateOrMenu($event, file)" @contextmenu="openMenu($event, file)" style="cursor:pointer" v-bind:class="{ shared: isShared(file) }">{{ file.getFileProperties().name }}</td>
 							<td> {{ getFileSize(file.getFileProperties()) }} </td>
-							<!-- <td> </td> -->
 							<td>{{ file.getFileProperties().getType() }}</td>
 							<td>{{ formatDateTime(file.getFileProperties().modified) }}</td>
-							</tr>
-						</tbody>
-					</table>
-				</div>
+						</tr>
+					</tbody>
+				</table>
 			</div>
 		</div>
 
@@ -1849,6 +1853,7 @@ module.exports = {
 			this.navigateOrMenuTab(event, file, false)
 		},
 		navigateOrMenuTab(event, file, fromTabKey) {
+			console.log('navigateOrMenuTab')
 			if (this.showSpinner) // disable user input whilst refreshing
 				return;
 			this.closeMenu();

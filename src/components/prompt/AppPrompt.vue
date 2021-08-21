@@ -4,9 +4,7 @@
 
 			<div class="app-prompt__container" @click.stop>
 				<header class="prompt__header">
-					<AppButton class="close" @click="closePrompt()">
-						<AppIcon icon="close" />
-					</AppButton>
+					<AppButton class="close" icon="close" @click="closePrompt()"/>
 					<h3>{{prompt_message}}</h3>
 				</header>
 				<div class="prompt__body">
@@ -15,9 +13,9 @@
 						ref="prompt"
 						v-model="prompt_result"
 						type="text"
-						v-bind:placeholder="placeholder"
+						:placeholder="placeholder"
 						:maxlength="input_length"
-						@:keyup.enter="getPrompt"
+						@keyup.enter="getPrompt"
 						autofocus
 					>
 					</input>
@@ -32,7 +30,7 @@
 						type="primary"
 						@click="getPrompt(this.prompt_result)"
 					>
-					OK
+					Create
 					</AppButton>
 				</footer>
 			</div>

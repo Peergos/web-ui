@@ -6,19 +6,17 @@
 			class="toggle-button--mobile mobile"
 			round
 			size="small"
+			icon="dots-menu"
 			@click="toggleSidebar"
-		>
-			<AppIcon icon="dots-menu"
-		/></AppButton>
+		/>
 
 		<AppButton
 			class="toggle-theme--mobile mobile"
 			size="small"
+			:icon="isDark ? 'sun' : 'moon'"
 			@click="toggleTheme()"
 			aria-label="Toggle themes"
-		>
-			<AppIcon :icon="isDark ? 'sun' : 'moon'" />
-		</AppButton>
+		/>
 
 		<ul class="nav-list">
 			<MenuItem label="Files" icon="files" view="Drive" />

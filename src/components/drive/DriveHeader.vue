@@ -4,12 +4,11 @@
 			<AppButton
 				class="toggle-button desktop"
 				round
-				icon
+				icon="chevron-down"
+				:class="{active : isOpen}"
 				small
 				@click="toggleSidebar"
-			>
-				<AppIcon icon="chevron-down" :class="{active : isOpen}"/>
-			</AppButton>
+			/>
 
 			<h2>My files</h2>
 			<div class="drive-breadcrumb">
@@ -20,17 +19,17 @@
 			</div>
 
 			<AppButton
+				class="change-view"
+				:icon="gridView ? 'list' : 'grid'"
 				@keyup.enter="$emit('switchView')"
 				@click="$emit('switchView')"
-				class="change-view"
-			>
-				<AppIcon :icon="gridView ? 'list' : 'grid'" />
-				<span class="desktop">{{ gridView ? "List view" : "Grid view"}}</span>
-			</AppButton>
+			/>
 
 			<AppDropdown
 				v-if="isWritable"
 				icon="plus"
+				type="primary"
+				accent
 				aria-label="Upload"
 			>
 				<ul>
@@ -111,7 +110,7 @@ module.exports = {
 	transition: transform 0.5s;
 
 }
-.drive-header .toggle-button svg.active {
+.drive-header .toggle-button.active svg{
 	transform: rotate(90deg);
 }
 

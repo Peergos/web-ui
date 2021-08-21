@@ -9,10 +9,11 @@
 			@blur="validatePassword()"
 		/>
 
-		<AppButton class="eye" @click="togglePassword()">
-			<AppIcon v-show="passwordIsVisible" icon="eye-open"/>
-			<AppIcon v-show="!passwordIsVisible" icon="eye-closed"/>
-		</AppButton>
+		<AppButton class="eye"
+			@click="togglePassword()"
+			:icon="passwordIsVisible ? 'eye-open' : 'eye-closed'"
+		/>
+
 	</div>
 </template>
 

@@ -9,11 +9,12 @@
 			block: block,
 			icon: icon,
 			outline: outline,
+			accent: accent,
 			[`${size}`]: size,
 			[`${type}`]: type,
 		}"
 	>
-		<slot></slot>
+		<slot></slot><AppIcon v-if="icon" :icon="icon"/>
 	</component>
 </template>
 
@@ -29,8 +30,8 @@ module.exports = {
 			default: false,
 		},
 		icon: {
-			type: Boolean,
-			default: false,
+			type: String,
+			default: null,
 		},
 		block: {
 			type: Boolean,
@@ -41,6 +42,10 @@ module.exports = {
 			default: false,
 		},
 		outline: {
+			type: Boolean,
+			default: false,
+		},
+		accent:{
 			type: Boolean,
 			default: false,
 		},
@@ -83,9 +88,6 @@ module.exports = {
 	transition: all 0.3s;
 }
 
-.app-button:hover {
-	color: var(--color-hover);
-}
 
 .app-button.round {
 	border-radius: 64px;
@@ -124,24 +126,29 @@ module.exports = {
 	padding: 0;
 }
 
+.app-button:hover {
+	color: var(--color-hover);
+}
+.app-button.accent{
+	color: var(--bg);
+	background-color: var(--green-500);
+}
+.app-button.accent:hover {
+	color: var(--bg);
+	background-color: var(--green-200);
+}
+.app-button.accent:focus{
+	outline:none;
+	background-color: var(--color-hover);
+}
 
 /* Types */
 
 .app-button.primary {
 	line-height: 32px;
 	padding: 8px 16px;
-	background-color: var(--green-500);
 	text-align: center;
-	color: var(--bg);
-}
 
-.app-button.primary:hover {
-	color: var(--bg);
-	background-color: var(--green-200);
-}
-.app-button.primary:focus{
-	outline:none;
-	background-color: var(--color-hover);
 }
 
 @media (max-width: 1024px) {

@@ -11,7 +11,7 @@
 				@input="(val) => (username = username.toLowerCase())"
 			/>
 
-			<AppButton class="generate-password" type="primary" block @click="generatePassword()">
+			<AppButton class="generate-password" type="primary" block accent @click="generatePassword()">
 				Generate password
 			</AppButton>
 
@@ -40,9 +40,8 @@
 				<span class="checkmark"></span>
 			</label>
 
-			<AppButton class="signup" type="primary" block @click="signup()">
+			<AppButton class="signup" type="primary" block accent @click="signup()" icon="arrow-right">
 				Sign up
-				<AppIcon :width="24" :height="24" icon="arrow-right"/>
 			</AppButton>
 		</template>
 

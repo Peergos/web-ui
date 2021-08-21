@@ -1,18 +1,32 @@
 <template>
-	<figure class="grid-card">
-		<img
-			v-if="src"
-			:src="src"
-			:alt="alt"
-			class="background"
+	<article class="grid-card">
+		<AppButton
+			class="card__menu"
+			icon="dot-menu"
+			aria-label="menu"
+			@click="$emit('popover')"
 		/>
-		<AppIcon v-else :icon="extension" />
-		<figcaption> {{ filename }}</figcaption>
-	</figure>
+
+		<figure>
+			<img
+				v-if="src"
+				:src="src"
+				:alt="alt"
+				class="cover"
+			/>
+			<AppIcon v-else class="card__icon" icon="files" />
+			<figcaption> {{ filename }}</figcaption>
+		</figure>
+	</article>
 </template>
 
 <script>
+const AppDropdown = require("../AppDropdown.vue");
+
 module.exports = {
+	components: {
+		AppDropdown,
+	},
 	props: {
 		filename: {
 			type: String,
@@ -32,64 +46,89 @@ module.exports = {
 			type: String,
 			default: "",
 		},
-		extension: {
+		type: {
 			type: String,
 			default: "",
 		},
 	},
+
 };
 </script>
 
 <style>
 .grid-card {
 	position: relative;
+	padding-bottom: 75%;
+	/* min-height: 220px; */
+
+
+	background-color: var(--bg-2);
+
+}
+
+.grid-card figure{
+
 	display: flex;
 	align-items: center;
 	justify-content: center;
 
-	height: 220px;
-	border-radius: 6px;
-	overflow: hidden;
-	background-color: var(--bg-2);
-
-
-
-	cursor: pointer;
-}
-
-.grid-card svg {
-	color: var(--color-2);
-	transform: scale(1);
-	transition: transform 0.3s;
-}
-
-.grid-card .background {
 	position: absolute;
 	top: 0;
 	left: 0;
 	right:0;
 	bottom:0;
-	width:100%;
+
 	object-fit: contain;
+	object-position: center center;
+
+	overflow: hidden;
+	border-radius: 6px;
+}
+
+.grid-card .cover {
+	width:100%;
+	height: 100%;
+	transform: scale(1);
+	transition: transform 0.3s;
+}
+
+
+.grid-card .card__icon {
+	color: var(--color-2);
 	transform: scale(1);
 	transition: transform 0.3s;
 }
 
 .grid-card figcaption {
-	margin: 0;
-	padding: 2px 6px;
-	border-radius: 4px;
 	position: absolute;
 	bottom: 8px;
 	left: 8px;
+
+	margin: 0;
+	padding: 2px 6px;
+	border-radius: 4px;
+
 	font-size: var(--text-small);
-	font-weight: var(--bold);
+	font-weight: var(--regular);
 	color: var(--color);
 	background-color: var(--bg);
 }
 
-.grid-card:hover .background,
-.grid-card:hover svg {
+.grid-card .card__menu{
+	position: absolute;
+	top:8px;
+	right:8px;
+	z-index: 5;
+	opacity:0;
+	background-color: var(--bg-50);
+}
+.grid-card:hover .card__menu {
+	opacity:1;
+}
+.grid-card:hover .cover {
 	transform: scale(1.05);
+}
+.grid-card:focus{
+	/* background-color: red; */
 }
 </style>

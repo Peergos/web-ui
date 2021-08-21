@@ -42,12 +42,17 @@
 
 	/* Light-mode */
 
-	--color: var(--text-color);
-	--color-hover: var(--blue-800);
+	/* --color: var(--text-color); */
+	/* --color-hover: var(--blue-800); */
+
+	--color: var(--blue-800);
+	--color-hover: var(--text-color);
 	--color-2: var(--gray-3);
 
 	--bg: var(--white);
 	--bg-hover: var(--gray-1);
+	/* https://codepen.io/chriscoyier/pen/XjbzAW */
+	--bg-50: #ffffff80;
 
 	--bg-2: var(--gray-1);
 	--bg-2-hover: var(--white);
@@ -64,6 +69,7 @@
 
 	--bg: var(--blue-800);
 	--bg-hover: var(--blue-900);
+	--bg-50: #2c3e5080;
 
 	--bg-2: var(--blue-900);
 	--bg-2-hover: var(--blue-800);
