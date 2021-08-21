@@ -48,17 +48,6 @@
 			</ul>
 		</div> -->
 
-		<div v-if="progressMonitors.length>0" class="progressholder">
-			<progressbar
-				v-for="progress in progressMonitors"
-				v-if="progress.show"
-				:key="progress.title"
-				@hide-progress="progressMonitors.splice(progressMonitors.indexOf(progress), 1)"
-				:title="progress.title"
-				:done="progress.done"
-				:max="progress.max"
-			/>
-		</div>
 
 		<div v-if="conversationMonitors.length>0" class="messageholder">
 			<messagebar :replyToMessage="replyToMessage"
@@ -166,8 +155,10 @@
 const DriveHeader = require("../components/drive/DriveHeader.vue");
 const DriveGrid = require("../components/drive/DriveGrid.vue");
 const DriveGridCard = require("../components/drive/DriveGridCard.vue");
+const ProgressBar = require("../components/drive/ProgressBar.vue");
 
 const AppPrompt = require("../components/prompt/AppPrompt.vue");
+
 
 const mixins = require("../mixins/downloader/index.js");
 
@@ -176,7 +167,8 @@ module.exports = {
 		DriveHeader,
 		DriveGrid,
 		DriveGridCard,
-		AppPrompt
+		AppPrompt,
+		ProgressBar
 	},
 	data() {
 		return {
@@ -251,7 +243,6 @@ module.exports = {
 			},
 			messages: [],
 			messageId: null,
-			progressMonitors: [],
 			messageMonitors: [],
 			conversationMonitors: [],
 			clipboardAction: "",
@@ -526,30 +517,30 @@ module.exports = {
 			const that = this;
 			if (this.context != null && this.context.username == null) {
 				// from a secret link
-				this.context.getEntryPath().thenApply(function (linkPath) {
-					var path = that.initPath == null ? null : decodeURIComponent(that.initPath);
-					if (path != null && (path.startsWith(linkPath) || linkPath.startsWith(path))) {
-						that.changePath(path);
-					} else {
-						that.changePath(linkPath);
-						that.context.getByPath(that.getPath())
-							.thenApply(function (file) {
-								file.get().getChildren(that.context.crypto.hasher, that.context.network).thenApply(function (children) {
-									var arr = children.toArray();
-									if (arr.length == 1) {
-										if (that.initiateDownload) {
-											that.downloadFile(arr[0]);
-										} else if (that.openFile) {
-											var open = () => {
-												that.updateFiles(arr[0].getFileProperties().name);
-											};
-											that.onUpdateCompletion.push(open);
-										}
-									}
-								})
-							});
-					}
-				});
+				// this.context.getEntryPath().thenApply(function (linkPath) {
+				// 	var path = that.initPath == null ? null : decodeURIComponent(that.initPath);
+				// 	if (path != null && (path.startsWith(linkPath) || linkPath.startsWith(path))) {
+				// 		that.changePath(path);
+				// 	} else {
+				// 		that.changePath(linkPath);
+				// 		that.context.getByPath(that.getPath())
+				// 			.thenApply(function (file) {
+				// 				file.get().getChildren(that.context.crypto.hasher, that.context.network).thenApply(function (children) {
+				// 					var arr = children.toArray();
+				// 					if (arr.length == 1) {
+				// 						if (that.initiateDownload) {
+				// 							that.downloadFile(arr[0]);
+				// 						} else if (that.openFile) {
+				// 							var open = () => {
+				// 								that.updateFiles(arr[0].getFileProperties().name);
+				// 							};
+				// 							that.onUpdateCompletion.push(open);
+				// 						}
+				// 					}
+				// 				})
+				// 			});
+				// 	}
+				// });
 			} else {
 				const props = this.getPropsFromUrl();
 				var pathFromUrl = props == null ? null : props.path;
@@ -1100,36 +1091,31 @@ module.exports = {
 
 		mkdir(name) {
 			var context = this.getContext();
-			this.showSpinner = true;
+			// this.showSpinner = true;
 			var that = this;
 
 			this.currentDir.mkdir(name, context.network, false, context.crypto)
 				.thenApply(function (updatedDir) {
 					that.currentDir = updatedDir;
 					that.updateFiles();
-					that.onUpdateCompletion.push(function () {
-						that.showSpinner = false;
-					});
 					that.updateUsage();
+					// that.onUpdateCompletion.push(function () {
+					// 	that.showSpinner = false;
+					// });
+
 				}.bind(this)).exceptionally(function (throwable) {
 
 					that.$toast.error(throwable.getMessage(), {timeout:false, id: 'mkdir'})
 
-					// that.errorTitle = 'Error creating directory: ' + name;
-					// that.errorBody = throwable.getMessage();
-					// that.showError = true;
-					that.showSpinner = false;
 					that.updateUsage();
 				});
 		},
 
 		askForFiles() {
-			// this.toggleUploadMenu();
 			document.getElementById('uploadFileInput').click();
 		},
 
 		askForDirectories() {
-			// this.toggleUploadMenu();
 			document.getElementById('uploadDirectoriesInput').click();
 		},
 
@@ -1179,50 +1165,72 @@ module.exports = {
 			var files = evt.target.files || evt.dataTransfer.files;
 			this.processFileUpload(files, false);
 		},
+
 		processFileUpload(files, fromDnd) {
-			let uploadPath = this.getPath();
-			var uploadParams = {
+			let uploadPath = this.getPath()
+
+			const uploadParams = {
 				cancelUpload: false,
 				accumulativeFileSize: 0,
 				applyReplaceToAll: false,
 				replaceFile: false,
 				fileInfoStore: []
-			};
-			var future = peergos.shared.util.Futures.incomplete();
-			this.showSpinner = true;
-			if (files.length > 10) {
-				this.spinnerMessage = "preparing for upload";
 			}
+			const future = peergos.shared.util.Futures.incomplete();
+
+			if (files.length > 10) {
+				this.$toast.info('preparing for upload', {timeout:false, id: 'progress'})
+			}
+
 			this.traverseDirectories(uploadPath, uploadPath, null, 0, files, 0, fromDnd, uploadParams, future);
+
 			let that = this;
+
 			future.thenApply(done => {
-				this.spinnerMessage = "";
+
+				that.$toast.dismiss('progress');
+
 				that.updateFiles();
 				//resetting .value tricks browser into allowing subsequent upload of same file(s)
 				document.getElementById('uploadFileInput').value = "";
 				document.getElementById('uploadDirectoriesInput').value = "";
+
 				let progressStore = [];
+
 				uploadParams.fileInfoStore.forEach(fileInfo => {
-					var thumbnailAllocation = Math.min(100000, fileInfo.file.size / 10);
-					var resultingSize = fileInfo.file.size + thumbnailAllocation;
+					let thumbnailAllocation = Math.min(100000, fileInfo.file.size / 10);
+					let resultingSize = fileInfo.file.size + thumbnailAllocation;
 					var progress = {
 						show: true,
 						title: "Encrypting and uploading " + fileInfo.file.name,
 						done: 0,
 						max: resultingSize
 					};
-					that.progressMonitors.push(progress);
+					that.$toast({
+						component: ProgressBar,
+						props:  {
+							title: progress.title,
+							done: progress.done,
+							max: progress.max
+						},
+					} , { icon: false , timeout:false, id: fileInfo.file.name})
+
+
 					progressStore.push(progress);
 				});
+
+
 				let futureUploads = peergos.shared.util.Futures.incomplete();
+
 				that.reduceAllUploads(uploadParams.fileInfoStore.reverse(), progressStore.slice().reverse(), uploadParams, futureUploads);
+
 				futureUploads.thenApply(done => {
-					progressStore.forEach(progress => {
-						let idx = that.progressMonitors.indexOf(progress);
-						if (idx >= 0) {
-							that.progressMonitors.splice(idx, 1);
-						}
-					});
+					// progressStore.forEach(progress => {
+					// 	let idx = that.progressMonitors.indexOf(progress);
+					// 	if (idx >= 0) {
+					// 		that.progressMonitors.splice(idx, 1);
+					// 	}
+					// });
 				});
 			});
 		},
@@ -1330,10 +1338,11 @@ module.exports = {
 				if (sameDirectory) {
 					if (nextFile.name != '.DS_Store') { //FU OSX
 						var uploadFileFuture = peergos.shared.util.Futures.incomplete();
-						this.showSpinner = true;
+						// this.showSpinner = true;
 						if (items.length > 10) {
-							this.spinnerMessage = "preparing for upload (" + itemIndex + " of " + items.length + ")";
+							this.$toast.info(`preparing for upload (${itemIndex} of ${items.length})`, {timeout:false, id: 'progress'})
 						}
+
 						that.uploadFileFromDirectory(nextFile, currentDir, refreshDir, fromDnd, uploadParams, uploadFileFuture);
 						uploadFileFuture.thenApply(res =>
 							that.uploadFilesFromDirectory(that, refreshDir, origDir, currentDir, dirs, dirIndex,
@@ -1434,25 +1443,37 @@ module.exports = {
 			return future;
 		},
 		uploadFileJS(file, directory, refreshDirectory, overwriteExisting, progress, future, uploadParams) {
-			var updateProgressBar = function (len) {
-				progress.done += len.value_0;
-				//that.progressMonitors.sort(function(a, b) {
-				//  return Math.floor(b.done / b.max) - Math.floor(a.done / a.max);
-				//});
+			let that = this;
+
+			function updateProgressBar(len) {
+				progress.done += Number(len);
+
+				that.$toast.update(file.name, {content:
+					{
+						component: ProgressBar,
+						props:  {
+							title: progress.title,
+							done: progress.done,
+							max: progress.max
+						},
+					}
+				});
+
 				if (progress.done >= progress.max) {
-					progress.show = false;
+					that.$toast.dismiss(file.name);
 				}
 			};
-			let that = this;
+
 			var reader = new browserio.JSFileReader(file);
 			var java_reader = new peergos.shared.user.fs.BrowserFileReader(reader);
 			let context = this.getContext();
+
 			context.getByPath(directory).thenApply(function (updatedDirOpt) {
 				let spaceAfterOperation = that.checkAvailableSpace(file.size);
 				if (spaceAfterOperation < 0) {
-					that.errorTitle = "Unable to upload: " + file.name + " . File size exceeds available space";
-					that.errorBody = "Please free up " + that.convertBytesToHumanReadable('' + -spaceAfterOperation) + " and try again";
-					that.showError = true;
+
+					that.$toast.error(`Unable to upload: ${file.name} File size exceeds available space. Please free up ${that.convertBytesToHumanReadable('' + -spaceAfterOperation)} and try again`, {timeout:false})
+
 					uploadParams.cancelUpload = true;
 					future.complete(false);
 					return;
@@ -1461,23 +1482,22 @@ module.exports = {
 					overwriteExisting, overwriteExisting ? true : false, context.network, context.crypto, updateProgressBar,
 					context.getTransactionService()
 				).thenApply(function (res) {
-					var thumbnailAllocation = Math.min(100000, file.size / 10);
-					updateProgressBar({ value_0: thumbnailAllocation });
+					const thumbnailAllocation = Math.min(100000, file.size / 10);
+					updateProgressBar(thumbnailAllocation);
 					if (refreshDirectory) {
-						that.showSpinner = true;
+						// that.showSpinner = true;
 						that.currentDir = res;
 						that.updateFiles();
 					}
 					context.getSpaceUsage().thenApply(u => {
-						// that.usageBytes = u;
 						that.$store.commit('SET_USAGE', u);
 						future.complete(true);
 					});
 				}).exceptionally(function (throwable) {
-					progress.show = false;
-					that.errorTitle = 'Error uploading file: ' + file.name;
-					that.errorBody = throwable.getMessage();
-					that.showError = true;
+
+					that.$toast.update(file.name, {
+						content:`Error uploading file ${file.name} : ${throwable.getMessage()}`
+					});
 					that.updateUsage();
 					future.complete(false);
 				})
