@@ -4,8 +4,8 @@
 
 			<div class="app-prompt__container" @click.stop>
 				<header class="prompt__header">
-					<AppButton class="close" icon="close" @click="closePrompt()"/>
-					<h3>{{prompt_message}}</h3>
+					<AppButton class="close" icon="close" @click.native="closePrompt()"/>
+					<h3>{{message}}</h3>
 				</header>
 				<div class="prompt__body">
 					<input
@@ -21,14 +21,14 @@
 					</input>
 				</div>
 				<footer class="prompt__footer">
-					<AppButton outline @click="closePrompt()">
+					<AppButton outline @click.native="closePrompt()">
 						Cancel
 					</AppButton>
 
 					<AppButton
 						id='prompt-button-id'
 						type="primary"
-						@click="getPrompt(this.prompt_result)"
+						@click.native="getPrompt(this.prompt_result)"
 					>
 					Create
 					</AppButton>
@@ -42,11 +42,33 @@
 module.exports = {
 	data: function() {
 		return {
-			'prompt_result': '',
+			prompt_result: '',
 			input_length: 255
 		}
 	},
-    props: ['prompt_message', 'placeholder', 'value', 'consumer_func', 'max_input_size'],
+    // props: ['prompt_message', 'placeholder', 'value', 'consumer_func', 'max_input_size'],
+	props: {
+		message: {
+			type: String,
+			default: ''
+		},
+		placeholder: {
+			type: String,
+			default: ''
+		},
+		value:{
+			type: String,
+			default: ''
+		},
+		max_input_size:{
+			type: Number,
+			default: 255
+		},
+		consumer_func: {
+			type: Function
+		}
+
+	},
 
 	mounted() {
 		this.prompt_result = this.value;

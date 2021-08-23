@@ -12,7 +12,7 @@
 
 		<FormPassword v-model="password" @keyup.native.enter="login()"/>
 
-		<AppButton class="login" @click="login()" type="primary" block accent  icon="arrow-right">
+		<AppButton class="login" @click.native="login()" type="primary" block accent  icon="arrow-right">
 			Sign in
 		</AppButton>
 	</div>

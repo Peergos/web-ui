@@ -4,7 +4,7 @@
 
 			<transition name="modal-content" appear>
 				<div v-if="showModal" class="app-modal__container" @click.stop>
-					<AppButton class="close" icon="close" @click="closeModal()"/>
+					<AppButton class="close" icon="close" @click.native="closeModal()"/>
 					<header><slot name="header"></slot></header>
 					<section><slot name="body"></slot></section>
 					<footer><slot name="footer"></slot></footer>

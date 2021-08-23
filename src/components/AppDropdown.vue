@@ -6,7 +6,7 @@
 			:accent="accent"
 			:area-expanded="isActive"
 			:icon="icon"
-			@click="toggleDropdown()"
+			@click.native="toggleDropdown()"
 		>
 		</AppButton>
 		<transition name="drop">

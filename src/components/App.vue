@@ -12,7 +12,7 @@
 			class="toggle-button--mobile mobile"
 			size="small"
 			round
-			@click="toggleSidebar"
+			@click.native="toggleSidebar"
 		>
 			<AppIcon icon="dots-menu" />
 		</AppButton>

@@ -10,7 +10,7 @@
 		/>
 
 		<AppButton class="eye"
-			@click="togglePassword()"
+			@click.native="togglePassword()"
 			:icon="passwordIsVisible ? 'eye-open' : 'eye-closed'"
 		/>
 

@@ -7,14 +7,14 @@
 			round
 			size="small"
 			icon="dots-menu"
-			@click="toggleSidebar"
+			@click.native="toggleSidebar"
 		/>
 
 		<AppButton
 			class="toggle-theme--mobile mobile"
 			size="small"
 			:icon="isDark ? 'sun' : 'moon'"
-			@click="toggleTheme()"
+			@click.native="toggleTheme()"
 			aria-label="Toggle themes"
 		/>
 

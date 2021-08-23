@@ -1,7 +1,7 @@
 <template>
 	<div class="sidebar-storage">
 		<div class="storage">{{ usage }} / {{ quota }}</div>
-		<AppButton class="upgrade" size="small" v-if="!isPro" @click="showRequestStorage()">
+		<AppButton class="upgrade" size="small" v-if="!isPro" @click.native="showRequestStorage()">
 			Upgrade
 		</AppButton>
 	</div>

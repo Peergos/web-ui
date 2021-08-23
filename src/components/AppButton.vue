@@ -2,7 +2,6 @@
 	<component
 		:is="tag"
 		:disabled="disabled"
-		@click="handleClick"
 		class="app-button"
 		:class="{
 			round: round,
@@ -59,9 +58,9 @@ module.exports = {
 		},
 	},
 	methods: {
-		handleClick(event) {
-			this.$emit("click", event);
-		},
+		// handleClick(event) {
+		// 	this.$emit("click", event);
+		// },
 	},
 };
 </script>

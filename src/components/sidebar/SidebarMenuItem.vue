@@ -1,6 +1,6 @@
 <template>
 	<li class="list-item" :class="{ 'current-view': isCurrentView }">
-		<AppButton @click="setView(view)">
+		<AppButton @click.native="setView(view)">
 			<AppIcon class="list-item__icon" :icon="icon"></AppIcon>
 			<span class="list-item__name">{{ label }} </span>
 		</AppButton>

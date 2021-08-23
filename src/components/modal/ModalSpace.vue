@@ -26,8 +26,8 @@
 		<template #footer>
 			<p>By continuing you agree to our <a href="/terms.html" target="_blank" rel="noopener noreferrer">Terms of Service</a>.</p>
 
-			<AppButton v-if="!isPro" @click="requestStorage(53687091200)" type="primary" block accent>Upgrade account</AppButton>
-			<AppButton v-else @click="cancelPro()" type="primary" block accent >Cancel Pro subscription</AppButton>
+			<AppButton v-if="!isPro" @click.native="requestStorage(53687091200)" type="primary" block accent>Upgrade account</AppButton>
+			<AppButton v-else @click.native="cancelPro()" type="primary" block accent >Cancel Pro subscription</AppButton>
 		</template>
 	</AppModal>
 </template>
