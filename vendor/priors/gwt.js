@@ -530,9 +530,12 @@ function renderThumbnail(bytes, future, size) {
 
 function getThumbnailFromCanvas(canvas, img, width, height, size, future) {
     if (img != null) {
-        canvas.width = size;
-        canvas.height = size;
-        canvas.getContext('2d').drawImage(img, 0, 0, width, height, 0, 0, size, size);
+        let tall = height > width;
+        let canvasWidth = tall ? width*size/height : size;
+        let canvasHeight = tall ? size : height*size/width;
+        canvas.width = canvasWidth;
+        canvas.height = canvasHeight;
+        canvas.getContext('2d').drawImage(img, 0, 0, width, height, 0, 0, canvasWidth, canvasHeight);
     }
     var dataUrl = canvas.toDataURL("image/webp");
     if (dataUrl.startsWith("data:image/png")) {
