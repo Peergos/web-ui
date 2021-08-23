@@ -3,18 +3,29 @@
 		<input type="file" id="uploadFileInput" @change="uploadFiles" style="display:none;" multiple />
 		<input type="file" id="uploadDirectoriesInput" @change="uploadFiles" style="display:none;" multiple directory mozDirectory webkitDirectory/>
 
+		<spinner v-if="showSpinner" :message="spinnerMessage"></spinner>
+
+		<a id="downloadAnchor" style="display:none"></a>
+
 		<DriveHeader
 			:gridView="isGrid"
 			:isWritable="isWritable"
 			:path="path"
 			@switchView="switchView()"
-			@goBackToLevel="goBackToLevel()"
-			@askForFiles="askForFiles()"
-			@askForDirectories="askForDirectories()"
+			@goBackToLevel="goBackToLevel($event)"
 			@askMkdir="askMkdir()"
 		/>
 
-		<a id="downloadAnchor" style="display:none"></a>
+		<AppPrompt
+			v-if="showPrompt"
+			@hide-prompt="closePrompt()"
+			:message='prompt_message'
+			:placeholder="prompt_placeholder"
+			:max_input_size="prompt_max_input_size"
+			:value="prompt_value"
+			:consumer_func="prompt_consumer_func"
+		/>
+
 
 		<div v-if="viewMenu && (isNotHome || isPasteAvailable || isNotBackground)">
 			<nav>
@@ -61,83 +72,69 @@
 		</div>
 
 
-		<AppPrompt
-			v-if="showPrompt"
-			@hide-prompt="closePrompt()"
-			:prompt_message='prompt_message'
-			:placeholder="prompt_placeholder"
-			:max_input_size="prompt_max_input_size"
-			:value="prompt_value"
-			:consumer_func="prompt_consumer_func"
-		>
-		</AppPrompt>
-
-		<spinner v-if="showSpinner" :message="spinnerMessage"></spinner>
-
-
-
-
 		<div id="dnd"
 			@drop="dndDrop($event)"
 			@dragover.prevent
 			:class="{ not_owner: isNotMe }"
 			@contextmenu="openMenu($event)"
 		>
+			<transition name="fade" mode="out-in" appear>
 
-			<DriveGrid v-if="isGrid">
-				<DriveGridCard v-for="(file, index) in sortedFiles"
-					:key="file.getFileProperties().name"
-					:filename="file.getFileProperties().name"
-					:src="getThumbnailURL(file)"
-					:type="file.getFileProperties().getType()"
-					@click="navigateOrMenuTab($event, file, true)"
-				/>
-			</DriveGrid>
+				<DriveGrid v-if="isGrid" appear>
+					<DriveGridCard v-for="(file, index) in sortedFiles"
+						:key="file.getFileProperties().name"
+						:filename="file.getFileProperties().name"
+						:src="getThumbnailURL(file)"
+						:type="file.getFileProperties().getType()"
+						@click.native="navigateOrMenuTab($event, file, true)"
+					/>
+				</DriveGrid>
 
 
-			<!-- <div class="grid" v-if="isGrid">
+				<!-- <div class="grid" v-if="isGrid">
 
-				<span class="column grid-item" v-for="(file, index) in sortedFiles" @keyup.enter="navigateOrMenuTab($event, file, true)">
-					<span class="grid_icon_wrapper fa" :id="index" draggable="true" @dragover.prevent @dragstart="dragStart($event, file)" @drop="drop($event, file)">
-						<a class="picon" v-bind:id="file.getFileProperties().name" @contextmenu="openMenu($event, file)">
-							<span v-if="!file.getFileProperties().thumbnail.isPresent()" @click="navigateOrMenu($event, file)" @contextmenu="openMenu($event, file)" v-bind:class="[getFileClass(file), getFileIcon(file), 'picon']"> </span>
-							<img id="thumbnail" v-if="file.getFileProperties().thumbnail.isPresent()" @click="navigateOrMenu($event, file)" @contextmenu="openMenu($event, file)" v-bind:src="getThumbnailURL(file)"/>
-						</a>
-						<div class="content filename" >
-							<div v-bind:class="{ noselect: true, shared: isShared(file) }">{{ file.getFileProperties().name }}</div>
-						</div>
+					<span class="column grid-item" v-for="(file, index) in sortedFiles" @keyup.enter="navigateOrMenuTab($event, file, true)">
+						<span class="grid_icon_wrapper fa" :id="index" draggable="true" @dragover.prevent @dragstart="dragStart($event, file)" @drop="drop($event, file)">
+							<a class="picon" v-bind:id="file.getFileProperties().name" @contextmenu="openMenu($event, file)">
+								<span v-if="!file.getFileProperties().thumbnail.isPresent()" @click="navigateOrMenu($event, file)" @contextmenu="openMenu($event, file)" v-bind:class="[getFileClass(file), getFileIcon(file), 'picon']"> </span>
+								<img id="thumbnail" v-if="file.getFileProperties().thumbnail.isPresent()" @click="navigateOrMenu($event, file)" @contextmenu="openMenu($event, file)" v-bind:src="getThumbnailURL(file)"/>
+							</a>
+							<div class="content filename" >
+								<div v-bind:class="{ noselect: true, shared: isShared(file) }">{{ file.getFileProperties().name }}</div>
+							</div>
+						</span>
 					</span>
-				</span>
 
-				<div v-if="sortedFiles.length==0 && currentDir != null && currentDir.isWritable()" class="instruction">
-					Upload a file by dragging and dropping here or clicking the <span class="fa fa-upload"/> icon
+					<div v-if="sortedFiles.length==0 && currentDir != null && currentDir.isWritable()" class="instruction">
+						Upload a file by dragging and dropping here or clicking the <span class="fa fa-upload"/> icon
+					</div>
+
+					<center v-if="isSecretLink" class="bottom-message">Join the revolution!<br/>
+						<button class="btn btn-lg btn-success" @click="gotoSignup()">Sign up to Peergos</button>
+					</center>
+				</div> -->
+
+				<div class="table-responsive" v-else>
+					<table class="table">
+						<thead>
+							<tr style="cursor:pointer;">
+								<th @click="setSortBy('name')">Name <span v-if="sortBy=='name'" :class="['fas', normalSortOrder ? 'fa-angle-down' : 'fa-angle-up']"/></th>
+								<th @click="setSortBy('size')">Size <span v-if="sortBy=='size'" :class="['fas', normalSortOrder ? 'fa-angle-down' : 'fa-angle-up']"/></th>
+								<th @click="setSortBy('type')">Type <span v-if="sortBy=='type'" :class="['fas', normalSortOrder ? 'fa-angle-down' : 'fa-angle-up']"/></th>
+								<th @click="setSortBy('modified')">Modified <span v-if="sortBy=='modified'" :class="['fas', normalSortOrder ? 'fa-angle-down' : 'fa-angle-up']"/></th>
+							</tr>
+						</thead>
+						<tbody>
+							<tr v-for="file in sortedFiles" @keyup.enter="navigateOrMenuTab($event, file, true)" class="grid-item">
+								<td :id="file.getFileProperties().name"  @click="navigateOrMenu($event, file)" @contextmenu="openMenu($event, file)" style="cursor:pointer" v-bind:class="{ shared: isShared(file) }">{{ file.getFileProperties().name }}</td>
+								<td> {{ getFileSize(file.getFileProperties()) }} </td>
+								<td>{{ file.getFileProperties().getType() }}</td>
+								<td>{{ formatDateTime(file.getFileProperties().modified) }}</td>
+							</tr>
+						</tbody>
+					</table>
 				</div>
-
-				<center v-if="isSecretLink" class="bottom-message">Join the revolution!<br/>
-					<button class="btn btn-lg btn-success" @click="gotoSignup()">Sign up to Peergos</button>
-				</center>
-			</div> -->
-
-			<div class="table-responsive" v-if="!isGrid">
-				<table class="table">
-					<thead>
-						<tr style="cursor:pointer;">
-							<th @click="setSortBy('name')">Name <span v-if="sortBy=='name'" v-bind:class="['fas', normalSortOrder ? 'fa-angle-down' : 'fa-angle-up']"/></th>
-							<th @click="setSortBy('size')">Size <span v-if="sortBy=='size'" v-bind:class="['fas', normalSortOrder ? 'fa-angle-down' : 'fa-angle-up']"/></th>
-							<th @click="setSortBy('type')">Type <span v-if="sortBy=='type'" v-bind:class="['fas', normalSortOrder ? 'fa-angle-down' : 'fa-angle-up']"/></th>
-							<th @click="setSortBy('modified')">Modified <span v-if="sortBy=='modified'" v-bind:class="['fas', normalSortOrder ? 'fa-angle-down' : 'fa-angle-up']"/></th>
-						</tr>
-					</thead>
-					<tbody>
-						<tr v-for="file in sortedFiles" @keyup.enter="navigateOrMenuTab($event, file, true)" class="grid-item">
-							<td :id="file.getFileProperties().name"  @click="navigateOrMenu($event, file)" @contextmenu="openMenu($event, file)" style="cursor:pointer" v-bind:class="{ shared: isShared(file) }">{{ file.getFileProperties().name }}</td>
-							<td> {{ getFileSize(file.getFileProperties()) }} </td>
-							<td>{{ file.getFileProperties().getType() }}</td>
-							<td>{{ formatDateTime(file.getFileProperties().modified) }}</td>
-						</tr>
-					</tbody>
-				</table>
-			</div>
+			</transition>
 		</div>
 
 		<error
@@ -998,7 +995,9 @@ module.exports = {
 			file.thumbnail = thumb;
 			return thumb;
 		},
+
 		goBackToLevel(level) {
+			console.log(level, 'goBackToLevel')
 			// By default let's jump to the root.
 			var newLevel = level || 0,
 				path = this.path.slice(0, newLevel).join('/');
@@ -1111,13 +1110,7 @@ module.exports = {
 				});
 		},
 
-		askForFiles() {
-			document.getElementById('uploadFileInput').click();
-		},
 
-		askForDirectories() {
-			document.getElementById('uploadDirectoriesInput').click();
-		},
 
 		dndDrop(evt) {
 			evt.preventDefault();
@@ -1876,7 +1869,10 @@ module.exports = {
 			console.log('navigateOrMenuTab')
 			if (this.showSpinner) // disable user input whilst refreshing
 				return;
+
 			this.closeMenu();
+
+			console.log(file, 'navigateOrMenuTab' )
 			if (file.isDirectory()) {
 				this.navigateToSubdir(file.getFileProperties().name);
 			} else {

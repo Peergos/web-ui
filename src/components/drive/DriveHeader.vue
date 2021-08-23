@@ -7,22 +7,22 @@
 				icon="chevron-down"
 				:class="{active : isOpen}"
 				small
-				@click="toggleSidebar"
+				@click.native="toggleSidebar"
 			/>
 
 			<h2>My files</h2>
+
 			<div class="drive-breadcrumb">
 				<template v-for="(dir, index) in path">
 					<span class="breadcrumb__separator"> / </span>
-					<AppButton tabindex="-1" @click="$emit('goBackToLevel', index + 1 )">{{ dir }}</AppButton>
+					<AppButton tabindex="-1" @click.native="$emit('goBackToLevel', index + 1 )">{{ dir }}</AppButton>
 				</template>
 			</div>
-
 			<AppButton
 				class="change-view"
 				:icon="gridView ? 'list' : 'grid'"
 				@keyup.enter="$emit('switchView')"
-				@click="$emit('switchView')"
+				@click.native="$emit('switchView')"
 			/>
 
 			<AppDropdown
@@ -33,8 +33,8 @@
 				aria-label="Upload"
 			>
 				<ul>
-					<li @click="$emit('askForFiles')">upload file</li>
-					<li @click="$emit('askForDirectories')">Upload directory</li>
+					<li @click="askForFiles()">upload file</li>
+					<li @click="askForDirectories()">Upload directory</li>
 					<li @click="$emit('askMkdir')">Add folder</li>
 				</ul>
 			</AppDropdown>
@@ -71,7 +71,15 @@ module.exports = {
 	methods: {
 		toggleSidebar() {
 			this.$store.commit("TOGGLE_SIDEBAR");
-		}
+		},
+
+		askForFiles() {
+			document.getElementById('uploadFileInput').click();
+		},
+
+		askForDirectories() {
+			document.getElementById('uploadDirectoriesInput').click();
+		},
 	},
 }
 </script>

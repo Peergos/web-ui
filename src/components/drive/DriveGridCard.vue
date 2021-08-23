@@ -1,22 +1,24 @@
 <template>
-	<article class="grid-card">
+	<article class="grid-card" >
 		<AppButton
 			class="card__menu"
 			icon="dot-menu"
 			aria-label="menu"
-			@click="$emit('popover')"
+			@click.native="$emit('popover')"
 		/>
 
 		<figure>
 			<img
+				class="cover"
 				v-if="src"
 				:src="src"
 				:alt="alt"
-				class="cover"
+
 			/>
 			<AppIcon v-else class="card__icon" icon="files" />
 			<figcaption> {{ filename }}</figcaption>
 		</figure>
+
 	</article>
 </template>
 
@@ -60,51 +62,48 @@ module.exports = {
 	position: relative;
 	padding-bottom: 75%;
 	/* min-height: 220px; */
-
-
 	background-color: var(--bg-2);
-
+	cursor: pointer;
 }
 
 .grid-card figure{
-
-	display: flex;
-	align-items: center;
-	justify-content: center;
-
 	position: absolute;
 	top: 0;
 	left: 0;
 	right:0;
 	bottom:0;
 
-	object-fit: contain;
-	object-position: center center;
+	display: flex;
+	align-items: center;
+	justify-content: center;
 
 	overflow: hidden;
 	border-radius: 6px;
 }
 
 .grid-card .cover {
+
 	width:100%;
-	height: 100%;
+	height:100%;
+	object-fit: cover; /* or contain */
+	object-position: center center;
 	transform: scale(1);
-	transition: transform 0.3s;
+	transition: transform 0.2s;
 }
 
 
 .grid-card .card__icon {
 	color: var(--color-2);
 	transform: scale(1);
-	transition: transform 0.3s;
+	transition: transform 0.2s;
 }
 
 .grid-card figcaption {
 	position: absolute;
 	bottom: 8px;
-	left: 8px;
+	left: 0;
 
-	margin: 0;
+	margin: 0 8px;
 	padding: 2px 6px;
 	border-radius: 4px;
 
