@@ -18,7 +18,7 @@ module.exports = {
 
 	width: 100%;
 	height: 100%;
-	padding: 0 var(--app-margin);
+	padding: 0 36px;
 
 	margin-top: 24px;
 

@@ -1,43 +1,41 @@
 <template>
 	<header class="drive-header">
 
-			<AppButton
-				class="toggle-button desktop"
-				round
-				icon="chevron-down"
-				:class="{active : isOpen}"
-				small
-				@click.native="toggleSidebar"
-			/>
+		<div class="drive-breadcrumb">
 
-			<h2>My files</h2>
+			<AppButton class="breadcrumb__root" aria-label="global files" @click.native="$emit('goBackToLevel', 0 )">
+				<AppIcon icon="globe-24"/>
+				<span v-if="!path.length">global</span>
+			</AppButton>
 
-			<div class="drive-breadcrumb">
-				<template v-for="(dir, index) in path">
-					<span class="breadcrumb__separator"> / </span>
-					<AppButton tabindex="-1" @click.native="$emit('goBackToLevel', index + 1 )">{{ dir }}</AppButton>
-				</template>
-			</div>
-			<AppButton
-				class="change-view"
-				:icon="gridView ? 'list' : 'grid'"
-				@keyup.enter="$emit('switchView')"
-				@click.native="$emit('switchView')"
-			/>
+			<template v-for="(dir, index) in path">
+				<AppIcon v-if="index!==0" icon="chevron-down" class="breadcrumb__separator" aria-hidden="true"/>
+				<AppButton :key="index" class="breadcrumb__item" :aria-label="dir" tabindex="-1" @click.native="$emit('goBackToLevel', index + 1 )">{{ dir }}</AppButton>
+			</template>
+		</div>
 
-			<AppDropdown
-				v-if="isWritable"
-				icon="plus"
-				type="primary"
-				accent
-				aria-label="Upload"
-			>
-				<ul>
-					<li @click="askForFiles()">upload file</li>
-					<li @click="askForDirectories()">Upload directory</li>
-					<li @click="$emit('askMkdir')">Add folder</li>
-				</ul>
-			</AppDropdown>
+		<AppButton
+			class="change-view"
+			:icon="gridView ? 'list' : 'grid'"
+			:aria-label="gridView ? 'list view' : 'grid view'"
+			@keyup.enter="$emit('switchView')"
+			@click.native="$emit('switchView')"
+		/>
+
+		<AppDropdown
+			v-if="isWritable"
+			class="upload"
+			icon="plus"
+			type="primary"
+			accent
+			aria-label="Upload"
+		>
+			<ul>
+				<li @click="askForFiles()">upload file</li>
+				<li @click="askForDirectories()">Upload directory</li>
+				<li @click="$emit('askMkdir')">Add folder</li>
+			</ul>
+		</AppDropdown>
 
 	</header>
 </template>
@@ -63,16 +61,7 @@ module.exports = {
 			default: ()=>[]
 		}
 	},
-	computed: {
-		isOpen() {
-			return this.$store.state.isSidebarOpen;
-		},
-	},
 	methods: {
-		toggleSidebar() {
-			this.$store.commit("TOGGLE_SIDEBAR");
-		},
-
 		askForFiles() {
 			document.getElementById('uploadFileInput').click();
 		},
@@ -85,41 +74,48 @@ module.exports = {
 </script>
 
 <style>
-
 .drive-header {
-
-
 	display: flex;
 	justify-content: flex-start;
-	align-items: baseline;
+	align-items: center;
 
 	height: 64px;
 	text-align: left;
 
 	padding: 0 16px;
-
-	/* transition: margin 0.5s ease; */
 }
 
 .drive-header > *{
 	margin-left: 16px;
 }
 
-.drive-header .toggle-button {
-	width: 32px;
-	top: 16px;
+
+.drive-breadcrumb{
+	background-color: var(--bg-2);
+	border-radius: 6px;
+	padding: 4px 8px;
+	margin-right:auto;
+	color: var(--color-2);
+}
+.drive-breadcrumb .breadcrumb__root span{
+	padding-left: 16px;
+	font-weight: var(--regular);
+}
+.drive-breadcrumb .breadcrumb__separator{
+	transform: rotate(-90deg);
+	width:16px;
+}
+.drive-breadcrumb .breadcrumb__item{
+	font-weight: var(--regular);
+}
+.drive-breadcrumb .breadcrumb__item:last-child{
+	color: var(--color);
 	background-color: var(--bg-2);
 }
 
-.drive-header .toggle-button svg {
-	width: 100%;
-	height: 100%;
-	transform: rotate(-90deg);
-	transition: transform 0.5s;
 
-}
-.drive-header .toggle-button.active svg{
-	transform: rotate(90deg);
+.drive-header .upload{
+	margin-right: 200px;
 }
 
 </style>

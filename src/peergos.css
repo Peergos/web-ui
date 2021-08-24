@@ -104,19 +104,8 @@ body {
   color: #009900;
 }
 
-.not_owner {
-  background-color: #DDDDDD;
-}
-
-body .grid {
-  height: 100%;
-  padding-top: 60px;
-  padding-left: 4em;
-}
 @media (max-width: 980px) {
-  body {
-    padding-top: 0px;
-  }
+
 }
 .picon{
   font-size: 2.5em;

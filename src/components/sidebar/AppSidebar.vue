@@ -1,6 +1,6 @@
 <template>
 	<aside class="sidebar" :class="{ active: isOpen }">
-		<AppIcon class="logo" :icon="isOpen ? 'logo-full' : 'logo-min'" />
+		<AppIcon class="logo" :icon="isOpen ? 'logo-full' : 'logo-min'" @click.native="toggleSidebar()"/>
 
 		<AppButton
 			class="toggle-button--mobile mobile"
@@ -104,6 +104,7 @@ module.exports = {
 	margin-top: 16px;
 	margin-bottom: 64px;
 	padding: 0 16px;
+	cursor: pointer;
 }
 
 .sidebar .nav-list {

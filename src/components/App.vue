@@ -14,7 +14,7 @@
 			round
 			@click.native="toggleSidebar"
 		>
-			<AppIcon icon="dots-menu" />
+			<AppIcon icon="dot-menu" />
 		</AppButton>
 
 		<!-- needs restyle -->
@@ -380,5 +380,12 @@ section.content{
 section.content.sidebar-margin {
 	margin-left: 256px;
 	/* width: calc(100% - 240px); */
+}
+
+@media screen and (max-width:1024px) {
+	section.content{
+		margin-left: 0;
+	}
+
 }
 </style>

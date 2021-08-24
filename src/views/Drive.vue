@@ -997,8 +997,9 @@ module.exports = {
 		},
 
 		goBackToLevel(level) {
-			console.log(level, 'goBackToLevel')
 			// By default let's jump to the root.
+
+			// this.changePath('/');
 			var newLevel = level || 0,
 				path = this.path.slice(0, newLevel).join('/');
 
