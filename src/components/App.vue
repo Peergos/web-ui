@@ -4,11 +4,11 @@
 		<component :is="currentModal"></component>
 
 		<!-- navigation -->
-		<AppSidebar v-if="userIsLoggedIn"/>
+		<AppSidebar v-if="isLoggedIn"/>
 
 		<!-- mobile menu trigger -->
 		<AppButton
-			v-if="userIsLoggedIn"
+			v-if="isLoggedIn"
 			class="toggle-button--mobile mobile"
 			size="small"
 			round
@@ -23,7 +23,7 @@
 			<h2>Loading secret link...</h2>
 		</section>
 
-		<section class="login-register" v-if="!userIsLoggedIn">
+		<section class="login-register" v-if="!isLoggedIn">
 			<AppIcon icon="logo-full" class="sprite-test"/>
 
 			<AppTabs ref="tabs">
@@ -50,7 +50,7 @@
 			<!-- App views (pages) ex-filesystem-->
 			<transition name="fade" mode="out-in">
 				<component
-					v-if="userIsLoggedIn"
+					v-if="isLoggedIn"
 					:is="currentView"
 					:initPath="data.initPath"
 					:initiateDownload="data.download"
@@ -113,14 +113,14 @@ module.exports = {
 
 	computed: {
 		...Vuex.mapState([
-			'userIsLoggedIn',
+			'isLoggedIn',
 			'isDark',
 			'isSidebarOpen',
 			'currentModal',
 			'currentView',
 			'crypto',
 			'network',
-			'userContext'
+			'context'
 		]),
 		...Vuex.mapGetters([
 			'currentTheme',
@@ -203,7 +203,7 @@ module.exports = {
 		init() {
 			console.log('init app')
 			const that = this;
-			if (this.userContext != null && this.userContext.username == null) {
+			if (this.context != null && this.context.username == null) {
 				// from a secret link
 				// this.context.getEntryPath().thenApply(function (linkPath) {
 				// 	var path = that.initPath == null ? null : decodeURIComponent(that.initPath);
@@ -234,7 +234,7 @@ module.exports = {
 				this.updateUsage();
 				this.updateQuota();
 
-				this.userContext.getPaymentProperties(false).thenApply(function (paymentProps) {
+				this.context.getPaymentProperties(false).thenApply(function (paymentProps) {
 					// console.log(paymentProps,'paymentProps')
 					that.$store.commit("SET_PAYMENT_PROPERTIES", paymentProps);
 					// if (paymentProps.isPaid()) {

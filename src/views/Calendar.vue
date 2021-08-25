@@ -35,7 +35,6 @@
 module.exports = {
     data: function() {
         return {
-            context: null,
             APPS_DIR_NAME: '.apps',
             CALENDAR_DIR_NAME: 'calendar',
             DATA_DIR_NAME: 'data',
@@ -64,8 +63,12 @@ module.exports = {
         }
     },
     props: ['messages', 'importFile', 'importCalendarPath', 'owner', 'shareWith', 'loadCalendarAsGuest'],
-    created: function() {
-        this.context = this.$store.state.userContext;
+	computed: {
+		...Vuex.mapState([
+			'context'
+		]),
+	},
+    created() {
         let that = this;
         this.displaySpinner();
         peergos.shared.user.App.init(that.context, "calendar").thenCompose(calendar => {

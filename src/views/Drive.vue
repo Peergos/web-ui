@@ -172,7 +172,6 @@ module.exports = {
 
 			isGrid: true,
 			view: "files",
-			context: null,
 			path: [],
 			searchPath: null,
 			currentDir: null,
@@ -278,7 +277,7 @@ module.exports = {
 		...Vuex.mapState([
 			'quotaBytes',
 			'usageBytes',
-			// 'userContext'
+			'context'
 		]),
 
 		sortedFiles() {
@@ -428,10 +427,10 @@ module.exports = {
 
 
 		username() {
-			var context = this.getContext();
-			if (context == null)
+
+			if (this.context == null)
 				return "";
-			return context.username;
+			return this.context.username;
 		}
 	},
 
@@ -439,8 +438,7 @@ module.exports = {
 
 	created() {
 		console.debug('Filesystem module created!');
-		// this.context = this.initContext;
-		this.context = this.$store.state.userContext;
+
 		this.showAppgrid = !this.isSecretLink;
 		if (this.isSecretLink)
 			this.view = "files";
@@ -506,7 +504,7 @@ module.exports = {
 	methods: {
 		...Vuex.mapActions([
 			'updateQuota',
-			'updateUsage'
+			'updateUsage',
 		]),
 
 		init() {
@@ -664,9 +662,9 @@ module.exports = {
 			});
 		},
 		showPendingServerMessages() {
-			let context = this.getContext();
+			// let context = this.getContext();
 			let that = this;
-			context.getServerConversations().thenApply(function (conversations) {
+			this.context.getServerConversations().thenApply(function (conversations) {
 				let allConversations = [];
 				let conv = conversations.toArray();
 				conv.forEach(function (conversation) {
@@ -731,8 +729,7 @@ module.exports = {
 		},
 
 		encryptProps(props) {
-			var context = this.getContext();
-			var both = context.encryptURL(props)
+			var both = this.context.encryptURL(props)
 			const nonce = both.base64Nonce;
 			const ciphertext = both.base64Ciphertext;
 			return { nonce: nonce, ciphertext: ciphertext };
@@ -741,8 +738,8 @@ module.exports = {
 		decryptProps(props) {
 			if (this.isSecretLink)
 				return path;
-			var context = this.getContext();
-			return fragmentToProps(context.decryptURL(props.ciphertext, props.nonce));
+
+			return fragmentToProps(this.context.decryptURL(props.ciphertext, props.nonce));
 		},
 
 		onUrlChange() {
@@ -792,12 +789,10 @@ module.exports = {
 			let currentPath = this.path;
 			if (newPath.length != currentPath.length) {
 				this.changePath(directory);
-				this.toggleNav();
 			} else {
 				for (var i = 0; i < newPath.length; i++) {
 					if (newPath[i] != currentPath[i]) {
 						this.changePath(directory);
-						this.toggleNav();
 						return;
 					}
 				}
@@ -864,12 +859,12 @@ module.exports = {
 			this.updateCurrentDirectory(null);
 		},
 		updateCurrentDirectory(selectedFilename) {
-			var context = this.getContext();
-			if (context == null)
+
+			if (this.context == null)
 				return Promise.resolve(null);
 			var path = this.getPath();
 			var that = this;
-			context.getByPath(path).thenApply(function (file) {
+			this.context.getByPath(path).thenApply(function (file) {
 				that.currentDir = file.get();
 				that.updateFiles(selectedFilename);
 			}).exceptionally(function (throwable) {
@@ -882,11 +877,11 @@ module.exports = {
 			if (current == null)
 				return Promise.resolve([]);
 			let that = this;
-			let context = this.getContext();
+			// let context = this.getContext();
 			let path = that.path.length == 0 ? ["/"] : that.path;
 			let directoryPath = peergos.client.PathUtils.directoryToPath(path);
-			context.getDirectorySharingState(directoryPath).thenApply(function (updatedSharedWithState) {
-				current.getChildren(context.crypto.hasher, context.network).thenApply(function (children) {
+			this.context.getDirectorySharingState(directoryPath).thenApply(function (updatedSharedWithState) {
+				current.getChildren(that.context.crypto.hasher, that.context.network).thenApply(function (children) {
 					that.sharedWithState = updatedSharedWithState;
 					var arr = children.toArray();
 					that.showSpinner = false;
@@ -910,8 +905,8 @@ module.exports = {
 		},
 
 		updateSocial(callbackFunc) {
-	    var context = this.getContext();
-            if (context == null || context.username == null)
+
+            if (this.context == null || this.context.username == null)
                 this.social = {
                     pending: [],
 		    friends: [],
@@ -924,7 +919,7 @@ module.exports = {
                 };
 	    else {
 		    var that = this;
-            context.getSocialState().thenApply(function(socialState){
+            this.context.getSocialState().thenApply(function(socialState){
 		    var annotations = {};
 		    socialState.friendAnnotations.keySet().toArray([]).map(name => annotations[name]=socialState.friendAnnotations.get(name));
 		    var followerNames = socialState.followerRoots.keySet().toArray([]);
@@ -967,8 +962,8 @@ module.exports = {
 	},
 
 		sharedWithDataUpdate() {
-			var context = this.getContext();
-			if (this.selectedFiles.length != 1 || context == null) {
+
+			if (this.selectedFiles.length != 1 || this.context == null) {
 				this.sharedWithData = { read_shared_with_users: [], edit_shared_with_users: [] };
 				return;
 			}
@@ -982,9 +977,9 @@ module.exports = {
 			let edit_usernames = fileSharedWithState.writeAccess.toArray([]);
 			this.sharedWithData = { read_shared_with_users: read_usernames, edit_shared_with_users: edit_usernames };
 		},
-		getContext() {
-			return this.context;
-		},
+		// getContext() {
+		// 	return this.context;
+		// },
 
 		getThumbnailURL(file) {
 			// cache thumbnail to avoid recalculating it
@@ -1089,11 +1084,11 @@ module.exports = {
 		},
 
 		mkdir(name) {
-			var context = this.getContext();
+
 			// this.showSpinner = true;
 			var that = this;
 
-			this.currentDir.mkdir(name, context.network, false, context.crypto)
+			this.currentDir.mkdir(name, this.context.network, false, this.context.crypto)
 				.thenApply(function (updatedDir) {
 					that.currentDir = updatedDir;
 					that.updateFiles();
@@ -1459,9 +1454,9 @@ module.exports = {
 
 			var reader = new browserio.JSFileReader(file);
 			var java_reader = new peergos.shared.user.fs.BrowserFileReader(reader);
-			let context = this.getContext();
+			// let context = this.getContext();
 
-			context.getByPath(directory).thenApply(function (updatedDirOpt) {
+			that.context.getByPath(directory).thenApply(function (updatedDirOpt) {
 				let spaceAfterOperation = that.checkAvailableSpace(file.size);
 				if (spaceAfterOperation < 0) {
 
@@ -1472,8 +1467,8 @@ module.exports = {
 					return;
 				}
 				updatedDirOpt.get().uploadFileJS(file.name, java_reader, (file.size - (file.size % Math.pow(2, 32))) / Math.pow(2, 32), file.size,
-					overwriteExisting, overwriteExisting ? true : false, context.network, context.crypto, updateProgressBar,
-					context.getTransactionService()
+					overwriteExisting, overwriteExisting ? true : false, that.context.network, that.context.crypto, updateProgressBar,
+					that.context.getTransactionService()
 				).thenApply(function (res) {
 					const thumbnailAllocation = Math.min(100000, file.size / 10);
 					updateProgressBar(thumbnailAllocation);
@@ -1554,14 +1549,14 @@ module.exports = {
 						let foundIndex = textFiles.findIndex(v => v.getName() === select_result);
 						if (foundIndex == -1) {
 							that.showSpinner = true;
-							let context = that.getContext();
+							// let context = that.getContext();
 							let empty = peergos.shared.user.JavaScriptPoster.emptyArray();
 							let reader = new peergos.shared.user.fs.AsyncReader.ArrayBacked(empty);
 							homeDir.get().uploadFileJS(select_result, reader, 0, 0,
-								false, false, context.network, context.crypto, function (len) { },
-								context.getTransactionService()
+								false, false, that.context.network, that.context.crypto, function (len) { },
+								that.context.getTransactionService()
 							).thenApply(function (updatedDir) {
-								updatedDir.getChild(select_result, context.crypto.hasher, context.network).thenApply(function (textFileOpt) {
+								updatedDir.getChild(select_result, that.context.crypto.hasher, that.context.network).thenApply(function (textFileOpt) {
 									that.showSpinner = false;
 									that.selectedFiles = [textFileOpt.get()];
 									that.clearTabNavigation();
@@ -1629,12 +1624,12 @@ module.exports = {
 				}
 				that.showSpinner = true;
 
-				var context = this.getContext();
+
 				if (clipboard.op == "cut") {
 					let name = clipboard.fileTreeNode.getFileProperties().name;
 					console.log("paste-cut " + name + " -> " + target.getFileProperties().name);
 					let filePath = peergos.client.PathUtils.toPath(that.path, name);
-					clipboard.fileTreeNode.moveTo(target, clipboard.parent, filePath, context)
+					clipboard.fileTreeNode.moveTo(target, clipboard.parent, filePath, that.context)
 						.thenApply(function () {
 							that.currentDirChanged();
 							that.onUpdateCompletion.push(function () {
@@ -1657,7 +1652,7 @@ module.exports = {
 							that.showSpinner = false;
 							return;
 						}
-						clipboard.fileTreeNode.copyTo(target, context)
+						clipboard.fileTreeNode.copyTo(target, that.context)
 							.thenApply(function () {
 								that.currentDirChanged();
 								that.onUpdateCompletion.push(function () {
@@ -1721,7 +1716,7 @@ module.exports = {
 		},
 		showShareWithForFile(dirPath, filename, allowReadWriteSharing, allowCreateSecretLink, nameToDisplay) {
 			let that = this;
-			var context = this.getContext();
+
 			this.context.getByPath(dirPath)
 				.thenApply(function (dir) {
 					dir.get().getChild(filename, that.context.crypto.hasher, that.context.network).thenApply(function (child) {
@@ -1732,7 +1727,7 @@ module.exports = {
 						that.filesToShare = [file];
 						that.pathToFile = dirPath.split('/');
 						let directoryPath = peergos.client.PathUtils.directoryToPath(that.pathToFile);
-						context.getDirectorySharingState(directoryPath).thenApply(function (updatedSharedWithState) {
+						taht.context.getDirectorySharingState(directoryPath).thenApply(function (updatedSharedWithState) {
 							let fileSharedWithState = updatedSharedWithState.get(file.getFileProperties().name);
 							let read_usernames = fileSharedWithState.readAccess.toArray([]);
 							let edit_usernames = fileSharedWithState.writeAccess.toArray([]);
@@ -1779,7 +1774,9 @@ module.exports = {
 			this.sortBy = prop;
 		},
 		updateContext(newContext) {
-			this.context = newContext;
+			// this.context = newContext;
+			this.$store.commit("SET_USER_CONTEXT", newContext);
+
 		},
 
 		changePath(path) {
@@ -1965,12 +1962,12 @@ module.exports = {
 				if (typeof (clipboard) == undefined || typeof (clipboard.op) == "undefined")
 					return;
 				that.showSpinner = true;
-				var context = this.getContext();
+
 				if (clipboard.op == "cut") {
 					var name = clipboard.fileTreeNode.getFileProperties().name;
 					console.log("drop-cut " + name + " -> " + target.getFileProperties().name);
 					let filePath = peergos.client.PathUtils.toPath(that.path, name);
-					clipboard.fileTreeNode.moveTo(target, clipboard.parent, filePath, context)
+					clipboard.fileTreeNode.moveTo(target, clipboard.parent, filePath, that.context)
 						.thenApply(function () {
 							that.currentDirChanged();
 							that.onUpdateCompletion.push(function () {
@@ -1987,7 +1984,7 @@ module.exports = {
 					console.log("drop-copy");
 					var file = clipboard.fileTreeNode;
 					var props = file.getFileProperties();
-					file.copyTo(target, context)
+					file.copyTo(target, that.context)
 						.thenApply(function () {
 							that.currentDirChanged();
 							that.onUpdateCompletion.push(function () {
@@ -2096,12 +2093,12 @@ module.exports = {
 		uploadEmptyFile(filename) {
 			this.showSpinner = true;
 			let that = this;
-			let context = this.getContext();
+			// let context = this.getContext();
 			let empty = peergos.shared.user.JavaScriptPoster.emptyArray();
 			let reader = new peergos.shared.user.fs.AsyncReader.ArrayBacked(empty);
 			this.currentDir.uploadFileJS(filename, reader, 0, 0,
-				false, false, context.network, context.crypto, function (len) { },
-				context.getTransactionService()
+				false, false, this.context.network, this.context.crypto, function (len) { },
+				this.context.getTransactionService()
 			).thenApply(function (res) {
 				that.currentDir = res;
 				that.updateFiles();
@@ -2174,9 +2171,9 @@ module.exports = {
 				var file = this.selectedFiles[i];
 				var that = this;
 				var parent = this.currentDir;
-				var context = this.getContext();
+
 				this.confirmDelete(file, () => {
-					that.deleteOne(file, parent, context);
+					that.deleteOne(file, parent, that.context);
 					that.buildTabNavigation();
 				});
 			}
@@ -2257,14 +2254,7 @@ module.exports = {
 			}
 			this.navigationViaTabKey = false;
 		},
-		toggleNav() {
-			if (this.showAppgrid)
-				this.view = "files"
-			else
-				this.view = "appgrid"
-			this.showAppgrid = !this.showAppgrid;
-			this.buildTabNavigation();
-		},
+
 		formatDateTime(dateTime) {
 			let date = new Date(dateTime.toString() + "+00:00");//adding UTC TZ in ISO_OFFSET_DATE_TIME ie 2021-12-03T10:25:30+00:00
 			let formatted = date.getFullYear() + '-' + (date.getMonth() + 1) + '-' + date.getDate()

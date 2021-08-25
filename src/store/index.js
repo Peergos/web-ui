@@ -16,10 +16,10 @@ module.exports = new Vuex.Store({
 
 		crypto: null,
 		network: null,
-		userContext: null,
+		context: null,
 		paymentProperties: null,
 
-		userIsLoggedIn: false,
+		isLoggedIn: false,
 		isAdmin:false
 	},
 
@@ -79,7 +79,7 @@ module.exports = new Vuex.Store({
 			state.network = payload;
 		},
 		SET_USER_CONTEXT(state, payload) {
-			state.userContext = payload;
+			state.context = payload;
 		},
 		SET_PAYMENT_PROPERTIES(state, payload) {
 			state.paymentProperties = payload;
@@ -95,7 +95,7 @@ module.exports = new Vuex.Store({
 
 		// User
 		USER_LOGIN(state, payload) {
-			state.userIsLoggedIn = payload;
+			state.isLoggedIn = payload;
 		},
 		USER_ADMIN(state, payload) {
 			state.isAdmin = payload;
@@ -107,7 +107,7 @@ module.exports = new Vuex.Store({
 		updateQuota({ commit, state }) {
 			if (state.isSecretLink)
 				return;
-			return state.userContext.getQuota().thenApply(q => {
+			return state.context.getQuota().thenApply(q => {
 				commit('SET_QUOTA', q)
 			});
 		},
@@ -116,7 +116,7 @@ module.exports = new Vuex.Store({
 			if (state.isSecretLink)
 				return;
 
-			return state.userContext.getSpaceUsage().thenApply(u => {
+			return state.context.getSpaceUsage().thenApply(u => {
 				commit("SET_USAGE", u);
 			});
 		},

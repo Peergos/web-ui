@@ -100,7 +100,6 @@
 module.exports = {
     data: function() {
         return {
-            context: null,
             targetUsername: "",
             targetUsernames: [],
             data:{
@@ -112,15 +111,24 @@ module.exports = {
                 groupsUidToName: [],
             },
             showSpinner: false,
-	    showFingerprint: false,
-	    initialIsVerified: false,
-	    fingerprint: null,
-	    friendname: null
+			showFingerprint: false,
+			initialIsVerified: false,
+			fingerprint: null,
+			friendname: null
         }
     },
     props: ['externalchange', 'messages', 'displayProfile'],
-    created: function() {
-        this.context = this.$store.state.userContext;
+
+	computed: {
+		...Vuex.mapState([
+			'context'
+		]),
+        usernames: function() {
+            return this.context.network.usernames.toArray([]);
+        }
+    },
+	created: function() {
+        // this.context = this.$store.state.context;
         // TODO store data in vuex?
         this.updateSocial();
         Vue.nextTick(this.setTypeAhead);
@@ -266,7 +274,7 @@ module.exports = {
 	    this.showFingerprint = false;
 	    this.data.annotations[this.friendname] = new peergos.shared.user.FriendAnnotation(this.friendname, isVerified, this.fingerprint.left)
 	},
-	
+
 	showFingerPrint: function(friendname) {
 	    var that = this;
 	    this.context.generateFingerPrint(friendname).thenApply(function(f) {
@@ -378,11 +386,7 @@ module.exports = {
             this.$emit("hide-social");
         }
     },
-    computed: {
-        usernames: function() {
-            return this.context.network.usernames.toArray([]);
-        }
-    }
+
 }
 </script>
 

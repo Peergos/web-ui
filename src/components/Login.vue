@@ -36,7 +36,8 @@ module.exports = {
 	computed: {
 		...Vuex.mapState([
 			'crypto',
-			'network'
+			'network',
+			'context'
 		]),
 	},
 	mounted() {

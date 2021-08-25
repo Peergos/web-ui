@@ -47,7 +47,7 @@
                         </button>
                     </div>
                 </div>
-                
+
                 <div id="scroll-area">
                     <center v-if="data.length==0">
                         <h3>
@@ -95,7 +95,7 @@
                                         <button class="btn btn-success" @click="addComment(entry[0])">Add comment</button>
                                     </span>
                                 </div>
-                                
+
                                 <div class="table-responsive table-striped table-hover" style="font-size: 1.0em;padding-left:0;margin-bottom:0;border:none;">
                                     <div v-for="(row, rowIndex) in entry">
                                         <div v-if="rowIndex >= 2 && row.isMedia">
@@ -138,7 +138,7 @@
                                         </div>
                                     </div>
                                 </div>
-                                
+
                             </div>
                             <div v-if="!entry[0].isLastEntry && (entry[0].isPost || entry[0].isMedia)" style="border: 1px solid black;border-radius: 11px; margin-top:5px; padding: 2em;">
                                 <div class="table-responsive table-striped table-hover" style="font-size: 1.0em;padding-left:0;margin-bottom:0;border:none;">
@@ -204,7 +204,6 @@
 module.exports = {
     data: function() {
         return {
-            context: null,
             buildingFeed: true,
             showSpinner: false,
             data: [],
@@ -238,7 +237,9 @@ module.exports = {
         'updateSocialFeedInstance', 'importCalendarFile', 'importSharedCalendar', 'displayProfile', 'groups',
         'followingnames', 'friendnames', 'followernames', 'checkAvailableSpace', 'convertBytesToHumanReadable', 'viewConversations'],
     created: function() {
-        this.context = this.$store.state.userContext;
+        // this.context = this.$store.state.userContext;
+		// this.context = this.$store.state.context;
+
         let that = this;
         this.context.getSocialFeed().thenCompose(function(socialFeed) {
                 return socialFeed.update().thenApply(function(updated) {
@@ -284,18 +285,18 @@ module.exports = {
         getPosition: function(e) {
 	    var posx = 0;
 	    var posy = 0;
-	    
+
 	    if (!e) var e = window.event;
 	    var body = document.getElementById("modal-body");
 	    var feed = document.getElementById("feed")
-	    
+
 	    if (e.clientX || e.clientY) {
-		posx = e.clientX - feed.offsetLeft + document.body.scrollLeft + 
+		posx = e.clientX - feed.offsetLeft + document.body.scrollLeft +
                     document.documentElement.scrollLeft;
-		posy = e.clientY - body.offsetTop + document.body.scrollTop + 
+		posy = e.clientY - body.offsetTop + document.body.scrollTop +
                     document.documentElement.scrollTop;
 	    }
-	    
+
 	    return {
 		x: posx,
 		y: posy
@@ -1319,6 +1320,9 @@ module.exports = {
         }
     },
     computed: {
+		...Vuex.mapState([
+			'context'
+		]),
     	blocks: function() {
             if (this.data == null || this.data.length == 0) {
                 return [];

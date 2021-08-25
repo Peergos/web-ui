@@ -38,7 +38,7 @@
 		</AppDropdown>
 
 		<AppDropdown
-			v-if="userIsLoggedIn"
+			v-if="isLoggedIn"
 			class=""
 			aria-expanded="true"
 			aria-label="settings"
@@ -94,12 +94,12 @@ module.exports = {
 	},
 	computed: {
 		...Vuex.mapState([
-			'userIsLoggedIn',
+			'isLoggedIn',
 			'isAdmin',
-			'userContext'
+			'context'
 		]),
 		userName(){
-			return this.userContext.username
+			return this.context.username
 		}
 	},
 	methods: {
