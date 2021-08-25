@@ -31,9 +31,9 @@
 			aria-label="Upload"
 		>
 			<ul>
-				<li @click="askForFiles()">upload file</li>
-				<li @click="askForDirectories()">Upload directory</li>
-				<li @click="$emit('askMkdir')">Add folder</li>
+				<li @click="askForFiles()">Upload files</li>
+				<li @click="askForDirectories()">Upload folders</li>
+				<li @click="$emit('askMkdir')">Create folder</li>
 			</ul>
 		</AppDropdown>
 
