@@ -35,15 +35,14 @@
 <script>
 
 module.exports = {
-	name: "ModalSpace",
 	data() {
-        return {
+		return {
 			unit:"GiB",
 			space:"",
 			paymentUrl:null,
 			showCard:false,
-        };
-    },
+		};
+	},
 	computed: {
 		...Vuex.mapState([
 			'context',

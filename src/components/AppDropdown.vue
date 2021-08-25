@@ -78,10 +78,20 @@ module.exports = {
 .app-dropdown li {
 	padding: 8px  16px;
 	cursor: pointer;
-	font-size: var(--text-small)
+	font-size: var(--text-small);
+	transition: background-color 0.5s;
 }
 .app-dropdown li:hover {
 	background-color: var(--bg-2);
+}
+.app-dropdown li:hover a{
+	color: var(--color);
+	text-decoration: none;
+}
+.app-dropdown li.divider{
+	border-top: 1px solid var(--text-color);
+	height: 1px;
+	padding: 0;
 }
 
 .drop-enter-active, .drop-leave-active  {

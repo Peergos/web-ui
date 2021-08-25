@@ -37,46 +37,19 @@
 			</ul>
 		</AppDropdown>
 
-		<AppDropdown
-			v-if="isLoggedIn"
-			class=""
-			aria-expanded="true"
-			aria-label="settings"
-		>
-		<template #trigger>
-			<div class="drive-user">
-				{{ userName }} <span class="picture--temp"></span>
-			</div>
-		</template>
-		<ul class="" aria-labelledby="logoutButton">
-			<li v-if="isAdmin" v-on:keyup.enter="showAdminPanel">
-				<a @click="showAdminPanel">Admin Panel</a>
-			</li>
-			<li class="settings-item" v-on:keyup.enter="showRequestStorage()">
-				<a @click="showRequestStorage()">Account</a>
-			</li>
-			<li class="settings-item" v-on:keyup.enter="showChangePassword()">
-				<a @click="showChangePassword()">Change Password</a>
-			</li>
-			<!-- <li class="settings-item" v-on:keyup.enter="showViewAccount">
-				<a @click="showViewAccount">Delete Account</a>
-			</li>
-			<li role="separator" class="divider"></li>
-			<li class="settings-item" v-on:keyup.enter="logout">
-				<a v-on:keyup.enter="logout" @click="logout">Log out</a>
-			</li> -->
-		</ul>
-		</AppDropdown>
+		<UserSettings />
 
 	</header>
 </template>
 
 <script>
 const AppDropdown = require("../AppDropdown.vue");
+const UserSettings = require("../UserSettings.vue");
 
 module.exports = {
 	components: {
 		AppDropdown,
+		UserSettings
 	},
 	props: {
 		gridView: {
@@ -92,16 +65,7 @@ module.exports = {
 			default: ()=>[]
 		}
 	},
-	computed: {
-		...Vuex.mapState([
-			'isLoggedIn',
-			'isAdmin',
-			'context'
-		]),
-		userName(){
-			return this.context.username
-		}
-	},
+
 	methods: {
 		askForFiles() {
 			document.getElementById('uploadFileInput').click();
@@ -110,22 +74,6 @@ module.exports = {
 		askForDirectories() {
 			document.getElementById('uploadDirectoriesInput').click();
 		},
-        showAdminPanel() {
-            if (this.context == null)
-                return;
-			console.log('admin panel...')
-            // const that = this;
-            // this.context.getAndDecodePendingSpaceRequests().thenApply(reqs => {
-            //     that.admindata.pending = reqs.toArray([]);
-            //     that.showAdmin = true;
-            // });
-        },
-		showRequestStorage() {
-			this.$store.commit('CURRENT_MODAL', 'ModalSpace');
-		},
-		showChangePassword(){
-			this.$store.commit('CURRENT_MODAL', 'ModalPassword');
-		}
 	},
 }
 </script>
@@ -174,18 +122,4 @@ module.exports = {
 .drive-header .upload{
 	margin-right: 200px;
 }
-
-.drive-user{
-	display:flex;
-	align-items: center;
-}
-.drive-user .picture--temp{
-	display: inline-block;
-	height: 50px;
-	width:50px;
-	margin-left:8px;
-	background-color: var(--bg-2);
-	border-radius: 50%;
-}
-
 </style>

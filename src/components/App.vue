@@ -76,6 +76,7 @@
 const AppSidebar = require("./sidebar/AppSidebar.vue");
 const ModalSpace = require("./modal/ModalSpace.vue");
 const ModalPassword = require("./modal/ModalPassword.vue");
+const ModalAccount = require("./modal/ModalAccount.vue");
 
 const AppTab = require("./tabs/AppTab.vue");
 const AppTabs = require("./tabs/AppTabs.vue");
@@ -93,6 +94,8 @@ module.exports = {
 	components: {
 		AppSidebar,
 		ModalSpace,
+		ModalPassword,
+		ModalAccount,
 		Calendar,
 		Drive,
 		NewsFeed,
@@ -101,8 +104,7 @@ module.exports = {
 		AppTab,
 		AppTabs,
 		Login,
-		Signup,
-		ModalPassword
+		Signup
 	},
 
 	data() {
