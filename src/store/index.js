@@ -4,7 +4,6 @@ const helpers = require("../mixins/storage/index.js");
 
 module.exports = new Vuex.Store({
 	state: {
-		userIsLoggedIn: false,
 		currentView: null,
 		isDark: false,
 		isSidebarOpen: false,
@@ -18,7 +17,10 @@ module.exports = new Vuex.Store({
 		crypto: null,
 		network: null,
 		userContext: null,
-		paymentProperties: null
+		paymentProperties: null,
+
+		userIsLoggedIn: false,
+		isAdmin:false
 	},
 
 	getters: {
@@ -65,10 +67,6 @@ module.exports = new Vuex.Store({
 			state.currentModal = payload;
 			state.showModal = true;
 		},
-		USER_LOGIN(state, payload) {
-			state.userIsLoggedIn = payload;
-		},
-
 		CURRENT_VIEW(state, payload) {
 			state.currentView = payload;
 		},
@@ -93,6 +91,14 @@ module.exports = new Vuex.Store({
 		},
 		SET_USAGE(state, payload) {
 			state.usageBytes = payload;
+		},
+
+		// User
+		USER_LOGIN(state, payload) {
+			state.userIsLoggedIn = payload;
+		},
+		USER_ADMIN(state, payload) {
+			state.isAdmin = payload;
 		},
 	},
 

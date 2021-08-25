@@ -8,6 +8,7 @@
 			:icon="icon"
 			@click.native="toggleDropdown()"
 		>
+			<slot name="trigger"></slot>
 		</AppButton>
 		<transition name="drop">
 			<div v-if="isActive" class="dropdown__content" @click="toggleDropdown()">

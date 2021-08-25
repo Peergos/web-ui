@@ -53,11 +53,11 @@
 			:initial-file-name="selectedFiles[0] == null ? '' : selectedFiles[0].getFileProperties().name">
 		</gallery>
 
-		<!-- <div v-if="viewMenu && isProfileViewable()">
+		<div v-if="viewMenu && isProfileViewable()">
 			<ul id="right-click-menu-profile" tabindex="-1"  @blur="closeMenu" v-bind:style="{top:top, left:left}">
 			<li id='profile-view' @click="showProfile(false)">Show Profile</li>
 			</ul>
-		</div> -->
+		</div>
 
 
 		<div v-if="conversationMonitors.length>0" class="messageholder">
@@ -193,7 +193,6 @@ module.exports = {
 			forceSharedRefreshWithUpdate: 0,
 			isNotBackground: true,
 
-			isAdmin: false,
 			showAdmin: false,
 			showAppgrid: false,
 			showGallery: false,
@@ -279,6 +278,7 @@ module.exports = {
 		...Vuex.mapState([
 			'quotaBytes',
 			'usageBytes',
+			// 'userContext'
 		]),
 
 		sortedFiles() {
@@ -441,7 +441,6 @@ module.exports = {
 		console.debug('Filesystem module created!');
 		// this.context = this.initContext;
 		this.context = this.$store.state.userContext;
-
 		this.showAppgrid = !this.isSecretLink;
 		if (this.isSecretLink)
 			this.view = "files";
@@ -563,7 +562,7 @@ module.exports = {
 					} else
 						that.context.getPendingSpaceRequests().thenApply(reqs => {
 							if (reqs.toArray([]).length > 0)
-								that.isAdmin = true;
+								that.$store.commit('USER_ADMIN', true);
 						});
 				});
 			}
@@ -2004,6 +2003,18 @@ module.exports = {
 				}
 			}
 		},
+		isProfileViewable: function() {
+           try {
+               if (this.currentDir.props.name != "/")
+                   return false;
+               if (this.selectedFiles.length != 1)
+                   return false;
+               return this.selectedFiles[0].isDirectory()
+           } catch (err) {
+               return false;
+           }
+        },
+
 		openMenu(e, file, fromTabKey) {
 			if (this.ignoreEvent) {
 				e.preventDefault();

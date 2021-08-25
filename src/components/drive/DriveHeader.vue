@@ -37,6 +37,37 @@
 			</ul>
 		</AppDropdown>
 
+		<AppDropdown
+			v-if="userIsLoggedIn"
+			class=""
+			aria-expanded="true"
+			aria-label="settings"
+		>
+		<template #trigger>
+			<div class="drive-user">
+				{{ userName }} <span class="picture--temp"></span>
+			</div>
+		</template>
+		<ul class="" aria-labelledby="logoutButton">
+			<li v-if="isAdmin" v-on:keyup.enter="showAdminPanel">
+				<a @click="showAdminPanel">Admin Panel</a>
+			</li>
+			<li class="settings-item" v-on:keyup.enter="showRequestStorage(true)">
+				<a @click="showRequestStorage(true)">Account</a>
+			</li>
+			<li class="settings-item" v-on:keyup.enter="showChangePassword">
+				<a @click="showChangePassword">Change Password</a>
+			</li>
+			<li class="settings-item" v-on:keyup.enter="showViewAccount">
+				<a @click="showViewAccount">Delete Account</a>
+			</li>
+			<li role="separator" class="divider"></li>
+			<li class="settings-item" v-on:keyup.enter="logout">
+				<a v-on:keyup.enter="logout" @click="logout">Log out</a>
+			</li>
+		</ul>
+		</AppDropdown>
+
 	</header>
 </template>
 
@@ -59,6 +90,16 @@ module.exports = {
 		path:{
 			type: Array,
 			default: ()=>[]
+		}
+	},
+	computed: {
+		...Vuex.mapState([
+			'userIsLoggedIn',
+			'isAdmin',
+			'userContext'
+		]),
+		userName(){
+			return this.userContext.username
 		}
 	},
 	methods: {
@@ -116,6 +157,19 @@ module.exports = {
 
 .drive-header .upload{
 	margin-right: 200px;
+}
+
+.drive-user{
+	display:flex;
+	align-items: center;
+}
+.drive-user .picture--temp{
+	display: inline-block;
+	height: 50px;
+	width:50px;
+	margin-left:8px;
+	background-color: var(--bg-2);
+	border-radius: 50%;
 }
 
 </style>
