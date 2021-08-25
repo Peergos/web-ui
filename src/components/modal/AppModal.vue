@@ -35,7 +35,7 @@ module.exports = {
 .app-modal__overlay{
 	position: fixed;
 	/* TODO: fix global z-index strategy */
- 	z-index: 100;
+ 	z-index: 200;
   	top: 0;
   	left: 0;
   	width: 100%;

@@ -46,7 +46,7 @@ module.exports = {
     },
 	computed: {
 		...Vuex.mapState([
-			'userContext',
+			'context',
 			'quotaBytes',
 			'usageBytes',
 			'paymentProperties'
@@ -124,9 +124,8 @@ module.exports = {
 			console.log('requestStorage:', bytes)
 			var that = this;
 
-			console.log(this.userContext,'this.userContext')
 
-			this.userContext.requestSpace(bytes)
+			this.context.requestSpace(bytes)
 				.thenCompose(x => that.updateQuota())
 				.thenApply(quotaBytes => {
 
@@ -151,8 +150,8 @@ module.exports = {
 
         updateCard() {
 			var that = this;
-			this.userContext.getPaymentProperties(true).thenApply(function(props) {
-				that.paymentUrl = props.getUrl() + "&username=" + that.userContext.username + "&client_secret=" + props.getClientSecret();
+			this.context.getPaymentProperties(true).thenApply(function(props) {
+				that.paymentUrl = props.getUrl() + "&username=" + that.context.username + "&client_secret=" + props.getClientSecret();
 				that.showCard = true;
 			});
 		},

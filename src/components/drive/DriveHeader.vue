@@ -52,19 +52,19 @@
 			<li v-if="isAdmin" v-on:keyup.enter="showAdminPanel">
 				<a @click="showAdminPanel">Admin Panel</a>
 			</li>
-			<li class="settings-item" v-on:keyup.enter="showRequestStorage(true)">
-				<a @click="showRequestStorage(true)">Account</a>
+			<li class="settings-item" v-on:keyup.enter="showRequestStorage()">
+				<a @click="showRequestStorage()">Account</a>
 			</li>
-			<li class="settings-item" v-on:keyup.enter="showChangePassword">
-				<a @click="showChangePassword">Change Password</a>
+			<li class="settings-item" v-on:keyup.enter="showChangePassword()">
+				<a @click="showChangePassword()">Change Password</a>
 			</li>
-			<li class="settings-item" v-on:keyup.enter="showViewAccount">
+			<!-- <li class="settings-item" v-on:keyup.enter="showViewAccount">
 				<a @click="showViewAccount">Delete Account</a>
 			</li>
 			<li role="separator" class="divider"></li>
 			<li class="settings-item" v-on:keyup.enter="logout">
 				<a v-on:keyup.enter="logout" @click="logout">Log out</a>
-			</li>
+			</li> -->
 		</ul>
 		</AppDropdown>
 
@@ -110,6 +110,22 @@ module.exports = {
 		askForDirectories() {
 			document.getElementById('uploadDirectoriesInput').click();
 		},
+        showAdminPanel() {
+            if (this.context == null)
+                return;
+			console.log('admin panel...')
+            // const that = this;
+            // this.context.getAndDecodePendingSpaceRequests().thenApply(reqs => {
+            //     that.admindata.pending = reqs.toArray([]);
+            //     that.showAdmin = true;
+            // });
+        },
+		showRequestStorage() {
+			this.$store.commit('CURRENT_MODAL', 'ModalSpace');
+		},
+		showChangePassword(){
+			this.$store.commit('CURRENT_MODAL', 'ModalPassword');
+		}
 	},
 }
 </script>

@@ -25,11 +25,11 @@ module.exports = {
         togglePassword1: function() {
 	    this.passwordFieldType = this.passwordFieldType == "text" ? "password" : "text";
 	},
-	
+
         togglePassword2: function() {
 	    this.password2FieldType = this.password2FieldType == "text" ? "password" : "text";
 	},
-	
+
         validatePassword: function(inFirstField) {
             if (inFirstField && !this.checkPassword)
                 return;

@@ -75,6 +75,8 @@
 <script>
 const AppSidebar = require("./sidebar/AppSidebar.vue");
 const ModalSpace = require("./modal/ModalSpace.vue");
+const ModalPassword = require("./modal/ModalPassword.vue");
+
 const AppTab = require("./tabs/AppTab.vue");
 const AppTabs = require("./tabs/AppTabs.vue");
 
@@ -99,7 +101,8 @@ module.exports = {
 		AppTab,
 		AppTabs,
 		Login,
-		Signup
+		Signup,
+		ModalPassword
 	},
 
 	data() {

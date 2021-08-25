@@ -28,9 +28,10 @@
 					<AppButton
 						id='prompt-button-id'
 						type="primary"
+						accent
 						@click.native="getPrompt(this.prompt_result)"
 					>
-					Create
+					{{confirm}}
 					</AppButton>
 				</footer>
 			</div>
@@ -66,7 +67,12 @@ module.exports = {
 		},
 		consumer_func: {
 			type: Function
+		},
+		confirm:{
+			type: String,
+			default: 'ok'
 		}
+
 
 	},
 
