@@ -60,18 +60,6 @@
 		</div>
 
 
-		<div v-if="conversationMonitors.length>0" class="messageholder">
-			<messagebar :replyToMessage="replyToMessage"
-				:dismissMessage="dismissMessage"
-				v-for="message in conversationMonitors"
-				:key="message.id"
-				:id="message.id"
-				:date="message.sendTime"
-				:contents="message.contents.length > 50 ? message.contents.substring(0,47) + '...' : message.contents"
-			/>
-		</div>
-
-
 		<div id="dnd"
 			@drop="dndDrop($event)"
 			@dragover.prevent

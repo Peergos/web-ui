@@ -10,10 +10,16 @@
 
 			<FormPassword v-model="password" />
 
+			<div class="modal__warning account" v-if="warning">
+				<p><AppIcon icon="warning"/> Are you absolutely sure you want to delete your account?</p>
+				<AppButton @click.native="deleteAccount()" accent >Yes, delete everything</AppButton>
+				<AppButton @click.native="warning=false">Nevermind</AppButton>
+			</div>
+
 		</template>
 		<template #footer>
 
-			 <AppButton @click.native="deleteAccountAction()" type="primary" block accent>Delete Account</AppButton>
+			 <AppButton @click.native="showWarning()" type="primary" block accent>Delete account</AppButton>
 
 		</template>
 	</AppModal>
@@ -25,13 +31,13 @@ module.exports = {
 	components: {
 		FormPassword,
 	},
-    // props: ['deleteAccount', 'username'],
 	data() {
 		return {
 			password: "",
+			warning: false
+
 		};
 	},
-
 	computed: {
 		...Vuex.mapState([
 			'context'
@@ -39,49 +45,47 @@ module.exports = {
     },
 
 	methods: {
-		confirmDeleteAccount(deleteAccountFn) {
-			this.$toast.error('Are you absolutely sure you want to delete your account?',{timeout:false, position: 'bottom-left' })
-            // this.warning_consumer_func = deleteAccountFn;
-        },
-        completeDeleteAccount() {
-            this.deleteAccount(this.password);
-			this.$store.commit("SET_MODAL", false);
-        },
-        deleteAccountAction() {
-            if(this.password.length == 0) {
+		showWarning() {
+			if(this.password.length == 0) {
 				this.$toast.error('Password must be populated!',{timeout:false, position: 'bottom-left' })
-            } else {
-                let that = this;
-                this.confirmDeleteAccount(() => that.completeDeleteAccount());
-            }
-        },
+			} else {
+				this.warning = true
+			}
+		},
 
-		deleteAccount(password) {
+		deleteAccount() {
             console.log("Deleting Account");
-            // var that = this;
-            // this.context.deleteAccount(password).thenApply(function(result){
-            //     if (result) {
-			// 		that.$toast('Account Deleted!',{position: 'bottom-left' })
-            //         // setTimeout(function(){ that.logout(); }, 5000);
-            //     } else {
-            //         that.updateFiles();
-            //         that.errorTitle = "Error Deleting Account";
-            //         that.errorBody = throwable.getMessage();
-            //         that.showError = true;
-            //         that.showSpinner = false;
-            //     }
-            // }).exceptionally(function(throwable) {
-            //     that.updateFiles();
-            //     that.errorTitle = "Error Deleting Account";
-            //     that.errorBody = throwable.getMessage();
-            //     that.showError = true;
-            //     that.showSpinner = false;
-            // });
+            var that = this;
+            this.context.deleteAccount(this.password).thenApply(function(result){
+                if (result) {
+					that.$toast('Account Deleted!',{position: 'bottom-left' })
+					that.$store.commit("SET_MODAL", false);
+                	that.exit()
+                } else {
+					that.$toast(`Error Deleting Account: ${throwable.getMessage()}`,{position: 'bottom-left' })
+                }
+            }).exceptionally(function(throwable) {
+                that.$toast(`Error Deleting Account: ${throwable.getMessage()}`,{position: 'bottom-left' })
+            });
         },
+		exit(){
+
+			setTimeout(()=>{
+				window.location.fragment = "";
+				window.location.reload();
+			 }, 3000);
+		}
 	},
 
 };
 </script>
 <style>
-
+.modal__warning {
+	background-color: var(--bg-2);
+	border-radius: 4px;
+	padding: 16px;
+}
+.modal__warning.account p {
+	margin-bottom: var(--app-margin);
+}
 </style>

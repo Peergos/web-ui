@@ -68,10 +68,6 @@ module.exports = {
 <style>
 .app-button {
 	display: inline-block;
-	border: none;
-	border-radius: 4px;
-
-	background-color: transparent;
 
 	margin: 0;
 	padding: 8px;
@@ -82,6 +78,10 @@ module.exports = {
 	text-align: left;
 
 	color: currentColor;
+	background-color: transparent;
+	border: 2px solid transparent;
+	border-radius: 4px;
+
 	cursor: pointer;
 
 	transition: all 0.3s;
@@ -145,7 +145,7 @@ module.exports = {
 
 .app-button.primary {
 	line-height: 32px;
-	padding: 8px 16px;
+	padding: 6px 16px;
 	text-align: center;
 
 }
