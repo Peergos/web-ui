@@ -1,22 +1,23 @@
 <template>
-	<aside class="sidebar" :class="{ active: isOpen }">
+	<nav class="app-navigation" :class="{ expanded: isOpen }">
+
 		<AppIcon class="logo" :icon="isOpen ? 'logo-full' : 'logo-min'" @click.native="toggleSidebar()"/>
 
-		<AppButton
+		<!-- <AppButton
 			class="toggle-button--mobile mobile"
 			round
 			size="small"
-			icon="dots-menu"
+			icon="dot-menu"
 			@click.native="toggleSidebar"
-		/>
+		/> -->
 
-		<AppButton
+		<!-- <AppButton
 			class="toggle-theme--mobile mobile"
 			size="small"
 			:icon="isDark ? 'sun' : 'moon'"
 			@click.native="toggleTheme()"
 			aria-label="Toggle themes"
-		/>
+		/> -->
 
 		<ul class="nav-list">
 			<MenuItem label="Files" icon="files" view="Drive" />
@@ -26,29 +27,21 @@
 			<MenuItem label="Calendar" icon="calendar" view="Calendar" />
 		</ul>
 
-		<!-- <AccountSettings
-			user="ianpreston"
-			propic="./img/propic.png"
-			class="account-settings mobile"
-		/> -->
-		<!-- <AppUpgrade/> -->
-		<SidebarStorage
+
+		<NavigationStorage
 			:is-premium="false"
 		/>
-	</aside>
+	</nav>
 </template>
 
 <script>
-const MenuItem = require('./SidebarMenuItem.vue');
-const SidebarStorage = require('./SidebarStorage.vue');
-// const AppUpgrade = require('./AppUpgrade.vue');
+const MenuItem = require('./NavigationMenuItem.vue');
+const NavigationStorage = require('./NavigationStorage.vue');
 
 module.exports = {
 	components: {
 		MenuItem,
-		SidebarStorage,
-		// AppUpgrade
-		// AccountSettings,
+		NavigationStorage,
 	},
 	computed: {
 		isOpen() {
@@ -79,25 +72,27 @@ module.exports = {
 </script>
 
 <style>
-.sidebar {
+.app-navigation {
+	position: fixed;
+	top: 0;
+	left: 0;
+	z-index: 300;
+	padding: 0 16px;
+
 	display: flex;
 	flex-direction: column;
 	height: 100%;
 	width: 96px;
-	position: fixed;
-	top: 0;
-	left: 0;
-	z-index: 99;
-	padding: 0 16px;
+
 	background: var(--bg-2);
 	transition: all 0.5s ease;
 }
-.sidebar.active {
+.app-navigation.expanded {
 	width: 240px;
 	padding: 0 16px;
 }
 
-.sidebar .logo {
+.app-navigation .logo {
 	width: 100%;
 	left: 0;
 	height: 32px;
@@ -107,20 +102,21 @@ module.exports = {
 	cursor: pointer;
 }
 
-.sidebar .nav-list {
+.app-navigation .nav-list {
 	margin-top: 20px;
+	margin-bottom: auto;
 	padding: 0;
 }
 
 
 
-.sidebar .toggle-button--mobile svg,
-.sidebar .toggle-theme--mobile svg {
+.app-navigation .toggle-button--mobile svg,
+.app-navigation .toggle-theme--mobile svg {
 	width: 24px;
 	height: 24px;
 }
 
-.sidebar .toggle-button--mobile {
+.app-navigation .toggle-button--mobile {
 	background-color: var(--bg-2);
 	position: fixed;
 	top: 16px;
@@ -128,7 +124,7 @@ module.exports = {
 	opacity: 1;
 }
 
-.sidebar .toggle-theme--mobile {
+.app-navigation .toggle-theme--mobile {
 	position: fixed;
 	top: 16px;
 	right: 56px;
@@ -136,16 +132,16 @@ module.exports = {
 }
 
 @media (max-width: 1024px) {
-	.sidebar {
+	.app-navigation {
 		/* visibility: hidden; */
 		width: 100%;
 		opacity: 0;
 		pointer-events: none;
-		background: var(--bg);
+		/* background: var(--bg); */
 		transition: opacity 0.3s, padding 0s 0.3s;
 	}
 
-	.sidebar.active {
+	.app-navigation.expanded {
 		visibility: visible;
 		width: 100%;
 
@@ -157,22 +153,5 @@ module.exports = {
 		pointer-events: all;
 	}
 
-	.sidebar .account {
-		display: flex;
-	}
-
-	.sidebar .account-settings {
-		text-align: left;
-		width: 100%;
-		margin-top: auto;
-		padding: 0 var(--app-margin);
-		border-top: 1px solid var(--border-color);
-	}
-
-	.sidebar .account .propic {
-		order: -1;
-		margin-left: 0;
-		margin-right: 8px;
-	}
 }
 </style>

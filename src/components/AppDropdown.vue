@@ -1,6 +1,6 @@
 
 <template>
-	<div class="app-dropdown upload">
+	<div class="app-dropdown">
 		<AppButton
 			:type="type"
 			:accent="accent"
@@ -89,7 +89,7 @@ module.exports = {
 	text-decoration: none;
 }
 .app-dropdown li.divider{
-	border-top: 1px solid var(--text-color);
+	border-top: 1px solid var(--border-color);
 	height: 1px;
 	padding: 0;
 }

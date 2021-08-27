@@ -110,6 +110,7 @@ var store = require('./store/index.js');
 
 const ToastOptions = {
 	hideProgressBar: true,
+	maxToasts: 3,
 	showCloseButtonOnHover: true,
 	position: 'bottom-right'
 };

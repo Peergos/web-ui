@@ -18,22 +18,16 @@ module.exports = {
 
 	width: 100%;
 	height: 100%;
-	padding: 0 36px;
-
-	margin-top: 24px;
-
+	padding: 0 32px;
+	margin-top: 32px;
 }
 
 @media (max-width: 1024px) {
-	.drive-grid{
-		margin-left: 0;
-		width: 100%;
-	}
-
 	.drive-grid  {
 		width: 100%;
 		grid-template-columns: 1fr 1fr;
 		grid-gap: 16px;
+		padding: 0 16px;
 	}
 }
 </style>

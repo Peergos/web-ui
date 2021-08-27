@@ -68,24 +68,24 @@ module.exports = {
 	height: 32px;
 }
 
-.sidebar.active .list-item button {
+.app-navigation.expanded .list-item button {
 	text-align: left;
 }
 
-.sidebar .list-item__name {
+.app-navigation .list-item__name {
 	opacity: 0;
 	pointer-events: none;
 	transition: all 0.3s ease;
 }
 
-.sidebar.active .list-item__name {
+.app-navigation.expanded .list-item__name {
 	transition: 0s;
 	opacity: 1;
 	pointer-events: auto;
 	margin-left: 4px;
 }
 
-.sidebar .tooltip {
+.app-navigation .tooltip {
 	position: absolute;
 	left: 96px;
 	top: 0;
@@ -100,7 +100,7 @@ module.exports = {
 	display: block;
 }
 
-.sidebar.active .tooltip {
+.app-navigation.expanded .tooltip {
 	display: none;
 }
 
@@ -109,14 +109,14 @@ module.exports = {
 	color: var(--color-hover);
 }
 
-.sidebar .list-item:hover .tooltip {
+.app-navigation .list-item:hover .tooltip {
 	transition: all 0.5s ease;
 	opacity: 1;
 	top: 50%;
 }
 
 @media (max-width: 1024px) {
-	.sidebar .list-item__name {
+	.app-navigation .list-item__name {
 		transition: none;
 	}
 }

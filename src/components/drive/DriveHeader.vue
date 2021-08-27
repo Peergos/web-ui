@@ -1,44 +1,54 @@
 <template>
 	<header class="drive-header">
 
-		<div class="drive-breadcrumb">
+		<!-- <AppIcon class="logo desktop-hidden" icon="logo-min" @click.native=""/> -->
 
-			<AppButton class="breadcrumb__root" aria-label="global files" @click.native="$emit('goBackToLevel', 0 )">
-				<AppIcon icon="globe-24"/>
-				<span v-if="!path.length">global</span>
-			</AppButton>
+			<nav class="drive-breadcrumb">
+				<AppButton class="breadcrumb__root" aria-label="global files" @click.native="$emit('goBackToLevel', 0 )">
+					<AppIcon icon="globe-24"/>
+					<span v-if="!path.length">global</span>
+				</AppButton>
 
-			<template v-for="(dir, index) in path">
-				<AppIcon v-if="index!==0" icon="chevron-down" class="breadcrumb__separator" aria-hidden="true"/>
-				<AppButton :key="index" class="breadcrumb__item" :aria-label="dir" tabindex="-1" @click.native="$emit('goBackToLevel', index + 1 )">{{ dir }}</AppButton>
-			</template>
-		</div>
+				<template v-for="(dir, index) in path">
+					<AppIcon v-if="index!==0" icon="chevron-down" class="breadcrumb__separator" aria-hidden="true"/>
+					<AppButton :key="index" class="breadcrumb__item" :aria-label="dir" tabindex="-1" @click.native="$emit('goBackToLevel', index + 1 )">{{ dir }}</AppButton>
+				</template>
+			</nav>
+			<div class="drive-tools">
 
-		<AppButton
-			class="change-view"
-			:icon="gridView ? 'list' : 'grid'"
-			:aria-label="gridView ? 'list view' : 'grid view'"
-			@keyup.enter="$emit('switchView')"
-			@click.native="$emit('switchView')"
-		/>
 
-		<AppDropdown
-			v-if="isWritable"
-			class="upload"
-			icon="plus"
-			type="primary"
-			accent
-			aria-label="Upload"
-		>
-			<ul>
-				<li @click="askForFiles()">Upload files</li>
-				<li @click="askForDirectories()">Upload folders</li>
-				<li @click="$emit('askMkdir')">Create folder</li>
-			</ul>
-		</AppDropdown>
+				<AppButton
+					class="change-view"
+					:icon="gridView ? 'list' : 'grid'"
+					:aria-label="gridView ? 'list view' : 'grid view'"
+					@keyup.enter="$emit('switchView')"
+					@click.native="$emit('switchView')"
+				/>
 
-		<UserSettings />
+				<AppButton
+					class="search"
+					icon="search"
+					aria-label="search"
+					@keyup.enter="$emit('search')"
+					@click.native="$emit('search')"
+				/>
 
+				<AppDropdown
+					v-if="isWritable"
+					class="upload"
+					icon="plus"
+					accent
+					aria-label="Upload"
+				>
+					<ul>
+						<li @click="askForFiles()">Upload files</li>
+						<li @click="askForDirectories()">Upload folders</li>
+						<li @click="$emit('askMkdir')">Create folder</li>
+					</ul>
+				</AppDropdown>
+
+				<UserSettings />
+			</div>
 	</header>
 </template>
 
@@ -83,23 +93,32 @@ module.exports = {
 	display: flex;
 	justify-content: flex-start;
 	align-items: center;
+/*
+	display:grid;
+	grid-template-columns: 1fr 1fr;
+	justify-content: start;
+	align-items: center; */
 
-	height: 64px;
-	text-align: left;
-
-	padding: 0 16px;
 }
 
-.drive-header > *{
+.drive-header .drive-tools{
+	flex:1 0 auto;
+	display: flex;
+	justify-content: flex-end;
+	align-items: center;
+	padding: 0 32px;
+
+}
+
+.drive-header .drive-tools > *{
 	margin-left: 16px;
 }
 
 
 .drive-breadcrumb{
-	background-color: var(--bg-2);
+	/* background-color: var(--bg-2); */
 	border-radius: 6px;
-	padding: 4px 8px;
-	margin-right:auto;
+	padding: 4px 32px;
 	color: var(--color-2);
 }
 .drive-breadcrumb .breadcrumb__root span{
@@ -115,11 +134,35 @@ module.exports = {
 }
 .drive-breadcrumb .breadcrumb__item:last-child{
 	color: var(--color);
-	background-color: var(--bg-2);
+	/* background-color: var(--bg-2); */
 }
 
 
-.drive-header .upload{
-	margin-right: 200px;
+.drive-header .upload button{
+	width:36px;
+	height: 36px;
+	padding: 0;
+	text-align: center;
+	line-height: 24px;
+	/* margin-right: 20px; */
+}
+
+@media screen and (max-width: 1024px) {
+	.drive-header {
+		flex-wrap: wrap;
+		flex-direction: column-reverse;
+	}
+	.drive-header > * {
+		width:100%;
+		min-height: 64px;
+		padding: 0 16px;
+	}
+	.drive-header .drive-tools{
+		padding: 0 16px;
+		border-bottom: 1px solid var(--border-color);
+	}
+	.drive-header .drive-breadcrumb{
+		padding: 8px 16px;
+	}
 }
 </style>

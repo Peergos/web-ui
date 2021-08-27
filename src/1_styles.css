@@ -115,6 +115,19 @@ input:focus-visible{
 
 /* MQ visibility */
 
+
+@media (max-width: 1024px) {
+	.mobile-hidden{
+		display: none!important;
+	}
+}
+@media (min-width: 1024px) {
+	.desktop-hidden{
+		display: none!important;
+	}
+
+}
+/*
 .desktop {
 	visibility: visible;
 }
@@ -133,4 +146,4 @@ input:focus-visible{
 	.mobile {
 		visibility: visible !important;
 	}
-}
+} */

@@ -1,6 +1,6 @@
 <template>
-	<div class="sidebar-storage">
-		<div class="storage">{{ usage }} / {{ quota }}</div>
+	<div class="navigation-storage">
+		<p class="storage">{{ usage }} / {{ quota }}</p>
 		<AppButton class="upgrade" size="small" v-if="!isPro" @click.native="showRequestStorage()">
 			Upgrade
 		</AppButton>
@@ -30,7 +30,7 @@ module.exports = {
 </script>
 
 <style>
-.sidebar-storage {
+.navigation-storage {
 	display: flex;
 	flex-direction: column;
 	align-items: flex-start;
@@ -40,7 +40,7 @@ module.exports = {
 	transition: all 0.3s;
 }
 
-.sidebar-storage .upgrade {
+.navigation-storage .upgrade {
 	font-size: var(--text-mini) !important;
 	text-transform: uppercase;
 	background-color: var(--green-500);
@@ -51,25 +51,27 @@ module.exports = {
 	color: white !important;
 }
 
-.sidebar-storage .storage {
+.navigation-storage .storage {
 	margin-bottom: 8px;
 }
 
-.sidebar.active .storage {
+.app-navigation.expanded .storage {
 	opacity: 1;
 }
 
-.sidebar.active .sidebar-storage {
+.app-navigation.expanded .navigation-storage {
 	padding: 0 16px;
 }
 
-.sidebar .storage {
+.app-navigation .storage {
 	white-space: nowrap;
 	opacity: 0;
 }
 
+
+
 @media (max-width: 1024px) {
-	.sidebar-storage {
+	.navigation-storage {
 		transition: none;
 		flex-direction: row;
 		align-items: center;
@@ -83,7 +85,7 @@ module.exports = {
 		padding-top: 16px !important;
 	}
 
-	.sidebar-storage .storage {
+	.navigation-storage .storage {
 		font-size: var(--text-small);
 		font-weight: var(--bold);
 		margin: 0;

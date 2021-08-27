@@ -4,10 +4,10 @@
 		<component :is="currentModal"></component>
 
 		<!-- navigation -->
-		<AppSidebar v-if="isLoggedIn"/>
+		<AppNavigation v-if="isLoggedIn"/>
 
 		<!-- mobile menu trigger -->
-		<AppButton
+		<!-- <AppButton
 			v-if="isLoggedIn"
 			class="toggle-button--mobile mobile"
 			size="small"
@@ -15,7 +15,7 @@
 			@click.native="toggleSidebar"
 		>
 			<AppIcon icon="dot-menu" />
-		</AppButton>
+		</AppButton> -->
 
 		<!-- needs restyle -->
 		<section v-if="isSecretLink">
@@ -73,10 +73,12 @@
 </template>
 
 <script>
-const AppSidebar = require("./sidebar/AppSidebar.vue");
+const AppNavigation = require("./navigation/AppNavigation.vue");
 const ModalSpace = require("./modal/ModalSpace.vue");
 const ModalPassword = require("./modal/ModalPassword.vue");
 const ModalAccount = require("./modal/ModalAccount.vue");
+const ModalProfile = require("./modal/ModalProfile.vue");
+
 
 const AppTab = require("./tabs/AppTab.vue");
 const AppTabs = require("./tabs/AppTabs.vue");
@@ -92,10 +94,11 @@ const Tasks = require("../views/Tasks.vue");
 
 module.exports = {
 	components: {
-		AppSidebar,
+		AppNavigation,
 		ModalSpace,
 		ModalPassword,
 		ModalAccount,
+		ModalProfile,
 		Calendar,
 		Drive,
 		NewsFeed,
@@ -126,9 +129,6 @@ module.exports = {
 			'crypto',
 			'network',
 			'context'
-		]),
-		...Vuex.mapGetters([
-			'currentTheme',
 		]),
 
 		isDemo() {
@@ -197,6 +197,7 @@ module.exports = {
 		let localTheme = localStorage.getItem("theme");
 		document.documentElement.setAttribute("data-theme", localTheme);
 		this.$store.commit("SET_THEME", localTheme == "dark-mode");
+
 	},
 
 	methods: {
@@ -256,19 +257,9 @@ module.exports = {
 			// this.showPendingServerMessages();
 		},
 
-		toggleTheme() {
-			this.$store.commit("TOGGLE_THEME");
-
-			document.documentElement.setAttribute(
-				"data-theme",
-				this.currentTheme
-			);
-			localStorage.setItem("theme", this.currentTheme);
-		},
-
-		toggleSidebar() {
-			this.$store.commit("TOGGLE_SIDEBAR");
-		},
+		// toggleSidebar() {
+		// 	this.$store.commit("TOGGLE_SIDEBAR");
+		// },
 
 		updateNetwork() {
 			let that = this;
@@ -345,7 +336,7 @@ module.exports = {
 	margin: var(--app-margin) auto;
 }
 
-
+/*
 .toggle-button--mobile {
 	background-color: var(--bg-2) !important;
 	position: fixed;
@@ -356,7 +347,7 @@ module.exports = {
 .toggle-button--mobile svg {
 	width: 24px;
 	height: 24px;
-}
+} */
 
 section.login-register{
 	min-height: 100vh;
