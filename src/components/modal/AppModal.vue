@@ -1,9 +1,8 @@
 <template>
 	<transition name="modal" appear>
-		<div v-if="showModal" class="app-modal app-modal__overlay" @click="closeModal()">
-
+		<div v-if="showModal" class="app-modal app-modal__overlay">
 			<transition name="modal-content" appear>
-				<div v-if="showModal" class="app-modal__container" @click.stop>
+				<div v-if="showModal" class="app-modal__container" @focusout="closeModal()">
 					<AppButton class="close" icon="close" @click.native="closeModal()"/>
 					<header><slot name="header"></slot></header>
 					<section><slot name="body"></slot></section>

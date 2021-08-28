@@ -1,17 +1,22 @@
 
 <template>
-	<div class="app-dropdown">
+	<div class="app-dropdown"
+		@focusin="expanded(true)"
+    	@focusout="expanded(false)"
+	>
 		<AppButton
 			:type="type"
 			:accent="accent"
 			:area-expanded="isActive"
 			:icon="icon"
-			@click.native="toggleDropdown()"
+			@click.native="expanded(true)"
 		>
 			<slot name="trigger"></slot>
 		</AppButton>
 		<transition name="drop">
-			<div v-if="isActive" class="dropdown__content" @click="toggleDropdown()">
+			<div v-if="isActive"
+				class="dropdown__content"
+			>
 				<slot />
 			</div>
 		</transition>
@@ -40,9 +45,11 @@ module.exports = {
 		};
 	},
 	methods: {
-		toggleDropdown() {
-			this.isActive = !this.isActive;
-		},
+		expanded(value){
+			// close on focus-out
+			// https://codepen.io/autumnwoodberry/pen/NvjJWm
+			this.isActive = value
+		}
 
 	},
 };

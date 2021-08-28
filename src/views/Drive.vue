@@ -27,23 +27,21 @@
 		/>
 
 
-		<div v-if="viewMenu && (isNotHome || isPasteAvailable || isNotBackground)">
-			<nav>
-				<ul id="right-click-menu" tabindex="-1" v-if="viewMenu && (isNotHome || isPasteAvailable || isNotBackground)" @blur="closeMenu" v-bind:style="{top:top, left:left}">
-					<li id='gallery' class="context-menu-item" @keyup.enter="gallery" v-if="canOpen" @click="gallery">View</li>
-					<li id='create-file' class="context-menu-item" @keyup.enter="createTextFile" v-if="!isNotBackground" @click="createTextFile">Create Text file</li>
-					<li id='open-file' class="context-menu-item" @keyup.enter="downloadAll" v-if="canOpen" @click="downloadAll">Download</li>
-					<li id='rename-file' class="context-menu-item" @keyup.enter="rename" v-if="isNotBackground && isWritable" @click="rename">Rename</li>
-					<li id='delete-file' class="context-menu-item" @keyup.enter="deleteFiles" v-if="isNotBackground && isWritable" @click="deleteFiles">Delete</li>
-					<li id='copy-file' class="context-menu-item" @keyup.enter="copy" v-if="isNotBackground && isWritable" @click="copy">Copy</li>
-					<li id='cut-file' class="context-menu-item" @keyup.enter="cut" v-if="isNotBackground && isWritable" @click="cut">Cut</li>
-					<li id='paste-file' class="context-menu-item" @keyup.enter="paste" v-if="isPasteAvailable" @click="paste">Paste</li>
-					<li id='share-file' class="context-menu-item" @keyup.enter="showShareWith" v-if="(isNotHome || isNotBackground) && isLoggedIn" @click="showShareWith">Share</li>
-					<li id='file-search' class="context-menu-item" @keyup.enter="openSearch(false)" v-if="isSearchable" @click="openSearch(false)">Search...</li>
-					<li id='close-context-menu-item' class="context-menu-item hidden-context-menu-item" @keyup.enter="closeMenu" @click="closeMenu">Close</li>
-				</ul>
-			</nav>
-		</div>
+		<nav v-if="viewMenu && (isPasteAvailable || isNotBackground)" @focusout="closeMenu($event)">
+			<ul id="right-click-menu" tabindex="-1" v-if="viewMenu && ( isPasteAvailable || isNotBackground)" @blur="closeMenu" v-bind:style="{top:top, left:left}">
+				<li id='gallery' class="context-menu-item" @keyup.enter="gallery" v-if="canOpen" @click="gallery">View</li>
+				<li id='create-file' class="context-menu-item" @keyup.enter="createTextFile" v-if="!isNotBackground" @click="createTextFile">Create Text file</li>
+				<li id='open-file' class="context-menu-item" @keyup.enter="downloadAll" v-if="canOpen" @click="downloadAll">Download</li>
+				<li id='rename-file' class="context-menu-item" @keyup.enter="rename" v-if="isNotBackground && isWritable" @click="rename">Rename</li>
+				<li id='delete-file' class="context-menu-item" @keyup.enter="deleteFiles" v-if="isNotBackground && isWritable" @click="deleteFiles">Delete</li>
+				<li id='copy-file' class="context-menu-item" @keyup.enter="copy" v-if="isNotBackground && isWritable" @click="copy">Copy</li>
+				<li id='cut-file' class="context-menu-item" @keyup.enter="cut" v-if="isNotBackground && isWritable" @click="cut">Cut</li>
+				<li id='paste-file' class="context-menu-item" @keyup.enter="paste" v-if="isPasteAvailable" @click="paste">Paste</li>
+				<li id='share-file' class="context-menu-item" @keyup.enter="showShareWith" v-if="isNotBackground && isLoggedIn" @click="showShareWith">Share</li>
+				<li id='file-search' class="context-menu-item" @keyup.enter="openSearch(false)" v-if="isSearchable" @click="openSearch(false)">Search...</li>
+				<li id='close-context-menu-item' class="context-menu-item hidden-context-menu-item" @keyup.enter="closeMenu" @click="closeMenu">Close</li>
+			</ul>
+		</nav>
 
 		<gallery
 			v-if="showGallery"
@@ -64,8 +62,9 @@
 			@drop="dndDrop($event)"
 			@dragover.prevent
 			:class="{ not_owner: isNotMe }"
-			@contextmenu="openMenu($event)"
 		>
+					<!-- @contextmenu="openMenu($event)" -->
+
 			<transition name="fade" mode="out-in" appear>
 
 				<DriveGrid v-if="isGrid" appear>
@@ -74,8 +73,10 @@
 						:filename="file.getFileProperties().name"
 						:src="getThumbnailURL(file)"
 						:type="file.getFileProperties().getType()"
-						@click.native="navigateOrMenuTab($event, file, true)"
+						@cardMenu="openMenu($event, file)"
 					/>
+					<!-- @click.native="navigateOrMenuTab($event, file, true)" -->
+
 				</DriveGrid>
 
 
@@ -380,9 +381,6 @@ module.exports = {
 			return !this.isSecretLink;
 		},
 
-		isNotHome() {
-			return this.path.length > 1;
-		},
 
 		isNotMe() {
 			if (this.currentDir == null)
@@ -1851,7 +1849,6 @@ module.exports = {
 			this.navigateOrMenuTab(event, file, false)
 		},
 		navigateOrMenuTab(event, file, fromTabKey) {
-			console.log('navigateOrMenuTab')
 			if (this.showSpinner) // disable user input whilst refreshing
 				return;
 
@@ -2001,6 +1998,8 @@ module.exports = {
         },
 
 		openMenu(e, file, fromTabKey) {
+
+			console.log('open menu:', e)
 			if (this.ignoreEvent) {
 				e.preventDefault();
 				return;

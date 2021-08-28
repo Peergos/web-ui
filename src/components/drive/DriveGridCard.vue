@@ -4,7 +4,7 @@
 			class="card__menu"
 			icon="dot-menu"
 			aria-label="menu"
-			@click.native="$emit('popover')"
+			@click.native="$emit('cardMenu',$event)"
 		/>
 
 		<figure>
