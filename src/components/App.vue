@@ -1,7 +1,7 @@
 <template>
 	<div class="layout">
 		<!-- modals -->
-		<component :is="currentModal"></component>
+		<component v-if="showModal" :is="currentModal"></component>
 
 		<!-- navigation -->
 		<AppNavigation v-if="isLoggedIn"/>
@@ -124,11 +124,13 @@ module.exports = {
 			'isLoggedIn',
 			'isDark',
 			'isSidebarOpen',
+			'showModal',
 			'currentModal',
 			'currentView',
 			'crypto',
 			'network',
-			'context'
+			'context',
+
 		]),
 
 		isDemo() {

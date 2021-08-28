@@ -1,8 +1,8 @@
 <template>
 	<transition name="modal" appear>
-		<div v-if="showModal" class="app-modal app-modal__overlay">
+		<div class="app-modal app-modal__overlay" @click="closeModal()">
 			<transition name="modal-content" appear>
-				<div v-if="showModal" class="app-modal__container" @focusout="closeModal()">
+				<div ref="modalContainer" tabindex="0" class="app-modal__container" @click.stop>
 					<AppButton class="close" icon="close" @click.native="closeModal()"/>
 					<header><slot name="header"></slot></header>
 					<section><slot name="body"></slot></section>
@@ -17,16 +17,15 @@
 <script>
 module.exports = {
 	name: 'AppModal',
-	computed: {
-		showModal() {
-            return this.$store.state.showModal;
-        }
-	},
 	methods: {
 		closeModal() {
 			this.$store.commit("SET_MODAL", false);
 		}
 	},
+
+	mounted(){
+		this.$refs.modalContainer.focus();
+	}
 }
 </script>
 
