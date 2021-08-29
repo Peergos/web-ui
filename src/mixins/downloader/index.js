@@ -1,7 +1,5 @@
 module.exports = {
-  data () {
-    return {}
-  },
+
   methods: {
     // This will only work up to a file size of 2^52 bytes (the biggest integer you can fit in a double)
     // But who ever needed a filesize > 4 PB ? ;-)
@@ -71,11 +69,11 @@ module.exports = {
       var that = this
       const watchProgress = this.progressMonitors != null
       if (watchProgress) this.progressMonitors.push(progress)
-      var context = this.getContext()
+    //   var context = this.getContext()
       file
         .getInputStream(
-          context.network,
-          context.crypto,
+          this.context.network,
+          this.context.crypto,
           props.sizeHigh(),
           props.sizeLow(),
           function (read) {

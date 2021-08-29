@@ -1,10 +1,10 @@
 <template>
-	<article class="grid-card" >
+	<article class="grid-card">
 		<AppButton
 			class="card__menu"
 			icon="dot-menu"
 			aria-label="menu"
-			@click.native="$emit('cardMenu',$event)"
+			@click.stop.native="$emit('cardMenu',$event)"
 		/>
 
 		<figure>
@@ -23,12 +23,8 @@
 </template>
 
 <script>
-const AppDropdown = require("../AppDropdown.vue");
 
 module.exports = {
-	components: {
-		AppDropdown,
-	},
 	props: {
 		filename: {
 			type: String,

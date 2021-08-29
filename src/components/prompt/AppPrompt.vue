@@ -41,13 +41,12 @@
 
 <script>
 module.exports = {
-	data: function() {
+	data() {
 		return {
 			prompt_result: '',
 			input_length: 255
 		}
 	},
-    // props: ['prompt_message', 'placeholder', 'value', 'consumer_func', 'max_input_size'],
 	props: {
 		message: {
 			type: String,

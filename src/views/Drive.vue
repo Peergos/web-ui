@@ -25,45 +25,33 @@
 			:value="prompt_value"
 			:consumer_func="prompt_consumer_func"
 		/>
-
-
-		<nav v-if="viewMenu && (isPasteAvailable || isNotBackground)" @focusout="closeMenu($event)">
-			<ul id="right-click-menu" tabindex="-1" v-if="viewMenu && ( isPasteAvailable || isNotBackground)" @blur="closeMenu" v-bind:style="{top:top, left:left}">
-				<li id='gallery' class="context-menu-item" @keyup.enter="gallery" v-if="canOpen" @click="gallery">View</li>
-				<li id='create-file' class="context-menu-item" @keyup.enter="createTextFile" v-if="!isNotBackground" @click="createTextFile">Create Text file</li>
-				<li id='open-file' class="context-menu-item" @keyup.enter="downloadAll" v-if="canOpen" @click="downloadAll">Download</li>
-				<li id='rename-file' class="context-menu-item" @keyup.enter="rename" v-if="isNotBackground && isWritable" @click="rename">Rename</li>
-				<li id='delete-file' class="context-menu-item" @keyup.enter="deleteFiles" v-if="isNotBackground && isWritable" @click="deleteFiles">Delete</li>
-				<li id='copy-file' class="context-menu-item" @keyup.enter="copy" v-if="isNotBackground && isWritable" @click="copy">Copy</li>
-				<li id='cut-file' class="context-menu-item" @keyup.enter="cut" v-if="isNotBackground && isWritable" @click="cut">Cut</li>
-				<li id='paste-file' class="context-menu-item" @keyup.enter="paste" v-if="isPasteAvailable" @click="paste">Paste</li>
-				<li id='share-file' class="context-menu-item" @keyup.enter="showShareWith" v-if="isNotBackground && isLoggedIn" @click="showShareWith">Share</li>
-				<li id='file-search' class="context-menu-item" @keyup.enter="openSearch(false)" v-if="isSearchable" @click="openSearch(false)">Search...</li>
-				<li id='close-context-menu-item' class="context-menu-item hidden-context-menu-item" @keyup.enter="closeMenu" @click="closeMenu">Close</li>
-			</ul>
-		</nav>
-
-		<gallery
-			v-if="showGallery"
-			@hide-gallery="closeApps()"
-			:files="sortedFiles"
-			:context="context"
-			:initial-file-name="selectedFiles[0] == null ? '' : selectedFiles[0].getFileProperties().name">
-		</gallery>
-
-		<div v-if="viewMenu && isProfileViewable()">
-			<ul id="right-click-menu-profile" tabindex="-1"  @blur="closeMenu" v-bind:style="{top:top, left:left}">
-			<li id='profile-view' @click="showProfile(false)">Show Profile</li>
-			</ul>
-		</div>
-
+		<transition name="drop">
+			<DriveMenu
+				ref="driveMenu"
+				:position="menuPosition"
+				@closeMenu="closeMenu($event)"
+				v-if="viewMenu"
+			>
+				<li id='gallery' v-if="canOpen" @keyup.enter="gallery" @click="gallery">View</li>
+				<li id='open-file' v-if="canOpen" @keyup.enter="downloadAll"  @click="downloadAll">Download</li>
+				<li id='rename-file' v-if="isWritable" @keyup.enter="rename"  @click="rename">Rename</li>
+				<li id='delete-file' v-if="isWritable" @keyup.enter="deleteFiles"  @click="deleteFiles">Delete</li>
+				<li id='copy-file' v-if="isWritable" @keyup.enter="copy"  @click="copy">Copy</li>
+				<li id='cut-file' v-if="isWritable" @keyup.enter="cut"  @click="cut">Cut</li>
+				<li id='paste-file' v-if="isPasteAvailable" @keyup.enter="paste"  @click="paste">Paste</li>
+				<li id='share-file' v-if="isLoggedIn" @keyup.enter="showShareWith"  @click="showShareWith">Share</li>
+				<!-- <li id='create-file'  @keyup.enter="createTextFile" @click="createTextFile">Create Text file</li> -->
+				<!-- <li id='profile-view' v-if="isProfileViewable" @click="showProfile(false)">Show Profile</li> -->
+				<li id='file-search' v-if="isSearchable" @keyup.enter="openSearch(false)" @click="openSearch(false)">Search...</li>
+			</DriveMenu>
+		</transition>
 
 		<div id="dnd"
 			@drop="dndDrop($event)"
 			@dragover.prevent
 			:class="{ not_owner: isNotMe }"
+			@contextmenu="openMenu($event)"
 		>
-					<!-- @contextmenu="openMenu($event)" -->
 
 			<transition name="fade" mode="out-in" appear>
 
@@ -73,10 +61,9 @@
 						:filename="file.getFileProperties().name"
 						:src="getThumbnailURL(file)"
 						:type="file.getFileProperties().getType()"
+						@click.native="navigateDrive($event, file)"
 						@cardMenu="openMenu($event, file)"
 					/>
-					<!-- @click.native="navigateOrMenuTab($event, file, true)" -->
-
 				</DriveGrid>
 
 
@@ -126,6 +113,14 @@
 			</transition>
 		</div>
 
+		<gallery
+			v-if="showGallery"
+			@hide-gallery="closeApps()"
+			:files="sortedFiles"
+			:context="context"
+			:initial-file-name="selectedFiles[0] == null ? '' : selectedFiles[0].getFileProperties().name">
+		</gallery>
+
 		<error
 			v-if="showError"
 			@hide-error="showError = false"
@@ -142,9 +137,9 @@ const DriveHeader = require("../components/drive/DriveHeader.vue");
 const DriveGrid = require("../components/drive/DriveGrid.vue");
 const DriveGridCard = require("../components/drive/DriveGridCard.vue");
 const ProgressBar = require("../components/drive/ProgressBar.vue");
+const DriveMenu = require("../components/drive/DriveMenu.vue");
 
 const AppPrompt = require("../components/prompt/AppPrompt.vue");
-
 
 const mixins = require("../mixins/downloader/index.js");
 
@@ -153,12 +148,16 @@ module.exports = {
 		DriveHeader,
 		DriveGrid,
 		DriveGridCard,
+		DriveMenu,
 		AppPrompt,
 		ProgressBar
 	},
 	data() {
 		return {
-
+			menuPosition:{
+				x: 0,
+				y: 0
+			},
 			isGrid: true,
 			view: "files",
 			path: [],
@@ -171,15 +170,12 @@ module.exports = {
 			selectedFiles: [],
 			url: null,
 			viewMenu: false,
-			ignoreEvent: false,
-			top: "0px",
-			left: "0px",
+			// ignoreEvent: false,
 			showTour: false,
 			showShare: false,
 			sharedWithState: null,
 			sharedWithData: { "edit_shared_with_users": [], "read_shared_with_users": [] },
 			forceSharedRefreshWithUpdate: 0,
-			isNotBackground: true,
 
 			showAdmin: false,
 			showAppgrid: false,
@@ -255,7 +251,6 @@ module.exports = {
 			showSpinner: true,
 			spinnerMessage: '',
 			onUpdateCompletion: [], // methods to invoke when current dir is next refreshed
-			navigationViaTabKey: false
 		};
 	},
 	props: ["initPath", "openFile", "initiateDownload"],
@@ -431,7 +426,6 @@ module.exports = {
 		this.showTour = this.newsignup;
 		this.init();
 		window.onhashchange = this.onUrlChange;
-		this.buildTabNavigation();
 	},
 	watch: {
 		// manually encode currentDir dependencies to get around infinite dependency chain issues with async-computed methods
@@ -553,100 +547,6 @@ module.exports = {
 			this.showPendingServerMessages();
 		},
 
-		clearTabNavigation() {
-			let that = this;
-			Vue.nextTick(function () {
-				let gridItems = document.getElementsByClassName('grid-item');
-				let appGridItems = document.getElementsByClassName('app-grid-item');
-				let toolbarItems = document.getElementsByClassName('toolbar-item');
-				let overlayItems = document.getElementsByClassName('overlay-item');
-				for (var g = 0; g < overlayItems.length; g++) {
-					overlayItems[g].removeAttribute("tabindex");
-				}
-				for (var i = 0; i < gridItems.length; i++) {
-					gridItems[i].removeAttribute("tabindex");
-				}
-				for (var j = 0; j < appGridItems.length; j++) {
-					appGridItems[j].removeAttribute("tabindex");
-				}
-				for (var k = 0; k < toolbarItems.length; k++) {
-					toolbarItems[k].removeAttribute("tabindex");
-				}
-			});
-		},
-		buildTabNavigation() {
-			let that = this;
-			Vue.nextTick(function () {
-				let gridItems = document.getElementsByClassName('grid-item');
-				let appGridItems = document.getElementsByClassName('app-grid-item');
-				let uploadItems = document.getElementsByClassName('upload-item');
-				let toolbarItems = document.getElementsByClassName('toolbar-item');
-				let settingsItems = document.getElementsByClassName('settings-item');
-				let overlayItems = document.getElementsByClassName('overlay-item');
-				for (var g = 0; g < overlayItems.length; g++) {
-					overlayItems[g].setAttribute("tabindex", 0);
-				}
-				for (var l = 0; l < toolbarItems.length; l++) {
-					toolbarItems[l].setAttribute("tabindex", 0);
-				}
-				if (that.showAppgrid) {
-					if (that.showUploadMenu || that.showSettingsMenu || that.viewMenu) {
-						for (var j = 0; j < appGridItems.length; j++) {
-							appGridItems[j].removeAttribute("tabindex");
-						}
-					} else {
-						for (var j = 0; j < appGridItems.length; j++) {
-							appGridItems[j].setAttribute("tabindex", 0);
-						}
-					}
-				} else {
-					if (that.showUploadMenu || that.showSettingsMenu || that.viewMenu) {
-						for (var i = 0; i < gridItems.length; i++) {
-							gridItems[i].removeAttribute("tabindex");
-						}
-					} else {
-						for (var i = 0; i < gridItems.length; i++) {
-							gridItems[i].setAttribute("tabindex", 0);
-						}
-					}
-				}
-				if (that.showUploadMenu) {
-					that.showSettingsMenu = false;
-					for (var k = 0; k < uploadItems.length; k++) {
-						uploadItems[k].setAttribute("tabindex", 0);
-					}
-					for (var l = 0; l < toolbarItems.length; l++) {
-						toolbarItems[l].removeAttribute("tabindex");
-					}
-					// document.getElementById("uploadButton").setAttribute("tabindex", 0);
-				} else if (that.showSettingsMenu) {
-					that.showUploadMenu = false;
-					for (var m = 0; m < settingsItems.length; m++) {
-						settingsItems[m].setAttribute("tabindex", 0);
-					}
-					for (var l = 0; l < toolbarItems.length; l++) {
-						toolbarItems[l].removeAttribute("tabindex");
-					}
-					document.getElementById("settings-menu").setAttribute("tabindex", 0);
-				} else if (that.viewMenu) { //context menu
-					that.showSettingsMenu = false;
-					that.showUploadMenu = false;
-					for (var l = 0; l < toolbarItems.length; l++) {
-						toolbarItems[l].removeAttribute("tabindex");
-					}
-				}
-				if (!that.showUploadMenu) {
-					for (var k = 0; k < uploadItems.length; k++) {
-						uploadItems[k].removeAttribute("tabindex");
-					}
-				}
-				if (!that.showSettingsMenu) {
-					for (var m = 0; m < settingsItems.length; m++) {
-						settingsItems[m].removeAttribute("tabindex");
-					}
-				}
-			});
-		},
 		showPendingServerMessages() {
 			// let context = this.getContext();
 			let that = this;
@@ -684,7 +584,6 @@ module.exports = {
 			this.showAppgrid = false;
 			this.view = "files";
 			this.path = data.path;
-			this.buildTabNavigation();
 		},
 		processPending() {
 			for (var i = 0; i < this.onUpdateCompletion.length; i++) {
@@ -814,13 +713,13 @@ module.exports = {
 				this.showSearch = true;
 		},
 		openSearch(fromRoot) {
-			var path = fromRoot ? "/" + this.getContext().username : this.getPath();
+			var path = fromRoot ? "/" + this.context.username : this.getPath();
 			if (!fromRoot) {
-				if (this.isNotBackground) {
-					path = path + this.selectedFiles[0].getFileProperties().name;
-				} else {
+				// if (this.isNotBackground) {
+				// 	path = path + this.selectedFiles[0].getFileProperties().name;
+				// } else {
 					path = path.substring(0, path.length - 1);
-				}
+				// }
 			}
 			this.searchPath = path;
 			this.showSearch = true;
@@ -829,7 +728,6 @@ module.exports = {
 		},
 		closeSearch() {
 			this.showSearch = false;
-			this.buildTabNavigation();
 		},
 		openAppFromFolder() {
 			let path = this.getPath();
@@ -874,7 +772,6 @@ module.exports = {
 					that.files = arr.filter(function (f) {
 						return !f.getFileProperties().isHidden;
 					});
-					that.buildTabNavigation();
 					if (selectedFilename != null) {
 						that.selectedFiles = that.files.filter(f => f.getName() == selectedFilename);
 						that.gallery();
@@ -1016,7 +913,6 @@ module.exports = {
 		},
 		closeWarning() {
 			this.showWarning = false;
-			this.buildTabNavigation();
 		},
 		confirmDownload(file, downloadFn) {
 			var size = this.getFileSize(file.getFileProperties());
@@ -1050,7 +946,6 @@ module.exports = {
 
 		switchView() {
 			this.isGrid = !this.isGrid;
-			this.buildTabNavigation();
 		},
 
 		currentDirChanged() {
@@ -1479,12 +1374,11 @@ module.exports = {
 		},
 		toggleUserMenu() {
 			this.showSettingsMenu = !this.showSettingsMenu;
-			this.buildTabNavigation();
 		},
 
 		toggleFeedbackForm() {
 			this.showFeedbackForm = !this.showFeedbackForm;
-			this.clearTabNavigation();
+			// this.clearTabNavigation();
 		},
 
 		popConversation(msgId) {
@@ -1512,17 +1406,16 @@ module.exports = {
 		},
 
 		toggleUploadMenu() {
-			// this.showUploadMenu = !this.showUploadMenu;
-			this.buildTabNavigation();
+			this.showUploadMenu = !this.showUploadMenu;
 		},
 
 		showTextEditor() {
 			let that = this;
 			this.select_placeholder = 'filename';
 			this.select_message = 'Create or open Text file';
-			this.clearTabNavigation();
-			that.showSpinner = true;
-			that.context.getByPath(this.getContext().username).thenApply(homeDir => {
+			// this.clearTabNavigation();
+			this.showSpinner = true;
+			this.context.getByPath(this.context.username).thenApply(homeDir => {
 				homeDir.get().getChildren(that.context.crypto.hasher, that.context.network).thenApply(function (children) {
 					let childrenArray = children.toArray();
 					let textFiles = childrenArray.filter(f => f.getFileProperties().mimeType.startsWith("text/"));
@@ -1545,7 +1438,7 @@ module.exports = {
 								updatedDir.getChild(select_result, that.context.crypto.hasher, that.context.network).thenApply(function (textFileOpt) {
 									that.showSpinner = false;
 									that.selectedFiles = [textFileOpt.get()];
-									that.clearTabNavigation();
+									// that.clearTabNavigation();
 									that.showCodeEditor = true;
 									that.updateHistory("editor", that.getPath(), "");
 								});
@@ -1577,7 +1470,7 @@ module.exports = {
 				op: "copy",
 				path: this.getPath()
 			};
-			this.closeMenu(true);
+			this.closeMenu();
 		},
 
 		cut() {
@@ -1591,7 +1484,7 @@ module.exports = {
 				op: "cut",
 				path: this.getPath()
 			};
-			this.closeMenu(true);
+			this.closeMenu();
 		},
 
 		paste() {
@@ -1693,11 +1586,11 @@ module.exports = {
 			return Number(this.quotaBytes.toString()) - (Number(this.usageBytes.toString()) + fileSize);
 		},
 		showShareWithForProfile(field, fieldName) {
-			let dirPath = this.getContext().username + "/.profile/";
+			let dirPath = this.context.username + "/.profile/";
 			this.showShareWithForFile(dirPath, field, false, false, fieldName);
 		},
 		showShareWithFromApp(app, filename, allowReadWriteSharing, allowCreateSecretLink, nameToDisplay) {
-			let dirPath = this.getContext().username + "/.apps/" + app;
+			let dirPath = this.context.username + "/.apps/" + app;
 			this.showShareWithForFile(dirPath, filename, allowReadWriteSharing, allowCreateSecretLink, nameToDisplay);
 		},
 		showShareWithForFile(dirPath, filename, allowReadWriteSharing, allowCreateSecretLink, nameToDisplay) {
@@ -1752,7 +1645,6 @@ module.exports = {
 		},
 		closeShare() {
 			this.showShare = false;
-			this.buildTabNavigation();
 		},
 		setSortBy(prop) {
 			if (this.sortBy == prop)
@@ -1779,7 +1671,7 @@ module.exports = {
 		downloadAll() {
 			if (this.selectedFiles.length == 0)
 				return;
-			this.closeMenu(true);
+			this.closeMenu();
 			for (var i = 0; i < this.selectedFiles.length; i++) {
 				var file = this.selectedFiles[i];
 				this.navigateOrDownload(file);
@@ -1836,7 +1728,6 @@ module.exports = {
 		navigateOrDownload(file) {
 			if (this.showSpinner) // disable user input whilst refreshing
 				return;
-			this.buildTabNavigation();
 			if (file.isDirectory()) {
 				this.navigateToSubdir(file.getFileProperties().name);
 			} else {
@@ -1845,23 +1736,30 @@ module.exports = {
 			}
 		},
 
-		navigateOrMenu(event, file) {
-			this.navigateOrMenuTab(event, file, false)
-		},
-		navigateOrMenuTab(event, file, fromTabKey) {
-			if (this.showSpinner) // disable user input whilst refreshing
-				return;
+		// navigateOrMenu(event, file) {
+		// 	this.navigateOrMenuTab(event, file, false)
+		// },
+		// navigateOrMenuTab(event, file) {
+		// 	if (this.showSpinner) // disable user input whilst refreshing
+		// 		return;
 
+		// 	this.closeMenu();
+
+		// 	console.log(file, 'navigateOrMenuTab' )
+		// 	if (file.isDirectory()) {
+		// 		this.navigateToSubdir(file.getFileProperties().name);
+		// 	} else {
+		// 		// this.openMenu(event, file, fromTabKey);
+		// 	}
+		// },
+		navigateDrive(event, file) {
 			this.closeMenu();
 
-			console.log(file, 'navigateOrMenuTab' )
+			console.log(file, 'navigateDrive' )
 			if (file.isDirectory()) {
 				this.navigateToSubdir(file.getFileProperties().name);
-			} else {
-				this.openMenu(event, file, fromTabKey);
 			}
 		},
-
 		navigateToSubdir(name) {
 			this.changePath(this.getPath() + name);
 		},
@@ -1997,73 +1895,26 @@ module.exports = {
            }
         },
 
-		openMenu(e, file, fromTabKey) {
+		openMenu(e, file) {
 
-			console.log('open menu:', e)
-			if (this.ignoreEvent) {
-				e.preventDefault();
-				return;
-			}
+			let clientRect =  e.target.getBoundingClientRect()
+			this.menuPosition = { x: clientRect.left, y: clientRect.top }
 
-			if (this.showSpinner) {// disable user input whilst refreshing
-				e.preventDefault();
-				return;
-			}
-			if (this.getPath() == "/") {
-				this.isNotBackground = false;
-				if (file != null) {
-					this.selectedFiles = [file];
-				}
-				this.setContextMenu(true);
-				Vue.nextTick(function () {
-					var menu = document.getElementById("right-click-menu-profile");
-					if (menu != null)
-						menu.focus();
-					this.setMenu(e.y, e.x, "right-click-menu-profile")
-				}.bind(this));
-				e.preventDefault();
+			if (file) {
+				this.selectedFiles = [file];
 			} else {
-				if (file) {
-					this.isNotBackground = true;
-					this.selectedFiles = [file];
-				} else {
-					this.isNotBackground = false;
-					this.selectedFiles = [this.currentDir];
-				}
-				this.setContextMenu(true);
-				Vue.nextTick(function () {
-					var menu = document.getElementById("right-click-menu");
-					if (menu != null) {
-						if (fromTabKey === true) {
-							this.navigationViaTabKey = true;
-							menu.removeAttribute("tabindex");
-							let contextMenuItems = document.getElementsByClassName('context-menu-item');
-							for (var g = 0; g < contextMenuItems.length; g++) {
-								contextMenuItems[g].setAttribute("tabindex", 0);
-							}
-							let closeItem = document.getElementById('close-context-menu-item');
-							if (closeItem) {
-								closeItem.classList.remove("hidden-context-menu-item");
-							}
-						} else {
-							this.navigationViaTabKey = false;
-							menu.setAttribute("tabindex", -1);
-							menu.focus();
-						}
-					}
-					this.setMenu(e.y, e.x, "right-click-menu")
-				}.bind(this));
-				e.preventDefault();
+				this.selectedFiles = [this.currentDir];
 			}
+
+			this.viewMenu = true
+
+			Vue.nextTick(() => {
+				this.$refs.driveMenu.$el.focus()
+			});
 		},
-		setContextMenu(val) {
-			this.viewMenu = val;
-			if (val) {
-				this.buildTabNavigation();
-			}
-		},
+
 		createTextFile() {
-			this.closeMenu(true);
+			this.closeMenu();
 			this.prompt_placeholder = 'File name';
 			this.prompt_message = 'Enter a file name';
 			this.prompt_value = '';
@@ -2099,6 +1950,7 @@ module.exports = {
 				that.showError = true;
 			})
 		},
+
 		rename() {
 			if (this.selectedFiles.length == 0)
 				return;
@@ -2128,7 +1980,7 @@ module.exports = {
 				console.log("Renaming " + old_name + "to " + newName);
 				Vue.nextTick(function () {
 					let filePath = peergos.client.PathUtils.toPath(that.path, old_name);
-					file.rename(newName, that.currentDir, filePath, that.getContext())
+					file.rename(newName, that.currentDir, filePath, that.context)
 						.thenApply(function (parent) {
 							that.currentDir = parent;
 							that.updateFiles();
@@ -2146,7 +1998,6 @@ module.exports = {
 		},
 		closePrompt() {
 			this.showPrompt = false;
-			this.buildTabNavigation();
 		},
 		deleteFiles() {
 			var selectedCount = this.selectedFiles.length;
@@ -2161,7 +2012,6 @@ module.exports = {
 
 				this.confirmDelete(file, () => {
 					that.deleteOne(file, parent, that.context);
-					that.buildTabNavigation();
 				});
 			}
 		},
@@ -2193,25 +2043,6 @@ module.exports = {
 			}
 		},
 
-		setMenu(top, left, menuId) {
-			if (this.isNotBackground) {
-				this.ignoreEvent = true;
-			}
-
-			var menu = document.getElementById(menuId);
-			if (menu != null) {
-				var largestHeight = window.innerHeight - menu.offsetHeight - 25;
-				var largestWidth = window.innerWidth - menu.offsetWidth - 25;
-
-				if (top > largestHeight) top = largestHeight;
-
-				if (left > largestWidth) left = largestWidth;
-
-				this.top = top + 'px';
-				this.left = left + 'px';
-			}
-		},
-
 		isShared(file) {
 			if (this.currentDir == null)
 				return false;
@@ -2219,27 +2050,10 @@ module.exports = {
 				return false;
 			return this.sharedWithState.isShared(file.getFileProperties().name);
 		},
-		closeMenu(ignoreClearTabNavigation) {
-			this.setContextMenu(false);
-			this.ignoreEvent = false;
-			if (ignoreClearTabNavigation) {
-				this.buildTabNavigation();
-			} else {
-				this.clearTabNavigation();
-			}
-			let menu = document.getElementById('right-click-menu');
-			if (menu) {
-				menu.setAttribute("tabindex", -1);
-				let contextMenuItems = document.getElementsByClassName('context-menu-item');
-				for (var g = 0; g < contextMenuItems.length; g++) {
-					contextMenuItems[g].removeAttribute("tabindex");
-				}
-				let closeItem = document.getElementById('close-context-menu-item');
-				if (closeItem) {
-					closeItem.classList.add("hidden-context-menu-item");
-				}
-			}
-			this.navigationViaTabKey = false;
+
+		closeMenu() {
+			console.log('close menu')
+			this.viewMenu = false
 		},
 
 		formatDateTime(dateTime) {
