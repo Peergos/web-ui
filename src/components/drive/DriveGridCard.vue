@@ -13,9 +13,8 @@
 				v-if="src"
 				:src="src"
 				:alt="alt"
-
 			/>
-			<AppIcon v-else class="card__icon" icon="files" />
+			<AppIcon v-else class="card__icon" :icon="cardIcon" />
 			<figcaption> {{ filename }}</figcaption>
 		</figure>
 
@@ -48,6 +47,14 @@ module.exports = {
 			type: String,
 			default: "",
 		},
+	},
+	computed:{
+		cardIcon(){
+			if (this.type == 'text')
+				return 'file-text';
+			if (this.type == 'dir')
+				return 'files';
+		}
 	},
 	methods:{
 		showMenu(e){
