@@ -20,7 +20,9 @@ module.exports = new Vuex.Store({
 		paymentProperties: null,
 
 		isLoggedIn: false,
-		isAdmin:false
+		isAdmin: false,
+
+		driveMenuPosition: null
 	},
 
 	getters: {
@@ -100,6 +102,11 @@ module.exports = new Vuex.Store({
 		USER_ADMIN(state, payload) {
 			state.isAdmin = payload;
 		},
+
+		//Drive
+		SET_DRIVE_MENU_POSITION(state, payload) {
+			state.driveMenuPosition= payload;
+		}
 	},
 
 	// Async

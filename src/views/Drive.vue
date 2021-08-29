@@ -1,5 +1,5 @@
 <template>
-	<div>
+	<div class="drive-view">
 		<input type="file" id="uploadFileInput" @change="uploadFiles" style="display:none;" multiple />
 		<input type="file" id="uploadDirectoriesInput" @change="uploadFiles" style="display:none;" multiple directory mozDirectory webkitDirectory/>
 
@@ -25,32 +25,12 @@
 			:value="prompt_value"
 			:consumer_func="prompt_consumer_func"
 		/>
-		<transition name="drop">
-			<DriveMenu
-				ref="driveMenu"
-				:position="menuPosition"
-				@closeMenu="closeMenu($event)"
-				v-if="viewMenu"
-			>
-				<li id='gallery' v-if="canOpen" @keyup.enter="gallery" @click="gallery">View</li>
-				<li id='open-file' v-if="canOpen" @keyup.enter="downloadAll"  @click="downloadAll">Download</li>
-				<li id='rename-file' v-if="isWritable" @keyup.enter="rename"  @click="rename">Rename</li>
-				<li id='delete-file' v-if="isWritable" @keyup.enter="deleteFiles"  @click="deleteFiles">Delete</li>
-				<li id='copy-file' v-if="isWritable" @keyup.enter="copy"  @click="copy">Copy</li>
-				<li id='cut-file' v-if="isWritable" @keyup.enter="cut"  @click="cut">Cut</li>
-				<li id='paste-file' v-if="isPasteAvailable" @keyup.enter="paste"  @click="paste">Paste</li>
-				<li id='share-file' v-if="isLoggedIn" @keyup.enter="showShareWith"  @click="showShareWith">Share</li>
-				<!-- <li id='create-file'  @keyup.enter="createTextFile" @click="createTextFile">Create Text file</li> -->
-				<!-- <li id='profile-view' v-if="isProfileViewable" @click="showProfile(false)">Show Profile</li> -->
-				<li id='file-search' v-if="isSearchable" @keyup.enter="openSearch(false)" @click="openSearch(false)">Search...</li>
-			</DriveMenu>
-		</transition>
+
 
 		<div id="dnd"
 			@drop="dndDrop($event)"
 			@dragover.prevent
 			:class="{ not_owner: isNotMe }"
-			@contextmenu="openMenu($event)"
 		>
 
 			<transition name="fade" mode="out-in" appear>
@@ -62,7 +42,7 @@
 						:src="getThumbnailURL(file)"
 						:type="file.getFileProperties().getType()"
 						@click.native="navigateDrive($event, file)"
-						@cardMenu="openMenu($event, file)"
+						@openMenu="openMenu(file)"
 					/>
 				</DriveGrid>
 
@@ -113,6 +93,26 @@
 			</transition>
 		</div>
 
+		<transition name="drop">
+			<DriveMenu
+				ref="driveMenu"
+				v-if="viewMenu"
+				@closeMenu="closeMenu()"
+			>
+				<li id='gallery' v-if="canOpen" @keyup.enter="gallery" @click="gallery">View</li>
+				<li id='open-file' v-if="canOpen" @keyup.enter="downloadAll"  @click="downloadAll">Download</li>
+				<li id='rename-file' v-if="isWritable" @keyup.enter="rename"  @click="rename">Rename</li>
+				<li id='delete-file' v-if="isWritable" @keyup.enter="deleteFiles"  @click="deleteFiles">Delete</li>
+				<li id='copy-file' v-if="isWritable" @keyup.enter="copy"  @click="copy">Copy</li>
+				<li id='cut-file' v-if="isWritable" @keyup.enter="cut"  @click="cut">Cut</li>
+				<li id='paste-file' v-if="isPasteAvailable" @keyup.enter="paste"  @click="paste">Paste</li>
+				<li id='share-file' v-if="isLoggedIn" @keyup.enter="showShareWith"  @click="showShareWith">Share</li>
+				<!-- <li id='create-file'  @keyup.enter="createTextFile" @click="createTextFile">Create Text file</li> -->
+				<!-- <li id='profile-view' v-if="isProfileViewable" @click="showProfile(false)">Show Profile</li> -->
+				<li id='file-search' v-if="isSearchable" @keyup.enter="openSearch(false)" @click="openSearch(false)">Search...</li>
+			</DriveMenu>
+		</transition>
+
 		<gallery
 			v-if="showGallery"
 			@hide-gallery="closeApps()"
@@ -121,6 +121,8 @@
 			:initial-file-name="selectedFiles[0] == null ? '' : selectedFiles[0].getFileProperties().name">
 		</gallery>
 
+
+
 		<error
 			v-if="showError"
 			@hide-error="showError = false"
@@ -128,7 +130,6 @@
 			:body="errorBody"
 			:messageId="messageId">
 		</error>
-
 	</div>
 </template>
 
@@ -154,10 +155,10 @@ module.exports = {
 	},
 	data() {
 		return {
-			menuPosition:{
-				x: 0,
-				y: 0
-			},
+			// menuPosition:{
+			// 	x: 0,
+			// 	y: 0
+			// },
 			isGrid: true,
 			view: "files",
 			path: [],
@@ -1895,10 +1896,7 @@ module.exports = {
            }
         },
 
-		openMenu(e, file) {
-
-			let clientRect =  e.target.getBoundingClientRect()
-			this.menuPosition = { x: clientRect.left, y: clientRect.top }
+		openMenu(file) {
 
 			if (file) {
 				this.selectedFiles = [file];
@@ -2052,7 +2050,6 @@ module.exports = {
 		},
 
 		closeMenu() {
-			console.log('close menu')
 			this.viewMenu = false
 		},
 
@@ -2070,5 +2067,7 @@ module.exports = {
 </script>
 
 <style>
-
+.drive-view{
+	/* position: relative; */
+}
 </style>

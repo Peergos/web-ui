@@ -2,6 +2,7 @@
 	<transition name="drop">
 		<nav
 			class="drive-menu"
+			:class="{'mobile' : isMobile}"
 			tabindex="0"
 			@focusout="$emit('closeMenu')"
 			:style="menuPosition"
@@ -15,43 +16,30 @@
 
 <script>
 module.exports = {
-	props: {
-		position:{
-			type: Object,
-			default: () => ({
-				x: 0,
-				y: 0
-			})
-		},
-	},
-	computed: {
-		menuPosition(){
-
-			// console.log(`left: ${Math.round(this.position.x)}px; top: ${Math.round(this.position.y)}px;`)
-			return `left: ${this.position.x}px; top: ${this.position.y}px;`
+	data() {
+		return {
+			isMobile: false
 		}
 	},
-	methods:{
-		// setMenu(top, left, menuId) {
-		// 	if (this.isNotBackground) {
-		// 		this.ignoreEvent = true;
-		// 	}
+	computed: {
+		...Vuex.mapState({
+			position : 'driveMenuPosition',
+		}),
 
-		// 	var menu = document.getElementById(menuId);
-		// 	if (menu != null) {
-		// 		var largestHeight = window.innerHeight - menu.offsetHeight - 25;
-		// 		var largestWidth = window.innerWidth - menu.offsetWidth - 25;
+		menuPosition(){
+			if(!this.isMobile){
+				let largestWidth = window.innerWidth - 290;
+				let xPos = this.position.x
+				let yPos = this.position.y + window.scrollY
 
-		// 		if (top > largestHeight) top = largestHeight;
+				if(xPos >largestWidth){
+					xPos = largestWidth
+				}
+				return `left: ${xPos}px; top: ${yPos}px;`
+			}
 
-		// 		if (left > largestWidth) left = largestWidth;
-
-		// 		this.top = top + 'px';
-		// 		this.left = left + 'px';
-		// 	}
-		// },
-	}
-
+		}
+	},
 }
 </script>
 
@@ -66,6 +54,12 @@ module.exports = {
 	box-shadow: 0 6px 16px rgba(0, 0, 0, 0.15);
 	border-radius: 6px;
 	overflow: hidden;
+}
+
+nav.drive-menu.mobile{
+	position: sticky;
+	bottom:0px;
+	width:100%;
 }
 /* .drive-menu:focus {
 } */

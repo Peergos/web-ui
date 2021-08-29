@@ -4,7 +4,7 @@
 			class="card__menu"
 			icon="dot-menu"
 			aria-label="menu"
-			@click.stop.native="$emit('cardMenu',$event)"
+			@click.stop.native="showMenu($event)"
 		/>
 
 		<figure>
@@ -49,6 +49,13 @@ module.exports = {
 			default: "",
 		},
 	},
+	methods:{
+		showMenu(e){
+			const Rect = e.currentTarget.getBoundingClientRect();
+			this.$store.commit('SET_DRIVE_MENU_POSITION', { x: Rect.left, y: Rect.top })
+			this.$emit('openMenu')
+		}
+	}
 
 };
 </script>

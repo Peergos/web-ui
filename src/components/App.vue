@@ -370,19 +370,19 @@ section.content{
 	position: relative;
 	right:0;
 	top:0;
-	margin-left:96px;
+	padding-left:96px;
 	/* width: calc(100% - 96px); */
 	min-height: 100vh;
 }
 
 section.content.sidebar-margin {
-	margin-left: 256px;
+	padding-left: 240px;
 	/* width: calc(100% - 240px); */
 }
 
 @media screen and (max-width:1024px) {
 	section.content{
-		margin-left: 0;
+		padding-left: 0;
 	}
 
 }
