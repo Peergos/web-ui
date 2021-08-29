@@ -14,6 +14,7 @@
 			@switchView="switchView()"
 			@goBackToLevel="goBackToLevel($event)"
 			@askMkdir="askMkdir()"
+			@createFile="createTextFile()"
 		/>
 
 		<AppPrompt
@@ -1919,7 +1920,6 @@ module.exports = {
 		},
 
 		createTextFile() {
-			this.closeMenu();
 			this.prompt_placeholder = 'File name';
 			this.prompt_message = 'Enter a file name';
 			this.prompt_value = '';
