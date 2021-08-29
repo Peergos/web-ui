@@ -51,8 +51,9 @@ module.exports = {
 	},
 	methods:{
 		showMenu(e){
-			const Rect = e.currentTarget.getBoundingClientRect();
-			this.$store.commit('SET_DRIVE_MENU_POSITION', { x: Rect.left, y: Rect.top })
+			// const Rect = e.currentTarget.getBoundingClientRect();
+			// this.$store.commit('SET_DRIVE_MENU_POSITION', { x: Rect.left, y: Rect.top })
+			this.$store.commit('SET_DRIVE_MENU_TARGET', e.currentTarget)
 			this.$emit('openMenu')
 		}
 	}

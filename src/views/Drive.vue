@@ -195,8 +195,6 @@ module.exports = {
 			paymentProperties: {
 				isPaid() { return false; }
 			},
-			showSettingsMenu: false,
-			showUploadMenu: false,
 			showFeedbackForm: false,
 			showTodoBoardViewer: false,
 			currentTodoBoardName: null,
@@ -419,15 +417,23 @@ module.exports = {
 
 
 	created() {
-		console.debug('Filesystem module created!');
-
-		this.showAppgrid = !this.isSecretLink;
 		if (this.isSecretLink)
 			this.view = "files";
+
 		this.showTour = this.newsignup;
 		this.init();
 		window.onhashchange = this.onUrlChange;
+
+		this.onResize()
+		// TODO: throttle onResize and make it global?
+		window.addEventListener('resize', this.onResize, {passive: true} );
 	},
+
+	beforeDestroy() {
+		window.removeEventListener('resize', this.onResize );
+	},
+
+
 	watch: {
 		// manually encode currentDir dependencies to get around infinite dependency chain issues with async-computed methods
 		context(newContext, oldContext) {
@@ -546,6 +552,11 @@ module.exports = {
 				});
 			}
 			this.showPendingServerMessages();
+		},
+
+		onResize() {
+			this.closeMenu()
+			this.$store.commit('SET_WINDOW_WIDTH', window.innerWidth)
 		},
 
 		showPendingServerMessages() {
@@ -670,6 +681,7 @@ module.exports = {
 			this.updateHistory("filesystem", this.getPath(), "");
 			this.forceSharedRefreshWithUpdate++;
 		},
+
 		navigateToAction(directory) {
 			let newPath = directory.startsWith("/") ? directory.substring(1).split('/') : directory.split('/');
 			let currentPath = this.path;
@@ -692,6 +704,7 @@ module.exports = {
 			this.updateHistory("filesystem", path, "");
 			this.updateCurrentDirectory(filename);
 		},
+
 		openInApp(filename, app) {
 			this.selectedFiles = this.files.filter(f => f.getName() == filename);
 			if (this.selectedFiles.length == 0)
@@ -1373,9 +1386,6 @@ module.exports = {
 				})
 			});
 		},
-		toggleUserMenu() {
-			this.showSettingsMenu = !this.showSettingsMenu;
-		},
 
 		toggleFeedbackForm() {
 			this.showFeedbackForm = !this.showFeedbackForm;
@@ -1393,6 +1403,7 @@ module.exports = {
 				}
 			}
 		},
+
 		getMessage(msgId) {
 			if (msgId != null) {
 				//linear scan
@@ -1404,10 +1415,6 @@ module.exports = {
 				}
 			}
 			return null;
-		},
-
-		toggleUploadMenu() {
-			this.showUploadMenu = !this.showUploadMenu;
 		},
 
 		showTextEditor() {
@@ -1654,7 +1661,7 @@ module.exports = {
 		},
 		updateContext(newContext) {
 			// this.context = newContext;
-			this.$store.commit("SET_USER_CONTEXT", newContext);
+			this.$store.commit('SET_USER_CONTEXT', newContext);
 
 		},
 
@@ -1926,6 +1933,7 @@ module.exports = {
 			}.bind(this);
 			this.showPrompt = true;
 		},
+
 		uploadEmptyFile(filename) {
 			this.showSpinner = true;
 			let that = this;
@@ -1994,9 +2002,8 @@ module.exports = {
 			};
 			this.showPrompt = true;
 		},
-		closePrompt() {
-			this.showPrompt = false;
-		},
+
+
 		deleteFiles() {
 			var selectedCount = this.selectedFiles.length;
 			if (selectedCount == 0)
@@ -2049,10 +2056,6 @@ module.exports = {
 			return this.sharedWithState.isShared(file.getFileProperties().name);
 		},
 
-		closeMenu() {
-			this.viewMenu = false
-		},
-
 		formatDateTime(dateTime) {
 			let date = new Date(dateTime.toString() + "+00:00");//adding UTC TZ in ISO_OFFSET_DATE_TIME ie 2021-12-03T10:25:30+00:00
 			let formatted = date.getFullYear() + '-' + (date.getMonth() + 1) + '-' + date.getDate()
@@ -2060,7 +2063,14 @@ module.exports = {
 				+ ':' + (date.getMinutes() < 10 ? '0' : '') + date.getMinutes()
 				+ ':' + (date.getSeconds() < 10 ? '0' : '') + date.getSeconds();
 			return formatted;
-		}
+		},
+
+		closePrompt() {
+			this.showPrompt = false;
+		},
+		closeMenu() {
+			this.viewMenu = false
+		},
 	},
 
 };
@@ -2068,6 +2078,6 @@ module.exports = {
 
 <style>
 .drive-view{
-	/* position: relative; */
+	min-height: 100vh;
 }
 </style>

@@ -7,7 +7,7 @@
 			@focusout="$emit('closeMenu')"
 			:style="menuPosition"
 		>
-			<ul id="right-click-menu">
+			<ul>
 				<slot />
 			</ul>
 		</nav>
@@ -16,30 +16,32 @@
 
 <script>
 module.exports = {
-	data() {
-		return {
-			isMobile: false
-		}
-	},
-	computed: {
-		...Vuex.mapState({
-			position : 'driveMenuPosition',
-		}),
 
+	computed: {
+		...Vuex.mapState([
+			'driveMenuTarget',
+			'windowWidth'
+		]),
+		isMobile(){
+			return this.windowWidth < 1024
+		},
 		menuPosition(){
 			if(!this.isMobile){
-				let largestWidth = window.innerWidth - 290;
-				let xPos = this.position.x
-				let yPos = this.position.y + window.scrollY
 
-				if(xPos >largestWidth){
-					xPos = largestWidth
+				const target = this.driveMenuTarget.getBoundingClientRect();
+
+				let maxWidth = this.windowWidth - 290;
+				let xPos = target.left
+				let yPos = target.top + window.scrollY
+
+				if(xPos >maxWidth){
+					xPos = maxWidth
 				}
 				return `left: ${xPos}px; top: ${yPos}px;`
 			}
-
 		}
-	},
+
+	}
 }
 </script>
 
@@ -54,12 +56,6 @@ module.exports = {
 	box-shadow: 0 6px 16px rgba(0, 0, 0, 0.15);
 	border-radius: 6px;
 	overflow: hidden;
-}
-
-nav.drive-menu.mobile{
-	position: sticky;
-	bottom:0px;
-	width:100%;
 }
 /* .drive-menu:focus {
 } */
@@ -78,5 +74,14 @@ nav.drive-menu.mobile{
 
 .drive-menu li:hover {
 	background-color: var(--bg-2);
+}
+
+.drive-menu.mobile{
+	position: sticky;
+	bottom:0px;
+	width:100%;
+}
+.drive-menu.mobile ul li{
+	padding: 16px var(--app-margin);
 }
 </style>

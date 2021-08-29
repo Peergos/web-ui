@@ -4,6 +4,7 @@ const helpers = require("../mixins/storage/index.js");
 
 module.exports = new Vuex.Store({
 	state: {
+		windowWidth: null,
 		currentView: null,
 		isDark: false,
 		isSidebarOpen: false,
@@ -22,14 +23,14 @@ module.exports = new Vuex.Store({
 		isLoggedIn: false,
 		isAdmin: false,
 
-		driveMenuPosition: null
+		// driveMenuPosition: null,
+		driveMenuTarget: null
 	},
 
 	getters: {
 		currentTheme: (state) => {
 			return state.isDark ? "dark-mode" : "";
 		},
-
 		quota: (state) => {
 			if (state.quotaBytes == 0)
 				return "N/A";
@@ -47,6 +48,9 @@ module.exports = new Vuex.Store({
 	// Sync
 	mutations: {
 		// UI
+		SET_WINDOW_WIDTH(state, payload) {
+			state.windowWidth = payload;
+		},
 		SET_VIEW(state, payload) {
 			state.view = payload;
 		},
@@ -104,8 +108,11 @@ module.exports = new Vuex.Store({
 		},
 
 		//Drive
-		SET_DRIVE_MENU_POSITION(state, payload) {
-			state.driveMenuPosition= payload;
+		// SET_DRIVE_MENU_POSITION(state, payload) {
+		// 	state.driveMenuPosition = payload;
+		// },
+		SET_DRIVE_MENU_TARGET(state, payload) {
+			state.driveMenuTarget = payload;
 		}
 	},
 
