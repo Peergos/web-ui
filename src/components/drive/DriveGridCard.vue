@@ -50,20 +50,20 @@ module.exports = {
 	},
 	computed:{
 		cardIcon(){
-			if (this.type == 'dir') 	return 'files';
-			if (this.type == 'image') 	return 'image-file';
-			if (this.type == 'text') 	return 'text-file';
-			if (this.type == 'audio') 	return 'audio-file';
-			if (this.type == 'video') 	return 'video-file';
-			if (this.type == 'pdf') 	return 'file-pdf';
-			if (this.type == 'zip') 	return 'zip-file';
-			if (this.type == 'todo') 	return 'tasks';
-			if (this.type == 'file') 	return 'add-document';
-			if (this.type == 'calendar') 	return 'calendar';
-			if (this.type == 'contact file') 	return 'address-card';
-			if (this.type == 'powerpoint presentation' || this.type == 'presentation') 	return 'powerpoint-file';
-			if (this.type == 'word document' || this.type == 'text document') 	return 'word-file';
-			if (this.type == 'excel spreadsheet' || this.type == 'spreadsheet') 	return 'excel-file';
+			if (this.type == 'dir') 	return 'folder--72';
+			if (this.type == 'image') 	return 'file-image--72';
+			if (this.type == 'text') 	return 'file-text--72';
+			if (this.type == 'audio') 	return 'file-audio--72';
+			if (this.type == 'video') 	return 'file-video--72';
+			if (this.type == 'pdf') 	return 'file-pdf--72';
+			if (this.type == 'zip') 	return 'file-zip--72';
+			if (this.type == 'todo') 	return 'tasks--72';
+			if (this.type == 'file') 	return 'file-generic--72';
+			if (this.type == 'calendar') 	return 'calendar--72';
+			if (this.type == 'contact file') 	return 'address-card--72';
+			if (this.type == 'powerpoint presentation' || this.type == 'presentation') 	return 'file-powerpoint--72';
+			if (this.type == 'word document' || this.type == 'text document') 	return 'file-word--72';
+			if (this.type == 'excel spreadsheet' || this.type == 'spreadsheet') 	return 'file-excel--72';
 		}
 	},
 	methods:{
@@ -105,8 +105,6 @@ module.exports = {
 	display: flex;
 	align-items: center;
 	justify-content: center;
-
-	cursor: default;
 }
 
 .grid-card .cover {

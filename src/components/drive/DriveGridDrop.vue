@@ -1,6 +1,6 @@
 <template>
 	<figure class="grid-card drop">
-		<AppIcon class="card__icon" icon="upload" />
+		<AppIcon class="card__icon" icon="upload--72" />
 		<figcaption>Drop files here</figcaption>
 	</figure>
 </template>
@@ -20,7 +20,7 @@ module.exports = {
 .grid-card.drop {
 	position: relative;
 	width: 100%;
-
+	cursor:default;
 	background-color: transparent;
 	border: 2px dashed var(--border-color);
 }

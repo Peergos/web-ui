@@ -20,7 +20,7 @@
 		/> -->
 
 		<ul class="nav-list">
-			<MenuItem label="Files" icon="files" view="Drive" />
+			<MenuItem label="Drive" icon="folder" view="Drive" />
 			<MenuItem label="Newsfeed" icon="news" view="NewsFeed" />
 			<MenuItem label="Tasks" icon="tasks" view="Tasks" />
 			<MenuItem label="Social" icon="social" view="Social" />
