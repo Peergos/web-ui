@@ -45,6 +45,9 @@
 						@click.native="navigateDrive($event, file)"
 						@openMenu="openMenu(file)"
 					/>
+					<DriveGridDrop v-if="sortedFiles.length==0 && currentDir != null && currentDir.isWritable()">
+						Upload a file by dragging and dropping here or clicking the icon
+					</DriveGridDrop>
 				</DriveGrid>
 
 
@@ -110,7 +113,7 @@
 				<li id='share-file' v-if="isLoggedIn" @keyup.enter="showShareWith"  @click="showShareWith">Share</li>
 				<!-- <li id='create-file'  @keyup.enter="createTextFile" @click="createTextFile">Create Text file</li> -->
 				<!-- <li id='profile-view' v-if="isProfileViewable" @click="showProfile(false)">Show Profile</li> -->
-				<li id='file-search' v-if="isSearchable" @keyup.enter="openSearch(false)" @click="openSearch(false)">Search...</li>
+				<!-- <li id='file-search' v-if="isSearchable" @keyup.enter="openSearch(false)" @click="openSearch(false)">Search...</li> -->
 			</DriveMenu>
 		</transition>
 
@@ -138,6 +141,8 @@
 const DriveHeader = require("../components/drive/DriveHeader.vue");
 const DriveGrid = require("../components/drive/DriveGrid.vue");
 const DriveGridCard = require("../components/drive/DriveGridCard.vue");
+const DriveGridDrop = require("../components/drive/DriveGridDrop.vue");
+
 const ProgressBar = require("../components/drive/ProgressBar.vue");
 const DriveMenu = require("../components/drive/DriveMenu.vue");
 
@@ -150,6 +155,7 @@ module.exports = {
 		DriveHeader,
 		DriveGrid,
 		DriveGridCard,
+		DriveGridDrop,
 		DriveMenu,
 		AppPrompt,
 		ProgressBar
@@ -1777,42 +1783,42 @@ module.exports = {
 				return "dir";
 			return "file"
 		},
-		getFileIcon(file) {
-			var type = file.getFileProperties().getType();
-			return this.getFileIconFromFileAndType(file, type);
-		},
-		getFileIconFromFileAndType(file, type) {
-			if (type == 'pdf')
-				return 'fa-file-pdf';
-			if (type == 'audio')
-				return 'fa-file-audio';
-			if (type == 'video')
-				return 'fa-file-video';
-			if (type == 'image')
-				return 'fa-file-image';
-			if (type == 'text')
-				return 'fa-file-alt';
-			if (type == 'zip')
-				return 'fa-file-archive';
-			if (type == 'powerpoint presentation' || type == 'presentation')
-				return 'fa-file-powerpoint';
-			if (type == 'word document' || type == 'text document')
-				return 'fa-file-word';
-			if (type == 'excel spreadsheet' || type == 'spreadsheet')
-				return 'fa-file-excel';
-			if (type == 'todo')
-				return 'fas fa-tasks';
-			if (type == 'calendar')
-				return 'fa fa-calendar-alt';
-			if (type == 'contact file')
-				return 'fa fa-address-card';
-			if (file.isDirectory()) {
-				if (file.isUserRoot() && file.getName() == this.username)
-					return 'fa-home';
-				return 'fa-folder-open';
-			}
-			return 'fa-file';
-		},
+		// getFileIcon(file) {
+		// 	var type = file.getFileProperties().getType();
+		// 	return this.getFileIconFromFileAndType(file, type);
+		// },
+		// getFileIconFromFileAndType(file, type) {
+		// 	if (type == 'pdf')
+		// 		return 'fa-file-pdf';
+		// 	if (type == 'audio')
+		// 		return 'fa-file-audio';
+		// 	if (type == 'video')
+		// 		return 'fa-file-video';
+		// 	if (type == 'image')
+		// 		return 'fa-file-image';
+		// 	if (type == 'text')
+		// 		return 'fa-file-alt';
+		// 	if (type == 'zip')
+		// 		return 'fa-file-archive';
+		// 	if (type == 'powerpoint presentation' || type == 'presentation')
+		// 		return 'fa-file-powerpoint';
+		// 	if (type == 'word document' || type == 'text document')
+		// 		return 'fa-file-word';
+		// 	if (type == 'excel spreadsheet' || type == 'spreadsheet')
+		// 		return 'fa-file-excel';
+		// 	if (type == 'todo')
+		// 		return 'fas fa-tasks';
+		// 	if (type == 'calendar')
+		// 		return 'fa fa-calendar-alt';
+		// 	if (type == 'contact file')
+		// 		return 'fa fa-address-card';
+		// 	if (file.isDirectory()) {
+		// 		if (file.isUserRoot() && file.getName() == this.username)
+		// 			return 'fa-home';
+		// 		return 'fa-folder-open';
+		// 	}
+		// 	return 'fa-file';
+		// },
 		getPath() {
 			return '/' + this.path.join('/') + (this.path.length > 0 ? "/" : "");
 		},

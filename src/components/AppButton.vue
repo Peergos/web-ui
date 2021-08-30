@@ -80,7 +80,7 @@ module.exports = {
 	color: currentColor;
 	background-color: transparent;
 	border: 2px solid transparent;
-	border-radius: 4px;
+	border-radius: 2px;
 
 	cursor: pointer;
 

@@ -54,7 +54,7 @@ module.exports = {
 	color: var(--color);
 	background-color: var(--bg);
 	box-shadow: 0 6px 16px rgba(0, 0, 0, 0.15);
-	border-radius: 6px;
+	border-radius: 4px;
 	overflow: hidden;
 }
 /* .drive-menu:focus {

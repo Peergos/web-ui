@@ -10,7 +10,7 @@
 		<figure>
 			<img
 				class="cover"
-				v-if="src"
+				v-if="type == 'image'"
 				:src="src"
 				:alt="alt"
 			/>
@@ -50,16 +50,24 @@ module.exports = {
 	},
 	computed:{
 		cardIcon(){
-			if (this.type == 'text')
-				return 'file-text';
-			if (this.type == 'dir')
-				return 'files';
+			if (this.type == 'dir') 	return 'files';
+			if (this.type == 'image') 	return 'image-file';
+			if (this.type == 'text') 	return 'text-file';
+			if (this.type == 'audio') 	return 'audio-file';
+			if (this.type == 'video') 	return 'video-file';
+			if (this.type == 'pdf') 	return 'file-pdf';
+			if (this.type == 'zip') 	return 'zip-file';
+			if (this.type == 'todo') 	return 'tasks';
+			if (this.type == 'file') 	return 'add-document';
+			if (this.type == 'calendar') 	return 'calendar';
+			if (this.type == 'contact file') 	return 'address-card';
+			if (this.type == 'powerpoint presentation' || this.type == 'presentation') 	return 'powerpoint-file';
+			if (this.type == 'word document' || this.type == 'text document') 	return 'word-file';
+			if (this.type == 'excel spreadsheet' || this.type == 'spreadsheet') 	return 'excel-file';
 		}
 	},
 	methods:{
 		showMenu(e){
-			// const Rect = e.currentTarget.getBoundingClientRect();
-			// this.$store.commit('SET_DRIVE_MENU_POSITION', { x: Rect.left, y: Rect.top })
 			this.$store.commit('SET_DRIVE_MENU_TARGET', e.currentTarget)
 			this.$emit('openMenu')
 		}
@@ -71,10 +79,20 @@ module.exports = {
 <style>
 .grid-card {
 	position: relative;
-	padding-bottom: 75%;
-	/* min-height: 220px; */
+	display: flex;
+	align-items: center;
+	justify-content: center;
+
+	/* padding-bottom: 75%; */
 	background-color: var(--bg-2);
 	cursor: pointer;
+	border-radius: 4px;
+	overflow:hidden;
+}
+.grid-card:before {
+ 	content: "";
+	position: relative;
+    padding-top: 75%;
 }
 
 .grid-card figure{
@@ -88,15 +106,14 @@ module.exports = {
 	align-items: center;
 	justify-content: center;
 
-	overflow: hidden;
-	border-radius: 6px;
+	cursor: default;
 }
 
 .grid-card .cover {
 
 	width:100%;
 	height:100%;
-	object-fit: cover; /* or contain */
+	object-fit: cover;
 	object-position: center center;
 	transform: scale(1);
 	transition: transform 0.2s;
@@ -104,6 +121,8 @@ module.exports = {
 
 
 .grid-card .card__icon {
+	width:72px;
+	height: 72px;
 	color: var(--color-2);
 	transform: scale(1);
 	transition: transform 0.2s;
@@ -116,14 +135,18 @@ module.exports = {
 
 	margin: 0 8px;
 	padding: 2px 6px;
-	border-radius: 4px;
+
 
 	font-size: var(--text-small);
 	font-weight: var(--regular);
 	color: var(--color);
+
+
+}
+.grid-card .cover ~ figcaption{
+	border-radius: 2px;
 	background-color: var(--bg);
 }
-
 .grid-card .card__menu{
 	position: absolute;
 	top:8px;
@@ -139,6 +162,5 @@ module.exports = {
 	transform: scale(1.05);
 }
 .grid-card:focus{
-	/* background-color: red; */
 }
 </style>
