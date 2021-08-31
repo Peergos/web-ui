@@ -36,7 +36,7 @@ module.exports = {
 	align-items: flex-start;
 	padding: 0;
 	margin-top: auto;
-	margin-bottom: 16px;
+	/* margin-bottom: 16px; */
 	transition: all 0.3s;
 }
 
@@ -45,6 +45,10 @@ module.exports = {
 	text-transform: uppercase;
 	background-color: var(--green-500);
 	color: white;
+	width:100%;
+	max-width: 72px;
+	text-align: center;
+
 }
 
 .upgrade:hover {
@@ -53,6 +57,7 @@ module.exports = {
 
 .navigation-storage .storage {
 	margin-bottom: 8px;
+	transition: all 0.3s;
 }
 
 .app-navigation.expanded .storage {
@@ -60,7 +65,7 @@ module.exports = {
 }
 
 .app-navigation.expanded .navigation-storage {
-	padding: 0 16px;
+	padding: 16px;
 }
 
 .app-navigation .storage {

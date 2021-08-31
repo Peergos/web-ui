@@ -10,7 +10,7 @@
 		<figure>
 			<img
 				class="cover"
-				v-if="type == 'image'"
+				v-if="src"
 				:src="src"
 				:alt="alt"
 			/>

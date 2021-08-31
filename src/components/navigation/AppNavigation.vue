@@ -3,21 +3,21 @@
 
 		<AppIcon class="logo" :icon="isOpen ? 'logo-full' : 'logo-min'" @click.native="toggleSidebar()"/>
 
-		<!-- <AppButton
-			class="toggle-button--mobile mobile"
+		<AppButton
+			class="toggle-button--mobile desktop-hidden"
 			round
 			size="small"
 			icon="dot-menu"
 			@click.native="toggleSidebar"
-		/> -->
+		/>
 
-		<!-- <AppButton
-			class="toggle-theme--mobile mobile"
+		<AppButton
+			class="toggle-theme--mobile desktop-hidden"
 			size="small"
 			:icon="isDark ? 'sun' : 'moon'"
 			@click.native="toggleTheme()"
 			aria-label="Toggle themes"
-		/> -->
+		/>
 
 		<ul class="nav-list">
 			<MenuItem label="Drive" icon="folder" view="Drive" />
@@ -77,33 +77,29 @@ module.exports = {
 	top: 0;
 	left: 0;
 	z-index: 300;
-	padding: 0 16px;
 
 	display: flex;
 	flex-direction: column;
 	height: 100%;
-	width: 96px;
-
+	width: 72px;
+	padding-top:16px;
 	background: var(--bg-2);
 	transition: all 0.5s ease;
 }
 .app-navigation.expanded {
 	width: 240px;
-	padding: 0 16px;
 }
 
 .app-navigation .logo {
 	width: 100%;
-	left: 0;
 	height: 32px;
-	margin-top: 16px;
-	margin-bottom: 64px;
+	margin:  0;
 	padding: 0 16px;
 	cursor: pointer;
 }
 
 .app-navigation .nav-list {
-	margin-top: 20px;
+	margin-top: var(--app-margin);
 	margin-bottom: auto;
 	padding: 0;
 }
@@ -117,7 +113,7 @@ module.exports = {
 }
 
 .app-navigation .toggle-button--mobile {
-	background-color: var(--bg-2);
+	/* background-color: var(--bg); */
 	position: fixed;
 	top: 16px;
 	right: 16px;
@@ -133,23 +129,17 @@ module.exports = {
 
 @media (max-width: 1024px) {
 	.app-navigation {
-		/* visibility: hidden; */
-		width: 100%;
+		/* width: 100%; */
 		opacity: 0;
 		pointer-events: none;
-		/* background: var(--bg); */
 		transition: opacity 0.3s, padding 0s 0.3s;
 	}
 
 	.app-navigation.expanded {
 		visibility: visible;
 		width: 100%;
-
-		padding: 0;
-
 		opacity: 1;
 		transition: opacity 0.3s;
-
 		pointer-events: all;
 	}
 

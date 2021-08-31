@@ -2,13 +2,12 @@
 	<nav class="user-settings">
 		<AppDropdown
 			v-if="isLoggedIn"
-			class="mobile-hidden"
 			aria-expanded="true"
 			aria-label="settings"
 		>
 			<template #trigger>
 				<div class="drive-user">
-					{{ context.username }}
+					<span class="mobile-hidden">{{ context.username }}</span>
 					<img
 						class="cover"
 						v-if="profileImage"
@@ -55,7 +54,7 @@
 
 		<!-- dark theme -->
 		<AppButton
-			class="toggle-theme"
+			class="toggle-theme mobile-hidden"
 			size="small"
 			:icon="isDark ? 'sun' : 'moon'"
 			@click.native="toggleTheme()"
@@ -157,6 +156,7 @@ module.exports = {
 	margin-left:auto;
 	display: flex;
 	align-items: center;
+	padding: 0 32px;
 }
 .user-settings button{
 	margin-left: 16px;

@@ -46,7 +46,7 @@
 	/* --color-hover: var(--blue-800); */
 
 	--color: var(--blue-800);
-	--color-hover: var(--text-color);
+	--color-hover: var(--blue-900);
 	--color-2: var(--gray-3);
 
 	--bg: var(--white);
@@ -65,7 +65,7 @@
 
 	--color: var(--white);
 	--color-hover: var(--white);
-	--color-2: var(--gray-3);
+	--color-2: var(--text-color);/* var(--gray-3);*/
 
 	--bg: var(--blue-800);
 	--bg-hover: var(--blue-900);

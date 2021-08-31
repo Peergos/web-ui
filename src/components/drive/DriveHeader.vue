@@ -47,9 +47,8 @@
 						<li @click="$emit('createFile')">New file</li>
 					</ul>
 				</AppDropdown>
-
-				<UserSettings />
 			</div>
+			<UserSettings />
 	</header>
 </template>
 
@@ -94,12 +93,6 @@ module.exports = {
 	display: flex;
 	justify-content: flex-start;
 	align-items: center;
-/*
-	display:grid;
-	grid-template-columns: 1fr 1fr;
-	justify-content: start;
-	align-items: center; */
-
 }
 
 .drive-header .drive-tools{
@@ -112,13 +105,11 @@ module.exports = {
 }
 
 .drive-header .drive-tools > *{
-	margin-left: 16px;
+	margin-right: 16px;
 }
 
 
 .drive-breadcrumb{
-	/* background-color: var(--bg-2); */
-	border-radius: 6px;
 	padding: 4px 32px;
 	color: var(--color-2);
 }
@@ -150,19 +141,35 @@ module.exports = {
 @media screen and (max-width: 1024px) {
 	.drive-header {
 		flex-wrap: wrap;
-		flex-direction: column-reverse;
+		flex-direction: row;
+		/* flex-direction: column; */
 	}
 	.drive-header > * {
 		width:100%;
 		min-height: 64px;
 		padding: 0 16px;
 	}
+
+
 	.drive-header .drive-tools{
+		flex:0 1 50%;
+		order: 1;
+		margin-left: 0;
 		padding: 0 16px;
-		border-bottom: 1px solid var(--border-color);
+		flex-direction: row-reverse;
+	}
+
+	.drive-header .user-settings{
+		order: 2;
+		flex: 0 1 50%;
+		justify-content: flex-end;
+		margin-right: 0;
 	}
 	.drive-header .drive-breadcrumb{
+		order: 3;
+		flex:1 0 100%;
 		padding: 8px 16px;
+		border-top: 1px solid var(--border-color);
 	}
 }
 </style>

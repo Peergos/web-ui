@@ -1124,6 +1124,7 @@ module.exports = {
 				});
 			});
 		},
+
 		reduceAllUploads(fileInfoStore, progressStore, uploadParams, future) {
 			let that = this;
 			let fileInfo = fileInfoStore.pop();
@@ -2047,12 +2048,6 @@ module.exports = {
 				});
 		},
 
-		setStyle(id, style) {
-			var el = document.getElementById(id);
-			if (el) {
-				el.style.display = style;
-			}
-		},
 
 		isShared(file) {
 			if (this.currentDir == null)

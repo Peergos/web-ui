@@ -31,6 +31,9 @@ module.exports = new Vuex.Store({
 		currentTheme: (state) => {
 			return state.isDark ? "dark-mode" : "";
 		},
+		isMobile:(state) => {
+			return state.windowWidth < 1024;
+		},
 		quota: (state) => {
 			if (state.quotaBytes == 0)
 				return "N/A";

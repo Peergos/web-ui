@@ -370,7 +370,7 @@ section.content{
 	position: relative;
 	right:0;
 	top:0;
-	padding-left:96px;
+	padding-left:72px;
 	/* width: calc(100% - 96px); */
 	min-height: 100vh;
 }
