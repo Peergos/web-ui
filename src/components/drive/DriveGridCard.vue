@@ -58,12 +58,12 @@ module.exports = {
 			if (this.type == 'pdf') 	return 'file-pdf--72';
 			if (this.type == 'zip') 	return 'file-zip--72';
 			if (this.type == 'todo') 	return 'tasks--72';
-			if (this.type == 'file') 	return 'file-generic--72';
 			if (this.type == 'calendar') 	return 'calendar--72';
 			if (this.type == 'contact file') 	return 'address-card--72';
 			if (this.type == 'powerpoint presentation' || this.type == 'presentation') 	return 'file-powerpoint--72';
 			if (this.type == 'word document' || this.type == 'text document') 	return 'file-word--72';
-			if (this.type == 'excel spreadsheet' || this.type == 'spreadsheet') 	return 'file-excel--72';
+		        if (this.type == 'excel spreadsheet' || this.type == 'spreadsheet') 	return 'file-excel--72';
+                        return 'file-generic--72';
 		}
 	},
 	methods:{
