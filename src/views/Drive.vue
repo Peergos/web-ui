@@ -25,6 +25,7 @@
 			:max_input_size="prompt_max_input_size"
 			:value="prompt_value"
 			:consumer_func="prompt_consumer_func"
+			:action="prompt_action"
 		/>
 
 
@@ -239,6 +240,7 @@ module.exports = {
 			prompt_max_input_size: null,
 			prompt_value: '',
 			prompt_consumer_func: () => { },
+			prompt_action: '',
 			showSelect: false,
 			showPrompt: false,
 			showWarning: false,
@@ -926,12 +928,15 @@ module.exports = {
 		},
 
 		confirmDelete(file, deleteFn) {
-			var extra = file.isDirectory() ? " and all its contents" : "";
-			this.warning_message = 'Are you sure you want to delete ' + file.getName() + extra + '?';
-			this.warning_body = '';
-			this.warning_consumer_func = deleteFn;
-			this.showWarning = true;
+			const extra = file.isDirectory() ? " and all its contents" : "";
+			this.prompt_placeholder = null;
+			this.prompt_message = `Are you sure you want to delete ${file.getName()} ${extra}?`;
+			this.prompt_value = '';
+			this.prompt_consumer_func = deleteFn;
+			this.prompt_action = 'Delete'
+			this.showPrompt = true;
 		},
+
 		closeWarning() {
 			this.showWarning = false;
 		},
@@ -2012,9 +2017,11 @@ module.exports = {
 
 
 		deleteFiles() {
+			// console.log('deleteFiles:',this.selectedFiles.length )
 			var selectedCount = this.selectedFiles.length;
 			if (selectedCount == 0)
 				return;
+
 			this.closeMenu();
 
 			for (var i = 0; i < selectedCount; i++) {
@@ -2022,8 +2029,10 @@ module.exports = {
 				var that = this;
 				var parent = this.currentDir;
 
+				// console.log('deleteFiles:',file, parent, this.context )
+
 				this.confirmDelete(file, () => {
-					that.deleteOne(file, parent, that.context);
+					that.deleteOne(file, parent, this.context);
 				});
 			}
 		},
@@ -2040,10 +2049,7 @@ module.exports = {
 					that.showSpinner = false;
 					that.updateUsage();
 				}).exceptionally(function (throwable) {
-					that.errorTitle = 'Error deleting file: ' + file.getFileProperties().name;
-					that.errorBody = throwable.getMessage();
-					that.showError = true;
-					that.showSpinner = false;
+					that.$toast.error(`Error deleting file: ${file.getFileProperties().name}: ${ throwable.getMessage() }`, {timeout:false, id: 'deleteFile'})
 					that.updateUsage();
 				});
 		},

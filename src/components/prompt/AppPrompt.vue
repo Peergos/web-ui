@@ -9,13 +9,14 @@
 				</header>
 				<div class="prompt__body">
 					<input
+						v-if="placeholder"
 						id="prompt-input"
 						ref="prompt"
 						v-model="prompt_result"
 						type="text"
 						:placeholder="placeholder"
-						:maxlength="input_length"
-						@keyup.enter="getPrompt"
+						:maxlength="maxLength"
+						@keyup.enter="getPrompt(this.prompt_result)"
 						autofocus
 					>
 					</input>
@@ -31,7 +32,7 @@
 						accent
 						@click.native="getPrompt(this.prompt_result)"
 					>
-					{{confirm}}
+					{{action}}
 					</AppButton>
 				</footer>
 			</div>
@@ -44,7 +45,6 @@ module.exports = {
 	data() {
 		return {
 			prompt_result: '',
-			input_length: 255
 		}
 	},
 	props: {
@@ -54,7 +54,7 @@ module.exports = {
 		},
 		placeholder: {
 			type: String,
-			default: ''
+			default: null
 		},
 		value:{
 			type: String,
@@ -67,18 +67,25 @@ module.exports = {
 		consumer_func: {
 			type: Function
 		},
-		confirm:{
+		action:{
 			type: String,
 			default: 'ok'
 		}
 
 
 	},
+	computed: {
+		maxLength() {
+			return (this.max_input_size == null || this.max_input_size == '') ? 255 : this.max_input_size;
+		}
+	},
 
 	mounted() {
 		this.prompt_result = this.value;
-		this.input_length = (this.max_input_size == null || this.max_input_size == '') ? 255 : this.max_input_size;
-		this.$refs.prompt.focus()
+
+		if(this.placeholder !== null){
+			this.$refs.prompt.focus()
+		}
 	},
 
 	methods: {
@@ -87,10 +94,8 @@ module.exports = {
 		},
 
 		getPrompt() {
-			var res = this.prompt_result;
+			this.consumer_func(this.prompt_result);
 			this.closePrompt();
-			this.prompt_result = '';
-			this.consumer_func(res);
 		}
 	}
 }
