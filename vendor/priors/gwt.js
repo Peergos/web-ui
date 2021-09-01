@@ -585,6 +585,10 @@ function createVideoThumbnailProm(future, asyncReader, fileSize, fileName) {
                 if(currentIncrement < duration){
                     let vHeight = video.videoHeight;
                     let vWidth = video.videoWidth;
+                    if (vHeight == 0) {
+                        future.complete("");
+                        return;
+                    }
                     let tall = vHeight > vWidth;
                     let width = tall ? vWidth*size/vHeight : size;
                     let height = tall ? size : vHeight*size/vWidth;

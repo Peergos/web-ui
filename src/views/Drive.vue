@@ -149,6 +149,7 @@ const DriveMenu = require("../components/drive/DriveMenu.vue");
 
 const AppPrompt = require("../components/prompt/AppPrompt.vue");
 
+const helpers = require("../mixins/storage/index.js");
 const mixins = require("../mixins/downloader/index.js");
 
 module.exports = {
@@ -1298,12 +1299,11 @@ module.exports = {
 						} else {
 							uploadParams.accumulativeFileSize += (file.size + (4096 - (file.size % 4096)));
 							let spaceAfterOperation = that.checkAvailableSpace(uploadParams.accumulativeFileSize);
-							if (spaceAfterOperation < 0) {
-								that.errorTitle = "Unable to proceed. " + file.name + " file size exceeds available space";
-								that.errorBody = "Please free up " + that.convertBytesToHumanReadable('' + -spaceAfterOperation) + " and try again";
-								that.showError = true;
-								uploadParams.cancelUpload = true;
-								uploadFileFuture.complete(true);
+						        if (spaceAfterOperation < 0) {
+                                                            let errMsg = "Unable to proceed. " + file.name + " file size exceeds available space\n" + "Please free up " + helpers.convertBytesToHumanReadable('' + -spaceAfterOperation) + " and try again";
+                                                            that.$toast.error(errMsg, {timeout:false, id: 'upload'})
+							    uploadParams.cancelUpload = true;
+							    uploadFileFuture.complete(true);
 							} else {
 								that.uploadOrReplaceFile(file, directory, refreshDirectory, false, uploadParams, uploadFileFuture);
 							}
@@ -1546,9 +1546,8 @@ module.exports = {
 					this.calculateTotalFileSize(clipboard.fileTreeNode, clipboard.path).thenApply(totalSize => {
 						let spaceAfterOperation = that.checkAvailableSpace(totalSize);
 						if (spaceAfterOperation < 0) {
-							that.errorTitle = "File copy operation exceeds available Space";
-							that.errorBody = "Please free up " + this.convertBytesToHumanReadable('' + -spaceAfterOperation) + " and try again";
-							that.showError = true;
+                                                    let errMsg = "File copy operation exceeds available Space\n" + "Please free up " + helpers.convertBytesToHumanReadable('' + -spaceAfterOperation) + " and try again";
+                                                    that.$toast.error(errMsg, {timeout:false, id: 'upload'})
 							that.showSpinner = false;
 							return;
 						}
