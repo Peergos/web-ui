@@ -43,7 +43,7 @@
 						:filename="file.getFileProperties().name"
 						:src="getThumbnailURL(file)"
 						:type="file.getFileProperties().getType()"
-						@click.native="navigateDrive($event, file)"
+						@click.native="navigateDrive(file)"
 						@openMenu="openMenu(file)"
 					/>
 					<DriveGridDrop v-if="sortedFiles.length==0 && currentDir != null && currentDir.isWritable()">
@@ -51,7 +51,14 @@
 					</DriveGridDrop>
 				</DriveGrid>
 
-
+				<DriveTable v-else
+					:files="sortedFiles"
+					@sortBy="setSortBy"
+					@openMenu="openMenu"
+					@navigateDrive="navigateDrive"
+				/>
+			</transition>
+		</div>
 				<!-- <div class="grid" v-if="isGrid">
 
 					<span class="column grid-item" v-for="(file, index) in sortedFiles" @keyup.enter="navigateOrMenuTab($event, file, true)">
@@ -75,8 +82,7 @@
 					</center>
 				</div> -->
 
-				<div class="table-responsive" v-else>
-					<table class="table">
+				<!-- <table class="table">
 						<thead>
 							<tr style="cursor:pointer;">
 								<th @click="setSortBy('name')">Name <span v-if="sortBy=='name'" :class="['fas', normalSortOrder ? 'fa-angle-down' : 'fa-angle-up']"/></th>
@@ -93,10 +99,8 @@
 								<td>{{ formatDateTime(file.getFileProperties().modified) }}</td>
 							</tr>
 						</tbody>
-					</table>
-				</div>
-			</transition>
-		</div>
+					</table> -->
+
 
 		<transition name="drop">
 			<DriveMenu
@@ -144,6 +148,9 @@ const DriveGrid = require("../components/drive/DriveGrid.vue");
 const DriveGridCard = require("../components/drive/DriveGridCard.vue");
 const DriveGridDrop = require("../components/drive/DriveGridDrop.vue");
 
+const DriveTable = require("../components/drive/DriveTable.vue");
+
+
 const ProgressBar = require("../components/drive/ProgressBar.vue");
 const DriveMenu = require("../components/drive/DriveMenu.vue");
 
@@ -158,6 +165,7 @@ module.exports = {
 		DriveGrid,
 		DriveGridCard,
 		DriveGridDrop,
+		DriveTable,
 		DriveMenu,
 		AppPrompt,
 		ProgressBar
@@ -236,14 +244,16 @@ module.exports = {
 			clipboardAction: "",
 			forceUpdate: 0,
 			externalChange: 0,
+
 			prompt_message: '',
 			prompt_placeholder: '',
 			prompt_max_input_size: null,
 			prompt_value: '',
 			prompt_consumer_func: () => { },
-			prompt_action: '',
-			showSelect: false,
+			prompt_action: 'ok',
 			showPrompt: false,
+
+			showSelect: false,
 			showWarning: false,
 			showReplace: false,
 			warning_message: "",
@@ -272,7 +282,6 @@ module.exports = {
 			'usageBytes',
 			'context'
 		]),
-
 		sortedFiles() {
 			if (this.files == null) {
 				return [];
@@ -562,6 +571,12 @@ module.exports = {
 				});
 			}
 			this.showPendingServerMessages();
+		},
+
+		setSortBy(prop) {
+			if (this.sortBy == prop)
+				this.normalSortOrder = !this.normalSortOrder;
+			this.sortBy = prop;
 		},
 
 		onResize() {
@@ -934,7 +949,7 @@ module.exports = {
 			this.prompt_message = `Are you sure you want to delete ${file.getName()} ${extra}?`;
 			this.prompt_value = '';
 			this.prompt_consumer_func = deleteFn;
-			this.prompt_action = 'Delete'
+			// this.prompt_action = 'Delete'
 			this.showPrompt = true;
 		},
 
@@ -1666,11 +1681,7 @@ module.exports = {
 		closeShare() {
 			this.showShare = false;
 		},
-		setSortBy(prop) {
-			if (this.sortBy == prop)
-				this.normalSortOrder = !this.normalSortOrder;
-			this.sortBy = prop;
-		},
+
 		updateContext(newContext) {
 			// this.context = newContext;
 			this.$store.commit('SET_USER_CONTEXT', newContext);
@@ -1772,7 +1783,7 @@ module.exports = {
 		// 		// this.openMenu(event, file, fromTabKey);
 		// 	}
 		// },
-		navigateDrive(event, file) {
+		navigateDrive(file) {
 			this.closeMenu();
 
 			console.log(file, 'navigateDrive' )
@@ -1916,7 +1927,7 @@ module.exports = {
         },
 
 		openMenu(file) {
-
+			// console.log(file)
 			if (file) {
 				this.selectedFiles = [file];
 			} else {
@@ -2062,14 +2073,7 @@ module.exports = {
 			return this.sharedWithState.isShared(file.getFileProperties().name);
 		},
 
-		formatDateTime(dateTime) {
-			let date = new Date(dateTime.toString() + "+00:00");//adding UTC TZ in ISO_OFFSET_DATE_TIME ie 2021-12-03T10:25:30+00:00
-			let formatted = date.getFullYear() + '-' + (date.getMonth() + 1) + '-' + date.getDate()
-				+ ' ' + (date.getHours() < 10 ? '0' : '') + date.getHours()
-				+ ':' + (date.getMinutes() < 10 ? '0' : '') + date.getMinutes()
-				+ ':' + (date.getSeconds() < 10 ? '0' : '') + date.getSeconds();
-			return formatted;
-		},
+
 
 		closePrompt() {
 			this.showPrompt = false;
@@ -2085,5 +2089,13 @@ module.exports = {
 <style>
 .drive-view{
 	min-height: 100vh;
+}
+
+
+@media (max-width: 1024px) {
+	#dnd{
+		/* enable table scroll */
+		overflow-x:auto;
+	}
 }
 </style>
