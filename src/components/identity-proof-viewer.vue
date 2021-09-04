@@ -5,11 +5,13 @@
 <div>
     <h2>Identity Proof</h2>
     <div v-if="proof != null">
-        User {{ proof.claim.peergosUsername }} on Peergos owns account {{ proof.claim.alternateUsername }} on {{ proof.claim.alternateService }}.
+        User {{ proof.claim.usernameA }} on {{ proof.claim.serviceA.name() }} owns account {{ proof.claim.usernameB }} on {{ proof.claim.serviceB.name() }}.
         <br/>
         Signature: {{ proof.encodedSignature() }}
         <br/>
-        <label>Proof: </label><a v-if="proof.hasUrl()" v-bind:href="proof.alternateUrl.get()" target="_blank">{{ proof.alternateUrl.get() }}</a>
+        <label>Proof: </label>
+        <br/>
+        <a v-if="proof.hasUrl()" v-bind:href="proof.alternateUrl.get()" target="_blank">{{ proof.alternateUrl.get() }}</a>
     </div>
 </div>
 </div>
@@ -55,7 +57,7 @@ module.exports = {
                             data.length = sizeToRead;
                             return reader.readIntoArray(data, 0, data.length)
                                 .thenApply(function(read){
-                                    that.proof = peergos.shared.util.Serialize.parse(data, c => peergos.shared.user.AlternateIdentityProof.fromCbor(c));
+                                    that.proof = peergos.shared.util.Serialize.parse(data, c => peergos.shared.user.IdentityLinkProof.fromCbor(c));
                                     that.showSpinner = false;
                                     console.log("Finished retrieving file section of size " + data.length);
                                 });
