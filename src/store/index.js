@@ -24,7 +24,8 @@ module.exports = new Vuex.Store({
 		isAdmin: false,
 
 		// driveMenuPosition: null,
-		driveMenuTarget: null
+		driveMenuTarget: null,
+		path:[]
 	},
 
 	getters: {
@@ -45,7 +46,14 @@ module.exports = new Vuex.Store({
 				return "N/A";
 
 			return helpers.convertBytesToHumanReadable(state.usageBytes.toString());
-		}
+		},
+		isSecretLink: (state) => {
+			return state.context != null && state.context.username == null
+		},
+		getPath: (state) => {
+			return '/' + state.path.join('/') + (state.path.length > 0 ? "/" : "");
+		},
+
 	},
 
 	// Sync
@@ -116,7 +124,10 @@ module.exports = new Vuex.Store({
 		// },
 		SET_DRIVE_MENU_TARGET(state, payload) {
 			state.driveMenuTarget = payload;
-		}
+		},
+		SET_PATH(state, payload) {
+			state.path = payload;
+		},
 	},
 
 	// Async

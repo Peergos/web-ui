@@ -39,6 +39,7 @@ module.exports = {
 				this.$store.commit("TOGGLE_SIDEBAR");
 			}
 			this.$store.commit("CURRENT_VIEW", view);
+			// this.$store.commit('SET_PATH', [])
 		},
 	},
 };

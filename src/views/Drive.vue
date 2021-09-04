@@ -172,13 +172,8 @@ module.exports = {
 	},
 	data() {
 		return {
-			// menuPosition:{
-			// 	x: 0,
-			// 	y: 0
-			// },
 			isGrid: true,
-			view: "files",
-			path: [],
+			// path: [],
 			searchPath: null,
 			currentDir: null,
 			files: [],
@@ -188,15 +183,12 @@ module.exports = {
 			selectedFiles: [],
 			url: null,
 			viewMenu: false,
-			// ignoreEvent: false,
-			showTour: false,
 			showShare: false,
 			sharedWithState: null,
 			sharedWithData: { "edit_shared_with_users": [], "read_shared_with_users": [] },
 			forceSharedRefreshWithUpdate: 0,
 
 			showAdmin: false,
-			showAppgrid: false,
 			showGallery: false,
 			showSocial: false,
 			showTimeline: false,
@@ -272,16 +264,31 @@ module.exports = {
 			onUpdateCompletion: [], // methods to invoke when current dir is next refreshed
 		};
 	},
-	props: ["initPath", "openFile", "initiateDownload"],
-
+	props: ["globalPath","initPath", "openFile", "initiateDownload"],
+	// props: {
+	// 	path: {
+	// 		type: Array,
+	// 		default: ()=>[]
+	// 	},
+	// 	initPath,
+	// 	openFile,
+	// 	initiateDownload,
+	// },
 	mixins:[mixins],
 
 	computed: {
 		...Vuex.mapState([
 			'quotaBytes',
 			'usageBytes',
-			'context'
+			'context',
+			'isLoggedIn',
+			'path'
 		]),
+		...Vuex.mapGetters([
+			'isSecretLink',
+			'getPath'
+		]),
+
 		sortedFiles() {
 			if (this.files == null) {
 				return [];
@@ -289,6 +296,7 @@ module.exports = {
 			var sortBy = this.sortBy;
 			var reverseOrder = !this.normalSortOrder;
 			var that = this;
+
 			return this.files.slice(0).sort(function (a, b) {
 				var aVal, bVal;
 				if (sortBy == null)
@@ -335,6 +343,7 @@ module.exports = {
 				}
 			});
 		},
+
 		isSearchable() {
 			try {
 				if (this.currentDir == null)
@@ -344,7 +353,7 @@ module.exports = {
 				if (!this.selectedFiles[0].isDirectory())
 					return false;
 				var owner = this.currentDir.getOwnerName();
-				var me = this.username;
+				var me = this.context.username
 				if (owner != me) {
 					return false;
 				}
@@ -386,21 +395,12 @@ module.exports = {
 			}
 		},
 
-		isSecretLink() {
-			return this.context != null && this.context.username == null;
-		},
-
-		isLoggedIn() {
-			return !this.isSecretLink;
-		},
-
-
 		isNotMe() {
 			if (this.currentDir == null)
 				return true;
 
 			var owner = this.currentDir.getOwnerName();
-			var me = this.username;
+			var me = this.context.username
 			if (owner === me) {
 				return false;
 			}
@@ -423,26 +423,12 @@ module.exports = {
 
 			return this.currentDir.isWritable() && target.isDirectory();
 		},
-
-
-		username() {
-
-			if (this.context == null)
-				return "";
-			return this.context.username;
-		}
 	},
 
 
 
 	created() {
-		if (this.isSecretLink)
-			this.view = "files";
-
-		this.showTour = this.newsignup;
 		this.init();
-		window.onhashchange = this.onUrlChange;
-
 		this.onResize()
 		// TODO: throttle onResize and make it global?
 		window.addEventListener('resize', this.onResize, {passive: true} );
@@ -450,6 +436,7 @@ module.exports = {
 
 	beforeDestroy() {
 		window.removeEventListener('resize', this.onResize );
+
 	},
 
 
@@ -543,23 +530,42 @@ module.exports = {
 				// });
 			} else {
 				const props = this.getPropsFromUrl();
-				var pathFromUrl = props == null ? null : props.path;
-				if (pathFromUrl != null) {
-					this.showSpinner = true;
-					const filename = props.filename;
-					const app = props.app;
-					var open = () => {
-						that.openInApp(filename, app);
-					};
-					this.onUpdateCompletion.push(open);
-					this.path = pathFromUrl.split('/').filter(n => n.length > 0);
-				} else {
-					this.path = [this.context.username];
-					this.updateHistory("filesystem", this.getPath(), "");
-				}
-				this.updateSocial();
-				this.updateUsage();
-				this.updateQuota();
+				const pathFromUrl = props == null ? null : props.path;
+
+				console.log('drive init pathFromUrl: ', pathFromUrl)
+
+				this.$store.commit('SET_PATH', [this.context.username])
+				this.updateHistory('drive', this.getPath,'')
+
+
+
+				// if (pathFromUrl !== null) {
+				// 	console.log('from URL')
+				// 	this.showSpinner = true;
+				// 	const filename = props.filename;
+				// 	const app = props.app;
+
+				// 	console.log(filename, app)
+
+				// 	// this.openInApp(filename, app);
+				// 	var open = () => {
+				// 		that.openInApp(filename, app);
+				// 	};
+				// 	this.onUpdateCompletion.push(open);
+
+				// 	// this.path = pathFromUrl.split('/').filter(n => n.length > 0);
+				// 	this.$store.commit('SET_PATH', pathFromUrl.split('/').filter(n => n.length > 0))
+				// } else {
+				// 	console.log('root')
+				// 	// this.path = [this.context.username];
+				// 	this.$store.commit('SET_PATH', [this.context.username])
+				// 	this.updateHistory('drive', this.getPath,'')
+				// }
+
+				this.updateSocial()
+				this.updateUsage()
+				this.updateQuota()
+
 				this.context.getPaymentProperties(false).thenApply(function (paymentProps) {
 					if (paymentProps.isPaid()) {
 						that.paymentProperties = paymentProps;
@@ -618,9 +624,9 @@ module.exports = {
 			});
 		},
 		showFiles(data) {
-			this.showAppgrid = false;
-			this.view = "files";
-			this.path = data.path;
+			// this.path = data.path;
+			this.$store.commit('SET_PATH', data.path)
+
 		},
 		processPending() {
 			for (var i = 0; i < this.onUpdateCompletion.length; i++) {
@@ -630,15 +636,20 @@ module.exports = {
 		},
 
 		updateHistory(app, path, filename) {
+			console.log('updateHistory:', app, path, filename)
 			if (this.isSecretLink)
 				return;
+
 			const currentProps = this.getPropsFromUrl();
 			const pathFromUrl = currentProps == null ? null : currentProps.path;
 			const appFromUrl = currentProps == null ? null : currentProps.app;
+
 			if (path == pathFromUrl && app == appFromUrl)
 				return;
+
 			var rawProps = propsToFragment({ app: app, path: path, filename: filename });
 			var props = this.encryptProps(rawProps);
+
 			window.location.hash = "#" + propsToFragment(props);
 		},
 
@@ -664,35 +675,42 @@ module.exports = {
 			return fragmentToProps(this.context.decryptURL(props.ciphertext, props.nonce));
 		},
 
-		onUrlChange() {
-			const props = this.getPropsFromUrl();
-			const path = props == null ? null : props.path;
-			const filename = props == null ? null : props.filename;
-			const app = props == null ? null : props.app;
-			const that = this;
-			const differentPath = path != null && path != this.getPath();
-			if (differentPath)
-				this.path = path.split("/").filter(x => x.length > 0);
+		// onUrlChange() {
+		// 	const props = this.getPropsFromUrl();
+		// 	const path = props == null ? null : props.path;
+		// 	const filename = props == null ? null : props.filename;
+		// 	const app = props == null ? null : props.app;
+		// 	const that = this;
+		// 	const differentPath = path != null && path != this.getPath;
 
-			if (app == "filesystem") {
-				this.showGallery = false;
-				this.showPdfViewer = false;
-				this.showCodeEditor = false;
-				this.showTextViewer = false;
-				this.showHexViewer = false;
-				this.showTimeline = false;
-				this.showSearch = false;
-				this.showTodoBoardViewer = false;
-				this.showCalendarViewer = false;
-			} else {
-				if (!differentPath)
-					this.openInApp(filename, app);
-				else
-					this.onUpdateCompletion.push(() => {
-						that.openInApp(filename, app);
-					});
-			}
-		},
+		// 	if (differentPath)
+		// 		// this.path = path.split("/").filter(x => x.length > 0);
+		// 		this.$store.commit('SET_PATH', path.split("/").filter(x => x.length > 0))
+
+		// 	console.log('onUrlChange:', app)
+		// 	console.log('onUrlChange differentPath:', differentPath)
+
+		// 	if (app == "drive") {
+		// 		this.showGallery = false;
+		// 		this.showPdfViewer = false;
+		// 		this.showCodeEditor = false;
+		// 		this.showTextViewer = false;
+		// 		this.showHexViewer = false;
+		// 		this.showTimeline = false;
+		// 		this.showSearch = false;
+		// 		this.showTodoBoardViewer = false;
+		// 		this.showCalendarViewer = false;
+		// 	}
+
+		// 	if (!differentPath){
+		// 		this.openInApp(filename, app);
+		// 	} else{
+		// 		this.onUpdateCompletion.push(() => {
+		// 			that.openInApp(filename, app);
+		// 		});
+		// 	}
+
+		// },
 
 		closeApps() {
 			this.showGallery = false;
@@ -703,7 +721,9 @@ module.exports = {
 			this.showTodoBoardViewer = false;
 			this.showCalendarViewer = false;
 			this.selectedFiles = [];
-			this.updateHistory("filesystem", this.getPath(), "");
+			this.updateHistory("drive", this.getPath, "");
+			// this.updateHistory("drive", this.getPath, "");
+
 			this.forceSharedRefreshWithUpdate++;
 		},
 
@@ -725,8 +745,11 @@ module.exports = {
 			this.showSpinner = true;
 			if (path.startsWith("/"))
 				path = path.substring(1);
-			this.path = path ? path.split('/') : [];
-			this.updateHistory("filesystem", path, "");
+
+			// this.path = path ? path.split('/') : [];
+			path == this.path ? path.split('/') : []
+
+			this.updateHistory("drive", path, "");
 			this.updateCurrentDirectory(filename);
 		},
 
@@ -752,7 +775,8 @@ module.exports = {
 				this.showSearch = true;
 		},
 		openSearch(fromRoot) {
-			var path = fromRoot ? "/" + this.context.username : this.getPath();
+			var path = fromRoot ? "/" + this.context.username : this.getPath;
+
 			if (!fromRoot) {
 				// if (this.isNotBackground) {
 				// 	path = path + this.selectedFiles[0].getFileProperties().name;
@@ -762,14 +786,16 @@ module.exports = {
 			}
 			this.searchPath = path;
 			this.showSearch = true;
-			this.updateHistory("search", this.getPath(), "");
+			this.updateHistory("search", this.getPath, "");
+
 			this.closeMenu();
 		},
 		closeSearch() {
 			this.showSearch = false;
 		},
 		openAppFromFolder() {
-			let path = this.getPath();
+			let path = this.getPath;
+
 			let pathItems = path.split('/').filter(n => n.length > 0);
 			if (pathItems.length == 5 && pathItems[1] == '.apps') {
 				if (pathItems[2] == 'calendar' && pathItems[3] == 'data') {
@@ -785,7 +811,7 @@ module.exports = {
 
 			if (this.context == null)
 				return Promise.resolve(null);
-			var path = this.getPath();
+			var path = this.getPath;
 			var that = this;
 			this.context.getByPath(path).thenApply(function (file) {
 				that.currentDir = file.get();
@@ -1072,13 +1098,13 @@ module.exports = {
 			}
 		},
 		uploadFiles(evt) {
-			let uploadPath = this.getPath();
+			let uploadPath = this.getPath;
 			var files = evt.target.files || evt.dataTransfer.files;
 			this.processFileUpload(files, false);
 		},
 
 		processFileUpload(files, fromDnd) {
-			let uploadPath = this.getPath()
+			let uploadPath = this.getPath
 
 			const uploadParams = {
 				cancelUpload: false,
@@ -1219,7 +1245,7 @@ module.exports = {
 						});
 				} else {
 					let file = items[itemIndex];
-					let refreshDir = that.getPath() == currentDir ? true : false;
+					let refreshDir = that.getPath == currentDir ? true : false;
 					that.uploadFilesFromDirectory(that, refreshDir, origDir, currentDir, dirs, dirIndex, items, itemIndex, fromDnd, uploadParams, future);
 				}
 			});
@@ -1476,7 +1502,7 @@ module.exports = {
 									that.selectedFiles = [textFileOpt.get()];
 									// that.clearTabNavigation();
 									that.showCodeEditor = true;
-									that.updateHistory("editor", that.getPath(), "");
+									that.updateHistory("editor", that.getPath, "");
 								});
 							}).exceptionally(function (throwable) {
 								that.showSpinner = false;
@@ -1487,7 +1513,7 @@ module.exports = {
 						} else {
 							that.selectedFiles = [textFiles[foundIndex]];
 							that.showCodeEditor = true;
-							that.updateHistory("editor", that.getPath(), "");
+							that.updateHistory("editor", that.getPath, "");
 						}
 					};
 					that.showSpinner = false;
@@ -1504,7 +1530,7 @@ module.exports = {
 			this.clipboard = {
 				fileTreeNode: file,
 				op: "copy",
-				path: this.getPath()
+				path: this.getPath
 			};
 			this.closeMenu();
 		},
@@ -1518,7 +1544,7 @@ module.exports = {
 				parent: this.currentDir,
 				fileTreeNode: file,
 				op: "cut",
-				path: this.getPath()
+				path: this.getPath
 			};
 			this.closeMenu();
 		},
@@ -1692,12 +1718,15 @@ module.exports = {
 			if (path == "/" && this.path.length == 0) {
 				return; //already root
 			}
-			console.debug('Changing to path:' + path);
+			console.log('Changing to path:' + path);
 			if (path.startsWith("/"))
 				path = path.substring(1);
-			this.path = path ? path.split('/') : [];
+
+			// this.path = path ? path.split('/') : [];
+			path == this.path ? path.split('/') : []
+
 			this.showSpinner = true;
-			this.updateHistory("filesystem", path, "");
+			this.updateHistory("drive", path, "");
 		},
 		downloadAll() {
 			if (this.selectedFiles.length == 0)
@@ -1728,31 +1757,31 @@ module.exports = {
 					if (this.isSecretLink) {
 						that.showGallery = true;
 					}
-					that.updateHistory("gallery", that.getPath(), filename);
+					that.updateHistory("gallery", that.getPath, filename);
 				});
 			} else if (mimeType === "application/vnd.peergos-todo") {
 				if (this.isSecretLink) {
 					this.showTodoBoardViewer = true;
 				}
-				this.updateHistory("todo", this.getPath(), filename);
+				this.updateHistory("todo", this.getPath, filename);
 			} else if (mimeType === "application/pdf") {
 				if (this.isSecretLink) {
 					this.showPdfViewer = true;
 				}
-				this.updateHistory("pdf", this.getPath(), filename);
+				this.updateHistory("pdf", this.getPath, filename);
 			} else if (mimeType === "text/calendar") {
 				this.importICALFile(true);
-				this.updateHistory("calender", this.getPath(), filename);
+				this.updateHistory("calender", this.getPath, filename);
 			} else if (mimeType.startsWith("text/")) {
 				if (this.isSecretLink) {
 					this.showCodeEditor = true;
 				}
-				this.updateHistory("editor", this.getPath(), filename);
+				this.updateHistory("editor", this.getPath, filename);
 			} else {
 				if (this.isSecretLink) {
 					this.showHexViewer = true;
 				}
-				this.updateHistory("hex", this.getPath(), filename);
+				this.updateHistory("hex", this.getPath, filename);
 			}
 		},
 
@@ -1767,153 +1796,101 @@ module.exports = {
 			}
 		},
 
-		// navigateOrMenu(event, file) {
-		// 	this.navigateOrMenuTab(event, file, false)
-		// },
-		// navigateOrMenuTab(event, file) {
-		// 	if (this.showSpinner) // disable user input whilst refreshing
-		// 		return;
-
-		// 	this.closeMenu();
-
-		// 	console.log(file, 'navigateOrMenuTab' )
-		// 	if (file.isDirectory()) {
-		// 		this.navigateToSubdir(file.getFileProperties().name);
-		// 	} else {
-		// 		// this.openMenu(event, file, fromTabKey);
-		// 	}
-		// },
 		navigateDrive(file) {
 			this.closeMenu();
-
-			console.log(file, 'navigateDrive' )
+			// console.log(file, 'navigateDrive' )
 			if (file.isDirectory()) {
 				this.navigateToSubdir(file.getFileProperties().name);
 			}
 		},
 		navigateToSubdir(name) {
-			this.changePath(this.getPath() + name);
+			this.changePath(this.getPath + name);
 		},
 		getFileClass(file) {
 			if (file.isDirectory())
 				return "dir";
 			return "file"
 		},
-		// getFileIcon(file) {
-		// 	var type = file.getFileProperties().getType();
-		// 	return this.getFileIconFromFileAndType(file, type);
+
+		// getPath() {
+		// 	return '/' + this.path.join('/') + (this.path.length > 0 ? "/" : "");
 		// },
-		// getFileIconFromFileAndType(file, type) {
-		// 	if (type == 'pdf')
-		// 		return 'fa-file-pdf';
-		// 	if (type == 'audio')
-		// 		return 'fa-file-audio';
-		// 	if (type == 'video')
-		// 		return 'fa-file-video';
-		// 	if (type == 'image')
-		// 		return 'fa-file-image';
-		// 	if (type == 'text')
-		// 		return 'fa-file-alt';
-		// 	if (type == 'zip')
-		// 		return 'fa-file-archive';
-		// 	if (type == 'powerpoint presentation' || type == 'presentation')
-		// 		return 'fa-file-powerpoint';
-		// 	if (type == 'word document' || type == 'text document')
-		// 		return 'fa-file-word';
-		// 	if (type == 'excel spreadsheet' || type == 'spreadsheet')
-		// 		return 'fa-file-excel';
-		// 	if (type == 'todo')
-		// 		return 'fas fa-tasks';
-		// 	if (type == 'calendar')
-		// 		return 'fa fa-calendar-alt';
-		// 	if (type == 'contact file')
-		// 		return 'fa fa-address-card';
-		// 	if (file.isDirectory()) {
-		// 		if (file.isUserRoot() && file.getName() == this.username)
-		// 			return 'fa-home';
-		// 		return 'fa-folder-open';
+
+		// dragStart(ev, treeNode) {
+		// 	console.log("dragstart");
+
+		// 	ev.dataTransfer.effectAllowed = 'move';
+		// 	var id = ev.target.id;
+		// 	ev.dataTransfer.setData("text/plain", id);
+		// 	var owner = treeNode.getOwnerName();
+		// 	var me = this.context.username
+		// 	if (owner === me) {
+		// 		console.log("cut");
+		// 		this.clipboard = {
+		// 			parent: this.currentDir,
+		// 			fileTreeNode: treeNode,
+		// 			op: "cut"
+		// 		};
+		// 	} else {
+		// 		console.log("copy");
+		// 		ev.dataTransfer.effectAllowed = 'copy';
+		// 		this.clipboard = {
+		// 			fileTreeNode: treeNode,
+		// 			op: "copy"
+		// 		};
 		// 	}
-		// 	return 'fa-file';
 		// },
-		getPath() {
-			return '/' + this.path.join('/') + (this.path.length > 0 ? "/" : "");
-		},
-
-		dragStart(ev, treeNode) {
-			console.log("dragstart");
-
-			ev.dataTransfer.effectAllowed = 'move';
-			var id = ev.target.id;
-			ev.dataTransfer.setData("text/plain", id);
-			var owner = treeNode.getOwnerName();
-			var me = this.username;
-			if (owner === me) {
-				console.log("cut");
-				this.clipboard = {
-					parent: this.currentDir,
-					fileTreeNode: treeNode,
-					op: "cut"
-				};
-			} else {
-				console.log("copy");
-				ev.dataTransfer.effectAllowed = 'copy';
-				this.clipboard = {
-					fileTreeNode: treeNode,
-					op: "copy"
-				};
-			}
-		},
 
 		// DragEvent, FileTreeNode => boolean
-		drop(ev, target) {
-			console.log("drop");
-			ev.preventDefault();
-			var moveId = ev.dataTransfer.getData("text");
-			var id = ev.currentTarget.id;
-			var that = this;
-			if (id != moveId && target.isDirectory()) {
-				const clipboard = this.clipboard;
-				if (typeof (clipboard) == undefined || typeof (clipboard.op) == "undefined")
-					return;
-				that.showSpinner = true;
+		// drop(ev, target) {
+		// 	console.log("drop");
+		// 	ev.preventDefault();
+		// 	var moveId = ev.dataTransfer.getData("text");
+		// 	var id = ev.currentTarget.id;
+		// 	var that = this;
+		// 	if (id != moveId && target.isDirectory()) {
+		// 		const clipboard = this.clipboard;
+		// 		if (typeof (clipboard) == undefined || typeof (clipboard.op) == "undefined")
+		// 			return;
+		// 		that.showSpinner = true;
 
-				if (clipboard.op == "cut") {
-					var name = clipboard.fileTreeNode.getFileProperties().name;
-					console.log("drop-cut " + name + " -> " + target.getFileProperties().name);
-					let filePath = peergos.client.PathUtils.toPath(that.path, name);
-					clipboard.fileTreeNode.moveTo(target, clipboard.parent, filePath, that.context)
-						.thenApply(function () {
-							that.currentDirChanged();
-							that.onUpdateCompletion.push(function () {
-								that.showSpinner = false;
-								that.clipboard = null;
-							});
-						}).exceptionally(function (throwable) {
-							that.errorTitle = 'Error moving file';
-							that.errorBody = throwable.getMessage();
-							that.showError = true;
-							that.showSpinner = false;
-						});
-				} else if (clipboard.op == "copy") {
-					console.log("drop-copy");
-					var file = clipboard.fileTreeNode;
-					var props = file.getFileProperties();
-					file.copyTo(target, that.context)
-						.thenApply(function () {
-							that.currentDirChanged();
-							that.onUpdateCompletion.push(function () {
-								that.showSpinner = false;
-								that.clipboard = null;
-							});
-						}).exceptionally(function (throwable) {
-							that.errorTitle = 'Error copying file';
-							that.errorBody = throwable.getMessage();
-							that.showError = true;
-							that.showSpinner = false;
-						});
-				}
-			}
-		},
+		// 		if (clipboard.op == "cut") {
+		// 			var name = clipboard.fileTreeNode.getFileProperties().name;
+		// 			console.log("drop-cut " + name + " -> " + target.getFileProperties().name);
+		// 			let filePath = peergos.client.PathUtils.toPath(that.path, name);
+		// 			clipboard.fileTreeNode.moveTo(target, clipboard.parent, filePath, that.context)
+		// 				.thenApply(function () {
+		// 					that.currentDirChanged();
+		// 					that.onUpdateCompletion.push(function () {
+		// 						that.showSpinner = false;
+		// 						that.clipboard = null;
+		// 					});
+		// 				}).exceptionally(function (throwable) {
+		// 					that.errorTitle = 'Error moving file';
+		// 					that.errorBody = throwable.getMessage();
+		// 					that.showError = true;
+		// 					that.showSpinner = false;
+		// 				});
+		// 		} else if (clipboard.op == "copy") {
+		// 			console.log("drop-copy");
+		// 			var file = clipboard.fileTreeNode;
+		// 			var props = file.getFileProperties();
+		// 			file.copyTo(target, that.context)
+		// 				.thenApply(function () {
+		// 					that.currentDirChanged();
+		// 					that.onUpdateCompletion.push(function () {
+		// 						that.showSpinner = false;
+		// 						that.clipboard = null;
+		// 					});
+		// 				}).exceptionally(function (throwable) {
+		// 					that.errorTitle = 'Error copying file';
+		// 					that.errorBody = throwable.getMessage();
+		// 					that.showError = true;
+		// 					that.showSpinner = false;
+		// 				});
+		// 		}
+		// 	}
+		// },
 		isProfileViewable: function() {
            try {
                if (this.currentDir.props.name != "/")

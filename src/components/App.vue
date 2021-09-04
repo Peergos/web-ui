@@ -6,17 +6,6 @@
 		<!-- navigation -->
 		<AppNavigation v-if="isLoggedIn"/>
 
-		<!-- mobile menu trigger -->
-		<!-- <AppButton
-			v-if="isLoggedIn"
-			class="toggle-button--mobile mobile"
-			size="small"
-			round
-			@click.native="toggleSidebar"
-		>
-			<AppIcon icon="dot-menu" />
-		</AppButton> -->
-
 		<!-- needs restyle -->
 		<section v-if="isSecretLink">
 			<AppIcon icon="logo-full" class="sprite-test"/>
@@ -50,23 +39,16 @@
 			<!-- App views (pages) ex-filesystem-->
 			<transition name="fade" mode="out-in">
 				<component
+					ref="appView"
 					v-if="isLoggedIn"
 					:is="currentView"
 					:initPath="data.initPath"
+					:globalPath="path"
 					:initiateDownload="data.download"
 					:openFile="data.open">
 				</component>
 			</transition >
 
-			<!-- <filesystem
-				v-if="view=='filesystem'"
-				:initContext="data.context"
-				:newsignup="data.signup"
-				:initPath="data.initPath"
-				:initiateDownload="data.download"
-				:openFile="data.open"
-			>
-			</filesystem> -->
 		</section>
 
 	</div>
@@ -112,7 +94,7 @@ module.exports = {
 
 	data() {
 		return {
-			isSecretLink: false,
+			// isSecretLink: false,
 			token: '',
 			data: {},
 			onUpdateCompletion: [], // methods to invoke when current dir is next refreshed
@@ -130,9 +112,12 @@ module.exports = {
 			'crypto',
 			'network',
 			'context',
-
+			'path'
 		]),
-
+		...Vuex.mapGetters([
+			'isSecretLink',
+			'getPath'
+		]),
 		isDemo() {
 			return window.location.hostname == "demo.peergos.net" && this.isSecretLink === false
 		},
@@ -193,6 +178,11 @@ module.exports = {
 	created() {
 		this.$store.commit('SET_CRYPTO', peergos.shared.Crypto.initJS() )
 		this.updateNetwork();
+
+
+
+		window.addEventListener('hashchange', this.onUrlChange, false );
+
 	},
 
 	mounted() {
@@ -259,9 +249,114 @@ module.exports = {
 			// this.showPendingServerMessages();
 		},
 
-		// toggleSidebar() {
-		// 	this.$store.commit("TOGGLE_SIDEBAR");
+		onUrlChange() {
+			const props = this.getPropsFromUrl();
+
+			console.log('pathFromURL: ', props.path)
+			console.log('pathFromStore: ', this.getPath)
+
+			const path = props == null ? null : props.path;
+			const filename = props == null ? null : props.filename;
+			const app = props == null ? null : props.app;
+			// const differentPath = path != null && path != this.getPath;
+
+			// if (differentPath){
+			// 	console.log('APP set new path:', path.split("/").filter(x => x.length > 0))
+
+			// 	// this.path = path.split("/").filter(x => x.length > 0);
+			// 	this.$store.commit('SET_PATH', path.split("/").filter(x => x.length > 0))
+			// }
+
+			this.$store.commit('SET_PATH', path.split("/").filter(x => x.length > 0))
+
+
+			console.log('APP onUrlChange:', app)
+			// console.log('APP onUrlChange differentPath:', differentPath)
+
+
+			const that = this;
+
+			if (app == "tasks") {
+				this.$store.commit("CURRENT_VIEW", 'Tasks');
+			}
+			if (app == "gallery") {
+				this.$store.commit("CURRENT_VIEW", 'Drive');
+				this.$refs.appView.openInApp(filename, app);
+			}
+			if (app == "drive") {
+				this.$store.commit("CURRENT_VIEW", 'Drive');
+				// this.showGallery = false;
+				// this.$refs.appView.showGallery = false;
+				// this.showPdfViewer = false;
+				// this.showCodeEditor = false;
+				// this.showTextViewer = false;
+				// this.showHexViewer = false;
+				// this.showTimeline = false;
+				// this.showSearch = false;
+				// this.showTodoBoardViewer = false;
+				// this.showCalendarViewer = false;
+
+
+				// if (!differentPath){
+				// 	// this.openInApp(filename, app);
+				// 	this.$refs.appView.openInApp(filename, app);
+				// } else{
+				// 	this.onUpdateCompletion.push(() => {
+				// 		// that.openInApp(filename, app);
+				// 		that.$refs.appView.openInApp(filename, app);
+				// 	});
+				// }
+				this.onUpdateCompletion.push(() => {
+					// that.openInApp(filename, app);
+					that.$refs.appView.openInApp(filename, app);
+				});
+			}
+
+		},
+
+		// updateHistory(app, path, filename) {
+		// 	console.log('APP > updateHistory:', app, path, filename)
+		// 	if (this.isSecretLink)
+		// 		return;
+
+		// 	const currentProps = this.getPropsFromUrl();
+		// 	const pathFromUrl = currentProps == null ? null : currentProps.path;
+		// 	const appFromUrl = currentProps == null ? null : currentProps.app;
+
+		// 	if (path == pathFromUrl && app == appFromUrl)
+		// 		return;
+
+		// 	var rawProps = propsToFragment({ app: app, path: path, filename: filename });
+		// 	var props = this.encryptProps(rawProps);
+
+		// 	window.location.hash = "#" + propsToFragment(props);
 		// },
+
+		getPropsFromUrl() {
+			try {
+				return this.decryptProps(fragmentToProps(window.location.hash.substring(1)));
+			} catch (e) {
+				return null;
+			}
+		},
+		decryptProps(props) {
+			if (this.isSecretLink)
+				return path;
+
+			return fragmentToProps(this.context.decryptURL(props.ciphertext, props.nonce));
+		},
+
+		encryptProps(props) {
+			var both = this.context.encryptURL(props)
+			const nonce = both.base64Nonce;
+			const ciphertext = both.base64Ciphertext;
+			return { nonce: nonce, ciphertext: ciphertext };
+		},
+
+
+
+
+
 
 		updateNetwork() {
 			let that = this;
@@ -311,7 +406,6 @@ module.exports = {
 					open: props.open,
 					initPath: props.path,
 				};
-				// that.currentView = "filesystem";
 				that.$store.commit("CURRENT_VIEW", 'Drive');
 				that.isSecretLink = false;
 			})
