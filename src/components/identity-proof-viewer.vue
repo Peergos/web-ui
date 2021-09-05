@@ -3,9 +3,9 @@
         <div class="modal-container" @click.stop style="height:95%;width:95%;overflow-y:auto;max-width:800px;">
             <spinner v-if="showSpinner"></spinner>
 <div>
-    <h2>Identity Proof</h2>
+    <h2>Identity Link</h2>
     <div v-if="proof != null">
-        User {{ proof.claim.usernameA }} on {{ proof.claim.serviceA.name() }} owns account {{ proof.claim.usernameB }} on {{ proof.claim.serviceB.name() }}.
+        User <i>{{ proof.claim.usernameA }}</i> on {{ proof.claim.serviceA.name() }} is also <i>{{ proof.claim.usernameB }}</i> on {{ proof.claim.serviceB.name() }}.
         <br/>
         Signature: {{ proof.encodedSignature() }}
         <br/>
