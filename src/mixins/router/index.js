@@ -24,7 +24,6 @@ module.exports = {
 			try {
 				return this.decryptProps(fragmentToProps(window.location.hash.substring(1)));
 			} catch (e) {
-				console.log('getPropsFromUrl:', e)
 				return null;
 			}
 		},
