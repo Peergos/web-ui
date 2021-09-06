@@ -11,7 +11,7 @@
         <br/>
         <label>Proof: </label>
         <br/>
-        <a v-if="proof.hasUrl()" v-bind:href="proof.alternateUrl.get()" target="_blank">{{ proof.alternateUrl.get() }}</a>
+        <a v-if="proof.hasUrl()" v-bind:href="proof.postUrl.get()" target="_blank">{{ proof.postUrl.get() }}</a>
     </div>
 </div>
 </div>
