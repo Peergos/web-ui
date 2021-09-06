@@ -454,6 +454,9 @@ module.exports = {
 		},
 
 		path(newPath, oldPath) {
+			console.log('drive oldPath: ', oldPath )
+			console.log('drive newPath: ', newPath )
+			this.updateCurrentDir();
 			if (newPath.length != oldPath.length) {
 				this.updateCurrentDir();
 			} else {
@@ -464,6 +467,7 @@ module.exports = {
 					}
 				}
 			}
+
 		},
 		forceSharedRefreshWithUpdate(newCounter, oldCounter) {
 			this.updateCurrentDir();
@@ -538,6 +542,7 @@ module.exports = {
 				// const filename = props == null ? null : props.filename;
 
 				const pathFromUrl = props == null ? null : props.path;
+				const appFromUrl = props == null ? null : props.app;
 
 
 
@@ -545,7 +550,7 @@ module.exports = {
 				// this.updateHistory('Drive', this.getPath,'')
 
 
-				if (pathFromUrl !== null) {
+				if (pathFromUrl !== null && appFromUrl == 'Drive' ) {
 					this.showSpinner = true;
 
 					const filename = props.filename;

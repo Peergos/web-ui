@@ -26,7 +26,7 @@ module.exports = {
 	},
 
 	mounted(){
-		this.updateHistory('Tasks', null , null )
+		this.updateHistory('Tasks', '/task' , null )
 	},
 
 }

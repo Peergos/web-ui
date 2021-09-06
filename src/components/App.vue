@@ -208,7 +208,6 @@ module.exports = {
 		]),
 
 		init() {
-			console.log('init app')
 			const that = this;
 			if (this.context != null && this.context.username == null) {
 				// from a secret link
@@ -272,10 +271,12 @@ module.exports = {
 			const differentPath = path != null && path != this.getPath;
 
 			if (differentPath){
-				 console.log('differentPath so we do: ', path.split("/").filter(x => x.length > 0))
+				 console.log('onUrlChange differentPath so we do: ', path.split("/").filter(x => x.length > 0))
 
 				// this.path = path.split("/").filter(x => x.length > 0);
 				this.$store.commit('SET_PATH', path.split("/").filter(x => x.length > 0))
+			} else{
+				 console.log('onUrlChange same path')
 			}
 
 			// this.$store.commit('SET_PATH', path.split("/").filter(x => x.length > 0))
