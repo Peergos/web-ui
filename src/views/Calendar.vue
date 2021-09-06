@@ -32,6 +32,8 @@
 </template>
 
 <script>
+const routerMixins = require("../mixins/router/index.js");
+
 module.exports = {
     data: function() {
         return {
@@ -65,9 +67,14 @@ module.exports = {
     props: ['messages', 'importFile', 'importCalendarPath', 'owner', 'shareWith', 'loadCalendarAsGuest'],
 	computed: {
 		...Vuex.mapState([
-			'context'
+			'context',
+		]),
+		...Vuex.mapGetters([
+			'isSecretLink',
+			'getPath'
 		]),
 	},
+	mixins:[routerMixins],
     created() {
         let that = this;
         this.displaySpinner();
@@ -82,6 +89,9 @@ module.exports = {
             }
         });
     },
+	mounted(){
+		this.updateHistory('Calendar', '/calendar' , null )
+	},
     methods: {
     frameUrl: function() {
         return this.frameDomain() + "/apps/calendar/index.html";

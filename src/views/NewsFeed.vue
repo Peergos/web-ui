@@ -201,6 +201,8 @@
 </template>
 
 <script>
+const routerMixins = require("../mixins/router/index.js");
+
 module.exports = {
     data: function() {
         return {
@@ -236,7 +238,9 @@ module.exports = {
     props: ['navigateToAction','viewAction', 'messages', 'getFileIconFromFileAndType', 'socialFeedInstance',
         'updateSocialFeedInstance', 'importCalendarFile', 'importSharedCalendar', 'displayProfile', 'groups',
         'followingnames', 'friendnames', 'followernames', 'checkAvailableSpace', 'convertBytesToHumanReadable', 'viewConversations'],
-    created: function() {
+	mixins:[routerMixins],
+
+  	created: function() {
         // this.context = this.$store.state.userContext;
 		// this.context = this.$store.state.context;
 
@@ -255,6 +259,9 @@ module.exports = {
                 that.showSpinner = false;
             });
     },
+	mounted(){
+		this.updateHistory('NewsFeed', '/NewsFeed' , null )
+	},
     methods: {
         addNewPost: function() {
             this.currentSocialPostEntry = null;
@@ -1321,7 +1328,11 @@ module.exports = {
     },
     computed: {
 		...Vuex.mapState([
-			'context'
+			'context',
+		]),
+		...Vuex.mapGetters([
+			'isSecretLink',
+			'getPath'
 		]),
     	blocks: function() {
             if (this.data == null || this.data.length == 0) {

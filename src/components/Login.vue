@@ -20,6 +20,7 @@
 
 <script>
 const FormPassword = require("./form/FormPassword.vue");
+const routerMixins = require("../mixins/router/index.js");
 
 module.exports = {
 	components: {
@@ -39,7 +40,12 @@ module.exports = {
 			'network',
 			'context'
 		]),
+		...Vuex.mapGetters([
+			'isSecretLink',
+		]),
 	},
+	mixins:[routerMixins],
+
 	mounted() {
 		this.$refs.username.focus()
 		// :)
@@ -73,20 +79,31 @@ module.exports = {
 
 					that.$toast.dismiss('login');
 
-					that.$store.commit("CURRENT_VIEW", 'Drive');
 					that.$store.commit("SET_USER_CONTEXT", context);
-					that.$store.commit('USER_LOGIN', true);
 
-					// temp test
+					that.$store.commit("CURRENT_VIEW", that.appFromUrl());
+
+					that.$store.commit('USER_LOGIN', true);
 					that.$emit("initApp")
 
 					// that.$emit("filesystem", { context: context });
+
 					console.log("Signing in/up took " + (Date.now()-creationStart)+" mS from function call");
 				})
 				.exceptionally(function (throwable) {
 					that.$toast.error(throwable.getMessage(), {timeout:false, id: 'login'})
 				});
 		},
+		appFromUrl(){
+			const currentProps = this.getPropsFromUrl();
+
+			// console.log('login currentProps:', currentProps )
+			// console.log('login current app:', currentProps.app )
+
+			return currentProps === null
+				? 'Drive'
+				: currentProps.app
+		}
 	}
 
 };

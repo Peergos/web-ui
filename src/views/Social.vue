@@ -97,8 +97,10 @@
 </template>
 
 <script>
+const routerMixins = require("../mixins/router/index.js");
+
 module.exports = {
-    data: function() {
+    data() {
         return {
             targetUsername: "",
             targetUsernames: [],
@@ -118,10 +120,15 @@ module.exports = {
         }
     },
     props: ['externalchange', 'messages', 'displayProfile'],
+	mixins:[routerMixins],
 
 	computed: {
 		...Vuex.mapState([
-			'context'
+			'context',
+		]),
+		...Vuex.mapGetters([
+			'isSecretLink',
+			'getPath'
 		]),
         usernames: function() {
             return this.context.network.usernames.toArray([]);
@@ -133,6 +140,9 @@ module.exports = {
         this.updateSocial();
         Vue.nextTick(this.setTypeAhead);
     },
+	mounted(){
+		this.updateHistory('Social', '/social' , null )
+	},
     methods: {
     updateSocial: function(callbackFunc) {
 	    var context = this.context;

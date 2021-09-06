@@ -23,9 +23,10 @@ module.exports = new Vuex.Store({
 		isLoggedIn: false,
 		isAdmin: false,
 
-		// driveMenuPosition: null,
 		driveMenuTarget: null,
-		path:[]
+		path: [],
+
+		// urlProps: null
 	},
 
 	getters: {
@@ -52,7 +53,7 @@ module.exports = new Vuex.Store({
 		},
 		getPath: (state) => {
 			return '/' + state.path.join('/') + (state.path.length > 0 ? "/" : "");
-		},
+		}
 
 	},
 
@@ -128,6 +129,10 @@ module.exports = new Vuex.Store({
 		SET_PATH(state, payload) {
 			state.path = payload;
 		},
+		// SET_URL_PROPS(state, payload) {
+		// 	state.urlProps = payload;
+		// },
+
 	},
 
 	// Async
@@ -148,6 +153,48 @@ module.exports = new Vuex.Store({
 				commit("SET_USAGE", u);
 			});
 		},
+
+		// async getPropsFromUrl({ commit, state }) {
+
+		// 	function decryptProps(props) {
+		// 		if (state.isSecretLink)
+		// 			return state.path;
+
+		// 		return fragmentToProps(state.context.decryptURL(props.ciphertext, props.nonce));
+		// 	}
+
+		// 	const propsFromUrl = await decryptProps(fragmentToProps(window.location.hash.substring(1)))
+		// 	commit('SET_URL_PROPS', propsFromUrl)
+
+		// },
+
+		// updateHistory({ commit, state }, { app, path, filename }) {
+		// 	console.log('store:updateHistory:', app, path, filename)
+
+		// 	if (state.isSecretLink)
+		// 		return;
+
+		// 	// const currentProps = this.getPropsFromUrl();
+		// 	const pathFromUrl = state.urlProps == null ? null : state.urlProps.path;
+		// 	const appFromUrl = state.urlProps == null ? null :  state.urlProps.app;
+
+		// 	if (path == pathFromUrl && app == appFromUrl)
+		// 		return;
+
+		// 	var rawProps = propsToFragment({ app: app, path: path, filename: filename });
+
+		// 	function encryptProps(props) {
+		// 		var both = state.context.encryptURL(props)
+		// 		const nonce = both.base64Nonce;
+		// 		const ciphertext = both.base64Ciphertext;
+		// 		return { nonce: nonce, ciphertext: ciphertext };
+		// 	}
+
+		// 	var props = encryptProps(rawProps);
+
+		// 	window.location.hash = "#" + propsToFragment(props);
+		// },
+
 	}
 
 });

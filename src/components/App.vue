@@ -74,6 +74,11 @@ const NewsFeed = require("../views/NewsFeed.vue");
 const Social = require("../views/Social.vue");
 const Tasks = require("../views/Tasks.vue");
 
+
+const routerMixins = require("../mixins/router/index.js");
+
+
+
 module.exports = {
 	components: {
 		AppNavigation,
@@ -91,6 +96,7 @@ module.exports = {
 		Login,
 		Signup
 	},
+
 
 	data() {
 		return {
@@ -125,6 +131,9 @@ module.exports = {
 			return window.location.hostname == "localhost"
 		}
 	},
+
+	mixins:[routerMixins],
+
 
 	watch: {
 		network(newNetwork) {
@@ -252,41 +261,35 @@ module.exports = {
 		onUrlChange() {
 			const props = this.getPropsFromUrl();
 
-			console.log('pathFromURL: ', props.path)
-			console.log('pathFromStore: ', this.getPath)
+			console.log('onUrlChange appURL:', props.app)
+			console.log('onUrlChange pathURL: ', props.path)
+			console.log('onUrlChange pathStore (prev?): ', this.getPath)
+			console.log('onUrlChange filenameURL: ', props.filename)
 
+			const app = props == null ? null : props.app;
 			const path = props == null ? null : props.path;
 			const filename = props == null ? null : props.filename;
-			const app = props == null ? null : props.app;
-			// const differentPath = path != null && path != this.getPath;
+			const differentPath = path != null && path != this.getPath;
 
-			// if (differentPath){
-			// 	console.log('APP set new path:', path.split("/").filter(x => x.length > 0))
+			if (differentPath){
+				 console.log('differentPath so we do: ', path.split("/").filter(x => x.length > 0))
 
-			// 	// this.path = path.split("/").filter(x => x.length > 0);
-			// 	this.$store.commit('SET_PATH', path.split("/").filter(x => x.length > 0))
-			// }
+				// this.path = path.split("/").filter(x => x.length > 0);
+				this.$store.commit('SET_PATH', path.split("/").filter(x => x.length > 0))
+			}
 
-			this.$store.commit('SET_PATH', path.split("/").filter(x => x.length > 0))
+			// this.$store.commit('SET_PATH', path.split("/").filter(x => x.length > 0))
+			// console.log('pathFromStore (prev?): ', this.getPath)
 
-
-			console.log('APP onUrlChange:', app)
 			// console.log('APP onUrlChange differentPath:', differentPath)
 
 
 			const that = this;
 
-			if (app == "tasks") {
-				this.$store.commit("CURRENT_VIEW", 'Tasks');
-			}
-			if (app == "gallery") {
-				this.$store.commit("CURRENT_VIEW", 'Drive');
-				this.$refs.appView.openInApp(filename, app);
-			}
-			if (app == "drive") {
+			if (app == "Drive") {
 				this.$store.commit("CURRENT_VIEW", 'Drive');
 				// this.showGallery = false;
-				// this.$refs.appView.showGallery = false;
+				this.$refs.appView.showGallery = false;
 				// this.showPdfViewer = false;
 				// this.showCodeEditor = false;
 				// this.showTextViewer = false;
@@ -295,6 +298,7 @@ module.exports = {
 				// this.showSearch = false;
 				// this.showTodoBoardViewer = false;
 				// this.showCalendarViewer = false;
+
 
 
 				// if (!differentPath){
@@ -311,47 +315,49 @@ module.exports = {
 					that.$refs.appView.openInApp(filename, app);
 				});
 			}
+			if (app == "gallery") {
+				this.$store.commit("CURRENT_VIEW", 'Drive');
+				this.$refs.appView.openInApp(filename, app);
+			}
+
+			if (app == "Calendar") {
+				this.$store.commit("CURRENT_VIEW", 'Calendar');
+			}
+			if (app == "Newsfeed") {
+				this.$store.commit("CURRENT_VIEW", 'Newsfeed');
+			}
+			if (app == "Social") {
+				this.$store.commit("CURRENT_VIEW", 'Social');
+			}
+			if (app == "Tasks") {
+				this.$store.commit("CURRENT_VIEW", 'Tasks');
+			}
+
+
+
 
 		},
 
-		// updateHistory(app, path, filename) {
-		// 	console.log('APP > updateHistory:', app, path, filename)
+		// getPropsFromUrl() {
+		// 	try {
+		// 		return this.decryptProps(fragmentToProps(window.location.hash.substring(1)));
+		// 	} catch (e) {
+		// 		return null;
+		// 	}
+		// },
+		// decryptProps(props) {
 		// 	if (this.isSecretLink)
-		// 		return;
+		// 		return path;
 
-		// 	const currentProps = this.getPropsFromUrl();
-		// 	const pathFromUrl = currentProps == null ? null : currentProps.path;
-		// 	const appFromUrl = currentProps == null ? null : currentProps.app;
-
-		// 	if (path == pathFromUrl && app == appFromUrl)
-		// 		return;
-
-		// 	var rawProps = propsToFragment({ app: app, path: path, filename: filename });
-		// 	var props = this.encryptProps(rawProps);
-
-		// 	window.location.hash = "#" + propsToFragment(props);
+		// 	return fragmentToProps(this.context.decryptURL(props.ciphertext, props.nonce));
 		// },
 
-		getPropsFromUrl() {
-			try {
-				return this.decryptProps(fragmentToProps(window.location.hash.substring(1)));
-			} catch (e) {
-				return null;
-			}
-		},
-		decryptProps(props) {
-			if (this.isSecretLink)
-				return path;
-
-			return fragmentToProps(this.context.decryptURL(props.ciphertext, props.nonce));
-		},
-
-		encryptProps(props) {
-			var both = this.context.encryptURL(props)
-			const nonce = both.base64Nonce;
-			const ciphertext = both.base64Ciphertext;
-			return { nonce: nonce, ciphertext: ciphertext };
-		},
+		// encryptProps(props) {
+		// 	var both = this.context.encryptURL(props)
+		// 	const nonce = both.base64Nonce;
+		// 	const ciphertext = both.base64Ciphertext;
+		// 	return { nonce: nonce, ciphertext: ciphertext };
+		// },
 
 
 

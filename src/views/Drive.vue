@@ -159,6 +159,8 @@ const AppPrompt = require("../components/prompt/AppPrompt.vue");
 const helpers = require("../mixins/storage/index.js");
 const mixins = require("../mixins/downloader/index.js");
 
+const routerMixins = require("../mixins/router/index.js");
+
 module.exports = {
 	components: {
 		DriveHeader,
@@ -274,7 +276,7 @@ module.exports = {
 	// 	openFile,
 	// 	initiateDownload,
 	// },
-	mixins:[mixins],
+	mixins:[mixins, routerMixins],
 
 	computed: {
 		...Vuex.mapState([
@@ -530,37 +532,43 @@ module.exports = {
 				// });
 			} else {
 				const props = this.getPropsFromUrl();
+
+				// const app = props == null ? null : props.app;
+				// const path = props == null ? null : props.path;
+				// const filename = props == null ? null : props.filename;
+
 				const pathFromUrl = props == null ? null : props.path;
 
-				console.log('drive init pathFromUrl: ', pathFromUrl)
-
-				this.$store.commit('SET_PATH', [this.context.username])
-				this.updateHistory('drive', this.getPath,'')
 
 
+				// this.$store.commit('SET_PATH', [this.context.username])
+				// this.updateHistory('Drive', this.getPath,'')
 
-				// if (pathFromUrl !== null) {
-				// 	console.log('from URL')
-				// 	this.showSpinner = true;
-				// 	const filename = props.filename;
-				// 	const app = props.app;
 
-				// 	console.log(filename, app)
+				if (pathFromUrl !== null) {
+					this.showSpinner = true;
 
-				// 	// this.openInApp(filename, app);
-				// 	var open = () => {
-				// 		that.openInApp(filename, app);
-				// 	};
-				// 	this.onUpdateCompletion.push(open);
+					const filename = props.filename;
+					const app = props.app;
 
-				// 	// this.path = pathFromUrl.split('/').filter(n => n.length > 0);
-				// 	this.$store.commit('SET_PATH', pathFromUrl.split('/').filter(n => n.length > 0))
-				// } else {
-				// 	console.log('root')
-				// 	// this.path = [this.context.username];
-				// 	this.$store.commit('SET_PATH', [this.context.username])
-				// 	this.updateHistory('drive', this.getPath,'')
-				// }
+					console.log('app URL: ', app)
+					console.log('filename URL: ', filename)
+					// this.openInApp(filename, app);
+					var open = () => {
+						that.openInApp(filename, app);
+					};
+					this.onUpdateCompletion.push(open);
+
+					// this.path = pathFromUrl.split('/').filter(n => n.length > 0);
+
+
+					this.$store.commit('SET_PATH', pathFromUrl.split('/').filter(n => n.length > 0))
+				} else {
+					// console.log('root')
+					// this.path = [this.context.username];
+					this.$store.commit('SET_PATH', [this.context.username])
+					this.updateHistory('Drive', this.getPath,'')
+				}
 
 				this.updateSocial()
 				this.updateUsage()
@@ -635,45 +643,45 @@ module.exports = {
 			this.onUpdateCompletion = [];
 		},
 
-		updateHistory(app, path, filename) {
-			console.log('updateHistory:', app, path, filename)
-			if (this.isSecretLink)
-				return;
+		// updateHistory(app, path, filename) {
+		// 	// console.log('updateHistory:', app, path, filename)
+		// 	if (this.isSecretLink)
+		// 		return;
 
-			const currentProps = this.getPropsFromUrl();
-			const pathFromUrl = currentProps == null ? null : currentProps.path;
-			const appFromUrl = currentProps == null ? null : currentProps.app;
+		// 	const currentProps = this.getPropsFromUrl();
+		// 	const pathFromUrl = currentProps == null ? null : currentProps.path;
+		// 	const appFromUrl = currentProps == null ? null : currentProps.app;
 
-			if (path == pathFromUrl && app == appFromUrl)
-				return;
+		// 	if (path == pathFromUrl && app == appFromUrl)
+		// 		return;
 
-			var rawProps = propsToFragment({ app: app, path: path, filename: filename });
-			var props = this.encryptProps(rawProps);
+		// 	var rawProps = propsToFragment({ app: app, path: path, filename: filename });
+		// 	var props = this.encryptProps(rawProps);
 
-			window.location.hash = "#" + propsToFragment(props);
-		},
+		// 	window.location.hash = "#" + propsToFragment(props);
+		// },
 
-		getPropsFromUrl() {
-			try {
-				return this.decryptProps(fragmentToProps(window.location.hash.substring(1)));
-			} catch (e) {
-				return null;
-			}
-		},
+		// getPropsFromUrl() {
+		// 	try {
+		// 		return this.decryptProps(fragmentToProps(window.location.hash.substring(1)));
+		// 	} catch (e) {
+		// 		return null;
+		// 	}
+		// },
 
-		encryptProps(props) {
-			var both = this.context.encryptURL(props)
-			const nonce = both.base64Nonce;
-			const ciphertext = both.base64Ciphertext;
-			return { nonce: nonce, ciphertext: ciphertext };
-		},
+		// encryptProps(props) {
+		// 	var both = this.context.encryptURL(props)
+		// 	const nonce = both.base64Nonce;
+		// 	const ciphertext = both.base64Ciphertext;
+		// 	return { nonce: nonce, ciphertext: ciphertext };
+		// },
 
-		decryptProps(props) {
-			if (this.isSecretLink)
-				return path;
+		// decryptProps(props) {
+		// 	if (this.isSecretLink)
+		// 		return path;
 
-			return fragmentToProps(this.context.decryptURL(props.ciphertext, props.nonce));
-		},
+		// 	return fragmentToProps(this.context.decryptURL(props.ciphertext, props.nonce));
+		// },
 
 		// onUrlChange() {
 		// 	const props = this.getPropsFromUrl();
@@ -690,7 +698,7 @@ module.exports = {
 		// 	console.log('onUrlChange:', app)
 		// 	console.log('onUrlChange differentPath:', differentPath)
 
-		// 	if (app == "drive") {
+		// 	if (app == "Drive") {
 		// 		this.showGallery = false;
 		// 		this.showPdfViewer = false;
 		// 		this.showCodeEditor = false;
@@ -721,8 +729,8 @@ module.exports = {
 			this.showTodoBoardViewer = false;
 			this.showCalendarViewer = false;
 			this.selectedFiles = [];
-			this.updateHistory("drive", this.getPath, "");
-			// this.updateHistory("drive", this.getPath, "");
+			this.updateHistory("Drive", this.getPath, "");
+			// this.updateHistory("Drive", this.getPath, "");
 
 			this.forceSharedRefreshWithUpdate++;
 		},
@@ -749,7 +757,7 @@ module.exports = {
 			// this.path = path ? path.split('/') : [];
 			path == this.path ? path.split('/') : []
 
-			this.updateHistory("drive", path, "");
+			this.updateHistory("Drive", path, "");
 			this.updateCurrentDirectory(filename);
 		},
 
@@ -757,6 +765,7 @@ module.exports = {
 			this.selectedFiles = this.files.filter(f => f.getName() == filename);
 			if (this.selectedFiles.length == 0)
 				return;
+
 			if (app == "gallery")
 				this.showGallery = true;
 			else if (app == "pdf")
@@ -1726,7 +1735,7 @@ module.exports = {
 			path == this.path ? path.split('/') : []
 
 			this.showSpinner = true;
-			this.updateHistory("drive", path, "");
+			this.updateHistory("Drive", path, "");
 		},
 		downloadAll() {
 			if (this.selectedFiles.length == 0)
