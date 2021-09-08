@@ -295,26 +295,19 @@ module.exports = {
 					// that.openInApp(filename, app);
 					that.$refs.appView.openInApp(filename, app);
 				});
-			}
-			if (app == "Gallery") {
+			} else if (app == "Calendar") {
+				this.$store.commit("CURRENT_VIEW", 'Calendar');
+			} else if (app == "Newsfeed") {
+				this.$store.commit("CURRENT_VIEW", 'Newsfeed');
+			} else if (app == "Social") {
+				this.$store.commit("CURRENT_VIEW", 'Social');
+			} if (app == "Tasks") {
+				this.$store.commit("CURRENT_VIEW", 'Tasks');
+			} else {
 				this.$store.commit("CURRENT_VIEW", 'Drive');
 				// console.log('onUrlChange / Gallery case: ', filename, app)
 				this.$refs.appView.openInApp(filename, app)
 			}
-
-			if (app == "Calendar") {
-				this.$store.commit("CURRENT_VIEW", 'Calendar');
-			}
-			if (app == "Newsfeed") {
-				this.$store.commit("CURRENT_VIEW", 'Newsfeed');
-			}
-			if (app == "Social") {
-				this.$store.commit("CURRENT_VIEW", 'Social');
-			}
-			if (app == "Tasks") {
-				this.$store.commit("CURRENT_VIEW", 'Tasks');
-			}
-
 
 
 

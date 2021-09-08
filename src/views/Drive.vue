@@ -128,7 +128,26 @@
 			:files="sortedFiles"
 			:initial-file-name="selectedFiles[0] == null ? '' : selectedFiles[0].getFileProperties().name">
 		</Gallery>
-
+                <hex
+                    v-if="showHexViewer"
+                    v-on:hide-hex-viewer="closeApps()"
+                    :file="selectedFiles[0]"
+                    :context="context">
+                </hex>
+                <pdf
+                    v-if="showPdfViewer"
+                    v-on:hide-pdf-viewer="closeApps()"
+                    :file="selectedFiles[0]"
+                    :context="context">
+                </pdf>
+                <code-editor
+                    v-if="showCodeEditor"
+                    v-on:hide-code-editor="closeApps(); updateCurrentDir();"
+                    v-on:update-refresh="forceUpdate++"
+                    :file="selectedFiles[0]"
+                    :context="context"
+                    :messages="messages">
+                </code-editor>
 
 
 		<error
