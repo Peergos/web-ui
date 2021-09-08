@@ -98,11 +98,14 @@ module.exports = {
 			const currentProps = this.getPropsFromUrl();
 
 			// console.log('login currentProps:', currentProps )
-			// console.log('login current app:', currentProps.app )
-
-			return currentProps === null
+			console.log('login current app:', currentProps.app )
+			// TODO: find a proper way to distinct main apps (VIEW: Drive) from regular apps (VIEW: Drive + COMPONENT: Gallery)
+			// From the url 'Drive' and "Gallery' are treated both as main apps
+			return currentProps === null || currentProps.app === 'Gallery'
 				? 'Drive'
 				: currentProps.app
+
+
 		}
 	}
 

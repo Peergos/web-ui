@@ -101,10 +101,69 @@ module.exports = {
 			pinging: false,
 		};
 	},
-	props: ["files", "context", "initialFileName", "hideGalleryTitle"],
+	props: ["files", "initialFileName", "hideGalleryTitle"],
 	mixins: [downloaderMixins],
+	computed: {
+		...Vuex.mapState([
+			'context',
+		]),
+		current() {
+			if (this.showableFiles == null || this.showableFiles.length == 0)
+				return null;
+			var file = this.showableFiles[this.fileIndex];
+			return file;
+		},
+		dataURL() {
+			console.log("Getting data url");
+
+			if (this.videoUrl != null) {
+				var url = this.videoUrl;
+				this.videoUrl = null;
+				return url;
+			}
+			if (this.imageData == null) {
+				console.log("No URL for null imageData");
+				return null;
+			}
+			var blob = new Blob([this.imageData], { type: "octet/stream" });
+			var dataURL = window.URL.createObjectURL(blob);
+			console.log("Setting data url to " + dataURL);
+			return dataURL;
+		},
+		currentIsVideo() {
+			return this.isVideo(this.current);
+		},
+		currentIsImage() {
+			return this.isImage(this.current);
+		},
+		currentIsAudio() {
+			return this.isAudio(this.current);
+		},
+		currentIsVideoOrAudio() {
+			return this.isVideo(this.current) || this.isAudio(this.current);
+		},
+		showableFiles() {
+			if (this.files == null) return null;
+			var that = this;
+			return this.files.filter(function (file) {
+				var is_image = that.isImage(file);
+				var is_video = that.isVideo(file);
+				var is_audio = that.isAudio(file);
+				// console.log(
+				// 	"is_image " +
+				// 		is_image +
+				// 		", is_video " +
+				// 		is_video +
+				// 		", is_audio " +
+				// 		is_audio
+				// );
+				return is_image || is_video || is_audio;
+			});
+		},
+	},
 	created() {
 		console.debug("Gallery module created!");
+		console.log('gallery files:', this.files)
 		var showable = this.showableFiles;
 		for (var i = 0; i < showable.length; i++)
 			if (showable[i].getFileProperties().name == this.initialFileName)
@@ -329,62 +388,7 @@ module.exports = {
 			var mimeType = file.getFileProperties().mimeType;
 			return mimeType.startsWith("audio");
 		},
-	},
-	computed: {
-		current() {
-			if (this.showableFiles == null || this.showableFiles.length == 0)
-				return null;
-			var file = this.showableFiles[this.fileIndex];
-			return file;
-		},
-		dataURL() {
-			console.log("Getting data url");
-
-			if (this.videoUrl != null) {
-				var url = this.videoUrl;
-				this.videoUrl = null;
-				return url;
-			}
-			if (this.imageData == null) {
-				console.log("No URL for null imageData");
-				return null;
-			}
-			var blob = new Blob([this.imageData], { type: "octet/stream" });
-			var dataURL = window.URL.createObjectURL(blob);
-			console.log("Setting data url to " + dataURL);
-			return dataURL;
-		},
-		currentIsVideo() {
-			return this.isVideo(this.current);
-		},
-		currentIsImage() {
-			return this.isImage(this.current);
-		},
-		currentIsAudio() {
-			return this.isAudio(this.current);
-		},
-		currentIsVideoOrAudio() {
-			return this.isVideo(this.current) || this.isAudio(this.current);
-		},
-		showableFiles() {
-			if (this.files == null) return null;
-			var that = this;
-			return this.files.filter(function (file) {
-				var is_image = that.isImage(file);
-				var is_video = that.isVideo(file);
-				var is_audio = that.isAudio(file);
-				// console.log(
-				// 	"is_image " +
-				// 		is_image +
-				// 		", is_video " +
-				// 		is_video +
-				// 		", is_audio " +
-				// 		is_audio
-				// );
-				return is_image || is_video || is_audio;
-			});
-		},
-	},
+	}
 };
 </script>
 

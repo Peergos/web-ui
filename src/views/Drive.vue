@@ -126,7 +126,6 @@
 			v-if="showGallery"
 			@hide-gallery="closeApps()"
 			:files="sortedFiles"
-			:context="context"
 			:initial-file-name="selectedFiles[0] == null ? '' : selectedFiles[0].getFileProperties().name">
 		</Gallery>
 
@@ -148,7 +147,7 @@ const DriveGrid = require("../components/drive/DriveGrid.vue");
 const DriveGridCard = require("../components/drive/DriveGridCard.vue");
 const DriveGridDrop = require("../components/drive/DriveGridDrop.vue");
 const DriveTable = require("../components/drive/DriveTable.vue");
-const Gallery = require("../components/drive/Gallery.vue");
+const Gallery = require("../components/drive/DriveGallery.vue");
 
 
 const ProgressBar = require("../components/drive/ProgressBar.vue");
@@ -172,7 +171,7 @@ module.exports = {
 		DriveMenu,
 		AppPrompt,
 		ProgressBar,
-		Gallery
+		Gallery,
 	},
 	data() {
 		return {
@@ -484,8 +483,13 @@ module.exports = {
 		},
 
 		files(newFiles, oldFiles) {
+
 			if (newFiles == null)
 				return;
+
+			console.log('drive oldFiles: ', oldFiles )
+			console.log('drive newFiles: ', newFiles )
+
 
 			if (oldFiles == null && newFiles != null)
 				return this.processPending();
@@ -773,7 +777,7 @@ module.exports = {
 			if (this.selectedFiles.length == 0)
 				return;
 
-			if (app == "gallery")
+			if (app == "Gallery")
 				this.showGallery = true;
 			else if (app == "pdf")
 				this.showPdfViewer = true;
@@ -1764,7 +1768,7 @@ module.exports = {
 			var file = this.selectedFiles[0];
 			var filename = file.getName();
 			var mimeType = file.getFileProperties().mimeType;
-			console.log("Opening " + mimeType);
+			// console.log("Opening " + mimeType);
 			if (mimeType.startsWith("audio") ||
 				mimeType.startsWith("video") ||
 				mimeType.startsWith("image")) {
@@ -1773,7 +1777,7 @@ module.exports = {
 					if (this.isSecretLink) {
 						that.showGallery = true;
 					}
-					that.updateHistory("gallery", that.getPath, filename);
+					that.updateHistory('Gallery', that.getPath, filename);
 				});
 			} else if (mimeType === "application/vnd.peergos-todo") {
 				if (this.isSecretLink) {

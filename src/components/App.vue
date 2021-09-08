@@ -316,9 +316,13 @@ module.exports = {
 					that.$refs.appView.openInApp(filename, app);
 				});
 			}
-			if (app == "gallery") {
+			if (app == "Gallery") {
 				this.$store.commit("CURRENT_VIEW", 'Drive');
-				this.$refs.appView.openInApp(filename, app);
+
+				console.log('onUrlChange / Gallery case: ', filename, app)
+				// this.$nextTick(() =>
+					this.$refs.appView.openInApp(filename, app)
+				// )
 			}
 
 			if (app == "Calendar") {
