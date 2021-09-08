@@ -1,3 +1,4 @@
+const ProgressBar = require("../../components/drive/ProgressBar.vue");
 module.exports = {
 
   methods: {
@@ -66,9 +67,11 @@ module.exports = {
         done: 0,
         max: resultingSize
       }
-      var that = this
-      const watchProgress = this.progressMonitors != null
-      if (watchProgress) this.progressMonitors.push(progress)
+        var that = this
+        that.$toast({
+	    component: ProgressBar,
+	    props:  progress,
+	} , { icon: false , timeout:false, id: props.name})
     //   var context = this.getContext()
       file
         .getInputStream(
@@ -78,17 +81,11 @@ module.exports = {
           props.sizeLow(),
           function (read) {
             progress.done += read.value_0
-            if (watchProgress) {
-              that.progressMonitors.sort(function (a, b) {
-                return Math.floor(b.done / b.max) - Math.floor(a.done / a.max)
-              })
               if (progress.done >= progress.max) {
                 setTimeout(function () {
-                  progress.show = false
-                  that.progressMonitors.pop(progress)
+                    that.$toast.dismiss(props.name);
                 }, 100)
               }
-            }
           }
         )
         .thenCompose(function (reader) {
