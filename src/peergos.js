@@ -8,9 +8,7 @@ var CodeEditor      = require('./components/code-editor');
 var Downloader      = require('./components/downloader');
 var Error           = require('./components/error');
 var Feedback        = require('./components/feedback');
-var Filesystem      = require('./components/filesystem');
 var Fingerprint     = require('./components/fingerprint');
-var Gallery         = require('./components/gallery');
 var Group           = require('./components/group');
 var Hex             = require('./components/viewers/hex');
 var Message         = require('./components/message');
@@ -42,7 +40,6 @@ var AppButton 		= require('./components/AppButton.vue');
 var AppIcon 		= require('./components/AppIcon.vue');
 var AppModal 		= require('./components/modal/AppModal.vue');
 var App  			= require('./components/App.vue');
-var Filesystem 		= require('./components/Filesystem.vue');
 
 // var ModalSpace 		= require('./components/modal/ModalSpace.vue');
 
@@ -57,9 +54,7 @@ Vue.component('choice', Vue.extend(Choice));
 Vue.component('code-editor', Vue.extend(Downloader).extend(CodeEditor));
 Vue.component('error', Vue.extend(Error));
 Vue.component('feedback', Vue.extend(Feedback));
-Vue.component('filesystem', Vue.extend(Downloader).extend(Filesystem));
 Vue.component('fingerprint', Vue.extend(Fingerprint));
-Vue.component('gallery', Vue.extend(Downloader).extend(Gallery));
 Vue.component('group', Vue.extend(Group));
 Vue.component('hex', Vue.extend(Downloader).extend(Hex));
 Vue.component('message', Vue.extend(Message));
@@ -90,9 +85,6 @@ Vue.component('App', Vue.extend(App));
 Vue.component('AppButton', Vue.extend(AppButton));
 Vue.component('AppIcon', Vue.extend(AppIcon));
 Vue.component('AppModal', Vue.extend(AppModal));
-Vue.component('Filesystem', Vue.extend(Downloader).extend(Filesystem));
-
-// Vue.component('ModalSpace', Vue.extend(ModalSpace));
 
 
 

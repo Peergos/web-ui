@@ -122,13 +122,13 @@
 			</DriveMenu>
 		</transition>
 
-		<gallery
+		<Gallery
 			v-if="showGallery"
 			@hide-gallery="closeApps()"
 			:files="sortedFiles"
 			:context="context"
 			:initial-file-name="selectedFiles[0] == null ? '' : selectedFiles[0].getFileProperties().name">
-		</gallery>
+		</Gallery>
 
 
 
@@ -147,8 +147,8 @@ const DriveHeader = require("../components/drive/DriveHeader.vue");
 const DriveGrid = require("../components/drive/DriveGrid.vue");
 const DriveGridCard = require("../components/drive/DriveGridCard.vue");
 const DriveGridDrop = require("../components/drive/DriveGridDrop.vue");
-
 const DriveTable = require("../components/drive/DriveTable.vue");
+const Gallery = require("../components/drive/Gallery.vue");
 
 
 const ProgressBar = require("../components/drive/ProgressBar.vue");
@@ -156,8 +156,9 @@ const DriveMenu = require("../components/drive/DriveMenu.vue");
 
 const AppPrompt = require("../components/prompt/AppPrompt.vue");
 
+
 const helpers = require("../mixins/storage/index.js");
-const mixins = require("../mixins/downloader/index.js");
+const downloaderMixins = require("../mixins/downloader/index.js");
 
 const routerMixins = require("../mixins/router/index.js");
 
@@ -170,7 +171,8 @@ module.exports = {
 		DriveTable,
 		DriveMenu,
 		AppPrompt,
-		ProgressBar
+		ProgressBar,
+		Gallery
 	},
 	data() {
 		return {
@@ -276,7 +278,7 @@ module.exports = {
 	// 	openFile,
 	// 	initiateDownload,
 	// },
-	mixins:[mixins, routerMixins],
+	mixins:[downloaderMixins, routerMixins],
 
 	computed: {
 		...Vuex.mapState([
