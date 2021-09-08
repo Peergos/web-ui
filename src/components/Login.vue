@@ -99,7 +99,7 @@ module.exports = {
 			const app = props == null ? null : props.app;
 			const driveApps = ['Gallery', 'pdf', 'editor', 'hex', 'todo', 'timeline' ]
 
-			return driveApps.includes(app)
+			return !driveApps.includes(app)
 				? app
 				: 'Drive'
 		}
