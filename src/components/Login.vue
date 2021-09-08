@@ -95,17 +95,13 @@ module.exports = {
 				});
 		},
 		appFromUrl(){
-			const currentProps = this.getPropsFromUrl();
+			const props = this.getPropsFromUrl();
+			const app = props == null ? null : props.app;
+			const driveApps = ['Gallery', 'pdf', 'editor', 'hex', 'todo', 'timeline' ]
 
-			// console.log('login currentProps:', currentProps )
-			console.log('login current app:', currentProps.app )
-			// TODO: find a proper way to distinct main apps (VIEW: Drive) from regular apps (VIEW: Drive + COMPONENT: Gallery)
-			// From the url 'Drive' and "Gallery' are treated both as main apps
-			return currentProps === null || currentProps.app === 'Gallery'
-				? 'Drive'
-				: currentProps.app
-
-
+			return driveApps.includes(app)
+				? app
+				: 'Drive'
 		}
 	}
 

@@ -260,10 +260,10 @@ module.exports = {
 		onUrlChange() {
 			const props = this.getPropsFromUrl();
 
-			console.log('onUrlChange appURL:', props.app)
-			console.log('onUrlChange pathURL: ', props.path)
-			console.log('onUrlChange pathStore (prev?): ', this.getPath)
-			console.log('onUrlChange filenameURL: ', props.filename)
+			// console.log('onUrlChange appURL:', props.app)
+			// console.log('onUrlChange pathURL: ', props.path)
+			// console.log('onUrlChange pathStore (prev?): ', this.getPath)
+			// console.log('onUrlChange filenameURL: ', props.filename)
 
 			const app = props == null ? null : props.app;
 			const path = props == null ? null : props.path;
@@ -271,19 +271,9 @@ module.exports = {
 			const differentPath = path != null && path != this.getPath;
 
 			if (differentPath){
-				 console.log('onUrlChange differentPath so we do: ', path.split("/").filter(x => x.length > 0))
-
-				// this.path = path.split("/").filter(x => x.length > 0);
+				//  console.log('onUrlChange differentPath so we do: ', path.split("/").filter(x => x.length > 0))
 				this.$store.commit('SET_PATH', path.split("/").filter(x => x.length > 0))
-			} else{
-				 console.log('onUrlChange same path')
 			}
-
-			// this.$store.commit('SET_PATH', path.split("/").filter(x => x.length > 0))
-			// console.log('pathFromStore (prev?): ', this.getPath)
-
-			// console.log('APP onUrlChange differentPath:', differentPath)
-
 
 			const that = this;
 
@@ -301,16 +291,6 @@ module.exports = {
 				// this.showCalendarViewer = false;
 
 
-
-				// if (!differentPath){
-				// 	// this.openInApp(filename, app);
-				// 	this.$refs.appView.openInApp(filename, app);
-				// } else{
-				// 	this.onUpdateCompletion.push(() => {
-				// 		// that.openInApp(filename, app);
-				// 		that.$refs.appView.openInApp(filename, app);
-				// 	});
-				// }
 				this.onUpdateCompletion.push(() => {
 					// that.openInApp(filename, app);
 					that.$refs.appView.openInApp(filename, app);
@@ -318,11 +298,8 @@ module.exports = {
 			}
 			if (app == "Gallery") {
 				this.$store.commit("CURRENT_VIEW", 'Drive');
-
-				console.log('onUrlChange / Gallery case: ', filename, app)
-				// this.$nextTick(() =>
-					this.$refs.appView.openInApp(filename, app)
-				// )
+				// console.log('onUrlChange / Gallery case: ', filename, app)
+				this.$refs.appView.openInApp(filename, app)
 			}
 
 			if (app == "Calendar") {

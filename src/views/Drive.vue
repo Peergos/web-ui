@@ -484,12 +484,11 @@ module.exports = {
 
 		files(newFiles, oldFiles) {
 
+			// console.log('drive oldFiles: ', oldFiles )
+			// console.log('drive newFiles: ', newFiles )
+
 			if (newFiles == null)
 				return;
-
-			console.log('drive oldFiles: ', oldFiles )
-			console.log('drive newFiles: ', newFiles )
-
 
 			if (oldFiles == null && newFiles != null)
 				return this.processPending();
@@ -549,34 +548,20 @@ module.exports = {
 
 				const pathFromUrl = props == null ? null : props.path;
 				const appFromUrl = props == null ? null : props.app;
+				const filenameFromUrl = props == null ? null : props.filename;
 
+				const apps = ['Calendar', 'NewsFeed', 'Social', 'Tasks']
 
+				if (pathFromUrl !== null && !apps.includes(appFromUrl) ) {
 
-				// this.$store.commit('SET_PATH', [this.context.username])
-				// this.updateHistory('Drive', this.getPath,'')
-
-
-				if (pathFromUrl !== null && appFromUrl == 'Drive' ) {
 					this.showSpinner = true;
 
-					const filename = props.filename;
-					const app = props.app;
-
-					console.log('app URL: ', app)
-					console.log('filename URL: ', filename)
-					// this.openInApp(filename, app);
-					var open = () => {
-						that.openInApp(filename, app);
-					};
+					let open = () => { that.openInApp(filenameFromUrl, appFromUrl) };
 					this.onUpdateCompletion.push(open);
 
-					// this.path = pathFromUrl.split('/').filter(n => n.length > 0);
-
-
 					this.$store.commit('SET_PATH', pathFromUrl.split('/').filter(n => n.length > 0))
+
 				} else {
-					// console.log('root')
-					// this.path = [this.context.username];
 					this.$store.commit('SET_PATH', [this.context.username])
 					this.updateHistory('Drive', this.getPath,'')
 				}
