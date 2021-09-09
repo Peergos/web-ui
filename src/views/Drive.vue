@@ -534,15 +534,15 @@ module.exports = {
                                     that.$store.commit('SET_PATH', path.split('/').filter(n => n.length > 0))
 				} else {
                                     that.$store.commit('SET_PATH', linkPath.split('/').filter(n => n.length > 0))
-                                    if (that.initiateDownload || that.openFile)
+                                    if (that.download || that.open)
 				        that.context.getByPath(that.getPath)
 				 	.thenApply(function (file) {
 				 	    file.get().getChildren(that.context.crypto.hasher, that.context.network).thenApply(function (children) {
 				 		var arr = children.toArray();
 				 		if (arr.length == 1) {
-				 		    if (that.initiateDownload) {
+				 		    if (that.download) {
 				 			that.downloadFile(arr[0]);
-				 		    } else if (that.openFile) {
+				 		    } else if (that.open) {
 				 			var open = () => {
 				 			    that.updateFiles(arr[0].getFileProperties().name);
 				 			};
