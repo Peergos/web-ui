@@ -1748,7 +1748,8 @@ module.exports = {
 				path = path.substring(1);
 
 			// this.path = path ? path.split('/') : [];
-			path == this.path ? path.split('/') : []
+		        let pathArr = path.length > 0 ? path.split('/') : []
+                        this.$store.commit('SET_PATH', pathArr)
 
 			this.showSpinner = true;
 			this.updateHistory("Drive", path, "");
