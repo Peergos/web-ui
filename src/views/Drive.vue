@@ -128,27 +128,44 @@
 			:files="sortedFiles"
 			:initial-file-name="selectedFiles[0] == null ? '' : selectedFiles[0].getFileProperties().name">
 		</Gallery>
-                <hex
-                    v-if="showHexViewer"
-                    v-on:hide-hex-viewer="closeApps()"
-                    :file="selectedFiles[0]"
-                    :context="context">
-                </hex>
-                <pdf
-                    v-if="showPdfViewer"
-                    v-on:hide-pdf-viewer="closeApps()"
-                    :file="selectedFiles[0]"
-                    :context="context">
-                </pdf>
-                <code-editor
-                    v-if="showCodeEditor"
-                    v-on:hide-code-editor="closeApps(); updateCurrentDir();"
-                    v-on:update-refresh="forceUpdate++"
-                    :file="selectedFiles[0]"
-                    :context="context"
-                    :messages="messages">
-                </code-editor>
 
+		<hex
+			v-if="showHexViewer"
+			v-on:hide-hex-viewer="closeApps()"
+			:file="selectedFiles[0]"
+			:context="context">
+		</hex>
+		<pdf
+			v-if="showPdfViewer"
+			v-on:hide-pdf-viewer="closeApps()"
+			:file="selectedFiles[0]"
+			:context="context">
+		</pdf>
+		<code-editor
+			v-if="showCodeEditor"
+			v-on:hide-code-editor="closeApps(); updateCurrentDir();"
+			v-on:update-refresh="forceUpdate++"
+			:file="selectedFiles[0]"
+			:context="context"
+			:messages="messages">
+		</code-editor>
+		<share
+			v-if="showShare"
+			v-on:hide-share-with="closeShare"
+			v-on:update-shared-refresh="forceSharedRefreshWithUpdate++"
+			:data="sharedWithData"
+			:fromApp="fromApp"
+			:displayName="displayName"
+			:allowReadWriteSharing="allowReadWriteSharing"
+			:allowCreateSecretLink="allowCreateSecretLink"
+			:files="filesToShare"
+			:path="pathToFile"
+			:context="context"
+			:followernames="followernames"
+			:friendnames="friendnames"
+			:groups="groups"
+			:messages="messages">
+		</share>
 
 		<error
 			v-if="showError"
@@ -167,6 +184,7 @@ const DriveGridCard = require("../components/drive/DriveGridCard.vue");
 const DriveGridDrop = require("../components/drive/DriveGridDrop.vue");
 const DriveTable = require("../components/drive/DriveTable.vue");
 const Gallery = require("../components/drive/DriveGallery.vue");
+const Share = require("../components/drive/DriveShare.vue");
 
 
 const ProgressBar = require("../components/drive/ProgressBar.vue");
@@ -191,6 +209,7 @@ module.exports = {
 		AppPrompt,
 		ProgressBar,
 		Gallery,
+		Share
 	},
 	data() {
 		return {
@@ -438,6 +457,20 @@ module.exports = {
 			}
 
 			return this.currentDir.isWritable() && target.isDirectory();
+		},
+
+		// share
+		followernames() {
+			return this.social.followers;
+		},
+		friendnames() {
+			return this.social.friends;
+		},
+		followingnames() {
+			return this.social.following;
+		},
+		groups() {
+			return {groupsNameToUid: this.social.groupsNameToUid, groupsUidToName: this.social.groupsUidToName};
 		},
 	},
 
