@@ -537,11 +537,11 @@ module.exports = {
 			    this.context.getEntryPath().thenApply(function (linkPath) {
 				var path = that.initPath == null ? null : decodeURIComponent(that.initPath);
 				if (path != null && (path.startsWith(linkPath) || linkPath.startsWith(path))) {
-				    that.changePath(path);
+                                    that.$store.commit('SET_PATH', path.split('/').filter(n => n.length > 0))
 				} else {
-				    //that.changePath(linkPath);
                                     that.$store.commit('SET_PATH', linkPath.split('/').filter(n => n.length > 0))
-				    that.context.getByPath(that.getPath)
+                                    if (that.initiateDownload || that.openFile)
+				        that.context.getByPath(that.getPath)
 				 	.thenApply(function (file) {
 				 	    file.get().getChildren(that.context.crypto.hasher, that.context.network).thenApply(function (children) {
 				 		var arr = children.toArray();
