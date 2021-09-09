@@ -64,7 +64,7 @@ module.exports = {
                     let that = this;
                     this.context.changePassword(this.existing, this.password).thenApply(function(newContext){
 
-						that.$store.commit("SET_USER_CONTEXT", newContext);
+						that.$store.commit("SET_CONTEXT", newContext);
 						that.$store.commit("SET_MODAL", false);
 						that.$toast.info('Password changed')
 

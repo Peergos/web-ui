@@ -286,16 +286,7 @@ module.exports = {
 			onUpdateCompletion: [], // methods to invoke when current dir is next refreshed
 		};
 	},
-	props: ["globalPath","initPath", "openFile", "initiateDownload"],
-	// props: {
-	// 	path: {
-	// 		type: Array,
-	// 		default: ()=>[]
-	// 	},
-	// 	initPath,
-	// 	openFile,
-	// 	initiateDownload,
-	// },
+
 	mixins:[downloaderMixins, routerMixins],
 
 	computed: {
@@ -303,6 +294,9 @@ module.exports = {
 			'quotaBytes',
 			'usageBytes',
 			'context',
+			'download',
+			'open',
+			'initPath',
 			'isLoggedIn',
 			'path'
 		]),
@@ -1735,7 +1729,7 @@ module.exports = {
 
 		updateContext(newContext) {
 			// this.context = newContext;
-			this.$store.commit('SET_USER_CONTEXT', newContext);
+			this.$store.commit('SET_CONTEXT', newContext);
 
 		},
 

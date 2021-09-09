@@ -171,7 +171,7 @@ module.exports = {
 
                             // that.$emit("filesystem", {context: context, signup:true});
 							that.$store.commit("CURRENT_VIEW", 'Drive');
-							that.$store.commit("SET_USER_CONTEXT", context);
+							that.$store.commit("SET_CONTEXT", context);
 							that.$store.commit('USER_LOGIN', true);
                             console.log("Signing in/up took " + (Date.now()-creationStart)+" mS from function call");
                         })

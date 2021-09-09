@@ -132,7 +132,7 @@ module.exports = {
 			this.$store.commit("CURRENT_MODAL", "ModalAccount");
 		},
 		logout() {
-			this.$store.commit("SET_USER_CONTEXT", null);
+			this.$store.commit("SET_CONTEXT", null);
 			window.location.fragment = "";
 			window.location.reload();
 		},

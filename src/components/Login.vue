@@ -79,7 +79,7 @@ module.exports = {
 
 					that.$toast.dismiss('login');
 
-					that.$store.commit("SET_USER_CONTEXT", context);
+					that.$store.commit("SET_CONTEXT", context);
 
 					that.$store.commit("CURRENT_VIEW", that.appFromUrl());
 

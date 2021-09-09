@@ -18,6 +18,10 @@ module.exports = new Vuex.Store({
 		crypto: null,
 		network: null,
 		context: null,
+		download: null,
+		open: null,
+		initPath: null,
+
 		paymentProperties: null,
 
 		isLoggedIn: false,
@@ -96,8 +100,17 @@ module.exports = new Vuex.Store({
 		SET_NETWORK(state, payload) {
 			state.network = payload;
 		},
-		SET_USER_CONTEXT(state, payload) {
+		SET_CONTEXT(state, payload) {
 			state.context = payload;
+		},
+		SET_DOWNLOAD(state, payload) {
+			state.download = payload;
+		},
+		SET_OPEN(state, payload) {
+			state.open = payload;
+		},
+		SET_INIT_PATH(state, payload) {
+			state.initPath = payload;
 		},
 		SET_PAYMENT_PROPERTIES(state, payload) {
 			state.paymentProperties = payload;

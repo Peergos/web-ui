@@ -7,7 +7,7 @@
 		<AppNavigation v-if="isLoggedIn"/>
 
 		<!-- needs restyle -->
-		<section v-if="isSecretLink && data.context==null">
+		<section v-if="isSecretLink && this.context==null">
 			<AppIcon icon="logo-full" class="sprite-test"/>
 			<h2>Loading secret link...</h2>
 		</section>
@@ -42,11 +42,7 @@
 					ref="appView"
 					v-if="isLoggedIn || isSecretLink"
 					:is="currentView"
-					:initPath="data.initPath"
-					:globalPath="path"
-					:initiateDownload="data.download"
-					:openFile="data.open">
-				</component>
+				/>
 			</transition >
 
 		</section>
@@ -100,9 +96,7 @@ module.exports = {
 
 	data() {
 		return {
-			//isSecretLink: false,
 			token: '',
-			data: {},
 			onUpdateCompletion: [], // methods to invoke when current dir is next refreshed
 		};
 	},
@@ -118,7 +112,7 @@ module.exports = {
 			'crypto',
 			'network',
 			'context',
-			'path'
+			// 'path'
 		]),
 		...Vuex.mapGetters([
 			'isSecretLink',
@@ -356,14 +350,11 @@ module.exports = {
 				that.crypto
 			)
 			.thenApply(function (context) {
-			    that.data = {
-				context: context,
-				download: props.download,
-				open: props.open,
-				initPath: props.path,
-			    };
-                            that.$store.commit("SET_USER_CONTEXT", context);
-			    that.$store.commit("CURRENT_VIEW", 'Drive');
+				that.$store.commit("SET_CONTEXT", context);
+				that.$store.commit("SET_DOWNLOAD", props.download);
+				that.$store.commit("SET_OPEN", props.open);
+				that.$store.commit("SET_INIT_PATH", props.path);
+				that.$store.commit("CURRENT_VIEW", 'Drive');
 			})
 			.exceptionally(function (throwable) {
 				that.$toast.error('Secret link not found! Url copy/paste error?')

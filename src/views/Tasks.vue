@@ -11,7 +11,6 @@ const routerMixins = require("../mixins/router/index.js");
 
 
 module.exports = {
-	props: ["initContext", "initPath", "openFile", "initiateDownload"],
 
 	mixins:[routerMixins],
 
