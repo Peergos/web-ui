@@ -1,5 +1,53 @@
-module.exports = {
-    template: require('hex.html'),
+<template>
+<transition name="modal">
+<div class="modal-mask" @click="close">
+    <div class="modal-container hex-viewer" @click.stop style="height:95%;width:95%;overflow-y:auto">
+        <spinner v-if="showSpinner"></spinner>
+        <center>
+            <h2 v-if="file != null">
+                <p>{{ file.getFileProperties().name }} (hex view)&nbsp;
+                    <button class="btn btn-large btn-primary" @click="downloadCurrentFile()">Download File</button>
+                </p>
+            </h2>
+        </center>
+
+        <center style="height:75%;max-width:100%;font-family: monospace;">
+            <table>
+                <tr v-for="line in lines">
+                    <td style="color:#990012">
+                        {{line.start}}:
+                    </td>
+                    <td style="padding-left:10px">
+                        <span v-for="(n, i) in 4">{{line.hex[i] != null ? line.hex[i] : ""}}</span>
+                    </td>
+                    <td style="padding-left:10px">
+                        <span v-for="(n, i) in 4">{{line.hex[i+4] != null ? line.hex[i+4] : ""}}</span>
+                    </td>
+                    <td style="padding-left:10px">
+                        <span v-for="(n, i) in 4">{{line.hex[i+8] != null ? line.hex[i+8] : ""}}</span>
+                    </td>
+                    <td style="padding-left:10px">
+                        <span v-for="(n, i) in 4">{{line.hex[i+12] != null ? line.hex[i+12] : ""}}</span>
+                    </td>
+                    <td style="padding-left:25px">
+                        <span v-for="(n, i) in 16">{{line.ascii[i] != null ? line.ascii[i] : ""}}</span>
+                    </td>
+                <tr/>
+            </table>
+        </center>
+        <error 
+            v-if="showError"
+            v-on:hide-error="showError = false"
+            :title="errorTitle" 
+            :body="errorBody">
+        </error>
+    </div>
+</div>
+</transition>
+</template>
+
+<script>
+    module.exports = {
     data: function() {
         return {
 	    lookup: ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'A', 'B', 'C', 'D', 'E', 'F'],
@@ -139,3 +187,11 @@ module.exports = {
         }
     }
 };
+</script>
+
+<style>
+.hex-viewer {
+    color: var(--color);
+    background-color: var(--bg);
+}
+</style>
