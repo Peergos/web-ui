@@ -540,7 +540,7 @@ module.exports = {
 				    that.changePath(path);
 				} else {
 				    that.changePath(linkPath);
-				    that.context.getByPath(that.getPath())
+				    that.context.getByPath(that.getPath)
 				 	.thenApply(function (file) {
 				 	    file.get().getChildren(that.context.crypto.hasher, that.context.network).thenApply(function (children) {
 				 		var arr = children.toArray();
