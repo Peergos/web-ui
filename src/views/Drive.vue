@@ -539,7 +539,8 @@ module.exports = {
 				if (path != null && (path.startsWith(linkPath) || linkPath.startsWith(path))) {
 				    that.changePath(path);
 				} else {
-				    that.changePath(linkPath);
+				    //that.changePath(linkPath);
+                                    that.$store.commit('SET_PATH', linkPath.split('/').filter(n => n.length > 0))
 				    that.context.getByPath(that.getPath)
 				 	.thenApply(function (file) {
 				 	    file.get().getChildren(that.context.crypto.hasher, that.context.network).thenApply(function (children) {
