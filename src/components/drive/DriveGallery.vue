@@ -1,7 +1,7 @@
 <template>
 	<div class="modal-mask" @click="close">
 		<div
-			class="modal-container full-height"
+			class="modal-container gallery full-height"
 			@click.stop
 			style="overflow-y: auto"
 			@keyup.right="next"
@@ -393,4 +393,8 @@ module.exports = {
 </script>
 
 <style>
+.gallery {
+    color: var(--color);
+    background-color: var(--bg);
+}
 </style>
