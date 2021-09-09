@@ -97,11 +97,12 @@ module.exports = {
 		appFromUrl(){
 			const props = this.getPropsFromUrl();
 			const app = props == null ? null : props.app;
-			const driveApps = ['Gallery', 'pdf', 'editor', 'hex', 'todo', 'timeline' ]
+			console.log('login app:', app)
+			const driveApps = [null, 'Gallery', 'pdf', 'editor', 'hex', 'todo', 'timeline' ]
 
-			return !driveApps.includes(app)
-				? app
-				: 'Drive'
+			return driveApps.includes(app)
+				? 'Drive'
+				: app
 		}
 	}
 

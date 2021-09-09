@@ -1771,9 +1771,11 @@ module.exports = {
 			this.closeMenu();
 			if (this.selectedFiles.length == 0)
 				return;
+
 			var file = this.selectedFiles[0];
 			var filename = file.getName();
 			var mimeType = file.getFileProperties().mimeType;
+
 			// console.log("Opening " + mimeType);
 			if (mimeType.startsWith("audio") ||
 				mimeType.startsWith("video") ||
@@ -1783,6 +1785,7 @@ module.exports = {
 					if (this.isSecretLink) {
 						that.showGallery = true;
 					}
+					// that.showGallery = true;
 					that.updateHistory('Gallery', that.getPath, filename);
 				});
 			} else if (mimeType === "application/vnd.peergos-todo") {

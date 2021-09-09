@@ -295,49 +295,24 @@ module.exports = {
 					// that.openInApp(filename, app);
 					that.$refs.appView.openInApp(filename, app);
 				});
+
 			} else if (app == "Calendar") {
 				this.$store.commit("CURRENT_VIEW", 'Calendar');
-			} else if (app == "Newsfeed") {
-				this.$store.commit("CURRENT_VIEW", 'Newsfeed');
+			} else if (app == "NewsFeed") {
+				this.$store.commit("CURRENT_VIEW", 'NewsFeed');
 			} else if (app == "Social") {
 				this.$store.commit("CURRENT_VIEW", 'Social');
-			} if (app == "Tasks") {
+			} else if (app == "Tasks") {
 				this.$store.commit("CURRENT_VIEW", 'Tasks');
 			} else {
+				// Drive sub-apps
 				this.$store.commit("CURRENT_VIEW", 'Drive');
-				// console.log('onUrlChange / Gallery case: ', filename, app)
-				this.$refs.appView.openInApp(filename, app)
+				this.$refs.appView.openInApp(filename, app);
 			}
 
 
 
 		},
-
-		// getPropsFromUrl() {
-		// 	try {
-		// 		return this.decryptProps(fragmentToProps(window.location.hash.substring(1)));
-		// 	} catch (e) {
-		// 		return null;
-		// 	}
-		// },
-		// decryptProps(props) {
-		// 	if (this.isSecretLink)
-		// 		return path;
-
-		// 	return fragmentToProps(this.context.decryptURL(props.ciphertext, props.nonce));
-		// },
-
-		// encryptProps(props) {
-		// 	var both = this.context.encryptURL(props)
-		// 	const nonce = both.base64Nonce;
-		// 	const ciphertext = both.base64Ciphertext;
-		// 	return { nonce: nonce, ciphertext: ciphertext };
-		// },
-
-
-
-
-
 
 		updateNetwork() {
 			let that = this;
