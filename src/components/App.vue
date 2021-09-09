@@ -7,12 +7,12 @@
 		<AppNavigation v-if="isLoggedIn"/>
 
 		<!-- needs restyle -->
-		<section v-if="isSecretLink">
+		<section v-if="isSecretLink && data.context==null">
 			<AppIcon icon="logo-full" class="sprite-test"/>
 			<h2>Loading secret link...</h2>
 		</section>
 
-		<section class="login-register" v-if="!isLoggedIn">
+		<section class="login-register" v-if="!isLoggedIn && !isSecretLink">
 			<AppIcon icon="logo-full" class="sprite-test"/>
 
 			<AppTabs ref="tabs">
@@ -40,7 +40,7 @@
 			<transition name="fade" mode="out-in">
 				<component
 					ref="appView"
-					v-if="isLoggedIn"
+					v-if="isLoggedIn || isSecretLink"
 					:is="currentView"
 					:initPath="data.initPath"
 					:globalPath="path"
@@ -100,7 +100,7 @@ module.exports = {
 
 	data() {
 		return {
-			// isSecretLink: false,
+			//isSecretLink: false,
 			token: '',
 			data: {},
 			onUpdateCompletion: [], // methods to invoke when current dir is next refreshed
@@ -210,31 +210,31 @@ module.exports = {
 		init() {
 			const that = this;
 			if (this.context != null && this.context.username == null) {
-				// from a secret link
-				// this.context.getEntryPath().thenApply(function (linkPath) {
-				// 	var path = that.initPath == null ? null : decodeURIComponent(that.initPath);
-				// 	if (path != null && (path.startsWith(linkPath) || linkPath.startsWith(path))) {
-				// 		that.changePath(path);
-				// 	} else {
-				// 		that.changePath(linkPath);
-				// 		that.context.getByPath(that.getPath())
-				// 			.thenApply(function (file) {
-				// 				file.get().getChildren(that.context.crypto.hasher, that.context.network).thenApply(function (children) {
-				// 					var arr = children.toArray();
-				// 					if (arr.length == 1) {
-				// 						if (that.initiateDownload) {
-				// 							that.downloadFile(arr[0]);
-				// 						} else if (that.openFile) {
-				// 							var open = () => {
-				// 								that.updateFiles(arr[0].getFileProperties().name);
-				// 							};
-				// 							that.onUpdateCompletion.push(open);
-				// 						}
-				// 					}
-				// 				})
-				// 			});
-				// 	}
-				// });
+			    // App.vue from a secret link
+			    /*this.context.getEntryPath().thenApply(function (linkPath) {
+				var path = that.initPath == null ? null : decodeURIComponent(that.initPath);
+				if (path != null && (path.startsWith(linkPath) || linkPath.startsWith(path))) {
+				    that.changePath(path);
+				} else {
+				    that.changePath(linkPath);
+				    that.context.getByPath(that.getPath())
+				 	.thenApply(function (file) {
+				 	    file.get().getChildren(that.context.crypto.hasher, that.context.network).thenApply(function (children) {
+				 		var arr = children.toArray();
+				 		if (arr.length == 1) {
+				 		    if (that.initiateDownload) {
+				 			that.downloadFile(arr[0]);
+				 		    } else if (that.openFile) {
+				 			var open = () => {
+				 			    that.updateFiles(arr[0].getFileProperties().name);
+				 			};
+				 			that.onUpdateCompletion.push(open);
+				 		    }
+				 		}
+				 	    })
+				 	});
+				}
+			    });*/
 			} else {
 
 				this.updateUsage();
@@ -381,14 +381,14 @@ module.exports = {
 				that.crypto
 			)
 			.thenApply(function (context) {
-				that.data = {
-					context: context,
-					download: props.download,
-					open: props.open,
-					initPath: props.path,
-				};
-				that.$store.commit("CURRENT_VIEW", 'Drive');
-				that.isSecretLink = false;
+			    that.data = {
+				context: context,
+				download: props.download,
+				open: props.open,
+				initPath: props.path,
+			    };
+                            that.$store.commit("SET_USER_CONTEXT", context);
+			    that.$store.commit("CURRENT_VIEW", 'Drive');
 			})
 			.exceptionally(function (throwable) {
 				that.$toast.error('Secret link not found! Url copy/paste error?')

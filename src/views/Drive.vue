@@ -533,31 +533,31 @@ module.exports = {
 		init() {
 			const that = this;
 			if (this.context != null && this.context.username == null) {
-				// from a secret link
-				// this.context.getEntryPath().thenApply(function (linkPath) {
-				// 	var path = that.initPath == null ? null : decodeURIComponent(that.initPath);
-				// 	if (path != null && (path.startsWith(linkPath) || linkPath.startsWith(path))) {
-				// 		that.changePath(path);
-				// 	} else {
-				// 		that.changePath(linkPath);
-				// 		that.context.getByPath(that.getPath())
-				// 			.thenApply(function (file) {
-				// 				file.get().getChildren(that.context.crypto.hasher, that.context.network).thenApply(function (children) {
-				// 					var arr = children.toArray();
-				// 					if (arr.length == 1) {
-				// 						if (that.initiateDownload) {
-				// 							that.downloadFile(arr[0]);
-				// 						} else if (that.openFile) {
-				// 							var open = () => {
-				// 								that.updateFiles(arr[0].getFileProperties().name);
-				// 							};
-				// 							that.onUpdateCompletion.push(open);
-				// 						}
-				// 					}
-				// 				})
-				// 			});
-				// 	}
-				// });
+			    // open drive from a secret link
+			    this.context.getEntryPath().thenApply(function (linkPath) {
+				var path = that.initPath == null ? null : decodeURIComponent(that.initPath);
+				if (path != null && (path.startsWith(linkPath) || linkPath.startsWith(path))) {
+				    that.changePath(path);
+				} else {
+				    that.changePath(linkPath);
+				    that.context.getByPath(that.getPath())
+				 	.thenApply(function (file) {
+				 	    file.get().getChildren(that.context.crypto.hasher, that.context.network).thenApply(function (children) {
+				 		var arr = children.toArray();
+				 		if (arr.length == 1) {
+				 		    if (that.initiateDownload) {
+				 			that.downloadFile(arr[0]);
+				 		    } else if (that.openFile) {
+				 			var open = () => {
+				 			    that.updateFiles(arr[0].getFileProperties().name);
+				 			};
+				 			that.onUpdateCompletion.push(open);
+				 		    }
+				 		}
+				 	    })
+				 	});
+				}
+			    });
 			} else {
 				const props = this.getPropsFromUrl();
 
