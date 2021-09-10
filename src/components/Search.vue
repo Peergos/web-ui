@@ -1,7 +1,7 @@
 <template>
 <transition name="modal">
 <div class="modal-mask" @click="close"> 
-    <div class="modal-container full-height" @click.stop style="overflow-y:auto">
+    <div class="modal-container search full-height" @click.stop style="overflow-y:auto">
       <span @click="close" tabindex="0" v-on:keyup.enter="close" aria-label="close" class="close">&times;</span>
         <div class="modal-header">
             <h2>Search</h2>
@@ -12,7 +12,7 @@
             </div>
             <spinner v-if="showSpinner"></spinner>
                 <div class="flex-container">
-                    <div class="flex-item" style="margin: 10px;">
+                    <div class="flex-item search" style="margin: 10px;">
                         <select v-model="selectedSearchType">
                             <option value="contains">Filename contains</option>
                             <option value="modifiedAfter">File modified after</option>
@@ -385,4 +385,12 @@ module.exports = {
 </script>
 
 <style>
+.search {
+    color: var(--color);
+    background-color: var(--bg);
+}
+.search select {
+    color: var(--color);
+    background-color: var(--bg);
+}
 </style>
