@@ -6,7 +6,7 @@
             </div>
             <div class="messagecontainer">
                 <button class="btn btn-success" @click="reply">Show</button>
-                <button class="btn btn-success" @click="close">Dismiss</button>
+                <button class="btn btn-success" @click="close">Delete</button>
             </div>
         </div>
     </div>
