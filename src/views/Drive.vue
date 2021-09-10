@@ -14,7 +14,8 @@
 			@switchView="switchView()"
 			@goBackToLevel="goBackToLevel($event)"
 			@askMkdir="askMkdir()"
-			@createFile="createTextFile()"
+		        @createFile="createTextFile()"
+                        @search="openSearch(false)"
 		/>
 
 		<AppPrompt
@@ -166,6 +167,14 @@
 			:groups="groups"
 			:messages="messages">
 		</share>
+                <search
+                    v-if="showSearch"
+                    v-on:hide-search="closeSearch"
+                    :path="searchPath"
+                    :navigateToAction="navigateToAction"
+                    :viewAction="viewAction"
+                    :context="context">
+                </search>
 
 		<error
 			v-if="showError"
