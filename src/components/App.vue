@@ -31,7 +31,13 @@
 				<strong>WARNING:</strong> This is a demo server and all data will be occasionally cleared. If you want to create a <i>permanent</i> account, please go to our <a class="line" href="https://alpha.peergos.net?signup=true">alpha network</a>
 			</p>
 		</section>
-
+                <div v-if="conversationMonitors.length>0" class="messageholder">
+                    <MessageBar :replyToMessage="replyToMessage" :dismissMessage="dismissMessage"
+                                v-for="message in conversationMonitors"
+                                :id="message.id"
+                                :date="message.sendTime"
+                                :contents="message.contents.length > 50 ? message.contents.substring(0,47) + '...' : message.contents" />
+                </div>
 
 		<!-- Main view container -->
 		<section class="content" :class="{ 'sidebar-margin': isSidebarOpen }">
@@ -70,6 +76,7 @@ const NewsFeed = require("../views/NewsFeed.vue");
 const Social = require("../views/Social.vue");
 const Tasks = require("../views/Tasks.vue");
 
+const MessageBar = require("./MessageBar.vue");
 
 const routerMixins = require("../mixins/router/index.js");
 
@@ -81,7 +88,8 @@ module.exports = {
 		ModalSpace,
 		ModalPassword,
 		ModalAccount,
-		ModalProfile,
+	        ModalProfile,
+                MessageBar,
 		Calendar,
 		Drive,
 		NewsFeed,
@@ -96,8 +104,10 @@ module.exports = {
 
 	data() {
 		return {
-			token: '',
-			onUpdateCompletion: [], // methods to invoke when current dir is next refreshed
+		    token: '',
+		    onUpdateCompletion: [], // methods to invoke when current dir is next refreshed
+                    messageMonitors: [],
+                    conversationMonitors: [],
 		};
 	},
 
@@ -231,24 +241,24 @@ module.exports = {
 			    });*/
 			} else {
 
-				this.updateUsage();
-				this.updateQuota();
-
-				this.context.getPaymentProperties(false).thenApply(function (paymentProps) {
-					// console.log(paymentProps,'paymentProps')
-					that.$store.commit("SET_PAYMENT_PROPERTIES", paymentProps);
-					// if (paymentProps.isPaid()) {
-					// 	console.log('isPaid')
-					// 	that.$store.commit("SET_PAYMENT_PROPERTIES", paymentProps);
-					// }
-					// else
-					// 	that.userContext.getPendingSpaceRequests().thenApply(reqs => {
-					// 		if (reqs.toArray([]).length > 0)
-					// 			that.isAdmin = true;
-					// });
-				});
+			    this.updateUsage();
+			    this.updateQuota();
+                            
+			    this.context.getPaymentProperties(false).thenApply(function (paymentProps) {
+				// console.log(paymentProps,'paymentProps')
+				that.$store.commit("SET_PAYMENT_PROPERTIES", paymentProps);
+				// if (paymentProps.isPaid()) {
+				// 	console.log('isPaid')
+				// 	that.$store.commit("SET_PAYMENT_PROPERTIES", paymentProps);
+				// }
+				// else
+				// 	that.userContext.getPendingSpaceRequests().thenApply(reqs => {
+				// 		if (reqs.toArray([]).length > 0)
+				// 			that.isAdmin = true;
+				// });
+			    });
+                            this.showPendingServerMessages();
 			}
-			// this.showPendingServerMessages();
 		},
 
 		onUrlChange() {
@@ -360,6 +370,98 @@ module.exports = {
 				that.$toast.error('Secret link not found! Url copy/paste error?')
 			});
 		},
+
+                showPendingServerMessages: function() {
+                    let context = this.context;
+                    let that = this;
+                    context.getServerConversations().thenApply(function(conversations){
+                        let allConversations = [];
+                        let conv = conversations.toArray();
+                        conv.forEach(function(conversation){
+                            let arr = conversation.messages.toArray();
+                            let lastMessage = arr[arr.length - 1];
+                            allConversations.push({id: lastMessage.id(), sendTime: lastMessage.getSendTime().toString().replace("T", " "),
+                                                   contents: lastMessage.getContents(), previousMessageId: lastMessage.getPreviousMessageId(),
+                                                   from: lastMessage.getAuthor(), msg: lastMessage});
+                            arr.forEach(function(message){
+                                that.messageMonitors.push({id: message.id(), sendTime: message.getSendTime().toString().replace("T", " "),
+                                                           contents: message.getContents(), previousMessageId: message.getPreviousMessageId(),
+                                                           from: message.getAuthor(), msg: message});
+                            });
+                        });
+                        if(allConversations.length > 0) {
+                            Vue.nextTick(function() {
+                                allConversations.forEach(function(msg){
+                                    that.conversationMonitors.push(msg);
+                                });
+                            });
+                        }
+                    }).exceptionally(function(throwable) {
+                        throwable.printStackTrace();
+                    });
+	        },
+
+                popConversation: function(msgId) {
+                    if (msgId != null) {
+                        for (var i=0; i < this.conversationMonitors.length; i++ ) {
+                            let currentMessage = this.conversationMonitors[i];
+                            if(currentMessage.id == msgId) {
+                                this.conversationMonitors.splice(i, 1);
+                                break;
+                            }
+                        }
+                    }
+                },
+                getMessage: function(msgId) {
+                    if (msgId != null) {
+                        //linear scan
+                        for (var i=0; i < this.messageMonitors.length; i++ ) {
+                            let currentMessage = this.messageMonitors[i];
+                            if(currentMessage.id == msgId) {
+                                return this.messageMonitors[i];
+                            }
+                        }
+                    }
+                    return null;
+                },
+
+                replyToMessage: function(msgId) {
+                    if (this.showFeedbackForm) {
+                        return;
+                    }
+                    this.messageId = msgId;
+                    this.showFeedbackForm = true;
+                },
+            
+                dismissMessage: function(msgId) {
+                    if (this.showFeedbackForm) {
+                        return;
+                    }
+                    this.messageId = null;
+                    if (msgId != null) {
+                        let message = this.getMessage(msgId);
+                        if (message != null) {
+                            let that = this;
+                            this.showSpinner = true;
+                            this.context.dismissMessage(message.msg).thenApply(res => {
+                                this.showSpinner = false;
+                                if (res) {
+                                    console.log("acknowledgement sent!");
+                                    that.popConversation(msgId);
+                                } else {
+                                    that.errorTitle = 'Error acknowledging message';
+                                    that.errorBody = "";
+                                    that.showError = true;
+                                }
+                            }).exceptionally(function(throwable) {
+                                that.errorTitle = 'Error acknowledging message';
+                                that.errorBody = throwable.getMessage();
+                                that.showError = true;
+                                that.showSpinner = false;
+                            });
+                        }
+                    }
+                },
 	},
 };
 </script>
