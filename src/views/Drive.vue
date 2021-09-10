@@ -194,7 +194,7 @@ const DriveGridDrop = require("../components/drive/DriveGridDrop.vue");
 const DriveTable = require("../components/drive/DriveTable.vue");
 const Gallery = require("../components/drive/DriveGallery.vue");
 const Share = require("../components/drive/DriveShare.vue");
-
+const Search = require("../components/Search.vue");
 
 const ProgressBar = require("../components/drive/ProgressBar.vue");
 const DriveMenu = require("../components/drive/DriveMenu.vue");
@@ -218,7 +218,8 @@ module.exports = {
 		AppPrompt,
 		ProgressBar,
 		Gallery,
-		Share
+	        Share,
+                Search
 	},
 	data() {
 		return {
