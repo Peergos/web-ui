@@ -342,6 +342,21 @@ Javac-Version: ${javac.version}</echo>
     </exec>
   </target>
 
+  <target name="message" depends="">
+    <exec executable="java" dir="${server}">
+      <arg value="-jar"/>
+      <arg value="Peergos.jar"/>
+      <arg value="server-msg"/>
+      <arg value="send"/>
+      <arg value="-username"/>
+      <arg value="peergos"/>
+      <arg value="-msg-file"/>
+      <arg value="msg.txt"/>
+      <arg value="PEERGOS_PATH"/>
+      <arg value="${server}/.peergos"/>
+    </exec>
+  </target>
+
   <target name="update_and_run" depends="peergos_submodule_sync,dist,run">
   </target>
 
