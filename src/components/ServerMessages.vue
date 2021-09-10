@@ -167,13 +167,11 @@
 
 <style>
 .messageholder {
-    /* position: absolute;*/
+    position: absolute;
     right:var(--app-margin);
     bottom:var(--app-margin);
     min-width:200px;
     z-index: 200;
-    /*display: flex;
-      flex-direction: column;*/
     display: inline-block;
     float: right;
     overflow-y: auto;
