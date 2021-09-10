@@ -1,31 +1,42 @@
 <template>
-    <div v-if="conversationMonitors.length > 0" class="messageholder">
-	<MessageBar
-	    :replyToMessage="replyToMessage"
-	    :dismissMessage="dismissMessage"
-	    v-for="message in conversationMonitors"
-	    :id="message.id"
-	    :date="message.sendTime"
-	    :contents="
-		       message.contents.length > 50
-		       ? message.contents.substring(0, 47) + '...'
-		       : message.contents
-		       "
-	    />
-    </div>
+<div v-if="conversationMonitors.length > 0" class="messageholder">
+    <ReplyToServerMessage
+        v-if="showFeedbackForm"
+        :closeFeedbackForm="closeFeedbackForm"
+        :loadMessageThread="loadMessageThread"
+        :sendFeedback="sendFeedback"
+        :sendMessage="sendMessage"
+        :messageId="messageId">
+    </ReplyToServerMessage>
+    <MessageBar
+	:replyToMessage="replyToMessage"
+	:dismissMessage="dismissMessage"
+	v-for="message in conversationMonitors"
+	:id="message.id"
+	:date="message.sendTime"
+	:contents="
+		   message.contents.length > 50
+		   ? message.contents.substring(0, 47) + '...'
+		   : message.contents
+		   "
+	/>
+</div>
 </template>
 
 <script>
     const MessageBar = require("./MessageBar.vue");
+    const ReplyToServerMessage = require("./ReplyToServerMessage.vue");
 
     module.exports = {
 	components: {
 		MessageBar,
+                ReplyToServerMessage,
 	},
 
 	data() {
 		return {
-			messageMonitors: [],
+			showFeedbackForm: false,
+		        messageMonitors: [],
 			conversationMonitors: [],
 		};
 	},
@@ -161,6 +172,65 @@
 		    }
 		}
 	    },
+
+            sendFeedback: function(contents) {
+                this.showSpinner = true;
+                let that = this;
+                var maxContextSize = peergos.shared.user.ServerMessage.MAX_CONTENT_SIZE;
+                var trimmedContents = contents.length > maxContextSize ? contents.substring(0, maxContextSize) : contents;
+                this.context.sendFeedback(trimmedContents)
+                    .thenApply(function(res) {
+                        that.showSpinner = false;
+                        if (res) {
+                            console.log("Feedback submitted!");
+                            that.closeFeedbackForm(null, false);
+                        } else {
+                            that.errorTitle = 'Error sending feedback';
+                            that.errorBody = "";
+                            that.showError = true;
+                        }
+                    }).exceptionally(function(throwable) {
+                        that.errorTitle = 'Error sending feedback';
+                        that.errorBody = throwable.getMessage();
+                        that.showError = true;
+                        that.showSpinner = false;
+                    });
+            },
+
+            sendMessage: function(msgId, contents) {
+                let that = this;
+                let message = this.getMessage(msgId);
+                if (message != null) {
+                    this.showSpinner = true;
+                    var maxContextSize = peergos.shared.user.ServerMessage.MAX_CONTENT_SIZE;
+                    var trimmedContents = contents.length > maxContextSize ? contents.substring(0, maxContextSize) : contents;
+                    this.context.sendReply(message.msg, trimmedContents)
+                        .thenApply(function(res) {
+                            that.showSpinner = false;
+                            if (res) {
+                                console.log("message sent!");
+                                that.closeFeedbackForm(msgId, true);
+                            } else {
+                                that.errorTitle = 'Error sending message';
+                                that.errorBody = "";
+                                that.showError = true;
+                            }
+                        }).exceptionally(function(throwable) {
+                            that.errorTitle = 'Error sending message';
+                            that.errorBody = throwable.getMessage();
+                            that.showError = true;
+                            that.showSpinner = false;
+                        });
+                }
+            },
+
+            closeFeedbackForm: function(msgId, submitted) {
+                let submittedMsgId = submitted ? msgId : null;
+                this.showFeedbackForm = false;
+                this.messageId = null;
+                this.popConversation(submittedMsgId);
+                this.buildTabNavigation();
+            },
 	},
     }
 </script>
