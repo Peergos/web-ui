@@ -167,14 +167,14 @@
 			:groups="groups"
 			:messages="messages">
 		</share>
-                <search
+                <Search
                     v-if="showSearch"
                     v-on:hide-search="closeSearch"
                     :path="searchPath"
                     :navigateToAction="navigateToAction"
                     :viewAction="viewAction"
                     :context="context">
-                </search>
+                </Search>
 
 		<error
 			v-if="showError"
@@ -778,7 +778,8 @@ module.exports = {
 			this.showPdfViewer = false;
 			this.showCodeEditor = false;
 			this.showTextViewer = false;
-			this.showHexViewer = false;
+    		        this.showHexViewer = false;
+                        this.showSearch = false;
 			this.showTodoBoardViewer = false;
 			this.showCalendarViewer = false;
 			this.selectedFiles = [];
@@ -810,6 +811,7 @@ module.exports = {
 			// this.path = path ? path.split('/') : [];
 			path == this.path ? path.split('/') : []
 
+                        this.closeApps();
 			this.updateHistory("Drive", path, "");
 			this.updateCurrentDirectory(filename);
 		},
