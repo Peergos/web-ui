@@ -4,44 +4,52 @@
 		<component v-if="showModal" :is="currentModal"></component>
 
 		<!-- navigation -->
-		<AppNavigation v-if="isLoggedIn"/>
+		<AppNavigation v-if="isLoggedIn" />
 
 		<!-- needs restyle -->
-		<section v-if="isSecretLink && this.context==null">
-			<AppIcon icon="logo-full" class="sprite-test"/>
+		<section v-if="isSecretLink && this.context == null">
+			<AppIcon icon="logo-full" class="sprite-test" />
 			<h2>Loading secret link...</h2>
 		</section>
 
 		<section class="login-register" v-if="!isLoggedIn && !isSecretLink">
-			<AppIcon icon="logo-full" class="sprite-test"/>
+			<AppIcon icon="logo-full" class="sprite-test" />
 
 			<AppTabs ref="tabs">
 				<AppTab title="Login">
-					<Login @initApp="init()"/>
+					<Login @initApp="init()" />
 				</AppTab>
 				<AppTab title="Signup">
-
-					<Signup
-						:token="token"
-					/>
-
+					<Signup :token="token" />
 				</AppTab>
 			</AppTabs>
 			<p class="demo--warning" v-if="isDemo">
-				<strong>WARNING:</strong> This is a demo server and all data will be occasionally cleared. If you want to create a <i>permanent</i> account, please go to our <a class="line" href="https://alpha.peergos.net?signup=true">alpha network</a>
+				<strong>WARNING:</strong> This is a demo server and all data
+				will be occasionally cleared. If you want to create a
+				<i>permanent</i> account, please go to our
+				<a class="line" href="https://alpha.peergos.net?signup=true"
+					>alpha network</a
+				>
 			</p>
 		</section>
-                <div v-if="conversationMonitors.length>0" class="messageholder">
-                    <MessageBar :replyToMessage="replyToMessage" :dismissMessage="dismissMessage"
-                                v-for="message in conversationMonitors"
-                                :id="message.id"
-                                :date="message.sendTime"
-                                :contents="message.contents.length > 50 ? message.contents.substring(0,47) + '...' : message.contents" />
-                </div>
+
+		<div v-if="conversationMonitors.length > 0" class="messageholder">
+			<MessageBar
+				:replyToMessage="replyToMessage"
+				:dismissMessage="dismissMessage"
+				v-for="message in conversationMonitors"
+				:id="message.id"
+				:date="message.sendTime"
+				:contents="
+					message.contents.length > 50
+						? message.contents.substring(0, 47) + '...'
+						: message.contents
+				"
+			/>
+		</div>
 
 		<!-- Main view container -->
 		<section class="content" :class="{ 'sidebar-margin': isSidebarOpen }">
-
 			<!-- App views (pages) ex-filesystem-->
 			<transition name="fade" mode="out-in">
 				<component
@@ -49,9 +57,10 @@
 					v-if="isLoggedIn || isSecretLink"
 					:is="currentView"
 				/>
-			</transition >
-
+			</transition>
 		</section>
+
+
 
 	</div>
 </template>
@@ -62,7 +71,6 @@ const ModalSpace = require("./modal/ModalSpace.vue");
 const ModalPassword = require("./modal/ModalPassword.vue");
 const ModalAccount = require("./modal/ModalAccount.vue");
 const ModalProfile = require("./modal/ModalProfile.vue");
-
 
 const AppTab = require("./tabs/AppTab.vue");
 const AppTabs = require("./tabs/AppTabs.vue");
@@ -80,16 +88,14 @@ const MessageBar = require("./MessageBar.vue");
 
 const routerMixins = require("../mixins/router/index.js");
 
-
-
 module.exports = {
 	components: {
 		AppNavigation,
 		ModalSpace,
 		ModalPassword,
 		ModalAccount,
-	        ModalProfile,
-                MessageBar,
+		ModalProfile,
+		MessageBar,
 		Calendar,
 		Drive,
 		NewsFeed,
@@ -98,46 +104,44 @@ module.exports = {
 		AppTab,
 		AppTabs,
 		Login,
-		Signup
+		Signup,
 	},
-
 
 	data() {
 		return {
-		    token: '',
-		    onUpdateCompletion: [], // methods to invoke when current dir is next refreshed
-                    messageMonitors: [],
-                    conversationMonitors: [],
+			token: "",
+			onUpdateCompletion: [], // methods to invoke when current dir is next refreshed
+			messageMonitors: [],
+			conversationMonitors: [],
 		};
 	},
 
 	computed: {
 		...Vuex.mapState([
-			'isLoggedIn',
-			'isDark',
-			'isSidebarOpen',
-			'showModal',
-			'currentModal',
-			'currentView',
-			'crypto',
-			'network',
-			'context',
+			"isLoggedIn",
+			"isDark",
+			"isSidebarOpen",
+			"showModal",
+			"currentModal",
+			"currentView",
+			"crypto",
+			"network",
+			"context",
 			// 'path'
 		]),
-		...Vuex.mapGetters([
-			'isSecretLink',
-			'getPath'
-		]),
+		...Vuex.mapGetters(["isSecretLink", "getPath"]),
 		isDemo() {
-			return window.location.hostname == "demo.peergos.net" && this.isSecretLink === false
+			return (
+				window.location.hostname == "demo.peergos.net" &&
+				this.isSecretLink === false
+			);
 		},
-		isLocalhost(){
-			return window.location.hostname == "localhost"
-		}
+		isLocalhost() {
+			return window.location.hostname == "localhost";
+		},
 	},
 
-	mixins:[routerMixins],
-
+	mixins: [routerMixins],
 
 	watch: {
 		network(newNetwork) {
@@ -171,8 +175,7 @@ module.exports = {
 				}
 			}
 			if (href.includes("?signup=true")) {
-
-				this.$refs.tabs.selectTab(1)
+				this.$refs.tabs.selectTab(1);
 
 				if (href.includes("token=")) {
 					var urlParams = new URLSearchParams(window.location.search);
@@ -189,33 +192,26 @@ module.exports = {
 	},
 
 	created() {
-		this.$store.commit('SET_CRYPTO', peergos.shared.Crypto.initJS() )
+		this.$store.commit("SET_CRYPTO", peergos.shared.Crypto.initJS());
 		this.updateNetwork();
 
-
-
-		window.addEventListener('hashchange', this.onUrlChange, false );
-
+		window.addEventListener("hashchange", this.onUrlChange, false);
 	},
 
 	mounted() {
 		let localTheme = localStorage.getItem("theme");
 		document.documentElement.setAttribute("data-theme", localTheme);
 		this.$store.commit("SET_THEME", localTheme == "dark-mode");
-
 	},
 
 	methods: {
-		...Vuex.mapActions([
-			'updateQuota',
-			'updateUsage'
-		]),
+		...Vuex.mapActions(["updateQuota", "updateUsage"]),
 
 		init() {
 			const that = this;
 			if (this.context != null && this.context.username == null) {
-			    // App.vue from a secret link
-			    /*this.context.getEntryPath().thenApply(function (linkPath) {
+				// App.vue from a secret link
+				/*this.context.getEntryPath().thenApply(function (linkPath) {
 				var path = that.initPath == null ? null : decodeURIComponent(that.initPath);
 				if (path != null && (path.startsWith(linkPath) || linkPath.startsWith(path))) {
 				    that.changePath(path);
@@ -240,24 +236,28 @@ module.exports = {
 				}
 			    });*/
 			} else {
+				this.updateUsage();
+				this.updateQuota();
 
-			    this.updateUsage();
-			    this.updateQuota();
-                            
-			    this.context.getPaymentProperties(false).thenApply(function (paymentProps) {
-				// console.log(paymentProps,'paymentProps')
-				that.$store.commit("SET_PAYMENT_PROPERTIES", paymentProps);
-				// if (paymentProps.isPaid()) {
-				// 	console.log('isPaid')
-				// 	that.$store.commit("SET_PAYMENT_PROPERTIES", paymentProps);
-				// }
-				// else
-				// 	that.userContext.getPendingSpaceRequests().thenApply(reqs => {
-				// 		if (reqs.toArray([]).length > 0)
-				// 			that.isAdmin = true;
-				// });
-			    });
-                            this.showPendingServerMessages();
+				this.context
+					.getPaymentProperties(false)
+					.thenApply(function (paymentProps) {
+						// console.log(paymentProps,'paymentProps')
+						that.$store.commit(
+							"SET_PAYMENT_PROPERTIES",
+							paymentProps
+						);
+						// if (paymentProps.isPaid()) {
+						// 	console.log('isPaid')
+						// 	that.$store.commit("SET_PAYMENT_PROPERTIES", paymentProps);
+						// }
+						// else
+						// 	that.userContext.getPendingSpaceRequests().thenApply(reqs => {
+						// 		if (reqs.toArray([]).length > 0)
+						// 			that.isAdmin = true;
+						// });
+					});
+				this.showPendingServerMessages();
 			}
 		},
 
@@ -274,15 +274,18 @@ module.exports = {
 			const filename = props == null ? null : props.filename;
 			const differentPath = path != null && path != this.getPath;
 
-			if (differentPath){
+			if (differentPath) {
 				//  console.log('onUrlChange differentPath so we do: ', path.split("/").filter(x => x.length > 0))
-				this.$store.commit('SET_PATH', path.split("/").filter(x => x.length > 0))
+				this.$store.commit(
+					"SET_PATH",
+					path.split("/").filter((x) => x.length > 0)
+				);
 			}
 
 			const that = this;
 
 			if (app == "Drive") {
-				this.$store.commit("CURRENT_VIEW", 'Drive');
+				this.$store.commit("CURRENT_VIEW", "Drive");
 				// this.showGallery = false;
 				this.$refs.appView.showGallery = false;
 				// this.showPdfViewer = false;
@@ -294,28 +297,23 @@ module.exports = {
 				// this.showTodoBoardViewer = false;
 				// this.showCalendarViewer = false;
 
-
 				this.onUpdateCompletion.push(() => {
 					// that.openInApp(filename, app);
 					that.$refs.appView.openInApp(filename, app);
 				});
-
 			} else if (app == "Calendar") {
-				this.$store.commit("CURRENT_VIEW", 'Calendar');
+				this.$store.commit("CURRENT_VIEW", "Calendar");
 			} else if (app == "NewsFeed") {
-				this.$store.commit("CURRENT_VIEW", 'NewsFeed');
+				this.$store.commit("CURRENT_VIEW", "NewsFeed");
 			} else if (app == "Social") {
-				this.$store.commit("CURRENT_VIEW", 'Social');
+				this.$store.commit("CURRENT_VIEW", "Social");
 			} else if (app == "Tasks") {
-				this.$store.commit("CURRENT_VIEW", 'Tasks');
+				this.$store.commit("CURRENT_VIEW", "Tasks");
 			} else {
 				// Drive sub-apps
-				this.$store.commit("CURRENT_VIEW", 'Drive');
+				this.$store.commit("CURRENT_VIEW", "Drive");
 				this.$refs.appView.openInApp(filename, app);
 			}
-
-
-
 		},
 
 		updateNetwork() {
@@ -342,7 +340,10 @@ module.exports = {
 					};
 
 					req.onerror = function (e) {
-						that.$toast.error('Please unblock the following domain for Peergos to function correctly: ' + domainOpt.get())
+						that.$toast.error(
+							"Please unblock the following domain for Peergos to function correctly: " +
+								domainOpt.get()
+						);
 					};
 
 					req.send();
@@ -359,109 +360,135 @@ module.exports = {
 				that.network,
 				that.crypto
 			)
-			.thenApply(function (context) {
-				that.$store.commit("SET_CONTEXT", context);
-				that.$store.commit("SET_DOWNLOAD", props.download);
-				that.$store.commit("SET_OPEN", props.open);
-				that.$store.commit("SET_INIT_PATH", props.path);
-				that.$store.commit("CURRENT_VIEW", 'Drive');
-			})
-			.exceptionally(function (throwable) {
-				that.$toast.error('Secret link not found! Url copy/paste error?')
-			});
+				.thenApply(function (context) {
+					that.$store.commit("SET_CONTEXT", context);
+					that.$store.commit("SET_DOWNLOAD", props.download);
+					that.$store.commit("SET_OPEN", props.open);
+					that.$store.commit("SET_INIT_PATH", props.path);
+					that.$store.commit("CURRENT_VIEW", "Drive");
+				})
+				.exceptionally(function (throwable) {
+					that.$toast.error(
+						"Secret link not found! Url copy/paste error?"
+					);
+				});
 		},
 
-                showPendingServerMessages: function() {
-                    let context = this.context;
-                    let that = this;
-                    context.getServerConversations().thenApply(function(conversations){
-                        let allConversations = [];
-                        let conv = conversations.toArray();
-                        conv.forEach(function(conversation){
-                            let arr = conversation.messages.toArray();
-                            let lastMessage = arr[arr.length - 1];
-                            allConversations.push({id: lastMessage.id(), sendTime: lastMessage.getSendTime().toString().replace("T", " "),
-                                                   contents: lastMessage.getContents(), previousMessageId: lastMessage.getPreviousMessageId(),
-                                                   from: lastMessage.getAuthor(), msg: lastMessage});
-                            arr.forEach(function(message){
-                                that.messageMonitors.push({id: message.id(), sendTime: message.getSendTime().toString().replace("T", " "),
-                                                           contents: message.getContents(), previousMessageId: message.getPreviousMessageId(),
-                                                           from: message.getAuthor(), msg: message});
-                            });
-                        });
-                        if(allConversations.length > 0) {
-                            Vue.nextTick(function() {
-                                allConversations.forEach(function(msg){
-                                    that.conversationMonitors.push(msg);
-                                });
-                            });
-                        }
-                    }).exceptionally(function(throwable) {
-                        throwable.printStackTrace();
-                    });
-	        },
+		showPendingServerMessages: function () {
+			let context = this.context;
+			let that = this;
+			context
+				.getServerConversations()
+				.thenApply(function (conversations) {
+					let allConversations = [];
+					let conv = conversations.toArray();
+					conv.forEach(function (conversation) {
+						let arr = conversation.messages.toArray();
+						let lastMessage = arr[arr.length - 1];
+						allConversations.push({
+							id: lastMessage.id(),
+							sendTime: lastMessage
+								.getSendTime()
+								.toString()
+								.replace("T", " "),
+							contents: lastMessage.getContents(),
+							previousMessageId:
+								lastMessage.getPreviousMessageId(),
+							from: lastMessage.getAuthor(),
+							msg: lastMessage,
+						});
+						arr.forEach(function (message) {
+							that.messageMonitors.push({
+								id: message.id(),
+								sendTime: message
+									.getSendTime()
+									.toString()
+									.replace("T", " "),
+								contents: message.getContents(),
+								previousMessageId:
+									message.getPreviousMessageId(),
+								from: message.getAuthor(),
+								msg: message,
+							});
+						});
+					});
+					if (allConversations.length > 0) {
+						Vue.nextTick(function () {
+							allConversations.forEach(function (msg) {
+								that.conversationMonitors.push(msg);
+							});
+						});
+					}
+				})
+				.exceptionally(function (throwable) {
+					throwable.printStackTrace();
+				});
+		},
 
-                popConversation: function(msgId) {
-                    if (msgId != null) {
-                        for (var i=0; i < this.conversationMonitors.length; i++ ) {
-                            let currentMessage = this.conversationMonitors[i];
-                            if(currentMessage.id == msgId) {
-                                this.conversationMonitors.splice(i, 1);
-                                break;
-                            }
-                        }
-                    }
-                },
-                getMessage: function(msgId) {
-                    if (msgId != null) {
-                        //linear scan
-                        for (var i=0; i < this.messageMonitors.length; i++ ) {
-                            let currentMessage = this.messageMonitors[i];
-                            if(currentMessage.id == msgId) {
-                                return this.messageMonitors[i];
-                            }
-                        }
-                    }
-                    return null;
-                },
+		popConversation: function (msgId) {
+			if (msgId != null) {
+				for (var i = 0; i < this.conversationMonitors.length; i++) {
+					let currentMessage = this.conversationMonitors[i];
+					if (currentMessage.id == msgId) {
+						this.conversationMonitors.splice(i, 1);
+						break;
+					}
+				}
+			}
+		},
+		getMessage: function (msgId) {
+			if (msgId != null) {
+				//linear scan
+				for (var i = 0; i < this.messageMonitors.length; i++) {
+					let currentMessage = this.messageMonitors[i];
+					if (currentMessage.id == msgId) {
+						return this.messageMonitors[i];
+					}
+				}
+			}
+			return null;
+		},
 
-                replyToMessage: function(msgId) {
-                    if (this.showFeedbackForm) {
-                        return;
-                    }
-                    this.messageId = msgId;
-                    this.showFeedbackForm = true;
-                },
-            
-                dismissMessage: function(msgId) {
-                    if (this.showFeedbackForm) {
-                        return;
-                    }
-                    this.messageId = null;
-                    if (msgId != null) {
-                        let message = this.getMessage(msgId);
-                        if (message != null) {
-                            let that = this;
-                            this.showSpinner = true;
-                            this.context.dismissMessage(message.msg).thenApply(res => {
-                                this.showSpinner = false;
-                                if (res) {
-                                    console.log("acknowledgement sent!");
-                                    that.popConversation(msgId);
-                                } else {
-                                    that.errorTitle = 'Error acknowledging message';
-                                    that.errorBody = "";
-                                    that.showError = true;
-                                }
-                            }).exceptionally(function(throwable) {
-                                that.errorTitle = 'Error acknowledging message';
-                                that.errorBody = throwable.getMessage();
-                                that.showError = true;
-                                that.showSpinner = false;
-                            });
-                        }
-                    }
-                },
+		replyToMessage: function (msgId) {
+			if (this.showFeedbackForm) {
+				return;
+			}
+			this.messageId = msgId;
+			this.showFeedbackForm = true;
+		},
+
+		dismissMessage: function (msgId) {
+			if (this.showFeedbackForm) {
+				return;
+			}
+			this.messageId = null;
+			if (msgId != null) {
+				let message = this.getMessage(msgId);
+				if (message != null) {
+					let that = this;
+					this.showSpinner = true;
+					this.context
+						.dismissMessage(message.msg)
+						.thenApply((res) => {
+							this.showSpinner = false;
+							if (res) {
+								console.log("acknowledgement sent!");
+								that.popConversation(msgId);
+							} else {
+								that.errorTitle = "Error acknowledging message";
+								that.errorBody = "";
+								that.showError = true;
+							}
+						})
+						.exceptionally(function (throwable) {
+							that.errorTitle = "Error acknowledging message";
+							that.errorBody = throwable.getMessage();
+							that.showError = true;
+							that.showSpinner = false;
+						});
+				}
+			}
+		},
 	},
 };
 </script>
@@ -473,10 +500,9 @@ module.exports = {
 	min-height: 100vh;
 }
 
-
-.icon.sprite-test{
+.icon.sprite-test {
 	display: block;
-	width:200px;
+	width: 200px;
 	height: 48px;
 	margin: var(--app-margin) auto;
 }
@@ -494,26 +520,26 @@ module.exports = {
 	height: 24px;
 } */
 
-section.login-register{
+section.login-register {
 	min-height: 100vh;
 	padding: var(--app-margin);
 	background-color: var(--bg-2);
 }
 
-section.login-register .demo--warning{
+section.login-register .demo--warning {
 	padding: 0 var(--app-margin) var(--app-margin);
-	max-width:400px;
+	max-width: 400px;
 	margin: 0 auto;
 	color: var(--color);
 	background-color: var(--bg);
 	text-align: left;
 }
 
-section.content{
+section.content {
 	position: relative;
-	right:0;
-	top:0;
-	padding-left:72px;
+	right: 0;
+	top: 0;
+	padding-left: 72px;
 	/* width: calc(100% - 96px); */
 	min-height: 100vh;
 }
@@ -523,10 +549,25 @@ section.content.sidebar-margin {
 	/* width: calc(100% - 240px); */
 }
 
-@media screen and (max-width:1024px) {
-	section.content{
+/* Temp  */
+
+.messageholder div {
+	position: absolute;
+	right:var(--app-margin);
+	bottom:var(--app-margin);
+	min-width:200px;
+    z-index: 200;
+	display: flex;
+	flex-direction: column;
+    overflow-y: auto;
+	color: var(--color);
+    background-color: var(--bg);
+	background-color: red;
+}
+
+@media screen and (max-width: 1024px) {
+	section.content {
 		padding-left: 0;
 	}
-
 }
 </style>

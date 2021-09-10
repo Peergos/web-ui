@@ -1,5 +1,5 @@
 <template>
-    <div class="messagebar">
+    <div class="messagebar" >
         <div class="" @click.stop>
             <div class="">
                 <span>&nbsp;{{ date }}&nbsp;Message:&nbsp;{{ contents }}</span>
@@ -44,14 +44,5 @@ module.exports = {
     border-radius: 2px;
     box-shadow: 0 2px 8px rgba(0, 0, 0, .33) inset;
 }
-.messageholder div {
-    color: var(--color);
-    background-color: var(--bg);
-}
-.messageholder {
-    z-index: 9998;
-    overflow-y: auto;
-    display: inline-block;
-    float: right;
-}
+
 </style>
