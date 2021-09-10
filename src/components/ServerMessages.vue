@@ -166,19 +166,23 @@
 </script>
 
 <style>
-.messageholder div {
-	/* position: absolute;*/
-	right:var(--app-margin);
-	bottom:var(--app-margin);
-	min-width:200px;
+.messageholder {
+    /* position: absolute;*/
+    right:var(--app-margin);
+    bottom:var(--app-margin);
+    min-width:200px;
     z-index: 200;
-	/*display: flex;
-	flex-direction: column;*/
+    /*display: flex;
+      flex-direction: column;*/
     display: inline-block;
     float: right;
     overflow-y: auto;
-	color: var(--color);
+    color: var(--color);
     background-color: var(--bg);
-	background-color: red;
+}
+
+.messageholder div {
+    color: var(--color);
+    background-color: var(--bg);
 }
 </style>
