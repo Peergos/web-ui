@@ -33,7 +33,7 @@
 			</p>
 		</section>
 
-                <ServerMessages v-if="context != null"/>
+    	<ServerMessages v-if="context != null"/>
 
 		<!-- Main view container -->
 		<section class="content" :class="{ 'sidebar-margin': isSidebarOpen }">

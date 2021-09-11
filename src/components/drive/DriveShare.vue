@@ -5,44 +5,89 @@
 				<span @click="close" tabindex="0" v-on:keyup.enter="close" aria-label="close" class="close">&times;</span>
 				<spinner v-if="showSpinner"></spinner>
 				<div class="modal-header">
-					<h4>Enter user to share {{ displayName }} with:</h4>
+					<h4>Share {{ displayName }}</h4>
 				</div>
 
 				<div class="modal-body">
-					<div class="container">
-					<div class="flex-container">
-						<div style="flex-grow:1; max-width:300px;">
-							<input id="friend-name-input" v-model="targetUsername" type="text" class="token-input"></input>
-						</div>
-						<div style="padding:5px; display:flex;">
-				<div class="hspace-5">
+
+					<fieldset class=share-fields>
+
+						<FormAutocomplete
+							is-multiple
+							v-model="targetUsernames"
+							:options="allNames"
+							placeholder="please select user"
+						/>
+
+						<!-- <div>
 							<input v-if="this.allowReadWriteSharing" type="radio" id="read-access" value="Read" v-model="sharedWithAccess">
-							<label v-if="this.allowReadWriteSharing" for="read-access" style="font-weight: normal;">Read Only</label>
-				</div>
-				<div class="hspace-5">
+							<label v-if="this.allowReadWriteSharing" for="read-access">Read Only</label>
+						</div>
+						<div>
 							<input v-if="this.allowReadWriteSharing && this.files[0].getOwnerName() == this.context.username" type="radio" id="edit-access" value="Edit" v-model="sharedWithAccess">
-							<label v-if="this.allowReadWriteSharing && this.files[0].getOwnerName() == this.context.username" for="edit-access" style="font-weight: normal;">Read &amp; Write</label>
-				</div>
-						<button :disabled="this.targetUsernames.slice().length == 0 && !this.shareWithFriendsGroup &&  !this.shareWithFollowersGroup" class="btn btn-success" @click="shareWith()">Share</button>
-						</div>
-					</div>
-					</div>
-					<div class="flex-container">
-						<div class="hspace-15">
-							<label style="font-weight: normal;">Or Group(s):</label>
-						</div>
-						<div class="hspace-15">
-							<input type="checkbox" id="friends-option" @change="onFriendChange()" v-model="shareWithFriendsGroup">
-							<label for="friends-option" style="font-weight: normal;">Friends</label>
-						</div>
-						<div class="hspace-15">
-							<input type="checkbox" id="followers-option" @change="onFollowerChange()" v-model="shareWithFollowersGroup">
-							<label for="followers-option" style="font-weight: normal;">Followers (Includes Friends)</label>
-						</div>
-					</div>
-					<div v-if="this.allowReadWriteSharing" class="modal-body modal-prominent">
-						<div class="container" v-if="data.edit_shared_with_users.length > 0"><p style="word-wrap;break-all;">
-							Read and Write Access:</p>
+							<label v-if="this.allowReadWriteSharing && this.files[0].getOwnerName() == this.context.username" for="edit-access">Read &amp; Write</label>
+						</div> -->
+
+						<label class="checkbox__group" v-if="this.allowReadWriteSharing">
+							Read Only
+							<input
+								type="radio"
+								value="Read"
+								name=""
+								v-model="sharedWithAccess"
+							/>
+							<span class="checkmark"></span>
+						</label>
+						<label class="checkbox__group" v-if="this.allowReadWriteSharing && this.files[0].getOwnerName() == this.context.username">
+							Read & Write
+							<input
+								type="radio"
+								value="Edit"
+								name=""
+								v-model="sharedWithAccess"
+							/>
+							<span class="checkmark"></span>
+						</label>
+
+						<label>Or Group(s):</label>
+
+						<label class="checkbox__group">
+							Friends
+							<input
+								type="checkbox"
+								name=""
+								v-model="shareWithFriendsGroup"
+								@change="onFriendChange()"
+							/>
+							<span class="checkmark"></span>
+						</label>
+
+						<label class="checkbox__group">
+							Followers (Includes Friends)
+							<input
+								type="checkbox"
+								name=""
+								v-model="shareWithFollowersGroup"
+								@change="onFollowerChange()"
+							/>
+							<span class="checkmark"></span>
+						</label>
+
+
+						<AppButton
+							:disabled="this.targetUsernames.slice().length == 0 && !this.shareWithFriendsGroup &&  !this.shareWithFollowersGroup"
+							class=""
+							accent
+							aria-label="Share"
+							@click.native="shareWith()"
+						>
+							Share
+						</AppButton>
+					</fieldset>
+
+					<div v-if="this.allowReadWriteSharing" class="modal-section">
+						<div v-if="data.edit_shared_with_users.length > 0">
+							<p>Read and Write Access:</p>
 							<div v-if="this.files[0].getOwnerName() == this.context.username">
 								<div v-for="user in filterEditSharedWithUsers()">
 									<input type="checkbox" v-bind:id="user" v-bind:value="user" v-model="unsharedEditAccessNames">&nbsp;<span>{{ getUserOrGroupName(user) }}</span>
@@ -55,18 +100,34 @@
 								</div>
 							</div>
 						</div>
-						<div class="container" v-if="data.edit_shared_with_users.length == 0"><p style="word-wrap;break-all;">
-							Read and Write Write Access:    None</p>
-						</div>
+						<p v-else>Read and Write Access: None</p>
 					</div>
-					<div class="modal-body modal-prominent">
-						<div class="container" v-if="data.read_shared_with_users.length > 0"><p style="word-wrap;break-all;">
-							Read only Access:</p>
+
+					<div class="modal-section">
+						<div v-if="data.read_shared_with_users.length > 0">
+							<p>Read only Access:</p>
 							<div v-if="this.files[0].getOwnerName() == this.context.username">
 								<div v-for="user in filterReadSharedWithUsers()">
-									<input type="checkbox" v-bind:id="user" v-bind:value="user" v-model="unsharedReadAccessNames">&nbsp;<span>{{ getUserOrGroupName(user) }}</span>
+									<!-- <input type="checkbox" v-bind:id="user" v-bind:value="user" v-model="unsharedReadAccessNames">&nbsp;<span>{{ getUserOrGroupName(user) }}</span> -->
+									<label class="checkbox__group">
+										{{ getUserOrGroupName(user) }}
+										<input
+											type="checkbox"
+											:id="user"
+											:value="user"
+											v-model="unsharedReadAccessNames"
+										/>
+										<span class="checkmark"></span>
+									</label>
 								</div>
-								<button :disabled="this.unsharedReadAccessNames.length == 0" class="btn btn-success" v-on:click="unshare('Read')">Revoke</button>
+								<AppButton
+									:disabled="this.unsharedReadAccessNames.length == 0"
+									size="small"
+									outline
+									@click.native="unshare('Read')"
+								>
+									Revoke
+								</AppButton>
 							</div>
 							<div v-if="this.files[0].getOwnerName() != this.context.username">
 								<div v-for="user in filterReadSharedWithUsers()">
@@ -74,27 +135,32 @@
 								</div>
 							</div>
 						</div>
-						<div class="container" v-if="data.read_shared_with_users.length == 0"><p style="word-wrap;break-all;">
-							Read only Access:    None</p>
-						</div>
+						<p v-else>Read only Access: None</p>
 					</div>
-					<div v-if="this.allowCreateSecretLink" class="modal-body modal-prominent">
-						<div class="container">
-							<button class="btn btn-success" @click="createSecretLink()">Create secret Link</button>
-						</div>
+
+					<div v-if="this.allowCreateSecretLink" class="modal-section">
+						<AppButton
+							accent
+							aria-label="Create Secret Link"
+							@click.native="createSecretLink()"
+						>
+							Create secret Link
+						</AppButton>
 					</div>
+
 					<error
-							v-if="showError"
-							v-on:hide-error="showError = false"
-							:title="errorTitle"
-							:body="errorBody">
-					</error>
+						v-if="showError"
+						v-on:hide-error="showError = false"
+						:title="errorTitle"
+						:body="errorBody"
+					/>
+
 					<modal
-							v-if="showModal"
-							v-on:hide-modal="showModal = false"
-							:title="modalTitle"
-							:links="modalLinks">
-					</modal>
+						v-if="showModal"
+						v-on:hide-modal="showModal = false"
+						:title="modalTitle"
+						:links="modalLinks"
+					/>
 				</div>
 			</div>
 		</div>
@@ -102,7 +168,13 @@
 </template>
 
 <script>
+const FormAutocomplete = require("../form/FormAutocomplete.vue");
+
+
 module.exports = {
+	components: {
+		FormAutocomplete,
+	},
 	data() {
 		return {
 			showSpinner: false,
@@ -128,22 +200,29 @@ module.exports = {
 		"groups",
 		"files",
 		"path",
-		"context",
 		"messages",
 		"fromApp",
 		"displayName",
 		"allowReadWriteSharing",
 		"allowCreateSecretLink",
 	],
-	created() {
-		Vue.nextTick(this.setTypeAhead);
+	computed: {
+		...Vuex.mapState([
+			'context',
+		]),
+		allNames() {
+			return this.followernames.concat(this.friendnames);
+		}
 	},
+	// created() {
+	// 	Vue.nextTick(this.setTypeAhead);
+	// },
 	methods: {
-		close(){
+		close() {
 			this.showSpinner = false;
 			this.$emit("hide-share-with");
 		},
-		refresh(){
+		refresh() {
 			if (!this.fromApp) {
 				this.$emit("update-shared-refresh");
 			}
@@ -157,7 +236,7 @@ module.exports = {
 				});
 			}
 		},
-		createSecretLink(){
+		createSecretLink() {
 			if (this.files.length == 0) return this.close();
 			if (this.files.length != 1)
 				throw "Unimplemented multiple file share call";
@@ -185,12 +264,12 @@ module.exports = {
 			this.modalTitle = title;
 			this.modalLinks = links;
 		},
-		onFriendChange(){
+		onFriendChange() {
 			if (this.shareWithFollowersGroup && this.shareWithFriendsGroup) {
 				this.shareWithFollowersGroup = false;
 			}
 		},
-		onFollowerChange(){
+		onFollowerChange() {
 			if (this.shareWithFollowersGroup && this.shareWithFriendsGroup) {
 				this.shareWithFriendsGroup = false;
 			}
@@ -221,7 +300,7 @@ module.exports = {
 					);
 				})
 				.exceptionally(function (throwable) {
-					that.resetTypeahead();
+					// that.resetTypeahead();
 					that.showSpinner = false;
 					that.errorTitle =
 						"Error sharing file: " +
@@ -230,11 +309,7 @@ module.exports = {
 					that.showError = true;
 				});
 		},
-		unshareFileWith(
-			read_usernames,
-			edit_usernames,
-			sharedWithAccess
-		) {
+		unshareFileWith(read_usernames, edit_usernames, sharedWithAccess) {
 			var that = this;
 			var filename = this.files[0].getFileProperties().name;
 			let filePath = peergos.client.PathUtils.toPath(this.path, filename);
@@ -314,12 +389,12 @@ module.exports = {
 			}
 			return true;
 		},
-		resetTypeahead(){
-			this.targetUsernames = [];
-			this.targetUsername = "";
-			$("#friend-name-input").tokenfield("setTokens", []);
-		},
-		shareWith(){
+		// resetTypeahead() {
+		// 	this.targetUsernames = [];
+		// 	this.targetUsername = "";
+		// 	$("#friend-name-input").tokenfield("setTokens", []);
+		// },
+		shareWith() {
 			if (this.files.length == 0) return this.close();
 			if (this.files.length != 1)
 				throw "Unimplemented multiple file share call";
@@ -348,7 +423,7 @@ module.exports = {
 					that.shareFileWith(read_usernames, edit_usernames);
 				})
 				.exceptionally(function (throwable) {
-					that.resetTypeahead();
+					// that.resetTypeahead();
 					that.showSpinner = false;
 					that.errorTitle =
 						"Error sharing file: " +
@@ -363,11 +438,7 @@ module.exports = {
 		isFollower(name) {
 			return this.followernames.indexOf(name) > -1 || this.isFriend(name);
 		},
-		filterNamesFromGroups(
-			includesFriends,
-			includesFollowers,
-			name
-		) {
+		filterNamesFromGroups(includesFriends, includesFollowers, name) {
 			if (includesFriends && this.isFriend(name)) {
 				return false;
 			}
@@ -400,10 +471,10 @@ module.exports = {
 			}
 			return result;
 		},
-		filterEditSharedWithUsers(){
+		filterEditSharedWithUsers() {
 			return this.filterSharedWithUsers(this.data.edit_shared_with_users);
 		},
-		filterReadSharedWithUsers(){
+		filterReadSharedWithUsers() {
 			return this.filterSharedWithUsers(this.data.read_shared_with_users);
 		},
 		getUserOrGroupName(username) {
@@ -413,10 +484,7 @@ module.exports = {
 		getGroupUid(groupName) {
 			return this.groups.groupsNameToUid[groupName];
 		},
-		rationaliseUsersToShareWith(
-			existingSharedUsers,
-			usersToShareWith
-		) {
+		rationaliseUsersToShareWith(existingSharedUsers, usersToShareWith) {
 			let friendGroupUid = this.getGroupUid(
 				peergos.shared.user.SocialState.FRIENDS_GROUP_NAME
 			);
@@ -532,12 +600,12 @@ module.exports = {
 						that.showSpinner = false;
 						that.showMessage("Success!", "Secure sharing complete");
 						that.close();
-						that.resetTypeahead();
+						// that.resetTypeahead();
 						console.log("shared read access to " + filename);
 						that.refresh();
 					})
 					.exceptionally(function (throwable) {
-						that.resetTypeahead();
+						// that.resetTypeahead();
 						that.showSpinner = false;
 						that.errorTitle = "Error sharing file: " + filename;
 						that.errorBody = throwable.getMessage();
@@ -552,13 +620,13 @@ module.exports = {
 					.thenApply(function (b) {
 						that.showSpinner = false;
 						that.showMessage("Success!", "Secure sharing complete");
-						that.resetTypeahead();
+						// that.resetTypeahead();
 						that.close();
 						console.log("shared write access to " + filename);
 						that.refresh();
 					})
 					.exceptionally(function (throwable) {
-						that.resetTypeahead();
+						// that.resetTypeahead();
 						that.showSpinner = false;
 						that.errorTitle = "Error sharing file: " + filename;
 						that.errorBody = throwable.getMessage();
@@ -566,110 +634,89 @@ module.exports = {
 					});
 			}
 		},
-		setTypeAhead(){
-			let allNames = this.followernames.concat(this.friendnames);
-			var engine = new Bloodhound({
-				datumTokenizer: Bloodhound.tokenizers.whitespace,
-				queryTokenizer: Bloodhound.tokenizers.whitespace,
-				local: allNames,
-			});
+		// setTypeAhead() {
+		// 	let allNames = this.followernames.concat(this.friendnames);
+		// 	var engine = new Bloodhound({
+		// 		datumTokenizer: Bloodhound.tokenizers.whitespace,
+		// 		queryTokenizer: Bloodhound.tokenizers.whitespace,
+		// 		local: allNames,
+		// 	});
 
-			engine.initialize();
+		// 	engine.initialize();
 
-			$("#friend-name-input").tokenfield({
-				minLength: 1,
-				minWidth: 1,
-				typeahead: [
-					{ hint: true, highlight: true, minLength: 1 },
-					{ source: suggestions },
-				],
-			});
+		// 	$("#friend-name-input").tokenfield({
+		// 		minLength: 1,
+		// 		minWidth: 1,
+		// 		typeahead: [
+		// 			{ hint: true, highlight: true, minLength: 1 },
+		// 			{ source: suggestions },
+		// 		],
+		// 	});
 
-			function suggestions(q, sync, async) {
-				var matches, substringRegex;
-				matches = [];
-				substrRegex = new RegExp(q, "i");
-				$.each(allNames, function (i, str) {
-					if (substrRegex.test(str)) {
-						matches.push(str);
-					}
-				});
-				sync(matches);
-			}
-			let that = this;
-			$("#friend-name-input").on(
-				"tokenfield:createtoken",
-				function (event) {
-					//only select from available items
-					var available_tokens = allNames;
-					var exists = true;
-					$.each(available_tokens, function (index, token) {
-						if (token === event.attrs.value) exists = false;
-					});
-					if (exists === true) {
-						event.preventDefault();
-					} else {
-						//do not allow duplicates in selection
-						var existingTokens = $(this).tokenfield("getTokens");
-						$.each(existingTokens, function (index, token) {
-							if (token.value === event.attrs.value)
-								event.preventDefault();
-						});
-					}
-				}
-			);
-			$("#friend-name-input").on(
-				"tokenfield:createdtoken",
-				function (event) {
-					that.targetUsernames.push(event.attrs.value);
-				}
-			);
+		// 	function suggestions(q, sync, async) {
+		// 		var matches, substringRegex;
+		// 		matches = [];
+		// 		substrRegex = new RegExp(q, "i");
+		// 		$.each(allNames, function (i, str) {
+		// 			if (substrRegex.test(str)) {
+		// 				matches.push(str);
+		// 			}
+		// 		});
+		// 		sync(matches);
+		// 	}
+		// 	let that = this;
+		// 	$("#friend-name-input").on(
+		// 		"tokenfield:createtoken",
+		// 		function (event) {
+		// 			//only select from available items
+		// 			var available_tokens = allNames;
+		// 			var exists = true;
+		// 			$.each(available_tokens, function (index, token) {
+		// 				if (token === event.attrs.value) exists = false;
+		// 			});
+		// 			if (exists === true) {
+		// 				event.preventDefault();
+		// 			} else {
+		// 				//do not allow duplicates in selection
+		// 				var existingTokens = $(this).tokenfield("getTokens");
+		// 				$.each(existingTokens, function (index, token) {
+		// 					if (token.value === event.attrs.value)
+		// 						event.preventDefault();
+		// 				});
+		// 			}
+		// 		}
+		// 	);
+		// 	$("#friend-name-input").on(
+		// 		"tokenfield:createdtoken",
+		// 		function (event) {
+		// 			that.targetUsernames.push(event.attrs.value);
+		// 		}
+		// 	);
 
-			$("#friend-name-input").on(
-				"tokenfield:removedtoken",
-				function (event) {
-					that.targetUsernames.pop(event.attrs.value);
-				}
-			);
-		},
+		// 	$("#friend-name-input").on(
+		// 		"tokenfield:removedtoken",
+		// 		function (event) {
+		// 			that.targetUsernames.pop(event.attrs.value);
+		// 		}
+		// 	);
+		// },
 	},
 };
 </script>
 
 <style>
 /* temporary reset */
-.drive-share{
-	color:var(--color);
+.drive-share {
+	color: var(--color);
 	background-color: var(--bg);
 }
-.drive-share .tokenfield,
-.drive-share input[type=text]{
-	all: initial;
-
-
-	padding: 0 16px;
-	font-family: var(--font-stack);
-
-	/* font-size: var(--text);*/
-	/* line-height: 48px;
-	height: 48px; */
-
-	border-radius: 4px;
-
-	-webkit-appearance:none;
-    -moz-appearance:none;
-    appearance: none;
-	outline: none;
-	box-shadow: none;
-
-	color: var(--color);
-    background-color: var(--bg-2);
+.share-fields{
+	display: flex;
+	flex-direction: column;
+	align-items: flex-start;
 }
 
-
-.drive-share input[type=checkbox]:active,
-.drive-share input[type=checkbox]:focus {
-	all: reset;
-	background-color: white!important;
+.modal-section{
+	margin: 32px 0;
 }
 </style>

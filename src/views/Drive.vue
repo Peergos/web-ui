@@ -14,8 +14,8 @@
 			@switchView="switchView()"
 			@goBackToLevel="goBackToLevel($event)"
 			@askMkdir="askMkdir()"
-		        @createFile="createTextFile()"
-                        @search="openSearch(false)"
+			@createFile="createTextFile()"
+			@search="openSearch(false)"
 		/>
 
 		<AppPrompt
@@ -150,7 +150,8 @@
 			:context="context"
 			:messages="messages">
 		</code-editor>
-		<share
+
+		<Share
 			v-if="showShare"
 			v-on:hide-share-with="closeShare"
 			v-on:update-shared-refresh="forceSharedRefreshWithUpdate++"
@@ -161,20 +162,19 @@
 			:allowCreateSecretLink="allowCreateSecretLink"
 			:files="filesToShare"
 			:path="pathToFile"
-			:context="context"
 			:followernames="followernames"
 			:friendnames="friendnames"
 			:groups="groups"
 			:messages="messages">
-		</share>
-                <Search
-                    v-if="showSearch"
-                    v-on:hide-search="closeSearch"
-                    :path="searchPath"
-                    :navigateToAction="navigateToAction"
-                    :viewAction="viewAction"
-                    :context="context">
-                </Search>
+		</Share>
+		<Search
+			v-if="showSearch"
+			v-on:hide-search="closeSearch"
+			:path="searchPath"
+			:navigateToAction="navigateToAction"
+			:viewAction="viewAction"
+			:context="context">
+		</Search>
 
 		<error
 			v-if="showError"
@@ -236,7 +236,10 @@ module.exports = {
 			viewMenu: false,
 			showShare: false,
 			sharedWithState: null,
-			sharedWithData: { "edit_shared_with_users": [], "read_shared_with_users": [] },
+			sharedWithData: {
+				"edit_shared_with_users": [],
+				"read_shared_with_users": []
+			},
 			forceSharedRefreshWithUpdate: 0,
 
 			showAdmin: false,

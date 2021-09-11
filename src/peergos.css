@@ -264,7 +264,8 @@ table {
     width: 90%;
     margin: 0px auto;
     padding: 20px 30px;
-    background-color: #fff;
+	color: var(--color);
+    background-color: var(--bg);
     border-radius: 2px;
     box-shadow: 0 2px 8px rgba(0, 0, 0, .33);
     transition: all .3s ease;
@@ -399,14 +400,14 @@ table {
   width: 0;
 }
 
-.checkmark {
+/* .checkmark {
   position: absolute;
   top: 0;
   left: 0;
   height: 25px;
   width: 25px;
   background-color: #eee;
-}
+} */
 
 .checkbox-container:hover input ~ .checkmark {
   background-color: #ccc;
