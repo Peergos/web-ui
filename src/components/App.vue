@@ -58,6 +58,7 @@ const ModalSpace = require("./modal/ModalSpace.vue");
 const ModalPassword = require("./modal/ModalPassword.vue");
 const ModalAccount = require("./modal/ModalAccount.vue");
 const ModalProfile = require("./modal/ModalProfile.vue");
+const ModalFeedback = require("./modal/ModalFeedback.vue");
 
 const AppTab = require("./tabs/AppTab.vue");
 const AppTabs = require("./tabs/AppTabs.vue");
@@ -82,6 +83,7 @@ module.exports = {
 		ModalPassword,
 		ModalAccount,
 		ModalProfile,
+		ModalFeedback,
 		ServerMessages,
 		Calendar,
 		Drive,
