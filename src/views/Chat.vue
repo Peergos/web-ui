@@ -1,9 +1,6 @@
 <template>
-<transition name="modal">
-
-<div class="modal-mask-app" @click="close" style="position:absolute;">
+<main class="chat-app">
     <div class="modal-container" style="width:100%;height: 100%;" @click.stop >
-        <span @click="close" class="close">&times;</span>
         <div class="header">
             <span>
                 <div id="chat-back-button" class="chat-top" style="display:none;">
@@ -263,8 +260,7 @@
             </div>
         </div>
     </div>
-</div>
-</transition>
+</main>
 </template>
 
 <script>
