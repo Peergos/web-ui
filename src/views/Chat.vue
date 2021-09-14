@@ -318,12 +318,16 @@ module.exports = {
             isInitialised: false
         }
     },
-    props: ['closeChatViewer', 'friendnames', 'socialFeed', 'socialState', 'getFileIconFromFileAndType'
+    props: ['closeChatViewer', 'socialFeed', 'socialState', 'getFileIconFromFileAndType'
         , 'displayProfile', 'checkAvailableSpace', 'convertBytesToHumanReadable', 'importCalendarFile','viewAction'],
     computed: {
 		...Vuex.mapState([
-			'context',
+		    'context',
+                    "socialData"
 		]),
+        friendnames: function() {
+            return this.socialData.friends;
+        },
     },
     created: function() {
         let that = this;
