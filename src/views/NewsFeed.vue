@@ -24,13 +24,13 @@
                     :checkAvailableSpace="checkAvailableSpace"
                     :convertBytesToHumanReadable="convertBytesToHumanReadable">
                 </social-post>
-                <gallery
+                <Gallery
                     v-if="showEmbeddedGallery"
                     v-on:hide-gallery="showEmbeddedGallery = false"
                     :files="filesToViewInGallery"
                     :hideGalleryTitle="true"
                     :context="context">
-                </gallery>
+                </Gallery>
                 <confirm
                     v-if="showConfirm"
                     v-on:hide-confirm="showConfirm = false"
@@ -201,10 +201,15 @@
 </template>
 
 <script>
+const Gallery = require("../components/drive/DriveGallery.vue");
+    
 const routerMixins = require("../mixins/router/index.js");
 
 module.exports = {
-    data: function() {
+    components: {
+		Gallery,
+	},
+	data: function() {
         return {
             buildingFeed: true,
             showSpinner: false,
