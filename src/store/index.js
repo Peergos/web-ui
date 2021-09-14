@@ -31,6 +31,17 @@ module.exports = new Vuex.Store({
 		path: [],
 
 		// urlProps: null
+
+		socialData: {
+			annotations: {},
+			friends: [],
+			followers: [],
+			following: [],
+			pending: [],
+			pendingOutgoing: [],
+			groupsNameToUid: {},
+			groupsUidToName: {}
+		}
 	},
 
 	getters: {
@@ -146,6 +157,33 @@ module.exports = new Vuex.Store({
 		// 	state.urlProps = payload;
 		// },
 
+
+		// Social
+		SET_ANOTATIONS(state, payload) {
+			state.socialData.annotations = payload;
+		},
+		SET_FRIENDS(state, payload) {
+			state.socialData.friends = payload;
+		},
+		SET_FOLLOWERS(state, payload) {
+			state.socialData.followers = payload;
+		},
+		SET_FOLLOWING(state, payload) {
+			state.socialData.following = payload;
+		},
+		SET_GROUP_TO_NAME(state, payload) {
+			state.socialData.groupsUidToName = payload;
+		},
+		SET_GROUP_TO_UID(state, payload) {
+			state.socialData.groupsNameToUid = payload;
+		},
+		SET_PENDING_INCOMING(state, payload) {
+			state.socialData.pending = payload;
+		},
+		SET_PENDING_OUTGOING(state, payload) {
+			state.socialData.pendingOutgoing = payload;
+		},
+
 	},
 
 	// Async
@@ -163,9 +201,46 @@ module.exports = new Vuex.Store({
 				return;
 
 			return state.context.getSpaceUsage().thenApply(u => {
-				commit("SET_USAGE", u);
+				commit('SET_USAGE', u);
 			});
 		},
+		updateSocial({ commit, state }) {
+
+			return state.context.getSocialState().thenApply(function (socialState) {
+
+				let annotations = {}
+				socialState.friendAnnotations.keySet().toArray([]).map(name => annotations[name]=socialState.friendAnnotations.get(name))
+				commit('SET_ANOTATIONS', annotations)
+
+
+				let followerNames = socialState.followerRoots.keySet().toArray([])
+				let followeeNames = socialState.followingRoots.toArray([]).map(function (f) { return f.getFileProperties().name })
+				let friendNames = followerNames.filter(x => followeeNames.includes(x))
+				followerNames = followerNames.filter(x => !friendNames.includes(x))
+				followeeNames = followeeNames.filter(x => !friendNames.includes(x))
+
+				commit('SET_FRIENDS', friendNames)
+				commit('SET_FOLLOWERS', followerNames)
+				commit('SET_FOLLOWING', followeeNames)
+
+				let groupsUidToName = {}
+				socialState.uidToGroupName.keySet().toArray([]).map(uid => groupsUidToName[uid] = socialState.uidToGroupName.get(uid))
+				commit('SET_GROUP_TO_NAME', groupsUidToName)
+
+				let groupsNameToUid = {}
+				socialState.groupNameToUid.keySet().toArray([]).map(name => groupsNameToUid[name]=socialState.groupNameToUid.get(name));
+				commit('SET_GROUP_TO_UID', groupsNameToUid)
+
+				let pendingOutgoingUsernames = [];
+				socialState.pendingOutgoing.toArray([]).map(u => pendingOutgoingUsernames.push(u));
+				commit('SET_PENDING_OUTGOING', pendingOutgoingUsernames)
+
+				commit('SET_PENDING_INCOMING', socialState.pendingIncoming.toArray([]))
+
+			}).exceptionally(function(throwable) {
+				return `Error retrieving social state ${throwable.getMessage()}`
+			});
+		}
 
 		// async getPropsFromUrl({ commit, state }) {
 

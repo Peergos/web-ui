@@ -37,7 +37,7 @@
             <div>
                 <h3>Incoming follow requests</h3>
                 <div id='follow-request-table-id' class="flex-container table" style="flex-flow:column;">
-                  <div v-for="req in data.pending" class="flex-container vspace-5" style="justify-content:space-between; max-width:700px;">
+                  <div v-for="req in socialData.pending" class="flex-container vspace-5" style="justify-content:space-between; max-width:700px;">
                     <div id='follow-request-id' style="font-size:1.5em;">{{ req.getEntry().ownerName }}</div>
 		    <div class="flex-container" style="justify-content:space-evenly;">
                       <div class="hspace-5">
@@ -57,7 +57,7 @@
             <div>
                 <h3>Friends</h3>
                 <div id='friend-table-id' class="table flex-container" style="flex-flow:column;">
-                  <div v-for="username in data.friends" class="flex-container vspace-5" style="justify-content:space-between; max-width:700px;">
+                  <div v-for="username in socialData.friends" class="flex-container vspace-5" style="justify-content:space-between; max-width:700px;">
                     <div id='friend-id' style="font-size:1.5em;">
                         <a v-on:click="profile(username)" style="cursor: pointer">{{ username }}</a>
                         <span v-if="isVerified(username)" class="fas fa-check-circle"><span class="not-mobile">Verified</span></span>
@@ -80,7 +80,7 @@
             <div>
                 <h3>Followers</h3>
                 <div id='follower-table-id' class="table flex-container" style="flex-flow:column;">
-		  <div v-for="username in data.followers" class="flex-container vspace-5" style="justify-content:space-between; max-width:700px;">
+		  <div v-for="username in socialData.followers" class="flex-container vspace-5" style="justify-content:space-between; max-width:700px;">
                     <div id='follower-id' style="font-size:1.5em;">
 		      {{ username }}
 		    </div>
@@ -94,7 +94,7 @@
             <div>
                 <h3>Following</h3>
                 <div class="table flex-container" style="flex-flow:column;">
-                  <tr v-for="user in data.following" class="flex-container vspace-5" style="justify-content:space-between; max-width:700px;">
+                  <tr v-for="user in socialData.following" class="flex-container vspace-5" style="justify-content:space-between; max-width:700px;">
                     <div style="font-size:1.5em;">
                         <a v-on:click="profile(user)" style="cursor: pointer">{{ user }}</a>
 		    </div>
@@ -119,14 +119,14 @@ module.exports = {
         return {
             targetUsername: "",
             targetUsernames: [],
-            data:{
-                pending: [],
-                friends: [],
-                followers: [],
-                following: [],
-                groupsNameToUid: [],
-                groupsUidToName: [],
-            },
+            // data:{
+            //     pending: [],
+            //     friends: [],
+            //     followers: [],
+            //     following: [],
+            //     groupsNameToUid: [],
+            //     groupsUidToName: [],
+            // },
             showSpinner: false,
 			showFingerprint: false,
 			initialIsVerified: false,
@@ -140,6 +140,7 @@ module.exports = {
 	computed: {
 		...Vuex.mapState([
 			'context',
+			'socialData'
 		]),
 		...Vuex.mapGetters([
 			'isSecretLink',
@@ -149,71 +150,75 @@ module.exports = {
 			let userList = this.context.network.usernames.toArray([])
 			// remove our username
 			userList.splice(userList.indexOf(this.context.username), 1);
+
+		//	 this.data.friends.forEach(function(name){
+    //         usernames.splice(usernames.indexOf(name), 1);
+    //     });
             return userList;
         }
     },
 	created() {
-        // this.context = this.$store.state.context;
-        // TODO store data in vuex?
-        this.updateSocial();
-        // Vue.nextTick(this.setTypeAhead);
+		this.updateSocial();
     },
 	mounted(){
 		this.updateHistory('Social', '/social' , null )
 	},
     methods: {
-    	updateSocial(callbackFunc) {
-	    var context = this.context;
-            if (context == null || context.username == null)
-                this.data = {
-                    pending: [],
-		    friends: [],
-                    followers: [],
-                    following: [],
-		    pendingOutgoing: [],
-		    annotations: {},
-		    groupsNameToUid: {},
-		    groupsUidToName: {}
-                };
-	    else {
-		    var that = this;
-            context.getSocialState().thenApply(function(socialState){
-		    var annotations = {};
-		    socialState.friendAnnotations.keySet().toArray([]).map(name => annotations[name]=socialState.friendAnnotations.get(name));
-		    var followerNames = socialState.followerRoots.keySet().toArray([]);
-		    var followeeNames = socialState.followingRoots.toArray([]).map(function(f){return f.getFileProperties().name});
-		    var friendNames = followerNames.filter(x => followeeNames.includes(x));
-		    followerNames = followerNames.filter(x => !friendNames.includes(x));
-		    followeeNames = followeeNames.filter(x => !friendNames.includes(x));
+		...Vuex.mapActions([
+			'updateSocial'
+		]),
+    	//updateSocial(callbackFunc) {
+			// var context = this.context;
+			//     if (context == null || context.username == null)
+			//         this.data = {
+			//             pending: [],
+			//     		friends: [],
+			//             followers: [],
+			//             following: [],
+			// 			pendingOutgoing: [],
+			// 			annotations: {},
+			// 			groupsNameToUid: {},
+			// 			groupsUidToName: {}
+			//         };
+			// else {
+			//     var that = this;
+			//     context.getSocialState().thenApply(function(socialState){
+			//     	var annotations = {};
+			//     socialState.friendAnnotations.keySet().toArray([]).map(name => annotations[name]=socialState.friendAnnotations.get(name));
+			//     var followerNames = socialState.followerRoots.keySet().toArray([]);
+			//     var followeeNames = socialState.followingRoots.toArray([]).map(function(f){return f.getFileProperties().name});
+			//     var friendNames = followerNames.filter(x => followeeNames.includes(x));
+			//     followerNames = followerNames.filter(x => !friendNames.includes(x));
+			//     followeeNames = followeeNames.filter(x => !friendNames.includes(x));
 
-		    var groupsUidToName = {};
-		    socialState.uidToGroupName.keySet().toArray([]).map(uid => groupsUidToName[uid]=socialState.uidToGroupName.get(uid));
-		    var groupsNameToUid = {};
-		    socialState.groupNameToUid.keySet().toArray([]).map(name => groupsNameToUid[name]=socialState.groupNameToUid.get(name));
+			//     var groupsUidToName = {};
+			//     socialState.uidToGroupName.keySet().toArray([]).map(uid => groupsUidToName[uid]=socialState.uidToGroupName.get(uid));
+			//     var groupsNameToUid = {};
+			//     socialState.groupNameToUid.keySet().toArray([]).map(name => groupsNameToUid[name]=socialState.groupNameToUid.get(name));
 
-		    var pendingOutgoingUsernames = [];
-		    socialState.pendingOutgoing.toArray([]).map(u => pendingOutgoingUsernames.push(u));
+			//     var pendingOutgoingUsernames = [];
+			//     socialState.pendingOutgoing.toArray([]).map(u => pendingOutgoingUsernames.push(u));
 
-		    that.data = {
-		                pendingOutgoing: pendingOutgoingUsernames,
-                        pending: socialState.pendingIncoming.toArray([]),
-			friends: friendNames,
-                        followers: followerNames,
-                        following: followeeNames,
-			annotations: annotations,
-			    groupsNameToUid: groupsNameToUid,
-			    groupsUidToName: groupsUidToName
-		    };
-                }).exceptionally(function(throwable) {
-			// that.errorTitle = 'Error retrieving social state';
-			// that.errorBody = throwable.getMessage();
-			// that.showError = true;
-			that.showSpinner = false;
-			that.$toast.error(`Error retrieving social state ${throwable.getMessage()}`, {timeout:false, id: 'social'})
+			// 		that.data = {
+			// 					pendingOutgoing: pendingOutgoingUsernames,
+			// 					pending: socialState.pendingIncoming.toArray([]),
+			// 					friends: friendNames,
+			// 					followers: followerNames,
+			// 					following: followeeNames,
+			// 					annotations: annotations,
+			// 					groupsNameToUid: groupsNameToUid,
+			// 					groupsUidToName: groupsUidToName
+			// 		};
+			//     }).exceptionally(function(throwable) {
+			// 	// that.errorTitle = 'Error retrieving social state';
+			// 	// that.errorBody = throwable.getMessage();
+			// 	// that.showError = true;
+			// 	that.showSpinner = false;
+			// 	that.$toast.error(`Error retrieving social state ${throwable.getMessage()}`, {timeout:false, id: 'social'})
 
-		});
-	    }
-    },
+				// 	});
+			//}
+		//},
     profile(username) {
         this.displayProfile(username, false);
     },
@@ -294,7 +299,7 @@ module.exports = {
 	// },
 
 	isVerified(username) {
-	    var annotations = this.data.annotations[username]
+	    var annotations = this.socialData.annotations[username]
 	    if (annotations == null)
 		return false;
 	    return annotations.isVerified();
@@ -302,7 +307,7 @@ module.exports = {
 
 	hideFingerprint(isVerified) {
 	    this.showFingerprint = false;
-	    this.data.annotations[this.friendname] = new peergos.shared.user.FriendAnnotation(this.friendname, isVerified, this.fingerprint.left)
+	    this.socialData.annotations[this.friendname] = new peergos.shared.user.FriendAnnotation(this.friendname, isVerified, this.fingerprint.left)
 	},
 
 	showFingerPrint(friendname) {
@@ -325,7 +330,7 @@ module.exports = {
 	                return;
 	            }
 	        }
-            this.data.pendingOutgoing.forEach(function(name){
+            this.socialData.pendingOutgoing.forEach(function(name){
                 let idx = that.targetUsernames.indexOf(name);
                 if (idx > -1) {
                     that.targetUsernames.splice(idx, 1);
@@ -371,7 +376,8 @@ module.exports = {
 					that.showSpinner = false;
                     // that.showMessage("Follow request reciprocated!", "");
 					that.$toast('Follow request reciprocated')
-                    that.$emit("external-change");
+                    // that.$emit("external-change");
+					that.updateSocial();
                 });
         },
 
