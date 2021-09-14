@@ -290,7 +290,7 @@ module.exports = {
 					)
 					.thenApply(function (b) {
 						that.showSpinner = false;
-						that.$toast('Success!", "Read access revoked')
+						that.$toast('Read access revoked')
 						that.close();
 						console.log(
 							"unshared read access to " +

@@ -1,27 +1,38 @@
 <template>
    <main class="app-social">
-       <fingerprint v-if="showFingerprint"
-		   v-on:hide-fingerprint="hideFingerprint"
-		   :fingerprint="fingerprint"
-		   :friendname="friendname"
-		   :initialIsVerified="initialIsVerified"
-		   :context="context">
-       </fingerprint>
-       <center><h2>Social</h2></center>
-       <spinner v-if="showSpinner"></spinner>
-            <div>
-                <div class="flex-container">
-                  <div class="hspace-5"><h3>Send follow request:</h3></div>
-		  <div class="flex-container" style="align-self: center;">
-                    <div class="flex-grow flex-container hspace-5">
-                      <input id="friend-name-input" v-model="targetUsername" type="text" class="token-input flex-grow" style="min-width:100px; max-width: 300px;" ></input>
-                    </div>
-                    <div class="hspace-5" style="text-align:right">
-		      <button id='send-follow-request-id' class="btn btn-success" @click="sendInitialFollowRequest()">Send</button>
-		    </div>
-		  </div>
-                </div>
-            </div>
+		<fingerprint v-if="showFingerprint"
+			v-on:hide-fingerprint="hideFingerprint"
+			:fingerprint="fingerprint"
+			:friendname="friendname"
+			:initialIsVerified="initialIsVerified"
+			:context="context">
+		</fingerprint>
+		<h2>Social</h2>
+		<spinner v-if="showSpinner"></spinner>
+		<section>
+			<h3>Send follow request:</h3>
+			<FormAutocomplete
+				is-multiple
+				v-model="targetUsernames"
+				:options="usernames"
+				placeholder="please select user"
+			/>
+			<!-- <div class="flex-container" style="align-self: center;">
+				<div class="flex-grow flex-container hspace-5">
+					<input id="friend-name-input" v-model="targetUsername" type="text" class="token-input flex-grow" style="min-width:100px; max-width: 300px;" ></input>
+				</div>
+				<div class="hspace-5" style="text-align:right">
+					<button id='send-follow-request-id' class="btn btn-success" @click="sendInitialFollowRequest()">Send</button>
+				</div>
+			</div> -->
+			<AppButton
+				accent
+				aria-label="Send"
+				@click.native="sendInitialFollowRequest()"
+			>
+				Send
+			</AppButton>
+		</section>
 
             <div>
                 <h3>Incoming follow requests</h3>
@@ -97,9 +108,13 @@
 </template>
 
 <script>
+const FormAutocomplete = require("../components/form/FormAutocomplete.vue");
 const routerMixins = require("../mixins/router/index.js");
 
 module.exports = {
+	components: {
+		FormAutocomplete,
+	},
     data() {
         return {
             targetUsername: "",
@@ -130,21 +145,24 @@ module.exports = {
 			'isSecretLink',
 			'getPath'
 		]),
-        usernames: function() {
-            return this.context.network.usernames.toArray([]);
+        usernames() {
+			let userList = this.context.network.usernames.toArray([])
+			// remove our username
+			userList.splice(userList.indexOf(this.context.username), 1);
+            return userList;
         }
     },
-	created: function() {
+	created() {
         // this.context = this.$store.state.context;
         // TODO store data in vuex?
         this.updateSocial();
-        Vue.nextTick(this.setTypeAhead);
+        // Vue.nextTick(this.setTypeAhead);
     },
 	mounted(){
 		this.updateHistory('Social', '/social' , null )
 	},
     methods: {
-    updateSocial: function(callbackFunc) {
+    	updateSocial(callbackFunc) {
 	    var context = this.context;
             if (context == null || context.username == null)
                 this.data = {
@@ -187,105 +205,107 @@ module.exports = {
 			    groupsUidToName: groupsUidToName
 		    };
                 }).exceptionally(function(throwable) {
-		    that.errorTitle = 'Error retrieving social state';
-		    that.errorBody = throwable.getMessage();
-		    that.showError = true;
-		    that.showSpinner = false;
+			// that.errorTitle = 'Error retrieving social state';
+			// that.errorBody = throwable.getMessage();
+			// that.showError = true;
+			that.showSpinner = false;
+			that.$toast.error(`Error retrieving social state ${throwable.getMessage()}`, {timeout:false, id: 'social'})
+
 		});
 	    }
     },
-    profile: function(username) {
+    profile(username) {
         this.displayProfile(username, false);
     },
-    setTypeAhead: function() {
+    // setTypeAhead() {
 
-        var usernames = this.usernames;
-        // remove our username
-        usernames.splice(usernames.indexOf(this.context.username), 1);
+    //     var usernames = this.usernames;
+    //     // remove our username
+    //     usernames.splice(usernames.indexOf(this.context.username), 1);
 
-        this.data.friends.forEach(function(name){
-            usernames.splice(usernames.indexOf(name), 1);
-        });
-        var engine = new Bloodhound({
-          datumTokenizer: Bloodhound.tokenizers.whitespace,
-          queryTokenizer: Bloodhound.tokenizers.whitespace,
-          local: usernames
-        });
+    //     this.data.friends.forEach(function(name){
+    //         usernames.splice(usernames.indexOf(name), 1);
+    //     });
+    //     var engine = new Bloodhound({
+    //       datumTokenizer: Bloodhound.tokenizers.whitespace,
+    //       queryTokenizer: Bloodhound.tokenizers.whitespace,
+    //       local: usernames
+    //     });
 
-        engine.initialize();
+    //     engine.initialize();
 
-        $('#friend-name-input').tokenfield({
-            minLength: 1,
-            minWidth: 1,
-            typeahead: [{hint: true, highlight: true, minLength: 1}, { source: suggestions }]
-        });
+    //     $('#friend-name-input').tokenfield({
+    //         minLength: 1,
+    //         minWidth: 1,
+    //         typeahead: [{hint: true, highlight: true, minLength: 1}, { source: suggestions }]
+    //     });
 
-        function suggestions(q, sync, async) {
-            var matches, substringRegex;
-            matches = [];
-            substrRegex = new RegExp(q, 'i');
-            $.each(usernames, function(i, str) {
-                if (substrRegex.test(str)) {
-                    matches.push(str);
-                }
-            });
-            sync(matches);
-        }
+    //     function suggestions(q, sync, async) {
+    //         var matches, substringRegex;
+    //         matches = [];
+    //         substrRegex = new RegExp(q, 'i');
+    //         $.each(usernames, function(i, str) {
+    //             if (substrRegex.test(str)) {
+    //                 matches.push(str);
+    //             }
+    //         });
+    //         sync(matches);
+    //     }
 
-        $('#friend-name-input').on('tokenfield:createtoken', function (event) {
-            //only select from available items
-        	var available_tokens = usernames;
-        	var exists = true;
-        	$.each(available_tokens, function(index, token) {
-        		if (token === event.attrs.value)
-        			exists = false;
-        	});
-        	if(exists === true) {
-        		event.preventDefault();
-            } else {
-                //do not allow duplicates in selection
-                var existingTokens = $(this).tokenfield('getTokens');
-                $.each(existingTokens, function(index, token) {
-                    if (token.value === event.attrs.value)
-                        event.preventDefault();
-                });
-            }
-        });
-        let that = this;
-        $('#friend-name-input').on('tokenfield:createdtoken', function (event) {
-    	    that.targetUsernames.push(event.attrs.value);
-        });
+    //     $('#friend-name-input').on('tokenfield:createtoken', function (event) {
+    //         //only select from available items
+    //     	var available_tokens = usernames;
+    //     	var exists = true;
+    //     	$.each(available_tokens, function(index, token) {
+    //     		if (token === event.attrs.value)
+    //     			exists = false;
+    //     	});
+    //     	if(exists === true) {
+    //     		event.preventDefault();
+    //         } else {
+    //             //do not allow duplicates in selection
+    //             var existingTokens = $(this).tokenfield('getTokens');
+    //             $.each(existingTokens, function(index, token) {
+    //                 if (token.value === event.attrs.value)
+    //                     event.preventDefault();
+    //             });
+    //         }
+    //     });
+    //     let that = this;
+    //     $('#friend-name-input').on('tokenfield:createdtoken', function (event) {
+    // 	    that.targetUsernames.push(event.attrs.value);
+    //     });
 
-        $('#friend-name-input').on('tokenfield:removedtoken', function (event) {
-    	    that.targetUsernames.pop(event.attrs.value);
-        });
-    },
-    resetTypeahead: function() {
-        this.targetUsernames = [];
-        this.targetUsername = "";
-        $('#friend-name-input').tokenfield('setTokens', []);
-    },
-        showMessage: function(title, body) {
-            this.messages.push({
-                title: title,
-                body: body,
-                show: true
-            });
-        },
+    //     $('#friend-name-input').on('tokenfield:removedtoken', function (event) {
+    // 	    that.targetUsernames.pop(event.attrs.value);
+    //     });
+    // },
+    // resetTypeahead() {
+    //     this.targetUsernames = [];
+    //     this.targetUsername = "";
+    //     $('#friend-name-input').tokenfield('setTokens', []);
+    // },
+	// showMessage(title, body) {
+	//     this.messages.push({
+	//         title: title,
+	//         body: body,
+	//         show: true
+	//     });
+	// },
 
-	isVerified: function(username) {
+	isVerified(username) {
 	    var annotations = this.data.annotations[username]
 	    if (annotations == null)
 		return false;
 	    return annotations.isVerified();
 	},
 
-	hideFingerprint: function(isVerified) {
+	hideFingerprint(isVerified) {
 	    this.showFingerprint = false;
 	    this.data.annotations[this.friendname] = new peergos.shared.user.FriendAnnotation(this.friendname, isVerified, this.fingerprint.left)
 	},
 
-	showFingerPrint: function(friendname) {
+	showFingerPrint(friendname) {
 	    var that = this;
 	    this.context.generateFingerPrint(friendname).thenApply(function(f) {
 		that.fingerprint = f;
@@ -295,7 +315,7 @@ module.exports = {
 	    })
 	},
 
-	sendInitialFollowRequest: function() {
+	sendInitialFollowRequest() {
 	        let that = this;
 	        if (this.targetUsernames.length == 0) {
     	        let singleVal = document.getElementById("friend-name-input-tokenfield").value.trim();
@@ -312,7 +332,8 @@ module.exports = {
                 }
             });
 	        if (this.targetUsernames.length == 0) {
-                that.showMessage("Follow request already sent!", "");
+                // that.showMessage("Follow request already sent!", "");
+				that.$toast('Follow request already sent')
                 return;
 	        }
             console.log("sending follow request");
@@ -320,79 +341,89 @@ module.exports = {
             that.context.sendInitialFollowRequests(this.targetUsernames)
                 .thenApply(function(success) {
                     if(success) {
-                        that.showMessage("Follow request(s) sent!", "");
-                        that.resetTypeahead();
+                        // that.showMessage("Follow request(s) sent!", "");
+			            // that.resetTypeahead();
+						that.$toast('Follow request(s) sent')
                         that.$emit("external-change");
                     } else {
-                        that.showMessage("Follow request(s) failed!", "");
-                        that.resetTypeahead();
+                        // that.showMessage("Follow request(s) failed!", "");
+						that.$toast('Follow request(s) failed')
+                        // that.resetTypeahead();
                     }
                     that.showSpinner = false;
             }).exceptionally(function(throwable) {
-                    if (that.targetUsernames.length == 1) {
-                        that.resetTypeahead();
-                    }
-                    that.showMessage(throwable.getMessage());
-                    that.showSpinner = false;
+
+                    // if (that.targetUsernames.length == 1) {
+                    //     // that.resetTypeahead();
+                    // }
+					that.showSpinner = false;
+					// that.showMessage(throwable.getMessage());
+					that.$toast.error(`${throwable.getMessage()}`, {timeout:false, id: 'social'})
+
             });
         },
 
-        acceptAndReciprocate: function(req) {
+        acceptAndReciprocate(req) {
             var that = this;
             this.showSpinner = true;
             this.context.sendReplyFollowRequest(req, true, true)
                 .thenApply(function(success) {
-                    that.showMessage("Follow request reciprocated!", "");
-                    that.showSpinner = false;
+					that.showSpinner = false;
+                    // that.showMessage("Follow request reciprocated!", "");
+					that.$toast('Follow request reciprocated')
                     that.$emit("external-change");
                 });
         },
 
-        accept: function(req) {
+        accept(req) {
             var that = this;
             this.showSpinner = true;
             this.context.sendReplyFollowRequest(req, true, false)
                 .thenApply(function(success) {
-                    that.showMessage("Follow request accepted!", "");
-                    that.showSpinner = false;
+					that.showSpinner = false;
+                    // that.showMessage("Follow request accepted!", "");
+					that.$toast('Follow request accepted')
                     that.$emit("external-change");
                 });
         },
 
-        reject: function(req) {
+        reject(req) {
             var that = this;
             this.showSpinner = true;
             this.context.sendReplyFollowRequest(req, false, false)
                 .thenApply(function(success) {
-                    that.showMessage("Follow request rejected!", "");
                     that.showSpinner = false;
+                    // that.showMessage("Follow request rejected!", "");
+					that.$toast('Follow request rejected')
                     that.$emit("external-change");
                 });
         },
 
-        removeFollower: function(username) {
+        removeFollower(username) {
             var that = this;
             this.showSpinner = true;
             this.context.removeFollower(username)
                 .thenApply(function(success) {
-                    that.showMessage("Removed follower " + username, "");
                     that.showSpinner = false;
+                    // that.showMessage("Removed follower " + username, "");
+					that.$toast(`Removed follower ${username}`)
                     that.$emit("external-change");
                 });
         },
 
-        unfollow: function(username) {
+        unfollow(username) {
             var that = this;
             this.showSpinner = true;
             this.context.unfollow(username)
                 .thenApply(function(success) {
-                    that.showMessage("Stopped following " + username, "");
-                    that.showSpinner = false;
+					that.showSpinner = false;
+                    // that.showMessage("Stopped following " + username, "");
+					that.$toast(`Stopped following ${username}`)
                     that.$emit("external-change");
                 });
         },
 
-        close: function () {
+        close () {
             this.$emit("hide-social");
         }
     },

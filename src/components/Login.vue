@@ -49,7 +49,7 @@ module.exports = {
 	mounted() {
 		this.$refs.username.focus()
 		// :)
-		setTimeout(() => this.loginDEV(), 300);
+		// setTimeout(() => this.loginDEV(), 300);
 	},
 	methods: {
 		loginDEV() {
