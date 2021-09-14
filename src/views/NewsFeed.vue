@@ -207,9 +207,9 @@ const routerMixins = require("../mixins/router/index.js");
 
 module.exports = {
     components: {
-		Gallery,
-	},
-	data: function() {
+	Gallery,
+    },
+    data: function() {
         return {
             buildingFeed: true,
             showSpinner: false,

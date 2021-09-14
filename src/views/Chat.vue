@@ -47,13 +47,13 @@
                 :title="message.title"
                 :message="message.body">
         </message>
-        <gallery
+        <Gallery
                 v-if="showEmbeddedGallery"
                 v-on:hide-gallery="showEmbeddedGallery = false"
                 :files="filesToViewInGallery"
                 :hideGalleryTitle="true"
                 :context="context">
-        </gallery>
+        </Gallery>
         <spinner v-if="showSpinner" :message="spinnerMessage"></spinner>
         <div class="chat-container">
             <div class="chat-messaging">
@@ -264,7 +264,12 @@
 </template>
 
 <script>
+const Gallery = require("../components/drive/DriveGallery.vue");
+    
 module.exports = {
+    components: {
+	Gallery,
+    },
     data: function() {
         return {
             showSpinner: false,
