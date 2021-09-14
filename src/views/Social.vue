@@ -158,15 +158,18 @@ module.exports = {
         }
     },
 	created() {
-		// this.updateSocial();
+		this.updateSocial(this.test);
     },
 	mounted(){
 		this.updateHistory('Social', '/social' , null )
 	},
     methods: {
-		// ...Vuex.mapActions([
-		// 	'updateSocial'
-		// ]),
+		...Vuex.mapActions([
+			'updateSocial'
+		]),
+		test(){
+			console.log('test')
+		},
     	//updateSocial(callbackFunc) {
 			// var context = this.context;
 			//     if (context == null || context.username == null)

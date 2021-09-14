@@ -204,7 +204,7 @@ module.exports = new Vuex.Store({
 				commit('SET_USAGE', u);
 			});
 		},
-		updateSocial({ commit, state }) {
+		updateSocial({ commit, state }, callback) {
 
 			return state.context.getSocialState().thenApply(function (socialState) {
 
@@ -236,6 +236,11 @@ module.exports = new Vuex.Store({
 				commit('SET_PENDING_OUTGOING', pendingOutgoingUsernames)
 
 				commit('SET_PENDING_INCOMING', socialState.pendingIncoming.toArray([]))
+
+				if (callback !== null) {
+					callback()
+				}
+
 
 			}).exceptionally(function(throwable) {
 				return `Error retrieving social state ${throwable.getMessage()}`
