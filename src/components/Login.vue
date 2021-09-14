@@ -49,19 +49,24 @@ module.exports = {
 	mounted() {
 		this.$refs.username.focus()
 		// :)
-		// setTimeout(() => this.loginDEV(), 300);
+		setTimeout(() => this.loginDEV(), 300);
 	},
 	methods: {
 		...Vuex.mapActions([
 			'updateSocial'
 		]),
 		loginDEV() {
-			// bypass login on DEV
-			if( window.location.hostname == "localhost"){
-				this.username = 'peergos'
-				this.password = 'testpassword'
-				this.login()
-			}
+		    // bypass login on DEV
+		    if( window.location.hostname == "localhost"){
+                        var query = new URLSearchParams(window.location.search)
+			this.username = query.get("username")
+                        if (this.username == null)
+                            this.username = 'peergos'
+                        this.password = query.get("password")
+                        if (this.password == null)
+			    this.password = 'testpassword'
+			this.login()
+		    }
 		},
 		togglePassword() {
 			this.passwordIsVisible = !this.passwordIsVisible
