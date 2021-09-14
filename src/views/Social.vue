@@ -158,15 +158,15 @@ module.exports = {
         }
     },
 	created() {
-		this.updateSocial();
+		// this.updateSocial();
     },
 	mounted(){
 		this.updateHistory('Social', '/social' , null )
 	},
     methods: {
-		...Vuex.mapActions([
-			'updateSocial'
-		]),
+		// ...Vuex.mapActions([
+		// 	'updateSocial'
+		// ]),
     	//updateSocial(callbackFunc) {
 			// var context = this.context;
 			//     if (context == null || context.username == null)
@@ -349,7 +349,8 @@ module.exports = {
                         // that.showMessage("Follow request(s) sent!", "");
 			            // that.resetTypeahead();
 						that.$toast('Follow request(s) sent')
-                        that.$emit("external-change");
+                        // that.$emit("external-change");
+						that.updateSocial();
                     } else {
                         // that.showMessage("Follow request(s) failed!", "");
 						that.$toast('Follow request(s) failed')
@@ -389,7 +390,8 @@ module.exports = {
 					that.showSpinner = false;
                     // that.showMessage("Follow request accepted!", "");
 					that.$toast('Follow request accepted')
-                    that.$emit("external-change");
+                    // that.$emit("external-change");
+					that.updateSocial();
                 });
         },
 
@@ -401,7 +403,8 @@ module.exports = {
                     that.showSpinner = false;
                     // that.showMessage("Follow request rejected!", "");
 					that.$toast('Follow request rejected')
-                    that.$emit("external-change");
+                    // that.$emit("external-change");
+					that.updateSocial();
                 });
         },
 
@@ -413,7 +416,8 @@ module.exports = {
                     that.showSpinner = false;
                     // that.showMessage("Removed follower " + username, "");
 					that.$toast(`Removed follower ${username}`)
-                    that.$emit("external-change");
+                    // that.$emit("external-change");
+					that.updateSocial();
                 });
         },
 
@@ -425,7 +429,8 @@ module.exports = {
 					that.showSpinner = false;
                     // that.showMessage("Stopped following " + username, "");
 					that.$toast(`Stopped following ${username}`)
-                    that.$emit("external-change");
+                    // that.$emit("external-change");
+					that.updateSocial();
                 });
         },
 

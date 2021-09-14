@@ -52,6 +52,9 @@ module.exports = {
 		// setTimeout(() => this.loginDEV(), 300);
 	},
 	methods: {
+		...Vuex.mapActions([
+			'updateSocial'
+		]),
 		loginDEV() {
 			// bypass login on DEV
 			if( window.location.hostname == "localhost"){
@@ -85,6 +88,8 @@ module.exports = {
 
 					that.$store.commit('USER_LOGIN', true);
 					that.$emit("initApp")
+
+					that.updateSocial()
 
 					// that.$emit("filesystem", { context: context });
 

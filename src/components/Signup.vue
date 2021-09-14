@@ -111,6 +111,9 @@ module.exports = {
 	},
 
     methods: {
+		...Vuex.mapActions([
+			'updateSocial'
+		]),
 		lowercaseUsername(){
 			this.username.toLowerCase()
 		},
@@ -173,6 +176,7 @@ module.exports = {
 							that.$store.commit("CURRENT_VIEW", 'Drive');
 							that.$store.commit("SET_CONTEXT", context);
 							that.$store.commit('USER_LOGIN', true);
+							that.updateSocial()
                             console.log("Signing in/up took " + (Date.now()-creationStart)+" mS from function call");
                         })
 						.exceptionally(function(throwable) {
