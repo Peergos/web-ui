@@ -451,6 +451,7 @@ module.exports = {
     flex-direction: column;
     align-items: flex-start;
     min-height: 100vh;
+    padding: 3em;
 }
 .app-temp h1{
     text-align: center;
