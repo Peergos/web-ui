@@ -237,7 +237,7 @@ module.exports = {
     },
     props: ['navigateToAction','viewAction', 'messages', 'getFileIconFromFileAndType', 'socialFeedInstance',
         'updateSocialFeedInstance', 'importCalendarFile', 'importSharedCalendar', 'displayProfile', 'groups',
-        'followingnames', 'friendnames', 'followernames', 'checkAvailableSpace', 'convertBytesToHumanReadable', 'viewConversations'],
+        'checkAvailableSpace', 'convertBytesToHumanReadable', 'viewConversations'],
 	mixins:[routerMixins],
 
   	created: function() {
@@ -1328,12 +1328,22 @@ module.exports = {
     },
     computed: {
 		...Vuex.mapState([
-			'context',
+		    'context',
+                    "socialData"
 		]),
 		...Vuex.mapGetters([
 			'isSecretLink',
 			'getPath'
 		]),
+        friendnames: function() {
+            return this.socialData.friends;
+        },
+    	followingnames: function() {
+            return this.socialData.following;
+        },
+    	followernames: function() {
+            return this.socialData.followers;
+        },
     	blocks: function() {
             if (this.data == null || this.data.length == 0) {
                 return [];
