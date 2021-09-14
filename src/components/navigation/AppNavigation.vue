@@ -25,6 +25,7 @@
 			<MenuItem label="Tasks" icon="tasks" view="Tasks" />
 			<MenuItem label="Social" icon="social" view="Social" />
 			<MenuItem label="Calendar" icon="calendar" view="Calendar" />
+                        <MenuItem v-if="showChat" label="Chat" icon="chat" view="Chat" />
 		</ul>
 
 
@@ -53,6 +54,10 @@ module.exports = {
 		isDark() {
 			return this.$store.state.isDark;
 		},
+                showChat() {
+                    var query = new URLSearchParams(window.location.search)
+                    return query.get("chat") == "true";
+                }
 	},
 	methods: {
 		toggleSidebar() {

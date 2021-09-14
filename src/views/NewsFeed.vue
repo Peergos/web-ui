@@ -1398,6 +1398,24 @@ module.exports = {
 </script>
 
 <style>
+.post-content {
+    white-space:pre-wrap;
+    margin-bottom:0;
+    margin-right: 10px;
+    line-height: 1.1;
+    background-color: #2e6da4;
+    border: 1px solid black;
+    border-radius: 4px;
+    padding: 5px;
+    font-size: 1.2em;
+    overflow-wrap: break-word;
+}
+.picon-timeline {
+    font-size: 5em;
+    word-wrap: break-word;
+    max-width: 5em;
+}
+
 .app-temp{
     display: flex;
     flex-direction:column;

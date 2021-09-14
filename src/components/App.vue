@@ -66,11 +66,12 @@ const AppTabs = require("./tabs/AppTabs.vue");
 const Login = require("./Login.vue");
 const Signup = require("./Signup.vue");
 
-const Calendar = require("../views/Calendar.vue");
 const Drive = require("../views/Drive.vue");
 const NewsFeed = require("../views/NewsFeed.vue");
-const Social = require("../views/Social.vue");
 const Tasks = require("../views/Tasks.vue");
+const Social = require("../views/Social.vue");
+const Calendar = require("../views/Calendar.vue");
+const Chat = require("../views/Chat.vue");
 
 const ServerMessages = require("./ServerMessages.vue");
 
@@ -85,11 +86,12 @@ module.exports = {
 		ModalProfile,
 		ModalFeedback,
 		ServerMessages,
-		Calendar,
 		Drive,
 		NewsFeed,
-		Social,
 		Tasks,
+		Social,
+		Calendar,
+		Chat,
 		AppTab,
 		AppTabs,
 		Login,
@@ -287,14 +289,16 @@ module.exports = {
 					// that.openInApp(filename, app);
 					that.$refs.appView.openInApp(filename, app);
 				});
-			} else if (app == "Calendar") {
-				this.$store.commit("CURRENT_VIEW", "Calendar");
 			} else if (app == "NewsFeed") {
 				this.$store.commit("CURRENT_VIEW", "NewsFeed");
-			} else if (app == "Social") {
-				this.$store.commit("CURRENT_VIEW", "Social");
 			} else if (app == "Tasks") {
 				this.$store.commit("CURRENT_VIEW", "Tasks");
+			} else if (app == "Social") {
+				this.$store.commit("CURRENT_VIEW", "Social");
+			} else if (app == "Calendar") {
+				this.$store.commit("CURRENT_VIEW", "Calendar");
+			} else if (app == "Chat") {
+				this.$store.commit("CURRENT_VIEW", "Chat");
 			} else {
 				// Drive sub-apps
 				this.$store.commit("CURRENT_VIEW", "Drive");
