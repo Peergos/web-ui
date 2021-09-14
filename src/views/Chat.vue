@@ -265,7 +265,9 @@
 
 <script>
 const Gallery = require("../components/drive/DriveGallery.vue");
-    
+
+const downloaderMixins = require("../mixins/downloader/index.js");
+
 module.exports = {
     components: {
 	Gallery,
