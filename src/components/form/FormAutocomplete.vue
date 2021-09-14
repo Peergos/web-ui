@@ -151,28 +151,26 @@ module.exports = {
 
 <style>
 .form-autocomplete {
-	/* padding: 10px; */
-	/* background: var(--bg-2); */
+	margin-bottom: var(--app-margin);
 }
 
-.form-autocomplete .autocomplete {
-	/* line-height: 48px;
-	border:none; */
-}
 
 .form-autocomplete ul {
 	/* width: 200px; */
 	padding-left: 0;
+	display: flex;
+
 
 }
 .form-autocomplete ul > li {
 	cursor: pointer;
 	list-style: none;
 	padding: 5px;
-	margin-bottom: 5px;
-	background: var(--bg);
 	color:var(--color);
 	line-height: 36px;
+	border: 2px solid var(--bg-2);
+	border-radius: 4px;
+	margin: 0 5px 10px 0;
 }
 .form-autocomplete ul > li:hover {
 	background: var(--bg-2);
@@ -180,7 +178,6 @@ module.exports = {
 }
 .form-autocomplete ul > li.disabled,
 .form-autocomplete ul > li.disabled:hover {
-	/* background: var(--bg); */
 	display:none;
 }
 .form-autocomplete ul > li.disabled {

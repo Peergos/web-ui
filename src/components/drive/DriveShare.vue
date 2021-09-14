@@ -19,15 +19,6 @@
 							placeholder="please select user"
 						/>
 
-						<!-- <div>
-							<input v-if="this.allowReadWriteSharing" type="radio" id="read-access" value="Read" v-model="sharedWithAccess">
-							<label v-if="this.allowReadWriteSharing" for="read-access">Read Only</label>
-						</div>
-						<div>
-							<input v-if="this.allowReadWriteSharing && this.files[0].getOwnerName() == this.context.username" type="radio" id="edit-access" value="Edit" v-model="sharedWithAccess">
-							<label v-if="this.allowReadWriteSharing && this.files[0].getOwnerName() == this.context.username" for="edit-access">Read &amp; Write</label>
-						</div> -->
-
 						<label class="checkbox__group" v-if="this.allowReadWriteSharing">
 							Read Only
 							<input
@@ -148,13 +139,6 @@
 						</AppButton>
 					</div>
 
-					<error
-						v-if="showError"
-						v-on:hide-error="showError = false"
-						:title="errorTitle"
-						:body="errorBody"
-					/>
-
 					<modal
 						v-if="showModal"
 						v-on:hide-modal="showModal = false"
@@ -183,9 +167,9 @@ module.exports = {
 			sharedWithAccess: "Read",
 			shareWithFriendsGroup: false,
 			shareWithFollowersGroup: false,
-			errorTitle: "",
-			errorBody: "",
-			showError: false,
+			// errorTitle: "",
+			// errorBody: "",
+			// showError: false,
 			unsharedReadAccessNames: [],
 			unsharedEditAccessNames: [],
 			showModal: false,
@@ -200,7 +184,7 @@ module.exports = {
 		"groups",
 		"files",
 		"path",
-		"messages",
+		// "messages",
 		"fromApp",
 		"displayName",
 		"allowReadWriteSharing",
@@ -214,9 +198,6 @@ module.exports = {
 			return this.followernames.concat(this.friendnames);
 		}
 	},
-	// created() {
-	// 	Vue.nextTick(this.setTypeAhead);
-	// },
 	methods: {
 		close() {
 			this.showSpinner = false;
@@ -225,15 +206,6 @@ module.exports = {
 		refresh() {
 			if (!this.fromApp) {
 				this.$emit("update-shared-refresh");
-			}
-		},
-		showMessage(title, body) {
-			if (!this.fromApp) {
-				this.messages.push({
-					title: title,
-					body: body,
-					show: true,
-				});
 			}
 		},
 		createSecretLink() {
@@ -300,13 +272,8 @@ module.exports = {
 					);
 				})
 				.exceptionally(function (throwable) {
-					// that.resetTypeahead();
 					that.showSpinner = false;
-					that.errorTitle =
-						"Error sharing file: " +
-						that.files[0].getFileProperties().name;
-					that.errorBody = throwable.getMessage();
-					that.showError = true;
+					that.$toast.error(`Error sharing file ${that.files[0].getFileProperties().name}: ${throwable.getMessage()}`, {timeout:false, id: 'share'})
 				});
 		},
 		unshareFileWith(read_usernames, edit_usernames, sharedWithAccess) {
@@ -323,7 +290,7 @@ module.exports = {
 					)
 					.thenApply(function (b) {
 						that.showSpinner = false;
-						that.showMessage("Success!", "Read access revoked");
+						that.$toast('Success!", "Read access revoked')
 						that.close();
 						console.log(
 							"unshared read access to " +
@@ -335,9 +302,8 @@ module.exports = {
 					})
 					.exceptionally(function (throwable) {
 						that.showSpinner = false;
-						that.errorTitle = "Error unsharing file: " + filename;
-						that.errorBody = throwable.getMessage();
-						that.showError = true;
+						that.$toast.error(`Error unsharing file ${filename}: ${throwable.getMessage()}`, {timeout:false, id: 'share'})
+
 					});
 			} else {
 				this.context
@@ -349,10 +315,7 @@ module.exports = {
 					)
 					.thenApply(function (b) {
 						that.showSpinner = false;
-						that.showMessage(
-							"Success!",
-							"Read & Write access revoked"
-						);
+						that.$toast('Read & Write access revoked')
 						that.close();
 						console.log(
 							"unshared write access to " +
@@ -364,36 +327,24 @@ module.exports = {
 					})
 					.exceptionally(function (throwable) {
 						that.showSpinner = false;
-						that.errorTitle = "Error unsharing file: " + filename;
-						that.errorBody = throwable.getMessage();
-						that.showError = true;
+						that.$toast.error(`Error unsharing file ${filename}: ${throwable.getMessage()}`, {timeout:false, id: 'share'})
 					});
 			}
 		},
 		allowedToShare(file) {
 			if (file.isUserRoot()) {
-				this.errorTitle = "You cannot share your home directory!";
-				this.errorBody = "";
-				this.showError = true;
+				this.$toast.error('You cannot share your home directory', {timeout:false, id: 'share'})
 				return false;
 			}
 			if (
 				this.sharedWithAccess == "Edit" &&
 				file.getOwnerName() != this.context.username
 			) {
-				this.errorTitle =
-					"Only the owner of a file can grant write access!";
-				this.errorBody = "";
-				this.showError = true;
+				this.$toast.error('Only the owner of a file can grant write access', {timeout:false, id: 'share'})
 				return false;
 			}
 			return true;
 		},
-		// resetTypeahead() {
-		// 	this.targetUsernames = [];
-		// 	this.targetUsername = "";
-		// 	$("#friend-name-input").tokenfield("setTokens", []);
-		// },
 		shareWith() {
 			if (this.files.length == 0) return this.close();
 			if (this.files.length != 1)
@@ -423,13 +374,8 @@ module.exports = {
 					that.shareFileWith(read_usernames, edit_usernames);
 				})
 				.exceptionally(function (throwable) {
-					// that.resetTypeahead();
 					that.showSpinner = false;
-					that.errorTitle =
-						"Error sharing file: " +
-						that.files[0].getFileProperties().name;
-					that.errorBody = throwable.getMessage();
-					that.showError = true;
+					that.$toast.error(`Error sharing file ${that.files[0].getFileProperties().name}: ${throwable.getMessage()} `, {timeout:false, id: 'share'})
 				});
 		},
 		isFriend(name) {
@@ -582,9 +528,7 @@ module.exports = {
 				}
 			}
 			if (usersToShareWith.length == 0) {
-				that.errorTitle = "Already shared!";
-				that.errorBody = "";
-				that.showError = true;
+				that.$toast.error('Already shared', {timeout:false, id: 'share'})
 				return;
 			}
 			var filename = that.files[0].getFileProperties().name;
@@ -598,18 +542,16 @@ module.exports = {
 					)
 					.thenApply(function (b) {
 						that.showSpinner = false;
-						that.showMessage("Success!", "Secure sharing complete");
+						that.$toast('Secure sharing complete')
 						that.close();
 						// that.resetTypeahead();
 						console.log("shared read access to " + filename);
 						that.refresh();
 					})
 					.exceptionally(function (throwable) {
-						// that.resetTypeahead();
 						that.showSpinner = false;
-						that.errorTitle = "Error sharing file: " + filename;
-						that.errorBody = throwable.getMessage();
-						that.showError = true;
+						that.$toast.error(`Error sharing file ${filename}: ${throwable.getMessage()}`, {timeout:false, id: 'share'})
+
 					});
 			} else {
 				that.context
@@ -619,87 +561,18 @@ module.exports = {
 					)
 					.thenApply(function (b) {
 						that.showSpinner = false;
-						that.showMessage("Success!", "Secure sharing complete");
+						that.$toast('Secure sharing complete')
 						// that.resetTypeahead();
 						that.close();
 						console.log("shared write access to " + filename);
 						that.refresh();
 					})
 					.exceptionally(function (throwable) {
-						// that.resetTypeahead();
 						that.showSpinner = false;
-						that.errorTitle = "Error sharing file: " + filename;
-						that.errorBody = throwable.getMessage();
-						that.showError = true;
+						that.$toast.error(`Error sharing file ${filename}: ${throwable.getMessage()}`, {timeout:false, id: 'share'})
 					});
 			}
 		},
-		// setTypeAhead() {
-		// 	let allNames = this.followernames.concat(this.friendnames);
-		// 	var engine = new Bloodhound({
-		// 		datumTokenizer: Bloodhound.tokenizers.whitespace,
-		// 		queryTokenizer: Bloodhound.tokenizers.whitespace,
-		// 		local: allNames,
-		// 	});
-
-		// 	engine.initialize();
-
-		// 	$("#friend-name-input").tokenfield({
-		// 		minLength: 1,
-		// 		minWidth: 1,
-		// 		typeahead: [
-		// 			{ hint: true, highlight: true, minLength: 1 },
-		// 			{ source: suggestions },
-		// 		],
-		// 	});
-
-		// 	function suggestions(q, sync, async) {
-		// 		var matches, substringRegex;
-		// 		matches = [];
-		// 		substrRegex = new RegExp(q, "i");
-		// 		$.each(allNames, function (i, str) {
-		// 			if (substrRegex.test(str)) {
-		// 				matches.push(str);
-		// 			}
-		// 		});
-		// 		sync(matches);
-		// 	}
-		// 	let that = this;
-		// 	$("#friend-name-input").on(
-		// 		"tokenfield:createtoken",
-		// 		function (event) {
-		// 			//only select from available items
-		// 			var available_tokens = allNames;
-		// 			var exists = true;
-		// 			$.each(available_tokens, function (index, token) {
-		// 				if (token === event.attrs.value) exists = false;
-		// 			});
-		// 			if (exists === true) {
-		// 				event.preventDefault();
-		// 			} else {
-		// 				//do not allow duplicates in selection
-		// 				var existingTokens = $(this).tokenfield("getTokens");
-		// 				$.each(existingTokens, function (index, token) {
-		// 					if (token.value === event.attrs.value)
-		// 						event.preventDefault();
-		// 				});
-		// 			}
-		// 		}
-		// 	);
-		// 	$("#friend-name-input").on(
-		// 		"tokenfield:createdtoken",
-		// 		function (event) {
-		// 			that.targetUsernames.push(event.attrs.value);
-		// 		}
-		// 	);
-
-		// 	$("#friend-name-input").on(
-		// 		"tokenfield:removedtoken",
-		// 		function (event) {
-		// 			that.targetUsernames.pop(event.attrs.value);
-		// 		}
-		// 	);
-		// },
 	},
 };
 </script>

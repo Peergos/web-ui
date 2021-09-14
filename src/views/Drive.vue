@@ -218,8 +218,8 @@ module.exports = {
 		AppPrompt,
 		ProgressBar,
 		Gallery,
-	        Share,
-                Search
+		Share,
+		Search
 	},
 	data() {
 		return {
@@ -921,17 +921,17 @@ module.exports = {
 
 		updateSocial(callbackFunc) {
 
-            if (this.context == null || this.context.username == null)
-                this.social = {
-                    pending: [],
-		    friends: [],
-                    followers: [],
-                    following: [],
-		    pendingOutgoing: [],
-		    annotations: {},
-		    groupsNameToUid: {},
-		    groupsUidToName: {}
-                };
+        if (this.context == null || this.context.username == null)
+			this.social = {
+				pending: [],
+				friends: [],
+				followers: [],
+				following: [],
+				pendingOutgoing: [],
+				annotations: {},
+				groupsNameToUid: {},
+				groupsUidToName: {}
+			}
 	    else {
 		    var that = this;
             this.context.getSocialState().thenApply(function(socialState){
@@ -952,14 +952,14 @@ module.exports = {
 		    socialState.pendingOutgoing.toArray([]).map(u => pendingOutgoingUsernames.push(u));
 
 		    that.social = {
-		                pendingOutgoing: pendingOutgoingUsernames,
-                        pending: socialState.pendingIncoming.toArray([]),
-			friends: friendNames,
-                        followers: followerNames,
-                        following: followeeNames,
-			annotations: annotations,
-			    groupsNameToUid: groupsNameToUid,
-			    groupsUidToName: groupsUidToName
+				pendingOutgoing: pendingOutgoingUsernames,
+				pending: socialState.pendingIncoming.toArray([]),
+				friends: friendNames,
+				followers: followerNames,
+				following: followeeNames,
+				annotations: annotations,
+				groupsNameToUid: groupsNameToUid,
+				groupsUidToName: groupsUidToName
 		    };
 		    if (callbackFunc != null) {
 		        callbackFunc(true);
