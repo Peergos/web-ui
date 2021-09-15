@@ -49,7 +49,7 @@ module.exports = {
 	mounted() {
 		this.$refs.username.focus()
 		// :)
-		setTimeout(() => this.loginDEV(), 300);
+		setTimeout(() => this.loginDEV(), 0);
 	},
 	methods: {
 		...Vuex.mapActions([
@@ -57,6 +57,10 @@ module.exports = {
 		]),
 		loginDEV() {
 		    // bypass login on DEV
+                    if (this.network == null) {
+                        setTimeout(() => this.loginDEV(), 100);
+                        return;
+                    }
 		    if( window.location.hostname == "localhost"){
                         var query = new URLSearchParams(window.location.search)
 			this.username = query.get("username")
