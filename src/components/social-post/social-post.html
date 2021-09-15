@@ -9,14 +9,6 @@
         </div>
         <spinner v-if="showSpinner"></spinner>
         <div class="modal-body">
-            <div v-if="progressMonitors.length>0" class="progressholder">
-                <progressbar
-                        v-for="progress in progressMonitors" v-if="progress.show"
-                        v-on:hide-progress="progressMonitors.splice(progressMonitors.indexOf(progress), 1)"
-                        :title="progress.title"
-                        :done="progress.done"
-                        :max="progress.max" />
-            </div>
             <div id="social-post-main">
                 <p>
                     <span>

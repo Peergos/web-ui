@@ -1,6 +1,10 @@
+const ProgressBar = require("../drive/ProgressBar.vue");
 module.exports = {
     template: require('social-post.html'),
-    data: function() {
+    components: {
+		ProgressBar,
+	},
+	data: function() {
         return {
             showSpinner: false,
             title: "Post a Message",
@@ -181,9 +185,22 @@ module.exports = {
                 let progress = progressStore[index];
                 let updateProgressBar = function(len){
                     progress.done += len.value_0;
-                    if (progress.done >= progress.max) {
-                        progress.show = false;
-                    }
+
+                    that.$toast.update(progress.name,
+                                       {content:
+					{
+					    component: ProgressBar,
+					    props:  {
+						title: progress.title,
+						done: progress.done,
+						max: progress.max
+					    },
+					}
+				       });
+                    
+		    if (progress.done >= progress.max) {
+			that.$toast.dismiss(progress.name);
+		    }
                 };
                 this.uploadMedia(this.mediaFiles[index], updateProgressBar).thenApply(result => {
                     if (result != null) {
@@ -205,11 +222,15 @@ module.exports = {
                 var thumbnailAllocation = Math.min(100000, file.size / 10);
                 var resultingSize = file.size + thumbnailAllocation;
                 var progress = {
-                    show:true,
                     title:"Encrypting and uploading " + file.name,
                     done:0,
-                    max:resultingSize
+                    max:resultingSize,
+                    name: file.name
                 };
+                that.$toast({
+		    component: ProgressBar,
+		    props:  progress,
+		} , { icon: false , timeout:false, id: file.name})
                 that.progressMonitors.push(progress);
                 progressStore.push(progress);
             }
