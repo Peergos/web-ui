@@ -26,7 +26,8 @@ module.exports = {
             choice_message: '',
             choice_body: '',
             choice_consumer_func: () => {},
-            choice_options: []
+            choice_options: [],
+            isIframeInitialised: false
         }
     },
     props: ['context', 'messages', 'importFile', 'importCalendarPath', 'owner', 'shareWith', 'loadCalendarAsGuest'],
@@ -52,8 +53,14 @@ module.exports = {
         return window.location.protocol + "//calendar." + window.location.host;
     },
     postMessage: function(obj) {
-	var iframe = document.getElementById("calendar");
-        iframe.contentWindow.postMessage(obj, '*');
+        let iframe = document.getElementById("calendar");
+        if (this.isIframeInitialised) {
+            iframe.contentWindow.postMessage(obj, '*');
+        } else {
+            iframe.contentWindow.postMessage({type: 'ping'}, '*');
+            let that = this;
+            window.setTimeout(function() {that.postMessage(obj);}, 30);
+        }
     },
     startListener: function(calendar) {
 	    var that = this;
@@ -72,7 +79,9 @@ module.exports = {
             // have to be careful about accepting data via the messaging API you
             // create. Check that source, and validate those inputs!
             if ((e.origin === "null" || e.origin === that.frameDomain()) && e.source === iframe.contentWindow) {
-                if(e.data.type=="save") {
+                if (e.data.type == 'pong') {
+                    that.isIframeInitialised = true;
+                } else if(e.data.type=="save") {
                     that.saveEvent(calendar, e.data);
                 } else if(e.data.type=="saveAll") {
                     that.saveAllEvents(calendar, e.data);
@@ -112,24 +121,27 @@ module.exports = {
         let date = new Date();
         let year = 1900 + date.getYear();
         let month = date.getMonth() + 1;
-        if (this.importFile != null) {
-            this.importICSFile();
-        } else if (this.importCalendarPath != null) {
-            if (this.loadCalendarAsGuest) {
-                let calendarDirectory = that.importCalendarPath.substring(that.importCalendarPath.lastIndexOf('/') +1);
-                that.readCalendarFile(calendar, that.owner, calendarDirectory).thenApply(function(json) {
-                    that.calendarProperties = new Object();
-                    that.calendarProperties.calendars = [];
-                    that.calendarProperties.calendars.push({name: json.name, owner: that.owner,
-                       directory: calendarDirectory, color: json.color});
-                   that.loadCalendars(calendar, year, month);
-                });
+        setTimeout(function(){
+            if (that.importFile != null) {
+                that.importICSFile();
+            } else if (that.importCalendarPath != null) {
+                if (that.loadCalendarAsGuest) {
+                    let calendarDirectory = that.importCalendarPath.substring(that.importCalendarPath.lastIndexOf('/') +1);
+                    that.readCalendarFile(calendar, that.owner, calendarDirectory).thenApply(function(json) {
+                        that.calendarProperties = new Object();
+                        that.calendarProperties.calendars = [];
+                        that.calendarProperties.calendars.push({name: json.name, owner: that.owner,
+                           directory: calendarDirectory, color: json.color});
+                       that.loadCalendars(calendar, year, month);
+                    });
+                } else {
+                    that.importSharedCalendar(calendar, year, month);
+                }
             } else {
-                this.importSharedCalendar(calendar, year, month);
+                this.load(calendar, year, month);
             }
-        } else {
-            this.load(calendar, year, month);
-        }
+        });
+
 	},
 	requestChoiceSelection: function(method, includeChangeAll) {
 	    let that = this;
@@ -274,10 +286,8 @@ module.exports = {
     loadAdditionalEvents: function(year, month, messageType, eventsThisMonth) {
         let that = this;
         let yearMonth = year * 12 + (month -1);
-        setTimeout(function(){
-            that.postMessage({type: messageType, currentMonth: eventsThisMonth
-                , yearMonth: yearMonth });
-        });
+        that.postMessage({type: messageType, currentMonth: eventsThisMonth
+            , yearMonth: yearMonth });
     },
     importSharedCalendar: function(calendar, year, month) {
         let that = this;
@@ -346,17 +356,15 @@ module.exports = {
     loadEvents: function(year, month, eventsPreviousMonth, eventsThisMonth, eventsNextMonth, recurringEvents) {
         let that = this;
         let yearMonth = year * 12 + (month-1);
-        setTimeout(function(){
-            let calendars = [];
-            for(var i=0;i < that.calendarProperties.calendars.length;i++) {
-                let calendar = that.calendarProperties.calendars[i];
-                calendars.push({name: calendar.name, color: calendar.color, owner: calendar.owner, shareable: calendar.shareable});
-            }
-            Vue.nextTick(function() {
-                that.postMessage({type: 'load', previousMonth: eventsPreviousMonth,
-                    currentMonth: eventsThisMonth, nextMonth: eventsNextMonth, recurringEvents: recurringEvents,
-                    yearMonth: yearMonth, username: that.context.username, calendars: calendars});
-            });
+        let calendars = [];
+        for(var i=0;i < that.calendarProperties.calendars.length;i++) {
+            let calendar = that.calendarProperties.calendars[i];
+            calendars.push({name: calendar.name, color: calendar.color, owner: calendar.owner, shareable: calendar.shareable});
+        }
+        Vue.nextTick(function() {
+            that.postMessage({type: 'load', previousMonth: eventsPreviousMonth,
+                currentMonth: eventsThisMonth, nextMonth: eventsNextMonth, recurringEvents: recurringEvents,
+                yearMonth: yearMonth, username: that.context.username, calendars: calendars});
         });
     },
     postDeleteCalendar: function(calendar, data) {

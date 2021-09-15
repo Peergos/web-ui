@@ -20,7 +20,8 @@ module.exports = {
             prompt_consumer_func: () => {},
             todoBoardName: null,
             todoExtension: ".todo",
-            currentFile: null
+            currentFile: null,
+            isIframeInitialised: false
         }
     },
     props: ['context', 'messages', 'currentTodoBoardName', 'file'],
@@ -57,7 +58,9 @@ module.exports = {
             // have to be careful about accepting data via the messaging API you
             // create. Check that source, and validate those inputs!
             if ((e.origin === "null" || e.origin === that.frameDomain()) && e.source === iframe.contentWindow) {
-                if (e.data.action == 'save') {
+                if (e.data.action == 'pong') {
+                    that.isIframeInitialised = true;
+                } else if (e.data.action == 'save') {
                     if (that.expectingSave) {
                         that.expectingSave = false;
                         that.save(e.data.text);
@@ -75,11 +78,12 @@ module.exports = {
             // origin, which might alow some esoteric attacks. Validate your output!
         if (this.currentFile == null) {
             that.isWritable = true;
-            setTimeout(function(){
-                that.showSpinner = false;
-                that.unsavedChanges = true;
+            that.showSpinner = false;
+            that.unsavedChanges = true;
+            let func = function() {
                 iframe.contentWindow.postMessage({title: that.todoBoardName, isWritable: that.isWritable, text: []}, '*');
-            });
+            };
+            that.setupIFrameMessaging(iframe, func);
         } else {
             that.isWritable = that.currentFile.isWritable();
             const props = this.currentFile.getFileProperties();
@@ -88,14 +92,13 @@ module.exports = {
                     var size = that.getFileSize(props);
                     var data = convertToByteArray(new Int8Array(size));
                     return reader.readIntoArray(data, 0, data.length).thenApply(function(read){
-                        setTimeout(function(){
-                            let allLists = that.loadTodoBoard(peergos.shared.user.TodoBoard.fromByteArray(data));
-                            let title = that.todoBoardName;
-                            setTimeout(function(){
-                                that.showSpinner = false;
-                                iframe.contentWindow.postMessage({title: title, isWritable: that.isWritable, text: allLists}, '*');
-                            });
-                        });
+                        let allLists = that.loadTodoBoard(peergos.shared.user.TodoBoard.fromByteArray(data));
+                        let title = that.todoBoardName;
+                        that.showSpinner = false;
+                        let func = function() {
+                            iframe.contentWindow.postMessage({title: title, isWritable: that.isWritable, text: allLists}, '*');
+                        };
+                        that.setupIFrameMessaging(iframe, func);
                     });
             }).exceptionally(function(throwable) {
                 that.showSpinner = false;
@@ -105,6 +108,15 @@ module.exports = {
             });
         }
 	},
+    setupIFrameMessaging: function(iframe, func) {
+        if (this.isIframeInitialised) {
+            func();
+        } else {
+            iframe.contentWindow.postMessage({type: 'ping'}, '*');
+            let that = this;
+            window.setTimeout(function() {that.setupIFrameMessaging(iframe, func);}, 20);
+        }
+    },
     loadTodoBoard: function(todoBoard) {
         let lists = todoBoard.getTodoLists().toArray([]);
         let allLists = [];

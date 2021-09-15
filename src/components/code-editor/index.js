@@ -7,7 +7,8 @@ module.exports = {
 	        saving: false,
 	        currentFile: null,
 	        currentFilename: null,
-	        isFileWritable: false
+	        isFileWritable: false,
+	        isIframeInitialised: false
         }
     },
     props: ['context', 'file', 'messages'],
@@ -41,7 +42,9 @@ module.exports = {
             // have to be careful about accepting data via the messaging API you
             // create. Check that source, and validate those inputs!
             if ((e.origin === "null" || e.origin === that.frameDomain()) && e.source === iframe.contentWindow) {
-                if (that.expectingSave) {
+                if (e.data.action == 'pong') {
+                    that.isIframeInitialised = true;
+                } else if (that.expectingSave) {
                     that.expectingSave = false;
                     that.save(e.data.text);
                 }
@@ -124,15 +127,26 @@ module.exports = {
                 var data = convertToByteArray(new Int8Array(size));
                 return reader.readIntoArray(data, 0, data.length)
                     .thenApply(function(read){
-                        setTimeout(function(){
+                        let func = function() {
                             iframe.contentWindow.postMessage({modes:modes, mime:mimeType, readOnly:readOnly, text:new TextDecoder().decode(data)}, '*');
-                        });
+                        };
+                        that.setupIFrameMessaging(iframe, func);
                     });
         }).exceptionally(function(throwable) {
             that.showMessage("Unexpected error", throwable.detailMessage);
             console.log('Error loading file: ' + that.file.getName());
             console.log(throwable.getMessage());
         });
+	},
+
+	setupIFrameMessaging: function(iframe, func) {
+        if (this.isIframeInitialised) {
+            func();
+        } else {
+            iframe.contentWindow.postMessage({type: 'ping'}, '*');
+            let that = this;
+            window.setTimeout(function() {that.setupIFrameMessaging(iframe, func);}, 20);
+        }
 	},
 
 	getAndSave: function() {

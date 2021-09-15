@@ -1860,9 +1860,7 @@ module.exports = {
                             that.importCalendarPath = null;
                             that.owner = file.getOwnerName();
                             that.loadCalendarAsGuest = isSecretLink;
-                            Vue.nextTick(function() {
-                                that.showCalendarViewer = true;
-                            });
+                            that.showCalendarViewer = true;
                         });
             })
         },

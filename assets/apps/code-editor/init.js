@@ -16,30 +16,32 @@ window.addEventListener('message', function (e) {
     mainWindow = e.source;
     origin = e.origin;
 
-    if (e.data.type == "save") {
-	var text = editor.getValue();
-	mainWindow.postMessage({text:text}, e.origin);
+    if (e.data.type == "ping") {
+	    mainWindow.postMessage({action:'pong'}, e.origin);
+    } else if (e.data.type == "save") {
+        var text = editor.getValue();
+        mainWindow.postMessage({text:text}, e.origin);
     } else {
-	document.getElementById("code").value = e.data.text;
-	var modes = e.data.modes;
-	countDownToReady = modes.length;
-	for (var i=0; i < modes.length; i++) {
-	    var script = document.createElement("script");
-	    script.type = "text/javascript";
-	    script.src = "mode/" + modes[i] + "/" + modes[i] + ".js";
-	    attacher = function() {
-		countDownToReady--;
-		if (countDownToReady == 0)
-		    editor = CodeMirror.fromTextArea(document.getElementById("code"), {
-			lineNumbers: true,
-			lineWrapping: true,
-			readOnly: e.data.readOnly,
-			//		matchBrackets: true,
-			mode: e.data.mime,
-		    });
-	    };
-	    script.onload = attacher;
-	    document.getElementsByTagName("head")[0].appendChild(script);
-	}
+        document.getElementById("code").value = e.data.text;
+        var modes = e.data.modes;
+        countDownToReady = modes.length;
+        for (var i=0; i < modes.length; i++) {
+            var script = document.createElement("script");
+            script.type = "text/javascript";
+            script.src = "mode/" + modes[i] + "/" + modes[i] + ".js";
+            attacher = function() {
+            countDownToReady--;
+            if (countDownToReady == 0)
+                editor = CodeMirror.fromTextArea(document.getElementById("code"), {
+                lineNumbers: true,
+                lineWrapping: true,
+                readOnly: e.data.readOnly,
+                //		matchBrackets: true,
+                mode: e.data.mime,
+                });
+            };
+            script.onload = attacher;
+            document.getElementsByTagName("head")[0].appendChild(script);
+        }
     }
 });
