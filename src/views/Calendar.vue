@@ -28,14 +28,35 @@
                 :consumer_cancel_func="confirm_consumer_cancel_func"
                 :consumer_func="confirm_consumer_func">
             </confirm>
+            <Share
+		v-if="showShare"
+		v-on:hide-share-with="closeShare"
+		v-on:update-shared-refresh="forceSharedRefreshWithUpdate++"
+		:data="sharedWithData"
+		:fromApp="fromApp"
+		:displayName="displayName"
+		:allowReadWriteSharing="allowReadWriteSharing"
+		:allowCreateSecretLink="allowCreateSecretLink"
+		:files="filesToShare"
+		:path="pathToFile"
+		:followernames="followernames"
+		:friendnames="friendnames"
+		:groups="groups"
+		:messages="messages">
+	    </Share>
 	</main>
 </template>
 
 <script>
+const Share = require("../components/drive/DriveShare.vue");
+
 const routerMixins = require("../mixins/router/index.js");
 
 module.exports = {
-    data: function() {
+    components: {
+		Share
+	},
+	data: function() {
         return {
             APPS_DIR_NAME: '.apps',
             CALENDAR_DIR_NAME: 'calendar',
@@ -44,6 +65,7 @@ module.exports = {
             CONFIG_FILENAME: 'App.config',
             NEW_CALENDAR_FILENAME: 'calendar.inf',
             showSpinner: false,
+            showShare: false,
             spinnerMessage: "",
             calendarProperties: null,
             showPrompt: false,
@@ -64,15 +86,25 @@ module.exports = {
             choice_options: []
         }
     },
-    props: ['messages', 'importFile', 'importCalendarPath', 'owner', 'shareWith', 'loadCalendarAsGuest'],
+    props: ['messages', 'importFile', 'importCalendarPath', 'owner', 'loadCalendarAsGuest'],
 	computed: {
 		...Vuex.mapState([
 			'context',
+			'socialData'
 		]),
 		...Vuex.mapGetters([
 			'isSecretLink',
 			'getPath'
 		]),
+            friendnames: function() {
+                return this.socialData.friends;
+            },
+            followernames: function() {
+                return this.socialData.followers;
+            },
+            groups: function() {
+		return {groupsNameToUid: this.socialData.groupsNameToUid, groupsUidToName: this.socialData.groupsUidToName};
+	    },
 	},
 	mixins:[routerMixins],
     created() {
@@ -179,7 +211,40 @@ module.exports = {
             this.load(calendar, year, month);
         }
 	},
-	requestChoiceSelection: function(method, includeChangeAll) {
+	closeShare: function() {
+            this.showShare = false;
+        },
+        shareWith: function(app, filename, allowReadWriteSharing, allowCreateSecretLink, nameToDisplay) {
+            let dirPath = this.context.username + "/.apps/" + app;
+            this.showShareWithForFile(dirPath, filename, allowReadWriteSharing, allowCreateSecretLink, nameToDisplay);
+        },
+        showShareWithForFile: function(dirPath, filename, allowReadWriteSharing, allowCreateSecretLink, nameToDisplay) {
+            let that = this;
+            var context = this.context;
+            this.context.getByPath(dirPath)
+                .thenApply(function(dir){dir.get().getChild(filename, that.context.crypto.hasher, that.context.network).thenApply(function(child){
+                    let file = child.get();
+                    if (file == null) {
+                        return;
+                    }
+                    that.filesToShare = [file];
+                    that.pathToFile = dirPath.split('/');
+                    let directoryPath = peergos.client.PathUtils.directoryToPath(that.pathToFile);
+                    context.getDirectorySharingState(directoryPath).thenApply(function(updatedSharedWithState) {
+                        let fileSharedWithState = updatedSharedWithState.get(file.getFileProperties().name);
+                        let read_usernames = fileSharedWithState.readAccess.toArray([]);
+                        let edit_usernames = fileSharedWithState.writeAccess.toArray([]);
+                        that.sharedWithData = {read_shared_with_users:read_usernames, edit_shared_with_users:edit_usernames};
+                        that.fromApp = true;
+                        that.displayName = nameToDisplay != null && nameToDisplay.length > 0 ?
+                                                     nameToDisplay : file.getFileProperties().name;
+                        that.allowReadWriteSharing = allowReadWriteSharing;
+                        that.allowCreateSecretLink = allowCreateSecretLink;
+                        that.showShare = true;
+                    });
+                })});
+        },
+        requestChoiceSelection: function(method, includeChangeAll) {
 	    let that = this;
         this.choice_message = method + ' Event';
         this.choice_body = '';
