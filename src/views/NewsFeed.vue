@@ -83,7 +83,7 @@
                                         <div v-if="!entry[0].isPost && !entry[0].isMedia">
                                             <span class="grid_icon_wrapper fa">
                                                 <a v-if="!entry[0].hasThumbnail && !entry[0].isChat">
-                                                    <AppIcon style="height:100px" v-on:click="view(entry[0])" v-bind:class="['icon', 'card__icon', getFileIconFromFileAndType(entry[0].file, entry[0].fileType), 'picon-timeline']" :icon="getFileIconFromFileAndType(entry[0].file, entry[0].fileType)"> </AppIcon>
+                                                    <AppIcon style="height:100px" v-on:click="view(entry[0])" class="card__icon" :icon="getFileIconFromFileAndType(entry[0].file, entry[0].fileType)"> </AppIcon>
                                                 </a>
                                                 <img v-if="entry[0].hasThumbnail && !entry[0].isChat" v-on:click="view(entry[0])" v-bind:src="entry[0].thumbnail" style="cursor: pointer"/>
                                                 <button v-if="entry[0].isChat && entry[0].isNewChat" class="btn btn-success" @click="joinConversation(entry[0])" style="font-weight: bold;">Join</button>
@@ -102,7 +102,7 @@
                                             <div v-bind:style="{ marginLeft: indent(row) }">
                                                 <div  v-for="(media, mediaIndex) in row.mediaList" class="grid_icon_wrapper fa" style="margin:0;margin-top:0.2em;">
                                                     <a v-if="!media.hasThumbnail">
-                                                        <span style="height:100px" v-on:click="viewMediaList(row.mediaList, mediaIndex)" v-bind:class="[media.isDirectory ? 'dir' : 'file', getFileIconFromFileAndType(media.file, media.fileType), 'picon-timeline']"> </span>
+                                                        <AppIcon style="height:100px" v-on:click="viewMediaList(row.mediaList, mediaIndex)" class="card__icon" :icon="getFileIconFromFileAndType(media.file, media.fileType)"> </AppIcon>
                                                     </a>
                                                     <img v-if="media.hasThumbnail" v-on:click="viewMediaList(row.mediaList, mediaIndex)" v-bind:src="media.thumbnail" style="cursor: pointer"/>
                                                 </div>
@@ -147,7 +147,7 @@
                                             <div v-bind:style="{ marginLeft: indent(row) }">
                                                 <div  v-for="(media, mediaIndex) in row.mediaList" class="grid_icon_wrapper fa" style="margin:0;margin-top:0.2em;">
                                                     <a v-if="!media.hasThumbnail">
-                                                        <span style="height:100px" v-on:click="viewMediaList(row.mediaList, mediaIndex)" v-bind:class="[media.isDirectory ? 'dir' : 'file', getFileIconFromFileAndType(media.file, media.fileType), 'picon-timeline']"> </span>
+                                                        <AppIcon style="height:100px" v-on:click="viewMediaList(row.mediaList, mediaIndex)" class="card__icon" :icon="getFileIconFromFileAndType(media.file, media.fileType)"> </AppIcon>
                                                     </a>
                                                     <img v-if="media.hasThumbnail" v-on:click="viewMediaList(row.mediaList, mediaIndex)" v-bind:src="media.thumbnail" style="cursor: pointer"/>
                                                 </div>
@@ -1445,11 +1445,9 @@ module.exports = {
 	color: var(--color-2);
 	transform: scale(1);
 	transition: transform 0.2s;
-}
-.picon-timeline {
-    font-size: 5em;
-    word-wrap: break-word;
-    max-width: 5em;
+        font-size: 5em;
+        word-wrap: break-word;
+        max-width: 5em;
 }
 
 .newsfeed {
