@@ -242,7 +242,7 @@ module.exports = {
     },
     props: ['navigateToAction','viewAction', 'messages', 'getFileIconFromFileAndType', 'socialFeedInstance',
         'importCalendarFile', 'importSharedCalendar', 'displayProfile', 
-        'checkAvailableSpace', 'convertBytesToHumanReadable', 'viewConversations'],
+        'convertBytesToHumanReadable', 'viewConversations'],
 	mixins:[routerMixins],
 
   	created: function() {
@@ -271,6 +271,9 @@ module.exports = {
         updateSocialFeedInstance: function(updated) {
             // TODO put this in vuex store
             this.socialFeed = updated;
+        },
+        checkAvailableSpace: function(fileSize) {
+            return Number(this.quotaBytes.toString()) - (Number(this.usageBytes.toString()) + fileSize);
         },
         addNewPost: function() {
             this.currentSocialPostEntry = null;
@@ -1337,8 +1340,10 @@ module.exports = {
     },
     computed: {
 		...Vuex.mapState([
-		    'context',
-                    "socialData"
+		    'quotaBytes',
+		    'usageBytes',
+                    'context',
+                    'socialData'
 		]),
 		...Vuex.mapGetters([
 			'isSecretLink',
