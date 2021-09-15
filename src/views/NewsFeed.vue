@@ -241,7 +241,7 @@ module.exports = {
         }
     },
     props: ['navigateToAction','viewAction', 'messages', 'getFileIconFromFileAndType', 'socialFeedInstance',
-        'updateSocialFeedInstance', 'importCalendarFile', 'importSharedCalendar', 'displayProfile', 'groups',
+        'importCalendarFile', 'importSharedCalendar', 'displayProfile', 
         'checkAvailableSpace', 'convertBytesToHumanReadable', 'viewConversations'],
 	mixins:[routerMixins],
 
