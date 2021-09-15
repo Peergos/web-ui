@@ -268,6 +268,10 @@ module.exports = {
 		this.updateHistory('NewsFeed', '/NewsFeed' , null )
 	},
     methods: {
+        updateSocialFeedInstance: function(updated) {
+            // TODO put this in vuex store
+            this.socialFeed = updated;
+        },
         addNewPost: function() {
             this.currentSocialPostEntry = null;
             this.socialPostAction = 'add';
@@ -1349,6 +1353,9 @@ module.exports = {
     	followernames: function() {
             return this.socialData.followers;
         },
+        groups: function() {
+	    return {groupsNameToUid: this.socialData.groupsNameToUid, groupsUidToName: this.socialData.groupsUidToName};
+	},
     	blocks: function() {
             if (this.data == null || this.data.length == 0) {
                 return [];
