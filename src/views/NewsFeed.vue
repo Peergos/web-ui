@@ -1,5 +1,5 @@
 <template>
-<main class="app-temp">
+<main class="newsfeed">
     <div v-if="buildingFeed">
         Building your news feed.
         <br/>
@@ -83,7 +83,7 @@
                                         <div v-if="!entry[0].isPost && !entry[0].isMedia">
                                             <span class="grid_icon_wrapper fa">
                                                 <a v-if="!entry[0].hasThumbnail && !entry[0].isChat">
-                                                    <span style="height:100px" v-on:click="view(entry[0])" v-bind:class="[entry[0].isDirectory ? 'dir' : 'file', getFileIconFromFileAndType(entry[0].file, entry[0].fileType), 'picon-timeline']"> </span>
+                                                    <AppIcon style="height:100px" v-on:click="view(entry[0])" v-bind:class="['icon', 'card__icon', getFileIconFromFileAndType(entry[0].file, entry[0].fileType), 'picon-timeline']" :icon="getFileIconFromFileAndType(entry[0].file, entry[0].fileType)"> </AppIcon>
                                                 </a>
                                                 <img v-if="entry[0].hasThumbnail && !entry[0].isChat" v-on:click="view(entry[0])" v-bind:src="entry[0].thumbnail" style="cursor: pointer"/>
                                                 <button v-if="entry[0].isChat && entry[0].isNewChat" class="btn btn-success" @click="joinConversation(entry[0])" style="font-weight: bold;">Join</button>
@@ -240,7 +240,7 @@ module.exports = {
             messenger: null
         }
     },
-    props: ['navigateToAction','viewAction', 'messages', 'getFileIconFromFileAndType', 'socialFeedInstance',
+    props: ['navigateToAction','viewAction', 'messages', 'socialFeedInstance',
         'importCalendarFile', 'importSharedCalendar', 'displayProfile', 
         'convertBytesToHumanReadable', 'viewConversations'],
 	mixins:[routerMixins],
@@ -271,6 +271,23 @@ module.exports = {
         updateSocialFeedInstance: function(updated) {
             // TODO put this in vuex store
             this.socialFeed = updated;
+        },
+        getFileIconFromFileAndType: function(file, type) {
+            // TODO unify this with the one on DriveGridCard
+            if (type == 'dir') 	return 'folder--72';
+	    if (type == 'image') 	return 'file-image--72';
+	    if (type == 'text') 	return 'file-text--72';
+	    if (type == 'audio') 	return 'file-audio--72';
+	    if (type == 'video') 	return 'file-video--72';
+	    if (type == 'pdf') 	return 'file-pdf--72';
+	    if (type == 'zip') 	return 'file-zip--72';
+	    if (type == 'todo') 	return 'tasks--72';
+	    if (type == 'calendar') 	return 'calendar--72';
+	    if (type == 'contact file') 	return 'file-card--72';
+	    if (type == 'powerpoint presentation' || type == 'presentation') 	return 'file-powerpoint--72';
+	    if (type == 'word document' || type == 'text document') 	return 'file-word--72';
+	    if (type == 'excel spreadsheet' || type == 'spreadsheet') 	return 'file-excel--72';
+            return 'file-generic--72';
         },
         checkAvailableSpace: function(fileSize) {
             return Number(this.quotaBytes.toString()) - (Number(this.usageBytes.toString()) + fileSize);
@@ -1422,20 +1439,27 @@ module.exports = {
     font-size: 1.2em;
     overflow-wrap: break-word;
 }
+.newsfeed .card__icon {
+	width:72px;
+	height: 72px;
+	color: var(--color-2);
+	transform: scale(1);
+	transition: transform 0.2s;
+}
 .picon-timeline {
     font-size: 5em;
     word-wrap: break-word;
     max-width: 5em;
 }
 
-.app-temp{
+.newsfeed {
     display: flex;
     flex-direction:column;
     align-items: center;
     justify-content: center;
     min-height: 100vh;
 }
-.app-temp h1{
+.newsfeed h1{
 	text-align: center;
 }
 </style>
