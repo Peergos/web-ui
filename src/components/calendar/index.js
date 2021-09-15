@@ -138,7 +138,7 @@ module.exports = {
                     that.importSharedCalendar(calendar, year, month);
                 }
             } else {
-                this.load(calendar, year, month);
+                that.load(calendar, year, month);
             }
         });
 

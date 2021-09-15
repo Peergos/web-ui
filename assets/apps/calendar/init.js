@@ -1,6 +1,6 @@
 var mainWindow;
 var origin;
-
+var theme;
 let handler = function (e) {
       // You must verify that the origin of the message's sender matches your
       // expectations. In this case, we're only planning on accepting messages
@@ -14,6 +14,7 @@ let handler = function (e) {
       mainWindow = e.source;
       origin = e.origin;
       if (e.data.type == "ping") {
+          theme = e.data.currentTheme;
           mainWindow.postMessage({type:'pong'}, e.origin);
       } else if (e.data.type == "load") {
           initialiseCalendar(e.data.username == null ? true : false, e.data.calendars);
