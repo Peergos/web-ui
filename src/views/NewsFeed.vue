@@ -240,7 +240,7 @@ module.exports = {
             messenger: null
         }
     },
-    props: ['navigateToAction','viewAction', 'messages', 'socialFeedInstance',
+    props: ['viewAction', 'messages', 'socialFeedInstance',
         'importCalendarFile', 'importSharedCalendar', 'displayProfile', 
         'convertBytesToHumanReadable', 'viewConversations'],
 	mixins:[routerMixins],
@@ -288,6 +288,9 @@ module.exports = {
 	    if (type == 'word document' || type == 'text document') 	return 'file-word--72';
 	    if (type == 'excel spreadsheet' || type == 'spreadsheet') 	return 'file-excel--72';
             return 'file-generic--72';
+        },
+        navigateToAction: function(directory) {
+            this.updateHistory("Drive", directory, "");
         },
         checkAvailableSpace: function(fileSize) {
             return Number(this.quotaBytes.toString()) - (Number(this.usageBytes.toString()) + fileSize);
@@ -1360,7 +1363,8 @@ module.exports = {
 		    'quotaBytes',
 		    'usageBytes',
                     'context',
-                    'socialData'
+                    'socialData',
+                    'path'
 		]),
 		...Vuex.mapGetters([
 			'isSecretLink',
