@@ -16,7 +16,7 @@
                     </div>
                     <strong><a v-bind:href="link.href">{{ link.name }}</a></strong>
                     <input v-bind:id="link.id" type="text" v-bind:value="link.href" style="display: none">
-                    <button class="fa fa-clipboard" style="padding: 6px 12px;" @click="copyUrlToClipboard($event)">&nbsp;Copy to clipboard</button>
+                    <button class="fa fa-clipboard" style="padding: 6px 12px; background-color:var(--bg);" @click="copyUrlToClipboard($event)">&nbsp;Copy to clipboard</button>
                 </p>
                 </div>
             </div>
