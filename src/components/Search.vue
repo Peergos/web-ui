@@ -232,7 +232,10 @@ module.exports = {
             this.errorClass = "has-error has-feedback alert alert-danger";
             return;
         }
-        return new Date(Date.parse(searchTerm));
+        let searchTermDate = new Date(Date.parse(searchTerm));
+        let jsDate = new Date(searchTermDate.getFullYear(), searchTermDate.getMonth(), searchTermDate.getDate(),
+            0, 0, 0, 0);
+        return jsDate;
     },
     extractFileSize: function(searchTerm) {
         if (searchTerm.length == 0) {
