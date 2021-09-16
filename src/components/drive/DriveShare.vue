@@ -135,7 +135,7 @@
 							aria-label="Create Secret Link"
 							@click.native="createSecretLink()"
 						>
-							Create secret Link
+							Create Secret Link
 						</AppButton>
 					</div>
 
