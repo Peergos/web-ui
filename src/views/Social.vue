@@ -9,7 +9,12 @@
 		</fingerprint>
 		<h2>Social</h2>
 		<spinner v-if="showSpinner"></spinner>
-		<section>
+		<ViewProfile
+                    v-if="showProfileViewForm"
+                    v-on:hide-profile-view="showProfileViewForm = false"
+                    :profile="profile">
+                </ViewProfile>
+                <section>
 			<h3>Send follow request:</h3>
 			<FormAutocomplete
 				is-multiple
@@ -59,7 +64,7 @@
                 <div id='friend-table-id' class="table flex-container" style="flex-flow:column;">
                   <div v-for="username in socialData.friends" class="flex-container vspace-5" style="justify-content:space-between; max-width:700px;">
                     <div id='friend-id' style="font-size:1.5em;">
-                        <a v-on:click="profile(username)" style="cursor: pointer">{{ username }}</a>
+                        <a v-on:click="displayProfile(username)" style="cursor: pointer">{{ username }}</a>
                         <span v-if="isVerified(username)" class="fas fa-check-circle"><span class="not-mobile">Verified</span></span>
 		    </div>
 		    <div class="flex-container" style="justify-content:space-evenly;">
@@ -96,7 +101,7 @@
                 <div class="table flex-container" style="flex-flow:column;">
                   <tr v-for="user in socialData.following" class="flex-container vspace-5" style="justify-content:space-between; max-width:700px;">
                     <div style="font-size:1.5em;">
-                        <a v-on:click="profile(user)" style="cursor: pointer">{{ user }}</a>
+                        <a v-on:click="displayProfile(user)" style="cursor: pointer">{{ user }}</a>
 		    </div>
                     <div>
 		      <button class="btn btn-danger" @click="unfollow(user)">Unfollow</button>
@@ -108,17 +113,29 @@
 </template>
 
 <script>
+const ViewProfile = require("../components/profile/ViewProfile.vue"); 
 const FormAutocomplete = require("../components/form/FormAutocomplete.vue");
 const routerMixins = require("../mixins/router/index.js");
 
 module.exports = {
 	components: {
-		FormAutocomplete,
+	    FormAutocomplete,
+            ViewProfile
 	},
     data() {
         return {
             targetUsername: "",
             targetUsernames: [],
+            profile: {
+                firstName: "",
+                lastName: "",
+                biography: "",
+                primaryPhone: "",
+                primaryEmail: "",
+                profileImage: "",
+                status: "",
+                webRoot: ""
+            },
             // data:{
             //     pending: [],
             //     friends: [],
@@ -128,13 +145,14 @@ module.exports = {
             //     groupsUidToName: [],
             // },
             showSpinner: false,
-			showFingerprint: false,
-			initialIsVerified: false,
-			fingerprint: null,
-			friendname: null
+	    showFingerprint: false,
+	    showProfileViewForm: false,
+            initialIsVerified: false,
+	    fingerprint: null,
+	    friendname: null
         }
     },
-    props: ['externalchange', 'messages', 'displayProfile'],
+    props: ['externalchange', 'messages'],
 	mixins:[routerMixins],
 
 	computed: {
@@ -222,9 +240,36 @@ module.exports = {
 				// 	});
 			//}
 		//},
-    profile(username) {
-        this.displayProfile(username, false);
-    },
+        displayProfile: function(username){
+            this.showSpinner = true;
+            let that = this;
+            let context = this.context;
+            peergos.shared.user.ProfilePaths.getProfile(username, context).thenApply(profile => {
+                var base64Image = "";
+                if (profile.profilePhoto.isPresent()) {
+                    var str = "";
+                    let data = profile.profilePhoto.get();
+                    for (let i = 0; i < data.length; i++) {
+                        str = str + String.fromCharCode(data[i] & 0xff);
+                    }
+                    if (data.byteLength > 0) {
+                        base64Image = "data:image/png;base64," + window.btoa(str);
+                    }
+                }
+                that.profile = {
+                    firstName: profile.firstName.isPresent() ? profile.firstName.get() : "",
+                    lastName: profile.lastName.isPresent() ? profile.lastName.get() : "",
+                    biography: profile.bio.isPresent() ? profile.bio.get() : "",
+                    primaryPhone: profile.phone.isPresent() ? profile.phone.get() : "",
+                    primaryEmail: profile.email.isPresent() ? profile.email.get() : "",
+                    profileImage: base64Image,
+                    status: profile.status.isPresent() ? profile.status.get() : "",
+                    webRoot: profile.webRoot.isPresent() ? profile.webRoot.get() : ""
+                };
+                that.showSpinner = false;
+                that.showProfileViewForm = true;
+            });
+        },
     // setTypeAhead() {
 
     //     var usernames = this.usernames;
