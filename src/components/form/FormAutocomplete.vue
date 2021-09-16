@@ -62,6 +62,10 @@ module.exports = {
 			type: String,
 			default: "",
 		},
+		maxitems: {
+			type: Number,
+			default: 5,
+		},
 		options: {
 			type: Array,
 			default() {
@@ -85,19 +89,20 @@ module.exports = {
 		};
 	},
 	computed: {
-		filteredOptions() {
-			return this.options.filter((val) =>
-				// val.title.toLowerCase().includes(this.textSearch.toLowerCase())
-				val.toLowerCase().includes(this.textSearch.toLowerCase())
-
-			);
-		},
-		selectedItems() {
-			if (this.isMultiple) {
-				return this.value.map((v) => v);
-			}
-			return [];
-		},
+	    filteredOptions() {
+		let filtered = this.options.filter((val) =>
+				                   // val.title.toLowerCase().includes(this.textSearch.toLowerCase())
+				                   val.toLowerCase().includes(this.textSearch.toLowerCase())                                                 
+			                          );
+                return filtered.slice(0, Math.min(filtered.length, this.maxitems));
+                    
+	    },
+	    selectedItems() {
+		if (this.isMultiple) {
+		    return this.value.map((v) => v);
+		}
+		return [];
+	    },
 	},
 	methods: {
 		inSelectedItems(uid) {

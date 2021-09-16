@@ -17,10 +17,11 @@
                 <section>
 			<h3>Send follow request:</h3>
 			<FormAutocomplete
-				is-multiple
-				v-model="targetUsernames"
-				:options="usernames"
-				placeholder="please select user"
+			    is-multiple
+			    v-model="targetUsernames"
+			    :options="usernames"
+                            :maxitems="5"
+			    placeholder="please select user"
 			/>
 			<!-- <div class="flex-container" style="align-self: center;">
 				<div class="flex-grow flex-container hspace-5">
