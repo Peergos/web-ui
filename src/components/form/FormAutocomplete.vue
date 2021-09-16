@@ -90,12 +90,18 @@ module.exports = {
 	},
 	computed: {
 	    filteredOptions() {
-		let filtered = this.options.filter((val) =>
-				                   // val.title.toLowerCase().includes(this.textSearch.toLowerCase())
-				                   val.toLowerCase().includes(this.textSearch.toLowerCase())                                                 
-			                          );
-                return filtered.slice(0, Math.min(filtered.length, this.maxitems));
-                    
+                let search = this.textSearch.toLowerCase();
+                let filter = (val) => {
+                    let lower = val.toLowerCase();
+                    for (var i=0; i < search.length; i++){
+                        if (! val.includes(search.charAt(i)))
+                            return false;
+                    }
+                    return true;
+                };
+		let filtered = this.options.filter(filter);
+                let sorted = filtered.sort((a, b) => this.levenshtein(a, search) - this.levenshtein(b, search));
+                return sorted.slice(0, Math.min(sorted.length, this.maxitems));
 	    },
 	    selectedItems() {
 		if (this.isMultiple) {
@@ -149,7 +155,47 @@ module.exports = {
 			this.$emit("input", items);
 			this.$emit("onRemoveItem", items);
 		},
-
+            levenshtein: function(a, b) {
+                var d = [];                
+                var n = a.length;
+                var m = b.length;
+                
+                if (n == 0) return m;
+                if (m == 0) return n;
+                
+                for (var i = n; i >= 0; i--) d[i] = [];                
+                for (var i = n; i >= 0; i--) d[i][0] = i;
+                for (var j = m; j >= 0; j--) d[0][j] = j;
+                
+                for (var i = 1; i <= n; i++) {
+                    var a_i = a.charAt(i - 1);
+                    
+                    for (var j = 1; j <= m; j++) {
+                        // check the jagged ld total so far
+                        if (i == j && d[i][j] > 4) return n;
+                        
+                        var b_j = b.charAt(j - 1);
+                        var cost = (a_i == b_j) ? 0 : 1;
+                        
+                        // get minimum
+                        var mi = d[i - 1][j] + 1;
+                        var x = d[i][j - 1] + 1;
+                        var y = d[i - 1][j - 1] + cost;
+                        
+                        if (x < mi) mi = x;
+                        if (y < mi) mi = y;
+                        
+                        d[i][j] = mi;
+                        
+                        //Damerau transposition
+                        if (i > 1 && j > 1 && a_i == b.charAt(j - 2) && a.charAt(i - 2) == b_j) {
+                            d[i][j] = Math.min(d[i][j], d[i - 2][j - 2] + cost);
+                        }
+                    }
+                }
+                
+                return d[n][m];
+            }
 	},
 };
 </script>
