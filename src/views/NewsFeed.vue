@@ -31,11 +31,11 @@
                     :hideGalleryTitle="true"
                     :context="context">
                 </Gallery>
-                <profile-view
+                <ViewProfile
                     v-if="showProfileViewForm"
                     v-on:hide-profile-view="showProfileViewForm = false"
                     :profile="profile">
-                </profile-view>
+                </ViewProfile>
                 <confirm
                     v-if="showConfirm"
                     v-on:hide-confirm="showConfirm = false"
@@ -207,12 +207,14 @@
 
 <script>
 const Gallery = require("../components/drive/DriveGallery.vue");
+const ViewProfile = require("../components/profile/ViewProfile.vue");  
     
 const routerMixins = require("../mixins/router/index.js");
 
 module.exports = {
     components: {
 	Gallery,
+        ViewProfile
     },
     data: function() {
         return {
