@@ -31,6 +31,11 @@
                     :hideGalleryTitle="true"
                     :context="context">
                 </Gallery>
+                <profile-view
+                    v-if="showProfileViewForm"
+                    v-on:hide-profile-view="showProfileViewForm = false"
+                    :profile="profile">
+                </profile-view>
                 <confirm
                     v-if="showConfirm"
                     v-on:hide-confirm="showConfirm = false"
@@ -70,7 +75,7 @@
                                 <center><span>No more entries</span></center>
                             </div>
                             <div v-if="!entry[0].isLastEntry && !entry[0].isPost && !entry[0].isMedia" style="border: 1px solid black;border-radius: 11px; margin-top:5px; padding: 2em;">
-                                <a v-if="entry[0].sharer != context.username && canLoadProfile(entry[0].sharer)" v-on:click="profile(entry[0].sharer)" style="cursor: pointer">
+                                <a v-if="entry[0].sharer != context.username && canLoadProfile(entry[0].sharer)" v-on:click="displayProfile(entry[0].sharer)" style="cursor: pointer">
                                     <span>{{ entry[0].sharer }}</span>
                                 </a>
                                 <span v-if="entry[0].sharer != context.username && !canLoadProfile(entry[0].sharer)">{{ entry[0].sharer }}</span>
@@ -118,7 +123,7 @@
                                         <div v-if="rowIndex >= 1 && row.isPost">
                                             <div v-bind:style="{ marginLeft: indent(row) }">
                                                 <div style="display:flex;font-size: 1em;color: #7d7d7d;margin-right: 10px;">
-                                                    <a v-if="row.sharer != context.username && canLoadProfile(row.sharer)" v-on:click="profile(row.sharer)" style="cursor: pointer">
+                                                    <a v-if="row.sharer != context.username && canLoadProfile(row.sharer)" v-on:click="displayProfile(row.sharer)" style="cursor: pointer">
                                                         <span>{{ row.sharer }}&nbsp;</span>
                                                     </a>
                                                     <span v-if="row.sharer!= context.username && !canLoadProfile(row.sharer)">{{ row.sharer }}&nbsp;</span>
@@ -163,7 +168,7 @@
                                         <div v-if="row.isPost">
                                             <div v-bind:style="{ marginLeft: indent(row) }">
                                                 <div style="display:flex;font-size: 1em;color: #7d7d7d;margin-right: 10px;">
-                                                    <a v-if="row.sharer != context.username && canLoadProfile(row.sharer)" v-on:click="profile(row.sharer)" style="cursor: pointer">
+                                                    <a v-if="row.sharer != context.username && canLoadProfile(row.sharer)" v-on:click="displayProfile(row.sharer)" style="cursor: pointer">
                                                         <span>{{ row.sharer }}&nbsp;</span>
                                                     </a>
                                                     <a
@@ -218,6 +223,17 @@ module.exports = {
             pageSize: 5,
             requestingMoreResults: false,
             noMoreResults: false,
+            showProfileViewForm:false,
+            profile: {
+                firstName: "",
+                lastName: "",
+                biography: "",
+                primaryPhone: "",
+                primaryEmail: "",
+                profileImage: "",
+                status: "",
+                webRoot: ""
+            },
             showSocialPostForm: false,
             socialPostAction: '',
             currentSocialPostEntry: null,
@@ -241,7 +257,7 @@ module.exports = {
         }
     },
     props: ['viewAction', 'messages', 'socialFeedInstance',
-        'importCalendarFile', 'importSharedCalendar', 'displayProfile', 
+        'importCalendarFile', 'importSharedCalendar',  
         'convertBytesToHumanReadable', 'viewConversations'],
 	mixins:[routerMixins],
 
@@ -291,6 +307,36 @@ module.exports = {
         },
         navigateToAction: function(directory) {
             this.updateHistory("Drive", directory, "");
+        },
+        displayProfile: function(username){
+            this.showSpinner = true;
+            let that = this;
+            let context = this.context;
+            peergos.shared.user.ProfilePaths.getProfile(username, context).thenApply(profile => {
+                var base64Image = "";
+                if (profile.profilePhoto.isPresent()) {
+                    var str = "";
+                    let data = profile.profilePhoto.get();
+                    for (let i = 0; i < data.length; i++) {
+                        str = str + String.fromCharCode(data[i] & 0xff);
+                    }
+                    if (data.byteLength > 0) {
+                        base64Image = "data:image/png;base64," + window.btoa(str);
+                    }
+                }
+                that.profile = {
+                    firstName: profile.firstName.isPresent() ? profile.firstName.get() : "",
+                    lastName: profile.lastName.isPresent() ? profile.lastName.get() : "",
+                    biography: profile.bio.isPresent() ? profile.bio.get() : "",
+                    primaryPhone: profile.phone.isPresent() ? profile.phone.get() : "",
+                    primaryEmail: profile.email.isPresent() ? profile.email.get() : "",
+                    profileImage: base64Image,
+                    status: profile.status.isPresent() ? profile.status.get() : "",
+                    webRoot: profile.webRoot.isPresent() ? profile.webRoot.get() : ""
+                };
+                that.showSpinner = false;
+                that.showProfileViewForm = true;
+            });
         },
         checkAvailableSpace: function(fileSize) {
             return Number(this.quotaBytes.toString()) - (Number(this.usageBytes.toString()) + fileSize);
@@ -908,9 +954,6 @@ module.exports = {
             let isFriend = this.friendnames.indexOf(sharer) > -1;
             let isFollowing = this.followingnames.indexOf(sharer) > -1;
             return isFriend || isFollowing;
-        },
-        profile: function(username) {
-            this.displayProfile(username, false);
         },
         isSharedCalendar: function(path) {
             let pathParts = path.split("/");
