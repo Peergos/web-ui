@@ -137,7 +137,8 @@ module.exports = {
         if (this.isIframeInitialised) {
             iframe.contentWindow.postMessage(obj, '*');
         } else {
-            iframe.contentWindow.postMessage({type: 'ping', currentTheme: 'notset'}, '*');
+            let theme = this.$store.getters.currentTheme;
+            iframe.contentWindow.postMessage({type: 'ping', currentTheme: theme}, '*');
             let that = this;
             window.setTimeout(function() {that.postMessage(obj);}, 30);
         }
