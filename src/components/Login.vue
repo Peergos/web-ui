@@ -65,10 +65,8 @@ module.exports = {
                         var query = new URLSearchParams(window.location.search)
 			this.username = query.get("username")
                         if (this.username == null)
-                            this.username = 'peergos'
+                            return;
                         this.password = query.get("password")
-                        if (this.password == null)
-			    this.password = 'testpassword'
 			this.login()
 		    }
 		},
