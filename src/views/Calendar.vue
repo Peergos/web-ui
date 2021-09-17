@@ -1,5 +1,11 @@
 <template>
-	<main class="app-temp">
+	<article class="app-view calendar-view">
+		<AppHeader>
+			<template #primary>
+				<h1>Calendar view</h1>
+			</template>
+		</AppHeader>
+		<main>
             <spinner v-if="showSpinner" :message="spinnerMessage"></spinner>
             <a id="downloadEventAnchor" style="display:none"></a>
 	    <iframe id="calendar-iframe" :src="frameUrl()" style="width:100%; min-height:100vh" frameBorder="0"></iframe>
@@ -44,17 +50,20 @@
 		:groups="groups"
 		:messages="messages">
 	    </Share>
-	</main>
+		</main>
+	</article>
 </template>
 
 <script>
+const AppHeader = require("../components/AppHeader.vue");
 const Share = require("../components/drive/DriveShare.vue");
 
 const routerMixins = require("../mixins/router/index.js");
 
 module.exports = {
     components: {
-		Share
+		Share,
+		AppHeader
 	},
 	data: function() {
         return {
@@ -883,13 +892,11 @@ module.exports = {
 </script>
 
 <style>
-.app-temp{
+.calendar-view main{
 	display: flex;
 	align-items: center;
 	justify-content: center;
 	min-height: 100vh;
 }
-.app-temp h1{
-	text-align: center;
-}
+
 </style>

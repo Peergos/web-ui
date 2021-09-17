@@ -1,5 +1,13 @@
 <template>
-   <main class="app-social">
+   	<article class="app-view social-view">
+	   	<AppHeader>
+			<template #primary>
+				<h1>Social view</h1>
+			</template>
+		</AppHeader>
+		<main>
+
+
 		<fingerprint v-if="showFingerprint"
 			v-on:hide-fingerprint="hideFingerprint"
 			:fingerprint="fingerprint"
@@ -7,7 +15,6 @@
 			:initialIsVerified="initialIsVerified"
 			:context="context">
 		</fingerprint>
-		<h2>Social</h2>
 		<spinner v-if="showSpinner"></spinner>
 		<ViewProfile
                     v-if="showProfileViewForm"
@@ -110,18 +117,21 @@
                   </tr>
 		</div>
             </div>
-   </main>
+		</main>
+   </article>
 </template>
 
 <script>
-const ViewProfile = require("../components/profile/ViewProfile.vue"); 
+const AppHeader = require("../components/AppHeader.vue");
+const ViewProfile = require("../components/profile/ViewProfile.vue");
 const FormAutocomplete = require("../components/form/FormAutocomplete.vue");
 const routerMixins = require("../mixins/router/index.js");
 
 module.exports = {
 	components: {
 	    FormAutocomplete,
-            ViewProfile
+		ViewProfile,
+		AppHeader
 	},
     data() {
         return {
@@ -492,14 +502,12 @@ module.exports = {
 </script>
 
 <style>
-.app-social{
+.social-view main{
     display: flex;
     flex-direction: column;
     align-items: flex-start;
     min-height: 100vh;
-    padding: 3em;
+    padding: var(--app-margin);
 }
-.app-temp h1{
-    text-align: center;
-}
+
 </style>

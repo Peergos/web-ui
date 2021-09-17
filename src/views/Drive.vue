@@ -1,5 +1,5 @@
 <template>
-	<div class="drive-view">
+	<article class="drive-view">
 		<input type="file" id="uploadFileInput" @change="uploadFiles" style="display:none;" multiple />
 		<input type="file" id="uploadDirectoriesInput" @change="uploadFiles" style="display:none;" multiple directory mozDirectory webkitDirectory/>
 
@@ -142,7 +142,7 @@
 			:body="errorBody"
 			:messageId="messageId">
 		</error>
-	</div>
+	</article>
 </template>
 
 <script>

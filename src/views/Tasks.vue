@@ -1,17 +1,24 @@
 <template>
-	<main class="app-temp">
-		<h1>Tasks view</h1>
-	</main>
+	<article class="app-view tasks-view">
+		<AppHeader>
+			<template #primary>
+				<h1>Tasks view</h1>
+			</template>
+		</AppHeader>
+		<main>
+
+		</main>
+	</article>
 </template>
 
 <script>
-
 const routerMixins = require("../mixins/router/index.js");
-
-
+const AppHeader = require("../components/AppHeader.vue");
 
 module.exports = {
-
+	components: {
+		AppHeader,
+	},
 	mixins:[routerMixins],
 
 	computed: {
@@ -32,13 +39,16 @@ module.exports = {
 </script>
 
 <style>
-.app-temp{
-	display: flex;
+.app-view{
+	min-height: 100vh;
+
+	/* display: flex;
 	align-items: center;
 	justify-content: center;
-	min-height: 100vh;
+	min-height: 100vh; */
 }
-.app-temp h1{
-	text-align: center;
+.app-view  h1{
+	font-size:16px;
+	line-height: 14px;
 }
 </style>

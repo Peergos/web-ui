@@ -1,15 +1,34 @@
 <template>
-<main class="newsfeed">
+<Article class="app-view newsfeed-view">
+	<AppHeader>
+		<template #primary>
+			<h1>Newsfeed</h1>
+		</template>
+		<template #tools>
+			<AppButton
+				aria-label="New Post"
+				@click.native="addNewPost()"
+				size="small"
+				accent
+			>
+			New Post
+			</AppButton>
+			<AppButton
+				aria-label="Refresh"
+				@click="refresh()"
+				size="small"
+				icon="refresh"
+			></AppButton>
+		</template>
+
+	</AppHeader>
+
     <div v-if="buildingFeed">
         Building your news feed.
         <br/>
         This could take a minute..
     </div>
-    <div v-if="!buildingFeed" style="width:100%; min-height:100vh;">
-        <center>
-            <h2>News Feed</h2>
-        </center>
-            <hr/>
+    <main v-else class="newsfeed__container">
             <spinner v-if="showSpinner"></spinner>
             <div @click="closeMenus($event)" style="flex-grow:1">
                 <social-post
@@ -44,14 +63,14 @@
                     :consumer_cancel_func="confirm_consumer_cancel_func"
                     :consumer_func="confirm_consumer_func">
                 </confirm>
-                <div class="panel-body">
+                <!-- <div class="panel-body">
                     <div>
                         <button @click="addNewPost()" class="btn btn-success" >Write Post</button>
                         <button @click="refresh()" class="btn btn-success" style="float: right;" >
                             <i class="fa fa-sync-alt" aria-hidden="true"></i>&nbsp;Refresh
                         </button>
                     </div>
-                </div>
+                </div> -->
 
                 <div id="scroll-area">
                     <center v-if="data.length==0">
@@ -145,7 +164,7 @@
                                 </div>
 
                             </div>
-                            <div v-if="!entry[0].isLastEntry && (entry[0].isPost || entry[0].isMedia)" style="border: 1px solid black;border-radius: 11px; margin-top:5px; padding: 2em;">
+                            <div v-if="!entry[0].isLastEntry && (entry[0].isPost || entry[0].isMedia)" class="entry">
                                 <div class="table-responsive table-striped table-hover" style="font-size: 1.0em;padding-left:0;margin-bottom:0;border:none;">
                                     <div v-for="(row, rowIndex) in entry">
                                         <div v-if="row.isMedia">
@@ -201,20 +220,22 @@
                     </center>
                 </div>
             </div>
-            </div>
-	</main>
+        </main>
+	</Article>
 </template>
 
 <script>
+const AppHeader = require("../components/AppHeader.vue");
 const Gallery = require("../components/drive/DriveGallery.vue");
-const ViewProfile = require("../components/profile/ViewProfile.vue");  
-    
+const ViewProfile = require("../components/profile/ViewProfile.vue");
+
 const routerMixins = require("../mixins/router/index.js");
 
 module.exports = {
     components: {
-	Gallery,
-        ViewProfile
+		Gallery,
+		ViewProfile,
+		AppHeader
     },
     data: function() {
         return {
@@ -259,7 +280,7 @@ module.exports = {
         }
     },
     props: ['viewAction', 'messages', 'socialFeedInstance',
-        'importCalendarFile', 'importSharedCalendar',  
+        'importCalendarFile', 'importSharedCalendar',
         'convertBytesToHumanReadable', 'viewConversations'],
 	mixins:[routerMixins],
 
@@ -1476,19 +1497,21 @@ module.exports = {
 </script>
 
 <style>
-.post-content {
-    white-space:pre-wrap;
-    margin-bottom:0;
-    margin-right: 10px;
-    line-height: 1.1;
-    background-color: #2e6da4;
-    border: 1px solid black;
-    border-radius: 4px;
-    padding: 5px;
-    font-size: 1.2em;
-    overflow-wrap: break-word;
+
+
+
+.newsfeed-view {
+    min-height: 100vh;
 }
-.newsfeed .card__icon {
+.newsfeed__container{
+	width:100%;
+	min-height: 100vh;
+	padding: 0 32px;
+	margin-top: 32px;
+}
+
+
+.newsfeed-view .card__icon {
 	width:72px;
 	height: 72px;
 	color: var(--color-2);
@@ -1499,14 +1522,29 @@ module.exports = {
         max-width: 5em;
 }
 
-.newsfeed {
-    display: flex;
-    flex-direction:column;
-    align-items: center;
-    justify-content: center;
-    min-height: 100vh;
+.newsfeed-view .entry{
+	color:var(--color);
+    background-color:var(--bg-2);
+	border-radius: 12px;
+	margin-top:5px;
+	padding: 16px;
+
+
 }
-.newsfeed h1{
-	text-align: center;
+.post-content {
+    white-space:pre-wrap;
+    margin-bottom:0;
+    margin-right: 10px;
+
+    border-radius: 4px;
+    padding: 5px;
+    font-size: 1.2em;
+    overflow-wrap: break-word;
+}
+
+@media (max-width: 1024px) {
+	.newsfeed__container{
+		padding: 0 16px;
+	}
 }
 </style>

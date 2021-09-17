@@ -1,5 +1,10 @@
 <template>
-<main class="chat-app">
+<article class="chat-app">
+	<AppHeader>
+		<template #primary>
+			<h1>Tasks view</h1>
+		</template>
+	</AppHeader>
     <div class="modal-container" style="width:100%;height: 100%;" @click.stop >
         <div class="header">
             <span>
@@ -260,17 +265,19 @@
             </div>
         </div>
     </div>
-</main>
+</article>
 </template>
 
 <script>
+const AppHeader = require("../components/AppHeader.vue");
 const Gallery = require("../components/drive/DriveGallery.vue");
 
 const downloaderMixins = require("../mixins/downloader/index.js");
 
 module.exports = {
     components: {
-	Gallery,
+		Gallery,
+		AppHeader
     },
     data: function() {
         return {
