@@ -1,8 +1,6 @@
 <template>
 	<header class="drive-header">
 
-		<!-- <AppIcon class="logo desktop-hidden" icon="logo-min" @click.native=""/> -->
-
 			<nav class="drive-breadcrumb">
 				<AppButton class="breadcrumb__root" aria-label="global files" @click.native="$emit('goBackToLevel', 0 )">
 					<AppIcon icon="globe--24"/>
@@ -14,9 +12,8 @@
 					<AppButton :key="index" class="breadcrumb__item" :aria-label="dir" tabindex="-1" @click.native="$emit('goBackToLevel', index + 1 )">{{ dir }}</AppButton>
 				</template>
 			</nav>
+
 			<div class="drive-tools">
-
-
 				<AppButton
 					class="change-view"
 					:icon="gridView ? 'list' : 'grid'"
@@ -48,6 +45,7 @@
 					</ul>
 				</AppDropdown>
 			</div>
+
 			<UserSettings />
 	</header>
 </template>

@@ -57,17 +57,17 @@ module.exports = {
 		]),
 		loginDEV() {
 		    // bypass login on DEV
-                    if (this.network == null) {
-                        setTimeout(() => this.loginDEV(), 100);
-                        return;
-                    }
+			if (this.network == null) {
+				setTimeout(() => this.loginDEV(), 100);
+				return;
+			}
 		    if( window.location.hostname == "localhost"){
-                        var query = new URLSearchParams(window.location.search)
-			this.username = query.get("username")
-                        if (this.username == null)
-                            return;
-                        this.password = query.get("password")
-			this.login()
+				var query = new URLSearchParams(window.location.search)
+				this.username = query.get("username")
+				if (this.username == null)
+					return;
+				this.password = query.get("password")
+				this.login()
 		    }
 		},
 		togglePassword() {

@@ -40,6 +40,7 @@
 
 				<DriveGrid v-if="isGrid" appear>
 					<DriveGridCard v-for="(file, index) in sortedFiles"
+						:class="{ shared: isShared(file) }"
 						:key="file.getFileProperties().name"
 						:filename="file.getFileProperties().name"
 						:src="getThumbnailURL(file)"
@@ -60,48 +61,6 @@
 				/>
 			</transition>
 		</div>
-				<!-- <div class="grid" v-if="isGrid">
-
-					<span class="column grid-item" v-for="(file, index) in sortedFiles" @keyup.enter="navigateOrMenuTab($event, file, true)">
-						<span class="grid_icon_wrapper fa" :id="index" draggable="true" @dragover.prevent @dragstart="dragStart($event, file)" @drop="drop($event, file)">
-							<a class="picon" v-bind:id="file.getFileProperties().name" @contextmenu="openMenu($event, file)">
-								<span v-if="!file.getFileProperties().thumbnail.isPresent()" @click="navigateOrMenu($event, file)" @contextmenu="openMenu($event, file)" v-bind:class="[getFileClass(file), getFileIcon(file), 'picon']"> </span>
-								<img id="thumbnail" v-if="file.getFileProperties().thumbnail.isPresent()" @click="navigateOrMenu($event, file)" @contextmenu="openMenu($event, file)" v-bind:src="getThumbnailURL(file)"/>
-							</a>
-							<div class="content filename" >
-								<div v-bind:class="{ noselect: true, shared: isShared(file) }">{{ file.getFileProperties().name }}</div>
-							</div>
-						</span>
-					</span>
-
-					<div v-if="sortedFiles.length==0 && currentDir != null && currentDir.isWritable()" class="instruction">
-						Upload a file by dragging and dropping here or clicking the <span class="fa fa-upload"/> icon
-					</div>
-
-					<center v-if="isSecretLink" class="bottom-message">Join the revolution!<br/>
-						<button class="btn btn-lg btn-success" @click="gotoSignup()">Sign up to Peergos</button>
-					</center>
-				</div> -->
-
-				<!-- <table class="table">
-						<thead>
-							<tr style="cursor:pointer;">
-								<th @click="setSortBy('name')">Name <span v-if="sortBy=='name'" :class="['fas', normalSortOrder ? 'fa-angle-down' : 'fa-angle-up']"/></th>
-								<th @click="setSortBy('size')">Size <span v-if="sortBy=='size'" :class="['fas', normalSortOrder ? 'fa-angle-down' : 'fa-angle-up']"/></th>
-								<th @click="setSortBy('type')">Type <span v-if="sortBy=='type'" :class="['fas', normalSortOrder ? 'fa-angle-down' : 'fa-angle-up']"/></th>
-								<th @click="setSortBy('modified')">Modified <span v-if="sortBy=='modified'" :class="['fas', normalSortOrder ? 'fa-angle-down' : 'fa-angle-up']"/></th>
-							</tr>
-						</thead>
-						<tbody>
-							<tr v-for="file in sortedFiles" @keyup.enter="navigateOrMenuTab($event, file, true)" class="grid-item">
-								<td :id="file.getFileProperties().name"  @click="navigateOrMenu($event, file)" @contextmenu="openMenu($event, file)" style="cursor:pointer" v-bind:class="{ shared: isShared(file) }">{{ file.getFileProperties().name }}</td>
-								<td> {{ getFileSize(file.getFileProperties()) }} </td>
-								<td>{{ file.getFileProperties().getType() }}</td>
-								<td>{{ formatDateTime(file.getFileProperties().modified) }}</td>
-							</tr>
-						</tbody>
-					</table> -->
-
 
 		<transition name="drop">
 			<DriveMenu
@@ -568,6 +527,7 @@ module.exports = {
 		...Vuex.mapActions([
 			'updateQuota',
 			'updateUsage',
+			'updateSocial'
 		]),
 
 		init() {
@@ -699,96 +659,17 @@ module.exports = {
 			this.onUpdateCompletion = [];
 		},
 
-		// updateHistory(app, path, filename) {
-		// 	// console.log('updateHistory:', app, path, filename)
-		// 	if (this.isSecretLink)
-		// 		return;
-
-		// 	const currentProps = this.getPropsFromUrl();
-		// 	const pathFromUrl = currentProps == null ? null : currentProps.path;
-		// 	const appFromUrl = currentProps == null ? null : currentProps.app;
-
-		// 	if (path == pathFromUrl && app == appFromUrl)
-		// 		return;
-
-		// 	var rawProps = propsToFragment({ app: app, path: path, filename: filename });
-		// 	var props = this.encryptProps(rawProps);
-
-		// 	window.location.hash = "#" + propsToFragment(props);
-		// },
-
-		// getPropsFromUrl() {
-		// 	try {
-		// 		return this.decryptProps(fragmentToProps(window.location.hash.substring(1)));
-		// 	} catch (e) {
-		// 		return null;
-		// 	}
-		// },
-
-		// encryptProps(props) {
-		// 	var both = this.context.encryptURL(props)
-		// 	const nonce = both.base64Nonce;
-		// 	const ciphertext = both.base64Ciphertext;
-		// 	return { nonce: nonce, ciphertext: ciphertext };
-		// },
-
-		// decryptProps(props) {
-		// 	if (this.isSecretLink)
-		// 		return path;
-
-		// 	return fragmentToProps(this.context.decryptURL(props.ciphertext, props.nonce));
-		// },
-
-		// onUrlChange() {
-		// 	const props = this.getPropsFromUrl();
-		// 	const path = props == null ? null : props.path;
-		// 	const filename = props == null ? null : props.filename;
-		// 	const app = props == null ? null : props.app;
-		// 	const that = this;
-		// 	const differentPath = path != null && path != this.getPath;
-
-		// 	if (differentPath)
-		// 		// this.path = path.split("/").filter(x => x.length > 0);
-		// 		this.$store.commit('SET_PATH', path.split("/").filter(x => x.length > 0))
-
-		// 	console.log('onUrlChange:', app)
-		// 	console.log('onUrlChange differentPath:', differentPath)
-
-		// 	if (app == "Drive") {
-		// 		this.showGallery = false;
-		// 		this.showPdfViewer = false;
-		// 		this.showCodeEditor = false;
-		// 		this.showTextViewer = false;
-		// 		this.showHexViewer = false;
-		// 		this.showTimeline = false;
-		// 		this.showSearch = false;
-		// 		this.showTodoBoardViewer = false;
-		// 		this.showCalendarViewer = false;
-		// 	}
-
-		// 	if (!differentPath){
-		// 		this.openInApp(filename, app);
-		// 	} else{
-		// 		this.onUpdateCompletion.push(() => {
-		// 			that.openInApp(filename, app);
-		// 		});
-		// 	}
-
-		// },
-
 		closeApps() {
 			this.showGallery = false;
 			this.showPdfViewer = false;
 			this.showCodeEditor = false;
 			this.showTextViewer = false;
-    		        this.showHexViewer = false;
-                        this.showSearch = false;
+			this.showHexViewer = false;
+			this.showSearch = false;
 			this.showTodoBoardViewer = false;
 			this.showCalendarViewer = false;
 			this.selectedFiles = [];
 			this.updateHistory("Drive", this.getPath, "");
-			// this.updateHistory("Drive", this.getPath, "");
-
 			this.forceSharedRefreshWithUpdate++;
 		},
 
@@ -919,63 +800,6 @@ module.exports = {
 			});
 		},
 
-		updateSocial(callbackFunc) {
-
-        if (this.context == null || this.context.username == null)
-			this.social = {
-				pending: [],
-				friends: [],
-				followers: [],
-				following: [],
-				pendingOutgoing: [],
-				annotations: {},
-				groupsNameToUid: {},
-				groupsUidToName: {}
-			}
-	    else {
-		    var that = this;
-            this.context.getSocialState().thenApply(function(socialState){
-		    var annotations = {};
-		    socialState.friendAnnotations.keySet().toArray([]).map(name => annotations[name]=socialState.friendAnnotations.get(name));
-		    var followerNames = socialState.followerRoots.keySet().toArray([]);
-		    var followeeNames = socialState.followingRoots.toArray([]).map(function(f){return f.getFileProperties().name});
-		    var friendNames = followerNames.filter(x => followeeNames.includes(x));
-		    followerNames = followerNames.filter(x => !friendNames.includes(x));
-		    followeeNames = followeeNames.filter(x => !friendNames.includes(x));
-
-		    var groupsUidToName = {};
-		    socialState.uidToGroupName.keySet().toArray([]).map(uid => groupsUidToName[uid]=socialState.uidToGroupName.get(uid));
-		    var groupsNameToUid = {};
-		    socialState.groupNameToUid.keySet().toArray([]).map(name => groupsNameToUid[name]=socialState.groupNameToUid.get(name));
-
-		    var pendingOutgoingUsernames = [];
-		    socialState.pendingOutgoing.toArray([]).map(u => pendingOutgoingUsernames.push(u));
-
-		    that.social = {
-				pendingOutgoing: pendingOutgoingUsernames,
-				pending: socialState.pendingIncoming.toArray([]),
-				friends: friendNames,
-				followers: followerNames,
-				following: followeeNames,
-				annotations: annotations,
-				groupsNameToUid: groupsNameToUid,
-				groupsUidToName: groupsUidToName
-		    };
-		    if (callbackFunc != null) {
-		        callbackFunc(true);
-		    }
-                }).exceptionally(function(throwable) {
-		    that.errorTitle = 'Error retrieving social state';
-		    that.errorBody = throwable.getMessage();
-		    that.showError = true;
-		    that.showSpinner = false;
-            if (callbackFunc != null) {
-                callbackFunc(false);
-            }
-		});
-	    }
-	},
-
 		sharedWithDataUpdate() {
 
 			if (this.selectedFiles.length != 1 || this.context == null) {
@@ -992,9 +816,6 @@ module.exports = {
 			let edit_usernames = fileSharedWithState.writeAccess.toArray([]);
 			this.sharedWithData = { read_shared_with_users: read_usernames, edit_shared_with_users: edit_usernames };
 		},
-		// getContext() {
-		// 	return this.context;
-		// },
 
 		getThumbnailURL(file) {
 			// cache thumbnail to avoid recalculating it
@@ -1883,85 +1704,6 @@ module.exports = {
 			return "file"
 		},
 
-		// getPath() {
-		// 	return '/' + this.path.join('/') + (this.path.length > 0 ? "/" : "");
-		// },
-
-		// dragStart(ev, treeNode) {
-		// 	console.log("dragstart");
-
-		// 	ev.dataTransfer.effectAllowed = 'move';
-		// 	var id = ev.target.id;
-		// 	ev.dataTransfer.setData("text/plain", id);
-		// 	var owner = treeNode.getOwnerName();
-		// 	var me = this.context.username
-		// 	if (owner === me) {
-		// 		console.log("cut");
-		// 		this.clipboard = {
-		// 			parent: this.currentDir,
-		// 			fileTreeNode: treeNode,
-		// 			op: "cut"
-		// 		};
-		// 	} else {
-		// 		console.log("copy");
-		// 		ev.dataTransfer.effectAllowed = 'copy';
-		// 		this.clipboard = {
-		// 			fileTreeNode: treeNode,
-		// 			op: "copy"
-		// 		};
-		// 	}
-		// },
-
-		// DragEvent, FileTreeNode => boolean
-		// drop(ev, target) {
-		// 	console.log("drop");
-		// 	ev.preventDefault();
-		// 	var moveId = ev.dataTransfer.getData("text");
-		// 	var id = ev.currentTarget.id;
-		// 	var that = this;
-		// 	if (id != moveId && target.isDirectory()) {
-		// 		const clipboard = this.clipboard;
-		// 		if (typeof (clipboard) == undefined || typeof (clipboard.op) == "undefined")
-		// 			return;
-		// 		that.showSpinner = true;
-
-		// 		if (clipboard.op == "cut") {
-		// 			var name = clipboard.fileTreeNode.getFileProperties().name;
-		// 			console.log("drop-cut " + name + " -> " + target.getFileProperties().name);
-		// 			let filePath = peergos.client.PathUtils.toPath(that.path, name);
-		// 			clipboard.fileTreeNode.moveTo(target, clipboard.parent, filePath, that.context)
-		// 				.thenApply(function () {
-		// 					that.currentDirChanged();
-		// 					that.onUpdateCompletion.push(function () {
-		// 						that.showSpinner = false;
-		// 						that.clipboard = null;
-		// 					});
-		// 				}).exceptionally(function (throwable) {
-		// 					that.errorTitle = 'Error moving file';
-		// 					that.errorBody = throwable.getMessage();
-		// 					that.showError = true;
-		// 					that.showSpinner = false;
-		// 				});
-		// 		} else if (clipboard.op == "copy") {
-		// 			console.log("drop-copy");
-		// 			var file = clipboard.fileTreeNode;
-		// 			var props = file.getFileProperties();
-		// 			file.copyTo(target, that.context)
-		// 				.thenApply(function () {
-		// 					that.currentDirChanged();
-		// 					that.onUpdateCompletion.push(function () {
-		// 						that.showSpinner = false;
-		// 						that.clipboard = null;
-		// 					});
-		// 				}).exceptionally(function (throwable) {
-		// 					that.errorTitle = 'Error copying file';
-		// 					that.errorBody = throwable.getMessage();
-		// 					that.showError = true;
-		// 					that.showSpinner = false;
-		// 				});
-		// 		}
-		// 	}
-		// },
 		isProfileViewable: function() {
            try {
                if (this.currentDir.props.name != "/")
