@@ -9,7 +9,7 @@ module.exports = new Vuex.Store({
 		isDark: false,
 		isSidebarOpen: false,
 		showModal: false,
-		currentModal: 'AppModal', // 'ModalSpace'
+		currentModal: 'AppModal',
 
 		quotaBytes: 0,
 		usageBytes: 0,

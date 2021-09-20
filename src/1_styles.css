@@ -187,6 +187,30 @@ input:focus-visible{
 	transform: rotate(45deg);
 }
 
+/* Select */
+select{
+	appearance: none;
+
+	color:var(--color);
+	background-color: transparent;
+	border: none;
+	border-radious: 4px;
+	margin: 8px ;
+	padding: 0 16px;
+	font-family: inherit;
+	font-size: inherit;
+	cursor: inherit;
+	line-height: 48px;
+
+
+}
+select:focus,
+select:active{
+	outline:none;
+	/* border: 2px solid var(--green-500)!important; */
+	background-color: var(--bg-2);
+}
+
 /* Fade transition  */
 
 .fade-enter-active, .fade-leave-active {
