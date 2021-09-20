@@ -154,13 +154,14 @@ module.exports = {
                             select_result.substring(0, select_result.length - 5) : select_result;
                         let foundIndex = todoBoards.findIndex(v => {
                             let name = v.getName();
-                            return name.substring(0, name.length - 5) === that.currentTodoBoardName;
+                            return name.substring(0, name.length - 5) === that.todoBoardName;
                         });
                         if (foundIndex != -1) {
-                            loadFile(that.getPath, todoBoards[foundIndex].getName());
+                            that.loadFile(that.getPath, todoBoards[foundIndex].getName());
                         }
-                        that.updateHistory("Tasks", that.getPath, select_result);
-                        that.startListener();
+                        else
+                            that.startListener();
+                        that.updateHistory("Tasks", that.getPath, select_result + ".todo");
                     };
                     that.showSpinner = false;
                     that.showSelect = true;
