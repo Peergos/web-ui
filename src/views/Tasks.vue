@@ -1,16 +1,15 @@
 <template>
-<article class="app-view tasks-view">
+<article class="app-view tasks-view" style="display:flex; flex-direction: column;">
     <AppHeader>
 	<template #primary>
             <div class="">
 	        <span style="">
 	            <span v-if="isWritable" @click="saveTodoBoard" tabindex="0" v-on:keyup.enter="saveTodoBoard" style="color:black;font-size:2.5em;font-weight:bold;cursor:pointer;margin:.3em;" v-bind:class="['fas', saving ? 'fa-hourglass' : 'fa-save']" title="Save"></span>
-	            <span @click="closeTodoBoard" tabindex="0" v-on:keyup.enter="closeTodoBoard" style="color:black;font-size:3em;font-weight:bold;cursor:pointer;">&times;</span>
 	        </span>
             </div>
 	</template>
     </AppHeader>
-    <main style="display:flex;">
+    <main style="display:flex; flex-grow: 1;">
         <div class="" style="padding:0;display:flex;flex-grow:1;">
 	    <iframe id="editor" :src="frameUrl()" style="width:100%;height:100%;" frameBorder="0"></iframe>
         </div>
@@ -64,7 +63,7 @@ module.exports = {
             prompt_max_input_size: null,
             prompt_value: '',
             prompt_consumer_func: () => {},
-            todoBoardName: "MyTasks",
+            todoBoardName: null,
             todoExtension: ".todo",
             currentFile: null,
             isIframeInitialised: false
@@ -149,7 +148,7 @@ module.exports = {
                             that.selectedFiles = [todoBoards[foundIndex]];
                         }
                         that.showTodoBoardViewer = true;
-                        that.updateHistory("todo", that.getPath(), "");
+                        that.updateHistory("Tasks", that.getPath, select_result);
                     };
                     that.showSpinner = false;
                     that.showSelect = true;
@@ -404,9 +403,6 @@ module.exports = {
             };
             this.showPrompt =  true;
         },
-        close: function () {
-            this.$emit("hide-todo-board");
-        }
     }
 }
 </script>
