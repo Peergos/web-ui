@@ -14,7 +14,15 @@
 	    <iframe id="editor" :src="frameUrl()" style="width:100%;height:100%;" frameBorder="0"></iframe>
         </div>
 	<spinner v-if="showSpinner" :message="spinnerMessage"></spinner>
-	<warning
+	<select-create
+            v-if="showSelect"
+            v-on:hide-select="closeSelect"
+            :select_message= "select_message"
+            :select_placeholder="select_placeholder"
+            :select_items="select_items"
+            :select_consumer_func="select_consumer_func">
+        </select-create>
+        <warning
 	    v-if="showWarning"
 	    v-on:hide-warning="showWarning = false"
 	    :warning_message='warning_message'
@@ -48,12 +56,13 @@ module.exports = {
     data: function() {
         return {
             showSpinner: false,
+            showSelect: false,
             spinnerMessage: '',
-	        expectingSave: false,
-	        saving: false,
-	        isWritable : false,
-	        warning_message: "",
-	        warning_body: "",
+	    expectingSave: false,
+	    saving: false,
+	    isWritable : false,
+	    warning_message: "",
+	    warning_body: "",
             warning_consumer_func: () => {},
             showWarning: false,
             unsavedChanges: false,
@@ -100,7 +109,12 @@ module.exports = {
                 this.selectOrCreateModal();
                 return;
             }
-            
+
+            this.loadFile(path, filename);
+        },
+        
+        loadFile: function(path, filename) {
+            let that = this;
             that.context.getByPath(path + filename).thenApply(fileOpt => {
                 if (! fileOpt.isPresent()) {
                     that.$toast.error("Couldn't load file: " + path + filename, {timeout:false})
@@ -111,10 +125,10 @@ module.exports = {
                 if (mimetype == "application/vnd.peergos-todo") {
                     that.currentFile = file;
                     that.todoBoardName = that.extractTodoBoardName(file.getName());
+                    that.startListener();
                 } else {
                     that.selectOrCreateModal();
                 }
-                that.startListener();
             });
         },
         
@@ -136,24 +150,25 @@ module.exports = {
                     that.select_consumer_func = function(select_result) {
                         if (select_result === null)
                             return;
-                        that.currentTodoBoardName = select_result.endsWith('.todo') ?
+                        that.todoBoardName = select_result.endsWith('.todo') ?
                             select_result.substring(0, select_result.length - 5) : select_result;
                         let foundIndex = todoBoards.findIndex(v => {
                             let name = v.getName();
                             return name.substring(0, name.length - 5) === that.currentTodoBoardName;
                         });
-                        if (foundIndex == -1) {
-                            that.selectedFiles = [];
-                        } else {
-                            that.selectedFiles = [todoBoards[foundIndex]];
+                        if (foundIndex != -1) {
+                            loadFile(that.getPath, todoBoards[foundIndex].getName());
                         }
-                        that.showTodoBoardViewer = true;
                         that.updateHistory("Tasks", that.getPath, select_result);
+                        that.startListener();
                     };
                     that.showSpinner = false;
                     that.showSelect = true;
                 });
             });
+        },
+        closeSelect: function() {
+            this.showSelect = false;
         },
         extractTodoBoardName: function(filename) {
             return filename.endsWith(this.todoExtension) ? filename.substring(0, filename.length - 5) : filename;
