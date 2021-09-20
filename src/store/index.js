@@ -195,7 +195,8 @@ module.exports = new Vuex.Store({
 			if (state.isSecretLink)
 				return;
 			return state.context.getQuota().thenApply(q => {
-				commit('SET_QUOTA', q)
+			    commit('SET_QUOTA', q)
+                            return q;
 			});
 		},
 

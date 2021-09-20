@@ -22,8 +22,7 @@
 			</div>
 
 			<div v-if="showCard">
-				stripe iframe
-				<iframe style="border: none;" width="450px" height="420px" :src="paymentUrl"/>
+			    <iframe id="paymentframe" style="border: none;" width="450px" height="420px" :src="paymentUrl"/>
 			</div>
 
 		</template>
@@ -75,8 +74,33 @@ module.exports = {
 			'updateQuota',
 		]),
 
-
-		requestStorage(bytes) {
+            startAddCardListener: function() {
+	        var that = this;
+	        var iframe = document.getElementById("paymentframe");
+	        if (iframe == null) {
+    		    setTimeout(that.startAddCardListener, 1000);
+	    	    return;
+	        }
+                // Listen for result message from the iframe
+                window.addEventListener('message', function (e) {
+                    // Normally, you should verify that the origin of the message's sender
+                    // was the origin and source you expected. This is easily done for the
+                    // unsandboxed frame. The sandboxed frame, on the other hand is more
+                    // difficult. Sandboxed iframes which lack the 'allow-same-origin'
+                    // header have "null" rather than a valid origin. This means you still
+                    // have to be careful about accepting data via the messaging API you
+                    // create. Check that source, and validate those inputs!
+                    let frameDomain = new URL(that.paymentUrl).origin
+                    if ((e.origin === "null" || e.origin === frameDomain) && e.source === iframe.contentWindow) {
+                        if (e.data.action == 'payment-result') {
+                            let result = e.data.result;
+                            if (result == "succeeded")
+                                that.requestStorage(53687091200);
+                        } 
+                    }
+                });
+	    },
+	    requestStorage(bytes) {
 			console.log('requestStorage:', bytes)
 			var that = this;
 
@@ -108,7 +132,8 @@ module.exports = {
 			var that = this;
 			this.context.getPaymentProperties(true).thenApply(function(props) {
 				that.paymentUrl = props.getUrl() + "&username=" + that.context.username + "&client_secret=" + props.getClientSecret();
-				that.showCard = true;
+			    that.showCard = true;
+                            that.startAddCardListener();
 			});
 		},
 

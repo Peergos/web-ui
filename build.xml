@@ -3,7 +3,7 @@
     Building Peergos and the web UI
   </description>
 
-  <property name="peergos_project_root" location="peergos"/>
+  <property name="peergos_project_root" location="../peergos"/>
   <property name="server" location="server"/>
   <property name="ui_src" location="src"/>
   <property name="ui" location="${server}/webroot"/>
@@ -281,9 +281,11 @@ Javac-Version: ${javac.version}</echo>
       <arg value="1000"/>
       <arg value="-generate-token"/>
       <arg value="true"/>
-      <!-- uncomment these to test payments!
+      <!-- uncomment these to test payments!!
       <arg value="quota-admin-address"/>
       <arg value="/ip4/127.0.0.1/tcp/6000"/>
+      <arg value="-payment-domain"/>
+      <arg value="localhost:7000"/>
       !-->
     </exec>
   </target>

@@ -55,6 +55,7 @@
 <script>
 const AppNavigation = require("./navigation/AppNavigation.vue");
 const ModalSpace = require("./modal/ModalSpace.vue");
+const ModalPro = require("./modal/ModalPro.vue");
 const ModalPassword = require("./modal/ModalPassword.vue");
 const ModalAccount = require("./modal/ModalAccount.vue");
 const ModalProfile = require("./modal/ModalProfile.vue");
@@ -81,6 +82,7 @@ module.exports = {
 	components: {
 		AppNavigation,
 		ModalSpace,
+		ModalPro,
 		ModalPassword,
 		ModalAccount,
 		ModalProfile,
