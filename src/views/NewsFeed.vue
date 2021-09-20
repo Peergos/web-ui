@@ -63,14 +63,6 @@
                     :consumer_cancel_func="confirm_consumer_cancel_func"
                     :consumer_func="confirm_consumer_func">
                 </confirm>
-                <!-- <div class="panel-body">
-                    <div>
-                        <button @click="addNewPost()" class="btn btn-success" >Write Post</button>
-                        <button @click="refresh()" class="btn btn-success" style="float: right;" >
-                            <i class="fa fa-sync-alt" aria-hidden="true"></i>&nbsp;Refresh
-                        </button>
-                    </div>
-                </div> -->
 
                 <div id="scroll-area">
                     <center v-if="data.length==0">
@@ -88,6 +80,7 @@
                     <ul id="friendMenu" v-if="showFriendMenu" class="dropdown-menu" v-bind:style="{top:menutop, left:menuleft}" style="cursor:pointer;display:block;min-width:100px;">
                         <li><a @click="sendFriendRequest(currentRow)">Send friend request</a></li>
                     </ul>
+
                     <div id="feed" class="table table-responsive table-striped table-hover" style="border:none;">
                         <div v-for="entry in blocks">
                             <div v-if="entry[0].isLastEntry">
@@ -394,25 +387,25 @@ module.exports = {
             }
         },
         getPosition: function(e) {
-	    var posx = 0;
-	    var posy = 0;
+			var posx = 0;
+			var posy = 0;
 
-	    if (!e) var e = window.event;
-	    var body = document.getElementById("modal-body");
-	    var feed = document.getElementById("feed")
+			if (!e) var e = window.event;
+			// var body = document.getElementById("modal-body");
+			// var feed = document.getElementById("feed")
 
-	    if (e.clientX || e.clientY) {
-		posx = e.clientX - feed.offsetLeft + document.body.scrollLeft +
-                    document.documentElement.scrollLeft;
-		posy = e.clientY - body.offsetTop + document.body.scrollTop +
-                    document.documentElement.scrollTop;
-	    }
+			if (e.clientX || e.clientY) {
+				// posx = e.clientX - feed.offsetLeft + document.body.scrollLeft + document.documentElement.scrollLeft;
+				// posy = e.clientY - body.offsetTop + document.body.scrollTop + document.documentElement.scrollTop;
+				posx = e.clientX - document.body.scrollLeft + document.documentElement.scrollLeft;
+				posy = e.clientY - document.body.scrollTop + document.documentElement.scrollTop;
 
-	    return {
-		x: posx,
-		y: posy
-	    }
-	},
+			}
+			return {
+				x: posx,
+				y: posy
+			}
+		},
 	closeMenus: function(e) {
 	    this.showEditMenu = false;
             this.showFriendMenu = false;
