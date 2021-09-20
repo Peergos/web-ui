@@ -1,36 +1,13 @@
 <template>
-<Article class="app-view newsfeed-view">
-	<AppHeader>
-		<template #primary>
-			<h1>Newsfeed</h1>
-		</template>
-		<template #tools>
-			<AppButton
-				aria-label="New Post"
-				@click.native="addNewPost()"
-				size="small"
-				accent
-			>
-			New Post
-			</AppButton>
-			<AppButton
-				aria-label="Refresh"
-				@click="refresh()"
-				size="small"
-				icon="refresh"
-			></AppButton>
-		</template>
-
-	</AppHeader>
-
-    <div v-if="buildingFeed">
-        Building your news feed.
-        <br/>
-        This could take a minute..
-    </div>
-    <main v-else class="newsfeed__container">
+	<transition name="modal">
+    <div class="modal-mask-app" @click="close" style="position:absolute;">
+        <div class="modal-container" @click.stop style="width:100%;">
+            <span @click="close" tabindex="0" v-on:keyup.enter="close" aria-label="close" class="close">&times;</span>
+            <div class="modal-header" @click="closeMenus($event)">
+                <h2>News Feed</h2>
+            </div>
             <spinner v-if="showSpinner"></spinner>
-            <div @click="closeMenus($event)" style="flex-grow:1">
+            <div id="modal-body" class="modal-body" @click="closeMenus($event)">
                 <SocialPost
                     v-if="showSocialPostForm"
                     :closeSocialPostForm="closeSocialPostForm"
@@ -43,18 +20,13 @@
                     :checkAvailableSpace="checkAvailableSpace"
                     :convertBytesToHumanReadable="convertBytesToHumanReadable">
                 </SocialPost>
-                <Gallery
+                <gallery
                     v-if="showEmbeddedGallery"
                     v-on:hide-gallery="showEmbeddedGallery = false"
                     :files="filesToViewInGallery"
                     :hideGalleryTitle="true"
                     :context="context">
-                </Gallery>
-                <ViewProfile
-                    v-if="showProfileViewForm"
-                    v-on:hide-profile-view="showProfileViewForm = false"
-                    :profile="profile">
-                </ViewProfile>
+                </gallery>
                 <confirm
                     v-if="showConfirm"
                     v-on:hide-confirm="showConfirm = false"
@@ -63,14 +35,14 @@
                     :consumer_cancel_func="confirm_consumer_cancel_func"
                     :consumer_func="confirm_consumer_func">
                 </confirm>
-                <!-- <div class="panel-body">
+                <div class="panel-body">
                     <div>
                         <button @click="addNewPost()" class="btn btn-success" >Write Post</button>
                         <button @click="refresh()" class="btn btn-success" style="float: right;" >
                             <i class="fa fa-sync-alt" aria-hidden="true"></i>&nbsp;Refresh
                         </button>
                     </div>
-                </div> -->
+                </div>
 
                 <div id="scroll-area">
                     <center v-if="data.length==0">
@@ -94,7 +66,7 @@
                                 <center><span>No more entries</span></center>
                             </div>
                             <div v-if="!entry[0].isLastEntry && !entry[0].isPost && !entry[0].isMedia" style="border: 1px solid black;border-radius: 11px; margin-top:5px; padding: 2em;">
-                                <a v-if="entry[0].sharer != context.username && canLoadProfile(entry[0].sharer)" v-on:click="displayProfile(entry[0].sharer)" style="cursor: pointer">
+                                <a v-if="entry[0].sharer != context.username && canLoadProfile(entry[0].sharer)" v-on:click="profile(entry[0].sharer)" style="cursor: pointer">
                                     <span>{{ entry[0].sharer }}</span>
                                 </a>
                                 <span v-if="entry[0].sharer != context.username && !canLoadProfile(entry[0].sharer)">{{ entry[0].sharer }}</span>
@@ -107,7 +79,7 @@
                                         <div v-if="!entry[0].isPost && !entry[0].isMedia">
                                             <span class="grid_icon_wrapper fa">
                                                 <a v-if="!entry[0].hasThumbnail && !entry[0].isChat">
-                                                    <AppIcon style="height:100px" @click.stop.native="view(entry[0])" class="card__icon" :icon="getFileIconFromFileAndType(entry[0].file, entry[0].fileType)"></AppIcon>
+                                                    <span style="height:100px" v-on:click="view(entry[0])" v-bind:class="[entry[0].isDirectory ? 'dir' : 'file', getFileIconFromFileAndType(entry[0].file, entry[0].fileType), 'picon-timeline']"> </span>
                                                 </a>
                                                 <img v-if="entry[0].hasThumbnail && !entry[0].isChat" v-on:click="view(entry[0])" v-bind:src="entry[0].thumbnail" style="cursor: pointer"/>
                                                 <button v-if="entry[0].isChat && entry[0].isNewChat" class="btn btn-success" @click="joinConversation(entry[0])" style="font-weight: bold;">Join</button>
@@ -126,7 +98,7 @@
                                             <div v-bind:style="{ marginLeft: indent(row) }">
                                                 <div  v-for="(media, mediaIndex) in row.mediaList" class="grid_icon_wrapper fa" style="margin:0;margin-top:0.2em;">
                                                     <a v-if="!media.hasThumbnail">
-                                                        <AppIcon style="height:100px" v-on:click="viewMediaList(row.mediaList, mediaIndex)" class="card__icon" :icon="getFileIconFromFileAndType(media.file, media.fileType)"> </AppIcon>
+                                                        <span style="height:100px" v-on:click="viewMediaList(row.mediaList, mediaIndex)" v-bind:class="[media.isDirectory ? 'dir' : 'file', getFileIconFromFileAndType(media.file, media.fileType), 'picon-timeline']"> </span>
                                                     </a>
                                                     <img v-if="media.hasThumbnail" v-on:click="viewMediaList(row.mediaList, mediaIndex)" v-bind:src="media.thumbnail" style="cursor: pointer"/>
                                                 </div>
@@ -142,7 +114,7 @@
                                         <div v-if="rowIndex >= 1 && row.isPost">
                                             <div v-bind:style="{ marginLeft: indent(row) }">
                                                 <div style="display:flex;font-size: 1em;color: #7d7d7d;margin-right: 10px;">
-                                                    <a v-if="row.sharer != context.username && canLoadProfile(row.sharer)" v-on:click="displayProfile(row.sharer)" style="cursor: pointer">
+                                                    <a v-if="row.sharer != context.username && canLoadProfile(row.sharer)" v-on:click="profile(row.sharer)" style="cursor: pointer">
                                                         <span>{{ row.sharer }}&nbsp;</span>
                                                     </a>
                                                     <span v-if="row.sharer!= context.username && !canLoadProfile(row.sharer)">{{ row.sharer }}&nbsp;</span>
@@ -164,14 +136,14 @@
                                 </div>
 
                             </div>
-                            <div v-if="!entry[0].isLastEntry && (entry[0].isPost || entry[0].isMedia)" class="entry">
+                            <div v-if="!entry[0].isLastEntry && (entry[0].isPost || entry[0].isMedia)" style="border: 1px solid black;border-radius: 11px; margin-top:5px; padding: 2em;">
                                 <div class="table-responsive table-striped table-hover" style="font-size: 1.0em;padding-left:0;margin-bottom:0;border:none;">
                                     <div v-for="(row, rowIndex) in entry">
                                         <div v-if="row.isMedia">
                                             <div v-bind:style="{ marginLeft: indent(row) }">
                                                 <div  v-for="(media, mediaIndex) in row.mediaList" class="grid_icon_wrapper fa" style="margin:0;margin-top:0.2em;">
                                                     <a v-if="!media.hasThumbnail">
-                                                        <AppIcon style="height:100px" v-on:click="viewMediaList(row.mediaList, mediaIndex)" class="card__icon" :icon="getFileIconFromFileAndType(media.file, media.fileType)"> </AppIcon>
+                                                        <span style="height:100px" v-on:click="viewMediaList(row.mediaList, mediaIndex)" v-bind:class="[media.isDirectory ? 'dir' : 'file', getFileIconFromFileAndType(media.file, media.fileType), 'picon-timeline']"> </span>
                                                     </a>
                                                     <img v-if="media.hasThumbnail" v-on:click="viewMediaList(row.mediaList, mediaIndex)" v-bind:src="media.thumbnail" style="cursor: pointer"/>
                                                 </div>
@@ -187,7 +159,7 @@
                                         <div v-if="row.isPost">
                                             <div v-bind:style="{ marginLeft: indent(row) }">
                                                 <div style="display:flex;font-size: 1em;color: #7d7d7d;margin-right: 10px;">
-                                                    <a v-if="row.sharer != context.username && canLoadProfile(row.sharer)" v-on:click="displayProfile(row.sharer)" style="cursor: pointer">
+                                                    <a v-if="row.sharer != context.username && canLoadProfile(row.sharer)" v-on:click="profile(row.sharer)" style="cursor: pointer">
                                                         <span>{{ row.sharer }}&nbsp;</span>
                                                     </a>
                                                     <a
@@ -220,46 +192,27 @@
                     </center>
                 </div>
             </div>
-        </main>
-	</Article>
+        </div>
+    </div>
+</transition>
+
 </template>
 
 <script>
-const AppHeader = require("../components/AppHeader.vue");
-const SocialPost = require("../components/social/SocialPost.vue");
-
-const Gallery = require("../components/drive/DriveGallery.vue");
-const ViewProfile = require("../components/profile/ViewProfile.vue");
-
-const routerMixins = require("../mixins/router/index.js");
+const SocialPost = require("./SocialPost.vue");
 
 module.exports = {
-    components: {
+	components: {
 		SocialPost,
-		Gallery,
-		ViewProfile,
-		AppHeader
-    },
+	},
     data: function() {
         return {
-            buildingFeed: true,
             showSpinner: false,
             data: [],
             pageEndIndex : 0,
             pageSize: 5,
             requestingMoreResults: false,
             noMoreResults: false,
-            showProfileViewForm:false,
-            profile: {
-                firstName: "",
-                lastName: "",
-                biography: "",
-                primaryPhone: "",
-                primaryEmail: "",
-                profileImage: "",
-                status: "",
-                webRoot: ""
-            },
             showSocialPostForm: false,
             socialPostAction: '',
             currentSocialPostEntry: null,
@@ -282,91 +235,18 @@ module.exports = {
             messenger: null
         }
     },
-    props: ['viewAction', 'messages', 'socialFeedInstance',
-        'importCalendarFile', 'importSharedCalendar',
-        'convertBytesToHumanReadable', 'viewConversations'],
-	mixins:[routerMixins],
-
-  	created: function() {
-        // this.context = this.$store.state.userContext;
-		// this.context = this.$store.state.context;
-
+    props: ['context','navigateToAction','viewAction', 'messages', 'getFileIconFromFileAndType', 'socialFeedInstance',
+        'updateSocialFeedInstance', 'importCalendarFile', 'importSharedCalendar', 'displayProfile', 'groups',
+        'followingnames', 'friendnames', 'followernames', 'checkAvailableSpace', 'convertBytesToHumanReadable', 'viewConversations'],
+    created: function() {
         let that = this;
-        this.context.getSocialFeed().thenCompose(function(socialFeed) {
-                return socialFeed.update().thenApply(function(updated) {
-                    that.socialFeed = updated;
-                    that.messenger = new peergos.shared.messaging.Messenger(that.context);
-                    that.init();
-                    that.buildingFeed = false;
-                    that.showSpinner = false;
-                });
-            }).exceptionally(function(throwable) {
-                that.showMessage(throwable.getMessage());
-                that.spinnerMessage = "";
-                that.showSpinner = false;
-            });
+        Vue.nextTick(function() {
+            that.socialFeed = that.socialFeedInstance;
+            that.messenger = new peergos.shared.messaging.Messenger(that.context);
+            that.init();
+        });
     },
-	mounted(){
-		this.updateHistory('NewsFeed', '/NewsFeed' , null )
-	},
     methods: {
-        updateSocialFeedInstance: function(updated) {
-            // TODO put this in vuex store
-            this.socialFeed = updated;
-        },
-        getFileIconFromFileAndType: function(file, type) {
-            // TODO unify this with the one on DriveGridCard
-            if (type == 'dir') 	return 'folder--72';
-	    if (type == 'image') 	return 'file-image--72';
-	    if (type == 'text') 	return 'file-text--72';
-	    if (type == 'audio') 	return 'file-audio--72';
-	    if (type == 'video') 	return 'file-video--72';
-	    if (type == 'pdf') 	return 'file-pdf--72';
-	    if (type == 'zip') 	return 'file-zip--72';
-	    if (type == 'todo') 	return 'tasks--72';
-	    if (type == 'calendar') 	return 'calendar--72';
-	    if (type == 'contact file') 	return 'file-card--72';
-	    if (type == 'powerpoint presentation' || type == 'presentation') 	return 'file-powerpoint--72';
-	    if (type == 'word document' || type == 'text document') 	return 'file-word--72';
-	    if (type == 'excel spreadsheet' || type == 'spreadsheet') 	return 'file-excel--72';
-            return 'file-generic--72';
-        },
-        navigateToAction: function(directory) {
-            this.updateHistory("Drive", directory, "");
-        },
-        displayProfile: function(username){
-            this.showSpinner = true;
-            let that = this;
-            let context = this.context;
-            peergos.shared.user.ProfilePaths.getProfile(username, context).thenApply(profile => {
-                var base64Image = "";
-                if (profile.profilePhoto.isPresent()) {
-                    var str = "";
-                    let data = profile.profilePhoto.get();
-                    for (let i = 0; i < data.length; i++) {
-                        str = str + String.fromCharCode(data[i] & 0xff);
-                    }
-                    if (data.byteLength > 0) {
-                        base64Image = "data:image/png;base64," + window.btoa(str);
-                    }
-                }
-                that.profile = {
-                    firstName: profile.firstName.isPresent() ? profile.firstName.get() : "",
-                    lastName: profile.lastName.isPresent() ? profile.lastName.get() : "",
-                    biography: profile.bio.isPresent() ? profile.bio.get() : "",
-                    primaryPhone: profile.phone.isPresent() ? profile.phone.get() : "",
-                    primaryEmail: profile.email.isPresent() ? profile.email.get() : "",
-                    profileImage: base64Image,
-                    status: profile.status.isPresent() ? profile.status.get() : "",
-                    webRoot: profile.webRoot.isPresent() ? profile.webRoot.get() : ""
-                };
-                that.showSpinner = false;
-                that.showProfileViewForm = true;
-            });
-        },
-        checkAvailableSpace: function(fileSize) {
-            return Number(this.quotaBytes.toString()) - (Number(this.usageBytes.toString()) + fileSize);
-        },
         addNewPost: function() {
             this.currentSocialPostEntry = null;
             this.socialPostAction = 'add';
@@ -981,6 +861,9 @@ module.exports = {
             let isFollowing = this.followingnames.indexOf(sharer) > -1;
             return isFriend || isFollowing;
         },
+        profile: function(username) {
+            this.displayProfile(username, false);
+        },
         isSharedCalendar: function(path) {
             let pathParts = path.split("/");
             return pathParts.length == 6 && pathParts[0] == '' &&
@@ -1428,29 +1311,6 @@ module.exports = {
         }
     },
     computed: {
-		...Vuex.mapState([
-		    'quotaBytes',
-		    'usageBytes',
-                    'context',
-                    'socialData',
-                    'path'
-		]),
-		...Vuex.mapGetters([
-			'isSecretLink',
-			'getPath'
-		]),
-        friendnames: function() {
-            return this.socialData.friends;
-        },
-    	followingnames: function() {
-            return this.socialData.following;
-        },
-    	followernames: function() {
-            return this.socialData.followers;
-        },
-        groups: function() {
-	    return {groupsNameToUid: this.socialData.groupsNameToUid, groupsUidToName: this.socialData.groupsUidToName};
-	},
     	blocks: function() {
             if (this.data == null || this.data.length == 0) {
                 return [];
@@ -1497,57 +1357,9 @@ module.exports = {
         }
     }
 }
+
 </script>
 
 <style>
 
-
-
-.newsfeed-view {
-    min-height: 100vh;
-}
-.newsfeed__container{
-	width:100%;
-	min-height: 100vh;
-	padding: 0 32px;
-	margin-top: 32px;
-}
-
-
-.newsfeed-view .card__icon {
-	width:72px;
-	height: 72px;
-	color: var(--color-2);
-	transform: scale(1);
-	transition: transform 0.2s;
-        font-size: 5em;
-        word-wrap: break-word;
-        max-width: 5em;
-}
-
-.newsfeed-view .entry{
-	color:var(--color);
-    background-color:var(--bg-2);
-	border-radius: 12px;
-	margin-top:5px;
-	padding: 16px;
-
-
-}
-.post-content {
-    white-space:pre-wrap;
-    margin-bottom:0;
-    margin-right: 10px;
-
-    border-radius: 4px;
-    padding: 5px;
-    font-size: 1.2em;
-    overflow-wrap: break-word;
-}
-
-@media (max-width: 1024px) {
-	.newsfeed__container{
-		padding: 0 16px;
-	}
-}
 </style>
