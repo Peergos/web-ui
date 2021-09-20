@@ -281,12 +281,12 @@ Javac-Version: ${javac.version}</echo>
       <arg value="1000"/>
       <arg value="-generate-token"/>
       <arg value="true"/>
-      <!-- uncomment these to test payments!!
+      <!-- uncomment these to test payments!!!
       <arg value="quota-admin-address"/>
       <arg value="/ip4/127.0.0.1/tcp/6000"/>
       <arg value="-payment-domain"/>
       <arg value="localhost:7000"/>
-      !-->
+      <!--!-->
     </exec>
   </target>
 
@@ -337,10 +337,12 @@ Javac-Version: ${javac.version}</echo>
       <arg value="true"/>
       <arg value="-include-csp"/>
       <arg value="false"/>
-      <!-- uncomment these to test payments!
+      <!-- uncomment these to test payments!!!
       <arg value="quota-admin-address"/>
       <arg value="/ip4/127.0.0.1/tcp/6000"/>
-      !-->
+      <arg value="-payment-domain"/>
+      <arg value="localhost:7000"/>
+      <!--!-->
     </exec>
   </target>
 
