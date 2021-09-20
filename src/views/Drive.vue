@@ -121,9 +121,6 @@
 			:allowCreateSecretLink="allowCreateSecretLink"
 			:files="filesToShare"
 			:path="pathToFile"
-			:followernames="followernames"
-			:friendnames="friendnames"
-			:groups="groups"
 			:messages="messages">
 		</Share>
 		<Search
@@ -222,14 +219,14 @@ module.exports = {
 			showProfileEditForm: false,
 			showProfileViewForm: false,
 			admindata: { pending: [] },
-			social: {
-				pending: [],
-				friends: [],
-				followers: [],
-				following: [],
-				groupsNameToUid: [],
-				groupsUidToName: [],
-			},
+			// social: {
+			// 	pending: [],
+			// 	friends: [],
+			// 	followers: [],
+			// 	following: [],
+			// 	groupsNameToUid: [],
+			// 	groupsUidToName: [],
+			// },
 			profile: {
 				firstName: "",
 				lastName: "",
@@ -427,20 +424,6 @@ module.exports = {
 			}
 
 			return this.currentDir.isWritable() && target.isDirectory();
-		},
-
-		// share
-		followernames() {
-			return this.social.followers;
-		},
-		friendnames() {
-			return this.social.friends;
-		},
-		followingnames() {
-			return this.social.following;
-		},
-		groups() {
-			return {groupsNameToUid: this.social.groupsNameToUid, groupsUidToName: this.social.groupsUidToName};
 		},
 	},
 

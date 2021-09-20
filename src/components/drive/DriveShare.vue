@@ -167,9 +167,6 @@ module.exports = {
 			sharedWithAccess: "Read",
 			shareWithFriendsGroup: false,
 			shareWithFollowersGroup: false,
-			// errorTitle: "",
-			// errorBody: "",
-			// showError: false,
 			unsharedReadAccessNames: [],
 			unsharedEditAccessNames: [],
 			showModal: false,
@@ -179,12 +176,8 @@ module.exports = {
 	},
 	props: [
 		"data",
-		"friendnames",
-		"followernames",
-		"groups",
 		"files",
 		"path",
-		// "messages",
 		"fromApp",
 		"displayName",
 		"allowReadWriteSharing",
@@ -381,10 +374,10 @@ module.exports = {
 				});
 		},
 		isFriend(name) {
-			return this.friendnames.indexOf(name) > -1;
+			return this.socialData.friends.indexOf(name) > -1;
 		},
 		isFollower(name) {
-			return this.followernames.indexOf(name) > -1 || this.isFriend(name);
+			return this.socialData.followers.indexOf(name) > -1 || this.isFriend(name);
 		},
 		filterNamesFromGroups(includesFriends, includesFollowers, name) {
 			if (includesFriends && this.isFriend(name)) {
@@ -426,11 +419,12 @@ module.exports = {
 			return this.filterSharedWithUsers(this.data.read_shared_with_users);
 		},
 		getUserOrGroupName(username) {
-			let groupName = this.groups.groupsUidToName[username];
+			let groupName = this.socialData.groupsUidToName[username];
+
 			return groupName != null ? groupName : username;
 		},
 		getGroupUid(groupName) {
-			return this.groups.groupsNameToUid[groupName];
+			return this.socialData.groupsNameToUid[groupName];
 		},
 		rationaliseUsersToShareWith(existingSharedUsers, usersToShareWith) {
 			let friendGroupUid = this.getGroupUid(
