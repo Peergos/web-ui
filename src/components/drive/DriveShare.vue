@@ -197,7 +197,7 @@ module.exports = {
 		]),
 		allNames() {
 			// return this.followernames.concat(this.friendnames);
-			return this.socialData.friends
+			return this.socialData.followers.concat(this.socialData.friends);
 		}
 	},
 	methods: {
