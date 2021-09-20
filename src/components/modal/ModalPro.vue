@@ -60,8 +60,8 @@ module.exports = {
 		]),
 
 		isPro() {
-            //return this.quotaBytes/(1024*1024) > this.paymentProperties.freeMb() && this.paymentProperties.desiredMb() > 0;
-			return false;
+            return this.quotaBytes/(1024*1024) > this.paymentProperties.freeMb() && this.paymentProperties.desiredMb() > 0;
+			// return false;
 		},
 		upgradeTitle(){
 			return (this.isPro)

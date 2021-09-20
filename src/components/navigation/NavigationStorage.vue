@@ -18,12 +18,17 @@ module.exports = {
 	computed: {
 		...Vuex.mapGetters([
 			'quota',
-			'usage'
+			'usage',
+			'isPaid'
 		]),
 	},
 	methods: {
 		showRequestStorage() {
-			this.$store.commit('CURRENT_MODAL', 'ModalSpace');
+			if(this.isPaid){
+				this.$store.commit('CURRENT_MODAL', 'ModalPro');
+			}else{
+				this.$store.commit('CURRENT_MODAL', 'ModalSpace');
+			}
 		},
 	},
 };

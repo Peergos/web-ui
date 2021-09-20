@@ -68,6 +68,9 @@ module.exports = new Vuex.Store({
 		},
 		getPath: (state) => {
 			return '/' + state.path.join('/') + (state.path.length > 0 ? "/" : "");
+		},
+		isPaid: (state) => {
+			return state.paymentProperties.isPaid()
 		}
 
 	},
