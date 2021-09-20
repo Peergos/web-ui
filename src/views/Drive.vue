@@ -218,8 +218,6 @@ module.exports = {
 				isPaid() { return false; }
 			},
 			showFeedbackForm: false,
-			showTodoBoardViewer: false,
-			currentTodoBoardName: null,
 			showCalendarViewer: false,
 			showProfileEditForm: false,
 			showProfileViewForm: false,
@@ -666,7 +664,6 @@ module.exports = {
 			this.showTextViewer = false;
 			this.showHexViewer = false;
 			this.showSearch = false;
-			this.showTodoBoardViewer = false;
 			this.showCalendarViewer = false;
 			this.selectedFiles = [];
 			this.updateHistory("Drive", this.getPath, "");
@@ -1655,7 +1652,7 @@ module.exports = {
 				if (this.isSecretLink) {
 					this.showTodoBoardViewer = true;
 				}
-				this.updateHistory("todo", this.getPath, filename);
+				this.updateHistory("Tasks", this.getPath, filename);
 			} else if (mimeType === "application/pdf") {
 				if (this.isSecretLink) {
 					this.showPdfViewer = true;
@@ -1663,7 +1660,7 @@ module.exports = {
 				this.updateHistory("pdf", this.getPath, filename);
 			} else if (mimeType === "text/calendar") {
 				this.importICALFile(true);
-				this.updateHistory("calender", this.getPath, filename);
+				this.updateHistory("Calendar", this.getPath, filename);
 			} else if (mimeType.startsWith("text/")) {
 				if (this.isSecretLink) {
 					this.showCodeEditor = true;
