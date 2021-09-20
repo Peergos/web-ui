@@ -286,7 +286,7 @@ Javac-Version: ${javac.version}</echo>
       <arg value="/ip4/127.0.0.1/tcp/6000"/>
       <arg value="-payment-domain"/>
       <arg value="localhost:7000"/>
-      <!--!-->
+      !-->
     </exec>
   </target>
 
@@ -342,7 +342,7 @@ Javac-Version: ${javac.version}</echo>
       <arg value="/ip4/127.0.0.1/tcp/6000"/>
       <arg value="-payment-domain"/>
       <arg value="localhost:7000"/>
-      <!--!-->
+      !-->
     </exec>
   </target>
 
