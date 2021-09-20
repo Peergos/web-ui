@@ -1,10 +1,11 @@
 <template>
 	<AppModal>
 		<template #header>
-			<h2>Upgrade your account to get more space</h2>
+			<h2>{{upgradeTitle}}</h2>
 		</template>
 		<template #body>
-			<p> Current space: {{ quota }}</p>
+
+			<p class="card__meta"> Current space: {{ quota }}</p>
 
 			<div v-if="!isPro" class="card__meta">
 				<h3>Pro Account</h3>
@@ -14,19 +15,23 @@
 					<li>5 GBP / month</li>
 				</ul>
 
-				<div v-if="showCard">
-					<iframe style="border: none;" width="450px" height="420px" :src="paymentUrl"/>
-				</div>
+
 			</div>
 			<div v-else>
 				<p>You will revert to the Basic quota<br/>at the end of the billing month.</p>
 			</div>
 
+			<div v-if="showCard">
+				stripe iframe
+				<iframe style="border: none;" width="450px" height="420px" :src="paymentUrl"/>
+			</div>
+
 		</template>
 		<template #footer>
-			<p>By continuing you agree to our <a href="/terms.html" target="_blank" rel="noopener noreferrer">Terms of Service</a>.</p>
+			<p v-if="!isPro">By continuing you agree to our <a href="/terms.html" target="_blank" rel="noopener noreferrer">Terms of Service</a>.</p>
+			<!-- <AppButton v-if="!isPro" @click.native="(53687091200)" type="primary" block accent>Upgrade account</AppButton> -->
+			<AppButton v-if="!isPro" @click.native="updateCard()" type="primary" block accent>Upgrade account</AppButton>
 
-			<AppButton v-if="!isPro" @click.native="requestStorage(53687091200)" type="primary" block accent>Upgrade account</AppButton>
 			<AppButton v-else @click.native="cancelPro()" type="primary" block accent >Cancel Pro subscription</AppButton>
 		</template>
 	</AppModal>
@@ -54,17 +59,15 @@ module.exports = {
 			'quota',
 			'usage'
 		]),
-		// quotaBytes:{
-		// 	get () {
-		// 		return this.$store.state.quotaBytes
-		// 	},
-		// 	set (value) {
-		// 		this.$store.commit('updateQuota', value)
-		// 	}
-		// },
+
 		isPro() {
-            return this.quotaBytes/(1024*1024) > this.paymentProperties.freeMb() && this.paymentProperties.desiredMb() > 0;
-			// return false;
+            //return this.quotaBytes/(1024*1024) > this.paymentProperties.freeMb() && this.paymentProperties.desiredMb() > 0;
+			return false;
+		},
+		upgradeTitle(){
+			return (this.isPro)
+				? 'Cancel Peergos subscription'
+				: 'Upgrade your account to get more space'
 		}
     },
 
@@ -73,56 +76,10 @@ module.exports = {
 			'updateQuota',
 		]),
 
-		// space
-
-        // getRequestedBytes() {
-        //     if (this.unit == "GiB")
-        //         return this.space*1024*1024*1024;
-        //     return this.space*1024*1024;
-        // },
-
-        // validateSpace() {
-        //     var bytes = parseInt(this.getRequestedBytes())
-        //     if (bytes != this.getRequestedBytes()) {
-        //         this.isError = true;
-        //         this.error = "Space must be a positive integer!";
-        //         this.errorClass = "has-error has-feedback alert alert-danger";
-        //         return false;
-        //     }
-        //     if (bytes < this.usage) {
-        //         this.isError = true;
-        //         this.error = "You can't request space smaller than your current usage, please delete some files and try again.";
-        //         this.errorClass = "has-error has-feedback alert alert-danger";
-        //         return false;
-        //     }
-        //     this.isError = false;
-        //     this.errorClass = "";
-        //     return true;
-        // },
-
-        // requestStorage() {
-        //     if (! this.validateSpace())
-        //         return;
-        //     const that = this;
-        //     this.context.requestSpace(this.getRequestedBytes()).thenApply(x => that.close())
-        // },
-
-
-		// Payment
-		// getRequestedBytes() {
-		// 	if (this.unit == "GiB")
-		// 		return this.space*1024*1024*1024;
-		// 	return this.space*1024*1024;
-		// },
-
-		// cancelPro() {
-		// 	this.requestStorage(0);
-		// },
 
 		requestStorage(bytes) {
 			console.log('requestStorage:', bytes)
 			var that = this;
-
 
 			this.context.requestSpace(bytes)
 				.thenCompose(x => that.updateQuota())
@@ -147,13 +104,18 @@ module.exports = {
 			}
 		},
 
-        updateCard() {
+    	updateCard() {
+			console.log('updateCard:')
 			var that = this;
 			this.context.getPaymentProperties(true).thenApply(function(props) {
 				that.paymentUrl = props.getUrl() + "&username=" + that.context.username + "&client_secret=" + props.getClientSecret();
 				that.showCard = true;
 			});
 		},
+
+		cancelPro() {
+            this.requestStorage(0);
+        },
 	},
 
 };
