@@ -238,15 +238,15 @@ module.exports = {
 							"SET_PAYMENT_PROPERTIES",
 							paymentProps
 						);
-						// if (paymentProps.isPaid()) {
-						// 	console.log('isPaid')
-						// 	that.$store.commit("SET_PAYMENT_PROPERTIES", paymentProps);
-						// }
-						// else
-						// 	that.userContext.getPendingSpaceRequests().thenApply(reqs => {
-						// 		if (reqs.toArray([]).length > 0)
-						// 			that.isAdmin = true;
-						// });
+					    if (paymentProps.isPaid()) {
+						console.log('isPaid')
+						that.$store.commit("SET_PAYMENT_PROPERTIES", paymentProps);
+					    } else {
+						that.context.getPendingSpaceRequests().thenApply(reqs => {
+						    if (reqs.toArray([]).length > 0)
+						        that.$store.commit("USER_ADMIN", true);
+					        });
+                                            }
 					});
 			}
 		},

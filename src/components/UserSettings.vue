@@ -63,7 +63,12 @@
 			@click.native="toggleTheme()"
 			aria-label="Toggle theme"
 		/>
-
+                <admin
+                    v-if="showAdmin"
+                    v-on:hide-admin="showAdmin=false"
+                    :data="admindata"
+                    :context="context">
+                </admin>
 		<!-- mobile menu trigger -->
 		<AppButton
 			v-if="isLoggedIn"
@@ -78,15 +83,19 @@
 </template>
 
 <script>
+const Admin = require("./admin")
 const AppDropdown = require("./AppDropdown.vue");
 
 module.exports = {
-	components: {
-		AppDropdown,
-	},
+    components: {
+        Admin,
+	AppDropdown,
+    },
 	data() {
 		return {
-			profileImage: "",
+		    profileImage: "",
+                    showAdmin: false,
+                    admindata: {pending:[]}
 		};
 	},
 	computed: {
@@ -114,13 +123,13 @@ module.exports = {
 			});
 		},
 		showAdminPanel() {
-			if (this.context == null) return;
-			console.log("admin panel...");
-			// const that = this;
-			// this.context.getAndDecodePendingSpaceRequests().thenApply(reqs => {
-			//     that.admindata.pending = reqs.toArray([]);
-			//     that.showAdmin = true;
-			// });
+		    if (this.context == null) return;
+		    console.log("admin panel...");
+		    const that = this;
+		    this.context.getAndDecodePendingSpaceRequests().thenApply(reqs => {
+			that.admindata.pending = reqs.toArray([]);
+			that.showAdmin = true;
+		    });
 		},
 		showRequestStorage() {
 			this.$store.commit("CURRENT_MODAL", "ModalSpace");
