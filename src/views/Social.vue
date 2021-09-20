@@ -27,7 +27,7 @@
 			    is-multiple
 			    v-model="targetUsernames"
 			    :options="usernames"
-                            :maxitems="5"
+                :maxitems="5"
 			    placeholder="please select user"
 			/>
 			<!-- <div class="flex-container" style="align-self: center;">

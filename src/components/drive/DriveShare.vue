@@ -193,9 +193,11 @@ module.exports = {
 	computed: {
 		...Vuex.mapState([
 			'context',
+			'socialData'
 		]),
 		allNames() {
-			return this.followernames.concat(this.friendnames);
+			// return this.followernames.concat(this.friendnames);
+			return this.socialData.friends
 		}
 	},
 	methods: {
