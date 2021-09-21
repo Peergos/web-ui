@@ -23,11 +23,14 @@
 
 	</AppHeader>
 
-    <div v-if="buildingFeed">
-        Building your news feed.
-        <br/>
-        This could take a minute..
-    </div>
+        <center v-if="buildingFeed">
+            <h3>
+                Building your news feed.
+                </h3>
+            <h3>
+                This could take a minute..
+            </h3>
+        </center>
     <main v-else class="newsfeed__container">
             <spinner v-if="showSpinner"></spinner>
             <div @click="closeMenus($event)" style="flex-grow:1">
