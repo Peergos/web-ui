@@ -211,6 +211,23 @@ module.exports = new Vuex.Store({
 				commit('SET_USAGE', u);
 			});
 		},
+
+		updatePayment({ commit, state }) {
+			state.context
+				.getPaymentProperties(false)
+				.thenApply(function (paymentProps) {
+					commit("SET_PAYMENT_PROPERTIES", paymentProps);
+					if (paymentProps.isPaid()) {
+						commit("SET_PAYMENT_PROPERTIES", paymentProps);
+					} else {
+						state.context.getPendingSpaceRequests().thenApply(reqs => {
+						if (reqs.toArray([]).length > 0)
+							commit("USER_ADMIN", true);
+						});
+					}
+				});
+		},
+
 		updateSocial({ commit, state }, callback) {
 
 			return state.context.getSocialState().thenApply(function (socialState) {

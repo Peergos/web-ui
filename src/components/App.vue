@@ -196,7 +196,11 @@ module.exports = {
 	},
 
 	methods: {
-		...Vuex.mapActions(["updateQuota", "updateUsage"]),
+		...Vuex.mapActions([
+			'updateQuota',
+			'updateUsage',
+			'updatePayment'
+		]),
 
 		init() {
 			const that = this;
@@ -229,25 +233,26 @@ module.exports = {
 			} else {
 				this.updateUsage();
 				this.updateQuota();
+				this.updatePayment();
 
-				this.context
-					.getPaymentProperties(false)
-					.thenApply(function (paymentProps) {
-						// console.log(paymentProps,'paymentProps')
-						that.$store.commit(
-							"SET_PAYMENT_PROPERTIES",
-							paymentProps
-						);
-					    if (paymentProps.isPaid()) {
-							console.log('isPaid')
-							that.$store.commit("SET_PAYMENT_PROPERTIES", paymentProps);
-					    } else {
-						that.context.getPendingSpaceRequests().thenApply(reqs => {
-						    if (reqs.toArray([]).length > 0)
-						        that.$store.commit("USER_ADMIN", true);
-					        });
-                                            }
-					});
+				// this.context
+				// 	.getPaymentProperties(false)
+				// 	.thenApply(function (paymentProps) {
+				// 		// console.log(paymentProps,'paymentProps')
+				// 		that.$store.commit(
+				// 			"SET_PAYMENT_PROPERTIES",
+				// 			paymentProps
+				// 		);
+				// 	    if (paymentProps.isPaid()) {
+				// 			console.log('isPaid')
+				// 			that.$store.commit("SET_PAYMENT_PROPERTIES", paymentProps);
+				// 	    } else {
+				// 		that.context.getPendingSpaceRequests().thenApply(reqs => {
+				// 		    if (reqs.toArray([]).length > 0)
+				// 		        that.$store.commit("USER_ADMIN", true);
+				// 	        });
+                //                             }
+				// 	});
 			}
 		},
 
