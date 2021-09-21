@@ -45,7 +45,7 @@
 				>
 					<slot :item="item">{{ item }}</slot>
 				</li>
-				<li v-if="filteredOptions.length === 0">User not found</li>
+				<li v-if="filteredOptions.length === 0 && this.doSearch">User not found</li>
 			</ul>
 		</div>
 	</div>
@@ -65,6 +65,10 @@ module.exports = {
 		maxitems: {
 			type: Number,
 			default: 5,
+		},
+		minchars: {
+			type: Number,
+			default: 1,
 		},
 		options: {
 			type: Array,
@@ -90,6 +94,8 @@ module.exports = {
 	},
 	computed: {
 	    filteredOptions() {
+                if (! this.doSearch)
+                    return [];
                 let search = this.textSearch.toLowerCase();
                 let filter = (val) => {
                     let lower = val.toLowerCase();
@@ -109,6 +115,9 @@ module.exports = {
 		}
 		return [];
 	    },
+            doSearch() {
+                return this.textSearch.length >= this.minchars;
+            }
 	},
 	methods: {
 		inSelectedItems(uid) {

@@ -13,10 +13,11 @@
 					<fieldset class=share-fields>
 
 						<FormAutocomplete
-							is-multiple
-							v-model="targetUsernames"
-							:options="allNames"
-							placeholder="please select user"
+						    is-multiple
+						    v-model="targetUsernames"
+                                                    :minchars="0"
+						    :options="allNames"
+						    placeholder="please select user"
 						/>
 
 						<label class="checkbox__group" v-if="this.allowReadWriteSharing">
