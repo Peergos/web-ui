@@ -147,14 +147,6 @@ module.exports = {
                 status: "",
                 webRoot: ""
             },
-            // data:{
-            //     pending: [],
-            //     friends: [],
-            //     followers: [],
-            //     following: [],
-            //     groupsNameToUid: [],
-            //     groupsUidToName: [],
-            // },
             showSpinner: false,
 	    showFingerprint: false,
 	    showProfileViewForm: false,
@@ -176,13 +168,13 @@ module.exports = {
 			'getPath'
 		]),
         usernames() {
-			let userList = this.context.network.usernames.toArray([])
-			// remove our username
-			userList.splice(userList.indexOf(this.context.username), 1);
-
-		//	 this.data.friends.forEach(function(name){
-    //         usernames.splice(usernames.indexOf(name), 1);
-    //     });
+	    let userList = this.context.network.usernames.toArray([])
+	    // remove our username
+	    userList.splice(userList.indexOf(this.context.username), 1);
+            // remove current friends
+	    this.socialData.friends.forEach(function(name){
+                userList.splice(userList.indexOf(name), 1);
+            });
             return userList;
         }
     },
@@ -200,58 +192,6 @@ module.exports = {
 		test(){
 			console.log('test')
 		},
-    	//updateSocial(callbackFunc) {
-			// var context = this.context;
-			//     if (context == null || context.username == null)
-			//         this.data = {
-			//             pending: [],
-			//     		friends: [],
-			//             followers: [],
-			//             following: [],
-			// 			pendingOutgoing: [],
-			// 			annotations: {},
-			// 			groupsNameToUid: {},
-			// 			groupsUidToName: {}
-			//         };
-			// else {
-			//     var that = this;
-			//     context.getSocialState().thenApply(function(socialState){
-			//     	var annotations = {};
-			//     socialState.friendAnnotations.keySet().toArray([]).map(name => annotations[name]=socialState.friendAnnotations.get(name));
-			//     var followerNames = socialState.followerRoots.keySet().toArray([]);
-			//     var followeeNames = socialState.followingRoots.toArray([]).map(function(f){return f.getFileProperties().name});
-			//     var friendNames = followerNames.filter(x => followeeNames.includes(x));
-			//     followerNames = followerNames.filter(x => !friendNames.includes(x));
-			//     followeeNames = followeeNames.filter(x => !friendNames.includes(x));
-
-			//     var groupsUidToName = {};
-			//     socialState.uidToGroupName.keySet().toArray([]).map(uid => groupsUidToName[uid]=socialState.uidToGroupName.get(uid));
-			//     var groupsNameToUid = {};
-			//     socialState.groupNameToUid.keySet().toArray([]).map(name => groupsNameToUid[name]=socialState.groupNameToUid.get(name));
-
-			//     var pendingOutgoingUsernames = [];
-			//     socialState.pendingOutgoing.toArray([]).map(u => pendingOutgoingUsernames.push(u));
-
-			// 		that.data = {
-			// 					pendingOutgoing: pendingOutgoingUsernames,
-			// 					pending: socialState.pendingIncoming.toArray([]),
-			// 					friends: friendNames,
-			// 					followers: followerNames,
-			// 					following: followeeNames,
-			// 					annotations: annotations,
-			// 					groupsNameToUid: groupsNameToUid,
-			// 					groupsUidToName: groupsUidToName
-			// 		};
-			//     }).exceptionally(function(throwable) {
-			// 	// that.errorTitle = 'Error retrieving social state';
-			// 	// that.errorBody = throwable.getMessage();
-			// 	// that.showError = true;
-			// 	that.showSpinner = false;
-			// 	that.$toast.error(`Error retrieving social state ${throwable.getMessage()}`, {timeout:false, id: 'social'})
-
-				// 	});
-			//}
-		//},
         displayProfile: function(username){
             this.showSpinner = true;
             let that = this;
