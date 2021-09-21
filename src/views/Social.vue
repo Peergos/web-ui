@@ -190,7 +190,8 @@ module.exports = {
 		this.updateSocial(this.test);
     },
 	mounted(){
-		this.updateHistory('Social', '/social' , null )
+	    this.updateHistory('Social', '/social' , null)
+            this.updateSocial();
 	},
     methods: {
 		...Vuex.mapActions([
