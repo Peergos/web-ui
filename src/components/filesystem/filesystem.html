@@ -218,6 +218,12 @@
     :context="context"
     :initial-file-name="selectedFiles[0] == null ? '' : selectedFiles[0].getFileProperties().name">
   </gallery>
+  <identity
+    v-if="showIdentityProof"
+    v-on:hide-identity-proof="closeApps()"
+    :file="selectedFiles[0]"
+    :context="context">
+  </identity>
   <hex
     v-if="showHexViewer"
     v-on:hide-hex-viewer="closeApps()"

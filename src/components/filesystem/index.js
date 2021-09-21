@@ -33,6 +33,7 @@ module.exports = {
             showSocial:false,
             showTimeline:false,
             showSearch:false,
+            showIdentityProof:false,
             showHexViewer:false,
             showCodeEditor:false,
             showPdfViewer:false,
@@ -178,6 +179,13 @@ module.exports = {
                 var path = that.initPath == null ? null : decodeURIComponent(that.initPath);
                 if (path != null && (path.startsWith(linkPath) || linkPath.startsWith(path))) {
                     that.changePath(path);
+                    if (that.openFile){
+                        var filename = that.path[that.path.length-1];
+                        var open = () => {
+                            that.updateFiles(filename);
+                        };
+                        that.onUpdateCompletion.push(open);
+                    }
                 } else {
                     that.changePath(linkPath);
                     that.context.getByPath(that.getPath())
@@ -454,6 +462,7 @@ module.exports = {
 		this.showHexViewer = false;
 		this.showTimeline = false;
 		this.showSearch = false;
+		this.showIdentityProof = false;
 		this.showTodoBoardViewer = false;
 		this.showCalendarViewer = false;
 	    } else {
@@ -514,6 +523,8 @@ module.exports = {
 		this.showCodeEditor = true;
 	    else if (app == "hex")
 		this.showHexViewer = true;
+	    else if (app == "identity-proof")
+		this.showIdentityProof = true;
 	    else if (app == "todo")
 		this.showTodoBoardViewer = true;
 	    else if (app == "calendar")
@@ -522,6 +533,8 @@ module.exports = {
 		this.showTimeline = true;
 	    else if (app == "search")
 		this.showSearch = true;
+            else if (app == "identity-proof")
+		this.showIdentityProof = true;
 	},
     openSearch: function(fromRoot) {
         var path = fromRoot ? "/" + this.getContext().username : this.getPath();
@@ -559,8 +572,17 @@ module.exports = {
             if (context == null)
                 return Promise.resolve(null);
             var path = this.getPath();
+            var pathArr = this.path;
             var that = this;
             context.getByPath(path).thenApply(function(file){
+                if (! file.get().isDirectory()) {
+                    // go to parent if we tried to navigate to file
+                    filename = pathArr[pathArr.length-1];
+                    pathArr = pathArr.slice(0, pathArr.length -1);
+                    that.path = pathArr;
+                    that.updateHistory("filesystem", pathArr.join("/"), filename);
+                    return;
+                }
                 that.currentDir = file.get();
                 that.updateFiles(selectedFilename);
             }).exceptionally(function(throwable) {
@@ -1902,6 +1924,11 @@ module.exports = {
                     this.showPdfViewer = true;
 		}
 		this.updateHistory("pdf", this.getPath(), filename);
+	    } else if (mimeType === "application/vnd.peergos-identity-proof") {
+                if (this.isSecretLink) {
+                    this.showIdentityProof = true;
+		}
+		this.updateHistory("identity-proof", this.getPath(), filename);
 	    } else if (mimeType === "text/calendar") {
                     this.importICALFile(true);
 		this.updateHistory("calender", this.getPath(), filename);
