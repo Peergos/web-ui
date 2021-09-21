@@ -30,14 +30,6 @@
                 :maxitems="5"
 			    placeholder="please select user"
 			/>
-			<!-- <div class="flex-container" style="align-self: center;">
-				<div class="flex-grow flex-container hspace-5">
-					<input id="friend-name-input" v-model="targetUsername" type="text" class="token-input flex-grow" style="min-width:100px; max-width: 300px;" ></input>
-				</div>
-				<div class="hspace-5" style="text-align:right">
-					<button id='send-follow-request-id' class="btn btn-success" @click="sendInitialFollowRequest()">Send</button>
-				</div>
-			</div> -->
 			<AppButton
 				accent
 				aria-label="Send"
@@ -155,7 +147,7 @@ module.exports = {
 	    friendname: null
         }
     },
-    props: ['externalchange', 'messages'],
+    props: [],
 	mixins:[routerMixins],
 
 	computed: {
@@ -222,81 +214,11 @@ module.exports = {
                 that.showProfileViewForm = true;
             });
         },
-    // setTypeAhead() {
-
-    //     var usernames = this.usernames;
-    //     // remove our username
-    //     usernames.splice(usernames.indexOf(this.context.username), 1);
-
-    //     this.data.friends.forEach(function(name){
-    //         usernames.splice(usernames.indexOf(name), 1);
-    //     });
-    //     var engine = new Bloodhound({
-    //       datumTokenizer: Bloodhound.tokenizers.whitespace,
-    //       queryTokenizer: Bloodhound.tokenizers.whitespace,
-    //       local: usernames
-    //     });
-
-    //     engine.initialize();
-
-    //     $('#friend-name-input').tokenfield({
-    //         minLength: 1,
-    //         minWidth: 1,
-    //         typeahead: [{hint: true, highlight: true, minLength: 1}, { source: suggestions }]
-    //     });
-
-    //     function suggestions(q, sync, async) {
-    //         var matches, substringRegex;
-    //         matches = [];
-    //         substrRegex = new RegExp(q, 'i');
-    //         $.each(usernames, function(i, str) {
-    //             if (substrRegex.test(str)) {
-    //                 matches.push(str);
-    //             }
-    //         });
-    //         sync(matches);
-    //     }
-
-    //     $('#friend-name-input').on('tokenfield:createtoken', function (event) {
-    //         //only select from available items
-    //     	var available_tokens = usernames;
-    //     	var exists = true;
-    //     	$.each(available_tokens, function(index, token) {
-    //     		if (token === event.attrs.value)
-    //     			exists = false;
-    //     	});
-    //     	if(exists === true) {
-    //     		event.preventDefault();
-    //         } else {
-    //             //do not allow duplicates in selection
-    //             var existingTokens = $(this).tokenfield('getTokens');
-    //             $.each(existingTokens, function(index, token) {
-    //                 if (token.value === event.attrs.value)
-    //                     event.preventDefault();
-    //             });
-    //         }
-    //     });
-    //     let that = this;
-    //     $('#friend-name-input').on('tokenfield:createdtoken', function (event) {
-    // 	    that.targetUsernames.push(event.attrs.value);
-    //     });
-
-    //     $('#friend-name-input').on('tokenfield:removedtoken', function (event) {
-    // 	    that.targetUsernames.pop(event.attrs.value);
-    //     });
-    // },
     // resetTypeahead() {
     //     this.targetUsernames = [];
     //     this.targetUsername = "";
     //     $('#friend-name-input').tokenfield('setTokens', []);
     // },
-	// showMessage(title, body) {
-	//     this.messages.push({
-	//         title: title,
-	//         body: body,
-	//         show: true
-	//     });
-	// },
 
 	isVerified(username) {
 	    var annotations = this.socialData.annotations[username]
@@ -337,35 +259,28 @@ module.exports = {
                 }
             });
 	        if (this.targetUsernames.length == 0) {
-                // that.showMessage("Follow request already sent!", "");
-				that.$toast('Follow request already sent')
-                return;
+		    that.$toast('Follow request already sent')
+                    return;
 	        }
             console.log("sending follow request");
             that.showSpinner = true;
             that.context.sendInitialFollowRequests(this.targetUsernames)
                 .thenApply(function(success) {
                     if(success) {
-                        // that.showMessage("Follow request(s) sent!", "");
-			            // that.resetTypeahead();
-						that.$toast('Follow request(s) sent')
-                        // that.$emit("external-change");
-						that.updateSocial();
+			// that.resetTypeahead();
+			that.$toast('Follow request(s) sent')
+			that.updateSocial();
                     } else {
-                        // that.showMessage("Follow request(s) failed!", "");
-						that.$toast('Follow request(s) failed')
+			that.$toast('Follow request(s) failed')
                         // that.resetTypeahead();
                     }
                     that.showSpinner = false;
             }).exceptionally(function(throwable) {
-
                     // if (that.targetUsernames.length == 1) {
                     //     // that.resetTypeahead();
                     // }
-					that.showSpinner = false;
-					// that.showMessage(throwable.getMessage());
-					that.$toast.error(`${throwable.getMessage()}`, {timeout:false, id: 'social'})
-
+		that.showSpinner = false;
+		that.$toast.error(`${throwable.getMessage()}`, {timeout:false, id: 'social'})
             });
         },
 
@@ -374,11 +289,9 @@ module.exports = {
             this.showSpinner = true;
             this.context.sendReplyFollowRequest(req, true, true)
                 .thenApply(function(success) {
-					that.showSpinner = false;
-                    // that.showMessage("Follow request reciprocated!", "");
-					that.$toast('Follow request reciprocated')
-                    // that.$emit("external-change");
-					that.updateSocial();
+		    that.showSpinner = false;
+		    that.$toast('Follow request reciprocated')
+		    that.updateSocial();
                 });
         },
 
@@ -387,11 +300,9 @@ module.exports = {
             this.showSpinner = true;
             this.context.sendReplyFollowRequest(req, true, false)
                 .thenApply(function(success) {
-					that.showSpinner = false;
-                    // that.showMessage("Follow request accepted!", "");
-					that.$toast('Follow request accepted')
-                    // that.$emit("external-change");
-					that.updateSocial();
+		    that.showSpinner = false;
+		    that.$toast('Follow request accepted')
+		    that.updateSocial();
                 });
         },
 
@@ -401,10 +312,8 @@ module.exports = {
             this.context.sendReplyFollowRequest(req, false, false)
                 .thenApply(function(success) {
                     that.showSpinner = false;
-                    // that.showMessage("Follow request rejected!", "");
-					that.$toast('Follow request rejected')
-                    // that.$emit("external-change");
-					that.updateSocial();
+		    that.$toast('Follow request rejected')
+		    that.updateSocial();
                 });
         },
 
@@ -414,10 +323,8 @@ module.exports = {
             this.context.removeFollower(username)
                 .thenApply(function(success) {
                     that.showSpinner = false;
-                    // that.showMessage("Removed follower " + username, "");
-					that.$toast(`Removed follower ${username}`)
-                    // that.$emit("external-change");
-					that.updateSocial();
+		    that.$toast(`Removed follower ${username}`)
+		    that.updateSocial();
                 });
         },
 
@@ -426,11 +333,9 @@ module.exports = {
             this.showSpinner = true;
             this.context.unfollow(username)
                 .thenApply(function(success) {
-					that.showSpinner = false;
-                    // that.showMessage("Stopped following " + username, "");
-					that.$toast(`Stopped following ${username}`)
-                    // that.$emit("external-change");
-					that.updateSocial();
+		    that.showSpinner = false;
+		    that.$toast(`Stopped following ${username}`)
+		    that.updateSocial();
                 });
         },
 
