@@ -191,12 +191,15 @@ module.exports = new Vuex.Store({
 
 	// Async
 	actions: {
-		updateQuota({ commit, state }) {
+		updateQuota({ commit, state }, callback) {
 			if (state.isSecretLink)
 				return;
 			return state.context.getQuota().thenApply(q => {
 			    commit('SET_QUOTA', q)
-                            return q;
+				// return q;
+				if (callback !== null) {
+					callback(q)
+				}
 			});
 		},
 

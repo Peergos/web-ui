@@ -5,7 +5,7 @@
 		</template>
 		<template #body>
 
-			<p class="card__meta"> Current space: {{ quota }}</p>
+			<h2 class="card__meta"> Current space: {{ quota }}</h2>
 
 			<fieldset class="modal-space-form">
 				<input
@@ -59,11 +59,11 @@ module.exports = {
 
             var bytes = parseInt(this.getRequestedBytes())
             if (bytes != this.getRequestedBytes()) {
-				this.$toast.error('Space must be a positive integer')
+				this.$toast.error('Space must be a positive integer', { position: 'bottom-left' })
                 return false;
             }
             if (bytes < this.usage) {
-                this.$toast.error(`You can't request space smaller than your current usage, please delete some files and try again.`)
+                this.$toast.error(`You can't request space smaller than your current usage, please delete some files and try again.`, { position: 'bottom-left' })
                 return false;
             }
             return true;
@@ -77,7 +77,7 @@ module.exports = {
             this.context.requestSpace(this.getRequestedBytes()).thenApply(x => that.close())
         },
 		close(){
-			this.$parent.$emit('closeModal')
+			this.$store.commit("SET_MODAL", false);
 		}
 
 	},

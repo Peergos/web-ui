@@ -239,8 +239,8 @@ module.exports = {
 							paymentProps
 						);
 					    if (paymentProps.isPaid()) {
-						console.log('isPaid')
-						that.$store.commit("SET_PAYMENT_PROPERTIES", paymentProps);
+							console.log('isPaid')
+							that.$store.commit("SET_PAYMENT_PROPERTIES", paymentProps);
 					    } else {
 						that.context.getPendingSpaceRequests().thenApply(reqs => {
 						    if (reqs.toArray([]).length > 0)

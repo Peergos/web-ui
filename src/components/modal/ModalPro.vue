@@ -5,7 +5,7 @@
 		</template>
 		<template #body>
 
-			<p class="card__meta"> Current space: {{ quota }}</p>
+			<h2 class="card__meta"> Current space: {{ quota }}</h2>
 
 			<div v-if="!isPro" class="card__meta">
 				<h3>Pro Account</h3>
@@ -17,7 +17,7 @@
 
 
 			</div>
-			<div v-else>
+			<div v-else class="card__meta">
 				<p>You will revert to the Basic quota<br/>at the end of the billing month.</p>
 			</div>
 
@@ -29,8 +29,8 @@
 		<template #footer>
 			<p v-if="!isPro">By continuing you agree to our <a href="/terms.html" target="_blank" rel="noopener noreferrer">Terms of Service</a>.</p>
 
-			<AppButton v-if="!isPro" @click.native="updateCard()" type="primary" block accent>Upgrade account</AppButton>
-			<AppButton v-else @click.native="cancelPro()" type="primary" block accent >Cancel Pro subscription</AppButton>
+			<AppButton @click.native="updateCard()" type="primary" block accent>{{upgradeCardMessage}}</AppButton>
+			<AppButton v-if="isPro" @click.native="cancelPro()" type="primary" block class="alert" >Cancel Peergos subscription</AppButton>
 		</template>
 	</AppModal>
 </template>
@@ -64,8 +64,13 @@ module.exports = {
 		},
 		upgradeTitle(){
 			return (this.isPro)
-				? 'Cancel Peergos subscription'
+				? 'Subscription settings'
 				: 'Upgrade your account to get more space'
+		},
+		upgradeCardMessage(){
+			return (this.isPro)
+				? 'Update payment details'
+				: 'Upgrade account'
 		}
     },
 
@@ -96,7 +101,7 @@ module.exports = {
                             let result = e.data.result;
                             if (result == "succeeded")
                                 that.requestStorage(53687091200);
-                        } 
+                        }
                     }
                 });
 	    },
@@ -105,40 +110,45 @@ module.exports = {
 			var that = this;
 
 			this.context.requestSpace(bytes)
-				.thenCompose(x => that.updateQuota())
-				.thenApply(quotaBytes => {
+				.thenCompose(x => that.updateQuota(quotaBytes => {
 
 					console.log(quotaBytes,'quotaBytes')
 					that.updateError();
 
 					if (quotaBytes >= bytes && bytes > 0) {
-						that.$toast.info('Thank you for signing up to a Peergos Pro account!')
+						that.$store.commit("SET_MODAL", false);
+						that.$toast.info('Thank you for signing up to a Peergos Pro account!',{timeout:false, id: 'pro'})
+
 					} else if (bytes == 0) {
-						that.$toast.error(`Sorry to see you go. We'd love to know what we can do better. Make sure to delete enough data to return within your Basic quota. `)
+						that.$store.commit("SET_MODAL", false);
+
+						that.$toast.error(`Sorry to see you go. We'd love to know what we can do better. Make sure to delete enough data to return within your Basic quota. `,{timeout:false, id: 'pro'})
+
 					} else if (quotaBytes < bytes && bytes > 0 ) {
-						that.$toast.error(`Card details required. Add a payment card to complete your upgrade. `)
+						that.$toast.error(`Card details required. Add a payment card to complete your upgrade. `,{timeout:false, id: 'pro', position: 'bottom-left'})
 					}
-				});
+				}))
 		},
 
 		updateError() {
 			if (this.paymentProperties.hasError()) {
-				that.$toast.error(this.paymentProperties.getError())
+				that.$toast.error(this.paymentProperties.getError(),{timeout:false, id: 'pro', position: 'bottom-left'})
 			}
 		},
 
     	updateCard() {
-			console.log('updateCard:')
+			console.log('updateCard')
 			var that = this;
 			this.context.getPaymentProperties(true).thenApply(function(props) {
 				that.paymentUrl = props.getUrl() + "&username=" + that.context.username + "&client_secret=" + props.getClientSecret();
 			    that.showCard = true;
-                            that.startAddCardListener();
+            	that.startAddCardListener();
 			});
 		},
 
 		cancelPro() {
             this.requestStorage(0);
+			this.$store.commit("SET_MODAL", false);
         },
 	},
 
@@ -173,5 +183,15 @@ module.exports = {
 	background-size: 24px auto;
     padding-left: 32px;
 }
-
+.app-modal__container h2.card__meta{
+	font-size: var(--text);
+}
+.app-modal__container .app-button.alert{
+	background-color: var(--alert);
+	color:var(--bg);
+	margin-top:8px;
+}
+.app-modal__container .app-button.alert:hover{
+	background-color: var(--alert-hover);
+}
 </style>
