@@ -49,15 +49,17 @@
 			<h2>This server is currently not accepting signups</h2>
 			<p>Join the waiting list to be notified when there are more places.</p>
 			<input
-				type="text"
-				name="email"
-				v-model="email"
-				placeholder="Email"
+			    type="text"
+			    name="email"
+			    v-model="email"
+			    placeholder="Email"
 			/>
 			<AppButton
-				@click="addToWaitList()"
-				class="waiting-list"
-				type="primary"
+			    @click.native="addToWaitList()"
+			    class="waiting-list"
+			    type="primary"
+                            block
+                            accent
 			>
 				Join waiting list
 			</AppButton>
@@ -120,15 +122,16 @@ module.exports = {
 			this.username.toLowerCase()
 		},
 		addToWaitList() {
-			var that = this;
-			// let emailRegEx = /^(([^<>()\[\]\\.,;:\s@"]+(\.[^<>()\[\]\\.,;:\s@"]+)*)|(".+"))@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}])|(([a-zA-Z\-0-9]+\.)+[a-zA-Z]{2,24}))$/ ;
-			// if(!emailRegEx.test(that.email)) {
-			// 	that.$toast.error('Invalid email.',{timeout:false})
-			// }
-			this.network.instanceAdmin.addToWaitList(that.email).thenApply(function(res) {
-				that.email='';
-				that.$toast.info('Congratulations, you have joined the waiting list')
-			});
+		    var that = this;
+		    let emailRegEx = /^(([^<>()\[\]\\.,;:\s@"]+(\.[^<>()\[\]\\.,;:\s@"]+)*)|(".+"))@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}])|(([a-zA-Z\-0-9]+\.)+[a-zA-Z]{2,24}))$/ ;
+		    if(!emailRegEx.test(that.email)) {
+			that.$toast.error('Invalid email.',{timeout:false})
+                        return
+		    }
+		    this.network.instanceAdmin.addToWaitList(that.email).thenApply(function(res) {
+			that.email='';
+			that.$toast.info("Congratulations, you have joined the waiting list. We'll be in touch as soon as a place is available.")
+		    });
 
 		},
 		generatePassword() {
