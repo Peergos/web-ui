@@ -15,7 +15,7 @@
 			</AppButton>
 			<AppButton
 				aria-label="Refresh"
-				@click="refresh()"
+				@click.native="refresh()"
 				size="small"
 				icon="refresh"
 			></AppButton>
@@ -898,11 +898,7 @@ module.exports = {
             });
         },
         showMessage: function(title, body) {
-            this.messages.push({
-                title: title,
-                body: body,
-                show: true
-            });
+            that.$toast.error(title + body, {timeout:false, id: 'error'})
         },
         joinConversation: function (entry) {
             let that = this;
