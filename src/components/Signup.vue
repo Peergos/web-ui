@@ -166,11 +166,11 @@ module.exports = {
 						that.network,
 						that.crypto,
                     	// {"accept" : x => that.spinnerMessage = x}
-						{"accept" : x => that.$toast.info(x, {id:'signup'})}
+						{"accept" : x => that.$toast.info(x, {id:'signup', timeout:false})}
 						)
                         .thenApply(function(context) {
 
-							that.$toast.dismiss('signup');
+
 
                             // that.$emit("filesystem", {context: context, signup:true});
 							that.$store.commit("CURRENT_VIEW", 'Drive');
@@ -178,6 +178,8 @@ module.exports = {
 							that.$store.commit('USER_LOGIN', true);
 							that.updateSocial()
                             console.log("Signing in/up took " + (Date.now()-creationStart)+" mS from function call");
+
+							that.$toast.dismiss('signup');
                         })
 						.exceptionally(function(throwable) {
                            that.$toast.error(throwable.getMessage(),{timeout:false, id: 'signup'})
