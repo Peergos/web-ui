@@ -109,6 +109,12 @@
 			:context="context"
 			:messages="messages">
 		</code-editor>
+                <identity
+                    v-if="showIdentityProof"
+                    v-on:hide-identity-proof="closeApps()"
+                    :file="selectedFiles[0]"
+                    :context="context">
+                </identity>
 
 		<Share
 			v-if="showShare"
@@ -149,6 +155,7 @@ const DriveGridCard = require("../components/drive/DriveGridCard.vue");
 const DriveGridDrop = require("../components/drive/DriveGridDrop.vue");
 const DriveTable = require("../components/drive/DriveTable.vue");
 const Gallery = require("../components/drive/DriveGallery.vue");
+const Identity = require("../components/identity-proof-viewer.vue");
 const Share = require("../components/drive/DriveShare.vue");
 const Search = require("../components/Search.vue");
 
@@ -174,6 +181,7 @@ module.exports = {
 		AppPrompt,
 		ProgressBar,
 		Gallery,
+		Identity,
 		Share,
 		Search
 	},
@@ -200,6 +208,7 @@ module.exports = {
 
 			showAdmin: false,
 			showGallery: false,
+			showIdentityProof: false,
 			showSocial: false,
 			showTimeline: false,
 			showSearch: false,
@@ -219,14 +228,6 @@ module.exports = {
 			showProfileEditForm: false,
 			showProfileViewForm: false,
 			admindata: { pending: [] },
-			// social: {
-			// 	pending: [],
-			// 	friends: [],
-			// 	followers: [],
-			// 	following: [],
-			// 	groupsNameToUid: [],
-			// 	groupsUidToName: [],
-			// },
 			profile: {
 				firstName: "",
 				lastName: "",
@@ -641,16 +642,17 @@ module.exports = {
 		},
 
 		closeApps() {
-			this.showGallery = false;
-			this.showPdfViewer = false;
-			this.showCodeEditor = false;
-			this.showTextViewer = false;
-			this.showHexViewer = false;
-			this.showSearch = false;
-			this.showCalendarViewer = false;
-			this.selectedFiles = [];
-			this.updateHistory("Drive", this.getPath, "");
-			this.forceSharedRefreshWithUpdate++;
+		    this.showGallery = false;
+                    this.showIdentityProof = false;
+		    this.showPdfViewer = false;
+		    this.showCodeEditor = false;
+		    this.showTextViewer = false;
+		    this.showHexViewer = false;
+		    this.showSearch = false;
+		    this.showCalendarViewer = false;
+		    this.selectedFiles = [];
+		    this.updateHistory("Drive", this.getPath, "");
+		    this.forceSharedRefreshWithUpdate++;
 		},
 
 		navigateToAction(directory) {
@@ -691,6 +693,8 @@ module.exports = {
 				this.showPdfViewer = true;
 			else if (app == "editor")
 				this.showCodeEditor = true;
+			else if (app == "identity-proof")
+				this.showIdentityProof = true;
 			else if (app == "hex")
 				this.showHexViewer = true;
 			else if (app == "todo")
@@ -736,17 +740,26 @@ module.exports = {
 			this.updateCurrentDirectory(null);
 		},
 		updateCurrentDirectory(selectedFilename) {
-
-			if (this.context == null)
-				return Promise.resolve(null);
-			var path = this.getPath;
-			var that = this;
-			this.context.getByPath(path).thenApply(function (file) {
-				that.currentDir = file.get();
-				that.updateFiles(selectedFilename);
-			}).exceptionally(function (throwable) {
-				console.log(throwable.getMessage());
-			});
+		    if (this.context == null)
+			return Promise.resolve(null);
+		    var path = this.getPath;
+		    var that = this;
+		    this.context.getByPath(path).thenApply(function (file) {
+                        if (! file.get().isDirectory()) {
+                            // go to parent if we tried to navigate to file
+                            if (path.endsWith("/"))
+                                path = path.substring(0, path.length-1)
+                            let index = path.lastIndexOf("/");
+                            filename = path.substring(index+1);
+                            that.changePath(path.substring(0, index));
+                            that.updateCurrentDirectory(filename)
+                            return;
+                        }
+			that.currentDir = file.get();
+			that.updateFiles(selectedFilename);
+		    }).exceptionally(function (throwable) {
+			console.log(throwable.getMessage());
+		    });
 		},
 
 		updateFiles(selectedFilename) {
@@ -1644,6 +1657,11 @@ module.exports = {
 			} else if (mimeType === "text/calendar") {
 				this.importICALFile(true);
 				this.updateHistory("Calendar", this.getPath, filename);
+			} else if (mimeType === "application/vnd.peergos-identity-proof") {
+				if (this.isSecretLink) {
+					this.showIdentityProof = true;
+				}
+				this.updateHistory("identity-proof", this.getPath, filename);
 			} else if (mimeType.startsWith("text/")) {
 				if (this.isSecretLink) {
 					this.showCodeEditor = true;
