@@ -102,22 +102,40 @@ module.exports = {
             // if we have a file selected and it is a todo list, open it,
             // otherwise list todo files in home dir and give choice of creating a new one or opening one of them
             const props = this.getPropsFromUrl();
-            const path = props == null ? null : props.path;
-	    const filename = props == null ? null : props.filename;
-            let that = this;
-            if (filename == null) {
-                this.selectOrCreateModal();
-                return;
+            if (props.secretLink) {
+                let that = this;
+                this.context.getEntryPath().thenCompose(path => {
+                    return that.context.getByPath(path).thenCompose(dirOpt => {
+                        dirOpt.get().getChildren(that.context.crypto.hasher, that.context.network)
+                            .thenApply(children => {
+                                var arr = children.toArray();
+				if (arr.length == 1) {
+                                    that.loadPath(path + "/" + arr[0].getName());
+                                }
+                            })
+                    });
+                })
+            } else {
+                const path = props == null ? null : props.path;
+	        const filename = props == null ? null : props.filename;
+                let that = this;
+                if (filename == null) {
+                    this.selectOrCreateModal();
+                    return;
+                }
+                
+                this.loadFile(path, filename);
             }
-
-            this.loadFile(path, filename);
         },
         
         loadFile: function(path, filename) {
+            this.loadPath(path+filename);
+        },
+        loadPath: function(path) {
             let that = this;
-            that.context.getByPath(path + filename).thenApply(fileOpt => {
+            that.context.getByPath(path).thenApply(fileOpt => {
                 if (! fileOpt.isPresent()) {
-                    that.$toast.error("Couldn't load file: " + path + filename, {timeout:false})
+                    that.$toast.error("Couldn't load file: " + path, {timeout:false})
                     return;
                 }
                 let file = fileOpt.get();

@@ -21,10 +21,13 @@ module.exports = {
 	},
         
 	getPropsFromUrl() {
+            let hash = window.location.hash;
+            if (hash.length == 0)
+                return null;
 	    try {
-		return this.decryptProps(fragmentToProps(window.location.hash.substring(1)));
+		return this.decryptProps(fragmentToProps(hash.substring(1)));
 	    } catch (e) {
-		return null;
+		return fragmentToProps(hash.substring(1));
 	    }
 	},
 	decryptProps(props) {
