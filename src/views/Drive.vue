@@ -168,7 +168,7 @@ const AppPrompt = require("../components/prompt/AppPrompt.vue");
 const helpers = require("../mixins/storage/index.js");
 const downloaderMixins = require("../mixins/downloader/index.js");
 
-const routerMixins = require("../mixins/router/index.js");
+const router = require("../mixins/router/index.js");
 
 module.exports = {
 	components: {
@@ -272,7 +272,7 @@ module.exports = {
 		};
 	},
 
-	mixins:[downloaderMixins, routerMixins],
+	mixins:[downloaderMixins, router],
 
 	computed: {
 		...Vuex.mapState([
@@ -1610,28 +1610,6 @@ module.exports = {
 				this.navigateOrDownload(file);
 			}
 		},
-
-                getApp(file, path) {
-                    var filename = file.getName();
-		    var mimeType = file.getFileProperties().mimeType;
-                    if (mimeType.startsWith("audio") ||
-			mimeType.startsWith("video") ||
-			mimeType.startsWith("image")) {
-			return 'Gallery';
-		    } else if (mimeType === "application/vnd.peergos-todo") {
-			return "Tasks";
-		    } else if (mimeType === "application/pdf") {
-			return "pdf";
-		    } else if (mimeType === "text/calendar") {
-			return "Calendar";
-		    } else if (mimeType === "application/vnd.peergos-identity-proof") {
-			return "identity-proof";
-		    } else if (mimeType.startsWith("text/")) {
-			return "editor";
-		    } else {
-			return "hex";
-		    }
-                },
 
 		openFile() {
 		    // TODO: once we support selecting files re-enable this
