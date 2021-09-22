@@ -68,7 +68,7 @@
 				v-if="viewMenu"
 				@closeMenu="closeMenu()"
 			>
-				<li id='gallery' v-if="canOpen" @keyup.enter="gallery" @click="gallery">View</li>
+				<li id='gallery' v-if="canOpen" @keyup.enter="gallery" @click="openFile">View</li>
 				<li id='open-file' v-if="canOpen" @keyup.enter="downloadAll"  @click="downloadAll">Download</li>
 				<li id='rename-file' v-if="isWritable" @keyup.enter="rename"  @click="rename">Rename</li>
 				<li id='delete-file' v-if="isWritable" @keyup.enter="deleteFiles"  @click="deleteFiles">Delete</li>
@@ -210,7 +210,6 @@ module.exports = {
 			showGallery: false,
 			showIdentityProof: false,
 			showSocial: false,
-			showTimeline: false,
 			showSearch: false,
 			showHexViewer: false,
 			showCodeEditor: false,
@@ -224,7 +223,6 @@ module.exports = {
 				isPaid() { return false; }
 			},
 			showFeedbackForm: false,
-			showCalendarViewer: false,
 			showProfileEditForm: false,
 			showProfileViewForm: false,
 			admindata: { pending: [] },
@@ -649,7 +647,6 @@ module.exports = {
 		    this.showTextViewer = false;
 		    this.showHexViewer = false;
 		    this.showSearch = false;
-		    this.showCalendarViewer = false;
 		    this.selectedFiles = [];
 		    this.updateHistory("Drive", this.getPath, "");
 		    this.forceSharedRefreshWithUpdate++;
@@ -697,12 +694,6 @@ module.exports = {
 				this.showIdentityProof = true;
 			else if (app == "hex")
 				this.showHexViewer = true;
-			else if (app == "todo")
-				this.showTodoBoardViewer = true;
-			else if (app == "calendar")
-				this.showCalendarViewer = true;
-			else if (app == "timeline")
-				this.showTimeline = true;
 			else if (app == "search")
 				this.showSearch = true;
 		},
@@ -780,7 +771,7 @@ module.exports = {
 					});
 					if (selectedFilename != null) {
 						that.selectedFiles = that.files.filter(f => f.getName() == selectedFilename);
-						that.gallery();
+						that.openFile();
 					} else {
 						that.sharedWithDataUpdate();
 						that.openAppFromFolder();
@@ -1620,59 +1611,58 @@ module.exports = {
 			}
 		},
 
-		gallery() {
-			// TODO: once we support selecting files re-enable this
-			//if (this.selectedFiles.length == 0)
-			//    return;
-			this.closeMenu();
-			if (this.selectedFiles.length == 0)
-				return;
+                getApp(file, path) {
+                    var filename = file.getName();
+		    var mimeType = file.getFileProperties().mimeType;
+                    if (mimeType.startsWith("audio") ||
+			mimeType.startsWith("video") ||
+			mimeType.startsWith("image")) {
+			return 'Gallery';
+		    } else if (mimeType === "application/vnd.peergos-todo") {
+			return "Tasks";
+		    } else if (mimeType === "application/pdf") {
+			return "pdf";
+		    } else if (mimeType === "text/calendar") {
+			return "Calendar";
+		    } else if (mimeType === "application/vnd.peergos-identity-proof") {
+			return "identity-proof";
+		    } else if (mimeType.startsWith("text/")) {
+			return "editor";
+		    } else {
+			return "hex";
+		    }
+                },
 
-			var file = this.selectedFiles[0];
-			var filename = file.getName();
-			var mimeType = file.getFileProperties().mimeType;
-
-			// console.log("Opening " + mimeType);
-			if (mimeType.startsWith("audio") ||
-				mimeType.startsWith("video") ||
-				mimeType.startsWith("image")) {
-				var that = this;
-				this.confirmView(file, () => {
-					if (this.isSecretLink) {
-						that.showGallery = true;
-					}
-					// that.showGallery = true;
-					that.updateHistory('Gallery', that.getPath, filename);
-				});
-			} else if (mimeType === "application/vnd.peergos-todo") {
-				if (this.isSecretLink) {
-					this.showTodoBoardViewer = true;
-				}
-				this.updateHistory("Tasks", this.getPath, filename);
-			} else if (mimeType === "application/pdf") {
-				if (this.isSecretLink) {
-					this.showPdfViewer = true;
-				}
-				this.updateHistory("pdf", this.getPath, filename);
-			} else if (mimeType === "text/calendar") {
-				this.importICALFile(true);
-				this.updateHistory("Calendar", this.getPath, filename);
-			} else if (mimeType === "application/vnd.peergos-identity-proof") {
-				if (this.isSecretLink) {
-					this.showIdentityProof = true;
-				}
-				this.updateHistory("identity-proof", this.getPath, filename);
-			} else if (mimeType.startsWith("text/")) {
-				if (this.isSecretLink) {
-					this.showCodeEditor = true;
-				}
-				this.updateHistory("editor", this.getPath, filename);
-			} else {
-				if (this.isSecretLink) {
-					this.showHexViewer = true;
-				}
-				this.updateHistory("hex", this.getPath, filename);
-			}
+		openFile() {
+		    // TODO: once we support selecting files re-enable this
+		    //if (this.selectedFiles.length == 0)
+		    //    return;
+		    this.closeMenu();
+		    if (this.selectedFiles.length == 0)
+			return;
+                    
+		    var file = this.selectedFiles[0];
+		    var filename = file.getName();
+                    
+                    var app = this.getApp(file, this.path);
+                    if (this.isSecretLink) {
+                        if (app === "Gallery")
+                            this.showGallery = true;
+                        else if (app === "pdf")
+                            this.showPdfViewer = true;
+                        else if (app === "editor")
+                            this.showCodeEditor = true;
+                        else if (app === "identity-proof")
+                            this.showIdentityProof = true;
+                        else if (app === "Tasks")
+                            this.$store.commit("CURRENT_VIEW", "Tasks");
+                        else if (app === "Calendar")
+                            this.$store.commit("CURRENT_VIEW", "Calendar");
+                        else if (app === "hex")
+                            this.showHexViewer = true;
+                    } else {
+                        this.updateHistory(app, this.getPath, filename);
+                    }
 		},
 
 		navigateOrDownload(file) {
