@@ -85,12 +85,15 @@ module.exports = {
 		this.$store.commit("CURRENT_VIEW", "NewsFeed");
 	    } else if (app == "Tasks") {
 		this.$store.commit("CURRENT_VIEW", "Tasks");
+                this.updateHistory(app, path, "");
 	    } else if (app == "Social") {
 		this.$store.commit("CURRENT_VIEW", "Social");
 	    } else if (app == "Calendar") {
 		this.$store.commit("CURRENT_VIEW", "Calendar");
+                this.updateHistory(app, path, "");
 	    } else if (app == "Chat") {
 		this.$store.commit("CURRENT_VIEW", "Chat");
+                this.updateHistory(app, path, "");
 	    } else {
 		// Drive sub-apps
 		this.$store.commit("CURRENT_VIEW", "Drive");
