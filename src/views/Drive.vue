@@ -534,7 +534,10 @@ module.exports = {
 				 			};
 				 			that.onUpdateCompletion.push(open);
 				 		    }
-				 		}
+				 		} else {
+                                                    let app = that.getApp(file.get(), linkPath);
+                                                    that.openFileOrDir(app, linkPath, file.get());
+                                                }
 				 	    })
 				 	});
 				}
