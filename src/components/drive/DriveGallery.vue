@@ -21,7 +21,7 @@
 			</center>
                         <warning 
                             v-if="showWarning" 
-                            v-on:hide-warning="this.showWarning = false;"
+                            v-on:hide-warning="hideWarning"
                             :warning_message='warning_message'
                             :warning_body="warning_body"
                             :consumer_func="warning_consumer_func">
@@ -183,10 +183,11 @@ module.exports = {
 		    this.fileIndex = i;
 	    console.log("Set initial gallery index to " + this.fileIndex);
 	    window.addEventListener("keyup", this.keyup);
+            let that = this;
             this.confirmView(this.current, () => {
-                this.showWarning = false;
-                this.showMedia = true;
-                this.updateCurrentFileData();
+                that.showWarning = false;
+                that.showMedia = true;
+                that.updateCurrentFileData();
             })
 	},
 
@@ -206,8 +207,13 @@ module.exports = {
 			}
 		},
 		close() {
-			this.pinging = false;
-			this.$emit("hide-gallery");
+		    this.pinging = false;
+                    this.showWarning = false;
+		    this.$emit("hide-gallery");
+		},
+
+		hideWarning() {
+                    this.showWarning = false;
 		},
 
 		keyup(e) {
