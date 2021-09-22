@@ -42,6 +42,15 @@ module.exports = {
 	},
         
         getApp(file, path) {
+            if (file.isDirectory()) {
+                let pathParts = path.split("/");
+                if (pathParts.length == 6 && pathParts[0] == '' &&
+                    pathParts[2] == '.apps' &&
+                    pathParts[3] == 'calendar' &&
+                    pathParts[4] == 'data')
+                    return "Calendar";
+                return "Drive";
+            }
             var filename = file.getName();
 	    var mimeType = file.getFileProperties().mimeType;
             if (mimeType.startsWith("audio") ||

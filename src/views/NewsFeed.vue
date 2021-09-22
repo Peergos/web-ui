@@ -95,7 +95,7 @@
                                 </a>
                                 <span v-if="entry[0].sharer != context.username && !canLoadProfile(entry[0].sharer)">{{ entry[0].sharer }}</span>
                                 <span>{{ entry[0].info }}</span>
-                                <a v-if="entry[0].displayFilename" v-on:click="navigateTo(entry[0])" style="cursor: pointer">
+                                <a v-if="entry[0].displayFilename" v-on:click="view(entry[0])" style="cursor: pointer">
                                     <span :title="entry[0].link">{{ entry[0].name }}</span>
                                 </a>
                                 <div>
@@ -326,9 +326,6 @@ module.exports = {
 	    if (type == 'word document' || type == 'text document') 	return 'file-word--72';
 	    if (type == 'excel spreadsheet' || type == 'spreadsheet') 	return 'file-excel--72';
             return 'file-generic--72';
-        },
-        navigateToAction: function(directory) {
-            this.updateHistory("Drive", directory, "");
         },
         displayProfile: function(username){
             this.showSpinner = true;
@@ -917,32 +914,15 @@ module.exports = {
             this.close();
             this.viewConversations();
         },
-        navigateTo: function (entry) {
-            this.close();
-            this.navigateToAction(entry.path);
-        },
         view: function (entry) {
-            var filename = entry.file.getName();
-            if (this.isSharedCalendar(entry.path)) {
-                this.importSharedCalendar(entry.path, entry.file, false, entry.file.getOwnerName());
+            let type = entry.file.props.getType();
+            if(type == "image" || type == "audio" || type == "video") {
+                this.openInGallery(entry);
             } else {
-                var mimeType = entry.file.getFileProperties().mimeType;
-                console.log("Opening " + mimeType);
-                if (mimeType === "text/calendar") {
-                    this.importCalendarFile(false, entry.file);
-                } else {
-                    if (entry.isDirectory) {
-                        this.navigateToAction(entry.path);
-                        this.close();
-                    } else {
-                        let type = entry.file.props.getType();
-                        if(type == "image" || type == "audio" || type == "video") {
-                            this.openInGallery(entry);
-                        } else {
-                            this.viewAction(entry.path +"/" + entry.fullName, entry.file);
-                        }
-                    }
-                }
+                if (entry.file.isDirectory())
+                    this.viewAction(entry.path, entry.file);
+                else
+                    this.viewAction(entry.path +"/" + entry.fullName, entry.file);
             }
         },
         viewAction: function(path, file) {
@@ -977,13 +957,6 @@ module.exports = {
             let isFollowing = this.followingnames.indexOf(sharer) > -1;
             return isFriend || isFollowing;
         },
-        isSharedCalendar: function(path) {
-            let pathParts = path.split("/");
-            return pathParts.length == 6 && pathParts[0] == '' &&
-                pathParts[2] == '.apps' &&
-                pathParts[3] == 'calendar' &&
-                pathParts[4] == 'data';
-        },
         indent: function(item) {
             let calcMargin = (item.indent * 20) + 10;
             return "" +  calcMargin + "px";
@@ -1008,6 +981,15 @@ module.exports = {
                 return false;
             }
         },
+        isSharedCalendar: function(path) {
+            //TODO move this into the universal get icon for file method
+            let pathParts = path.split("/");
+            return pathParts.length == 6 && pathParts[0] == '' &&
+                pathParts[2] == '.apps' &&
+                pathParts[3] == 'calendar' &&
+                pathParts[4] == 'data';
+        },
+
         createTimelineEntry: function(filePath, entry, socialPost, file, isChat) {
             var displayFilename = true;
             let info = " shared";
