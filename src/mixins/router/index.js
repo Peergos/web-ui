@@ -62,5 +62,25 @@ module.exports = {
 		return "hex";
 	    }
         },
+
+        openFileOrDir(app, path, file) {
+            if (app == "Drive") {
+		this.$store.commit("CURRENT_VIEW", "Drive");
+	    } else if (app == "NewsFeed") {
+		this.$store.commit("CURRENT_VIEW", "NewsFeed");
+	    } else if (app == "Tasks") {
+		this.$store.commit("CURRENT_VIEW", "Tasks");
+	    } else if (app == "Social") {
+		this.$store.commit("CURRENT_VIEW", "Social");
+	    } else if (app == "Calendar") {
+		this.$store.commit("CURRENT_VIEW", "Calendar");
+	    } else if (app == "Chat") {
+		this.$store.commit("CURRENT_VIEW", "Chat");
+	    } else {
+		// Drive sub-apps
+		this.$store.commit("CURRENT_VIEW", "Drive");
+		this.updateHistory(app, path, file.getName());
+	    }
+        }
     },
 }

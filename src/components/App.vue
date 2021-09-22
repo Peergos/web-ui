@@ -309,7 +309,7 @@ module.exports = {
 			} else {
 				// Drive sub-apps
 				this.$store.commit("CURRENT_VIEW", "Drive");
-				this.$refs.appView.openInApp(filename, app);
+				//this.$refs.appView.openInApp(filename, app);
 			}
 		},
 

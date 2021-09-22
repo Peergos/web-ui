@@ -278,7 +278,7 @@ module.exports = {
             messenger: null
         }
     },
-    props: ['viewAction', 'messages', 'socialFeedInstance',
+    props: ['messages', 'socialFeedInstance',
         'importCalendarFile', 'importSharedCalendar',
         'convertBytesToHumanReadable', 'viewConversations'],
 	mixins:[routerMixins],
@@ -939,11 +939,15 @@ module.exports = {
                         if(type == "image" || type == "audio" || type == "video") {
                             this.openInGallery(entry);
                         } else {
-                            this.viewAction(entry.path, entry.fullName);
+                            this.viewAction(entry.path +"/" + entry.fullName, entry.file);
                         }
                     }
                 }
             }
+        },
+        viewAction: function(path, file) {
+            let app = this.getApp(file, path)
+            this.openFileOrDir(app, path, file)
         },
         viewMediaList: function (mediaList, mediaIndex) {
             let files = [];
