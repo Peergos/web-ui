@@ -52,6 +52,9 @@ module.exports = {
                     pathParts[3] == 'calendar' &&
                     pathParts[4] == 'data')
                     return "Calendar";
+                if (pathParts.length >= 3 && pathParts[0] == '' &&
+                    pathParts[2] == '.messaging')
+                    return "Chat";
                 return "Drive";
             }
             var filename = file.getName();
