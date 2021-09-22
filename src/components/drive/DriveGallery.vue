@@ -19,7 +19,14 @@
 			<center>
 				<h2 v-if="current != null">{{ showGalleryTitle(current) }}</h2>
 			</center>
-			<center v-if="showableFiles.length > 1">
+                        <warning 
+                            v-if="showWarning" 
+                            v-on:hide-warning="this.showWarning = false;"
+                            :warning_message='warning_message'
+                            :warning_body="warning_body"
+                            :consumer_func="warning_consumer_func">
+                        </warning>
+			<center v-if="showMedia && showableFiles.length > 1">
 				<div class="btn-group" style="padding: 10px">
 					<button
 						@click="start()"
@@ -48,6 +55,7 @@
 				</div>
 			</center>
 			<center
+                                v-if="showMedia"
 				style="height: 75%"
 				@keyup.right="next"
 				@keyup.left="previous"
@@ -94,11 +102,16 @@ const downloaderMixins = require("../../mixins/downloader/index.js");
 module.exports = {
 	data() {
 		return {
-			showSpinner: false,
-			fileIndex: 0,
-			imageData: null,
-			videoUrl: null,
-			pinging: false,
+		    showSpinner: false,
+		    fileIndex: 0,
+		    imageData: null,
+		    videoUrl: null,
+		    pinging: false,
+                    showMedia: false,
+                    showWarning: false,
+		    warning_message: "",
+		    warning_body: "",
+		    warning_consumer_func: () => { }			
 		};
 	},
 	props: ["files", "initialFileName", "hideGalleryTitle"],
@@ -162,15 +175,19 @@ module.exports = {
 		},
 	},
 	created() {
-		console.debug("Gallery module created!");
-		console.log('gallery files:', this.files)
-		var showable = this.showableFiles;
-		for (var i = 0; i < showable.length; i++)
-			if (showable[i].getFileProperties().name == this.initialFileName)
-				this.fileIndex = i;
-		console.log("Set initial gallery index to " + this.fileIndex);
-		window.addEventListener("keyup", this.keyup);
-		this.updateCurrentFileData();
+	    console.debug("Gallery module created!");
+	    console.log('gallery files:', this.files)
+	    var showable = this.showableFiles;
+	    for (var i = 0; i < showable.length; i++)
+		if (showable[i].getFileProperties().name == this.initialFileName)
+		    this.fileIndex = i;
+	    console.log("Set initial gallery index to " + this.fileIndex);
+	    window.addEventListener("keyup", this.keyup);
+            this.confirmView(this.current, () => {
+                this.showWarning = false;
+                this.showMedia = true;
+                this.updateCurrentFileData();
+            })
 	},
 
 	watch: {
@@ -234,7 +251,21 @@ module.exports = {
 			else this.fileIndex--;
 			this.updateCurrentFileData();
 		},
-		updateCurrentFileData() {
+		confirmView(file, viewFn) {
+			var size = this.getFileSize(file.getFileProperties());
+			if (this.supportsStreaming() || size < 50 * 1024 * 1024)
+				return viewFn();
+			var sizeMb = (size / 1024 / 1024) | 0;
+			this.warning_message = 'Are you sure you want to view ' + file.getName() + " of size " + sizeMb + 'MiB?';
+			if (this.detectFirefoxWritableSteams()) {
+				this.warning_body = "Firefox has added support for streaming behind a feature flag. To enable streaming; open about:config, enable 'javascript.options.writable_streams' and then open a new tab";
+			} else {
+				this.warning_body = "We recommend Chrome for downloads of large files. Your browser doesn't support it and may crash or be very slow";
+			}
+			this.warning_consumer_func = viewFn;
+			this.showWarning = true;
+		},
+                updateCurrentFileData() {
 			var file = this.current;
 			if (file == null) {
 				console.log("null file in gallery");

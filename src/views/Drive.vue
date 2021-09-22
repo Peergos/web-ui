@@ -68,7 +68,7 @@
 				v-if="viewMenu"
 				@closeMenu="closeMenu()"
 			>
-				<li id='gallery' v-if="canOpen" @keyup.enter="gallery" @click="openFile">View</li>
+				<li id='gallery' v-if="canOpen" @keyup.enter="openFile" @click="openFile">View</li>
 				<li id='open-file' v-if="canOpen" @keyup.enter="downloadAll"  @click="downloadAll">Download</li>
 				<li id='rename-file' v-if="isWritable" @keyup.enter="rename"  @click="rename">Rename</li>
 				<li id='delete-file' v-if="isWritable" @keyup.enter="deleteFiles"  @click="deleteFiles">Delete</li>
@@ -869,21 +869,6 @@ module.exports = {
 			this.showWarning = true;
 		},
 
-		confirmView(file, viewFn) {
-			var size = this.getFileSize(file.getFileProperties());
-			if (this.supportsStreaming() || size < 50 * 1024 * 1024)
-				return viewFn();
-			var sizeMb = (size / 1024 / 1024) | 0;
-			this.warning_message = 'Are you sure you want to view ' + file.getName() + " of size " + sizeMb + 'MiB?';
-			if (this.detectFirefoxWritableSteams()) {
-				this.warning_body = "Firefox has added support for streaming behind a feature flag. To enable streaming; open about:config, enable 'javascript.options.writable_streams' and then open a new tab";
-			} else {
-				this.warning_body = "We recommend Chrome for downloads of large files. Your browser doesn't support it and may crash or be very slow";
-			}
-			this.warning_consumer_func = viewFn;
-			this.showWarning = true;
-		},
-
 		switchView() {
 			this.isGrid = !this.isGrid;
 		},
@@ -1623,24 +1608,23 @@ module.exports = {
 		    var filename = file.getName();
                     
                     var app = this.getApp(file, this.path);
-                    if (this.isSecretLink) {
-                        if (app === "Gallery")
-                            this.showGallery = true;
-                        else if (app === "pdf")
-                            this.showPdfViewer = true;
-                        else if (app === "editor")
-                            this.showCodeEditor = true;
-                        else if (app === "identity-proof")
-                            this.showIdentityProof = true;
-                        else if (app === "Tasks")
-                            this.$store.commit("CURRENT_VIEW", "Tasks");
-                        else if (app === "Calendar")
-                            this.$store.commit("CURRENT_VIEW", "Calendar");
-                        else if (app === "hex")
-                            this.showHexViewer = true;
-                    } else {
+                    if (app === "Gallery")
+                        this.showGallery = true;
+                    else if (app === "pdf")
+                        this.showPdfViewer = true;
+                    else if (app === "editor")
+                        this.showCodeEditor = true;
+                    else if (app === "identity-proof")
+                        this.showIdentityProof = true;
+                    else if (app === "Tasks")
+                        this.$store.commit("CURRENT_VIEW", "Tasks");
+                    else if (app === "Calendar")
+                        this.$store.commit("CURRENT_VIEW", "Calendar");
+                    else if (app === "hex")
+                        this.showHexViewer = true;
+                    
+                    if (!this.isSecretLink)
                         this.updateHistory(app, this.getPath, filename);
-                    }
 		},
 
 		navigateOrDownload(file) {
