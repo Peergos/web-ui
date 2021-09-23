@@ -1500,6 +1500,7 @@ module.exports = {
         font-size: 5em;
         word-wrap: break-word;
         max-width: 5em;
+        cursor: pointer;
 }
 
 .newsfeed-view .entry{
