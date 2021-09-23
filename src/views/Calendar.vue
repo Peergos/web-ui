@@ -93,10 +93,14 @@ module.exports = {
             choice_body: '',
             choice_consumer_func: () => {},
             choice_options: [],
-            isIframeInitialised: false
+            isIframeInitialised: false,
+            importFile: null,
+            importCalendarPath: null,
+            owner: null,
+            loadCalendarAsGuest: false
         }
     },
-    props: ['messages', 'importFile', 'importCalendarPath', 'owner', 'loadCalendarAsGuest'],
+    props: ['messages'],
 	computed: {
 		...Vuex.mapState([
 			'context',
@@ -106,35 +110,141 @@ module.exports = {
 			'isSecretLink',
 			'getPath'
 		]),
-            friendnames: function() {
-                return this.socialData.friends;
-            },
-            followernames: function() {
-                return this.socialData.followers;
-            },
-            groups: function() {
-		return {groupsNameToUid: this.socialData.groupsNameToUid, groupsUidToName: this.socialData.groupsUidToName};
+        friendnames: function() {
+            return this.socialData.friends;
+        },
+        followernames: function() {
+            return this.socialData.followers;
+        },
+        groups: function() {
+		    return {groupsNameToUid: this.socialData.groupsNameToUid, groupsUidToName: this.socialData.groupsUidToName};
 	    },
 	},
 	mixins:[routerMixins],
     created() {
         let that = this;
         this.displaySpinner();
-        peergos.shared.user.App.init(that.context, "calendar").thenCompose(calendar => {
-            if (that.loadCalendarAsGuest) {
-                that.startListener(calendar);
-            } else {
-                that.getPropertiesFile(calendar).thenApply(props => {
-                    that.calendarProperties = props;
-                    that.startListener(calendar)
-                })
-            }
+        this.getInputParameters().thenCompose(inputParameters => {
+            that.loadInputParameters(inputParameters).thenCompose(loadedParameters => {
+                if (loadedParameters != null) {
+                    that.importFile = loadedParameters.importFile;
+                    that.importCalendarPath = loadedParameters.importCalendarPath;
+                    that.owner = loadedParameters.owner;
+                    that.loadCalendarAsGuest = that.isSecretLink;
+                    peergos.shared.user.App.init(that.context, "calendar").thenCompose(calendar => {
+                        if (that.loadCalendarAsGuest) {
+                            that.startListener(calendar);
+                        } else {
+                            that.getPropertiesFile(calendar).thenApply(props => {
+                                that.calendarProperties = props;
+                                that.startListener(calendar)
+                            })
+                        }
+                    });
+                }
+            });
         });
     },
 	mounted(){
 		this.updateHistory('Calendar', '/calendar' , null )
 	},
     methods: {
+    getInputParameters: function() {
+        let that = this;
+        let future = peergos.shared.util.Futures.incomplete();
+        const props = this.getPropsFromUrl();
+        if (props.secretLink) {
+            this.context.getEntryPath().thenCompose(path => {
+                that.context.getByPath(path).thenCompose(dirOpt => {
+                    dirOpt.get().getChildren(that.context.crypto.hasher, that.context.network)
+                        .thenApply(children => {
+                            var arr = children.toArray();
+                            if (arr.length == 1) {
+                                //secret link to calendar event
+                                future.complete({path: path, filename: arr[0].getName()});
+                            } else {
+                                let calInfFile = arr.filter(f => f.getName() =="calendar.inf");
+                                if (calInfFile.length == 1) {
+                                    //secret link to calendar
+                                    future.complete({path: path, filename: null});
+                                } else {
+                                    that.$toast.error("Couldn't find calendar", {timeout:false});
+                                    future.complete(null);
+                                }
+                            }
+                        })
+                });
+            })
+        } else {
+            let isFile = props.path.endsWith('.inf') || props.path.endsWith('.ics');
+            if (!isFile) {
+                //loading calendar from left hand menu + shared calendar importing
+                future.complete({path: props.path, filename: null});
+            } else {
+                //shared calendar item importing
+                let slashIndex = props.path.lastIndexOf('/');
+                let path = props.path.substring(0, slashIndex);
+                let filename = props.path.substring(slashIndex + 1);
+                future.complete({path: path, filename: filename});
+            }
+        }
+        return future;
+    },
+    loadInputParameters: function(inputParameters) {
+      let future = peergos.shared.util.Futures.incomplete();
+      if (inputParameters == null) {
+        future.complete(null);
+        return future;
+      }
+      let path = inputParameters.path
+      let filename = inputParameters.filename;
+      let that = this;
+      if (filename == null) {
+            if (path == '/' + that.context.username + '/') {
+                future.complete({importFile: null, importCalendarPath: null,
+                    owner: that.context.username});
+            } else {
+                that.context.getByPath(path).thenApply(dirOpt => {
+                    if (! dirOpt.isPresent()) {
+                        that.$toast.error("Couldn't load calendar", {timeout:false});
+                        future.complete(null);
+                    } else {
+                        let dir = dirOpt.get();
+                        let dirParts = path.split('/').filter(s => s.length > 0);
+                        future.complete({importFile: null, importCalendarPath: path,
+                            owner: dirParts[0]});
+                    }
+                });
+            }
+      } else {
+            that.context.getByPath(path + '/' + filename).thenApply(fileOpt => {
+                if (! fileOpt.isPresent()) {
+                    that.$toast.error("Couldn't load calendar file", {timeout:false});
+                    future.complete(null);
+                    return;
+                }
+                let file = fileOpt.get();
+                let props = file.getFileProperties();
+                let that = this;
+                file.getInputStream(that.context.network, that.context.crypto, props.sizeHigh(), props.sizeLow(), function(read) {})
+                .thenCompose(function(reader) {
+                    var size = that.getFileSize(props);
+                    var data = convertToByteArray(new Int8Array(size));
+                    return reader.readIntoArray(data, 0, data.length)
+                    .thenApply(function(read){
+                        future.complete({importFile: new TextDecoder().decode(data), importCalendarPath: null,
+                            owner: file.getOwnerName()});
+                    });
+                });
+            });
+      }
+      return future;
+    },
+    getFileSize: function(props) {
+            var low = props.sizeLow();
+            if (low < 0) low = low + Math.pow(2, 32);
+            return low + (props.sizeHigh() * Math.pow(2, 32));
+    },
     frameUrl: function() {
         return this.frameDomain() + "/apps/calendar/index.html";
     },
@@ -300,7 +410,7 @@ module.exports = {
             if (newName === '.' || newName === '..')
                 return;
             if (!newName.match(/^[a-z\d\-_\s]+$/i)) {
-                that.showMessage("Invalid calendar name. Use only alphanumeric characters plus space, dash and underscore");
+                that.showMessage(true, "Invalid calendar name. Use only alphanumeric characters plus space, dash and underscore");
                 return;
             }
             setTimeout(function(){
@@ -345,7 +455,7 @@ module.exports = {
             if (newName === '.' || newName === '..')
                 return;
             if (!newName.match(/^[a-z\d\-_\s]+$/i)) {
-                that.showMessage("Invalid calendar name. Use only alphanumeric characters plus space, dash and underscore");
+                that.showMessage(true, "Invalid calendar name. Use only alphanumeric characters plus space, dash and underscore");
                 return;
             }
             setTimeout(function(){
@@ -416,7 +526,8 @@ module.exports = {
         let calendarDirectory = this.importCalendarPath.substring(this.importCalendarPath.lastIndexOf('/') +1);
         let existingCalendar = this.getCalendarForDirectory(calendarDirectory);
         if (existingCalendar != null) {
-            that.showMessage("Calendar: " + existingCalendar.name + " already imported");
+            that.showMessage(true, "Calendar: " + existingCalendar.name + " already imported");
+            that.removeSpinner();
             that.close();
         } else {
             this.readCalendarFile(calendar, this.owner, calendarDirectory).thenApply(function(json) {
@@ -524,7 +635,7 @@ module.exports = {
                             that.postDeleteCalendar(calendar, data);
                         } else {
                             that.removeSpinner();
-                            that.showMessage("Unable to delete Calendar");
+                            that.showMessage(true, "Unable to delete Calendar");
                             console.log(throwable.getMessage());
                         }
                     });
@@ -553,7 +664,7 @@ module.exports = {
         this.removeCalendarEvent(calendar, item.calendarName, item.year, item.month, item.Id, item.isRecurring).thenApply(function(res) {
 	        that.removeSpinner();
         }).exceptionally(function(throwable) {
-            that.showMessage("Unable to delete event","Please close calendar and try again");
+            that.showMessage(true, "Unable to delete event","Please close calendar and try again");
             console.log(throwable.getMessage());
 	        that.removeSpinner();
         });
@@ -565,10 +676,7 @@ module.exports = {
         this.showSpinner = false;
     },
     displayMessage: function(msg) {
-        this.showMessage(msg);
-    },
-    renameCalendar: function(msg) {
-        this.showMessage(msg);
+        this.showMessage(true, msg);
     },
     getPropertiesFile: function(calendar) {
         let that = this;
@@ -582,7 +690,7 @@ module.exports = {
                 props.calendars.push({name: 'My Calendar', directory: 'default', color: '#00a9ff'});
                 return props;
             } else {
-                that.showMessage("Unable to load file","Please close calendar and try again");
+                that.showMessage(true, "Unable to load file","Please close calendar and try again");
             }
         });
     },
@@ -661,7 +769,7 @@ module.exports = {
                 this.updateCalendarEvent(calendar, item).thenApply(function(res) {
                     that.removeSpinner();
                 }).exceptionally(function(throwable) {
-                    that.showMessage("Unable to save event","Please close calendar and try again");
+                    that.showMessage(true, "Unable to save event","Please close calendar and try again");
                     console.log(throwable.getMessage());
                     that.removeSpinner();
                 });
@@ -676,12 +784,12 @@ module.exports = {
             that.updateCalendarEvent(calendar, item).thenApply(function(res2) {
                 that.removeSpinner();
             }).exceptionally(function(throwable) {
-                that.showMessage("Unable to save moved event","Please re-create event");
+                that.showMessage(true, "Unable to save moved event","Please re-create event");
                 console.log(throwable.getMessage());
                 that.removeSpinner();
             });
         }).exceptionally(function(throwable) {
-            that.showMessage("Unable to move event","Please close calendar and try again");
+            that.showMessage(true, "Unable to move event","Please close calendar and try again");
             console.log(throwable.getMessage());
             that.removeSpinner();
         });
@@ -693,11 +801,11 @@ module.exports = {
     saveAllEventsRecursive: function(calendar, items, index, showConfirmation) {
         const that = this;
         if (index == items.length) {
+            that.removeSpinner();
             if (showConfirmation) {
                 that.close();
             } else {
-    	        that.removeSpinner();
-                that.showMessage("Imported: " + items.length + " event(s)");
+                that.showMessage(false, "Completed importing event(s)");
             }
         } else {
             let item = items[index];
@@ -722,7 +830,7 @@ module.exports = {
            if (showConfirmation) {
                 that.close();
            }
-           that.showMessage("Unable to import event");
+           that.showMessage(true, "Unable to import event");
            console.log(throwable.getMessage());
         });
     },
@@ -877,15 +985,15 @@ module.exports = {
         this.shareWith(this.CALENDAR_DIR_NAME + '/' + this.DATA_DIR_NAME, calendarDirectory, false, true,
             'Calendar - ' + calendar.name);
     },
-    showMessage: function(title, body) {
-        this.messages.push({
-            title: title,
-            body: body,
-            show: true
-        });
+    showMessage: function(isError, message) {
+        if (isError) {
+            that.$toast.error(message, {timeout:false});
+        } else {
+            that.$toast(message)
+        }
     },
     close: function () {
-        this.$emit("hide-calendar");
+        //this.$emit("hide-calendar");
     }
     }
 }
