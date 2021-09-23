@@ -530,7 +530,10 @@ module.exports = {
 				 			that.downloadFile(arr[0]);
 				 		    } else if (that.open) {
 				 			var open = () => {
-				 			    that.updateFiles(arr[0].getFileProperties().name);
+                                                            const filename = arr[0].getName();
+                                                            that.selectedFiles = that.files.filter(f => f.getName() == filename);
+						            that.openFile();
+				 			    //that.updateFiles(arr[0].getFileProperties().name);
 				 			};
 				 			that.onUpdateCompletion.push(open);
 				 		    }

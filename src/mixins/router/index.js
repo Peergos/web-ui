@@ -11,8 +11,12 @@ module.exports = {
         },
         
 	updateHistory(app, path, filename) {
-	    if (this.isSecretLink)
+	    if (this.isSecretLink) {
+                const sidebarApps = ["Drive", "NewsFeed", "Tasks", "Social", "Calendar", "Chat"]
+                if (sidebarApps.includes(app))
+		    this.$store.commit("CURRENT_VIEW", app);
 		return;
+            }
             path = this.canonical(path);
 	    console.log('updateHistory:', app, path, filename)
             
