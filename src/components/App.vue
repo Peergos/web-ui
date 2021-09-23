@@ -196,7 +196,7 @@ module.exports = {
 	},
 
 	methods: {
-		...Vuex.mapActions([
+                ...Vuex.mapActions([
 			'updateQuota',
 			'updateUsage',
 			'updatePayment'
@@ -256,9 +256,12 @@ module.exports = {
                     const that = this;
                     const sidebarApps = ["Drive", "NewsFeed", "Tasks", "Social", "Calendar", "Chat"]
 		    if (app === "Drive") {
+                        const inDrive = this.currentView == "Drive";
 		        this.$store.commit("CURRENT_VIEW", app);
-                        this.$refs.appView.updateCurrentDir();
-                        this.$refs.appView.closeApps();
+                        if (inDrive) {
+                            this.$refs.appView.updateCurrentDir();
+                            this.$refs.appView.closeApps();
+                        }
 		    } else if (sidebarApps.includes(app)) {
 			this.$store.commit("CURRENT_VIEW", app);
 		    } else {
