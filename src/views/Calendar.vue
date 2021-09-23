@@ -175,16 +175,13 @@ module.exports = {
                 });
             })
         } else {
-            let isFile = props.path.endsWith('.inf') || props.path.endsWith('.ics');
-            if (!isFile) {
+            let isFile = props.filename != null && props.filename.length > 0;
+            if (!isFile || props.path.endsWith('/' + props.filename)) {
                 //loading calendar from left hand menu + shared calendar importing
                 future.complete({path: props.path, filename: null});
             } else {
                 //shared calendar item importing
-                let slashIndex = props.path.lastIndexOf('/');
-                let path = props.path.substring(0, slashIndex);
-                let filename = props.path.substring(slashIndex + 1);
-                future.complete({path: path, filename: filename});
+                future.complete({path: props.path, filename: props.filename});
             }
         }
         return future;
@@ -199,7 +196,7 @@ module.exports = {
       let filename = inputParameters.filename;
       let that = this;
       if (filename == null) {
-            if (path == '/' + that.context.username + '/') {
+            if (path == that.context.username) {
                 future.complete({importFile: null, importCalendarPath: null,
                     owner: that.context.username});
             } else {
