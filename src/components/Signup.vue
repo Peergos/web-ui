@@ -15,9 +15,9 @@
 				Generate password
 			</AppButton>
 
-			<FormPassword v-model="password" firstOfTwo />
+			<FormPassword v-model="password" :passwordIsVisible="showPasswords" firstOfTwo />
 
-			<FormPassword v-model="password2" @keyup.native.enter="signup()"/>
+			<FormPassword v-model="password2" :passwordIsVisible="showPasswords" @keyup.native.enter="signup()"/>
 
 			<label class="checkbox__group">
 				I understand that passwords cannot be reset or recovered - if I forget my password, then I will lose access to my
@@ -86,13 +86,14 @@ module.exports = {
 
 	data() {
 		return {
-			username: '',
-			password: '',
-			password2: '',
-			email: '',
-			acceptingSignups: true,
-			tosAccepted:false,
-			safePassword:false,
+		    username: '',
+		    password: '',
+		    password2: '',
+		    email: '',
+                    showPasswords: false,
+		    acceptingSignups: true,
+		    tosAccepted:false,
+		    safePassword:false,
 		};
 	},
 
@@ -113,87 +114,79 @@ module.exports = {
 	},
 
     methods: {
-		...Vuex.mapActions([
-			'updateSocial',
-			'updateUsage',
-			'updatePayment'
-		]),
-		lowercaseUsername(){
-			this.username.toLowerCase()
-		},
-		addToWaitList() {
-		    var that = this;
-		    let emailRegEx = /^(([^<>()\[\]\\.,;:\s@"]+(\.[^<>()\[\]\\.,;:\s@"]+)*)|(".+"))@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}])|(([a-zA-Z\-0-9]+\.)+[a-zA-Z]{2,24}))$/ ;
-		    if(!emailRegEx.test(that.email)) {
-			that.$toast.error('Invalid email.',{timeout:false})
-                        return
-		    }
-		    this.network.instanceAdmin.addToWaitList(that.email).thenApply(function(res) {
-			that.email='';
-			that.$toast.info("Congratulations, you have joined the waiting list. We'll be in touch as soon as a place is available.")
-		    });
-
-		},
-		generatePassword() {
-			let bytes = nacl.randomBytes(16);
-			let wordIndices = [];
-			for (var i=0; i < 7; i++)
-			wordIndices[i] = bytes[2*i]*8 + (bytes[2*i + 1] & 7);
-			let password = wordIndices.map(j => Bip39[j]).join("-");
-			this.password = password;
-
+	...Vuex.mapActions([
+	    'updateSocial',
+	    'updateUsage',
+	    'updatePayment'
+	]),
+	lowercaseUsername(){
+	    this.username.toLowerCase()
+	},
+	addToWaitList() {
+	    var that = this;
+	    let emailRegEx = /^(([^<>()\[\]\\.,;:\s@"]+(\.[^<>()\[\]\\.,;:\s@"]+)*)|(".+"))@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}])|(([a-zA-Z\-0-9]+\.)+[a-zA-Z]{2,24}))$/ ;
+	    if(!emailRegEx.test(that.email)) {
+		that.$toast.error('Invalid email.',{timeout:false})
+                return
+	    }
+	    this.network.instanceAdmin.addToWaitList(that.email).thenApply(function(res) {
+		that.email='';
+		that.$toast.info("Congratulations, you have joined the waiting list. We'll be in touch as soon as a place is available.")
+	    });
+            
+	},
+	generatePassword() {
+	    let bytes = nacl.randomBytes(16);
+	    let wordIndices = [];
+	    for (var i=0; i < 7; i++)
+		wordIndices[i] = bytes[2*i]*8 + (bytes[2*i + 1] & 7);
+	    let password = wordIndices.map(j => Bip39[j]).join("-");
+	    this.password = password;
+            this.showPasswords = true;
         },
         signup() {
             const creationStart = Date.now();
             const that = this;
-
+            
             if(!that.safePassword) {
-			 	this.$toast.error('You must accept the password safety warning', {id:'signup'})
-		 	} else if (!that.tosAccepted) {
-				this.$toast.error('You must accept the Terms of Service',{id:'signup'})
+		this.$toast.error('You must accept the password safety warning', {id:'signup'})
+	    } else if (!that.tosAccepted) {
+		this.$toast.error('You must accept the Terms of Service',{id:'signup'})
             } else if (that.password != that.password2) {
-				this.$toast.error('Passwords do not match!',{id:'signup'})
-			} else if (that.password == '') {
-				this.$toast.error('Please generate your password',{id:'signup'})
+		this.$toast.error('Passwords do not match!',{id:'signup'})
+	    } else if (that.password == '') {
+		this.$toast.error('Please generate your password',{id:'signup'})
             } else {
                 let usernameRegEx = /^[a-z0-9](?:[a-z0-9]|[_-](?=[a-z0-9])){0,31}$/;
-
-				if(!usernameRegEx.test(that.username)) {
-					that.$toast.error('Invalid username. Usernames must consist of between 1 and 32 characters, containing only digits, lowercase letters, underscore and hyphen. They also cannot have two consecutive hyphens or underscores, or start or end with a hyphen or underscore.',{id:'signup',timeout:false})
+                
+		if(!usernameRegEx.test(that.username)) {
+		    that.$toast.error('Invalid username. Usernames must consist of between 1 and 32 characters, containing only digits, lowercase letters, underscore and hyphen. They also cannot have two consecutive hyphens or underscores, or start or end with a hyphen or underscore.',{id:'signup',timeout:false})
                 } else if (BannedUsernames.includes(that.username)) {
-					that.$toast.error(`Banned username: ${that.username}`,{id:'signup', timeout:false})
+		    that.$toast.error(`Banned username: ${that.username}`,{id:'signup', timeout:false})
                 } else {
-                   	that.$toast.info('signing up!', {id:'signup'})
+                    that.$toast.info('signing up!', {id:'signup'})
                     return peergos.shared.user.UserContext.signUp(
-						that.username,
-						that.password,
-						that.token,
-						that.network,
-						that.crypto,
-                    	// {"accept" : x => that.spinnerMessage = x}
-						{"accept" : x => that.$toast.info(x, {id:'signup', timeout:false})}
-						)
-                        .thenApply(function(context) {
-
-
-
-                            // that.$emit("filesystem", {context: context, signup:true});
-							that.$store.commit("CURRENT_VIEW", 'Drive');
-							that.$store.commit("SET_CONTEXT", context);
-							that.$store.commit('USER_LOGIN', true);
-							that.updatePayment()
-							that.updateSocial()
-							that.updateUsage()
-                            console.log("Signing in/up took " + (Date.now()-creationStart)+" mS from function call");
-
-							that.$toast.dismiss('signup');
-                        })
-						.exceptionally(function(throwable) {
-                           that.$toast.error(throwable.getMessage(),{timeout:false, id: 'signup'})
-                        });
+			that.username,
+			that.password,
+			that.token,
+			that.network,
+			that.crypto,
+			{"accept" : x => that.$toast.info(x, {id:'signup', timeout:false})}
+		    ).thenApply(function(context) {
+			that.$store.commit("CURRENT_VIEW", 'Drive');
+			that.$store.commit("SET_CONTEXT", context);
+			that.$store.commit('USER_LOGIN', true);
+			that.updatePayment()
+			that.updateSocial()
+			that.updateUsage()
+                        console.log("Signing in/up took " + (Date.now()-creationStart)+" mS from function call");
+			that.$toast.dismiss('signup');
+                    }).exceptionally(function(throwable) {
+                        that.$toast.error(throwable.getMessage(),{timeout:false, id: 'signup'})
+                    });
                 }
             }
-		},
+	},
     }
 };
 </script>

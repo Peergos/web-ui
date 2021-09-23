@@ -44,7 +44,7 @@ module.exports = {
 <style>
 
 .app-tabs{
-	max-width:400px;
+	max-width:500px;
 	margin: 0 auto;
 	color: var(--color);
 	background-color: var(--bg);

@@ -21,53 +21,55 @@
 const CommonPasswords = require('../../mixins/password/passwords.json');
 
 module.exports = {
-	props: {
-		value:{
-			type: [String, Array],
-		},
-		placeholder: {
-			type: String,
-			default: 'Password'
-		},
-		firstOfTwo:{
-			type:Boolean,
-			default:false
-		},
-
+    props: {
+	value:{
+	    type: [String, Array],
 	},
-	data() {
-		return {
-			passwordIsVisible: true,
-			passwordThreshold: 12,
-			passwordUpdate: false
-		}
+	placeholder: {
+	    type: String,
+	    default: 'Password'
 	},
-
-	methods: {
-		togglePassword() {
-			this.passwordIsVisible = !this.passwordIsVisible
-		},
-
-		validatePassword() {
-			if (!this.firstOfTwo || this.value == '')
-				return
-
-			let passwd = this.value
-			let index = CommonPasswords.indexOf(passwd);
-			let suffix = ["th", "st", "nd", "rd", "th", "th", "th", "th", "th", "th"][(index+1) % 10];
-
-			if (index != -1) {
-				this.$toast.error(`your password is the ${index+1} ${suffix} most common password!`,{ id: 'password', timeout:false });
-				this.passwordUpdate = true
-			} else if (passwd.length < this.passwordThreshold) {
-				this.$toast.error(`passwords less than ${this.passwordThreshold} characters are considered unsafe.`,{ id: 'password', timeout:false });
-				this.passwordUpdate = true
-			}else{
-				if (this.passwordUpdate)
-					this.$toast.error(`That's a better password.`,{ id: 'password', timeout:4000 });
-			}
-		}
+	firstOfTwo:{
+	    type:Boolean,
+	    default:false
 	},
+        passwordIsVisible:{
+            type:Boolean,
+            default:false
+        },
+    },
+    data() {
+	return {
+	    passwordThreshold: 12,
+	    passwordUpdate: false
+	}
+    },
+    
+    methods: {
+	togglePassword() {
+	    this.passwordIsVisible = !this.passwordIsVisible
+	},
+        
+	validatePassword() {
+	    if (!this.firstOfTwo || this.value == '')
+		return
+            
+	    let passwd = this.value
+	    let index = CommonPasswords.indexOf(passwd);
+	    let suffix = ["th", "st", "nd", "rd", "th", "th", "th", "th", "th", "th"][(index+1) % 10];
+            
+	    if (index != -1) {
+		this.$toast.error(`your password is the ${index+1} ${suffix} most common password!`,{ id: 'password', timeout:false });
+		this.passwordUpdate = true
+	    } else if (passwd.length < this.passwordThreshold) {
+		this.$toast.error(`passwords less than ${this.passwordThreshold} characters are considered unsafe.`,{ id: 'password', timeout:false });
+		this.passwordUpdate = true
+	    }else{
+		if (this.passwordUpdate)
+		    this.$toast.error(`That's a better password.`,{ id: 'password', timeout:4000 });
+	    }
+	}
+    },
 }
 </script>
 
