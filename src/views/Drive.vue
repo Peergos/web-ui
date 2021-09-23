@@ -137,7 +137,15 @@
 			:viewAction="viewAction"
 			:context="context">
 		</Search>
-
+        <replace
+            v-if="showReplace"
+            v-on:hide-replace="showReplace = false"
+            :replace_message='replace_message'
+            :replace_body="replace_body"
+            :consumer_cancel_func="replace_consumer_cancel_func"
+            :consumer_func="replace_consumer_func"
+            :showApplyAll=replace_showApplyAll>
+        </replace>
 		<error
 			v-if="showError"
 			@hide-error="showError = false"

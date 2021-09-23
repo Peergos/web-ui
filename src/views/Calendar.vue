@@ -176,7 +176,7 @@ module.exports = {
             })
         } else {
             let isFile = props.filename != null && props.filename.length > 0;
-            if (!isFile || props.path.endsWith('/' + props.filename)) {
+            if (!isFile) {
                 //loading calendar from left hand menu + shared calendar importing
                 future.complete({path: props.path, filename: null});
             } else {
