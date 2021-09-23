@@ -123,6 +123,9 @@ module.exports = new Vuex.Store({
 		SET_OPEN(state, payload) {
 			state.open = payload;
 		},
+		SET_IS_SECRET_LINK(state, payload) {
+			state.isSecretLink = payload;
+		},
 		SET_INIT_PATH(state, payload) {
 			state.initPath = payload;
 		},
