@@ -319,7 +319,7 @@ module.exports = {
         let month = date.getMonth() + 1;
         setTimeout(function(){
             if (that.importFile != null) {
-                that.importICSFile();
+                that.importICSFile(calendar, year, month);
             } else if (that.importCalendarPath != null) {
                 if (that.loadCalendarAsGuest) {
                     let calendarDirectory = that.importCalendarPath.substring(that.importCalendarPath.lastIndexOf('/') +1);
@@ -498,12 +498,19 @@ module.exports = {
         (c ^ crypto.getRandomValues(new Uint8Array(1))[0] & 15 >> c / 4).toString(16)
       ).substring(0, 8);
     },
-    importICSFile: function() {
+    importICSFile: function(calendar, year, month) {
         let that = this;
-
-        that.postMessage({type: 'importICSFile', contents: that.importFile,
-            isSharedWithUs: that.owner != that.context.username, loadCalendarAsGuest: that.loadCalendarAsGuest,
-            username: that.context.username });
+        if (that.loadCalendarAsGuest) {
+            that.postMessage({type: 'importICSFile', contents: that.importFile,
+                isSharedWithUs: that.owner != that.context.username, loadCalendarAsGuest: that.loadCalendarAsGuest,
+                username: that.context.username });
+        } else {
+            let importCalendarEventParams = {contents: that.importFile,
+                isSharedWithUs: that.owner != that.context.username,
+                loadCalendarAsGuest: that.loadCalendarAsGuest,
+                username: that.context.username };
+            this.loadCalendars(calendar, year, month, importCalendarEventParams);
+        }
     },
     loadAdditional: function(calendar, year, month, messageType) {
         let that = this;
@@ -572,17 +579,17 @@ module.exports = {
             }
         });
     },
-    loadCalendars: function(calendar, year, month) {
+    loadCalendars: function(calendar, year, month, importCalendarEventParams) {
         let that = this;
         that.getRecurringCalendarEvents(calendar).thenApply(function(recurringEvents) {
             that.getCalendarEventsAroundMonth(calendar, year, month).thenApply(function(allEvents) {
                 that.loadEvents(year, month, allEvents.previous, allEvents.current,
-                        allEvents.next, recurringEvents);
+                        allEvents.next, recurringEvents, importCalendarEventParams);
             });
         });
     },
 
-    loadEvents: function(year, month, eventsPreviousMonth, eventsThisMonth, eventsNextMonth, recurringEvents) {
+    loadEvents: function(year, month, eventsPreviousMonth, eventsThisMonth, eventsNextMonth, recurringEvents, importCalendarEventParams) {
         let that = this;
         let yearMonth = year * 12 + (month-1);
         let calendars = [];
@@ -593,7 +600,7 @@ module.exports = {
         Vue.nextTick(function() {
             that.postMessage({type: 'load', previousMonth: eventsPreviousMonth,
                 currentMonth: eventsThisMonth, nextMonth: eventsNextMonth, recurringEvents: recurringEvents,
-                yearMonth: yearMonth, username: that.context.username, calendars: calendars});
+                yearMonth: yearMonth, username: that.context.username, calendars: calendars, importCalendarEventParams: importCalendarEventParams});
         });
     },
     postDeleteCalendar: function(calendar, data) {
