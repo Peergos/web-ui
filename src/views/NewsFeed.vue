@@ -926,7 +926,7 @@ module.exports = {
         },
         viewAction: function(path, file) {
             let app = this.getApp(file, path)
-            this.openFileOrDir(app, path, file.getName())
+            this.openFileOrDir(app, path, file.isDirectory() ? "" : file.getName())
         },
         viewMediaList: function (mediaList, mediaIndex) {
             let files = [];

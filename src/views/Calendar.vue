@@ -983,9 +983,9 @@ module.exports = {
     },
     showMessage: function(isError, message) {
         if (isError) {
-            that.$toast.error(message, {timeout:false});
+            this.$toast.error(message, {timeout:false});
         } else {
-            that.$toast(message)
+            this.$toast(message)
         }
     },
     close: function () {
