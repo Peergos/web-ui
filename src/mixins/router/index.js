@@ -1,17 +1,27 @@
 module.exports = {
     methods: {
+        canonical(path){
+            if (path == null)
+                return "";
+            if (path.startsWith("/"))
+                path = path.substring(1);
+            if (path.endsWith("/"))
+                path = path.substring(0, path.length - 1);
+            return path;
+        },
         
 	updateHistory(app, path, filename) {
 	    if (this.isSecretLink)
 		return;
-            
+            path = this.canonical(path);
 	    console.log('updateHistory:', app, path, filename)
             
 	    const currentProps = this.getPropsFromUrl();
-	    const pathFromUrl = currentProps == null ? null : currentProps.path;
+	    const pathFromUrl = this.canonical(currentProps == null ? null : currentProps.path);
 	    const appFromUrl = currentProps == null ? null : currentProps.app;
+            const filenameFromUrl = currentProps == null ? null : currentProps.filename;
             
-	    if (path == pathFromUrl && app == appFromUrl)
+	    if (path == pathFromUrl && app == appFromUrl && filename == filenameFromUrl)
 		return;
             
 	    const rawProps = propsToFragment({ app: app, path: path, filename: filename });
@@ -78,27 +88,8 @@ module.exports = {
 	    }
         },
 
-        openFileOrDir(app, path, file) {
-            if (app == "Drive") {
-		this.$store.commit("CURRENT_VIEW", "Drive");
-	    } else if (app == "NewsFeed") {
-		this.$store.commit("CURRENT_VIEW", "NewsFeed");
-	    } else if (app == "Tasks") {
-		this.$store.commit("CURRENT_VIEW", "Tasks");
-                this.updateHistory(app, path, "");
-	    } else if (app == "Social") {
-		this.$store.commit("CURRENT_VIEW", "Social");
-	    } else if (app == "Calendar") {
-		this.$store.commit("CURRENT_VIEW", "Calendar");
-                this.updateHistory(app, path, "");
-	    } else if (app == "Chat") {
-		this.$store.commit("CURRENT_VIEW", "Chat");
-                this.updateHistory(app, path, "");
-	    } else {
-		// Drive sub-apps
-		this.$store.commit("CURRENT_VIEW", "Drive");
-		this.updateHistory(app, path, file.getName());
-	    }
+        openFileOrDir(app, path, filename) {
+	    this.updateHistory(app, path, filename);
         }
     },
 }

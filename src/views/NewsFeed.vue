@@ -303,7 +303,6 @@ module.exports = {
             });
     },
 	mounted(){
-		this.updateHistory('NewsFeed', '/NewsFeed' , null )
 	},
     methods: {
         updateSocialFeedInstance: function(updated) {
@@ -922,12 +921,12 @@ module.exports = {
                 if (entry.file.isDirectory())
                     this.viewAction(entry.path, entry.file);
                 else
-                    this.viewAction(entry.path +"/" + entry.fullName, entry.file);
+                    this.viewAction(entry.path, entry.file);
             }
         },
         viewAction: function(path, file) {
             let app = this.getApp(file, path)
-            this.openFileOrDir(app, path, file)
+            this.openFileOrDir(app, path, file.getName())
         },
         viewMediaList: function (mediaList, mediaIndex) {
             let files = [];

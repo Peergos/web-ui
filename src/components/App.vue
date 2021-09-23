@@ -234,83 +234,40 @@ module.exports = {
 				this.updateUsage();
 				this.updateQuota();
 				this.updatePayment();
-
-				// this.context
-				// 	.getPaymentProperties(false)
-				// 	.thenApply(function (paymentProps) {
-				// 		// console.log(paymentProps,'paymentProps')
-				// 		that.$store.commit(
-				// 			"SET_PAYMENT_PROPERTIES",
-				// 			paymentProps
-				// 		);
-				// 	    if (paymentProps.isPaid()) {
-				// 			console.log('isPaid')
-				// 			that.$store.commit("SET_PAYMENT_PROPERTIES", paymentProps);
-				// 	    } else {
-				// 		that.context.getPendingSpaceRequests().thenApply(reqs => {
-				// 		    if (reqs.toArray([]).length > 0)
-				// 		        that.$store.commit("USER_ADMIN", true);
-				// 	        });
-                //                             }
-				// 	});
 			}
 		},
 
 		onUrlChange() {
-			const props = this.getPropsFromUrl();
+		    const props = this.getPropsFromUrl();
 
-			// console.log('onUrlChange appURL:', props.app)
-			// console.log('onUrlChange pathURL: ', props.path)
-			// console.log('onUrlChange pathStore (prev?): ', this.getPath)
-			// console.log('onUrlChange filenameURL: ', props.filename)
+		    const app = props == null ? null : props.app;
+		    const path = props == null ? null : props.path;
+		    const filename = props == null ? null : props.filename;
+		    const differentPath = path != null && path != this.getPath;
+                    
+		    if (differentPath) {
+			console.log('onUrlChange differentPath so we do: ', path.split("/").filter(x => x.length > 0))
+			this.$store.commit(
+			    "SET_PATH",
+			    path.split("/").filter((x) => x.length > 0)
+			);
+		    }
 
-			const app = props == null ? null : props.app;
-			const path = props == null ? null : props.path;
-			const filename = props == null ? null : props.filename;
-			const differentPath = path != null && path != this.getPath;
-
-			if (differentPath) {
-				//  console.log('onUrlChange differentPath so we do: ', path.split("/").filter(x => x.length > 0))
-				this.$store.commit(
-					"SET_PATH",
-					path.split("/").filter((x) => x.length > 0)
-				);
-			}
-
-			const that = this;
-
-			if (app == "Drive") {
-				this.$store.commit("CURRENT_VIEW", "Drive");
-				// this.showGallery = false;
-				this.$refs.appView.showGallery = false;
-				// this.showPdfViewer = false;
-				// this.showCodeEditor = false;
-				// this.showTextViewer = false;
-				// this.showHexViewer = false;
-				// this.showTimeline = false;
-				// this.showSearch = false;
-				// this.showTodoBoardViewer = false;
-				// this.showCalendarViewer = false;
-
-				this.onUpdateCompletion.push(() => {
-					// that.openInApp(filename, app);
-					that.$refs.appView.openInApp(filename, app);
-				});
-			} else if (app == "NewsFeed") {
-				this.$store.commit("CURRENT_VIEW", "NewsFeed");
-			} else if (app == "Tasks") {
-				this.$store.commit("CURRENT_VIEW", "Tasks");
-			} else if (app == "Social") {
-				this.$store.commit("CURRENT_VIEW", "Social");
-			} else if (app == "Calendar") {
-				this.$store.commit("CURRENT_VIEW", "Calendar");
-			} else if (app == "Chat") {
-				this.$store.commit("CURRENT_VIEW", "Chat");
-			} else {
-				// Drive sub-apps
-				this.$store.commit("CURRENT_VIEW", "Drive");
-				//this.$refs.appView.openInApp(filename, app);
-			}
+                    const that = this;
+                    const sidebarApps = ["Drive", "NewsFeed", "Tasks", "Social", "Calendar", "Chat"]
+		    if (app === "Drive") {
+		        this.$store.commit("CURRENT_VIEW", app);
+                        this.$refs.appView.updateCurrentDir();
+                        this.$refs.appView.closeApps();
+		    } else if (sidebarApps.includes(app)) {
+			this.$store.commit("CURRENT_VIEW", app);
+		    } else {
+			// Drive sub-apps
+			this.$store.commit("CURRENT_VIEW", "Drive");
+                        this.onUpdateCompletion.push(() => {
+			    that.$refs.appView.openInApp(filename, app);
+			});
+		    }
 		},
 
 		updateNetwork() {

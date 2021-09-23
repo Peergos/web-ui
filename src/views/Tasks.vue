@@ -119,7 +119,7 @@ module.exports = {
                 const path = props == null ? null : props.path;
 	        const filename = props == null ? null : props.filename;
                 let that = this;
-                if (filename == null) {
+                if (filename == null || filename === "") {
                     this.selectOrCreateModal();
                     return;
                 }
@@ -129,7 +129,9 @@ module.exports = {
         },
         
         loadFile: function(path, filename) {
-            this.loadPath(path+filename);
+            if (!path.endsWith("/"))
+                path = path + "/";
+            this.loadPath(path + filename);
         },
         loadPath: function(path) {
             let that = this;
@@ -179,7 +181,7 @@ module.exports = {
                         }
                         else
                             that.startListener();
-                        that.updateHistory("Tasks", that.getPath, select_result + ".todo");
+                        that.updateHistory("Tasks", "/" + that.context.username + "/", select_result + ".todo");
                     };
                     that.showSpinner = false;
                     that.showSelect = true;

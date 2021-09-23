@@ -683,22 +683,24 @@ module.exports = {
 		},
 
 		openInApp(filename, app) {
-			this.selectedFiles = this.files.filter(f => f.getName() == filename);
-			if (this.selectedFiles.length == 0)
-				return;
+		    this.selectedFiles = this.files.filter(f => f.getName() == filename);
+		    if (this.selectedFiles.length == 0)
+			return;
+                    
+		    if (app == "Gallery")
+			this.showGallery = true;
+		    else if (app == "pdf")
+			this.showPdfViewer = true;
+		    else if (app == "editor")
+			this.showCodeEditor = true;
+		    else if (app == "identity-proof")
+			this.showIdentityProof = true;
+		    else if (app == "hex")
+			this.showHexViewer = true;
+		    else if (app == "search")
+			this.showSearch = true;
 
-			if (app == "Gallery")
-				this.showGallery = true;
-			else if (app == "pdf")
-				this.showPdfViewer = true;
-			else if (app == "editor")
-				this.showCodeEditor = true;
-			else if (app == "identity-proof")
-				this.showIdentityProof = true;
-			else if (app == "hex")
-				this.showHexViewer = true;
-			else if (app == "search")
-				this.showSearch = true;
+                    this.updateHistory(app, this.getPath, "");
 		},
 		openSearch(fromRoot) {
 			var path = fromRoot ? "/" + this.context.username : this.getPath;
@@ -1619,15 +1621,10 @@ module.exports = {
                         this.showCodeEditor = true;
                     else if (app === "identity-proof")
                         this.showIdentityProof = true;
-                    else if (app === "Tasks")
-                        this.$store.commit("CURRENT_VIEW", "Tasks");
-                    else if (app === "Calendar")
-                        this.$store.commit("CURRENT_VIEW", "Calendar");
                     else if (app === "hex")
                         this.showHexViewer = true;
-                    
-                    if (!this.isSecretLink)
-                        this.updateHistory(app, this.getPath, filename);
+
+                    this.openFileOrDir(app, this.getPath, filename)
 		},
 
 		navigateOrDownload(file) {

@@ -9,6 +9,7 @@
 </template>
 
 <script>
+const router = require("../../mixins/router/index.js");
 module.exports = {
 	props: {
 		icon: {
@@ -24,9 +25,13 @@ module.exports = {
 			default: "",
 		},
 	},
+    	mixins:[router],
 	computed: {
-		...Vuex.mapGetters([
-			'isMobile'
+		...Vuex.mapState([
+			'context'
+		]),...Vuex.mapGetters([
+		    'isMobile',
+                    'getPath'
 		]),
 		isCurrentView() {
 			return  this.view === this.$store.state.currentView;
@@ -38,8 +43,7 @@ module.exports = {
 			if(this.isMobile){
 				this.$store.commit("TOGGLE_SIDEBAR");
 			}
-			this.$store.commit("CURRENT_VIEW", view);
-			// this.$store.commit('SET_PATH', [])
+			this.openFileOrDir(view, this.context.username, "");
 		},
 	},
 };

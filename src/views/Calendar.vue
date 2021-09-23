@@ -146,7 +146,6 @@ module.exports = {
         });
     },
 	mounted(){
-		this.updateHistory('Calendar', '/calendar' , null )
 	},
     methods: {
     getInputParameters: function() {
