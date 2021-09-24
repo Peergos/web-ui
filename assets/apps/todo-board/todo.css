@@ -1,6 +1,5 @@
 .board {
   display: flex;
-  height: 100vh;
   grid-gap: 1rem;
   flex-wrap: wrap;
 }

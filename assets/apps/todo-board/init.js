@@ -14,7 +14,9 @@ window.addEventListener('message', function (e) {
     mainWindow = e.source;
     origin = e.origin;
 
-    if (e.data.type == "save") {
+    if (e.data.type == "ping") {
+	    mainWindow.postMessage({action:'pong'}, e.origin);
+    } else if (e.data.type == "save") {
 	    var text = save();
 	    mainWindow.postMessage({action:'save', text:text}, e.origin);
     } else if (e.data.type == "respondRenameList") {

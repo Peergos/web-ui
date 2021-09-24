@@ -532,9 +532,12 @@ function renderThumbnail(bytes, future, size) {
 
 function getThumbnailFromCanvas(canvas, img, width, height, size, future) {
     if (img != null) {
-        canvas.width = size;
-        canvas.height = size;
-        canvas.getContext('2d').drawImage(img, 0, 0, width, height, 0, 0, size, size);
+        let tall = height > width;
+        let canvasWidth = tall ? width*size/height : size;
+        let canvasHeight = tall ? size : height*size/width;
+        canvas.width = canvasWidth;
+        canvas.height = canvasHeight;
+        canvas.getContext('2d').drawImage(img, 0, 0, width, height, 0, 0, canvasWidth, canvasHeight);
     }
     var dataUrl = canvas.toDataURL("image/webp");
     if (dataUrl.startsWith("data:image/png")) {
@@ -571,7 +574,7 @@ function createVideoThumbnailProm(future, asyncReader, fileSize, fileName) {
     asyncReader.readIntoArray(bytes, 0, fileSize).thenApply(function(bytesRead) {
         var increment = 0;
         var currentIncrement = 0;                                                   
-        let width = 400, height = 400;   
+        let size = 400;   
         let video = document.createElement('video');
         video.onloadedmetadata = function(){
             let thumbnailGenerator = () => {
@@ -582,6 +585,15 @@ function createVideoThumbnailProm(future, asyncReader, fileSize, fileName) {
                 }
                 currentIncrement = currentIncrement + increment;
                 if(currentIncrement < duration){
+                    let vHeight = video.videoHeight;
+                    let vWidth = video.videoWidth;
+                    if (vHeight == 0) {
+                        future.complete("");
+                        return;
+                    }
+                    let tall = vHeight > vWidth;
+                    let width = tall ? vWidth*size/vHeight : size;
+                    let height = tall ? size : vHeight*size/vWidth;
                     captureThumbnail(width, height, currentIncrement, video).thenApply((thumbnail)=>{
                         if(thumbnail.length == 0){
                             setTimeout(function(){thumbnailGenerator();}, 1000);
@@ -618,7 +630,7 @@ function captureThumbnail(width, height, currentIncrement, video){
             context.drawImage(video, 0, 0, width, height);
             let imageData = context.getImageData(0, 0, width, height);
             if(isLikelyValidImage(imageData, blackWhiteThreshold)) {
-                getThumbnailFromCanvas(canvas, null, width, height, width, capturingFuture);
+                getThumbnailFromCanvas(canvas, null, width, height, Math.max(width, height), capturingFuture);
             } else {
                 capturingFuture.complete("");
             }

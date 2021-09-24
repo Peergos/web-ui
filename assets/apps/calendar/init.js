@@ -1,6 +1,6 @@
 var mainWindow;
 var origin;
-
+var theme;
 let handler = function (e) {
       // You must verify that the origin of the message's sender matches your
       // expectations. In this case, we're only planning on accepting messages
@@ -13,9 +13,17 @@ let handler = function (e) {
 
       mainWindow = e.source;
       origin = e.origin;
-      if (e.data.type == "load") {
+      if (e.data.type == "ping") {
+          theme = e.data.currentTheme;
+          mainWindow.postMessage({type:'pong'}, e.origin);
+      } else if (e.data.type == "load") {
           initialiseCalendar(e.data.username == null ? true : false, e.data.calendars);
           load(e.data.previousMonth, e.data.currentMonth, e.data.nextMonth, e.data.recurringEvents, e.data.yearMonth, e.data.username);
+          let importCalendarEventParams = e.data.importCalendarEventParams;
+          if (importCalendarEventParams != null) {
+            importICSFile(importCalendarEventParams.contents, importCalendarEventParams.username,
+            importCalendarEventParams.isSharedWithUs, importCalendarEventParams.loadCalendarAsGuest, "My Calendar", true);
+          }
       } else if (e.data.type == "loadAdditional") {
           loadAdditional(e.data.currentMonth, e.data.yearMonth);
       } else if (e.data.type == "respondRenameCalendar") {
@@ -32,10 +40,8 @@ let handler = function (e) {
           loadCalendarAsGuest = e.data.loadCalendarAsGuest;
           if(loadCalendarAsGuest) {
               initialiseCalendar(true, []);
-          } else {
-              setCalendars(true, []);
+              importICSFile(e.data.contents, e.data.username, e.data.isSharedWithUs, loadCalendarAsGuest, "My Calendar", true);
           }
-          importICSFile(e.data.contents, e.data.username, e.data.isSharedWithUs, loadCalendarAsGuest, "My Calendar", true);
       }
 };
 window.addEventListener('message', handler);

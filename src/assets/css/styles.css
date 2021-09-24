@@ -1,0 +1,60 @@
+body {
+	margin: 0;
+	font-family: var(--font-stack);
+	font-size: var(--text);
+
+	-moz-osx-font-smoothing: grayscale;
+	-webkit-font-smoothing: antialiased;
+	max-width: 100%;
+	overflow-x: hidden;
+
+	color: var(--color);
+	background-color: var(--bg);
+	transition: background-color 0.3s;
+}
+
+*,
+*:before,
+*:after {
+	box-sizing: border-box;
+}
+
+a {
+	color: currentColor;
+	text-decoration: none;
+}
+
+.stretched-link::after {
+	content: "";
+	position: absolute;
+	top: 0;
+	left: 0;
+	right: 0;
+	bottom: 0;
+}
+
+.toggle-button--mobile {
+	background-color: var(--bg-2);
+}
+
+/* MQ visibility */
+
+.desktop {
+	visibility: visible;
+}
+
+.mobile {
+	visibility: hidden;
+	display: none;
+}
+
+@media (max-width: 1024px) {
+	.desktop {
+		visibility: hidden !important;
+		display: none;
+	}
+
+	.mobile {
+		visibility: visible !important;
+	}
+}

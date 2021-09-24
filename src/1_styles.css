@@ -1,0 +1,257 @@
+body {
+	margin: 0;
+	font-family: var(--font-stack);
+	font-size: var(--text);
+
+	-moz-osx-font-smoothing: grayscale;
+	-webkit-font-smoothing: antialiased;
+	max-width: 100%;
+	overflow-x: hidden;
+	overflow-y: auto;
+
+	color: var(--color);
+	background-color: var(--bg);
+	transition: background-color 0.3s;
+}
+
+*,
+*:before,
+*:after {
+	box-sizing: border-box;
+}
+
+a {
+	color: currentColor;
+	text-decoration: none;
+}
+
+.stretched-link::after {
+	content: "";
+	position: absolute;
+	top: 0;
+	left: 0;
+	right: 0;
+	bottom: 0;
+}
+
+.toggle-button--mobile {
+	background-color: var(--bg-2);
+}
+
+
+h1, h2, h3{
+	font-size: var(--title);
+	font-weight: var(--bold);
+	line-height: var(--title-height)
+}
+
+/* Funtional css */
+
+.text-small{
+	font-size: var(--text-small);
+}
+.text-mini{
+	font-size: var(--text-mini);
+}
+
+
+/* Forms */
+
+input[type=text],
+input[type=password]{
+	width:100%;
+	margin: 8px 0;
+	padding: 0 16px;
+
+	font-size: var(--text);
+	/* text-transform: lowercase; */
+	line-height: 48px;
+	border-radius: 4px;
+
+	-webkit-appearance:none;
+    -moz-appearance:none;
+    appearance: none;
+
+	outline: none;
+	box-shadow: none;
+
+	border: 2px solid var(--green-500);
+	color: var(--color);
+    background-color: var(--bg);
+}
+input:focus,
+input:active,
+input:focus-visible{
+	outline:none;
+	border: 2px solid var(--green-500)!important;
+}
+/* TODO: quick reset, we shopuld properly remove other styles */
+input:-webkit-autofill,
+input:-webkit-autofill:hover,
+input:-webkit-autofill:focus,
+input:-webkit-autofill:active,
+input:focus,
+input:active,
+input:focus-visible{
+	color:var(--color);
+	font-size: var(--text);
+	box-shadow:none;
+	-webkit-text-fill-color: var(--color);
+	-webkit-box-shadow:0 0 0 30px var(--bg-2) inset;
+	border-color: var(--bg-2);
+}
+
+
+/* Checkboxs */
+.checkbox__group {
+	display: block;
+	position: relative;
+	padding-left: 32px;
+	margin-bottom: 16px;
+	cursor: pointer;
+	-webkit-user-select: none;
+	-moz-user-select: none;
+	-ms-user-select: none;
+	user-select: none;
+
+	font-weight: var(--regular);
+	font-size: 14px;
+	text-align: left;
+}
+
+.checkbox__group a{
+	text-decoration: underline;
+}
+.checkbox__group a:hover{
+	color:var(--color);
+}
+.checkbox__group a:focus{
+	outline: none;
+	background-color: var(--bg-2);
+}
+
+/* Hide the browser's default checkbox */
+.checkbox__group input {
+  position: absolute;
+  opacity: 0;
+  cursor: pointer;
+  height: 0;
+  width: 0;
+}
+
+/* Create a custom checkbox */
+.checkmark {
+  position: absolute;
+  top: 0;
+  left: 0;
+  height: 20px;
+  width: 20px;
+  border-radius: 4px;
+  background-color: var(--bg);
+  border: 2px solid var(--green-500);
+
+}
+.checkbox__group:hover input ~ .checkmark,
+.checkbox__group input:focus ~ .checkmark {
+
+	background-color: var(--bg-2);
+}
+
+/* When the checkbox is checked, add a blue background */
+.checkbox__group input:checked ~ .checkmark {
+	background-color: var(--green-500);
+}
+
+/* Create the checkmark (hidden when not checked) */
+.checkmark:after {
+  content: "";
+  position: absolute;
+  display: none;
+}
+
+/* Show the checkmark when checked */
+.checkbox__group input:checked ~ .checkmark:after {
+  display: block;
+}
+
+/* Style the checkmark */
+.checkbox__group .checkmark:after {
+	left: 6px;
+	top: 2px;
+	width: 5px;
+	height: 10px;
+	border: solid white;
+	border-width: 0 2px 2px 0;
+	-webkit-transform: rotate(45deg);
+	-ms-transform: rotate(45deg);
+	transform: rotate(45deg);
+}
+
+/* Select */
+select{
+	appearance: none;
+
+	color:var(--color);
+	background-color: transparent;
+	border: none;
+	border-radious: 4px;
+	margin: 8px ;
+	padding: 0 16px;
+	font-family: inherit;
+	font-size: inherit;
+	cursor: inherit;
+	line-height: 48px;
+
+
+}
+select:focus,
+select:active{
+	outline:none;
+	/* border: 2px solid var(--green-500)!important; */
+	background-color: var(--bg-2);
+}
+
+/* Fade transition  */
+
+.fade-enter-active, .fade-leave-active {
+  transition: opacity .5s;
+}
+.fade-enter, .fade-leave-to {
+  opacity: 0;
+}
+
+
+/* MQ visibility */
+
+
+@media (max-width: 1024px) {
+	.mobile-hidden{
+		display: none!important;
+	}
+}
+@media (min-width: 1024px) {
+	.desktop-hidden{
+		display: none!important;
+	}
+
+}
+/*
+.desktop {
+	visibility: visible;
+}
+
+.mobile {
+	visibility: hidden;
+	display: none;
+}
+
+@media (max-width: 1024px) {
+	.desktop {
+		visibility: hidden !important;
+		display: none;
+	}
+
+	.mobile {
+		visibility: visible !important;
+	}
+} */
