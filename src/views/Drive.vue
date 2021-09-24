@@ -75,7 +75,7 @@
 				<li id='copy-file' v-if="isWritable" @keyup.enter="copy"  @click="copy">Copy</li>
 				<li id='cut-file' v-if="isWritable" @keyup.enter="cut"  @click="cut">Cut</li>
 				<li id='paste-file' v-if="isPasteAvailable" @keyup.enter="paste"  @click="paste">Paste</li>
-				<li id='share-file' v-if="isLoggedIn" @keyup.enter="showShareWith"  @click="showShareWith">Share</li>
+				<li id='share-file' v-if="allowShare" @keyup.enter="showShareWith"  @click="showShareWith">Share</li>
 				<!-- <li id='create-file'  @keyup.enter="createTextFile" @click="createTextFile">Create Text file</li> -->
 				<!-- <li id='profile-view' v-if="isProfileViewable" @click="showProfile(false)">Show Profile</li> -->
 				<!-- <li id='file-search' v-if="isSearchable" @keyup.enter="openSearch(false)" @click="openSearch(false)">Search...</li> -->
@@ -381,6 +381,9 @@ module.exports = {
 			} catch (err) {
 				return false;
 			}
+		},
+		allowShare() {
+			return this.isLoggedIn && this.path.length > 0;
 		},
 		isIcsFile() {
 			try {
