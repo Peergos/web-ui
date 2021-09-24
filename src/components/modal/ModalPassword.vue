@@ -4,6 +4,7 @@
 			<h2>Change password</h2>
 		</template>
 		<template #body>
+            <spinner v-if="showSpinner"></spinner>
 
 			<FormPassword v-model="existing" />
 
@@ -34,6 +35,7 @@ module.exports = {
     
     data() {
         return {
+        showSpinner: false,
 	    existing: "",
 	    password: "",
 	    password2: "",
@@ -64,13 +66,15 @@ module.exports = {
             } else {
                 if (this.password == this.password2) {
                     let that = this;
+                    this.showSpinner = true;
                     this.context.changePassword(this.existing, this.password).thenApply(function(newContext){
                         
 			that.$store.commit("SET_CONTEXT", newContext);
 			that.$store.commit("SET_MODAL", false);
 			that.$toast.info('Password changed')
-                        
+            that.showSpinner = false;
 		    }).exceptionally(function(throwable) {
+            that.showSpinner = false;
 			// that.$toast.error(throwable.getMessage())
 			console.log(throwable.getMessage())
              	    });
