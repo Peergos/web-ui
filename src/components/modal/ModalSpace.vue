@@ -74,7 +74,10 @@ module.exports = {
                 return;
 
             const that = this;
-            this.context.requestSpace(this.getRequestedBytes()).thenApply(x => that.close())
+            this.context.requestSpace(this.getRequestedBytes()).thenApply(x => {
+                that.$toast("Space request sent!");
+                that.close();
+            })
         },
 		close(){
 			this.$store.commit("SET_MODAL", false);
