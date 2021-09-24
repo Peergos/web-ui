@@ -30,7 +30,7 @@
 		    </Share>
                     <div class="modal-body">
                         <spinner v-if="showSpinner"></spinner>
-                        
+
                         <div class="flex-thumbnail-container">
                             <div style="padding:20px;">
 		                <img id="profile-image" alt="Profile image" v-if="hasProfileImage()" style="width:150px; height:150px" v-bind:src="getProfileImage()"/>
@@ -217,12 +217,18 @@ module.exports = {
 	},
     },
     methods: {
-        showMessage: function(title, body) {
-            this.messages.push({
+        showMessage: function(isError, title, body) {
+            /*this.messages.push({
                 title: title,
                 body: body,
                 show: true
-            });
+            });*/
+            let bodyContents = body == null ? '' : ' ' + body;
+            if (isError) {
+                this.$toast.error(title + bodyContents, {timeout:false});
+            } else {
+                this.$toast(title + bodyContents)
+            }
         },
         processProfileUpdate: function() {
             this.firstName = this.previousFirstName = this.profile.firstName;
@@ -359,7 +365,7 @@ module.exports = {
                     binFilereader.readAsArrayBuffer(file);
                 };
                 image.onerror = function() {
-                    that.showMessage("Unable to read image");
+                    that.showMessage(true, "Unable to read image");
                 };
                 image.src = this.result;
             };
@@ -522,7 +528,7 @@ module.exports = {
                     changes.push({func: changeWebRootFunc});
                     this.saveChanges(changes);
                 } else if (updatedPath == '/') {
-                    that.showMessage("Validation Error", "Web Directory not set. Changes not saved!");
+                    that.showMessage(true, "Validation Error", "Web Directory not set. Changes not saved!");
                 } else {
                     if (updatedPath.endsWith('/')) {
                         updatedPath = updatedPath.substring(0, updatedPath.length -1);
@@ -531,26 +537,26 @@ module.exports = {
                         updatedPath = updatedPath.substring(1);
                     }
                     if (updatedPath == '') {
-                        this.showMessage("Validation Error", "Web Directory not set. Changes not saved!");
+                        this.showMessage(true, "Validation Error", "Web Directory not set. Changes not saved!");
                     } else {
                         if (!updatedPath.startsWith(this.context.username+ '/')) {
                             updatedPath = this.context.username + '/' + updatedPath;
                         }
                         if (updatedPath == '' || updatedPath == this.context.username + '/' + this.context.username) {
-                            this.showMessage("Validation Error", "Web Directory not set. Changes not saved!");
+                            this.showMessage(true, "Validation Error", "Web Directory not set. Changes not saved!");
                         } else {
                             try {
                                 let dirPath = peergos.client.PathUtils.directoryToPath(updatedPath.split('/'));
                                 this.context.getByPath(dirPath.toString()).thenApply(function(dirOpt){
                                         if (dirOpt.isEmpty()) {
-                                            that.showMessage("Validation Error", "Web Directory not found. Changes not saved!");
+                                            that.showMessage(true, "Validation Error", "Web Directory not found. Changes not saved!");
                                         } else {
                                             changes.push({func: changeWebRootFunc});
                                             that.saveChanges(changes);
                                         }
                                 });
                             } catch (pathException) {
-                                that.showMessage("Validation Error", "Web Directory not valid. Changes not saved!");
+                                that.showMessage(true, "Validation Error", "Web Directory not valid. Changes not saved!");
                             }
                         }
                     }
@@ -570,7 +576,7 @@ module.exports = {
             + " or if you run a local Peergos gateway from http://" + this.context.username + ".peergos.localhost:9000"
             + " Viewing websites via a local Peergos gateway doesn't rely on DNS or TLS certificate authorities for security or authenticity."
             + " You can get started by adding a index.html file to your web directory.";
-            this.showMessage("Website Directory", text);
+            this.showMessage(false, "Website Directory", text);
         },
         publishWebroot: function() {
             let that = this;
@@ -585,27 +591,27 @@ module.exports = {
                         let dirPath = peergos.client.PathUtils.directoryToPath(that.webRoot.split('/'));
                         that.context.getByPath(dirPath.toString()).thenApply(function(dirOpt){
                             if (dirOpt.isEmpty()) {
-                                that.showMessage("Unable to publish Web Directory", "Web Directory not found");
+                                that.showMessage(true, "Unable to publish Web Directory", "Web Directory not found");
                             } else {
                                 peergos.shared.user.ProfilePaths.publishWebroot(that.context).thenApply(function(success){
                                     that.showSpinner = false;
                                     that.$emit("update-refresh");
                                     if (success) {
-                                        that.showMessage("Web Directory published", "Available at: https://" + that.context.username+".peergos.me");
+                                        that.showMessage(false, "Web Directory published", "Available at: https://" + that.context.username+".peergos.me");
                                         that.webRootUrl = "https://" + that.context.username + ".peergos.me";
                                         that.webRootReadyToBePublished = false;
                                     } else {
-                                        that.showMessage("Unable to publish Web Directory", "");
+                                        that.showMessage(true, "Unable to publish Web Directory", "");
                                     }
                                 }).exceptionally(function(throwable) {
-                                  that.showMessage("Unable to publish Web Directory", throwable.getMessage());
+                                  that.showMessage(true, "Unable to publish Web Directory", throwable.getMessage());
                                   console.log(throwable.getMessage());
                                   that.showSpinner = false;
                                 });
                             }
                         });
                     } catch (pathException) {
-                        that.showMessage("Unable to publish Web Directory", "Web Directory not valid");
+                        that.showMessage(true, "Unable to publish Web Directory", "Web Directory not valid");
                         that.showSpinner = false;
                     }
                 };
@@ -622,13 +628,13 @@ module.exports = {
                     that.showSpinner = false;
                     that.$emit("update-refresh");
                 }).exceptionally(function(throwable) {
-                  that.showMessage("Unexpected error", throwable.getMessage());
+                  that.showMessage(true, "Unexpected error", throwable.getMessage());
                   console.log(throwable.getMessage());
                   that.showSpinner = false;
                   that.$emit("update-refresh");
                 });
             }).exceptionally(function(throwable) {
-              that.showMessage("Unexpected error", throwable.getMessage());
+              that.showMessage(true, "Unexpected error", throwable.getMessage());
               console.log(throwable.getMessage());
               that.showSpinner = false;
             });
@@ -645,7 +651,7 @@ module.exports = {
             let that = this;
             let func = changes.pop();
             if(func == null) {
-                that.showMessage("Profile updated","");
+                that.showMessage(false, "Profile updated");
                 that.showSpinner = false;
                 console.log("profile updated");
                 that.$emit("update-refresh");
@@ -655,12 +661,12 @@ module.exports = {
                     if(success) {
                         that.reduceAll(changes);
                     } else {
-                        that.showMessage("Unable to update profile");
+                        that.showMessage(true, "Unable to update profile");
                         console.log("Unable to update profile");
                         that.showSpinner = false;
                     }
                 }).exceptionally(function(throwable) {
-                    that.showMessage("Unexpected error", throwable.getMessage());
+                    that.showMessage(true, "Unexpected error", throwable.getMessage());
                     console.log('Error updating profile');
                     console.log(throwable.getMessage());
                     that.showSpinner = false;
