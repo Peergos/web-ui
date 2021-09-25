@@ -71,48 +71,51 @@
 const Bip39 = require('../mixins/password/bip-0039-english.json');
 const BannedUsernames = require('../mixins/password/bannedUsernames.json');
 const FormPassword = require("./form/FormPassword.vue");
+const UriDecoder = require('../mixins/uridecoder/index.js');
 
 module.exports = {
-	components: {
-		FormPassword,
-	},
-
-	props: {
-		token: {
-			type: String,
-			default: ''
-		},
-	},
-
-	data() {
-		return {
-		    username: '',
-		    password: '',
-		    password2: '',
-		    email: '',
-                    showPasswords: false,
-		    acceptingSignups: true,
-		    tosAccepted:false,
-		    safePassword:false,
-		};
-	},
-
-	computed: {
-		...Vuex.mapState([
-			'crypto',
-			'network'
-		]),
+    components: {
+	FormPassword,
     },
-	mounted() {
-		this.$refs.username.focus()
-		let that = this;
-		this.network.instanceAdmin.acceptingSignups().thenApply(function(res) {
-			if (that.token.length > 0) return;
-			that.acceptingSignups = res;
-			console.log("accepting signups: " + res);
-		});
-	},
 
+    mixins:[UriDecoder],
+    
+    props: {
+	token: {
+	    type: String,
+	    default: ''
+	},
+    },
+    
+    data() {
+	return {
+	    username: '',
+	    password: '',
+	    password2: '',
+	    email: '',
+            showPasswords: false,
+	    acceptingSignups: true,
+	    tosAccepted:false,
+	    safePassword:false,
+	};
+    },
+    
+    computed: {
+	...Vuex.mapState([
+	    'crypto',
+	    'network'
+	]),
+    },
+    mounted() {
+	this.$refs.username.focus()
+	let that = this;
+	this.network.instanceAdmin.acceptingSignups().thenApply(function(res) {
+	    if (that.token.length > 0) return;
+	    that.acceptingSignups = res;
+	    console.log("accepting signups: " + res);
+	});
+    },
+    
     methods: {
 	...Vuex.mapActions([
 	    'updateSocial',
@@ -182,7 +185,7 @@ module.exports = {
                         console.log("Signing in/up took " + (Date.now()-creationStart)+" mS from function call");
 			that.$toast.dismiss('signup');
                     }).exceptionally(function(throwable) {
-                        that.$toast.error(throwable.getMessage(),{timeout:false, id: 'signup'})
+                        that.$toast.error(that.uriDecode(throwable.getMessage()),{timeout:false, id: 'signup'})
                     });
                 }
             }
