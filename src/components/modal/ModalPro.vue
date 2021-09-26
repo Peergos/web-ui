@@ -110,53 +110,53 @@ module.exports = {
                 });
 	    },
 	    requestStorage(bytes) {
-			console.log('requestStorage:', bytes)
-			var that = this;
+		console.log('requestStorage:', bytes)
+		var that = this;
+                
+		this.context.requestSpace(bytes)
+		    .thenCompose(x => that.updateQuota(quotaBytes => {
+			console.log(quotaBytes,'quotaBytes')
+                        
+			if (quotaBytes >= bytes && bytes > 0) {
+			    that.updatePayment()
+			    that.$store.commit("SET_MODAL", false)
+			    that.$toast.info('Thank you for signing up to a Peergos Pro account!',{timeout:false, id: 'pro'})                            
+			} else if (bytes == 0) {
+			    that.updatePayment()
+			    that.$store.commit("SET_MODAL", false)
+			    that.$toast.error(`Sorry to see you go. We'd love to know what we can do better. Make sure to delete enough data to return within your Basic quota. `,{timeout:false, id: 'pro'})
+			} else if (quotaBytes < bytes && bytes > 0 ) {
+                            that.updatePayment(() => {
+                                that.updateError()
+                                if (! that.paymentProperties.hasError())
+			            that.$toast.error(`Card details required. Add a payment card to complete your upgrade. `,{timeout:false, id: 'pro', position: 'bottom-left'})
+                            });
+			} else
+                            that.updatePayment(() => that.updateError());
+		    }))
+	    },
+            
+	    updateError() {
+		if (this.paymentProperties.hasError()) {
+		    this.$toast.error(this.paymentProperties.getError(),{timeout:false, id: 'payment', position: 'bottom-left'})
+		}
+	    },
 
-			this.context.requestSpace(bytes)
-				.thenCompose(x => that.updateQuota(quotaBytes => {
-
-					console.log(quotaBytes,'quotaBytes')
-					that.updateError();
-
-					if (quotaBytes >= bytes && bytes > 0) {
-						that.updatePayment()
-						that.$store.commit("SET_MODAL", false)
-						that.$toast.info('Thank you for signing up to a Peergos Pro account!',{timeout:false, id: 'pro'})
-
-					} else if (bytes == 0) {
-						that.updatePayment()
-						that.$store.commit("SET_MODAL", false)
-						that.$toast.error(`Sorry to see you go. We'd love to know what we can do better. Make sure to delete enough data to return within your Basic quota. `,{timeout:false, id: 'pro'})
-
-					} else if (quotaBytes < bytes && bytes > 0 ) {
-						that.$toast.error(`Card details required. Add a payment card to complete your upgrade. `,{timeout:false, id: 'pro', position: 'bottom-left'})
-					}
-				}))
-		},
-
-		updateError() {
-			if (this.paymentProperties.hasError()) {
-				this.$toast.error(this.paymentProperties.getError(),{timeout:false, id: 'payment', position: 'bottom-left'})
-			}
-		},
-
-    	updateCard() {
-			console.log('updateCard')
-			var that = this;
-			this.context.getPaymentProperties(true).thenApply(function(props) {
-				that.paymentUrl = props.getUrl() + "&username=" + that.context.username + "&client_secret=" + props.getClientSecret();
-			    that.showCard = true;
-            	that.startAddCardListener();
-			});
-		},
-
-		cancelPro() {
-            this.requestStorage(0);
-			this.$store.commit("SET_MODAL", false);
-        },
+    	    updateCard() {
+		console.log('updateCard')
+		var that = this;
+		this.context.getPaymentProperties(true).thenApply(function(props) {
+		    that.paymentUrl = props.getUrl() + "&username=" + that.context.username + "&client_secret=" + props.getClientSecret();
+		    that.showCard = true;
+            	    that.startAddCardListener();
+		});
+	    },
+            
+	    cancelPro() {
+                this.requestStorage(0);
+		this.$store.commit("SET_MODAL", false);
+            },
 	},
-
 };
 </script>
 <style>

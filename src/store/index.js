@@ -215,13 +215,15 @@ module.exports = new Vuex.Store({
 			});
 		},
 
-		updatePayment({ commit, state }) {
+		updatePayment({ commit, state }, callback) {
 			state.context
 				.getPaymentProperties(false)
 				.thenApply(function (paymentProps) {
 					commit("SET_PAYMENT_PROPERTIES", paymentProps);
 					if (paymentProps.isPaid()) {
-						commit("SET_PAYMENT_PROPERTIES", paymentProps);
+					    commit("SET_PAYMENT_PROPERTIES", paymentProps);
+                                            if (callback != null)
+                                                callback()
 					} else {
 						state.context.getPendingSpaceRequests().thenApply(reqs => {
 						if (reqs.toArray([]).length > 0)
