@@ -74,6 +74,10 @@ module.exports = {
 		}
     },
 
+    mounted() {
+        this.updateError()
+    },
+    
 	methods: {
 		...Vuex.mapActions([
 			'updateQuota',
@@ -133,7 +137,7 @@ module.exports = {
 
 		updateError() {
 			if (this.paymentProperties.hasError()) {
-				that.$toast.error(this.paymentProperties.getError(),{timeout:false, id: 'pro', position: 'bottom-left'})
+				this.$toast.error(this.paymentProperties.getError(),{timeout:false, id: 'payment', position: 'bottom-left'})
 			}
 		},
 
