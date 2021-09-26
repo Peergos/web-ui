@@ -21,6 +21,7 @@
 <script>
 const FormPassword = require("./form/FormPassword.vue");
 const routerMixins = require("../mixins/router/index.js");
+const UriDecoder = require('../mixins/uridecoder/index.js');
 
 module.exports = {
 	components: {
@@ -44,7 +45,7 @@ module.exports = {
 			'isSecretLink',
 		]),
 	},
-	mixins:[routerMixins],
+	mixins:[routerMixins, UriDecoder],
 
 	mounted() {
 		this.$refs.username.focus()
@@ -103,7 +104,7 @@ module.exports = {
 					console.log("Signing in/up took " + (Date.now()-creationStart)+" mS from function call");
 				})
 				.exceptionally(function (throwable) {
-					that.$toast.error(throwable.getMessage(), {timeout:false, id: 'login'})
+					that.$toast.error(that.uriDecode(throwable.getMessage()), {timeout:false, id: 'login'})
 				});
 		},
 		appFromUrl(){
