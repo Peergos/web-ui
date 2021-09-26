@@ -29,8 +29,8 @@
 				<strong>WARNING:</strong> This is a demo server and all data
 				will be occasionally cleared. If you want to create a
 				<i>permanent</i> account, please go to our
-				<a class="line" href="https://alpha.peergos.net?signup=true"
-					>alpha network</a
+				<a class="line" href="https://beta.peergos.net?signup=true"
+					>beta network</a
 				>
 			</p>
 		</section>
