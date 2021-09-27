@@ -909,23 +909,17 @@ module.exports = {
 		},
 
 		mkdir(name) {
-
-			// this.showSpinner = true;
+			this.showSpinner = true;
 			var that = this;
-
 			this.currentDir.mkdir(name, this.context.network, false, this.context.crypto)
 				.thenApply(function (updatedDir) {
 					that.currentDir = updatedDir;
 					that.updateFiles();
 					that.updateUsage();
-					// that.onUpdateCompletion.push(function () {
-					// 	that.showSpinner = false;
-					// });
-
+					that.showSpinner = false;
 				}.bind(this)).exceptionally(function (throwable) {
-
+					that.showSpinner = false;
 					that.$toast.error(throwable.getMessage(), {timeout:false, id: 'mkdir'})
-
 					that.updateUsage();
 				});
 		},
