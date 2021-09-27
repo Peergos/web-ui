@@ -281,7 +281,6 @@ module.exports = {
     },
     props: ['viewConversations'],
 	mixins:[routerMixins, mixins],
-
   	created: function() {
         // this.context = this.$store.state.userContext;
 		// this.context = this.$store.state.context;

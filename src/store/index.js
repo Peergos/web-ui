@@ -177,6 +177,9 @@ module.exports = new Vuex.Store({
 		SET_FOLLOWING(state, payload) {
 			state.socialData.following = payload;
 		},
+        SET_FOLLOWING_ROOTS(state, payload) {
+            state.socialData.followingRoots = payload;
+        },
 		SET_GROUP_TO_NAME(state, payload) {
 			state.socialData.groupsUidToName = payload;
 		},
@@ -251,6 +254,7 @@ module.exports = new Vuex.Store({
 				commit('SET_FRIENDS', friendNames)
 				commit('SET_FOLLOWERS', followerNames)
 				commit('SET_FOLLOWING', followeeNames)
+				commit('SET_FOLLOWING_ROOTS', socialState.followingRoots)
 
 				let groupsUidToName = {}
 				socialState.uidToGroupName.keySet().toArray([]).map(uid => groupsUidToName[uid] = socialState.uidToGroupName.get(uid))
