@@ -25,7 +25,7 @@
 			</div>
 		</transition-group>
 		<span class="slider__pagination">
-			{{ current }}/ {{ slidesLength }}
+			{{ current }} / {{ slidesLength }}
 		</span>
 		<!-- <AppButton
 			class="slider__button button--prev"
@@ -87,8 +87,8 @@ module.exports = {
 	position: relative;
 }
 .slider__container {
-	min-width: 500px;
-	min-height: 500px;
+	min-width: 420px;
+	min-height: 420px;
 }
 .app-slider .slide {
 	position: absolute;
@@ -121,7 +121,9 @@ module.exports = {
 }
 
 
-.slider__pagination{}
+.slider__pagination{
+	line-height: 36px;
+}
 
 /* Next Slide */
 .slide-next-enter-active,
@@ -146,4 +148,13 @@ module.exports = {
 .slide-prev-leave-to {
 	transform: translate(100%);
 }
+
+@media (max-width: 540px) {
+
+	.slider__container {
+		min-width: 320px;
+		min-height: 420px;
+	}
+}
+
 </style>

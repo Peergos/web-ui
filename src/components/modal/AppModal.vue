@@ -143,8 +143,8 @@ module.exports = {
 }
 
 @media (max-width: 1024px) {
-	.app-modal__container{
-		width: 100%;
+	.app-modal__container.modal--right{
+		width: 100%
 	}
 }
 
