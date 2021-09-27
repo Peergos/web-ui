@@ -827,6 +827,7 @@ module.exports = {
         let item = items[index];
         that.displaySpinner();
         this.updateCalendarEvent(calendar, item).thenApply(function(res) {
+           that.postMessage({type: 'respondConfirmImportICSFile', item: item, index: index});
            that.saveAllEventsRecursive(calendar, items, ++index, showConfirmation);
         }).exceptionally(function(throwable) {
            that.removeSpinner();

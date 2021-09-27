@@ -21,8 +21,8 @@ let handler = function (e) {
           load(e.data.previousMonth, e.data.currentMonth, e.data.nextMonth, e.data.recurringEvents, e.data.yearMonth, e.data.username);
           let importCalendarEventParams = e.data.importCalendarEventParams;
           if (importCalendarEventParams != null) {
-            importICSFile(importCalendarEventParams.contents, importCalendarEventParams.username,
-            importCalendarEventParams.isSharedWithUs, importCalendarEventParams.loadCalendarAsGuest, "My Calendar", true);
+            confirmImportICSFile(importCalendarEventParams.contents, importCalendarEventParams.username,
+            importCalendarEventParams.isSharedWithUs, importCalendarEventParams.loadCalendarAsGuest, "My Calendar");
           }
       } else if (e.data.type == "loadAdditional") {
           loadAdditional(e.data.currentMonth, e.data.yearMonth);
@@ -36,6 +36,8 @@ let handler = function (e) {
           respondToCalendarColorChange(e.data.calendarName, e.data.newColor);
       } else if (e.data.type == "respondChoiceSelection") {
           respondToChoiceSelection(e.data.optionIndex, e.data.method);
+      } else if (e.data.type == "respondConfirmImportICSFile") {
+          respondToConfirmImportICSFile(e.data.item, e.data.index);
       } else if(e.data.type == "importICSFile") {
           loadCalendarAsGuest = e.data.loadCalendarAsGuest;
           if(loadCalendarAsGuest) {
@@ -56,6 +58,8 @@ var CalendarList = [];
 let ScheduleCache = [];
 let CachedYearMonths = [];
 let LoadedEvents = [];
+let tempLoadedEvents = []; //used as part of ical import
+let tempSchedules = []; //used as part of ical import
 let RecurringSchedules = [];
 var currentMoment = moment();
 var loadCalendarAsGuest = false;
@@ -951,6 +955,61 @@ function importICSFile(contents, username, isSharedWithUs, loadCalendarAsGuest, 
     if (cal != null) { // could be headless import
         refreshScheduleVisibility();
     }
+}
+function confirmImportICSFile(contents, username, isSharedWithUs, loadCalendarAsGuest, calendarName) {
+    tempLoadedEvents = [];
+    tempSchedules = [];
+    currentUsername = username;
+    let icalComponent = new ICAL.Component(ICAL.parse(contents));
+    let vevents = icalComponent.getAllSubcomponents('vevent');
+    let scheduleMap = {};
+    for(var idx = 0; idx < vevents.length; idx++) {
+        let vvent = vevents[idx];
+        let event = unpackEvent(icalComponent, vvent, true, isSharedWithUs, findCalendarByName(calendarName).id);
+        if (validateEvent(event)) {
+            let schedule = buildScheduleFromEvent(event);
+            if (event.recurrenceId == null) {
+                scheduleMap[schedule.id] = schedule;
+                tempSchedules.push(schedule);
+                tempLoadedEvents[schedule.id] = buildComponentFromEvent(icalComponent, vvent);
+            } else {
+                let origSchedule = scheduleMap[schedule.raw.parentId];
+                if (origSchedule != null) {
+                    origSchedule.raw.exceptions.push(schedule);
+                }
+            }
+        }
+    }
+    let allEvents = [];
+    let allEventSummaries = [];
+    for(var i = 0 ; i < tempSchedules.length; i++) {
+        let schedule = tempSchedules[i];
+        let output = serialiseICal(schedule, false);
+        let dt = moment.utc(schedule.start.toUTCString());
+        let year = dt.year();
+        let month = dt.month() + 1;
+        let recurringText = schedule.raw.hasRecurrenceRule ? ' (Recurring: ' + schedule.recurrenceRule + ')' : '';
+        let eventSummary = {datetime: moment(schedule.start.toUTCString()).format('YYYY MMMM Do, h:mm:ss a'), title: schedule.title + recurringText };
+        allEvents.push({calendarName: calendarName, year: year, month: month, Id: schedule.id, item:output,
+                summary: eventSummary, isRecurring: schedule.raw.hasRecurrenceRule});
+    }
+    if (allEvents.length > 0) {
+        mainWindow.postMessage({items:allEvents, showConfirmation: true, type:"saveAll"}, origin);
+    }
+}
+function respondToConfirmImportICSFile(item, index) {
+    LoadedEvents[item.Id] = tempLoadedEvents[item.Id];
+    let schedule = tempSchedules[index];
+    if (item.isRecurring) {
+        RecurringSchedules.push(schedule);
+        CachedYearMonths.forEach(function(yearMonth) {
+            cal.createSchedules(loadSchedule(schedule, yearMonth));
+        });
+    } else {
+        cal.createSchedules([schedule]);
+        addToCache(schedule);
+    }
+    refreshScheduleVisibility();
 }
 function isEmptyValue(val) {
     return val == null || val.trim().length == 0;
