@@ -90,16 +90,17 @@ module.exports = {
 
 					that.$toast.dismiss('login');
 
-					that.$store.commit("SET_CONTEXT", context);
+					that.$store.commit('SET_CONTEXT', context);
 
-					that.$store.commit("CURRENT_VIEW", that.appFromUrl());
+					that.$store.commit('CURRENT_VIEW', that.appFromUrl());
 
 					that.$store.commit('USER_LOGIN', true);
+
 					that.$emit("initApp")
 
 					that.updateSocial()
 
-					// that.$emit("filesystem", { context: context });
+					// that.$store.commit('CURRENT_MODAL', 'ModalTour');
 
 					console.log("Signing in/up took " + (Date.now()-creationStart)+" mS from function call");
 				})

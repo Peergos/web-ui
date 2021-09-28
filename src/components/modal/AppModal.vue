@@ -1,8 +1,14 @@
 <template>
 	<transition name="modal" appear>
 		<div class="app-modal app-modal__overlay" @click="closeModal()">
-			<transition name="modal-content" appear>
-				<div ref="modalContainer" tabindex="0" class="app-modal__container" @click.stop>
+			<transition :name="`modal-content--${position}`" appear>
+				<div
+					ref="modalContainer"
+					tabindex="0"
+					class="app-modal__container"
+					:class="`modal--${position}`"
+					@click.stop
+				>
 					<AppButton class="close" icon="close" @click.native="closeModal()"/>
 					<header><slot name="header"></slot></header>
 					<section><slot name="body"></slot></section>
@@ -17,6 +23,15 @@
 <script>
 module.exports = {
 	name: 'AppModal',
+	props: {
+		position:{
+			type: String,
+			default: 'right',
+			validator: function (value) {
+				return ['right', 'center'].indexOf(value) !== -1
+			}
+		},
+	},
 	methods: {
 		closeModal() {
 			this.$store.commit("SET_MODAL", false);
@@ -42,13 +57,12 @@ module.exports = {
 	overflow-y: auto;
 	overflow-x: hidden;
 
+	display: flex;
+	align-items: center;
+	justify-content: center;
 }
 
 .app-modal__container{
-	position: absolute;
-	right:0;
-	width:50%;
-	min-height:100vh;
 
 	display:flex;
 	flex-direction: column;
@@ -56,6 +70,21 @@ module.exports = {
 	padding: var(--app-margin);
 	color: var(--color);
 	background-color: var(--bg);
+}
+.app-modal__container:focus{
+	outline: none;
+}
+
+.app-modal__container.modal--right{
+	position: absolute;
+	right:0;
+	width:50%;
+	min-height:100vh;
+}
+
+.app-modal__container.modal--center{
+	position: relative;
+	/* width:50%; */
 }
 
 .app-modal__container .close{
@@ -80,7 +109,7 @@ module.exports = {
 	min-height: auto;
 }
 
-/* modal overlay transition */
+/* overlay transition */
 .modal-enter-active{
   transition: opacity 0.5s ease-out;
 }
@@ -92,21 +121,30 @@ module.exports = {
   opacity: 0;
 }
 
-/* modal-content transtion */
-.modal-content-enter-active{
+/* RIGHT content transtion */
+.modal-content--right-enter-active{
 	transition: transform 0.5s ease-out,
 				opacity 0.2s ease-out;
 	transform: translateX(0);
 }
-.modal-content-enter,
-.modal-content-leave-to {
+.modal-content--right-enter,
+.modal-content--right-leave-to {
 	opacity: 0;
 	transform: translateX(100px);
 }
 
+/* CENTER content transtion */
+.modal-content--center-enter-active{
+	transition: opacity 0.2s ease-out;
+}
+.modal-content--center-enter,
+.modal-content--center-leave-to {
+	opacity: 0;
+}
+
 @media (max-width: 1024px) {
-	.app-modal__container{
-		width: 100%;
+	.app-modal__container.modal--right{
+		width: 100%
 	}
 }
 

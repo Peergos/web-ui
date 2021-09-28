@@ -35,7 +35,7 @@
 		<div id="dnd"
 			@drop="dndDrop($event)"
 			@dragover.prevent
-			:class="{ not_owner: isNotMe }"
+			:class="{ not_owner: isNotMe, dnd: 'dnd' }"
 		>
 
 			<transition name="fade" mode="out-in" appear>
@@ -1837,10 +1837,15 @@ module.exports = {
 </script>
 
 <style>
-.drive-view{
-	min-height: 100vh;
+.drive-view {
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
 }
 
+.dnd {
+    flex-grow: 1;
+}
 
 @media (max-width: 1024px) {
 	#dnd{

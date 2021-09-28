@@ -38,6 +38,9 @@
 				<li v-on:keyup.enter="showFeedback()" @click="showFeedback()">
 					Feedback
 				</li>
+				<li v-on:keyup.enter="showTour()" @click="showTour()">
+					Tour
+				</li>
 				<li
 					v-on:keyup.enter="showChangePassword()"
 					@click="showChangePassword()"
@@ -136,6 +139,9 @@ module.exports = {
 		},
 		showProfile() {
 			this.$store.commit("CURRENT_MODAL", "ModalProfile");
+		},
+		showTour() {
+			this.$store.commit("CURRENT_MODAL", "ModalTour");
 		},
 		showFeedback() {
 			this.$store.commit("CURRENT_MODAL", "ModalFeedback");

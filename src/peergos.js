@@ -19,7 +19,6 @@ var Replace         = require('./components/replace');
 var SelectCreate    = require('./components/select-create');
 var Spinner         = require('./components/spinner');
 var Text            = require('./components/viewers/text-viewer');
-var Tour            = require('./components/tour');
 var Confirm         = require('./components/confirm');
 var Warning         = require('./components/warning.vue');
 
@@ -48,7 +47,6 @@ Vue.component('replace', Vue.extend(Replace));
 Vue.component('select-create', Vue.extend(SelectCreate));
 Vue.component('spinner', Vue.extend(Spinner));
 Vue.component('text-viewer', Vue.extend(Downloader).extend(Text));
-Vue.component('tour', Vue.extend(Tour));
 Vue.component('confirm', Vue.extend(Confirm));
 Vue.component('warning', Vue.extend(Warning));
 

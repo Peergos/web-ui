@@ -158,7 +158,7 @@ module.exports = {
 		flex:0 1 50%;
 		order: 1;
 		margin-left: 0;
-		padding: 0 16px;
+		padding: 0 0 0 16px ;
 		flex-direction: row-reverse;
 	}
 
@@ -167,6 +167,7 @@ module.exports = {
 		flex: 0 1 50%;
 		justify-content: flex-end;
 		margin-right: 0;
+		padding-left: 0;
 	}
 	.drive-header .drive-breadcrumb{
 		order: 3;

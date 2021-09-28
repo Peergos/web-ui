@@ -79,14 +79,14 @@ module.exports = {
     },
 
     mixins:[UriDecoder],
-    
+
     props: {
 	token: {
 	    type: String,
 	    default: ''
 	},
     },
-    
+
     data() {
 	return {
 	    username: '',
@@ -99,7 +99,7 @@ module.exports = {
 	    safePassword:false,
 	};
     },
-    
+
     computed: {
 	...Vuex.mapState([
 	    'crypto',
@@ -115,7 +115,7 @@ module.exports = {
 	    console.log("accepting signups: " + res);
 	});
     },
-    
+
     methods: {
 	...Vuex.mapActions([
 	    'updateSocial',
@@ -136,7 +136,7 @@ module.exports = {
 		that.email='';
 		that.$toast.info("Congratulations, you have joined the waiting list. We'll be in touch as soon as a place is available.")
 	    });
-            
+
 	},
 	generatePassword() {
 	    let bytes = nacl.randomBytes(16);
@@ -150,7 +150,7 @@ module.exports = {
         signup() {
             const creationStart = Date.now();
             const that = this;
-            
+
             if(!that.safePassword) {
 		this.$toast.error('You must accept the password safety warning', {id:'signup'})
 	    } else if (!that.tosAccepted) {
@@ -161,7 +161,7 @@ module.exports = {
 		this.$toast.error('Please generate your password',{id:'signup'})
             } else {
                 let usernameRegEx = /^[a-z0-9](?:[a-z0-9]|[_-](?=[a-z0-9])){0,31}$/;
-                
+
 		if(!usernameRegEx.test(that.username)) {
 		    that.$toast.error('Invalid username. Usernames must consist of between 1 and 32 characters, containing only digits, lowercase letters, underscore and hyphen. They also cannot have two consecutive hyphens or underscores, or start or end with a hyphen or underscore.',{id:'signup',timeout:false})
                 } else if (BannedUsernames.includes(that.username)) {
@@ -169,27 +169,29 @@ module.exports = {
                 } else {
                     that.$toast.info('signing up!', {id:'signup'})
                     return peergos.shared.user.UserContext.signUp(
-			that.username,
-			that.password,
-			that.token,
-			that.network,
-			that.crypto,
-			{"accept" : x => that.$toast.info(x, {id:'signup', timeout:false})}
-		    ).thenApply(function(context) {
-			that.$store.commit("CURRENT_VIEW", 'Drive');
-			that.$store.commit("SET_CONTEXT", context);
-			that.$store.commit('USER_LOGIN', true);
-			that.updatePayment()
-			that.updateSocial()
-			that.updateUsage()
-                        console.log("Signing in/up took " + (Date.now()-creationStart)+" mS from function call");
-			that.$toast.dismiss('signup');
+					that.username,
+					that.password,
+					that.token,
+					that.network,
+					that.crypto,
+					{"accept" : x => that.$toast.info(x, {id:'signup', timeout:false})}
+					).thenApply(function(context) {
+						that.$store.commit('CURRENT_VIEW', 'Drive');
+						that.$store.commit('SET_CONTEXT', context);
+						that.$store.commit('USER_LOGIN', true);
+						that.$store.commit('CURRENT_MODAL', 'ModalTour');
+
+						that.updatePayment()
+						that.updateSocial()
+						that.updateUsage()
+						console.log("Signing in/up took " + (Date.now()-creationStart)+" mS from function call");
+						that.$toast.dismiss('signup');
                     }).exceptionally(function(throwable) {
                         that.$toast.error(that.uriDecode(throwable.getMessage()),{timeout:false, id: 'signup'})
                     });
                 }
             }
-	},
+		},
     }
 };
 </script>

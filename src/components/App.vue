@@ -56,6 +56,7 @@
 
 <script>
 const AppNavigation = require("./navigation/AppNavigation.vue");
+const ModalTour = require("./modal/ModalTour.vue");
 const ModalSpace = require("./modal/ModalSpace.vue");
 const ModalPro = require("./modal/ModalPro.vue");
 const ModalPassword = require("./modal/ModalPassword.vue");
@@ -83,6 +84,9 @@ const routerMixins = require("../mixins/router/index.js");
 module.exports = {
 	components: {
 		AppNavigation,
+		ModalTour,
+		// TODO: lazy load dynamic components
+		// ModalTour: () => import("~/components/modal/ModalTour"),
 		ModalSpace,
 		ModalPro,
 		ModalPassword,
@@ -153,7 +157,7 @@ module.exports = {
 		var props = this.getSecretLinkProps();
 		if (href.includes("?signup=true")) {
 		    this.$refs.tabs.selectTab(1);
-                    
+
 		    if (href.includes("token=")) {
 			var urlParams = new URLSearchParams(window.location.search);
 			this.token = urlParams.get("token");
@@ -171,23 +175,23 @@ module.exports = {
     created() {
 	this.$store.commit("SET_CRYPTO", peergos.shared.Crypto.initJS());
 	this.updateNetwork();
-        
+
 	window.addEventListener("hashchange", this.onUrlChange, false);
     },
-    
+
     mounted() {
 	let localTheme = localStorage.getItem("theme");
 	document.documentElement.setAttribute("data-theme", localTheme);
 	this.$store.commit("SET_THEME", localTheme == "dark-mode");
     },
-    
+
     methods: {
         ...Vuex.mapActions([
 	    'updateQuota',
 	    'updateUsage',
 	    'updatePayment'
 	]),
-        
+
 	init() {
 	    const that = this;
 	    if (this.context != null && this.context.username == null) {
@@ -208,7 +212,7 @@ module.exports = {
 		if (fragment.length > 0) {
 		    // support legacy secret links
 		    props.secretLink = true;
-                    
+
 		    var query = fragment.indexOf("?");
 		    if (query > 0) {
 			if (fragment.indexOf("download=true") > 0)
@@ -222,15 +226,15 @@ module.exports = {
 	    }
             return props;
         },
-        
+
 	onUrlChange() {
 	    const props = this.getPropsFromUrl();
-            
+
 	    const app = props == null ? null : props.app;
 	    const path = props == null ? null : props.path;
 	    const filename = props == null ? null : props.filename;
 	    const differentPath = path != null && path != this.getPath;
-            
+
 	    if (differentPath) {
 		console.log('onUrlChange differentPath so we do: ', path.split("/").filter(x => x.length > 0))
 		this.$store.commit(
@@ -238,7 +242,7 @@ module.exports = {
 		    path.split("/").filter((x) => x.length > 0)
 		);
 	    }
-            
+
             const that = this;
             const sidebarApps = ["Drive", "NewsFeed", "Tasks", "Social", "Calendar", "Chat"]
 	    if (app === "Drive") {
@@ -258,7 +262,7 @@ module.exports = {
 		});
 	    }
 	},
-        
+
 	updateNetwork() {
 	    let that = this;
 	    peergos.shared.NetworkAccess.buildJS(
@@ -268,7 +272,7 @@ module.exports = {
 		that.$store.commit("SET_NETWORK", network);
 	    });
 	},
-        
+
 	checkIfDomainNeedsUnblocking() {
 	    if (this.network == null) return;
 	    var that = this;
@@ -281,19 +285,19 @@ module.exports = {
 		    req.onload = function () {
 			console.log("S3 test returned: " + req.status);
 		    };
-                    
+
 		    req.onerror = function (e) {
 			that.$toast.error(
 			    "Please unblock the following domain for Peergos to function correctly: " +
 				domainOpt.get()
 			);
 		    };
-                    
+
 		    req.send();
 		}
 	    });
 	},
-        
+
 	// still need to check this
 	gotoSecretLink(props) {
 	    var that = this;
