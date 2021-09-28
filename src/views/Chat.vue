@@ -1,10 +1,5 @@
 <template>
 <article class="chat-app">
-	<AppHeader>
-		<template #primary>
-			<h1>Tasks view</h1>
-		</template>
-	</AppHeader>
     <div class="modal-container" style="width:100%;height: 100%;" @click.stop >
         <div class="header">
             <span>
