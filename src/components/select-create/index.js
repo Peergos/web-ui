@@ -11,7 +11,7 @@ module.exports = {
     props: ['select_message', 'select_placeholder', 'select_items', 'messages', 'select_consumer_func'],
     created: function() {
         let that = this;
-        this.options.push({ text: 'Create new...', value: this.newEntryToken });
+        this.options.push({ text: 'Create new / Open existing', value: this.newEntryToken });
         let itemsExist = this.select_items != null && this.select_items.length > 0;
         if(itemsExist) {
             this.select_items.forEach(function(text){
