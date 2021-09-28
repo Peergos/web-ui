@@ -27,32 +27,12 @@
                             :consumer_func="warning_consumer_func">
                         </warning>
 			<center v-if="showMedia && showableFiles.length > 1">
-				<div class="btn-group" style="padding: 10px">
-					<button
-						@click="start()"
-						class="btn btn-large center-block btn-primary"
-					>
-						First
-					</button>
-					<button
-						@click="previous()"
-						class="btn btn-large center-block btn-primary"
-					>
-						Previous
-					</button>
-					<button
-						@click="next()"
-						class="btn btn-large center-block btn-primary"
-					>
-						Next
-					</button>
-					<button
-						@click="end()"
-						class="btn btn-large center-block btn-primary"
-					>
-						Last
-					</button>
-				</div>
+			    <div class="btn-group" style="padding: 10px">
+                                <button class="btn btn-success flex-grow" @click="start()" >First</button>
+                                <button class="btn btn-success flex-grow" @click="previous()" >Previous</button>
+                                <button class="btn btn-success flex-grow" @click="next()" >Next</button>
+                                <button class="btn btn-success flex-grow" @click="end()" >Last</button>
+			    </div>
 			</center>
 			<center
                                 v-if="showMedia"
