@@ -1,10 +1,5 @@
 <template>
 <article class="chat-app">
-	<AppHeader>
-		<template #primary>
-			<h1>Tasks view</h1>
-		</template>
-	</AppHeader>
     <div class="modal-container" style="width:100%;height: 100%;" @click.stop >
         <div class="header">
             <span>
@@ -33,19 +28,17 @@
                 :consumer_cancel_func="confirm_consumer_cancel_func"
                 :consumer_func="confirm_consumer_func">
         </confirm>
-        <group
+        <Group
                 v-if="showGroupMembership"
                 v-on:hide-group="showGroupMembership = false"
                 :groupId="groupId"
                 :groupTitle="groupTitle"
                 :existingGroupMembers="existingGroupMembers"
                 :existingAdmins="existingAdmins"
-                :context="context"
                 :friendNames="friendnames"
                 :updatedGroupMembership="updatedGroupMembership"
-                :existingGroups="existingGroups"
-                :messages="messages">
-        </group>
+                :existingGroups="existingGroups">
+        </Group>
         <message
                 v-for="message in messages"
                 v-on:remove-message="messages.splice(messages.indexOf(message), 1)"
@@ -59,6 +52,11 @@
                 :hideGalleryTitle="true"
                 :context="context">
         </Gallery>
+        <ViewProfile
+            v-if="showProfileViewForm"
+            v-on:hide-profile-view="showProfileViewForm = false"
+            :profile="profile">
+        </ViewProfile>
         <spinner v-if="showSpinner" :message="spinnerMessage"></spinner>
         <div class="chat-container">
             <div class="chat-messaging">
@@ -94,8 +92,8 @@
                             <div v-for="conversation in conversations">
                                 <div @click="selectConversation(conversation)" v-bind:class="{ conversationContainer: true, activeConversation: isConversationSelected(conversation) }">
                                     <div class="chat_img">
-                                        <img v-if="conversation.profileImage !=null && conversation.profileImage.length > 0" v-on:click="profile(conversation)" v-bind:src="conversation.profileImage" class="img-thumbail-chat">
-                                        <span v-if="conversation.profileImage == null && conversation.participants.length <= 1" v-on:click="profile(conversation)" class="fa fa-user picon-chat img-thumbail-chat"> </span>
+                                        <img v-if="conversation.profileImage !=null && conversation.profileImage.length > 0" v-on:click="viewProfile(conversation)" v-bind:src="conversation.profileImage" class="img-thumbail-chat">
+                                        <span v-if="conversation.profileImage == null && conversation.participants.length <= 1" v-on:click="viewProfile(conversation)" class="fa fa-user picon-chat img-thumbail-chat"> </span>
                                         <span v-if="conversation.profileImage == null && conversation.participants.length > 1" class="fa fa-users picon-chat img-thumbail-chat"> </span>
                                     </div>
                                     <div class="conversation" v-if="conversation.hasUnreadMessages">
@@ -137,7 +135,9 @@
                                         <div class="received-message">
                                             <div v-for="(mediaFile, idx) in message.mediaFiles" class="attachment-view-container">
                                                 <img v-if="mediaFile.hasThumbnail" v-on:click="view(message, idx)" v-bind:src="mediaFile.thumbnail" style="cursor: pointer; margin-bottom: 10px; margin-top: 10px;"/>
-                                                <span v-if="!mediaFile.hasThumbnail" style="height:100px;cursor: pointer" v-on:click="view(message, idx)" v-bind:class="['file', 'fa', getFileIcon(mediaFile.file, mediaFile.fileType), 'picon-timeline']"> </span>
+                                                <span v-if="!mediaFile.hasThumbnail">
+                                                    <AppIcon style="height:100px" @click.stop.native="view(message, idx)" class="card__icon" :icon="getFileIcon(mediaFile.file, mediaFile.fileType)"></AppIcon>
+                                                </span>
                                             </div>
                                             <p v-if="message.contents.length > 0">{{message.contents}}</p>
                                             <span v-if="message.sendTime.length == 0" class="chat-message-info"><i class="fa fa-reply" @click="reply(message)" style="cursor: pointer"></i> | {{message.sender}} | <i class="fa fa-spinner fa-spin"></i> <i v-if="message.edited && !message.deleted">&nbsp; [edited]</i></span>
@@ -148,7 +148,9 @@
                                         <div class="sent-message">
                                             <div v-for="(mediaFile, idx) in message.mediaFiles" class="attachment-view-container">
                                                 <img v-if="mediaFile.hasThumbnail" v-on:click="view(message, idx)" v-bind:src="mediaFile.thumbnail" style="cursor: pointer; margin-bottom: 10px; margin-top: 10px;"/>
-                                                <span v-if="!mediaFile.hasThumbnail" style="height:100px;cursor: pointer" v-on:click="view(message, idx)" v-bind:class="['file', 'fa', getFileIcon(mediaFile.file, mediaFile.fileType), 'picon-timeline']"> </span>
+                                                <span v-if="!mediaFile.hasThumbnail">
+                                                    <AppIcon style="height:100px" @click.stop.native="view(message, idx)" class="card__icon" :icon="getFileIcon(mediaFile.file, mediaFile.fileType)"></AppIcon>
+                                                </span>
                                             </div>
                                             <p v-if="message.contents.length > 0">{{message.contents}}</p>
                                             <span v-if="message.sendTime.length == 0" class="chat-message-info"><i class="fa fa-reply" @click="reply(message)" style="cursor: pointer"></i> <b>|</b> {{message.sender}} <b>|</b> <i class="fa fa-spinner fa-spin"></i> <b v-if="!message.deleted">|</b> <i v-if="!message.deleted" class="fa fa-edit" @click="edit(message)" style="cursor: pointer"></i> <b v-if="!message.deleted">|</b> <i v-if="!message.deleted" class="fa fa-trash-alt" @click="deleteMessage(message)" style="cursor: pointer"></i><i v-if="message.edited && !message.deleted">&nbsp; [edited]</i></span>
@@ -163,7 +165,9 @@
                                                 <div v-bind:class="['parent-message', message.parentMessage.sender == context.username ? 'sent-message' : 'received-message']">
                                                     <div v-for="(mediaFile, idx) in message.parentMessage.mediaFiles" class="attachment-view-container">
                                                         <img v-if="mediaFile.hasThumbnail" v-on:click="view(message.parentMessage, idx)" v-bind:src="mediaFile.thumbnail" style="cursor: pointer; margin-bottom: 10px; margin-top: 10px;"/>
-                                                        <span v-if="!mediaFile.hasThumbnail" style="height:100px;cursor: pointer" v-on:click="view(message.parentMessage, idx)" v-bind:class="['file', 'fa', getFileIcon(mediaFile.file, mediaFile.fileType), 'picon-timeline']"> </span>
+                                                        <span v-if="!mediaFile.hasThumbnail">
+                                                            <AppIcon style="height:100px" @click.stop.native="view(message.parentMessage, idx)" class="card__icon" :icon="getFileIcon(mediaFile.file, mediaFile.fileType)"></AppIcon>
+                                                        </span>
                                                     </div>
                                                     <p v-if="message.parentMessage.contents.length > 0" v-bind:class="[message.parentMessage.sender == context.username ? 'reply-to-own-message' : 'reply-to-others-message']">{{message.parentMessage.contents}}</p>
                                                     <span v-if="message.parentMessage.sendTime.length == 0" class="chat-message-info">Original message: {{message.parentMessage.sender}} | <i class="fa fa-spinner fa-spin"></i>  <i v-if="message.parentMessage.edited && !message.parentMessage.deleted">&nbsp; [edited]</i></span>
@@ -174,7 +178,9 @@
                                                 <div class="received-message">
                                                     <div v-for="(mediaFile, idx) in message.mediaFiles" class="attachment-view-container">
                                                         <img v-if="mediaFile.hasThumbnail" v-on:click="view(message, idx)" v-bind:src="mediaFile.thumbnail" style="cursor: pointer; margin-bottom: 10px; margin-top: 10px;"/>
-                                                        <span v-if="!mediaFile.hasThumbnail" style="height:100px;cursor: pointer" v-on:click="view(message, idx)" v-bind:class="['file', 'fa', getFileIcon(mediaFile.file, mediaFile.fileType), 'picon-timeline']"> </span>
+                                                        <span v-if="!mediaFile.hasThumbnail">
+                                                            <AppIcon style="height:100px" @click.stop.native="view(message, idx)" class="card__icon" :icon="getFileIcon(mediaFile.file, mediaFile.fileType)"></AppIcon>
+                                                        </span>
                                                     </div>
                                                     <p v-if="message.contents.length > 0">{{message.contents}}</p>
                                                     <span v-if="message.sendTime.length == 0" class="chat-message-info"><i class="fa fa-reply" @click="reply(message)" style="cursor: pointer"></i> | {{message.sender}} | <i class="fa fa-spinner fa-spin"></i> <i v-if="message.edited && !message.deleted">&nbsp; [edited]</i></span>
@@ -189,7 +195,9 @@
                                                 <div v-bind:class="['parent-message', message.parentMessage.sender == context.username ? 'sent-message' : 'received-message']">
                                                     <div v-for="(mediaFile, idx) in message.parentMessage.mediaFiles" class="attachment-view-container">
                                                         <img v-if="mediaFile.hasThumbnail" v-on:click="view(message.parentMessage, idx)" v-bind:src="mediaFile.thumbnail" style="cursor: pointer; margin-bottom: 10px; margin-top: 10px;"/>
-                                                        <span v-if="!mediaFile.hasThumbnail" style="height:100px;cursor: pointer" v-on:click="view(message.parentMessage, idx)" v-bind:class="['file', 'fa', getFileIcon(mediaFile.file, mediaFile.fileType), 'picon-timeline']"> </span>
+                                                        <span v-if="!mediaFile.hasThumbnail">
+                                                            <AppIcon style="height:100px" @click.stop.native="view(message.parentMessage, idx)" class="card__icon" :icon="getFileIcon(mediaFile.file, mediaFile.fileType)"></AppIcon>
+                                                        </span>
                                                     </div>
                                                     <p v-if="message.parentMessage.contents.length > 0" v-bind:class="[message.parentMessage.sender == context.username ? 'reply-to-own-message' : 'reply-to-others-message']">{{message.parentMessage.contents}}</p>
                                                     <span v-if="message.parentMessage.sendTime.length == 0" class="chat-message-info">Original message: {{message.parentMessage.sender}} | <i class="fa fa-spinner fa-spin"></i> <i v-if="message.parentMessage.edited && !message.parentMessage.deleted">&nbsp; [edited]</i></span>
@@ -200,7 +208,9 @@
                                                 <div class="sent-message">
                                                     <div v-for="(mediaFile, idx) in message.mediaFiles" class="attachment-view-container">
                                                         <img v-if="mediaFile.hasThumbnail" v-on:click="view(message, idx)" v-bind:src="mediaFile.thumbnail" style="cursor: pointer; margin-bottom: 10px; margin-top: 10px;"/>
-                                                        <span v-if="!mediaFile.hasThumbnail" style="height:100px;cursor: pointer" v-on:click="view(message, idx)" v-bind:class="['file', 'fa', getFileIcon(mediaFile.file, mediaFile.fileType), 'picon-timeline']"> </span>
+                                                        <span v-if="!mediaFile.hasThumbnail">
+                                                            <AppIcon style="height:100px" @click.stop.native="view(message, idx)" class="card__icon" :icon="getFileIcon(mediaFile.file, mediaFile.fileType)"></AppIcon>
+                                                        </span>
                                                     </div>
                                                     <p v-if="message.contents.length > 0">{{message.contents}}</p>
                                                     <span v-if="message.sendTime.length == 0" class="chat-message-info"><i class="fa fa-reply" @click="reply(message)" style="cursor: pointer"></i> <b>|</b> {{message.sender}} <b>|</b> <i class="fa fa-spinner fa-spin"></i> <b v-if="!message.deleted">|</b> <i v-if="!message.deleted" class="fa fa-edit" @click="edit(message)" style="cursor: pointer"></i> <b v-if="!message.deleted">|</b> <i v-if="!message.deleted" class="fa fa-trash-alt" @click="deleteMessage(message)" style="cursor: pointer"></i><i v-if="message.edited && !message.deleted">&nbsp; [edited]</i></span>
@@ -216,7 +226,9 @@
                             <div class="reply-draft-message">
                                 <div v-for="(mediaFile, idx) in replyToMessage.mediaFiles" class="attachment-view-container">
                                     <img v-if="mediaFile.hasThumbnail" v-on:click="view(replyToMessage, idx)" v-bind:src="mediaFile.thumbnail" style="cursor: pointer; margin-bottom: 10px; margin-top: 10px;"/>
-                                    <span v-if="!mediaFile.hasThumbnail" style="height:100px;cursor: pointer" v-on:click="view(replyToMessage, idx)" v-bind:class="['file', 'fa', getFileIcon(mediaFile.file, mediaFile.fileType), 'picon-timeline']"> </span>
+                                    <span v-if="!mediaFile.hasThumbnail">
+                                        <AppIcon style="height:100px" @click.stop.native="view(replyToMessage, idx)" class="card__icon" :icon="getFileIcon(mediaFile.file, mediaFile.fileType)"></AppIcon>
+                                    </span>
                                 </div>
                                 <p v-if="replyToMessage.contents.length > 0" v-bind:class="[replyToMessage.sender == context.username ? 'reply-to-own-message' : 'reply-to-others-message']">{{replyToMessage.contents}}</p>
                                 <span v-if="replyToMessage.sendTime.length == 0" class="chat-message-info">{{replyToMessage.sender}} | <i class="fa fa-spinner fa-spin"></i> <i v-if="replyToMessage.edited && !replyToMessage.deleted">&nbsp; [edited]</i></span>
@@ -235,7 +247,10 @@
                         <div v-if="attachmentList.length > 0" class="attachment">
                             <div v-for="attachment in attachmentList" class="attachment-container">
                                 <img v-if="attachment.mediaFile != null && attachment.mediaFile.getFileProperties().thumbnail.ref != null" v-bind:src="attachment.mediaFile.getBase64Thumbnail()" style="cursor: pointer; margin-bottom: 10px;"/>
-                                <span v-if="attachment.mediaFile != null && attachment.mediaFile.getFileProperties().thumbnail.ref == null" style="height:100px;cursor: pointer" v-bind:class="['file', 'fa', getFileIconFromFileAndType(attachment.mediaFile, attachment.mediaFile.getFileProperties().getType()), 'picon-timeline']"> </span>
+                                <span v-if="attachment.mediaFile != null && attachment.mediaFile.getFileProperties().thumbnail.ref == null">
+                                    <AppIcon style="height:100px" class="card__icon" :icon="getFileIcon(attachment.mediaFile, attachment.mediaFile.getFileProperties().getType())"></AppIcon>
+                                </span>
+
                                 <p class="attachment-delete-btn fa fa-trash-alt" @click="deleteAttachment(attachment)" style="cursor: pointer"></p>
                             </div>
                         </div>
@@ -271,12 +286,19 @@
 <script>
 const AppHeader = require("../components/AppHeader.vue");
 const Gallery = require("../components/drive/DriveGallery.vue");
-
+const ViewProfile = require("../components/profile/ViewProfile.vue");
+const Group = require("../components/Group.vue");
+const mixins = require("../mixins/mixins.js");
+const routerMixins = require("../mixins/router/index.js");
 const downloaderMixins = require("../mixins/downloader/index.js");
+const ProgressBar = require("../components/drive/ProgressBar.vue");
 
 module.exports = {
     components: {
 		Gallery,
+		ViewProfile,
+		Group,
+        ProgressBar,
 		AppHeader
     },
     data: function() {
@@ -322,20 +344,33 @@ module.exports = {
             draftMessages: [],
             selectedConversationIsReadOnly: true,
             closedChat: false,
-            isInitialised: false
+            isInitialised: false,
+            showProfileViewForm:false,
+            profile: {
+                firstName: "",
+                lastName: "",
+                biography: "",
+                primaryPhone: "",
+                primaryEmail: "",
+                profileImage: "",
+                status: "",
+                webRoot: ""
+            }
         }
     },
-    props: ['closeChatViewer', 'socialFeed', 'socialState', 'getFileIconFromFileAndType'
-        , 'displayProfile', 'checkAvailableSpace', 'convertBytesToHumanReadable', 'importCalendarFile','viewAction'],
+    props: [],
     computed: {
 		...Vuex.mapState([
+            'quotaBytes',
+            'usageBytes',
 		    'context',
-                    "socialData"
+            "socialData"
 		]),
         friendnames: function() {
             return this.socialData.friends;
         },
     },
+    mixins:[mixins, routerMixins, downloaderMixins],
     created: function() {
         let that = this;
         this.messenger = new peergos.shared.messaging.Messenger(this.context);
@@ -360,14 +395,65 @@ module.exports = {
         });
     },
     methods: {
-        getContext: function() {
-            return this.context;
+        viewAction: function(path, file) {
+            let app = this.getApp(file, path)
+            this.openFileOrDir(app, path, file.isDirectory() ? "" : file.getName())
+        },
+        displayProfile: function(username){
+            this.showSpinner = true;
+            let that = this;
+            let context = this.context;
+            peergos.shared.user.ProfilePaths.getProfile(username, context).thenApply(profile => {
+                var base64Image = "";
+                if (profile.profilePhoto.isPresent()) {
+                    var str = "";
+                    let data = profile.profilePhoto.get();
+                    for (let i = 0; i < data.length; i++) {
+                        str = str + String.fromCharCode(data[i] & 0xff);
+                    }
+                    if (data.byteLength > 0) {
+                        base64Image = "data:image/png;base64," + window.btoa(str);
+                    }
+                }
+                that.profile = {
+                    firstName: profile.firstName.isPresent() ? profile.firstName.get() : "",
+                    lastName: profile.lastName.isPresent() ? profile.lastName.get() : "",
+                    biography: profile.bio.isPresent() ? profile.bio.get() : "",
+                    primaryPhone: profile.phone.isPresent() ? profile.phone.get() : "",
+                    primaryEmail: profile.email.isPresent() ? profile.email.get() : "",
+                    profileImage: base64Image,
+                    status: profile.status.isPresent() ? profile.status.get() : "",
+                    webRoot: profile.webRoot.isPresent() ? profile.webRoot.get() : ""
+                };
+                that.showSpinner = false;
+                that.showProfileViewForm = true;
+            });
+        },
+        getFileIconFromFileAndType: function(file, type) {
+            // TODO unify this with the one on DriveGridCard
+            if (type == 'dir') 	return 'folder--72';
+            if (type == 'image') 	return 'file-image--72';
+            if (type == 'text') 	return 'file-text--72';
+            if (type == 'audio') 	return 'file-audio--72';
+            if (type == 'video') 	return 'file-video--72';
+            if (type == 'pdf') 	return 'file-pdf--72';
+            if (type == 'zip') 	return 'file-zip--72';
+            if (type == 'todo') 	return 'tasks--72';
+            if (type == 'calendar') 	return 'calendar--72';
+            if (type == 'contact file') 	return 'file-card--72';
+            if (type == 'powerpoint presentation' || type == 'presentation') 	return 'file-powerpoint--72';
+            if (type == 'word document' || type == 'text document') 	return 'file-word--72';
+            if (type == 'excel spreadsheet' || type == 'spreadsheet') 	return 'file-excel--72';
+                return 'file-generic--72';
+        },
+        checkAvailableSpace: function(fileSize) {
+            return Number(this.quotaBytes.toString()) - (Number(this.usageBytes.toString()) + fileSize);
         },
         checkMessageLength: function(e) {
             let newMessageValue = e.target.value;
             if (newMessageValue.length > this.newMessageMaxLength) {
                 this.newMessageText = this.truncateText(newMessageValue, this.newMessageMaxLength);
-                this.showMessage("Message has been truncated to " + this.newMessageMaxLength + " characters");
+                this.showToastWarning("Message has been truncated to " + this.newMessageMaxLength + " characters");
             }
         },
         getFileIcon: function(file, fileType) {
@@ -406,6 +492,14 @@ module.exports = {
                 body: message,
                 show: true
             });
+        },
+        showToastError: function(title, message) {
+            let bodyContents = body == null ? '' : ' ' + body;
+            this.$toast.error(title + bodyContents, {timeout:false});
+        },
+        showToastWarning: function(title, message) {
+            let bodyContents = body == null ? '' : ' ' + body;
+            this.$toast(title + bodyContents);
         },
         resizeHandler: function() {
             var left = document.getElementById("chat-left-panel");
@@ -575,12 +669,12 @@ module.exports = {
                         future.complete(true);
                     }).exceptionally(function(throwable) {
                         console.log(throwable);
-                        that.showMessage("error deleting attachment");
+                        that.showToastError("error deleting attachment");
                         future.complete(false);
                     });
                 }).exceptionally(function(throwable) {
                     console.log(throwable);
-                    that.showMessage("error finding attachment");
+                    that.showToastError("error finding attachment");
                     future.complete(false);
                 });
             }
@@ -616,7 +710,7 @@ module.exports = {
                 document.getElementById("message-input").focus();
             });
         },
-        profile: function(conversation) {
+        viewProfile: function(conversation) {
             this.displayProfile(conversation.participants[0], false);
         },
         launchUploadDialog: function() {
@@ -625,14 +719,14 @@ module.exports = {
         dndChatDrop: function(evt) {
             evt.preventDefault();
             if (this.selectedConversationId == null) {
-                this.showMessage("Select chat before adding media");
+                this.showToastError("Select chat before adding media");
                 return;
             }
             let entries = evt.dataTransfer.items;
             for(var i=0; i < entries.length; i++) {
                 let entry = entries[i].webkitGetAsEntry();
                 if (entry.isDirectory || !entry.isFile) {
-                    this.showMessage("Only files can be dragged and dropped");
+                    this.showToastError("Only files can be dragged and dropped");
                     return;
                 }
             }
@@ -661,14 +755,12 @@ module.exports = {
                 }
                 this.filesToViewInGallery = files;
                 this.showEmbeddedGallery = true;
-            } else if(currentMediaItem.fileType == 'calendar'){
-                this.importCalendarFile(false, currentMediaItem.file);
             } else {
                 let slash = currentMediaItem.path.lastIndexOf('/');
                 let dir = currentMediaItem.path.substring(0, slash);
                 let filename = currentMediaItem.path.substring(slash +1);
-                if(currentMediaItem.fileType == 'pdf' || currentMediaItem.fileType == 'text'){
-                    this.viewAction(dir, filename);
+                if(currentMediaItem.fileType == 'pdf' || currentMediaItem.fileType == 'text' || currentMediaItem.fileType == 'calendar'){
+                    this.viewAction(dir, currentMediaItem.file);
                 } else {
                     this.downloadFile(currentMediaItem.file);
                 }
@@ -680,7 +772,7 @@ module.exports = {
             let reader = new browserio.JSFileReader(mediaFile);
             let java_reader = new peergos.shared.user.fs.BrowserFileReader(reader);
             if (mediaFile.size > 200 * 1024 * 1024) {
-                that.showMessage("Media file greater than 200 MiB not currently supported!", "Instead, you can upload a larger file to your drive and share it with a secret link here");
+                that.showToastError("Media file greater than 200 MiB not currently supported!", "Instead, you can upload a larger file to your drive and share it with a secret link here");
                 future.complete(null);
             } else {
                 let fileExtension = "";
@@ -697,12 +789,12 @@ module.exports = {
                         let file = fileOpt.ref;
                         future.complete({mediaItem: pair.right, mediaFile: file});
                     }).exceptionally(err => {
-                        that.showMessage("unable to get uploaded media");
+                        that.showToastError("unable to get uploaded media");
                         console.log(err);
                         future.complete(null);
                     });
                 }).exceptionally(err => {
-                    that.showMessage("unable to upload media");
+                    that.showToastError("unable to upload media");
                     console.log(err);
                     future.complete(null);
                 });
@@ -724,11 +816,13 @@ module.exports = {
                 var thumbnailAllocation = Math.min(100000, mediaFile.size / 10);
                 var resultingSize = mediaFile.size + thumbnailAllocation;
                 var progress = {
-                    show:true,
                     title:"Encrypting and uploading " + mediaFile.name,
                     done:0,
-                    max:resultingSize
+                    max:resultingSize,
+                    name: mediaFile.name
                 };
+                this.$toast({component: ProgressBar,props:  progress,}
+                    , { icon: false , timeout:false, id: mediaFile.name})
                 this.progressMonitors.push(progress);
                 progressBars.push(progress);
             }
@@ -772,7 +866,7 @@ module.exports = {
             let spaceAfterOperation = this.checkAvailableSpace(totalSize);
             if (spaceAfterOperation < 0) {
                 document.getElementById('uploadInput').value = "";
-                that.showMessage("Attachment(s) exceeds available Space",
+                that.showToastError("Attachment(s) exceeds available Space",
                     "Please free up " + this.convertBytesToHumanReadable('' + -spaceAfterOperation) + " and try again");
             } else {
                 this.uploadAllAttachments(files, conversationId);
@@ -783,8 +877,18 @@ module.exports = {
             let that = this;
             let updateProgressBar = function(len){
                 progress.done += len.value_0;
+                that.$toast.update(progress.name, {content:
+                    {
+                        component: ProgressBar,
+                        props:  {
+                        title: progress.title,
+                        done: progress.done,
+                        max: progress.max
+                        },
+                    }
+                });
                 if (progress.done >= progress.max) {
-                    progress.show = false;
+                    that.$toast.dismiss(progress.name);
                 }
             };
             this.uploadMedia(mediaFile, updateProgressBar, conversationId).thenApply(function(mediaResponse) {
@@ -1060,7 +1164,7 @@ module.exports = {
                 let friendsInChat = this.friendnames.filter(friend => participants.findIndex(v => v === friend) > -1);
                 if (friendsInChat.length == 0) {
                     conversation.chatVisibilityWarningDisplayed = true;
-                    this.showMessage("Chat no longer contains any of your friends. Your messages will not be seen by others");
+                    this.showToastError("Chat no longer contains any of your friends. Your messages will not be seen by others");
                 }
             }
         },
@@ -1079,7 +1183,7 @@ module.exports = {
             var that = this;
             let future = peergos.shared.util.Futures.incomplete();
             let chatController = this.allChatControllers.get(conversationId);
-            that.messenger.mergeAllUpdates(chatController.controller, this.socialState).thenApply(latestController => {
+            that.messenger.mergeAllUpdates(chatController.controller, this.socialData).thenApply(latestController => {
                 chatController.controller = latestController;
                 let origParticipants = latestController.getMemberNames().toArray();
                 let participants = that.removeSelfFromParticipants(origParticipants);
@@ -1143,7 +1247,7 @@ module.exports = {
                 future.complete(true);
             }).exceptionally(function(throwable) {
                 console.log(throwable);
-                that.showMessage("error deleting chat");
+                that.showToastError("error deleting chat");
                 future.complete(false);
             });
             return future;
@@ -1189,7 +1293,6 @@ module.exports = {
                 }
             }
             window.removeEventListener("resize", this.resizeHandler);
-            this.closeChatViewer();
         },
         truncateText: function(text, length) {
             return  text.length > length ? text.substring(0,length -3) + '...' : text;
@@ -1263,7 +1366,7 @@ module.exports = {
                         });
                     });
                 }).exceptionally(err => {
-                    that.showMessage("Unable to create chat");
+                    that.showToastError("Unable to create chat");
                     that.spinner(false);
                     console.log(err);
                     future.complete(false);
@@ -1421,7 +1524,7 @@ module.exports = {
                         chatController.controller = updatedController;
                         future.complete(true);
                     }).exceptionally(err => {
-                        that.showMessage("Unable to add members to chat");
+                        that.showToastError("Unable to add members to chat");
                         console.log(err);
                         future.complete(false);
                     });
@@ -1444,7 +1547,7 @@ module.exports = {
                 }).exceptionally(function(throwable) {
                     that.spinnerMessage = "";
                     console.log(throwable);
-                    that.showMessage("Unable to remove " + username + " from chat");
+                    that.showToastError("Unable to remove " + username + " from chat");
                     that.reduceRemovingInvitations(conversationId, membersToRemove, ++index, future);
                 });
             }
@@ -1476,7 +1579,7 @@ module.exports = {
                 }).exceptionally(function(throwable) {
                     that.spinnerMessage = "";
                     console.log(throwable);
-                    that.showMessage("Unable to add " + username + " as chat admin");
+                    that.showToastError("Unable to add " + username + " as chat admin");
                     that.reduceAddingAdmins(conversationId, adminsToAdd, ++index, future);
                 });
             }
@@ -1508,7 +1611,7 @@ module.exports = {
                 }).exceptionally(function(throwable) {
                     that.spinnerMessage = "";
                     console.log(throwable);
-                    that.showMessage("Unable to remove " + username + " as chat admin");
+                    that.showToastError("Unable to remove " + username + " as chat admin");
                     that.reduceRemovingAdmins(conversationId, adminsToRemove, ++index, future);
                 });
             }
@@ -1565,7 +1668,7 @@ module.exports = {
             let future = peergos.shared.util.Futures.incomplete();
             let chatController = this.allChatControllers.get(controller.chatUuid);
             let conversation = this.allConversations.get(controller.chatUuid);
-            that.messenger.mergeAllUpdates(controller, this.socialState).thenApply(updatedController => {
+            that.messenger.mergeAllUpdates(controller, this.socialData).thenApply(updatedController => {
                 chatController.controller = updatedController;
                 let origParticipants = updatedController.getMemberNames().toArray();
                 let participants = that.removeSelfFromParticipants(origParticipants);
@@ -1925,7 +2028,7 @@ module.exports = {
                 future.complete(true);
             }).exceptionally(function(throwable) {
                 console.log(throwable);
-                that.showMessage("Unable to send message");
+                that.showToastError("Unable to send message");
                 future.complete(false);
             });
             return future;
@@ -1940,7 +2043,7 @@ module.exports = {
                 future.complete(true);
             }).exceptionally(function(throwable) {
                 console.log(throwable);
-                that.showMessage("Unable to change Title");
+                that.showToastError("Unable to change Title");
                 future.complete(false);
             });
             return future;

@@ -1,6 +1,103 @@
+<template>
+<div class="modal-mask" @click="close">
+    <div class="modal-container full-height" @click.stop style="overflow-y:auto; max-width:1000px;">
+        <span @click="close" class="close">&times;</span>
+        <spinner v-if="showSpinner"></spinner>
+        <prompt
+                v-if="showPrompt"
+                v-on:hide-prompt="showPrompt = false"
+                :prompt_message='prompt_message'
+                :placeholder="prompt_placeholder"
+                :max_input_size="prompt_max_input_size"
+                :value="prompt_value"
+                :consumer_func="prompt_consumer_func">
+        </prompt>
+        <div class="modal-header">
+            <span>
+                <h4 style="text-align: center;" @click="changeGroupTitle()">{{ displayedTitle }}&nbsp;&nbsp;<i v-if="isAdmin" @click="changeGroupTitle()" class="fa fa-edit" aria-hidden="true"></i></h4>
+
+            </span>
+        </div>
+
+        <div class="modal-body">
+            <div class="container">
+              <div class="flex-container">
+                    <FormAutocomplete
+                            is-multiple
+                            v-model="targetUsernames"
+                            :options="friendNames"
+                            :maxitems="5"
+                            placeholder="please select user"
+                    />
+                  <div class="hspace-5" v-if="isAdmin">
+                      <input type="radio" id="member-access" value="Member" v-model="memberAccess">
+                      <label for="member-access" style="font-weight: normal;">Member</label>
+                  </div>
+                  <div class="hspace-5" v-if="isAdmin">
+                      <input type="radio" id="admin-access" value="Admin" v-model="memberAccess">
+                      <label for="admin-access" style="font-weight: normal;" data-toggle="tooltip" data-placement="bottom" title="Admins can change chat title and membership">Admin</label>
+                  </div>
+                <div style="padding:5px; display:flex;">
+                  <button :disabled="this.targetUsernames.slice().length == 0" class="btn btn-success" @click="addUsersToGroup()"> {{ addLabel }}</button>
+                </div>
+              </div>
+            </div>
+            <div v-if="isAdmin" class="modal-body modal-prominent">
+                <div class="container" ><p style="word-wrap;break-all;">
+                    Admins:</p>
+                    <div v-for="user in existingAdmins">
+                        <input :disabled="existingAdmins.length <= 1" type="checkbox" v-bind:id="user" v-bind:value="user" v-model="adminsToRemove"><span style="margin-left:10px">{{ user }}</span>
+                    </div>
+                    <button :disabled="existingAdmins.length <= 1 || adminsToRemove.length == 0" class="btn btn-success" v-on:click="removeAdminFromGroup()">Remove</button>
+                </div>
+            </div>
+            <div class="modal-body modal-prominent">
+                <div class="container" v-if="existingGroupMembers.length > 0"><p style="word-wrap;break-all;">
+                    Members:</p>
+                    <div v-if="!haveRemovedSelf">
+                        <input :disabled="isAdmin" v-if="!haveRemovedSelf" type="checkbox" v-bind:value="context.username" v-model="selectSelf"><span  v-if="!haveRemovedSelf" style="margin-left:10px">{{ context.username }}</span>
+                    </div>
+                    <div v-for="user in existingGroupMembers">
+                        <input :disabled="!isAdmin"  type="checkbox" v-bind:id="user" v-bind:value="user" v-model="membersSelected"><span style="margin-left:10px">{{ user }}</span>
+                    </div>
+                    <button :disabled="this.membersSelected.length == 0 && this.selectSelf.length == 0" class="btn btn-success" v-on:click="removeUserFromGroup()">Remove</button>
+                    <button v-if="isAdmin" :disabled="this.membersSelected.length == 0 && this.selectSelf.length == 0" class="btn btn-info" v-on:click="promoteToGroupAdmin()">Promote to Admin</button>
+                </div>
+                <div class="container" v-if="existingGroupMembers.length == 0"><p style="word-wrap;break-all;">
+                    Members:</p>
+                    <div v-if="!haveRemovedSelf">
+                        <input :disabled="isAdmin" v-if="!haveRemovedSelf" type="checkbox" v-bind:value="context.username" v-model="selectSelf"><span  v-if="!haveRemovedSelf" style="margin-left:10px">{{ context.username }}</span>
+                    </div>
+                    <button v-if="!haveRemovedSelf" :disabled="this.selectSelf.length == 0" class="btn btn-success" v-on:click="removeUserFromGroup()">Remove</button>
+                </div>
+            </div>
+            <error
+                    v-if="showError"
+                    v-on:hide-error="showError = false"
+                    :title="errorTitle"
+                    :body="errorBody">
+            </error>
+        </div>
+        <div class="modal-footer">
+            <slot name="footer">
+                <button class="btn btn-success" @click="updateGroupMembership">
+                    {{ updateLabel }}
+                </button>
+            </slot>
+        </div>
+    </div>
+</div>
+</template>
+
+<script>
+const FormAutocomplete = require("../components/form/FormAutocomplete.vue");
+const routerMixins = require("../mixins/router/index.js");
+
 module.exports = {
-    template: require('group.html'),
-    data: function() {
+	components: {
+	    FormAutocomplete,
+	},
+    data() {
         return {
             showSpinner: false,
             targetUsername: "",
@@ -26,20 +123,24 @@ module.exports = {
             memberAccess: "Member"
         }
     },
-    props: ['existingGroups', 'groupId', 'groupTitle', 'existingGroupMembers', 'friendNames', 'context', 'messages'
+    props: ['existingGroups', 'groupId', 'groupTitle', 'existingGroupMembers', 'friendNames'
         , 'updatedGroupMembership', 'existingAdmins'],
+    computed: {
+        ...Vuex.mapState([
+            'context',
+        ])
+    },
     created: function() {
         this.displayedTitle = this.groupTitle;
         if (this.groupId == "") {
             this.updateLabel = "Create";
         }
         this.isAdmin = this.existingAdmins.findIndex(v => v === this.context.username) > -1;
-        Vue.nextTick(this.setTypeAhead);
     },
     methods: {
         updateGroupMembership: function () {
             if (this.groupId == "" && this.displayedTitle == this.groupTitle) {
-                this.showMessage("Click on title to set " + this.genericLabel + " name");
+                this.showMessage(true, "Click on title to set " + this.genericLabel + " name");
             } else {
                 this.updatedGroupMembership(this.groupId, this.displayedTitle, this.existingGroupMembers.slice()
                     , this.existingAdmins.slice(), this.haveRemovedSelf);
@@ -66,7 +167,7 @@ module.exports = {
                 if (newName === '.' || newName === '..')
                     return;
                 if (!newName.match(/^[a-z\d\-_\s]+$/i)) {
-                    that.showMessage("Invalid " + that.genericLabel + " name. Use only alphanumeric characters plus space, dash and underscore");
+                    that.showMessage(true, "Invalid " + that.genericLabel + " name. Use only alphanumeric characters plus space, dash and underscore");
                     return;
                 }
                 setTimeout(function(){
@@ -74,7 +175,7 @@ module.exports = {
                     for (var i=0;i < that.existingGroups.length; i++) {
                         let existingGroupName = that.existingGroups[i];
                         if (existingGroupName == newName) {
-                            that.showMessage("Duplicate " + that.genericLabel + " name");
+                            that.showMessage(true, "Duplicate " + that.genericLabel + " name");
                             return;
                         }
                     }
@@ -86,12 +187,13 @@ module.exports = {
         close: function () {
             this.$emit("hide-group");
         },
-        showMessage : function (title, body) {
-            this.messages.push({
-                title: title,
-                body: body,
-                show: true
-            });
+        showMessage : function (isError, title, body) {
+            let bodyContents = body == null ? '' : ' ' + body;
+            if (isError) {
+                this.$toast.error(title + bodyContents, {timeout:false});
+            } else {
+                this.$toast(title + bodyContents)
+            }
         },
         removeUserFromGroup : function () {
             if(this.selectSelf.length > 0) {
@@ -135,11 +237,6 @@ module.exports = {
             }
             this.adminsToRemove = [];
         },
-        resetTypeahead: function() {
-            this.targetUsernames = [];
-            this.targetUsername = "";
-            $('#friend-name-input').tokenfield('setTokens', []);
-        },
         addUsersToGroup: function() {
             var usersToAdd = this.targetUsernames.slice();
             if (usersToAdd.length == 0) {
@@ -150,7 +247,6 @@ module.exports = {
             } else {
                 this.addAdminsToGroup(usersToAdd);
             }
-            this.resetTypeahead();
         },
         addMembersToGroup: function(usersToAdd) {
             if (usersToAdd.length == 0) {
@@ -201,61 +297,12 @@ module.exports = {
             } else {
                 this.addMembersToGroup(membersToAdd);
             }
-        },
-	    setTypeAhead: function() {
-            let allNames = this.friendNames;
-            var engine = new Bloodhound({
-              datumTokenizer: Bloodhound.tokenizers.whitespace,
-              queryTokenizer: Bloodhound.tokenizers.whitespace,
-              local: allNames
-            });
-
-            engine.initialize();
-
-            $('#friend-name-input').tokenfield({
-                minLength: 1,
-                minWidth: 1,
-                typeahead: [{hint: true, highlight: true, minLength: 1}, { source: suggestions }]
-            });
-
-            function suggestions(q, sync, async) {
-                var matches, substringRegex;
-                matches = [];
-                substrRegex = new RegExp(q, 'i');
-                $.each(allNames, function(i, str) {
-                    if (substrRegex.test(str)) {
-                        matches.push(str);
-                    }
-                });
-                sync(matches);
-            }
-            let that = this;
-            $('#friend-name-input').on('tokenfield:createtoken', function (event) {
-                //only select from available items
-            	var available_tokens = allNames;
-            	var exists = true;
-            	$.each(available_tokens, function(index, token) {
-            		if (token === event.attrs.value)
-            			exists = false;
-            	});
-            	if(exists === true) {
-            		event.preventDefault();
-                } else {
-                    //do not allow duplicates in selection
-                    var existingTokens = $(this).tokenfield('getTokens');
-                    $.each(existingTokens, function(index, token) {
-                        if (token.value === event.attrs.value)
-                            event.preventDefault();
-                    });
-                }
-            });
-            $('#friend-name-input').on('tokenfield:createdtoken', function (event) {
-        	    that.targetUsernames.push(event.attrs.value);
-            });
-
-            $('#friend-name-input').on('tokenfield:removedtoken', function (event) {
-        	    that.targetUsernames.pop(event.attrs.value);
-            });
         }
     }
 }
+</script>
+
+<style>
+
+
+</style>
