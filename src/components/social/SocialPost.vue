@@ -176,7 +176,7 @@ module.exports = {
             return this.isReady && !this.isPosting;
         },
         submitPost: function() {
-            if (this.isPosting) {
+            if (this.isPosting || this.post == '') {
                 return;
             }
             this.isPosting = true;

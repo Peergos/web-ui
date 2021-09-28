@@ -228,6 +228,7 @@ const Gallery = require("../components/drive/DriveGallery.vue");
 const ViewProfile = require("../components/profile/ViewProfile.vue");
 
 const routerMixins = require("../mixins/router/index.js");
+const mixins = require("../mixins/mixins.js");
 
 module.exports = {
     components: {
@@ -278,10 +279,8 @@ module.exports = {
             messenger: null
         }
     },
-    props: ['messages', 'socialFeedInstance',
-        'importCalendarFile', 'importSharedCalendar',
-        'convertBytesToHumanReadable', 'viewConversations'],
-	mixins:[routerMixins],
+    props: ['viewConversations'],
+	mixins:[routerMixins, mixins],
 
   	created: function() {
         // this.context = this.$store.state.userContext;
@@ -894,7 +893,7 @@ module.exports = {
             });
         },
         showMessage: function(title, body) {
-            that.$toast.error(title + body, {timeout:false, id: 'error'})
+            this.$toast.error(title + body, {timeout:false, id: 'error'})
         },
         joinConversation: function (entry) {
             let that = this;
