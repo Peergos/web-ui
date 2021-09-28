@@ -25,7 +25,7 @@
 			</div>
 		</transition-group>
 		<span class="slider__pagination">
-			{{ current }} / {{ slidesLength }}
+			{{ current + 1 }} / {{ slidesLength }}
 		</span>
 		<!-- <AppButton
 			class="slider__button button--prev"
