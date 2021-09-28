@@ -24,15 +24,15 @@
 				<AppTab title="Signup">
 					<Signup :token="token" />
 				</AppTab>
+                                <p class="demo--warning" v-if="isDemo">
+				    <strong>WARNING:</strong> This is a demo server and all data
+				    will be occasionally cleared. If you want to create a
+				    <i>permanent</i> account, please go to our
+				    <a class="line" href="https://beta.peergos.net?signup=true"
+				       >beta network</a>
+			        </p>
 			</AppTabs>
-			<p class="demo--warning" v-if="isDemo">
-				<strong>WARNING:</strong> This is a demo server and all data
-				will be occasionally cleared. If you want to create a
-				<i>permanent</i> account, please go to our
-				<a class="line" href="https://beta.peergos.net?signup=true"
-					>beta network</a
-				>
-			</p>
+			
 		</section>
 
     	<ServerMessages v-if="context != null"/>
@@ -357,9 +357,13 @@ section.login-register .demo--warning {
 	padding: 0 var(--app-margin) var(--app-margin);
 	max-width: 400px;
 	margin: 0 auto;
-	color: var(--color);
+	color: red;
 	background-color: var(--bg);
 	text-align: left;
+}
+
+section.login-register .demo--warning a {
+	color: cornflowerblue;
 }
 
 section.content {
