@@ -119,6 +119,26 @@
 		    }
 		}
 	    },
+        loadMessageThread: function(msgId) {
+            let messages = [];
+            if (msgId == null) {
+                return messages;
+            }
+            var finished = false;
+            while (!finished) {
+                let message = this.getMessage(msgId);
+                if (message == null) {
+                    break;
+                }
+                messages.push({id: message.id, sendTime: message.sendTime,
+                    contents: message.contents, from: message.from, visible: false});
+                if (message.previousMessageId == null || message.previousMessageId >= msgId) {
+                    finished = true;
+                }
+                msgId = message.previousMessageId;
+            }
+            return messages.reverse();
+        },
 	    getMessage: function (msgId) {
 		if (msgId != null) {
 		    //linear scan
@@ -229,7 +249,6 @@
                 this.showFeedbackForm = false;
                 this.messageId = null;
                 this.popConversation(submittedMsgId);
-                this.buildTabNavigation();
             },
 	},
     }
