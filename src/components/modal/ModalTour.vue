@@ -29,7 +29,7 @@ data() {
 			{
 				title: "Secure sharing",
 				description: "Securely share with friends on Peergos, or with anyone via a secret link.",
-				image: "images/tour/share.png"
+				image: "images/tour/share.jpg"
 			},
 			{
 				title: "Photo gallery",
@@ -54,12 +54,12 @@ data() {
 			{
 				title: "PDF viewer",
 				description: "Safely view PDF documents.",
-				image: "images/tour/pdf.png"
+				image: "images/tour/pdf.jpg"
 			},
 			{
 				title: "Tasks board",
 				description: "Organise and plan things with our task boards.",
-				image: "images/tour/tasks.png"
+				image: "images/tour/tasks.jpg"
 			},
 			{
 				title: "Calendar",
@@ -69,7 +69,7 @@ data() {
 			{
 				title: "Social Feed",
 				description: "Share posts and comments with your friends and followers.",
-				image: "images/tour/social-feed.png"
+				image: "images/tour/social-feed.jpg"
 			},
 		]
 	}
