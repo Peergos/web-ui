@@ -107,7 +107,7 @@
                                                 </a>
                                                 <img v-if="entry[0].hasThumbnail && !entry[0].isChat" v-on:click="view(entry[0])" v-bind:src="entry[0].thumbnail" style="cursor: pointer"/>
                                                 <button v-if="entry[0].isChat && entry[0].isNewChat" class="btn btn-success" @click="joinConversation(entry[0])" style="font-weight: bold;">Join</button>
-                                                <button v-if="entry[0].isChat && !entry[0].isNewChat" class="btn btn-success" @click="openConversations()" style="font-weight: bold;">View</button>
+                                                <button v-if="entry[0].isChat && !entry[0].isNewChat" class="btn btn-success" @click="openConversation(entry[0])" style="font-weight: bold;">View</button>
                                             </span>
                                         </div>
                                     </div>
@@ -279,7 +279,7 @@ module.exports = {
             messenger: null
         }
     },
-    props: ['viewConversations'],
+    props: [],
 	mixins:[routerMixins, mixins],
   	created: function() {
         // this.context = this.$store.state.userContext;
@@ -899,17 +899,15 @@ module.exports = {
             that.showSpinner = true;
             this.messenger.cloneLocallyAndJoin(entry.file).thenApply(res => {
                 that.showSpinner = false;
-                that.close();
-                that.viewConversations();
+                that.openConversation(entry);
             }).exceptionally(function(throwable) {
                 console.log("Unable to join Chat. Error:" + throwable.getMessage());
                 that.showMessage("Unable to join Chat");
                 that.showSpinner = false;
             });
         },
-        openConversations: function () {
-            this.close();
-            this.viewConversations();
+        openConversation: function (entry) {
+            this.viewAction(entry.path, entry.file);
         },
         view: function (entry) {
             let type = entry.file.props.getType();
@@ -1397,9 +1395,6 @@ module.exports = {
                 that.showMessage(throwable.getMessage());
                 that.showSpinner = false;
             });
-        },
-        close: function () {
-            this.$emit("hide-timeline");
         }
     },
     computed: {
