@@ -10,12 +10,14 @@
 		<DriveHeader
 			:gridView="isGrid"
 			:isWritable="isWritable"
+			:canPaste="isPasteAvailable"
 			:path="path"
 			@switchView="switchView()"
 			@goBackToLevel="goBackToLevel($event)"
 			@askMkdir="askMkdir()"
 			@createFile="createTextFile()"
-			@search="openSearch(false)"
+		        @search="openSearch(false)"
+                        @paste="paste()"
 		/>
 
 		<AppPrompt
@@ -425,9 +427,9 @@ module.exports = {
 			if (typeof (this.clipboard) == undefined || this.clipboard == null || this.clipboard.op == null || typeof (this.clipboard.op) == "undefined")
 				return false;
 
-			if (this.selectedFiles.length != 1)
+			if (this.selectedFiles.length > 1)
 				return false;
-			var target = this.selectedFiles[0];
+			var target = this.selectedFiles.length == 1 ? this.selectedFiles[0] : this.currentDir;
 
 			if (this.clipboard.fileTreeNode.samePointer(target)) {
 				return false;
@@ -1420,9 +1422,9 @@ module.exports = {
 		},
 
 		paste() {
-			if (this.selectedFiles.length != 1)
+			if (this.selectedFiles.length > 1)
 				return;
-			var target = this.selectedFiles[0];
+			var target = this.selectedFiles.length == 1 ? this.selectedFiles[0] : this.currentDir;
 			var that = this;
 			this.closeMenu();
 			if (target.isDirectory()) {
