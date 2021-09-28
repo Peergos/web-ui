@@ -68,6 +68,7 @@
 						max-height: 100%;
 						text-align: center;
 						line-height: 200px;
+                                                object-fit: contain;
 					"
 					@click="next()"
 					v-on:longpress="openMenu($event, current)"
