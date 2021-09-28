@@ -42,6 +42,7 @@
 						<li @click="askForDirectories()">Upload folder</li>
 						<li @click="$emit('askMkdir')">New folder</li>
 						<li @click="$emit('createFile')">New file</li>
+                                                <li v-if="canPaste" @click="$emit('paste')">Paste</li>
 					</ul>
 				</AppDropdown>
 			</div>
@@ -67,6 +68,10 @@ module.exports = {
 		isWritable: {
 			type: Boolean,
 			default: true
+		},
+		canPaste: {
+			type: Boolean,
+			default: false
 		},
 		path:{
 			type: Array,
