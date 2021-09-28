@@ -1,48 +1,47 @@
 <template>
 <transition name="modal">
-	<div class="modal-mask" @click="close">
+    <div class="modal-mask" @click="close">
     	<meta http-equiv="content-type" content="text/html; charset=utf-8" />
-    	<div style="height:20%"></div>
-		<div class="modal-container" @click.stop style="height:70%;overflow-y:auto;width:60%;">
-			<span @click="close()" tabindex="0" v-on:keyup.enter="close()" aria-label="close" class="close">&times;</span>
-			<div class="modal-header">
-					<h2>{{title}}</h2>
-			</div>
-			<spinner v-if="showSpinner"></spinner>
-        <div class="modal-body">
-            <div id="social-post-main">
-                <p>
-                    <span>
-                    <button v-if="socialPostAction=='add' || socialPostAction=='reply'" class="btn btn-success" @click="triggerUpload">Upload Media</button>
-                    &nbsp;{{mediaFilenames}}</span>
-                    <input type="file" id="uploadInput" @change="uploadFiles" style="display:none;" multiple accept="audio/*,video/*,image/*" />
-                </p>
-                <p>
-                    <textarea id="social-post-text" style="width:100%;resize: none;" rows=2 :placeholder="textAreaPlaceholder" maxlength="1000" v-model="post"></textarea>
-                </p>
-                <div v-if="isReady" class="flex-container">
-                    <div class="hspace-15">
-                        <label style="font-weight: normal;">Share post with:</label>
+    	<div class="social-post-container" @click.stop style="overflow-y:auto;">
+	    <span @click="close()" tabindex="0" v-on:keyup.enter="close()" aria-label="close" class="close">&times;</span>
+	    <div class="modal-header">
+		<h2>{{title}}</h2>
+	    </div>
+	    <spinner v-if="showSpinner"></spinner>
+            <div class="modal-body">
+                <div id="social-post-main">
+                    <p>
+                        <span class="full-width">
+                            <button v-if="socialPostAction=='add' || socialPostAction=='reply'" class="btn btn-success full-width" @click="triggerUpload">Upload Media</button>
+                            <div v-for="filename in mediaFilenames">{{filename}}</div>
+                        </span>
+                        <input type="file" id="uploadInput" @change="uploadFiles" style="display:none;" multiple accept="audio/*,video/*,image/*" />
+                    </p>
+                    <p>
+                        <textarea id="social-post-text" style="width:100%;resize: none;" rows=7 :placeholder="textAreaPlaceholder" maxlength="1000" v-model="post"></textarea>
+                    </p>
+                    <div v-if="isReady" class="flex-container">
+                        <div class="hspace-15 full-width">
+                            <label style="font-weight: normal;">Share post with:</label>
+                        </div>
+                        <div v-if="shareWithSharerOnly" class="hspace-15">
+                            <input :disabled="socialPostAction=='edit'" type="radio" id="sharer-option" value="Sharer" v-model="shareWith">
+                            <label for="sharer-option" style="font-weight: normal;">{{currentSocialPostEntry.sharer}}</label>
+                        </div>
+                        <div v-if="!shareWithSharerOnly" class="hspace-15">
+                            <input :disabled="socialPostAction=='edit'" type="radio" id="friends-option" value="Friends" v-model="shareWith">
+                            <label for="friends-option" style="font-weight: normal;">Friends</label>
+                        </div>
+                        <div v-if="!shareWithSharerOnly" class="hspace-15">
+                            <input :disabled="!allowFollowerSharingOption || socialPostAction=='edit'" type="radio" id="followers-option" value="Followers" v-model="shareWith">
+                            <label for="followers-option" style="font-weight: normal;">Followers (Includes Friends)</label>
+                        </div>
+                        <div class="full-width">
+                            <button :disabled="!isPostingAvailable()" class="btn btn-success full-width" @click="submitPost()">
+                                Post
+                            </button>
+                        </div>
                     </div>
-                    <div v-if="shareWithSharerOnly" class="hspace-15">
-                        <input :disabled="socialPostAction=='edit'" type="radio" id="sharer-option" value="Sharer" v-model="shareWith">
-                        <label for="sharer-option" style="font-weight: normal;">{{currentSocialPostEntry.sharer}}</label>
-                    </div>
-                    <div v-if="!shareWithSharerOnly" class="hspace-15">
-                        <input :disabled="socialPostAction=='edit'" type="radio" id="friends-option" value="Friends" v-model="shareWith">
-                        <label for="friends-option" style="font-weight: normal;">Friends</label>
-                    </div>
-                    <div v-if="!shareWithSharerOnly" class="hspace-15">
-                        <input :disabled="!allowFollowerSharingOption || socialPostAction=='edit'" type="radio" id="followers-option" value="Followers" v-model="shareWith">
-                        <label for="followers-option" style="font-weight: normal;">Followers (Includes Friends)</label>
-                    </div>
-                    <div class="hspace-15">
-                        <button :disabled="!isPostingAvailable()" class="btn btn-success" @click="submitPost()">
-                            Post
-                        </button>
-                    </div>
-                </div>
-
                 </p>
             </div>
         </div>
@@ -138,7 +137,7 @@ module.exports = {
                 for(var i = 0; i < files.length; i++) {
                     mediaFilenames.push(files[i].name);
                 };
-                this.mediaFilenames = mediaFilenames.join(", ");
+                this.mediaFilenames = mediaFilenames;
             }
         },
         triggerUpload: function() {
@@ -406,4 +405,29 @@ module.exports = {
 	background-color: var(--bg);
 }
 
+.social-post-container {
+    width: 90%;
+    height: 80%;
+    margin: 10% auto;
+    padding: 20px 30px;
+    color: var(--color);
+    background-color: var(--bg);
+    border-radius: 2px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, .33);
+    transition: all .3s ease;
+    width: 60%;
+}
+
+@media (max-width: 600px) {
+    .social-post-container {
+        width: 100%;
+        height: 100%;
+        padding: 10px 10px;
+        margin: 0;
+    }
+}
+
+.full-width {
+    width: 100%;
+}
 </style>
