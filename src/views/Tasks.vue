@@ -1,7 +1,7 @@
 <template>
 <article class="app-view tasks-view" style="display:flex; flex-direction: column;">
     <AppHeader>
-	<template #primary>
+	<template #tools>
             <div class="">
 	        <span style="">
 	            <span v-if="isWritable" @click="saveTodoBoard" tabindex="0" v-on:keyup.enter="saveTodoBoard" style="color:black;font-size:2.5em;font-weight:bold;cursor:pointer;margin:.3em;" v-bind:class="['fas', saving ? 'fa-hourglass' : 'fa-save']" title="Save"></span>
