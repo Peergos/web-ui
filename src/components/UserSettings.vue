@@ -26,10 +26,10 @@
 					Admin Panel
 				</li>
 				<li
-					v-on:keyup.enter="showRequestStorage()"
+                                        v-on:keyup.enter="showRequestStorage()"
 					@click="showRequestStorage()"
 				>
-					Storage
+					Account
 				</li>
 				<li class="divider"></li>
 				<li v-on:keyup.enter="showProfile()" @click="showProfile()">
@@ -103,7 +103,7 @@ module.exports = {
 	},
 	computed: {
 		...Vuex.mapState(['isLoggedIn', 'isAdmin', 'context', 'isDark']),
-		...Vuex.mapGetters(['currentTheme'])
+		...Vuex.mapGetters(['currentTheme', 'isPaid'])
 	},
 	methods: {
 		displayProfile() {
@@ -134,9 +134,13 @@ module.exports = {
 			that.showAdmin = true;
 		    });
 		},
-		showRequestStorage() {
-			this.$store.commit("CURRENT_MODAL", "ModalSpace");
-		},
+	    showRequestStorage() {
+                if(this.isPaid){
+		    this.$store.commit('CURRENT_MODAL', 'ModalPro');
+		}else{
+		    this.$store.commit('CURRENT_MODAL', 'ModalSpace');
+		}
+	    },
 		showProfile() {
 			this.$store.commit("CURRENT_MODAL", "ModalProfile");
 		},
