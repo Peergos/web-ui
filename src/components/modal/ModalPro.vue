@@ -17,9 +17,6 @@
 
 
 			</div>
-			<div v-else class="card__meta">
-				<p>You will revert to the Basic quota<br/>at the end of the billing month.</p>
-			</div>
 
 			<div v-if="showCard">
 			    <iframe id="paymentframe" style="border: none;" width="450px" height="420px" :src="paymentUrl"/>
@@ -124,7 +121,7 @@ module.exports = {
 			} else if (bytes == 0) {
 			    that.updatePayment()
 			    that.$store.commit("SET_MODAL", false)
-			    that.$toast.error(`Sorry to see you go. We'd love to know what we can do better. Make sure to delete enough data to return within your Basic quota. `,{timeout:false, id: 'pro'})
+			    that.$toast.error("Sorry to see you go. We'd love to know what we can do better. Make sure to delete enough data to return within your Basic quota. You will revert to the Basic quota at the end of the billing month.", {timeout:false, id: 'pro'})
 			} else if (quotaBytes < bytes && bytes > 0 ) {
                             that.updatePayment(() => {
                                 that.updateError()
