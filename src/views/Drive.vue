@@ -1622,7 +1622,7 @@ module.exports = {
 		    var file = this.selectedFiles[0];
 		    var filename = file.getName();
                     
-                    var app = this.getApp(file, this.path);
+                    var app = this.getApp(file, this.getPath);
                     if (app === "Gallery")
                         this.showGallery = true;
                     else if (app === "pdf")

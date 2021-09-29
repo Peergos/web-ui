@@ -13,8 +13,10 @@ module.exports = {
 	updateHistory(app, path, filename) {
 	    if (this.isSecretLink) {
                 const sidebarApps = ["Drive", "NewsFeed", "Tasks", "Social", "Calendar", "Chat"]
-                if (sidebarApps.includes(app))
+                if (sidebarApps.includes(app)) {
 		    this.$store.commit("CURRENT_VIEW", app);
+                    this.$store.commit('SET_PATH', (path + filename).split('/').filter(n => n.length > 0))
+                }
 		return;
             }
             path = this.canonical(path);
