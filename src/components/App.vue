@@ -301,7 +301,7 @@ module.exports = {
 	// still need to check this
 	gotoSecretLink(props) {
 	    var that = this;
-            this.$store.commit("IS_SECRET_LINK", true);
+            this.$store.commit("SET_IS_SECRET_LINK", true);
 	    peergos.shared.user.UserContext.fromSecretLink(
 		props.link,
 		that.network,
