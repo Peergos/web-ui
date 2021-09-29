@@ -203,7 +203,7 @@ module.exports = new Vuex.Store({
 			return state.context.getQuota().thenApply(q => {
 			    commit('SET_QUOTA', q)
 				// return q;
-				if (callback !== null) {
+				if (callback != null) {
 					callback(q)
 				}
 			});
@@ -270,7 +270,7 @@ module.exports = new Vuex.Store({
 
 				commit('SET_PENDING_INCOMING', socialState.pendingIncoming.toArray([]))
 
-				if (callback !== null) {
+				if (callback != null) {
 					callback()
 				}
 
