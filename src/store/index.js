@@ -29,6 +29,7 @@ module.exports = new Vuex.Store({
 
 		driveMenuTarget: null,
 		path: [],
+		currentFilename: "",
 
 		// urlProps: null
 
@@ -68,6 +69,9 @@ module.exports = new Vuex.Store({
 		},
 		getPath: (state) => {
 			return '/' + state.path.join('/') + (state.path.length > 0 ? "/" : "");
+		},
+		currentFilename: (state) => {
+			return state.currentFilename;
 		},
 		isPaid: (state) => {
 			return state.paymentProperties != null && state.paymentProperties.isPaid()
@@ -158,6 +162,9 @@ module.exports = new Vuex.Store({
 		},
 		SET_PATH(state, payload) {
 			state.path = payload;
+		},
+		SET_CURRENT_FILENAME(state, payload) {
+			state.currentFilename = payload;
 		},
 		// SET_URL_PROPS(state, payload) {
 		// 	state.urlProps = payload;

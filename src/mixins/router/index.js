@@ -15,7 +15,10 @@ module.exports = {
                 const sidebarApps = ["Drive", "NewsFeed", "Tasks", "Social", "Calendar", "Chat"]
                 if (sidebarApps.includes(app)) {
 		    this.$store.commit("CURRENT_VIEW", app);
-                    this.$store.commit('SET_PATH', (path + filename).split('/').filter(n => n.length > 0))
+                    if (app != "Drive") {
+                        this.$store.commit('SET_PATH', path.split('/').filter(n => n.length > 0))
+                        this.$store.commit('SET_CURRENT_FILENAME', filename)
+                    }
                 }
 		return;
             }

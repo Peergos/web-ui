@@ -85,12 +85,12 @@ module.exports = {
 	]),
 	...Vuex.mapGetters([
 	    'isSecretLink',
-	    'getPath'
+	    'getPath',
+	    'currentFilename',
 	]),
     },
 
     mounted(){
-	//this.updateHistory('Tasks', '/task' , null )
     },
 
     created: function() {
@@ -103,19 +103,9 @@ module.exports = {
             // otherwise list todo files in home dir and give choice of creating a new one or opening one of them
             const props = this.getPropsFromUrl();
             if (props.secretLink) {
-                this.loadPath(this.getPath)
-                /*let that = this;
-                this.context.getEntryPath().thenCompose(path => {
-                    return that.context.getByPath(path).thenCompose(dirOpt => {
-                        dirOpt.get().getChildren(that.context.crypto.hasher, that.context.network)
-                            .thenApply(children => {
-                                var arr = children.toArray();
-				if (arr.length == 1) {
-                                    that.loadPath(path + "/" + arr[0].getName());
-                                }
-                            })
-                    });
-                })*/
+                let path = this.getPath;
+                let filepath = path + (path.endsWith("/") ? "" : "/") + this.currentFilename;
+                this.loadPath(filepath)
             } else {
                 const path = props == null ? null : props.path;
 	        const filename = props == null ? null : props.filename;
