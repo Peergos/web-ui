@@ -1,14 +1,80 @@
+<template>
+<article class="chat-app">
+	<AppHeader>
+		<template #primary>
+			<h1>Tasks view</h1>
+		</template>
+	</AppHeader>
+    <div class="modal-mask-app" @click="close">
+        <div class="modal-container full-height" @click.stop style="width:100%;overflow-y:auto;padding:0;display:flex;flex-flow:column;">
+            <div class="modal-header-app">
+                <span style="position:absolute;top:0;right: 0.2em;">
+                    <span @click="close" style="color:black;font-size:3em;font-weight:bold;cursor:pointer;">&times;</span>
+                </span>
+            </div>
+
+            <div class="modal-body" style="padding:0;display:flex;flex-grow:1;">
+                <iframe id="email-client" :src="frameUrl()" style="width:100%;height:100%" frameBorder="0"></iframe>
+            </div>
+            <spinner v-if="showSpinner" :message="spinnerMessage"></spinner>
+            <warning
+                    v-if="showWarning"
+                    v-on:hide-warning="showWarning = false"
+                    :warning_message='warning_message'
+                    :warning_body="warning_body"
+                    :consumer_func="warning_consumer_func">
+            </warning>
+            <prompt
+                    v-if="showPrompt"
+                    v-on:hide-prompt="showPrompt = false"
+                    :prompt_message='prompt_message'
+                    :placeholder="prompt_placeholder"
+                    :max_input_size="prompt_max_input_size"
+                    :value="prompt_value"
+                    :consumer_func="prompt_consumer_func">
+            </prompt>
+            <confirm
+                    v-if="showConfirm"
+                    v-on:hide-confirm="showConfirm = false"
+                    :confirm_message='confirm_message'
+                    :confirm_body="confirm_body"
+                    :consumer_cancel_func="confirm_consumer_cancel_func"
+                    :consumer_func="confirm_consumer_func">
+            </confirm>
+            <message
+                    v-for="message in messages"
+                    v-on:remove-message="messages.splice(messages.indexOf(message), 1)"
+                    :title="message.title"
+                    :message="message.body">
+            </message>
+        </div>
+    </div>
+</article>
+</template>
+
+<script>
+const AppHeader = require("../components/AppHeader.vue");
+const Gallery = require("../components/drive/DriveGallery.vue");
+const ProgressBar = require("../components/drive/ProgressBar.vue");
+const mixins = require("../mixins/mixins.js");
+const routerMixins = require("../mixins/router/index.js");
+const downloaderMixins = require("../mixins/downloader/index.js");
+
 module.exports = {
-    template: require('email.html'),
+    components: {
+		Gallery,
+		AppHeader,
+		ProgressBar
+    },
     data: function() {
         return {
             CONFIG_FILENAME: 'App.config',
             EMAIL_FILE_EXTENSION: '.cbor',
             emailClientProperties: null,
-	        showSpinner: false,
-	        spinnerMessage: '',
-	        showWarning: false,
-	        showPrompt: false,
+            showSpinner: false,
+            spinnerMessage: '',
+            showWarning: false,
+            showPrompt: false,
             showPrompt: false,
             prompt_message: '',
             prompt_placeholder: '',
@@ -22,36 +88,104 @@ module.exports = {
             confirm_consumer_func: () => {},
             messageToTimestamp: new Map(),
             directoryPrefix: 'default',
-            isIframeInitialised: false
+            isIframeInitialised: false,
+            messages: [],
+            icalEventTitle: '',
+            icalEvent: ''
         }
     },
-    props: ['context', 'messages', 'importCalendarEvent', 'icalEventTitle', 'icalEvent', 'checkAvailableSpace', 'friendnames'],
+    props: [],
+    computed: {
+        ...Vuex.mapState([
+            'quotaBytes',
+            'usageBytes',
+             'context',
+             'socialData',
+             'path'
+        ]),
+        ...Vuex.mapGetters([
+            'isSecretLink',
+            'getPath'
+        ]),
+         friendnames: function() {
+             return this.socialData.friends;
+         }
+    },
+    mixins:[mixins, routerMixins, downloaderMixins],
     created: function() {
-        this.displaySpinner();
         let that = this;
-        peergos.shared.user.App.init(that.context, "email").thenCompose(emailApp => {
-            that.isPendingDirectoryCreated(emailApp).thenApply(isInit => {
-                if (! isInit) {
-                    that.askForEmailBridgeUser(emailApp);
-                } else {
-                    peergos.shared.email.EmailClient.load(emailApp, that.context.crypto, that.context).thenApply(emailClient => {
-                        emailClient.getEmailAddress().thenApply(emailAddress => {
-                            if (emailAddress.ref == null) {
-                                that.showMessage("Awaiting approval from Email Administrator");
-                                that.close();
-                            } else {
-                                that.getPropertiesFile(emailApp).thenApply(props => {
-                                    that.emailClientProperties = props;
-                                    that.startListener(emailApp, emailClient, emailAddress.ref);
-                                });
-                            }
-                        });
-                    });
-                }
+        var query = new URLSearchParams(window.location.search)
+        if (query.get("email") == null) {
+            this.$toast.error("Email client not configured", {timeout:false});
+            Vue.nextTick(function() {
+                that.close();
             });
-        });
+        } else {
+            this.displaySpinner();
+            peergos.shared.user.App.init(that.context, "email").thenCompose(emailApp => {
+                that.isPendingDirectoryCreated(emailApp).thenApply(isInit => {
+                    if (! isInit) {
+                        that.askForEmailBridgeUser(emailApp);
+                    } else {
+                        peergos.shared.email.EmailClient.load(emailApp, that.context.crypto, that.context).thenApply(emailClient => {
+                            emailClient.getEmailAddress().thenApply(emailAddress => {
+                                if (emailAddress.ref == null) {
+                                    that.showToast("Awaiting approval from Email Administrator");
+                                    that.close();
+                                } else {
+                                    that.getInputParameters().thenApply(done => {
+                                        that.getPropertiesFile(emailApp).thenApply(props => {
+                                            that.emailClientProperties = props;
+                                            that.startListener(emailApp, emailClient, emailAddress.ref);
+                                        });
+                                    });
+                                }
+                            });
+                        });
+                    }
+                });
+            });
+        }
     },
     methods: {
+        getInputParameters: function() {
+            let that = this;
+            let future = peergos.shared.util.Futures.incomplete();
+            const urlProps = this.getPropsFromUrl();
+            if (urlProps.filename == '') {
+                future.complete(false);
+            } else {
+                this.context.getByPath(urlProps.path + '/' + urlProps.filename).thenApply(fileOpt => {
+                    if (! fileOpt.isPresent()) {
+                        that.$toast.error("Couldn't load calendar event file", {timeout:false});
+                        future.complete(false);
+                    } else {
+                        let file = fileOpt.get();
+                        let props = file.getFileProperties();
+                        file.getInputStream(that.context.network, that.context.crypto, props.sizeHigh(), props.sizeLow(), function(read) {})
+                        .thenCompose(function(reader) {
+                            var size = that.getFileSize(props);
+                            var data = convertToByteArray(new Int8Array(size));
+                            return reader.readIntoArray(data, 0, data.length)
+                            .thenApply(function(read){
+                                that.icalEventTitle = ""; //fixme set from event title somehow
+                                that.icalEvent = new TextDecoder().decode(data);
+                                future.complete(true);
+                            });
+                        });
+                    }
+                });
+            }
+            return future;
+        },
+        getFileSize: function(props) {
+                var low = props.sizeLow();
+                if (low < 0) low = low + Math.pow(2, 32);
+                return low + (props.sizeHigh() * Math.pow(2, 32));
+        },
+        checkAvailableSpace: function(fileSize) {
+            return Number(this.quotaBytes.toString()) - (Number(this.usageBytes.toString()) + fileSize);
+        },
         getContext: function() {
             return this.context;
         },
@@ -83,14 +217,14 @@ module.exports = {
                     }
                 }
                 if (! valid) {
-                    that.showMessage("Username does not exist:" + bridgeUsername);
+                    that.showError("Username does not exist:" + bridgeUsername);
                     that.close();
                 } else {
                     that.displaySpinner("Creating email directories");
                     peergos.shared.email.EmailClient.load(email, that.context.crypto).thenApply(client => {
                         client.connectToBridge(that.context, bridgeUsername).thenApply(res => {
                             that.removeSpinner();
-                            that.showMessage("Awaiting approval from Email Administrator");
+                            that.showToast("Awaiting approval from Email Administrator");
                             that.close();
                         });
                     });
@@ -156,11 +290,11 @@ module.exports = {
                     } else if(e.data.type=="requestConfirmAction") {
                         that.requestConfirmAction(e.data.action, e.data.message);
                     } else if(e.data.action=="requestImportCalendarAttachment") {
-                        that.requestImportCalendarAttachment(emailClient, e.data.attachment);
+                        that.requestImportCalendarAttachment(e.data.attachment);
                     } else if(e.data.action=="requestDownloadAttachment") {
                         that.requestDownloadAttachment(emailClient, e.data.attachment);
                     } else if(e.data.action=="requestImportCalendarEvent") {
-                        that.requestImportCalendarEvent(e.data.icalEvent);
+                        that.requestImportCalendarEvent(email, e.data.icalEvent);
                     } else if(e.data.action=="requestRefreshInbox") {
                         that.requestRefreshInbox(email, emailClient, false);
                     } else if(e.data.action=="requestRefreshSent") {
@@ -284,7 +418,7 @@ module.exports = {
                     future.complete(true);
                 }
             }).exceptionally(function(throwable) {
-                that.showMessage("Unable to delete email");
+                that.showError("Unable to delete email");
                 console.log(throwable.getMessage());
                 future.complete(false);
             });
@@ -304,7 +438,7 @@ module.exports = {
                     if (throwable.toString() == "java.util.NoSuchElementException") {
                         that.reduceDeletingAttachments(email, attachments, ++index, future);
                     } else {
-                        that.showMessage("Unable to delete attachment:" + attachment.filename);
+                        that.showError("Unable to delete attachment:" + attachment.filename);
                         console.log(throwable.getMessage());
                         future.complete(false);
                     }
@@ -319,12 +453,12 @@ module.exports = {
                 that.removeEmail(email, fromFolder, data, false).thenApply(function(res) {
                     future.complete(true);
                 }).exceptionally(function(throwable) {
-                    that.showMessage("Unable to delete moved email from source folder");
+                    that.showError("Unable to delete moved email from source folder");
                     console.log(throwable.getMessage());
                     future.complete(false);
                 });
             }).exceptionally(function(throwable) {
-                that.showMessage("Unable to move email");
+                that.showError("Unable to move email");
                 console.log(throwable.getMessage());
                 future.complete(false);
             });
@@ -338,7 +472,7 @@ module.exports = {
                 that.removeSpinner();
                 that.postMessage({type: 'respondToUpdateEmail'});
             }).exceptionally(function(throwable) {
-                that.showMessage("Unable to save email");
+                that.showError("Unable to save email");
                 console.log(throwable.getMessage());
             });
         },
@@ -352,31 +486,13 @@ module.exports = {
                     if (optFile.ref != null) {
                         that.downloadFile(optFile.ref, attachment.filename);
                     } else {
-                        that.showMessage("Unable to find email attachment:" + attachment.filename);
+                        that.showError("Unable to find email attachment:" + attachment.filename);
                     }
                 });
         },
-        requestImportCalendarAttachment: function(emailClient, attachment) {
-            let that = this;
-            this.retrieveAttachment(attachment.uuid).thenApply(function(optFile) {
-                if (optFile.ref != null) {
-                    let file = optFile.ref;
-                    const props = file.getFileProperties();
-                    file.getInputStream(that.context.network, that.context.crypto, props.sizeHigh(), props.sizeLow(), function(read){})
-                        .thenApply(function(reader) {
-                            var size = that.getFileSize(props);
-                            var data = convertToByteArray(new Int8Array(size));
-                            reader.readIntoArray(data, 0, data.length).thenApply(function(read){
-                                let text = new TextDecoder().decode(data);
-                                that.requestImportCalendarEvent(text);
-                            });
-                    }).exceptionally(function(throwable) {
-                        that.showMessage("Error loading calendar event");
-                    });
-                } else {
-                    that.showMessage("Unable to find calendar event:" + attachment.filename);
-                }
-            });
+        requestImportCalendarAttachment: function(attachment) {
+            let path = this.context.username + '/.apps/email/data/default/attachments';
+            this.openFileOrDir("Calendar", path, attachment.uuid);
         },
         buildEmailBytes: function(data) {
             let email = this.buildEmail(data, true);
@@ -436,7 +552,7 @@ module.exports = {
                         if (copiedToOutbox) {
                             that.postMessage({type: 'respondToSendEmail'});
                         } else {
-                            that.showMessage("Unable to Send Email to pending outbox");
+                            that.showError("Unable to Send Email to pending outbox");
                         }
                     });
                 });
@@ -459,7 +575,7 @@ module.exports = {
                     props.userFolders = [];
                     return props;
                 } else {
-                    that.showMessage("Unable to load file","Please close email client and try again");
+                    that.showError("Unable to load file","Please close email client and try again");
                 }
             });
         },
@@ -566,19 +682,19 @@ module.exports = {
                 if (newName === '.' || newName === '..')
                     return;
                 if (!newName.match(/^[a-z\d\-_\s]+$/i)) {
-                    that.showMessage("Invalid folder name. Use only alphanumeric characters plus space, dash and underscore");
+                    that.showError("Invalid folder name. Use only alphanumeric characters plus space, dash and underscore");
                     return;
                 }
                 setTimeout(function(){
                     //make sure names are unique
                     if (that.isInbuiltFolderName(newName)) {
-                        that.showMessage("Folder already exists!");
+                        that.showError("Folder already exists!");
                         return;
                     }
                     for (var i=0;i < that.emailClientProperties.userFolders.length; i++) {
                         let folder = that.emailClientProperties.userFolders[i];
                         if (folder.name == newName) {
-                            that.showMessage("Folder already exists!");
+                            that.showError("Folder already exists!");
                             return;
                         }
                     }
@@ -637,7 +753,7 @@ module.exports = {
                             that.postDeleteFolder(email, folderName);
                         } else {
                             that.removeSpinner();
-                            that.showMessage("Unable to delete Folder");
+                            that.showError("Unable to delete Folder");
                             console.log(throwable.getMessage());
                         }
                     });
@@ -664,10 +780,21 @@ module.exports = {
                 };
             this.showConfirm = true;
         },
-        requestImportCalendarEvent: function(icalEvent) {
+        requestImportCalendarEvent: function(email, icalEvent) {
+            //fixme. creating a temp file is not ideal
+            console.log("import ical event:" + icalEvent);
+            let encoder = new TextEncoder();
+            let uint8Array = encoder.encode(icalEvent);
+            let bytes = convertToByteArray(uint8Array);
+            let path = 'default/attachments';
+            let filename =  this.createUUID() + '.ics';
+            let fullPath = path + '/' + filename;
+            let icalFilePath = peergos.client.PathUtils.directoryToPath(fullPath.split('/'));
             let that = this;
-            Vue.nextTick(function() {
-                that.importCalendarEvent(icalEvent, that.context.username, false, true);
+            this.displaySpinner();
+            email.writeInternal(icalFilePath, bytes).thenApply(done => {
+                that.removeSpinner();
+                that.openFileOrDir("Calendar", this.context.username + '/.apps/email/data/' + path, filename);
             });
         },
         requestRefreshSent: function(emailApp, emailClient, filterStarredEmails) {
@@ -733,11 +860,17 @@ module.exports = {
                 show: true
             });
         },
+        showError: function(message) {
+            this.$toast.error(message, {timeout:false});
+        },
+        showToast: function(message) {
+            this.$toast(message)
+        },
         requestShowMessage: function(msg) {
             this.showMessage(msg);
         },
         close: function () {
-            this.$emit("hide-email");
+            this.openFileOrDir("Drive", this.context.username, "");
         },
         uploadForwardedAttachments: function(email, data) {
             let future = peergos.shared.util.Futures.incomplete();
@@ -762,12 +895,12 @@ module.exports = {
                     email.writeInternal(destFilePath, bytes).thenApply(res => {
                         that.reduceMovingForwardedAttachments(email, attachments, ++index, future);
                     }).exceptionally(function(throwable) {
-                        that.showMessage("Unable to move attachment to pending outbox:" + destFilePath);
+                        that.showError("Unable to move attachment to pending outbox:" + destFilePath);
                         console.log(throwable.getMessage());
                         future.complete(false);
                     });
                 }).exceptionally(function(throwable) {
-                    that.showMessage("Unable to read existing attachment:" + srcFilePath);
+                    that.showError("Unable to read existing attachment:" + srcFilePath);
                     console.log(throwable.getMessage());
                     future.complete(false);
                 });
@@ -781,7 +914,7 @@ module.exports = {
             }
             let spaceAfterOperation = this.checkAvailableSpace(totalSize);
             if (spaceAfterOperation < 0) {
-                that.showMessage("Attachment(s) exceeds available Space",
+                that.showError("Attachment(s) exceeds available Space",
                     "Please free up " + this.convertBytesToHumanReadable('' + -spaceAfterOperation) + " and try again");
                 return;
             }
@@ -829,7 +962,7 @@ module.exports = {
             emailClient.uploadAttachment(data).thenApply(function(uuid) {
                     future.complete(uuid);
             }).exceptionally(err => {
-                that.showMessage("unable to upload file:" + file.filename);
+                that.showError("unable to upload file:" + file.filename);
                 console.log(err);
                 future.complete(null);
             });
@@ -837,3 +970,8 @@ module.exports = {
         },
     }
 }
+
+</script>
+
+<style>
+</style>

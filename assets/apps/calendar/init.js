@@ -39,11 +39,13 @@ let handler = function (e) {
       } else if (e.data.type == "respondConfirmImportICSFile") {
           respondToConfirmImportICSFile(e.data.item, e.data.index);
       } else if(e.data.type == "importICSFile") {
-          loadCalendarAsGuest = e.data.loadCalendarAsGuest;
-          if(loadCalendarAsGuest) {
-              initialiseCalendar(true, []);
-              importICSFile(e.data.contents, e.data.username, e.data.isSharedWithUs, loadCalendarAsGuest, "My Calendar", true);
-          }
+            loadCalendarAsGuest = e.data.loadCalendarAsGuest;
+            if(loadCalendarAsGuest) {
+                initialiseCalendar(true, []);
+            } else {
+                setCalendars(true, []);
+            }
+            importICSFile(e.data.contents, e.data.username, e.data.isSharedWithUs, loadCalendarAsGuest, "My Calendar", true);
       }
 };
 window.addEventListener('message', handler);
@@ -990,7 +992,8 @@ function confirmImportICSFile(contents, username, isSharedWithUs, loadCalendarAs
         let year = dt.year();
         let month = dt.month() + 1;
         let recurringText = schedule.raw.hasRecurrenceRule ? ' (Recurring: ' + schedule.recurrenceRule + ')' : '';
-        let eventSummary = {datetime: moment(schedule.start.toUTCString()).format('YYYY MMMM Do, h:mm:ss a'), title: schedule.title + recurringText };
+        let stateText = schedule.state == CALENDAR_EVENT_CANCELLED ? 'CANCELLED ' : '';
+        let eventSummary = {datetime: moment(schedule.start.toUTCString()).toLocaleString(), title: stateText + schedule.title + recurringText };
         allEvents.push({calendarName: calendarName, year: year, month: month, Id: schedule.id, item:output,
                 summary: eventSummary, isRecurring: schedule.raw.hasRecurrenceRule});
     }
@@ -1857,11 +1860,18 @@ function emailEvent(schedule) {
     var instance = schedule.raw.parentId != null
         ? RecurringSchedules[RecurringSchedules.findIndex(v => v.id === schedule.raw.parentId)]
         : schedule;
-    let event = serialiseICal(instance, false);
     let recurringText = schedule.raw.hasRecurrenceRule ? ' (Recurring: ' + schedule.recurrenceRule + ')' : '';
     let stateText = schedule.state == CALENDAR_EVENT_CANCELLED ? 'CANCELLED ' : '';
     let title = stateText + schedule.title + ' - ' + moment(schedule.start.toUTCString()).toLocaleString() + recurringText;
-    mainWindow.postMessage({event: event, title: title, type: 'emailEvent'}, origin);
+
+    let dt = moment.utc(schedule.start.toUTCString());
+    let year = dt.year();
+    let month = dt.month() +1;
+    let calendarName = findCalendar(schedule.calendarId).name;
+    let scheduleId = schedule.raw.parentId != null ? schedule.raw.parentId : schedule.id;
+    let isRecurring = schedule.raw.hasRecurrenceRule || schedule.raw.isException;
+
+    mainWindow.postMessage({calendarName: calendarName, id: scheduleId, year: year, month: month, isRecurring: isRecurring, title: title, type: 'emailEvent'}, origin);
 }
 function shareCalendarEvent(schedule) {
    let dt = moment.utc(schedule.start.toUTCString());
@@ -2005,7 +2015,6 @@ function buildExtraFieldsToSummary(eventData, that) {
     downloadLink.onclick=function() {
         downloadEvent(eventData.schedule);
     };
-
     span1.appendChild(document.createTextNode('\u00A0\u00A0'));
     var img6 = document.createElement("img");
     img6.src = "./images/envelope.png";
