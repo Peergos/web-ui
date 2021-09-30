@@ -108,7 +108,8 @@ module.exports = {
 		]),
 		...Vuex.mapGetters([
 			'isSecretLink',
-			'getPath'
+			'getPath',
+			'currentFilename'
 		]),
         friendnames: function() {
             return this.socialData.friends;
@@ -153,27 +154,15 @@ module.exports = {
         let future = peergos.shared.util.Futures.incomplete();
         const props = this.getPropsFromUrl();
         if (props.secretLink) {
-            this.context.getEntryPath().thenCompose(path => {
-                that.context.getByPath(path).thenCompose(dirOpt => {
-                    dirOpt.get().getChildren(that.context.crypto.hasher, that.context.network)
-                        .thenApply(children => {
-                            var arr = children.toArray();
-                            if (arr.length == 1) {
-                                //secret link to calendar event
-                                future.complete({path: path, filename: arr[0].getName()});
-                            } else {
-                                let calInfFile = arr.filter(f => f.getName() =="calendar.inf");
-                                if (calInfFile.length == 1) {
-                                    //secret link to calendar
-                                    future.complete({path: path, filename: null});
-                                } else {
-                                    that.$toast.error("Couldn't find calendar", {timeout:false});
-                                    future.complete(null);
-                                }
-                            }
-                        })
-                });
-            })
+            let path = this.getPath;
+            let filename = this.currentFilename;
+            if (filename.length > 0) {
+                //secret link to calendar event
+                future.complete({path: path, filename: filename});
+            } else {
+                //secret link to calendar
+                future.complete({path: path, filename: null});
+            }
         } else {
             let isFile = props.filename != null && props.filename.length > 0;
             if (!isFile) {
@@ -213,7 +202,7 @@ module.exports = {
                 });
             }
       } else {
-            that.context.getByPath(path + '/' + filename).thenApply(fileOpt => {
+            that.context.getByPath(path + (path.endsWith("/") ? "" : '/') + filename).thenApply(fileOpt => {
                 if (! fileOpt.isPresent()) {
                     that.$toast.error("Couldn't load calendar file", {timeout:false});
                     future.complete(null);
@@ -322,7 +311,8 @@ module.exports = {
                 that.importICSFile(calendar, year, month);
             } else if (that.importCalendarPath != null) {
                 if (that.loadCalendarAsGuest) {
-                    let calendarDirectory = that.importCalendarPath.substring(that.importCalendarPath.lastIndexOf('/') +1);
+                    let pathArr = that.importCalendarPath.split('/').filter(n => n.length > 0)
+                    let calendarDirectory = pathArr[pathArr.length - 1];
                     that.readCalendarFile(calendar, that.owner, calendarDirectory).thenApply(function(json) {
                         that.calendarProperties = new Object();
                         that.calendarProperties.calendars = [];

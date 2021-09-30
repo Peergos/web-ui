@@ -546,13 +546,12 @@ module.exports = {
                                                             const filename = arr[0].getName();
                                                             that.selectedFiles = that.files.filter(f => f.getName() == filename);
 						            that.openFile();
-				 			    //that.updateFiles(arr[0].getFileProperties().name);
 				 			};
 				 			that.onUpdateCompletion.push(open);
 				 		    }
 				 		} else {
                                                     let app = that.getApp(file.get(), linkPath);
-                                                    that.openFileOrDir(app, linkPath, file.get());
+                                                    that.openFileOrDir(app, linkPath, "");
                                                 }
 				 	    })
 				 	});
@@ -1622,7 +1621,7 @@ module.exports = {
 		    var file = this.selectedFiles[0];
 		    var filename = file.getName();
                     
-                    var app = this.getApp(file, this.path);
+                    var app = this.getApp(file, this.getPath);
                     if (app === "Gallery")
                         this.showGallery = true;
                     else if (app === "pdf")
