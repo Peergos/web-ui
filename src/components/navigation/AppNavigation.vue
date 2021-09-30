@@ -25,7 +25,8 @@
 			<MenuItem label="Tasks" icon="tasks" view="Tasks" />
 			<MenuItem label="Social" icon="social" view="Social" />
 			<MenuItem label="Calendar" icon="calendar" view="Calendar" />
-                        <MenuItem v-if="showChat" label="Chat" icon="chat" view="Chat" />
+            <MenuItem v-if="showChat" label="Chat" icon="chat" view="Chat" />
+            <MenuItem v-if="showEmail" label="Email" icon="email" view="Email" />
 		</ul>
 
 
@@ -54,10 +55,14 @@ module.exports = {
 		isDark() {
 			return this.$store.state.isDark;
 		},
-                showChat() {
-                    var query = new URLSearchParams(window.location.search)
-                    return query.get("chat") == "true";
-                }
+        showChat() {
+            var query = new URLSearchParams(window.location.search)
+            return query.get("chat") == "true";
+        },
+        showEmail() {
+            var query = new URLSearchParams(window.location.search)
+            return query.get("email") == "true";
+        }
 	},
 	methods: {
 		toggleSidebar() {

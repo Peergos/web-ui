@@ -2,7 +2,8 @@ module.exports = {
     template: require('appgrid.html'),
     data: function() {
         return {
-            chatIsAvailable: false
+            chatIsAvailable: false,
+            emailIsAvailable: false
         };
     },
     props: ["context", "social", "canUpgrade"],
@@ -10,11 +11,16 @@ module.exports = {
         const href = window.location.href;
         if (href.includes("?chat=true"))
             this.chatIsAvailable = true;
+        if (href.includes("?email=true"))
+            this.emailIsAvailable = true;
     },
     methods: {
         iconCount: function() {
             var appCount = 10;
             if (this.chatIsAvailable) {
+                appCount++;
+            }
+            if (this.emailIsAvailable) {
                 appCount++;
             }
             return appCount + (this.canUpgrade ? 1 : 0);
@@ -54,6 +60,9 @@ module.exports = {
         },
         showUpgrade: function() {
             this.$emit("upgrade");
+        },
+        showEmail: function() {
+            this.$emit("email");
         }
     },
 };

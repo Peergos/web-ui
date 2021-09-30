@@ -72,6 +72,12 @@
                 <label class="app-icon-title">Chat</label>
             </span>
         </a>
+        <a v-if="emailIsAvailable" @click="showEmail" class="app-grid-item">
+             <span class="app-icon">
+                <span data-toggle="tooltip" data-placement="bottom" title="Email" class="fa fa-envelope" style="cursor: pointer;"/>
+                <label class="app-icon-title">Email</label>
+             </span>
+        </a>
         <div v-if="this.iconCount() % 2 == 1" class="app-grid-item app-grid-filler-2"></div>
         <div v-if="this.iconCount() % 3 == 1" class="app-grid-item app-grid-filler-3"></div>
         <div v-if="this.iconCount() % 3 == 2 || this.iconCount() % 3 == 1" class="app-grid-item app-grid-filler-3"></div>

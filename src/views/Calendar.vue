@@ -210,7 +210,6 @@ module.exports = {
                 }
                 let file = fileOpt.get();
                 let props = file.getFileProperties();
-                let that = this;
                 file.getInputStream(that.context.network, that.context.crypto, props.sizeHigh(), props.sizeLow(), function(read) {})
                 .thenCompose(function(reader) {
                     var size = that.getFileSize(props);
@@ -284,8 +283,10 @@ module.exports = {
                     that.loadAdditional(calendar, e.data.year, e.data.month, 'loadAdditional');
                 } else if(e.data.type=="downloadEvent") {
                     that.downloadEvent(calendar, e.data.title, e.data.event);
+                } else if(e.data.type=="emailEvent") {
+                    that.emailEvent(e.data.calendarName, e.data.id, e.data.year, e.data.month, e.data.isRecurring, e.data.title);
                 } else if(e.data.type=="shareCalendarEvent") {
-                    that.shareCalendarEvent(calendar, e.data.calendarName, e.data.id, e.data.year, e.data.month, e.data.isRecurring);
+                    that.shareCalendarEvent(e.data.calendarName, e.data.id, e.data.year, e.data.month, e.data.isRecurring);
                 } else if (e.data.action == 'requestRenameCalendar') {
                     that.renameCalendarRequest(calendar, e.data.calendar);
                 } else if (e.data.action == 'requestCalendarColorChange') {
@@ -295,7 +296,7 @@ module.exports = {
                 } else if (e.data.action == 'requestChoiceSelection') {
                     that.requestChoiceSelection(e.data.method, e.data.includeChangeAll);
                 } else if(e.data.action=="shareCalendar") {
-                    that.shareCalendar(calendar, e.data.calendar);
+                    that.shareCalendar(e.data.calendar);
                 }
             }
         });
@@ -493,7 +494,7 @@ module.exports = {
         if (that.loadCalendarAsGuest) {
             that.postMessage({type: 'importICSFile', contents: that.importFile,
                 isSharedWithUs: that.owner != that.context.username, loadCalendarAsGuest: that.loadCalendarAsGuest,
-                username: that.context.username });
+                username: that.context.username, confirmImport: that.confirmImport });
         } else {
             let importCalendarEventParams = {contents: that.importFile,
                 isSharedWithUs: that.owner != that.context.username,
@@ -968,13 +969,20 @@ module.exports = {
         link.click();
         this.removeSpinner();
     },
-    shareCalendarEvent: function(calendar, calendarName, id, year, month, isRecurring) {
+    emailEvent: function(calendarName, id, year, month, isRecurring, title) {
+        let calendarDirectory = this.findCalendarDirectory(calendarName);
+        let dirPath =  isRecurring ? calendarDirectory + "/recurring" : calendarDirectory + "/" + year + "/" + month;
+        let path = this.context.username + "/.apps/" + this.CALENDAR_DIR_NAME + '/' + this.DATA_DIR_NAME + "/" + dirPath;
+        let filename = id + '.ics';
+        this.openFileOrDir("Email", path, filename);
+    },
+    shareCalendarEvent: function(calendarName, id, year, month, isRecurring) {
         let calendarDirectory = this.findCalendarDirectory(calendarName);
         let dirPath =  isRecurring ? calendarDirectory + "/recurring" : calendarDirectory + "/" + year + "/" + month;
         this.shareWith(this.CALENDAR_DIR_NAME + '/' + this.DATA_DIR_NAME + "/" + dirPath,
             id + '.ics', false, true, 'Calendar Event');
     },
-    shareCalendar: function(calendar, calendar) {
+    shareCalendar: function(calendar) {
         let calendarDirectory = this.findCalendarDirectory(calendar.name);
         this.shareWith(this.CALENDAR_DIR_NAME + '/' + this.DATA_DIR_NAME, calendarDirectory, false, true,
             'Calendar - ' + calendar.name);
