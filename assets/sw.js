@@ -110,8 +110,33 @@ function createStream (port) {
   })
 }
 
+// PWA stuff
+var cacheName = 'peergos-offline';
+var filesToCache = [
+    '/',
+    '/index.html',
+    'css/vendor.css',
+    'css/peergos.css',
+    '/js/sha256.min.js',
+    'js/sha256stream.min.js',
+    'js/nacl-fast.min.js',
+    'js/scrypt.js',
+    'js/blake2b.js',
+    'js/vendor.js',
+    'js/peergoslib.nocache.js',
+    'js/wrapper.js',
+    'js/StreamSaver.js',
+    'js/emoji-button-3.1.1.min.js',
+    'js/init.js'
+];
+
 self.addEventListener('install', event =>  {
-    self.skipWaiting();
+    //    self.skipWaiting();
+    event.waitUntil(
+        caches.open(cacheName).then(function(cache) {
+            return cache.addAll(filesToCache);
+        })
+    );
 });
 self.addEventListener('activate', event => {
     clients.claim();
@@ -127,6 +152,16 @@ self.onfetch = event => {
         headers: { 'Access-Control-Allow-Origin': '*' }
       }))
     }
+
+    if (! url.startsWith("intercept")) {
+        /* Serve cached content when offline */
+        return event.respondWith(
+            caches.match(event.request).then(function(response) {
+                return response || fetch(event.request);
+            })
+        );
+    }
+    
     if (event.request.headers.get('range')) {
         const streamingEntry = streamingMap.get(url)
         if (!streamingEntry) {
