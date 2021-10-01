@@ -90,6 +90,8 @@ module.exports = {
 		return "Calendar";
 	    } else if (mimeType === "application/vnd.peergos-identity-proof") {
 		return "identity-proof";
+	    } else if (mimeType.startsWith("text/") && filename.endsWith(".md")) {
+		return "markdown";
 	    } else if (mimeType.startsWith("text/")) {
 		return "editor";
 	    } else {

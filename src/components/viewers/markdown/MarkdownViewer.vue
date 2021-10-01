@@ -10,13 +10,13 @@
 	            </span>
             </div>
             <div class="modal-body" style="margin:0;padding:0;display:flex;flex-grow:1;">
-                <gallery
+                <Gallery
                         v-if="showEmbeddedGallery"
                         v-on:hide-gallery="showEmbeddedGallery = false"
                         :files="filesToViewInGallery"
                         :hideGalleryTitle="true"
                         :context="context">
-                </gallery>
+                </Gallery>
                 <iframe id="browser-iframe" :src="frameUrl()" style="width:100%;height:100%;" frameBorder="0"></iframe>
             </div>
         </div>
@@ -25,10 +25,12 @@
 </template>
 
 <script>
+const Gallery = require("../../drive/DriveGallery.vue");
 const routerMixins = require("../../../mixins/router/index.js");
 
 module.exports = {
     components: {
+        Gallery
     },
     mixins:[routerMixins],
     data: function() {
@@ -62,11 +64,11 @@ module.exports = {
         const props = this.getPropsFromUrl();
         let completePath = null;
         if (props.secretLink) {
-            this.currentBrowserPath = this.getPath;
-            completePath = this.currentBrowserPath + (this.currentBrowserPath.endsWith("/") ? "" : "/") + this.currentFilename;
+            this.currentBrowserPath = this.getPath + (this.getPath.endsWith("/") ? "" : "/");
+            completePath = this.currentBrowserPath + this.currentFilename;
         } else {
-            this.currentBrowserPath = props.path;
-            completePath = this.currentBrowserPath + (this.currentBrowserPath.endsWith("/") ? "" : "/") + props.filename;
+            this.currentBrowserPath = props.path + (props.path.endsWith("/") ? "" : "/");
+            completePath = this.currentBrowserPath + props.filename;
         }
         let that = this;
         this.context.getByPath(completePath).thenApply(fileOpt => {
@@ -255,6 +257,11 @@ module.exports = {
                 future.complete(null);
             });
             return future;
+        },
+        getFileSize: function(props) {
+                var low = props.sizeLow();
+                if (low < 0) low = low + Math.pow(2, 32);
+                return low + (props.sizeHigh() * Math.pow(2, 32));
         }
     }
 }
