@@ -155,7 +155,9 @@ self.onfetch = event => {
       }))
     }
 
-    if (! url.startsWith("intercept")) {
+    let req = new URL(url);
+    let path = req.pathname;
+    if (! path.startsWith("/intercept")) {
         /* Serve cached content when offline */
         return event.respondWith(
             caches.match(event.request).then(function(response) {
