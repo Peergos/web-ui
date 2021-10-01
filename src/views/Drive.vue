@@ -103,21 +103,21 @@
 			:file="selectedFiles[0]"
 			:context="context">
 		</pdf>
-		<code-editor
+		<CodeEditor
 			v-if="showCodeEditor"
 			v-on:hide-code-editor="closeApps(); updateCurrentDir();"
-			v-on:update-refresh="forceUpdate++"
-			:file="selectedFiles[0]"
-			:context="context"
-			:messages="messages">
-		</code-editor>
-                <identity
-                    v-if="showIdentityProof"
-                    v-on:hide-identity-proof="closeApps()"
-                    :file="selectedFiles[0]"
-                    :context="context">
-                </identity>
-
+			v-on:update-refresh="forceUpdate++">
+		</CodeEditor>
+        <MarkdownViewer
+            v-if="showMarkdownViewer"
+            v-on:hide-markdown-viewer="closeApps()">
+        </MarkdownViewer>
+        <identity
+            v-if="showIdentityProof"
+            v-on:hide-identity-proof="closeApps()"
+            :file="selectedFiles[0]"
+            :context="context">
+        </identity>
 		<Share
 			v-if="showShare"
 			v-on:hide-share-with="closeShare"
@@ -159,6 +159,7 @@
 </template>
 
 <script>
+const CodeEditor = require("../components/code-editor/CodeEditor.vue");
 const DriveHeader = require("../components/drive/DriveHeader.vue");
 const DriveGrid = require("../components/drive/DriveGrid.vue");
 const DriveGridCard = require("../components/drive/DriveGridCard.vue");
@@ -166,6 +167,8 @@ const DriveGridDrop = require("../components/drive/DriveGridDrop.vue");
 const DriveTable = require("../components/drive/DriveTable.vue");
 const Gallery = require("../components/drive/DriveGallery.vue");
 const Identity = require("../components/identity-proof-viewer.vue");
+const MarkdownViewer = require("../components/viewers/markdown/MarkdownViewer.vue");
+
 const Share = require("../components/drive/DriveShare.vue");
 const Search = require("../components/Search.vue");
 
@@ -182,6 +185,7 @@ const router = require("../mixins/router/index.js");
 
 module.exports = {
 	components: {
+        CodeEditor,
 		DriveHeader,
 		DriveGrid,
 		DriveGridCard,
@@ -192,6 +196,7 @@ module.exports = {
 		ProgressBar,
 		Gallery,
 		Identity,
+		MarkdownViewer,
 		Share,
 		Search
 	},
@@ -225,6 +230,7 @@ module.exports = {
 			showCodeEditor: false,
 			showPdfViewer: false,
 			showTextViewer: false,
+            showMarkdownViewer:false,
 			showPassword: false,
 			showAccount: false,
 			showRequestSpace: false,
@@ -663,6 +669,7 @@ module.exports = {
 		    this.showPdfViewer = false;
 		    this.showCodeEditor = false;
 		    this.showTextViewer = false;
+		    this.showMarkdownViewer = false;
 		    this.showHexViewer = false;
 		    this.showSearch = false;
 		    this.selectedFiles = [];
@@ -706,16 +713,20 @@ module.exports = {
 			this.showGallery = true;
 		    else if (app == "pdf")
 			this.showPdfViewer = true;
-		    else if (app == "editor")
+		    else if (app == "editor") {
 			this.showCodeEditor = true;
-		    else if (app == "identity-proof")
+            this.showMarkdownViewer = false;
+		    } else if (app == "identity-proof")
 			this.showIdentityProof = true;
 		    else if (app == "hex")
 			this.showHexViewer = true;
 		    else if (app == "search")
 			this.showSearch = true;
-
-                    this.updateHistory(app, this.getPath, "");
+            else if (app == "markdown") {
+			this.showCodeEditor = false;
+            this.showMarkdownViewer = true;
+            }
+            this.updateHistory(app, this.getPath, "");
 		},
 		openSearch(fromRoot) {
 			var path = fromRoot ? "/" + this.context.username : this.getPath;
@@ -1626,13 +1637,17 @@ module.exports = {
                         this.showGallery = true;
                     else if (app === "pdf")
                         this.showPdfViewer = true;
-                    else if (app === "editor")
+                    else if (app === "editor") {
+                        this.showMarkdownViewer = false;
                         this.showCodeEditor = true;
-                    else if (app === "identity-proof")
+                    } else if (app === "identity-proof")
                         this.showIdentityProof = true;
                     else if (app === "hex")
                         this.showHexViewer = true;
-
+                    else if (app == "markdown") {
+                        this.showCodeEditor = false;
+                        this.showMarkdownViewer = true;
+                    }
                     this.openFileOrDir(app, this.getPath, filename)
 		},
 
