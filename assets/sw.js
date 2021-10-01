@@ -115,8 +115,9 @@ var cacheName = 'peergos-assets-v1';
 var filesToCache = [
     '/',
     '/index.html',
-    'css/vendor.css',
-    'css/peergos.css',
+    '/favicon.ico',
+    '/css/vendor.css',
+    '/css/peergos.css',
     '/js/sha256.min.js',
     'js/sha256stream.min.js',
     'js/nacl-fast.min.js',
