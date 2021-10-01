@@ -712,6 +712,7 @@ function createVideoThumbnailStreamingProm(future, asyncReader, size, filename, 
             console.log("unable to create video thumbnail onerror: " + e);
             if(! result.done) {
                 result.done = true;
+                video.pause();
                 future.complete("");
             }
         }
@@ -728,6 +729,7 @@ function createVideoThumbnailStreamingProm(future, asyncReader, size, filename, 
                             if (video.currentTime >= video.duration || video.currentTime > 30) {
                                 console.log("unable to create video thumbnail within time");
                                 result.done = true;
+                                video.pause();
                                 future.complete("");
                             }
                             let context = canvas.getContext('2d');
@@ -735,6 +737,7 @@ function createVideoThumbnailStreamingProm(future, asyncReader, size, filename, 
                             let imageData = context.getImageData(0, 0, width, height);
                             if (isLikelyValidImage(imageData, blackWhiteThreshold)) {
                                 result.done = true;
+                                video.pause();
                                 getThumbnailFromCanvas(canvas, null, width, height, width, future);
                             } else {
                                 if (! result.done) {
@@ -748,6 +751,7 @@ function createVideoThumbnailStreamingProm(future, asyncReader, size, filename, 
                 }catch(e) {
                     console.log("unable to create video thumbnail: " + e);
                     result.done = true;
+                    video.pause();
                     future.complete("");
                 }
             };
