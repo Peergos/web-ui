@@ -125,7 +125,7 @@ var filesToCache = [
     'js/vendor.js',
     'js/peergoslib.nocache.js',
     'js/wrapper.js',
-    'js/peerogs.js',
+    'js/peergos.js',
     'js/StreamSaver.js',
     'js/emoji-button-3.1.1.min.js',
     'js/init.js'
