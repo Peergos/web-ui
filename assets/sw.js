@@ -131,7 +131,7 @@ var filesToCache = [
 ];
 
 self.addEventListener('install', event =>  {
-    //    self.skipWaiting();
+    self.skipWaiting();
     event.waitUntil(
         caches.open(cacheName).then(function(cache) {
             return cache.addAll(filesToCache);
