@@ -157,11 +157,21 @@ self.onfetch = event => {
 
     let req = new URL(url);
     let path = req.pathname;
-    if (! path.startsWith("/intercept")) {
-        /* Serve cached content when offline */
+    if (! path.startsWith("/intercept") && ! path.startsWith("/api/") && ! path.startsWith("/peergos/")) {
+        /* Serve cached content when offline, and attempt an async update */
         return event.respondWith(
             caches.match(event.request).then(function(response) {
-                return response || fetch(event.request);
+                function fetchAndCache () {
+		    return fetch(event.request).then(response => {
+			caches.open(cacheName).then(cache => cache.put(event.request, response.clone()));
+			return response;
+		    });
+		}
+                if (!response) { return fetch(event.request); }
+                
+		// If exists in cache, return from cache while updating cache in background.
+		fetchAndCache();
+		return response;
             })
         );
     }
