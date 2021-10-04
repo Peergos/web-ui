@@ -468,7 +468,6 @@ module.exports = {
 		path(newPath, oldPath) {
 			console.log('drive oldPath: ', oldPath )
 			console.log('drive newPath: ', newPath )
-			this.updateCurrentDir();
 			if (newPath.length != oldPath.length) {
 				this.updateCurrentDir();
 			} else {

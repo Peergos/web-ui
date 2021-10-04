@@ -250,8 +250,7 @@ module.exports = {
 	    if (app === "Drive") {
                 const inDrive = this.currentView == "Drive";
 		this.$store.commit("CURRENT_VIEW", app);
-                if (inDrive) {
-                    this.$refs.appView.updateCurrentDir();
+                if (! inDrive) {
                     this.$refs.appView.closeApps();
                 }
 	    } else if (sidebarApps.includes(app)) {
