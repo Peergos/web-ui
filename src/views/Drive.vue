@@ -86,26 +86,26 @@
 
 		<Gallery
 			v-if="showGallery"
-			@hide-gallery="closeApps()"
+			@hide-gallery="closeApps(false)"
 			:files="sortedFiles"
 			:initial-file-name="selectedFiles[0] == null ? '' : selectedFiles[0].getFileProperties().name">
 		</Gallery>
 
 		<hex
 			v-if="showHexViewer"
-			v-on:hide-hex-viewer="closeApps()"
+			v-on:hide-hex-viewer="closeApps(false)"
 			:file="selectedFiles[0]"
 			:context="context">
 		</hex>
 		<pdf
 			v-if="showPdfViewer"
-			v-on:hide-pdf-viewer="closeApps()"
+			v-on:hide-pdf-viewer="closeApps(false)"
 			:file="selectedFiles[0]"
 			:context="context">
 		</pdf>
 		<code-editor
 			v-if="showCodeEditor"
-			v-on:hide-code-editor="closeApps(); updateCurrentDir();"
+			v-on:hide-code-editor="closeApps(true); updateCurrentDir();"
 			v-on:update-refresh="forceUpdate++"
 			:file="selectedFiles[0]"
 			:context="context"
@@ -113,7 +113,7 @@
 		</code-editor>
                 <identity
                     v-if="showIdentityProof"
-                    v-on:hide-identity-proof="closeApps()"
+                    v-on:hide-identity-proof="closeApps(false)"
                     :file="selectedFiles[0]"
                     :context="context">
                 </identity>
@@ -284,6 +284,9 @@ module.exports = {
 
 	mixins:[downloaderMixins, router],
 
+        mounted: function() {
+            this.updateCurrentDir();
+        },
 	computed: {
 		...Vuex.mapState([
 			'quotaBytes',
@@ -656,7 +659,7 @@ module.exports = {
 			this.onUpdateCompletion = [];
 		},
 
-		closeApps() {
+		closeApps(refresh) {
 		    this.showGallery = false;
                     this.showIdentityProof = false;
 		    this.showPdfViewer = false;
@@ -666,7 +669,8 @@ module.exports = {
 		    this.showSearch = false;
 		    this.selectedFiles = [];
 		    this.updateHistory("Drive", this.getPath, "");
-		    this.forceSharedRefreshWithUpdate++;
+                    if (refresh)
+		        this.forceSharedRefreshWithUpdate++;
 		},
 
 		navigateToAction(directory) {
@@ -691,7 +695,7 @@ module.exports = {
 			// this.path = path ? path.split('/') : [];
 			path == this.path ? path.split('/') : []
 
-                        this.closeApps();
+                        this.closeApps(false);
 			this.updateHistory("Drive", path, "");
 			this.updateCurrentDirectory(filename);
 		},
