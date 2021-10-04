@@ -1,7 +1,11 @@
 // TODO: split store in modules (UI, Settings, Storage, Drive,...)
 
 const helpers = require("../mixins/storage/index.js");
-
+function shallow(val) {
+    // tag a value so vue will only shallow watch it
+    val._isVue = true;
+    return val;
+}
 module.exports = new Vuex.Store({
 	state: {
 		windowWidth: null,
@@ -113,13 +117,13 @@ module.exports = new Vuex.Store({
 
 		// Settings
 		SET_CRYPTO(state, payload) {
-			state.crypto = payload;
+		    state.crypto = shallow(payload);
 		},
 		SET_NETWORK(state, payload) {
-			state.network = payload;
+		    state.network = shallow(payload);
 		},
 		SET_CONTEXT(state, payload) {
-			state.context = payload;
+		    state.context = shallow(payload);
 		},
 		SET_DOWNLOAD(state, payload) {
 			state.download = payload;
