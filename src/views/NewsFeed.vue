@@ -95,7 +95,7 @@
                                 </a>
                                 <span v-if="entry[0].sharer != context.username && !canLoadProfile(entry[0].sharer)">{{ entry[0].sharer }}</span>
                                 <span>{{ entry[0].info }}</span>
-                                <a v-if="entry[0].displayFilename" v-on:click="view(entry[0])" style="cursor: pointer">
+                                <a v-if="entry[0].displayFilename" v-on:click="viewFolder(entry[0])" style="cursor: pointer">
                                     <span :title="entry[0].link">{{ entry[0].name }}</span>
                                 </a>
                                 <div>
@@ -908,6 +908,9 @@ module.exports = {
         },
         openConversation: function (entry) {
             this.viewAction(entry.path, entry.file);
+        },
+        viewFolder: function (entry) {
+            this.openFileOrDir("Drive", entry.path, "")
         },
         view: function (entry) {
             let type = entry.file.props.getType();
