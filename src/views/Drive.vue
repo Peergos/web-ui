@@ -49,6 +49,10 @@
 						:type="file.getFileProperties().getType()"
 						@click.native="navigateDrive(file)"
 						@openMenu="openMenu(file)"
+						:dragstartFunc="dragStart"
+						:dropFunc="drop"
+						:file="file"
+						:itemIndex="index"
 					/>
 					<DriveGridDrop v-if="sortedFiles.length==0 && currentDir != null && currentDir.isWritable()">
 						Upload a file by dragging and dropping here or clicking the icon
@@ -433,8 +437,12 @@ module.exports = {
 			if (this.selectedFiles.length > 1)
 				return false;
 			var target = this.selectedFiles.length == 1 ? this.selectedFiles[0] : this.currentDir;
+			
+			if (target == null) {
+				return false;
+			}
 
-			if (this.clipboard.fileTreeNode.samePointer(target)) {
+			if (this.clipboard.fileTreeNode != null && this.clipboard.fileTreeNode.samePointer(target)) {
 				return false;
 			}
 
@@ -1665,7 +1673,79 @@ module.exports = {
 				return "dir";
 			return "file"
 		},
+        dragStart: function(ev, treeNode) {
+            console.log("dragstart");
 
+            ev.dataTransfer.effectAllowed='move';
+            var id = ev.target.id;
+            ev.dataTransfer.setData("text/plain", id);
+            var owner = treeNode.getOwnerName();
+            var me = this.context.username;
+            if (owner === me) {
+                console.log("cut");
+                this.clipboard = {
+                    parent: this.currentDir,
+                    fileTreeNode: treeNode,
+                    op: "cut"
+                };
+            } else {
+                console.log("copy");
+                ev.dataTransfer.effectAllowed='copy';
+                this.clipboard = {
+                    fileTreeNode: treeNode,
+                    op: "copy"
+                };
+            }
+        },
+        // DragEvent, FileTreeNode => boolean
+        drop: function(ev, target) {
+            console.log("drop");
+            ev.preventDefault();
+            var moveId = ev.dataTransfer.getData("text");
+            var id = ev.currentTarget.id;
+            var that = this;
+            if(id != moveId && target.isDirectory()) {
+                const clipboard = this.clipboard;
+                if (typeof(clipboard) ==  undefined || typeof(clipboard.op) == "undefined")
+                    return;
+                that.showSpinner = true;
+                if (clipboard.op == "cut") {
+        		    var name = clipboard.fileTreeNode.getFileProperties().name;
+                    console.log("drop-cut " + name + " -> "+target.getFileProperties().name);
+                    let filePath = peergos.client.PathUtils.toPath(that.path, name);
+                    clipboard.fileTreeNode.moveTo(target, clipboard.parent, filePath, this.context)
+                    .thenApply(function() {
+                        that.currentDirChanged();
+			            that.onUpdateCompletion.push(function() {
+                            that.showSpinner = false;
+                            that.clipboard = null;
+			            });
+                    }).exceptionally(function(throwable) {
+                        that.errorTitle = 'Error moving file';
+                        that.errorBody = throwable.getMessage();
+                        that.showError = true;
+                        that.showSpinner = false;
+                    });
+                } else if (clipboard.op == "copy") {
+                    console.log("drop-copy");
+                    var file = clipboard.fileTreeNode;
+                    var props = file.getFileProperties();
+                    file.copyTo(target, this.context)
+                    .thenApply(function() {
+                        that.currentDirChanged();
+                        that.onUpdateCompletion.push(function() {
+                            that.showSpinner = false;
+                            that.clipboard = null;
+                        });
+                    }).exceptionally(function(throwable) {
+                        that.errorTitle = 'Error copying file';
+                        that.errorBody = throwable.getMessage();
+                        that.showError = true;
+                        that.showSpinner = false;
+                    });
+                }
+            }
+        },
 		isProfileViewable: function() {
            try {
                if (this.currentDir.props.name != "/")
