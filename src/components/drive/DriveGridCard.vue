@@ -7,7 +7,7 @@
 			@click.stop.native="showMenu($event)"
 		/>
 
-		<figure>
+		<figure :id="itemIndex" draggable="true" @dragover.prevent @dragstart="dragstartFunc($event, file)" @drop="dropFunc($event, file)">
 			<img
 				class="cover"
 				v-if="src"
@@ -24,30 +24,17 @@
 <script>
 
 module.exports = {
-	props: {
-		filename: {
-			type: String,
-			default: "",
-			required:true
-		},
-		src: {
-			type: String,
-			default: "",
-			required:true
-		},
-		alt: {
-			type: String,
-			default: "",
-		},
-		srcset: {
-			type: String,
-			default: "",
-		},
-		type: {
-			type: String,
-			default: "",
-		},
-	},
+	props: [
+		'filename',
+		'src',
+		'alt',
+		'srcset',
+		'type',
+		'dragstartFunc',
+		'dropFunc',
+		'file',
+		'itemIndex'
+	],
 	computed:{
 		cardIcon(){
 			if (this.type == 'dir') 	return 'folder--72';
