@@ -437,8 +437,12 @@ module.exports = {
 			if (this.selectedFiles.length > 1)
 				return false;
 			var target = this.selectedFiles.length == 1 ? this.selectedFiles[0] : this.currentDir;
+			
+			if (target == null) {
+				return false;
+			}
 
-			if (this.clipboard.fileTreeNode.samePointer(target)) {
+			if (this.clipboard.fileTreeNode != null && this.clipboard.fileTreeNode.samePointer(target)) {
 				return false;
 			}
 
