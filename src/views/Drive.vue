@@ -541,6 +541,26 @@ module.exports = {
 				var path = that.initPath == null ? null : decodeURIComponent(that.initPath);
 				if (path != null && (path.startsWith(linkPath) || linkPath.startsWith(path))) {
                                     that.$store.commit('SET_PATH', path.split('/').filter(n => n.length > 0))
+                                    if (that.download || that.open) {
+				        that.context.getByPath(path)
+				            .thenApply(function (file) {
+				 	        if (! file.get().isDirectory()) {
+				 	            if (that.download) {
+				 		        that.downloadFile(file.get());
+				 	            } else if (that.open) {
+				 		        var open = () => {
+                                                            const filename = file.get().getName();
+                                                            that.selectedFiles = that.files.filter(f => f.getName() == filename);
+						            that.openFile();
+				 		        };
+				 		        that.onUpdateCompletion.push(open);
+				 	            }
+				 	        } else {
+                                                    let app = that.getApp(file.get(), linkPath);
+                                                    that.openFileOrDir(app, linkPath, "");
+                                                }
+				            });
+                                    }
 				} else {
                                     that.$store.commit('SET_PATH', linkPath.split('/').filter(n => n.length > 0))
                                     if (that.download || that.open)
