@@ -97,7 +97,8 @@ module.exports = {
             importFile: null,
             importCalendarPath: null,
             owner: null,
-            loadCalendarAsGuest: false
+            loadCalendarAsGuest: false,
+            hasEmail: false
         }
     },
     props: ['messages'],
@@ -131,6 +132,7 @@ module.exports = {
                     that.importFile = loadedParameters.importFile;
                     that.importCalendarPath = loadedParameters.importCalendarPath;
                     that.owner = loadedParameters.owner;
+                    that.hasEmail = loadedParameters.hasEmail;
                     that.loadCalendarAsGuest = that.isSecretLink;
                     peergos.shared.user.App.init(that.context, "calendar").thenCompose(calendar => {
                         if (that.loadCalendarAsGuest) {
@@ -183,11 +185,13 @@ module.exports = {
       }
       let path = inputParameters.path
       let filename = inputParameters.filename;
+      let query = new URLSearchParams(window.location.search)
+      let hasEmail = query.get("email") == "true";
       let that = this;
       if (filename == null) {
             if (path == that.context.username) {
                 future.complete({importFile: null, importCalendarPath: null,
-                    owner: that.context.username});
+                    owner: that.context.username, hasEmail: hasEmail});
             } else {
                 that.context.getByPath(path).thenApply(dirOpt => {
                     if (! dirOpt.isPresent()) {
@@ -197,7 +201,7 @@ module.exports = {
                         let dir = dirOpt.get();
                         let dirParts = path.split('/').filter(s => s.length > 0);
                         future.complete({importFile: null, importCalendarPath: path,
-                            owner: dirParts[0]});
+                            owner: dirParts[0], hasEmail: hasEmail});
                     }
                 });
             }
@@ -217,7 +221,7 @@ module.exports = {
                     return reader.readIntoArray(data, 0, data.length)
                     .thenApply(function(read){
                         future.complete({importFile: new TextDecoder().decode(data), importCalendarPath: null,
-                            owner: file.getOwnerName()});
+                            owner: file.getOwnerName(), hasEmail: hasEmail});
                     });
                 });
             });
@@ -241,7 +245,7 @@ module.exports = {
             iframe.contentWindow.postMessage(obj, '*');
         } else {
             let theme = this.$store.getters.currentTheme;
-            iframe.contentWindow.postMessage({type: 'ping', currentTheme: theme}, '*');
+            iframe.contentWindow.postMessage({type: 'ping', currentTheme: theme, hasEmail: this.hasEmail}, '*');
             let that = this;
             window.setTimeout(function() {that.postMessage(obj);}, 30);
         }
@@ -283,6 +287,8 @@ module.exports = {
                     that.loadAdditional(calendar, e.data.year, e.data.month, 'loadAdditional');
                 } else if(e.data.type=="downloadEvent") {
                     that.downloadEvent(calendar, e.data.title, e.data.event);
+                } else if(e.data.type=="sendEventToNativeEmailClient") {
+                    that.sendEventToNativeEmailClient(e.data.calendarName, e.data.id, e.data.year, e.data.month, e.data.isRecurring, e.data.title);
                 } else if(e.data.type=="emailEvent") {
                     that.emailEvent(e.data.calendarName, e.data.id, e.data.year, e.data.month, e.data.isRecurring, e.data.title);
                 } else if(e.data.type=="shareCalendarEvent") {
@@ -968,6 +974,22 @@ module.exports = {
         link.download = 'event - ' + title + '.ics';
         link.click();
         this.removeSpinner();
+    },
+    sendEventToNativeEmailClient: function(calendarName, id, year, month, isRecurring, title) {
+        let calendarDirectory = this.findCalendarDirectory(calendarName);
+        let dirPath =  isRecurring ? calendarDirectory + "/recurring" : calendarDirectory + "/" + year + "/" + month;
+        let path = this.context.username + "/.apps/" + this.CALENDAR_DIR_NAME + '/' + this.DATA_DIR_NAME + "/" + dirPath;
+        let filename = id + '.ics';
+        this.context.getByPath(path + '/' + filename).thenApply(fileOpt => {
+            if (fileOpt.isPresent()) {
+                let file = fileOpt.get();
+                let json = {open:true, secretLink:true,link:file.toLink()};
+                let body = 'Link to event: ' + window.location.origin + window.location.pathname + "#" + propsToFragment(json);
+                var link = document.createElement("a");
+                link.href = "mailto:?subject=" + escape(title) + "&body=" + body;
+                link.click();
+            }
+        });
     },
     emailEvent: function(calendarName, id, year, month, isRecurring, title) {
         let calendarDirectory = this.findCalendarDirectory(calendarName);
