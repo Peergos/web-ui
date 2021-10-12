@@ -1,6 +1,7 @@
 var mainWindow;
 var origin;
 var theme;
+var hasEmail;
 let handler = function (e) {
       // You must verify that the origin of the message's sender matches your
       // expectations. In this case, we're only planning on accepting messages
@@ -15,6 +16,7 @@ let handler = function (e) {
       origin = e.origin;
       if (e.data.type == "ping") {
           theme = e.data.currentTheme;
+          hasEmail = e.data.hasEmail;
           mainWindow.postMessage({type:'pong'}, e.origin);
       } else if (e.data.type == "load") {
           initialiseCalendar(e.data.username == null ? true : false, e.data.calendars);
@@ -1856,6 +1858,23 @@ function downloadEvent(schedule) {
     let event = serialiseICal(instance, false);
     mainWindow.postMessage({event: event, title: schedule.title, type: 'downloadEvent'}, origin);
 }
+function sendEventToNativeEmailClient(schedule) {
+    var instance = schedule.raw.parentId != null
+        ? RecurringSchedules[RecurringSchedules.findIndex(v => v.id === schedule.raw.parentId)]
+        : schedule;
+    let recurringText = schedule.raw.hasRecurrenceRule ? ' (Recurring: ' + schedule.recurrenceRule + ')' : '';
+    let stateText = schedule.state == CALENDAR_EVENT_CANCELLED ? 'CANCELLED ' : '';
+    let title = stateText + schedule.title + ' - ' + moment(schedule.start.toUTCString()).toLocaleString() + recurringText;
+
+    let dt = moment.utc(schedule.start.toUTCString());
+    let year = dt.year();
+    let month = dt.month() +1;
+    let calendarName = findCalendar(schedule.calendarId).name;
+    let scheduleId = schedule.raw.parentId != null ? schedule.raw.parentId : schedule.id;
+    let isRecurring = schedule.raw.hasRecurrenceRule || schedule.raw.isException;
+
+    mainWindow.postMessage({calendarName: calendarName, id: scheduleId, year: year, month: month, isRecurring: isRecurring, title: title, type: 'sendEventToNativeEmailClient'}, origin);
+}
 function emailEvent(schedule) {
     var instance = schedule.raw.parentId != null
         ? RecurringSchedules[RecurringSchedules.findIndex(v => v.id === schedule.raw.parentId)]
@@ -2019,16 +2038,25 @@ function buildExtraFieldsToSummary(eventData, that) {
     var img6 = document.createElement("img");
     img6.src = "./images/envelope.png";
     span1.appendChild(img6);
-
-    var emailLink = document.createElement("a");
-    emailLink.style.cursor="pointer";
-    emailLink.style.marginLeft="3px";
-    emailLink.innerText = "Email";
-    span1.appendChild(emailLink);
-    emailLink.onclick=function() {
-        emailEvent(eventData.schedule);
-    };
-
+    if (hasEmail) {
+        var emailLink = document.createElement("a");
+        emailLink.style.cursor="pointer";
+        emailLink.style.marginLeft="3px";
+        emailLink.innerText = "Email";
+        span1.appendChild(emailLink);
+        emailLink.onclick=function() {
+            emailEvent(eventData.schedule);
+        };
+    } else {
+        var emailLink = document.createElement("a");
+        emailLink.style.cursor="pointer";
+        emailLink.style.marginLeft="3px";
+        emailLink.innerText = "Email";
+        span1.appendChild(emailLink);
+        emailLink.onclick=function() {
+            sendEventToNativeEmailClient(eventData.schedule);
+        };
+    }
     var div2 = document.createElement("div");
     eventDetails.appendChild(div2);
     var div3 = document.createElement("div");
