@@ -1408,6 +1408,9 @@ module.exports = {
 			return future;
 		},
 		checkAvailableSpace(fileSize) {
+		    if (this.currentDir.getOwnerName() != this.context.username) {
+		        return 0;
+		    }
 			return Number(this.quotaBytes.toString()) - (Number(this.usageBytes.toString()) + fileSize);
 		},
 		showShareWithForProfile(field, fieldName) {
