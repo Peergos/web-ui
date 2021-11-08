@@ -26,6 +26,7 @@
 </template>
 
 <script>
+const UriDecoder = require('../../mixins/uridecoder/index.js');
 const Bip39 = require('../../mixins/password/bip-0039-english.json');
 const FormPassword = require("../form/FormPassword.vue");
 module.exports = {
@@ -48,7 +49,7 @@ module.exports = {
 	    'context'
 	]),
     },
-    
+    mixins:[UriDecoder],
     methods: {
 	generatePassword() {
 	    let bytes = nacl.randomBytes(16);
@@ -61,29 +62,27 @@ module.exports = {
         },
         
 	updatePassword() {
-            if(this.existing.length == 0 || this.password.length == 0 || this.password2.length == 0) {
-		this.$toast.error('All fields must be populated!',{timeout:false, position: 'bottom-left' })
+        if(this.existing.length == 0 || this.password.length == 0 || this.password2.length == 0) {
+            this.$toast.error('All fields must be populated!',{timeout:false, position: 'bottom-left' })
+        } else {
+            if (this.password == this.password2) {
+                let that = this;
+                this.showSpinner = true;
+                this.context.changePassword(this.existing, this.password).thenApply(function(newContext){
+                    that.$store.commit("SET_CONTEXT", newContext);
+                    that.$store.commit("SET_MODAL", false);
+                    that.$toast.info('Password changed')
+                    that.showSpinner = false;
+                }).exceptionally(function(throwable) {
+                    that.showSpinner = false;
+                    that.$toast.error(that.uriDecode(throwable.getMessage()),{timeout:false})
+                    console.log(throwable.getMessage())
+                });
             } else {
-                if (this.password == this.password2) {
-                    let that = this;
-                    this.showSpinner = true;
-                    this.context.changePassword(this.existing, this.password).thenApply(function(newContext){
-                        
-			that.$store.commit("SET_CONTEXT", newContext);
-			that.$store.commit("SET_MODAL", false);
-			that.$toast.info('Password changed')
-            that.showSpinner = false;
-		    }).exceptionally(function(throwable) {
-            that.showSpinner = false;
-			// that.$toast.error(throwable.getMessage())
-			console.log(throwable.getMessage())
-             	    });
-                    
-		} else {
-		    this.$toast.error('Passwords do not match',{timeout:false, position: 'bottom-left' })
-                }
+                this.$toast.error('Passwords do not match',{timeout:false})
             }
-        },
+        }
+    },
     },
 };
 </script>
