@@ -3,7 +3,9 @@
 const helpers = require("../mixins/storage/index.js");
 function shallow(val) {
     // tag a value so vue will only shallow watch it
-    val._isVue = true;
+    if (val != null) {
+        val._isVue = true;
+    }
     return val;
 }
 module.exports = new Vuex.Store({
