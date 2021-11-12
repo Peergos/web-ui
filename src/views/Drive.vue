@@ -828,7 +828,7 @@ module.exports = {
 
 		sharedWithDataUpdate() {
 
-			if (this.selectedFiles.length != 1 || this.context == null) {
+			if (this.selectedFiles.length != 1 || this.selectedFiles[0] == null || this.context == null) {
 				this.sharedWithData = { read_shared_with_users: [], edit_shared_with_users: [] };
 				return;
 			}
@@ -1038,38 +1038,43 @@ module.exports = {
                 for(var i=0; i < files.length; i++) {
                     totalSize += (files[i].size + (4096 - (files[i].size % 4096)));
                 }
-                let spaceAfterOperation = this.checkAvailableSpace(totalSize);
-                if (spaceAfterOperation < 0) {
-                    let errMsg = "File copy operation exceeds available Space\n" + "Please free up " + helpers.convertBytesToHumanReadable('' + -spaceAfterOperation) + " and try again";
+                if (Number(that.quotaBytes.toString()) < totalSize) {
+                    let errMsg = "File copy operation exceeds Account quota\n" + "Please upgrade to get more space";
                     that.$toast.error(errMsg, {timeout:false, id: 'upload'})
                 } else {
-                    //resetting .value tricks browser into allowing subsequent upload of same file(s)
-                    document.getElementById('uploadFileInput').value = "";
-                    document.getElementById('uploadDirectoriesInput').value = "";
-                    let future = peergos.shared.util.Futures.incomplete();
-                    let progressBars = [];
-                    for(var i=0; i < files.length; i++) {
-                        let that = this;
-                        var thumbnailAllocation = Math.min(100000, files[i].size / 10);
-                        var resultingSize = files[i].size + thumbnailAllocation;
-                        var progress = {
-                            title:"Encrypting and uploading " + files[i].name,
-                            done:0,
-                            max:resultingSize,
-                            name: files[i].name
-                        };
-                        that.$toast({component: ProgressBar,props:  progress} , { icon: false , timeout:false, id: files[i].name})
-                        progressBars.push(progress);
+                    let spaceAfterOperation = this.checkAvailableSpace(totalSize);
+                    if (spaceAfterOperation < 0) {
+                        let errMsg = "File copy operation exceeds available Space\n" + "Please free up " + helpers.convertBytesToHumanReadable('' + -spaceAfterOperation) + " and try again";
+                        that.$toast.error(errMsg, {timeout:false, id: 'upload'})
+                    } else {
+                        //resetting .value tricks browser into allowing subsequent upload of same file(s)
+                        document.getElementById('uploadFileInput').value = "";
+                        document.getElementById('uploadDirectoriesInput').value = "";
+                        let future = peergos.shared.util.Futures.incomplete();
+                        let progressBars = [];
+                        for(var i=0; i < files.length; i++) {
+                            let that = this;
+                            var thumbnailAllocation = Math.min(100000, files[i].size / 10);
+                            var resultingSize = files[i].size + thumbnailAllocation;
+                            var progress = {
+                                title:"Encrypting and uploading " + files[i].name,
+                                done:0,
+                                max:resultingSize,
+                                name: files[i].name
+                            };
+                            that.$toast({component: ProgressBar,props:  progress} , { icon: false , timeout:false, id: files[i].name})
+                            progressBars.push(progress);
+                        }
+                        const uploadParams = {
+                            applyReplaceToAll: false,
+                            replaceFile: false,
+                            filesUploaded: 0
+                        }
+                        that.reduceAllUploads(0, files, future, uploadParams, progressBars);
+                        future.thenApply(done => {
+                            console.log("upload complete");
+                        });
                     }
-                    const uploadParams = {
-                        applyReplaceToAll: false,
-                        replaceFile: false,
-                        filesUploaded: 0
-                    }
-                    that.reduceAllUploads(0, files, future, uploadParams, progressBars);
-                    future.thenApply(done => {
-                        console.log("upload complete");
-                    });
                 }
             });
         },
@@ -1349,26 +1354,31 @@ module.exports = {
 				} else if (clipboard.op == "copy") {
 					console.log("paste-copy");
 					this.calculateTotalFileSize(clipboard.fileTreeNode, clipboard.path).thenApply(totalSize => {
-						let spaceAfterOperation = that.checkAvailableSpace(totalSize);
-						if (spaceAfterOperation < 0) {
-                                                    let errMsg = "File copy operation exceeds available Space\n" + "Please free up " + helpers.convertBytesToHumanReadable('' + -spaceAfterOperation) + " and try again";
-                                                    that.$toast.error(errMsg, {timeout:false, id: 'upload'})
-							that.showSpinner = false;
-							return;
-						}
-						clipboard.fileTreeNode.copyTo(target, that.context)
-							.thenApply(function () {
-								that.currentDirChanged();
-								that.onUpdateCompletion.push(function () {
-									that.updateUsage();
-									that.showSpinner = false;
-								});
-							}).exceptionally(function (throwable) {
-								that.errorTitle = 'Error copying file';
-								that.errorBody = throwable.getMessage();
-								that.showError = true;
-								that.showSpinner = false;
-							});
+                        if (Number(that.quotaBytes.toString()) < totalSize) {
+                            let errMsg = "File copy operation exceeds Account quota\n" + "Please upgrade to get more space";
+                            that.$toast.error(errMsg, {timeout:false, id: 'upload'})
+                        } else {
+                            let spaceAfterOperation = that.checkAvailableSpace(totalSize);
+                            if (spaceAfterOperation < 0) {
+                                let errMsg = "File copy operation exceeds available Space\n" + "Please free up " + helpers.convertBytesToHumanReadable('' + -spaceAfterOperation) + " and try again";
+                                that.$toast.error(errMsg, {timeout:false, id: 'upload'})
+                                that.showSpinner = false;
+                                return;
+                            }
+                            clipboard.fileTreeNode.copyTo(target, that.context)
+                                .thenApply(function () {
+                                    that.currentDirChanged();
+                                    that.onUpdateCompletion.push(function () {
+                                        that.updateUsage();
+                                        that.showSpinner = false;
+                                    });
+                                }).exceptionally(function (throwable) {
+                                    that.errorTitle = 'Error copying file';
+                                    that.errorBody = throwable.getMessage();
+                                    that.showError = true;
+                                    that.showSpinner = false;
+                                });
+                        }
 					});
 				}
 				this.clipboard.op = null;
