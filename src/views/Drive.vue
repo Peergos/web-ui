@@ -1044,7 +1044,7 @@ module.exports = {
                 } else {
                     let spaceAfterOperation = this.checkAvailableSpace(totalSize);
                     if (spaceAfterOperation < 0) {
-                        let errMsg = "File copy operation exceeds available space\n" + "Please free up " + helpers.convertBytesToHumanReadable('' + -spaceAfterOperation) + " and try again";
+                        let errMsg = "File upload operation exceeds available space\n" + "Please free up " + helpers.convertBytesToHumanReadable('' + -spaceAfterOperation) + " and try again";
                         that.$toast.error(errMsg, {timeout:false, id: 'upload'})
                     } else {
                         //resetting .value tricks browser into allowing subsequent upload of same file(s)
