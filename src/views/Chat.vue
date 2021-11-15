@@ -76,7 +76,7 @@
                             </div>
                             <div class="chat-message-search">
                                 <span class="input-group-addon">
-                                    <input id="filter-conversations" type="text" class="search-bar" v-model="filterText" :maxlength="15"  v-on:keyup.enter="filterConversations()" placeholder="Filter">
+                                    <input id="filter-conversations" type="text" style="line-height: 20px;" v-model="filterText" :maxlength="15"  v-on:keyup.enter="filterConversations()" placeholder="Filter">
                                     <button type="button" @click="filterConversations()"> <i class="fa fa-filter" aria-hidden="true"></i> </button>
                                 </span>
                             </div>
@@ -508,7 +508,7 @@ module.exports = {
             var conversationsContainer = document.getElementById("conversations-container");
             conversationsContainer.style.height = window.innerHeight - 160 + 'px';
             var chatContainer = document.getElementById("message-scroll-area");
-            chatContainer.style.height = window.innerHeight - 200 + 'px';
+            chatContainer.style.height = window.innerHeight - 165 + 'px';
 
             let closeConversationEl = document.getElementById('chat-back-button');
             if (this.displayingMessages) {
@@ -2494,4 +2494,5 @@ module.exports = {
 .chat-messages-container {
   overflow-y: auto;
 }
+
 </style>

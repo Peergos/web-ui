@@ -29,20 +29,20 @@
                             :maxitems="5"
                             placeholder="please select user"
                     />
-                  <div class="hspace-5" v-if="isAdmin">
+                  <div class="hspace-5" v-if="isAdmin" style="margin-top: 20px;">
                       <input type="radio" id="member-access" value="Member" v-model="memberAccess">
                       <label for="member-access" style="font-weight: normal;">Member</label>
                   </div>
-                  <div class="hspace-5" v-if="isAdmin">
+                  <div class="hspace-5" v-if="isAdmin"  style="margin-top: 20px;">
                       <input type="radio" id="admin-access" value="Admin" v-model="memberAccess">
                       <label for="admin-access" style="font-weight: normal;" data-toggle="tooltip" data-placement="bottom" title="Admins can change chat title and membership">Admin</label>
                   </div>
-                <div style="padding:5px; display:flex;">
+                <div style="padding:5px; margin-top: 10px;">
                   <button :disabled="this.targetUsernames.slice().length == 0" class="btn btn-success" @click="addUsersToGroup()"> {{ addLabel }}</button>
                 </div>
               </div>
             </div>
-            <div v-if="isAdmin" class="modal-body modal-prominent">
+            <div v-if="isAdmin" class="modal-prominent">
                 <div class="container" ><p style="word-wrap;break-all;">
                     Admins:</p>
                     <div v-for="user in existingAdmins">
@@ -51,7 +51,7 @@
                     <button :disabled="existingAdmins.length <= 1 || adminsToRemove.length == 0" class="btn btn-success" v-on:click="removeAdminFromGroup()">Remove</button>
                 </div>
             </div>
-            <div class="modal-body modal-prominent">
+            <div class="modal-prominent">
                 <div class="container" v-if="existingGroupMembers.length > 0"><p style="word-wrap;break-all;">
                     Members:</p>
                     <div v-if="!haveRemovedSelf">
