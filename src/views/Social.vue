@@ -244,12 +244,17 @@ module.exports = {
 	sendInitialFollowRequest() {
 	        let that = this;
 	        if (this.targetUsernames.length == 0) {
-    	        let singleVal = document.getElementById("friend-name-input-tokenfield").value.trim();
-    	        if (singleVal.length > 0 && singleVal != this.context.username) {
-            	    this.targetUsernames.push(singleVal);
-    	        } else {
-	                return;
-	            }
+	            let tokenFieldElement = document.getElementById("friend-name-input-tokenfield");
+	            if (tokenFieldElement == null) {
+                    return;
+	            } else {
+                    let singleVal = tokenFieldElement.value.trim();
+                    if (singleVal.length > 0 && singleVal != this.context.username) {
+                        this.targetUsernames.push(singleVal);
+                    } else {
+                        return;
+                    }
+                }
 	        }
             this.socialData.pendingOutgoing.forEach(function(name){
                 let idx = that.targetUsernames.indexOf(name);

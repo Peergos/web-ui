@@ -58,11 +58,11 @@ module.exports = {
             showSpinner: false,
             showSelect: false,
             spinnerMessage: '',
-	    expectingSave: false,
-	    saving: false,
-	    isWritable : false,
-	    warning_message: "",
-	    warning_body: "",
+            expectingSave: false,
+            saving: false,
+            isWritable : false,
+            warning_message: "",
+            warning_body: "",
             warning_consumer_func: () => {},
             showWarning: false,
             unsavedChanges: false,
@@ -75,7 +75,8 @@ module.exports = {
             todoBoardName: null,
             todoExtension: ".todo",
             currentFile: null,
-            isIframeInitialised: false
+            isIframeInitialised: false,
+            taskSelected: false
         }
     },
     
@@ -167,6 +168,7 @@ module.exports = {
                             let name = v.getName();
                             return name.substring(0, name.length - 5) === that.todoBoardName;
                         });
+                        that.taskSelected = true;
                         if (foundIndex != -1) {
                             that.loadFile(that.getPath, todoBoards[foundIndex].getName());
                         }
@@ -181,6 +183,9 @@ module.exports = {
         },
         closeSelect: function() {
             this.showSelect = false;
+            if (!this.taskSelected) {
+                this.openFileOrDir("Drive", "/", "")
+            }
         },
         extractTodoBoardName: function(filename) {
             return filename.endsWith(this.todoExtension) ? filename.substring(0, filename.length - 5) : filename;
@@ -391,12 +396,8 @@ module.exports = {
             console.log(logMessage);
             console.log(throwable.getMessage());
         },
-        showMessage: function(title, body) {
-            this.messages.push({
-                title: title,
-                body: body,
-                show: true
-            });
+        showMessage: function(title, detail) {
+            this.$toast.error(title + " " + detail, {timeout:false});
         },
         closeTodoBoard: function () {
             let that = this;

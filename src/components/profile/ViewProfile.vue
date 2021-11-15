@@ -68,13 +68,6 @@ module.exports = {
         close: function () {
             this.$emit("hide-profile-view");
         },
-        showMessage: function(title, body) {
-            this.messages.push({
-                title: title,
-                body: body,
-                show: true
-            });
-        },
         getProfileImage: function() {
             return this.profileImage;
         },

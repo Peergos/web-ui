@@ -25,12 +25,8 @@ module.exports = {
         });
     },
     methods: {
-        showMessage: function(title, body) {
-            this.messages.push({
-                title: title,
-                body: body,
-                show: true
-            });
+        showMessage: function(message) {
+            this.$toast.error(message, {timeout:false});
         },
         onChange: function (event) {
             let newVal = event.target.value;
@@ -44,8 +40,8 @@ module.exports = {
             } else {
                 document.getElementById("name-input").style.display = 'none';
                 document.getElementById("name-input-button").style.display = 'none';
-                this.close();
                 this.select_consumer_func(newVal);
+                this.close();
             }
         },
         close: function () {
@@ -60,13 +56,12 @@ module.exports = {
                 return;
             if (!res.match(/^[a-z\d\-_\.\s]+$/i)) {
                 this.showMessage("Invalid name. Use only alphanumeric characters plus space, dash, dot and underscore");
-                this.close();
                 return;
             }
-            this.close();
             this.select_result='';
             this.options = [];
             this.select_consumer_func(res);
+            this.close();
         }
     }
 }

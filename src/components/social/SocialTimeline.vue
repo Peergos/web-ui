@@ -781,12 +781,8 @@ module.exports = {
                 that.requestingMoreResults = false;
             });
         },
-        showMessage: function(title, body) {
-            this.messages.push({
-                title: title,
-                body: body,
-                show: true
-            });
+        showMessage: function(message) {
+            this.$toast.error(message, {timeout:false});
         },
         joinConversation: function (entry) {
             let that = this;
