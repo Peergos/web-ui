@@ -1,44 +1,17 @@
-<template>
-<transition name="modal">
-    <div class="modal-mask" @click="close">
-        <div class="modal-container full-height" @click.stop style="width:100%;overflow-y:auto;padding:0;display:flex;flex-flow:column;">
-            <div class="modal-header" style="padding:0">
-                <h2>{{displayPath}}</h2>
-                <span style="position:absolute;top:0;right:0.2em;">
-                    <span v-if="isWritable()" @click="editMarkdown" tabindex="0" v-on:keyup.enter="editMarkdown"  style="color:black;font-size:2.5em;font-weight:bold;cursor:pointer;margin:.3em;" class="fa fa-edit" title="Edit"></span>
-	                <span @click="close" tabindex="1" v-on:keyup.enter="close" style="color:black;font-size:3em;font-weight:bold;cursor:pointer;">&times;</span>
-	            </span>
-            </div>
-            <div class="modal-body" style="margin:0;padding:0;display:flex;flex-grow:1;">
-                <Gallery
-                        v-if="showEmbeddedGallery"
-                        v-on:hide-gallery="showEmbeddedGallery = false"
-                        :files="filesToViewInGallery"
-                        :hideGalleryTitle="true"
-                        :context="context">
-                </Gallery>
-                <iframe id="browser-iframe" :src="frameUrl()" style="width:100%;height:100%;" frameBorder="0"></iframe>
-            </div>
-        </div>
-    </div>
-</transition>
-</template>
-
-<script>
 const Gallery = require("../../drive/DriveGallery.vue");
-const routerMixins = require("../../../mixins/router/index.js");
-
+const router = require("../../../mixins/router/index.js");
 module.exports = {
+    template: require('markdown-viewer.html'),
     components: {
         Gallery
     },
-    mixins:[routerMixins],
+    mixins:[router],
     data: function() {
         return {
+	        currentFilename: null,
             showSpinner: false,
-	        currentFile: null,
-	        currentBrowserPath: null,
-	        isIframeInitialised: false,
+            currentFile: null,
+            isIframeInitialised: false,
             FILE_NOT_FOUND: 2,
             PATH_PREFIX: '/apps/markdown/',
             displayPath: '',
@@ -47,40 +20,13 @@ module.exports = {
             isFileWritable: false
         }
     },
-    computed: {
-    ...Vuex.mapState([
-        'context',
-    ]),
-    ...Vuex.mapGetters([
-        'isSecretLink',
-        'getPath',
-        'currentFilename',
-    ]),
-    },
-    mounted(){
-    },
-    props: [],
+    props: ['context', 'file', 'messages', 'pathToFile'],
     created: function() {
-        const props = this.getPropsFromUrl();
-        let completePath = null;
-        if (props.secretLink) {
-            this.currentBrowserPath = this.getPath + (this.getPath.endsWith("/") ? "" : "/");
-            completePath = this.currentBrowserPath + this.currentFilename;
-        } else {
-            this.currentBrowserPath = props.path + (props.path.endsWith("/") ? "" : "/");
-            completePath = this.currentBrowserPath + props.filename;
-        }
-        let that = this;
-        this.context.getByPath(completePath).thenApply(fileOpt => {
-            if (! fileOpt.isPresent()) {
-                that.$toast.error("Couldn't load file: " + completePath, {timeout:false})
-                return;
-            }
-            let file = fileOpt.get();
-            that.currentFile = file;
-            that.isFileWritable = this.currentFile.isWritable();
-            that.startListener();
-        });
+        this.currentFile = this.file;
+        this.currentFilename = this.file.getName();
+        this.isFileWritable = this.file.isWritable();
+        this.displayPath = this.pathToFile + '/' + this.currentFilename;
+        this.startListener();
     },
     methods: {
 	    frameUrl: function() {
@@ -121,15 +67,24 @@ module.exports = {
             // origin. Sandboxed iframes which lack the 'allow-same-origin' header
             // don't have an origin which you can target: you'll have to send to any
             // origin, which might alow some esoteric attacks. Validate your output!
-            if (this.currentFile != null) {
-                this.displayPath = this.currentBrowserPath + this.currentFile.getName();
-                this.readInFile(this.currentFile).thenApply(data => {
-                    let func = function() {
-                        iframe.contentWindow.postMessage({action: "respondToNavigateTo", text:new TextDecoder().decode(data)}, '*');
-                    };
-                    that.setupIFrameMessaging(iframe, func);
-                });
-            }
+            const props = this.currentFile.getFileProperties();
+            const name = this.currentFile.getName();
+            this.currentFile.getInputStream(this.context.network, this.context.crypto, props.sizeHigh(), props.sizeLow(), function(read){})
+                .thenCompose(function(reader) {
+                    var size = that.getFileSize(props);
+                    var data = convertToByteArray(new Int8Array(size));
+                    return reader.readIntoArray(data, 0, data.length)
+                        .thenApply(function(read){
+                            let func = function() {
+                                iframe.contentWindow.postMessage({action: "respondToNavigateTo", text:new TextDecoder().decode(data)}, '*');
+                            };
+                            that.setupIFrameMessaging(iframe, func);
+                        });
+            }).exceptionally(function(throwable) {
+                that.showMessage("Unexpected error", throwable.detailMessage);
+                console.log('Error loading file: ' + name);
+                console.log(throwable.getMessage());
+            });
         },
         setupIFrameMessaging: function(iframe, func) {
             if (this.isIframeInitialised) {
@@ -155,9 +110,9 @@ module.exports = {
             return this.isFileWritable;
         },
         editMarkdown: function() {
-            this.showMessage(true, "Not Implemented");
-            this.openFileOrDir("editor", '/' + this.currentBrowserPath, this.currentFile.getName());
+            this.openFileOrDir("editor", '/' + this.pathToFile, this.currentFilename);
         },
+
         showMediaRequest: function(filePath) {
             let that = this;
             let fullPath = this.updatePath(filePath, false);
@@ -191,19 +146,23 @@ module.exports = {
         },
         navigateToRequest: function(iframe, filePath) {
             let that = this;
-            this.loadResource(filePath, true).thenApply(data => {
-                if (data != null) {
-                    let func = function() {
-                      iframe.contentWindow.postMessage({action: "respondToNavigateTo", text:new TextDecoder().decode(data)}, '*');
-                    };
-                    that.setupIFrameMessaging(iframe, func);
-                }
-            });
+            if (filePath.toLowerCase().endsWith('.md')) {
+                this.loadResource(filePath, true).thenApply(data => {
+                    if (data != null) {
+                        let func = function() {
+                          iframe.contentWindow.postMessage({action: "respondToNavigateTo", text:new TextDecoder().decode(data)}, '*');
+                        };
+                        that.setupIFrameMessaging(iframe, func);
+                    }
+                });
+            } else {
+                console.log("not implemented!");
+            }
         },
         updatePath: function(filePath, updateDisplayPath) {
             let peergosPath = filePath.startsWith(this.PATH_PREFIX) ? filePath.substring(this.PATH_PREFIX.length) : filePath;
             let peergosPathWithoutSlash = peergosPath.startsWith('/') ? peergosPath.substring(1) : peergosPath;
-            let fullPath = this.currentBrowserPath + peergosPathWithoutSlash;
+            let fullPath = this.pathToFile + '/' + peergosPathWithoutSlash;
             if (updateDisplayPath) {
                 this.displayPath = fullPath;
             }

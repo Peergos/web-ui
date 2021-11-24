@@ -1,79 +1,22 @@
-<template>
-<transition name="modal">
-<div class="modal-mask" @click="close"> 
-    <div class="modal-container full-height" @click.stop style="width:100%;overflow-y:auto;padding:0;display:flex;flex-flow:column;">
-        <div class="modal-header" style="padding:0">
-          <h2>{{ getFilename() }}</h2>
-	  <span style="position:absolute;top:0;right:0.2em;">
-        <span v-if="isMarkdown()" @click="previewMarkdown" tabindex="0" v-on:keyup.enter="previewMarkdown"  style="color:black;font-size:2.5em;font-weight:bold;cursor:pointer;margin:.3em;" class="fa fa-tv" title="Preview"></span>
-	    <span v-if="isWritable()" @click="getAndSave" tabindex="0" v-on:keyup.enter="getAndSave"  style="color:black;font-size:2.5em;font-weight:bold;cursor:pointer;margin:.3em;" v-bind:class="['fas', saving ? 'fa-hourglass' : 'fa-save']" title="Save file"></span>
-	    <span @click="close" tabindex="0" v-on:keyup.enter="close" style="color:black;font-size:3em;font-weight:bold;cursor:pointer;">&times;</span>
-	  </span>
-        </div>
-
-        <div class="modal-body" style="margin:0;padding:0;display:flex;flex-grow:1;">
-	  <iframe id="editor" :src="frameUrl()" style="width:100%;height:100%;" frameBorder="0"></iframe>
-        </div>
-    </div>
-</div>
-</transition>
-</template>
-
-<script>
-const routerMixins = require("../../mixins/router/index.js");
-
 module.exports = {
-    components: {
-    },
-    mixins:[routerMixins],
+    template: require('code-editor.html'),
     data: function() {
         return {
             showSpinner: false,
 	        expectingSave: false,
 	        saving: false,
-	        editedFile: null,
-	        editPath: null,
-	        editedFilename: null,
+	        currentFile: null,
+	        currentFilename: null,
 	        isFileWritable: false,
 	        isIframeInitialised: false
         }
     },
-    computed: {
-    ...Vuex.mapState([
-        'context',
-    ]),
-    ...Vuex.mapGetters([
-        'isSecretLink',
-        'getPath',
-        'currentFilename',
-    ]),
-    },
-
-    mounted(){
-    },
-    props: [],
+    props: ['context', 'file', 'messages', 'pathToFile'],
     created: function() {
-        const props = this.getPropsFromUrl();
-        let completePath = null;
-        if (props.secretLink) {
-            this.editPath = this.getPath;
-            completePath = this.editPath + (this.editPath.endsWith("/") ? "" : "/") + this.currentFilename;
-        } else {
-            this.editPath = props.path;
-            completePath = this.editPath + (this.editPath.endsWith("/") ? "" : "/") + props.filename;
-        }
-        let that = this;
-        this.context.getByPath(completePath).thenApply(fileOpt => {
-            if (! fileOpt.isPresent()) {
-                that.$toast.error("Couldn't load file: " + path, {timeout:false})
-                return;
-            }
-            let file = fileOpt.get();
-            this.editedFile = file;
-            this.editedFilename = file.getName();
-            this.isFileWritable = file.isWritable();
-            this.startListener();
-        });
+        this.currentFile = this.file;
+        this.currentFilename = this.file.getName();
+        this.isFileWritable = this.file.isWritable();
+        this.startListener();
     },
     methods: {
 	frameUrl: function() {
@@ -111,8 +54,8 @@ module.exports = {
             // origin. Sandboxed iframes which lack the 'allow-same-origin' header
             // don't have an origin which you can target: you'll have to send to any
             // origin, which might alow some esoteric attacks. Validate your output!
-	    const props = this.editedFile.getFileProperties();
-	    const name = this.editedFile.getName();
+	    const props = this.currentFile.getFileProperties();
+	    const name = this.currentFile.getName();
 	    var mimeType = "text/x-markdown";
 	    var modes = ["markdown"]; // default to markdown for plain text
 	    if (name.endsWith(".java")) {
@@ -178,7 +121,7 @@ module.exports = {
 	    }
 	    var readOnly = ! this.isFileWritable;
 
-	    this.editedFile.getInputStream(this.context.network, this.context.crypto, props.sizeHigh(), props.sizeLow(), function(read){})
+	    this.currentFile.getInputStream(this.context.network, this.context.crypto, props.sizeHigh(), props.sizeLow(), function(read){})
 	        .thenCompose(function(reader) {
                 var size = that.getFileSize(props);
                 var data = convertToByteArray(new Int8Array(size));
@@ -190,16 +133,12 @@ module.exports = {
                         that.setupIFrameMessaging(iframe, func);
                     });
         }).exceptionally(function(throwable) {
-            that.showMessage(true, "Unexpected error", throwable.detailMessage);
+            that.showMessage("Unexpected error", throwable.detailMessage);
             console.log('Error loading file: ' + that.file.getName());
             console.log(throwable.getMessage());
         });
 	},
-    getFileSize: function(props) {
-            var low = props.sizeLow();
-            if (low < 0) low = low + Math.pow(2, 32);
-            return low + (props.sizeHigh() * Math.pow(2, 32));
-    },
+
 	setupIFrameMessaging: function(iframe, func) {
         if (this.isIframeInitialised) {
             func();
@@ -220,25 +159,26 @@ module.exports = {
 	},
 
     save: function(text) {
+        this.showMessage('kev','testing');
 	    this.saving = true;
 	    var bytes = convertToByteArray(new TextEncoder().encode(text));
 	    var java_reader = peergos.shared.user.fs.AsyncReader.build(bytes);
 	    const context = this.context;
 	    const that = this;
 	    const sizeHi = (bytes.length - (bytes.length % Math.pow(2, 32)))/Math.pow(2, 32);
-        this.editedFile.overwriteFileJS(java_reader, sizeHi, bytes.length,
+        this.currentFile.overwriteFileJS(java_reader, sizeHi, bytes.length,
             context.network, context.crypto, len => {})
         .thenApply(function(updatedFile) {
             that.saving = false;
-            that.editedFile = updatedFile;
+            that.currentFile = updatedFile;
             that.$emit("update-refresh");
         }).exceptionally(function(throwable) {
             if (throwable.detailMessage.includes("Couldn%27t+update+mutable+pointer%2C+cas+failed")
                 ||   throwable.detailMessage.includes("CAS exception updating cryptree node.")) {
-                that.showMessage(true, "Concurrent modification detected", "The file: '" +
+                that.showMessage("Concurrent modification detected", "The file: '" +
                 that.file.getName() + "' has been updated by another user. Your changes have not been saved.");
             } else {
-                that.showMessage(true, "Unexpected error", throwable.detailMessage);
+                that.showMessage("Unexpected error", throwable.detailMessage);
                 console.log('Error uploading file: ' + that.file.getName());
                 console.log(throwable.getMessage());
             }
@@ -246,15 +186,14 @@ module.exports = {
         });
     },
     getFilename: function() {
-        return this.editedFilename;
+        return this.currentFilename;
     },
-    showMessage: function(isError, title, body) {
-        let bodyContents = body == null ? '' : ' ' + body;
-        if (isError) {
-            this.$toast.error(title + bodyContents, {timeout:false});
-        } else {
-            this.$toast(title + bodyContents)
-        }
+    showMessage: function(title, body) {
+        this.messages.push({
+            title: title,
+            body: body,
+            show: true
+        });
     },
     close: function () {
         this.$emit("hide-code-editor");
@@ -264,8 +203,8 @@ module.exports = {
     },
     isMarkdown: function() {
         try {
-            var mimeType = this.editedFile.getFileProperties().mimeType;
-            return mimeType.startsWith("text/") && this.editedFilename.endsWith(".md");
+            var mimeType = this.file.getFileProperties().mimeType;
+            return mimeType.startsWith("text/") && this.file.endsWith(".md");
         } catch (ex) {
             return false;
         }
@@ -274,23 +213,7 @@ module.exports = {
         if(this.saving) {
             return;
         }
-        console.log("preview markdown file");
-        this.openFileOrDir("markdown", this.editPath, this.editedFilename);
+        this.openFileOrDir("markdown", this.pathToFile, this.currentFilename);
     }
     }
 }
-</script>
-<style>
-.app-view{
-	min-height: 100vh;
-
-	/* display: flex;
-	align-items: center;
-	justify-content: center;
-	min-height: 100vh; */
-}
-.app-view  h1{
-	font-size:16px;
-	line-height: 14px;
-}
-</style>

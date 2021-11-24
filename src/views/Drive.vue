@@ -103,15 +103,23 @@
 			:file="selectedFiles[0]"
 			:context="context">
 		</pdf>
-		<CodeEditor
+		<code-editor
 			v-if="showCodeEditor"
 			v-on:hide-code-editor="closeApps(); updateCurrentDir();"
-			v-on:update-refresh="forceUpdate++">
-		</CodeEditor>
-        <MarkdownViewer
+			v-on:update-refresh="forceUpdate++"
+			:pathToFile="this.path.join('/')"
+            :file="selectedFiles[0]"
+            :context="context"
+            :messages="messages">
+        </code-editor>
+        <markdown-viewer
             v-if="showMarkdownViewer"
-            v-on:hide-markdown-viewer="closeApps()">
-        </MarkdownViewer>
+            v-on:hide-markdown-viewer="closeApps()"
+			:pathToFile="this.path.join('/')"
+            :file="selectedFiles[0]"
+            :context="context"
+            :messages="messages">
+        </markdown-viewer>
         <identity
             v-if="showIdentityProof"
             v-on:hide-identity-proof="closeApps()"
@@ -159,7 +167,6 @@
 </template>
 
 <script>
-const CodeEditor = require("../components/code-editor/CodeEditor.vue");
 const DriveHeader = require("../components/drive/DriveHeader.vue");
 const DriveGrid = require("../components/drive/DriveGrid.vue");
 const DriveGridCard = require("../components/drive/DriveGridCard.vue");
@@ -167,7 +174,6 @@ const DriveGridDrop = require("../components/drive/DriveGridDrop.vue");
 const DriveTable = require("../components/drive/DriveTable.vue");
 const Gallery = require("../components/drive/DriveGallery.vue");
 const Identity = require("../components/identity-proof-viewer.vue");
-const MarkdownViewer = require("../components/viewers/markdown/MarkdownViewer.vue");
 
 const Share = require("../components/drive/DriveShare.vue");
 const Search = require("../components/Search.vue");
@@ -185,7 +191,6 @@ const router = require("../mixins/router/index.js");
 
 module.exports = {
 	components: {
-        CodeEditor,
 		DriveHeader,
 		DriveGrid,
 		DriveGridCard,
@@ -196,7 +201,6 @@ module.exports = {
 		ProgressBar,
 		Gallery,
 		Identity,
-		MarkdownViewer,
 		Share,
 		Search
 	},
