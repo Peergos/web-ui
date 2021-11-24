@@ -5,7 +5,7 @@
             <div class="modal-header" style="padding:0">
                 <h2>{{displayPath}}</h2>
                 <span style="position:absolute;top:0;right:0.2em;">
-                    <span v-if="isWritable()" @click="editMarkdown" tabindex="0" v-on:keyup.enter="editMarkdown"  style="color:black;font-size:2.5em;font-weight:bold;cursor:pointer;margin:.3em;" class="fa fa-edit" title="Preview"></span>
+                    <span v-if="isWritable()" @click="editMarkdown" tabindex="0" v-on:keyup.enter="editMarkdown"  style="color:black;font-size:2.5em;font-weight:bold;cursor:pointer;margin:.3em;" class="fa fa-edit" title="Edit"></span>
 	                <span @click="close" tabindex="1" v-on:keyup.enter="close" style="color:black;font-size:3em;font-weight:bold;cursor:pointer;">&times;</span>
 	            </span>
             </div>
@@ -73,7 +73,7 @@ module.exports = {
         let that = this;
         this.context.getByPath(completePath).thenApply(fileOpt => {
             if (! fileOpt.isPresent()) {
-                that.$toast.error("Couldn't load file: " + path, {timeout:false})
+                that.$toast.error("Couldn't load file: " + completePath, {timeout:false})
                 return;
             }
             let file = fileOpt.get();
@@ -118,9 +118,9 @@ module.exports = {
                 }
             });
             // Note that we're sending the message to "*", rather than some specific
-                // origin. Sandboxed iframes which lack the 'allow-same-origin' header
-                // don't have an origin which you can target: you'll have to send to any
-                // origin, which might alow some esoteric attacks. Validate your output!
+            // origin. Sandboxed iframes which lack the 'allow-same-origin' header
+            // don't have an origin which you can target: you'll have to send to any
+            // origin, which might alow some esoteric attacks. Validate your output!
             if (this.currentFile != null) {
                 this.displayPath = this.currentBrowserPath + this.currentFile.getName();
                 this.readInFile(this.currentFile).thenApply(data => {
@@ -155,8 +155,9 @@ module.exports = {
             return this.isFileWritable;
         },
         editMarkdown: function() {
-            //this.editMarkdownFile(this.currentFile);
-            this.openFileOrDir("editor", this.editPath, this.editedFilename);
+            //kev-todo
+            this.showMessage(true, "Not Implemented");
+            this.openFileOrDir("editor", '/' + this.currentBrowserPath, this.currentFile.getName());
         },
         showMediaRequest: function(filePath) {
             let that = this;

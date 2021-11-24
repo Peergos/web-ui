@@ -6,7 +6,7 @@ window.addEventListener('message', function (e) {
     // from our own origin, so we can simply compare the message event's
     // origin to the location of this document. If we get a message from an
     // unexpected host, ignore the message entirely.
-    let parentDomain = window.location.host;//.substring(window.location.host.indexOf(".")+1)
+    let parentDomain = window.location.host; //iframe inside iframe, so this not required .substring(window.location.host.indexOf(".")+1)
     if (e.origin !== (window.location.protocol + "//" + parentDomain))
         return;
     
