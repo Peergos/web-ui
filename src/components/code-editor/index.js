@@ -133,7 +133,7 @@ module.exports = {
                         that.setupIFrameMessaging(iframe, func);
                     });
         }).exceptionally(function(throwable) {
-            that.showMessage("Unexpected error", throwable.detailMessage);
+            that.showMessage(true, "Unexpected error", throwable.detailMessage);
             console.log('Error loading file: ' + that.file.getName());
             console.log(throwable.getMessage());
         });
@@ -159,7 +159,6 @@ module.exports = {
 	},
 
     save: function(text) {
-        this.showMessage('kev','testing');
 	    this.saving = true;
 	    var bytes = convertToByteArray(new TextEncoder().encode(text));
 	    var java_reader = peergos.shared.user.fs.AsyncReader.build(bytes);
@@ -175,10 +174,10 @@ module.exports = {
         }).exceptionally(function(throwable) {
             if (throwable.detailMessage.includes("Couldn%27t+update+mutable+pointer%2C+cas+failed")
                 ||   throwable.detailMessage.includes("CAS exception updating cryptree node.")) {
-                that.showMessage("Concurrent modification detected", "The file: '" +
+                that.showMessage(true, "Concurrent modification detected", "The file: '" +
                 that.file.getName() + "' has been updated by another user. Your changes have not been saved.");
             } else {
-                that.showMessage("Unexpected error", throwable.detailMessage);
+                that.showMessage(true, "Unexpected error", throwable.detailMessage);
                 console.log('Error uploading file: ' + that.file.getName());
                 console.log(throwable.getMessage());
             }
@@ -188,12 +187,13 @@ module.exports = {
     getFilename: function() {
         return this.currentFilename;
     },
-    showMessage: function(title, body) {
-        this.messages.push({
-            title: title,
-            body: body,
-            show: true
-        });
+    showMessage: function(isError, title, body) {
+        let bodyContents = body == null ? '' : ' ' + body;
+        if (isError) {
+            this.$toast.error(title + bodyContents, {timeout:false});
+        } else {
+            this.$toast(title + bodyContents)
+        }
     },
     close: function () {
         this.$emit("hide-code-editor");
@@ -204,7 +204,7 @@ module.exports = {
     isMarkdown: function() {
         try {
             var mimeType = this.file.getFileProperties().mimeType;
-            return mimeType.startsWith("text/") && this.file.endsWith(".md");
+            return mimeType.startsWith("text/") && this.currentFilename.toLowerCase().endsWith(".md");
         } catch (ex) {
             return false;
         }
