@@ -12,7 +12,7 @@ module.exports = {
         
 	updateHistory(app, path, filename) {
 	    if (this.isSecretLink) {
-                const sidebarApps = ["Drive", "NewsFeed", "Tasks", "Social", "Calendar", "Chat"]
+                const sidebarApps = ["Drive", "NewsFeed", "Tasks", "Social", "Calendar", "Chat", "Browser"]
                 if (sidebarApps.includes(app)) {
 		    this.$store.commit("CURRENT_VIEW", app);
                     if (app != "Drive") {
@@ -90,6 +90,8 @@ module.exports = {
 		return "Calendar";
 	    } else if (mimeType === "application/vnd.peergos-identity-proof") {
 		return "identity-proof";
+	    } else if (filename.toLowerCase().endsWith(".html")) {
+		return "browser";
 	    } else if (mimeType.startsWith("text/")) {
 		return "editor";
 	    } else {

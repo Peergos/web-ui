@@ -77,6 +77,7 @@ const Social = require("../views/Social.vue");
 const Calendar = require("../views/Calendar.vue");
 const Chat = require("../views/Chat.vue");
 const Email = require("../views/Email.vue");
+const Browser = require("./browser/Browser.vue");
 
 const ServerMessages = require("./ServerMessages.vue");
 
@@ -106,6 +107,7 @@ module.exports = {
 		AppTabs,
 		Login,
 		Signup,
+		Browser
 	},
 
 	data() {
@@ -246,7 +248,7 @@ module.exports = {
 	    }
 
             const that = this;
-            const sidebarApps = ["Drive", "NewsFeed", "Tasks", "Social", "Calendar", "Chat", "Email"]
+            const sidebarApps = ["Drive", "NewsFeed", "Tasks", "Social", "Calendar", "Chat", "Email", "Browser"]
 	    if (app === "Drive") {
                 const inDrive = this.currentView == "Drive";
 		this.$store.commit("CURRENT_VIEW", app);

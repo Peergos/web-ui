@@ -121,7 +121,13 @@
                     :file="selectedFiles[0]"
                     :context="context">
                 </identity>
-
+        <Browser
+            v-if="showBrowser"
+            v-on:hide-browser="closeApps(false);"
+            :file="selectedFiles[0]"
+            :pathToFile = "path"
+            :context="context">
+        </Browser>
 		<Share
 			v-if="showShare"
 			v-on:hide-share-with="closeShare"
@@ -172,6 +178,7 @@ const Gallery = require("../components/drive/DriveGallery.vue");
 const Identity = require("../components/identity-proof-viewer.vue");
 const Share = require("../components/drive/DriveShare.vue");
 const Search = require("../components/Search.vue");
+const Browser = require("../components/browser/Browser.vue");
 
 const ProgressBar = require("../components/drive/ProgressBar.vue");
 const DriveMenu = require("../components/drive/DriveMenu.vue");
@@ -197,7 +204,8 @@ module.exports = {
 		Gallery,
 		Identity,
 		Share,
-		Search
+		Search,
+		Browser
 	},
 	data() {
 		return {
@@ -239,6 +247,7 @@ module.exports = {
 			showFeedbackForm: false,
 			showProfileEditForm: false,
 			showProfileViewForm: false,
+			showBrowser: false,
 			admindata: { pending: [] },
 			profile: {
 				firstName: "",
@@ -692,6 +701,7 @@ module.exports = {
                     this.showIdentityProof = false;
 		    this.showPdfViewer = false;
 		    this.showCodeEditor = false;
+		    this.showBrowser = false;
 		    this.showTextViewer = false;
 		    this.showHexViewer = false;
 		    this.showSearch = false;
@@ -739,6 +749,8 @@ module.exports = {
 			this.showPdfViewer = true;
 		    else if (app == "editor")
 			this.showCodeEditor = true;
+            else if (app == "browser")
+            this.showBrowser = true;
 		    else if (app == "identity-proof")
 			this.showIdentityProof = true;
 		    else if (app == "hex")
@@ -1538,6 +1550,8 @@ module.exports = {
                         this.showIdentityProof = true;
                     else if (app === "hex")
                         this.showHexViewer = true;
+                    else if (app === "browser")
+                        this.showBrowser = true;
 
                     this.openFileOrDir(app, this.getPath, filename)
 		},
