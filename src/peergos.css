@@ -1254,3 +1254,10 @@ h3 {word-wrap:break-word; white-space:normal;}
     width:100%;
 }
 
+.app-install-view {
+    font-size: 1.3em;
+}
+.app-install-span {
+    font-weight: bold;
+    padding-right: 10px;
+}

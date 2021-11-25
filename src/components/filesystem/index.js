@@ -104,7 +104,18 @@ module.exports = {
             showSpinner: true,
             spinnerMessage: '',
             onUpdateCompletion: [], // methods to invoke when current dir is next refreshed
-            navigationViaTabKey: false
+            navigationViaTabKey: false,
+            showApp: false,
+            appName: '',
+            appFilePath: '',
+            appFileExtensionRegistrationMap: new Map(),
+            appMimeTypeRegistrationMap: new Map(),
+            showAppInstallation: false,
+            appPropFile: null,
+            appDirectory: null,
+            appPath: null,
+            showAppManagement: false,
+            appsInstalled: []
         };
     },
     props: ["initContext", "newsignup", "initPath", "openFile", "initiateDownload"],
@@ -235,6 +246,68 @@ module.exports = {
             });
         }
         this.showPendingServerMessages();
+	},
+	appOpen: function(appName) {
+    	this.closeMenu();
+	    let filePath = '/' + this.path.slice(1).join('/') + '/';
+	    let prefix = this.path[0] == this.username ? "/$peergos-user" : "/" + this.path[0];
+	    let finalFilePath =  prefix + filePath + this.selectedFiles[0].getFileProperties().name;
+		this.executeApp(appName, finalFilePath);
+	},
+	registerApps: function(appProperties) {
+	    this.appFileExtensionRegistrationMap = new Map();
+	    this.appMimeTypeRegistrationMap = new Map();
+	    let that = this;
+	    this.appsInstalled = [];
+	    appProperties.forEach(props => {
+	        that.appsInstalled.push({name: props.app.details.name, displayName: props.app.details.displayName});
+	        props.app.details.fileExtensions.forEach(extension => {
+	            let currentMapping = that.appFileExtensionRegistrationMap.get(extension);
+	            if (currentMapping == null) {
+	                currentMapping = [{name: props.app.details.name, displayName: props.app.details.displayName}];
+	            } else {
+	                currentMapping.push({name: props.app.details.name, displayName: props.app.details.displayName});
+	            }
+	            that.appFileExtensionRegistrationMap.set(extension, currentMapping);
+    	    });
+	        props.app.details.mimeTypes.forEach(mimeType => {
+	            let currentMapping = that.appMimeTypeRegistrationMap.get(mimeType);
+	            if (currentMapping == null) {
+	                currentMapping = [{name: props.app.details.name, displayName: props.app.details.displayName}];
+	            } else {
+	                currentMapping.push({name: props.app.details.name, displayName: props.app.details.displayName});
+	            }
+	            that.appMimeTypeRegistrationMap.set(mimeType, currentMapping);
+    	    });
+	    });
+	},
+	installApp: function() {
+        let that = this;
+        this.closeMenu(true);
+        this.appPropFile = this.selectedFiles[0];
+        this.appDirectory = this.currentDir;
+        var path = this.getPath();
+        this.appPath = path.substring(0, path.length - 1);
+        this.showAppInstallation = true;
+	},
+	closeAppInstallation: function() {
+	    this.showAppInstallation = false;
+    },
+    displayAppManagement: function() {
+        let that = this;
+        this.showAppManagement = true;
+    },
+    closeAppManagement: function() {
+        this.showAppManagement = false;
+    },
+	executeApp: function(appName, appFilePath) {
+	    this.appName = appName;
+	    this.appFilePath = appFilePath;
+	    this.showApp = true;
+	},
+	closeApp: function() {
+	    this.appName = '';
+	    this.showApp = false;
 	},
 	clearTabNavigation: function() {
 	    let that = this;
@@ -603,7 +676,7 @@ module.exports = {
                     var arr = children.toArray();
                     that.showSpinner = false;
                     that.files = arr.filter(function(f){
-                        return !f.getFileProperties().isHidden;
+                        return true;//!f.getFileProperties().isHidden;
                     });
                     that.buildTabNavigation();
                     if(selectedFilename != null) {
@@ -1714,39 +1787,6 @@ module.exports = {
                 this.clipboard.op = null;
             }
         },
-        calculateDirectorySize: function(file, path, accumulator, future) {
-            let that = this;
-            file.getChildren(this.context.crypto.hasher, this.context.network).thenApply(function(children) {
-                let arr = children.toArray();
-                for(var i = 0; i < arr.length; i++) {
-                    let child = arr[i];
-                    let childProps = child.getFileProperties();
-                    if (childProps.isDirectory) {
-                        accumulator.walkCounter++;
-                        accumulator.size += 4096;
-                        let newPath = path + "/" + childProps.name;
-                        that.calculateDirectorySize(child, newPath, accumulator, future);
-                    } else {
-                        let size = that.getFileSize(childProps);
-                        accumulator.size += (size + (4096 - (size % 4096)));
-                    }
-                }
-                accumulator.walkCounter--;
-                if (accumulator.walkCounter == 0) {
-                    future.complete(accumulator.size);
-                }
-            });
-        },
-        calculateTotalFileSize: function(file, path) {
-            let future = peergos.shared.util.Futures.incomplete();
-            if (file.isDirectory()) {
-                this.calculateDirectorySize(file, path + file.getFileProperties().name,
-                    { size: 4096, walkCounter: 1}, future);
-            } else {
-                future.complete(this.getFileSize(file.getFileProperties()));
-            }
-            return future;
-        },
         checkAvailableSpace: function(fileSize) {
             return Number(this.quotaBytes.toString()) - (Number(this.usageBytes.toString()) + fileSize);
         },
@@ -1882,9 +1922,7 @@ module.exports = {
                             that.importCalendarPath = null;
                             that.owner = file.getOwnerName();
                             that.loadCalendarAsGuest = isSecretLink;
-                            Vue.nextTick(function() {
-                                that.showCalendarViewer = true;
-                            });
+                            that.showCalendarViewer = true;
                         });
             })
         },
@@ -2435,6 +2473,16 @@ module.exports = {
                 }
             });
         },
+        isInstallable: function() {
+           try {
+               if (this.selectedFiles.length != 1)
+                   return false;
+               return !this.selectedFiles[0].isDirectory()
+                    && this.selectedFiles[0].getFileProperties().name.endsWith("peergos-app.json");
+           } catch (err) {
+               return false;
+           }
+        },
         isSearchable: function() {
            try {
                if (this.currentDir == null)
@@ -2462,6 +2510,31 @@ module.exports = {
                return !this.selectedFiles[0].isDirectory()
            } catch (err) {
                return false;
+           }
+        },
+        availableApps: function() {
+           try {
+               if (this.currentDir == null)
+                   return [];
+               if (this.selectedFiles.length != 1)
+                   return [];
+                if (this.selectedFiles[0].isDirectory()) {
+                    return [];
+                }
+                let currentFilename = this.selectedFiles[0].getFileProperties().name;
+                let extension = currentFilename.substring(currentFilename.lastIndexOf(".") +1);
+                var currentFileExtensionMapping = this.appFileExtensionRegistrationMap.get(extension);
+                currentFileExtensionMapping = currentFileExtensionMapping == null ? [] : currentFileExtensionMapping;
+                let mimeType = this.selectedFiles[0].getFileProperties().mimeType;
+                var currentMimeTypeMapping = this.appMimeTypeRegistrationMap.get(mimeType);
+                currentMimeTypeMapping = currentMimeTypeMapping == null ? [] : currentMimeTypeMapping;
+                let combinedMapping = currentFileExtensionMapping.concat(currentMimeTypeMapping);
+
+                return combinedMapping.sort(function(a, b) {
+                        return a.displayName.localeCompare(b.displayName);
+                });
+           } catch (err) {
+               return [];
            }
         },
         isIcsFile: function() {

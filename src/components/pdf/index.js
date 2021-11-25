@@ -3,6 +3,7 @@ module.exports = {
     data: function() {
         return {
             showSpinner: false,
+            isIframeInitialised: false
         }
     },
     props: ['context', 'file'],
@@ -31,8 +32,13 @@ module.exports = {
 		// header have "null" rather than a valid origin. This means you still
 		// have to be careful about accepting data via the messaging API you
 		// create. Check that source, and validate those inputs!
+	    var that = this;
 		if ((e.origin === "null" || e.origin === that.frameDomain()) && e.source === iframe.contentWindow) {
-		    console.log('Message from Iframe: ' + e.data);
+            if (e.data.action == 'pong') {
+                that.isIframeInitialised = true;
+            } else {
+    		    console.log('Message from Iframe: ' + e.data);
+            }
 		}
 	    });
 	    // Note that we're sending the message to "*", rather than some specific
@@ -41,17 +47,27 @@ module.exports = {
             // origin, which might alow some esoteric attacks. Validate your output!
 	    const props = this.file.getFileProperties();
 	    const name = this.file.getName();
-	    var that = this;
 	    this.file.getInputStream(this.context.network, this.context.crypto, props.sizeHigh(), props.sizeLow(), function(read){}).thenCompose(function(reader) {
 		var size = that.getFileSize(props);
 		var data = convertToByteArray(new Int8Array(size));
 		return reader.readIntoArray(data, 0, data.length)
 		    .thenApply(function(read){
-			iframe.contentWindow.postMessage({name:name,bytes:data}, '*');
+                let func = function() {
+    			    iframe.contentWindow.postMessage({name:name,bytes:data}, '*');
+                };
+                that.setupIFrameMessaging(iframe, func);
 		    });
 	    });
 	},
-
+        setupIFrameMessaging: function(iframe, func) {
+            if (this.isIframeInitialised) {
+                func();
+            } else {
+                iframe.contentWindow.postMessage({type: 'ping'}, '*');
+                let that = this;
+                window.setTimeout(function() {that.setupIFrameMessaging(iframe, func);}, 20);
+            }
+        },
         close: function () {
             this.$emit("hide-pdf-viewer");
         }

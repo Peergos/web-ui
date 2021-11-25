@@ -1,0 +1,43 @@
+<transition name="modal">
+<div class="modal-mask" @click="close">
+    <meta http-equiv="content-type" content="text/html; charset=utf-8" />
+    <div @click.stop class="profile-page-container">
+        <span @click="close" tabindex="0" v-on:keyup.enter="close" aria-label="close" class="close">&times;</span>
+        <div class="modal-header">
+            <h2>App Installation</h2>
+        </div>
+        <div class="modal-body">
+            <spinner v-if="showSpinner"></spinner>
+            <error
+                    v-if="showError"
+                    v-on:hide-error="showError = false"
+                    :title="errorTitle"
+                    :body="errorBody">
+            </error>
+            <div v-if="appProperties != null">
+                <div class="app-install-view">
+                    <p>
+                        <span class="app-install-span">Name:</span><span>{{appProperties.details.displayName}}&nbsp;
+                        {{appProperties.details.majorVersion}}.{{appProperties.details.minorVersion}}
+                        </span>
+                    </p>
+                    <p>
+                        <span class="app-install-span">Description:</span><span>{{appProperties.details.description}}</span>
+                    </p>
+                    <p>
+                        <span class="app-install-span">Author:</span><span>{{appProperties.details.author}}</span>
+                    </p>
+                    <p>
+                        <span class="app-install-span">Support:</span><span>{{appProperties.details.supportAddress}}</span>
+                    </p>
+                </div>
+                <div class="flex-line-item">
+                    <div>
+                        <button class="btn btn-success" style = "width:100%" @click="installNewApp()">Install</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+</transition>

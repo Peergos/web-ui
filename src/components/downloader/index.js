@@ -3,6 +3,39 @@ module.exports = {
 	return {}
     },
     methods: {
+    calculateTotalFileSize: function(file, path) {
+        let future = peergos.shared.util.Futures.incomplete();
+        if (file.isDirectory()) {
+            this.calculateDirectorySize(file, path + file.getFileProperties().name,
+                { size: 4096, walkCounter: 1}, future);
+        } else {
+            future.complete(this.getFileSize(file.getFileProperties()));
+        }
+        return future;
+    },
+    calculateDirectorySize: function(file, path, accumulator, future) {
+        let that = this;
+        file.getChildren(this.context.crypto.hasher, this.context.network).thenApply(function(children) {
+            let arr = children.toArray();
+            for(var i = 0; i < arr.length; i++) {
+                let child = arr[i];
+                let childProps = child.getFileProperties();
+                if (childProps.isDirectory) {
+                    accumulator.walkCounter++;
+                    accumulator.size += 4096;
+                    let newPath = path + "/" + childProps.name;
+                    that.calculateDirectorySize(child, newPath, accumulator, future);
+                } else {
+                    let size = that.getFileSize(childProps);
+                    accumulator.size += (size + (4096 - (size % 4096)));
+                }
+            }
+            accumulator.walkCounter--;
+            if (accumulator.walkCounter == 0) {
+                future.complete(accumulator.size);
+            }
+        });
+    },
 	// This will only work up to a file size of 2^52 bytes (the biggest integer you can fit in a double)
 	// But who ever needed a filesize > 4 PB ? ;-)
 	getFileSize: function(props) {

@@ -9,7 +9,10 @@ window.addEventListener('message', function (e) {
         return;
     
     var mainWindow = e.source;
-
-    PDFViewerApplication.setTitle(e.data.name);
-    PDFViewerApplication.open(new Uint8Array(e.data.bytes));
+    if (e.data.type == "ping") {
+	    mainWindow.postMessage({action:'pong'}, e.origin);
+    } else {
+        PDFViewerApplication.setTitle(e.data.name);
+        PDFViewerApplication.open(new Uint8Array(e.data.bytes));
+    }
 });

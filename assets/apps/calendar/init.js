@@ -13,7 +13,9 @@ let handler = function (e) {
 
       mainWindow = e.source;
       origin = e.origin;
-      if (e.data.type == "load") {
+      if (e.data.type == "ping") {
+          mainWindow.postMessage({type:'pong'}, e.origin);
+      } else if (e.data.type == "load") {
           initialiseCalendar(e.data.username == null ? true : false, e.data.calendars);
           load(e.data.previousMonth, e.data.currentMonth, e.data.nextMonth, e.data.recurringEvents, e.data.yearMonth, e.data.username);
       } else if (e.data.type == "loadAdditional") {

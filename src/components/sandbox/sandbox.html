@@ -1,0 +1,32 @@
+<transition name="modal">
+    <div class="modal-mask-app" @click="closeApp">
+        <div class="modal-container full-height" @click.stop style="width:100%;overflow-y:auto;padding:0;display:flex;flex-flow:column;">
+            <div class="modal-header-app">
+              <span>
+                <h2 v-if="addressBarText.length > 0">
+                    {{ addressBarText }}
+                    &nbsp;<img v-if="addressBarText.length > 0 && displayToBookmark" src="/images/bookmark-o.png" @click="toggleBookmark">
+                    &nbsp;<img v-if="addressBarText.length > 0 && !displayToBookmark" src="/images/bookmark.png" @click="toggleBookmark">
+                </h2>
+              </span>
+              <span style="position:absolute;top:0;right:5em;">
+                <span @click="closeApp" tabindex="0" v-on:keyup.enter="closeApp" style="color:black;font-size:3em;font-weight:bold;cursor:pointer;">&times;</span>
+              </span>
+            </div>
+
+            <div class="modal-body" style="padding:0;display:flex;flex-grow:1;">
+                <iframe id="sandboxId" :src="frameUrl()" style="width:100%" frameBorder="0"></iframe>
+            </div>
+            <spinner v-if="showSpinner" :message="spinnerMessage"></spinner>
+            <prompt
+                    v-if="showPrompt"
+                    v-on:hide-prompt="closePrompt"
+                    :prompt_message='prompt_message'
+                    :placeholder="prompt_placeholder"
+                    :max_input_size="prompt_max_input_size"
+                    :value="prompt_value"
+                    :consumer_func="prompt_consumer_func">
+            </prompt>
+        </div>
+    </div>
+</transition>

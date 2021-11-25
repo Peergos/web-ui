@@ -2,22 +2,39 @@ module.exports = {
     template: require('appgrid.html'),
     data: function() {
         return {
-            chatIsAvailable: false
+            chatIsAvailable: true,
+            numberOfDefaultApps: 11,
+            installedApps: []
         };
     },
-    props: ["context", "social", "canUpgrade"],
+    props: ["context", "social", "canUpgrade", "executeApp", "registerApps"],
     created: function() {
         const href = window.location.href;
         if (href.includes("?chat=true"))
             this.chatIsAvailable = true;
+        let that = this;
+        this.context.getByPath(this.context.username + "/.apps").thenApply(appsDirOpt => {
+            if (appsDirOpt.ref != null) {
+                appsDirOpt.get().getChildren(that.context.crypto.hasher, that.context.network).thenApply(children => {
+                    var appDirectories = children.toArray().filter(n => n.getName() != "calendar");
+                    that.readAppProperties(appDirectories).thenApply(appPropsList => {
+                        that.installedApps = appPropsList;
+                        that.registerApps(appPropsList);
+                    });
+                });
+            }
+        });
     },
     methods: {
+        launchApp: function(index) {
+            this.executeApp(this.installedApps[index].app.details.name, '');
+        },
         iconCount: function() {
-            var appCount = 10;
+            var appCount = this.numberOfDefaultApps;
             if (this.chatIsAvailable) {
                 appCount++;
             }
-            return appCount + (this.canUpgrade ? 1 : 0);
+            return appCount + this.installedApps.length + (this.canUpgrade ? 1 : 0);
         },
         showChat: function() {
             this.$emit("chat");
@@ -27,7 +44,7 @@ module.exports = {
         },
         showOurFiles: function() {
             this.$emit("files", {path:[this.context.username]});
-	},
+	    },
         showFriendsFiles: function() {
             this.$emit("files", {path:[]});
         },
@@ -54,6 +71,9 @@ module.exports = {
         },
         showUpgrade: function() {
             this.$emit("upgrade");
+        },
+        showAppManagement: function() {
+            this.$emit("app-management");
         }
     },
 };

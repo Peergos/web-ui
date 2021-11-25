@@ -44,6 +44,7 @@
     <nav>
     <ul id="right-click-menu" tabindex="-1" v-if="viewMenu && (isNotHome || isPasteAvailable || isNotBackground)" v-on:blur="closeMenu" v-bind:style="{top:top, left:left}">
       <li id='gallery' class="context-menu-item" v-on:keyup.enter="gallery" v-if="canOpen" v-on:click="gallery">View</li>
+      <li class="context-menu-item" v-for="app in availableApps" v-on:keyup.enter="appOpen(app.name)" v-on:click="appOpen(app.name)">Open in {{app.displayName}}</li>
       <li id='create-file' class="context-menu-item" v-on:keyup.enter="createTextFile" v-if="!isNotBackground" v-on:click="createTextFile">Create Text file</li>
       <li id='open-file' class="context-menu-item" v-on:keyup.enter="downloadAll" v-if="canOpen" v-on:click="downloadAll">Download</li>
       <li id='rename-file' class="context-menu-item" v-on:keyup.enter="rename" v-if="isNotBackground && isWritable" v-on:click="rename">Rename</li>
@@ -53,6 +54,7 @@
       <li id='paste-file' class="context-menu-item" v-on:keyup.enter="paste" v-if="isPasteAvailable" v-on:click="paste">Paste</li>
       <li id='share-file' class="context-menu-item" v-on:keyup.enter="showShareWith" v-if="(isNotHome || isNotBackground) && isLoggedIn" v-on:click="showShareWith">Share</li>
       <li id='file-search' class="context-menu-item" v-on:keyup.enter="openSearch(false)" v-if="isSearchable" v-on:click="openSearch(false)">Search...</li>
+      <li id='app-install' class="context-menu-item" v-on:keyup.enter="installApp()" v-if="isInstallable" v-on:click="installApp()">Install App</li>
       <li id='close-context-menu-item' class="context-menu-item hidden-context-menu-item" v-on:keyup.enter="closeMenu" v-on:click="closeMenu">Close</li>
     </ul>
     </nav>
@@ -71,6 +73,8 @@
       :context="context"
       :social="social"
       :canUpgrade="canUpgrade"
+      :executeApp="executeApp"
+      :registerApps="registerApps"
       v-on:files="showFiles"
       v-on:news-feed="showTimelineView()"
       v-on:upgrade="showRequestStorage()"
@@ -82,6 +86,7 @@
       v-on:profile="showProfile(true)"
       v-on:chat="showChat()"
       v-on:tour="showTourViewer"
+      v-on:app-management="displayAppManagement"
       >
   </appgrid>
   <share 
@@ -262,6 +267,14 @@
           :messages="messages"
           :select_consumer_func="select_consumer_func">
   </select-create>
+  <sandbox
+          v-if="showApp"
+          v-on:hide-sandbox="closeApp();"
+          :appName="appName"
+          :appFilePath="appFilePath"
+          :context="context"
+          :messages="messages">
+  </sandbox>
   <calendar
           v-if="showCalendarViewer"
           v-on:hide-calendar="closeApps();"
@@ -279,6 +292,24 @@
     :file="selectedFiles[0]" 
     :context="context">
   </text-viewer>
+  <app-installation
+          v-if="showAppInstallation"
+          v-on:hide-app-installation="closeAppInstallation()"
+          :appPropFile="appPropFile"
+          :appDirectory="appDirectory"
+          :appPath="appPath"
+          :checkAvailableSpace="checkAvailableSpace"
+          :messages="messages"
+          :appsInstalled="appsInstalled"
+          :context="context">
+  </app-installation>
+  <app-management
+          v-if="showAppManagement"
+          v-on:hide-app-management="closeAppManagement()"
+          :messages="messages"
+          :appsInstalled="appsInstalled"
+          :context="context">
+  </app-management>
   <message 
     v-for="message in messages" 
     v-on:remove-message="messages.splice(messages.indexOf(message), 1)"
@@ -389,7 +420,6 @@
       v-if="showError"
       v-on:hide-error="showError = false"
       :title="errorTitle" 
-      :body="errorBody"
-      :messageId="messageId">
+      :body="errorBody">
   </error>
 </div>

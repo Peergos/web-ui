@@ -72,6 +72,19 @@
                 <label class="app-icon-title">Chat</label>
             </span>
         </a>
+
+        <a @click="showAppManagement" class="app-grid-item" v-on:keyup.enter="showAppManagement">
+            <span class="app-icon">
+                <span data-toggle="tooltip" data-placement="bottom" title="App Management" class="fa fa-cogs"/>
+                <label class="app-icon-title">App Management</label>
+            </span>
+        </a>
+        <a v-for="(item, index) in installedApps" @click="launchApp(index)" class="app-grid-item" v-on:keyup.enter="launchApp(index)">
+            <span class="app-icon">
+                <span data-toggle="tooltip" data-placement="bottom" :title="item.app.details.description" class="fa fa-cogs"/>
+                <label class="app-icon-title">{{item.app.details.displayName}}</label>
+            </span>
+        </a>
         <div v-if="this.iconCount() % 2 == 1" class="app-grid-item app-grid-filler-2"></div>
         <div v-if="this.iconCount() % 3 == 1" class="app-grid-item app-grid-filler-3"></div>
         <div v-if="this.iconCount() % 3 == 2 || this.iconCount() % 3 == 1" class="app-grid-item app-grid-filler-3"></div>
