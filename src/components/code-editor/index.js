@@ -133,7 +133,7 @@ module.exports = {
                         that.setupIFrameMessaging(iframe, func);
                     });
         }).exceptionally(function(throwable) {
-            that.showMessage("Unexpected error", throwable.detailMessage);
+            that.showMessage(true, "Unexpected error", throwable.detailMessage);
             console.log('Error loading file: ' + that.file.getName());
             console.log(throwable.getMessage());
         });
@@ -174,10 +174,10 @@ module.exports = {
         }).exceptionally(function(throwable) {
             if (throwable.detailMessage.includes("Couldn%27t+update+mutable+pointer%2C+cas+failed")
                 ||   throwable.detailMessage.includes("CAS exception updating cryptree node.")) {
-                that.showMessage("Concurrent modification detected", "The file: '" +
+                that.showMessage(true, "Concurrent modification detected", "The file: '" +
                 that.file.getName() + "' has been updated by another user. Your changes have not been saved.");
             } else {
-                that.showMessage("Unexpected error", throwable.detailMessage);
+                that.showMessage(true, "Unexpected error", throwable.detailMessage);
                 console.log('Error uploading file: ' + that.file.getName());
                 console.log(throwable.getMessage());
             }
@@ -187,12 +187,13 @@ module.exports = {
     getFilename: function() {
         return this.currentFilename;
     },
-    showMessage: function(title, body) {
-        this.messages.push({
-            title: title,
-            body: body,
-            show: true
-        });
+    showMessage: function(isError, title, body) {
+        let bodyContents = body == null ? '' : ' ' + body;
+        if (isError) {
+            this.$toast.error(title + bodyContents, {timeout:false});
+        } else {
+            this.$toast(title + bodyContents)
+        }
     },
     close: function () {
         this.$emit("hide-code-editor");
