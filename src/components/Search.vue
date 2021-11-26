@@ -17,12 +17,14 @@
                             <option value="contains">Filename contains</option>
                             <option value="modifiedAfter">File modified after</option>
                             <option value="modifiedBefore">File modified before</option>
+                            <option value="createdAfter">File created after</option>
+                            <option value="createdBefore">File created before</option>
                             <option value="fileSizeGreaterThan">File size greater than</option>
                             <option value="fileSizeLessThan">File size less than</option>
                             <option value="mimeType">File type</option>
                         </select>
                     </div>
-                    <div class="flex-item" v-if="selectedSearchType=='modifiedAfter' || selectedSearchType=='modifiedBefore'" style="margin: 10px;">
+                    <div class="flex-item" v-if="selectedSearchType=='modifiedAfter' || selectedSearchType=='modifiedBefore' || selectedSearchType=='createdAfter' || selectedSearchType=='createdBefore'" style="margin: 10px;">
                         <input v-model="selectedDate" type="date" min="1900-01-01" max="3000-01-01" maxlength="12" ></input>
                     </div>
                     <div class="flex-item" v-if="selectedSearchType=='contains'" style="margin: 10px;">
@@ -177,6 +179,7 @@ module.exports = {
             name: props.name,
             size: props.isDirectory ? "" : this.getFileSize(props),
             lastModified: props.modified,
+            created: props.created,
             isDirectory: props.isDirectory
         };
         this.matches.push(entry);
@@ -200,6 +203,22 @@ module.exports = {
         let props = file.getFileProperties();
         let modified = props.modified.date;
         let jsDate = new Date(modified.year, modified.month -1, modified.day, 0, 0, 0, 0);
+        if (jsDate.getTime() < searchTerm.getTime()) {
+            this.addMatch(props, path);
+        }
+    },
+    createdAfterTest: function(file, path, searchTerm) {
+        let props = file.getFileProperties();
+        let created = props.created.date;
+        let jsDate = new Date(created.year, created.month -1, created.day, 0, 0, 0, 0);
+        if (jsDate.getTime() > (searchTerm.getTime() + (1000 * 60 * 60 * 24) - 1)) {
+            this.addMatch(props, path);
+        }
+    },
+    createdBeforeTest: function(file, path, searchTerm) {
+        let props = file.getFileProperties();
+        let created = props.created.date;
+        let jsDate = new Date(created.year, created.month -1, created.day, 0, 0, 0, 0);
         if (jsDate.getTime() < searchTerm.getTime()) {
             this.addMatch(props, path);
         }
@@ -290,6 +309,12 @@ module.exports = {
                 searchTerm = this.extractDate(this.selectedDate.trim());
             } else if(this.selectedSearchType == "modifiedBefore") {
                 filterFunction = this.modifiedBeforeTest;
+                searchTerm = this.extractDate(this.selectedDate.trim());
+            } else if(this.selectedSearchType == "createdAfter") {
+                filterFunction = this.createdAfterTest;
+                searchTerm = this.extractDate(this.selectedDate.trim());
+            } else if(this.selectedSearchType == "createdBefore") {
+                filterFunction = this.createdBeforeTest;
                 searchTerm = this.extractDate(this.selectedDate.trim());
             } else if(this.selectedSearchType == "fileSizeGreaterThan") {
                 filterFunction = this.fileSizeGreaterThanTest;

@@ -328,6 +328,9 @@ module.exports = {
 				} else if (sortBy == "modified") {
 					aVal = a.getFileProperties().modified;
 					bVal = b.getFileProperties().modified;
+				} else if (sortBy == "created") {
+					aVal = a.getFileProperties().created;
+					bVal = b.getFileProperties().created;
 				} else if (sortBy == "type") {
 					aVal = a.isDirectory();
 					bVal = b.isDirectory();
@@ -347,7 +350,7 @@ module.exports = {
 				} else {
 					if (sortBy == "name") {
 						return aVal.localeCompare(bVal, undefined, { numeric: true });
-					} else if (sortBy == "modified") {
+					} else if (sortBy == "modified" || sortBy == "created") {
 						return aVal.compareTo(bVal);
 					} else {
 						if (aVal < bVal) {

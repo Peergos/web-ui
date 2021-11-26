@@ -6,6 +6,7 @@
 				<th class="size" @click="$emit('sortBy', 'size')">Size</th>
 				<th class="type" @click="$emit('sortBy', 'type')">Type</th>
 				<th class="date" @click="$emit('sortBy', 'modified')">Modified</th>
+				<th class="date" @click="$emit('sortBy', 'created')">Created</th>
 				<th/>
 			</tr>
 		</thead>
@@ -22,6 +23,7 @@
 				<td class="size">{{ getFileSize(file.getFileProperties()) }}</td>
 				<td class="type">{{ file.getFileProperties().getType() }}</td>
 				<td class="date">{{ formatDateTime(file.getFileProperties().modified) }}</td>
+				<td class="date">{{ formatDateTime(file.getFileProperties().created) }}</td>
 				<td class="menu">
 					<AppButton
 						class="table__menu"

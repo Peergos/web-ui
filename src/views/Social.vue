@@ -181,7 +181,6 @@ module.exports = {
 			'updateSocial'
 		]),
 		test(){
-			console.log('test')
 		},
         displayProfile: function(username){
             this.showSpinner = true;

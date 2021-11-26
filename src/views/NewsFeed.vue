@@ -1188,12 +1188,19 @@ module.exports = {
                 } else {
                     let allChildren = this.children.slice();
                     allChildren.push(node);
+                    // social posts sorted different to files
                     let sortedList = allChildren.sort(function (a, b) {
-                        let aVal = a.item.socialPost.postTime;
-                        let bVal = b.item.socialPost.postTime;
-                        return aVal.compareTo(bVal);
+                        let aVal = a.item.socialPost != null ? a.item.socialPost.postTime
+                            : a.item.file.getFileProperties().created;
+                        let bVal = b.item.socialPost != null ? b.item.socialPost.postTime
+                            : b.item.file.getFileProperties().created;
+                        if (a.item.socialPost != null) {
+                            return aVal.compareTo(bVal);
+                        } else {
+                            return bVal.compareTo(aVal);
+                        }
                     });
-                    this.children = allChildren;
+                    this.children = sortedList;
                 }
             }
         },
@@ -1222,7 +1229,7 @@ module.exports = {
                 if (sharedItemsProcessedMap.get(item.path) != null) {
                     //already processed, skip to next
                 } else if (item.socialPost == null) {
-                    entryTree.addChild(null, item, [], true);
+                    entryTree.addChild(null, item, [], false);
                 } else {
                     let wasCommentOnSharedItem = false;
                     if (item.socialPost.parent.ref != null && !item.socialPost.parent.ref.path.includes("/.posts/")) {
@@ -1265,9 +1272,9 @@ module.exports = {
             let combinedPosts = commentPosts.concat(parentPosts).concat(sharedItems);
             let sortedList = combinedPosts.sort(function (a, b) {
                 let aVal = a.socialPost != null ? a.socialPost.postTime
-                    : a.file.getFileProperties().modified;
+                    : a.file.getFileProperties().created;
                 let bVal = b.socialPost != null ? b.socialPost.postTime
-                    : b.file.getFileProperties().modified;
+                    : b.file.getFileProperties().created;
                 return bVal.compareTo(aVal);
             });
             let dedupedItems = [];
