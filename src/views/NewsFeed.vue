@@ -243,7 +243,7 @@ module.exports = {
             showSpinner: false,
             data: [],
             pageEndIndex : 0,
-            pageSize: 5,
+            pageSize: 10,
             requestingMoreResults: false,
             noMoreResults: false,
             showProfileViewForm:false,
