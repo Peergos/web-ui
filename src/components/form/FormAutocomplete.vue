@@ -1,7 +1,7 @@
 <template>
 	<div class="form-autocomplete">
 		<div v-if="!isMultiple">
-			<input
+			<input id="input-tokenfield"
 				class="autocomplete"
 				v-if="!value"
 				v-model="textSearch"
@@ -23,7 +23,7 @@
 			</ul>
 		</div>
 		<div v-else>
-			<input
+			<input id="input-tokenfield"
 				class="autocomplete"
 				v-model="textSearch"
 				type="text"

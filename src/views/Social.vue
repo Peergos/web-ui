@@ -244,7 +244,7 @@ module.exports = {
 	sendInitialFollowRequest() {
 	        let that = this;
 	        if (this.targetUsernames.length == 0) {
-	            let tokenFieldElement = document.getElementById("friend-name-input-tokenfield");
+	            let tokenFieldElement = document.getElementById("input-tokenfield");
 	            if (tokenFieldElement == null) {
                     return;
 	            } else {
@@ -263,28 +263,29 @@ module.exports = {
                 }
             });
 	        if (this.targetUsernames.length == 0) {
-		    that.$toast('Follow request already sent')
-                    return;
+		        that.$toast('Follow request already sent')
+                return;
 	        }
             console.log("sending follow request");
             that.showSpinner = true;
             that.context.sendInitialFollowRequests(this.targetUsernames)
-                .thenApply(function(success) {
-                    if(success) {
-			// that.resetTypeahead();
-			that.$toast('Follow request(s) sent')
-			that.updateSocial();
-                    } else {
-			that.$toast('Follow request(s) failed')
-                        // that.resetTypeahead();
-                    }
-                    that.showSpinner = false;
+            .thenApply(function(success) {
+                if(success) {
+                    // that.resetTypeahead();
+                    that.$toast('Follow request(s) sent')
+                    that.updateSocial();
+                    that.targetUsernames = [];
+                } else {
+                    that.$toast('Follow request(s) failed')
+                                // that.resetTypeahead();
+                }
+                that.showSpinner = false;
             }).exceptionally(function(throwable) {
                     // if (that.targetUsernames.length == 1) {
                     //     // that.resetTypeahead();
                     // }
-		that.showSpinner = false;
-		that.$toast.error(`${throwable.getMessage()}`, {timeout:false, id: 'social'})
+                that.showSpinner = false;
+                that.$toast.error(`${throwable.getMessage()}`, {timeout:false, id: 'social'})
             });
         },
 

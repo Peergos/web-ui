@@ -265,7 +265,8 @@ module.exports = {
                 that.errorTitle = "Already a member!";
                 that.errorBody = "";
                 that.showError = true;
-                return;
+            } else {
+                this.targetUsernames = [];
             }
         },
         addAdminsToGroup: function(usersToAdd) {
@@ -293,7 +294,6 @@ module.exports = {
                 that.errorTitle = "Already an Admin!";
                 that.errorBody = "";
                 that.showError = true;
-                return;
             } else {
                 this.addMembersToGroup(membersToAdd);
             }
