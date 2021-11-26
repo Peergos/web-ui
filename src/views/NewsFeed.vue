@@ -1189,12 +1189,14 @@ module.exports = {
                     let allChildren = this.children.slice();
                     allChildren.push(node);
                     // social posts sorted different to files
+                    let socialPosts = allChildren.filter(i => i.item.socialPost != null);
+                    let sortDirection = socialPosts.length < allChildren.length ? 0 : 1;
                     let sortedList = allChildren.sort(function (a, b) {
                         let aVal = a.item.socialPost != null ? a.item.socialPost.postTime
                             : a.item.file.getFileProperties().created;
                         let bVal = b.item.socialPost != null ? b.item.socialPost.postTime
                             : b.item.file.getFileProperties().created;
-                        if (a.item.socialPost != null) {
+                        if (sortDirection == 1) {
                             return aVal.compareTo(bVal);
                         } else {
                             return bVal.compareTo(aVal);
