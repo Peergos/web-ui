@@ -3,7 +3,7 @@ The Web interface for Peergos
 
 ## Screenshots
 
-![Drive](/assets/images/tour/drive.png)
+![Drive](/assets/images/tour/images.jpg)
 
 ![Calendar](/assets/images/tour/calendar.png)
 
