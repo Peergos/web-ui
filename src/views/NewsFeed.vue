@@ -243,7 +243,7 @@ module.exports = {
             showSpinner: false,
             data: [],
             pageEndIndex : 0,
-            pageSize: 5,
+            pageSize: 20,
             requestingMoreResults: false,
             noMoreResults: false,
             showProfileViewForm:false,
@@ -276,7 +276,9 @@ module.exports = {
             socialFeed: null,
             seenPosts: new Map(),
             knownChats: [],
-            messenger: null
+            messenger: null,
+            sharedItemsProcessedMap: new Map(),
+            entryTree: null
         }
     },
     props: [],
@@ -286,6 +288,7 @@ module.exports = {
 		// this.context = this.$store.state.context;
 
         let that = this;
+        this.entryTree = new this.Tree(this);
         this.context.getSocialFeed().thenCompose(function(socialFeed) {
                 return socialFeed.update().thenApply(function(updated) {
                     that.socialFeed = updated;
@@ -837,7 +840,7 @@ module.exports = {
                 future.complete(0);
             } else {
                 that.buildTimeline(items).thenApply(function(allTimelineEntries) {
-                    that.data = that.data.concat(allTimelineEntries);
+                    that.data = allTimelineEntries;
                     future.complete(allTimelineEntries.length);
                 });
             }
@@ -1141,10 +1144,6 @@ module.exports = {
             }
             return allTimelineEntries;
         },
-        insertIntoEntries: function(entryTree, itemToInsert, mediaList) {
-            let parentPath = itemToInsert.socialPost.parent.ref.path.startsWith('/') ?  itemToInsert.socialPost.parent.ref.path : '/' + itemToInsert.socialPost.parent.ref.path;
-            let newNode = entryTree.addChild(parentPath, itemToInsert, mediaList, false);
-        },
         Tree: function(thisRef) {
             this.methodCtx = thisRef;
             this.root = new this.methodCtx.TreeNode(null, "", null, null);
@@ -1152,7 +1151,7 @@ module.exports = {
             this.lookup = function(path) {
                 return path == null ? this.root : this.nodeLookupMap.get(path);
             }
-            this.addChild = function(parentPath, item, mediaList, insertBefore) {
+            this.addChild = function(parentPath, item, mediaList) {
                 let parent = this.lookup(parentPath);
                 if (parent == null) {
                     return null;
@@ -1160,7 +1159,7 @@ module.exports = {
                 let path = item.path;
                 let node = new this.methodCtx.TreeNode(parent, path, item, mediaList);
                 this.nodeLookupMap.set(path, node);
-                parent.addChild(node, insertBefore);
+                parent.addChild(node);
                 return node;
             }
             this.collect = function() {
@@ -1171,6 +1170,18 @@ module.exports = {
             this.recurseCollect = function(node, depth, accumulator) {
                 accumulator.push(new this.methodCtx.IndentedRow(depth, node.item, node.mediaList));
                 let that = this;
+                let sortedChildren = node.children.sort(function (a, b) {
+                    let aVal = a.item.socialPost != null ? a.item.socialPost.postTime
+                        : a.item.file.getFileProperties().modified;
+                    let bVal = b.item.socialPost != null ? b.item.socialPost.postTime
+                        : b.item.file.getFileProperties().modified;
+                    if (depth == 0) {
+                        return bVal.compareTo(aVal);
+                    } else {
+                        return aVal.compareTo(bVal);
+                    }
+                });
+                node.children = sortedChildren;
                 node.children.forEach(each => {
                     that.recurseCollect(each, depth + 1, accumulator);
                 });
@@ -1182,19 +1193,8 @@ module.exports = {
             this.mediaList = mediaList;
             this.children = [];
             this.parent = parent;
-            this.addChild = function(node, insertBefore) {
-                if (insertBefore) {
-                    this.children.unshift(node);
-                } else {
-                    let allChildren = this.children.slice();
-                    allChildren.push(node);
-                    let sortedList = allChildren.sort(function (a, b) {
-                        let aVal = a.item.socialPost.postTime;
-                        let bVal = b.item.socialPost.postTime;
-                        return aVal.compareTo(bVal);
-                    });
-                    this.children = allChildren;
-                }
+            this.addChild = function(node) {
+                this.children.push(node);
             }
         },
         IndentedRow: function(indent, item, mediaList) {
@@ -1202,7 +1202,7 @@ module.exports = {
             this.item = item;
             this.mediaList = mediaList;
         },
-        isStartOfThread: function(entries, mediaMap, item) {
+        isStartOfThread: function(item) {
             if (item.socialPost.parent.ref != null) {
                 return false;
             }
@@ -1216,27 +1216,26 @@ module.exports = {
                     sharedItemsMap.set(item.path, item);
                 }
             });
-            let sharedItemsProcessedMap = new Map();
-            let entryTree = new this.Tree(this);
             sharedItems.reverse().forEach(item => {
-                if (sharedItemsProcessedMap.get(item.path) != null) {
+                if (that.sharedItemsProcessedMap.get(item.path) != null) {
                     //already processed, skip to next
                 } else if (item.socialPost == null) {
-                    entryTree.addChild(null, item, [], true);
+                    that.entryTree.addChild(null, item, []);
                 } else {
                     let wasCommentOnSharedItem = false;
                     if (item.socialPost.parent.ref != null && !item.socialPost.parent.ref.path.includes("/.posts/")) {
                         let path = item.socialPost.parent.ref.path.startsWith('/') ? item.socialPost.parent.ref.path : '/' + item.socialPost.parent.ref.path;
-                        if (entryTree.lookup(path) == null) {
+                        if (that.entryTree.lookup(path) == null) {
                             var sharedItemParent = mediaMap.get(path);
                             if (sharedItemParent == null) {
                                 sharedItemParent = sharedItemsMap.get(path);
                                 if (sharedItemParent != null) {
-                                    sharedItemsProcessedMap.set(sharedItemParent.path, sharedItemParent);
-                                    entryTree.addChild(null, sharedItemParent, [], true);
+                                    that.sharedItemsProcessedMap.set(sharedItemParent.path, sharedItemParent);
+                                    that.entryTree.addChild(null, sharedItemParent, []);
                                 }
                             } else {
-                                entryTree.addChild(null, sharedItemParent, [], true);
+                                that.entryTree.addChild(null, sharedItemParent, []);
+                                that.sharedItemsProcessedMap.set(sharedItemParent.path, sharedItemParent);
                             }
                         }
                         wasCommentOnSharedItem = true;
@@ -1252,21 +1251,31 @@ module.exports = {
                             }
                         }
                     }
-                    if (!wasCommentOnSharedItem && that.isStartOfThread(entryTree.root.children, mediaMap, item)) {
-                        entryTree.addChild(null, item, mediaList, true);
+                    if (!wasCommentOnSharedItem && that.isStartOfThread(item)) {
+                        that.entryTree.addChild(null, item, mediaList);
                     } else {
-                        that.insertIntoEntries(entryTree, item, mediaList);
+                        let parentPath = item.socialPost.parent.ref.path.startsWith('/') ?  item.socialPost.parent.ref.path : '/' + item.socialPost.parent.ref.path;
+                        that.entryTree.addChild(parentPath, item, mediaList);
                     }
                 }
             });
-            return entryTree.collect();
+            return that.entryTree.collect();
+        },
+        extractSocialPostCreationTimestamp(socialPost) {
+            if (socialPost.previousVersions.isEmpty()) {
+                return socialPost.postTime;
+            } else {
+                let previousVersions = socialPost.previousVersions.toArray();
+                return previousVersions[0].postTime;
+            }
         },
         mergeAndSortPosts: function(sharedItems, parentPosts, commentPosts) {
             let combinedPosts = commentPosts.concat(parentPosts).concat(sharedItems);
+            let that = this;
             let sortedList = combinedPosts.sort(function (a, b) {
-                let aVal = a.socialPost != null ? a.socialPost.postTime
+                let aVal = a.socialPost != null ? that.extractSocialPostCreationTimestamp(a.socialPost)
                     : a.file.getFileProperties().modified;
-                let bVal = b.socialPost != null ? b.socialPost.postTime
+                let bVal = b.socialPost != null ? that.extractSocialPostCreationTimestamp(b.socialPost)
                     : b.file.getFileProperties().modified;
                 return bVal.compareTo(aVal);
             });
