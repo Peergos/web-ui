@@ -1338,6 +1338,8 @@ module.exports = {
             var that = this;
             that.showSpinner = true;
             let lastSeenIndex = this.socialFeed.getLastSeenIndex();
+            this.entryTree = new this.Tree(this);
+            this.sharedItemsProcessedMap = new Map();
             this.socialFeed.update().thenApply(function(updated) {
                 that.socialFeed = updated;
                 that.updateSocialFeedInstance(updated);
