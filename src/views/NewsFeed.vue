@@ -1171,9 +1171,9 @@ module.exports = {
                 accumulator.push(new this.methodCtx.IndentedRow(depth, node.item, node.mediaList));
                 let that = this;
                 let sortedChildren = node.children.sort(function (a, b) {
-                    let aVal = a.item.socialPost != null ? a.item.socialPost.postTime
+                    let aVal = a.item.socialPost != null ? that.methodCtx.extractSocialPostCreationTimestamp(a.item.socialPost)
                         : a.item.file.getFileProperties().modified;
-                    let bVal = b.item.socialPost != null ? b.item.socialPost.postTime
+                    let bVal = b.item.socialPost != null ? that.methodCtx.extractSocialPostCreationTimestamp(b.item.socialPost)
                         : b.item.file.getFileProperties().modified;
                     if (depth == 0) {
                         return bVal.compareTo(aVal);
