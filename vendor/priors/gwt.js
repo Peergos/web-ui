@@ -595,7 +595,9 @@ function createVideoThumbnailProm(future, asyncReader, fileSize, fileName) {
                     let width = tall ? vWidth*size/vHeight : size;
                     let height = tall ? size : vHeight*size/vWidth;
                     captureThumbnail(width, height, currentIncrement, video).thenApply((thumbnail)=>{
-                        if(thumbnail.length == 0){
+                        if (thumbnail == null) {
+                            future.complete("");
+                        } else if(thumbnail.length == 0){
                             setTimeout(function(){thumbnailGenerator();}, 1000);
                         } else {
                             future.complete(thumbnail);
@@ -627,7 +629,13 @@ function captureThumbnail(width, height, currentIncrement, video){
     let blackWhiteThreshold = width * height / 10 * 8; //80%
     setTimeout(() => {
             let context = canvas.getContext('2d');
-            context.drawImage(video, 0, 0, width, height);
+            try {
+                context.drawImage(video, 0, 0, width, height);
+            } catch (ex) {
+                console.log("Unable to capture thumbnail. Maybe blocked by browser addon?");
+                capturingFuture.complete(null);
+                return;
+            }
             let imageData = context.getImageData(0, 0, width, height);
             if(isLikelyValidImage(imageData, blackWhiteThreshold)) {
                 getThumbnailFromCanvas(canvas, null, width, height, Math.max(width, height), capturingFuture);
