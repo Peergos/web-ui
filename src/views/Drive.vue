@@ -1200,7 +1200,7 @@ module.exports = {
                 });
             }).exceptionally(function (throwable) {
                 that.$toast.update(file.name, {
-                    content:'Error uploading file ${file.name} : ${throwable.getMessage()}'
+                    content:'Error uploading file ' + file.name + ' : ' + throwable.getMessage()
                 });
                 console.log("File upload error:" + throwable.toString());
                 that.context.getSpaceUsage().thenApply(u => {
