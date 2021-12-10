@@ -2121,7 +2121,7 @@ module.exports = {
 }
 
 .chat-full-width{
-    width:100%;
+    width:100% !important;
 }
 
 .emoji-position {
