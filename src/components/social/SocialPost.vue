@@ -25,16 +25,25 @@
                             <label style="font-weight: normal;">Share post with:</label>
                         </div>
                         <div v-if="shareWithSharerOnly" class="hspace-15">
-                            <input :disabled="socialPostAction=='edit'" type="radio" id="sharer-option" value="Sharer" v-model="shareWith">
-                            <label for="sharer-option" style="font-weight: normal;">{{currentSocialPostEntry.sharer}}</label>
+                            <label class="checkbox__group">
+                                <input :disabled="socialPostAction=='edit'" type="radio" id="sharer-option" value="Sharer" v-model="shareWith">
+                                <span class="checkmark"></span>
+                                {{currentSocialPostEntry.sharer}}
+                            </label>
                         </div>
                         <div v-if="!shareWithSharerOnly" class="hspace-15">
-                            <input :disabled="socialPostAction=='edit'" type="radio" id="friends-option" value="Friends" v-model="shareWith">
-                            <label for="friends-option" style="font-weight: normal;">Friends</label>
+                            <label class="checkbox__group">
+                                <input :disabled="socialPostAction=='edit'" type="radio" id="friends-option" value="Friends" v-model="shareWith">
+                                <span class="checkmark"></span>
+                                Friends
+                            </label>
                         </div>
                         <div v-if="!shareWithSharerOnly" class="hspace-15">
-                            <input :disabled="!allowFollowerSharingOption || socialPostAction=='edit'" type="radio" id="followers-option" value="Followers" v-model="shareWith">
-                            <label for="followers-option" style="font-weight: normal;">Followers (Includes Friends)</label>
+                            <label class="checkbox__group">
+                                <input :disabled="!allowFollowerSharingOption || socialPostAction=='edit'" type="radio" id="followers-option" value="Followers" v-model="shareWith">
+                                <span class="checkmark"></span>
+                                Followers (Includes Friends)
+                            </label>
                         </div>
                         <div class="full-width">
                             <button :disabled="!isPostingAvailable()" class="btn btn-success full-width" @click="submitPost()">

@@ -30,12 +30,18 @@
                             placeholder="please select user"
                     />
                   <div class="hspace-5" v-if="isAdmin" style="margin-top: 20px;">
-                      <input type="radio" id="member-access" value="Member" v-model="memberAccess">
-                      <label for="member-access" style="font-weight: normal;">Member</label>
+                        <label class="checkbox__group">
+                            <input type="radio" id="member-access" value="Member" v-model="memberAccess">
+                            <span class="checkmark"></span>
+                            Member
+                        </label>
                   </div>
                   <div class="hspace-5" v-if="isAdmin"  style="margin-top: 20px;">
-                      <input type="radio" id="admin-access" value="Admin" v-model="memberAccess">
-                      <label for="admin-access" style="font-weight: normal;" data-toggle="tooltip" data-placement="bottom" title="Admins can change chat title and membership">Admin</label>
+                        <label for="admin-access" data-toggle="tooltip" data-placement="bottom" title="Admins can change chat title and membership" class="checkbox__group">
+                            <input type="radio" id="admin-access" value="Admin" v-model="memberAccess">
+                            <span class="checkmark"></span>
+                            Admin
+                        </label>
                   </div>
                 <div style="padding:5px; margin-top: 10px;">
                   <button :disabled="this.targetUsernames.slice().length == 0" class="btn btn-success" @click="addUsersToGroup()"> {{ addLabel }}</button>
@@ -46,7 +52,11 @@
                 <div class="container" ><p style="word-wrap;break-all;">
                     Admins:</p>
                     <div v-for="user in existingAdmins">
-                        <input :disabled="existingAdmins.length <= 1" type="checkbox" v-bind:id="user" v-bind:value="user" v-model="adminsToRemove"><span style="margin-left:10px">{{ user }}</span>
+                        <label class="checkbox__group">
+                            <input :disabled="existingAdmins.length <= 1" type="checkbox" v-bind:id="user" v-bind:value="user" v-model="adminsToRemove">
+                            <span class="checkmark"></span>
+                            <span style="margin-left:10px">{{ user }}</span>
+                        </label>
                     </div>
                     <button :disabled="existingAdmins.length <= 1 || adminsToRemove.length == 0" class="btn btn-success" v-on:click="removeAdminFromGroup()">Remove</button>
                 </div>
@@ -55,10 +65,18 @@
                 <div class="container" v-if="existingGroupMembers.length > 0"><p style="word-wrap;break-all;">
                     Members:</p>
                     <div v-if="!haveRemovedSelf">
-                        <input :disabled="isAdmin" v-if="!haveRemovedSelf" type="checkbox" v-bind:value="context.username" v-model="selectSelf"><span  v-if="!haveRemovedSelf" style="margin-left:10px">{{ context.username }}</span>
+                        <label class="checkbox__group">
+                            <input :disabled="isAdmin" type="checkbox" v-bind:value="context.username" v-model="selectSelf">
+                            <span class="checkmark"></span>
+                            <span style="margin-left:10px">{{ context.username }}</span>
+                        </label>
                     </div>
                     <div v-for="user in existingGroupMembers">
-                        <input :disabled="!isAdmin"  type="checkbox" v-bind:id="user" v-bind:value="user" v-model="membersSelected"><span style="margin-left:10px">{{ user }}</span>
+                        <label class="checkbox__group">
+                            <input :disabled="!isAdmin" type="checkbox" v-bind:id="user" v-bind:value="user" v-model="membersSelected">
+                            <span class="checkmark"></span>
+                            <span style="margin-left:10px">{{ user }}</span>
+                        </label>
                     </div>
                     <button :disabled="this.membersSelected.length == 0 && this.selectSelf.length == 0" class="btn btn-success" v-on:click="removeUserFromGroup()">Remove</button>
                     <button v-if="isAdmin" :disabled="this.membersSelected.length == 0 && this.selectSelf.length == 0" class="btn btn-info" v-on:click="promoteToGroupAdmin()">Promote to Admin</button>
@@ -66,7 +84,11 @@
                 <div class="container" v-if="existingGroupMembers.length == 0"><p style="word-wrap;break-all;">
                     Members:</p>
                     <div v-if="!haveRemovedSelf">
-                        <input :disabled="isAdmin" v-if="!haveRemovedSelf" type="checkbox" v-bind:value="context.username" v-model="selectSelf"><span  v-if="!haveRemovedSelf" style="margin-left:10px">{{ context.username }}</span>
+                        <label class="checkbox__group">
+                            <input :disabled="isAdmin" type="checkbox" v-bind:value="context.username" v-model="selectSelf">
+                            <span class="checkmark"></span>
+                            <span style="margin-left:10px">{{ context.username }}</span>
+                        </label>
                     </div>
                     <button v-if="!haveRemovedSelf" :disabled="this.selectSelf.length == 0" class="btn btn-success" v-on:click="removeUserFromGroup()">Remove</button>
                 </div>
