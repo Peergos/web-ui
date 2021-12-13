@@ -49,7 +49,7 @@ function getWithHeadersProm(url, headers) {
         } else if (req.status == 429) {
 	    future.completeExceptionally(new peergos.shared.storage.RateLimitException());
         } else {
-	    future.completeExceptionally(Error(req.getResponseHeader("Trailer")));
+	        future.completeExceptionally(java.lang.Throwable.of(Error(req.getResponseHeader("Trailer"))));
         }
     };
     
