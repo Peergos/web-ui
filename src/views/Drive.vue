@@ -78,7 +78,7 @@
 				<li id='open-file' v-if="canOpen" @keyup.enter="downloadAll"  @click="downloadAll">Download</li>
 				<li id='rename-file' v-if="isWritable" @keyup.enter="rename"  @click="rename">Rename</li>
 				<li id='delete-file' v-if="isWritable" @keyup.enter="deleteFiles"  @click="deleteFiles">Delete</li>
-				<li id='copy-file' v-if="isWritable" @keyup.enter="copy"  @click="copy">Copy</li>
+				<li id='copy-file' v-if="allowCopy" @keyup.enter="copy"  @click="copy">Copy</li>
 				<li id='cut-file' v-if="isWritable" @keyup.enter="cut"  @click="cut">Cut</li>
 				<li id='paste-file' v-if="isPasteAvailable" @keyup.enter="paste"  @click="paste">Paste</li>
 				<li id='share-file' v-if="allowShare" @keyup.enter="showShareWith"  @click="showShareWith">Share</li>
@@ -391,6 +391,9 @@ module.exports = {
 				return false;
 			}
 		},
+        allowCopy() {
+            return this.isLoggedIn && this.path.length > 0;
+        },
 		allowShare() {
 			return this.isLoggedIn && this.path.length > 0;
 		},
