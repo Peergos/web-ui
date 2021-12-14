@@ -283,6 +283,10 @@ module.exports = {
 			showSpinner: true,
 			spinnerMessage: '',
 			onUpdateCompletion: [], // methods to invoke when current dir is next refreshed
+            dblClickDelay: 700,
+            clicks: 0,
+            clickTimer: null,
+            clickedFilename: null
 		};
 	},
 
@@ -1529,22 +1533,21 @@ module.exports = {
                     
 		    var file = this.selectedFiles[0];
 		    var filename = file.getName();
-                    
-                    var app = this.getApp(file, this.getPath);
-                    if (app === "Gallery")
-                        this.showGallery = true;
-                    else if (app === "pdf")
-                        this.showPdfViewer = true;
-                    else if (app === "editor")
-                        this.showCodeEditor = true;
-                    else if (app === "identity-proof")
-                        this.showIdentityProof = true;
-                    else if (app === "hex")
-                        this.showHexViewer = true;
 
-                    this.openFileOrDir(app, this.getPath, filename)
+            var app = this.getApp(file, this.getPath);
+            if (app === "Gallery")
+                this.showGallery = true;
+            else if (app === "pdf")
+                this.showPdfViewer = true;
+            else if (app === "editor")
+                this.showCodeEditor = true;
+            else if (app === "identity-proof")
+                this.showIdentityProof = true;
+            else if (app === "hex")
+                this.showHexViewer = true;
+
+            this.openFileOrDir(app, this.getPath, filename)
 		},
-
 		navigateOrDownload(file) {
 			if (this.showSpinner) // disable user input whilst refreshing
 				return;
@@ -1558,9 +1561,24 @@ module.exports = {
 
 		navigateDrive(file) {
 			this.closeMenu();
-			// console.log(file, 'navigateDrive' )
+            // console.log(file, 'navigateDrive' )
 			if (file.isDirectory()) {
 				this.navigateToSubdir(file.getFileProperties().name);
+			} else {
+			    let newClickedFilename = file.getFileProperties().name;
+			    let existingClickedFilename = this.clickedFilename;
+			    this.clickedFilename = newClickedFilename;
+                this.clicks++;
+                if (this.clicks === 1) {
+                    this.clickTimer = setTimeout( () => { this.clicks = 0}, this.dblClickDelay);
+                } else {
+                    clearTimeout(this.clickTimer);
+                    if (newClickedFilename == existingClickedFilename) {
+                        this.selectedFiles = [file];
+                        this.openFile();
+                    }
+                    this.clicks = 0;
+                }
 			}
 		},
 		navigateToSubdir(name) {
