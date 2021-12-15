@@ -82,6 +82,7 @@
 				<li id='cut-file' v-if="isWritable" @keyup.enter="cut"  @click="cut">Cut</li>
 				<li id='paste-file' v-if="isPasteAvailable" @keyup.enter="paste"  @click="paste">Paste</li>
 				<li id='share-file' v-if="allowShare" @keyup.enter="showShareWith"  @click="showShareWith">Share</li>
+				<li id='create-thumbnail' v-if="isWritable && canCreateThumbnail" @keyup.enter="createThumbnail"  @click="createThumbnail">Create Thumbnail</li>
 				<!-- <li id='create-file'  @keyup.enter="createTextFile" @click="createTextFile">Create Text file</li> -->
 				<!-- <li id='profile-view' v-if="isProfileViewable" @click="showProfile(false)">Show Profile</li> -->
 				<!-- <li id='file-search' v-if="isSearchable" @keyup.enter="openSearch(false)" @click="openSearch(false)">Search...</li> -->
@@ -384,6 +385,20 @@ module.exports = {
 				return false;
 			}
 		},
+		canCreateThumbnail() {
+            if (this.selectedFiles.length != 1)
+                return false;
+            let file = this.selectedFiles[0];
+            if (file.props.thumbnail.ref != null) {
+                return false;
+            }
+            var mimeType = file.props.mimeType;
+            if (mimeType.startsWith("video") || mimeType.startsWith("image") || mimeType.startsWith("audio/mpeg")) {
+                return true;
+            } else {
+                return false;
+            }
+		},
 		canOpen() {
 			try {
 				if (this.currentDir == null)
@@ -648,7 +663,16 @@ module.exports = {
 			this.closeMenu()
 			this.$store.commit('SET_WINDOW_WIDTH', window.innerWidth)
 		},
-
+        createThumbnail() {
+            this.closeMenu();
+            if (this.selectedFiles.length != 1)
+                return false;
+            let file = this.selectedFiles[0];
+            let that = this;
+            file.calculateThumbnail(this.context.network, this.context.crypto).thenApply(res => {
+                that.currentDirChanged();
+             });
+        },
 		showPendingServerMessages() {
 			// let context = this.getContext();
 			let that = this;
