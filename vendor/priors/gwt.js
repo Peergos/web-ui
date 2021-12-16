@@ -537,7 +537,15 @@ function getThumbnailFromCanvas(canvas, img, width, height, size, future) {
         let canvasHeight = tall ? size : height*size/width;
         canvas.width = canvasWidth;
         canvas.height = canvasHeight;
-        canvas.getContext('2d').drawImage(img, 0, 0, width, height, 0, 0, canvasWidth, canvasHeight);
+        let context = canvas.getContext('2d');
+        //canvas.getContext('2d').drawImage(img, 0, 0, width, height, 0, 0, canvasWidth, canvasHeight);
+        try {
+            context.drawImage(img, 0, 0, width, height, 0, 0, canvasWidth, canvasHeight);
+        } catch (ex) {
+            console.log("Unable to capture thumbnail. Maybe blocked by browser addon?");
+            future.complete("");
+            return;
+        }
     }
     var dataUrl = canvas.toDataURL("image/webp");
     if (dataUrl.startsWith("data:image/png")) {
@@ -739,9 +747,16 @@ function createVideoThumbnailStreamingProm(future, asyncReader, size, filename, 
                                 result.done = true;
                                 video.pause();
                                 future.complete("");
+                                return;
                             }
                             let context = canvas.getContext('2d');
-                            context.drawImage(video, 0, 0, width, height);
+                            try {
+                                context.drawImage(video, 0, 0, width, height);
+                            } catch (ex) {
+                                console.log("Unable to capture thumbnail. Maybe blocked by browser addon?");
+                                future.complete("");
+                                return;
+                            }
                             let imageData = context.getImageData(0, 0, width, height);
                             if (isLikelyValidImage(imageData, blackWhiteThreshold)) {
                                 result.done = true;
