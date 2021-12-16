@@ -669,7 +669,7 @@ module.exports = {
                 return false;
             let file = this.selectedFiles[0];
             let that = this;
-            file.calculateThumbnail(this.context.network, this.context.crypto).thenApply(res => {
+            file.calculateAndUpdateThumbnail(this.context.network, this.context.crypto).thenApply(res => {
                 if (res) {
                     that.currentDirChanged();
                 }
