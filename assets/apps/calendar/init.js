@@ -47,7 +47,7 @@ let handler = function (e) {
             } else {
                 setCalendars(true, []);
             }
-            importICSFile(e.data.contents, e.data.username, e.data.isSharedWithUs, loadCalendarAsGuest, "My Calendar", true);
+            importICSFile(e.data.contents, e.data.username, e.data.isSharedWithUs, loadCalendarAsGuest, "My Calendar");
       }
 };
 window.addEventListener('message', handler);
@@ -894,13 +894,20 @@ function updateCache(oldSchedule, newSchedule) {
         }
     }
 }
-function importICSFile(contents, username, isSharedWithUs, loadCalendarAsGuest, calendarName, showConfirmation) {
+function importICSFile(contents, username, isSharedWithUs, loadCalendarAsGuest, calendarName) {
     currentUsername = username;
     if (loadCalendarAsGuest) {
         var yearMonth = currentMoment.year() * 12 + currentMoment.month();
         load([], [], [], [], yearMonth, "unknown");
     }
-    let icalComponent = new ICAL.Component(ICAL.parse(contents));
+    var icalComponent = null;
+    try {
+        icalComponent = new ICAL.Component(ICAL.parse(contents));
+    } catch (ex) {
+        console.log('Unable to parse ical file: ' + ex);
+        showImportError('Unable to parse ical file');
+        return;
+    }
     let vevents = icalComponent.getAllSubcomponents('vevent');
     let scheduleMap = {};
     let schedules = [];
@@ -955,7 +962,7 @@ function importICSFile(contents, username, isSharedWithUs, loadCalendarAsGuest, 
         disableToolbarButtons(false);
     }
     if (allEvents.length > 0) {
-        mainWindow.postMessage({items:allEvents, showConfirmation: showConfirmation, type:"saveAll"}, origin);
+        mainWindow.postMessage({items:allEvents, showConfirmation: false, type:"saveAll"}, origin);
     }
     if (cal != null) { // could be headless import
         refreshScheduleVisibility();
@@ -965,7 +972,14 @@ function confirmImportICSFile(contents, username, isSharedWithUs, loadCalendarAs
     tempLoadedEvents = [];
     tempSchedules = [];
     currentUsername = username;
-    let icalComponent = new ICAL.Component(ICAL.parse(contents));
+    var icalComponent = null;
+    try {
+        icalComponent = new ICAL.Component(ICAL.parse(contents));
+    } catch (ex) {
+        console.log('Unable to parse ical file: ' + ex);
+        showImportError('Unable to parse ical file');
+        return;
+    }
     let vevents = icalComponent.getAllSubcomponents('vevent');
     let scheduleMap = {};
     for(var idx = 0; idx < vevents.length; idx++) {
@@ -1362,7 +1376,13 @@ function serialiseICal(schedule, updateTimestamp) {
         vvent.updatePropertyWithValue('summary', schedule.title);
         vvent.updatePropertyWithValue('description', schedule.raw.memo);
         vvent.updatePropertyWithValue('location', schedule.location);
-        if (updateTimestamp || vvent.getFirstPropertyValue("dtstamp") == null) {
+        var dtStamp = null;
+        try {
+            dtStamp = vvent.getFirstPropertyValue("dtstamp");
+        } catch (dtEx) {
+            console.log('Unable to parse dtstamp: ' + dtEx);
+        }
+        if (updateTimestamp || dtStamp == null) {
             vvent.updatePropertyWithValue('dtstamp', timestamp(new Date()));
         }
         if (schedule.isAllDay) {
@@ -2278,7 +2298,7 @@ function importICal(item, evt){
     let file = files[0];
     let filereader = new FileReader();
     filereader.onload = function(){
-        importICSFile(this.result, currentUsername, false, false, item.name, false);
+        importICSFile(this.result, currentUsername, false, false, item.name);
     };
     filereader.readAsText(file);
 }
