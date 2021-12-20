@@ -153,6 +153,13 @@
             :consumer_func="replace_consumer_func"
             :showApplyAll=replace_showApplyAll>
         </replace>
+        <warning
+            v-if="showWarning"
+            v-on:hide-warning="closeWarning"
+            :warning_message='warning_message'
+            :warning_body="warning_body"
+            :consumer_func="warning_consumer_func">
+        </warning>
 		<error
 			v-if="showError"
 			@hide-error="showError = false"
@@ -287,7 +294,8 @@ module.exports = {
             dblClickDelay: 700,
             clicks: 0,
             clickTimer: null,
-            clickedFilename: null
+            clickedFilename: null,
+            isStreamingAvailable: false
 		};
 	},
 
@@ -393,7 +401,9 @@ module.exports = {
                 return false;
             }
             var mimeType = file.props.mimeType;
-            if (mimeType.startsWith("video") || mimeType.startsWith("image") || mimeType.startsWith("audio/mpeg")) {
+            if (mimeType.startsWith("video")) {
+                return this.isStreamingAvailable;
+            } else if(mimeType.startsWith("image") || mimeType.startsWith("audio/mpeg")) {
                 return true;
             } else {
                 return false;
@@ -556,6 +566,7 @@ module.exports = {
 		]),
 
 		init() {
+		    this.isStreamingAvailable = this.supportsStreaming();
 			const that = this;
 			if (this.context != null && this.context.username == null) {
 			    // open drive from a secret link
@@ -931,7 +942,7 @@ module.exports = {
 		},
 		confirmDownload(file, downloadFn) {
 			var size = this.getFileSize(file.getFileProperties());
-			if (this.supportsStreaming() || size < 50 * 1024 * 1024)
+			if (this.isStreamingAvailable || size < 50 * 1024 * 1024)
 				return downloadFn();
 			var sizeMb = (size / 1024 / 1024) | 0;
 			this.warning_message = 'Are you sure you want to download ' + file.getName() + " of size " + sizeMb + 'MiB?';
