@@ -23,7 +23,8 @@ module.exports = new Vuex.Store({
 
 		crypto: null,
 		network: null,
-		context: null,
+	        context: null,
+                mirrorBatId: null,
 		download: null,
 		open: null,
 		initPath: null,
@@ -158,7 +159,10 @@ module.exports = new Vuex.Store({
 		USER_ADMIN(state, payload) {
 			state.isAdmin = payload;
 		},
-
+                SET_MIRROR_BAT_ID(state, payload) {
+			state.mirrorBatId = payload;
+		},
+		
 		//Drive
 		// SET_DRIVE_MENU_POSITION(state, payload) {
 		// 	state.driveMenuPosition = payload;
@@ -228,6 +232,15 @@ module.exports = new Vuex.Store({
 
 			return state.context.getSpaceUsage().thenApply(u => {
 				commit('SET_USAGE', u);
+			});
+		},
+
+		updateMirrorBatId({ commit, state }) {
+			if (state.isSecretLink)
+				return;
+
+			return state.context.ensureMirrorId().thenApply(u => {
+				commit('SET_MIRROR_BAT_ID', u);
 			});
 		},
 

@@ -211,7 +211,7 @@ module.exports = {
 		return {
 			isGrid: true,
 			// path: [],
-			searchPath: null,
+		        searchPath: null,
 			currentDir: null,
 			files: [],
 			sortBy: "name",
@@ -309,6 +309,7 @@ module.exports = {
 			'quotaBytes',
 			'usageBytes',
 			'context',
+			'mirrorBatId',
 			'download',
 			'open',
 			'initPath',
@@ -562,7 +563,8 @@ module.exports = {
 		...Vuex.mapActions([
 			'updateQuota',
 			'updateUsage',
-			'updateSocial'
+		        'updateSocial',
+                        'updateMirrorBatId'
 		]),
 
 		init() {
@@ -649,8 +651,9 @@ module.exports = {
 
 				this.updateSocial()
 				this.updateUsage()
-				this.updateQuota()
-
+ 			        this.updateQuota()
+                                this.updateMirrorBatId()
+                            
 				this.context.getPaymentProperties(false).thenApply(function (paymentProps) {
 					if (paymentProps.isPaid()) {
 						that.paymentProperties = paymentProps;
@@ -978,7 +981,7 @@ module.exports = {
 		mkdir(name) {
 			this.showSpinner = true;
 			var that = this;
-			this.currentDir.mkdir(name, this.context.network, false, this.context.crypto)
+			this.currentDir.mkdir(name, this.context.network, false, this.mirrorBatId, this.context.crypto)
 				.thenApply(function (updatedDir) {
 					that.currentDir = updatedDir;
 					that.updateFiles();
@@ -1222,7 +1225,7 @@ module.exports = {
                 return;
             }
             updatedDir.uploadFileJS(file.name, java_reader, (file.size - (file.size % Math.pow(2, 32))) / Math.pow(2, 32), file.size,
-                overwriteExisting, overwriteExisting ? true : false, that.context.network, that.context.crypto, updateProgressBar,
+                overwriteExisting, overwriteExisting ? true : false, that.mirrorBatId, that.context.network, that.context.crypto, updateProgressBar,
                 that.context.getTransactionService()
             ).thenApply(function (res) {
                 uploadParams.filesUploaded++;
@@ -1307,7 +1310,7 @@ module.exports = {
 							let empty = peergos.shared.user.JavaScriptPoster.emptyArray();
 							let reader = new peergos.shared.user.fs.AsyncReader.ArrayBacked(empty);
 							homeDir.get().uploadFileJS(select_result, reader, 0, 0,
-								false, false, that.context.network, that.context.crypto, function (len) { },
+								false, false, that.mirrorBatId, that.context.network, that.context.crypto, function (len) { },
 								that.context.getTransactionService()
 							).thenApply(function (updatedDir) {
 								updatedDir.getChild(select_result, that.context.crypto.hasher, that.context.network).thenApply(function (textFileOpt) {
@@ -1748,7 +1751,7 @@ module.exports = {
 			let empty = peergos.shared.user.JavaScriptPoster.emptyArray();
 			let reader = new peergos.shared.user.fs.AsyncReader.ArrayBacked(empty);
 			this.currentDir.uploadFileJS(filename, reader, 0, 0,
-				false, false, this.context.network, this.context.crypto, function (len) { },
+				false, false, that.mirrorBatId, this.context.network, this.context.crypto, function (len) { },
 				this.context.getTransactionService()
 			).thenApply(function (res) {
 				that.currentDir = res;

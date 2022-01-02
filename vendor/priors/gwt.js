@@ -428,6 +428,31 @@ var scryptJS = {
 	    var res = convertToByteArray(data.slice(0, outputLength));
 	    return res;
 	}
+
+        this.hmacSha256 = function(secretKey, message) {
+            var future = peergos.shared.util.Futures.incomplete();
+            crypto.subtle.importKey(
+    		'raw',
+    		secretKey,
+   		{ name: 'HMAC', hash: 'SHA-256' },
+    		false,
+    		['sign', 'verify'],
+  	    ).then(function(key) {
+	        return window.crypto.subtle.sign(
+		    'HMAC',
+                    key,
+		    message
+	        ).then(function(sig){
+		    //returns the hash as an ArrayBuffer
+		    var data = new Int8Array(sig);
+		    var res = convertToByteArray(data.slice(0, 32));
+		    future.complete(res);
+	        }).catch(function(err){
+		    future.completeExceptionally(java.lang.Throwable.of(err));
+	        });
+            })
+	    return future;
+        }
     }
 };
 
