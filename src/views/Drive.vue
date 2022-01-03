@@ -211,7 +211,7 @@ module.exports = {
 		return {
 			isGrid: true,
 			// path: [],
-		        searchPath: null,
+            searchPath: null,
 			currentDir: null,
 			files: [],
 			sortBy: "name",
@@ -563,8 +563,8 @@ module.exports = {
 		...Vuex.mapActions([
 			'updateQuota',
 			'updateUsage',
-		        'updateSocial',
-                        'updateMirrorBatId'
+            'updateSocial',
+            'updateMirrorBatId'
 		]),
 
 		init() {
@@ -651,8 +651,8 @@ module.exports = {
 
 				this.updateSocial()
 				this.updateUsage()
- 			        this.updateQuota()
-                                this.updateMirrorBatId()
+                this.updateQuota()
+                this.updateMirrorBatId()
                             
 				this.context.getPaymentProperties(false).thenApply(function (paymentProps) {
 					if (paymentProps.isPaid()) {

@@ -23,8 +23,8 @@ module.exports = new Vuex.Store({
 
 		crypto: null,
 		network: null,
-	        context: null,
-                mirrorBatId: null,
+        context: null,
+        mirrorBatId: null,
 		download: null,
 		open: null,
 		initPath: null,
@@ -159,7 +159,7 @@ module.exports = new Vuex.Store({
 		USER_ADMIN(state, payload) {
 			state.isAdmin = payload;
 		},
-                SET_MIRROR_BAT_ID(state, payload) {
+        SET_MIRROR_BAT_ID(state, payload) {
 			state.mirrorBatId = payload;
 		},
 		
