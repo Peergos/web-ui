@@ -978,10 +978,14 @@ module.exports = {
 			link.dispatchEvent(click)
 		},
 
+		getMirrorBatId(file) {
+			return file.getOwnerName() == this.context.username ? this.mirrorBatId : java.util.Optional.empty()				
+		},
+				
 		mkdir(name) {
 			this.showSpinner = true;
 			var that = this;
-			this.currentDir.mkdir(name, this.context.network, false, this.mirrorBatId, this.context.crypto)
+			this.currentDir.mkdir(name, this.context.network, false, this.getMirrorBatId(this.currentDir), this.context.crypto)
 				.thenApply(function (updatedDir) {
 					that.currentDir = updatedDir;
 					that.updateFiles();
@@ -1225,7 +1229,7 @@ module.exports = {
                 return;
             }
             updatedDir.uploadFileJS(file.name, java_reader, (file.size - (file.size % Math.pow(2, 32))) / Math.pow(2, 32), file.size,
-                overwriteExisting, overwriteExisting ? true : false, that.mirrorBatId, that.context.network, that.context.crypto, updateProgressBar,
+                overwriteExisting, overwriteExisting ? true : false, that.getMirrorBatId(updatedDir), that.context.network, that.context.crypto, updateProgressBar,
                 that.context.getTransactionService()
             ).thenApply(function (res) {
                 uploadParams.filesUploaded++;
@@ -1751,7 +1755,7 @@ module.exports = {
 			let empty = peergos.shared.user.JavaScriptPoster.emptyArray();
 			let reader = new peergos.shared.user.fs.AsyncReader.ArrayBacked(empty);
 			this.currentDir.uploadFileJS(filename, reader, 0, 0,
-				false, false, that.mirrorBatId, this.context.network, this.context.crypto, function (len) { },
+				false, false, that.getMirrorBatId(that.currentDir), this.context.network, this.context.crypto, function (len) { },
 				this.context.getTransactionService()
 			).thenApply(function (res) {
 				that.currentDir = res;
