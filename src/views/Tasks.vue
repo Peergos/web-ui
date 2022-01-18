@@ -379,8 +379,8 @@ module.exports = {
                         that.$emit("update-refresh");
                     }).exceptionally(function(throwable) {
                         that.showSpinner = false;
-                        if (throwable.detailMessage.includes("Couldn%27t+update+mutable+pointer%2C+cas+failed")
-                            ||   throwable.detailMessage.includes("CAS exception updating cryptree node.")) {
+                        if (throwable.detailMessage.includes("CAS exception updating cryptree node.")
+                            ||   throwable.detailMessage.includes("Corenode Crypto CAS failed!")) {
                             that.showMessage("Concurrent modification detected", "The file: '" +
                                              that.currentFile.getName() + "' has been updated by another user. Your changes have not been saved.");
                         } else {
