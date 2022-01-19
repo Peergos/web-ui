@@ -173,9 +173,8 @@ module.exports = {
             that.$emit("update-refresh");
         }).exceptionally(function(throwable) {
             if (throwable.detailMessage.includes("CAS exception updating cryptree node.")
-                ||   throwable.detailMessage.includes("Corenode Crypto CAS failed!")) {
-                that.showMessage(true, "Concurrent modification detected", "The file: '" +
-                that.file.getName() + "' has been updated by another user. Your changes have not been saved.");
+                ||   throwable.detailMessage.includes("Mutable pointer update failed! Concurrent Modification.")) {
+                that.showMessage(true, "Concurrent modification detected", "The file has been updated by another user. Your changes have not been saved.");
             } else {
                 that.showMessage(true, "Unexpected error", throwable.detailMessage);
                 console.log('Error uploading file: ' + that.file.getName());
