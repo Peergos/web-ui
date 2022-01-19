@@ -379,10 +379,9 @@ module.exports = {
                         that.$emit("update-refresh");
                     }).exceptionally(function(throwable) {
                         that.showSpinner = false;
-                        if (throwable.detailMessage.includes("Couldn%27t+update+mutable+pointer%2C+cas+failed")
-                            ||   throwable.detailMessage.includes("CAS exception updating cryptree node.")) {
-                            that.showMessage("Concurrent modification detected", "The file: '" +
-                                             that.currentFile.getName() + "' has been updated by another user. Your changes have not been saved.");
+                        if (throwable.detailMessage.includes("CAS exception updating cryptree node.")
+                            ||   throwable.detailMessage.includes("Mutable pointer update failed! Concurrent Modification.")) {
+                            that.showMessage("Concurrent modification detected", "The file has been updated by another user. Your changes have not been saved.");
                         } else {
                             that.handleException(throwable, "Unexpected error", 'Error uploading file: ' + that.currentFile.getName());
                         }
