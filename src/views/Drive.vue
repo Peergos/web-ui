@@ -1149,7 +1149,7 @@ module.exports = {
                 future.complete(this.currentDir);
             } else {
                 let relativePath = peergos.client.PathUtils.directoryToPath(file.directory);
-                this.currentDir.getOrMkdirs(relativePath,this.context.network, false, this.context.crypto).thenApply(function (updatedDir) {
+                this.currentDir.getOrMkdirs(relativePath,this.context.network, false, this.getMirrorBatId(this.currentDir), this.context.crypto).thenApply(function (updatedDir) {
                     future.complete(updatedDir);
                 });
             }
