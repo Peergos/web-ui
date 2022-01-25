@@ -54,8 +54,7 @@
 						:file="file"
 						:itemIndex="index"
 					/>
-					<DriveGridDrop v-if="sortedFiles.length==0 && currentDir != null && currentDir.isWritable()">
-						Upload a file by dragging and dropping here or clicking the icon
+					<DriveGridDrop v-if="showDnDArea && sortedFiles.length==0 && currentDir != null && currentDir.isWritable()">
 					</DriveGridDrop>
 				</DriveGrid>
 
@@ -295,14 +294,20 @@ module.exports = {
             clicks: 0,
             clickTimer: null,
             clickedFilename: null,
-            isStreamingAvailable: false
+            isStreamingAvailable: false,
+            showDnDArea: false
 		};
 	},
 
 	mixins:[downloaderMixins, router],
 
         mounted: function() {
-            this.updateCurrentDir();
+            let that = this;
+            this.updateCurrentDirectory(null,
+                () => {
+                    that.showDnDArea = true;
+                }
+            );
         },
 	computed: {
 		...Vuex.mapState([
@@ -510,6 +515,9 @@ module.exports = {
 		},
 
 		path(newPath, oldPath) {
+		    if (oldPath.length == 0) {
+		        return;
+		    }
 			console.log('drive oldPath: ', oldPath )
 			console.log('drive newPath: ', newPath )
 			if (newPath.length != oldPath.length) {
