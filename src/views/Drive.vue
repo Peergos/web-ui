@@ -515,7 +515,7 @@ module.exports = {
 		},
 
 		path(newPath, oldPath) {
-		    if (oldPath.length == 0) {
+		    if (!this.showDnDArea && oldPath.length == 0) {
 		        return;
 		    }
 			console.log('drive oldPath: ', oldPath )
