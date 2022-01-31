@@ -1184,9 +1184,9 @@ module.exports = {
                 let that = this;
                 let sortedChildren = node.children.sort(function (a, b) {
                     let aVal = a.item.socialPost != null ? that.methodCtx.extractSocialPostCreationTimestamp(a.item.socialPost)
-                        : a.item.file.getFileProperties().modified;
+                        : a.item.file.getFileProperties().created;
                     let bVal = b.item.socialPost != null ? that.methodCtx.extractSocialPostCreationTimestamp(b.item.socialPost)
-                        : b.item.file.getFileProperties().modified;
+                        : b.item.file.getFileProperties().created;
                     if (depth == 0) {
                         return bVal.compareTo(aVal);
                     } else {
@@ -1286,9 +1286,9 @@ module.exports = {
             let that = this;
             let sortedList = combinedPosts.sort(function (a, b) {
                 let aVal = a.socialPost != null ? that.extractSocialPostCreationTimestamp(a.socialPost)
-                    : a.file.getFileProperties().modified;
+                    : a.file.getFileProperties().created;
                 let bVal = b.socialPost != null ? that.extractSocialPostCreationTimestamp(b.socialPost)
-                    : b.file.getFileProperties().modified;
+                    : b.file.getFileProperties().created;
                 return bVal.compareTo(aVal);
             });
             let dedupedItems = [];
