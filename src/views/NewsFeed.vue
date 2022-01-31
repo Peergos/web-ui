@@ -425,9 +425,13 @@ module.exports = {
         },
         editPost: function(entry) {
             this.socialPostAction = 'edit';
-            this.currentSocialPostEntry = {path: entry.link, socialPost: entry.socialPost};
+            let parentPostAuthor = "";
+            if (entry.socialPost.parent.ref != null) {
+                parentPostAuthor = this.extractOwnerFromPath(entry.socialPost.parent.ref.path);
+            }
+            this.currentSocialPostEntry = {path: entry.link, socialPost: entry.socialPost, sharer: parentPostAuthor};
             this.showSocialPostForm = true;
-	    this.showEditMenu = false;
+            this.showEditMenu = false;
         },
         sendFriendRequest: function(entry) {
             let ctx = this.context;
