@@ -184,7 +184,7 @@ module.exports = {
             return this.isReady && !this.isPosting;
         },
         submitPost: function() {
-            if (this.isPosting || this.post == '') {
+            if (this.isPosting || (this.mediaFiles.length == 0 && this.post == '')) {
                 return;
             }
             this.isPosting = true;
