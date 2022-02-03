@@ -598,11 +598,11 @@ function generateVideoThumbnailProm(asyncReader, fileSize, fileName, mimeType) {
     if(supportsStreaming() && fileSize > 50 * 1000 * 1000) {
         return createVideoThumbnailStreamingProm(future, asyncReader, fileSize, fileName, mimeType);
     }else{
-        return createVideoThumbnailProm(future, asyncReader, fileSize, fileName);
+        return createVideoThumbnailProm(future, asyncReader, fileSize, fileName, mimeType);
     }
 }
 
-function createVideoThumbnailProm(future, asyncReader, fileSize, fileName) {
+function createVideoThumbnailProm(future, asyncReader, fileSize, fileName, mimeType) {
     let bytes = peergos.shared.util.Serialize.newByteArray(fileSize);
     asyncReader.readIntoArray(bytes, 0, fileSize).thenApply(function(bytesRead) {
         var increment = 0;
@@ -646,26 +646,7 @@ function createVideoThumbnailProm(future, asyncReader, fileSize, fileName) {
             console.log(e);
             future.complete("");
         }
-        //        let blob = new Blob([new Uint8Array(bytes)], {type: "octet/stream"});
-        //safari is picky about mime type
-        let safari =
-          /constructor/i.test(window.HTMLElement) ||
-          !!window.safari ||
-          !!window.WebKitPoint
-        var type = "octet/stream";
-        let fileNameLowercase = fileName.toLowerCase();
-        if (safari) {
-            if (fileNameLowercase.endsWith('.mov') ) {
-                type = "video/quicktime";
-            } else if (fileNameLowercase.endsWith('.mp4') ) {
-                type = "video/mp4";
-            } else if (fileNameLowercase.endsWith('.m4v') ) {
-                type = "video/x-m4v";
-            } else if (fileNameLowercase.endsWith('.3gp') ) {
-                type = "video/3gpp";
-            }
-        }
-        let blob = new Blob([new Uint8Array(bytes)], {type: type});
+        let blob = new Blob([new Uint8Array(bytes)], {type: mimeType});
         var url = (window.webkitURL || window.URL).createObjectURL(blob);
         video.src = url;
     });
