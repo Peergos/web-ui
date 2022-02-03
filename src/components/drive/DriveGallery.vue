@@ -119,7 +119,25 @@ module.exports = {
 				console.log("No URL for null imageData");
 				return null;
 			}
-			var blob = new Blob([this.imageData], { type: "octet/stream" });
+            //safari is picky about mime type
+            let safari =
+              /constructor/i.test(window.HTMLElement) ||
+              !!window.safari ||
+              !!window.WebKitPoint
+            var type = "octet/stream";
+            let fileNameLowercase = this.current.getFileProperties().name.toLowerCase();
+            if (safari) {
+                if (fileNameLowercase.endsWith('.mov') ) {
+                    type = "video/quicktime";
+                } else if (fileNameLowercase.endsWith('.mp4') ) {
+                    type = "video/mp4";
+                } else if (fileNameLowercase.endsWith('.m4v') ) {
+                    type = "video/x-m4v";
+                } else if (fileNameLowercase.endsWith('.3gp') ) {
+                    type = "video/3gpp";
+                }
+            }
+			var blob = new Blob([this.imageData], { type: type });
 			var dataURL = window.URL.createObjectURL(blob);
 			console.log("Setting data url to " + dataURL);
 			return dataURL;
