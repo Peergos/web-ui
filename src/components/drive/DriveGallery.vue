@@ -125,17 +125,8 @@ module.exports = {
               !!window.safari ||
               !!window.WebKitPoint
             var type = "octet/stream";
-            let fileNameLowercase = this.current.getFileProperties().name.toLowerCase();
             if (safari) {
-                if (fileNameLowercase.endsWith('.mov') ) {
-                    type = "video/quicktime";
-                } else if (fileNameLowercase.endsWith('.mp4') ) {
-                    type = "video/mp4";
-                } else if (fileNameLowercase.endsWith('.m4v') ) {
-                    type = "video/x-m4v";
-                } else if (fileNameLowercase.endsWith('.3gp') ) {
-                    type = "video/3gpp";
-                }
+                type = this.current.getFileProperties().mimeType;
             }
 			var blob = new Blob([this.imageData], { type: type });
 			var dataURL = window.URL.createObjectURL(blob);
