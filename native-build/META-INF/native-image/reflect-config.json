@@ -1,24 +1,52 @@
 [
-{
-  "name":"org.sqlite.JDBC"
-},
-{
-  "name":"org.sqlite.NativeDB",
-  "methods":[
-    {"name":"<init>","parameterTypes":[] }, 
-    {"name":"load","parameterTypes":[] }
-  ]
-},
-{
-  "name":"org.sqlite.Function"
-},
-{
-  "name":"org.sqlite.Function$Aggregate"
-},
-{
-  "name":"org.sqlite.DB"
-},
-{
-  "name":"org.sqlite.DB$ProgressObserver"
-}
+    {
+        "name":"org.sqlite.core.DB",
+        "allDeclaredMethods":true,
+        "allPublicMethods": true,
+        "allDeclaredFields":true,
+        "methods":[{"name":"<init>","parameterTypes":["java.lang.String", "java.lang.String", "org.sqlite.SQLiteConfig"] }]
+    },
+    {
+        "name":"org.sqlite.core.NativeDB",
+        "allDeclaredMethods":true,
+        "allPublicMethods": true,
+        "allDeclaredFields":true,
+        "methods":[{"name":"<init>","parameterTypes":["java.lang.String", "java.lang.String", "org.sqlite.SQLiteConfig"] }]
+    },
+    {
+        "name":"org.sqlite.BusyHandler",
+        "allDeclaredMethods":true,
+        "allPublicMethods": true,
+        "methods":[{"name":"<init>","parameterTypes":[] }]
+    },
+    {
+        "name":"org.sqlite.Function",
+        "allDeclaredMethods":true,
+        "allPublicMethods": true,
+        "allDeclaredFields":true,
+        "methods":[{"name":"<init>","parameterTypes":[] }]
+    },
+    {
+        "name":"org.sqlite.ProgressHandler",
+        "allDeclaredMethods":true,
+        "allPublicMethods": true,
+        "methods":[{"name":"<init>","parameterTypes":[] }]
+    },
+    {
+        "name":"org.sqlite.Function$Aggregate",
+        "allDeclaredMethods":true,
+        "allPublicMethods": true,
+        "methods":[{"name":"<init>","parameterTypes":[] }]
+    },
+    {
+        "name":"org.sqlite.Function$Window",
+        "allDeclaredMethods":true,
+        "allPublicMethods": true,
+        "methods":[{"name":"<init>","parameterTypes":[] }]
+    },
+    {
+        "name":"org.sqlite.core.DB$ProgressObserver",
+        "allDeclaredMethods":true,
+        "allPublicMethods": true
+    }
 ]
