@@ -21,7 +21,7 @@ jobs:
       run: cd native-build && ./build-native-image.sh
     - name: Tar binary
       shell: bash
-      run: cd native-build && ./tar -cvzf peergos.tar.gz peergos
+      run: cd native-build && tar -cvzf peergos.tar.gz peergos
     - name: Upload Artifact
       uses: actions/upload-artifact@v2
       with:
