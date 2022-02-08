@@ -17,6 +17,7 @@
 # You can run the output with:
 # ./peergos daemon -admin-usernames demo -logToConsole true
 
+export NATIVE_IMAGE_BIN=$(readlink -f graalvm-ce-java11-22.0.0.2/bin/native-image)
 PEERGOS_JAR_PATH=${1:-Peergos.jar}
 NATIVE_IMAGE_BIN=${NATIVE_IMAGE_BIN:-native-image}
 NATIVE_IMAGE_JAVA=./graalvm-ce-java11-22.0.0.2/bin/java
