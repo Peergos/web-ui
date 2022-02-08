@@ -1,0 +1,29 @@
+name: Native build
+
+on: [push]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v1
+    - name: Set up JDK
+      uses: actions/setup-java@v1
+      with:
+        java-version: 11
+    - name: Build with Ant
+      run: ant -noinput -buildfile build.xml peergos_submodule_sync dist 
+    - name: Install GraalVM and native-image
+      shell: bash
+      run: cd native-build && ./install-native-image.sh
+    - name: Build native image of Peergos
+      shell: bash
+      run: cd native-build && ./build-native-image.sh
+    - name: Tar binary
+      shell: bash
+      run: cd native-build && ./tar -cvzf peergos.tar.gz peergos
+    - name: Upload Artifact
+      uses: actions/upload-artifact@v2
+      with:
+        name: peergos
+        path: "./native-build/peergos.tar.gz"
