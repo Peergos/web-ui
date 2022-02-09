@@ -29,7 +29,7 @@ public class BuildNativeImage {
                    "-H:ConfigurationFileDirectories=META-INF/native-image " +
                    "--no-fallback " +
                    "--initialize-at-build-time=org.sqlite.DB,org.sqlite.NativeDB,org.sqlite.Function,org.sqlite.Function\\$Aggregate,org.sqlite.DB\\$ProgressObserver " +
-                   "-jar Peergos.jar peergos" + ext);
+                   "-jar Peergos.jar peergos");
         if (! new File("peergos"+ext).exists())
             throw new IllegalStateException("Native build failed!");
     }
