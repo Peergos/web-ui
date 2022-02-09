@@ -5,7 +5,8 @@ on: [push]
 jobs:
   build:
     runs-on: ${{ matrix.os }}
-    matrix:
+    strategy:
+      matrix:
         os: [ubuntu-latest]
     steps:
     - uses: actions/checkout@v1
