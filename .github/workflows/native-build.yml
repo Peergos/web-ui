@@ -32,4 +32,4 @@ jobs:
       uses: actions/upload-artifact@v2
       with:
         name: peergos
-        path: "./native-build/"${{ matrix.bin }}
+        path: "./native-build/${{ matrix.bin }}"
