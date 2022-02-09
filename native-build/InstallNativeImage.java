@@ -23,7 +23,8 @@ public class InstallNativeImage {
         runCommand(tar + " " + filename);
 
         // install native-image
-        runCommand("./graalvm-ce-java11-" + VERSION + "/bin/gu install native-image");
+        String guExt = OS.equals("windows") ? ".cmd" : "";
+        runCommand("./graalvm-ce-java11-" + VERSION + "/bin/gu" + guExt + " install native-image");
 
         if (new File("graalvm-ce-java11-"+VERSION + "/bin/native-image").exists())
             System.out.println("native-image installed");
