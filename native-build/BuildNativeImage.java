@@ -17,16 +17,18 @@ public class BuildNativeImage {
         if (! new File("graalvm-ce-java11-"+VERSION + "/bin/native-image").exists())
             throw new IllegalStateException("native-image not installed...");
         String ext = OS.equals("windows") ? ".exe" : "";
+        String binExt = OS.equals("windows") ? ".cmd" : "";
 
         // run native-image
-        runCommand("graalvm-ce-java11-"+VERSION + "/bin/native-image --allow-incomplete-classpath " +
-                "-H:EnableURLProtocols=http " +
-                "-H:IncludeResources='./webroot/.*' " +
-                "-H:+ReportUnsupportedElementsAtRuntime " +
-                "-H:ConfigurationFileDirectories=META-INF/native-image " +
-                "--no-fallback " +
-                "--initialize-at-build-time=org.sqlite.DB,org.sqlite.NativeDB,org.sqlite.Function,org.sqlite.Function\\$Aggregate,org.sqlite.DB\\$ProgressObserver " +
-                "-jar Peergos.jar peergos" + ext);
+        runCommand("graalvm-ce-java11-"+VERSION + "/bin/native-image" + binExt +
+                   " --allow-incomplete-classpath " +
+                   "-H:EnableURLProtocols=http " +
+                   "-H:IncludeResources='./webroot/.*' " +
+                   "-H:+ReportUnsupportedElementsAtRuntime " +
+                   "-H:ConfigurationFileDirectories=META-INF/native-image " +
+                   "--no-fallback " +
+                   "--initialize-at-build-time=org.sqlite.DB,org.sqlite.NativeDB,org.sqlite.Function,org.sqlite.Function\\$Aggregate,org.sqlite.DB\\$ProgressObserver " +
+                   "-jar Peergos.jar peergos" + ext);
     }
 
     public static int runCommand(String command) throws Exception {
