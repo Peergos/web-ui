@@ -15,7 +15,7 @@ jobs:
       run: ant -noinput -buildfile build.xml peergos_submodule_sync dist 
     - name: Install GraalVM and native-image
       shell: bash
-      run: cd native-build && ./install-native-image.sh
+      run: cd native-build && java InstallNativeImage.java
     - name: Build native image of Peergos
       shell: bash
       run: cd native-build && ./build-native-image.sh
