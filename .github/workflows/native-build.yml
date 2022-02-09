@@ -12,8 +12,6 @@ jobs:
         exclude:
           - os: ubuntu-latest
             bin: peergos.exe
-          - os: macos-latest
-            bin: peergos.exe
           - os: windows-latest
             bin: peergos
     steps:
