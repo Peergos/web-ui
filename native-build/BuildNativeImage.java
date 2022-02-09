@@ -13,11 +13,12 @@ public class BuildNativeImage {
         String OS = canonicaliseOS(System.getProperty("os.name").toLowerCase());
         String OS_ARCH = getOsArch();
         System.out.println("OS-ARCH: " + OS_ARCH);
+        String binExt = OS.equals("windows") ? ".cmd" : "";
 
-        if (! new File("graalvm-ce-java11-"+VERSION + "/bin/native-image").exists())
+        if (! new File("graalvm-ce-java11-"+VERSION + "/bin/native-image" + binExt).exists())
             throw new IllegalStateException("native-image not installed...");
         String ext = OS.equals("windows") ? ".exe" : "";
-        String binExt = OS.equals("windows") ? ".cmd" : "";
+        
 
         // run native-image
         runCommand("graalvm-ce-java11-"+VERSION + "/bin/native-image" + binExt +

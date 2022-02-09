@@ -29,7 +29,7 @@ public class InstallNativeImage {
         if (new File("graalvm-ce-java11-"+VERSION + "/bin/native-image" + binExt).exists())
             System.out.println("native-image installed");
         else
-            System.out.println("native-image not installed...");
+            throw new IllegalStateException("native-image not installed...");
     }
 
     public static void download(String url, File output) throws Exception {
