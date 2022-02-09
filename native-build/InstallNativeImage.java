@@ -24,7 +24,8 @@ public class InstallNativeImage {
 
         // install native-image
         String binExt = OS.equals("windows") ? ".cmd" : "";
-        runCommand("./graalvm-ce-java11-" + VERSION + "/bin/gu" + binExt + " install native-image");
+        String extraDirs = OS.equals("macos") ? "/Contents/Home" : "";
+        runCommand("./graalvm-ce-java11-" + VERSION + extraDirs + "/bin/gu" + binExt + " install native-image");
 
         if (new File("graalvm-ce-java11-"+VERSION + "/bin/native-image" + binExt).exists())
             System.out.println("native-image installed");
