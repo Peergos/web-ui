@@ -14,14 +14,14 @@ public class BuildNativeImage {
         String OS_ARCH = getOsArch();
         System.out.println("OS-ARCH: " + OS_ARCH);
         String binExt = OS.equals("windows") ? ".cmd" : "";
+        String extraDirs = OS.equals("darwin") ? "/Contents/Home" : "";
 
-        if (! new File("graalvm-ce-java11-"+VERSION + "/bin/native-image" + binExt).exists())
+        if (! new File("graalvm-ce-java11-"+VERSION + extraDirs + "/bin/native-image" + binExt).exists())
             throw new IllegalStateException("native-image not installed...");
         String ext = OS.equals("windows") ? ".exe" : "";
-        
 
         // run native-image
-        runCommand("graalvm-ce-java11-"+VERSION + "/bin/native-image" + binExt +
+        runCommand("graalvm-ce-java11-"+VERSION + extraDirs + "/bin/native-image" + binExt +
                    " --allow-incomplete-classpath " +
                    "-H:EnableURLProtocols=http " +
                    "-H:IncludeResources='./webroot/.*' " +
