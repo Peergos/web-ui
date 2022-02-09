@@ -33,5 +33,5 @@ jobs:
     - name: Upload Artifact
       uses: actions/upload-artifact@v2
       with:
-        name: ${{ matrix.os }}/peergos
+        name: ${{ matrix.os }}-peergos
         path: "./native-build/${{ matrix.bin }}"
