@@ -8,6 +8,14 @@ jobs:
     strategy:
       matrix:
         os: [ubuntu-latest, windows-latest]
+        bin: [peergos, peergos.exe]
+        exclude:
+          - os: ubuntu-latest
+            bin: peergos.exe
+          - os: macos-latest
+            bin: peergos.exe
+          - os: windows-latest
+            bin: peergos
     steps:
     - uses: actions/checkout@v1
     - name: Set up JDK
@@ -26,4 +34,4 @@ jobs:
       uses: actions/upload-artifact@v2
       with:
         name: peergos
-        path: "./native-build/peergos.tar.gz"
+        path: "./native-build/"${{ matrix.bin }}
