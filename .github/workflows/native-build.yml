@@ -21,7 +21,7 @@ jobs:
       run: cd native-build && java InstallNativeImage.java
     - name: Build native image of Peergos
       shell: bash
-      run: cd native-build && ./build-native-image.sh
+      run: cd native-build && java BuildNativeImage.java
     - name: Upload Artifact
       uses: actions/upload-artifact@v2
       with:
