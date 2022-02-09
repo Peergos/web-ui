@@ -4,7 +4,9 @@ on: [push]
 
 jobs:
   build:
-    runs-on: ubuntu-latest
+    runs-on: ${{ matrix.os }}
+    matrix:
+        os: [ubuntu-latest]
     steps:
     - uses: actions/checkout@v1
     - name: Set up JDK
@@ -19,9 +21,6 @@ jobs:
     - name: Build native image of Peergos
       shell: bash
       run: cd native-build && ./build-native-image.sh
-    - name: Tar binary
-      shell: bash
-      run: cd native-build && tar -cvzf peergos.tar.gz peergos
     - name: Upload Artifact
       uses: actions/upload-artifact@v2
       with:
