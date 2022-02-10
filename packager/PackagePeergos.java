@@ -14,13 +14,14 @@ public class PackagePeergos {
         String OS_ARCH = getOsArch();
 
         Files.copy(Paths.get("../server/Peergos.jar"), Paths.get("Peergos.jar"), StandardCopyOption.REPLACE_EXISTING);
-        
+
+        String icon = OS.equals("windows") ? "../assets/favicon.ico" : "../assets/images/logo.png";
         runCommand("jpackage", "-i", "../server", "-n", "peergos",
                    "--main-class", "peergos.server.Main", "--main-jar",
                    "Peergos.jar", "--vendor", "Peergos Ltd.",
                    "--description", "The Peergos server and web interface.",
                    "--copyright", "AGPL",
-                   "--icon", "../assets/images/logo.png",
+                   "--icon", icon,
                    "--resource-dir", "deb-resources",
                    "--app-version", "1.0.0");
         String artifact = Files.list(Paths.get(""))
