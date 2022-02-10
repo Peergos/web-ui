@@ -31,7 +31,7 @@ jobs:
     - name: Build native image of Peergos
       shell: bash
       run: cd native-build && java BuildNativeImage.java
-    - name: Upload Artifact
+    - name: Upload static binary artifact
       uses: actions/upload-artifact@v2
       with:
         name: ${{ matrix.os }}-peergos
@@ -39,7 +39,7 @@ jobs:
     - name: Build Peergos installer
       shell: bash
       run: cd packager && java PackagePeergos.java
-    - name: Upload Artifact
+    - name: Upload package artifact
       uses: actions/upload-artifact@v2
       with:
         name: ${{ matrix.os }}-peergos

@@ -1,6 +1,7 @@
 import java.io.*;
 import java.net.*;
 import java.nio.file.*;
+import java.util.*;
 import java.util.zip.*;
 
 /** Package Peergos.jar into a self contained installer
@@ -14,15 +15,14 @@ public class PackagePeergos {
 
         Files.copy(Paths.get("../server/Peergos.jar"), Paths.get("Peergos.jar"), StandardCopyOption.REPLACE_EXISTING);
         
-        if (OS.equals("linux"))
-            runCommand("jpackage", "-i", "../server", "-n", "peergos",
-                       "--main-class", "peergos.server.Main", "--main-jar",
-                       "Peergos.jar", "--vendor", "Peergos Ltd.",
-                       "--description", "The Peergos server and web interface.",
-                       "--copyright", "AGPL",
-                       "--icon", "../assets/images/logo.png",
-                       "--resource-dir", "deb-resources",
-                       "--app-version", "0.5.0");
+        runCommand("jpackage", "-i", "../server", "-n", "peergos",
+                   "--main-class", "peergos.server.Main", "--main-jar",
+                   "Peergos.jar", "--vendor", "Peergos Ltd.",
+                   "--description", "The Peergos server and web interface.",
+                   "--copyright", "AGPL",
+                   "--icon", "../assets/images/logo.png",
+                   "--resource-dir", "deb-resources",
+                   "--app-version", "0.5.0");
     }
 
     public static int runCommand(String... command) throws Exception {
