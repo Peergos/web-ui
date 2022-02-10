@@ -10,6 +10,14 @@ module.exports = {
       return low + props.sizeHigh() * Math.pow(2, 32)
     },
 
+    supportsVideoStreaming: function() {
+        try {
+            return 'serviceWorker' in navigator && !!new ReadableStream() && !!new WritableStream()
+        } catch(err) {
+            return false;
+        }
+    },
+
     supportsStreaming: function () {
       try {
         //see https://github.com/jimmywarting/StreamSaver.js/issues/69
