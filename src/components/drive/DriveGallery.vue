@@ -119,15 +119,7 @@ module.exports = {
 				console.log("No URL for null imageData");
 				return null;
 			}
-            //safari is picky about mime type
-            let safari =
-              /constructor/i.test(window.HTMLElement) ||
-              !!window.safari ||
-              !!window.WebKitPoint
-            var type = "octet/stream";
-            if (safari) {
-                type = this.current.getFileProperties().mimeType;
-            }
+            let type = this.current.getFileProperties().mimeType;
 			var blob = new Blob([this.imageData], { type: type });
 			var dataURL = window.URL.createObjectURL(blob);
 			console.log("Setting data url to " + dataURL);
@@ -249,7 +241,7 @@ module.exports = {
 		},
 		confirmView(file, viewFn) {
 			var size = this.getFileSize(file.getFileProperties());
-			if (this.supportsStreaming() || size < 50 * 1024 * 1024)
+			if (this.supportsVideoStreaming() || size < 50 * 1024 * 1024)
 				return viewFn();
 			var sizeMb = (size / 1024 / 1024) | 0;
 			this.warning_message = 'Are you sure you want to view ' + file.getName() + " of size " + sizeMb + 'MiB?';
@@ -261,7 +253,7 @@ module.exports = {
 			this.warning_consumer_func = viewFn;
 			this.showWarning = true;
 		},
-                updateCurrentFileData() {
+        updateCurrentFileData() {
 			var file = this.current;
 			if (file == null) {
 				console.log("null file in gallery");
@@ -274,7 +266,7 @@ module.exports = {
 			var isLargeAudioFile =
 				that.isAudio(file) && that.getFileSize(props) > 1024 * 1024 * 5;
 			if (
-				that.supportsStreaming() &&
+				that.supportsVideoStreaming() &&
 				(that.isVideo(file) || isLargeAudioFile)
 			) {
 				var size = that.getFileSize(props);

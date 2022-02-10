@@ -22,7 +22,7 @@ self.onmessage = event => {
       var entry = new CacheEntry(event.data.size);
       setupStreamingEntry(port, entry)
       streamingMap = new Map()
-      streamingMap.set(uniqLink, [entry, port])
+      streamingMap.set(uniqLink, {entry: entry, port: port, mimeType: event.data.mimeType})
   } else {
       // Make filename RFC5987 compatible
       filename = encodeURIComponent(filename).replace(/['()]/g, escape)
@@ -133,13 +133,20 @@ self.onfetch = event => {
 	    console.log("Ignoring service worker request for " + url);
 	    return;
 	}
-        const [cacheEntry, port] = streamingEntry
+        const cacheEntry = streamingEntry.entry;
+        const port = streamingEntry.port;
+        const mimeType = streamingEntry.mimeType;
 
         const bytes = /^bytes\=(\d+)\-(\d+)?$/g.exec(
             event.request.headers.get('range')
         );
         const start = Number(bytes[1]);
-        var end = cacheEntry.firstRun ? oneMegBlockSize - 1 : alignToChunkBoundary(start, Number(bytes[2]));
+        const desiredEnd = Number(bytes[2]);
+        let firstBlockSize = oneMegBlockSize - 1;
+        if (desiredEnd == 1) {
+            firstBlockSize = 1;
+        }
+        var end = cacheEntry.firstRun ? firstBlockSize : alignToChunkBoundary(start, Number(bytes[2]));
         if(end > cacheEntry.fileSize - 1) {
             end = cacheEntry.fileSize - 1;
         }
@@ -147,7 +154,7 @@ self.onfetch = event => {
         const seekLength = end-start + 1;
         cacheEntry.setSkip();
         port.postMessage({ seekHi: seekHi, seekLo: start, seekLength: seekLength })
-        return event.respondWith(returnRangeRequest(start, end, cacheEntry))
+        return event.respondWith(returnRangeRequest(start, end, cacheEntry, mimeType))
     } else {
         const downloadEntry = downloadMap.get(url)
         if (!downloadEntry) return;
@@ -159,7 +166,9 @@ self.onfetch = event => {
 }
 function alignToChunkBoundary(start, end) {
     if (end) {
-        return end;
+        let modifiedEnd = end - start > maxBlockSize ?
+            alignToChunkBoundary(start) : end;
+        return modifiedEnd;
     } else {
         let endOfRange = ((Math.floor(start / maxBlockSize) + 1) * maxBlockSize) - 1;
         let len = endOfRange - start;
@@ -169,7 +178,7 @@ function alignToChunkBoundary(start, end) {
         return endOfRange;
     }
 }
-function returnRangeRequest(start, end, cacheEntry) {
+function returnRangeRequest(start, end, cacheEntry, mimeType) {
     return new Promise(function(resolve, reject) {
         let pump = (currentCount) => {
             const store = cacheEntry.bytes;
@@ -198,7 +207,7 @@ function returnRangeRequest(start, end, cacheEntry) {
               status: 206,
               statusText: 'Partial Content',
               headers: [
-//               'Content-Type': 'video/mp4',
+                ['Content-Type', mimeType],
                 ['accept-ranges', 'bytes'],
                 ['Content-Range', `bytes ${start}-${bytesProvided}/${fileSize}`],
                 ['content-length', arrayBuffer.byteLength]
