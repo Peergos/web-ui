@@ -22,7 +22,7 @@ jobs:
     - name: Set up JDK
       uses: actions/setup-java@v1
       with:
-        java-version: 11
+        java-version: 17
     - name: Build with Ant
       run: ant -noinput -buildfile build.xml peergos_submodule_sync dist 
     - name: Install GraalVM and native-image
@@ -39,4 +39,9 @@ jobs:
     - name: Build Peergos installer
       shell: bash
       run: cd packager && java PackagePeergos.java
+    - name: Upload Artifact
+      uses: actions/upload-artifact@v2
+      with:
+        name: ${{ matrix.os }}-peergos
+        path: "./packager/peergos_0.5.0-1_amd64.deb"
     

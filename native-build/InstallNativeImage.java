@@ -8,10 +8,11 @@ public class InstallNativeImage {
         String VERSION = "22.0.0.2";
         
         String OS = canonicaliseOS(System.getProperty("os.name").toLowerCase());
-        String OS_ARCH = getOsArch();
+        String OS_ARCH = getOsArch();       
         System.out.println("OS-ARCH: " + OS_ARCH);
         String ext = OS.equals("windows") ? ".zip" : ".tar.gz";
-        String filename = "graalvm-ce-java11-"+OS_ARCH+"-"+VERSION+ext;
+        String JAVA_VERSION = "java17";
+        String filename = "graalvm-ce-" + JAVA_VERSION + "-" + OS_ARCH + "-"+VERSION+ext;
         String url = "https://github.com/graalvm/graalvm-ce-builds/releases/download/vm-" +VERSION +"/" + filename;
 
         // Download graalVM
@@ -25,9 +26,9 @@ public class InstallNativeImage {
         // install native-image
         String binExt = OS.equals("windows") ? ".cmd" : "";
         String extraDirs = OS.equals("darwin") ? "/Contents/Home" : "";
-        runCommand("./graalvm-ce-java11-" + VERSION + extraDirs + "/bin/gu" + binExt + " install native-image");
+        runCommand("./graalvm-ce-" + JAVA_VERSION + "-" + VERSION + extraDirs + "/bin/gu" + binExt + " install native-image");
 
-        if (new File("graalvm-ce-java11-"+VERSION + extraDirs + "/bin/native-image" + binExt).exists())
+        if (new File("graalvm-ce-" + JAVA_VERSION + "-"+VERSION + extraDirs + "/bin/native-image" + binExt).exists())
             System.out.println("native-image installed");
         else
             throw new IllegalStateException("native-image not installed...");

@@ -26,7 +26,7 @@ public class PackagePeergos {
     }
 
     public static int runCommand(String... command) throws Exception {
-        System.out.println(command);
+        System.out.println(Arrays.asList(command));
         ProcessBuilder pb = new ProcessBuilder(command);
         pb.redirectError(ProcessBuilder.Redirect.INHERIT);
         pb.redirectOutput(ProcessBuilder.Redirect.INHERIT);
