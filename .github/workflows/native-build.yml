@@ -16,7 +16,7 @@ jobs:
             bin: peergos
           - os: macos-latest
             bin: peergos.exe
-        fail-fast: false
+      fail-fast: false
     steps:
     - uses: actions/checkout@v1
     - uses: ilammy/msvc-dev-cmd@v1
