@@ -30,9 +30,9 @@ public class PackagePeergos {
             .findFirst().get();
         System.out.println("artifact: " + artifact);
         if (OS.equals("windows"))
-            runCommand("setenv.bat", "artifact="+artifact);
+            runCommand("./setenv.bat", "artifact="+artifact);
         else
-            runCommand("setenv.sh", "artifact="+artifact);
+            runCommand("./setenv.sh", "artifact="+artifact);
     }
 
     public static int runCommand(String... command) throws Exception {
