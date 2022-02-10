@@ -29,10 +29,7 @@ public class PackagePeergos {
             .filter(n -> n.endsWith(".exe") || n.endsWith("deb") || n.endsWith("dmg"))
             .findFirst().get();
         System.out.println("artifact: " + artifact);
-        if (OS.equals("linux"))
-            runCommand("export", "artifact="+artifact);
-        else if (OS.equals("windows"))
-            runCommand("set", "artifact="+artifact);
+        runCommand("echo", "artifact="+artifact, ">>", "$GITHUB_ENV");
     }
 
     public static int runCommand(String... command) throws Exception {
