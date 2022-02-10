@@ -23,6 +23,7 @@ public class PackagePeergos {
                    "--icon", "../assets/images/logo.png",
                    "--resource-dir", "deb-resources",
                    "--app-version", "0.5.0");
+        Files.list(Paths.get("")).forEach(System.out::println);
     }
 
     public static int runCommand(String... command) throws Exception {
