@@ -29,7 +29,10 @@ public class PackagePeergos {
             .filter(n -> n.endsWith(".exe") || n.endsWith("deb") || n.endsWith("dmg"))
             .findFirst().get();
         System.out.println("artifact: " + artifact);
-        runCommand("echo", "artifact="+artifact, ">>", "$GITHUB_ENV");
+        if (OS.equals("windows"))
+            runCommand("setenv.bat", "artifact="+artifact);
+        else
+            runCommand("setenv.sh", "artifact="+artifact);
     }
 
     public static int runCommand(String... command) throws Exception {
