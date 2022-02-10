@@ -36,3 +36,7 @@ jobs:
       with:
         name: ${{ matrix.os }}-peergos
         path: "./native-build/${{ matrix.bin }}"
+    - name: Build Peergos installer
+      shell: bash
+      run: cd packager && java PackagePeergos.java
+    
