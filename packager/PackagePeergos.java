@@ -22,8 +22,15 @@ public class PackagePeergos {
                    "--copyright", "AGPL",
                    "--icon", "../assets/images/logo.png",
                    "--resource-dir", "deb-resources",
-                   "--app-version", "0.5.0");
-        Files.list(Paths.get("")).forEach(System.out::println);
+                   "--app-version", "1.0.0");
+        String artifact = Files.list(Paths.get(""))
+            .map(f -> f.GetName())
+            .filter(n -> n.endsWith(".exe") || n.endsWith("deb") || n.endsWith("dmg"))
+            .findFirst().get();
+        if (OS.equals("linux"))
+            runCommand("export", "artifact="+artifact);
+        else if (OS.equals("windows"))
+            runCommand("set", "artifact="+artifact);
     }
 
     public static int runCommand(String... command) throws Exception {
