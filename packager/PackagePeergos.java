@@ -25,9 +25,10 @@ public class PackagePeergos {
                    "--resource-dir", "deb-resources",
                    "--app-version", "1.0.0");
         String artifact = Files.list(Paths.get(""))
-            .map(f -> f.GetName())
+            .map(f -> f.toString())
             .filter(n -> n.endsWith(".exe") || n.endsWith("deb") || n.endsWith("dmg"))
             .findFirst().get();
+        System.out.println("artifact: " + artifact);
         if (OS.equals("linux"))
             runCommand("export", "artifact="+artifact);
         else if (OS.equals("windows"))
