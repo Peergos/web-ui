@@ -142,7 +142,7 @@ self.onfetch = event => {
         );
         const start = Number(bytes[1]);
         const desiredEnd = Number(bytes[2]);
-        let firstBlockSize = oneMegBlockSize - 1;
+        var firstBlockSize = oneMegBlockSize - 1;
         if (desiredEnd == 1) {
             firstBlockSize = 1;
         }
