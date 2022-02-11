@@ -37,12 +37,12 @@ jobs:
       with:
         name: ${{ matrix.os }}-peergos
         path: "./native-build/${{ matrix.bin }}"
-    - name: Build Peergos installer
-      shell: bash
-      run: cd packager && java PackagePeergos.java
-    - name: Upload package artifact
-      uses: actions/upload-artifact@v2
-      with:
-        name: ${{ env.artifact }}
-        path: "./packager/${{ env.artifact }}"
+#    - name: Build Peergos installer
+#      shell: bash
+#      run: cd packager && java PackagePeergos.java
+#    - name: Upload package artifact
+#      uses: actions/upload-artifact@v2
+#      with:
+#        name: ${{ env.artifact }}
+#        path: "./packager/${{ env.artifact }}"
     
