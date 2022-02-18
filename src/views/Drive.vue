@@ -1159,7 +1159,7 @@ module.exports = {
                 let that = this;
                 this.context.getByPath(uploadParams.directoryPath).thenApply(uploadDir => {
                     uploadDir.ref.uploadSubtree(folderStream,
-                        uploadDir.ref.mirrorBatId(), that.context.network, that.context.crypto, that.context.getTransactionService()).thenApply(res => {
+                        that.getMirrorBatId(uploadDir.ref), that.context.network, that.context.crypto, that.context.getTransactionService()).thenApply(res => {
                             uploadFuture.complete(true);
                     }).exceptionally(function (throwable) {
                         that.errorTitle = 'Error Uploading files';
