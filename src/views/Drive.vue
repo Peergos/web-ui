@@ -1055,15 +1055,18 @@ module.exports = {
 			this.processFileUpload(files, false);
 		},
         extractDirectory(file) {
+            var path = null;
             if (file.fullPath != null) {
-                let path = file.fullPath.substring(0, file.fullPath.lastIndexOf('/'));
-                return path;
+                path = file.fullPath.substring(0, file.fullPath.lastIndexOf('/'));
             }else if (file.webkitRelativePath == null) {
-                return '';
+                path = '';
             } else {
-                let path = file.webkitRelativePath.substring(0, file.webkitRelativePath.lastIndexOf('/'));
+                path = file.webkitRelativePath.substring(0, file.webkitRelativePath.lastIndexOf('/'));
+            }
+            if (path.length == 0) {
                 return path;
             }
+            return path.startsWith('/') ? path : '/' + path;
         },
         collectFiles(fromDnd, index, filesToUpload, accumulatedFiles, collectFuture) {
             let that = this;
