@@ -1135,7 +1135,11 @@ module.exports = {
                             fileUploadProperties: []
                         }
                         let prepareFuture = peergos.shared.util.Futures.incomplete();
-                        that.reduceAllUploads(0, files, prepareFuture, uploadParams, progressBars);
+                        let previousDirectoryHolder = {
+                            fileWrapper: null,
+                            path: ''
+                        };
+                        that.reduceAllUploads(0, files, prepareFuture, uploadParams, progressBars, previousDirectoryHolder);
                         prepareFuture.thenApply(preparationDone => {
                             that.bulkUpload(uploadParams).thenApply(res => {
                                 console.log("upload complete");
@@ -1158,11 +1162,20 @@ module.exports = {
                     let folderUP = new peergos.shared.user.fs.FileWrapper.FolderUploadProperties(pathList, filePropsList);
                     folderUPList.push(folderUP);
                 }
+                var commitWatcher = {
+                    get_0: function() {
+                        that.context.getSpaceUsage().thenApply(u => {
+                            that.$store.commit('SET_USAGE', u);
+                        });
+                        that.updateCurrentDirectory();
+                    }
+                };
+
                 let folderStream = peergos.client.JsUtil.asList(folderUPList).stream();
                 let that = this;
                 this.context.getByPath(uploadParams.directoryPath).thenApply(uploadDir => {
-                    uploadDir.ref.uploadSubtree(folderStream,
-                        that.getMirrorBatId(uploadDir.ref), that.context.network, that.context.crypto, that.context.getTransactionService()).thenApply(res => {
+                    uploadDir.ref.uploadSubtree(folderStream, that.getMirrorBatId(uploadDir.ref), that.context.network,
+                        that.context.crypto, that.context.getTransactionService(), commitWatcher).thenApply(res => {
                             uploadFuture.complete(true);
                     }).exceptionally(function (throwable) {
                         that.errorTitle = 'Error Uploading files';
@@ -1174,29 +1187,35 @@ module.exports = {
             }
             return uploadFuture;
         },
-        reduceAllUploads: function(index, files, future, uploadParams, progressBars) {
+        reduceAllUploads: function(index, files, future, uploadParams, progressBars, previousDirectoryHolder) {
             let that = this;
             if (index == files.length) {
                 future.complete(true);
             } else {
-                this.uploadFile(files[index], uploadParams, progressBars[index]).thenApply(result => {
-                    that.reduceAllUploads(index+1, files, future, uploadParams, progressBars);
+                this.uploadFile(files[index], uploadParams, progressBars[index], previousDirectoryHolder).thenApply(result => {
+                    that.reduceAllUploads(index+1, files, future, uploadParams, progressBars, previousDirectoryHolder);
                 });
             }
         },
-        getUploadDirectory(directoryPath, file) {
+        getUploadDirectory(previousDirectoryHolder, directoryPath, file) {
             let future = peergos.shared.util.Futures.incomplete();
             let uploadDirectoryPath = file.directory.length == 0 ? directoryPath
                 : directoryPath + file.directory.substring(1);
-            this.context.getByPath(uploadDirectoryPath).thenApply(function (optDir) {
-                future.complete(optDir.ref);
-            });
+            if (previousDirectoryHolder.path == uploadDirectoryPath) {
+                    future.complete(previousDirectoryHolder.fileWrapper);
+            } else {
+                this.context.getByPath(uploadDirectoryPath).thenApply(function (optDir) {
+                    previousDirectoryHolder.path = uploadDirectoryPath;
+                    previousDirectoryHolder.fileWrapper = optDir.ref;
+                    future.complete(optDir.ref);
+                });
+            }
             return future;
         },
-        uploadFile: function(file, uploadParams, progress) {
+        uploadFile: function(file, uploadParams, progress, previousDirectoryHolder) {
             let that = this;
             let future = peergos.shared.util.Futures.incomplete();
-            this.getUploadDirectory(uploadParams.directoryPath, file).thenApply(function (updatedDir) {
+            this.getUploadDirectory(previousDirectoryHolder, uploadParams.directoryPath, file).thenApply(function (updatedDir) {
                 if (updatedDir == null) {
                     that.uploadFileJS(file, false, future, uploadParams, progress);
                 } else {
@@ -1259,10 +1278,6 @@ module.exports = {
                 //                const thumbnailAllocation = Math.min(100000, file.size / 10);
                 //                updateProgressBar({value_0:thumbnailAllocation});
                 if (progress.done >= progress.max) {
-                    that.context.getSpaceUsage().thenApply(u => {
-                        that.$store.commit('SET_USAGE', u);
-                        that.updateCurrentDirectory();
-                    });
                     setTimeout(() => that.$toast.dismiss(progress.name), 1000)
                 }
             };
