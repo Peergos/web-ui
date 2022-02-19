@@ -1168,6 +1168,7 @@ module.exports = {
                         that.errorTitle = 'Error Uploading files';
                         that.errorBody = throwable.getMessage();
                         that.showError = true;
+                        that.$toast.clear();
                     });
                 });
             }
