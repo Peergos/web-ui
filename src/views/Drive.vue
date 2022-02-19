@@ -1132,7 +1132,8 @@ module.exports = {
                             replaceFile: false,
                             directoryPath: uploadDirectoryPath,
                             uploadPaths: [],
-                            fileUploadProperties: []
+                            fileUploadProperties: [],
+                            triggerRefresh: false
                         }
                         let prepareFuture = peergos.shared.util.Futures.incomplete();
                         let previousDirectoryHolder = {
@@ -1164,10 +1165,14 @@ module.exports = {
                 }
                 var commitWatcher = {
                     get_0: function() {
-                        that.context.getSpaceUsage().thenApply(u => {
-                            that.$store.commit('SET_USAGE', u);
-                        });
-                        that.updateCurrentDirectory();
+                        if (uploadParams.triggerRefresh) {
+                            uploadParams.triggerRefresh = false;
+                            that.context.getSpaceUsage().thenApply(u => {
+                                that.$store.commit('SET_USAGE', u);
+                            });
+                            that.updateCurrentDirectory();
+                        }
+                        return true;
                     }
                 };
 
@@ -1278,6 +1283,7 @@ module.exports = {
                 //                const thumbnailAllocation = Math.min(100000, file.size / 10);
                 //                updateProgressBar({value_0:thumbnailAllocation});
                 if (progress.done >= progress.max) {
+                    uploadParams.triggerRefresh = true;
                     setTimeout(() => that.$toast.dismiss(progress.name), 1000)
                 }
             };
