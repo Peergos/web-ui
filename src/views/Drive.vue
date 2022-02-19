@@ -1263,7 +1263,7 @@ module.exports = {
                         that.$store.commit('SET_USAGE', u);
                         that.updateCurrentDirectory();
                     });
-                    that.$toast.dismiss(progress.name);
+                    setTimeout(() => that.$toast.dismiss(progress.name), 1000)
                 }
             };
             var foundDirectoryIndex = -1;
