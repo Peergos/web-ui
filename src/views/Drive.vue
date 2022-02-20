@@ -1115,7 +1115,6 @@ module.exports = {
                         let progressBars = [];
                         for(var i=0; i < files.length; i++) {
                             let that = this;
-                            //var thumbnailAllocation = Math.min(100000, files[i].size / 10);
                             var resultingSize = files[i].size;
                             var progress = {
                                 title:"Encrypting and uploading " + files[i].name,
@@ -1280,8 +1279,6 @@ module.exports = {
                             },
                         }
                    });
-                //                const thumbnailAllocation = Math.min(100000, file.size / 10);
-                //                updateProgressBar({value_0:thumbnailAllocation});
                 if (progress.done >= progress.max) {
                     uploadParams.triggerRefresh = true;
                     setTimeout(() => that.$toast.dismiss(progress.name), 1000)
