@@ -9,12 +9,13 @@ import java.util.zip.*;
 public class CompileSubmodule {
 
     public static void main(String[] a) throws Exception {
+        String dir = a[0];
         if (isWindows()) {
-            runCommand("peergos", "cmd", "/c", "ant", "dist");
-            runCommand("peergos", "cmd", "/c", "ant", "gwtc");
+            runCommand(dir, "cmd", "/c", "ant", "dist");
+            runCommand(dir, "cmd", "/c", "ant", "gwtc");
         } else {
-            runCommand("peergos", "ant", "dist");
-            runCommand("peergos", "ant", "gwtc");
+            runCommand(dir, "ant", "dist");
+            runCommand(dir, "ant", "gwtc");
         }
     }
 
