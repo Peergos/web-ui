@@ -459,7 +459,7 @@ var scryptJS = {
 var ForkJoinJS = {
     JSForkJoinPool: function() {
 	this.execute = function(task) {
-            task.run()
+            setTimeout(() => task.run(), 0)
 	}
     }
 }
