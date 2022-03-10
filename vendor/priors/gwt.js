@@ -476,6 +476,8 @@ var tweetNaCl = {
         this.randombytes = generateRandomBytes;
         this.secretbox = generateSecretbox;
         this.secretbox_open = generateSecretbox_open;
+        this.secretboxAsync = generateSecretboxAsync;
+        this.secretbox_openAsync = generateSecretbox_openAsync;
 
         this.crypto_sign_open = generateCrypto_sign_open;
         this.crypto_sign = generateCrypto_sign;
@@ -485,6 +487,55 @@ var tweetNaCl = {
         this.crypto_box_keypair = generateCrypto_box_keypair;
     }   
 };
+
+var inflightEncryptFutures = new Object();
+var inflightDecryptFutures = new Object();
+
+document.encryptworker = new Worker('js/encrypt.js');
+document.encryptworker.onmessage = function(oEvent) {
+    let uInt8IdView = new Uint8Array(oEvent.data.id, oEvent.data.id.byteOffset, oEvent.data.id.byteLength);
+    let taskId = uInt8IdView.toString();
+    let future = inflightEncryptFutures[taskId];
+    delete inflightEncryptFutures[taskId];
+    var int8DataView = new Int8Array(oEvent.data.data, oEvent.data.data.byteOffset, oEvent.data.data.byteLength);
+    future.complete(convertToByteArray(int8DataView));
+};
+
+document.decryptworker = new Worker('js/decrypt.js');
+document.decryptworker.onmessage = function(oEvent) {
+    let uInt8IdView = new Uint8Array(oEvent.data.id, oEvent.data.id.byteOffset, oEvent.data.id.byteLength);
+    let taskId = uInt8IdView.toString();
+    let future = inflightDecryptFutures[taskId];
+    delete inflightDecryptFutures[taskId];
+    let int8DataView = new Int8Array(oEvent.data.data, oEvent.data.data.byteOffset, oEvent.data.data.byteLength);
+    future.complete(convertToByteArray(int8DataView));
+};
+
+function generateSecretboxAsync(data, nonce, key) {
+    let uInt8DataView = new Uint8Array(data);
+    let uInt8NonceView = new Uint8Array(nonce);
+    let uInt8KeyView = new Uint8Array(key);
+
+    let uInt8IdView = new Uint8Array(nacl.randomBytes(6));
+    let taskId = uInt8IdView.toString();
+    var future = peergos.shared.util.Futures.incomplete();
+    inflightEncryptFutures[taskId] = future
+    document.encryptworker.postMessage({id: uInt8IdView.buffer, data: uInt8DataView.buffer, nonce: uInt8NonceView.buffer, key: uInt8KeyView.buffer}, [uInt8IdView.buffer, uInt8DataView.buffer, uInt8NonceView.buffer, uInt8KeyView.buffer]);
+    return future;
+}
+
+function generateSecretbox_openAsync(cipher, nonce, key) {
+    let uInt8CipherView = new Uint8Array(cipher);
+    let uInt8NonceView = new Uint8Array(nonce);
+    let uInt8KeyView = new Uint8Array(key);
+
+    let uInt8IdView = new Uint8Array(nacl.randomBytes(6));
+    let taskId = uInt8IdView.toString();
+    var future = peergos.shared.util.Futures.incomplete();
+    inflightDecryptFutures[taskId] = future
+    document.decryptworker.postMessage({id: uInt8IdView.buffer, cipher: uInt8CipherView.buffer, nonce: uInt8NonceView.buffer, key: uInt8KeyView.buffer}, [uInt8IdView.buffer, uInt8CipherView.buffer, uInt8NonceView.buffer, uInt8KeyView.buffer]);
+    return future;
+}
 
 var browserio = {
     JSFileReader: function(file) {
