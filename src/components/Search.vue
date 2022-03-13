@@ -12,7 +12,7 @@
             </div>
             <spinner v-if="showSpinner"></spinner>
                 <div class="flex-container">
-                    <div class="flex-item search" style="margin: 10px;">
+                    <div class="flex-item search" style="margin: 10px; border-width: 1px; border-style: solid;">
                         <select v-model="selectedSearchType">
                             <option value="contains">Filename contains</option>
                             <option value="modifiedAfter">File modified after</option>

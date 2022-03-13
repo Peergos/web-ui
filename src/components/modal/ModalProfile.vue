@@ -4,6 +4,7 @@
 			<h2>Profile</h2>
 		</template>
 		<template #body>
+            <spinner v-if="showSpinner"></spinner>
 		    <confirm
                         v-if="showConfirm"
                         v-on:hide-confirm="showConfirm = false"
@@ -29,7 +30,6 @@
 			:messages="messages">
 		    </Share>
                     <div class="modal-body">
-                        <spinner v-if="showSpinner"></spinner>
 
                         <div class="flex-thumbnail-container">
                             <div style="padding:20px;">
