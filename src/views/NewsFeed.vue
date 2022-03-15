@@ -243,7 +243,7 @@ module.exports = {
             showSpinner: false,
             data: [],
             pageEndIndex : 0,
-            pageSize: 20,
+            pageSize: 40,
             requestingMoreResults: false,
             noMoreResults: false,
             showProfileViewForm:false,
@@ -284,9 +284,6 @@ module.exports = {
     props: [],
 	mixins:[routerMixins, mixins],
   	created: function() {
-        // this.context = this.$store.state.userContext;
-		// this.context = this.$store.state.context;
-
         let that = this;
         this.entryTree = new this.Tree(this);
         this.context.getSocialFeed().thenCompose(function(socialFeed) {
@@ -457,10 +454,6 @@ module.exports = {
             this.showFriendMenu = true;
 	    event.stopPropagation();
         },
-        convertToPath: function(dir) {
-            let dirWithoutLeadingSlash = dir.startsWith("/") ? dir.substring(1) : dir;
-            return peergos.client.PathUtils.directoryToPath(dirWithoutLeadingSlash.split('/'));
-        },
         removeItemFromDisplay: function(entry) {
             let index = this.data.findIndex(v => v.link === entry.link);
             if (index > -1) {
@@ -518,8 +511,9 @@ module.exports = {
                 this.context.getByPath(ref.path).thenApply(function(optFile){
                     let mediaFile = optFile.ref;
                     if (mediaFile != null) {
-                        let parentPath = entry.link.substring(0, entry.link.lastIndexOf('/'));
-                        that.deleteFile(parentPath + "/" + mediaFile.props.name, mediaFile).thenApply(function(res){
+                        var parentPath = entry.link.substring(0, entry.link.lastIndexOf('/'));
+                        parentPath = parentPath.substring(0, parentPath.lastIndexOf('/'));
+                        that.deleteFile(parentPath + "/media/" + mediaFile.props.name, mediaFile).thenApply(function(res){
                             that.reduceDeletingAllMediaReferences(entry, references, index + 1, future);
                         }).exceptionally(function(throwable) {
                             that.showMessage("error deleting media file!");
@@ -641,7 +635,7 @@ module.exports = {
                     that.loadFile(currentPair.left.path, currentPair.right).thenApply(result => {
                         that.addToSeen(currentPair.left.path);
                         let socialPost = result ? result.socialPost : null;
-                        let fullPath = currentPair.left.path.startsWith("/") ? currentPair.left.path : "/" + currentPair.left.path;
+                        let fullPath = that.toPathKey(currentPair.left.path);
                         let isChat = fullPath.includes("/.messaging/") ? true : false;
                         accumulator = accumulator.concat({isChat: isChat, entry: currentPair.left, path: fullPath, socialPost: socialPost, file: currentPair.right});
                         if (accumulator.length == pairs.length) {
@@ -652,17 +646,29 @@ module.exports = {
             }
             return future;
         },
+        comparePaths: function(path1, path2) {
+            let left = this.toPathKey(path1);
+            let right = this.toPathKey(path2);
+            return left == right;
+        },
+        convertToPath: function(dir) {
+            let pathKey = this.toPathKey(dir);
+            return peergos.client.PathUtils.directoryToPath(pathKey.split('/'));
+        },
+        toPathKey: function(path) {
+            return path.startsWith("/") ? path.substring(1) : path;
+        },
         addToSeen: function(path) {
-            let fullPath = path.startsWith("/") ? path : "/" + path;
+            let fullPath = this.toPathKey(path);
             this.seenPosts.set(fullPath, "");
         },
         alreadySeen: function(path) {
-            let fullPath = path.startsWith("/") ? path : "/" + path;
+            let fullPath = this.toPathKey(path);
             return this.seenPosts.get(fullPath) != null;
         },
         extractOwnerFromPath: function(path) {
-            let pathWithoutLeadingSlash = path.startsWith("/") ? path.substring(1) : path;
-            return pathWithoutLeadingSlash.substring(0, pathWithoutLeadingSlash.indexOf("/"));
+            let fullPath = this.toPathKey(path);
+            return fullPath.substring(0, fullPath.indexOf("/"));
         },
         loadAllMediaPosts: function(refs, future) {
             let that = this;
@@ -677,7 +683,7 @@ module.exports = {
                         loadedCount++;
                         let mediaFile = optFile.ref;
                         if (mediaFile != null) {
-                            let fullPath = ref.path.startsWith("/") ? ref.path : "/" + ref.path;
+                            let fullPath = that.toPathKey(ref.path);
                             mediaMap.set(fullPath, {cap: ref.cap, path: fullPath, socialPost: null, file: mediaFile});
                         }
                         if (loadedCount == refs.length) {
@@ -690,17 +696,18 @@ module.exports = {
         loadMediaPosts: function(sharedPosts) {
             let future = peergos.shared.util.Futures.incomplete();
             let refs = [];
+            let that = this;
             for(var i = 0; i < sharedPosts.length; i++) {
                 let post = sharedPosts[i].socialPost;
                 if (post != null) {
                     if (post.parent.ref != null) {
                         let isPost = post.parent.ref.path.includes("/.posts/");
                         if (!isPost) {
-                            let path = post.parent.ref.path.startsWith('/') ? post.parent.ref.path.substring(1) : post.parent.ref.path;
-                            let index = sharedPosts.findIndex(v => v.path.endsWith(path));
+                            let path = post.parent.ref.path;
+                            let index = sharedPosts.findIndex(v => that.comparePaths(v.path, path));
                             if (index == -1) {
                                 //eg we shared a file that another has commented on
-                                if (refs.findIndex(v => v.path == post.parent.ref.path) == -1) {
+                                if (refs.findIndex(v => that.comparePaths(v.path, path)) == -1) {
                                     refs.push(post.parent.ref);
                                 }
                             }
@@ -709,7 +716,7 @@ module.exports = {
                     let references = post.references().toArray([]);
                     if (references.length > 0) {
                         references.forEach(mediaRef => {
-                            if (refs.findIndex(v => v.path == mediaRef.path) == -1) {
+                            if (refs.findIndex(v => that.comparePaths(v.path, mediaRef.path)) == -1) {
                                 refs.push(mediaRef);
                             }
                         });
@@ -734,9 +741,9 @@ module.exports = {
                                 future.complete(accumulator);
                             }
                         } else {
-                            that.addToSeen(ref.path);
+                            let fullPath = that.toPathKey(ref.path);
+                            that.addToSeen(fullPath);
                             let socialPost = result.socialPost;
-                            let fullPath = ref.path.startsWith("/") ? ref.path : "/" + ref.path;
                             accumulator = accumulator.concat({cap: ref.cap, path: fullPath, socialPost: socialPost, file: result.file});
                             let references = socialPost.comments.toArray([]);
                             let future2 = peergos.shared.util.Futures.incomplete();
@@ -771,14 +778,15 @@ module.exports = {
         loadCommentPosts: function(sharedPosts) {
             let future = peergos.shared.util.Futures.incomplete();
             let refs = [];
+            let that = this;
             for(var i = 0; i < sharedPosts.length; i++) {
                 let post = sharedPosts[i].socialPost;
                 if (post != null) {
                     let references = post.comments.toArray([]);
                     references.forEach(ref => {
-                        let fullRefPath = ref.path.startsWith("/") ? ref.path : "/" + ref.path;
-                        if (refs.findIndex(v => v.path == ref.path) == -1
-                            && sharedPosts.findIndex(v => v.path == fullRefPath) == -1) {
+                        let fullRefPath = that.toPathKey(ref.path);
+                        if (refs.findIndex(v => that.comparePaths(v.path, fullRefPath)) == -1
+                            && sharedPosts.findIndex(v => that.comparePaths(v.path, fullRefPath)) == -1) {
                             refs.push(ref);
                         }
                     });
@@ -807,7 +815,7 @@ module.exports = {
                                 future.complete(accumulator);
                             }
                         } else {
-                            let fullPath = post.parent.ref.path.startsWith("/") ? post.parent.ref.path : "/" + post.parent.ref.path;
+                            let fullPath = that.toPathKey(post.parent.ref.path);
                             that.addToSeen(fullPath);
                             let sharedPost = {cap: post.parent.ref.cap, path: fullPath, socialPost: result.socialPost, file: result.file};
                             accumulator = accumulator.concat(sharedPost);
@@ -1160,7 +1168,7 @@ module.exports = {
                 if (parent == null) {
                     return null;
                 }
-                let path = item.path;
+                let path = this.methodCtx.toPathKey(item.path);
                 let node = new this.methodCtx.TreeNode(parent, path, item, mediaList);
                 this.nodeLookupMap.set(path, node);
                 parent.addChild(node);
@@ -1217,29 +1225,29 @@ module.exports = {
             let sharedItemsMap = new Map();
             sharedItems.forEach(item => {
                 if (item.socialPost == null) {
-                    sharedItemsMap.set(item.path, item);
+                    sharedItemsMap.set(that.toPathKey(item.path), item);
                 }
             });
             sharedItems.reverse().forEach(item => {
-                if (that.sharedItemsProcessedMap.get(item.path) != null) {
+                if (that.sharedItemsProcessedMap.get(that.toPathKey(item.path)) != null) {
                     //already processed, skip to next
                 } else if (item.socialPost == null) {
                     that.entryTree.addChild(null, item, []);
                 } else {
                     let wasCommentOnSharedItem = false;
                     if (item.socialPost.parent.ref != null && !item.socialPost.parent.ref.path.includes("/.posts/")) {
-                        let path = item.socialPost.parent.ref.path.startsWith('/') ? item.socialPost.parent.ref.path : '/' + item.socialPost.parent.ref.path;
+                        let path = that.toPathKey(item.socialPost.parent.ref.path);
                         if (that.entryTree.lookup(path) == null) {
                             var sharedItemParent = mediaMap.get(path);
                             if (sharedItemParent == null) {
                                 sharedItemParent = sharedItemsMap.get(path);
                                 if (sharedItemParent != null) {
-                                    that.sharedItemsProcessedMap.set(sharedItemParent.path, sharedItemParent);
+                                    that.sharedItemsProcessedMap.set(that.toPathKey(sharedItemParent.path), sharedItemParent);
                                     that.entryTree.addChild(null, sharedItemParent, []);
                                 }
                             } else {
                                 that.entryTree.addChild(null, sharedItemParent, []);
-                                that.sharedItemsProcessedMap.set(sharedItemParent.path, sharedItemParent);
+                                that.sharedItemsProcessedMap.set(that.toPathKey(sharedItemParent.path), sharedItemParent);
                             }
                         }
                         wasCommentOnSharedItem = true;
@@ -1249,7 +1257,7 @@ module.exports = {
                     var mediaList = [];
                     if (references.length > 0){
                         for(var j = 0; j < references.length; j++) {
-                            let media = mediaMap.get(references[j].path);
+                            let media = mediaMap.get(that.toPathKey(references[j].path));
                             if (media != null) {
                                 mediaList.push(media);
                             }
@@ -1258,7 +1266,7 @@ module.exports = {
                     if (!wasCommentOnSharedItem && that.isStartOfThread(item)) {
                         that.entryTree.addChild(null, item, mediaList);
                     } else {
-                        let parentPath = item.socialPost.parent.ref.path.startsWith('/') ?  item.socialPost.parent.ref.path : '/' + item.socialPost.parent.ref.path;
+                        let parentPath = that.toPathKey(item.socialPost.parent.ref.path);
                         that.entryTree.addChild(parentPath, item, mediaList);
                     }
                 }
