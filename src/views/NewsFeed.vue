@@ -939,7 +939,7 @@ module.exports = {
             }
         },
         viewAction: function(path, file) {
-            let app = this.getApp(file, path)
+            let app = this.getApp(file, '/' + path)
             this.openFileOrDir(app, path, file.isDirectory() ? "" : file.getName())
         },
         viewMediaList: function (mediaList, mediaIndex) {
@@ -984,10 +984,10 @@ module.exports = {
         },
         isNewChat: function(filePath, isChat) {
             let pathParts = filePath.split('/');
-            if (pathParts[2] != ".messaging") {
+            if (pathParts[1] != ".messaging") {
                 return false;
             }
-            let uuid = pathParts[3];
+            let uuid = pathParts[2];
             if(this.knownChats.findIndex(v => v.chatUuid == uuid) == -1) {
                 return true;
             } else {
@@ -1302,7 +1302,7 @@ module.exports = {
         },
         extractChatOwner: function(chatUuid) {
             let withoutPrefix = chatUuid.substring(5);//chat:
-            return withoutPrefix.substring(0,withoutPrefix.indexOf(":"));
+            return withoutPrefix.substring(0,withoutPrefix.indexOf("$"));
         },
         filterOutOwnChats: function(allPairs) {
             let remainingSharedItems = [];
