@@ -997,10 +997,10 @@ module.exports = {
         isSharedCalendar: function(path) {
             //TODO move this into the universal get icon for file method
             let pathParts = path.split("/");
-            return pathParts.length == 6 && pathParts[0] == '' &&
-                pathParts[2] == '.apps' &&
-                pathParts[3] == 'calendar' &&
-                pathParts[4] == 'data';
+            return pathParts.length == 5 &&
+                pathParts[1] == '.apps' &&
+                pathParts[2] == 'calendar' &&
+                pathParts[3] == 'data';
         },
 
         createTimelineEntry: function(filePath, entry, socialPost, file, isChat) {
