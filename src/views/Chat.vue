@@ -503,6 +503,9 @@ module.exports = {
         },
         resizeHandler: function() {
             var left = document.getElementById("chat-left-panel");
+            if (left == null) {
+                return;
+            }
             var right = document.getElementById("dnd-chat");
 
             var conversationsContainer = document.getElementById("conversations-container");
