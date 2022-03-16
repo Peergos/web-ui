@@ -171,17 +171,12 @@ module.exports = {
         }
     },
 	created() {
-		this.updateSocial(this.test);
+		this.updateSocial();
     },
-	mounted(){
-            this.updateSocial();
-	},
     methods: {
 		...Vuex.mapActions([
 			'updateSocial'
 		]),
-		test(){
-		},
         displayProfile: function(username){
             this.showSpinner = true;
             let that = this;
