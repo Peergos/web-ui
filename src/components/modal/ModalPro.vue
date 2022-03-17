@@ -208,6 +208,8 @@ module.exports = {
 .app-modal__container .options_container{
 	display: flex;
         flex-direction: row;
+        flex-wrap: wrap;
+        justify-content: space-around;
 }
 .app-modal__container .options{
 	
