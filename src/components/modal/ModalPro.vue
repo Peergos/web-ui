@@ -9,23 +9,23 @@
 
                         <p v-if="!isPaid">By continuing you agree to our <a href="/terms.html" target="_blank" rel="noopener noreferrer">Terms of Service</a>.</p>
                         <div v-if="!showCard" class="options_container">
-			    <div v-if="!isPro" class="card__meta options">
+			    <div class="card__meta options">
 				<h3>Pro Account</h3>
 				<ul>
 				    <li>50 GB of hyper secure storage</li>
 				    <li>All our bundled private applications</li>
 				    <li>5£ / month</li>
 				</ul>
-                                <AppButton @click.native="updateCard(53687091200)" type="primary" block accent>Select Pro</AppButton>
+                                <AppButton @click.native="updateCard(53687091200)" :disabled="isPro" type="primary" block accent>{{proButtonText}}</AppButton>
 			    </div>
-                            <div v-if="!isVisionary" class="card__meta options">
+                            <div class="card__meta options">
 				<h3>Visionary Account</h3>
 				<ul>
 				    <li>500 GB of hyper secure storage</li>
 				    <li>All our bundled private applications</li>
 				    <li>25£ / month</li>
 				</ul>
-                                <AppButton @click.native="updateCard(536870912000)" type="primary" block accent>Select Visionary</AppButton>
+                                <AppButton @click.native="updateCard(536870912000)" :disabled="isVisionary" type="primary" block accent>{{visionaryButtonText}}</AppButton>
 			    </div>
                         </div>
 
@@ -81,7 +81,17 @@ module.exports = {
 			return (this.isPro)
 				? 'Subscription settings'
 				: 'Upgrade your account to get more space'
-		},
+	    },
+            proButtonText(){
+                return (this.isPro)
+				? 'Your Current Plan'
+				: 'Select Pro'
+            },
+            visionaryButtonText(){
+                return (this.isVisionary)
+				? 'Your Current Plan'
+				: 'Select Visionary'
+            }
     },
 
     mounted() {
@@ -213,6 +223,12 @@ module.exports = {
 }
 .app-modal__container .options{
 	
+}
+.app-modal__container button:disabled{
+	background-color: gray;
+}
+.app-modal__container button:disabled:hover{
+	background-color: gray;
 }
 .app-modal__container .app-button.alert{
 	background-color: var(--alert);
