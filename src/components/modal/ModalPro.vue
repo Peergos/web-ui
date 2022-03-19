@@ -78,7 +78,7 @@ module.exports = {
                 return this.quotaBytes/(1024*1024) > this.paymentProperties.freeMb() && this.paymentProperties.desiredMb() == this.visionaryMb;
             },
             upgradeTitle(){
-			return (this.isPro)
+			return (this.isPaid)
 				? 'Subscription settings'
 				: 'Upgrade your account to get more space'
 	    },
