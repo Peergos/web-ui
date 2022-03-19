@@ -14,7 +14,7 @@
 				<ul>
 				    <li>50 GB of hyper secure storage</li>
 				    <li>All our bundled private applications</li>
-				    <li>5£ / month</li>
+				    <li>5&#x00A3 / month</li>
 				</ul>
                                 <AppButton @click.native="updateCard(53687091200)" :disabled="isPro" type="primary" block accent>{{proButtonText}}</AppButton>
 			    </div>
@@ -23,7 +23,7 @@
 				<ul>
 				    <li>500 GB of hyper secure storage</li>
 				    <li>All our bundled private applications</li>
-				    <li>25£ / month</li>
+				    <li>25&#x00A3 / month</li>
 				</ul>
                                 <AppButton @click.native="updateCard(536870912000)" :disabled="isVisionary" type="primary" block accent>{{visionaryButtonText}}</AppButton>
 			    </div>
