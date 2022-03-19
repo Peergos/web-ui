@@ -153,7 +153,9 @@ module.exports = {
                             });
 			} else
                             that.updatePayment(() => that.updateError());
-		    }))
+		    })).exceptionally(t => {
+                        that.$toast.error("Error requesting more storage: " + t.getMessage())
+                    })
 	    },
             
 	    updateError() {
