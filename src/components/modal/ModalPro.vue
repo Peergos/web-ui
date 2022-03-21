@@ -134,7 +134,7 @@ module.exports = {
 		var that = this;
                 
 		this.context.requestSpace(bytes)
-		    .thenCompose(x => that.updateQuota(quotaBytes => {
+		    .thenApply(x => that.updateQuota(quotaBytes => {
 			console.log(quotaBytes,'quotaBytes')
                         
 			if (quotaBytes >= bytes && bytes > 0) {
