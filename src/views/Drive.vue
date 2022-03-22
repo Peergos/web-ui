@@ -73,7 +73,8 @@
 				v-if="viewMenu"
 				@closeMenu="closeMenu()"
 			>
-				<li id='gallery' v-if="canOpen" @keyup.enter="openFile" @click="openFile">View</li>
+				<li id='gallery' v-if="canOpen" @keyup.enter="openFile" @click="openFile(false)">View</li>
+				<li id='gallery' v-if="isMarkdown" @keyup.enter="openFile" @click="openFile(true)">Render Markdown</li>
 				<li id='open-file' v-if="canOpen" @keyup.enter="downloadAll"  @click="downloadAll">Download</li>
 				<li id='rename-file' v-if="isWritable" @keyup.enter="rename"  @click="rename">Rename</li>
 				<li id='delete-file' v-if="isWritable" @keyup.enter="deleteFiles"  @click="deleteFiles">Delete</li>
@@ -115,6 +116,14 @@
 			:context="context"
 			:messages="messages">
 		</code-editor>
+        <markdown-viewer
+            v-if="showMarkdownViewer"
+            v-on:hide-markdown-viewer="closeApps(true); updateCurrentDir();"
+            :file="selectedFiles[0]"
+            :path="getPath"
+            :context="context"
+            :messages="messages">
+        </markdown-viewer>
                 <identity
                     v-if="showIdentityProof"
                     v-on:hide-identity-proof="closeApps(false)"
@@ -234,6 +243,7 @@ module.exports = {
 			showSearch: false,
 			showHexViewer: false,
 			showCodeEditor: false,
+			showMarkdownViewer: false,
 			showPdfViewer: false,
 			showTextViewer: false,
 			showPassword: false,
@@ -426,6 +436,22 @@ module.exports = {
 				return false;
 			}
 		},
+        isMarkdown() {
+            try {
+                if (this.currentDir == null)
+                    return false;
+                if (this.selectedFiles.length != 1)
+                    return false;
+                if (this.selectedFiles[0].isDirectory())
+                    return false;
+                let file =  this.selectedFiles[0];
+                let mimeType = file.getFileProperties().mimeType;
+                return mimeType.startsWith("text/x-markdown") ||
+                    (mimeType.startsWith("text/") && file.getName().endsWith('.md'));
+            } catch (err) {
+                return false;
+            }
+        },
         allowCopy() {
             return this.isLoggedIn && this.path.length > 0;
         },
@@ -747,6 +773,7 @@ module.exports = {
                     this.showIdentityProof = false;
 		    this.showPdfViewer = false;
 		    this.showCodeEditor = false;
+		    this.showMarkdownViewer = false;
 		    this.showTextViewer = false;
 		    this.showHexViewer = false;
 		    this.showSearch = false;
@@ -798,6 +825,8 @@ module.exports = {
 			this.showIdentityProof = true;
 		    else if (app == "hex")
 			this.showHexViewer = true;
+            else if (app == "markdown")
+            this.showMarkdownViewer = true;
 		    else if (app == "search")
 			this.showSearch = true;
 
@@ -1615,7 +1644,7 @@ module.exports = {
 			}
 		},
 
-		openFile() {
+		openFile(showMarkdownViewer) {
 		    // TODO: once we support selecting files re-enable this
 		    //if (this.selectedFiles.length == 0)
 		    //    return;
@@ -1631,13 +1660,16 @@ module.exports = {
                 this.showGallery = true;
             else if (app === "pdf")
                 this.showPdfViewer = true;
-            else if (app === "editor")
-                this.showCodeEditor = true;
+            else if (app == "editor" || app === "markdown")
+                if (showMarkdownViewer) {
+                    this.showMarkdownViewer = true;
+                } else {
+                    this.showCodeEditor = true;
+                }
             else if (app === "identity-proof")
                 this.showIdentityProof = true;
             else if (app === "hex")
                 this.showHexViewer = true;
-
             this.openFileOrDir(app, this.getPath, filename)
 		},
 		navigateOrDownload(file) {
