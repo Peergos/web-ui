@@ -30,7 +30,7 @@
                         </div>
 
 			<div v-if="showCard">
-			    <iframe id="paymentframe" style="border: none;" width="450px" height="420px" :src="paymentUrl"/>
+			    <iframe id="paymentframe" style="border: none;" width="450px" height="420px" :src="paymentUrl" referrerpolicy="origin"/>
 			</div>
 
 		</template>
