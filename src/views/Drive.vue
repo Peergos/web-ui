@@ -91,6 +91,7 @@
 				<li id='zip-folder' v-if="allowDownloadFolder" @keyup.enter="zipAndDownload"  @click="zipAndDownload">Download as Zip</li>
 				<li id='create-thumbnail' v-if="isWritable && canCreateThumbnail" @keyup.enter="createThumbnail"  @click="createThumbnail">Create Thumbnail</li>
 				<li id='folder-props' v-if="allowViewFolderProperties" @keyup.enter="viewFolderProperties"  @click="viewFolderProperties">Properties</li>
+				<li id='add-to-launcher' v-if="allowAddingToLauncher" @keyup.enter="addToLauncher"  @click="addToLauncher">Add to Launcher</li>
 			</DriveMenu>
 		</transition>
 
@@ -210,6 +211,7 @@ const downloaderMixins = require("../mixins/downloader/index.js");
 const zipMixin = require("../mixins/zip/index.js");
 
 const router = require("../mixins/router/index.js");
+const launcherMixin = require("../mixins/launcher/index.js");
 
 module.exports = {
 	components: {
@@ -313,12 +315,12 @@ module.exports = {
             clickTimer: null,
             clickedFilename: null,
             isStreamingAvailable: false,
-            showDnDArea: false
+            showDnDArea: false,
+            launcherApp: null,
+            launcherShortcuts: new Map()
 		};
 	},
-
-	mixins:[downloaderMixins, router, zipMixin],
-
+	mixins:[downloaderMixins, router, zipMixin, launcherMixin],
         mounted: function() {
             let that = this;
             this.updateCurrentDirectory(null,
@@ -510,6 +512,22 @@ module.exports = {
 		allowShare() {
 			return this.isLoggedIn && this.path.length > 0;
 		},
+        allowAddingToLauncher() {
+            try {
+                if (this.currentDir == null)
+                    return false;
+                if (this.selectedFiles.length != 1)
+                    return false;
+                if (!this.isLoggedIn && this.path.length > 0)
+                    return false;
+                let file = this.selectedFiles[0];
+                let postFix = file.isDirectory() ? '/' : '';
+                let link = this.path.join('/') + '/' + file.getName() + postFix;
+                return this.launcherShortcuts.get(link) == null;
+            } catch (err) {
+                return false;
+            }
+        },
 		isIcsFile() {
 			try {
 				if (this.currentDir == null)
@@ -569,10 +587,24 @@ module.exports = {
 
 
 	created() {
-		this.init();
+	    let that = this;
 		this.onResize()
 		// TODO: throttle onResize and make it global?
 		window.addEventListener('resize', this.onResize, {passive: true} );
+
+        peergos.shared.user.App.init(that.context, "launcher").thenCompose(launcher => {
+            that.launcherApp = launcher;
+            that.showSpinner = true;
+            that.loadLauncherShortcutsFile(launcher).thenApply(shortcutList => {
+                that.showSpinner = false;
+                let shortcutMap = new Map();
+                shortcutList.shortcuts.forEach(entry => {
+                    shortcutMap.set(entry.link, '');
+                });
+                that.launcherShortcuts = shortcutMap;
+        		this.init();
+            })
+        });
 	},
 
 	beforeDestroy() {
@@ -740,7 +772,7 @@ module.exports = {
 				const appFromUrl = props == null ? null : props.app;
 				const argsFromUrl = props == null ? null : props.args;
 
-				const apps = ['Calendar', 'NewsFeed', 'Social', 'Tasks']
+				const apps = ['Calendar', 'NewsFeed', 'Social', 'Tasks', 'Launcher']
 
 				if (pathFromUrl !== null && !apps.includes(appFromUrl) ) {
 
@@ -1784,7 +1816,28 @@ module.exports = {
 					})
 				});
 		},
+		addToLauncher() {
+            if (this.selectedFiles.length != 1)
+                return false;
+            let file = this.selectedFiles[0];
+            this.closeMenu();
+            let postFix = file.isDirectory() ? '/' : '';
+            let link = this.path.join('/') + '/' + file.getName() + postFix;
+            if (this.launcherShortcuts.get(link) == null) {
+                this.launcherShortcuts.set(link, '');
 
+                let shortcutList = new Object();
+                shortcutList.shortcuts = [];
+                this.launcherShortcuts.forEach (function(value, key) {
+                    shortcutList.shortcuts.push({link: key});
+                })
+                this.showSpinner = true;
+                let that = this;
+                that.updateLauncherShortcutsFile(this.launcherApp, shortcutList).thenApply(res => {
+                    that.showSpinner = false;
+                });
+            }
+		},
 		showShareWith() {
 			if (this.selectedFiles.length == 0)
 				return;

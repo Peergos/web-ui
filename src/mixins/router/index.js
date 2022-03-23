@@ -9,7 +9,7 @@ module.exports = {
                 path = path.substring(0, path.length - 1);
             return path;
         },
-        
+
 	updateHistory(app, path, args, writable) {
             path = this.canonical(path);
 	    console.log('updateHistory:', app, path, args)

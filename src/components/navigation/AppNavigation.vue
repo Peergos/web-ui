@@ -20,6 +20,7 @@
 		/>
 
 		<ul class="nav-list">
+            <MenuItem label="Launcher" icon="tasks" view="Launcher" />
 			<MenuItem label="Drive" icon="folder" view="Drive" />
 			<MenuItem label="Newsfeed" icon="news" view="NewsFeed" />
 			<MenuItem label="Tasks" icon="tasks" view="Tasks" />
