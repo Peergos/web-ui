@@ -23,7 +23,7 @@
 				<ul>
 				    <li>500 GB of hyper secure storage</li>
 				    <li>All our bundled private applications</li>
-				    <li>&#x00A3;25 / month</li>
+				    <li>&#x00A3;25 / month  {{ prorataText }}</li>
 				</ul>
                                 <AppButton @click.native="updateCard(536870912000)" :disabled="isVisionary" type="primary" block accent>{{visionaryButtonText}}</AppButton>
 			    </div>
@@ -76,6 +76,12 @@ module.exports = {
 
             isVisionary() {
                 return this.quotaBytes/(1024*1024) > this.paymentProperties.freeMb() && this.paymentProperties.desiredMb() == this.visionaryMb;
+            },
+
+            prorataText() {
+                if (!this.isPro)
+                    return "";
+                return " (pro rata for this month)";
             },
             upgradeTitle(){
 			return (this.isPaid)
