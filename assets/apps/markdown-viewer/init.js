@@ -32,7 +32,6 @@ window.addEventListener('message', function (e) {
         for(var i=0; i < anchors.length;i++) {
             let anchor = anchors[i];
             anchor.addEventListener("click", function(e){
-                console.log("link pressed");
                 e.preventDefault();
                 let url = e.target.href;
                 if (url == null) {
@@ -52,10 +51,14 @@ window.addEventListener('message', function (e) {
         for(var i=0; i < images.length;i++) {
             let image = images[i];
             const requestedResource = new URL(image.src);
-            image.src = '#';
-            let generatedId = 'image-' + uuid();
-            image.id = generatedId;
-            mainWindow.postMessage({action:'loadImage', src: requestedResource.pathname, id: generatedId}, origin);
+            if (window.location.host == requestedResource.host) {
+                image.src = '#';
+                let generatedId = 'image-' + uuid();
+                image.id = generatedId;
+                mainWindow.postMessage({action:'loadImage', src: requestedResource.pathname, id: generatedId}, origin);
+            } else {
+                console.log('invalid link: ' + image.src);
+            }
         }
     }
 });

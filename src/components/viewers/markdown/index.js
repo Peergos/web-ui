@@ -13,18 +13,23 @@ module.exports = {
             APP_NAME: 'markdown-viewer',
             PATH_PREFIX: '/apps/markdown-viewer/',
             showEmbeddedGallery: false,
-            filesToViewInGallery: []
-
+            filesToViewInGallery: [],
+            validImageSuffixes: ['jpg','png','gif'],
+            validMediaSuffixes: ['mpg','mp3','mp4','avi','webm'],
+            validResourceSuffixes: ['md'],//,'pdf','zip'];
+            validResourceMimeTypes: ['text/x-markdown', 'text/'],
+            scopedPath: null
         }
     },
     props: ['context', 'file', 'messages', 'path'],
     created: function() {
         this.currentPath = this.path.substring(0, this.path.length - 1);
+        this.scopedPath = this.path;
         this.currentFilename = this.file.getName();
         this.startListener();
     },
     methods: {
-	frameUrl: function() {
+	    frameUrl: function() {
             return this.frameDomain() + this.PATH_PREFIX + "index.html";
         },
         frameDomain: function() {
@@ -104,18 +109,54 @@ module.exports = {
             this.$toast(title + bodyContents)
         }
     },
+    showErrorMessage(errMsg) {
+        console.log(errMsg);
+        this.showMessage(true, "", errMsg);
+        this.showSpinner = false;
+    },
     close: function () {
         this.$emit("hide-markdown-viewer");
     },
+    hasValidFileExtension: function(path, validExtensions) {
+        let extensionIndex = path.lastIndexOf('.');
+        if (extensionIndex > 0 && extensionIndex < path.length) {
+            let extension = path.substring(extensionIndex +1).toLowerCase();
+            if (validExtensions.includes(extension)) {
+               return true;
+            } else {
+                this.showErrorMessage('file extension not on allowed list: ' + path);
+                return false;
+            }
+        } else {
+            this.showErrorMessage('unable to determine file extension: ' + path);
+            return false;
+        }
+    },
     calculatePath: function(filePath, updateFullPath) {
-        let peergosPath = filePath.startsWith(this.PATH_PREFIX) ? filePath.substring(this.PATH_PREFIX.length) : filePath;
+        if (filePath.startsWith(this.PATH_PREFIX)) {
+            return this.calculateFullPath(filePath.substring(this.PATH_PREFIX.length), updateFullPath);
+        } else {
+            let pathElements = filePath.split('/').filter(n => n.length > 0);
+            let username = pathElements[0];
+            if (username == this.context.username) {
+                //then path must be scope to initial directory
+                if (filePath.startsWith(this.scopedPath)) {
+                    return this.calculateFullPath(filePath, updateFullPath);
+                } else {
+                    this.showErrorMessage('Links are restricted to folder: ' + this.scopedPath);
+                    return null;
+                }
+            } else {
+                return this.calculateFullPath(filePath, updateFullPath);
+            }
+        }
+    },
+    calculateFullPath: function(peergosPath, updateFullPath) {
         let pathElements = peergosPath.split('/').filter(n => n.length > 0);
         var path = this.currentPath;
         var filename = '';
         if (pathElements ==  0) {
-            if (updateFullPath) {
-                this.currentFilename = filename;
-            }
+            return null;
         } else if (pathElements.length == 1) {
             filename =  pathElements[0];
             if (updateFullPath) {
@@ -133,38 +174,58 @@ module.exports = {
         }
         return path + '/' + filename;
     },
-    loadResource: function(filePath, updateFullPath) {
+    findMimeType(mimeType, validMimeTypes) {
+        let matches = validMimeTypes.filter(validMimeType => mimeType.startsWith(validMimeType));
+        return matches.length > 0;
+    },
+    loadResource: function(filePath, updateFullPath, validMimeTypes, validFileTypes) {
         let that = this;
         if (updateFullPath) {
             this.showSpinner = true;
         }
         let fullPath = this.calculatePath(filePath, updateFullPath);
         var future = peergos.shared.util.Futures.incomplete();
-        that.findFile(fullPath).thenApply(file => {
-            if (file != null) {
-                that.readInFile(file).thenApply(bytes => {
+        if (fullPath == null) {
+            future.complete(null);
+        } else {
+            that.findFile(fullPath).thenApply(file => {
+                if (file != null) {
+                    let mimeType = file.props.mimeType;
+                    let type = file.props.getType();
+                    if(validFileTypes.includes(type) || validFileTypes.length == 0) {
+                        if (validMimeTypes.length == 0 || that.findMimeType(mimeType, validMimeTypes)) {
+                            that.readInFile(file).thenApply(bytes => {
+                                that.showSpinner = false;
+                                future.complete(bytes);
+                            });
+                        } else {
+                            that.showErrorMessage("Resource not of correct mimetype: " + fullPath);
+                            future.complete(null);
+                        }
+                    } else {
+                        that.showErrorMessage("Resource not of correct type: " + fullPath);
+                        future.complete(null);
+                    }
+                } else {
                     that.showSpinner = false;
-                    future.complete(bytes);
-                });
-            } else {
-                that.showSpinner = false;
-                that.showMessage(true, "Resource not found: ", fullPath);
-                future.complete(null);
-            }
-        });
+                    that.showErrorMessage(true, "Resource not found: " + fullPath);
+                    future.complete(null);
+                }
+            });
+        }
         return future;
     },
     findFile: function(filePath) {
         var future = peergos.shared.util.Futures.incomplete();
         this.context.getByPath(filePath).thenApply(function(fileOpt){
             if (fileOpt.ref == null) {
-                console.log("path not found!:" + filePath);
+                that.showErrorMessage("path not found!: " + filePath);
                 future.complete(null);
             } else {
                 let file = fileOpt.get();
                 const props = file.getFileProperties();
                 if (props.isHidden || props.isDirectory) {
-                    console.log("file not accessible:" + filePath);
+                    that.showErrorMessage("file not accessible: " + filePath);
                     future.complete(null);
                 } else {
                     future.complete(file);
@@ -198,18 +259,23 @@ module.exports = {
     showMediaRequest: function(filePath) {
         let that = this;
         let fullPath = this.calculatePath(filePath, false);
-        that.findFile(fullPath).thenApply(file => {
-            if (file != null) {
-                let type = file.props.getType();
-                if(type == "image" || type == "audio" || type == "video") {
-                    this.openInGallery(file);
+        if (fullPath == null) {
+            return;
+        }
+        if (this.hasValidFileExtension(fullPath, this.validMediaSuffixes)) {
+            that.findFile(fullPath).thenApply(file => {
+                if (file != null) {
+                    let type = file.props.getType();
+                    if(type == "image" || type == "audio" || type == "video") {
+                        this.openInGallery(file);
+                    } else {
+                        that.showErrorMessage("unable to display resource in gallery. Not an allowed filetype");
+                    }
                 } else {
-                    console.log("unable to display resource in gallery");
+                    that.showErrorMessage("unable to find resource: " + fullPath);
                 }
-            } else {
-                console.log("unable to find resource");
-            }
-        });
+            });
+        }
     },
     openInGallery: function (file) {
         this.filesToViewInGallery = [file];
@@ -217,19 +283,21 @@ module.exports = {
     },
     loadImageRequest: function(iframe, src, id) {
         let that = this;
-        this.loadResource(src, false).thenApply(data => {
-            if (data != null) {
-                let func = function() {
-                  iframe.contentWindow.postMessage({action: "respondToLoadImage", id:id, data: data}, '*');
-                };
-                that.setupIFrameMessaging(iframe, func);
-            }
-        });
+        if (this.hasValidFileExtension(src, this.validImageSuffixes)) {
+            this.loadResource(src, false, [], ["image"]).thenApply(data => {
+                if (data != null) {
+                    let func = function() {
+                      iframe.contentWindow.postMessage({action: "respondToLoadImage", id:id, data: data}, '*');
+                    };
+                    that.setupIFrameMessaging(iframe, func);
+                }
+            });
+        }
     },
     navigateToRequest: function(iframe, filePath) {
         let that = this;
-        if (filePath.toLowerCase().endsWith('.md')) {
-            this.loadResource(filePath, true).thenApply(data => {
+        if (this.hasValidFileExtension(filePath, this.validResourceSuffixes)) {
+            this.loadResource(filePath, true, this.validResourceMimeTypes, ["text"]).thenApply(data => {
                 if (data != null) {
                     let func = function() {
                       iframe.contentWindow.postMessage({action: "respondToNavigateTo", text:new TextDecoder().decode(data)}, '*');
