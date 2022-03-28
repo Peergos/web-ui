@@ -63,43 +63,45 @@ module.exports = {
 	    return { nonce: nonce, ciphertext: ciphertext };
 	},
         
-    getApp(file, path) {
-        if (file.isDirectory()) {
-            let pathParts = path.split("/");
-            if (pathParts.length == 6 && pathParts[0] == '' &&
-                pathParts[2] == '.apps' &&
-                pathParts[3] == 'calendar' &&
-                pathParts[4] == 'data')
-                return "Calendar";
-            if (pathParts.length >= 3 && pathParts[0] == '' &&
-                pathParts[2] == '.messaging')
-                return "Chat";
-            return "Drive";
-        }
-        var filename = file.getName();
-        var mimeType = file.getFileProperties().mimeType;
-        if (mimeType.startsWith("audio") ||
-        mimeType.startsWith("video") || mimeType.startsWith("image")) {
-            return 'Gallery';
-        } else if (mimeType === "application/vnd.peergos-todo") {
-            return "Tasks";
-        } else if (mimeType === "application/pdf") {
-            return "pdf";
-        } else if (mimeType === "text/calendar") {
-            return "Calendar";
-        } else if (mimeType === "application/vnd.peergos-identity-proof") {
-            return "identity-proof";
+        getApp(file, path) {
+            if (file.isDirectory()) {
+                let pathParts = path.split("/");
+                if (pathParts.length == 6 && pathParts[0] == '' &&
+                    pathParts[2] == '.apps' &&
+                    pathParts[3] == 'calendar' &&
+                    pathParts[4] == 'data')
+                    return "Calendar";
+                if (pathParts.length >= 3 && pathParts[0] == '' &&
+                    pathParts[2] == '.messaging')
+                    return "Chat";
+                return "Drive";
+            }
+            var filename = file.getName();
+	    var mimeType = file.getFileProperties().mimeType;
+            if (mimeType.startsWith("audio") ||
+		mimeType.startsWith("video") ||
+		mimeType.startsWith("image")) {
+		return 'Gallery';
+	    } else if (mimeType === "application/vnd.peergos-todo") {
+		return "Tasks";
+	    } else if (mimeType === "application/pdf") {
+		return "pdf";
+	    } else if (mimeType === "text/calendar") {
+		return "Calendar";
+	    } else if (mimeType === "application/vnd.peergos-identity-proof") {
+		return "identity-proof";
         } else if (mimeType.startsWith("text/x-markdown") ||
             ( mimeType.startsWith("text/") && filename.endsWith('.md'))) {
             return "markdown";
-        } else if (mimeType.startsWith("text/")) {
-            return "editor";
-        } else {
-            return "hex";
+	    } else if (mimeType.startsWith("text/")) {
+		return "editor";
+	    } else {
+		return "hex";
+	    }
+        },
+
+        openFileOrDir(app, path, filename) {
+	    this.updateHistory(app, path, filename);
         }
-    },
-    openFileOrDir(app, path, filename) {
-        this.updateHistory(app, path, filename);
-    }
     },
 }
