@@ -1,14 +1,44 @@
-const Gallery = require("../../drive/DriveGallery.vue");
+<template>
+<transition name="modal">
+<div class="modal-mask" @click="close"> 
+    <div class="modal-container full-height" @click.stop style="width:100%;overflow-y:auto;padding:0;display:flex;flex-flow:column;">
+        <div class="modal-header" style="padding:0">
+            <center><h2>{{ getFullPath() }}</h2></center>
+          <span style="position:absolute;top:0;right:0.2em;">
+            <span @click="close" tabindex="0" v-on:keyup.enter="close" style="color:black;font-size:3em;font-weight:bold;cursor:pointer;">&times;</span>
+          </span>
+        </div>
+
+        <div class="modal-body" style="margin:0;padding:0;display:flex;flex-grow:1;">
+            <spinner v-if="showSpinner"></spinner>
+            <Gallery
+                    v-if="showEmbeddedGallery"
+                    v-on:hide-gallery="showEmbeddedGallery = false"
+                    :files="filesToViewInGallery"
+                    :hideGalleryTitle="true"
+                    :context="context">
+            </Gallery>
+	  <iframe id="editor" :src="frameUrl()" style="width:100%;height:100%;" frameBorder="0"></iframe>
+        </div>
+    </div>
+</div>
+</transition>
+</template>
+
+<script>
+    const Gallery = require("../../drive/DriveGallery.vue");
+    const mixins = require("../../../mixins/downloader/index.js");
+    const routerMixins = require("../../../mixins/router/index.js");
+
 module.exports = {
-    template: require('markdown.html'),
     components: {
         Gallery
     },
     data: function() {
         return {
             showSpinner: false,
-	        currentPath: null,
-	        currentFilename: null,
+	        currPath: null,
+	        currFilename: null,
 	        isIframeInitialised: false,
             APP_NAME: 'markdown-viewer',
             PATH_PREFIX: '/apps/markdown-viewer/',
@@ -23,12 +53,36 @@ module.exports = {
             updatedFilename: ''
         }
     },
-    props: ['context', 'file', 'messages', 'path'],
+    props: [],
+    mixins:[mixins, routerMixins],
+    computed: {
+        ...Vuex.mapState([
+            'context'
+        ]),
+        ...Vuex.mapGetters([
+            'isSecretLink',
+            'getPath',
+            'currentFilename'
+        ]),
+    },
     created: function() {
-        this.currentPath = this.path.substring(0, this.path.length - 1);
-        this.scopedPath = this.path;
-        this.currentFilename = this.file.getName();
-        this.startListener();
+        const props = this.getPropsFromUrl();
+        var completePath = props.path + '/' + props.filename;
+        if (props.secretLink) {
+            completePath = this.getPath + '/' + this.currentFilename;
+        }
+        let path = props.secretLink ? this.getPath : props.path +'/';
+        this.currPath = path.substring(0, path.length - 1);
+        this.scopedPath = path;
+        this.currFilename = props.secretLink ? this.currentFilename : props.filename;
+        let that = this;
+        this.findFile(completePath).thenApply(file => {
+            if (file != null) {
+                that.readInFile(file).thenApply(data => {
+                    that.startListener(data);
+                });
+            }
+        });
     },
     methods: {
 	    frameUrl: function() {
@@ -37,7 +91,7 @@ module.exports = {
         frameDomain: function() {
             return window.location.protocol + "//" + this.APP_NAME + '.' + window.location.host;
         },
-        startListener: function() {
+        startListener: function(data) {
 	    var that = this;
 	    var iframe = document.getElementById("editor");
 	    if (iframe == null) {
@@ -70,25 +124,12 @@ module.exports = {
         // don't have an origin which you can target: you'll have to send to any
         // origin, which might alow some esoteric attacks. Validate your output!
         this.showSpinner = true;
-	    const props = this.file.getFileProperties();
         let theme = this.$store.getters.currentTheme;
-	    this.file.getInputStream(this.context.network, this.context.crypto, props.sizeHigh(), props.sizeLow(), function(read){})
-	        .thenCompose(function(reader) {
-                let size = that.getFileSize(props);
-                let data = convertToByteArray(new Int8Array(size));
-                return reader.readIntoArray(data, 0, data.length).thenApply(function(read){
-                        let func = function() {
-                            iframe.contentWindow.postMessage({action: "respondToNavigateTo", theme: theme, text:new TextDecoder().decode(data)}, '*');
-                            that.showSpinner = false;
-                        };
-                        that.setupIFrameMessaging(iframe, func);
-                });
-        }).exceptionally(function(throwable) {
+        let func = function() {
+            iframe.contentWindow.postMessage({action: "respondToNavigateTo", theme: theme, text:new TextDecoder().decode(data)}, '*');
             that.showSpinner = false;
-            that.showMessage(true, "Unexpected error", throwable.detailMessage);
-            console.log('Error loading file: ' + that.file.getName());
-            console.log(throwable.getMessage());
-        });
+        };
+        that.setupIFrameMessaging(iframe, func);
 	},
 
 	setupIFrameMessaging: function(iframe, func) {
@@ -101,7 +142,7 @@ module.exports = {
         }
 	},
     getFullPath: function() {
-        return this.currentPath + '/' + this.currentFilename;
+        return this.currPath + '/' + this.currFilename;
     },
     showMessage: function(isError, title, body) {
         let bodyContents = body == null ? '' : ' ' + body;
@@ -155,7 +196,7 @@ module.exports = {
     },
     calculateFullPath: function(peergosPath, updateFullPath) {
         let pathElements = peergosPath.split('/').filter(n => n.length > 0);
-        var path = this.currentPath;
+        var path = this.currPath;
         var filename = '';
         if (pathElements == 0) {
             return null;
@@ -202,8 +243,8 @@ module.exports = {
                         if (validMimeTypes.length == 0 || that.findMimeType(mimeType, validMimeTypes)) {
                             that.readInFile(file).thenApply(bytes => {
                                 if (updateFullPath) {
-                                    this.currentPath = this.updatedPath;
-                                    this.currentFilename = this.updatedFilename;
+                                    this.currPath = this.updatedPath;
+                                    this.currFilename = this.updatedFilename;
                                 }
                                 that.showSpinner = false;
                                 future.complete(bytes);
@@ -313,6 +354,8 @@ module.exports = {
                       iframe.contentWindow.postMessage({action: "respondToNavigateTo", text:new TextDecoder().decode(data)}, '*');
                     };
                     that.setupIFrameMessaging(iframe, func);
+                    that.updateHistory("Markdown", this.updatedPath, this.updatedFilename);
+                    //that.openFileOrDir('Markdown', that.updatedPath, that.updatedFilename);
                 }
             });
         } else {
@@ -321,3 +364,4 @@ module.exports = {
     },
     }
 }
+</script>

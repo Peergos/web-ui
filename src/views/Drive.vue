@@ -117,14 +117,10 @@
 			:context="context"
 			:messages="messages">
 		</code-editor>
-        <markdown-viewer
+        <Markdown
             v-if="showMarkdownViewer"
-            v-on:hide-markdown-viewer="closeApps(true); updateCurrentDir();"
-            :file="selectedFiles[0]"
-            :path="getPath"
-            :context="context"
-            :messages="messages">
-        </markdown-viewer>
+            v-on:hide-markdown-viewer="closeApps(true); updateCurrentDir();">
+        </Markdown>
                 <identity
                     v-if="showIdentityProof"
                     v-on:hide-identity-proof="closeApps(false)"
@@ -189,6 +185,7 @@ const Gallery = require("../components/drive/DriveGallery.vue");
 const Identity = require("../components/identity-proof-viewer.vue");
 const Share = require("../components/drive/DriveShare.vue");
 const Search = require("../components/Search.vue");
+const Markdown = require("../components/viewers/markdown/Markdown.vue");
 
 const ProgressBar = require("../components/drive/ProgressBar.vue");
 const DriveMenu = require("../components/drive/DriveMenu.vue");
@@ -214,7 +211,8 @@ module.exports = {
 		Gallery,
 		Identity,
 		Share,
-		Search
+		Search,
+		Markdown
 	},
 	data() {
 		return {
