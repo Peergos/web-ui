@@ -10167,6 +10167,10 @@ var baseConvertors = {
         var entering = _a.entering;
         if (entering) {
             var _b = node, title = _b.title, destination = _b.destination;
+            if (destination.includes('..')) {
+                destination = destination.replaceAll('..', 'INVALID_PATH');
+                console.log('anchor href cannot contain ..');
+            }
             return {
                 type: 'openTag',
                 tagName: 'a',
@@ -10178,6 +10182,10 @@ var baseConvertors = {
     image: function (node, _a) {
         var getChildrenText = _a.getChildrenText, skipChildren = _a.skipChildren;
         var _b = node, title = _b.title, destination = _b.destination;
+        if (destination.includes('..')) {
+            destination = destination.replaceAll('..', 'INVALID_PATH');
+            console.log('image src cannot contain ..');
+        }
         skipChildren();
         return {
             type: 'openTag',

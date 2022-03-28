@@ -157,7 +157,10 @@ module.exports = {
         let pathElements = peergosPath.split('/').filter(n => n.length > 0);
         var path = this.currentPath;
         var filename = '';
-        if (pathElements ==  0) {
+        if (pathElements == 0) {
+            return null;
+        } else if (peergosPath.includes('INVALID_PATH/')) {
+            this.showErrorMessage('Links cannot contain ..');
             return null;
         } else if (pathElements.length == 1) {
             filename =  pathElements[0];
