@@ -74,8 +74,8 @@
 				@closeMenu="closeMenu()"
 			>
 				<li id='gallery' v-if="canOpen && !isMarkdown" @keyup.enter="openFile(false)" @click="openFile(false)">View</li>
-				<li id='gallery-edit-markdown' v-if="isMarkdown" @keyup.enter="openFile(false)" @click="openFile(false)">Edit</li>
 				<li id='gallery-view-markdown' v-if="isMarkdown" @keyup.enter="openFile(true)" @click="openFile(true)">View</li>
+				<li id='gallery-edit-markdown' v-if="isMarkdown" @keyup.enter="openFile(false)" @click="openFile(false)">Edit</li>
 				<li id='open-file' v-if="canOpen" @keyup.enter="downloadAll"  @click="downloadAll">Download</li>
 				<li id='rename-file' v-if="isWritable" @keyup.enter="rename"  @click="rename">Rename</li>
 				<li id='delete-file' v-if="isWritable" @keyup.enter="deleteFiles"  @click="deleteFiles">Delete</li>
