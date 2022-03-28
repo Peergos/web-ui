@@ -18,7 +18,9 @@ module.exports = {
             validMediaSuffixes: ['mpg','mp3','mp4','avi','webm'],
             validResourceSuffixes: ['md'],//,'pdf','zip'];
             validResourceMimeTypes: ['text/x-markdown', 'text/'],
-            scopedPath: null
+            scopedPath: null,
+            updatedPath: '',
+            updatedFilename: ''
         }
     },
     props: ['context', 'file', 'messages', 'path'],
@@ -160,7 +162,8 @@ module.exports = {
         } else if (pathElements.length == 1) {
             filename =  pathElements[0];
             if (updateFullPath) {
-                this.currentFilename = filename;
+                this.updatedPath = path;
+                this.updatedFilename = filename;
             }
         } else {
             let directories = pathElements.slice();
@@ -168,8 +171,8 @@ module.exports = {
             path = '/' + directories.join('/');
             filename = pathElements[pathElements.length -1];
             if (updateFullPath) {
-                this.currentPath = path;
-                this.currentFilename = filename;
+                this.updatedPath = path;
+                this.updatedFilename = filename;
             }
         }
         return path + '/' + filename;
@@ -195,6 +198,10 @@ module.exports = {
                     if(validFileTypes.includes(type) || validFileTypes.length == 0) {
                         if (validMimeTypes.length == 0 || that.findMimeType(mimeType, validMimeTypes)) {
                             that.readInFile(file).thenApply(bytes => {
+                                if (updateFullPath) {
+                                    this.currentPath = this.updatedPath;
+                                    this.currentFilename = this.updatedFilename;
+                                }
                                 that.showSpinner = false;
                                 future.complete(bytes);
                             });
@@ -208,7 +215,6 @@ module.exports = {
                     }
                 } else {
                     that.showSpinner = false;
-                    that.showErrorMessage(true, "Resource not found: " + fullPath);
                     future.complete(null);
                 }
             });
@@ -216,6 +222,7 @@ module.exports = {
         return future;
     },
     findFile: function(filePath) {
+        let that = this;
         var future = peergos.shared.util.Futures.incomplete();
         this.context.getByPath(filePath).thenApply(function(fileOpt){
             if (fileOpt.ref == null) {
@@ -267,7 +274,7 @@ module.exports = {
                 if (file != null) {
                     let type = file.props.getType();
                     if(type == "image" || type == "audio" || type == "video") {
-                        this.openInGallery(file);
+                        that.openInGallery(file);
                     } else {
                         that.showErrorMessage("unable to display resource in gallery. Not an allowed filetype");
                     }
