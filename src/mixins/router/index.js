@@ -10,7 +10,7 @@ module.exports = {
             return path;
         },
         
-	updateHistory(app, path, filename) {
+	updateHistory(app, path, filename, writable) {
 	    if (this.isSecretLink) {
                 const sidebarApps = ["Drive", "NewsFeed", "Tasks", "Social", "Calendar", "Chat"]
                 if (sidebarApps.includes(app)) {
@@ -33,7 +33,7 @@ module.exports = {
 	    if (path == pathFromUrl && app == appFromUrl && filename == filenameFromUrl)
 		return;
             
-	    const rawProps = propsToFragment({ app: app, path: path, filename: filename });
+	    const rawProps = propsToFragment({ app: app, path: path, filename: filename, writable: writable });
 	    const props = this.encryptProps(rawProps);
             
 	    window.location.hash = "#" + propsToFragment(props);
@@ -63,7 +63,7 @@ module.exports = {
 	    return { nonce: nonce, ciphertext: ciphertext };
 	},
         
-        getApp(file, path) {
+        getApp(file, path, writable) {
             if (file.isDirectory()) {
                 let pathParts = path.split("/");
                 if (pathParts.length == 6 && pathParts[0] == '' &&
@@ -92,7 +92,7 @@ module.exports = {
 		return "identity-proof";
         } else if (mimeType.startsWith("text/x-markdown") ||
             ( mimeType.startsWith("text/") && filename.endsWith('.md'))) {
-            return "markdown";
+            return writable ? "editor" : "markdown";
 	    } else if (mimeType.startsWith("text/")) {
 		return "editor";
 	    } else {
@@ -100,7 +100,7 @@ module.exports = {
 	    }
         },
 
-        openFileOrDir(app, path, filename) {
+        openFileOrDir(app, path, filename, writable) {
 	    this.updateHistory(app, path, filename);
         }
     },

@@ -113,7 +113,6 @@ module.exports = {
 	data() {
 		return {
 			token: "",
-			onUpdateCompletion: [], // methods to invoke when current dir is next refreshed
 		};
 	},
 
@@ -248,18 +247,26 @@ module.exports = {
 	    }
 
             const that = this;
-            const sidebarApps = ["Drive", "NewsFeed", "Tasks", "Social", "Calendar", "Chat", "Email", "Markdown"]
+            const sidebarApps = ["Drive", "NewsFeed", "Tasks", "Social", "Calendar", "Chat", "Email"]
+            const inDrive = this.currentView == "Drive";
 	    if (app === "Drive") {
-                const inDrive = this.currentView == "Drive";
-		this.$store.commit("CURRENT_VIEW", app);
+                if (inDrive) {
+                    that.$refs.appView.closeApps()
+                } else 
+		    this.$store.commit("CURRENT_VIEW", app);
 	    } else if (sidebarApps.includes(app)) {
 		this.$store.commit("CURRENT_VIEW", app);
 	    } else {
-		// Drive sub-apps
-		this.$store.commit("CURRENT_VIEW", "Drive");
-                this.onUpdateCompletion.push(() => {
-		    that.$refs.appView.openInApp(filename, app);
-		});
+                // Drive sub-apps
+                if (inDrive) {
+                    that.$refs.appView.openInApp(filename, app);
+                } else {
+		    this.$store.commit("CURRENT_VIEW", "Drive");
+                    // TODO: find a cleaner way to do this
+                    this.$refs.appView._data.onUpdateCompletion.push(() => {
+		        that.$refs.appView.openInApp(filename, app);
+		    });
+                }
 	    }
 	},
 

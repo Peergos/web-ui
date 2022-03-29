@@ -74,8 +74,8 @@
 				@closeMenu="closeMenu()"
 			>
 				<li id='gallery' v-if="canOpen && !isMarkdown" @keyup.enter="openFile(false)" @click="openFile(false)">View</li>
-				<li id='gallery-view-markdown' v-if="isMarkdown" @keyup.enter="openFile(true)" @click="openFile(true)">View</li>
-				<li id='gallery-edit-markdown' v-if="isMarkdown" @keyup.enter="openFile(false)" @click="openFile(false)">Edit</li>
+				<li id='gallery-view-markdown' v-if="isMarkdown" @keyup.enter="openFile(false)" @click="openFile(false)">View</li>
+				<li id='gallery-edit-markdown' v-if="isMarkdown" @keyup.enter="openFile(true)" @click="openFile(true)">Edit</li>
 				<li id='open-file' v-if="canOpen" @keyup.enter="downloadAll"  @click="downloadAll">Download</li>
 				<li id='rename-file' v-if="isWritable" @keyup.enter="rename"  @click="rename">Rename</li>
 				<li id='delete-file' v-if="isWritable" @keyup.enter="deleteFiles"  @click="deleteFiles">Delete</li>
@@ -630,7 +630,8 @@ module.exports = {
 				 		        var open = () => {
                                                             const filename = file.get().getName();
                                                             that.selectedFiles = that.files.filter(f => f.getName() == filename);
-						            that.openFile();
+                                                            var app = that.getApp(filename, path, false);
+						            that.openInApp(filename, app);
 				 		        };
 				 		        that.onUpdateCompletion.push(open);
 				 	            }
@@ -642,28 +643,28 @@ module.exports = {
                                     }
 				} else {
                                     that.$store.commit('SET_PATH', linkPath.split('/').filter(n => n.length > 0))
-                                    if (that.download || that.open)
-				        that.context.getByPath(that.getPath)
-				 	.thenApply(function (file) {
-				 	    file.get().getChildren(that.context.crypto.hasher, that.context.network).thenApply(function (children) {
-				 		var arr = children.toArray();
-				 		if (arr.length == 1) {
-				 		    if (that.download) {
-				 			that.downloadFile(arr[0]);
-				 		    } else if (that.open) {
-				 			var open = () => {
-                                                            const filename = arr[0].getName();
-                                                            that.selectedFiles = that.files.filter(f => f.getName() == filename);
-						            that.openFile();
-				 			};
-				 			that.onUpdateCompletion.push(open);
-				 		    }
-				 		} else {
-                                                    let app = that.getApp(file.get(), linkPath);
-                                                    that.openFileOrDir(app, linkPath, "");
-                                                }
-				 	    })
-				 	});
+                                    if (that.download) {
+                                        var download = () => {
+                                            that.downloadFile(that.files[0]);
+				 	};
+				 	that.onUpdateCompletion.push(download);
+                                    }
+                                    if (that.open) {
+                                        var open = () => {
+                                            const oneFile = that.files.length == 1;
+                                            if (oneFile) {
+                                                const filename = that.files[0].getName();
+                                                that.selectedFiles = that.files;
+					        var app = that.getApp(that.files[0], that.getPath, false);
+					        that.openInApp(filename, app);
+                                                that.updateHistory(app, that.getPath, filename, false);
+                                            } else {
+                                                let app = that.getApp(that.currentDir, linkPath);
+                                                that.openFileOrDir(app, linkPath, "");
+                                            }
+				 	};
+				 	that.onUpdateCompletion.push(open);
+                                    }
 				}
 			    });
 			} else {
@@ -820,7 +821,11 @@ module.exports = {
 			this.updateCurrentDirectory(filename);
 		},
 
-		openInApp(filename, app) {
+	    openInApp(filename, app) {
+                    if (app == null || app == "") {
+                        this.closeApps();
+                        return
+                    }
 		    this.selectedFiles = this.files.filter(f => f.getName() == filename);
 		    if (this.selectedFiles.length == 0)
 			return;
@@ -835,12 +840,10 @@ module.exports = {
 			this.showIdentityProof = true;
 		    else if (app == "hex")
 			this.showHexViewer = true;
-            else if (app == "markdown")
-            this.showMarkdownViewer = true;
+                    else if (app == "markdown")
+                        this.showMarkdownViewer = true;
 		    else if (app == "search")
 			this.showSearch = true;
-
-                    this.updateHistory(app, this.getPath, "");
 		},
 		openSearch(fromRoot) {
 			var path = fromRoot ? "/" + this.context.username : this.getPath;
@@ -1654,7 +1657,7 @@ module.exports = {
 			}
 		},
 
-		openFile(showMarkdownViewer) {
+		openFile(writable) {
 		    // TODO: once we support selecting files re-enable this
 		    //if (this.selectedFiles.length == 0)
 		    //    return;
@@ -1665,23 +1668,13 @@ module.exports = {
 		    var file = this.selectedFiles[0];
 		    var filename = file.getName();
 
-            var app = this.getApp(file, this.getPath);
-            if (app === "Gallery")
-                this.showGallery = true;
-            else if (app === "pdf")
-                this.showPdfViewer = true;
-            else if (app == "editor" || app === "markdown")
-                if (showMarkdownViewer) {
-                    this.showMarkdownViewer = true;
-                } else {
-                    this.showCodeEditor = true;
-                }
-            else if (app === "identity-proof")
-                this.showIdentityProof = true;
-            else if (app === "hex")
-                this.showHexViewer = true;
-            this.openFileOrDir(app, this.getPath, filename)
+                    var app = this.getApp(file, this.getPath, writable);
+                    if (this.isSecretLink)
+                        this.openInApp(filename, app)
+                    else
+                        this.openFileOrDir(app, this.getPath, filename, writable)
 		},
+            
 		navigateOrDownload(file) {
 			if (this.showSpinner) // disable user input whilst refreshing
 				return;
