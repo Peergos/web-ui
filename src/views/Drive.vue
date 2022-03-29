@@ -779,7 +779,7 @@ module.exports = {
 			this.onUpdateCompletion = [];
 		},
 
-		closeApps(refresh) {
+		closeApps(refresh, recordHistory) {
 		    this.showGallery = false;
                     this.showIdentityProof = false;
 		    this.showPdfViewer = false;
@@ -789,7 +789,8 @@ module.exports = {
 		    this.showHexViewer = false;
 		    this.showSearch = false;
 		    this.selectedFiles = [];
-		    this.updateHistory("Drive", this.getPath, "");
+		    if (recordHistory == null || recordHistory === true)
+		        this.updateHistory("Drive", this.getPath, "");
                     if (refresh)
 		        this.forceSharedRefreshWithUpdate++;
 		},
@@ -825,31 +826,29 @@ module.exports = {
                     if (app == null || app == "") {
                         this.closeApps();
                         return
+                    } else {
+                        this.closeApps(false, false);
                     }
 		    this.selectedFiles = this.files.filter(f => f.getName() == filename);
 		    if (this.selectedFiles.length == 0)
 			return;
-                    
-		    if (app == "Gallery")
-			this.showGallery = true;
-		    else if (app == "pdf")
-			this.showPdfViewer = true;
-		    else if (app == "editor")
-			this.showCodeEditor = true;
-		    else if (app == "identity-proof")
-			this.showIdentityProof = true;
-		    else if (app == "hex")
-			this.showHexViewer = true;
-            else if (app == "markdown") {
-                if (this.showMarkdownViewer) {
-                    this.closeApps(true);
-                }
-                let that = this;
-                Vue.nextTick(() => {
-                    that.showMarkdownViewer = true;
-                });
-		    }else if (app == "search")
-			this.showSearch = true;
+            let that = this;
+            Vue.nextTick(() => {
+                if (app == "Gallery")
+                that.showGallery = true;
+                else if (app == "pdf")
+                that.showPdfViewer = true;
+                else if (app == "editor")
+                that.showCodeEditor = true;
+                else if (app == "identity-proof")
+                that.showIdentityProof = true;
+                else if (app == "hex")
+                that.showHexViewer = true;
+                else if (app == "markdown") {
+                that.showMarkdownViewer = true;
+                }else if (app == "search")
+                that.showSearch = true;
+            });
 		},
 		openSearch(fromRoot) {
 			var path = fromRoot ? "/" + this.context.username : this.getPath;

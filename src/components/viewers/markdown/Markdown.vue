@@ -160,18 +160,22 @@ module.exports = {
     close: function () {
         this.$emit("hide-markdown-viewer");
     },
-    hasValidFileExtension: function(path, validExtensions) {
+    hasValidFileExtension: function(path, validExtensions, showErrorMessage) {
         let extensionIndex = path.lastIndexOf('.');
         if (extensionIndex > 0 && extensionIndex < path.length) {
             let extension = path.substring(extensionIndex +1).toLowerCase();
             if (validExtensions.includes(extension)) {
                return true;
             } else {
-                this.showErrorMessage('file extension not on allowed list: ' + path);
+                if (showErrorMessage) {
+                    this.showErrorMessage('file extension not on allowed list: ' + path);
+                }
                 return false;
             }
         } else {
-            this.showErrorMessage('unable to determine file extension: ' + path);
+            if (showErrorMessage) {
+                this.showErrorMessage('unable to determine file extension: ' + path);
+            }
             return false;
         }
     },
@@ -315,7 +319,7 @@ module.exports = {
         if (fullPath == null) {
             return;
         }
-        if (this.hasValidFileExtension(fullPath, this.validMediaSuffixes)) {
+        if (this.hasValidFileExtension(fullPath, this.validMediaSuffixes, true)) {
             that.findFile(fullPath).thenApply(file => {
                 if (file != null) {
                     let type = file.props.getType();
@@ -336,7 +340,7 @@ module.exports = {
     },
     loadImageRequest: function(iframe, src, id) {
         let that = this;
-        if (this.hasValidFileExtension(src, this.validImageSuffixes)) {
+        if (this.hasValidFileExtension(src, this.validImageSuffixes, true)) {
             this.loadResource(src, false, [], ["image"]).thenApply(data => {
                 if (data != null) {
                     let func = function() {
@@ -349,16 +353,24 @@ module.exports = {
     },
     navigateToRequest: function(iframe, filePath) {
         let that = this;
-        if (this.hasValidFileExtension(filePath, this.validResourceSuffixes)) {
+        if (this.hasValidFileExtension(filePath, this.validResourceSuffixes, false)) {
             this.loadResource(filePath, true, this.validResourceMimeTypes, ["text"]).thenApply(isLoaded => {
                 if (isLoaded) {
                     that.updateHistory("markdown", this.updatedPath, this.updatedFilename);
                 }
             });
         } else {
-            //let app = that.getApp(file.get(), linkPath);
-            //that.openFileOrDir(app, that.updatedPath, that.updatedFilename);
-            //console.log("not a markdown file:" + filePath);
+            let fullPath = this.calculatePath(filePath, true);
+            that.findFile(fullPath).thenApply(file => {
+                if (file != null) {
+                    let app = that.getApp(file, that.updatedPath);
+                    if (app == 'hex') {
+                        that.openFileOrDir("Drive", that.updatedPath, "");
+                    } else {
+                        that.openFileOrDir(app, that.updatedPath, that.updatedFilename);
+                    }
+                }
+            });
         }
     },
     }
