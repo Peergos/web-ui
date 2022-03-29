@@ -840,9 +840,15 @@ module.exports = {
 			this.showIdentityProof = true;
 		    else if (app == "hex")
 			this.showHexViewer = true;
-                    else if (app == "markdown")
-                        this.showMarkdownViewer = true;
-		    else if (app == "search")
+            else if (app == "markdown") {
+                if (this.showMarkdownViewer) {
+                    this.closeApps(true);
+                }
+                let that = this;
+                Vue.nextTick(() => {
+                    that.showMarkdownViewer = true;
+                });
+		    }else if (app == "search")
 			this.showSearch = true;
 		},
 		openSearch(fromRoot) {

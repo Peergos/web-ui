@@ -242,12 +242,14 @@ module.exports = {
                     if(validFileTypes.includes(type) || validFileTypes.length == 0) {
                         if (validMimeTypes.length == 0 || that.findMimeType(mimeType, validMimeTypes)) {
                             that.readInFile(file).thenApply(bytes => {
+                                that.showSpinner = false;
                                 if (updateFullPath) {
                                     this.currPath = this.updatedPath;
                                     this.currFilename = this.updatedFilename;
+                                    future.complete(true);
+                                } else {
+                                    future.complete(bytes);
                                 }
-                                that.showSpinner = false;
-                                future.complete(bytes);
                             });
                         } else {
                             that.showErrorMessage("Resource not of correct mimetype: " + fullPath);
@@ -348,18 +350,15 @@ module.exports = {
     navigateToRequest: function(iframe, filePath) {
         let that = this;
         if (this.hasValidFileExtension(filePath, this.validResourceSuffixes)) {
-            this.loadResource(filePath, true, this.validResourceMimeTypes, ["text"]).thenApply(data => {
-                if (data != null) {
-                    let func = function() {
-                      iframe.contentWindow.postMessage({action: "respondToNavigateTo", text:new TextDecoder().decode(data)}, '*');
-                    };
-                    that.setupIFrameMessaging(iframe, func);
-                    that.updateHistory("Markdown", this.updatedPath, this.updatedFilename);
-                    //that.openFileOrDir('Markdown', that.updatedPath, that.updatedFilename);
+            this.loadResource(filePath, true, this.validResourceMimeTypes, ["text"]).thenApply(isLoaded => {
+                if (isLoaded) {
+                    that.updateHistory("markdown", this.updatedPath, this.updatedFilename);
                 }
             });
         } else {
-            console.log("not a markdown file:" + filePath);
+            //let app = that.getApp(file.get(), linkPath);
+            //that.openFileOrDir(app, that.updatedPath, that.updatedFilename);
+            //console.log("not a markdown file:" + filePath);
         }
     },
     }
