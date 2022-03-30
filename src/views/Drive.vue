@@ -826,13 +826,27 @@ module.exports = {
                     if (app == null || app == "") {
                         this.closeApps();
                         return
-                    } else {
-                        this.closeApps(false, false);
                     }
-		    this.selectedFiles = this.files.filter(f => f.getName() == filename);
-		    if (this.selectedFiles.length == 0)
-			return;
             let that = this;
+		    this.selectedFiles = this.files.filter(f => f.getName() == filename);
+		    if (this.selectedFiles.length == 0) {
+		        //path may have changed, so refresh and try again
+		        this.updateCurrentDirectory(null, () => {
+        		    that.selectedFiles = that.files.filter(f => f.getName() == filename);
+        		    if (that.selectedFiles.length == 1) {
+        			    that.openApp(app);
+        		    }
+		        });
+			} else {
+			    this.openApp(app);
+			}
+
+		},
+		openApp(app) {
+            let that = this;
+            //if navigating via history, first ensure app is closed
+            this.closeApps(false, false);
+            //wait a tick before showing again
             Vue.nextTick(() => {
                 if (app == "Gallery")
                 that.showGallery = true;

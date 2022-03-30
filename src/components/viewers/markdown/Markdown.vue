@@ -3,7 +3,7 @@
 <div class="modal-mask" @click="close"> 
     <div class="modal-container full-height" @click.stop style="width:100%;overflow-y:auto;padding:0;display:flex;flex-flow:column;">
         <div class="modal-header" style="padding:0">
-            <center><h2>{{ getFullPath() }}</h2></center>
+            <center><h2>{{ getFullPathForDisplay() }}</h2></center>
           <span style="position:absolute;top:0;right:0.2em;">
             <span @click="close" tabindex="0" v-on:keyup.enter="close" style="color:black;font-size:3em;font-weight:bold;cursor:pointer;">&times;</span>
           </span>
@@ -50,7 +50,8 @@ module.exports = {
             validResourceMimeTypes: ['text/x-markdown', 'text/'],
             scopedPath: null,
             updatedPath: '',
-            updatedFilename: ''
+            updatedFilename: '',
+            fullPathForDisplay: ''
         }
     },
     props: [],
@@ -79,6 +80,7 @@ module.exports = {
         this.findFile(completePath).thenApply(file => {
             if (file != null) {
                 that.readInFile(file).thenApply(data => {
+                    that.setFullPathForDisplay();
                     that.startListener(data);
                 });
             }
@@ -141,8 +143,11 @@ module.exports = {
             window.setTimeout(function() {that.setupIFrameMessaging(iframe, func);}, 20);
         }
 	},
-    getFullPath: function() {
-        return this.currPath + '/' + this.currFilename;
+    getFullPathForDisplay: function() {
+        return this.fullPathForDisplay;
+    },
+    setFullPathForDisplay: function() {
+        this.fullPathForDisplay = this.currPath + '/' + this.currFilename;
     },
     showMessage: function(isError, title, body) {
         let bodyContents = body == null ? '' : ' ' + body;
