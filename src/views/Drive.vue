@@ -73,9 +73,9 @@
 				v-if="viewMenu"
 				@closeMenu="closeMenu()"
 			>
-				<li id='gallery' v-if="canOpen && !isMarkdown" @keyup.enter="openFile(false)" @click="openFile(false)">View</li>
-				<li id='gallery-view-markdown' v-if="isMarkdown" @keyup.enter="openFile(false)" @click="openFile(false)">View</li>
-				<li id='gallery-edit-markdown' v-if="isMarkdown" @keyup.enter="openFile(true)" @click="openFile(true)">Edit</li>
+				<li id='gallery' v-if="canOpen && !isMarkdown" @keyup.enter="viewFile()" @click="viewFile()">View</li>
+				<li id='gallery-view-markdown' v-if="isMarkdown" @keyup.enter="viewFile()" @click="viewFile()">View</li>
+				<li id='gallery-edit-markdown' v-if="isMarkdown" @keyup.enter="editFile()" @click="editFile()">Edit</li>
 				<li id='open-file' v-if="canOpen" @keyup.enter="downloadAll"  @click="downloadAll">Download</li>
 				<li id='rename-file' v-if="isWritable" @keyup.enter="rename"  @click="rename">Rename</li>
 				<li id='delete-file' v-if="isWritable" @keyup.enter="deleteFiles"  @click="deleteFiles">Delete</li>
@@ -1684,6 +1684,7 @@ module.exports = {
 
                     var app = this.getApp(file, this.getPath, writable);
                     var args = {filename:filename}
+                    this.appArgs = args;
                     if (this.isSecretLink)
                         this.openInApp(args, app)
                     else
