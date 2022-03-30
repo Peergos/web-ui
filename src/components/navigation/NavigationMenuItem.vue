@@ -43,7 +43,7 @@ module.exports = {
 			if(this.isMobile){
 				this.$store.commit("TOGGLE_SIDEBAR");
 			}
-			this.openFileOrDir(view, this.context.username, "");
+			this.openFileOrDir(view, this.context.username, {filename:""});
 		},
 	},
 };

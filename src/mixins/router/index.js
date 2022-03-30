@@ -10,30 +10,30 @@ module.exports = {
             return path;
         },
         
-	updateHistory(app, path, filename, writable) {
+	updateHistory(app, path, args, writable) {
 	    if (this.isSecretLink) {
                 const sidebarApps = ["Drive", "NewsFeed", "Tasks", "Social", "Calendar", "Chat"]
                 if (sidebarApps.includes(app)) {
 		    this.$store.commit("CURRENT_VIEW", app);
                     if (app != "Drive") {
                         this.$store.commit('SET_PATH', path.split('/').filter(n => n.length > 0))
-                        this.$store.commit('SET_CURRENT_FILENAME', filename)
+                        this.$store.commit('SET_CURRENT_FILENAME', args.filename)
                     }
                 }
 		return;
             }
             path = this.canonical(path);
-	    console.log('updateHistory:', app, path, filename)
+	    console.log('updateHistory:', app, path, args)
             
 	    const currentProps = this.getPropsFromUrl();
 	    const pathFromUrl = this.canonical(currentProps == null ? null : currentProps.path);
 	    const appFromUrl = currentProps == null ? null : currentProps.app;
-            const filenameFromUrl = currentProps == null ? null : currentProps.filename;
+            const argsFromUrl = currentProps == null ? null : currentProps.args;
             
-	    if (path == pathFromUrl && app == appFromUrl && filename == filenameFromUrl)
+	    if (path == pathFromUrl && app == appFromUrl && JSON.stringify(args) === JSON.stringify(argsFromUrl))
 		return;
             
-	    const rawProps = propsToFragment({ app: app, path: path, filename: filename, writable: writable });
+	    const rawProps = propsToFragment({ app: app, path: path, args: args, writable: writable });
 	    const props = this.encryptProps(rawProps);
             
 	    window.location.hash = "#" + propsToFragment(props);
@@ -46,7 +46,11 @@ module.exports = {
 	    try {
 		return this.decryptProps(fragmentToProps(hash.substring(1)));
 	    } catch (e) {
-		return fragmentToProps(hash.substring(1));
+                try {
+		    return fragmentToProps(hash.substring(1));
+                } catch (f) {
+                    return null;
+                }
 	    }
 	},
 	decryptProps(props) {
@@ -100,8 +104,8 @@ module.exports = {
 	    }
         },
 
-        openFileOrDir(app, path, filename, writable) {
-	    this.updateHistory(app, path, filename);
+        openFileOrDir(app, path, args, writable) {
+	    this.updateHistory(app, path, args, writable);
         }
     },
 }

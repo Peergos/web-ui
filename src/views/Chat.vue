@@ -397,7 +397,7 @@ module.exports = {
     methods: {
         viewAction: function(path, file) {
             let app = this.getApp(file, path)
-            this.openFileOrDir(app, path, file.isDirectory() ? "" : file.getName())
+            this.openFileOrDir(app, path, {filename:file.isDirectory() ? "" : file.getName()})
         },
         displayProfile: function(username){
             this.showSpinner = true;

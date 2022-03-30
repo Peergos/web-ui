@@ -998,7 +998,7 @@ module.exports = {
         let dirPath =  isRecurring ? calendarDirectory + "/recurring" : calendarDirectory + "/" + year + "/" + month;
         let path = this.context.username + "/.apps/" + this.CALENDAR_DIR_NAME + '/' + this.DATA_DIR_NAME + "/" + dirPath;
         let filename = id + '.ics';
-        this.openFileOrDir("Email", path, filename);
+        this.openFileOrDir("Email", path, {filename:filename});
     },
     shareCalendarEvent: function(calendarName, id, year, month, isRecurring) {
         let calendarDirectory = this.findCalendarDirectory(calendarName);

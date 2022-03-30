@@ -233,8 +233,8 @@ module.exports = {
 
 	    const app = props == null ? null : props.app;
 	    const path = props == null ? null : props.path;
-	    const filename = props == null ? null : props.filename;
-	    const differentPath = path != null && path != this.getPath;
+	    const args = props == null ? null : props.args;
+	    const differentPath = this.canonical(path) != this.canonical(this.getPath);
 
 	    if (differentPath) {
 		console.log('onUrlChange differentPath so we do: ', path.split("/").filter(x => x.length > 0))
@@ -257,12 +257,12 @@ module.exports = {
 	    } else {
                 // Drive sub-apps
                 if (inDrive) {
-                    that.$refs.appView.openInApp(filename, app);
+                    that.$refs.appView.openInApp(args, app);
                 } else {
 		    this.$store.commit("CURRENT_VIEW", "Drive");
                     // TODO: find a cleaner way to do this
                     this.$refs.appView._data.onUpdateCompletion.push(() => {
-		        that.$refs.appView.openInApp(filename, app);
+		        that.$refs.appView.openInApp(args, app);
 		    });
                 }
 	    }

@@ -361,7 +361,7 @@ module.exports = {
         if (this.hasValidFileExtension(filePath, this.validResourceSuffixes, false)) {
             this.loadResource(filePath, true, this.validResourceMimeTypes, ["text"]).thenApply(isLoaded => {
                 if (isLoaded) {
-                    that.updateHistory("markdown", this.updatedPath, this.updatedFilename);
+                    that.updateHistory("markdown", this.updatedPath, {filename:this.updatedFilename});
                 }
             });
         } else {
@@ -370,9 +370,9 @@ module.exports = {
                 if (file != null) {
                     let app = that.getApp(file, that.updatedPath);
                     if (app == 'hex') {
-                        that.openFileOrDir("Drive", that.updatedPath, "");
+                        that.openFileOrDir("Drive", that.updatedPath, {filename:""});
                     } else {
-                        that.openFileOrDir(app, that.updatedPath, that.updatedFilename);
+                        that.openFileOrDir(app, that.updatedPath, {filename:that.updatedFilename});
                     }
                 }
             });

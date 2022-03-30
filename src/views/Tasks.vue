@@ -175,7 +175,7 @@ module.exports = {
                         }
                         else
                             that.startListener();
-                        that.updateHistory("Tasks", "/" + that.context.username + "/", select_result + ".todo");
+                        that.updateHistory("Tasks", "/" + that.context.username + "/", {filename:select_result + ".todo"});
                     };
                     that.showSpinner = false;
                     that.showSelect = true;
@@ -185,7 +185,7 @@ module.exports = {
         closeSelect: function() {
             this.showSelect = false;
             if (!this.taskSelected) {
-                this.openFileOrDir("Drive", "/", "")
+                this.openFileOrDir("Drive", "/", {filename:""})
             }
         },
         extractTodoBoardName: function(filename) {

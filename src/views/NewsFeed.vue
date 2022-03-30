@@ -925,7 +925,7 @@ module.exports = {
             this.viewAction(entry.path, entry.file);
         },
         viewFolder: function (entry) {
-            this.openFileOrDir("Drive", entry.path, "")
+            this.openFileOrDir("Drive", entry.path, {filename:""})
         },
         view: function (entry) {
             let type = entry.file.props.getType();
@@ -940,7 +940,7 @@ module.exports = {
         },
         viewAction: function(path, file) {
             let app = this.getApp(file, '/' + path)
-            this.openFileOrDir(app, path, file.isDirectory() ? "" : file.getName())
+            this.openFileOrDir(app, path, {filename:file.isDirectory() ? "" : file.getName()})
         },
         viewMediaList: function (mediaList, mediaIndex) {
             let files = [];

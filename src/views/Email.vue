@@ -492,7 +492,7 @@ module.exports = {
         },
         requestImportCalendarAttachment: function(attachment) {
             let path = this.context.username + '/.apps/email/data/default/attachments';
-            this.openFileOrDir("Calendar", path, attachment.uuid);
+            this.openFileOrDir("Calendar", path, {filename:attachment.uuid});
         },
         buildEmailBytes: function(data) {
             let email = this.buildEmail(data, true);
@@ -794,7 +794,7 @@ module.exports = {
             this.displaySpinner();
             email.writeInternal(icalFilePath, bytes).thenApply(done => {
                 that.removeSpinner();
-                that.openFileOrDir("Calendar", this.context.username + '/.apps/email/data/' + path, filename);
+                that.openFileOrDir("Calendar", this.context.username + '/.apps/email/data/' + path, {filename:filename});
             });
         },
         requestRefreshSent: function(emailApp, emailClient, filterStarredEmails) {
@@ -870,7 +870,7 @@ module.exports = {
             this.showMessage(msg);
         },
         close: function () {
-            this.openFileOrDir("Drive", this.context.username, "");
+            this.openFileOrDir("Drive", this.context.username, {filename:""});
         },
         uploadForwardedAttachments: function(email, data) {
             let future = peergos.shared.util.Futures.incomplete();

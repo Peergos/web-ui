@@ -92,26 +92,26 @@
 
 		<Gallery
 			v-if="showGallery"
-			@hide-gallery="closeApps(false)"
+			@hide-gallery="showDrive()"
 			:files="sortedFiles"
-			:initial-file-name="selectedFiles[0] == null ? '' : selectedFiles[0].getFileProperties().name">
+			:initial-file-name="appArgs.filename">
 		</Gallery>
 
 		<hex
 			v-if="showHexViewer"
-			v-on:hide-hex-viewer="closeApps(false)"
+			v-on:hide-hex-viewer="showDrive()"
 			:file="selectedFiles[0]"
 			:context="context">
 		</hex>
 		<pdf
 			v-if="showPdfViewer"
-			v-on:hide-pdf-viewer="closeApps(false)"
+			v-on:hide-pdf-viewer="showDrive()"
 			:file="selectedFiles[0]"
 			:context="context">
 		</pdf>
 		<code-editor
 			v-if="showCodeEditor"
-			v-on:hide-code-editor="closeApps(true); updateCurrentDir();"
+			v-on:hide-code-editor="showDrive()"
 			v-on:update-refresh="forceUpdate++"
 			:file="selectedFiles[0]"
 			:context="context"
@@ -119,11 +119,11 @@
 		</code-editor>
         <Markdown
             v-if="showMarkdownViewer"
-            v-on:hide-markdown-viewer="closeApps(true); updateCurrentDir();">
+            v-on:hide-markdown-viewer="showDrive()">
         </Markdown>
                 <identity
                     v-if="showIdentityProof"
-                    v-on:hide-identity-proof="closeApps(false)"
+                    v-on:hide-identity-proof="showDrive()"
                     :file="selectedFiles[0]"
                     :context="context">
                 </identity>
@@ -235,6 +235,8 @@ module.exports = {
 			},
 			forceSharedRefreshWithUpdate: 0,
 
+                        appArgs: {},
+                    
 			showAdmin: false,
 			showGallery: false,
 			showIdentityProof: false,
@@ -631,7 +633,7 @@ module.exports = {
                                                             const filename = file.get().getName();
                                                             that.selectedFiles = that.files.filter(f => f.getName() == filename);
                                                             var app = that.getApp(filename, path, false);
-						            that.openInApp(filename, app);
+						            that.openInApp({filename:filename}, app);
 				 		        };
 				 		        that.onUpdateCompletion.push(open);
 				 	            }
@@ -656,8 +658,8 @@ module.exports = {
                                                 const filename = that.files[0].getName();
                                                 that.selectedFiles = that.files;
 					        var app = that.getApp(that.files[0], that.getPath, false);
-					        that.openInApp(filename, app);
-                                                that.updateHistory(app, that.getPath, filename, false);
+					        that.openInApp({filename:filename}, app);
+                                                that.updateHistory(app, that.getPath, {filename:filename}, false);
                                             } else {
                                                 let app = that.getApp(that.currentDir, linkPath);
                                                 that.openFileOrDir(app, linkPath, "");
@@ -676,7 +678,7 @@ module.exports = {
 
 				const pathFromUrl = props == null ? null : props.path;
 				const appFromUrl = props == null ? null : props.app;
-				const filenameFromUrl = props == null ? null : props.filename;
+				const argsFromUrl = props == null ? null : props.args;
 
 				const apps = ['Calendar', 'NewsFeed', 'Social', 'Tasks']
 
@@ -684,14 +686,14 @@ module.exports = {
 
 					this.showSpinner = true;
 
-					let open = () => { that.openInApp(filenameFromUrl, appFromUrl) };
+					let open = () => { that.openInApp(argsFromUrl, appFromUrl) };
 					this.onUpdateCompletion.push(open);
 
 					this.$store.commit('SET_PATH', pathFromUrl.split('/').filter(n => n.length > 0))
 
 				} else {
 					this.$store.commit('SET_PATH', [this.context.username])
-					this.updateHistory('Drive', this.getPath,'')
+					this.updateHistory('Drive', this.getPath, {filename:""})
 				}
 
 				this.updateSocial()
@@ -779,7 +781,11 @@ module.exports = {
 			this.onUpdateCompletion = [];
 		},
 
-		closeApps(refresh, recordHistory) {
+                showDrive() {
+                    this.updateHistory("Drive", this.getPath, {filename:""});
+                },
+
+		closeApps() {
 		    this.showGallery = false;
                     this.showIdentityProof = false;
 		    this.showPdfViewer = false;
@@ -789,10 +795,6 @@ module.exports = {
 		    this.showHexViewer = false;
 		    this.showSearch = false;
 		    this.selectedFiles = [];
-		    if (recordHistory == null || recordHistory === true)
-		        this.updateHistory("Drive", this.getPath, "");
-                    if (refresh)
-		        this.forceSharedRefreshWithUpdate++;
 		},
 
 		navigateToAction(directory) {
@@ -817,52 +819,37 @@ module.exports = {
 			// this.path = path ? path.split('/') : [];
 			path == this.path ? path.split('/') : []
 
-                        this.closeApps(false);
-			this.updateHistory("Drive", path, "");
+                        this.closeApps();
+			this.updateHistory("Drive", path, {filename:""});
 			this.updateCurrentDirectory(filename);
 		},
 
-	    openInApp(filename, app) {
-                    if (app == null || app == "") {
-                        this.closeApps();
-                        return
-                    }
-            let that = this;
-		    this.selectedFiles = this.files.filter(f => f.getName() == filename);
-		    if (this.selectedFiles.length == 0) {
-		        //path may have changed, so refresh and try again
-		        this.updateCurrentDirectory(null, () => {
-        		    that.selectedFiles = that.files.filter(f => f.getName() == filename);
-        		    if (that.selectedFiles.length == 1) {
-        			    that.openApp(app);
-        		    }
-		        });
-			} else {
-			    this.openApp(app);
-			}
-
-		},
+	    openInApp(args, app) {
+                if (app == null || app == "" || app == "Drive") {
+                    this.closeApps();
+                    return
+                }
+                let that = this;
+		this.selectedFiles = this.files.filter(f => f.getName() == args.filename);
+		this.openApp(app);
+	    },
 		openApp(app) {
-            let that = this;
-            //if navigating via history, first ensure app is closed
-            this.closeApps(false, false);
-            //wait a tick before showing again
-            Vue.nextTick(() => {
-                if (app == "Gallery")
-                that.showGallery = true;
-                else if (app == "pdf")
-                that.showPdfViewer = true;
-                else if (app == "editor")
-                that.showCodeEditor = true;
-                else if (app == "identity-proof")
-                that.showIdentityProof = true;
-                else if (app == "hex")
-                that.showHexViewer = true;
-                else if (app == "markdown") {
-                that.showMarkdownViewer = true;
-                }else if (app == "search")
-                that.showSearch = true;
-            });
+                    let that = this;
+                        
+                    if (app == "Gallery")
+                        that.showGallery = true;
+                    else if (app == "pdf")
+                        that.showPdfViewer = true;
+                    else if (app == "editor")
+                        that.showCodeEditor = true;
+                    else if (app == "identity-proof")
+                        that.showIdentityProof = true;
+                    else if (app == "hex")
+                        that.showHexViewer = true;
+                    else if (app == "markdown")
+                        that.showMarkdownViewer = true;
+                    else if (app == "search")
+                        that.showSearch = true;
 		},
 		openSearch(fromRoot) {
 			var path = fromRoot ? "/" + this.context.username : this.getPath;
@@ -876,7 +863,7 @@ module.exports = {
 			}
 			this.searchPath = path;
 			this.showSearch = true;
-			this.updateHistory("search", this.getPath, "");
+			this.updateHistory("search", this.getPath, {filename:""});
 
 			this.closeMenu();
 		},
@@ -1431,7 +1418,7 @@ module.exports = {
 									that.selectedFiles = [textFileOpt.get()];
 									// that.clearTabNavigation();
 									that.showCodeEditor = true;
-									that.updateHistory("editor", that.getPath, "");
+									that.updateHistory("editor", that.getPath, {filename:""});
 								});
 							}).exceptionally(function (throwable) {
 								that.showSpinner = false;
@@ -1442,7 +1429,7 @@ module.exports = {
 						} else {
 							that.selectedFiles = [textFiles[foundIndex]];
 							that.showCodeEditor = true;
-							that.updateHistory("editor", that.getPath, "");
+							that.updateHistory("editor", that.getPath, {filename:""});
 						}
 					};
 					that.showSpinner = false;
@@ -1664,7 +1651,7 @@ module.exports = {
                         this.$store.commit('SET_PATH', pathArr)
 
 			this.showSpinner = true;
-			this.updateHistory("Drive", path, "");
+			this.updateHistory("Drive", path, {filename:""});
 		},
 		downloadAll() {
 			if (this.selectedFiles.length == 0)
@@ -1675,6 +1662,14 @@ module.exports = {
 				this.navigateOrDownload(file);
 			}
 		},
+
+                viewFile() {
+                    this.openFile(false)
+                },
+
+		editFile() {
+                    this.openFile(true)
+                },
 
 		openFile(writable) {
 		    // TODO: once we support selecting files re-enable this
@@ -1688,10 +1683,11 @@ module.exports = {
 		    var filename = file.getName();
 
                     var app = this.getApp(file, this.getPath, writable);
+                    var args = {filename:filename}
                     if (this.isSecretLink)
-                        this.openInApp(filename, app)
+                        this.openInApp(args, app)
                     else
-                        this.openFileOrDir(app, this.getPath, filename, writable)
+                        this.openFileOrDir(app, this.getPath, args, writable)
 		},
             
 		navigateOrDownload(file) {
