@@ -181,7 +181,7 @@ module.exports = {
     },
     calculatePath: function(filePath, updateFullPath) {
         if (filePath.startsWith(this.PATH_PREFIX)) {
-            return this.calculateFullPath(filePath.substring(this.PATH_PREFIX.length), updateFullPath);
+            return this.calculateFullPath(this.scopedPath + filePath.substring(this.PATH_PREFIX.length), updateFullPath);
         } else {
             let pathElements = filePath.split('/').filter(n => n.length > 0);
             let username = pathElements[0];
