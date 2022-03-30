@@ -77,7 +77,6 @@ const Social = require("../views/Social.vue");
 const Calendar = require("../views/Calendar.vue");
 const Chat = require("../views/Chat.vue");
 const Email = require("../views/Email.vue");
-const Markdown = require("../components/viewers/markdown/Markdown.vue");
 
 const ServerMessages = require("./ServerMessages.vue");
 
@@ -106,8 +105,7 @@ module.exports = {
 		AppTab,
 		AppTabs,
 		Login,
-		Signup,
-		Markdown
+		Signup
 	},
 
 	data() {
