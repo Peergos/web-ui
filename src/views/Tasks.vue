@@ -110,7 +110,7 @@ module.exports = {
                 this.loadPath(filepath)
             } else {
                 const path = props == null ? null : props.path;
-	        const filename = props == null ? null : props.filename;
+	        const filename = props == null ? null : props.args.filename;
                 let that = this;
                 if (filename == null || filename === "") {
                     this.selectOrCreateModal();
