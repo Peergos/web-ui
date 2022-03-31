@@ -829,7 +829,7 @@ module.exports = {
                     this.closeApps();
                     return
                 }
-                let that = this;
+                this.appArgs = args;
 		this.selectedFiles = this.files.filter(f => f.getName() == args.filename);
 		this.openApp(app);
 	    },
