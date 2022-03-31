@@ -33,7 +33,7 @@ module.exports = {
 	    if (path == pathFromUrl && app == appFromUrl && JSON.stringify(args) === JSON.stringify(argsFromUrl))
 		return;
             
-	    const rawProps = propsToFragment({ app: app, path: path, args: args, writable: writable });
+	    const rawProps = propsToFragment({ app: app, path: path, args: args, writable: writable || false });
 	    const props = this.encryptProps(rawProps);
             
 	    window.location.hash = "#" + propsToFragment(props);

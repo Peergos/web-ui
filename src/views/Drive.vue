@@ -795,7 +795,6 @@ module.exports = {
 		    this.showTextViewer = false;
 		    this.showHexViewer = false;
 		    this.showSearch = false;
-		    this.selectedFiles = [];
 		},
 
 		navigateToAction(directory) {
@@ -836,7 +835,7 @@ module.exports = {
 	    },
 		openApp(app) {
                     let that = this;
-                        
+                    this.closeApps();
                     if (app == "Gallery")
                         that.showGallery = true;
                     else if (app == "pdf")

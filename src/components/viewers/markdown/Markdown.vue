@@ -399,7 +399,6 @@ module.exports = {
             let fullPath = this.calculatePath(filePath, true);
             that.findFile(fullPath).thenApply(file => {
                 if (file != null) {
-                    that.close();
                     let app = that.getApp(file, that.updatedPath);
                     if (app == 'hex') {
                         that.openFileOrDir("Drive", that.updatedPath, {filename:""});

@@ -249,7 +249,7 @@ module.exports = {
             const inDrive = this.currentView == "Drive";
 	    if (app === "Drive") {
                 if (inDrive) {
-                    that.$refs.appView.closeApps()
+                    this.$refs.appView.closeApps()
                 } else 
 		    this.$store.commit("CURRENT_VIEW", app);
 	    } else if (sidebarApps.includes(app)) {
@@ -257,7 +257,13 @@ module.exports = {
 	    } else {
                 // Drive sub-apps
                 if (inDrive) {
-                    that.$refs.appView.openInApp(args, app);
+                    if (differentPath) {
+                        // TODO: find a cleaner way to do this
+                        this.$refs.appView._data.onUpdateCompletion.push(() => {
+		            that.$refs.appView.openInApp(args, app);
+		        });
+                    } else
+                        that.$refs.appView.openInApp(args, app);
                 } else {
 		    this.$store.commit("CURRENT_VIEW", "Drive");
                     // TODO: find a cleaner way to do this
