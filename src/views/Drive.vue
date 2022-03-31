@@ -119,7 +119,8 @@
 		</code-editor>
         <Markdown
             v-if="showMarkdownViewer"
-            v-on:hide-markdown-viewer="showDrive()">
+            v-on:hide-markdown-viewer="showDrive()"
+            :propAppArgs = "appArgs">
         </Markdown>
                 <identity
                     v-if="showIdentityProof"

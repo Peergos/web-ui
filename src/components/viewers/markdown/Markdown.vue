@@ -54,7 +54,7 @@ module.exports = {
             fullPathForDisplay: ''
         }
     },
-    props: [],
+    props: ['propAppArgs'],
     mixins:[mixins, routerMixins],
     computed: {
         ...Vuex.mapState([
@@ -65,6 +65,10 @@ module.exports = {
             'getPath',
             'currentFilename'
         ]),
+        propArgs() {
+            console.log('props changed');
+            return this.propAppArgs;
+        }
     },
     created: function() {
         const props = this.getPropsFromUrl();
@@ -256,10 +260,8 @@ module.exports = {
                                 if (updateFullPath) {
                                     this.currPath = this.updatedPath;
                                     this.currFilename = this.updatedFilename;
-                                    future.complete(true);
-                                } else {
-                                    future.complete(bytes);
                                 }
+                                future.complete(bytes);
                             });
                         } else {
                             that.showErrorMessage("Resource not of correct mimetype: " + fullPath);
@@ -360,9 +362,13 @@ module.exports = {
     navigateToRequest: function(iframe, filePath) {
         let that = this;
         if (this.hasValidFileExtension(filePath, this.validResourceSuffixes, false)) {
-            this.loadResource(filePath, true, this.validResourceMimeTypes, ["text"]).thenApply(isLoaded => {
-                if (isLoaded) {
-                    that.updateHistory("markdown", this.updatedPath, {filename:this.updatedFilename});
+            this.loadResource(filePath, true, this.validResourceMimeTypes, ["text"]).thenApply(data => {
+                if (data != null) {
+                    let func = function() {
+                      iframe.contentWindow.postMessage({action: "respondToNavigateTo", text:new TextDecoder().decode(data)}, '*');
+                    };
+                    that.setupIFrameMessaging(iframe, func);
+                    that.updateHistory("markdown", this.scopedPath, {subPath: this.updatedPath, filename:this.updatedFilename});
                 }
             });
         } else {
