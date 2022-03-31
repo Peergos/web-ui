@@ -18,7 +18,6 @@ window.addEventListener('message', function (e) {
     } else if(e.data.action == "respondToNavigateTo"){
         let div = document.createElement('div');
         let themeToUse = 'light'; //e.data.theme != null && e.data.theme == 'dark-mode' ? 'dark' : 'light';
-        let subLevel = e.data.subLevel ? e.data.subLevel : 0;
         let subPath = e.data.subPath ? e.data.subPath : '';
         const viewer = new toastui.Editor({
             el: div,
@@ -26,7 +25,6 @@ window.addEventListener('message', function (e) {
             usageStatistics: false,
             headless: true,
             theme: themeToUse,
-            subLevel: subLevel,
             subPath: subPath
         });
         let output = viewer.getHTML();

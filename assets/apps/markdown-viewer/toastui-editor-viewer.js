@@ -10167,21 +10167,8 @@ var baseConvertors = {
         var entering = _a.entering;
         if (entering) {
             var _b = node, title = _b.title, destination = _b.destination;
-            if (_a.options.subPath.length > 0 && !destination.startsWith('/')) {
+            if (!destination.startsWith('/')) {
                 destination = _a.options.subPath + '/' + destination;
-            }
-            if (destination.includes('DOUBLE_DOT')) {
-                destination = destination.replaceAll('DOUBLE_DOT', 'INVALID_PATH');
-            }
-            if (destination.includes('..')) {
-                for(var i = 0; i < _a.options.subLevel; i++) {
-                    destination = destination.replace('..', 'DOUBLE_DOT');
-                }
-                if (destination.includes('..')) {
-                    destination = destination.replaceAll('..', 'INVALID_PATH');
-                    console.log('anchor href cannot contain ..');
-                }
-                destination = destination.replaceAll('DOUBLE_DOT', '..');
             }
             return {
                 type: 'openTag',
@@ -10194,21 +10181,8 @@ var baseConvertors = {
     image: function (node, _a) {
         var getChildrenText = _a.getChildrenText, skipChildren = _a.skipChildren;
         var _b = node, title = _b.title, destination = _b.destination;
-        if (_a.options.subPath.length > 0 && !destination.startsWith('/')) {
+        if (!destination.startsWith('/')) {
             destination = _a.options.subPath + '/' + destination;
-        }
-        if (destination.includes('DOUBLE_DOT')) {
-            destination = destination.replaceAll('DOUBLE_DOT', 'INVALID_PATH');
-        }
-        if (destination.includes('..')) {
-            for(var i = 0; i < _a.options.subLevel; i++) {
-                destination = destination.replace('..', 'DOUBLE_DOT');
-            }
-            if (destination.includes('..')) {
-                destination = destination.replaceAll('..', 'INVALID_PATH');
-                console.log('image src cannot contain ..');
-            }
-            destination = destination.replaceAll('DOUBLE_DOT', '..');
         }
         skipChildren();
         return {
@@ -11852,7 +11826,6 @@ var MarkdownPreview = /** @class */ (function () {
             gfm: true,
             nodeId: true,
             convertors: getHTMLRenderConvertors(linkAttributes, customHTMLRenderer),
-            subLevel: options.subLevel,
             subPath: options.subPath
         });
         this.cursorNodeId = null;
@@ -12720,7 +12693,6 @@ var ToastUIEditorViewer = /** @class */ (function () {
             referenceDefinition: referenceDefinition,
             frontMatter: frontMatter,
             sanitizer: customHTMLSanitizer || sanitizeHTML,
-            subLevel: options.subLevel,
             subPath: options.subPath
         };
         if (!this.options.headless && this.options.events) {

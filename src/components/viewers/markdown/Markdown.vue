@@ -78,7 +78,7 @@ module.exports = {
         if (props.secretLink) {
             completePath = this.getPath + '/' + this.currentFilename;
         }
-        let path = props.secretLink ? this.getPath : props.path +'/';
+        let path = props.secretLink ? this.getPath : '/' + props.path +'/';
         this.currPath = path.substring(0, path.length - 1);
         this.scopedPath = path;
         this.currFilename = props.secretLink ? this.currentFilename : filename;
@@ -98,16 +98,6 @@ module.exports = {
             let subPath = this.propAppArgs.subPath != null ? this.propAppArgs.subPath
                 : this.scopedPath.substring(0, this.scopedPath.length -1);
             var completePath = subPath + '/' + filename;
-            let currDirParts = this.currPath.split('/').filter(n => n.length > 0);
-            let subPathDirParts = subPath.split('/').filter(n => n.length > 0);
-            var match = subPathDirParts.length >= currDirParts.length;
-            for(var i = 0; match && i < currDirParts.length; i++) {
-                if (currDirParts[i] != subPathDirParts[i]) {
-                    match = false;
-                    break;
-                }
-            }
-            let subLevel = match ? Math.max(0, subPathDirParts.length - currDirParts.length) : 0;
             this.currPath = subPath;
             this.currFilename = filename;
             let that = this;
@@ -119,7 +109,7 @@ module.exports = {
                         let iframe = document.getElementById("editor");
                         let func = function() {
                             iframe.contentWindow.postMessage({action: "respondToNavigateTo", text:new TextDecoder().decode(data)
-                                , subPath: subPath, subLevel: subLevel }, '*');
+                                , subPath: subPath}, '*');
                             that.showSpinner = false;
                         };
                         that.setupIFrameMessaging(iframe, func);
@@ -167,8 +157,11 @@ module.exports = {
         // origin, which might alow some esoteric attacks. Validate your output!
         this.showSpinner = true;
         let theme = this.$store.getters.currentTheme;
+        let subPath = this.propAppArgs.subPath != null ? this.propAppArgs.subPath
+                        : this.scopedPath.substring(0, this.scopedPath.length -1);
         let func = function() {
-            iframe.contentWindow.postMessage({action: "respondToNavigateTo", theme: theme, text:new TextDecoder().decode(data)}, '*');
+            iframe.contentWindow.postMessage({action: "respondToNavigateTo", theme: theme
+                , text:new TextDecoder().decode(data), subPath: subPath}, '*');
             that.showSpinner = false;
         };
         that.setupIFrameMessaging(iframe, func);
@@ -231,10 +224,8 @@ module.exports = {
             let pathElements = filePath.split('/').filter(n => n.length > 0);
             let username = pathElements[0];
             if (username == this.context.username) {
-                //then path must be scope to initial directory
-                let filePathWithoutSlash = filePath.startsWith('/') ? filePath.substring(1) : filePath;
-                if (filePathWithoutSlash.startsWith(this.scopedPath)) {
-                    return this.calculateFullPath(filePathWithoutSlash, updateFullPath);
+                if (filePath.startsWith(this.scopedPath)) {
+                    return this.calculateFullPath(filePath, updateFullPath);
                 } else {
                     this.showErrorMessage('Links are restricted to folder: ' + this.scopedPath);
                     return null;
@@ -249,9 +240,6 @@ module.exports = {
         var path = this.currPath;
         var filename = '';
         if (pathElements == 0) {
-            return null;
-        } else if (peergosPath.includes('INVALID_PATH/')) {
-            this.showErrorMessage('Link not valid ' + peergosPath);
             return null;
         } else if (pathElements.length == 1) {
             filename =  pathElements[0];
