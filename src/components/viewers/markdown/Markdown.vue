@@ -64,10 +64,11 @@ module.exports = {
             'isSecretLink',
             'getPath',
             'currentFilename'
-        ]),
-        propArgs() {
-            console.log('props changed');
-            return this.propAppArgs;
+        ])
+    },
+    watch: {
+        propAppArgs(newQuestion, oldQuestion) {
+            this.goToPage();
         }
     },
     created: function() {
@@ -92,6 +93,40 @@ module.exports = {
         });
     },
     methods: {
+        goToPage: function() {
+            let filename = this.propAppArgs.filename;
+            let subPath = this.propAppArgs.subPath != null ? this.propAppArgs.subPath
+                : this.scopedPath.substring(0, this.scopedPath.length -1);
+            var completePath = subPath + '/' + filename;
+            let currDirParts = this.currPath.split('/').filter(n => n.length > 0);
+            let subPathDirParts = subPath.split('/').filter(n => n.length > 0);
+            var match = subPathDirParts.length >= currDirParts.length;
+            for(var i = 0; match && i < currDirParts.length; i++) {
+                if (currDirParts[i] != subPathDirParts[i]) {
+                    match = false;
+                    break;
+                }
+            }
+            let subLevel = match ? Math.max(0, subPathDirParts.length - currDirParts.length) : 0;
+            this.currPath = subPath;
+            this.currFilename = filename;
+            let that = this;
+            this.showSpinner = true;
+            this.findFile(completePath).thenApply(file => {
+                if (file != null) {
+                    that.readInFile(file).thenApply(data => {
+                        that.setFullPathForDisplay();
+                        let iframe = document.getElementById("editor");
+                        let func = function() {
+                            iframe.contentWindow.postMessage({action: "respondToNavigateTo", text:new TextDecoder().decode(data)
+                                , subPath: subPath, subLevel: subLevel }, '*');
+                            that.showSpinner = false;
+                        };
+                        that.setupIFrameMessaging(iframe, func);
+                    });
+                }
+            });
+        },
 	    frameUrl: function() {
             return this.frameDomain() + this.PATH_PREFIX + "index.html";
         },
@@ -197,8 +232,9 @@ module.exports = {
             let username = pathElements[0];
             if (username == this.context.username) {
                 //then path must be scope to initial directory
-                if (filePath.startsWith(this.scopedPath)) {
-                    return this.calculateFullPath(filePath, updateFullPath);
+                let filePathWithoutSlash = filePath.startsWith('/') ? filePath.substring(1) : filePath;
+                if (filePathWithoutSlash.startsWith(this.scopedPath)) {
+                    return this.calculateFullPath(filePathWithoutSlash, updateFullPath);
                 } else {
                     this.showErrorMessage('Links are restricted to folder: ' + this.scopedPath);
                     return null;
@@ -215,7 +251,7 @@ module.exports = {
         if (pathElements == 0) {
             return null;
         } else if (peergosPath.includes('INVALID_PATH/')) {
-            this.showErrorMessage('Links cannot contain ..');
+            this.showErrorMessage('Link not valid ' + peergosPath);
             return null;
         } else if (pathElements.length == 1) {
             filename =  pathElements[0];
@@ -260,8 +296,10 @@ module.exports = {
                                 if (updateFullPath) {
                                     this.currPath = this.updatedPath;
                                     this.currFilename = this.updatedFilename;
+                                    future.complete(true);
+                                } else {
+                                    future.complete(bytes);
                                 }
-                                future.complete(bytes);
                             });
                         } else {
                             that.showErrorMessage("Resource not of correct mimetype: " + fullPath);
@@ -362,25 +400,26 @@ module.exports = {
     navigateToRequest: function(iframe, filePath) {
         let that = this;
         if (this.hasValidFileExtension(filePath, this.validResourceSuffixes, false)) {
-            this.loadResource(filePath, true, this.validResourceMimeTypes, ["text"]).thenApply(data => {
-                if (data != null) {
-                    let func = function() {
-                      iframe.contentWindow.postMessage({action: "respondToNavigateTo", text:new TextDecoder().decode(data)}, '*');
-                    };
-                    that.setupIFrameMessaging(iframe, func);
-                    that.updateHistory("markdown", this.scopedPath, {subPath: this.updatedPath, filename:this.updatedFilename});
+            let previousPath = this.currPath;
+            this.loadResource(filePath, true, this.validResourceMimeTypes, ["text"]).thenApply(isLoaded => {
+                if (isLoaded) {
+                    that.currPath = previousPath;
+                    that.updateHistory("markdown", that.scopedPath, {subPath: that.updatedPath, filename:that.updatedFilename});
                 }
             });
         } else {
             let fullPath = this.calculatePath(filePath, true);
             that.findFile(fullPath).thenApply(file => {
                 if (file != null) {
+                    that.close();
                     let app = that.getApp(file, that.updatedPath);
                     if (app == 'hex') {
                         that.openFileOrDir("Drive", that.updatedPath, {filename:""});
                     } else {
                         that.openFileOrDir(app, that.updatedPath, {filename:that.updatedFilename});
                     }
+                } else {
+                    that.showErrorMessage("unable to find resource: " + filePath);
                 }
             });
         }

@@ -18,12 +18,16 @@ window.addEventListener('message', function (e) {
     } else if(e.data.action == "respondToNavigateTo"){
         let div = document.createElement('div');
         let themeToUse = 'light'; //e.data.theme != null && e.data.theme == 'dark-mode' ? 'dark' : 'light';
+        let subLevel = e.data.subLevel ? e.data.subLevel : 0;
+        let subPath = e.data.subPath ? e.data.subPath : '';
         const viewer = new toastui.Editor({
             el: div,
             initialValue: e.data.text,
             usageStatistics: false,
             headless: true,
-            theme: themeToUse
+            theme: themeToUse,
+            subLevel: subLevel,
+            subPath: subPath
         });
         let output = viewer.getHTML();
         let xss = DOMPurify.sanitize(output);
