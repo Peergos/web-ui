@@ -166,13 +166,14 @@ module.exports = {
                 future.complete({path: path, filename: null});
             }
         } else {
-            let isFile = props.filename != null && props.filename.length > 0;
+            let filename = props.args.filename;
+            let isFile = filename != null && filename.length > 0;
             if (!isFile) {
                 //loading calendar from left hand menu + shared calendar importing
                 future.complete({path: props.path, filename: null});
             } else {
                 //shared calendar item importing
-                future.complete({path: props.path, filename: props.filename});
+                future.complete({path: props.path, filename: filename});
             }
         }
         return future;

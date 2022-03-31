@@ -152,10 +152,11 @@ module.exports = {
             let that = this;
             let future = peergos.shared.util.Futures.incomplete();
             const urlProps = this.getPropsFromUrl();
-            if (urlProps.filename == '') {
+            let filename = urlProps.args.filename;
+            if (filename == '') {
                 future.complete(false);
             } else {
-                this.context.getByPath(urlProps.path + '/' + urlProps.filename).thenApply(fileOpt => {
+                this.context.getByPath(urlProps.path + '/' + filename).thenApply(fileOpt => {
                     if (! fileOpt.isPresent()) {
                         that.$toast.error("Couldn't load calendar event file", {timeout:false});
                         future.complete(false);

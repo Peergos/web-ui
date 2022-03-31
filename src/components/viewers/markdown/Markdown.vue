@@ -68,14 +68,15 @@ module.exports = {
     },
     created: function() {
         const props = this.getPropsFromUrl();
-        var completePath = props.path + '/' + props.filename;
+        let filename = props.args.filename;
+        var completePath = props.path + '/' + filename;
         if (props.secretLink) {
             completePath = this.getPath + '/' + this.currentFilename;
         }
         let path = props.secretLink ? this.getPath : props.path +'/';
         this.currPath = path.substring(0, path.length - 1);
         this.scopedPath = path;
-        this.currFilename = props.secretLink ? this.currentFilename : props.filename;
+        this.currFilename = props.secretLink ? this.currentFilename : filename;
         let that = this;
         this.findFile(completePath).thenApply(file => {
             if (file != null) {
