@@ -6,7 +6,7 @@
 		</template>
 	</AppHeader>
     <div class="modal-mask-app" @click="close">
-        <div class="modal-container full-height" @click.stop style="width:100%;overflow-y:auto;padding:0;display:flex;flex-flow:column;">
+        <div class="modal-container full-height" @click="close" style="width:100%;overflow-y:auto;padding:0;display:flex;flex-flow:column;">
             <div class="modal-header-app">
                 <span style="position:absolute;top:0;right: 0.2em;">
                     <span @click="close" style="color:black;font-size:3em;font-weight:bold;cursor:pointer;">&times;</span>
