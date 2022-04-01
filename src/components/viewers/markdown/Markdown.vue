@@ -73,15 +73,21 @@ module.exports = {
     },
     created: function() {
         const props = this.getPropsFromUrl();
-        let filename = props.args.filename;
-        var completePath = props.path + '/' + filename;
+        var completePath = '';
+        var path = '';
         if (props.secretLink) {
-            completePath = this.getPath + '/' + this.currentFilename;
+            completePath = this.getPath + this.currentFilename;
+            path = this.getPath;
+            this.currFilename = this.currentFilename;
+        } else {
+            let filename = props.args.filename;
+            completePath = props.path + '/' + filename;
+            path = '/' + props.path +'/';
+            this.currFilename = filename;
         }
-        let path = props.secretLink ? this.getPath : '/' + props.path +'/';
+
         this.currPath = path.substring(0, path.length - 1);
         this.scopedPath = path;
-        this.currFilename = props.secretLink ? this.currentFilename : filename;
         let that = this;
         this.findFile(completePath).thenApply(file => {
             if (file != null) {
