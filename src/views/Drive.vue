@@ -1685,9 +1685,10 @@ module.exports = {
                     var app = this.getApp(file, this.getPath, writable);
                     var args = {filename:filename}
                     this.appArgs = args;
-                    if (this.isSecretLink)
+                    if (this.isSecretLink) {
+                        this.openFileOrDir(app, this.getPath, args, writable)
                         this.openInApp(args, app)
-                    else
+                    } else
                         this.openFileOrDir(app, this.getPath, args, writable)
 		},
             
