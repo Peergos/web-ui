@@ -405,8 +405,6 @@ module.exports = {
                     } else {
                         that.openFileOrDir(app, that.updatedPath, {filename:that.updatedFilename});
                     }
-                } else {
-                    that.showErrorMessage("unable to find resource: " + filePath);
                 }
             });
         }

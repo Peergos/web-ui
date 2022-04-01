@@ -315,7 +315,7 @@ module.exports = {
                         return;
                     }
                     that.filesToShare = [file];
-                    that.pathToFile = dirPath.split('/');
+                    that.pathToFile = dirPath.split('/').filter(n => n.length > 0);
                     let directoryPath = peergos.client.PathUtils.directoryToPath(that.pathToFile);
                     context.getDirectorySharingState(directoryPath).thenApply(function(updatedSharedWithState) {
                         let fileSharedWithState = updatedSharedWithState.get(file.getFileProperties().name);
