@@ -12,12 +12,12 @@ module.exports = {
         
 	updateHistory(app, path, args, writable) {
 	    if (this.isSecretLink) {
+                this.$store.commit('SET_CURRENT_FILENAME', args.filename)
                 const sidebarApps = ["Drive", "NewsFeed", "Tasks", "Social", "Calendar", "Chat"]
                 if (sidebarApps.includes(app)) {
 		    this.$store.commit("CURRENT_VIEW", app);
                     if (app != "Drive") {
                         this.$store.commit('SET_PATH', path.split('/').filter(n => n.length > 0))
-                        this.$store.commit('SET_CURRENT_FILENAME', args.filename)
                     }
                 }
 		return;

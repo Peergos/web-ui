@@ -659,8 +659,8 @@ module.exports = {
                                                 const filename = that.files[0].getName();
                                                 that.selectedFiles = that.files;
 					        var app = that.getApp(that.files[0], that.getPath, false);
-					        that.openInApp({filename:filename}, app);
                                                 that.updateHistory(app, that.getPath, {filename:filename}, false);
+                                                that.openInApp({filename:filename}, app);
                                             } else {
                                                 let app = that.getApp(that.currentDir, linkPath);
                                                 that.openFileOrDir(app, linkPath, "");
