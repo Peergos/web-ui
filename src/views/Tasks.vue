@@ -104,21 +104,15 @@ module.exports = {
             // if we have a file selected and it is a todo list, open it,
             // otherwise list todo files in home dir and give choice of creating a new one or opening one of them
             const props = this.getPropsFromUrl();
-            if (props.secretLink) {
-                let path = this.getPath;
-                let filepath = path + (path.endsWith("/") ? "" : "/") + this.currentFilename;
-                this.loadPath(filepath)
-            } else {
-                const path = props == null ? null : props.path;
-	        const filename = props == null ? null : props.args.filename;
-                let that = this;
-                if (filename == null || filename === "") {
-                    this.selectOrCreateModal();
-                    return;
-                }
-                
-                this.loadFile(path, filename);
+            const path = props == null ? null : props.path;
+	    const filename = props == null ? null : props.args.filename;
+            let that = this;
+            if (filename == null || filename === "") {
+                this.selectOrCreateModal();
+                return;
             }
+            
+            this.loadFile(path, filename);
         },
         
         loadFile: function(path, filename) {
