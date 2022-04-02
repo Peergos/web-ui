@@ -61,7 +61,6 @@ module.exports = {
             'context'
         ]),
         ...Vuex.mapGetters([
-            'isSecretLink',
             'getPath',
             'currentFilename'
         ])
@@ -75,16 +74,11 @@ module.exports = {
         const props = this.getPropsFromUrl();
         var completePath = '';
         var path = '';
-        if (props.secretLink) {
-            completePath = this.getPath + this.currentFilename;
-            path = this.getPath;
-            this.currFilename = this.currentFilename;
-        } else {
-            let filename = props.args.filename;
-            completePath = props.path + '/' + filename;
-            path = '/' + props.path +'/';
-            this.currFilename = filename;
-        }
+        
+        let filename = props.args.filename;
+        completePath = props.path + '/' + filename;
+        path = '/' + props.path +'/';
+        this.currFilename = filename;
 
         this.currPath = path.substring(0, path.length - 1);
         this.scopedPath = path;

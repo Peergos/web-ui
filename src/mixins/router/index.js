@@ -11,17 +11,6 @@ module.exports = {
         },
         
 	updateHistory(app, path, args, writable) {
-	    if (this.isSecretLink) {
-                this.$store.commit('SET_CURRENT_FILENAME', args.filename)
-                const sidebarApps = ["Drive", "NewsFeed", "Tasks", "Social", "Calendar", "Chat"]
-                if (sidebarApps.includes(app)) {
-		    this.$store.commit("CURRENT_VIEW", app);
-                    if (app != "Drive") {
-                        this.$store.commit('SET_PATH', path.split('/').filter(n => n.length > 0))
-                    }
-                }
-		return;
-            }
             path = this.canonical(path);
 	    console.log('updateHistory:', app, path, args)
             
@@ -32,9 +21,14 @@ module.exports = {
             
 	    if (path == pathFromUrl && app == appFromUrl && JSON.stringify(args) === JSON.stringify(argsFromUrl))
 		return;
-            
-	    const rawProps = propsToFragment({ app: app, path: path, args: args, writable: writable || false });
-	    const props = this.encryptProps(rawProps);
+
+            var rawProps = { app: app, path: path, args: args, writable: writable || false }
+	    if (currentProps.secretLink) {
+                rawProps.secretLink = true;
+                rawProps.link = currentProps.link;
+            }
+	    var encodedProps = propsToFragment(rawProps);
+            const props = currentProps.secretLink ? rawProps : this.encryptProps(encodedProps);
             
 	    window.location.hash = "#" + propsToFragment(props);
 	},
@@ -44,18 +38,19 @@ module.exports = {
             if (hash.length == 0)
                 return null;
 	    try {
-		return this.decryptProps(fragmentToProps(hash.substring(1)));
+                const rawProps = fragmentToProps(hash.substring(1))
+		return this.decryptProps(rawProps);
 	    } catch (e) {
                 try {
-		    return fragmentToProps(hash.substring(1));
+		    return rawProps;
                 } catch (f) {
                     return null;
                 }
 	    }
 	},
 	decryptProps(props) {
-	    if (this.isSecretLink)
-		return path;
+	    if (props.secretLink)
+		return props;
             
 	    return fragmentToProps(this.context.decryptURL(props.ciphertext, props.nonce));
 	},
