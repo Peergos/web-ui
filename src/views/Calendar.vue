@@ -155,26 +155,15 @@ module.exports = {
         let that = this;
         let future = peergos.shared.util.Futures.incomplete();
         const props = this.getPropsFromUrl();
-        if (props.secretLink) {
-            let path = this.getPath;
-            let filename = this.currentFilename;
-            if (filename.length > 0) {
-                //secret link to calendar event
-                future.complete({path: path, filename: filename});
-            } else {
-                //secret link to calendar
-                future.complete({path: path, filename: null});
-            }
+        
+        let filename = props.args.filename;
+        let isFile = filename != null && filename.length > 0;
+        if (!isFile) {
+            //loading calendar from left hand menu + shared calendar importing
+            future.complete({path: props.path, filename: null});
         } else {
-            let filename = props.args.filename;
-            let isFile = filename != null && filename.length > 0;
-            if (!isFile) {
-                //loading calendar from left hand menu + shared calendar importing
-                future.complete({path: props.path, filename: null});
-            } else {
-                //shared calendar item importing
-                future.complete({path: props.path, filename: filename});
-            }
+            //shared calendar item importing
+            future.complete({path: props.path, filename: filename});
         }
         return future;
     },
