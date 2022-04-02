@@ -26,6 +26,8 @@ module.exports = {
 	    if (currentProps.secretLink) {
                 rawProps.secretLink = true;
                 rawProps.link = currentProps.link;
+                if (currentProps.open)
+                    rawProps.open = true;
             }
 	    var encodedProps = propsToFragment(rawProps);
             const props = currentProps.secretLink ? rawProps : this.encryptProps(encodedProps);

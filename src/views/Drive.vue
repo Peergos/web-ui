@@ -655,15 +655,23 @@ module.exports = {
                                     if (that.open) {
                                         var open = () => {
                                             const oneFile = that.files.length == 1;
-                                            if (oneFile) {
+                                            const props = that.getPropsFromUrl();
+                                            if (props.args != null && props.args.filename != null) {
+                                                that.appArgs = props.args;
+                                                const filename = props.args.filename;
+                                                that.selectedFiles = that.files.filter(f => f.getName() == filename);
+					        var app = props.app || that.getApp(that.files[0], that.getPath, false);
+                                                that.openInApp({filename:filename}, app);
+                                                that.openFileOrDir(app, that.getPath, {filename:filename}, false);
+                                            } else if (oneFile) {
                                                 const filename = that.files[0].getName();
                                                 that.selectedFiles = that.files;
 					        var app = that.getApp(that.files[0], that.getPath, false);
-                                                that.updateHistory(app, that.getPath, {filename:filename}, false);
                                                 that.openInApp({filename:filename}, app);
+                                                that.openFileOrDir(app, that.getPath, {filename:filename}, false);
                                             } else {
                                                 let app = that.getApp(that.currentDir, linkPath);
-                                                that.openFileOrDir(app, linkPath, "");
+                                                that.openFileOrDir(app, linkPath, {filename:""});
                                             }
 				 	};
 				 	that.onUpdateCompletion.push(open);

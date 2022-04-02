@@ -323,7 +323,10 @@ module.exports = {
 		    that.$store.commit("SET_DOWNLOAD", props.download);
 		    that.$store.commit("SET_OPEN", props.open);
 		    that.$store.commit("SET_INIT_PATH", props.path);
-		    that.$store.commit("CURRENT_VIEW", "Drive");
+                    that.$store.commit("CURRENT_VIEW", "Drive");
+                    Vue.nextTick(() => {
+                        that.onUrlChange()
+                    });
 		})
 		.exceptionally(function (throwable) {
 		    that.$toast.error(
