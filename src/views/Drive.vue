@@ -633,8 +633,9 @@ module.exports = {
 				 		        var open = () => {
                                                             const filename = file.get().getName();
                                                             that.selectedFiles = that.files.filter(f => f.getName() == filename);
-                                                            var app = that.getApp(filename, path, false);
+                                                            var app = that.getApp(file.get(), path, false);
 						            that.openInApp({filename:filename}, app);
+                                                            that.openFileOrDir(app, path, {filename:filename}, false);
 				 		        };
 				 		        that.onUpdateCompletion.push(open);
 				 	            }
