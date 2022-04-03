@@ -23,14 +23,14 @@ module.exports = {
 		return;
 
             var rawProps = { app: app, path: path, args: args, writable: writable || false }
-	    if (currentProps.secretLink) {
+	    if (currentProps != null && currentProps.secretLink) {
                 rawProps.secretLink = true;
                 rawProps.link = currentProps.link;
                 if (currentProps.open)
                     rawProps.open = true;
             }
 	    var encodedProps = propsToFragment(rawProps);
-            const props = currentProps.secretLink ? rawProps : this.encryptProps(encodedProps);
+            const props = (currentProps != null && currentProps.secretLink) ? rawProps : this.encryptProps(encodedProps);
             
 	    window.location.hash = "#" + propsToFragment(props);
 	},
