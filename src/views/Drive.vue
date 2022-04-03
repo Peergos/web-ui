@@ -640,7 +640,7 @@ module.exports = {
 				 	            }
 				 	        } else {
                                                     let app = that.getApp(file.get(), linkPath);
-                                                    that.openFileOrDir(app, linkPath, "");
+                                                    that.openFileOrDir(app, linkPath, {path:path});
                                                 }
 				            });
                                     }
@@ -656,20 +656,30 @@ module.exports = {
                                         var open = () => {
                                             const oneFile = that.files.length == 1;
                                             const props = that.getPropsFromUrl();
-                                            if (props.args != null && props.args.filename != null) {
+                                            const openSubdir = props.args != null && props.args.path != null;
+                                            if (props.args != null && props.args.filename != null && props.args.filename != "") {
+                                                // if props name a file, open it
                                                 that.appArgs = props.args;
                                                 const filename = props.args.filename;
                                                 that.selectedFiles = that.files.filter(f => f.getName() == filename);
 					        var app = props.app || that.getApp(that.files[0], that.getPath, false);
                                                 that.openInApp({filename:filename}, app);
                                                 that.openFileOrDir(app, that.getPath, {filename:filename}, false);
-                                            } else if (oneFile) {
+                                            } else if (openSubdir) {
+                                                // if props name a dir, open it
+                                                that.appArgs = props.args;
+					        var app = props.app || that.getApp(that.currentDir, that.getPath, false);
+                                                let args = {path:that.getPath}
+                                                that.openInApp(args, app);
+                                                that.openFileOrDir(app, that.getPath, args, false);
+                                            } else if (oneFile) { // if there is exactly 1 file, open it
                                                 const filename = that.files[0].getName();
                                                 that.selectedFiles = that.files;
 					        var app = that.getApp(that.files[0], that.getPath, false);
                                                 that.openInApp({filename:filename}, app);
                                                 that.openFileOrDir(app, that.getPath, {filename:filename}, false);
                                             } else {
+                                                // open a directory
                                                 let app = that.getApp(that.currentDir, linkPath);
                                                 that.openFileOrDir(app, linkPath, {filename:""});
                                             }
