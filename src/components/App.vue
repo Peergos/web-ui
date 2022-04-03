@@ -236,7 +236,7 @@ module.exports = {
 	    const args = props == null ? null : props.args;
 	    const differentPath = this.canonical(path) != this.canonical(this.getPath);
 
-	    if (differentPath) {
+	    if (differentPath && path != null) {
 		console.log('onUrlChange differentPath so we do: ', path.split("/").filter(x => x.length > 0))
 		this.$store.commit(
 		    "SET_PATH",
