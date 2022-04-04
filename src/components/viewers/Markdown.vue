@@ -44,7 +44,7 @@ module.exports = {
             PATH_PREFIX: '/apps/markdown-viewer/',
             showEmbeddedGallery: false,
             filesToViewInGallery: [],
-            validImageSuffixes: ['jpg','png','gif','webp'],
+            validImageSuffixes: ['jpg','jpeg','png','gif','webp'],
             validMediaSuffixes: ['mpg','mp3','mp4','avi','webm'],
             validResourceSuffixes: ['md'],//,'pdf','zip'];
             validResourceMimeTypes: ['text/x-markdown', 'text/'],
