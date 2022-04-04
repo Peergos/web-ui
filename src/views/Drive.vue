@@ -92,7 +92,7 @@
 
 		<Gallery
 			v-if="showGallery"
-			@hide-gallery="showDrive()"
+			@hide-gallery="back()"
 			:files="sortedFiles"
 			:initial-file-name="appArgs.filename">
 		</Gallery>
