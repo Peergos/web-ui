@@ -99,19 +99,19 @@
 
 		<hex
 			v-if="showHexViewer"
-			v-on:hide-hex-viewer="showDrive()"
+			v-on:hide-hex-viewer="back()"
 			:file="selectedFiles[0]"
 			:context="context">
 		</hex>
 		<pdf
 			v-if="showPdfViewer"
-			v-on:hide-pdf-viewer="showDrive()"
+			v-on:hide-pdf-viewer="back()"
 			:file="selectedFiles[0]"
 			:context="context">
 		</pdf>
 		<code-editor
 			v-if="showCodeEditor"
-			v-on:hide-code-editor="showDrive()"
+			v-on:hide-code-editor="back()"
 			v-on:update-refresh="forceUpdate++"
 			:file="selectedFiles[0]"
 			:context="context"
@@ -119,12 +119,12 @@
 		</code-editor>
         <Markdown
             v-if="showMarkdownViewer"
-            v-on:hide-markdown-viewer="showDrive()"
+            v-on:hide-markdown-viewer="back()"
             :propAppArgs = "appArgs">
         </Markdown>
                 <identity
                     v-if="showIdentityProof"
-                    v-on:hide-identity-proof="showDrive()"
+                    v-on:hide-identity-proof="back()"
                     :file="selectedFiles[0]"
                     :context="context">
                 </identity>
@@ -800,6 +800,10 @@ module.exports = {
 			}
 			this.onUpdateCompletion = [];
 		},
+
+                back() {
+                    history.back();
+                },
 
                 showDrive() {
                     this.updateHistory("Drive", this.getPath, {filename:""});
