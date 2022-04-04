@@ -352,7 +352,8 @@ module.exports = {
         if (fullPath == null) {
             return;
         }
-        if (this.hasValidFileExtension(fullPath, this.validMediaSuffixes, true)) {
+        let allMediaSuffixes = this.validMediaSuffixes.concat(this.validImageSuffixes);
+        if (this.hasValidFileExtension(fullPath, allMediaSuffixes, true)) {
             that.findFile(fullPath).thenApply(file => {
                 if (file != null) {
                     let type = file.props.getType();
