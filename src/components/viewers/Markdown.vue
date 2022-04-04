@@ -279,16 +279,17 @@ module.exports = {
                     let type = file.props.getType();
                     if(validFileTypes.includes(type) || validFileTypes.length == 0) {
                         if (validMimeTypes.length == 0 || that.findMimeType(mimeType, validMimeTypes)) {
-                            that.readInFile(file).thenApply(bytes => {
+                            if (updateFullPath) {
                                 that.showSpinner = false;
-                                if (updateFullPath) {
-                                    this.currPath = this.updatedPath;
-                                    this.currFilename = this.updatedFilename;
-                                    future.complete(true);
-                                } else {
+                                this.currPath = this.updatedPath;
+                                this.currFilename = this.updatedFilename;
+                                future.complete(true);
+                            } else {
+                                that.readInFile(file).thenApply(bytes => {
+                                    that.showSpinner = false;
                                     future.complete(bytes);
-                                }
-                            });
+                                });
+                            }
                         } else {
                             that.showErrorMessage("Resource not of correct mimetype: " + fullPath);
                             future.complete(null);
