@@ -664,15 +664,14 @@ module.exports = {
                                                 const filename = props.args.filename;
                                                 that.selectedFiles = that.files.filter(f => f.getName() == filename);
 					        var app = props.app || that.getApp(that.files[0], that.getPath, false);
-                                                that.openInApp({filename:filename}, app);
-                                                that.openFileOrDir(app, that.getPath, {filename:filename}, false);
+                                                that.openInApp(props.args, app);
+                                                that.openFileOrDir(app, that.getPath, props.args, false);
                                             } else if (openSubdir) {
                                                 // if props name a dir, open it
                                                 that.appArgs = props.args;
 					        var app = props.app || that.getApp(that.currentDir, that.getPath, false);
-                                                let args = {path:that.getPath}
-                                                that.openInApp(args, app);
-                                                that.openFileOrDir(app, that.getPath, args, false);
+                                                that.openInApp(props.args, app);
+                                                that.openFileOrDir(app, that.getPath, props.args, false);
                                             } else if (oneFile) { // if there is exactly 1 file, open it
                                                 const filename = that.files[0].getName();
                                                 that.selectedFiles = that.files;
