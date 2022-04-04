@@ -61,3 +61,25 @@ ant watch_ui
 
 ##  Browser tests
 [README](browser_tests/README.md) 
+
+
+## Development
+### Navigation between apps
+Navigation between apps is driven by updating the URL fragment with an encrypted object, except for secret links which don't update the history
+
+* drive.openFile(writable)
+  -> getApp(file, path, writable)
+  - isSecretLink ? drive.openInApp(args, app) OR openFileOrDir(app, path, args, writable)
+* openFileOrDir(app, path, args, writable)
+  -> updateHistory
+
+* updateHistory(app, path, args, writable)
+  - put these fields into an encrypted object in the url fragment
+
+* onUrlChange
+  - set view from props decrypted from URL
+  - for non sidebar apps, call drive.openInApp(args, app)
+
+* drive.openInApp(args, app)
+  - set showX = true OR closeApps()
+  

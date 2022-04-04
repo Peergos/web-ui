@@ -105,13 +105,12 @@ module.exports = {
 		AppTab,
 		AppTabs,
 		Login,
-		Signup,
+		Signup
 	},
 
 	data() {
 		return {
 			token: "",
-			onUpdateCompletion: [], // methods to invoke when current dir is next refreshed
 		};
 	},
 
@@ -234,10 +233,10 @@ module.exports = {
 
 	    const app = props == null ? null : props.app;
 	    const path = props == null ? null : props.path;
-	    const filename = props == null ? null : props.filename;
-	    const differentPath = path != null && path != this.getPath;
+	    const args = props == null ? null : props.args;
+	    const differentPath = this.canonical(path) != this.canonical(this.getPath);
 
-	    if (differentPath) {
+	    if (differentPath && path != null) {
 		console.log('onUrlChange differentPath so we do: ', path.split("/").filter(x => x.length > 0))
 		this.$store.commit(
 		    "SET_PATH",
@@ -247,17 +246,31 @@ module.exports = {
 
             const that = this;
             const sidebarApps = ["Drive", "NewsFeed", "Tasks", "Social", "Calendar", "Chat", "Email"]
+            const inDrive = this.currentView == "Drive";
 	    if (app === "Drive") {
-                const inDrive = this.currentView == "Drive";
-		this.$store.commit("CURRENT_VIEW", app);
+                if (inDrive) {
+                    this.$refs.appView.closeApps()
+                } else 
+		    this.$store.commit("CURRENT_VIEW", app);
 	    } else if (sidebarApps.includes(app)) {
 		this.$store.commit("CURRENT_VIEW", app);
 	    } else {
-		// Drive sub-apps
-		this.$store.commit("CURRENT_VIEW", "Drive");
-                this.onUpdateCompletion.push(() => {
-		    that.$refs.appView.openInApp(filename, app);
-		});
+                // Drive sub-apps
+                if (inDrive) {
+                    if (differentPath) {
+                        // TODO: find a cleaner way to do this
+                        this.$refs.appView._data.onUpdateCompletion.push(() => {
+		            that.$refs.appView.openInApp(args, app);
+		        });
+                    } else
+                        that.$refs.appView.openInApp(args, app);
+                } else {
+		    this.$store.commit("CURRENT_VIEW", "Drive");
+                    // TODO: find a cleaner way to do this
+                    this.$refs.appView._data.onUpdateCompletion.push(() => {
+		        that.$refs.appView.openInApp(args, app);
+		    });
+                }
 	    }
 	},
 
@@ -310,7 +323,7 @@ module.exports = {
 		    that.$store.commit("SET_DOWNLOAD", props.download);
 		    that.$store.commit("SET_OPEN", props.open);
 		    that.$store.commit("SET_INIT_PATH", props.path);
-		    that.$store.commit("CURRENT_VIEW", "Drive");
+                    that.$store.commit("CURRENT_VIEW", "Drive");
 		})
 		.exceptionally(function (throwable) {
 		    that.$toast.error(

@@ -10,31 +10,27 @@ module.exports = {
             return path;
         },
         
-	updateHistory(app, path, filename) {
-	    if (this.isSecretLink) {
-                const sidebarApps = ["Drive", "NewsFeed", "Tasks", "Social", "Calendar", "Chat"]
-                if (sidebarApps.includes(app)) {
-		    this.$store.commit("CURRENT_VIEW", app);
-                    if (app != "Drive") {
-                        this.$store.commit('SET_PATH', path.split('/').filter(n => n.length > 0))
-                        this.$store.commit('SET_CURRENT_FILENAME', filename)
-                    }
-                }
-		return;
-            }
+	updateHistory(app, path, args, writable) {
             path = this.canonical(path);
-	    console.log('updateHistory:', app, path, filename)
+	    console.log('updateHistory:', app, path, args)
             
 	    const currentProps = this.getPropsFromUrl();
 	    const pathFromUrl = this.canonical(currentProps == null ? null : currentProps.path);
 	    const appFromUrl = currentProps == null ? null : currentProps.app;
-            const filenameFromUrl = currentProps == null ? null : currentProps.filename;
+            const argsFromUrl = currentProps == null ? null : currentProps.args;
             
-	    if (path == pathFromUrl && app == appFromUrl && filename == filenameFromUrl)
+	    if (path == pathFromUrl && app == appFromUrl && JSON.stringify(args) === JSON.stringify(argsFromUrl))
 		return;
-            
-	    const rawProps = propsToFragment({ app: app, path: path, filename: filename });
-	    const props = this.encryptProps(rawProps);
+
+            var rawProps = { app: app, path: path, args: args, writable: writable || false }
+	    if (currentProps != null && currentProps.secretLink) {
+                rawProps.secretLink = true;
+                rawProps.link = currentProps.link;
+                if (currentProps.open)
+                    rawProps.open = true;
+            }
+	    var encodedProps = propsToFragment(rawProps);
+            const props = (currentProps != null && currentProps.secretLink) ? rawProps : this.encryptProps(encodedProps);
             
 	    window.location.hash = "#" + propsToFragment(props);
 	},
@@ -44,14 +40,19 @@ module.exports = {
             if (hash.length == 0)
                 return null;
 	    try {
-		return this.decryptProps(fragmentToProps(hash.substring(1)));
+                const rawProps = fragmentToProps(hash.substring(1))
+		return this.decryptProps(rawProps);
 	    } catch (e) {
-		return fragmentToProps(hash.substring(1));
+                try {
+		    return rawProps;
+                } catch (f) {
+                    return null;
+                }
 	    }
 	},
 	decryptProps(props) {
-	    if (this.isSecretLink)
-		return path;
+	    if (props.secretLink)
+		return props;
             
 	    return fragmentToProps(this.context.decryptURL(props.ciphertext, props.nonce));
 	},
@@ -63,7 +64,7 @@ module.exports = {
 	    return { nonce: nonce, ciphertext: ciphertext };
 	},
         
-        getApp(file, path) {
+        getApp(file, path, writable) {
             if (file.isDirectory()) {
                 let pathParts = path.split("/");
                 if (pathParts.length == 6 && pathParts[0] == '' &&
@@ -90,6 +91,9 @@ module.exports = {
 		return "Calendar";
 	    } else if (mimeType === "application/vnd.peergos-identity-proof") {
 		return "identity-proof";
+        } else if (mimeType.startsWith("text/x-markdown") ||
+            ( mimeType.startsWith("text/") && filename.endsWith('.md'))) {
+            return writable ? "editor" : "markdown";
 	    } else if (mimeType.startsWith("text/")) {
 		return "editor";
 	    } else {
@@ -97,8 +101,8 @@ module.exports = {
 	    }
         },
 
-        openFileOrDir(app, path, filename) {
-	    this.updateHistory(app, path, filename);
+        openFileOrDir(app, path, args, writable) {
+	    this.updateHistory(app, path, args, writable);
         }
     },
 }

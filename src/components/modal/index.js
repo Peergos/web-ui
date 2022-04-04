@@ -19,6 +19,10 @@ module.exports = {
             let json = {secretLink:true,link:link.fileLink};
             if (autoOpenOverride || link.autoOpen) {
                 json.open = true;
+                if (link.isFile)
+                    json.filename = link.filename;
+                else
+                    json.path = link.path;
             }
             return window.location.origin + window.location.pathname + "#" + propsToFragment(json);
         },

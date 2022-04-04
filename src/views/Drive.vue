@@ -73,7 +73,9 @@
 				v-if="viewMenu"
 				@closeMenu="closeMenu()"
 			>
-				<li id='gallery' v-if="canOpen" @keyup.enter="openFile" @click="openFile">View</li>
+				<li id='gallery' v-if="canOpen && !isMarkdown" @keyup.enter="viewFile()" @click="viewFile()">View</li>
+				<li id='gallery-view-markdown' v-if="isMarkdown" @keyup.enter="viewFile()" @click="viewFile()">View</li>
+				<li id='gallery-edit-markdown' v-if="isMarkdown" @keyup.enter="editFile()" @click="editFile()">Edit</li>
 				<li id='open-file' v-if="canOpen" @keyup.enter="downloadAll"  @click="downloadAll">Download</li>
 				<li id='rename-file' v-if="isWritable" @keyup.enter="rename"  @click="rename">Rename</li>
 				<li id='delete-file' v-if="isWritable" @keyup.enter="deleteFiles"  @click="deleteFiles">Delete</li>
@@ -90,34 +92,39 @@
 
 		<Gallery
 			v-if="showGallery"
-			@hide-gallery="closeApps(false)"
+			@hide-gallery="showDrive()"
 			:files="sortedFiles"
-			:initial-file-name="selectedFiles[0] == null ? '' : selectedFiles[0].getFileProperties().name">
+			:initial-file-name="appArgs.filename">
 		</Gallery>
 
 		<hex
 			v-if="showHexViewer"
-			v-on:hide-hex-viewer="closeApps(false)"
+			v-on:hide-hex-viewer="showDrive()"
 			:file="selectedFiles[0]"
 			:context="context">
 		</hex>
 		<pdf
 			v-if="showPdfViewer"
-			v-on:hide-pdf-viewer="closeApps(false)"
+			v-on:hide-pdf-viewer="showDrive()"
 			:file="selectedFiles[0]"
 			:context="context">
 		</pdf>
 		<code-editor
 			v-if="showCodeEditor"
-			v-on:hide-code-editor="closeApps(true); updateCurrentDir();"
+			v-on:hide-code-editor="showDrive()"
 			v-on:update-refresh="forceUpdate++"
 			:file="selectedFiles[0]"
 			:context="context"
 			:messages="messages">
 		</code-editor>
+        <Markdown
+            v-if="showMarkdownViewer"
+            v-on:hide-markdown-viewer="showDrive()"
+            :propAppArgs = "appArgs">
+        </Markdown>
                 <identity
                     v-if="showIdentityProof"
-                    v-on:hide-identity-proof="closeApps(false)"
+                    v-on:hide-identity-proof="showDrive()"
                     :file="selectedFiles[0]"
                     :context="context">
                 </identity>
@@ -179,6 +186,7 @@ const Gallery = require("../components/drive/DriveGallery.vue");
 const Identity = require("../components/identity-proof-viewer.vue");
 const Share = require("../components/drive/DriveShare.vue");
 const Search = require("../components/Search.vue");
+const Markdown = require("../components/viewers/Markdown.vue");
 
 const ProgressBar = require("../components/drive/ProgressBar.vue");
 const DriveMenu = require("../components/drive/DriveMenu.vue");
@@ -204,7 +212,8 @@ module.exports = {
 		Gallery,
 		Identity,
 		Share,
-		Search
+		Search,
+		Markdown
 	},
 	data() {
 		return {
@@ -227,6 +236,8 @@ module.exports = {
 			},
 			forceSharedRefreshWithUpdate: 0,
 
+                        appArgs: {},
+                    
 			showAdmin: false,
 			showGallery: false,
 			showIdentityProof: false,
@@ -234,6 +245,7 @@ module.exports = {
 			showSearch: false,
 			showHexViewer: false,
 			showCodeEditor: false,
+			showMarkdownViewer: false,
 			showPdfViewer: false,
 			showTextViewer: false,
 			showPassword: false,
@@ -426,6 +438,33 @@ module.exports = {
 				return false;
 			}
 		},
+        canOpen() {
+            try {
+                if (this.currentDir == null)
+                    return false;
+                if (this.selectedFiles.length != 1)
+                    return false;
+                return !this.selectedFiles[0].isDirectory()
+            } catch (err) {
+                return false;
+            }
+        },
+        isMarkdown() {
+            try {
+                if (this.currentDir == null)
+                    return false;
+                if (this.selectedFiles.length != 1)
+                    return false;
+                if (this.selectedFiles[0].isDirectory())
+                    return false;
+                let file =  this.selectedFiles[0];
+                let mimeType = file.getFileProperties().mimeType;
+                return mimeType.startsWith("text/x-markdown") ||
+                    (mimeType.startsWith("text/") && file.getName().endsWith('.md'));
+            } catch (err) {
+                return false;
+            }
+        },
         allowCopy() {
             return this.isLoggedIn && this.path.length > 0;
         },
@@ -594,40 +633,60 @@ module.exports = {
 				 		        var open = () => {
                                                             const filename = file.get().getName();
                                                             that.selectedFiles = that.files.filter(f => f.getName() == filename);
-						            that.openFile();
+                                                            var app = that.getApp(file.get(), path, false);
+						            that.openInApp({filename:filename}, app);
+                                                            that.openFileOrDir(app, path, {filename:filename}, false);
 				 		        };
 				 		        that.onUpdateCompletion.push(open);
 				 	            }
 				 	        } else {
                                                     let app = that.getApp(file.get(), linkPath);
-                                                    that.openFileOrDir(app, linkPath, "");
+                                                    that.openFileOrDir(app, linkPath, {path:path});
                                                 }
 				            });
                                     }
 				} else {
                                     that.$store.commit('SET_PATH', linkPath.split('/').filter(n => n.length > 0))
-                                    if (that.download || that.open)
-				        that.context.getByPath(that.getPath)
-				 	.thenApply(function (file) {
-				 	    file.get().getChildren(that.context.crypto.hasher, that.context.network).thenApply(function (children) {
-				 		var arr = children.toArray();
-				 		if (arr.length == 1) {
-				 		    if (that.download) {
-				 			that.downloadFile(arr[0]);
-				 		    } else if (that.open) {
-				 			var open = () => {
-                                                            const filename = arr[0].getName();
-                                                            that.selectedFiles = that.files.filter(f => f.getName() == filename);
-						            that.openFile();
-				 			};
-				 			that.onUpdateCompletion.push(open);
-				 		    }
-				 		} else {
-                                                    let app = that.getApp(file.get(), linkPath);
-                                                    that.openFileOrDir(app, linkPath, "");
-                                                }
-				 	    })
-				 	});
+                                    if (that.download) {
+                                        var download = () => {
+                                            that.downloadFile(that.files[0]);
+				 	};
+				 	that.onUpdateCompletion.push(download);
+                                    }
+                                    if (that.open) {
+                                        var open = () => {
+                                            const oneFile = that.files.length == 1;
+                                            const props = that.getPropsFromUrl();
+                                            const openSubdir = props.args != null && props.args.path != null;
+                                            if (props.args != null && props.args.filename != null && props.args.filename != "") {
+                                                // if props name a file, open it
+                                                that.appArgs = props.args;
+                                                const filename = props.args.filename;
+                                                that.selectedFiles = that.files.filter(f => f.getName() == filename);
+					        var app = props.app || that.getApp(that.files[0], that.getPath, false);
+                                                that.openInApp({filename:filename}, app);
+                                                that.openFileOrDir(app, that.getPath, {filename:filename}, false);
+                                            } else if (openSubdir) {
+                                                // if props name a dir, open it
+                                                that.appArgs = props.args;
+					        var app = props.app || that.getApp(that.currentDir, that.getPath, false);
+                                                let args = {path:that.getPath}
+                                                that.openInApp(args, app);
+                                                that.openFileOrDir(app, that.getPath, args, false);
+                                            } else if (oneFile) { // if there is exactly 1 file, open it
+                                                const filename = that.files[0].getName();
+                                                that.selectedFiles = that.files;
+					        var app = that.getApp(that.files[0], that.getPath, false);
+                                                that.openInApp({filename:filename}, app);
+                                                that.openFileOrDir(app, that.getPath, {filename:filename}, false);
+                                            } else {
+                                                // open a directory
+                                                let app = that.getApp(that.currentDir, linkPath);
+                                                that.openFileOrDir(app, linkPath, {filename:""});
+                                            }
+				 	};
+				 	that.onUpdateCompletion.push(open);
+                                    }
 				}
 			    });
 			} else {
@@ -639,7 +698,7 @@ module.exports = {
 
 				const pathFromUrl = props == null ? null : props.path;
 				const appFromUrl = props == null ? null : props.app;
-				const filenameFromUrl = props == null ? null : props.filename;
+				const argsFromUrl = props == null ? null : props.args;
 
 				const apps = ['Calendar', 'NewsFeed', 'Social', 'Tasks']
 
@@ -647,14 +706,14 @@ module.exports = {
 
 					this.showSpinner = true;
 
-					let open = () => { that.openInApp(filenameFromUrl, appFromUrl) };
+					let open = () => { that.openInApp(argsFromUrl, appFromUrl) };
 					this.onUpdateCompletion.push(open);
 
 					this.$store.commit('SET_PATH', pathFromUrl.split('/').filter(n => n.length > 0))
 
 				} else {
 					this.$store.commit('SET_PATH', [this.context.username])
-					this.updateHistory('Drive', this.getPath,'')
+					this.updateHistory('Drive', this.getPath, {filename:""})
 				}
 
 				this.updateSocial()
@@ -742,18 +801,19 @@ module.exports = {
 			this.onUpdateCompletion = [];
 		},
 
-		closeApps(refresh) {
+                showDrive() {
+                    this.updateHistory("Drive", this.getPath, {filename:""});
+                },
+
+		closeApps() {
 		    this.showGallery = false;
                     this.showIdentityProof = false;
 		    this.showPdfViewer = false;
 		    this.showCodeEditor = false;
+		    this.showMarkdownViewer = false;
 		    this.showTextViewer = false;
 		    this.showHexViewer = false;
 		    this.showSearch = false;
-		    this.selectedFiles = [];
-		    this.updateHistory("Drive", this.getPath, "");
-                    if (refresh)
-		        this.forceSharedRefreshWithUpdate++;
 		},
 
 		navigateToAction(directory) {
@@ -778,30 +838,37 @@ module.exports = {
 			// this.path = path ? path.split('/') : [];
 			path == this.path ? path.split('/') : []
 
-                        this.closeApps(false);
-			this.updateHistory("Drive", path, "");
+                        this.closeApps();
+			this.updateHistory("Drive", path, {filename:""});
 			this.updateCurrentDirectory(filename);
 		},
 
-		openInApp(filename, app) {
-		    this.selectedFiles = this.files.filter(f => f.getName() == filename);
-		    if (this.selectedFiles.length == 0)
-			return;
-                    
-		    if (app == "Gallery")
-			this.showGallery = true;
-		    else if (app == "pdf")
-			this.showPdfViewer = true;
-		    else if (app == "editor")
-			this.showCodeEditor = true;
-		    else if (app == "identity-proof")
-			this.showIdentityProof = true;
-		    else if (app == "hex")
-			this.showHexViewer = true;
-		    else if (app == "search")
-			this.showSearch = true;
-
-                    this.updateHistory(app, this.getPath, "");
+	    openInApp(args, app) {
+                if (app == null || app == "" || app == "Drive") {
+                    this.closeApps();
+                    return
+                }
+                this.appArgs = args;
+		this.selectedFiles = this.files.filter(f => f.getName() == args.filename);
+		this.openApp(app);
+	    },
+		openApp(app) {
+                    let that = this;
+                    this.closeApps();
+                    if (app == "Gallery")
+                        that.showGallery = true;
+                    else if (app == "pdf")
+                        that.showPdfViewer = true;
+                    else if (app == "editor")
+                        that.showCodeEditor = true;
+                    else if (app == "identity-proof")
+                        that.showIdentityProof = true;
+                    else if (app == "hex")
+                        that.showHexViewer = true;
+                    else if (app == "markdown")
+                        that.showMarkdownViewer = true;
+                    else if (app == "search")
+                        that.showSearch = true;
 		},
 		openSearch(fromRoot) {
 			var path = fromRoot ? "/" + this.context.username : this.getPath;
@@ -815,7 +882,7 @@ module.exports = {
 			}
 			this.searchPath = path;
 			this.showSearch = true;
-			this.updateHistory("search", this.getPath, "");
+			this.updateHistory("search", this.getPath, {filename:""});
 
 			this.closeMenu();
 		},
@@ -1370,7 +1437,7 @@ module.exports = {
 									that.selectedFiles = [textFileOpt.get()];
 									// that.clearTabNavigation();
 									that.showCodeEditor = true;
-									that.updateHistory("editor", that.getPath, "");
+									that.updateHistory("editor", that.getPath, {filename:""});
 								});
 							}).exceptionally(function (throwable) {
 								that.showSpinner = false;
@@ -1381,7 +1448,7 @@ module.exports = {
 						} else {
 							that.selectedFiles = [textFiles[foundIndex]];
 							that.showCodeEditor = true;
-							that.updateHistory("editor", that.getPath, "");
+							that.updateHistory("editor", that.getPath, {filename:""});
 						}
 					};
 					that.showSpinner = false;
@@ -1603,7 +1670,7 @@ module.exports = {
                         this.$store.commit('SET_PATH', pathArr)
 
 			this.showSpinner = true;
-			this.updateHistory("Drive", path, "");
+			this.updateHistory("Drive", path, {filename:""});
 		},
 		downloadAll() {
 			if (this.selectedFiles.length == 0)
@@ -1615,7 +1682,15 @@ module.exports = {
 			}
 		},
 
-		openFile() {
+                viewFile() {
+                    this.openFile(false)
+                },
+
+		editFile() {
+                    this.openFile(true)
+                },
+
+		openFile(writable) {
 		    // TODO: once we support selecting files re-enable this
 		    //if (this.selectedFiles.length == 0)
 		    //    return;
@@ -1626,20 +1701,12 @@ module.exports = {
 		    var file = this.selectedFiles[0];
 		    var filename = file.getName();
 
-            var app = this.getApp(file, this.getPath);
-            if (app === "Gallery")
-                this.showGallery = true;
-            else if (app === "pdf")
-                this.showPdfViewer = true;
-            else if (app === "editor")
-                this.showCodeEditor = true;
-            else if (app === "identity-proof")
-                this.showIdentityProof = true;
-            else if (app === "hex")
-                this.showHexViewer = true;
-
-            this.openFileOrDir(app, this.getPath, filename)
+                    var app = this.getApp(file, this.getPath, writable);
+                    var args = {filename:filename}
+                    this.appArgs = args;
+                    this.openFileOrDir(app, this.getPath, args, writable)
 		},
+            
 		navigateOrDownload(file) {
 			if (this.showSpinner) // disable user input whilst refreshing
 				return;

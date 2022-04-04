@@ -189,6 +189,9 @@ module.exports = {
 			'context',
 			'socialData'
 		]),
+                ...Vuex.mapGetters([
+	            'getPath',
+	        ]),
 		allNames() {
 			// return this.followernames.concat(this.friendnames);
 			return this.socialData.followers.concat(this.socialData.friends);
@@ -215,7 +218,9 @@ module.exports = {
 			var name = this.displayName;
 			let isFile = !props.isDirectory;
 			links.push({
-				fileLink: file.toLink(),
+			        fileLink: file.toLink(),
+                                filename:props.name,
+                                path:this.getPath,
 				name: name,
 				id: "secret_link_" + name,
 				isFile: isFile,

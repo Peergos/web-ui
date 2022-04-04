@@ -155,25 +155,15 @@ module.exports = {
         let that = this;
         let future = peergos.shared.util.Futures.incomplete();
         const props = this.getPropsFromUrl();
-        if (props.secretLink) {
-            let path = this.getPath;
-            let filename = this.currentFilename;
-            if (filename.length > 0) {
-                //secret link to calendar event
-                future.complete({path: path, filename: filename});
-            } else {
-                //secret link to calendar
-                future.complete({path: path, filename: null});
-            }
+        
+        let filename = props.args.filename;
+        let isFile = filename != null && filename.length > 0;
+        if (!isFile) {
+            //loading calendar from left hand menu + shared calendar importing
+            future.complete({path: props.path, filename: null});
         } else {
-            let isFile = props.filename != null && props.filename.length > 0;
-            if (!isFile) {
-                //loading calendar from left hand menu + shared calendar importing
-                future.complete({path: props.path, filename: null});
-            } else {
-                //shared calendar item importing
-                future.complete({path: props.path, filename: props.filename});
-            }
+            //shared calendar item importing
+            future.complete({path: props.path, filename: filename});
         }
         return future;
     },
@@ -998,7 +988,7 @@ module.exports = {
         let dirPath =  isRecurring ? calendarDirectory + "/recurring" : calendarDirectory + "/" + year + "/" + month;
         let path = this.context.username + "/.apps/" + this.CALENDAR_DIR_NAME + '/' + this.DATA_DIR_NAME + "/" + dirPath;
         let filename = id + '.ics';
-        this.openFileOrDir("Email", path, filename);
+        this.openFileOrDir("Email", path, {filename:filename});
     },
     shareCalendarEvent: function(calendarName, id, year, month, isRecurring) {
         let calendarDirectory = this.findCalendarDirectory(calendarName);

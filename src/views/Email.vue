@@ -6,7 +6,7 @@
 		</template>
 	</AppHeader>
     <div class="modal-mask-app" @click="close">
-        <div class="modal-container full-height" @click.stop style="width:100%;overflow-y:auto;padding:0;display:flex;flex-flow:column;">
+        <div class="modal-container full-height" @click="close" style="width:100%;overflow-y:auto;padding:0;display:flex;flex-flow:column;">
             <div class="modal-header-app">
                 <span style="position:absolute;top:0;right: 0.2em;">
                     <span @click="close" style="color:black;font-size:3em;font-weight:bold;cursor:pointer;">&times;</span>
@@ -152,10 +152,11 @@ module.exports = {
             let that = this;
             let future = peergos.shared.util.Futures.incomplete();
             const urlProps = this.getPropsFromUrl();
-            if (urlProps.filename == '') {
+            let filename = urlProps.args.filename;
+            if (filename == '') {
                 future.complete(false);
             } else {
-                this.context.getByPath(urlProps.path + '/' + urlProps.filename).thenApply(fileOpt => {
+                this.context.getByPath(urlProps.path + '/' + filename).thenApply(fileOpt => {
                     if (! fileOpt.isPresent()) {
                         that.$toast.error("Couldn't load calendar event file", {timeout:false});
                         future.complete(false);
@@ -492,7 +493,7 @@ module.exports = {
         },
         requestImportCalendarAttachment: function(attachment) {
             let path = this.context.username + '/.apps/email/data/default/attachments';
-            this.openFileOrDir("Calendar", path, attachment.uuid);
+            this.openFileOrDir("Calendar", path, {filename:attachment.uuid});
         },
         buildEmailBytes: function(data) {
             let email = this.buildEmail(data, true);
@@ -794,7 +795,7 @@ module.exports = {
             this.displaySpinner();
             email.writeInternal(icalFilePath, bytes).thenApply(done => {
                 that.removeSpinner();
-                that.openFileOrDir("Calendar", this.context.username + '/.apps/email/data/' + path, filename);
+                that.openFileOrDir("Calendar", this.context.username + '/.apps/email/data/' + path, {filename:filename});
             });
         },
         requestRefreshSent: function(emailApp, emailClient, filterStarredEmails) {
@@ -870,7 +871,7 @@ module.exports = {
             this.showMessage(msg);
         },
         close: function () {
-            this.openFileOrDir("Drive", this.context.username, "");
+            this.openFileOrDir("Drive", this.context.username, {filename:""});
         },
         uploadForwardedAttachments: function(email, data) {
             let future = peergos.shared.util.Futures.incomplete();
