@@ -186,7 +186,7 @@ const Gallery = require("../components/drive/DriveGallery.vue");
 const Identity = require("../components/identity-proof-viewer.vue");
 const Share = require("../components/drive/DriveShare.vue");
 const Search = require("../components/Search.vue");
-const Markdown = require("../components/viewers/markdown/Markdown.vue");
+const Markdown = require("../components/viewers/Markdown.vue");
 
 const ProgressBar = require("../components/drive/ProgressBar.vue");
 const DriveMenu = require("../components/drive/DriveMenu.vue");
