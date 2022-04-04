@@ -26,9 +26,9 @@
 </template>
 
 <script>
-    const Gallery = require("../../drive/DriveGallery.vue");
-    const mixins = require("../../../mixins/downloader/index.js");
-    const routerMixins = require("../../../mixins/router/index.js");
+    const Gallery = require("../drive/DriveGallery.vue");
+    const mixins = require("../../mixins/downloader/index.js");
+    const routerMixins = require("../../mixins/router/index.js");
 
 module.exports = {
     components: {
