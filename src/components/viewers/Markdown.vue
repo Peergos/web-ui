@@ -72,12 +72,10 @@ module.exports = {
     },
     created: function() {
         const props = this.getPropsFromUrl();
-        var completePath = '';
-        var path = '';
         
         let filename = props.args.filename;
-        completePath = props.path + '/' + filename;
-        path = '/' + props.path +'/';
+        let completePath = props.path + '/' + filename;
+        let path = '/' + props.path +'/';
         this.currFilename = filename;
 
         this.currPath = path.substring(0, path.length - 1);
@@ -97,7 +95,7 @@ module.exports = {
             let filename = this.propAppArgs.filename;
             let subPath = this.propAppArgs.subPath != null ? this.propAppArgs.subPath
                 : this.scopedPath.substring(0, this.scopedPath.length -1);
-            var completePath = subPath + '/' + filename;
+            let completePath = subPath + '/' + filename;
             this.currPath = subPath;
             this.currFilename = filename;
             let that = this;
