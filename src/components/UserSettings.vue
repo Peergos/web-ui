@@ -1,5 +1,6 @@
 <template>
 	<nav class="user-settings">
+    	<spinner v-if="showSettingsSpinner"></spinner>
 		<AppDropdown
 			v-if="isLoggedIn"
 			aria-expanded="true"
@@ -47,6 +48,12 @@
 				>
 					Change Password
 				</li>
+                <li
+                    v-on:keyup.enter="cleanupFailedUploads()"
+                    @click="cleanupFailedUploads()"
+                >
+                    Cleanup failed uploads
+                </li>
 				<li
 					v-on:keyup.enter="showViewAccount()"
 					@click="showViewAccount()"
@@ -98,7 +105,8 @@ module.exports = {
 		return {
 		    profileImage: "",
                     showAdmin: false,
-                    admindata: {pending:[]}
+                    admindata: {pending:[]},
+                    showSettingsSpinner: false
 		};
 	},
 	computed: {
@@ -106,6 +114,16 @@ module.exports = {
 		...Vuex.mapGetters(['currentTheme', 'isPaid'])
 	},
 	methods: {
+        cleanupFailedUploads() {
+            this.showSettingsSpinner = true;
+            let that = this;
+            this.context.cleanPartialUploads().thenApply(snapshot => {
+                that.showSettingsSpinner = false;
+            }).exceptionally(function(throwable) {
+                console.log(throwable.getMessage());
+                that.showSettingsSpinner = false;
+            });
+        },
 		displayProfile() {
 			let that = this;
 			peergos.shared.user.ProfilePaths.getProfile(
