@@ -47,6 +47,12 @@
 				>
 					Change Password
 				</li>
+                <li
+                    v-on:keyup.enter="cleanupFailedUploads()"
+                    @click="cleanupFailedUploads()"
+                >
+                    Cleanup failed uploads
+                </li>
 				<li
 					v-on:keyup.enter="showViewAccount()"
 					@click="showViewAccount()"
@@ -106,6 +112,9 @@ module.exports = {
 		...Vuex.mapGetters(['currentTheme', 'isPaid'])
 	},
 	methods: {
+        cleanupFailedUploads() {
+            console.log('hello world!');
+        },
 		displayProfile() {
 			let that = this;
 			peergos.shared.user.ProfilePaths.getProfile(
