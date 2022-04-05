@@ -1,5 +1,6 @@
 <template>
 	<nav class="user-settings">
+    	<spinner v-if="showSettingsSpinner"></spinner>
 		<AppDropdown
 			v-if="isLoggedIn"
 			aria-expanded="true"
@@ -104,7 +105,8 @@ module.exports = {
 		return {
 		    profileImage: "",
                     showAdmin: false,
-                    admindata: {pending:[]}
+                    admindata: {pending:[]},
+                    showSettingsSpinner: false
 		};
 	},
 	computed: {
@@ -113,7 +115,14 @@ module.exports = {
 	},
 	methods: {
         cleanupFailedUploads() {
-            console.log('hello world!');
+            this.showSettingsSpinner = true;
+            let that = this;
+            this.context.cleanPartialUploads().thenApply(snapshot => {
+                that.showSettingsSpinner = false;
+            }).exceptionally(function(throwable) {
+                console.log(throwable.getMessage());
+                that.showSettingsSpinner = false;
+            });
         },
 		displayProfile() {
 			let that = this;
