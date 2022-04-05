@@ -92,26 +92,26 @@
 
 		<Gallery
 			v-if="showGallery"
-			@hide-gallery="showDrive()"
+			@hide-gallery="back()"
 			:files="sortedFiles"
 			:initial-file-name="appArgs.filename">
 		</Gallery>
 
 		<hex
 			v-if="showHexViewer"
-			v-on:hide-hex-viewer="showDrive()"
+			v-on:hide-hex-viewer="back()"
 			:file="selectedFiles[0]"
 			:context="context">
 		</hex>
 		<pdf
 			v-if="showPdfViewer"
-			v-on:hide-pdf-viewer="showDrive()"
+			v-on:hide-pdf-viewer="back()"
 			:file="selectedFiles[0]"
 			:context="context">
 		</pdf>
 		<code-editor
 			v-if="showCodeEditor"
-			v-on:hide-code-editor="showDrive()"
+			v-on:hide-code-editor="back()"
 			v-on:update-refresh="forceUpdate++"
 			:file="selectedFiles[0]"
 			:context="context"
@@ -124,7 +124,7 @@
         </Markdown>
                 <identity
                     v-if="showIdentityProof"
-                    v-on:hide-identity-proof="showDrive()"
+                    v-on:hide-identity-proof="back()"
                     :file="selectedFiles[0]"
                     :context="context">
                 </identity>
@@ -664,15 +664,14 @@ module.exports = {
                                                 const filename = props.args.filename;
                                                 that.selectedFiles = that.files.filter(f => f.getName() == filename);
 					        var app = props.app || that.getApp(that.files[0], that.getPath, false);
-                                                that.openInApp({filename:filename}, app);
-                                                that.openFileOrDir(app, that.getPath, {filename:filename}, false);
+                                                that.openInApp(props.args, app);
+                                                that.openFileOrDir(app, that.getPath, props.args, false);
                                             } else if (openSubdir) {
                                                 // if props name a dir, open it
                                                 that.appArgs = props.args;
 					        var app = props.app || that.getApp(that.currentDir, that.getPath, false);
-                                                let args = {path:that.getPath}
-                                                that.openInApp(args, app);
-                                                that.openFileOrDir(app, that.getPath, args, false);
+                                                that.openInApp(props.args, app);
+                                                that.openFileOrDir(app, that.getPath, props.args, false);
                                             } else if (oneFile) { // if there is exactly 1 file, open it
                                                 const filename = that.files[0].getName();
                                                 that.selectedFiles = that.files;
@@ -800,6 +799,10 @@ module.exports = {
 			}
 			this.onUpdateCompletion = [];
 		},
+
+                back() {
+                    history.back();
+                },
 
                 showDrive() {
                     this.updateHistory("Drive", this.getPath, {filename:""});

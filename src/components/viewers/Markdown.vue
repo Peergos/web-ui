@@ -74,7 +74,8 @@ module.exports = {
         const props = this.getPropsFromUrl();
         
         let filename = props.args.filename;
-        let completePath = props.path + '/' + filename;
+        let subPath = props.args.subPath != null && props.args.subPath.length > 0 ? props.args.subPath + "/" : "";
+        let completePath = props.path + '/' + subPath + filename;
         let path = '/' + props.path +'/';
         this.currFilename = filename;
 
