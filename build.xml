@@ -288,6 +288,58 @@ Javac-Version: ${javac.version}</echo>
     </exec>
   </target>
 
+  <target name="paid_run" depends="">
+    <echo>
+***********************************
+***********************************
+***********************************
+      Starting Peergos Server
+           Please wait...
+***********************************
+***********************************
+***********************************
+    </echo>
+    <exec executable="java" dir="${server}">
+      <arg value="-jar"/>
+      <arg value="Peergos.jar"/>
+      <arg value="pki-init"/>
+      <arg value="-log-to-console"/>
+      <arg value="true"/>
+      <arg value="-useIPFS"/>
+      <arg value="false"/>
+      <arg value="-webroot"/>
+      <arg value="webroot"/>
+      <arg value="-webcache"/>
+      <arg value="false"/>
+      <arg value="-max-users"/>
+      <arg value="5"/>
+      <arg value="peergos.password"/>
+      <arg value="testpassword"/>
+      <arg value="pki.keygen.password"/>
+      <arg value="testpkipassword"/>
+      <arg value="pki.keyfile.password"/>
+      <arg value="testpkifilepassword"/>
+      <arg value="default-quota"/>
+      <arg value="157286400"/>
+      <arg value="PEERGOS_PATH"/>
+      <arg value="${server}/.peergos"/>
+      <arg value="-admin-usernames"/>
+      <arg value="peergos"/>
+      <arg value="-collect-metrics"/>
+      <arg value="true"/>
+      <arg value="-enable-wait-list"/>
+      <arg value="true"/>
+      <arg value="-max-daily-signups"/>
+      <arg value="1000"/>
+      <arg value="-generate-token"/>
+      <arg value="true"/>
+      <arg value="quota-admin-address"/>
+      <arg value="/ip4/127.0.0.1/tcp/6000"/>
+      <arg value="-payment-domain"/>
+      <arg value="localhost:7000"/>
+    </exec>
+  </target>
+  
   <target name="rerun" depends="">
     <echo>
 ***********************************
