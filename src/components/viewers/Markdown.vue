@@ -75,12 +75,13 @@ module.exports = {
         
         let filename = props.args.filename;
         let subPath = props.args.subPath != null && props.args.subPath.length > 0 ? props.args.subPath + "/" : "";
-        let completePath = props.path + '/' + subPath + filename;
-        let path = '/' + props.path +'/';
+        let path = '/' + props.path;
+        let completePath = props.args.subPath != path ?
+            props.path + '/' + subPath + filename : props.path + '/' + filename;
         this.currFilename = filename;
 
-        this.currPath = path.substring(0, path.length - 1);
-        this.scopedPath = path;
+        this.currPath = path;
+        this.scopedPath = path + '/';
         let that = this;
         this.findFile(completePath).thenApply(file => {
             if (file != null) {
