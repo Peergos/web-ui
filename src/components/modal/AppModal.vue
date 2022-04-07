@@ -1,6 +1,6 @@
 <template>
 	<transition name="modal" appear>
-		<div class="app-modal app-modal__overlay" @click="closeModal()">
+		<div id="modal-close" class="app-modal app-modal__overlay" @click="closeModal()">
 			<transition :name="`modal-content--${position}`" appear>
 				<div
 					ref="modalContainer"
