@@ -32,7 +32,7 @@
             </div>
             <button type="button" class="collapsible-help-item">Share a file/folder with another Peergos user?</button>
             <div class="help-item-content">
-              <p>Each file/folder icon in the drive will have a vertical 3 dot menu in the top right. From the context menu that appears, select Share. You can grant access to other users individually or in groups. Access can be for read only or read & write access. The recipient can on-share a shared file.</p>
+              <p>Each file/folder icon in the drive will have a vertical 3 dot menu in the top right. From the context menu that appears, select Share. You can grant access to other users individually or in groups. Access can be for read only or read & write access. The recipient can on-share a shared file for read only access.</p>
               <p>When sharing a folder, sub-folders are automatically shared.</p>
               <p>Who has access and the level of access granted is also displayed on this modal.</p>
             </div>
@@ -57,14 +57,14 @@
               <p>Click the share button to set the read-only audience for the calendar<p>
               <p>Calendars shared with you will first need to be imported via the newsfeed view</p>
             </div>
-            <button type="button" class="collapsible-help-item">Share a calendar event entry?</button>
+            <button type="button" class="collapsible-help-item">Share a calendar event?</button>
             <div class="help-item-content">
               <p>After creating a calendar event. Select the share link on the event context menu to set the audience.</p>
               <p>Calendar events shared with you will first need to be imported via the newsfeed view. The imported event is a copy of the event.</p>
             </div>
-            <button type="button" class="collapsible-help-item">Import a calendar entry?</button>
+            <button type="button" class="collapsible-help-item">Import a calendar event?</button>
             <div class="help-item-content">
-              <p>To import an event shared with you via another Peergos user, first open the newsfeed and select the entry</p>
+              <p>To import an event shared with you via another Peergos user, first open the newsfeed and select the event</p>
               <p>To import an .ics file, open the calendar view and select the gears icon in the toolbar. Select the 'Calendar Settings' button to display the currently configured Calendars. From here click the 'import' button</p>
               <p>An .ics file containing multiple entries is supported. Different calendar implementations (including ours!) have varying level of support/compliance.</p>
             </div>
@@ -76,7 +76,9 @@
             <div class="help-item-content">
               <p>Select 'Profile' menu item after clicking on the user settings menu (the person icon in the top right-hand corner). At the bottom of the modal you will see a field titled 'Website Directory'. After setting the field and selecting Save, a Publish button will appear alongside the same field.</p>
               <p>Click the publish button to complete the action</p>
-              <p>Clear the text field and click Save to reset.</p>
+              <p>NOTE: Publishing will make the folder and any sub-folders and all its contents public!</p>
+              <p>Clear the text field and click Save to reset</p>
+              <p>See This blog <a class="help-link" href="https://peergos.org/posts/p2p-web-hosting" target="_blank" rel="noopener noreferrer">post</a> for more details</p>
             </div>
             <button type="button" class="collapsible-help-item">Clean up failed uploads?</button>
             <div class="help-item-content">
@@ -97,17 +99,18 @@
             <button type="button" class="collapsible-help-item">Delete my account?</button>
             <div class="help-item-content">
               <p>See 'Delete Account' menu item on the user settings menu.</p>
+              <p>NOTE: All YOUR data will be deleted and your account with be irretrievable.</p>
             </div>
 
             <h2>Gripes/Concerns:</h2>
             <button type="button" class="collapsible-help-item">Why is everything so slow?</button>
             <div class="help-item-content">
               <p>It isn't! The whole story is always more complicated. In an end-to-end encrypted and peer-to-peer system, the client is required to do a lot of work (and not just decrypting/encryption). If you are technically minded, open the browser console and watch the stream of 100's of requests to get a flavour.</p>
-              <p>Improvements are always possible and will be rolled out on an on-going basis as further optimisations are achieved.<p>
+              <p>There are still a lot of speed improvements we are planning on implementing. Performance will also improve as browsers implement some of the primitives we need for signing and encryption.<p>
             </div>
             <button type="button" class="collapsible-help-item">I heard Peergos is written in Java, are you crazy?</button>
             <div class="help-item-content">
-              <p>In fact Java is an ideal language for Peergos. The JVM is rock solid and provides good performance and resource utilization. The client is written in mostly java and trans-complied to Javascript via the battle-hardened GWT</p>
+              <p>In fact Java is an ideal language for Peergos. The JVM is rock solid and provides good performance and resource utilization. The client is written mostly in java and trans-complied to Javascript via the battle-hardened GWT</p>
               <p>Having a single language codebase for server and most of the client has multiple benefits. We are not language zealots, other choices would be appropriate in different circumstances.
             </div>
 
@@ -147,6 +150,9 @@ module.exports = {
 }
 </script>
 <style>
+.help-link:link {
+    text-decoration: underline;
+}
 .collapsible-help-item {
   background-color: #26b99a;
   color: white;
