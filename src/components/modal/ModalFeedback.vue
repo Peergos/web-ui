@@ -8,7 +8,7 @@
                         You can tell us here how we can improve, or you can chat with us on <a href="https://reddit.com/r/peergos" target="_blank" rel="noopener noreferrer">reddit</a>, <a href="https://app.element.io/#/room/#peergos-chat:matrix.org" target="_blank" rel="noopener noreferrer">Matrix</a> or send us an email: <a href="mailto:feedback@peergos.org">feedback@peergos.org</a>
                     </h3>
                     <p>
-                        <textarea id="feedback-text" spellcheck="true" style="width:100%" rows=5 :placeholder="textAreaPlaceholder" maxlength="1000"></textarea>
+                        <textarea id="feedback-text" v-model="currentFeedback" spellcheck="true" style="width:100%" rows=5 :placeholder="textAreaPlaceholder" maxlength="1000"></textarea>
                     </p>
 		</template>
 		<template #footer>
@@ -27,18 +27,24 @@ module.exports = {
 		return {
 			textAreaPlaceholder: "Type your feedback here.",
 			warning: false
-
 		};
 	},
 	computed: {
 		...Vuex.mapState([
 			'context'
 		]),
+      currentFeedback: {
+        get () {
+          return this.$store.getters.getCurrentFeedback;
+        },
+        set (value) {
+          this.$store.commit("SET_CURRENT_FEEDBACK", value);
+        }
+      }
     },
-
 	methods: {
 		sendFeedback: function() {
-                    var contents = document.getElementById("feedback-text").value;
+                    var contents = this.currentFeedback;
                     if (contents.length == 0)
                         return;
                     let that = this;
@@ -50,6 +56,7 @@ module.exports = {
                                 console.log("Feedback submitted!");
                                 that.$toast.info('Feedback sent. Thank you!',{timeout:false, position: 'bottom-left' })
                                 that.$store.commit("SET_MODAL", false);
+                                that.$store.commit("SET_CURRENT_FEEDBACK", "");
                             } else {
                                 that.$toast.error('Error sending feedback',{timeout:false, position: 'bottom-left' })
                             }

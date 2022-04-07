@@ -37,7 +37,7 @@ module.exports = new Vuex.Store({
 		driveMenuTarget: null,
 		path: [],
 		currentFilename: "",
-
+        currentFeedback: "",
 		// urlProps: null
 
 		socialData: {
@@ -82,8 +82,10 @@ module.exports = new Vuex.Store({
 		},
 		isPaid: (state) => {
 			return state.paymentProperties != null && state.paymentProperties.isPaid()
-		}
-
+		},
+		getCurrentFeedback: (state) => {
+			return state.currentFeedback;
+		},
 	},
 
 	// Sync
@@ -179,8 +181,9 @@ module.exports = new Vuex.Store({
 		// SET_URL_PROPS(state, payload) {
 		// 	state.urlProps = payload;
 		// },
-
-
+		SET_CURRENT_FEEDBACK(state, payload) {
+			state.currentFeedback = payload;
+		},
 		// Social
 		SET_ANOTATIONS(state, payload) {
 			state.socialData.annotations = payload;
