@@ -1,12 +1,10 @@
 <template>
 <transition name="modal">
 <div class="modal-mask" @click="close">
-    <div class="modal-container full-height" @click.stop style="width:100%;overflow-y:auto;padding:0;display:flex;flex-flow:column;">
+    <div class="modal-container full-height" @click.stop style="width:100%;overflow-y:auto;padding:0;">
         <div class="modal-header" style="padding:0">
             <center><h2>Help/FAQ</h2></center>
-          <span style="position:absolute;top:0;right:2em;">
-            <span @click="close" tabindex="0" v-on:keyup.enter="close" style="color:black;font-size:3em;font-weight:bold;cursor:pointer;">&times;</span>
-          </span>
+            <span @click="close" tabindex="0" v-on:keyup.enter="close" style="position:absolute;top:-10px;right:40px;z-index:999;color:black;font-size:3em;font-weight:bold;cursor:pointer;">&times;</span>
         </div>
         <div class="modal-body">
             <h2>How do I...</h2>
@@ -56,12 +54,12 @@
             <button type="button" class="collapsible-help-item">Share a whole calendar?</button>
             <div class="help-item-content">
               <p>Your primary calendar cannot be shared. You can create multiple calendars. From the calendar view, click the gears icon in the toolbar. Select the 'Calendar Settings' button to display the currently configured Calendars.</p>
-              <p>Clicking the share button to set the read-only audience for the calendar<p>
+              <p>Click the share button to set the read-only audience for the calendar<p>
               <p>Calendars shared with you will first need to be imported via the newsfeed view</p>
             </div>
             <button type="button" class="collapsible-help-item">Share a calendar event entry?</button>
             <div class="help-item-content">
-              <p>After creating a calendar event. Select the share link to set the audience.</p>
+              <p>After creating a calendar event. Select the share link on the event context menu to set the audience.</p>
               <p>Calendar events shared with you will first need to be imported via the newsfeed view. The imported event is a copy of the event.</p>
             </div>
             <button type="button" class="collapsible-help-item">Import a calendar entry?</button>
@@ -72,11 +70,13 @@
             </div>
             <button type="button" class="collapsible-help-item">Share a Task/Todo list?</button>
             <div class="help-item-content">
-              <p>Task/Todo lists are saved to the root directory of your Drive space. Click the vertical 3 dot icon in the top right of the desired Task/Todo item and select Share</p>
+              <p>Task/Todo lists are saved by default to the root directory of your Drive space. Click the vertical 3 dot icon in the top right of the desired Task/Todo item and select Share</p>
             </div>
             <button type="button" class="collapsible-help-item">Host a directory as a static website?</button>
             <div class="help-item-content">
-              <p>Select 'Profile' menu item after clicking on the user settings menu (the person icon in the top right-hand corner). At the bottom of the modal you will see a field titled 'Website Directory'. After setting the field and selecting save, a publish button will appear alongside the same field. Clear the field and click save to reset.</p>
+              <p>Select 'Profile' menu item after clicking on the user settings menu (the person icon in the top right-hand corner). At the bottom of the modal you will see a field titled 'Website Directory'. After setting the field and selecting Save, a Publish button will appear alongside the same field.</p>
+              <p>Click the publish button to complete the action</p>
+              <p>Clear the text field and click Save to reset.</p>
             </div>
             <button type="button" class="collapsible-help-item">Clean up failed uploads?</button>
             <div class="help-item-content">
@@ -108,7 +108,7 @@
             <button type="button" class="collapsible-help-item">I heard Peergos is written in Java, are you crazy?</button>
             <div class="help-item-content">
               <p>In fact Java is an ideal language for Peergos. The JVM is rock solid and provides good performance and resource utilization. The client is written in mostly java and trans-complied to Javascript via the battle-hardened GWT</p>
-              <p>Having a single codebase for server and most of the client has multiple benefits. We are not language zealots, other choices would be appropriate in different circumstances.
+              <p>Having a single language codebase for server and most of the client has multiple benefits. We are not language zealots, other choices would be appropriate in different circumstances.
             </div>
 
         </div>
@@ -118,9 +118,6 @@
 </template>
 
 <script>
-    const mixins = require("../../mixins/downloader/index.js");
-    const routerMixins = require("../../mixins/router/index.js");
-
 module.exports = {
     components: {
     },
@@ -128,16 +125,6 @@ module.exports = {
         return {
         }
     },
-    computed: {
-        ...Vuex.mapState([
-            'context'
-        ]),
-        ...Vuex.mapGetters([
-            'getPath',
-            'currentFilename'
-        ])
-    },
-    mixins:[mixins, routerMixins],
     mounted() {
         var coll = document.getElementsByClassName("collapsible-help-item");
         for (var i = 0; i < coll.length; i++) {
@@ -154,8 +141,7 @@ module.exports = {
     },
     methods: {
         close: function () {
-            //this.openFileOrDir("Drive", '/' + this.context.username, {filename:""});
-            //history.back();
+            this.$store.commit("SET_MODAL", false);
         }
     }
 }
