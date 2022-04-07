@@ -8,7 +8,7 @@
                         You can tell us here how we can improve, or you can chat with us on <a href="https://reddit.com/r/peergos" target="_blank" rel="noopener noreferrer">reddit</a>, <a href="https://app.element.io/#/room/#peergos-chat:matrix.org" target="_blank" rel="noopener noreferrer">Matrix</a> or send us an email: <a href="mailto:feedback@peergos.org">feedback@peergos.org</a>
                     </h3>
                     <p>
-                        <textarea id="feedback-text" v-model="feedBackContents" spellcheck="true" style="width:100%" rows=5 :placeholder="textAreaPlaceholder" maxlength="1000"></textarea>
+                        <textarea id="feedback-text" v-model="currentFeedback" spellcheck="true" style="width:100%" rows=5 :placeholder="textAreaPlaceholder" maxlength="1000"></textarea>
                     </p>
 		</template>
 		<template #footer>
@@ -26,33 +26,25 @@ module.exports = {
 	data() {
 		return {
 			textAreaPlaceholder: "Type your feedback here.",
-			warning: false,
-			feedBackContents: ''
-
+			warning: false
 		};
 	},
 	computed: {
 		...Vuex.mapState([
 			'context'
 		]),
-    },
-    mounted() {
-        let that = this;
-        let savedFeedback = this.$store.getters.getCurrentFeedback;
-        if (savedFeedback != null) {
-            this.feedBackContents = '' + savedFeedback;
+      currentFeedback: {
+        get () {
+          return this.$store.getters.getCurrentFeedback;
+        },
+        set (value) {
+          this.$store.commit("SET_CURRENT_FEEDBACK", value);
         }
-        document.getElementById("modal-close").addEventListener("click", () => {
-            that.close();
-        });
+      }
     },
 	methods: {
-        close: function () {
-            this.$store.commit("SET_CURRENT_FEEDBACK", this.feedBackContents);
-            this.$store.commit("SET_MODAL", false);
-        },
 		sendFeedback: function() {
-                    var contents = this.feedBackContents;
+                    var contents = this.currentFeedback;
                     if (contents.length == 0)
                         return;
                     let that = this;
