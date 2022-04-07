@@ -42,6 +42,9 @@
 				<li v-on:keyup.enter="showTour()" @click="showTour()">
 					Tour
 				</li>
+				<li v-on:keyup.enter="launchHelp()" @click="launchHelp()">
+					Help/FAQ
+				</li>
 				<li
 					v-on:keyup.enter="showChangePassword()"
 					@click="showChangePassword()"
@@ -161,6 +164,9 @@ module.exports = {
 	    },
 		showProfile() {
 			this.$store.commit("CURRENT_MODAL", "ModalProfile");
+		},
+		launchHelp() {
+			this.$store.commit("CURRENT_MODAL", "ModalHelp");
 		},
 		showTour() {
 			this.$store.commit("CURRENT_MODAL", "ModalTour");

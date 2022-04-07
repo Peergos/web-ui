@@ -57,6 +57,7 @@
 <script>
 const AppNavigation = require("./navigation/AppNavigation.vue");
 const ModalTour = require("./modal/ModalTour.vue");
+const ModalHelp = require("./modal/ModalHelp.vue");
 const ModalSpace = require("./modal/ModalSpace.vue");
 const ModalPro = require("./modal/ModalPro.vue");
 const ModalPassword = require("./modal/ModalPassword.vue");
@@ -86,6 +87,7 @@ module.exports = {
 	components: {
 		AppNavigation,
 		ModalTour,
+		ModalHelp,
 		// TODO: lazy load dynamic components
 		// ModalTour: () => import("~/components/modal/ModalTour"),
 		ModalSpace,
