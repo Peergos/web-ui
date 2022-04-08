@@ -61,11 +61,13 @@ function getWithHeadersProm(url, headers) {
     return future;
 }
 
-function postProm(url, data) {
+function postProm(url, data, timeout) {
     var future = peergos.shared.util.Futures.incomplete();
     new Promise(function(resolve, reject) {
 	var req = new XMLHttpRequest();
 	req.open('POST', url);
+        if (timeout >= 0)
+            req.timeout = timeout;
 	req.responseType = 'arraybuffer';
 	
 	req.onload = function() {
@@ -91,6 +93,10 @@ function postProm(url, data) {
 	req.onerror = function(e) {
             reject(Error("Network Error"));
 	};
+
+        req.ontimeout = function() {
+            reject(Error("Network timeout"));
+        };
 
 	req.send(data);
     }).then(function(result, err) {
