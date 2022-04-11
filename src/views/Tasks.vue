@@ -11,7 +11,7 @@
     </AppHeader>
     <main style="display:flex; flex-grow: 1;">
         <div class="" style="padding:0;display:flex;flex-grow:1;">
-	    <iframe id="editor" :src="frameUrl()" style="width:100%;height:100%;" frameBorder="0"></iframe>
+	    <iframe id="task-editor" :src="frameUrl()" style="width:100%;height:100%;" frameBorder="0"></iframe>
         </div>
 	<spinner v-if="showSpinner" :message="spinnerMessage"></spinner>
 	<select-create
@@ -193,7 +193,7 @@ module.exports = {
         },
         startListener: function() {
 	    var that = this;
-	    var iframe = document.getElementById("editor");
+	    var iframe = document.getElementById("task-editor");
 	    if (iframe == null) {
     		setTimeout(that.startListener, 1000);
 	    	return;
@@ -292,7 +292,7 @@ module.exports = {
 	        return;
 	    }
             
-	    var iframe = document.getElementById("editor");
+	    var iframe = document.getElementById("task-editor");
 	    this.expectingSave = true;
 	    iframe.contentWindow.postMessage({type:"save"}, '*');
 	},
@@ -419,7 +419,7 @@ module.exports = {
                 if (newName === '.' || newName === '..')
                     return;
                 setTimeout(function(){
-                    var iframe = document.getElementById("editor");
+                    var iframe = document.getElementById("task-editor");
                     iframe.contentWindow.postMessage({type: 'respondRenameList', index: index, newName: prompt_result}, '*');
                 });
             };

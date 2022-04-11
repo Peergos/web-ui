@@ -5,6 +5,7 @@
         <div class="modal-header" style="padding:0">
             <center><h2>{{ getFullPathForDisplay() }}</h2></center>
           <span style="position:absolute;top:0;right:0.2em;">
+            <span v-if="isWritable()" @click="launchEditor" tabindex="0" v-on:keyup.enter="launchEditor"  style="color:black;font-size:2.5em;font-weight:bold;cursor:pointer;margin:.3em;" class='fas fa-edit' title="Edit file"></span>
             <span @click="close" tabindex="0" v-on:keyup.enter="close" style="color:black;font-size:3em;font-weight:bold;cursor:pointer;">&times;</span>
           </span>
         </div>
@@ -18,7 +19,7 @@
                     :hideGalleryTitle="true"
                     :context="context">
             </Gallery>
-	  <iframe id="editor" :src="frameUrl()" style="width:100%;height:100%;" frameBorder="0"></iframe>
+	  <iframe id="md-editor" :src="frameUrl()" style="width:100%;height:100%;" frameBorder="0"></iframe>
         </div>
     </div>
 </div>
@@ -51,7 +52,8 @@ module.exports = {
             scopedPath: null,
             updatedPath: '',
             updatedFilename: '',
-            fullPathForDisplay: ''
+            fullPathForDisplay: '',
+            isFileWritable: false
         }
     },
     props: ['propAppArgs'],
@@ -59,10 +61,6 @@ module.exports = {
     computed: {
         ...Vuex.mapState([
             'context'
-        ]),
-        ...Vuex.mapGetters([
-            'getPath',
-            'currentFilename'
         ])
     },
     watch: {
@@ -85,6 +83,7 @@ module.exports = {
         let that = this;
         this.findFile(completePath).thenApply(file => {
             if (file != null) {
+                that.isFileWritable = file.isWritable();
                 that.readInFile(file).thenApply(data => {
                     that.setFullPathForDisplay();
                     that.startListener(data);
@@ -93,6 +92,12 @@ module.exports = {
         });
     },
     methods: {
+        launchEditor: function() {
+            this.openFileOrDir("editor", this.currPath, {filename:this.currFilename});
+        },
+        isWritable: function() {
+            return this.isFileWritable;
+        },
         goToPage: function() {
             let filename = this.propAppArgs.filename;
             let subPath = this.propAppArgs.subPath != null ? this.propAppArgs.subPath
@@ -106,7 +111,7 @@ module.exports = {
                 if (file != null) {
                     that.readInFile(file).thenApply(data => {
                         that.setFullPathForDisplay();
-                        let iframe = document.getElementById("editor");
+                        let iframe = document.getElementById("md-editor");
                         let func = function() {
                             iframe.contentWindow.postMessage({action: "respondToNavigateTo", text:new TextDecoder().decode(data)
                                 , subPath: subPath}, '*');
@@ -125,7 +130,7 @@ module.exports = {
         },
         startListener: function(data) {
 	    var that = this;
-	    var iframe = document.getElementById("editor");
+	    var iframe = document.getElementById("md-editor");
 	    if (iframe == null) {
     		setTimeout(that.startListener, 1000);
 	    	return;

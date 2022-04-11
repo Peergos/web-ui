@@ -11,7 +11,7 @@ module.exports = {
 	        isIframeInitialised: false
         }
     },
-    props: ['context', 'file', 'messages'],
+    props: ['context', 'file'],
     created: function() {
         this.currentFile = this.file;
         this.currentFilename = this.file.getName();

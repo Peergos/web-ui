@@ -114,8 +114,7 @@
 			v-on:hide-code-editor="back()"
 			v-on:update-refresh="forceUpdate++"
 			:file="selectedFiles[0]"
-			:context="context"
-			:messages="messages">
+			:context="context">
 		</code-editor>
         <Markdown
             v-if="showMarkdownViewer"
