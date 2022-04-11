@@ -74,8 +74,12 @@ module.exports = {
         let filename = props.args.filename;
         let subPath = props.args.subPath != null && props.args.subPath.length > 0 ? props.args.subPath + "/" : "";
         let path = '/' + props.path;
-        let completePath = props.args.subPath != path ?
-            props.path + '/' + subPath + filename : props.path + '/' + filename;
+        var completePath = '';
+        if (subPath.length == 0 || props.args.subPath == path) {
+            completePath = props.path + '/' + filename
+        } else {
+            completePath = subPath + filename
+        }
         this.currFilename = filename;
 
         this.currPath = path;
