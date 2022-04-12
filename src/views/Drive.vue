@@ -31,6 +31,11 @@
 			:action="prompt_action"
 		/>
 
+		<FolderProperties
+            v-if="showFolderProperties"
+            v-on:hide-folder-properties-view="showFolderProperties = false"
+            :folder_properties="folder_properties">
+        </FolderProperties>
 
 		<div id="dnd"
 			@drop="dndDrop($event)"
@@ -83,10 +88,9 @@
 				<li id='cut-file' v-if="isWritable" @keyup.enter="cut"  @click="cut">Cut</li>
 				<li id='paste-file' v-if="isPasteAvailable" @keyup.enter="paste"  @click="paste">Paste</li>
 				<li id='share-file' v-if="allowShare" @keyup.enter="showShareWith"  @click="showShareWith">Share</li>
+				<li id='zip-folder' v-if="allowDownloadFolder" @keyup.enter="zipAndDownload"  @click="zipAndDownload">Download as Zip</li>
 				<li id='create-thumbnail' v-if="isWritable && canCreateThumbnail" @keyup.enter="createThumbnail"  @click="createThumbnail">Create Thumbnail</li>
-				<!-- <li id='create-file'  @keyup.enter="createTextFile" @click="createTextFile">Create Text file</li> -->
-				<!-- <li id='profile-view' v-if="isProfileViewable" @click="showProfile(false)">Show Profile</li> -->
-				<!-- <li id='file-search' v-if="isSearchable" @keyup.enter="openSearch(false)" @click="openSearch(false)">Search...</li> -->
+				<li id='folder-props' v-if="allowViewFolderProperties" @keyup.enter="viewFolderProperties"  @click="viewFolderProperties">Properties</li>
 			</DriveMenu>
 		</transition>
 
@@ -172,6 +176,14 @@
 			:body="errorBody"
 			:messageId="messageId">
 		</error>
+        <confirm
+                v-if="showConfirm"
+                v-on:hide-confirm="showConfirm = false"
+                :confirm_message='confirm_message'
+                :confirm_body="confirm_body"
+                :consumer_cancel_func="confirm_consumer_cancel_func"
+                :consumer_func="confirm_consumer_func">
+        </confirm>
 	</article>
 </template>
 
@@ -191,10 +203,11 @@ const ProgressBar = require("../components/drive/ProgressBar.vue");
 const DriveMenu = require("../components/drive/DriveMenu.vue");
 
 const AppPrompt = require("../components/prompt/AppPrompt.vue");
-
+const FolderProperties = require("../components/FolderProperties.vue");
 
 const helpers = require("../mixins/storage/index.js");
 const downloaderMixins = require("../mixins/downloader/index.js");
+const zipMixin = require("../mixins/zip/index.js");
 
 const router = require("../mixins/router/index.js");
 
@@ -207,6 +220,7 @@ module.exports = {
 		DriveTable,
 		DriveMenu,
 		AppPrompt,
+		FolderProperties,
 		ProgressBar,
 		Gallery,
 		Identity,
@@ -255,19 +269,7 @@ module.exports = {
 				isPaid() { return false; }
 			},
 			showFeedbackForm: false,
-			showProfileEditForm: false,
-			showProfileViewForm: false,
 			admindata: { pending: [] },
-			profile: {
-				firstName: "",
-				lastName: "",
-				biography: "",
-				primaryPhone: "",
-				primaryEmail: "",
-				profileImage: "",
-				status: "",
-				webRoot: ""
-			},
 			messages: [],
 			messageId: null,
 			messageMonitors: [],
@@ -283,7 +285,7 @@ module.exports = {
 			prompt_consumer_func: () => { },
 			prompt_action: 'ok',
 			showPrompt: false,
-
+            showFolderProperties: false,
 			showSelect: false,
 			showWarning: false,
 			showReplace: false,
@@ -298,6 +300,11 @@ module.exports = {
 			errorTitle: '',
 			errorBody: '',
 			showError: false,
+            showConfirm: false,
+            confirm_message: "",
+            confirm_body: "",
+            confirm_consumer_cancel_func: () => {},
+            confirm_consumer_func: () => {},
 			showSpinner: true,
 			spinnerMessage: '',
 			onUpdateCompletion: [], // methods to invoke when current dir is next refreshed
@@ -310,7 +317,7 @@ module.exports = {
 		};
 	},
 
-	mixins:[downloaderMixins, router],
+	mixins:[downloaderMixins, router, zipMixin],
 
         mounted: function() {
             let that = this;
@@ -463,6 +470,36 @@ module.exports = {
             } catch (err) {
                 return false;
             }
+        },
+		allowDownloadFolder() {
+			try {
+                if (!(this.path.length > 0)) {
+                    return false;
+                }
+                if (!this.isStreamingAvailable)
+                    return false;
+				if (this.currentDir == null)
+					return false;
+				if (this.selectedFiles.length != 1)
+					return false;
+				return this.selectedFiles[0].isDirectory();
+			} catch (err) {
+				return false;
+			}
+		},
+        allowViewFolderProperties() {
+			try {
+                if (!(this.path.length > 0)) {
+                    return false;
+                }
+				if (this.currentDir == null)
+					return false;
+				if (this.selectedFiles.length != 1)
+					return false;
+				return this.selectedFiles[0].isDirectory();
+			} catch (err) {
+				return false;
+			}
         },
         allowCopy() {
             return this.isLoggedIn && this.path.length > 0;
@@ -1075,8 +1112,164 @@ module.exports = {
 				});
 		},
 
+		calculateDirectoryStatistics(file, path, accumulator, future) {
+			let that = this;
+			file.getChildren(this.context.crypto.hasher, this.context.network).thenApply(function (children) {
+				let arr = children.toArray();
+				for (var i = 0; i < arr.length; i++) {
+					let child = arr[i];
+					let childProps = child.getFileProperties();
+					if (childProps.isDirectory) {
+            			accumulator.folderCount += 1;
+						accumulator.apparentSize += 4096;
+						let newPath = path + "/" + childProps.name;
+						accumulator.directoryMap.set(newPath, '');
+						that.calculateDirectoryStatistics(child, newPath, accumulator, future);
+					} else {
+            			accumulator.fileCount += 1;
+						let size = that.getFileSize(childProps);
+						accumulator.actualSize += size;
+						accumulator.apparentSize += (size + (4096 - (size % 4096)));
+					}
+				}
+                accumulator.directoryMap.delete(path);
+				if (accumulator.directoryMap.size == 0) {
+					future.complete(accumulator);
+				}
+			});
+		},
+		calculateTotalSize(file, path) {
+			let future = peergos.shared.util.Futures.incomplete();
+			let accumulator = { folderName: file.getFileProperties().name, actualSize: 0, apparentSize: 4096, directoryMap: new Map(), fileCount: 0, folderCount: 0 };
+			if (file.isDirectory()) {
+			    accumulator.folderName = file.getFileProperties().name;
+                this.calculateDirectoryStatistics(file, path + file.getFileProperties().name, accumulator, future);
+            } else {
+                accumulator.fileCount += 1;
+                let size = this.getFileSize(file.getFileProperties());
+                accumulator.actualSize += size;
+                accumulator.apparentSize += (size + (4096 - (size % 4096)));
+                future.complete(accumulator);
+            }
+			return future;
+		},
+        showMessage: function(title, body) {
+            this.messages.push({
+                title: title,
+                body: body,
+                show: true
+            });
+        },
+        viewFolderProperties() {
+            if (this.selectedFiles.length != 1)
+                return;
+            this.closeMenu();
+            let file = this.selectedFiles[0];
+            this.showSpinner = true;
+            let that = this;
+            this.calculateTotalSize(file, this.getPath).thenApply(statistics => {
+                that.showSpinner = false;
+                that.showFolderProperties = true;
+                that.folder_properties = statistics;
+            });
+        },
+		zipAndDownload() {
+            if (this.selectedFiles.length != 1)
+                return;
+            this.closeMenu();
+            let file = this.selectedFiles[0];
+			this.showSpinner = true;
+			let that = this;
+            this.calculateTotalSize(file, this.getPath).thenApply(statistics => {
+                that.showSpinner = false;
+                if (statistics.fileCount == 0) {
+                    that.$toast('Folder:' + file.getName() + ' contains no files. Nothing to download');
+                }else if (statistics.actualSize > 1024 * 1024 * 1024 * 4) { //4GiB
+                    that.$toast('Download of a Folder greater than 4GiB in size is not supported');
+                } else {
+                    let filename = file.getName();
+                    this.confirmZipAndDownloadOfFolder(filename, statistics,
+                        () => {
+                            that.showConfirm = false;
+                            var progress = {
+                                show: true,
+                                title: 'Downloading folder: ' + filename,
+                                done: 0,
+                                max: statistics.actualSize
+                            }
+                            let zipFilename = filename + '.zip';
+                            let accumulator = {directoryMap: new Map(), files: []};
+                            let future = peergos.shared.util.Futures.incomplete();
 
-
+                            that.collectFilesToZip(that.getPath, file,
+                                that.getPath + file.getFileProperties().name, accumulator, future);
+                            future.thenApply(allFiles => {
+                                that.$toast({component: ProgressBar,props: progress}
+                                    , { icon: false , timeout:false, id: zipFilename});
+                                that.zipFiles(zipFilename, allFiles.files, progress).thenApply(res => {
+                                    console.log('folder download complete');
+                                }).exceptionally(function (throwable) {
+                                    that.$toast.error(throwable.getMessage())
+                                });
+                            }).exceptionally(function (throwable) {
+                                that.$toast.error(throwable.getMessage())
+                            })
+                        },
+                        () => {
+                            that.showConfirm = false;
+                        }
+                    );
+                }
+            }).exceptionally(function (throwable) {
+                that.$toast.error(throwable.getMessage())
+            });
+		},
+        confirmZipAndDownloadOfFolder(folderName, statistics, deleteFunction, cancelFunction) {
+            this.confirm_message='Are you sure you want to download folder: ' + folderName + " ?";
+            this.confirm_body='Folder(s): ' + statistics.folderCount
+                    + ', File(s): ' + statistics.fileCount
+                    + ', Total size: ' + helpers.convertBytesToHumanReadable(statistics.actualSize);
+            this.confirm_consumer_cancel_func = cancelFunction;
+            this.confirm_consumer_func = deleteFunction;
+            this.showConfirm = true;
+        },
+		collectFilesToZip(prefix, file, path, accumulator, future) {
+			let that = this;
+			file.getChildren(this.context.crypto.hasher, this.context.network).thenApply(function (children) {
+				let arr = children.toArray();
+				for (var i = 0; i < arr.length; i++) {
+					let child = arr[i];
+					let childProps = child.getFileProperties();
+					if (childProps.isDirectory) {
+						let newPath = path + "/" + childProps.name;
+						accumulator.directoryMap.set(newPath, '');
+						that.collectFilesToZip(prefix, child, newPath, accumulator, future);
+					} else {
+					    let relativePath = path.substring(prefix.length);
+						accumulator.files.push({path: relativePath, file: child});
+					}
+				}
+				accumulator.directoryMap.delete(path)
+				if (accumulator.directoryMap.size == 0) {
+					future.complete(accumulator);
+				}
+			});
+		},
+        reduceZippingFiles(allFiles, index, future, progress, writer, zipFilename, state) {
+            let that = this;
+            if (index == allFiles.length) {
+                future.complete(true);
+            } else {
+                let fileEntry = allFiles[index];
+                this.zipFile(fileEntry, progress, writer, zipFilename, state).thenApply(res => {
+                    that.reduceZippingFiles(allFiles, ++index, future, progress, writer, zipFilename, state);
+                }).exceptionally(function(throwable) {
+                    console.log(throwable);
+                    that.showToastError("Unable to process file: " + file.getName());
+                    future.complete(false);
+                });
+            }
+        },
 		dndDrop(evt) {
 			evt.preventDefault();
 			let entries = evt.dataTransfer.items;
@@ -1521,12 +1714,12 @@ module.exports = {
 						});
 				} else if (clipboard.op == "copy") {
 					console.log("paste-copy");
-					this.calculateTotalFileSize(clipboard.fileTreeNode, clipboard.path).thenApply(totalSize => {
-                        if (Number(that.quotaBytes.toString()) < totalSize) {
+					this.calculateTotalSize(clipboard.fileTreeNode, clipboard.path).thenApply(statistics => {
+                        if (Number(that.quotaBytes.toString()) < statistics.apparentSize) {
                             let errMsg = "File copy operation exceeds total space\n" + "Please upgrade to get more space";
                             that.$toast.error(errMsg, {timeout:false, id: 'upload'})
                         } else {
-                            let spaceAfterOperation = that.checkAvailableSpace(totalSize);
+                            let spaceAfterOperation = that.checkAvailableSpace(statistics.apparentSize);
                             if (spaceAfterOperation < 0) {
                                 let errMsg = "File copy operation exceeds available space\n" + "Please free up " + helpers.convertBytesToHumanReadable('' + -spaceAfterOperation) + " and try again";
                                 that.$toast.error(errMsg, {timeout:false, id: 'upload'})
@@ -1560,30 +1753,20 @@ module.exports = {
 					let child = arr[i];
 					let childProps = child.getFileProperties();
 					if (childProps.isDirectory) {
-						accumulator.walkCounter++;
 						accumulator.size += 4096;
 						let newPath = path + "/" + childProps.name;
+						accumulator.directoryMap.set(newPath, '');
 						that.calculateDirectorySize(child, newPath, accumulator, future);
 					} else {
 						let size = that.getFileSize(childProps);
 						accumulator.size += (size + (4096 - (size % 4096)));
 					}
 				}
-				accumulator.walkCounter--;
-				if (accumulator.walkCounter == 0) {
+				accumulator.directoryMap.remove(path);
+				if (accumulator.directoryMap.size == 0) {
 					future.complete(accumulator.size);
 				}
 			});
-		},
-		calculateTotalFileSize(file, path) {
-			let future = peergos.shared.util.Futures.incomplete();
-			if (file.isDirectory()) {
-				this.calculateDirectorySize(file, path + file.getFileProperties().name,
-					{ size: 4096, walkCounter: 1 }, future);
-			} else {
-				future.complete(this.getFileSize(file.getFileProperties()));
-			}
-			return future;
 		},
 		checkAvailableSpace(fileSize) {
 		    if (this.currentDir.getOwnerName() != this.context.username) {
