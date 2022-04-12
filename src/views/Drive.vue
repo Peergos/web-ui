@@ -88,7 +88,7 @@
 				<li id='cut-file' v-if="isWritable" @keyup.enter="cut"  @click="cut">Cut</li>
 				<li id='paste-file' v-if="isPasteAvailable" @keyup.enter="paste"  @click="paste">Paste</li>
 				<li id='share-file' v-if="allowShare" @keyup.enter="showShareWith"  @click="showShareWith">Share</li>
-				<li id='zip-folder' v-if="allowDownloadFolder" @keyup.enter="zipAndDownload"  @click="zipAndDownload">Download Folder</li>
+				<li id='zip-folder' v-if="allowDownloadFolder" @keyup.enter="zipAndDownload"  @click="zipAndDownload">Download as Zip</li>
 				<li id='create-thumbnail' v-if="isWritable && canCreateThumbnail" @keyup.enter="createThumbnail"  @click="createThumbnail">Create Thumbnail</li>
 				<li id='folder-props' v-if="allowViewFolderProperties" @keyup.enter="viewFolderProperties"  @click="viewFolderProperties">Properties</li>
 			</DriveMenu>
@@ -1189,12 +1189,11 @@ module.exports = {
 			this.showSpinner = true;
 			let that = this;
             this.calculateTotalSize(file, this.getPath).thenApply(statistics => {
+                that.showSpinner = false;
                 if (statistics.fileCount == 0) {
                     that.$toast('Folder:' + file.getName() + ' contains no files. Nothing to download');
-                    that.showSpinner = false;
                 }else if (statistics.actualSize > 1024 * 1024 * 1024) { //1GiB
                     that.$toast('Download of a Folder greater than 1GiB in size is not supported');
-                    that.showSpinner = false;
                 } else {
                     let filename = file.getName();
                     this.confirmZipAndDownloadOfFolder(filename, statistics,
@@ -1209,32 +1208,27 @@ module.exports = {
                             let zipFilename = filename + '.zip';
                             let accumulator = {directoryMap: new Map(), files: []};
                             let future = peergos.shared.util.Futures.incomplete();
-                            that.collectFilesToZip(file, that.getPath + file.getFileProperties().name
-                                , accumulator, future);
+
+                            that.collectFilesToZip(that.getPath, file,
+                                that.getPath + file.getFileProperties().name, accumulator, future);
                             future.thenApply(allFiles => {
                                 that.$toast({component: ProgressBar,props: progress}
                                     , { icon: false , timeout:false, id: zipFilename});
                                 that.zipFiles(zipFilename, allFiles.files, progress).thenApply(res => {
-                                    that.showSpinner = false;
                                     console.log('folder download complete');
                                 }).exceptionally(function (throwable) {
-                                    that.showSpinner = false;
                                     that.$toast.error(throwable.getMessage())
                                 });
                             }).exceptionally(function (throwable) {
-                                that.showSpinner = false;
                                 that.$toast.error(throwable.getMessage())
                             })
                         },
                         () => {
-                            that.showSpinner = false;
                             that.showConfirm = false;
-
                         }
                     );
                 }
             }).exceptionally(function (throwable) {
-                that.showSpinner = false;
                 that.$toast.error(throwable.getMessage())
             });
 		},
@@ -1247,7 +1241,7 @@ module.exports = {
             this.confirm_consumer_func = deleteFunction;
             this.showConfirm = true;
         },
-		collectFilesToZip(file, path, accumulator, future) {
+		collectFilesToZip(prefix, file, path, accumulator, future) {
 			let that = this;
 			file.getChildren(this.context.crypto.hasher, this.context.network).thenApply(function (children) {
 				let arr = children.toArray();
@@ -1257,9 +1251,10 @@ module.exports = {
 					if (childProps.isDirectory) {
 						let newPath = path + "/" + childProps.name;
 						accumulator.directoryMap.set(newPath, '');
-						that.collectFilesToZip(child, newPath, accumulator, future);
+						that.collectFilesToZip(prefix, child, newPath, accumulator, future);
 					} else {
-						accumulator.files.push({path: path.substring(1), file: child});
+					    let relativePath = path.substring(prefix.length);
+						accumulator.files.push({path: relativePath, file: child});
 					}
 				}
 				accumulator.directoryMap.delete(path)
@@ -1317,12 +1312,12 @@ module.exports = {
                     link.type = mimeType
                     link.href = url
                     link.dispatchEvent(click)
-                    that.go(zipFilename, allFiles, progress, zipFuture, writerContainer);
+                    that.startZipDownload(zipFilename, allFiles, progress, zipFuture, writerContainer);
                 },function (seekHi, seekLo, seekLength) {},undefined, progress.max);
             writerContainer.writer = fileStream.getWriter();
             return zipFuture;
         },
-        go(zipFilename, allFiles, progress, completedZipping, writerContainer) {
+        startZipDownload(zipFilename, allFiles, progress, completedZipping, writerContainer) {
             let that = this;
             this.precalcCrc32();
             let writer = writerContainer.writer;
