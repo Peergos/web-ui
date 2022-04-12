@@ -473,7 +473,7 @@ module.exports = {
         },
 		allowDownloadFolder() {
 			try {
-                if (!(this.isLoggedIn && this.path.length > 0)) {
+                if (!(this.path.length > 0)) {
                     return false;
                 }
                 if (!this.isStreamingAvailable)
@@ -489,7 +489,7 @@ module.exports = {
 		},
         allowViewFolderProperties() {
 			try {
-                if (!(this.isLoggedIn && this.path.length > 0)) {
+                if (!(this.path.length > 0)) {
                     return false;
                 }
 				if (this.currentDir == null)
