@@ -230,18 +230,7 @@ module.exports = {
         if (filePath.startsWith(this.PATH_PREFIX)) {
             return this.calculateFullPath(this.scopedPath + filePath.substring(this.PATH_PREFIX.length), updateFullPath);
         } else {
-            let pathElements = filePath.split('/').filter(n => n.length > 0);
-            let username = pathElements[0];
-            if (username == this.context.username) {
-                if (filePath.startsWith(this.scopedPath)) {
-                    return this.calculateFullPath(filePath, updateFullPath);
-                } else {
-                    this.showErrorMessage('Links are restricted to folder: ' + this.scopedPath);
-                    return null;
-                }
-            } else {
-                return this.calculateFullPath(filePath, updateFullPath);
-            }
+            return this.calculateFullPath(filePath, updateFullPath);
         }
     },
     calculateFullPath: function(peergosPath, updateFullPath) {
