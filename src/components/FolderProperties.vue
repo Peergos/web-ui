@@ -26,7 +26,7 @@
 </template>
 
 <script>
-const helpers = require("../../mixins/storage/index.js");
+const helpers = require("../mixins/storage/index.js");
 module.exports = {
     data: function() {
         return {
