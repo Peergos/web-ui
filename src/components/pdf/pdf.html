@@ -4,7 +4,7 @@
       
       
         <div class="modal-header" style="padding:0">
-            <h2>PDF viewer: {{ file.getName() }}</h2><span @click="close" tabindex="0" v-on:keyup.enter="close" style="color:black;font-size:3em;font-weight:bold;position:absolute;top:0;right:0.2em;cursor:pointer;">&times;</span>
+            <center><h2>{{ file.getName() }}</h2></center><span @click="close" tabindex="0" v-on:keyup.enter="close" style="color:black;font-size:3em;font-weight:bold;position:absolute;top:0;right:0.2em;cursor:pointer;">&times;</span>
         </div>
 
         <div class="modal-body" style="margin:0;padding:0;display:flex;flex-grow:1;">
