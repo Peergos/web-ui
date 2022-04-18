@@ -2,9 +2,6 @@
 <Article class="app-view launcher-view">
 	<AppHeader>
 	</AppHeader>
-        <div style="padding-left: 20px">
-            <h2>Launcher</h2>
-        </div>
         <div class="modal-body">
             <div v-bind:class="errorClass">
                 <label v-if="isError">{{ error }}</label>
@@ -35,27 +32,27 @@
                 </div>
             </div>
             <div>
-                <h3>Files/Folder i have Shared</h3>
+                <h3>Files &amp; Folders I have Shared</h3>
                 <div class="flex-container">
                     <div class="flex-item" style="margin: 10px;">
                         <button id='submit-search' class="btn btn-success" @click="findShared()">Recalculate</button>
                     </div>
                 </div>
-                <div v-if="matches.length ==0" class="table-responsive">
+                <div v-if="sharedItemsList.length ==0" class="table-responsive">
                     No Items to display
                 </div>
-                <div v-if="matches!=0" class="table-responsive">
+                <div v-if="sharedItemsList!=0" class="table-responsive">
                     <table class="table">
                         <thead>
-                        <tr  v-if="matches!=0" style="cursor:pointer;">
-                            <th @click="setSortBy('name')">Name <span v-if="sortBy=='name'" v-bind:class="['fas', normalSortOrder ? 'fa-angle-down' : 'fa-angle-up']"/></th>
-                            <th @click="setSortBy('path')">Directory <span v-if="sortBy=='path'" v-bind:class="['fas', normalSortOrder ? 'fa-angle-down' : 'fa-angle-up']"/></th>
-                            <th @click="setSortBy('size')">Size <span v-if="sortBy=='size'" v-bind:class="['fas', normalSortOrder ? 'fa-angle-down' : 'fa-angle-up']"/></th>
-                            <th @click="setSortBy('modified')">Modified <span v-if="sortBy=='modified'" v-bind:class="['fas', normalSortOrder ? 'fa-angle-down' : 'fa-angle-up']"/></th>
+                        <tr  v-if="sharedItemsList!=0" style="cursor:pointer;">
+                            <th @click="setSharedSortBy('name')">Name <span v-if="sortBy=='name'" v-bind:class="['fas', normalSortOrder ? 'fa-angle-down' : 'fa-angle-up']"/></th>
+                            <th @click="setSharedSortBy('path')">Directory <span v-if="sortBy=='path'" v-bind:class="['fas', normalSortOrder ? 'fa-angle-down' : 'fa-angle-up']"/></th>
+                            <th @click="setSharedSortBy('size')">Size <span v-if="sortBy=='size'" v-bind:class="['fas', normalSortOrder ? 'fa-angle-down' : 'fa-angle-up']"/></th>
+                            <th @click="setSharedSortBy('modified')">Modified <span v-if="sortBy=='modified'" v-bind:class="['fas', normalSortOrder ? 'fa-angle-down' : 'fa-angle-up']"/></th>
                         </tr>
                         </thead>
                         <tbody>
-                        <tr v-for="match in sortedItems">
+                        <tr v-for="match in sortedSharedItems">
                             <td v-on:click="view(match, true)" style="cursor:pointer;">{{ match.name }}</td>
                             <td v-on:click="navigateTo(match)" style="cursor:pointer;">
                                 {{ match.path }}
@@ -88,7 +85,7 @@ module.exports = {
         return {
             showSpinner: false,
             walkCounter: 0,
-            matches: [],
+            sharedItemsList: [],
             error: "",
             isError:false,
             errorClass: "",
@@ -131,11 +128,11 @@ module.exports = {
                 });
             }
         },
-        sortedItems(){
+        sortedSharedItems(){
             var sortBy = this.sortBy;
             var reverseOrder = ! this.normalSortOrder;
             if(sortBy == "name" || sortBy == "path") {
-                return this.matches.sort(function (a, b) {
+                return this.sharedItemsList.sort(function (a, b) {
                     if (reverseOrder) {
                         return ('' + b.name).localeCompare(a.name);
                     } else {
@@ -143,7 +140,7 @@ module.exports = {
                     }
                 });
             } else if(this.sortBy == "modified") {
-                return this.matches.sort(function (a, b) {
+                return this.sharedItemsList.sort(function (a, b) {
                     let aVal = a.lastModified;
                     let bVal = b.lastModified;
                     if (reverseOrder) {
@@ -153,7 +150,7 @@ module.exports = {
                     }
                 });
             } else if(sortBy == "size") {
-                return this.matches.sort(function (a, b) {
+                return this.sharedItemsList.sort(function (a, b) {
                     let aVal = reverseOrder ? b.size : a.size;
                     let bVal = reverseOrder ? a.size : b.size;
                     if (aVal > bVal) {
@@ -239,7 +236,7 @@ module.exports = {
                 if (low < 0) low = low + Math.pow(2, 32);
                 return low + (props.sizeHigh() * Math.pow(2, 32));
         },
-        addMatch: function(props, path) {
+        addSharedItem: function(props, path) {
             let pathStr = props.isDirectory ? path.substring(0, path.lastIndexOf("/")): path;
             let entry = {
                 path: pathStr,
@@ -249,7 +246,7 @@ module.exports = {
                 isDirectory: props.isDirectory,
                 type: props.getType()
             };
-            this.matches.push(entry);
+            this.sharedItemsList.push(entry);
         },
         isSharedTest: function(sharedWithState, file, path) {
             if (sharedWithState == null) {
@@ -259,7 +256,7 @@ module.exports = {
             let filename = props.name;
             let isShared = sharedWithState.isShared(filename);
             if (isShared){
-                this.addMatch(props, path);
+                this.addSharedItem(props, path);
             }
         },
         findShared: function() {
@@ -271,7 +268,7 @@ module.exports = {
 
             var that = this;
             let path = '/' + this.context.username + '/';
-            this.matches = [];
+            this.sharedItemsList = [];
             this.walkCounter = 0;
             this.context.getByPath(path).thenApply(function(dir){
                 that.walk(dir.get(), path, null);
@@ -283,20 +280,68 @@ module.exports = {
             });
 
         },
+        showMessage: function(isError, title, body) {
+            let bodyContents = body == null ? '' : ' ' + body;
+            if (isError) {
+                this.$toast.error(title + bodyContents, {timeout:false});
+            } else {
+                this.$toast(title + bodyContents)
+            }
+        },
+        showErrorMessage(errMsg) {
+            console.log(errMsg);
+            this.showMessage(true, "", errMsg);
+            this.showSpinner = false;
+        },
+        findFile: function(filePath) {
+            let that = this;
+            var future = peergos.shared.util.Futures.incomplete();
+            this.context.getByPath(filePath).thenApply(function(fileOpt){
+                if (fileOpt.ref == null) {
+                    that.showErrorMessage("path not found!: " + filePath);
+                    future.complete(null);
+                } else {
+                    let file = fileOpt.get();
+                    const props = file.getFileProperties();
+                    if (props.isHidden || props.isDirectory) {
+                        that.showErrorMessage("file not accessible: " + filePath);
+                        future.complete(null);
+                    } else {
+                        future.complete(file);
+                    }
+                }
+            }).exceptionally(function(throwable) {
+                console.log(throwable.getMessage());
+                future.complete(null);
+            });
+            return future;
+        },
         view: function (entry) {
-            this.openFileOrDir("Drive", entry.path, entry.isDirectory ? "" : entry.name);
+            //this.openFileOrDir("Drive", entry.path, entry.isDirectory ? "" : entry.name);
+            let that = this;
+            let fullPath = entry.path + (entry.isDirectory ? "" : '/' + entry.name);
+            this.findFile(fullPath).thenApply(file => {
+                if (file != null) {
+                    let app = that.getApp(file, entry.path);
+                    if (app == 'hex') {
+                        that.openFileOrDir("Drive", entry.path, {filename:""});
+                    } else {
+                        that.openFileOrDir(app, entry.path, {filename:entry.name});
+                    }
+                }
+            });
         },
         navigateTo: function (entry) {
-            this.openFileOrDir("Drive", entry.path, "");
+            this.openFileOrDir("Drive", entry.path, {filename:""});
         },
-        setSortBy: function(prop) {
+        setSharedSortBy: function(prop) {
             if (this.sortBy == prop)
                 this.normalSortOrder = !this.normalSortOrder;
             this.sortBy = prop;
         },
         setShortCutsSortBy: function(prop) {
             if (this.shortCutsSortBy == prop)
-                this.shortCutsSortByNormalSortOrder = !this.shortCutsSortByNormalSortOrder;
+                this.shortCutsNormalSortOrder = !this.shortCutsNormalSortOrder;
             this.shortCutsSortBy = prop;
         },
         formatDateTime: function(dateTime) {
