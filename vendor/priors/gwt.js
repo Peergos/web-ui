@@ -80,7 +80,7 @@ function postProm(url, data, timeout) {
 		try {
             let trailer = req.getResponseHeader("Trailer");
             if (trailer == null) {
-                reject('Unexpected Response from server');
+                reject('Unexpected error from server');
             } else {
                 if (trailer.startsWith('Storage+quota+reached')) {
                     future.completeExceptionally(new peergos.shared.storage.StorageQuotaExceededException(trailer));
@@ -131,7 +131,7 @@ function postMultipartProm(url, dataArrays) {
 		try {
 		    let trailer = req.getResponseHeader("Trailer");
             if (trailer == null) {
-                reject('Unexpected Response from server');
+                reject('Unexpected error from server');
             } else {
                 if (trailer.startsWith('Storage+quota+reached')) {
                     future.completeExceptionally(new peergos.shared.storage.StorageQuotaExceededException(trailer));
