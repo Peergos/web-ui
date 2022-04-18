@@ -1366,7 +1366,7 @@ module.exports = {
                     let errMsg = "File upload operation exceeds total space\n" + "Please upgrade to get more space";
                     that.$toast.error(errMsg, {timeout:false, id: 'upload'})
                 } else {
-                    let spaceAfterOperation = this.checkAvailableSpace(totalSize);
+                    let spaceAfterOperation = that.checkAvailableSpace(totalSize);
                     if (spaceAfterOperation < 0) {
                         let errMsg = "File upload operation exceeds available space\n" + "Please free up " + helpers.convertBytesToHumanReadable('' + -spaceAfterOperation) + " and try again";
                         that.$toast.error(errMsg, {timeout:false, id: 'upload'})
@@ -1376,7 +1376,6 @@ module.exports = {
                         document.getElementById('uploadDirectoriesInput').value = "";
                         let progressBars = [];
                         for(var i=0; i < files.length; i++) {
-                            let that = this;
                             var resultingSize = files[i].size;
                             var progress = {
                                 title:"Encrypting and uploading " + files[i].name,
@@ -1387,7 +1386,7 @@ module.exports = {
                             that.$toast({component: ProgressBar,props:  progress} , { icon: false , timeout:false, id: files[i].name})
                             progressBars.push(progress);
                         }
-                        let uploadDirectoryPath = this.getPath;
+                        let uploadDirectoryPath = that.getPath;
                         const uploadParams = {
                             applyReplaceToAll: false,
                             replaceFile: false,
