@@ -79,10 +79,14 @@ function postProm(url, data, timeout) {
             else {
 		try {
             let trailer = req.getResponseHeader("Trailer");
-            if (trailer.startsWith('Storage+quota+reached')) {
-                future.completeExceptionally(new peergos.shared.storage.StorageQuotaExceededException(trailer));
+            if (trailer == null) {
+                reject('Unexpected Response from server');
             } else {
-                reject(trailer);
+                if (trailer.startsWith('Storage+quota+reached')) {
+                    future.completeExceptionally(new peergos.shared.storage.StorageQuotaExceededException(trailer));
+                } else {
+                    reject(trailer);
+                }
             }
 		} catch (e) {
 		    reject(e);
@@ -126,11 +130,15 @@ function postMultipartProm(url, dataArrays) {
             else {
 		try {
 		    let trailer = req.getResponseHeader("Trailer");
-            if (trailer.startsWith('Storage+quota+reached')) {
-                future.completeExceptionally(new peergos.shared.storage.StorageQuotaExceededException(trailer));
+            if (trailer == null) {
+                reject('Unexpected Response from server');
             } else {
-		        reject(trailer);
-		    }
+                if (trailer.startsWith('Storage+quota+reached')) {
+                    future.completeExceptionally(new peergos.shared.storage.StorageQuotaExceededException(trailer));
+                } else {
+                    reject(trailer);
+                }
+            }
 		} catch (e) {
 		    reject("Error");
 		}
