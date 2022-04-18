@@ -78,9 +78,11 @@
 				v-if="viewMenu"
 				@closeMenu="closeMenu()"
 			>
-				<li id='gallery' v-if="canOpen && !isMarkdown" @keyup.enter="viewFile()" @click="viewFile()">View</li>
+				<li id='gallery' v-if="canOpen && !isMarkdown && !isHTML" @keyup.enter="viewFile()" @click="viewFile()">View</li>
 				<li id='gallery-view-markdown' v-if="isMarkdown" @keyup.enter="viewFile()" @click="viewFile()">View</li>
 				<li id='gallery-edit-markdown' v-if="isMarkdown" @keyup.enter="editFile()" @click="editFile()">Edit</li>
+				<li id='gallery-view-html' v-if="isHTML" @keyup.enter="viewFile()" @click="viewFile()">View</li>
+				<li id='gallery-edit-html' v-if="isHTML" @keyup.enter="editFile()" @click="editFile()">Edit</li>
 				<li id='open-file' v-if="canOpen" @keyup.enter="downloadAll"  @click="downloadAll">Download</li>
 				<li id='rename-file' v-if="isWritable" @keyup.enter="rename"  @click="rename">Rename</li>
 				<li id='delete-file' v-if="isWritable" @keyup.enter="deleteFiles"  @click="deleteFiles">Delete</li>
@@ -131,7 +133,11 @@
                     :file="selectedFiles[0]"
                     :context="context">
                 </identity>
-
+        <Browser
+            v-if="showBrowser"
+            v-on:hide-browser="closeApps(false);"
+            :internalNavigation = "true">
+        </Browser>
 		<Share
 			v-if="showShare"
 			v-on:hide-share-with="closeShare"
@@ -198,6 +204,7 @@ const Identity = require("../components/identity-proof-viewer.vue");
 const Share = require("../components/drive/DriveShare.vue");
 const Search = require("../components/Search.vue");
 const Markdown = require("../components/viewers/Markdown.vue");
+const Browser = require("../components/browser/Browser.vue");
 
 const ProgressBar = require("../components/drive/ProgressBar.vue");
 const DriveMenu = require("../components/drive/DriveMenu.vue");
@@ -226,7 +233,8 @@ module.exports = {
 		Identity,
 		Share,
 		Search,
-		Markdown
+		Markdown,
+		Browser
 	},
 	data() {
 		return {
@@ -259,6 +267,7 @@ module.exports = {
 			showHexViewer: false,
 			showCodeEditor: false,
 			showMarkdownViewer: false,
+			showBrowser: false,
 			showPdfViewer: false,
 			showTextViewer: false,
 			showPassword: false,
@@ -433,17 +442,6 @@ module.exports = {
                 return false;
             }
 		},
-		canOpen() {
-			try {
-				if (this.currentDir == null)
-					return false;
-				if (this.selectedFiles.length != 1)
-					return false;
-				return !this.selectedFiles[0].isDirectory()
-			} catch (err) {
-				return false;
-			}
-		},
         canOpen() {
             try {
                 if (this.currentDir == null)
@@ -467,6 +465,22 @@ module.exports = {
                 let mimeType = file.getFileProperties().mimeType;
                 return mimeType.startsWith("text/x-markdown") ||
                     (mimeType.startsWith("text/") && file.getName().endsWith('.md'));
+            } catch (err) {
+                return false;
+            }
+        },
+        isHTML() {
+            try {
+                if (this.currentDir == null)
+                    return false;
+                if (this.selectedFiles.length != 1)
+                    return false;
+                if (this.selectedFiles[0].isDirectory())
+                    return false;
+                let file =  this.selectedFiles[0];
+                let mimeType = file.getFileProperties().mimeType;
+                return mimeType.startsWith("text/html") ||
+                    (mimeType.startsWith("text/") && file.getName().endsWith('.html'));
             } catch (err) {
                 return false;
             }
@@ -846,10 +860,11 @@ module.exports = {
 
 		closeApps() {
 		    this.showGallery = false;
-                    this.showIdentityProof = false;
+            this.showIdentityProof = false;
 		    this.showPdfViewer = false;
 		    this.showCodeEditor = false;
 		    this.showMarkdownViewer = false;
+		    this.showBrowser = false;
 		    this.showTextViewer = false;
 		    this.showHexViewer = false;
 		    this.showSearch = false;
@@ -908,6 +923,8 @@ module.exports = {
                         that.showMarkdownViewer = true;
                     else if (app == "search")
                         that.showSearch = true;
+                    else if (app == "browser")
+                        this.showBrowser = true;
 		},
 		openSearch(fromRoot) {
 			var path = fromRoot ? "/" + this.context.username : this.getPath;

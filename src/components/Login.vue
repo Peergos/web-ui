@@ -112,8 +112,7 @@ module.exports = {
 			const props = this.getPropsFromUrl();
 			const app = props == null ? null : props.app;
 			console.log('login app:', app)
-			const driveApps = [null, 'Gallery', 'pdf', 'editor', 'hex', 'markdown', 'todo', 'timeline' ]
-
+			const driveApps = [null, 'Gallery', 'pdf', 'editor', 'hex', 'markdown', 'todo', 'timeline', 'browser' ]
 			return driveApps.includes(app)
 				? 'Drive'
 				: app
