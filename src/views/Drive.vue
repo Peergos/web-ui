@@ -1357,17 +1357,23 @@ module.exports = {
             let collectFuture = peergos.shared.util.Futures.incomplete();
             this.collectFiles(fromDnd, 0, filesToUpload, [], collectFuture);
             let that = this;
+            let urlProps = this.getPropsFromUrl();
+            if (urlProps.secretLink && !urlProps.writable) {
+                return;
+            }
+            let isSecretLink = (typeof urlProps.secretLink !== 'undefined') && urlProps.secretLink;
+            let isWritableSecretLink = isSecretLink && urlProps.writable;
             collectFuture.thenApply(files => {
                 let totalSize = 0;
                 for(var i=0; i < files.length; i++) {
                     totalSize += (files[i].size + (4096 - (files[i].size % 4096)));
                 }
-                if (Number(that.quotaBytes.toString()) < totalSize) {
+                if (!isWritableSecretLink && Number(that.quotaBytes.toString()) < totalSize) {
                     let errMsg = "File upload operation exceeds total space\n" + "Please upgrade to get more space";
                     that.$toast.error(errMsg, {timeout:false, id: 'upload'})
                 } else {
                     let spaceAfterOperation = that.checkAvailableSpace(totalSize);
-                    if (spaceAfterOperation < 0) {
+                    if (!isWritableSecretLink && spaceAfterOperation < 0) {
                         let errMsg = "File upload operation exceeds available space\n" + "Please free up " + helpers.convertBytesToHumanReadable('' + -spaceAfterOperation) + " and try again";
                         that.$toast.error(errMsg, {timeout:false, id: 'upload'})
                     } else {
