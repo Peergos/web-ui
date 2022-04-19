@@ -1357,12 +1357,10 @@ module.exports = {
             let collectFuture = peergos.shared.util.Futures.incomplete();
             this.collectFiles(fromDnd, 0, filesToUpload, [], collectFuture);
             let that = this;
-            let urlProps = this.getPropsFromUrl();
-            if (urlProps.secretLink && !urlProps.writable) {
+            if (this.isSecretLink && !this.currentDir.isWritable()) {
                 return;
             }
-            let isSecretLink = (typeof urlProps.secretLink !== 'undefined') && urlProps.secretLink;
-            let isWritableSecretLink = isSecretLink && urlProps.writable;
+            let isWritableSecretLink = this.isSecretLink && this.currentDir.isWritable();
             collectFuture.thenApply(files => {
                 let totalSize = 0;
                 for(var i=0; i < files.length; i++) {
