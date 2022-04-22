@@ -1434,9 +1434,11 @@ module.exports = {
                     get_0: function() {
                         if (uploadParams.triggerRefresh) {
                             uploadParams.triggerRefresh = false;
-                            that.context.getSpaceUsage().thenApply(u => {
-                                that.$store.commit('SET_USAGE', u);
-                            });
+                            if (!that.isSecretLink) {
+                                that.context.getSpaceUsage().thenApply(u => {
+                                    that.$store.commit('SET_USAGE', u);
+                                });
+                            }
                             that.updateCurrentDirectory();
                         }
                         return true;
