@@ -38,6 +38,7 @@ Apache Ant(TM) version 1.10.8 compiled on May 10 2020
 ```
 ## Building
 > ant dist
+
 The output will be server/Peergos.jar
 
 ## Development
