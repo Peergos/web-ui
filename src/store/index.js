@@ -50,7 +50,13 @@ module.exports = new Vuex.Store({
 			blocked: [],
 			groupsNameToUid: {},
 			groupsUidToName: {}
-		}
+		},
+        sandboxedApps: {
+            appFileExtensionRegistrationMap: new Map(),
+            appMimeTypeRegistrationMap: new Map(),
+            appFileTypeRegistrationMap: new Map(),
+            appsInstalled: []
+        }
 	},
 
 	getters: {
@@ -216,6 +222,19 @@ module.exports = new Vuex.Store({
 		SET_BLOCKED(state, payload) {
 			state.socialData.blocked = payload;
 		},
+        //sandboxed Apps
+        SET_FILE_EXTENSION_REGISTRATIONS(state, payload) {
+            state.sandboxedApps.appFileExtensionRegistrationMap = payload;
+        },
+        SET_MIMETYPE_REGISTRATIONS(state, payload) {
+            state.sandboxedApps.appMimeTypeRegistrationMap = payload;
+        },
+        SET_FILETYPE_REGISTRATIONS(state, payload) {
+            state.sandboxedApps.appFileTypeRegistrationMap = payload;
+        },
+        SET_SANDBOXED_APPS(state, payload) {
+            state.sandboxedApps.appsInstalled = payload;
+        }
 	},
 
 	// Async

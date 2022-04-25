@@ -2,6 +2,47 @@ const ProgressBar = require("../../components/drive/ProgressBar.vue");
 module.exports = {
 
   methods: {
+    calculateDirectoryStatistics(file, path, accumulator, future) {
+        let that = this;
+        file.getChildren(this.context.crypto.hasher, this.context.network).thenApply(function (children) {
+            let arr = children.toArray();
+            for (var i = 0; i < arr.length; i++) {
+                let child = arr[i];
+                let childProps = child.getFileProperties();
+                if (childProps.isDirectory) {
+                    accumulator.folderCount += 1;
+                    accumulator.apparentSize += 4096;
+                    let newPath = path + "/" + childProps.name;
+                    accumulator.directoryMap.set(newPath, '');
+                    that.calculateDirectoryStatistics(child, newPath, accumulator, future);
+                } else {
+                    accumulator.fileCount += 1;
+                    let size = that.getFileSize(childProps);
+                    accumulator.actualSize += size;
+                    accumulator.apparentSize += (size + (4096 - (size % 4096)));
+                }
+            }
+              accumulator.directoryMap.delete(path);
+            if (accumulator.directoryMap.size == 0) {
+                future.complete(accumulator);
+            }
+        });
+    },
+    calculateTotalSize(file, path) {
+        let future = peergos.shared.util.Futures.incomplete();
+        let accumulator = { folderName: file.getFileProperties().name, actualSize: 0, apparentSize: 4096, directoryMap: new Map(), fileCount: 0, folderCount: 0 };
+        if (file.isDirectory()) {
+            accumulator.folderName = file.getFileProperties().name;
+              this.calculateDirectoryStatistics(file, path + file.getFileProperties().name, accumulator, future);
+          } else {
+              accumulator.fileCount += 1;
+              let size = this.getFileSize(file.getFileProperties());
+              accumulator.actualSize += size;
+              accumulator.apparentSize += (size + (4096 - (size % 4096)));
+              future.complete(accumulator);
+          }
+        return future;
+    },
     // This will only work up to a file size of 2^52 bytes (the biggest integer you can fit in a double)
     // But who ever needed a filesize > 4 PB ? ;-)
     getFileSize: function (props) {

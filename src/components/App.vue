@@ -83,6 +83,7 @@ const Launcher = require("../views/Launcher.vue");
 const ServerMessages = require("./ServerMessages.vue");
 
 const routerMixins = require("../mixins/router/index.js");
+const sandboxAppMixins = require("../mixins/sandbox/index.js");
 
 module.exports = {
 	components: {
@@ -128,7 +129,7 @@ module.exports = {
 		"currentView",
 		"crypto",
 		"network",
-		"context",
+		"context"
 	    ]),
 	    ...Vuex.mapGetters(["isSecretLink", "getPath"]),
 	    isDemo() {
@@ -145,7 +146,7 @@ module.exports = {
             }
 	},
 
-	mixins: [routerMixins],
+	mixins: [routerMixins, sandboxAppMixins],
 
 	watch: {
 	    network(newNetwork) {
@@ -205,8 +206,22 @@ module.exports = {
 		this.updateUsage();
 		this.updateQuota();
 		this.updatePayment();
+        this.initSandboxedApps();
 	    }
 	},
+
+    initSandboxedApps() {
+        let that = this;
+        this.context.getByPath(this.context.username + "/.apps").thenApply(appsDirOpt => {
+            if (appsDirOpt.ref != null) {
+                appsDirOpt.get().getChildren(that.context.crypto.hasher, that.context.network).thenApply(children => {
+                    that.loadAllAppProperties(children.toArray()).thenApply(sandboxedAppsPropsList => {
+                        that.registerApps(sandboxedAppsPropsList);
+                    });
+                });
+            }
+        });
+    },
 
         getSecretLinkProps() {
             var fragment = window.location.hash.substring(1);

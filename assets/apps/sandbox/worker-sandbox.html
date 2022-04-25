@@ -1,0 +1,12 @@
+<!--
+	worker.html
+
+	This is only meant to signal the opener's messageChannel to
+	the service worker - when that is done this page can be closed
+
+	The service worker is capable of intercepting all request and fork their
+	own "fake" response - wish we are going to craft
+	when the worker then receives a stream then the worker will tell the opener
+	to open up a link that will start the download
+-->
+<script src="init-sw-sandbox.js"></script>

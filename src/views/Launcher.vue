@@ -3,14 +3,30 @@
 	<AppHeader>
 	</AppHeader>
         <div class="modal-body">
-            <div v-bind:class="errorClass">
-                <label v-if="isError">{{ error }}</label>
-            </div>
             <spinner v-if="showSpinner"></spinner>
+            <AppSandbox
+                v-if="showAppSandbox"
+                v-on:hide-app-sandbox="closeAppSandbox"
+                :sandboxAppName="sandboxAppName"
+                :currentFile=null>
+            </AppSandbox>
+            <confirm
+                    v-if="showConfirm"
+                    v-on:hide-confirm="showConfirm = false"
+                    :confirm_message='confirm_message'
+                    :confirm_body="confirm_body"
+                    :consumer_cancel_func="confirm_consumer_cancel_func"
+                    :consumer_func="confirm_consumer_func">
+            </confirm>
+            <AppDetails
+                v-if="showAppDetails"
+                v-on:hide-app-details="closeAppDetails"
+                :appPropsFile=currentAppPropertiesFile>
+            </AppDetails>
             <div>
                 <h3>Shortcuts</h3>
                 <div v-if="shortcutList.length ==0" class="table-responsive">
-                    Entries can be added via file/Folder context menu item 'Add to Launcher'
+                    Entries can be added via context menu item 'Add to Launcher'
                 </div>
                 <div v-if="shortcutList!=0" class="table-responsive">
                     <table class="table">
@@ -18,6 +34,9 @@
                         <tr  v-if="shortcutList.length!=0" style="cursor:pointer;">
                             <th @click="setShortCutsSortBy('name')">Name <span v-if="shortCutsSortBy=='name'" v-bind:class="['fas', shortCutsNormalSortOrder ? 'fa-angle-down' : 'fa-angle-up']"/></th>
                             <th @click="setShortCutsSortBy('path')">Directory <span v-if="shortCutsSortBy=='path'" v-bind:class="['fas', shortCutsNormalSortOrder ? 'fa-angle-down' : 'fa-angle-up']"/></th>
+                            <th @click="setShortCutsSortBy('modified')">Modified <span v-if="shortCutsSortBy=='modified'" v-bind:class="['fas', shortCutsNormalSortOrder ? 'fa-angle-down' : 'fa-angle-up']"/></th>
+                            <th @click="setShortCutsSortBy('created')">Created <span v-if="shortCutsSortBy=='created'" v-bind:class="['fas', shortCutsNormalSortOrder ? 'fa-angle-down' : 'fa-angle-up']"/></th>
+                            <th></th>
                         </tr>
                         </thead>
                         <tbody>
@@ -25,6 +44,41 @@
                             <td v-on:click="view(shortcut, true)" style="cursor:pointer;">{{ shortcut.name }}</td>
                             <td v-on:click="navigateTo(shortcut)" style="cursor:pointer;">
                                 {{ shortcut.path }}
+                            </td>
+                            <td>
+                                {{ formatDateTime(shortcut.lastModified) }}
+                            </td>
+                            <td>
+                                {{ formatDateTime(shortcut.created) }}
+                            </td>
+                            <td> <button class="btn btn-danger" @click="removeShortcut(shortcut)">Delete</button>
+                            </td>
+                        </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            <div>
+                <h3>Apps</h3>
+                <div v-if="appsList.length ==0" class="table-responsive">
+                    No Apps currently installed
+                </div>
+                <div v-if="appsList!=0" class="table-responsive">
+                    <table class="table">
+                        <thead>
+                        <tr  v-if="appsList.length!=0" style="cursor:pointer;">
+                            <th @click="setAppsSortBy('name')">Name <span v-if="appsSortBy=='name'" v-bind:class="['fas', appsNormalSortOrder ? 'fa-angle-down' : 'fa-angle-up']"/></th>
+                            <th></th>
+                            <th>Delete</th>
+                        </tr>
+                        </thead>
+                        <tbody>
+                        <tr v-for="app in sortedApps">
+                            <td v-if="app.launchable"><button class="btn btn-info" @click="launchApp(app.name)">{{ app.displayName }}</button></td>
+                            <td v-if="!app.launchable">{{ app.displayName }}</td>
+                            <td> <button class="btn btn-success" @click="displayAppDetails(app)">Details</button>
+                            </td>
+                            <td> <button class="btn btn-danger" @click="removeApp(app)">Remove</button>
                             </td>
                         </tr>
                         </tbody>
@@ -38,9 +92,6 @@
                         <button id='submit-search' class="btn btn-success" @click="findShared()">Recalculate</button>
                     </div>
                 </div>
-                <div v-if="sharedItemsList.length ==0" class="table-responsive">
-                    No Items to display
-                </div>
                 <div v-if="sharedItemsList!=0" class="table-responsive">
                     <table class="table">
                         <thead>
@@ -49,6 +100,7 @@
                             <th @click="setSharedSortBy('path')">Directory <span v-if="sortBy=='path'" v-bind:class="['fas', normalSortOrder ? 'fa-angle-down' : 'fa-angle-up']"/></th>
                             <th @click="setSharedSortBy('size')">Size <span v-if="sortBy=='size'" v-bind:class="['fas', normalSortOrder ? 'fa-angle-down' : 'fa-angle-up']"/></th>
                             <th @click="setSharedSortBy('modified')">Modified <span v-if="sortBy=='modified'" v-bind:class="['fas', normalSortOrder ? 'fa-angle-down' : 'fa-angle-up']"/></th>
+                            <th @click="setSharedSortBy('created')">Created <span v-if="sortBy=='created'" v-bind:class="['fas', normalSortOrder ? 'fa-angle-down' : 'fa-angle-up']"/></th>
                         </tr>
                         </thead>
                         <tbody>
@@ -63,6 +115,9 @@
                             <td>
                                 {{ formatDateTime(match.lastModified) }}
                             </td>
+                            <td>
+                                {{ formatDateTime(match.created) }}
+                            </td>
                         </tr>
                         </tbody>
                     </table>
@@ -74,35 +129,45 @@
 
 <script>
 const AppHeader = require("../components/AppHeader.vue");
+const AppDetails = require("../components/sandbox/AppDetails.vue");
+const AppSandbox = require("../components/sandbox/AppSandbox.vue");
 const routerMixins = require("../mixins/router/index.js");
 const mixins = require("../mixins/mixins.js");
 const launcherMixin = require("../mixins/launcher/index.js");
+const sandboxMixin = require("../mixins/sandbox/index.js");
 module.exports = {
     components: {
-		AppHeader
+		AppHeader,
+		AppDetails,
+		AppSandbox
     },
     data: function() {
         return {
             showSpinner: false,
             walkCounter: 0,
             sharedItemsList: [],
-            error: "",
-            isError:false,
-            errorClass: "",
             sortBy: "name",
             normalSortOrder: true,
-            cancelSearch: false,
-	        showCancel: false,
-            showEmbeddedGallery: false,
-            filesToViewInGallery: [],
             launcherApp: null,
             shortcutList: [],
             shortCutsSortBy: "name",
-            shortCutsNormalSortOrder: true
+            shortCutsNormalSortOrder: true,
+            appsList: [],
+            appsSortBy: "name",
+            appsNormalSortOrder: true,
+            showConfirm: false,
+            confirm_message: "",
+            confirm_body: "",
+            confirm_consumer_cancel_func: () => {},
+            confirm_consumer_func: () => {},
+            showAppDetails: false,
+            currentAppPropertiesFile: null,
+            showAppSandbox: false,
+            sandboxAppName: ''
         }
     },
     props: [],
-    mixins:[routerMixins, mixins, launcherMixin],
+    mixins:[routerMixins, mixins, launcherMixin, sandboxMixin],
     computed: {
         ...Vuex.mapState([
             'context',
@@ -126,6 +191,39 @@ module.exports = {
                         return ('' + a.path).localeCompare(b.path);
                     }
                 });
+            } else if(sortBy == "modified") {
+                return this.shortcutList.sort(function (a, b) {
+                    let aVal = a.lastModified;
+                    let bVal = b.lastModified;
+                    if (reverseOrder) {
+                        return bVal.compareTo(aVal);
+                    } else {
+                        return aVal.compareTo(bVal);
+                    }
+                });
+            } else if(sortBy == "created") {
+                return this.shortcutList.sort(function (a, b) {
+                    let aVal = a.created;
+                    let bVal = b.created;
+                    if (reverseOrder) {
+                        return bVal.compareTo(aVal);
+                    } else {
+                        return aVal.compareTo(bVal);
+                    }
+                });
+            }
+        },
+        sortedApps(){
+            var sortBy = this.appsSortBy;
+            var reverseOrder = ! this.appsNormalSortOrder;
+            if(sortBy == "name") {
+                return this.appsList.sort(function (a, b) {
+                    if (reverseOrder) {
+                        return ('' + b.name).localeCompare(a.name);
+                    } else {
+                        return ('' + a.name).localeCompare(b.name);
+                    }
+                });
             }
         },
         sortedSharedItems(){
@@ -143,6 +241,16 @@ module.exports = {
                 return this.sharedItemsList.sort(function (a, b) {
                     let aVal = a.lastModified;
                     let bVal = b.lastModified;
+                    if (reverseOrder) {
+                        return bVal.compareTo(aVal);
+                    } else {
+                        return aVal.compareTo(bVal);
+                    }
+                });
+            } else if(this.sortBy == "created") {
+                return this.sharedItemsList.sort(function (a, b) {
+                    let aVal = a.created;
+                    let bVal = b.created;
                     if (reverseOrder) {
                         return bVal.compareTo(aVal);
                     } else {
@@ -169,8 +277,108 @@ module.exports = {
         peergos.shared.user.App.init(that.context, "launcher").thenCompose(launcher => {
             that.launcherApp = launcher;
             that.showSpinner = true;
-            that.loadLauncherShortcutsFile(launcher).thenApply(contents => {
+            that.loadLauncherShortcuts().thenApply(loadedShortcuts => {
+                let appsInstalled = this.sandboxedApps.appsInstalled.slice();
+                that.appsList = appsInstalled;
                 that.showSpinner = false;
+            });
+        });
+    },
+    methods: {
+        launchApp: function(appName) {
+            this.showAppSandbox = true;
+            this.sandboxAppName = appName;
+        },
+        closeAppSandbox() {
+            this.showAppSandbox = false;
+        },
+        displayAppDetails: function(app) {
+            console.log('displayAppDetails');
+            let that = this;
+            let fullPath = "/" + this.context.username + "/.apps/" + app.name + '/peergos-app.json';
+            this.findFile(fullPath).thenApply(file => {
+                if (file != null) {
+                    that.currentAppPropertiesFile = file;
+                    that.showAppDetails = true;
+                }
+            });
+        },
+        closeAppDetails() {
+            this.currentAppPropertiesFile = null;
+            this.showAppDetails = false;
+        },
+        removeApp: function(app) {
+            let that = this;
+            this.confirmRemoveApp(app.displayName,
+                () => {
+                    that.showConfirm = false;
+                    that.deleteApp(app);
+                },
+                () => {
+                    that.showConfirm = false;
+                    that.showSpinner = false;
+                }
+            );
+        },
+        deleteApp(app) {
+            let that = this;
+            let appDirName = app.name;
+            this.showSpinner = true;
+            this.context.getByPath("/" + this.context.username + "/.apps").thenApply(appDirOpt => {
+                if (appDirOpt.ref != null) {
+                    appDirOpt.ref.getChild(appDirName, that.context.crypto.hasher, that.context.network).thenApply(appToDeleteOpt => {
+                        if (appToDeleteOpt.ref != null) {
+                            that.deleteAppFolder(app, appToDeleteOpt.ref, appDirOpt.ref);
+                        }
+                    });
+                }
+            });
+        },
+        deleteAppFolder: function(app, file, parent) {
+            let name = file.getFileProperties().name;
+            let that = this;
+            let filePath = peergos.client.PathUtils.directoryToPath([this.context.username, ".apps", name]);
+            file.remove(parent, filePath, this.context).thenApply(function(b){
+                that.deRegisterApp(app);
+                let appIndex = appsList.findIndex(v => v.name === app.name);
+                if (appIndex > -1) {
+                    appsList.splice(appIndex, 1);
+                }
+                that.showSpinner = false;
+            }).exceptionally(function(throwable) {
+                console.log('Unexpected error: ' + throwable);
+                that.showErrorMessage('Error deleting App: ' + app.name);
+                that.showSpinner = false;
+            });
+        },
+        confirmRemoveShortcut(replaceFunction, cancelFunction) {
+            this.confirm_message = 'Remove shortcut';
+            this.confirm_body = "Are you sure you want to remove this shortcut?";
+            this.confirm_consumer_cancel_func = cancelFunction;
+            this.confirm_consumer_func = replaceFunction;
+            this.showConfirm = true;
+        },
+        removeShortcut: function(shortcut) {
+            console.log('removeShortcut');
+            let that = this;
+            this.confirmRemoveShortcut(
+                () => {
+                    that.showConfirm = false;
+                    that.deleteShortcut(shortcut);
+                },
+                () => {
+                    that.showConfirm = false;
+                    that.showSpinner = false;
+                }
+            );
+        },
+        deleteShortcut: function() {
+            console.log('deleteShortcut');
+        },
+        loadLauncherShortcuts: function() {
+            var future = peergos.shared.util.Futures.incomplete();
+            let that = this;
+            this.loadLauncherShortcutsFile(that.launcherApp).thenApply(contents => {
                 let shortcuts = [];
                 contents.shortcuts.forEach(entry => {
                     var isDirectory = false;
@@ -181,13 +389,25 @@ module.exports = {
                         name = entry.link.substring(entry.link.lastIndexOf('/') + 1);
                     }
                     let path = entry.link.substring(0, entry.link.lastIndexOf('/'));
-                    shortcuts.push({name: name, path: path, isDirectory : isDirectory});
+                    let shortcut = {name: name, path: path, isDirectory : isDirectory, lastModified: '', created: ''};
+                    that.populateShortcut(shortcut);
+                    shortcuts.push(shortcut);
                 });
                 that.shortcutList = shortcuts;
+                future.complete(true);
             })
-        });
-    },
-    methods: {
+            return future;
+        },
+        populateShortcut(entry) {
+            let fullPath = entry.path + (entry.isDirectory ? "" : '/' + entry.name);
+            this.findFile(fullPath).thenApply(file => {
+                if (file != null) {
+                    let props = file.getFileProperties();
+                    entry.lastModified = props.modified;
+                    entry.created = props.created;
+                }
+            });
+        },
         walk: function(file, path, sharedWithState) {
             let searchButton = document.getElementById("submit-search");
             let fileProperties = file.getFileProperties();
@@ -210,7 +430,6 @@ module.exports = {
                             that.walkCounter--;
                             if (that.walkCounter == 0) {
                                 that.showSpinner = false;
-                                that.showCancel = false;
                                 searchButton.disabled = false;
                             }
                         }
@@ -221,7 +440,6 @@ module.exports = {
                                 that.walkCounter--;
                                 if (that.walkCounter == 0) {
                                     that.showSpinner = false;
-                                    that.showCancel = false;
                                     searchButton.disabled = false;
                                 }
                             }
@@ -243,6 +461,7 @@ module.exports = {
                 name: props.name,
                 size: props.isDirectory ? "" : this.getFileSize(props),
                 lastModified: props.modified,
+                created: props.created,
                 isDirectory: props.isDirectory,
                 type: props.getType()
             };
@@ -260,12 +479,6 @@ module.exports = {
             }
         },
         findShared: function() {
-            this.showCancel = true;
-            this.cancelSearch = false;
-            this.isError = false;
-            this.error = "";
-            this.errorClass = "";
-
             var that = this;
             let path = '/' + this.context.username + '/';
             this.sharedItemsList = [];
@@ -303,7 +516,7 @@ module.exports = {
                 } else {
                     let file = fileOpt.get();
                     const props = file.getFileProperties();
-                    if (props.isHidden || props.isDirectory) {
+                    if (props.isHidden) {
                         that.showErrorMessage("file not accessible: " + filePath);
                         future.complete(null);
                     } else {
@@ -317,16 +530,28 @@ module.exports = {
             return future;
         },
         view: function (entry) {
-            //this.openFileOrDir("Drive", entry.path, entry.isDirectory ? "" : entry.name);
+            if (entry.name.length == 0) {
+                return;
+            }
             let that = this;
             let fullPath = entry.path + (entry.isDirectory ? "" : '/' + entry.name);
             this.findFile(fullPath).thenApply(file => {
                 if (file != null) {
-                    let app = that.getApp(file, entry.path);
+                    let app = that.getApp(file, entry.path, file.isWritable());
                     if (app == 'hex') {
                         that.openFileOrDir("Drive", entry.path, {filename:""});
                     } else {
-                        that.openFileOrDir(app, entry.path, {filename:entry.name});
+                        if (app == 'editor') {
+                            let mimeType = file.getFileProperties().mimeType;
+                            if (mimeType.startsWith("text/x-markdown") ||
+                                ( mimeType.startsWith("text/") && entry.name.endsWith('.md'))) {
+                                that.openFileOrDir("markdown", entry.path, {filename:entry.name});
+                            } else {
+                                that.openFileOrDir("editor", entry.path, {filename:entry.name});
+                            }
+                        } else {
+                            that.openFileOrDir(app, entry.path, {filename:entry.name});
+                        }
                     }
                 }
             });
@@ -344,7 +569,15 @@ module.exports = {
                 this.shortCutsNormalSortOrder = !this.shortCutsNormalSortOrder;
             this.shortCutsSortBy = prop;
         },
+        setAppsSortBy: function(prop) {
+            if (this.appsSortBy == prop)
+                this.appsNormalSortOrder = !this.appsNormalSortOrder;
+            this.appsSortBy = prop;
+        },
         formatDateTime: function(dateTime) {
+            if (dateTime.length == 0) {
+                return dateTime;
+            }
             let date = new Date(dateTime.toString() + "+00:00");//adding UTC TZ in ISO_OFFSET_DATE_TIME ie 2021-12-03T10:25:30+00:00
             let formatted = date.getFullYear() + '-' + (date.getMonth() + 1) + '-' + date.getDate()
                 + ' ' + (date.getHours() < 10 ? '0' : '') + date.getHours()

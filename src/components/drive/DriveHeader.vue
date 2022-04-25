@@ -42,24 +42,39 @@
 						<li @click="askForDirectories()">Upload folder</li>
 						<li @click="$emit('askMkdir')">New folder</li>
 						<li @click="$emit('createFile')">New file</li>
-                                                <li v-if="canPaste" @click="$emit('paste')">Paste</li>
+                        <li v-for="app in creatableApps" v-on:keyup.enter="appCreateNew(app.name)" v-on:click="appCreateNew(app.name)">APP: {{app.createMenuText}}</li>
+                        <li v-if="canPaste" @click="$emit('paste')">Paste</li>
 					</ul>
 				</AppDropdown>
 			</div>
 
 			<UserSettings />
+            <AppSandbox
+                v-if="showAppSandbox"
+                v-on:hide-app-sandbox="closeAppSandbox"
+                :sandboxAppName="sandboxAppName"
+                :currentFile=null>
+            </AppSandbox>
 	</header>
 </template>
 
 <script>
 const AppDropdown = require("../AppDropdown.vue");
+const AppSandbox = require("../sandbox/AppSandbox.vue");
 const UserSettings = require("../UserSettings.vue");
 
 module.exports = {
 	components: {
 		AppDropdown,
+        AppSandbox,
 		UserSettings
 	},
+    data() {
+        return {
+            showAppSandbox: false,
+            sandboxAppName: ''
+        };
+    },
 	props: {
 		gridView: {
 			type: Boolean,
@@ -78,8 +93,29 @@ module.exports = {
 			default: ()=>[]
 		}
 	},
-
+	computed: {
+        ...Vuex.mapState([
+            "sandboxedApps"
+        ]),
+        creatableApps: function() {
+           try {
+                let appsInstalled = this.sandboxedApps.appsInstalled.slice().filter(app => app.createMenuText != null);
+                return appsInstalled.sort(function(a, b) {
+                    return a.createMenuText.localeCompare(b.createMenuText);
+                });
+           } catch (err) {
+               return [];
+           }
+        },
+	},
 	methods: {
+	    appCreateNew(appName) {
+            this.showAppSandbox = true;
+            this.sandboxAppName = appName;
+        },
+        closeAppSandbox() {
+            this.showAppSandbox = false;
+        },
 		askForFiles() {
 			document.getElementById('uploadFileInput').click();
 		},
