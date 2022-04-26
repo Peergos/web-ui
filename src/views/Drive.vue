@@ -1854,14 +1854,14 @@ module.exports = {
 
             let postFix = file.isDirectory() ? '/' : '';
             let link = this.path.join('/') + '/' + file.getName() + postFix;
-            this.refreshAndAddShortcutLink(link);
+            this.refreshAndAddShortcutLink(link, new Date(file.getFileProperties().created.toString() + "+00:00"));
 		},
-		refreshAndAddShortcutLink(link) {
+		refreshAndAddShortcutLink(link, created) {
 		    let that = this;
             this.showSpinner = true;
             this.loadLauncherShortcutsFile(this.launcherApp).thenApply(shortcutsMap => {
                 if (shortcutsMap.get(link) == null) {
-                    let entry = {added: new Date()};
+                    let entry = {added: new Date(), created: created};
                     shortcutsMap.set(link, entry)
                     that.updateLauncherShortcutsFile(that.launcherApp, shortcutsMap).thenApply(res => {
                         that.showSpinner = false;

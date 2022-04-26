@@ -32,6 +32,7 @@
                     <table class="table">
                         <thead>
                         <tr  v-if="shortcutList.length!=0" style="cursor:pointer;">
+                            <th @click="setShortCutsSortBy('added')">Added <span v-if="shortCutsSortBy=='added'" v-bind:class="['fas', shortCutsNormalSortOrder ? 'fa-angle-down' : 'fa-angle-up']"/></th>
                             <th @click="setShortCutsSortBy('name')">Name <span v-if="shortCutsSortBy=='name'" v-bind:class="['fas', shortCutsNormalSortOrder ? 'fa-angle-down' : 'fa-angle-up']"/></th>
                             <th @click="setShortCutsSortBy('path')">Directory <span v-if="shortCutsSortBy=='path'" v-bind:class="['fas', shortCutsNormalSortOrder ? 'fa-angle-down' : 'fa-angle-up']"/></th>
                             <th @click="setShortCutsSortBy('modified')">Modified <span v-if="shortCutsSortBy=='modified'" v-bind:class="['fas', shortCutsNormalSortOrder ? 'fa-angle-down' : 'fa-angle-up']"/></th>
@@ -41,6 +42,9 @@
                         </thead>
                         <tbody>
                         <tr v-for="shortcut in sortedShortCuts">
+                            <td>
+                                {{ formatJSDate(shortcut.added) }}
+                            </td>
                             <td v-on:click="view(shortcut, true)" style="cursor:pointer;">{{ shortcut.name }}</td>
                             <td v-on:click="navigateTo(shortcut)" style="cursor:pointer;">
                                 {{ shortcut.path }}
@@ -49,7 +53,7 @@
                                 {{ formatDateTime(shortcut.lastModified) }}
                             </td>
                             <td>
-                                {{ formatDateTime(shortcut.created) }}
+                                {{ formatJSDate(shortcut.created) }}
                             </td>
                             <td> <button class="btn btn-danger" @click="removeShortcut(shortcut)">Delete</button>
                             </td>
@@ -207,9 +211,19 @@ module.exports = {
                     let aVal = a.created;
                     let bVal = b.created;
                     if (reverseOrder) {
-                        return bVal.compareTo(aVal);
+                        return bVal - aVal;
                     } else {
-                        return aVal.compareTo(bVal);
+                        return aVal - bVal;
+                    }
+                });
+            } else if(sortBy == "added") {
+                return this.shortcutList.sort(function (a, b) {
+                    let aVal = a.added;
+                    let bVal = b.added;
+                    if (reverseOrder) {
+                        return bVal - aVal;
+                    } else {
+                        return aVal - bVal;
                     }
                 });
             }
@@ -296,7 +310,8 @@ module.exports = {
                     name = key.substring(key.lastIndexOf('/') + 1);
                 }
                 let path = key.substring(0, key.lastIndexOf('/'));
-                let shortcut = {name: name, path: path, isDirectory : isDirectory, lastModified: '', created: ''};
+                let shortcut = {name: name, path: path, isDirectory : isDirectory, lastModified: '',
+                    created: new Date(value.created), added: new Date(value.added)};
                 that.populateShortcut(shortcut);
                 allShortcuts.push(shortcut);
             });
@@ -415,7 +430,6 @@ module.exports = {
                 if (file != null) {
                     let props = file.getFileProperties();
                     entry.lastModified = props.modified;
-                    entry.created = props.created;
                 }
             });
         },
@@ -590,6 +604,9 @@ module.exports = {
                 return dateTime;
             }
             let date = new Date(dateTime.toString() + "+00:00");//adding UTC TZ in ISO_OFFSET_DATE_TIME ie 2021-12-03T10:25:30+00:00
+            return this.formatJSDate(date);
+        },
+        formatJSDate: function(date) {
             let formatted = date.getFullYear() + '-' + (date.getMonth() + 1) + '-' + date.getDate()
                 + ' ' + (date.getHours() < 10 ? '0' : '') + date.getHours()
                 + ':' + (date.getMinutes() < 10 ? '0' : '') + date.getMinutes()
