@@ -83,6 +83,7 @@ const Launcher = require("../views/Launcher.vue");
 const ServerMessages = require("./ServerMessages.vue");
 
 const routerMixins = require("../mixins/router/index.js");
+const launcherMixin = require("../mixins/launcher/index.js");
 const sandboxAppMixins = require("../mixins/sandbox/index.js");
 
 module.exports = {
@@ -146,7 +147,7 @@ module.exports = {
             }
 	},
 
-	mixins: [routerMixins, sandboxAppMixins],
+	mixins: [routerMixins, sandboxAppMixins, launcherMixin],
 
 	watch: {
 	    network(newNetwork) {
@@ -203,13 +204,17 @@ module.exports = {
 	    if (this.context != null && this.context.username == null) {
 		// App.vue from a secret link
 	    } else {
-		this.updateUsage();
-		this.updateQuota();
-		this.updatePayment();
-        this.initSandboxedApps();
+            peergos.shared.user.App.init(this.context, "launcher").thenApply(launcher => {
+                that.loadLauncherShortcutsFile(launcher).thenApply(shortcutsMap => {
+                    that.$store.commit("SET_SHORTCUTS", shortcutsMap);
+                    that.updateUsage();
+                    that.updateQuota();
+                    that.updatePayment();
+                    that.initSandboxedApps();
+                })
+            });
 	    }
 	},
-
     initSandboxedApps() {
         let that = this;
         this.context.getByPath(this.context.username + "/.apps").thenApply(appsDirOpt => {

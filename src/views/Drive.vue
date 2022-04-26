@@ -59,7 +59,7 @@
 						:file="file"
 						:itemIndex="index"
 					/>
-					<DriveGridDrop v-if="showDnDArea && sortedFiles.length==0 && currentDir != null && currentDir.isWritable()">
+					<DriveGridDrop v-if="getPath.length > 1 && sortedFiles.length==0 && currentDir != null && currentDir.isWritable()">
 					</DriveGridDrop>
 				</DriveGrid>
 
@@ -337,19 +337,12 @@ module.exports = {
             clickTimer: null,
             clickedFilename: null,
             isStreamingAvailable: false,
-            showDnDArea: false,
-            launcherApp: null,
-            launcherShortcuts: new Map()
+            launcherApp: null
 		};
 	},
 	mixins:[downloaderMixins, router, zipMixin, launcherMixin],
         mounted: function() {
-            let that = this;
-            this.updateCurrentDirectory(null,
-                () => {
-                    that.showDnDArea = true;
-                }
-            );
+
         },
 	computed: {
 		...Vuex.mapState([
@@ -362,7 +355,8 @@ module.exports = {
 			'initPath',
 			'isLoggedIn',
 			'path',
-            "sandboxedApps"
+            "sandboxedApps",
+            "shortcuts"
 		]),
 		...Vuex.mapGetters([
 			'isSecretLink',
@@ -588,7 +582,7 @@ module.exports = {
 		allowShare() {
 			return this.isLoggedIn && this.path.length > 0;
 		},
-        allowAddingToLauncher() {
+		allowAddingToLauncher() {
             try {
                 if (this.currentDir == null)
                     return false;
@@ -599,7 +593,8 @@ module.exports = {
                 let file = this.selectedFiles[0];
                 let postFix = file.isDirectory() ? '/' : '';
                 let link = this.path.join('/') + '/' + file.getName() + postFix;
-                return this.launcherShortcuts.get(link) == null;
+                let entry = this.shortcuts.shortcutsMap.get(link);
+                return entry == null;
             } catch (err) {
                 return false;
             }
@@ -667,19 +662,9 @@ module.exports = {
 		this.onResize()
 		// TODO: throttle onResize and make it global?
 		window.addEventListener('resize', this.onResize, {passive: true} );
-
         peergos.shared.user.App.init(that.context, "launcher").thenApply(launcher => {
             that.launcherApp = launcher;
-            that.showSpinner = true;
-            that.loadLauncherShortcutsFile(launcher).thenApply(shortcutList => {
-                that.showSpinner = false;
-                let shortcutMap = new Map();
-                shortcutList.shortcuts.forEach(entry => {
-                    shortcutMap.set(entry.link, '');
-                });
-                that.launcherShortcuts = shortcutMap;
-        		this.init();
-            })
+            that.init();
         });
 	},
 
@@ -701,9 +686,6 @@ module.exports = {
 		},
 
 		path(newPath, oldPath) {
-		    if (!this.showDnDArea && oldPath.length == 0) {
-		        return;
-		    }
 			console.log('drive oldPath: ', oldPath )
 			console.log('drive newPath: ', newPath )
 			if (newPath.length != oldPath.length) {
@@ -1095,7 +1077,7 @@ module.exports = {
 					var arr = children.toArray();
 					that.showSpinner = false;
 					that.files = arr.filter(function (f) {
-						return true;//!f.getFileProperties().isHidden;
+						return !f.getFileProperties().isHidden;
 					});
                     if (selectedFilename != null) {
                         that.selectedFiles = that.files.filter(f => f.getName() == selectedFilename);
@@ -1872,20 +1854,23 @@ module.exports = {
 
             let postFix = file.isDirectory() ? '/' : '';
             let link = this.path.join('/') + '/' + file.getName() + postFix;
-            if (this.launcherShortcuts.get(link) == null) {
-                this.launcherShortcuts.set(link, '');
-
-                let shortcutList = new Object();
-                shortcutList.shortcuts = [];
-                this.launcherShortcuts.forEach (function(value, key) {
-                    shortcutList.shortcuts.push({link: key});
-                })
-                this.showSpinner = true;
-                let that = this;
-                that.updateLauncherShortcutsFile(this.launcherApp, shortcutList).thenApply(res => {
+            this.refreshAndAddShortcutLink(link);
+		},
+		refreshAndAddShortcutLink(link) {
+		    let that = this;
+            this.showSpinner = true;
+            this.loadLauncherShortcutsFile(this.launcherApp).thenApply(shortcutsMap => {
+                if (shortcutsMap.get(link) == null) {
+                    let entry = {added: new Date()};
+                    shortcutsMap.set(link, entry)
+                    that.updateLauncherShortcutsFile(that.launcherApp, shortcutsMap).thenApply(res => {
+                        that.showSpinner = false;
+                        that.$store.commit("SET_SHORTCUTS", shortcutsMap);
+                    });
+                } else {
                     that.showSpinner = false;
-                });
-            }
+                }
+            })
 		},
 		showShareWith() {
 			if (this.selectedFiles.length == 0)

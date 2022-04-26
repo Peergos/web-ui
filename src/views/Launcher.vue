@@ -171,6 +171,7 @@ module.exports = {
     computed: {
         ...Vuex.mapState([
             'context',
+            "shortcuts"
         ]),
         sortedShortCuts(){
             var sortBy = this.shortCutsSortBy;
@@ -277,14 +278,30 @@ module.exports = {
         peergos.shared.user.App.init(that.context, "launcher").thenCompose(launcher => {
             that.launcherApp = launcher;
             that.showSpinner = true;
-            that.loadLauncherShortcuts().thenApply(loadedShortcuts => {
-                let appsInstalled = this.sandboxedApps.appsInstalled.slice();
-                that.appsList = appsInstalled;
-                that.showSpinner = false;
-            });
+            that.setShortcutList(new Map(that.shortcuts.shortcutsMap));
+            that.appsList = this.sandboxedApps.appsInstalled.slice();
+            that.showSpinner = false;
         });
     },
     methods: {
+        setShortcutList: function(shortcutsMap) {
+            let that = this;
+            let allShortcuts = [];
+            shortcutsMap.forEach(function(value, key) {
+                var isDirectory = false;
+                var name = '';
+                if (key.endsWith('/')) {
+                    isDirectory = true;
+                } else {
+                    name = key.substring(key.lastIndexOf('/') + 1);
+                }
+                let path = key.substring(0, key.lastIndexOf('/'));
+                let shortcut = {name: name, path: path, isDirectory : isDirectory, lastModified: '', created: ''};
+                that.populateShortcut(shortcut);
+                allShortcuts.push(shortcut);
+            });
+            that.shortcutList = allShortcuts;
+        },
         launchApp: function(appName) {
             this.showAppSandbox = true;
             this.sandboxAppName = appName;
@@ -372,31 +389,25 @@ module.exports = {
                 }
             );
         },
-        deleteShortcut: function() {
-            console.log('deleteShortcut');
+        deleteShortcut: function(entry) {
+            let link = entry.path + '/' + (entry.isDirectory ? "" : entry.name);
+            this.refreshAndDeleteShortcutLink(link);
         },
-        loadLauncherShortcuts: function() {
-            var future = peergos.shared.util.Futures.incomplete();
+        refreshAndDeleteShortcutLink(link) {
             let that = this;
-            this.loadLauncherShortcutsFile(that.launcherApp).thenApply(contents => {
-                let shortcuts = [];
-                contents.shortcuts.forEach(entry => {
-                    var isDirectory = false;
-                    var name = '';
-                    if (entry.link.endsWith('/')) {
-                        isDirectory = true;
-                    } else {
-                        name = entry.link.substring(entry.link.lastIndexOf('/') + 1);
-                    }
-                    let path = entry.link.substring(0, entry.link.lastIndexOf('/'));
-                    let shortcut = {name: name, path: path, isDirectory : isDirectory, lastModified: '', created: ''};
-                    that.populateShortcut(shortcut);
-                    shortcuts.push(shortcut);
-                });
-                that.shortcutList = shortcuts;
-                future.complete(true);
+            this.showSpinner = true;
+            this.loadLauncherShortcutsFile(this.launcherApp).thenApply(shortcutsMap => {
+                if (shortcutsMap.get(link) != null) {
+                    shortcutsMap.delete(link)
+                    that.updateLauncherShortcutsFile(that.launcherApp, shortcutsMap).thenApply(res => {
+                        that.showSpinner = false;
+                        that.$store.commit("SET_SHORTCUTS", shortcutsMap);
+                        that.setShortcutList(new Map(shortcutsMap));
+                    });
+                } else {
+                    that.showSpinner = false;
+                }
             })
-            return future;
         },
         populateShortcut(entry) {
             let fullPath = entry.path + (entry.isDirectory ? "" : '/' + entry.name);
