@@ -128,8 +128,7 @@ var filesToCache = [
     'js/wrapper.js',
     'js/peergos.js',
     'js/StreamSaver.js',
-    'js/emoji-button-3.1.1.min.js',
-    'js/init.js'
+    'js/emoji-button-3.1.1.min.js'
 ];
 
 self.addEventListener('install', event =>  {
