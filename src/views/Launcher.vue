@@ -117,9 +117,9 @@
                         </thead>
                         <tbody>
                         <tr v-for="app in sortedApps">
-                            <td v-if="app.launchable"><button class="btn btn-info" @click="launchApp(app.name)">{{ app.displayName }}</button></td>
+                            <td v-if="app.launchable"><button class="btn btn-success" @click="launchApp(app.name)">{{ app.displayName }}</button></td>
                             <td v-if="!app.launchable">{{ app.displayName }}</td>
-                            <td> <button class="btn btn-success" @click="displayAppDetails(app)">Details</button>
+                            <td> <button class="btn btn-info" @click="displayAppDetails(app)">Details</button>
                             </td>
                             <td> <button class="btn btn-danger" @click="removeApp(app)">Remove</button>
                             </td>

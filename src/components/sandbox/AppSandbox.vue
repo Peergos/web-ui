@@ -36,6 +36,7 @@ module.exports = {
             CREATE_SUCCESS: 6,
             UPDATE_SUCCESS: 7,
             GET_SUCCESS: 8,
+            PATCH_SUCCESS: 9,
             isIframeInitialised: false,
             appFilePath: ''
         }
@@ -54,7 +55,7 @@ module.exports = {
     created: function() {
         let that = this;
         let currentFilename = this.currentFile == null ? '' : this.currentFile.getName();
-        this.appFilePath = this.getPath + currentFilename;
+        this.appFilePath = this.currentFile == null ? '' : this.getPath + currentFilename;
         if (!this.supportsStreaming()) {
             this.giveUp();
         } else {
@@ -225,6 +226,8 @@ module.exports = {
                     that.createAction(headerFunc(), filePath, bytes, hasFormData);
                 } else if(apiMethod == 'PUT') {
                     that.putAction(headerFunc(), filePath, bytes);
+                } else if(apiMethod == 'PATCH') {
+                    that.patchAction(headerFunc(), filePath, bytes);
                 }
             } catch(ex) {
                 console.log('Exception:' + ex);
@@ -279,6 +282,23 @@ module.exports = {
                     that.buildResponse(header, relativePathBytes, hasFormData ? that.UPDATE_SUCCESS : that.CREATE_SUCCESS);
                 } else {
                     console.log("unable to create file: " + dirPath);
+                    that.buildResponse(header, null, that.ACTION_FAILED);
+                }
+            }).exceptionally(function(throwable) {
+                console.log(throwable.getMessage());
+                that.buildResponse(header, null, that.ACTION_FAILED);
+            });
+        },
+        patchAction: function(header, filePath, bytes) {
+            let that = this;
+            let dataPath = peergos.client.PathUtils.directoryToPath(filePath.split('/'));
+            this.sandboxedApp.appendInternal(dataPath, bytes).thenApply(function(res) {
+                if (res) {
+                    let encoder = new TextEncoder();
+                    let relativePathBytes = encoder.encode(filePath);
+                    that.buildResponse(header, relativePathBytes, that.PATCH_SUCCESS);
+                } else {
+                    console.log("unable to append data: " + filePath);
                     that.buildResponse(header, null, that.ACTION_FAILED);
                 }
             }).exceptionally(function(throwable) {
@@ -400,7 +420,6 @@ module.exports = {
             }
         },
         expandFilePath(filePath) {
-            let prefix = '/' + this.context.username + '/';
             if (filePath == this.appFilePath) {
                 return filePath;
             } else {

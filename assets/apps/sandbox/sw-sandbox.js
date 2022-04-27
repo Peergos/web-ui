@@ -144,6 +144,8 @@ function AppData() {
             return 200;
         } else if (code == '8') { //            GET_SUCCESS: 8,
             return 200;
+        } else if (code == '9') { //            PATCH_SUCCESS: 9,
+            return 204;
         } else {
             return 400;
         }
@@ -270,6 +272,9 @@ self.onfetch = event => {
             if (uniqueId == '' && method != 'GET') {
                 return new Response('Unexpected url', {status: 400})
             }
+            if (method == 'PATCH' && "append" != event.request.headers.get('X-Update-Range').toLowerCase()) {
+                return new Response('X-Update-Range:append header expected', {status: 400})
+            }
             return event.respondWith(
                 (async function() {
                     var formData = null;
@@ -289,7 +294,7 @@ self.onfetch = event => {
                     }
                     appPort.postMessage({ filePath: restFilePath, requestId: uniqueId, apiMethod: method, bytes: buffer,
                         hasFormData: formData != null});
-                    return returnAppData(restFilePath, uniqueId);
+                    return returnAppData(method, restFilePath, uniqueId);
                 })()
             )
         }
@@ -301,7 +306,7 @@ function uuid() {
     (c ^ crypto.getRandomValues(new Uint8Array(1))[0] & 15 >> c / 4).toString(16)
   );
 }
-function returnAppData(filePath, uniqueId) {
+function returnAppData(method, filePath, uniqueId) {
     return new Promise(function(resolve, reject) {
         let key = filePath + uniqueId;
         let pump = () => {
@@ -315,11 +320,21 @@ function returnAppData(filePath, uniqueId) {
         pump()
     }).then(function(fileData, err) {    
         if (fileData.statusCode == 201) {
+            //https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/201
             let location = new TextDecoder().decode(fileData.file);
             return new Response(null, {
                 status: fileData.statusCode,
                 headers: [
                     ['location', location]
+                ]
+            });
+        } else if (method == 'PATCH' && fileData.statusCode == 204) {
+            //https://developer.mozilla.org/en-US/docs/Web/HTTP/Methods/PATCH
+            let location = new TextDecoder().decode(fileData.file);
+            return new Response(null, {
+                status: fileData.statusCode,
+                headers: [
+                    ['Content-Location', location]
                 ]
             });
         } else {

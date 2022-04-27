@@ -58,7 +58,9 @@ function load(appName, appFilePath) {
     removeServiceWorkerRegistration(() => {
         let fileStream = streamSaver.createWriteStream(appName, "text/html", url => {
                 let iframe = document.getElementById("appSandboxId");
-                iframe.src= "assets/index.html?path=" + appFilePath;
+                let path = appFilePath.length > 0 ? "?path=" + appFilePath : '';
+                let src = "assets/index.html" + path;
+                iframe.src= src;
             }, function(seekHi, seekLo, seekLength, streamFilePath){
                 that.streamFile(seekHi, seekLo, seekLength, streamFilePath);
             }, 0
