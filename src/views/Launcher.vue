@@ -24,6 +24,45 @@
                 :appPropsFile=currentAppPropertiesFile>
             </AppDetails>
             <div>
+                <h3>Bookmarks</h3>
+                <div v-if="bookmarkList.length ==0" class="table-responsive">
+                    Bookmarks can be added via the Markdown Viewer
+                </div>
+                <div v-if="bookmarkList!=0" class="table-responsive">
+                    <table class="table">
+                        <thead>
+                        <tr  v-if="bookmarkList.length!=0" style="cursor:pointer;">
+                            <th @click="setBookmarksSortBy('added')">Added <span v-if="bookmarksSortBy=='added'" v-bind:class="['fas', bookmarksNormalSortOrder ? 'fa-angle-down' : 'fa-angle-up']"/></th>
+                            <th @click="setBookmarksSortBy('name')">Name <span v-if="bookmarksSortBy=='name'" v-bind:class="['fas', bookmarksNormalSortOrder ? 'fa-angle-down' : 'fa-angle-up']"/></th>
+                            <th @click="setBookmarksSortBy('path')">Folder <span v-if="bookmarksSortBy=='path'" v-bind:class="['fas', bookmarksNormalSortOrder ? 'fa-angle-down' : 'fa-angle-up']"/></th>
+                            <th @click="setBookmarksSortBy('modified')">Modified <span v-if="bookmarksSortBy=='modified'" v-bind:class="['fas', bookmarksNormalSortOrder ? 'fa-angle-down' : 'fa-angle-up']"/></th>
+                            <th @click="setBookmarksSortBy('created')">Created <span v-if="bookmarksSortBy=='created'" v-bind:class="['fas', bookmarksNormalSortOrder ? 'fa-angle-down' : 'fa-angle-up']"/></th>
+                            <th></th>
+                        </tr>
+                        </thead>
+                        <tbody>
+                        <tr v-for="bookmark in sortedBookmarks">
+                            <td v-bind:class="[bookmark.missing ? 'deleted-entry' : '']">
+                                {{ formatJSDate(bookmark.added) }}
+                            </td>
+                            <td v-bind:class="[bookmark.missing ? 'deleted-entry' : '']" v-on:click="view(bookmark, true)" style="cursor:pointer;">{{ bookmark.name }}</td>
+                            <td v-bind:class="[bookmark.missing ? 'deleted-entry' : '']"  v-on:click="navigateTo(bookmark)" style="cursor:pointer;">
+                                {{ bookmark.path }}
+                            </td>
+                            <td v-bind:class="[bookmark.missing ? 'deleted-entry' : '']">
+                                {{ formatDateTime(bookmark.lastModified) }}
+                            </td>
+                            <td v-bind:class="[bookmark.missing ? 'deleted-entry' : '']">
+                                {{ formatDateTime(bookmark.created) }}
+                            </td>
+                            <td> <button class="btn btn-danger" @click="removeBookmark(bookmark)">Delete</button>
+                            </td>
+                        </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            <div>
                 <h3>Shortcuts</h3>
                 <div v-if="shortcutList.length ==0" class="table-responsive">
                     Entries can be added via context menu item 'Add to Launcher'
@@ -32,27 +71,27 @@
                     <table class="table">
                         <thead>
                         <tr  v-if="shortcutList.length!=0" style="cursor:pointer;">
-                            <th @click="setShortCutsSortBy('added')">Added <span v-if="shortCutsSortBy=='added'" v-bind:class="['fas', shortCutsNormalSortOrder ? 'fa-angle-down' : 'fa-angle-up']"/></th>
-                            <th @click="setShortCutsSortBy('name')">Name <span v-if="shortCutsSortBy=='name'" v-bind:class="['fas', shortCutsNormalSortOrder ? 'fa-angle-down' : 'fa-angle-up']"/></th>
-                            <th @click="setShortCutsSortBy('path')">Directory <span v-if="shortCutsSortBy=='path'" v-bind:class="['fas', shortCutsNormalSortOrder ? 'fa-angle-down' : 'fa-angle-up']"/></th>
-                            <th @click="setShortCutsSortBy('modified')">Modified <span v-if="shortCutsSortBy=='modified'" v-bind:class="['fas', shortCutsNormalSortOrder ? 'fa-angle-down' : 'fa-angle-up']"/></th>
-                            <th @click="setShortCutsSortBy('created')">Created <span v-if="shortCutsSortBy=='created'" v-bind:class="['fas', shortCutsNormalSortOrder ? 'fa-angle-down' : 'fa-angle-up']"/></th>
+                            <th @click="setShortcutsSortBy('added')">Added <span v-if="shortcutsSortBy=='added'" v-bind:class="['fas', shortcutsNormalSortOrder ? 'fa-angle-down' : 'fa-angle-up']"/></th>
+                            <th @click="setShortcutsSortBy('name')">Name <span v-if="shortcutsSortBy=='name'" v-bind:class="['fas', shortcutsNormalSortOrder ? 'fa-angle-down' : 'fa-angle-up']"/></th>
+                            <th @click="setShortcutsSortBy('path')">Folder <span v-if="shortcutsSortBy=='path'" v-bind:class="['fas', shortcutsNormalSortOrder ? 'fa-angle-down' : 'fa-angle-up']"/></th>
+                            <th @click="setShortcutsSortBy('modified')">Modified <span v-if="shortcutsSortBy=='modified'" v-bind:class="['fas', shortcutsNormalSortOrder ? 'fa-angle-down' : 'fa-angle-up']"/></th>
+                            <th @click="setShortcutsSortBy('created')">Created <span v-if="shortcutsSortBy=='created'" v-bind:class="['fas', shortcutsNormalSortOrder ? 'fa-angle-down' : 'fa-angle-up']"/></th>
                             <th></th>
                         </tr>
                         </thead>
                         <tbody>
-                        <tr v-for="shortcut in sortedShortCuts">
-                            <td>
+                        <tr v-for="shortcut in sortedShortcuts">
+                            <td v-bind:class="[shortcut.missing ? 'deleted-entry' : '']">
                                 {{ formatJSDate(shortcut.added) }}
                             </td>
-                            <td v-on:click="view(shortcut, true)" style="cursor:pointer;">{{ shortcut.name }}</td>
-                            <td v-on:click="navigateTo(shortcut)" style="cursor:pointer;">
+                            <td v-bind:class="[shortcut.missing ? 'deleted-entry' : '']" v-on:click="view(shortcut, true)" style="cursor:pointer;">{{ shortcut.name }}</td>
+                            <td v-bind:class="[shortcut.missing ? 'deleted-entry' : '']"  v-on:click="navigateTo(shortcut)" style="cursor:pointer;">
                                 {{ shortcut.path }}
                             </td>
-                            <td>
+                            <td v-bind:class="[shortcut.missing ? 'deleted-entry' : '']">
                                 {{ formatDateTime(shortcut.lastModified) }}
                             </td>
-                            <td>
+                            <td v-bind:class="[shortcut.missing ? 'deleted-entry' : '']">
                                 {{ formatJSDate(shortcut.created) }}
                             </td>
                             <td> <button class="btn btn-danger" @click="removeShortcut(shortcut)">Delete</button>
@@ -153,9 +192,12 @@ module.exports = {
             sortBy: "name",
             normalSortOrder: true,
             launcherApp: null,
+            bookmarkList: [],
+            bookmarksSortBy: "name",
+            bookmarksNormalSortOrder: true,
             shortcutList: [],
-            shortCutsSortBy: "name",
-            shortCutsNormalSortOrder: true,
+            shortcutsSortBy: "name",
+            shortcutsNormalSortOrder: true,
             appsList: [],
             appsSortBy: "name",
             appsNormalSortOrder: true,
@@ -175,11 +217,63 @@ module.exports = {
     computed: {
         ...Vuex.mapState([
             'context',
-            "shortcuts"
+            "shortcuts",
+            "bookmarks",
         ]),
-        sortedShortCuts(){
-            var sortBy = this.shortCutsSortBy;
-            var reverseOrder = ! this.shortCutsNormalSortOrder;
+        sortedBookmarks(){
+            var sortBy = this.bookmarksSortBy;
+            var reverseOrder = ! this.bookmarksNormalSortOrder;
+            if(sortBy == "name") {
+                return this.bookmarkList.sort(function (a, b) {
+                    if (reverseOrder) {
+                        return ('' + b.name).localeCompare(a.name);
+                    } else {
+                        return ('' + a.name).localeCompare(b.name);
+                    }
+                });
+            } else if(sortBy == "path") {
+                return this.bookmarkList.sort(function (a, b) {
+                    if (reverseOrder) {
+                        return ('' + b.path).localeCompare(a.path);
+                    } else {
+                        return ('' + a.path).localeCompare(b.path);
+                    }
+                });
+            } else if(sortBy == "modified") {
+                return this.bookmarkList.sort(function (a, b) {
+                    let aVal = a.lastModified;
+                    let bVal = b.lastModified;
+                    if (reverseOrder) {
+                        return bVal.compareTo(aVal);
+                    } else {
+                        return aVal.compareTo(bVal);
+                    }
+                });
+            } else if(sortBy == "created") {
+                return this.bookmarkList.sort(function (a, b) {
+                    let aVal = a.created;
+                    let bVal = b.created;
+                    if (reverseOrder) {
+                        return bVal.compareTo(aVal);
+                    } else {
+                        return aVal.compareTo(bVal);
+                    }
+                });
+            } else if(sortBy == "added") {
+                return this.bookmarkList.sort(function (a, b) {
+                    let aVal = a.added;
+                    let bVal = b.added;
+                    if (reverseOrder) {
+                        return bVal - aVal;
+                    } else {
+                        return aVal - bVal;
+                    }
+                });
+            }
+        },
+        sortedShortcuts(){
+            var sortBy = this.shortcutsSortBy;
+            var reverseOrder = ! this.shortcutsNormalSortOrder;
             if(sortBy == "name") {
                 return this.shortcutList.sort(function (a, b) {
                     if (reverseOrder) {
@@ -292,12 +386,32 @@ module.exports = {
         peergos.shared.user.App.init(that.context, "launcher").thenCompose(launcher => {
             that.launcherApp = launcher;
             that.showSpinner = true;
+            that.setBookmarkList(new Map(that.bookmarks.bookmarksMap));
             that.setShortcutList(new Map(that.shortcuts.shortcutsMap));
             that.appsList = this.sandboxedApps.appsInstalled.slice();
             that.showSpinner = false;
         });
     },
     methods: {
+        setBookmarkList: function(bookmarksMap) {
+            let that = this;
+            let allBookmarks = [];
+            bookmarksMap.forEach(function(value, key) {
+                var isDirectory = false;
+                var name = '';
+                if (key.endsWith('/')) {
+                    isDirectory = true;
+                } else {
+                    name = key.substring(key.lastIndexOf('/') + 1);
+                }
+                let path = key.substring(0, key.lastIndexOf('/'));
+                let bookmark = {missing: false, name: name, path: path, isDirectory : isDirectory, lastModified: '',
+                    created: '', added: new Date(value.added)};
+                that.populateBookmark(bookmark);
+                allBookmarks.push(bookmark);
+            });
+            that.bookmarkList = allBookmarks;
+        },
         setShortcutList: function(shortcutsMap) {
             let that = this;
             let allShortcuts = [];
@@ -310,7 +424,7 @@ module.exports = {
                     name = key.substring(key.lastIndexOf('/') + 1);
                 }
                 let path = key.substring(0, key.lastIndexOf('/'));
-                let shortcut = {name: name, path: path, isDirectory : isDirectory, lastModified: '',
+                let shortcut = {missing: false, name: name, path: path, isDirectory : isDirectory, lastModified: '',
                     created: new Date(value.created), added: new Date(value.added)};
                 that.populateShortcut(shortcut);
                 allShortcuts.push(shortcut);
@@ -383,6 +497,58 @@ module.exports = {
                 that.showSpinner = false;
             });
         },
+        confirmRemoveBookmark(replaceFunction, cancelFunction) {
+            this.confirm_message = 'Remove bookmark';
+            this.confirm_body = "Are you sure you want to remove this bookmark?";
+            this.confirm_consumer_cancel_func = cancelFunction;
+            this.confirm_consumer_func = replaceFunction;
+            this.showConfirm = true;
+        },
+        removeBookmark: function(bookmark) {
+            let that = this;
+            this.confirmRemoveBookmark(
+                () => {
+                    that.showConfirm = false;
+                    that.deleteBookmark(bookmark);
+                },
+                () => {
+                    that.showConfirm = false;
+                    that.showSpinner = false;
+                }
+            );
+        },
+        deleteBookmark: function(entry) {
+            let link = entry.path + '/' + (entry.isDirectory ? "" : entry.name);
+            this.refreshAndDeleteBookmark(link);
+        },
+        refreshAndDeleteBookmark(link) {
+            let that = this;
+            this.showSpinner = true;
+            this.loadBookmarksFile(this.launcherApp).thenApply(bookmarksMap => {
+                if (bookmarksMap.get(link) != null) {
+                    bookmarksMap.delete(link)
+                    that.updateBookmarksFile(that.launcherApp, bookmarksMap).thenApply(res => {
+                        that.showSpinner = false;
+                        that.$store.commit("SET_BOOKMARKS", bookmarksMap);
+                        that.setBookmarkList(new Map(bookmarksMap));
+                    });
+                } else {
+                    that.showSpinner = false;
+                }
+            })
+        },
+        populateBookmark(entry) {
+            let fullPath = entry.path + (entry.isDirectory ? "" : '/' + entry.name);
+            this.findFile(fullPath).thenApply(file => {
+                if (file != null) {
+                    let props = file.getFileProperties();
+                    entry.created = props.created;
+                    entry.lastModified = props.modified;
+                } else {
+                    entry.missing = true;
+                }
+            });
+        },
         confirmRemoveShortcut(replaceFunction, cancelFunction) {
             this.confirm_message = 'Remove shortcut';
             this.confirm_body = "Are you sure you want to remove this shortcut?";
@@ -411,10 +577,10 @@ module.exports = {
         refreshAndDeleteShortcutLink(link) {
             let that = this;
             this.showSpinner = true;
-            this.loadLauncherShortcutsFile(this.launcherApp).thenApply(shortcutsMap => {
+            this.loadShortcutsFile(this.launcherApp).thenApply(shortcutsMap => {
                 if (shortcutsMap.get(link) != null) {
                     shortcutsMap.delete(link)
-                    that.updateLauncherShortcutsFile(that.launcherApp, shortcutsMap).thenApply(res => {
+                    that.updateShortcutsFile(that.launcherApp, shortcutsMap).thenApply(res => {
                         that.showSpinner = false;
                         that.$store.commit("SET_SHORTCUTS", shortcutsMap);
                         that.setShortcutList(new Map(shortcutsMap));
@@ -430,6 +596,8 @@ module.exports = {
                 if (file != null) {
                     let props = file.getFileProperties();
                     entry.lastModified = props.modified;
+                } else {
+                    entry.missing = true;
                 }
             });
         },
@@ -536,13 +704,11 @@ module.exports = {
             var future = peergos.shared.util.Futures.incomplete();
             this.context.getByPath(filePath).thenApply(function(fileOpt){
                 if (fileOpt.ref == null) {
-                    that.showErrorMessage("path not found!: " + filePath);
                     future.complete(null);
                 } else {
                     let file = fileOpt.get();
                     const props = file.getFileProperties();
                     if (props.isHidden) {
-                        that.showErrorMessage("file not accessible: " + filePath);
                         future.complete(null);
                     } else {
                         future.complete(file);
@@ -589,10 +755,15 @@ module.exports = {
                 this.normalSortOrder = !this.normalSortOrder;
             this.sortBy = prop;
         },
-        setShortCutsSortBy: function(prop) {
-            if (this.shortCutsSortBy == prop)
-                this.shortCutsNormalSortOrder = !this.shortCutsNormalSortOrder;
-            this.shortCutsSortBy = prop;
+        setBookmarksSortBy: function(prop) {
+            if (this.bookmarksSortBy == prop)
+                this.bookmarksNormalSortOrder = !this.bookmarksNormalSortOrder;
+            this.bookmarksSortBy = prop;
+        },
+        setShortcutsSortBy: function(prop) {
+            if (this.shortcutsSortBy == prop)
+                this.shortcutsNormalSortOrder = !this.shortcutsNormalSortOrder;
+            this.shortcutsSortBy = prop;
         },
         setAppsSortBy: function(prop) {
             if (this.appsSortBy == prop)
@@ -618,12 +789,7 @@ module.exports = {
 </script>
 
 <style>
-.search {
-    color: var(--color);
-    background-color: var(--bg);
-}
-.search select {
-    color: var(--color);
-    background-color: var(--bg);
+.deleted-entry {
+    text-decoration: line-through;
 }
 </style>

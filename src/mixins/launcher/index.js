@@ -1,8 +1,20 @@
 module.exports = {
     methods: {
-        loadLauncherShortcutsFile: function(launcherApp) {
+        loadBookmarksFile: function(launcherApp) {
+            return this.loadJsonMapFile(launcherApp, 'bookmarks.json');
+        },
+        updateBookmarksFile: function(launcherApp, shortcutsMap) {
+            return this.updateJsonMapFile(launcherApp, 'bookmarks.json', shortcutsMap);
+        },
+        loadShortcutsFile: function(launcherApp) {
+            return this.loadJsonMapFile(launcherApp, 'shortcuts.json');
+        },
+        updateShortcutsFile: function(launcherApp, shortcutsMap) {
+            return this.updateJsonMapFile(launcherApp, 'shortcuts.json', shortcutsMap);
+        },
+        loadJsonMapFile: function(launcherApp, filenaname) {
             let that = this;
-            let filePath = peergos.client.PathUtils.directoryToPath(['shortcuts.json']);
+            let filePath = peergos.client.PathUtils.directoryToPath([filenaname]);
             return launcherApp.readInternal(filePath).thenApply(data => {
                 let obj = JSON.parse(new TextDecoder().decode(data));
                 let map = new Map(Object.entries(obj));
@@ -12,13 +24,14 @@ module.exports = {
                 if (throwable.detailMessage.startsWith("File not found")) {
                     return new Map();
                 } else {
-                    that.showMessage(true, "Unable to load shortcuts");
+                    console.log('Unable to load file: ' + filenaname);
+                    return new Map();
                 }
             });
         },
-        updateLauncherShortcutsFile: function(launcherApp, shortcutsMap) {
-            let obj = Object.fromEntries(shortcutsMap);
-            let filePath = peergos.client.PathUtils.directoryToPath(['shortcuts.json']);
+        updateJsonMapFile: function(launcherApp, filename, map) {
+            let obj = Object.fromEntries(map);
+            let filePath = peergos.client.PathUtils.directoryToPath([filename]);
             let encoder = new TextEncoder();
             let uint8Array = encoder.encode(JSON.stringify(obj));
             let bytes = convertToByteArray(uint8Array);

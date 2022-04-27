@@ -205,12 +205,15 @@ module.exports = {
 		// App.vue from a secret link
 	    } else {
             peergos.shared.user.App.init(this.context, "launcher").thenApply(launcher => {
-                that.loadLauncherShortcutsFile(launcher).thenApply(shortcutsMap => {
+                that.loadShortcutsFile(launcher).thenApply(shortcutsMap => {
                     that.$store.commit("SET_SHORTCUTS", shortcutsMap);
-                    that.updateUsage();
-                    that.updateQuota();
-                    that.updatePayment();
-                    that.initSandboxedApps();
+                    that.loadBookmarksFile(launcher).thenApply(bookmarksMap => {
+                    that.$store.commit("SET_BOOKMARKS", bookmarksMap);
+                        that.updateUsage();
+                        that.updateQuota();
+                        that.updatePayment();
+                        that.initSandboxedApps();
+                    })
                 })
             });
 	    }

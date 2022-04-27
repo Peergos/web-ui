@@ -1859,11 +1859,11 @@ module.exports = {
 		refreshAndAddShortcutLink(link, created) {
 		    let that = this;
             this.showSpinner = true;
-            this.loadLauncherShortcutsFile(this.launcherApp).thenApply(shortcutsMap => {
+            this.loadShortcutsFile(this.launcherApp).thenApply(shortcutsMap => {
                 if (shortcutsMap.get(link) == null) {
                     let entry = {added: new Date(), created: created};
                     shortcutsMap.set(link, entry)
-                    that.updateLauncherShortcutsFile(that.launcherApp, shortcutsMap).thenApply(res => {
+                    that.updateShortcutsFile(that.launcherApp, shortcutsMap).thenApply(res => {
                         that.showSpinner = false;
                         that.$store.commit("SET_SHORTCUTS", shortcutsMap);
                     });
