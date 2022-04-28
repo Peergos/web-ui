@@ -12,6 +12,14 @@ module.exports = {
         ])
     },
   methods: {
+      convertPermissionToHumanReadable: function(permission) {
+          if (permission === 'STORE_APP_DATA') {
+              return "Can store and read files in a directory private to the app";
+          } else {
+              console.log('Unknown permission: ' + permission);
+              this.$toast.error('Unknown permission: ' + permission, {timeout:false});
+          }
+      },
       verifyJSONFile: function(file) {
           let that = this;
           let appNames = this.sandboxedApps.appsInstalled.slice();
@@ -29,6 +37,7 @@ module.exports = {
                       ,"description","supportAddress","fileExtensions","mimeTypes"
                       , "launchable", "fileTypes", "folderAction"];
                   let existingCreateMenuItems = ["upload files","upload folder","new folder","new file"];
+                  let validPermissions = ["STORE_APP_DATA"];
                   fields.forEach(field => {
                       if (props.details[field] == null) {
                           errors.push("Missing property " + field);
@@ -38,6 +47,16 @@ module.exports = {
                       if (props.schemaVersion != this.currentAppSchema) {
                           errors.push("Invalid schemaVersion property. Must be: " + this.currentAppSchema);
                       }
+                        if (!(props.permissions.constructor === Array)) {
+                            errors.push("Invalid App Permissions. Must be an array. Can be empty []");
+                        } else {
+                            props.permissions.forEach(permission => {
+                                let permissionIndex = validPermissions.findIndex(v => v === permission);
+                                if (permissionIndex == -1) {
+                                    errors.push("Invalid permission: " + permission);
+                                }
+                            });
+                        }
                       if (props.details.displayName.length > 15) {
                           errors.push("Invalid displayName property. Length must not exceed 15 characters");
                       }
@@ -115,6 +134,52 @@ module.exports = {
           }
           return future;
       },
+        readAppPermissions: function(appName) {
+            let that = this;
+            let future = peergos.shared.util.Futures.incomplete();
+            this.readAppProperties(appName).thenApply(function(props) {
+                    let allPermissions = new Map();
+                    props.permissions.forEach(permission => {
+                        allPermissions.set(permission, new Date());
+                    });
+                    future.complete(allPermissions);
+            });
+            return future;
+        },
+        readAppProperties: function(appName) {
+            let that = this;
+            let future = peergos.shared.util.Futures.incomplete();
+            let emptyObj = {};
+            this.context.getByPath(this.context.username + "/.apps/" + appName).thenApply(appDirOpt => {
+                if (appDirOpt.ref != null) {
+                    appDirOpt.get().getChild("peergos-app.json", that.context.crypto.hasher, that.context.network).thenApply(function(propFileOpt) {
+                        if (propFileOpt.ref == null) {
+                            console.log('peergos-app.json not found! App: ' + appName);
+                            future.complete(emptyObj);
+                        } else {
+                            let props = propFileOpt.ref.getFileProperties();
+                            if (!props.created.equals(props.modified)) {
+                                console.log('peergos-app.json file has changed! App: ' + appName);
+                                future.complete(emptyObj);
+                            } else {
+                                that.readJSONFile(propFileOpt.ref).thenApply(res => {
+                                    if (res == null) {
+                                        console.log('Properties not found! App: ' + appName);
+                                        future.complete(emptyObj);
+                                    } else {
+                                        future.complete(res.app);
+                                    }
+                                });
+                            }
+                        }
+                    });
+                } else {
+                    console.log('App directory not found! App: ' + appName);
+                    future.complete(emptyObj);
+                }
+            });
+            return future;
+        },
       readAllAppProperties: function(appDirectories) {
           let that = this;
           let accumulator = [];

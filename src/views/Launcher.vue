@@ -4,6 +4,12 @@
 	</AppHeader>
         <div class="modal-body">
             <spinner v-if="showSpinner"></spinner>
+            <message
+                    v-for="message in messages"
+                    v-on:remove-message="messages.splice(messages.indexOf(message), 1)"
+                    :title="message.title"
+                    :message="message.body">
+            </message>
             <AppSandbox
                 v-if="showAppSandbox"
                 v-on:hide-app-sandbox="closeAppSandbox"
@@ -23,6 +29,22 @@
                 v-on:hide-app-details="closeAppDetails"
                 :appPropsFile=currentAppPropertiesFile>
             </AppDetails>
+            <Share
+                v-if="showShare"
+                v-on:hide-share-with="closeShare"
+                v-on:update-shared-refresh="sharingChangesMade"
+                :data="sharedWithData"
+                :fromApp="fromApp"
+                :displayName="displayName"
+                :allowReadWriteSharing="allowReadWriteSharing"
+                :allowCreateSecretLink="allowCreateSecretLink"
+                :files="filesToShare"
+                :path="pathToFile"
+                :followernames="followernames"
+                :friendnames="friendnames"
+                :groups="groups"
+                :messages="messages">
+            </Share>
             <div>
                 <h3>Bookmarks</h3>
                 <div v-if="bookmarkList.length ==0" class="table-responsive">
@@ -144,6 +166,8 @@
                             <th @click="setSharedSortBy('size')">Size <span v-if="sortBy=='size'" v-bind:class="['fas', normalSortOrder ? 'fa-angle-down' : 'fa-angle-up']"/></th>
                             <th @click="setSharedSortBy('modified')">Modified <span v-if="sortBy=='modified'" v-bind:class="['fas', normalSortOrder ? 'fa-angle-down' : 'fa-angle-up']"/></th>
                             <th @click="setSharedSortBy('created')">Created <span v-if="sortBy=='created'" v-bind:class="['fas', normalSortOrder ? 'fa-angle-down' : 'fa-angle-up']"/></th>
+                            <th @click="setSharedSortBy('access')">Access <span v-if="sortBy=='access'" v-bind:class="['fas', normalSortOrder ? 'fa-angle-down' : 'fa-angle-up']"/></th>
+                            <th>Share</th>
                         </tr>
                         </thead>
                         <tbody>
@@ -161,6 +185,11 @@
                             <td>
                                 {{ formatDateTime(match.created) }}
                             </td>
+                            <td>
+                                {{ match.access }}
+                            </td>
+                            <td> <button class="btn btn-success" @click="share(match)">Share</button>
+                            </td>
                         </tr>
                         </tbody>
                     </table>
@@ -174,6 +203,7 @@
 const AppHeader = require("../components/AppHeader.vue");
 const AppDetails = require("../components/sandbox/AppDetails.vue");
 const AppSandbox = require("../components/sandbox/AppSandbox.vue");
+const Share = require("../components/drive/DriveShare.vue");
 const routerMixins = require("../mixins/router/index.js");
 const mixins = require("../mixins/mixins.js");
 const launcherMixin = require("../mixins/launcher/index.js");
@@ -182,7 +212,8 @@ module.exports = {
     components: {
 		AppHeader,
 		AppDetails,
-		AppSandbox
+		AppSandbox,
+		Share
     },
     data: function() {
         return {
@@ -209,7 +240,10 @@ module.exports = {
             showAppDetails: false,
             currentAppPropertiesFile: null,
             showAppSandbox: false,
-            sandboxAppName: ''
+            sandboxAppName: '',
+            showShare: false,
+            messages: [],
+            currentEntry: null
         }
     },
     props: [],
@@ -219,7 +253,17 @@ module.exports = {
             'context',
             "shortcuts",
             "bookmarks",
+            'socialData'
         ]),
+        friendnames: function() {
+            return this.socialData.friends;
+        },
+        followernames: function() {
+            return this.socialData.followers;
+        },
+        groups: function() {
+            return {groupsNameToUid: this.socialData.groupsNameToUid, groupsUidToName: this.socialData.groupsUidToName};
+        },
         sortedBookmarks(){
             var sortBy = this.bookmarksSortBy;
             var reverseOrder = ! this.bookmarksNormalSortOrder;
@@ -378,6 +422,16 @@ module.exports = {
                         return -1;
                     }
                 });
+            } else if(sortBy == "access") {
+                return this.sharedItemsList.sort(function (a, b) {
+                    let aVal = a.access;
+                    let bVal = b.access;
+                    if (reverseOrder) {
+                        return bVal.compareTo(aVal);
+                    } else {
+                        return aVal.compareTo(bVal);
+                    }
+                });
             }
         }
     },
@@ -385,11 +439,9 @@ module.exports = {
         let that = this;
         peergos.shared.user.App.init(that.context, "launcher").thenCompose(launcher => {
             that.launcherApp = launcher;
-            that.showSpinner = true;
             that.setBookmarkList(new Map(that.bookmarks.bookmarksMap));
             that.setShortcutList(new Map(that.shortcuts.shortcutsMap));
             that.appsList = this.sandboxedApps.appsInstalled.slice();
-            that.showSpinner = false;
         });
     },
     methods: {
@@ -505,6 +557,9 @@ module.exports = {
             this.showConfirm = true;
         },
         removeBookmark: function(bookmark) {
+            if (bookmark.missing) {
+                return;
+            }
             let that = this;
             this.confirmRemoveBookmark(
                 () => {
@@ -557,7 +612,9 @@ module.exports = {
             this.showConfirm = true;
         },
         removeShortcut: function(shortcut) {
-            console.log('removeShortcut');
+            if (shortcut.missing) {
+                return;
+            }
             let that = this;
             this.confirmRemoveShortcut(
                 () => {
@@ -647,8 +704,12 @@ module.exports = {
                 if (low < 0) low = low + Math.pow(2, 32);
                 return low + (props.sizeHigh() * Math.pow(2, 32));
         },
-        addSharedItem: function(props, path) {
+        addSharedItem: function(sharedWithState, file, path) {
+            let props = file.getFileProperties();
             let pathStr = props.isDirectory ? path.substring(0, path.lastIndexOf("/")): path;
+            let fileSharingState = sharedWithState.get(props.name);
+            let read_usernames = fileSharingState.readAccess.toArray([]);
+            let edit_usernames = fileSharingState.writeAccess.toArray([]);
             let entry = {
                 path: pathStr,
                 name: props.name,
@@ -656,7 +717,11 @@ module.exports = {
                 lastModified: props.modified,
                 created: props.created,
                 isDirectory: props.isDirectory,
-                type: props.getType()
+                type: props.getType(),
+                file: file,
+                read_shared_with_users: read_usernames,
+                edit_shared_with_users: edit_usernames,
+                access: edit_usernames.length > 0 ? "R & W" : "R"
             };
             this.sharedItemsList.push(entry);
         },
@@ -664,11 +729,10 @@ module.exports = {
             if (sharedWithState == null) {
                 return;
             }
-            let props = file.getFileProperties();
-            let filename = props.name;
+            let filename = file.getName();
             let isShared = sharedWithState.isShared(filename);
             if (isShared){
-                this.addSharedItem(props, path);
+                this.addSharedItem(sharedWithState, file, path);
             }
         },
         findShared: function() {
@@ -721,7 +785,7 @@ module.exports = {
             return future;
         },
         view: function (entry) {
-            if (entry.name.length == 0) {
+            if (entry.name.length == 0 || entry.missing) {
                 return;
             }
             let that = this;
@@ -748,6 +812,9 @@ module.exports = {
             });
         },
         navigateTo: function (entry) {
+            if (entry.missing) {
+                return;
+            }
             this.openFileOrDir("Drive", entry.path, {filename:""});
         },
         setSharedSortBy: function(prop) {
@@ -783,6 +850,40 @@ module.exports = {
                 + ':' + (date.getMinutes() < 10 ? '0' : '') + date.getMinutes()
                 + ':' + (date.getSeconds() < 10 ? '0' : '') + date.getSeconds();
             return formatted;
+        },
+        closeShare: function() {
+            this.showShare = false;
+        },
+        sharingChangesMade: function() {
+            let that = this;
+            let index = this.sharedItemsList.findIndex(v => v.path === this.currentEntry.path &&
+                         v.name === this.currentEntry.name);
+            let directoryPath = peergos.client.PathUtils.directoryToPath(this.pathToFile);
+            this.context.getDirectorySharingState(directoryPath).thenApply(function (sharedWithState) {
+                let isShared = sharedWithState.isShared(that.currentEntry.name);
+                if (isShared){
+                    let fullPath = that.currentEntry.path + '/' + that.currentEntry.name;
+                    that.context.getByPath(fullPath).thenApply(function(fileOpt){
+                        that.sharedItemsList.splice(index, 1);
+                        that.addSharedItem(sharedWithState, fileOpt.ref, fullPath);
+                        that.currentEntry = null;
+                    });
+                } else {
+                    that.sharedItemsList.splice(index, 1);
+                }
+            });
+        },
+        share: function(entry) {
+            this.currentEntry = entry;
+            this.filesToShare = [entry.file];
+            this.pathToFile = entry.path.split('/').filter(n => n.length > 0);
+            this.sharedWithData = {read_shared_with_users:entry.read_shared_with_users,
+                edit_shared_with_users: entry.edit_shared_with_users};
+            this.fromApp = false;
+            this.displayName = entry.name;
+            this.allowReadWriteSharing = true;
+            this.allowCreateSecretLink = true;
+            this.showShare = true;
         }
     }
 }

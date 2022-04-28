@@ -20,9 +20,10 @@
 <script>
 const downloaderMixins = require("../../mixins/downloader/index.js");
 const router = require("../../mixins/router/index.js");
+const sandboxMixin = require("../../mixins/sandbox/index.js");
 
 module.exports = {
-	mixins:[downloaderMixins, router],
+	mixins:[downloaderMixins, router, sandboxMixin],
     data: function() {
         return {
             showSpinner: false,
@@ -38,7 +39,9 @@ module.exports = {
             GET_SUCCESS: 8,
             PATCH_SUCCESS: 9,
             isIframeInitialised: false,
-            appFilePath: ''
+            appFilePath: '',
+            permissionsMap: new Map(),
+            PERMISSION_STORE_APP_DATA: 'STORE_APP_DATA',
         }
     },
     computed: {
@@ -59,9 +62,12 @@ module.exports = {
         if (!this.supportsStreaming()) {
             this.giveUp();
         } else {
-            peergos.shared.user.App.init(that.context, this.sandboxAppName).thenApply(sandboxedApp => {
-                that.sandboxedApp = sandboxedApp;
-                that.startListener();
+            this.readAppPermissions(that.sandboxAppName).thenApply(permissionsMap => {
+                that.permissionsMap = permissionsMap;
+                peergos.shared.user.App.init(that.context, that.sandboxAppName).thenApply(sandboxedApp => {
+                    that.sandboxedApp = sandboxedApp;
+                    that.startListener();
+                });
             });
         }
     },
@@ -207,7 +213,12 @@ module.exports = {
             try {
                 if (apiMethod == 'GET') {
                     if (requestId.length > 0) {
-                        that.getFileAction(headerFunc, filePath);
+                        if (!that.permissionsMap.get(that.PERMISSION_STORE_APP_DATA)) {
+                            that.showError("App attempted to access file without permission :" + filePath);
+                            that.buildResponse(headerFunc(), null, that.ACTION_FAILED);
+                        } else {
+                            that.getFileAction(headerFunc, filePath);
+                        }
                     } else {
                         that.findFile(filePath).thenApply(file => {
                             if (that.showSpinner && filePath == "assets/index.html") {
@@ -220,14 +231,20 @@ module.exports = {
                             }
                         });
                     }
-                } else if(apiMethod == 'DELETE') {
-                    that.deleteAction(headerFunc(), filePath);
-                } else if(apiMethod == 'POST') {
-                    that.createAction(headerFunc(), filePath, bytes, hasFormData);
-                } else if(apiMethod == 'PUT') {
-                    that.putAction(headerFunc(), filePath, bytes);
-                } else if(apiMethod == 'PATCH') {
-                    that.patchAction(headerFunc(), filePath, bytes);
+                } else {
+                    if (!that.permissionsMap.get(that.PERMISSION_STORE_APP_DATA)) {
+                        that.showError("App attempted to access file without permission :" + filePath);
+                        that.buildResponse(headerFunc(), null, that.ACTION_FAILED);
+                    }
+                    if(apiMethod == 'DELETE') {
+                        that.deleteAction(headerFunc(), filePath);
+                    } else if(apiMethod == 'POST') {
+                        that.createAction(headerFunc(), filePath, bytes, hasFormData);
+                    } else if(apiMethod == 'PUT') {
+                        that.putAction(headerFunc(), filePath, bytes);
+                    } else if(apiMethod == 'PATCH') {
+                        that.patchAction(headerFunc(), filePath, bytes);
+                    }
                 }
             } catch(ex) {
                 console.log('Exception:' + ex);
@@ -311,13 +328,6 @@ module.exports = {
           return ([1e7]+-1e3+-4e3+-8e3+-1e11).replace(/[018]/g, c =>
             (c ^ crypto.getRandomValues(new Uint8Array(1))[0] & 15 >> c / 4).toString(16)
           );
-        },
-        getRelativePath: function(filePath) {
-            let sandboxDataPrefix = '/.apps/' + this.sandboxAppName + '/assets/';
-            if (!filePath.startsWith(sandboxDataPrefix)) {
-                throw new Error('Path to resource invalid!');
-            }
-            return filePath.substring(sandboxDataPrefix.length);
         },
         getFileAction: function(headerFunc, filePath) {
             let that = this;
@@ -432,7 +442,6 @@ module.exports = {
             let expandedFilePath = this.expandFilePath(filePath);
             this.context.getByPath(expandedFilePath).thenApply(function(fileOpt){
                 if (fileOpt.ref == null) {
-                    console.log("file not found!:" + filePath);
                     that.showError('file not found: ' + filePath);
                     future.complete(null);
                 } else {
@@ -480,6 +489,7 @@ module.exports = {
             return array;
         },
         showError: function(msg) {
+            console.log(msg);
             this.$toast.error(msg);
         },
         closeApp: function () {

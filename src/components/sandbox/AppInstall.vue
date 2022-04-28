@@ -46,7 +46,12 @@
                         <span class="app-install-span">Permissions:</span><span class="app-install-text">None Required</span>
                     </p>
                     <p v-if="appProperties.permissions.length > 0">
-                        <span class="app-install-span">Permissions:</span><span class="app-install-text">{{appProperties.permissions.join(", ")}}</span>
+                        <span class="app-install-span">Permissions:</span><span class="app-install-text"></span>
+                    </p>
+                    <p v-if="appProperties.permissions.length > 0">
+                        <li v-for="permission in appProperties.permissions">
+                          {{ convertPermissionToHumanReadable(permission) }}
+                        </li>
                     </p>
                 </div>
                 <div class="flex-line-item">
@@ -118,9 +123,9 @@ module.exports = {
         checkAvailableSpace: function(fileSize) {
             return Number(this.quotaBytes.toString()) - (Number(this.usageBytes.toString()) + fileSize);
         },
-        confirmReplaceAppInstall(appName, replaceFunction, cancelFunction) {
-            this.confirm_message = 'App: ' + appName + ' already installed!';
-            this.confirm_body = "Are you sure you want to replace existing installation?";
+        confirmReplaceAppInstall(appName, oldVersion, newVersion, replaceFunction, cancelFunction) {
+            this.confirm_message = 'App: ' + appName + ' ' + oldVersion + ' already installed!';
+            this.confirm_body = "Are you sure you want to replace with version: " + newVersion + "?";
             this.confirm_consumer_cancel_func = cancelFunction;
             this.confirm_consumer_func = replaceFunction;
             this.showConfirm = true;
@@ -130,26 +135,35 @@ module.exports = {
                 return;
             }
             let appName = this.appProperties.details.name;
+            let displayName = this.appProperties.details.displayName;
+            let newVersion = this.appProperties.details.majorVersion + '.' + this.appProperties.details.minorVersion;
             let that = this;
             this.showSpinner = true;
             this.context.getByPath("/" + this.context.username + "/.apps/" + appName).thenApply(appOpt => {
                 if (appOpt.ref != null) {
-                    that.confirmReplaceAppInstall(appName,
-                        () => {
-                            that.showConfirm = false;
-                            that.installApp();
-                        },
-                        () => {
-                            that.showConfirm = false;
-                            that.showSpinner = false;
+                    that.readAppProperties(appName).thenApply(props => {
+                        if (props.details == null) {
+                            that.installApp(false);
+                        } else {
+                            let oldVersion = props.details.majorVersion + '.' + props.details.minorVersion;
+                            that.confirmReplaceAppInstall(displayName, oldVersion, newVersion,
+                                () => {
+                                    that.showConfirm = false;
+                                    that.installApp(true);
+                                },
+                                () => {
+                                    that.showConfirm = false;
+                                    that.showSpinner = false;
+                                }
+                            );
                         }
-                    );
+                    });
                 } else {
-                    that.installApp();
+                    that.installApp(false);
                 }
             });
         },
-       installApp: function() {
+       installApp: function(replaceExisting) {
            let that = this;
            let displayName = this.appProperties.details.displayName;
            let appName = this.appProperties.details.name;
@@ -164,12 +178,47 @@ module.exports = {
                        that.spinnerMessage = "Installing App: " + displayName;
                        peergos.shared.user.App.init(that.context, appName).thenApply(ready => {
                              let future = peergos.shared.util.Futures.incomplete();
-                             that.gatherAppFiles([{directory: srcDirectoryOpt.ref, path: srcPath}], 0, appName, future, []);
-                             future.thenApply(appFiles => that.copyAllFiles(appFiles, appName, displayName));
+                             that.backupPropertiesFile(appName, replaceExisting).thenApply(done => {
+                                 that.gatherAppFiles([{directory: srcDirectoryOpt.ref, path: srcPath}], 0, appName, future, []);
+                                 future.thenApply(appFiles => that.copyAllFiles(appFiles, appName, displayName));
+                             });
                        });
                    }
                });
            });
+       },
+       backupPropertiesFile: function(appName, replaceExisting) {
+           var future = peergos.shared.util.Futures.incomplete();
+           if (!replaceExisting) {
+                future.complete(true);
+           } else {
+               let that = this;
+               let pathStem = "/" + this.context.username + "/.apps/" + appName + "/";
+               let propsFilename = 'peergos-app.json';
+               let filePath =  pathStem + propsFilename;
+               this.context.getByPath(pathStem).thenApply(function(appDirOpt){
+                   let pathArray = pathStem.split('/').filter(n => n.length > 0);
+                   let previousPath = peergos.client.PathUtils.toPath(pathArray, propsFilename);
+                   let newName = 'peergos-app-' + new Date().toISOString() + '.json';
+                    appDirOpt.ref.getChild(propsFilename, that.context.crypto.hasher, that.context.network).thenApply(function (fileOpt) {
+                       fileOpt.ref.rename(newName, appDirOpt.ref, previousPath, that.context).thenApply(function (parentDir) {
+                            parentDir.getChild(newName, that.context.crypto.hasher, that.context.network).thenApply(function (fileOpt2) {
+                               let dataPath = pathStem + "/data";
+                               that.context.getByPath(dataPath).thenApply(function(dirOpt){
+//moveTo(FileWrapper target, FileWrapper parent, Path ourPath, UserContext context) {
+                                   let dataPathArray = dataPath.split('/').filter(n => n.length > 0);
+                                   let newPath = peergos.client.PathUtils.toPath(dataPathArray, newName);
+
+                                    fileOpt2.ref.moveTo(dirOpt.ref, parentDir, newPath, that.context).thenApply(function() {
+                                        future.complete(true);
+                                    });
+                                });
+                            });
+                        });
+                    });
+               });
+           }
+           return future;
        },
         gatherAppFiles: function(directoryEntries, index, app, future, accumulator) {
             if (index == directoryEntries.length) {

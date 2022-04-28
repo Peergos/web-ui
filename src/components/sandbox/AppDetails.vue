@@ -37,8 +37,16 @@
                     <p v-if="appProperties.permissions.length == 0">
                         <span class="app-install-span">Permissions:</span><span class="app-install-text">None Required</span>
                     </p>
+                    <p v-if="appProperties.permissions.length == 0">
+                        <span class="app-install-span">Permissions:</span><span class="app-install-text">None</span>
+                    </p>
                     <p v-if="appProperties.permissions.length > 0">
-                        <span class="app-install-span">Permissions:</span><span class="app-install-text">{{appProperties.permissions.join(", ")}}</span>
+                        <span class="app-install-span">Permissions:</span><span class="app-install-text"></span>
+                    </p>
+                    <p v-if="appProperties.permissions.length > 0">
+                        <li v-for="permission in appProperties.permissions">
+                          {{ convertPermissionToHumanReadable(permission) }}
+                        </li>
                     </p>
                 </div>
             </div>
