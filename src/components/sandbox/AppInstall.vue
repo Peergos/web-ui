@@ -143,13 +143,13 @@ module.exports = {
                 if (appOpt.ref != null) {
                     that.readAppProperties(appName).thenApply(props => {
                         if (props.details == null) {
-                            that.installApp(false);
+                            that.installApp();
                         } else {
                             let oldVersion = props.details.majorVersion + '.' + props.details.minorVersion;
                             that.confirmReplaceAppInstall(displayName, oldVersion, newVersion,
                                 () => {
                                     that.showConfirm = false;
-                                    that.installApp(true);
+                                    that.installApp({app:props});
                                 },
                                 () => {
                                     that.showConfirm = false;
@@ -159,11 +159,11 @@ module.exports = {
                         }
                     });
                 } else {
-                    that.installApp(false);
+                    that.installApp();
                 }
             });
         },
-       installApp: function(replaceExisting) {
+       installApp: function(oldProperties) {
            let that = this;
            let displayName = this.appProperties.details.displayName;
            let appName = this.appProperties.details.name;
@@ -178,7 +178,7 @@ module.exports = {
                        that.spinnerMessage = "Installing App: " + displayName;
                        peergos.shared.user.App.init(that.context, appName).thenApply(ready => {
                              let future = peergos.shared.util.Futures.incomplete();
-                             that.backupPropertiesFile(appName, replaceExisting).thenApply(done => {
+                             that.backupPropertiesFile(appName, oldProperties).thenApply(done => {
                                  that.gatherAppFiles([{directory: srcDirectoryOpt.ref, path: srcPath}], 0, appName, future, []);
                                  future.thenApply(appFiles => that.copyAllFiles(appFiles, appName, displayName));
                              });
@@ -187,38 +187,23 @@ module.exports = {
                });
            });
        },
-       backupPropertiesFile: function(appName, replaceExisting) {
+       backupPropertiesFile: function(appName, oldProperties) {
            var future = peergos.shared.util.Futures.incomplete();
-           if (!replaceExisting) {
+           if (oldProperties == null) {
                 future.complete(true);
            } else {
                let that = this;
-               let pathStem = "/" + this.context.username + "/.apps/" + appName + "/";
-               let propsFilename = 'peergos-app.json';
-               let filePath =  pathStem + propsFilename;
-               this.context.getByPath(pathStem).thenApply(function(appDirOpt){
-                   let pathArray = pathStem.split('/').filter(n => n.length > 0);
-                   let previousPath = peergos.client.PathUtils.toPath(pathArray, propsFilename);
-                   let newName = 'peergos-app-' + new Date().toISOString() + '.json';
-                    appDirOpt.ref.getChild(propsFilename, that.context.crypto.hasher, that.context.network).thenApply(function (fileOpt) {
-                       fileOpt.ref.rename(newName, appDirOpt.ref, previousPath, that.context).thenApply(function (parentDir) {
-                            parentDir.getChild(newName, that.context.crypto.hasher, that.context.network).thenApply(function (fileOpt2) {
-                               let dataPath = pathStem + "/data";
-                               that.context.getByPath(dataPath).thenApply(function(dirOpt){
-//moveTo(FileWrapper target, FileWrapper parent, Path ourPath, UserContext context) {
-                                   let dataPathArray = dataPath.split('/').filter(n => n.length > 0);
-                                   let newPath = peergos.client.PathUtils.toPath(dataPathArray, newName);
-
-                                    fileOpt2.ref.moveTo(dirOpt.ref, parentDir, newPath, that.context).thenApply(function() {
-                                        future.complete(true);
-                                    });
-                                });
-                            });
-                        });
+               peergos.shared.user.App.init(that.context, appName).thenApply(app => {
+                    let filePath = peergos.client.PathUtils.directoryToPath(['peergos-app-previous.json']);
+                    let encoder = new TextEncoder();
+                    let uint8Array = encoder.encode(JSON.stringify(oldProperties));
+                    let bytes = convertToByteArray(uint8Array);
+                    app.writeInternal(filePath, bytes).thenApply(done => {
+                        future.complete(true);
                     });
-               });
-           }
-           return future;
+                });
+            }
+            return future;
        },
         gatherAppFiles: function(directoryEntries, index, app, future, accumulator) {
             if (index == directoryEntries.length) {
