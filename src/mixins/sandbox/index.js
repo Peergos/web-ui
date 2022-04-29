@@ -14,7 +14,7 @@ module.exports = {
   methods: {
       convertPermissionToHumanReadable: function(permission) {
           if (permission === 'STORE_APP_DATA') {
-              return "Can store and read files in a directory private to the app";
+              return "Can store and read files in a folder private to the app";
           } else if (permission === 'EDIT_CHOSEN_FILE') {
               return "Can modify file chosen by user";
           } else if (permission === 'READ_CHOSEN_FOLDER') {

@@ -452,15 +452,34 @@ module.exports = {
         },
         getFileAction: function(headerFunc, filePath) {
             let that = this;
-            let dataPath = peergos.client.PathUtils.directoryToPath(filePath.split('/'));
-            this.sandboxedApp.readInternal(dataPath).thenApply(data => {
-                that.sandboxedApp.mimeTypeInternal(dataPath).thenApply(mimeType => {
-                    that.buildResponse(headerFunc(mimeType), data, that.GET_SUCCESS);
+            if (filePath.endsWith('/')) {
+                let fullFolderPath = this.context.username + "/.apps/" + this.sandboxAppName + '/data/' + filePath;
+                this.context.getByPath(fullFolderPath).thenApply(function(folderOpt){
+                    if (folderOpt.ref == null) {
+                        that.showError('Folder not found: ' + filePath);
+                        that.buildResponse(headerFunc(), null, that.ACTION_FAILED);
+                    } else {
+                        let folder = folderOpt.get();
+                        let props = folder.getFileProperties();
+                        if (props.isDirectory) {
+                            that.readFolderListing(headerFunc("text/plain"), folder);
+                        } else {
+                            that.showError('Path not a folder: ' + filePath);
+                            that.buildResponse(headerFunc(), null, that.ACTION_FAILED);
+                        }
+                    }
                 });
-            }).exceptionally(function(throwable) {
-                console.log(throwable.getMessage());
-                that.buildResponse(headerFunc(''), null, that.FILE_NOT_FOUND);
-            });
+            } else {
+                let dataPath = peergos.client.PathUtils.directoryToPath(filePath.split('/'));
+                this.sandboxedApp.readInternal(dataPath).thenApply(data => {
+                    that.sandboxedApp.mimeTypeInternal(dataPath).thenApply(mimeType => {
+                        that.buildResponse(headerFunc(mimeType), data, that.GET_SUCCESS);
+                    });
+                }).exceptionally(function(throwable) {
+                    console.log(throwable.getMessage());
+                    that.buildResponse(headerFunc(), null, that.FILE_NOT_FOUND);
+                });
+            }
         },
         deleteAction: function(header, filePath) {
             let that = this;
