@@ -134,7 +134,8 @@ module.exports = {
                 } else if (e.data.action == 'streamFile') {
                     that.streamFile(e.data.seekHi, e.data.seekLo, e.data.seekLength, e.data.streamFilePath);
                 } else if(e.data.action == 'actionRequest') {
-                    that.actionRequest(e.data.filePath, e.data.requestId, e.data.apiMethod, e.data.bytes, e.data.hasFormData);
+                    that.actionRequest(e.data.filePath, e.data.requestId, e.data.apiMethod, e.data.bytes,
+                        e.data.hasFormData, e.data.params);
                 }
             }
         },
@@ -241,7 +242,7 @@ module.exports = {
             let data = convertToByteArray(bytes);
             this.postData(data);
         },
-        actionRequest: function(path, requestId, apiMethod, data, hasFormData) {
+        actionRequest: function(path, requestId, apiMethod, data, hasFormData, params) {
             let that = this;
             let headerFunc = (mimeType) => that.buildHeader(path, mimeType, requestId);
 
@@ -253,7 +254,7 @@ module.exports = {
                             that.showError("App attempted to access file without permission :" + path);
                             that.buildResponse(headerFunc(), null, that.ACTION_FAILED);
                         } else {
-                            that.getFileAction(headerFunc, path);
+                            that.getFileAction(headerFunc, path, params);
                         }
                     } else {
                         if (path.startsWith('assets/')) {
@@ -271,7 +272,7 @@ module.exports = {
                             that.showError("App attempted to read unexpected path:" + path);
                             that.buildResponse(headerFunc(), null, that.ACTION_FAILED);
                         } else {
-                            that.readFileOrFolder(headerFunc, path);
+                            that.readFileOrFolder(headerFunc, path, params);
                         }
                     }
                 } else {
@@ -313,7 +314,7 @@ module.exports = {
                 that.buildResponse(headerFunc(), null, that.ACTION_FAILED);
             }
         },
-        readFileOrFolder: function(headerFunc, path) {
+        readFileOrFolder: function(headerFunc, path, params) {
             let that = this;
             this.context.getByPath(path).thenApply(function(respOpt){
                 if (respOpt.ref == null) {
@@ -329,11 +330,26 @@ module.exports = {
                         if (props.isDirectory) {
                             that.readFolderListing(headerFunc("text/plain"), resp);
                         } else {
-                            that.readInFile(headerFunc(props.mimeType), resp);
+                            let fileType = props.getType();
+                            if (params.get('preview') == 'true') {
+                                if (fileType == 'image' || fileType == 'video') {
+                                    that.readInThumbnail(headerFunc("text/plain"), resp);
+                                } else {
+                                    that.buildResponse(headerFunc(), null, that.ACTION_FAILED);
+                                }
+                            } else {
+                                that.readInFile(headerFunc(props.mimeType), resp);
+                            }
                         }
                     }
                 }
             });
+        },
+        readInThumbnail: function(header, file) {
+            let thumbnail = file.getBase64Thumbnail();
+            let encoder = new TextEncoder();
+            let data = encoder.encode(thumbnail);
+            this.buildResponse(header, data, this.GET_SUCCESS);
         },
         readFolderListing: function(header, folder) {
             let that = this;
@@ -450,7 +466,7 @@ module.exports = {
             (c ^ crypto.getRandomValues(new Uint8Array(1))[0] & 15 >> c / 4).toString(16)
           );
         },
-        getFileAction: function(headerFunc, filePath) {
+        getFileAction: function(headerFunc, filePath, params) {
             let that = this;
             if (filePath.endsWith('/')) {
                 let fullFolderPath = this.context.username + "/.apps/" + this.sandboxAppName + '/data/' + filePath;
@@ -470,15 +486,34 @@ module.exports = {
                     }
                 });
             } else {
-                let dataPath = peergos.client.PathUtils.directoryToPath(filePath.split('/'));
-                this.sandboxedApp.readInternal(dataPath).thenApply(data => {
-                    that.sandboxedApp.mimeTypeInternal(dataPath).thenApply(mimeType => {
-                        that.buildResponse(headerFunc(mimeType), data, that.GET_SUCCESS);
+                if (params.get('preview') == 'true') {
+                    let fullFilePath = this.context.username + "/.apps/" + this.sandboxAppName + '/data/' + filePath;
+                    this.context.getByPath(fullFilePath).thenApply(function(fileOpt){
+                        if (fileOpt.ref == null) {
+                            that.showError('File not found: ' + filePath);
+                            that.buildResponse(headerFunc(), null, that.ACTION_FAILED);
+                        } else {
+                            let file = fileOpt.get();
+                            let props = file.getFileProperties();
+                            let fileType = props.getType();
+                            if (fileType == 'image' || fileType == 'video') {
+                                that.readInThumbnail(headerFunc("text/plain"), file);
+                            } else {
+                                that.buildResponse(headerFunc(), null, that.ACTION_FAILED);
+                            }
+                        }
                     });
-                }).exceptionally(function(throwable) {
-                    console.log(throwable.getMessage());
-                    that.buildResponse(headerFunc(), null, that.FILE_NOT_FOUND);
-                });
+                } else {
+                    let dataPath = peergos.client.PathUtils.directoryToPath(filePath.split('/'));
+                    this.sandboxedApp.readInternal(dataPath).thenApply(data => {
+                        that.sandboxedApp.mimeTypeInternal(dataPath).thenApply(mimeType => {
+                            that.buildResponse(headerFunc(mimeType), data, that.GET_SUCCESS);
+                        });
+                    }).exceptionally(function(throwable) {
+                        console.log(throwable.getMessage());
+                        that.buildResponse(headerFunc(), null, that.FILE_NOT_FOUND);
+                    });
+                }
             }
         },
         deleteAction: function(header, filePath) {

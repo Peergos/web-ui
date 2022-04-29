@@ -253,6 +253,11 @@ self.onfetch = event => {
         port.postMessage({ seekHi: seekHi, seekLo: start, seekLength: seekLength, streamFilePath: filePath })
         return event.respondWith(returnRangeRequest(start, end, streamingEntry))
     } else {
+        let params = new Map();
+        requestedResource.searchParams.forEach( (value, key) => {
+            params.set(key, value);
+        });
+
         let method = event.request.method;
         if (method == 'OPTIONS' || method == 'HEAD') {
             return event.respondWith(new Response('Not Implemented!', {
@@ -293,7 +298,7 @@ self.onfetch = event => {
                         }
                     }
                     appPort.postMessage({ filePath: restFilePath, requestId: uniqueId, apiMethod: method, bytes: buffer,
-                        hasFormData: formData != null});
+                        hasFormData: formData != null, params: params});
                     return returnAppData(method, restFilePath, uniqueId);
                 })()
             )

@@ -49,9 +49,9 @@ function streamFile(seekHi, seekLo, seekLength, streamFilePath) {
     mainWindow.postMessage({action:'streamFile', seekHi: seekHi, seekLo: seekLo, seekLength: seekLength
         , streamFilePath: streamFilePath}, origin);
 }
-function actionRequest(filePath, requestId, apiMethod, bytes, hasFormData) {
+function actionRequest(filePath, requestId, apiMethod, bytes, hasFormData, params) {
     mainWindow.postMessage({action:'actionRequest', requestId: requestId, filePath: filePath, apiMethod: apiMethod,
-    bytes: bytes, hasFormData: hasFormData}, origin);
+    bytes: bytes, hasFormData: hasFormData, params: params}, origin);
 }
 function load(appName, appPath) {
     let that = this;
@@ -64,8 +64,8 @@ function load(appName, appPath) {
             }, function(seekHi, seekLo, seekLength, streamFilePath){
                 that.streamFile(seekHi, seekLo, seekLength, streamFilePath);
             }, 0
-            ,function(filePath, requestId, apiMethod, bytes, hasFormData){
-                that.actionRequest(filePath, requestId, apiMethod, bytes, hasFormData);
+            ,function(filePath, requestId, apiMethod, bytes, hasFormData, params){
+                that.actionRequest(filePath, requestId, apiMethod, bytes, hasFormData, params);
             }
         );
         that.streamWriter = fileStream.getWriter();

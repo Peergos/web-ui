@@ -218,7 +218,8 @@
             makeIframe(evt.data.download)
           }
         } else if (evt.data.filePath) {
-            fileDataCallback(evt.data.filePath, evt.data.requestId, evt.data.apiMethod, evt.data.bytes, evt.data.hasFormData);
+            fileDataCallback(evt.data.filePath, evt.data.requestId, evt.data.apiMethod, evt.data.bytes,
+                evt.data.hasFormData, evt.data.params);
         } else if (evt.data.seekLength) {
             seekCallback(evt.data.seekHi, evt.data.seekLo, evt.data.seekLength, evt.data.streamFilePath)
         }
