@@ -39,9 +39,12 @@ module.exports = {
             GET_SUCCESS: 8,
             PATCH_SUCCESS: 9,
             isIframeInitialised: false,
-            appFilePath: '',
+            appPath: '',
+            isAppPathAFolder: false,
             permissionsMap: new Map(),
             PERMISSION_STORE_APP_DATA: 'STORE_APP_DATA',
+            PERMISSION_EDIT_CHOSEN_FILE: 'EDIT_CHOSEN_FILE',
+            PERMISSION_READ_CHOSEN_FOLDER: 'READ_CHOSEN_FOLDER'
         }
     },
     computed: {
@@ -58,24 +61,57 @@ module.exports = {
     created: function() {
         let that = this;
         let currentFilename = this.currentFile == null ? '' : this.currentFile.getName();
-        this.appFilePath = this.currentFile == null ? '' : this.getPath + currentFilename;
+        this.appPath = this.currentFile == null ? '' : this.getPath + currentFilename;
+        if (this.currentFile != null) {
+            if (this.currentFile.getFileProperties().isDirectory) {
+                this.isAppPathAFolder = true;
+            }
+        }
         if (!this.supportsStreaming()) {
             this.giveUp();
         } else {
-            this.readAppPermissions(that.sandboxAppName).thenApply(permissionsMap => {
-                that.permissionsMap = permissionsMap;
-                peergos.shared.user.App.init(that.context, that.sandboxAppName).thenApply(sandboxedApp => {
-                    that.sandboxedApp = sandboxedApp;
-                    that.startListener();
-                });
+            this.readAppProperties(that.sandboxAppName).thenApply(props => {
+                if (!that.validatePermissions(props)) {
+                    that.fatalError('Application configuration error. See console for further details');
+                } else {
+                    peergos.shared.user.App.init(that.context, that.sandboxAppName).thenApply(sandboxedApp => {
+                        that.sandboxedApp = sandboxedApp;
+                        that.startListener();
+                    });
+                }
             });
         }
     },
     methods: {
+        validatePermissions: function(props) {
+            let allPermissions = new Map();
+            props.permissions.forEach(permission => {
+                allPermissions.set(permission, new Date());
+            });
+            this.permissionsMap = allPermissions;
+            if (!props.details.folderAction && this.isAppPathAFolder) {
+                console.log('App configured as NOT a FolderAction, but Path is a folder!');
+                return false;
+            }
+            if (props.details.folderAction && !this.isAppPathAFolder) {
+                console.log('App configured as a FolderAction, but Path is not a folder!');
+                return false;
+            }
+            if (this.isAppPathAFolder) {
+                if (!this.permissionsMap.get(this.PERMISSION_READ_CHOSEN_FOLDER)) {
+                    console.log('App configured as a FolderAction, but permission READ_CHOSEN_FOLDER not set!');
+                    return false;
+                }
+            }
+            return true;
+        },
     	giveUp: function() {
-            this.showError('Your Web browser does not support sandbox applications. Are you running incognito-mode?');
-            this.closeApp();
+            this.fatalError('Your Web browser does not support sandbox applications. Are you running incognito-mode?');
     	},
+        fatalError: function(msg) {
+            this.showError(msg);
+            this.closeApp();
+        },
         frameUrl: function() {
             let url= this.frameDomain() + "/apps/sandbox/sandbox.html";
             return url;
@@ -114,7 +150,7 @@ module.exports = {
             window.removeEventListener('message', that.messageHandler);
             window.addEventListener('message', that.messageHandler);
             let func = function() {
-                that.postMessage({type: 'init', appName: that.sandboxAppName, appFilePath: that.appFilePath});
+                that.postMessage({type: 'init', appName: that.sandboxAppName, appPath: that.appPath});
             };
             that.setupIFrameMessaging(iframe, func);
         },
@@ -205,51 +241,136 @@ module.exports = {
             let data = convertToByteArray(bytes);
             this.postData(data);
         },
-        actionRequest: function(filePath, requestId, apiMethod, data, hasFormData) {
+        actionRequest: function(path, requestId, apiMethod, data, hasFormData) {
             let that = this;
-            let headerFunc = (mimeType) => that.buildHeader(filePath, mimeType, requestId);
+            let headerFunc = (mimeType) => that.buildHeader(path, mimeType, requestId);
 
             var bytes = convertToByteArray(new Int8Array(data));
             try {
                 if (apiMethod == 'GET') {
-                    if (requestId.length > 0) {
+                    if (requestId.length > 0) { //GET requests to /form or /data
                         if (!that.permissionsMap.get(that.PERMISSION_STORE_APP_DATA)) {
-                            that.showError("App attempted to access file without permission :" + filePath);
+                            that.showError("App attempted to access file without permission :" + path);
                             that.buildResponse(headerFunc(), null, that.ACTION_FAILED);
                         } else {
-                            that.getFileAction(headerFunc, filePath);
+                            that.getFileAction(headerFunc, path);
                         }
                     } else {
-                        that.findFile(filePath).thenApply(file => {
-                            if (that.showSpinner && filePath == "assets/index.html") {
-                                that.showSpinner = false;
-                            }
-                            if (file != null) {
-                                that.readInFile(headerFunc(file.getFileProperties().mimeType), file);
-                            } else {
-                                that.buildResponse(headerFunc(), null, that.FILE_NOT_FOUND);
-                            }
-                        });
+                        if (path.startsWith('assets/')) {
+                            that.findFile(path).thenApply(file => {
+                                if (that.showSpinner && path == "assets/index.html") {
+                                    that.showSpinner = false;
+                                }
+                                if (file != null) {
+                                    that.readInFile(headerFunc(file.getFileProperties().mimeType), file);
+                                } else {
+                                    that.buildResponse(headerFunc(), null, that.FILE_NOT_FOUND);
+                                }
+                            });
+                        } else if (!path.startsWith(that.appPath) || that.appPath.length == 0) {
+                            that.showError("App attempted to read unexpected path:" + path);
+                            that.buildResponse(headerFunc(), null, that.ACTION_FAILED);
+                        } else {
+                            that.readFileOrFolder(headerFunc, path);
+                        }
                     }
                 } else {
-                    if (!that.permissionsMap.get(that.PERMISSION_STORE_APP_DATA)) {
-                        that.showError("App attempted to access file without permission :" + filePath);
-                        that.buildResponse(headerFunc(), null, that.ACTION_FAILED);
-                    }
-                    if(apiMethod == 'DELETE') {
-                        that.deleteAction(headerFunc(), filePath);
-                    } else if(apiMethod == 'POST') {
-                        that.createAction(headerFunc(), filePath, bytes, hasFormData);
-                    } else if(apiMethod == 'PUT') {
-                        that.putAction(headerFunc(), filePath, bytes);
-                    } else if(apiMethod == 'PATCH') {
-                        that.patchAction(headerFunc(), filePath, bytes);
+                    if (that.appPath.length > 0 && path.startsWith(that.appPath)) {
+                        if (that.isAppPathAFolder) {
+                            that.showError("App attempted to write folder without permission :" + path);
+                            that.buildResponse(headerFunc(), null, that.ACTION_FAILED);
+                        } else {
+                            if (apiMethod == 'POST' || apiMethod == 'PUT') {
+                                if (!that.permissionsMap.get(that.PERMISSION_EDIT_CHOSEN_FILE)) {
+                                    that.showError("App attempted to write to file without permission :" + path);
+                                    that.buildResponse(headerFunc(), null, that.ACTION_FAILED);
+                                } else {
+                                    that.overwriteFile(headerFunc(), path, bytes);
+                                }
+                            } else {
+                                that.showError("App attempted unexpected action: " + apiMethod);
+                                that.buildResponse(headerFunc(), null, that.ACTION_FAILED);
+                            }
+                        }
+                    } else {
+                        if (!that.permissionsMap.get(that.PERMISSION_STORE_APP_DATA)) {
+                            that.showError("App attempted to access file without permission :" + path);
+                            that.buildResponse(headerFunc(), null, that.ACTION_FAILED);
+                        }
+                        if(apiMethod == 'DELETE') {
+                            that.deleteAction(headerFunc(), path);
+                        } else if(apiMethod == 'POST') {
+                            that.createAction(headerFunc(), path, bytes, hasFormData);
+                        } else if(apiMethod == 'PUT') {
+                            that.putAction(headerFunc(), path, bytes);
+                        } else if(apiMethod == 'PATCH') {
+                            that.patchAction(headerFunc(), path, bytes);
+                        }
                     }
                 }
             } catch(ex) {
                 console.log('Exception:' + ex);
                 that.buildResponse(headerFunc(), null, that.ACTION_FAILED);
             }
+        },
+        readFileOrFolder: function(headerFunc, path) {
+            let that = this;
+            this.context.getByPath(path).thenApply(function(respOpt){
+                if (respOpt.ref == null) {
+                    that.showError('Path not found: ' + path);
+                    that.buildResponse(headerFunc(), null, that.ACTION_FAILED);
+                } else {
+                    let resp = respOpt.get();
+                    let props = resp.getFileProperties();
+                    if (props.isHidden) {
+                        that.showError('Path not accessible: ' + path);
+                        that.buildResponse(headerFunc(), null, that.ACTION_FAILED);
+                    } else {
+                        if (props.isDirectory) {
+                            that.readFolderListing(headerFunc("text/plain"), resp);
+                        } else {
+                            that.readInFile(headerFunc(props.mimeType), resp);
+                        }
+                    }
+                }
+            });
+        },
+        readFolderListing: function(header, folder) {
+            let that = this;
+            folder.getChildren(that.context.crypto.hasher, that.context.network).thenApply(function(children) {
+                let arr = children.toArray();
+                let folderListing = {files:[], subFolders:[]};
+                arr.forEach(function(child){
+                    let props = child.getFileProperties();
+                    if (!props.isHidden) {
+                        if(props.isDirectory) {
+                            folderListing.subFolders.push(child.getName());
+                        } else {
+                            folderListing.files.push(child.getName());
+                        }
+                    }
+                });
+                let encoder = new TextEncoder();
+                let data = encoder.encode(JSON.stringify(folderListing));
+                that.buildResponse(header, data, that.GET_SUCCESS);
+            });
+        },
+        overwriteFile: function(header, filePath, bytes) {
+            let that = this;
+            this.findFile(filePath).thenApply(file => {
+                if (file != null) {
+                    let java_reader = peergos.shared.user.fs.AsyncReader.build(bytes);
+                    let sizeHi = (bytes.length - (bytes.length % Math.pow(2, 32)))/Math.pow(2, 32);
+                    file.overwriteFileJS(java_reader, sizeHi, bytes.length, that.context.network, that.context.crypto, len => {})
+                    .thenApply(function(updatedFile) {
+                        that.buildResponse(header, null, that.UPDATE_SUCCESS);
+                    }).exceptionally(function(throwable) {
+                            that.showMessage(true, "Unexpected error", throwable.detailMessage);
+                            console.log('Error uploading file: ' + that.file.getName());
+                            console.log(throwable.getMessage());
+                    });
+                }
+            });
         },
         putAction: function(header, filePath, bytes) {
             let that = this;
@@ -430,7 +551,7 @@ module.exports = {
             }
         },
         expandFilePath(filePath) {
-            if (filePath == this.appFilePath) {
+            if (filePath == this.appPath) {
                 return filePath;
             } else {
                 return this.context.username + "/.apps/" + this.sandboxAppName + '/' + filePath;

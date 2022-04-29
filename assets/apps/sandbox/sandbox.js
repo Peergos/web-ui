@@ -16,7 +16,7 @@ let handler = function (e) {
       if (e.data.type == "ping") {
         mainWindow.postMessage({action:'pong'}, e.origin);
       } else if (e.data.type == "init") {
-          load(e.data.appName, e.data.appFilePath);
+          load(e.data.appName, e.data.appPath);
       } else if(e.data.type == "respondToLoadedChunk") {
         respondToLoadedChunk(e.data.bytes);
       }
@@ -53,12 +53,12 @@ function actionRequest(filePath, requestId, apiMethod, bytes, hasFormData) {
     mainWindow.postMessage({action:'actionRequest', requestId: requestId, filePath: filePath, apiMethod: apiMethod,
     bytes: bytes, hasFormData: hasFormData}, origin);
 }
-function load(appName, appFilePath) {
+function load(appName, appPath) {
     let that = this;
     removeServiceWorkerRegistration(() => {
         let fileStream = streamSaver.createWriteStream(appName, "text/html", url => {
                 let iframe = document.getElementById("appSandboxId");
-                let path = appFilePath.length > 0 ? "?path=" + appFilePath : '';
+                let path = appPath.length > 0 ? "?path=" + appPath : '';
                 let src = "assets/index.html" + path;
                 iframe.src= src;
             }, function(seekHi, seekLo, seekLength, streamFilePath){

@@ -199,7 +199,9 @@ module.exports = {
                     let uint8Array = encoder.encode(JSON.stringify(oldProperties));
                     let bytes = convertToByteArray(uint8Array);
                     app.writeInternal(filePath, bytes).thenApply(done => {
-                        future.complete(true);
+                        that.deletePropertiesFile(appName).thenApply(done => {
+                            future.complete(true);
+                        });
                     });
                 });
             }
@@ -228,6 +230,40 @@ module.exports = {
                     });
                 }
             }
+        },
+        deletePropertiesFile(appName) {
+            let that = this;
+            let future = peergos.shared.util.Futures.incomplete();
+            let folderPath = "/" + this.context.username + "/.apps/" + appName;
+            let filename = 'peergos-app.json';
+            this.context.getByPath(folderPath).thenApply(appDirOpt => {
+                if (appDirOpt.ref != null) {
+                    appDirOpt.ref.getChild(filename, that.context.crypto.hasher, that.context.network).thenApply(fileToDeleteOpt => {
+                        if (fileToDeleteOpt.ref != null) {
+                            that.removeFile(folderPath + '/' + filename, fileToDeleteOpt.ref, appDirOpt.ref).thenApply(res => {
+                                future.complete(true);
+                            });
+                        } else {
+                            future.complete(false);
+                        }
+                    });
+                }else {
+                    future.complete(false);
+                }
+            });
+            return future;
+        },
+        removeFile: function(filename, file, parent) {
+            let future = peergos.shared.util.Futures.incomplete();
+            let that = this;
+            let filePath = peergos.client.PathUtils.directoryToPath(filename.split('/').filter(n => n.length > 0));
+            file.remove(parent, filePath, this.context).thenApply(function(b){
+                future.complete(true);
+            }).exceptionally(function(throwable) {
+                console.log('Unexpected error: ' + throwable);
+                future.complete(false);
+            });
+            return future;
         },
         copyAllFiles: function(appFiles, app, displayName) {
             let that = this;

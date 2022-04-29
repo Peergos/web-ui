@@ -491,7 +491,6 @@ module.exports = {
             this.showAppSandbox = false;
         },
         displayAppDetails: function(app) {
-            console.log('displayAppDetails');
             let that = this;
             let fullPath = "/" + this.context.username + "/.apps/" + app.name + '/peergos-app.json';
             this.findFile(fullPath).thenApply(file => {

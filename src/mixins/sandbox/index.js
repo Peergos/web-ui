@@ -15,6 +15,10 @@ module.exports = {
       convertPermissionToHumanReadable: function(permission) {
           if (permission === 'STORE_APP_DATA') {
               return "Can store and read files in a directory private to the app";
+          } else if (permission === 'EDIT_CHOSEN_FILE') {
+              return "Can modify file chosen by user";
+          } else if (permission === 'READ_CHOSEN_FOLDER') {
+              return "Can read contents of folder chosen by user";
           } else {
               console.log('Unknown permission: ' + permission);
               this.$toast.error('Unknown permission: ' + permission, {timeout:false});
@@ -37,7 +41,7 @@ module.exports = {
                       ,"description","supportAddress","fileExtensions","mimeTypes"
                       , "launchable", "fileTypes", "folderAction"];
                   let existingCreateMenuItems = ["upload files","upload folder","new folder","new file"];
-                  let validPermissions = ["STORE_APP_DATA"];
+                  let validPermissions = ["STORE_APP_DATA", "EDIT_CHOSEN_FILE", "READ_CHOSEN_FOLDER"];
                   fields.forEach(field => {
                       if (props.details[field] == null) {
                           errors.push("Missing property " + field);
@@ -134,18 +138,6 @@ module.exports = {
           }
           return future;
       },
-        readAppPermissions: function(appName) {
-            let that = this;
-            let future = peergos.shared.util.Futures.incomplete();
-            this.readAppProperties(appName).thenApply(function(props) {
-                    let allPermissions = new Map();
-                    props.permissions.forEach(permission => {
-                        allPermissions.set(permission, new Date());
-                    });
-                    future.complete(allPermissions);
-            });
-            return future;
-        },
         readAppProperties: function(appName) {
             let that = this;
             let future = peergos.shared.util.Futures.incomplete();
