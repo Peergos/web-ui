@@ -55,7 +55,7 @@
                     v-on:keyup.enter="cleanupFailedUploads()"
                     @click="cleanupFailedUploads()"
                 >
-                    Cleanup failed uploads
+                    Cleanup Failed Uploads
                 </li>
 				<li
 					v-on:keyup.enter="showViewAccount()"
@@ -126,7 +126,9 @@ module.exports = {
                     that.$store.commit('SET_USAGE', u);
                 });
             }).exceptionally(function(throwable) {
-                console.log(throwable.getMessage());
+                let errMsg = throwable.getMessage();
+                console.log(errMsg);
+                that.$toast.error('Upload cleanup failed. Please try again. Error: ' + errMsg, {timeout:false});
                 that.showSettingsSpinner = false;
             });
         },
