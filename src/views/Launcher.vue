@@ -77,7 +77,7 @@
                             <td v-bind:class="[bookmark.missing ? 'deleted-entry' : '']">
                                 {{ formatDateTime(bookmark.created) }}
                             </td>
-                            <td> <button class="btn btn-danger" @click="removeBookmark(bookmark)">Delete</button>
+                            <td> <button class="btn btn-danger" @click="removeBookmark(bookmark)">Remove</button>
                             </td>
                         </tr>
                         </tbody>
@@ -116,7 +116,7 @@
                             <td v-bind:class="[shortcut.missing ? 'deleted-entry' : '']">
                                 {{ formatJSDate(shortcut.created) }}
                             </td>
-                            <td> <button class="btn btn-danger" @click="removeShortcut(shortcut)">Delete</button>
+                            <td> <button class="btn btn-danger" @click="removeShortcut(shortcut)">Remove</button>
                             </td>
                         </tr>
                         </tbody>
@@ -163,7 +163,6 @@
                         <tr  v-if="sharedItemsList!=0" style="cursor:pointer;">
                             <th @click="setSharedSortBy('name')">Name <span v-if="sortBy=='name'" v-bind:class="['fas', normalSortOrder ? 'fa-angle-down' : 'fa-angle-up']"/></th>
                             <th @click="setSharedSortBy('path')">Directory <span v-if="sortBy=='path'" v-bind:class="['fas', normalSortOrder ? 'fa-angle-down' : 'fa-angle-up']"/></th>
-                            <th @click="setSharedSortBy('size')">Size <span v-if="sortBy=='size'" v-bind:class="['fas', normalSortOrder ? 'fa-angle-down' : 'fa-angle-up']"/></th>
                             <th @click="setSharedSortBy('modified')">Modified <span v-if="sortBy=='modified'" v-bind:class="['fas', normalSortOrder ? 'fa-angle-down' : 'fa-angle-up']"/></th>
                             <th @click="setSharedSortBy('created')">Created <span v-if="sortBy=='created'" v-bind:class="['fas', normalSortOrder ? 'fa-angle-down' : 'fa-angle-up']"/></th>
                             <th @click="setSharedSortBy('access')">Access <span v-if="sortBy=='access'" v-bind:class="['fas', normalSortOrder ? 'fa-angle-down' : 'fa-angle-up']"/></th>
@@ -175,9 +174,6 @@
                             <td v-on:click="view(match, true)" style="cursor:pointer;">{{ match.name }}</td>
                             <td v-on:click="navigateTo(match)" style="cursor:pointer;">
                                 {{ match.path }}
-                            </td>
-                            <td>
-                                {{ match.size }}
                             </td>
                             <td>
                                 {{ formatDateTime(match.lastModified) }}
@@ -224,11 +220,11 @@ module.exports = {
             normalSortOrder: true,
             launcherApp: null,
             bookmarkList: [],
-            bookmarksSortBy: "name",
-            bookmarksNormalSortOrder: true,
+            bookmarksSortBy: "added",
+            bookmarksNormalSortOrder: false,
             shortcutList: [],
-            shortcutsSortBy: "name",
-            shortcutsNormalSortOrder: true,
+            shortcutsSortBy: "added",
+            shortcutsNormalSortOrder: false,
             appsList: [],
             appsSortBy: "name",
             appsNormalSortOrder: true,
@@ -410,18 +406,6 @@ module.exports = {
                         return aVal.compareTo(bVal);
                     }
                 });
-            } else if(sortBy == "size") {
-                return this.sharedItemsList.sort(function (a, b) {
-                    let aVal = reverseOrder ? b.size : a.size;
-                    let bVal = reverseOrder ? a.size : b.size;
-                    if (aVal > bVal) {
-                        return 1;
-                    } else if (aVal == bVal) {
-                        return 0;
-                    } else {
-                        return -1;
-                    }
-                });
             } else if(sortBy == "access") {
                 return this.sharedItemsList.sort(function (a, b) {
                     let aVal = a.access;
@@ -563,9 +547,6 @@ module.exports = {
             this.showConfirm = true;
         },
         removeBookmark: function(bookmark) {
-            if (bookmark.missing) {
-                return;
-            }
             let that = this;
             this.confirmRemoveBookmark(
                 () => {
@@ -618,9 +599,6 @@ module.exports = {
             this.showConfirm = true;
         },
         removeShortcut: function(shortcut) {
-            if (shortcut.missing) {
-                return;
-            }
             let that = this;
             this.confirmRemoveShortcut(
                 () => {
@@ -719,7 +697,6 @@ module.exports = {
             let entry = {
                 path: pathStr,
                 name: props.name,
-                size: props.isDirectory ? "" : this.getFileSize(props),
                 lastModified: props.modified,
                 created: props.created,
                 isDirectory: props.isDirectory,
