@@ -686,19 +686,7 @@ module.exports = {
 		},
 
 		path(newPath, oldPath) {
-			console.log('drive oldPath: ', oldPath )
-			console.log('drive newPath: ', newPath )
-			if (newPath.length != oldPath.length) {
-				this.updateCurrentDir();
-			} else {
-				for (var i = 0; i < newPath.length; i++) {
-					if (newPath[i] != oldPath[i]) {
-						this.updateCurrentDir();
-						return;
-					}
-				}
-			}
-
+            this.updateCurrentDir();
 		},
 		forceSharedRefreshWithUpdate(newCounter, oldCounter) {
 			this.updateCurrentDir();

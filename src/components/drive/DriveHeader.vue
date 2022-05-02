@@ -98,14 +98,15 @@ module.exports = {
             "sandboxedApps"
         ]),
         creatableApps: function() {
-           try {
+            return [];
+           /* TODO try {
                 let appsInstalled = this.sandboxedApps.appsInstalled.slice().filter(app => app.createMenuText != null);
                 return appsInstalled.sort(function(a, b) {
                     return a.createMenuText.localeCompare(b.createMenuText);
                 });
            } catch (err) {
                return [];
-           }
+           }*/
         },
 	},
 	methods: {

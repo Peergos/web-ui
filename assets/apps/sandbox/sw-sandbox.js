@@ -206,7 +206,6 @@ const oneMegBlockSize = 1024 * 1024 * 1;
 
 self.onfetch = event => {
     const url = event.request.url;
-    console.log("url=" + url);
     if (url.endsWith('/ping')) {
       return event.respondWith(new Response('pong', {
         headers: { 'Access-Control-Allow-Origin': '*' }

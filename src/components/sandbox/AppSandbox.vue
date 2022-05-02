@@ -8,8 +8,7 @@
               </span>
             </div>
 
-            <div class="modal-body" style="padding:0;display:flex;flex-grow:1;">
-                <iframe id="sandboxId" :src="frameUrl()" style="width:600px;height:600px" frameBorder="0" scrolling="no"></iframe>
+            <div id='sandbox-container' class="modal-body" style="padding:0;display:flex;flex-grow:1;">
             </div>
             <spinner v-if="showSpinner" :message="spinnerMessage"></spinner>
         </div>
@@ -51,7 +50,7 @@ module.exports = {
         ...Vuex.mapState([
             'quotaBytes',
             'usageBytes',
-            'context',
+            'context'
         ]),
         ...Vuex.mapGetters([
             'getPath',
@@ -123,37 +122,59 @@ module.exports = {
             let iframe = document.getElementById("sandboxId");
             iframe.contentWindow.postMessage(obj, '*');
         },
+        resizeHandler: function() {
+            let iframe = document.getElementById("sandboxId");
+            if (iframe == null) {
+                return;
+            }
+            iframe.style.width = window.innerWidth + 'px';
+            iframe.style.height = window.innerHeight + 'px';
+        },
         messageHandler: function(e) {
             let that = this;
             let iframe = document.getElementById("sandboxId");
-            if ((e.origin === "null" || e.origin === that.frameDomain()) && e.source === iframe.contentWindow) {
-                if (e.data.action == 'pong') {
-                    that.isIframeInitialised = true;
-                } else if (e.data.action == 'failedInit') {
-                    that.giveUp();
-                } else if (e.data.action == 'streamFile') {
-                    that.streamFile(e.data.seekHi, e.data.seekLo, e.data.seekLength, e.data.streamFilePath);
-                } else if(e.data.action == 'actionRequest') {
-                    that.actionRequest(e.data.filePath, e.data.requestId, e.data.apiMethod, e.data.bytes,
-                        e.data.hasFormData, e.data.params);
+            let win = iframe.contentWindow;
+            if (win == null ) {
+                that.closeSandbox();
+            } else {
+                if ((e.origin === "null" || e.origin === that.frameDomain()) && e.source === iframe.contentWindow) {
+                    if (e.data.action == 'pong') {
+                        that.isIframeInitialised = true;
+                    } else if (e.data.action == 'failedInit') {
+                        that.giveUp();
+                    } else if (e.data.action == 'streamFile') {
+                        that.streamFile(e.data.seekHi, e.data.seekLo, e.data.seekLength, e.data.streamFilePath);
+                    } else if(e.data.action == 'actionRequest') {
+                        that.actionRequest(e.data.filePath, e.data.requestId, e.data.apiMethod, e.data.bytes,
+                            e.data.hasFormData, e.data.params);
+                    } else if(e.data.action == 'postShutdown') {
+                        that.closeSandbox();
+                    }
                 }
             }
         },
         startListener: function() {
             this.showSpinner = true;
             var that = this;
-            var iframe = document.getElementById("sandboxId");
-            if (iframe == null) {
-                setTimeout(() => {that.startListener();}, 100);
-                return;
-            }
-            // Listen for response messages from the frames.
-            window.removeEventListener('message', that.messageHandler);
-            window.addEventListener('message', that.messageHandler);
-            let func = function() {
-                that.postMessage({type: 'init', appName: that.sandboxAppName, appPath: that.appPath});
-            };
-            that.setupIFrameMessaging(iframe, func);
+            var iframeContainer = document.getElementById("sandbox-container");
+            var iframe = document.createElement('iframe');
+            iframe.id = 'sandboxId';
+            iframe.style.width = window.innerWidth + 'px';
+            iframe.style.height = window.innerHeight + 'px';
+            iframe.frameBorder="0";
+            iframe.scrolling="no";
+            iframeContainer.appendChild(iframe);
+            Vue.nextTick(function() {
+                iframe.src = that.frameUrl();
+                // Listen for response messages from the frames.
+                window.addEventListener('message', that.messageHandler);
+                window.addEventListener("resize", that.resizeHandler);
+                that.resizeHandler();
+                let func = function() {
+                    that.postMessage({type: 'init', appName: that.sandboxAppName, appPath: that.appPath});
+                };
+                that.setupIFrameMessaging(iframe, func);
+            });
         },
         setupIFrameMessaging: function(iframe, func) {
             if (this.isIframeInitialised) {
@@ -668,11 +689,22 @@ module.exports = {
             this.$toast.error(msg);
         },
         closeApp: function () {
-            var iframe = document.getElementById("sandboxId");
-            //iframe.parentNode.removeChild(iframe);
-            iframe.src = '#';
-            this.$emit("hide-app-sandbox");
+            let that = this;
+            if (this.isIframeInitialised) {
+                this.postMessage({type: 'shutdown'});
+            } else {
+                this.closeSandbox();
+            }
         },
+        closeSandbox: function () {
+            let iframe = document.getElementById("sandboxId");
+            if (iframe != null) {
+                iframe.parentNode.removeChild(iframe);
+            }
+            window.removeEventListener('message', this.messageHandler);
+            window.removeEventListener("resize", this.resizeHandler);
+            this.$emit("hide-app-sandbox");
+        }
     }
 }
 </script>

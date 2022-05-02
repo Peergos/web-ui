@@ -1,7 +1,7 @@
 var mainWindow;
 var origin;
 var streamWriter;
-let handler = function (e) {
+let msgHandler = function (e) {
       // You must verify that the origin of the message's sender matches your
       // expectations. In this case, we're only planning on accepting messages
       // from our own origin, so we can simply compare the message event's
@@ -19,9 +19,21 @@ let handler = function (e) {
           load(e.data.appName, e.data.appPath);
       } else if(e.data.type == "respondToLoadedChunk") {
         respondToLoadedChunk(e.data.bytes);
+      } else if(e.data.type == "shutdown") {
+      window.removeEventListener("resize", this.resizeHandler);
+        removeServiceWorkerRegistration(() => { mainWindow.postMessage({action:'postShutdown'}, origin)});
       }
 };
-window.addEventListener('message', handler);
+function resizeHandler() {
+    let iframe = document.getElementById("appSandboxId");
+    if (iframe == null) {
+        return;
+    }
+    iframe.style.width = window.innerWidth + 'px';
+    iframe.style.height = window.innerHeight + 'px';
+}
+window.addEventListener('message', msgHandler);
+window.addEventListener("resize", resizeHandler);
 
 function removeServiceWorkerRegistration(callback) {
     if (navigator.serviceWorker == null) {
@@ -55,9 +67,11 @@ function actionRequest(filePath, requestId, apiMethod, bytes, hasFormData, param
 }
 function load(appName, appPath) {
     let that = this;
+    let iframe = document.getElementById("appSandboxId");
+    iframe.style.width = window.innerWidth + 'px';
+    iframe.style.height = window.innerHeight + 'px';
     removeServiceWorkerRegistration(() => {
         let fileStream = streamSaver.createWriteStream(appName, "text/html", url => {
-                let iframe = document.getElementById("appSandboxId");
                 let path = appPath.length > 0 ? "?path=" + appPath : '';
                 let src = "assets/index.html" + path;
                 iframe.src= src;

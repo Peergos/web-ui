@@ -134,7 +134,7 @@
                         <tr  v-if="appsList.length!=0" style="cursor:pointer;">
                             <th @click="setAppsSortBy('name')">Name <span v-if="appsSortBy=='name'" v-bind:class="['fas', appsNormalSortOrder ? 'fa-angle-down' : 'fa-angle-up']"/></th>
                             <th></th>
-                            <th>Delete</th>
+                            <th></th>
                         </tr>
                         </thead>
                         <tbody>
