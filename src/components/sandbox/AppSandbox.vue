@@ -166,7 +166,6 @@ module.exports = {
             iframeContainer.appendChild(iframe);
             Vue.nextTick(function() {
                 iframe.src = that.frameUrl();
-                // Listen for response messages from the frames.
                 window.addEventListener('message', that.messageHandler);
                 window.addEventListener("resize", that.resizeHandler);
                 that.resizeHandler();

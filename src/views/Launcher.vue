@@ -504,6 +504,13 @@ module.exports = {
             this.currentAppPropertiesFile = null;
             this.showAppDetails = false;
         },
+        confirmRemoveApp(appName, replaceFunction, cancelFunction) {
+            this.confirm_message = 'Remove App: ' + appName;
+            this.confirm_body = "Are you sure you want to remove this App?";
+            this.confirm_consumer_cancel_func = cancelFunction;
+            this.confirm_consumer_func = replaceFunction;
+            this.showConfirm = true;
+        },
         removeApp: function(app) {
             let that = this;
             this.confirmRemoveApp(app.displayName,
@@ -537,9 +544,9 @@ module.exports = {
             let filePath = peergos.client.PathUtils.directoryToPath([this.context.username, ".apps", name]);
             file.remove(parent, filePath, this.context).thenApply(function(b){
                 that.deRegisterApp(app);
-                let appIndex = appsList.findIndex(v => v.name === app.name);
+                let appIndex = that.appsList.findIndex(v => v.name === app.name);
                 if (appIndex > -1) {
-                    appsList.splice(appIndex, 1);
+                    that.appsList.splice(appIndex, 1);
                 }
                 that.showSpinner = false;
             }).exceptionally(function(throwable) {
