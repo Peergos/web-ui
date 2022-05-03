@@ -82,7 +82,16 @@
 							<p>Read and Write Access:</p>
 							<div v-if="this.files[0].getOwnerName() == this.context.username">
 								<div v-for="user in filterEditSharedWithUsers()">
-									<input type="checkbox" v-bind:id="user" v-bind:value="user" v-model="unsharedEditAccessNames">&nbsp;<span>{{ getUserOrGroupName(user) }}</span>
+									<label class="checkbox__group">
+										{{ getUserOrGroupName(user) }}
+										<input
+											type="checkbox"
+											:id="user"
+											:value="user"
+											v-model="unsharedEditAccessNames"
+										/>
+										<span class="checkmark"></span>
+									</label>
 								</div>
 								<button :disabled="this.unsharedEditAccessNames.length == 0" class="btn btn-success" v-on:click="unshare('Edit')">Revoke</button>
 							</div>
@@ -112,14 +121,7 @@
 										<span class="checkmark"></span>
 									</label>
 								</div>
-								<AppButton
-									:disabled="this.unsharedReadAccessNames.length == 0"
-									size="small"
-									outline
-									@click.native="unshare('Read')"
-								>
-									Revoke
-								</AppButton>
+                                <button :disabled="this.unsharedReadAccessNames.length == 0" class="btn btn-success" v-on:click="unshare('Read')">Revoke</button>
 							</div>
 							<div v-if="this.files[0].getOwnerName() != this.context.username">
 								<div v-for="user in filterReadSharedWithUsers()">
