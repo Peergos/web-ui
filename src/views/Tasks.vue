@@ -341,7 +341,8 @@ module.exports = {
                             that.$toast.error("TodoBoard with same filename already exists! File has not been saved", {timeout:false})
                         } else {
                             dir.uploadFileJS(filename, java_reader, sizeHi, bytes.length,
-                                             false, false, this.mirrorBatId, context.network, context.crypto, function(len){}, context.getTransactionService()
+                                             false, false, this.mirrorBatId, context.network, context.crypto, function(len){},
+                                             context.getTransactionService(), f => peergos.shared.util.Futures.of(false)
                                             ).thenApply(function(updatedDir) {
                                                 updatedDir.getChild(filename, context.crypto.hasher, context.network).thenApply(function(fileOpt){
                                                     that.showSpinner = false;

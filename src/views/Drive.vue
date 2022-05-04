@@ -1447,9 +1447,29 @@ module.exports = {
 
                 let folderStream = peergos.client.JsUtil.asList(folderUPList).stream();
                 let that = this;
+                let resumeFileUpload = function(f) {
+                    let future = peergos.shared.util.Futures.incomplete();
+                    let path = f.getPath();
+                    let lastSlashIdx = path.lastIndexOf('/');
+                    let filename = path.substring(lastSlashIdx + 1);
+                    let folderPath = path.substring(0, lastSlashIdx);
+                    that.confirmResumeFileUpload(filename, folderPath,
+                        () => {
+                            that.showConfirm = false;
+                            future.complete(true);
+                        },
+                        () => {
+                            that.showConfirm = false;
+                            future.complete(false);
+                        }
+                    );
+                    return future;
+                }
                 this.context.getByPath(uploadParams.directoryPath).thenApply(uploadDir => {
                     uploadDir.ref.uploadSubtree(folderStream, that.getMirrorBatId(uploadDir.ref), that.context.network,
-                        that.context.crypto, that.context.getTransactionService(), commitWatcher).thenApply(res => {
+                        that.context.crypto, that.context.getTransactionService(),
+                        f => resumeFileUpload(f),
+                        commitWatcher).thenApply(res => {
                             uploadFuture.complete(true);
                     }).exceptionally(function (throwable) {
                         that.errorTitle = 'Error Uploading files';
@@ -1460,6 +1480,13 @@ module.exports = {
                 });
             }
             return uploadFuture;
+        },
+        confirmResumeFileUpload(filename, folderPath, confirmFunction, cancelFunction) {
+            this.confirm_message='Do you wish to resume failed File upload?';
+            this.confirm_body='File: ' + filename + " Folder: " + folderPath;
+            this.confirm_consumer_cancel_func = cancelFunction;
+            this.confirm_consumer_func = confirmFunction;
+            this.showConfirm = true;
         },
         reduceAllUploads: function(index, files, future, uploadParams, progressBars, previousDirectoryHolder) {
             let that = this;
@@ -1571,7 +1598,7 @@ module.exports = {
             let reader = new browserio.JSFileReader(file);
             let java_reader = new peergos.shared.user.fs.BrowserFileReader(reader);
             let fup = new peergos.shared.user.fs.FileWrapper.FileUploadProperties(file.name, java_reader,
-                (file.size - (file.size % Math.pow(2, 32))) / Math.pow(2, 32), file.size,
+                (file.size - (file.size % Math.pow(2, 32))) / Math.pow(2, 32), file.size, false,
                 overwriteExisting ? true : false, updateProgressBar);
 
             let fileUploadList = uploadParams.fileUploadProperties[foundDirectoryIndex];
@@ -1633,7 +1660,8 @@ module.exports = {
 							let reader = new peergos.shared.user.fs.AsyncReader.ArrayBacked(empty);
 							homeDir.get().uploadFileJS(select_result, reader, 0, 0,
 								false, false, that.mirrorBatId, that.context.network, that.context.crypto, function (len) { },
-								that.context.getTransactionService()
+								that.context.getTransactionService(),
+								f => peergos.shared.util.Futures.of(false)
 							).thenApply(function (updatedDir) {
 								updatedDir.getChild(select_result, that.context.crypto.hasher, that.context.network).thenApply(function (textFileOpt) {
 									that.showSpinner = false;
@@ -2064,7 +2092,8 @@ module.exports = {
 			let reader = new peergos.shared.user.fs.AsyncReader.ArrayBacked(empty);
 			this.currentDir.uploadFileJS(filename, reader, 0, 0,
 				false, false, that.getMirrorBatId(that.currentDir), this.context.network, this.context.crypto, function (len) { },
-				this.context.getTransactionService()
+				this.context.getTransactionService(),
+				f => peergos.shared.util.Futures.of(false)
 			).thenApply(function (res) {
 				that.currentDir = res;
 				that.updateFiles();
