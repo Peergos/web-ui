@@ -342,7 +342,7 @@ module.exports = {
                         } else {
                             dir.uploadFileJS(filename, java_reader, sizeHi, bytes.length,
                                              false, false, this.mirrorBatId, context.network, context.crypto, function(len){},
-                                             context.getTransactionService(), f => peergos.shared.util.Futures.of(false)
+                                             context.getTransactionService(), f => peergos.shared.util.Futures.of(true)
                                             ).thenApply(function(updatedDir) {
                                                 updatedDir.getChild(filename, context.crypto.hasher, context.network).thenApply(function(fileOpt){
                                                     that.showSpinner = false;
