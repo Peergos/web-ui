@@ -1336,6 +1336,7 @@ module.exports = {
         collectFiles(fromDnd, index, filesToUpload, accumulatedFiles, collectFuture) {
             let that = this;
             if (index == filesToUpload.length) {
+                accumulatedFiles.sort(function(a, b){return a.size-b.size});
                 collectFuture.complete(accumulatedFiles);
                 return;
             }
@@ -1447,9 +1448,29 @@ module.exports = {
 
                 let folderStream = peergos.client.JsUtil.asList(folderUPList).stream();
                 let that = this;
+                let resumeFileUpload = function(f) {
+                    let future = peergos.shared.util.Futures.incomplete();
+                    let path = f.getPath();
+                    let lastSlashIdx = path.lastIndexOf('/');
+                    let filename = path.substring(lastSlashIdx + 1);
+                    let folderPath = path.substring(0, lastSlashIdx);
+                    that.confirmResumeFileUpload(filename, folderPath,
+                        () => {
+                            that.showConfirm = false;
+                            future.complete(true);
+                        },
+                        () => {
+                            that.showConfirm = false;
+                            future.complete(false);
+                        }
+                    );
+                    return future;
+                }
                 this.context.getByPath(uploadParams.directoryPath).thenApply(uploadDir => {
                     uploadDir.ref.uploadSubtree(folderStream, that.getMirrorBatId(uploadDir.ref), that.context.network,
-                        that.context.crypto, that.context.getTransactionService(), commitWatcher).thenApply(res => {
+                        that.context.crypto, that.context.getTransactionService(),
+                        f => resumeFileUpload(f),
+                        commitWatcher).thenApply(res => {
                             uploadFuture.complete(true);
                     }).exceptionally(function (throwable) {
                         that.errorTitle = 'Error Uploading files';
@@ -1460,6 +1481,13 @@ module.exports = {
                 });
             }
             return uploadFuture;
+        },
+        confirmResumeFileUpload(filename, folderPath, confirmFunction, cancelFunction) {
+            this.confirm_message='Do you wish to resume failed file upload?';
+            this.confirm_body='File: ' + filename + " Folder: " + folderPath;
+            this.confirm_consumer_cancel_func = cancelFunction;
+            this.confirm_consumer_func = confirmFunction;
+            this.showConfirm = true;
         },
         reduceAllUploads: function(index, files, future, uploadParams, progressBars, previousDirectoryHolder) {
             let that = this;
@@ -1571,7 +1599,7 @@ module.exports = {
             let reader = new browserio.JSFileReader(file);
             let java_reader = new peergos.shared.user.fs.BrowserFileReader(reader);
             let fup = new peergos.shared.user.fs.FileWrapper.FileUploadProperties(file.name, java_reader,
-                (file.size - (file.size % Math.pow(2, 32))) / Math.pow(2, 32), file.size,
+                (file.size - (file.size % Math.pow(2, 32))) / Math.pow(2, 32), file.size, false,
                 overwriteExisting ? true : false, updateProgressBar);
 
             let fileUploadList = uploadParams.fileUploadProperties[foundDirectoryIndex];
@@ -1607,57 +1635,6 @@ module.exports = {
 				}
 			}
 			return null;
-		},
-
-		showTextEditor() {
-			let that = this;
-			this.select_placeholder = 'filename';
-			this.select_message = 'Create or open Text file';
-			// this.clearTabNavigation();
-			this.showSpinner = true;
-			this.context.getByPath(this.context.username).thenApply(homeDir => {
-				homeDir.get().getChildren(that.context.crypto.hasher, that.context.network).thenApply(function (children) {
-					let childrenArray = children.toArray();
-					let textFiles = childrenArray.filter(f => f.getFileProperties().mimeType.startsWith("text/"));
-					that.select_items = textFiles.map(f => f.getName()).sort(function (a, b) {
-						return a.localeCompare(b);
-					});
-					that.select_consumer_func = function (select_result) {
-						if (select_result === null)
-							return;
-						let foundIndex = textFiles.findIndex(v => v.getName() === select_result);
-						if (foundIndex == -1) {
-							that.showSpinner = true;
-							// let context = that.getContext();
-							let empty = peergos.shared.user.JavaScriptPoster.emptyArray();
-							let reader = new peergos.shared.user.fs.AsyncReader.ArrayBacked(empty);
-							homeDir.get().uploadFileJS(select_result, reader, 0, 0,
-								false, false, that.mirrorBatId, that.context.network, that.context.crypto, function (len) { },
-								that.context.getTransactionService()
-							).thenApply(function (updatedDir) {
-								updatedDir.getChild(select_result, that.context.crypto.hasher, that.context.network).thenApply(function (textFileOpt) {
-									that.showSpinner = false;
-									that.selectedFiles = [textFileOpt.get()];
-									// that.clearTabNavigation();
-									that.showCodeEditor = true;
-									that.updateHistory("editor", that.getPath, {filename:""});
-								});
-							}).exceptionally(function (throwable) {
-								that.showSpinner = false;
-								that.errorTitle = 'Error creating file';
-								that.errorBody = throwable.getMessage();
-								that.showError = true;
-							});
-						} else {
-							that.selectedFiles = [textFiles[foundIndex]];
-							that.showCodeEditor = true;
-							that.updateHistory("editor", that.getPath, {filename:""});
-						}
-					};
-					that.showSpinner = false;
-					that.showSelect = true;
-				});
-			});
 		},
 
 		copy() {
@@ -2063,8 +2040,9 @@ module.exports = {
 			let empty = peergos.shared.user.JavaScriptPoster.emptyArray();
 			let reader = new peergos.shared.user.fs.AsyncReader.ArrayBacked(empty);
 			this.currentDir.uploadFileJS(filename, reader, 0, 0,
-				false, false, that.getMirrorBatId(that.currentDir), this.context.network, this.context.crypto, function (len) { },
-				this.context.getTransactionService()
+				false, that.getMirrorBatId(that.currentDir), this.context.network, this.context.crypto, function (len) { },
+				this.context.getTransactionService(),
+				f => peergos.shared.util.Futures.of(false)
 			).thenApply(function (res) {
 				that.currentDir = res;
 				that.updateFiles();
