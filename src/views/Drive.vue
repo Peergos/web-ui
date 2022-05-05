@@ -1336,6 +1336,7 @@ module.exports = {
         collectFiles(fromDnd, index, filesToUpload, accumulatedFiles, collectFuture) {
             let that = this;
             if (index == filesToUpload.length) {
+                accumulatedFiles.sort(function(a, b){return a.size-b.size});
                 collectFuture.complete(accumulatedFiles);
                 return;
             }
