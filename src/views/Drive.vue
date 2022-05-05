@@ -1482,7 +1482,7 @@ module.exports = {
             return uploadFuture;
         },
         confirmResumeFileUpload(filename, folderPath, confirmFunction, cancelFunction) {
-            this.confirm_message='Do you wish to resume failed File upload?';
+            this.confirm_message='Do you wish to resume failed file upload?';
             this.confirm_body='File: ' + filename + " Folder: " + folderPath;
             this.confirm_consumer_cancel_func = cancelFunction;
             this.confirm_consumer_func = confirmFunction;
@@ -1634,58 +1634,6 @@ module.exports = {
 				}
 			}
 			return null;
-		},
-
-		showTextEditor() {
-			let that = this;
-			this.select_placeholder = 'filename';
-			this.select_message = 'Create or open Text file';
-			// this.clearTabNavigation();
-			this.showSpinner = true;
-			this.context.getByPath(this.context.username).thenApply(homeDir => {
-				homeDir.get().getChildren(that.context.crypto.hasher, that.context.network).thenApply(function (children) {
-					let childrenArray = children.toArray();
-					let textFiles = childrenArray.filter(f => f.getFileProperties().mimeType.startsWith("text/"));
-					that.select_items = textFiles.map(f => f.getName()).sort(function (a, b) {
-						return a.localeCompare(b);
-					});
-					that.select_consumer_func = function (select_result) {
-						if (select_result === null)
-							return;
-						let foundIndex = textFiles.findIndex(v => v.getName() === select_result);
-						if (foundIndex == -1) {
-							that.showSpinner = true;
-							// let context = that.getContext();
-							let empty = peergos.shared.user.JavaScriptPoster.emptyArray();
-							let reader = new peergos.shared.user.fs.AsyncReader.ArrayBacked(empty);
-							homeDir.get().uploadFileJS(select_result, reader, 0, 0,
-								false, false, that.mirrorBatId, that.context.network, that.context.crypto, function (len) { },
-								that.context.getTransactionService(),
-								f => peergos.shared.util.Futures.of(false)
-							).thenApply(function (updatedDir) {
-								updatedDir.getChild(select_result, that.context.crypto.hasher, that.context.network).thenApply(function (textFileOpt) {
-									that.showSpinner = false;
-									that.selectedFiles = [textFileOpt.get()];
-									// that.clearTabNavigation();
-									that.showCodeEditor = true;
-									that.updateHistory("editor", that.getPath, {filename:""});
-								});
-							}).exceptionally(function (throwable) {
-								that.showSpinner = false;
-								that.errorTitle = 'Error creating file';
-								that.errorBody = throwable.getMessage();
-								that.showError = true;
-							});
-						} else {
-							that.selectedFiles = [textFiles[foundIndex]];
-							that.showCodeEditor = true;
-							that.updateHistory("editor", that.getPath, {filename:""});
-						}
-					};
-					that.showSpinner = false;
-					that.showSelect = true;
-				});
-			});
 		},
 
 		copy() {
@@ -2091,7 +2039,7 @@ module.exports = {
 			let empty = peergos.shared.user.JavaScriptPoster.emptyArray();
 			let reader = new peergos.shared.user.fs.AsyncReader.ArrayBacked(empty);
 			this.currentDir.uploadFileJS(filename, reader, 0, 0,
-				false, false, that.getMirrorBatId(that.currentDir), this.context.network, this.context.crypto, function (len) { },
+				false, that.getMirrorBatId(that.currentDir), this.context.network, this.context.crypto, function (len) { },
 				this.context.getTransactionService(),
 				f => peergos.shared.util.Futures.of(false)
 			).thenApply(function (res) {
