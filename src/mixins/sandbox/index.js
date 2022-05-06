@@ -61,10 +61,10 @@ module.exports = {
                                 }
                             });
                         }
-                      if (props.details.displayName.length > 15) {
+                      if (props.details.displayName.length > 25) {
                           errors.push("Invalid displayName property. Length must not exceed 15 characters");
                       }
-                      if (props.details.name.length > 15) {
+                      if (props.details.name.length > 25) {
                           errors.push("Invalid name property. Length must not exceed 15 characters");
                       }
                       if (!props.details.name.match(/^[a-z\d\-_]+$/i)) {
