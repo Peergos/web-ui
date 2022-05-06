@@ -44,7 +44,11 @@ window.addEventListener('message', function (e) {
                     if (window.location.host == requestedResource.host) {
                         mainWindow.postMessage({action:'navigateTo', path: requestedResource.pathname}, origin);
                     } else {
-                        console.log('invalid link: ' + url);
+                        if(requestedResource.protocol == 'https:' || requestedResource.protocol == 'http:') {
+                            mainWindow.postMessage({action:'externalLink', url: url}, origin);
+                        } else {
+                            console.log('invalid link: ' + url);
+                        }
                     }
                 }
             });

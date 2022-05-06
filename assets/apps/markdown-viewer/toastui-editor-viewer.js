@@ -10167,8 +10167,10 @@ var baseConvertors = {
         var entering = _a.entering;
         if (entering) {
             var _b = node, title = _b.title, destination = _b.destination;
-            if (!destination.startsWith('/')) {
-                destination = _a.options.subPath + '/' + destination;
+            if(! (destination.startsWith('https://') || destination.startsWith('http://'))) {
+                if (!destination.startsWith('/')) {
+                    destination = _a.options.subPath + '/' + destination;
+                }
             }
             return {
                 type: 'openTag',
