@@ -1577,7 +1577,8 @@ module.exports = {
                             },
                         }
                    });
-                if (progress.done >= progress.max) {
+                let thumbnailOffset = 20 * 1024;
+                if (progress.done >= (progress.max + thumbnailOffset)) {
                     uploadParams.triggerRefresh = true;
                     setTimeout(() => that.$toast.dismiss(progress.name), 1000)
                 }
