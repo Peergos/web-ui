@@ -74,7 +74,10 @@ module.exports = {
     computed: {
         ...Vuex.mapState([
             'context'
-        ])
+        ]),
+        ...Vuex.mapGetters([
+            'isSecretLink'
+        ]),
     },
     watch: {
         propAppArgs(newQuestion, oldQuestion) {
@@ -417,15 +420,19 @@ module.exports = {
     },
     navigateToExternalLink: function(url) {
         let that = this;
-        this.confirmNavigationToExternalLink(url,
-            () => {
-                that.showConfirm = false;
-                that.openLinkInNewTab(url);
-            },
-            () => {
-                that.showConfirm = false;
-            }
-        );
+        if (this.isSecretLink) {
+            this.openLinkInNewTab(url);
+        } else {
+            this.confirmNavigationToExternalLink(url,
+                () => {
+                    that.showConfirm = false;
+                    that.openLinkInNewTab(url);
+                },
+                () => {
+                    that.showConfirm = false;
+                }
+            );
+        }
     },
     navigateToRequest: function(iframe, filePath) {
         let that = this;
