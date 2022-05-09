@@ -12,6 +12,14 @@
 
         <div class="modal-body" style="margin:0;padding:0;display:flex;flex-grow:1;">
             <spinner v-if="showSpinner"></spinner>
+            <confirm
+                    v-if="showConfirm"
+                    v-on:hide-confirm="showConfirm = false"
+                    :confirm_message='confirm_message'
+                    :confirm_body="confirm_body"
+                    :consumer_cancel_func="confirm_consumer_cancel_func"
+                    :consumer_func="confirm_consumer_func">
+            </confirm>
             <Gallery
                     v-if="showEmbeddedGallery"
                     v-on:hide-gallery="showEmbeddedGallery = false"
@@ -53,7 +61,12 @@ module.exports = {
             updatedPath: '',
             updatedFilename: '',
             fullPathForDisplay: '',
-            isFileWritable: false
+            isFileWritable: false,
+            showConfirm: false,
+            confirm_message: "",
+            confirm_body: "",
+            confirm_consumer_cancel_func: () => {},
+            confirm_consumer_func: () => {}
         }
     },
     props: ['propAppArgs'],
@@ -61,7 +74,10 @@ module.exports = {
     computed: {
         ...Vuex.mapState([
             'context'
-        ])
+        ]),
+        ...Vuex.mapGetters([
+            'isSecretLink'
+        ]),
     },
     watch: {
         propAppArgs(newQuestion, oldQuestion) {
@@ -153,6 +169,8 @@ module.exports = {
                     that.isIframeInitialised = true;
                 } else if(e.data.action == 'navigateTo') {
                     that.navigateToRequest(iframe, e.data.path);
+                } else if(e.data.action == 'externalLink') {
+                    that.navigateToExternalLink(e.data.url);
                 } else if(e.data.action == 'loadImage') {
                     that.loadImageRequest(iframe, e.data.src, e.data.id);
                 } else if(e.data.action == 'showMedia') {
@@ -383,6 +401,37 @@ module.exports = {
                     that.setupIFrameMessaging(iframe, func);
                 }
             });
+        }
+    },
+    confirmNavigationToExternalLink(url, confirmFunction, cancelFunction) {
+        this.confirm_message='External Link Confirmation';
+        this.confirm_body='You are about to open another browser tab and visit: ' + url;
+        this.confirm_consumer_cancel_func = cancelFunction;
+        this.confirm_consumer_func = confirmFunction;
+        this.showConfirm = true;
+    },
+    openLinkInNewTab: function(url) {
+        let link = document.createElement('a');
+        let click = new MouseEvent('click');
+        link.rel = "noopener noreferrer";
+        link.target = "_blank"
+        link.href = url;
+        link.dispatchEvent(click);
+    },
+    navigateToExternalLink: function(url) {
+        let that = this;
+        if (this.isSecretLink) {
+            this.openLinkInNewTab(url);
+        } else {
+            this.confirmNavigationToExternalLink(url,
+                () => {
+                    that.showConfirm = false;
+                    that.openLinkInNewTab(url);
+                },
+                () => {
+                    that.showConfirm = false;
+                }
+            );
         }
     },
     navigateToRequest: function(iframe, filePath) {
