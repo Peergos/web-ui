@@ -322,32 +322,34 @@ function returnAppData(method, filePath, uniqueId) {
             }
         }
         pump()
-    }).then(function(fileData, err) {    
+    }).then(function(fileData, err) {
+        let respHeaders = [
+            ['Cross-Origin-Embedder-Policy', 'require-corp'],
+            ['Cross-Origin-Opener-Policy', 'same-origin'],
+            ['Cross-Origin-Resource-Policy', 'same-origin']
+        ];
         if (fileData.statusCode == 201) {
             //https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/201
             let location = new TextDecoder().decode(fileData.file);
+            respHeaders.push(['location', location]);
             return new Response(null, {
                 status: fileData.statusCode,
-                headers: [
-                    ['location', location]
-                ]
+                headers: respHeaders
             });
         } else if (method == 'PATCH' && fileData.statusCode == 204) {
             //https://developer.mozilla.org/en-US/docs/Web/HTTP/Methods/PATCH
             let location = new TextDecoder().decode(fileData.file);
+            respHeaders.push(['Content-Location', location]);
             return new Response(null, {
                 status: fileData.statusCode,
-                headers: [
-                    ['Content-Location', location]
-                ]
+                headers: respHeaders
             });
         } else {
+            respHeaders.push(['Content-Type', fileData.mimeType]);
+            respHeaders.push(['Content-Length', fileData.file.byteLength]);
             return new Response(fileData.file.byteLength == 0 ? null : fileData.file, {
                 status: fileData.statusCode,
-                headers: [
-              		['Content-Type', fileData.mimeType],
-                	['Content-Length', fileData.file.byteLength]
-                ]
+                headers: respHeaders
             });
         }
     });
@@ -404,23 +406,29 @@ function returnRangeRequest(start, end, streamingEntry) {
     }).then(function(arrayBuffer, err) {
         const fileSize = streamingEntry.getFileSize();
         const mimeType = streamingEntry.getMimeType();
+        let respHeaders = [
+            ['Cross-Origin-Embedder-Policy', 'require-corp'],
+            ['Cross-Origin-Opener-Policy', 'same-origin'],
+            ['Cross-Origin-Resource-Policy', 'same-origin']
+        ];
         if (arrayBuffer == null) {
+            respHeaders.push(['Content-Range', `*/${fileSize}`]);
             return new Response(null, {
               status: 416,
               statusText: 'Range Not Satisfiable',
-              headers: [['Content-Range', `*/${fileSize}`]]
+              headers: respHeaders
             });
         } else {
             const bytesProvided = start +  arrayBuffer.byteLength - 1;
+            respHeaders.push(['content-type', mimeType]);
+            respHeaders.push(['accept-ranges', 'bytes']);
+            respHeaders.push(['Content-Range', `bytes ${start}-${bytesProvided}/${fileSize}`]);
+            respHeaders.push(['content-length', arrayBuffer.byteLength]);
+
             return new Response(arrayBuffer, {
               status: 206,
               statusText: 'Partial Content',
-              headers: [
-                ['content-type', mimeType],
-                ['accept-ranges', 'bytes'],
-                ['Content-Range', `bytes ${start}-${bytesProvided}/${fileSize}`],
-                ['content-length', arrayBuffer.byteLength]
-              ]
+              headers: respHeaders
             });
         }
     });
