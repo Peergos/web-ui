@@ -68,6 +68,7 @@
                             <th @click="setSortBy('path')">Directory <span v-if="sortBy=='path'" v-bind:class="['fas', normalSortOrder ? 'fa-angle-down' : 'fa-angle-up']"/></th>
                             <th @click="setSortBy('size')">Size <span v-if="sortBy=='size'" v-bind:class="['fas', normalSortOrder ? 'fa-angle-down' : 'fa-angle-up']"/></th>
                             <th @click="setSortBy('modified')">Modified <span v-if="sortBy=='modified'" v-bind:class="['fas', normalSortOrder ? 'fa-angle-down' : 'fa-angle-up']"/></th>
+                            <th @click="setSortBy('created')">Created <span v-if="sortBy=='created'" v-bind:class="['fas', normalSortOrder ? 'fa-angle-down' : 'fa-angle-up']"/></th>
 
                         </tr>
                         </thead>
@@ -82,6 +83,9 @@
                             </td>
                             <td>
                                 {{ formatDateTime(match.lastModified) }}
+                            </td>
+                            <td>
+                                {{ formatDateTime(match.created) }}
                             </td>
                         </tr>
                         </tbody>
@@ -388,6 +392,16 @@ module.exports = {
                 return this.matches.sort(function (a, b) {
                     let aVal = a.lastModified;
                     let bVal = b.lastModified;
+                    if (reverseOrder) {
+                        return bVal.compareTo(aVal);
+                    } else {
+                        return aVal.compareTo(bVal);
+                    }
+                });
+            } else if(this.sortBy == "created") {
+                return this.matches.sort(function (a, b) {
+                    let aVal = a.created;
+                    let bVal = b.created;
                     if (reverseOrder) {
                         return bVal.compareTo(aVal);
                     } else {

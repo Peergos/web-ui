@@ -640,8 +640,14 @@ function addUntilToSchedule(schedule, untilTZDate) {
     schedule.raw.previousRecurrenceRule = schedule.recurrenceRule;
     var updatedRRule = removePart("COUNT", schedule.recurrenceRule);
     updatedRRule = removePart("UNTIL", updatedRRule);
-    var start = moment(untilTZDate.toDate());
-    start.subtract(1, 'm');
+    let jsDate = untilTZDate.toDate();
+    let strYear = jsDate.getFullYear();
+    let month =  jsDate.getMonth() + 1;
+    let strMonth = month < 10 ? '0' + month : '' + month;
+    let date = jsDate.getDate();
+    let strDate = date < 10 ? '0' + date : '' + date;
+    var start = moment(strYear + '-' + strMonth + '-' + strDate + ' 23:59:59');
+    start.subtract(1, 'd');
     let formattedDate = untilUTCTimeString(start);
     schedule.recurrenceRule = updatedRRule + "UNTIL=" + formattedDate;
 }
