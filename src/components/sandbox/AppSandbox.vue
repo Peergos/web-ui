@@ -39,6 +39,7 @@ module.exports = {
             PATCH_SUCCESS: 9,
             isIframeInitialised: false,
             appPath: '',
+            appSubdomain: '',
             isAppPathAFolder: false,
             permissionsMap: new Map(),
             PERMISSION_STORE_APP_DATA: 'STORE_APP_DATA',
@@ -75,7 +76,10 @@ module.exports = {
                 } else {
                     peergos.shared.user.App.init(that.context, that.sandboxAppName).thenApply(sandboxedApp => {
                         that.sandboxedApp = sandboxedApp;
-                        that.startListener();
+                        peergos.shared.user.App.getAppSubdomain(that.sandboxAppName, that.context.crypto.hasher).thenApply(appSubdomain => {
+                            that.appSubdomain = appSubdomain;
+                            that.startListener();
+                        });
                     });
                 }
             });
@@ -116,7 +120,7 @@ module.exports = {
             return url;
         },
         frameDomain: function() {
-            return window.location.protocol + "//sandbox." + window.location.host;
+            return window.location.protocol + "//" + this.appSubdomain + "." + window.location.host;
         },
         postMessage: function(obj) {
             let iframe = document.getElementById("sandboxId");
