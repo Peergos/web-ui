@@ -49,7 +49,7 @@
             <div>
                 <h3>Bookmarks</h3>
                 <div v-if="bookmarkList.length ==0" class="table-responsive">
-                    Bookmarks can be added via the Markdown Viewer
+                    Bookmarks can be added via the Markdown or HTML Viewer
                 </div>
                 <div v-if="bookmarkList!=0" class="table-responsive">
                     <table class="table">
@@ -151,7 +151,7 @@
                     </table>
                 </div>
             </div>
-            <div>
+            <div v-if="showSharedItems">
                 <h3>Files &amp; Folders I have Shared</h3>
                 <div class="flex-container">
                     <div class="flex-item" style="margin: 10px;">
@@ -243,6 +243,7 @@ module.exports = {
             currentEntry: null,
             currentFile: null,
             currentPath: null,
+            showSharedItems: false
         }
     },
     props: [],
