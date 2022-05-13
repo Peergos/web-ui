@@ -178,7 +178,7 @@ module.exports = {
 					).thenApply(function(context) {
                         that.$store.commit('SET_CONTEXT', context);
                         that.$store.commit('USER_LOGIN', true);
-					    that.installDefaultApps().thenApply(function() {
+					    that.installDefaultApp().thenApply(function(props) {
                             that.initSandboxedApps();
                             that.$store.commit('CURRENT_VIEW', 'Drive');
                             that.$store.commit('CURRENT_MODAL', 'ModalTour');

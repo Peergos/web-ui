@@ -54,6 +54,7 @@ module.exports = {
             fullPathForDisplay: '',
             displayToBookmark: true,
             launcherApp: null,
+            running: true
         }
     },
     computed: {
@@ -103,6 +104,11 @@ module.exports = {
         }
     },
     methods: {
+        startTitleDetection: function() {
+            if (!this.running) return;
+            this.postMessage({type: 'currentTitleRequest'});
+            setTimeout(() => this.startTitleDetection(), 1000);
+        },
         loadAppProperties: function(fullPath, title) {
            let that = this;
            var future = peergos.shared.util.Futures.incomplete();
@@ -146,6 +152,9 @@ module.exports = {
             }
             let that = this;
             let address = this.fullPathForDisplay;
+            if (address.length <= 1) {
+                return;
+            }
             let bookmark = this.bookmarks.bookmarksMap.get(address);
             if (remove) {
                 if (bookmark != null) {
@@ -298,6 +307,7 @@ module.exports = {
                 window.addEventListener("resize", that.resizeHandler);
                 that.resizeHandler();
                 let func = function() {
+                    that.startTitleDetection();
                     that.postMessage({type: 'init', appName: that.sandboxAppName, appPath: that.appPath, allowBrowsing: that.browserMode});
                 };
                 that.setupIFrameMessaging(iframe, func);
@@ -393,7 +403,7 @@ module.exports = {
         actionRequest: function(path, requestId, apiMethod, data, hasFormData, params) {
             let that = this;
             let headerFunc = (mimeType) => that.buildHeader(path, mimeType, requestId);
-            this.postMessage({type: 'currentTitleRequest'});
+
             var bytes = convertToByteArray(new Int8Array(data));
             try {
                 if (apiMethod == 'GET') {
@@ -838,6 +848,7 @@ module.exports = {
             }
             window.removeEventListener('message', this.messageHandler);
             window.removeEventListener("resize", this.resizeHandler);
+            this.running = false;
             this.$emit("hide-app-sandbox");
         }
     }

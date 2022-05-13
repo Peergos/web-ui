@@ -214,23 +214,30 @@ module.exports = {
           let accumulator = [];
           let future = peergos.shared.util.Futures.incomplete();
           let appCount = appDirectories.length;
-          appDirectories.forEach(currentApp => {
-              currentApp.getChild("peergos-app.json", this.context.crypto.hasher, this.context.network).thenApply(function(propFileOpt) {
-                  that.readJSONFile(propFileOpt.ref).thenApply(res => {
-                      if (res == null) {
-                        appCount = appCount -1;
-                      } else {
-                        accumulator.push(res);
-                      }
-                      if (accumulator.length == appCount) {
-                          future.complete(accumulator);
-                      }
+          if (appCount == 0) {
+            that.installDefaultApp().thenApply( res => {
+                accumulator.push(res);
+                future.complete(accumulator);
+            });
+          } else {
+              appDirectories.forEach(currentApp => {
+                  currentApp.getChild("peergos-app.json", this.context.crypto.hasher, this.context.network).thenApply(function(propFileOpt) {
+                      that.readJSONFile(propFileOpt.ref).thenApply(res => {
+                          if (res == null) {
+                            appCount = appCount -1;
+                          } else {
+                            accumulator.push(res);
+                          }
+                          if (accumulator.length == appCount) {
+                              future.complete(accumulator);
+                          }
+                      });
                   });
               });
-          });
+          }
           return future;
       },
-      installDefaultApps: function() {
+      installDefaultApp: function() {
           let future = peergos.shared.util.Futures.incomplete();
           let that = this;
           let path = ".apps/htmlbrowser";
@@ -238,11 +245,11 @@ module.exports = {
           this.context.getByPath("/" + this.context.username).thenApply(rootOpt => {
               rootOpt.get().getOrMkdirs(appDir, that.context.network, true, that.mirrorBatId, that.context.crypto).thenApply(dir => {
                 let encoder = new TextEncoder();
-                let props = {"displayName": "HTML Browser",
-                    "version": "1.0.0-initial",
+                let props = {"schemaVersion": "1", "displayName": "HTML Browser", "name": "htmlbrowser",
+                    "version": "1.0.0-initial", "supportAddress": "", "folderAction": false,
                     "description": "for viewing HTML files",
                     "launchable": false,
-                    "fileExtensions": ["html","htm"]
+                    "fileExtensions": ["html","htm"], "mimeTypes": [], "fileTypes": [], "permissions": []
                 };
                 let uint8Array = encoder.encode(JSON.stringify(props));
                 let bytes = convertToByteArray(uint8Array);
@@ -251,7 +258,7 @@ module.exports = {
                     true, true, that.mirrorBatId, that.context.network, that.context.crypto, function (len) { },
                     that.context.getTransactionService()
                 ).thenApply(function (res) {
-                    future.complete(true);
+                    future.complete(props);
                 })
               });
           });
