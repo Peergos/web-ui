@@ -93,6 +93,7 @@
 				<li id='create-thumbnail' v-if="isWritable && canCreateThumbnail" @keyup.enter="createThumbnail"  @click="createThumbnail">Create Thumbnail</li>
 				<li id='folder-props' v-if="allowViewFolderProperties" @keyup.enter="viewFolderProperties"  @click="viewFolderProperties">Properties</li>
 				<li id='add-to-launcher' v-if="allowAddingToLauncher" @keyup.enter="addToLauncher"  @click="addToLauncher">Add to Launcher</li>
+                <li id='app-run' v-if="isInstallable" @keyup.enter="runApp()" @click="runApp()">Run App</li>
                 <li id='app-install' v-if="isInstallable" @keyup.enter="installApp()" @click="installApp()">Install App</li>
 
 			</DriveMenu>
@@ -157,6 +158,11 @@
 			:viewAction="viewAction"
 			:context="context">
 		</Search>
+        <AppRunner
+            v-if="showAppRunner"
+            v-on:hide-app-run="closeAppRunner"
+            :appPropsFile="selectedFiles[0]">
+        </AppRunner>
         <AppInstall
             v-if="showAppInstallation"
             v-on:hide-app-installation="closeAppInstallation"
@@ -206,6 +212,7 @@
 <script>
 
 const AppInstall = require("../components/sandbox/AppInstall.vue");
+const AppRunner = require("../components/sandbox/AppRunner.vue");
 const AppSandbox = require("../components/sandbox/AppSandbox.vue");
 const DriveHeader = require("../components/drive/DriveHeader.vue");
 const DriveGrid = require("../components/drive/DriveGrid.vue");
@@ -234,6 +241,7 @@ const launcherMixin = require("../mixins/launcher/index.js");
 module.exports = {
 	components: {
 	    AppInstall,
+	    AppRunner,
 	    AppSandbox,
 		DriveHeader,
 		DriveGrid,
@@ -309,6 +317,7 @@ module.exports = {
 			showPrompt: false,
             showFolderProperties: false,
             showAppInstallation: false,
+            showAppRunner: false,
             showAppSandbox: false,
             sandboxAppName: '',
 			showSelect: false,
@@ -425,6 +434,8 @@ module.exports = {
         isInstallable: function() {
            try {
                if (this.selectedFiles.length != 1)
+                   return false;
+               if (!this.isLoggedIn && this.path.length > 0)
                    return false;
                return !this.selectedFiles[0].isDirectory()
                     && this.selectedFiles[0].getFileProperties().name == "peergos-app.json";
@@ -869,6 +880,14 @@ module.exports = {
         },
         closeAppInstallation() {
             this.showAppInstallation = false;
+            this.forceSharedRefreshWithUpdate++;
+        },
+        runApp() {
+            this.closeMenu();
+            this.showAppRunner = true;
+        },
+        closeAppRunner() {
+            this.showAppRunner = false;
             this.forceSharedRefreshWithUpdate++;
         },
         createThumbnail() {

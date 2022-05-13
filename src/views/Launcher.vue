@@ -502,16 +502,20 @@ module.exports = {
         },
         removeApp: function(app) {
             let that = this;
-            this.confirmRemoveApp(app.displayName,
-                () => {
-                    that.showConfirm = false;
-                    that.deleteApp(app);
-                },
-                () => {
-                    that.showConfirm = false;
-                    that.showSpinner = false;
-                }
-            );
+            if (app.name == 'htmlbrowser') {
+                this.showErrorMessage('Unable to remove HTML Browser');
+            } else {
+                this.confirmRemoveApp(app.displayName,
+                    () => {
+                        that.showConfirm = false;
+                        that.deleteApp(app);
+                    },
+                    () => {
+                        that.showConfirm = false;
+                        that.showSpinner = false;
+                    }
+                );
+            }
         },
         deleteApp(app) {
             let that = this;

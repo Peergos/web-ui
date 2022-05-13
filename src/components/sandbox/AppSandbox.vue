@@ -62,9 +62,12 @@ module.exports = {
             'usageBytes',
             'context',
             "bookmarks"
+        ]),
+        ...Vuex.mapGetters([
+            'getPath',
         ])
     },
-    props: ['sandboxAppName', 'currentFile', 'currentPath'],
+    props: ['sandboxAppName', 'currentFile', 'currentPath', 'currentProps'],
     created: function() {
         let that = this;
         if (this.sandboxAppName == 'htmlbrowser') {
@@ -80,7 +83,7 @@ module.exports = {
         if (!this.supportsStreaming()) {
             this.giveUp();
         } else {
-            this.readAppProperties(that.sandboxAppName).thenApply(props => {
+            this.loadAppProperties(that.sandboxAppName).thenApply(props => {
                 if (props == null) {
                     that.fatalError('Application properties not found');
                 } else if (!that.validatePermissions(props)) {
@@ -100,6 +103,18 @@ module.exports = {
         }
     },
     methods: {
+        loadAppProperties: function(fullPath, title) {
+           let that = this;
+           var future = peergos.shared.util.Futures.incomplete();
+           if (this.currentProps != null) {
+                future.complete(this.currentProps);
+           } else {
+                this.readAppProperties(that.sandboxAppName).thenApply(props => {
+                    future.complete(props);
+                });
+            }
+            return future;
+        },
         currentTitleResponse: function(fullPath, title) {
             let that = this;
             let pathPrefix = '/apps/sandbox/';
@@ -745,7 +760,11 @@ module.exports = {
             if (filePath == this.appPath) {
                 return filePath;
             } else {
-                return this.context.username + "/.apps/" + this.sandboxAppName + '/' + filePath;
+                if (this.currentProps != null) { //running in-place
+                    return this.getPath + filePath;
+                } else {
+                    return this.context.username + "/.apps/" + this.sandboxAppName + '/' + filePath;
+                }
             }
         },
         findFile: function(filePath) {
