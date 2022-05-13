@@ -21,7 +21,7 @@
                 <div class="app-install-view">
                     <p>
                         <span class="app-install-span">Name:</span><span>{{appProperties.details.displayName}}&nbsp;
-                        {{appProperties.details.majorVersion}}.{{appProperties.details.minorVersion}}
+                        {{appProperties.details.version}}
                         </span>
                     </p>
                     <p>
@@ -136,7 +136,7 @@ module.exports = {
             }
             let appName = this.appProperties.details.name;
             let displayName = this.appProperties.details.displayName;
-            let newVersion = this.appProperties.details.majorVersion + '.' + this.appProperties.details.minorVersion;
+            let newVersion = this.appProperties.details.version;
             let that = this;
             this.showSpinner = true;
             this.context.getByPath("/" + this.context.username + "/.apps/" + appName).thenApply(appOpt => {
@@ -145,7 +145,7 @@ module.exports = {
                         if (props.details == null) {
                             that.installApp();
                         } else {
-                            let oldVersion = props.details.majorVersion + '.' + props.details.minorVersion;
+                            let oldVersion = props.details.version;
                             that.confirmReplaceAppInstall(displayName, oldVersion, newVersion,
                                 () => {
                                     that.showConfirm = false;

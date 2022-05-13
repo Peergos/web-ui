@@ -13,7 +13,7 @@
                 <div class="app-details-view">
                     <p>
                         <span class="app-details-span">Name:</span><span>{{appProperties.details.displayName}}&nbsp;
-                        {{appProperties.details.majorVersion}}.{{appProperties.details.minorVersion}}
+                        {{appProperties.details.version}}
                         </span>
                     </p>
                     <p>

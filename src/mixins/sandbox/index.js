@@ -35,14 +35,33 @@ module.exports = {
                   let props = res.app;
                   let errors = [];
                   if (props.schemaVersion == null) {
-                      errors.push("Missing property schemaVersion");
+                      props.schemaVersion = this.currentAppSchema;
                   }
-                  let fields = ["displayName","name","majorVersion","minorVersion"
-                      ,"description","supportAddress","fileExtensions","mimeTypes"
-                      , "launchable", "fileTypes", "folderAction"];
+                  if (props.details.version == null) {
+                      props.details.version = "0.0.1";
+                  }
+                  if (props.details.supportAddress == null) {
+                      props.details.supportAddress = "";
+                  }
+                  if (props.details.folderAction == null) {
+                      props.details.folderAction = false;
+                  }
+                  if (props.details.fileExtensions == null) {
+                      props.details.fileExtensions = [];
+                  }
+                  if (props.details.mimeTypes == null) {
+                      props.details.mimeTypes = [];
+                  }
+                  if (props.details.fileTypes == null) {
+                      props.details.fileTypes = [];
+                  }
+                  if (props.permissions == null) {
+                      props.permissions = [];
+                  }
+                  let mandatoryFields = ["displayName", "description", "launchable"];
                   let existingCreateMenuItems = ["upload files","upload folder","new folder","new file"];
                   let validPermissions = ["STORE_APP_DATA", "EDIT_CHOSEN_FILE", "READ_CHOSEN_FOLDER"];
-                  fields.forEach(field => {
+                  mandatoryFields.forEach(field => {
                       if (props.details[field] == null) {
                           errors.push("Missing property " + field);
                       }
@@ -62,21 +81,17 @@ module.exports = {
                             });
                         }
                       if (props.details.displayName.length > 25) {
-                          errors.push("Invalid displayName property. Length must not exceed 15 characters");
+                          errors.push("Invalid displayName property. Length must not exceed 25 characters");
                       }
-                      if (props.details.name.length > 25) {
-                          errors.push("Invalid name property. Length must not exceed 15 characters");
+                      if (!that.validateDisplayName(props.details.displayName)) {
+                          errors.push("Invalid displayName property. Use only alphanumeric characters plus dash and underscore");
                       }
-                      if (!props.details.name.match(/^[a-z\d\-_]+$/i)) {
-                          errors.push("Invalid name property. Use only alphanumeric characters plus dash and underscore");
-                      }
-                      const majorVersion = Number(props.details.majorVersion);
-                      if (!(majorVersion >= 0 && majorVersion < 1000)) {
-                          errors.push("Invalid majorVersion property. Must be numeric between 1 and 999");
-                      }
-                      const minorVersion = Number(props.details.minorVersion);
-                      if (!(minorVersion >= 0 && minorVersion < 1000)) {
-                          errors.push("Invalid minorVersion property. Must be numeric between 1 and 999");
+                      props.details.name = props.details.displayName.replaceAll(' ', '');
+                      const versionStr = props.details.version;
+                      try {
+                        peergos.shared.util.Version.parse(versionStr);
+                      } catch {
+                          errors.push("Invalid version property. Must be of format: major.minor.patch-suffix");
                       }
                       if (props.details.description.length > 100) {
                           errors.push("Invalid description property. Length must not exceed 100 characters");
@@ -114,6 +129,16 @@ module.exports = {
               }
           });
           return future;
+      },
+      validateDisplayName: function(displayName) {
+          if (displayName === '')
+              return false;
+          if (displayName.includes('.') || displayName.includes('..'))
+              return false;
+          if (!displayName.match(/^[a-z\d\-_\s]+$/i)) {
+              return false;
+          }
+          return true;
       },
       readJSONFile: function(file) {
           let future = peergos.shared.util.Futures.incomplete();
