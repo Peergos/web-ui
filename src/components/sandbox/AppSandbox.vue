@@ -3,11 +3,15 @@
     <div class="modal-mask-app" @click="closeApp">
         <div class="modal-container full-height" @click.stop style="width:100%;overflow-y:auto;padding:0;display:flex;flex-flow:column;">
             <div class="modal-header-app">
-              <span style="position:absolute;top:0;right:5em;">
-                <span @click="closeApp" tabindex="0" v-on:keyup.enter="closeApp" style="color:black;font-size:3em;font-weight:bold;cursor:pointer;">&times;</span>
-              </span>
+                <center v-if="browserMode"><h2>{{ getFullPathForDisplay() }}</h2></center>
+                <span style="position:absolute;top:0;right:0.2em;">
+                    <span v-if="browserMode" style="z-index:9999">
+                          <img v-if="displayToBookmark" src="/images/bookmark-o.png" @click="toggleBookmark(false)" style="color:black;font-size:2.5em;cursor:pointer;margin-bottom: 0.4em;margin-right: 0.3em;">
+                          <img v-if="!displayToBookmark" src="/images/bookmark.png" @click="toggleBookmark(true)" style="color:black;font-size:2.5em;cursor:pointer;margin-bottom: 0.4em;margin-right: 0.3em;">
+                    </span>
+                    <span @click="closeApp" tabindex="0" v-on:keyup.enter="closeApp" style="color:black;font-size:3em;font-weight:bold;cursor:pointer;">&times;</span>
+                </span>
             </div>
-
             <div id='sandbox-container' class="modal-body" style="padding:0;display:flex;flex-grow:1;">
             </div>
             <spinner v-if="showSpinner" :message="spinnerMessage"></spinner>
@@ -20,9 +24,10 @@
 const downloaderMixins = require("../../mixins/downloader/index.js");
 const router = require("../../mixins/router/index.js");
 const sandboxMixin = require("../../mixins/sandbox/index.js");
+const launcherMixin = require("../../mixins/launcher/index.js");
 
 module.exports = {
-	mixins:[downloaderMixins, router, sandboxMixin],
+	mixins:[downloaderMixins, router, sandboxMixin, launcherMixin],
     data: function() {
         return {
             showSpinner: false,
@@ -44,24 +49,29 @@ module.exports = {
             permissionsMap: new Map(),
             PERMISSION_STORE_APP_DATA: 'STORE_APP_DATA',
             PERMISSION_EDIT_CHOSEN_FILE: 'EDIT_CHOSEN_FILE',
-            PERMISSION_READ_CHOSEN_FOLDER: 'READ_CHOSEN_FOLDER'
+            PERMISSION_READ_CHOSEN_FOLDER: 'READ_CHOSEN_FOLDER',
+            browserMode: false,
+            fullPathForDisplay: '',
+            displayToBookmark: true,
+            launcherApp: null,
         }
     },
     computed: {
         ...Vuex.mapState([
             'quotaBytes',
             'usageBytes',
-            'context'
-        ]),
-        ...Vuex.mapGetters([
-            'getPath',
+            'context',
+            "bookmarks"
         ])
     },
-    props: ['sandboxAppName', 'currentFile'],
+    props: ['sandboxAppName', 'currentFile', 'currentPath'],
     created: function() {
         let that = this;
+        if (this.sandboxAppName == 'htmlbrowser') {
+            this.browserMode = true;
+        }
         let currentFilename = this.currentFile == null ? '' : this.currentFile.getName();
-        this.appPath = this.currentFile == null ? '' : this.getPath + currentFilename;
+        this.appPath = this.currentFile == null ? '' : this.currentPath + currentFilename;
         if (this.currentFile != null) {
             if (this.currentFile.getFileProperties().isDirectory) {
                 this.isAppPathAFolder = true;
@@ -80,7 +90,9 @@ module.exports = {
                         that.sandboxedApp = sandboxedApp;
                         peergos.shared.user.App.getAppSubdomain(that.sandboxAppName, that.context.crypto.hasher).thenApply(appSubdomain => {
                             that.appSubdomain = appSubdomain;
-                            that.startListener();
+                            that.loadBookmarks().thenApply(res => {
+                                that.startListener();
+                            });
                         });
                     });
                 }
@@ -88,6 +100,97 @@ module.exports = {
         }
     },
     methods: {
+        currentTitleResponse: function(fullPath, title) {
+            let that = this;
+            let pathPrefix = '/apps/sandbox/';
+            let fullPrefix = pathPrefix + '/' + this.context.username + '/assets/$peergos';
+            let path = '';
+            if (fullPath.startsWith(fullPrefix)) {
+                path = fullPath.substring(fullPrefix.length);
+            } else {
+                path = fullPath.substring(pathPrefix.length);
+            }
+            this.setFullPathForDisplay(path);
+        },
+        getFullPathForDisplay: function() {
+            return this.fullPathForDisplay;
+        },
+        setFullPathForDisplay: function(path) {
+            this.fullPathForDisplay = path;
+            if (this.browserMode) {
+                if (this.bookmarks.bookmarksMap.get(this.fullPathForDisplay) == null) {
+                    this.displayToBookmark = true;
+                } else {
+                    this.displayToBookmark = false;
+                }
+            }
+        },
+        toggleBookmark: function(remove) {
+            if(this.showSpinner || this.isSecretLink) {
+                return;
+            }
+            let that = this;
+            let address = this.fullPathForDisplay;
+            let bookmark = this.bookmarks.bookmarksMap.get(address);
+            if (remove) {
+                if (bookmark != null) {
+                    this.refreshAndDeleteBookmark(address);
+                }
+            } else {
+                if (bookmark == null) {
+                    this.refreshAndAddBookmark(address);
+                }
+            }
+        },
+        refreshAndAddBookmark(link) {
+            let that = this;
+            this.showSpinner = true;
+            this.loadBookmarksFile(this.launcherApp).thenApply(bookmarksMap => {
+                if (bookmarksMap.get(link) == null) {
+                    let entry = {added: new Date()};
+                    bookmarksMap.set(link, entry)
+                    that.updateBookmarksFile(that.launcherApp, bookmarksMap).thenApply(res => {
+                        that.showSpinner = false;
+                        that.displayToBookmark = false;
+                        that.$store.commit("SET_BOOKMARKS", bookmarksMap);
+                    });
+                } else {
+                    that.showSpinner = false;
+                }
+            })
+        },
+        refreshAndDeleteBookmark(link) {
+            let that = this;
+            this.showSpinner = true;
+            this.loadBookmarksFile(this.launcherApp).thenApply(bookmarksMap => {
+                if (bookmarksMap.get(link) != null) {
+                    bookmarksMap.delete(link)
+                    that.updateBookmarksFile(that.launcherApp, bookmarksMap).thenApply(res => {
+                        that.showSpinner = false;
+                        that.displayToBookmark = true;
+                        that.$store.commit("SET_BOOKMARKS", bookmarksMap);
+                    });
+                } else {
+                    that.showSpinner = false;
+                }
+            })
+        },
+        loadBookmarks: function() {
+            let that = this;
+            let future = peergos.shared.util.Futures.incomplete();
+            if (!this.browserMode || this.isSecretLink) {
+                future.complete(true);
+            } else {
+                peergos.shared.user.App.init(this.context, "launcher").thenApply(launcher => {
+                    that.launcherApp = launcher;
+                    that.loadBookmarksFile(launcher).thenApply(bookmarksMap => {
+                        that.$store.commit("SET_BOOKMARKS", bookmarksMap);
+                        future.complete(true);
+                    });
+                });
+            }
+            return future;
+        },
         validatePermissions: function(props) {
             let allPermissions = new Map();
             props.permissions.forEach(permission => {
@@ -153,6 +256,8 @@ module.exports = {
                     } else if(e.data.action == 'actionRequest') {
                         that.actionRequest(e.data.filePath, e.data.requestId, e.data.apiMethod, e.data.bytes,
                             e.data.hasFormData, e.data.params);
+                    } else if(e.data.action == 'currentTitleResponse') {
+                        that.currentTitleResponse(e.data.path, e.data.title);
                     } else if(e.data.action == 'postShutdown') {
                         that.closeSandbox();
                     }
@@ -160,7 +265,9 @@ module.exports = {
             }
         },
         startListener: function() {
-            this.showSpinner = true;
+            if (!this.browserMode) {
+                this.showSpinner = true;
+            }
             var that = this;
             var iframeContainer = document.getElementById("sandbox-container");
             var iframe = document.createElement('iframe');
@@ -176,7 +283,7 @@ module.exports = {
                 window.addEventListener("resize", that.resizeHandler);
                 that.resizeHandler();
                 let func = function() {
-                    that.postMessage({type: 'init', appName: that.sandboxAppName, appPath: that.appPath});
+                    that.postMessage({type: 'init', appName: that.sandboxAppName, appPath: that.appPath, allowBrowsing: that.browserMode});
                 };
                 that.setupIFrameMessaging(iframe, func);
             });
@@ -271,7 +378,7 @@ module.exports = {
         actionRequest: function(path, requestId, apiMethod, data, hasFormData, params) {
             let that = this;
             let headerFunc = (mimeType) => that.buildHeader(path, mimeType, requestId);
-
+            this.postMessage({type: 'currentTitleRequest'});
             var bytes = convertToByteArray(new Int8Array(data));
             try {
                 if (apiMethod == 'GET') {
@@ -295,8 +402,12 @@ module.exports = {
                                 }
                             });
                         } else if (!path.startsWith(that.appPath) || that.appPath.length == 0) {
-                            that.showError("App attempted to read unexpected path:" + path);
-                            that.buildResponse(headerFunc(), null, that.ACTION_FAILED);
+                            if (that.browserMode) {
+                                that.readFileOrFolder(headerFunc, path, params);
+                            } else {
+                                that.showError("App attempted to read unexpected path:" + path);
+                                that.buildResponse(headerFunc(), null, that.ACTION_FAILED);
+                            }
                         } else {
                             that.readFileOrFolder(headerFunc, path, params);
                         }

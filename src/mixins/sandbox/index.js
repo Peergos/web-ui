@@ -8,10 +8,23 @@ module.exports = {
     computed: {
         ...Vuex.mapState([
         "context",
-        "sandboxedApps"
+        "sandboxedApps",
+        'mirrorBatId',
         ])
     },
   methods: {
+      initSandboxedApps() {
+          let that = this;
+          this.context.getByPath(this.context.username + "/.apps").thenApply(appsDirOpt => {
+              if (appsDirOpt.ref != null) {
+                  appsDirOpt.get().getChildren(that.context.crypto.hasher, that.context.network).thenApply(children => {
+                      that.loadAllAppProperties(children.toArray()).thenApply(sandboxedAppsPropsList => {
+                          that.registerApps(sandboxedAppsPropsList);
+                      });
+                  });
+              }
+          });
+      },
       convertPermissionToHumanReadable: function(permission) {
           if (permission === 'STORE_APP_DATA') {
               return "Can store and read files in a folder private to the app";
@@ -152,7 +165,7 @@ module.exports = {
                           if (props.permissions == null) {
                               props.permissions = [];
                           }
-                          props.name = props.displayName.replaceAll(' ', '');
+                          props.name = props.displayName.replaceAll(' ', '').toLowerCase().trim();
                           future.complete(props);
                       } catch (ex) {
                           console.log(ex);
@@ -200,9 +213,6 @@ module.exports = {
           let that = this;
           let accumulator = [];
           let future = peergos.shared.util.Futures.incomplete();
-          if (appDirectories.length == 0) {
-              future.complete(accumulator);
-          }
           let appCount = appDirectories.length;
           appDirectories.forEach(currentApp => {
               currentApp.getChild("peergos-app.json", this.context.crypto.hasher, this.context.network).thenApply(function(propFileOpt) {
@@ -216,6 +226,33 @@ module.exports = {
                           future.complete(accumulator);
                       }
                   });
+              });
+          });
+          return future;
+      },
+      installDefaultApps: function() {
+          let future = peergos.shared.util.Futures.incomplete();
+          let that = this;
+          let path = ".apps/htmlbrowser";
+          let appDir = peergos.client.PathUtils.directoryToPath(path.split('/'));
+          this.context.getByPath("/" + this.context.username).thenApply(rootOpt => {
+              rootOpt.get().getOrMkdirs(appDir, that.context.network, true, that.mirrorBatId, that.context.crypto).thenApply(dir => {
+                let encoder = new TextEncoder();
+                let props = {"displayName": "HTML Browser",
+                    "version": "1.0.0-initial",
+                    "description": "for viewing HTML files",
+                    "launchable": false,
+                    "fileExtensions": ["html","htm"]
+                };
+                let uint8Array = encoder.encode(JSON.stringify(props));
+                let bytes = convertToByteArray(uint8Array);
+                let reader = new peergos.shared.user.fs.AsyncReader.ArrayBacked(bytes);
+                dir.uploadFileJS("peergos-app.json", reader, 0, bytes.byteLength,
+                    true, true, that.mirrorBatId, that.context.network, that.context.crypto, function (len) { },
+                    that.context.getTransactionService()
+                ).thenApply(function (res) {
+                    future.complete(true);
+                })
               });
           });
           return future;

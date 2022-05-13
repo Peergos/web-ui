@@ -72,13 +72,13 @@ const Bip39 = require('../mixins/password/bip-0039-english.json');
 const BannedUsernames = require('../mixins/password/bannedUsernames.json');
 const FormPassword = require("./form/FormPassword.vue");
 const UriDecoder = require('../mixins/uridecoder/index.js');
-
+const sandboxMixin = require("../mixins/sandbox/index.js");
 module.exports = {
     components: {
 	FormPassword,
     },
 
-    mixins:[UriDecoder],
+    mixins:[UriDecoder, sandboxMixin],
 
     props: {
 	token: {
@@ -176,16 +176,18 @@ module.exports = {
 					that.crypto,
 					{"accept" : x => that.$toast.info(x, {id:'signup', timeout:false})}
 					).thenApply(function(context) {
-						that.$store.commit('CURRENT_VIEW', 'Drive');
-						that.$store.commit('SET_CONTEXT', context);
-						that.$store.commit('USER_LOGIN', true);
-						that.$store.commit('CURRENT_MODAL', 'ModalTour');
-
-						that.updatePayment()
-						that.updateSocial()
-						that.updateUsage()
-						console.log("Signing in/up took " + (Date.now()-creationStart)+" mS from function call");
-						that.$toast.dismiss('signup');
+                        that.$store.commit('SET_CONTEXT', context);
+                        that.$store.commit('USER_LOGIN', true);
+					    that.installDefaultApps().thenApply(function() {
+                            that.initSandboxedApps();
+                            that.$store.commit('CURRENT_VIEW', 'Drive');
+                            that.$store.commit('CURRENT_MODAL', 'ModalTour');
+                            that.updatePayment()
+                            that.updateSocial()
+                            that.updateUsage()
+                            console.log("Signing in/up took " + (Date.now()-creationStart)+" mS from function call");
+                            that.$toast.dismiss('signup');
+                        });
                     }).exceptionally(function(throwable) {
                         that.$toast.error(that.uriDecode(throwable.getMessage()),{timeout:false, id: 'signup'})
                     });

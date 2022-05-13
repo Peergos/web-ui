@@ -14,7 +14,8 @@
                 v-if="showAppSandbox"
                 v-on:hide-app-sandbox="closeAppSandbox"
                 :sandboxAppName="sandboxAppName"
-                :currentFile=null>
+                :currentFile="currentFile"
+                :currentPath="currentPath">
             </AppSandbox>
             <confirm
                     v-if="showConfirm"
@@ -239,7 +240,9 @@ module.exports = {
             sandboxAppName: '',
             showShare: false,
             messages: [],
-            currentEntry: null
+            currentEntry: null,
+            currentFile: null,
+            currentPath: null,
         }
     },
     props: [],
@@ -467,9 +470,11 @@ module.exports = {
             });
             that.shortcutList = allShortcuts;
         },
-        launchApp: function(appName) {
+        launchApp: function(appName, currentFile, currentPath) {
             this.showAppSandbox = true;
             this.sandboxAppName = appName;
+            this.currentFile = currentFile;
+            this.currentPath = currentPath;
         },
         closeAppSandbox() {
             this.showAppSandbox = false;
@@ -775,20 +780,24 @@ module.exports = {
             let fullPath = entry.path + (entry.isDirectory ? "" : '/' + entry.name);
             this.findFile(fullPath).thenApply(file => {
                 if (file != null) {
-                    let app = that.getApp(file, entry.path, file.isWritable());
-                    if (app == 'hex') {
-                        that.openFileOrDir("Drive", entry.path, {filename:""});
+                    let mimeType = file.getFileProperties().mimeType;
+                    if (mimeType == 'text/html') {
+                        that.launchApp('htmlbrowser', file, entry.path + '/');
                     } else {
-                        if (app == 'editor') {
-                            let mimeType = file.getFileProperties().mimeType;
-                            if (mimeType.startsWith("text/x-markdown") ||
-                                ( mimeType.startsWith("text/") && entry.name.endsWith('.md'))) {
-                                that.openFileOrDir("markdown", entry.path, {filename:entry.name});
-                            } else {
-                                that.openFileOrDir("editor", entry.path, {filename:entry.name});
-                            }
+                        let app = that.getApp(file, entry.path, file.isWritable());
+                        if (app == 'hex') {
+                            that.openFileOrDir("Drive", entry.path, {filename:""});
                         } else {
-                            that.openFileOrDir(app, entry.path, {filename:entry.name});
+                            if (app == 'editor') {
+                                if (mimeType.startsWith("text/x-markdown") ||
+                                    ( mimeType.startsWith("text/") && entry.name.endsWith('.md'))) {
+                                    that.openFileOrDir("markdown", entry.path, {filename:entry.name});
+                                } else {
+                                    that.openFileOrDir("editor", entry.path, {filename:entry.name});
+                                }
+                            } else {
+                                that.openFileOrDir(app, entry.path, {filename:entry.name});
+                            }
                         }
                     }
                 }

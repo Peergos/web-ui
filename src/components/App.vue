@@ -218,19 +218,6 @@ module.exports = {
             });
 	    }
 	},
-    initSandboxedApps() {
-        let that = this;
-        this.context.getByPath(this.context.username + "/.apps").thenApply(appsDirOpt => {
-            if (appsDirOpt.ref != null) {
-                appsDirOpt.get().getChildren(that.context.crypto.hasher, that.context.network).thenApply(children => {
-                    that.loadAllAppProperties(children.toArray()).thenApply(sandboxedAppsPropsList => {
-                        that.registerApps(sandboxedAppsPropsList);
-                    });
-                });
-            }
-        });
-    },
-
         getSecretLinkProps() {
             var fragment = window.location.hash.substring(1);
 	    var props = {};

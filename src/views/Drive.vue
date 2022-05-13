@@ -166,7 +166,8 @@
             v-if="showAppSandbox"
             v-on:hide-app-sandbox="closeAppSandbox"
             :sandboxAppName="sandboxAppName"
-            :currentFile="selectedFiles[0]">
+            :currentFile="selectedFiles[0]"
+            :currentPath="getPath">
         </AppSandbox>
         <replace
             v-if="showReplace"
