@@ -28,41 +28,16 @@ module.exports = {
           let that = this;
           let appNames = this.sandboxedApps.appsInstalled.slice();
           let future = peergos.shared.util.Futures.incomplete();
-          this.readJSONFile(file).thenApply(res => {
-              if (res == null) {
+          this.readJSONFile(file).thenApply(props => {
+              if (props == null) {
                   future.complete({props: null, errors: ['Unable to parse peergos-app.json. See console for details']});
               } else {
-                  let props = res.app;
                   let errors = [];
-                  if (props.schemaVersion == null) {
-                      props.schemaVersion = this.currentAppSchema;
-                  }
-                  if (props.details.version == null) {
-                      props.details.version = "0.0.1";
-                  }
-                  if (props.details.supportAddress == null) {
-                      props.details.supportAddress = "";
-                  }
-                  if (props.details.folderAction == null) {
-                      props.details.folderAction = false;
-                  }
-                  if (props.details.fileExtensions == null) {
-                      props.details.fileExtensions = [];
-                  }
-                  if (props.details.mimeTypes == null) {
-                      props.details.mimeTypes = [];
-                  }
-                  if (props.details.fileTypes == null) {
-                      props.details.fileTypes = [];
-                  }
-                  if (props.permissions == null) {
-                      props.permissions = [];
-                  }
                   let mandatoryFields = ["displayName", "description", "launchable"];
                   let existingCreateMenuItems = ["upload files","upload folder","new folder","new file"];
                   let validPermissions = ["STORE_APP_DATA", "EDIT_CHOSEN_FILE", "READ_CHOSEN_FOLDER"];
                   mandatoryFields.forEach(field => {
-                      if (props.details[field] == null) {
+                      if (props[field] == null) {
                           errors.push("Missing property " + field);
                       }
                   });
@@ -80,48 +55,47 @@ module.exports = {
                                 }
                             });
                         }
-                      if (props.details.displayName.length > 25) {
+                      if (props.displayName.length > 25) {
                           errors.push("Invalid displayName property. Length must not exceed 25 characters");
                       }
-                      if (!that.validateDisplayName(props.details.displayName)) {
+                      if (!that.validateDisplayName(props.displayName)) {
                           errors.push("Invalid displayName property. Use only alphanumeric characters plus dash and underscore");
                       }
-                      props.details.name = props.details.displayName.replaceAll(' ', '');
-                      const versionStr = props.details.version;
+                      const versionStr = props.version;
                       try {
                         peergos.shared.util.Version.parse(versionStr);
                       } catch {
                           errors.push("Invalid version property. Must be of format: major.minor.patch-suffix");
                       }
-                      if (props.details.description.length > 100) {
+                      if (props.description.length > 100) {
                           errors.push("Invalid description property. Length must not exceed 100 characters");
                       }
-                      if (!(typeof props.details.launchable == "boolean")) {
+                      if (!(typeof props.launchable == "boolean")) {
                           errors.push("Invalid launchable property. Must have boolean value of true or false");
                       }
-                      if (!(typeof props.details.folderAction == "boolean")) {
+                      if (!(typeof props.folderAction == "boolean")) {
                           errors.push("Invalid folderAction property. Must have boolean value of true or false");
                       }
-                      if (props.details.supportAddress.length > 100) {
+                      if (props.supportAddress.length > 100) {
                           errors.push("Invalid supportAddress property. Length must not exceed 100 characters");
                       }
-                        if (props.details.createMenuText != null) {
-                          if (props.details.createMenuText.length > 25) {
+                        if (props.createMenuText != null) {
+                          if (props.createMenuText.length > 25) {
                               errors.push("Invalid createMenuText property. Length must not exceed 25 characters");
                           }
-                          let lowercaseText = props.details.createMenuText.toLowerCase().trim();
+                          let lowercaseText = props.createMenuText.toLowerCase().trim();
                           let itemIndex = existingCreateMenuItems.findIndex(v => v.name === lowercaseText);
                           if (itemIndex > -1) {
                               errors.push("Invalid createMenuText property. Menu text already exists!");
                           }
                         }
-                      if (!(props.details.fileExtensions.constructor === Array)) {
+                      if (!(props.fileExtensions.constructor === Array)) {
                           errors.push("Invalid fileExtensions property. Must be an array. Can be empty []");
                       }
-                      if (!(props.details.mimeTypes.constructor === Array)) {
+                      if (!(props.mimeTypes.constructor === Array)) {
                           errors.push("Invalid mimeTypes property. Must be an array. Can be empty []");
                       }
-                      if (!(props.details.fileTypes.constructor === Array)) {
+                      if (!(props.fileTypes.constructor === Array)) {
                           errors.push("Invalid fileTypes property. Must be an array. Can be empty []");
                       }
                   }
@@ -153,7 +127,33 @@ module.exports = {
                   let data = convertToByteArray(new Int8Array(size));
                   return reader.readIntoArray(data, 0, data.length).thenApply(read => {
                       try {
-                          future.complete(JSON.parse(new TextDecoder().decode(data)));
+                          let props = JSON.parse(new TextDecoder().decode(data));
+                          if (props.schemaVersion == null) {
+                              props.schemaVersion = this.currentAppSchema;
+                          }
+                          if (props.version == null) {
+                              props.version = "0.0.1";
+                          }
+                          if (props.supportAddress == null) {
+                              props.supportAddress = "";
+                          }
+                          if (props.folderAction == null) {
+                              props.folderAction = false;
+                          }
+                          if (props.fileExtensions == null) {
+                              props.fileExtensions = [];
+                          }
+                          if (props.mimeTypes == null) {
+                              props.mimeTypes = [];
+                          }
+                          if (props.fileTypes == null) {
+                              props.fileTypes = [];
+                          }
+                          if (props.permissions == null) {
+                              props.permissions = [];
+                          }
+                          props.name = props.displayName.replaceAll(' ', '');
+                          future.complete(props);
                       } catch (ex) {
                           console.log(ex);
                           future.complete(null);
@@ -166,25 +166,24 @@ module.exports = {
         readAppProperties: function(appName) {
             let that = this;
             let future = peergos.shared.util.Futures.incomplete();
-            let emptyObj = {};
             this.context.getByPath(this.context.username + "/.apps/" + appName).thenApply(appDirOpt => {
                 if (appDirOpt.ref != null) {
                     appDirOpt.get().getChild("peergos-app.json", that.context.crypto.hasher, that.context.network).thenApply(function(propFileOpt) {
                         if (propFileOpt.ref == null) {
                             console.log('peergos-app.json not found! App: ' + appName);
-                            future.complete(emptyObj);
+                            future.complete(null);
                         } else {
                             let props = propFileOpt.ref.getFileProperties();
                             if (!props.created.equals(props.modified)) {
                                 console.log('peergos-app.json file has changed! App: ' + appName);
-                                future.complete(emptyObj);
+                                future.complete(null);
                             } else {
                                 that.readJSONFile(propFileOpt.ref).thenApply(res => {
                                     if (res == null) {
                                         console.log('Properties not found! App: ' + appName);
-                                        future.complete(emptyObj);
+                                        future.complete(null);
                                     } else {
-                                        future.complete(res.app);
+                                        future.complete(res);
                                     }
                                 });
                             }
@@ -192,7 +191,7 @@ module.exports = {
                     });
                 } else {
                     console.log('App directory not found! App: ' + appName);
-                    future.complete(emptyObj);
+                    future.complete(null);
                 }
             });
             return future;
@@ -211,7 +210,7 @@ module.exports = {
                       if (res == null) {
                         appCount = appCount -1;
                       } else {
-                        accumulator.push(res.app);
+                        accumulator.push(res);
                       }
                       if (accumulator.length == appCount) {
                           future.complete(accumulator);
@@ -285,41 +284,41 @@ module.exports = {
         },
         registerApp: function(props) {
             var appsInstalled = this.sandboxedApps.appsInstalled.slice();
-            let appIndex = appsInstalled.findIndex(v => v.name === props.details.name);
+            let appIndex = appsInstalled.findIndex(v => v.name === props.name);
             if (appIndex > -1) {
-                this.deRegisterApp(props.details);
+                this.deRegisterApp(props);
             }
             appsInstalled = this.sandboxedApps.appsInstalled.slice();
             let appFileExtensionRegistrationMap = new Map(this.sandboxedApps.appFileExtensionRegistrationMap);
             let appMimeTypeRegistrationMap = new Map(this.sandboxedApps.appMimeTypeRegistrationMap);
             let appFileTypeRegistrationMap = new Map(this.sandboxedApps.appFileTypeRegistrationMap);
-            appsInstalled.push({name: props.details.name, displayName: props.details.displayName,
-                createMenuText: props.details.createMenuText, launchable: props.details.launchable,
-                folderAction: props.details.folderAction});
-            props.details.fileExtensions.forEach(extension => {
+            appsInstalled.push({name: props.name, displayName: props.displayName,
+                createMenuText: props.createMenuText, launchable: props.launchable,
+                folderAction: props.folderAction});
+            props.fileExtensions.forEach(extension => {
                 let currentMapping = appFileExtensionRegistrationMap.get(extension);
                 if (currentMapping == null) {
-                    currentMapping = [{name: props.details.name, displayName: props.details.displayName}];
+                    currentMapping = [{name: props.name, displayName: props.displayName}];
                 } else {
-                    currentMapping.push({name: props.details.name, displayName: props.details.displayName});
+                    currentMapping.push({name: props.name, displayName: props.displayName});
                 }
                 appFileExtensionRegistrationMap.set(extension, currentMapping);
             });
-            props.details.mimeTypes.forEach(mimeType => {
+            props.mimeTypes.forEach(mimeType => {
                 let currentMapping = appMimeTypeRegistrationMap.get(mimeType);
                 if (currentMapping == null) {
-                    currentMapping = [{name: props.details.name, displayName: props.details.displayName}];
+                    currentMapping = [{name: props.name, displayName: props.displayName}];
                 } else {
-                    currentMapping.push({name: props.details.name, displayName: props.details.displayName});
+                    currentMapping.push({name: props.name, displayName: props.displayName});
                 }
                 appMimeTypeRegistrationMap.set(mimeType, currentMapping);
             });
-            props.details.fileTypes.forEach(fileType => {
+            props.fileTypes.forEach(fileType => {
                 let currentMapping = appFileTypeRegistrationMap.get(fileType);
                 if (currentMapping == null) {
-                    currentMapping = [{name: props.details.name, displayName: props.details.displayName}];
+                    currentMapping = [{name: props.name, displayName: props.displayName}];
                 } else {
-                    currentMapping.push({name: props.details.name, displayName: props.details.displayName});
+                    currentMapping.push({name: props.name, displayName: props.displayName});
                 }
                 appFileTypeRegistrationMap.set(fileType, currentMapping);
             });

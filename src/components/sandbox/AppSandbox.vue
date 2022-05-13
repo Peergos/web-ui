@@ -71,7 +71,9 @@ module.exports = {
             this.giveUp();
         } else {
             this.readAppProperties(that.sandboxAppName).thenApply(props => {
-                if (!that.validatePermissions(props)) {
+                if (props == null) {
+                    that.fatalError('Application properties not found');
+                } else if (!that.validatePermissions(props)) {
                     that.fatalError('Application configuration error. See console for further details');
                 } else {
                     peergos.shared.user.App.init(that.context, that.sandboxAppName).thenApply(sandboxedApp => {
@@ -92,11 +94,11 @@ module.exports = {
                 allPermissions.set(permission, new Date());
             });
             this.permissionsMap = allPermissions;
-            if (!props.details.folderAction && this.isAppPathAFolder) {
+            if (!props.folderAction && this.isAppPathAFolder) {
                 console.log('App configured as NOT a FolderAction, but Path is a folder!');
                 return false;
             }
-            if (props.details.folderAction && !this.isAppPathAFolder) {
+            if (props.folderAction && !this.isAppPathAFolder) {
                 console.log('App configured as a FolderAction, but Path is not a folder!');
                 return false;
             }

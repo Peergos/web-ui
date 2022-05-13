@@ -20,27 +20,27 @@
             <div v-if="appProperties != null">
                 <div class="app-install-view">
                     <p>
-                        <span class="app-install-span">Name:</span><span>{{appProperties.details.displayName}}&nbsp;
-                        {{appProperties.details.version}}
+                        <span class="app-install-span">Name:</span><span>{{appProperties.displayName}}&nbsp;
+                        {{appProperties.version}}
                         </span>
                     </p>
                     <p>
-                        <span class="app-install-span">Description:</span><span class="app-install-text">{{appProperties.details.description}}</span>
+                        <span class="app-install-span">Description:</span><span class="app-install-text">{{appProperties.description}}</span>
                     </p>
                     <p>
-                        <span class="app-install-span">Support:</span><span class="app-install-text">{{appProperties.details.supportAddress}}</span>
+                        <span class="app-install-span">Support:</span><span class="app-install-text">{{appProperties.supportAddress}}</span>
                     </p>
                     <p>
-                        <span v-if="appProperties.details.fileExtensions.length > 0" class="app-install-span">Associated File extensions:</span><span class="app-install-text">{{appProperties.details.fileExtensions.join(", ")}}</span>
+                        <span v-if="appProperties.fileExtensions.length > 0" class="app-install-span">Associated File extensions:</span><span class="app-install-text">{{appProperties.fileExtensions.join(", ")}}</span>
                     </p>
                     <p>
-                        <span v-if="appProperties.details.mimeTypes.length > 0" class="app-install-span">Associated Mime types:</span><span class="app-install-text">{{appProperties.details.mimeTypes.join(", ")}}</span>
+                        <span v-if="appProperties.mimeTypes.length > 0" class="app-install-span">Associated Mime types:</span><span class="app-install-text">{{appProperties.mimeTypes.join(", ")}}</span>
                     </p>
                     <p>
-                        <span v-if="appProperties.details.fileTypes.length > 0" class="app-install-span">Associated File types:</span><span class="app-install-text">{{appProperties.details.fileTypes.join(", ")}}</span>
+                        <span v-if="appProperties.fileTypes.length > 0" class="app-install-span">Associated File types:</span><span class="app-install-text">{{appProperties.fileTypes.join(", ")}}</span>
                     </p>
                     <p>
-                        <span v-if="appProperties.details.folderAction==true" class="app-install-span">Is a Folder Action</span>
+                        <span v-if="appProperties.folderAction==true" class="app-install-span">Is a Folder Action</span>
                     </p>
                     <p v-if="appProperties.permissions.length == 0">
                         <span class="app-install-span">Permissions:</span><span class="app-install-text">None Required</span>
@@ -134,18 +134,18 @@ module.exports = {
             if (this.appProperties == null) {
                 return;
             }
-            let appName = this.appProperties.details.name;
-            let displayName = this.appProperties.details.displayName;
-            let newVersion = this.appProperties.details.version;
+            let appName = this.appProperties.name;
+            let displayName = this.appProperties.displayName;
+            let newVersion = this.appProperties.version;
             let that = this;
             this.showSpinner = true;
             this.context.getByPath("/" + this.context.username + "/.apps/" + appName).thenApply(appOpt => {
                 if (appOpt.ref != null) {
                     that.readAppProperties(appName).thenApply(props => {
-                        if (props.details == null) {
+                        if (props == null) {
                             that.installApp();
                         } else {
-                            let oldVersion = props.details.version;
+                            let oldVersion = props.version;
                             that.confirmReplaceAppInstall(displayName, oldVersion, newVersion,
                                 () => {
                                     that.showConfirm = false;
@@ -165,8 +165,8 @@ module.exports = {
         },
        installApp: function(oldProperties) {
            let that = this;
-           let displayName = this.appProperties.details.displayName;
-           let appName = this.appProperties.details.name;
+           let displayName = this.appProperties.displayName;
+           let appName = this.appProperties.name;
            let srcPath = that.getPath.substring(0, that.getPath.length -1);
            that.context.getByPath(that.getPath).thenApply(srcDirectoryOpt => {
                that.calculateTotalSize(srcDirectoryOpt.ref, srcPath).thenApply(statistics => {

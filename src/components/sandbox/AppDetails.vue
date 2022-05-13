@@ -12,27 +12,27 @@
             <div v-if="appProperties != null">
                 <div class="app-details-view">
                     <p>
-                        <span class="app-details-span">Name:</span><span>{{appProperties.details.displayName}}&nbsp;
-                        {{appProperties.details.version}}
+                        <span class="app-details-span">Name:</span><span>{{appProperties.displayName}}&nbsp;
+                        {{appProperties.version}}
                         </span>
                     </p>
                     <p>
-                        <span class="app-details-span">Description:</span><span class="app-details-text">{{appProperties.details.description}}</span>
+                        <span class="app-details-span">Description:</span><span class="app-details-text">{{appProperties.description}}</span>
                     </p>
                     <p>
-                        <span class="app-details-span">Support:</span><span class="app-details-text">{{appProperties.details.supportAddress}}</span>
+                        <span class="app-details-span">Support:</span><span class="app-details-text">{{appProperties.supportAddress}}</span>
                     </p>
                     <p>
-                        <span v-if="appProperties.details.fileExtensions.length > 0" class="app-install-span">Associated File extensions:</span><span class="app-install-text">{{appProperties.details.fileExtensions.join(", ")}}</span>
+                        <span v-if="appProperties.fileExtensions.length > 0" class="app-install-span">Associated File extensions:</span><span class="app-install-text">{{appProperties.fileExtensions.join(", ")}}</span>
                     </p>
                     <p>
-                        <span v-if="appProperties.details.mimeTypes.length > 0" class="app-install-span">Associated Mime types:</span><span class="app-install-text">{{appProperties.details.mimeTypes.join(", ")}}</span>
+                        <span v-if="appProperties.mimeTypes.length > 0" class="app-install-span">Associated Mime types:</span><span class="app-install-text">{{appProperties.mimeTypes.join(", ")}}</span>
                     </p>
                     <p>
-                        <span v-if="appProperties.details.fileTypes.length > 0" class="app-install-span">Associated File types:</span><span class="app-install-text">{{appProperties.details.fileTypes.join(", ")}}</span>
+                        <span v-if="appProperties.fileTypes.length > 0" class="app-install-span">Associated File types:</span><span class="app-install-text">{{appProperties.fileTypes.join(", ")}}</span>
                     </p>
                     <p>
-                        <span v-if="appProperties.details.folderAction==true" class="app-install-span">Is a Folder Action</span>
+                        <span v-if="appProperties.folderAction==true" class="app-install-span">Is a Folder Action</span>
                     </p>
                     <p v-if="appProperties.permissions.length == 0">
                         <span class="app-install-span">Permissions:</span><span class="app-install-text">None Required</span>
@@ -78,7 +78,7 @@ module.exports = {
             this.showSpinner = true;
             that.readJSONFile(this.appPropsFile).thenApply((res) => {
                 that.showSpinner = false;
-                that.appProperties = res.app;
+                that.appProperties = res;
             });
         },
     }
