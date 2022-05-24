@@ -147,6 +147,9 @@ module.exports = {
                           if (props.version == null) {
                               props.version = "0.0.1";
                           }
+                          if (props.source == null) {
+                              props.source = "";
+                          }
                           if (props.supportAddress == null) {
                               props.supportAddress = "";
                           }
@@ -247,7 +250,7 @@ module.exports = {
                 let encoder = new TextEncoder();
                 let props = {"schemaVersion": "1", "displayName": "HTML Browser", "name": "htmlbrowser",
                     "version": "1.0.0-initial", "supportAddress": "", "folderAction": false,
-                    "description": "for viewing HTML files",
+                    "description": "for viewing HTML files", "source": "",
                     "launchable": false,
                     "fileExtensions": ["html","htm"], "mimeTypes": [], "fileTypes": [], "permissions": []
                 };

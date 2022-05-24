@@ -19,8 +19,11 @@
                     <p>
                         <span class="app-details-span">Description:</span><span class="app-details-text">{{appProperties.description}}</span>
                     </p>
-                    <p>
+                    <p v-if="appProperties.supportAddress.length > 0">
                         <span class="app-details-span">Support:</span><span class="app-details-text">{{appProperties.supportAddress}}</span>
+                    </p>
+                    <p v-if="appProperties.source.length > 0">
+                        <span class="app-details-span">Source:</span><span class="app-details-text"><a @click="navigateToInstallFolder()" >{{appProperties.source}}</a></span>
                     </p>
                     <p>
                         <span v-if="appProperties.fileExtensions.length > 0" class="app-install-span">Associated File extensions:</span><span class="app-install-text">{{appProperties.fileExtensions.join(", ")}}</span>
@@ -55,7 +58,7 @@
 
 <script>
 const sandboxMixin = require("../../mixins/sandbox/index.js");
-
+const routerMixins = require("../../mixins/router/index.js");
 module.exports = {
     data: function() {
         return {
@@ -65,7 +68,7 @@ module.exports = {
         }
     },
     props: ['appPropsFile'],
-    mixins:[sandboxMixin],
+    mixins:[sandboxMixin, routerMixins],
     created: function() {
         this.loadAppProperties();
     },
@@ -81,6 +84,9 @@ module.exports = {
                 that.appProperties = res;
             });
         },
+        navigateToInstallFolder: function() {
+            this.openFileOrDir("Drive", this.appProperties.source, {filename:""});
+        }
     }
 }
 </script>
