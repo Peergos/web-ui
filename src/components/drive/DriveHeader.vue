@@ -42,7 +42,8 @@
 						<li @click="askForDirectories()">Upload folder</li>
 						<li @click="$emit('askMkdir')">New folder</li>
 						<li @click="$emit('createFile')">New file</li>
-                        <li v-for="app in creatableApps" v-on:keyup.enter="appCreateNew(app.name)" v-on:click="appCreateNew(app.name)">APP: {{app.createMenuText}}</li>
+						<li @click="$emit('newApp')">New App</li>
+                        <li v-for="app in creatableApps" v-on:keyup.enter="appCreateNewInstance(app.name)" v-on:click="appCreateNewInstance(app.name)">APP: {{app.createMenuText}}</li>
                         <li v-if="canPaste" @click="$emit('paste')">Paste</li>
 					</ul>
 				</AppDropdown>
@@ -110,7 +111,7 @@ module.exports = {
         },
 	},
 	methods: {
-	    appCreateNew(appName) {
+	    appCreateNewInstance(appName) {
             this.showAppSandbox = true;
             this.sandboxAppName = appName;
         },

@@ -16,6 +16,7 @@
 			@goBackToLevel="goBackToLevel($event)"
 			@askMkdir="askMkdir()"
 			@createFile="createTextFile()"
+			@newApp="createNewApp()"
 		        @search="openSearch(false)"
                         @paste="paste()"
 		/>
@@ -2102,6 +2103,125 @@ module.exports = {
 				this.$refs.driveMenu.$el.focus()
 			});
 		},
+
+		createNewApp() {
+            this.prompt_placeholder = 'App name';
+            this.prompt_message = 'Enter App name';
+            this.prompt_value = '';
+            this.prompt_consumer_func = function (prompt_result) {
+                if (prompt_result === null)
+                    return;
+                let appName = prompt_result.trim();
+                if (appName === '')
+                    return;
+                this.buildNewAppSkeleton(appName);
+            }.bind(this);
+            this.showPrompt = true;
+		},
+
+		createAppFolder(folder, appName) {
+			var that = this;
+			let future = peergos.shared.util.Futures.incomplete();
+            let appDir = peergos.client.PathUtils.directoryToPath([appName]);
+			folder.getOrMkdirs(appDir, that.context.network, false, that.getMirrorBatId(that.currentDir), that.context.crypto)
+			    .thenApply(dir => {
+					future.complete(dir);
+				}).exceptionally(function (throwable) {
+                    console.log('unable to create folder: ' + appName + ' error: ' + throwable.getMessage());
+					future.complete(null);
+				});
+            return future;
+		},
+
+		createAppIndexPage(folder, appDisplayName) {
+            let encoder = new TextEncoder();
+            let html = '<!DOCTYPE html>\n' +
+            '<html lang="en">\n' +
+            '    <head>\n' +
+            '        <meta charset="UTF-8">\n' +
+            '        <meta name="viewport" content="width=device-width, initial-scale=1">\n' +
+            '        <title>App: ' + appDisplayName + '</title>\n' +
+            '        <!-- link rel="apple-touch-icon" href="pwa-logo-192.png" -->\n' +
+            '    </head>\n' +
+            '    <body>\n' +
+            '	<h1>' + appDisplayName + '</h1>\n' +
+            '    </body>\n' +
+            '</html>';
+            let uint8Array = encoder.encode(html);
+            let bytes = convertToByteArray(uint8Array);
+            return this.writeFileContents(folder, 'index.html', bytes);
+        },
+
+		createAppManifest(folder, appDisplayName, appName) {
+            let encoder = new TextEncoder();
+            let props = {"schemaVersion": "1", "displayName": appDisplayName, "name": appName,
+                "version": "0.0.1-initial", "supportAddress": "", "folderAction": false,
+                "description": "Please set...", "launchable": true,
+                "fileExtensions": [], "mimeTypes": [], "fileTypes": [], "permissions": []
+            };
+            let uint8Array = encoder.encode(JSON.stringify(props));
+            let bytes = convertToByteArray(uint8Array);
+            return this.writeFileContents(folder, 'peergos-app.json', bytes);
+        },
+		writeFileContents(folder, filename, bytes) {
+            let reader = new peergos.shared.user.fs.AsyncReader.ArrayBacked(bytes);
+            let that = this;
+            let future = peergos.shared.util.Futures.incomplete();
+            folder.uploadFileJS(filename, reader, 0, bytes.byteLength,
+                true, true, this.mirrorBatId, this.context.network, this.context.crypto, function (len) { },
+                this.context.getTransactionService()
+            ).thenApply(function (res) {
+                future.complete(res);
+            }).exceptionally(function (throwable) {
+                console.log('unable to create file: ' + filename + ' error: ' + throwable.getMessage());
+                future.complete(false);
+            })
+            return future;
+        },
+
+        validateAppName: function(displayName) {
+            if (displayName === '')
+                return false;
+            if (displayName.includes('.') || displayName.includes('..'))
+                return false;
+            if (!displayName.match(/^[a-z\d\-_\s]+$/i)) {
+                return false;
+            }
+            return true;
+        },
+
+        buildNewAppSkeleton(appDisplayName) {
+            console.log('appDisplayName=' + appDisplayName);
+            if (appDisplayName.length > 25) {
+                this.$toast.error('App name length must not exceed 25 characters');
+                return;
+            }
+            if (!this.validateAppName(appDisplayName)) {
+                this.$toast.error('App name invalid. Use only alphanumeric characters plus dash and underscore');
+                return;
+            }
+			var that = this;
+            let appNameLowercase = appDisplayName.toLowerCase();
+            let dupApp = this.sandboxedApps.appsInstalled.slice().filter(app => app.displayName.toLowerCase() == appNameLowercase);
+            if (dupApp.length != 0) {
+                this.$toast.error(`App with name ${appDisplayName} already exists!`);
+                return;
+            }
+			this.showSpinner = true;
+			let appName = appDisplayName.replaceAll(' ', '').toLowerCase().trim();
+			this.createAppFolder(this.currentDir, appName).thenApply(appDir => {
+                that.createAppManifest(appDir, appDisplayName, appName).thenApply(appDir2 => {
+        			that.createAppFolder(appDir2, 'assets').thenApply(assetsDir => {
+                        that.createAppIndexPage(assetsDir, appDisplayName).thenApply(assetsDir2 => {
+                            that.showSpinner = false;
+                            that.updateCurrentDir();
+                            that.updateFiles();
+                            that.updateUsage();
+                        });
+                    });
+                });
+			});
+        },
 
 		createTextFile() {
 			this.prompt_placeholder = 'File name';
