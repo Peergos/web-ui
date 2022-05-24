@@ -331,7 +331,13 @@ function returnAppData(method, filePath, uniqueId) {
         let respHeaders = [
             ['Cross-Origin-Embedder-Policy', 'require-corp'],
             ['Cross-Origin-Opener-Policy', 'same-origin'],
-            ['Cross-Origin-Resource-Policy', 'same-origin']
+            ['Cross-Origin-Resource-Policy', 'same-origin'],
+            ['Origin-Agent-Cluster', '?1'],
+            ['x-xss-protection', '1; mode=block'],
+            ['x-dns-prefetch-control', 'off'],
+            ['x-content-type-options', 'nosniff'],
+            ['referrer-policy', 'no-referrer'],
+            ['permissions-policy', 'interest-cohort=(), geolocation=(), gyroscope=(), magnetometer=(), accelerometer=(), microphone=(), camera=(self), fullscreen=(self)']
         ];
         if (fileData.statusCode == 201) {
             //https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/201
@@ -411,10 +417,18 @@ function returnRangeRequest(start, end, streamingEntry) {
     }).then(function(arrayBuffer, err) {
         const fileSize = streamingEntry.getFileSize();
         const mimeType = streamingEntry.getMimeType();
+
         let respHeaders = [
+            ['content-security-policy', 'require-corp'],
             ['Cross-Origin-Embedder-Policy', 'require-corp'],
             ['Cross-Origin-Opener-Policy', 'same-origin'],
-            ['Cross-Origin-Resource-Policy', 'same-origin']
+            ['Cross-Origin-Resource-Policy', 'same-origin'],
+            ['Origin-Agent-Cluster', '?1'],
+            ['x-xss-protection', '1; mode=block'],
+            ['x-dns-prefetch-control', 'off'],
+            ['x-content-type-options', 'nosniff'],
+            ['referrer-policy', 'no-referrer'],
+            ['permissions-policy', 'interest-cohort=(), geolocation=(), gyroscope=(), magnetometer=(), accelerometer=(), microphone=(), camera=(self), fullscreen=(self)']
         ];
         if (arrayBuffer == null) {
             respHeaders.push(['Content-Range', `*/${fileSize}`]);
