@@ -328,7 +328,9 @@ function returnAppData(method, filePath, uniqueId) {
         }
         pump()
     }).then(function(fileData, err) {
+        let csp = "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; style-src-elem 'self' 'unsafe-inline'; font-src 'self'";
         let respHeaders = [
+            ['content-security-policy', csp],
             ['Cross-Origin-Embedder-Policy', 'require-corp'],
             ['Cross-Origin-Opener-Policy', 'same-origin'],
             ['Cross-Origin-Resource-Policy', 'same-origin'],
@@ -418,7 +420,9 @@ function returnRangeRequest(start, end, streamingEntry) {
         const fileSize = streamingEntry.getFileSize();
         const mimeType = streamingEntry.getMimeType();
 
+        let csp = "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; style-src-elem 'self' 'unsafe-inline'; font-src 'self'";
         let respHeaders = [
+            ['content-security-policy', csp],
             ['content-security-policy', 'require-corp'],
             ['Cross-Origin-Embedder-Policy', 'require-corp'],
             ['Cross-Origin-Opener-Policy', 'same-origin'],
