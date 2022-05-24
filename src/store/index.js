@@ -55,6 +55,9 @@ module.exports = new Vuex.Store({
             appFileExtensionRegistrationMap: new Map(),
             appMimeTypeRegistrationMap: new Map(),
             appFileTypeRegistrationMap: new Map(),
+            appFileExtensionWildcardRegistrationList: [],
+            appMimeTypeWildcardRegistrationList: [],
+            appFileTypeWildcardRegistrationList: [],
             appsInstalled: []
         },
         shortcuts: {
@@ -237,6 +240,15 @@ module.exports = new Vuex.Store({
         },
         SET_FILETYPE_REGISTRATIONS(state, payload) {
             state.sandboxedApps.appFileTypeRegistrationMap = payload;
+        },
+        SET_FILE_EXTENSION_WILDCARD_REGISTRATIONS(state, payload) {
+            state.sandboxedApps.appFileExtensionWildcardRegistrationList = payload;
+        },
+        SET_MIMETYPE_WILDCARD_REGISTRATIONS(state, payload) {
+            state.sandboxedApps.appMimeTypeWildcardRegistrationList = payload;
+        },
+        SET_FILETYPE_WILDCARD_REGISTRATIONS(state, payload) {
+            state.sandboxedApps.appFileTypeWildcardRegistrationList = payload;
         },
         SET_SANDBOXED_APPS(state, payload) {
             state.sandboxedApps.appsInstalled = payload;

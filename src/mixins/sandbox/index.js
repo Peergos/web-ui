@@ -286,6 +286,14 @@ module.exports = {
             let appFileExtensionRegistrationMap = new Map();
             let appMimeTypeRegistrationMap = new Map();
             let appFileTypeRegistrationMap = new Map();
+
+            let appFileExtensionWildcardRegistrationList =
+                    this.sandboxedApps.appFileExtensionWildcardRegistrationList.filter(entry => entry.name != app.name);
+            let appMimeTypeWildcardRegistrationList =
+                    this.sandboxedApps.appMimeTypeWildcardRegistrationList.filter(entry => entry.name != app.name);
+            let appFileTypeWildcardRegistrationList =
+                    this.sandboxedApps.appFileTypeWildcardRegistrationList.filter(entry => entry.name != app.name);
+
             let appsInstalled = this.sandboxedApps.appsInstalled.slice();
             let appIndex = appsInstalled.findIndex(v => v.name === app.name);
             if (appIndex > -1) {
@@ -328,6 +336,10 @@ module.exports = {
             this.$store.commit("SET_FILE_EXTENSION_REGISTRATIONS", appFileExtensionRegistrationMap);
             this.$store.commit("SET_MIMETYPE_REGISTRATIONS", appMimeTypeRegistrationMap);
             this.$store.commit("SET_FILETYPE_REGISTRATIONS", appFileTypeRegistrationMap);
+
+            this.$store.commit("SET_FILE_EXTENSION_WILDCARD_REGISTRATIONS", appFileExtensionWildcardRegistrationList);
+            this.$store.commit("SET_MIMETYPE_WILDCARD_REGISTRATIONS", appMimeTypeWildcardRegistrationList);
+            this.$store.commit("SET_FILETYPE_WILDCARD_REGISTRATIONS", appFileTypeWildcardRegistrationList);
         },
         registerApp: function(props) {
             var appsInstalled = this.sandboxedApps.appsInstalled.slice();
@@ -339,39 +351,61 @@ module.exports = {
             let appFileExtensionRegistrationMap = new Map(this.sandboxedApps.appFileExtensionRegistrationMap);
             let appMimeTypeRegistrationMap = new Map(this.sandboxedApps.appMimeTypeRegistrationMap);
             let appFileTypeRegistrationMap = new Map(this.sandboxedApps.appFileTypeRegistrationMap);
+
+            let appFileExtensionWildcardRegistrationList = this.sandboxedApps.appFileExtensionWildcardRegistrationList.slice();
+            let appMimeTypeWildcardRegistrationList = this.sandboxedApps.appMimeTypeWildcardRegistrationList.slice();
+            let appFileTypeWildcardRegistrationList = this.sandboxedApps.appFileTypeWildcardRegistrationList.slice();
+
             appsInstalled.push({name: props.name, displayName: props.displayName,
                 createMenuText: props.createMenuText, launchable: props.launchable,
                 folderAction: props.folderAction});
             props.fileExtensions.forEach(extension => {
-                let currentMapping = appFileExtensionRegistrationMap.get(extension);
-                if (currentMapping == null) {
-                    currentMapping = [{name: props.name, displayName: props.displayName}];
+                if (extension == '*') {
+                    appFileExtensionWildcardRegistrationList.push({name: props.name, displayName: props.displayName});
                 } else {
-                    currentMapping.push({name: props.name, displayName: props.displayName});
+                    let currentMapping = appFileExtensionRegistrationMap.get(extension);
+                    if (currentMapping == null) {
+                        currentMapping = [{name: props.name, displayName: props.displayName}];
+                    } else {
+                        currentMapping.push({name: props.name, displayName: props.displayName});
+                    }
+                    appFileExtensionRegistrationMap.set(extension, currentMapping);
                 }
-                appFileExtensionRegistrationMap.set(extension, currentMapping);
             });
             props.mimeTypes.forEach(mimeType => {
-                let currentMapping = appMimeTypeRegistrationMap.get(mimeType);
-                if (currentMapping == null) {
-                    currentMapping = [{name: props.name, displayName: props.displayName}];
+                if (mimeType == '*') {
+                    appMimeTypeWildcardRegistrationList.push({name: props.name, displayName: props.displayName});
                 } else {
-                    currentMapping.push({name: props.name, displayName: props.displayName});
+                    let currentMapping = appMimeTypeRegistrationMap.get(mimeType);
+                    if (currentMapping == null) {
+                        currentMapping = [{name: props.name, displayName: props.displayName}];
+                    } else {
+                        currentMapping.push({name: props.name, displayName: props.displayName});
+                    }
+                    appMimeTypeRegistrationMap.set(mimeType, currentMapping);
                 }
-                appMimeTypeRegistrationMap.set(mimeType, currentMapping);
             });
             props.fileTypes.forEach(fileType => {
-                let currentMapping = appFileTypeRegistrationMap.get(fileType);
-                if (currentMapping == null) {
-                    currentMapping = [{name: props.name, displayName: props.displayName}];
+                if (fileType == '*') {
+                    appFileTypeWildcardRegistrationList.push({name: props.name, displayName: props.displayName});
                 } else {
-                    currentMapping.push({name: props.name, displayName: props.displayName});
+                    let currentMapping = appFileTypeRegistrationMap.get(fileType);
+                    if (currentMapping == null) {
+                        currentMapping = [{name: props.name, displayName: props.displayName}];
+                    } else {
+                        currentMapping.push({name: props.name, displayName: props.displayName});
+                    }
+                    appFileTypeRegistrationMap.set(fileType, currentMapping);
                 }
-                appFileTypeRegistrationMap.set(fileType, currentMapping);
             });
             this.$store.commit("SET_FILE_EXTENSION_REGISTRATIONS", appFileExtensionRegistrationMap);
             this.$store.commit("SET_MIMETYPE_REGISTRATIONS", appMimeTypeRegistrationMap);
             this.$store.commit("SET_FILETYPE_REGISTRATIONS", appFileTypeRegistrationMap);
+
+            this.$store.commit("SET_FILE_EXTENSION_WILDCARD_REGISTRATIONS", appFileExtensionWildcardRegistrationList);
+            this.$store.commit("SET_MIMETYPE_WILDCARD_REGISTRATIONS", appMimeTypeWildcardRegistrationList);
+            this.$store.commit("SET_FILETYPE_WILDCARD_REGISTRATIONS", appFileTypeWildcardRegistrationList);
+
             this.$store.commit("SET_SANDBOXED_APPS", appsInstalled);
         },
   }

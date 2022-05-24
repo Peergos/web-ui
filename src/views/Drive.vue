@@ -463,14 +463,17 @@ module.exports = {
 
                 var currentFileExtensionMapping = this.sandboxedApps.appFileExtensionRegistrationMap.get(extension);
                 currentFileExtensionMapping = currentFileExtensionMapping == null ? [] : currentFileExtensionMapping;
+                currentFileExtensionMapping = currentFileExtensionMapping.concat(this.sandboxedApps.appFileExtensionWildcardRegistrationList);
 
                 let mimeType = this.selectedFiles[0].getFileProperties().mimeType;
                 var currentMimeTypeMapping = this.sandboxedApps.appMimeTypeRegistrationMap.get(mimeType);
                 currentMimeTypeMapping = currentMimeTypeMapping == null ? [] : currentMimeTypeMapping;
+                currentMimeTypeMapping = currentMimeTypeMapping.concat(this.sandboxedApps.appMimeTypeWildcardRegistrationList);
 
                 let fileType = this.selectedFiles[0].getFileProperties().getType();
                 var currentFileTypeMapping = this.sandboxedApps.appFileTypeRegistrationMap.get(fileType);
                 currentFileTypeMapping = currentFileTypeMapping == null ? [] : currentFileTypeMapping;
+                currentFileTypeMapping = currentFileTypeMapping.concat(this.sandboxedApps.appFileTypeWildcardRegistrationList);
 
                 let combinedMapping = currentFileExtensionMapping.concat(currentMimeTypeMapping).concat(currentFileTypeMapping);
                 let dedupedItems = [];
@@ -481,7 +484,7 @@ module.exports = {
                     }
                 });
                 return dedupedItems.sort(function(a, b) {
-                        return a.displayName.localeCompare(b.displayName);
+                    return a.displayName.localeCompare(b.displayName);
                 });
            } catch (err) {
                return [];
