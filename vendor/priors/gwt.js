@@ -733,7 +733,7 @@ function createVideoThumbnailStreamingProm(future, asyncReader, size, filename, 
                 var currentSize = length;
                 var blockSize = currentSize > this.maxBlockSize ? this.maxBlockSize : currentSize;
                 var pump = function(reader) {
-                    if(! result.done && blockSize > 0 && thatRef.counter == currentCount) {
+                    if(blockSize > 0 && thatRef.counter == currentCount) {
                         var data = convertToByteArray(new Uint8Array(blockSize));
                         data.length = blockSize;
                         reader.readIntoArray(data, 0, blockSize).thenApply(function(read){
@@ -824,9 +824,7 @@ function createVideoThumbnailStreamingProm(future, asyncReader, size, filename, 
         video.src = url;
         video.play();
     }, function(seekHi, seekLo, seekLength){
-        if(! result.done) {
-            context.stream(seekHi, seekLo, seekLength);
-        }
+        context.stream(seekHi, seekLo, seekLength);
     }, undefined, size);
     context.writer = fileStream.getWriter();
     return future;
