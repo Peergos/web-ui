@@ -772,6 +772,8 @@ module.exports = {
             } else {
                 if (this.currentProps != null) { //running in-place
                     return this.getPath + filePath;
+                } else if (this.browserMode){
+                    return filePath;
                 } else {
                     return this.context.username + "/.apps/" + this.sandboxAppName + '/' + filePath;
                 }
