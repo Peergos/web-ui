@@ -110,7 +110,8 @@ module.exports = {
         loadAppProperties: function() {
             let that = this;
             this.showSpinner = true;
-            that.verifyJSONFile(this.appPropsFile).thenApply((res) => {
+            let appPath = that.getPath.substring(0, that.getPath.length -1);
+            that.verifyJSONFile(this.appPropsFile, appPath).thenApply((res) => {
                 that.showSpinner = false;
                 if (res.errors.length > 0) {
                     that.showError("Unable to install App: " + res.errors.join(', '));

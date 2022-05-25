@@ -133,6 +133,7 @@
                     <table class="table">
                         <thead>
                         <tr  v-if="appsList.length!=0" style="cursor:pointer;">
+                            <th></th>
                             <th @click="setAppsSortBy('name')">Name <span v-if="appsSortBy=='name'" v-bind:class="['fas', appsNormalSortOrder ? 'fa-angle-down' : 'fa-angle-up']"/></th>
                             <th></th>
                             <th></th>
@@ -140,6 +141,9 @@
                         </thead>
                         <tbody>
                         <tr v-for="app in sortedApps">
+                            <td>
+                                <img v-if="app.appIcon.length > 0 && app.thumbnail != null" v-bind:src="app.thumbnail" style="width:100px;height:100px;"/>
+                            </td>
                             <td v-if="app.launchable"><button class="btn btn-success" @click="launchApp(app.name)">{{ app.displayName }}</button></td>
                             <td v-if="!app.launchable">{{ app.displayName }}</td>
                             <td> <button class="btn btn-info" @click="displayAppDetails(app)">Details</button>
@@ -430,9 +434,21 @@ module.exports = {
             that.setBookmarkList(new Map(that.bookmarks.bookmarksMap));
             that.setShortcutList(new Map(that.shortcuts.shortcutsMap));
             that.appsList = this.sandboxedApps.appsInstalled.slice();
+            that.loadAppIcons();
         });
     },
     methods: {
+        loadAppIcons: function() {
+            let that = this;
+            this.appsList.filter(app => app.appIcon.length > 0).forEach(app => {
+                let fullPathToAppIcon = "/" + that.context.username + "/.apps/" + app.name + '/assets/' + app.appIcon;
+                that.findFile(fullPathToAppIcon).thenCompose(file => {
+                    if (file != null) {
+                        //todo disable for now... app.thumbnail = file.getBase64Thumbnail();
+                    }
+                });
+            });
+        },
         setBookmarkList: function(bookmarksMap) {
             let that = this;
             let allBookmarks = [];

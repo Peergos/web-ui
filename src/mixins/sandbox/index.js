@@ -37,7 +37,7 @@ module.exports = {
               this.$toast.error('Unknown permission: ' + permission, {timeout:false});
           }
       },
-      verifyJSONFile: function(file) {
+      verifyJSONFile: function(file, appPath) {
           let that = this;
           let appNames = this.sandboxedApps.appsInstalled.slice();
           let future = peergos.shared.util.Futures.incomplete();
@@ -68,12 +68,12 @@ module.exports = {
                                 }
                             });
                         }
-                      if (props.displayName.length > 25) {
-                          errors.push("Invalid displayName property. Length must not exceed 25 characters");
-                      }
-                      if (!that.validateDisplayName(props.displayName)) {
-                          errors.push("Invalid displayName property. Use only alphanumeric characters plus dash and underscore");
-                      }
+                        if (props.displayName.length > 25) {
+                            errors.push("Invalid displayName property. Length must not exceed 25 characters");
+                        }
+                        if (!that.validateDisplayName(props.displayName)) {
+                            errors.push("Invalid displayName property. Use only alphanumeric characters plus dash and underscore");
+                        }
                       const versionStr = props.version;
                       try {
                         peergos.shared.util.Version.parse(versionStr);
@@ -112,10 +112,46 @@ module.exports = {
                           errors.push("Invalid fileTypes property. Must be an array. Can be empty []");
                       }
                   }
-                  future.complete({props:props, errors: errors});
+                    if (errors.length == 0 && appPath != null) {
+                      that.validateAppIconImage(props.appIcon, appPath, errors).thenApply(isIconOK => {
+                          future.complete({props:props, errors: errors});
+                      });
+                    } else {
+                      future.complete({props:props, errors: errors});
+                    }
               }
           });
           return future;
+      },
+      validateAppIconImage: function(iconFilename, appPath, errors) {
+            let that = this;
+            let future = peergos.shared.util.Futures.incomplete();
+            if (iconFilename.length == 0) {
+                future.complete(true);
+            } else {
+                this.context.getByPath(appPath + '/assets/').thenApply(assetsDirOpt => {
+                    if (assetsDirOpt.ref == null) {
+                        errors.push("Invalid App icon. App assets directory not found");
+                        future.complete(false);
+                    } else {
+                        assetsDirOpt.get().getChild(iconFilename, that.context.crypto.hasher, that.context.network).thenApply(function(iconFileOpt) {
+                            if (iconFileOpt.ref == null) {
+                                errors.push("Invalid App icon. Image file not found: " + iconFilename); //Image format not supported?");
+                                future.complete(false);
+                            } else {
+                                let type = iconFileOpt.ref.props.getType();
+                                if(type != 'image') {
+                                    errors.push("Invalid App icon. Image format not supported");
+                                    future.complete(false);
+                                } else {
+                                    future.complete(true);
+                                }
+                            }
+                        });
+                    }
+                });
+            }
+            return future;
       },
       validateDisplayName: function(displayName) {
           if (displayName === '')
@@ -155,6 +191,9 @@ module.exports = {
                           }
                           if (props.folderAction == null) {
                               props.folderAction = false;
+                          }
+                          if (props.appIcon == null) {
+                              props.appIcon = '';
                           }
                           if (props.fileExtensions == null) {
                               props.fileExtensions = [];
@@ -358,7 +397,7 @@ module.exports = {
 
             appsInstalled.push({name: props.name, displayName: props.displayName,
                 createMenuText: props.createMenuText, launchable: props.launchable,
-                folderAction: props.folderAction});
+                folderAction: props.folderAction, appIcon: props.appIcon});
             props.fileExtensions.forEach(extension => {
                 if (extension == '*') {
                     appFileExtensionWildcardRegistrationList.push({name: props.name, displayName: props.displayName});
