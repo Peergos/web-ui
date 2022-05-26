@@ -142,7 +142,7 @@
                         <tbody>
                         <tr v-for="app in sortedApps">
                             <td>
-                                <img v-if="app.appIcon.length > 0 && app.thumbnail != null" v-bind:src="app.thumbnail" style="width:100px;height:100px;"/>
+                                <img v-if="app.appIcon.length > 0 && app.thumbnail != null" v-bind:src="app.thumbnail" style="width:50px;height:50px;"/>
                             </td>
                             <td v-if="app.launchable"><button class="btn btn-success" @click="launchApp(app.name)">{{ app.displayName }}</button></td>
                             <td v-if="!app.launchable">{{ app.displayName }}</td>
@@ -444,7 +444,13 @@ module.exports = {
                 let fullPathToAppIcon = "/" + that.context.username + "/.apps/" + app.name + '/assets/' + app.appIcon;
                 that.findFile(fullPathToAppIcon).thenCompose(file => {
                     if (file != null) {
-                        //todo disable for now... app.thumbnail = file.getBase64Thumbnail();
+                       let appIndex = that.appsList.findIndex(v => v.name === app.name);
+                       if (appIndex > -1) {
+                           let appRow = that.appsList[appIndex];
+                           that.appsList.splice(appIndex, 1);
+                           appRow.thumbnail = file.getBase64Thumbnail();
+                           that.appsList.push(appRow);
+                       }
                     }
                 });
             });
@@ -803,7 +809,7 @@ module.exports = {
                 if (file != null) {
                     let mimeType = file.getFileProperties().mimeType;
                     if (mimeType == 'text/html') {
-                        that.launchApp('htmlbrowser', file, entry.path + '/');
+                        that.launchApp('htmlbrowser', file, '/' + entry.path + '/');
                     } else {
                         let app = that.getApp(file, entry.path, file.isWritable());
                         if (app == 'hex') {

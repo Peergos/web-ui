@@ -172,6 +172,7 @@
         <AppSandbox
             v-if="showAppSandbox"
             v-on:hide-app-sandbox="closeAppSandbox"
+            v-on:refresh="forceSharedRefreshWithUpdate++"
             :sandboxAppName="sandboxAppName"
             :currentFile="selectedFiles[0]"
             :currentPath="getPath">

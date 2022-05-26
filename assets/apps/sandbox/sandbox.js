@@ -16,7 +16,7 @@ let msgHandler = function (e) {
       origin = e.origin;
 
       let appIFrame = document.getElementById("appSandboxId");
-      if (appIFrame != null) {
+      if (appIFrame != null && appIFrame.contentDocument != null) {
           let path = appIFrame.contentDocument.location.pathname;
           let title = appIFrame.contentDocument.title;
           if (path != null && path != currentPath) {
@@ -87,12 +87,10 @@ function load(appName, appPath, allowBrowsing) {
     let iframe = document.getElementById("appSandboxId");
     iframe.style.width = window.innerWidth + 'px';
     iframe.style.height = window.innerHeight + 'px';
-    let sandboxPath = (allowBrowsing && appPath.length > 0) ?
-        appPath.substring(0, appPath.lastIndexOf('/') +1) : appName;
     removeServiceWorkerRegistration(() => {
-        let fileStream = streamSaver.createWriteStream(sandboxPath, "text/html", url => {
+        let fileStream = streamSaver.createWriteStream(appName, "text/html", url => {
                 let path = appPath.length > 0 ? "?path=" + appPath : '';
-                let src = allowBrowsing ? "/apps/sandbox/" + appPath : "assets/index.html" + path;
+                let src = allowBrowsing ? appPath.substring(1) : "assets/index.html" + path;
                 iframe.src= src;
             }, function(seekHi, seekLo, seekLength, streamFilePath){
                 that.streamFile(seekHi, seekLo, seekLength, streamFilePath);

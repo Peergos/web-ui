@@ -1,17 +1,17 @@
 let APP_FILE_MODE = 0;
 let STREAMING_MODE = 1;
 var streamingMap
+var appName;
 let prefix = '/apps/sandbox/';
-var fullPrefix = null;
 var appData = null;
 var appPort = null;
 
 var streamingFilePath = "";
 var streamingAppEntry = new StreamingEntry(-1);
 var downloadUrl = null;
-
-let dataRequest = "assets/data/";
-let formRequest = "assets/form/";
+let apiRequest = "assets/";
+let dataRequest = apiRequest + "data/";
+let formRequest = apiRequest + "form/";
 
 self.onmessage = event => {
   if (event.data === 'ping') {
@@ -31,11 +31,8 @@ self.onmessage = event => {
   let size = Number(headers.get('Content-Length'));
   let disposition = headers.get('Content-Disposition');
   let startIndex = disposition.indexOf("''");
-  let sandboxPath = decodeURIComponent(disposition.substring(startIndex+2, disposition.length))
+  appName = decodeURIComponent(disposition.substring(startIndex+2, disposition.length))
                         .replaceAll(':','/');
-  if (sandboxPath.indexOf('/') > -1) {
-    fullPrefix = prefix + sandboxPath + '$peergos';
-  }
   setupNewApp(port);
   port.postMessage({ download: downloadUrl})
 
@@ -225,9 +222,7 @@ self.onfetch = event => {
     }
     const requestedResource = new URL(url)
     var filePath = requestedResource.pathname;
-    if (fullPrefix != null && requestedResource.pathname.startsWith(fullPrefix)) {
-        filePath = requestedResource.pathname.substring(fullPrefix.length);
-    } else if (requestedResource.pathname.startsWith(prefix)) {
+    if (requestedResource.pathname.startsWith(prefix)) {
         filePath = requestedResource.pathname.substring(prefix.length);
     }
     if (event.request.headers.get('range')) {
@@ -328,7 +323,7 @@ function returnAppData(method, filePath, uniqueId) {
         }
         pump()
     }).then(function(fileData, err) {
-        let csp = "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; style-src-elem 'self' 'unsafe-inline'; font-src 'self'";
+        let csp = "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; style-src-elem 'self' 'unsafe-inline'; font-src 'self';img-src 'self' data:;";
         let respHeaders = [
             ['content-security-policy', csp],
             ['Cross-Origin-Embedder-Policy', 'require-corp'],

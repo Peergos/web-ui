@@ -124,14 +124,10 @@ module.exports = {
         currentTitleResponse: function(fullPath, title) {
             let that = this;
             let pathPrefix = '/apps/sandbox/';
-            let fullPrefix = pathPrefix + '/' + this.context.username + '/assets/$peergos';
-            let path = '';
-            if (fullPath.startsWith(fullPrefix)) {
-                path = fullPath.substring(fullPrefix.length);
-            } else {
-                path = fullPath.substring(pathPrefix.length);
+            if (fullPath.startsWith(pathPrefix)) {
+                let path = fullPath.substring(pathPrefix.length);
+                this.setFullPathForDisplay(path);
             }
-            this.setFullPathForDisplay(path);
         },
         getFullPathForDisplay: function() {
             return this.fullPathForDisplay;
@@ -409,9 +405,13 @@ module.exports = {
             try {
                 if (apiMethod == 'GET') {
                     //requestId is set if it is a GET request to /form or /data
-                    if (requestId.length > 0 && !that.permissionsMap.get(that.PERMISSION_STORE_APP_DATA)) {
-                        that.showError("App attempted to access file without permission :" + path);
-                        that.buildResponse(headerFunc(), null, that.ACTION_FAILED);
+                    if (requestId.length > 0) {
+                        if (!that.permissionsMap.get(that.PERMISSION_STORE_APP_DATA)) {
+                            that.showError("App attempted to access file without permission :" + path);
+                            that.buildResponse(headerFunc(), null, that.ACTION_FAILED);
+                        } else {
+                            that.readFileOrFolder(headerFunc, 'data/' + path, params, true);
+                        }
                     } else {
                         that.readFileOrFolder(headerFunc, path, params);
                     }
@@ -458,7 +458,7 @@ module.exports = {
                 that.buildResponse(headerFunc(), null, that.ACTION_FAILED);
             }
         },
-        readFileOrFolder: function(headerFunc, path, params) {
+        readFileOrFolder: function(headerFunc, path, params, ignoreHiddenFolderCheck) {
             let that = this;
             let expandedFilePath = this.expandFilePath(path);
             if (this.browserMode && expandedFilePath.includes('/.')) {
@@ -467,13 +467,16 @@ module.exports = {
             } else {
                 this.context.getByPath(expandedFilePath).thenApply(function(respOpt){
                     if (respOpt.ref == null) {
-                        that.showError('Path not found: ' + expandedFilePath);
-                        that.buildResponse(headerFunc(), null, that.ACTION_FAILED);
+                        console.log('Path not found: ' + expandedFilePath);
+                        that.buildResponse(headerFunc(), null, that.FILE_NOT_FOUND);
                     } else {
                         let resp = respOpt.get();
                         let props = resp.getFileProperties();
-                        if (props.isHidden) {
-                            that.showError('Path not accessible: ' + expandedFilePath);
+                        if (!props.isDirectory && props.isHidden) {
+                            that.showError('File not accessible: ' + expandedFilePath);
+                            that.buildResponse(headerFunc(), null, that.ACTION_FAILED);
+                        } else if (props.isDirectory && !ignoreHiddenFolderCheck) {
+                            that.showError('Folder not accessible: ' + expandedFilePath);
                             that.buildResponse(headerFunc(), null, that.ACTION_FAILED);
                         } else {
                             if (props.isDirectory) {
@@ -719,7 +722,9 @@ module.exports = {
             if (filePath == this.appPath) {
                 return filePath;
             } else {
-                if (this.currentProps != null) { //running in-place
+                if (this.isAppPathAFolder && filePath.startsWith(this.appPath)) {
+                    return filePath;
+                } else if (this.currentProps != null) { //running in-place
                     return this.getPath + filePath;
                 } else if (this.browserMode){
                     return filePath;
@@ -800,6 +805,7 @@ module.exports = {
             window.removeEventListener('message', this.messageHandler);
             window.removeEventListener("resize", this.resizeHandler);
             this.running = false;
+            this.$emit("refresh");
             this.$emit("hide-app-sandbox");
         }
     }
