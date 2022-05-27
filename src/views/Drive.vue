@@ -2172,8 +2172,8 @@ module.exports = {
             let that = this;
             let future = peergos.shared.util.Futures.incomplete();
             folder.uploadFileJS(filename, reader, 0, bytes.byteLength,
-                true, true, this.mirrorBatId, this.context.network, this.context.crypto, function (len) { },
-                this.context.getTransactionService()
+                true, this.mirrorBatId, this.context.network, this.context.crypto, function (len) { },
+                this.context.getTransactionService(), f => peergos.shared.util.Futures.of(true)
             ).thenApply(function (res) {
                 future.complete(res);
             }).exceptionally(function (throwable) {

@@ -297,8 +297,8 @@ module.exports = {
                 let bytes = convertToByteArray(uint8Array);
                 let reader = new peergos.shared.user.fs.AsyncReader.ArrayBacked(bytes);
                 dir.uploadFileJS("peergos-app.json", reader, 0, bytes.byteLength,
-                    true, true, that.mirrorBatId, that.context.network, that.context.crypto, function (len) { },
-                    that.context.getTransactionService()
+                    true, that.mirrorBatId, that.context.network, that.context.crypto, function (len) { },
+                    that.context.getTransactionService(), f => peergos.shared.util.Futures.of(true)
                 ).thenApply(function (res) {
                     future.complete(props);
                 })

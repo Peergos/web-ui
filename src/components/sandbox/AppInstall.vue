@@ -293,8 +293,8 @@ module.exports = {
                 let filename = 'peergos-app.json';
                 that.context.getByPath("/" + that.context.username + "/.apps/" + appName).thenApply(appDirOpt => {
                       appDirOpt.get().uploadFileJS(filename, reader, 0, bytes.byteLength,
-                          true, true, that.getMirrorBatId(appDirOpt.get()), that.context.network, that.context.crypto, function (len) { },
-                          that.context.getTransactionService()
+                          true, that.getMirrorBatId(appDirOpt.get()), that.context.network, that.context.crypto, function (len) { },
+                          that.context.getTransactionService(), f => peergos.shared.util.Futures.of(true)
                       ).thenApply(function (res) {
                           future.complete(true);
                       }).exceptionally(function (throwable) {
