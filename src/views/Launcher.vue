@@ -56,7 +56,7 @@
                         <thead>
                         <tr  v-if="bookmarkList.length!=0" style="cursor:pointer;">
                             <th @click="setBookmarksSortBy('added')">Added <span v-if="bookmarksSortBy=='added'" v-bind:class="['fas', bookmarksNormalSortOrder ? 'fa-angle-down' : 'fa-angle-up']"/></th>
-                            <th @click="setBookmarksSortBy('name')">Name <span v-if="bookmarksSortBy=='name'" v-bind:class="['fas', bookmarksNormalSortOrder ? 'fa-angle-down' : 'fa-angle-up']"/></th>
+                            <th @click="setBookmarksSortBy('name')">Page <span v-if="bookmarksSortBy=='name'" v-bind:class="['fas', bookmarksNormalSortOrder ? 'fa-angle-down' : 'fa-angle-up']"/></th>
                             <th @click="setBookmarksSortBy('path')">Folder <span v-if="bookmarksSortBy=='path'" v-bind:class="['fas', bookmarksNormalSortOrder ? 'fa-angle-down' : 'fa-angle-up']"/></th>
                             <th @click="setBookmarksSortBy('modified')">Modified <span v-if="bookmarksSortBy=='modified'" v-bind:class="['fas', bookmarksNormalSortOrder ? 'fa-angle-down' : 'fa-angle-up']"/></th>
                             <th @click="setBookmarksSortBy('created')">Created <span v-if="bookmarksSortBy=='created'" v-bind:class="['fas', bookmarksNormalSortOrder ? 'fa-angle-down' : 'fa-angle-up']"/></th>
@@ -68,7 +68,7 @@
                             <td v-bind:class="[bookmark.missing ? 'deleted-entry' : '']">
                                 {{ formatJSDate(bookmark.added) }}
                             </td>
-                            <td v-bind:class="[bookmark.missing ? 'deleted-entry' : '']" v-on:click="view(bookmark, true)" style="cursor:pointer;">{{ bookmark.name }}</td>
+                            <td v-bind:class="[bookmark.missing ? 'deleted-entry' : '']" v-on:click="viewBookmark(bookmark, true)" style="cursor:pointer;">{{ bookmark.name }}</td>
                             <td v-bind:class="[bookmark.missing ? 'deleted-entry' : '']"  v-on:click="navigateTo(bookmark)" style="cursor:pointer;">
                                 {{ bookmark.path }}
                             </td>
@@ -525,8 +525,8 @@ module.exports = {
         },
         removeApp: function(app) {
             let that = this;
-            if (app.name == 'htmlbrowser') {
-                this.showErrorMessage('Unable to remove HTML Browser');
+            if (app.name == 'htmlviewer') {
+                this.showErrorMessage('Unable to remove HTML Viewer');
             } else {
                 this.confirmRemoveApp(app.displayName,
                     () => {
@@ -799,6 +799,24 @@ module.exports = {
             });
             return future;
         },
+        viewBookmark: function (entry) {
+            if (entry.name.length == 0 || entry.missing) {
+                return;
+            }
+            let that = this;
+            let fullPath = entry.path + (entry.isDirectory ? "" : '/' + entry.name);
+            this.findFile(fullPath).thenApply(file => {
+                if (file != null) {
+                    let mimeType = file.getFileProperties().mimeType;
+                    if (mimeType.startsWith("text/x-markdown") ||
+                        ( mimeType.startsWith("text/") && entry.name.endsWith('.md'))) {
+                        that.openFileOrDir("markdown", entry.path, {filename:entry.name});
+                    } else {
+                        that.launchApp('htmlviewer', file, '/' + entry.path + '/');
+                    }
+                }
+            });
+        },
         view: function (entry) {
             if (entry.name.length == 0 || entry.missing) {
                 return;
@@ -809,7 +827,7 @@ module.exports = {
                 if (file != null) {
                     let mimeType = file.getFileProperties().mimeType;
                     if (mimeType == 'text/html') {
-                        that.launchApp('htmlbrowser', file, '/' + entry.path + '/');
+                        that.launchApp('htmlviewer', file, '/' + entry.path + '/');
                     } else {
                         let app = that.getApp(file, entry.path, file.isWritable());
                         if (app == 'hex') {

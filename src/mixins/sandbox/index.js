@@ -282,12 +282,12 @@ module.exports = {
       installDefaultApp: function() {
           let future = peergos.shared.util.Futures.incomplete();
           let that = this;
-          let path = ".apps/htmlbrowser";
+          let path = ".apps/htmlviewer";
           let appDir = peergos.client.PathUtils.directoryToPath(path.split('/'));
           this.context.getByPath("/" + this.context.username).thenApply(rootOpt => {
               rootOpt.get().getOrMkdirs(appDir, that.context.network, true, that.mirrorBatId, that.context.crypto).thenApply(dir => {
                 let encoder = new TextEncoder();
-                let props = {"schemaVersion": "1", "displayName": "HTML Browser", "name": "htmlbrowser",
+                let props = {"schemaVersion": "1", "displayName": "HTML Viewer", "name": "htmlviewer",
                     "version": "1.0.0-initial", "supportAddress": "", "folderAction": false,
                     "description": "for viewing HTML files", "source": "",
                     "launchable": false,

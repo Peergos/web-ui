@@ -4,7 +4,7 @@
         <div class="modal-container full-height" @click.stop style="width:100%;overflow-y:auto;padding:0;display:flex;flex-flow:column;">
             <div class="modal-header-app">
                 <center v-if="browserMode"><h2>{{ getFullPathForDisplay() }}</h2></center>
-                <span style="position:absolute;top:0;right:0.2em;">
+                <span style="position:absolute;top:0;right:2em;">
                     <span v-if="browserMode" style="z-index:9999">
                           <img v-if="displayToBookmark" src="/images/bookmark-o.png" @click="toggleBookmark(false)" style="color:black;font-size:2.5em;cursor:pointer;margin-bottom: 0.4em;margin-right: 0.3em;">
                           <img v-if="!displayToBookmark" src="/images/bookmark.png" @click="toggleBookmark(true)" style="color:black;font-size:2.5em;cursor:pointer;margin-bottom: 0.4em;margin-right: 0.3em;">
@@ -71,7 +71,7 @@ module.exports = {
     props: ['sandboxAppName', 'currentFile', 'currentPath', 'currentProps'],
     created: function() {
         let that = this;
-        if (this.sandboxAppName == 'htmlbrowser') {
+        if (this.sandboxAppName == 'htmlviewer') {
             this.browserMode = true;
         }
         let currentFilename = this.currentFile == null ? '' : this.currentFile.getName();
