@@ -82,7 +82,7 @@
 				<li id='gallery' v-if="canOpen && !isMarkdown" @keyup.enter="viewFile()" @click="viewFile()">View</li>
 				<li id='gallery-view-markdown' v-if="isMarkdown" @keyup.enter="viewFile()" @click="viewFile()">View</li>
 				<li id='gallery-edit-markdown' v-if="isMarkdown" @keyup.enter="editFile()" @click="editFile()">Edit</li>
-				<li id='open-in-app' v-for="app in availableApps" v-on:keyup.enter="appOpen(app.name)" v-on:click="appOpen(app.name)">Open in {{app.displayName}}</li>
+				<li id='open-in-app' v-for="app in availableApps" v-on:keyup.enter="appOpen(app.name)" v-on:click="appOpen(app.name)">{{app.contextMenuText}}</li>
 				<li id='download-folder' v-if="canOpen" @keyup.enter="downloadAll"  @click="downloadAll">Download</li>
 				<li id='rename-file' v-if="isWritable" @keyup.enter="rename"  @click="rename">Rename</li>
 				<li id='delete-file' v-if="isWritable" @keyup.enter="deleteFiles"  @click="deleteFiles">Delete</li>

@@ -285,7 +285,7 @@ module.exports = {
             let future = peergos.shared.util.Futures.incomplete();
             let manifestItem = appFiles.slice().filter(item => item.file.getFileProperties().name == 'peergos-app.json');
             that.readJSONFile(manifestItem[0].file).thenApply(props => {
-                props.source = manifestItem[0].path;
+                props.source = props.source.length > 0 ? props.source : manifestItem[0].path;
                 let encoder = new TextEncoder();
                 let uint8Array = encoder.encode(JSON.stringify(props));
                 let bytes = convertToByteArray(uint8Array);
