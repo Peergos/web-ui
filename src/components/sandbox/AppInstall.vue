@@ -330,7 +330,7 @@ module.exports = {
                 let path = ".apps" + sourcePath.substring(sourcePath.indexOf(appSourceDirName)).replace(appSourceDirName, "/" + appName);
                 let appDir = peergos.client.PathUtils.directoryToPath(path.split('/'));
                 this.context.getByPath("/" + this.context.username).thenApply(rootOpt => {
-                    rootOpt.get().getOrMkdirs(appDir, that.context.network, true, that.getMirrorBatId(rootOpt.get()), that.context.crypto).thenApply(dir => {
+                    rootOpt.get().getOrMkdirs(appDir, that.context.network, false, that.getMirrorBatId(rootOpt.get()), that.context.crypto).thenApply(dir => {
                         dir.getChild(sourceFile.getName(), this.context.crypto.hasher, this.context.network).thenApply(destFileOpt => {
                             if (destFileOpt.ref != null) {
                                 destFileOpt.ref.replaceFile(sourceFile, that.context.network, this.context.crypto, () => {}).thenApply(() => {
