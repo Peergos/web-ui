@@ -273,6 +273,24 @@ module.exports = {
 		        that.$toast('Follow request already sent')
                 return;
 	        }
+	        let alreadyBlockedUsers = [];
+            this.socialData.blocked.forEach(function(name){
+                let idx = that.targetUsernames.indexOf(name);
+                if (idx > -1) {
+                    alreadyBlockedUsers.push(name);
+                }
+            });
+            if (alreadyBlockedUsers.length > 0) {
+                if (alreadyBlockedUsers.length > 1) {
+                    that.$toast('The following users are blocked: ' +
+                        alreadyBlockedUsers.join(", ") +
+                        '');
+                    return;
+                } else {
+                    that.$toast('User: ' + alreadyBlockedUsers[0] + ' is blocked');
+                    return;
+                }
+            }
             console.log("sending follow request");
             that.showSpinner = true;
             that.context.sendInitialFollowRequests(this.targetUsernames)
