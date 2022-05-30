@@ -2,16 +2,14 @@ let APP_FILE_MODE = 0;
 let STREAMING_MODE = 1;
 var streamingMap
 var appName;
-let prefix = '/apps/sandbox/';
 var appData = null;
 var appPort = null;
 
 var streamingFilePath = "";
 var streamingAppEntry = new StreamingEntry(-1);
 var downloadUrl = null;
-let apiRequest = "assets/";
-let dataRequest = apiRequest + "data/";
-let formRequest = apiRequest + "form/";
+let dataRequest = "/data/";
+let formRequest = "/form/";
 
 self.onmessage = event => {
   if (event.data === 'ping') {
@@ -221,10 +219,7 @@ self.onfetch = event => {
       }))
     }
     const requestedResource = new URL(url)
-    var filePath = requestedResource.pathname;
-    if (requestedResource.pathname.startsWith(prefix)) {
-        filePath = requestedResource.pathname.substring(prefix.length);
-    }
+    let filePath = requestedResource.pathname;
     if (event.request.headers.get('range')) {
         if (filePath != streamingFilePath) {
             streamingFilePath = filePath;

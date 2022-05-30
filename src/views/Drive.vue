@@ -456,7 +456,7 @@ module.exports = {
                 if (this.selectedFiles[0].isDirectory()) {
                     let folderApps = this.sandboxedApps.appsInstalled.slice().filter(app => app.folderAction);
                     return folderApps.sort(function(a, b) {
-                        return a.name.localeCompare(b.name);
+                        return a.displayName.localeCompare(b.displayName);
                     });
                 }
                 let currentFilename = this.selectedFiles[0].getFileProperties().name;

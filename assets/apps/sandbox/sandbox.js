@@ -90,7 +90,7 @@ function load(appName, appPath, allowBrowsing) {
     removeServiceWorkerRegistration(() => {
         let fileStream = streamSaver.createWriteStream(appName, "text/html", url => {
                 let path = appPath.length > 0 ? "?path=" + appPath : '';
-                let src = allowBrowsing ? appPath.substring(1) : "assets/index.html" + path;
+                let src = allowBrowsing ? appPath.substring(1) : "index.html" + path;
                 iframe.src= src;
             }, function(seekHi, seekLo, seekLength, streamFilePath){
                 that.streamFile(seekHi, seekLo, seekLength, streamFilePath);

@@ -395,51 +395,54 @@ module.exports = {
             let appMimeTypeWildcardRegistrationList = this.sandboxedApps.appMimeTypeWildcardRegistrationList.slice();
             let appFileTypeWildcardRegistrationList = this.sandboxedApps.appFileTypeWildcardRegistrationList.slice();
 
-            appsInstalled.push({name: props.name, displayName: props.displayName,
-                createMenuText: props.createMenuText, launchable: props.launchable,
-                folderAction: props.folderAction, appIcon: props.appIcon});
             let contextMenuText = props.permissions.filter(p => p == 'EDIT_CHOSEN_FILE').length > 0 ?
-                'Edit in ' + props.displayName : 'Open in ' + props.displayName;
-            let item = {name: props.name, displayName: props.displayName, contextMenuText: contextMenuText};
-            props.fileExtensions.forEach(extension => {
-                if (extension == '*') {
-                    appFileExtensionWildcardRegistrationList.push(item);
-                } else {
-                    let currentMapping = appFileExtensionRegistrationMap.get(extension);
-                    if (currentMapping == null) {
-                        currentMapping = [item];
+                'Edit in ' + props.displayName : 'View in ' + props.displayName;
+            let item = {name: props.name, displayName: props.displayName,
+                createMenuText: props.createMenuText, launchable: props.launchable,
+                folderAction: props.folderAction, appIcon: props.appIcon, contextMenuText: contextMenuText};
+
+            appsInstalled.push(item);
+            if (!props.folderAction) {
+                props.fileExtensions.forEach(extension => {
+                    if (extension == '*') {
+                        appFileExtensionWildcardRegistrationList.push(item);
                     } else {
-                        currentMapping.push(item);
+                        let currentMapping = appFileExtensionRegistrationMap.get(extension);
+                        if (currentMapping == null) {
+                            currentMapping = [item];
+                        } else {
+                            currentMapping.push(item);
+                        }
+                        appFileExtensionRegistrationMap.set(extension, currentMapping);
                     }
-                    appFileExtensionRegistrationMap.set(extension, currentMapping);
-                }
-            });
-            props.mimeTypes.forEach(mimeType => {
-                if (mimeType == '*') {
-                    appMimeTypeWildcardRegistrationList.push(item);
-                } else {
-                    let currentMapping = appMimeTypeRegistrationMap.get(mimeType);
-                    if (currentMapping == null) {
-                        currentMapping = [item];
+                });
+                props.mimeTypes.forEach(mimeType => {
+                    if (mimeType == '*') {
+                        appMimeTypeWildcardRegistrationList.push(item);
                     } else {
-                        currentMapping.push(item);
+                        let currentMapping = appMimeTypeRegistrationMap.get(mimeType);
+                        if (currentMapping == null) {
+                            currentMapping = [item];
+                        } else {
+                            currentMapping.push(item);
+                        }
+                        appMimeTypeRegistrationMap.set(mimeType, currentMapping);
                     }
-                    appMimeTypeRegistrationMap.set(mimeType, currentMapping);
-                }
-            });
-            props.fileTypes.forEach(fileType => {
-                if (fileType == '*') {
-                    appFileTypeWildcardRegistrationList.push(item);
-                } else {
-                    let currentMapping = appFileTypeRegistrationMap.get(fileType);
-                    if (currentMapping == null) {
-                        currentMapping = [item];
+                });
+                props.fileTypes.forEach(fileType => {
+                    if (fileType == '*') {
+                        appFileTypeWildcardRegistrationList.push(item);
                     } else {
-                        currentMapping.push(item);
+                        let currentMapping = appFileTypeRegistrationMap.get(fileType);
+                        if (currentMapping == null) {
+                            currentMapping = [item];
+                        } else {
+                            currentMapping.push(item);
+                        }
+                        appFileTypeRegistrationMap.set(fileType, currentMapping);
                     }
-                    appFileTypeRegistrationMap.set(fileType, currentMapping);
-                }
-            });
+                });
+            }
             this.$store.commit("SET_FILE_EXTENSION_REGISTRATIONS", appFileExtensionRegistrationMap);
             this.$store.commit("SET_MIMETYPE_REGISTRATIONS", appMimeTypeRegistrationMap);
             this.$store.commit("SET_FILETYPE_REGISTRATIONS", appFileTypeRegistrationMap);

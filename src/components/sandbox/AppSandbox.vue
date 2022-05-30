@@ -107,7 +107,7 @@ module.exports = {
         startTitleDetection: function() {
             if (!this.running) return;
             this.postMessage({type: 'currentTitleRequest'});
-            setTimeout(() => this.startTitleDetection(), 1000);
+            setTimeout(() => this.startTitleDetection(), 300);
         },
         loadAppProperties: function(fullPath, title) {
            let that = this;
@@ -122,11 +122,8 @@ module.exports = {
             return future;
         },
         currentTitleResponse: function(fullPath, title) {
-            let that = this;
-            let pathPrefix = '/apps/sandbox/';
-            if (fullPath.startsWith(pathPrefix)) {
-                let path = fullPath.substring(pathPrefix.length);
-                this.setFullPathForDisplay(path);
+            if (fullPath != "blank") {
+                this.setFullPathForDisplay(fullPath);
             }
         },
         getFullPathForDisplay: function() {
@@ -241,7 +238,7 @@ module.exports = {
             this.closeApp();
         },
         frameUrl: function() {
-            let url= this.frameDomain() + "/apps/sandbox/sandbox.html";
+            let url= this.frameDomain() + "/sandbox.html";
             return url;
         },
         frameDomain: function() {
@@ -320,7 +317,10 @@ module.exports = {
             if (this.browserMode && streamFilePath.includes('/.')) {
                 that.showError('Path not accessible: ' + streamFilePath);
             } else {
-                this.findFile(streamFilePath).thenApply(file => {
+                let prefix = !this.browserMode
+                    && streamFilePath != this.appPath
+                    && !streamFilePath.startsWith('/data') ? '/assets' : '';
+                this.findFile(prefix + streamFilePath).thenApply(file => {
                     if (file != null) {
                         that.stream(seekHi, seekLo, seekLength, file, streamFilePath);
                     }
@@ -410,10 +410,13 @@ module.exports = {
                             that.showError("App attempted to access file without permission :" + path);
                             that.buildResponse(headerFunc(), null, that.ACTION_FAILED);
                         } else {
-                            that.readFileOrFolder(headerFunc, 'data/' + path, params, true);
+                            that.readFileOrFolder(headerFunc, '/data/' + path, params, true);
                         }
                     } else {
-                        that.readFileOrFolder(headerFunc, path, params);
+                        let prefix = !this.browserMode
+                            && !(path == this.appPath || this.isAppPathAFolder && path.startsWith(this.appPath))
+                            && !path.startsWith('/data') ? '/assets' : '';
+                        that.readFileOrFolder(headerFunc, prefix + path, params);
                     }
                 } else {
                     if (that.appPath.length > 0 && path == that.appPath) {
@@ -475,7 +478,7 @@ module.exports = {
                         if (!props.isDirectory && props.isHidden) {
                             that.showError('File not accessible: ' + expandedFilePath);
                             that.buildResponse(headerFunc(), null, that.ACTION_FAILED);
-                        } else if (props.isDirectory && !ignoreHiddenFolderCheck) {
+                        } else if (props.isDirectory && props.isHidden && !ignoreHiddenFolderCheck) {
                             that.showError('Folder not accessible: ' + expandedFilePath);
                             that.buildResponse(headerFunc(), null, that.ACTION_FAILED);
                         } else {
@@ -725,11 +728,11 @@ module.exports = {
                 if (this.isAppPathAFolder && filePath.startsWith(this.appPath)) {
                     return filePath;
                 } else if (this.currentProps != null) { //running in-place
-                    return this.getPath + filePath;
+                    return this.getPath + filePath.substring(1);
                 } else if (this.browserMode){
                     return filePath;
                 } else {
-                    return this.context.username + "/.apps/" + this.sandboxAppName + '/' + filePath;
+                    return this.context.username + "/.apps/" + this.sandboxAppName + filePath;
                 }
             }
         },
