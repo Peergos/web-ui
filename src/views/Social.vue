@@ -109,6 +109,19 @@
                   </tr>
 		</div>
             </div>
+            <div>
+                <h3>Blocked</h3>
+                <div class="table flex-container" style="flex-flow:column;">
+                  <tr v-for="user in socialData.blocked" class="flex-container vspace-5" style="justify-content:space-between; max-width:700px;">
+                        <div style="font-size:1.5em;">
+                            {{ user }}
+            		    </div>
+                        <div>
+            		      <button class="btn btn-danger" @click="unblock(user)">Unblock</button>
+            		    </div>
+                  </tr>
+                </div>
+            </div>
 		</main>
    </article>
 </template>
@@ -260,6 +273,24 @@ module.exports = {
 		        that.$toast('Follow request already sent')
                 return;
 	        }
+	        let alreadyBlockedUsers = [];
+            this.socialData.blocked.forEach(function(name){
+                let idx = that.targetUsernames.indexOf(name);
+                if (idx > -1) {
+                    alreadyBlockedUsers.push(name);
+                }
+            });
+            if (alreadyBlockedUsers.length > 0) {
+                if (alreadyBlockedUsers.length > 1) {
+                    that.$toast('The following users are blocked: ' +
+                        alreadyBlockedUsers.join(", ") +
+                        '');
+                    return;
+                } else {
+                    that.$toast('User: ' + alreadyBlockedUsers[0] + ' is blocked');
+                    return;
+                }
+            }
             console.log("sending follow request");
             that.showSpinner = true;
             that.context.sendInitialFollowRequests(this.targetUsernames)
@@ -336,6 +367,16 @@ module.exports = {
 		    that.$toast(`Stopped following ${username}`)
 		    that.updateSocial();
                 });
+        },
+
+        unblock(username) {
+            var that = this;
+            this.showSpinner = true;
+            this.context.unblock(username).thenApply(function(success) {
+		        that.showSpinner = false;
+		        that.$toast(`${username} unblocked`);
+		        that.updateSocial();
+            });
         },
 
         close () {

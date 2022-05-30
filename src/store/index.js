@@ -47,6 +47,7 @@ module.exports = new Vuex.Store({
 			following: [],
 			pending: [],
 			pendingOutgoing: [],
+			blocked: [],
 			groupsNameToUid: {},
 			groupsUidToName: {}
 		}
@@ -212,7 +213,9 @@ module.exports = new Vuex.Store({
 		SET_PENDING_OUTGOING(state, payload) {
 			state.socialData.pendingOutgoing = payload;
 		},
-
+		SET_BLOCKED(state, payload) {
+			state.socialData.blocked = payload;
+		},
 	},
 
 	// Async
@@ -298,6 +301,10 @@ module.exports = new Vuex.Store({
 				commit('SET_PENDING_OUTGOING', pendingOutgoingUsernames)
 
 				commit('SET_PENDING_INCOMING', socialState.pendingIncoming.toArray([]))
+
+				let blockedUsernames = [];
+				socialState.blocked.toArray([]).filter(u => u.length > 0).map(i => blockedUsernames.push(i));
+				commit('SET_BLOCKED', blockedUsernames)
 
 				if (callback != null) {
 					callback()
