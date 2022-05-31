@@ -2,6 +2,7 @@ var mainWindow;
 var origin;
 var theme;
 var hasEmail;
+var canRefreshDay = false;
 let handler = function (e) {
       // You must verify that the origin of the message's sender matches your
       // expectations. In this case, we're only planning on accepting messages
@@ -89,6 +90,22 @@ let calendarSettingsButton = document.getElementById('calendar-settings');
 calendarSettingsButton.onclick=function(e) {
     toggleCalendarsView(e);
 };
+function startCurrentDayCheck() {
+    let repeatMS = 10000;
+    if (canRefreshDay) {
+        let today = moment();
+        let sameDay = today.day() == currentMoment.day();
+        if (sameDay) {
+            setTimeout(() => startCurrentDayCheck(), repeatMS);
+        } else {
+            currentMoment = today;
+            if(!reload(today)) {
+                setTimeout(() => startCurrentDayCheck(), repeatMS);
+            }
+        }
+    }
+}
+
 
 //--rrule
 //These 2 are only internal for display
@@ -465,6 +482,10 @@ function removeRecurringScheduleInstances(parentId) {
     });
 }
 function disableToolbarButtons(newValue){
+    canRefreshDay = !newValue;
+    if (canRefreshDay) {
+        startCurrentDayCheck();
+    }
     let calendarSettings = document.getElementById("calendar-settings");
     calendarSettings.disabled = newValue;
     let calendarType = document.getElementById("dropdownMenu-calendarType");
@@ -1771,12 +1792,9 @@ function onClickNavi(e) {
     let wasMoment = currentMoment.clone();
     if (action == 'move-today') {
         let today = moment();
+        currentMoment = today;
         cal.today();
-        if (wasMoment.month() == currentMoment.month()) {
-          setRenderRangeText();
-        } else {
-          reload(today, today);
-        }
+        reload(today);
     } else {
         if (viewName === 'day') {
               switch (action) {
@@ -1818,16 +1836,16 @@ function onClickNavi(e) {
             let toLoadMonth = currentMoment.clone();
             if (wasMoment.isSameOrAfter(currentMoment)) {
                 toLoadMonth.subtract(1, 'months');
-                reload(currentMoment, toLoadMonth);
+                reload(toLoadMonth);
             } else {
                 toLoadMonth.add(1, 'months');
-                reload(currentMoment, toLoadMonth);
+                reload(toLoadMonth);
             }
         }
     }
 }
 
-function reload(currentMoment, toLoadMonth) {
+function reload(toLoadMonth) {
     let cachedList = ScheduleCache[toLoadMonth.year() * 12 + toLoadMonth.month()];
     if (cachedList == null) {
         displaySpinner();
@@ -1839,9 +1857,11 @@ function reload(currentMoment, toLoadMonth) {
             mainWindow.postMessage({type:"loadAdditional", year: toLoadMonth.year(), month: (toLoadMonth.month() + 1)},
                 origin);
         }
+        return true;
     } else {
         refreshScheduleVisibility();
         setRenderRangeText();
+        return false;
     }
 }
 
