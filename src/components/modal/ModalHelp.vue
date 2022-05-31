@@ -172,6 +172,7 @@ module.exports = {
   padding: 0 20px;
   display: none;
   overflow: hidden;
-  background-color: white;
+  background-color: var(--bg);
+  color: var(--color);
 }
 </style>
