@@ -91,7 +91,7 @@ calendarSettingsButton.onclick=function(e) {
     toggleCalendarsView(e);
 };
 function startCurrentDayCheck() {
-    let repeatMS = 10000;
+    let repeatMS = 1000*60*10;
     if (canRefreshDay) {
         let today = moment();
         let sameDay = today.day() == currentMoment.day();
