@@ -2123,66 +2123,6 @@ module.exports = {
             this.showPrompt = true;
 		},
 
-		createAppFolder(folder, appName) {
-			var that = this;
-			let future = peergos.shared.util.Futures.incomplete();
-            let appDir = peergos.client.PathUtils.directoryToPath([appName]);
-			folder.getOrMkdirs(appDir, that.context.network, false, that.getMirrorBatId(that.currentDir), that.context.crypto)
-			    .thenApply(dir => {
-					future.complete(dir);
-				}).exceptionally(function (throwable) {
-                    console.log('unable to create folder: ' + appName + ' error: ' + throwable.getMessage());
-					future.complete(null);
-				});
-            return future;
-		},
-
-		createAppIndexPage(folder, appDisplayName) {
-            let encoder = new TextEncoder();
-            let html = '<!DOCTYPE html>\n' +
-            '<html lang="en">\n' +
-            '    <head>\n' +
-            '        <meta charset="UTF-8">\n' +
-            '        <meta name="viewport" content="width=device-width, initial-scale=1">\n' +
-            '        <title>App: ' + appDisplayName + '</title>\n' +
-            '        <!-- link rel="apple-touch-icon" href="pwa-logo-192.png" -->\n' +
-            '    </head>\n' +
-            '    <body>\n' +
-            '	<h1>' + appDisplayName + '</h1>\n' +
-            '    </body>\n' +
-            '</html>';
-            let uint8Array = encoder.encode(html);
-            let bytes = convertToByteArray(uint8Array);
-            return this.writeFileContents(folder, 'index.html', bytes);
-        },
-
-		createAppManifest(folder, appDisplayName, appName) {
-            let encoder = new TextEncoder();
-            let props = {"schemaVersion": "1", "displayName": appDisplayName, "name": appName,
-                "version": "0.0.1-initial", "supportAddress": "", "folderAction": false,
-                "description": "Please set...", "launchable": true,
-                "fileExtensions": [], "mimeTypes": [], "fileTypes": [], "permissions": []
-            };
-            let uint8Array = encoder.encode(JSON.stringify(props));
-            let bytes = convertToByteArray(uint8Array);
-            return this.writeFileContents(folder, 'peergos-app.json', bytes);
-        },
-		writeFileContents(folder, filename, bytes) {
-            let reader = new peergos.shared.user.fs.AsyncReader.ArrayBacked(bytes);
-            let that = this;
-            let future = peergos.shared.util.Futures.incomplete();
-            folder.uploadFileJS(filename, reader, 0, bytes.byteLength,
-                true, this.mirrorBatId, this.context.network, this.context.crypto, function (len) { },
-                this.context.getTransactionService(), f => peergos.shared.util.Futures.of(true)
-            ).thenApply(function (res) {
-                future.complete(res);
-            }).exceptionally(function (throwable) {
-                console.log('unable to create file: ' + filename + ' error: ' + throwable.getMessage());
-                future.complete(false);
-            })
-            return future;
-        },
-
         validateAppName: function(displayName) {
             if (displayName === '')
                 return false;
@@ -2213,18 +2153,68 @@ module.exports = {
             }
 			this.showSpinner = true;
 			let appName = appDisplayName.replaceAll(' ', '').toLowerCase().trim();
-			this.createAppFolder(this.currentDir, appName).thenApply(appDir => {
-                that.createAppManifest(appDir, appDisplayName, appName).thenApply(appDir2 => {
-        			that.createAppFolder(appDir2, 'assets').thenApply(assetsDir => {
-                        that.createAppIndexPage(assetsDir, appDisplayName).thenApply(assetsDir2 => {
-                            that.showSpinner = false;
-                            that.updateCurrentDir();
-                            that.updateFiles();
-                            that.updateUsage();
-                        });
-                    });
-                });
-			});
+            let encoder = new TextEncoder();
+            let props = {"schemaVersion": "1", "displayName": appDisplayName, "name": appName,
+                "version": "0.0.1-initial", "supportAddress": "", "folderAction": false,
+                "description": "Please set...", "launchable": true,
+                "fileExtensions": [], "mimeTypes": [], "fileTypes": [], "permissions": []
+            };
+            let manifestUint8Array = encoder.encode(JSON.stringify(props));
+            let appManifest = convertToByteArray(manifestUint8Array);
+            let manifestReader = new peergos.shared.user.fs.AsyncReader.ArrayBacked(appManifest);
+            let manifestProps =
+                    new peergos.shared.user.fs.FileWrapper.FileUploadProperties("peergos-app.json", manifestReader, 0,
+                        manifestUint8Array.byteLength, false, true, x => {});
+            let html = '<!DOCTYPE html>\n' +
+            '<html lang="en">\n' +
+            '    <head>\n' +
+            '        <meta charset="UTF-8">\n' +
+            '        <meta name="viewport" content="width=device-width, initial-scale=1">\n' +
+            '        <title>App: ' + appDisplayName + '</title>\n' +
+            '        <!-- link rel="apple-touch-icon" href="pwa-logo-192.png" -->\n' +
+            '    </head>\n' +
+            '    <body>\n' +
+            '	<h1>' + appDisplayName + '</h1>\n' +
+            '    </body>\n' +
+            '</html>';
+            let indexUint8Array = encoder.encode(html);
+            let appIndexPage = convertToByteArray(indexUint8Array);
+            let indexReader = new peergos.shared.user.fs.AsyncReader.ArrayBacked(appIndexPage);
+            let indexPageProps =
+                    new peergos.shared.user.fs.FileWrapper.FileUploadProperties("index.html", indexReader, 0,
+                        indexUint8Array.byteLength, false, true, x => {});
+            let folderUPList = [];
+            let appFolderProps = new peergos.shared.user.fs.FileWrapper.FolderUploadProperties(
+                peergos.client.JsUtil.asList([appName]), peergos.client.JsUtil.asList([manifestProps]));
+            folderUPList.push(appFolderProps);
+            let assetFolderProps = new peergos.shared.user.fs.FileWrapper.FolderUploadProperties(
+                peergos.client.JsUtil.asList([appName, 'assets']), peergos.client.JsUtil.asList([indexPageProps]));
+            folderUPList.push(assetFolderProps);
+
+            let folderStream = peergos.client.JsUtil.asList(folderUPList).stream();
+            let alwaysResumeFileUpload = function(f) {
+                let future = peergos.shared.util.Futures.incomplete();
+                future.complete(true);
+                return future;
+            }
+            var commitWatcher = {
+                get_0: function() {
+                    return true;
+                }
+            };
+            this.currentDir.uploadSubtree(folderStream, this.getMirrorBatId(this.currentDir), this.context.network,
+                this.context.crypto, this.context.getTransactionService(),
+                f => alwaysResumeFileUpload(f), commitWatcher).thenApply(res => {
+                    that.showSpinner = false;
+                    that.updateCurrentDir();
+                    that.updateFiles();
+                    that.updateUsage();
+            }).exceptionally(function (throwable) {
+                that.errorTitle = 'Error creating App';
+                that.errorBody = throwable.getMessage();
+                that.showError = true;
+                that.showSpinner = false;
+            });
         },
 
 		createTextFile() {

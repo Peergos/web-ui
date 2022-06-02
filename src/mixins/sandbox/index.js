@@ -47,7 +47,7 @@ module.exports = {
               } else {
                   let errors = [];
                   let mandatoryFields = ["displayName", "description", "launchable"];
-                  let existingCreateMenuItems = ["upload files","upload folder","new folder","new file"];
+                  let existingCreateMenuItems = ["upload files","upload folder","new folder","new file", "new app"];
                   let validPermissions = ["STORE_APP_DATA", "EDIT_CHOSEN_FILE", "READ_CHOSEN_FOLDER"];
                   mandatoryFields.forEach(field => {
                       if (props[field] == null) {
