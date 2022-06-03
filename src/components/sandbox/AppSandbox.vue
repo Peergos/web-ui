@@ -330,7 +330,14 @@ module.exports = {
                     && !streamFilePath.startsWith('/data') ? '/assets' : '';
                 this.findFile(prefix + streamFilePath).thenApply(file => {
                     if (file != null) {
-                        that.stream(seekHi, seekLo, seekLength, file, streamFilePath);
+                        let mimeType = file.getFileProperties().mimeType;
+                        if (!(mimeType.startsWith("audio") ||
+                            mimeType.startsWith("video") ||
+                            mimeType.startsWith("image"))) {
+                            that.showError('Unable to stream file: ' + file.getName());
+                        } else {
+                            that.stream(seekHi, seekLo, seekLength, file, streamFilePath);
+                        }
                     }
                 });
             }
@@ -408,7 +415,13 @@ module.exports = {
         actionRequest: function(path, requestId, apiMethod, data, hasFormData, params) {
             let that = this;
             let headerFunc = (mimeType) => that.buildHeader(path, mimeType, requestId);
-
+            if (this.browserMode) {
+                if (apiMethod != 'GET') {
+                    that.showError("HTMLViewer does not support: " + apiMethod);
+                    that.buildResponse(headerFunc(), null, that.ACTION_FAILED);
+                    return;
+                }
+            }
             var bytes = convertToByteArray(new Int8Array(data));
             try {
                 if (apiMethod == 'GET') {
@@ -831,7 +844,9 @@ module.exports = {
             window.removeEventListener('message', this.messageHandler);
             window.removeEventListener("resize", this.resizeHandler);
             this.running = false;
-            this.$emit("refresh");
+            if (!this.browserMode) {
+                this.$emit("refresh");
+            }
             this.$emit("hide-app-sandbox");
             if (this.navigateTo != null) {
                 this.openFileOrDir('htmlviewer', this.navigateTo.navigationPath, {filename: this.navigateTo.navigationFilename});
