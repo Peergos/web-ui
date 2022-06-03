@@ -54,7 +54,9 @@ module.exports = {
             fullPathForDisplay: '',
             displayToBookmark: true,
             launcherApp: null,
-            running: true
+            running: false,
+            workspaceName: '',
+            navigateTo: null
         }
     },
     computed: {
@@ -71,11 +73,14 @@ module.exports = {
     props: ['sandboxAppName', 'currentFile', 'currentPath', 'currentProps'],
     created: function() {
         let that = this;
-        if (this.sandboxAppName == 'htmlviewer') {
-            this.browserMode = true;
-        }
         let currentFilename = this.currentFile == null ? '' : this.currentFile.getName();
         this.appPath = this.currentFile == null ? '' : this.currentPath + currentFilename;
+        if (this.sandboxAppName == 'htmlviewer') {
+            this.browserMode = true;
+            this.workspaceName = this.extractWorkspace(this.appPath);
+        } else {
+            this.workspaceName = this.sandboxAppName;
+        }
         if (this.currentFile != null) {
             if (this.currentFile.getFileProperties().isDirectory) {
                 this.isAppPathAFolder = true;
@@ -92,7 +97,7 @@ module.exports = {
                 } else {
                     peergos.shared.user.App.init(that.context, that.sandboxAppName).thenApply(sandboxedApp => {
                         that.sandboxedApp = sandboxedApp;
-                        peergos.shared.user.App.getAppSubdomain(that.sandboxAppName, that.context.crypto.hasher).thenApply(appSubdomain => {
+                        peergos.shared.user.App.getAppSubdomain(that.workspaceName, that.context.crypto.hasher).thenApply(appSubdomain => {
                             that.appSubdomain = appSubdomain;
                             that.loadBookmarks().thenApply(res => {
                                 that.startListener();
@@ -104,6 +109,9 @@ module.exports = {
         }
     },
     methods: {
+        extractWorkspace: function(path) {
+                return path.substring(1, path.indexOf('/', 1));
+        },
         startTitleDetection: function() {
             if (!this.running) return;
             this.postMessage({type: 'currentTitleRequest'});
@@ -416,7 +424,22 @@ module.exports = {
                         let prefix = !this.browserMode
                             && !(path == this.appPath || this.isAppPathAFolder && path.startsWith(this.appPath))
                             && !path.startsWith('/data') ? '/assets' : '';
-                        that.readFileOrFolder(headerFunc, prefix + path, params);
+                        if (this.browserMode && path.toLowerCase().endsWith('.html')) {
+                            if (!this.running) {
+                                this.running = true;
+                                this.readFileOrFolder(headerFunc, path, params);
+                            } else if(this.extractWorkspace(path) == this.workspaceName){
+                                this.readFileOrFolder(headerFunc, path, params);
+                            } else {
+                                that.buildResponse(headerFunc(), null, that.ACTION_FAILED);
+                                let navigationPath = path.substring(0, path.lastIndexOf('/'));
+                                let navigationFilename = path.substring(path.lastIndexOf('/') + 1);
+                                this.navigateTo = { navigationPath: navigationPath, navigationFilename: navigationFilename};
+                                that.closeApp();
+                            }
+                        } else {
+                            that.readFileOrFolder(headerFunc, prefix + path, params);
+                        }
                     }
                 } else {
                     if (that.appPath.length > 0 && path == that.appPath) {
@@ -810,6 +833,9 @@ module.exports = {
             this.running = false;
             this.$emit("refresh");
             this.$emit("hide-app-sandbox");
+            if (this.navigateTo != null) {
+                this.openFileOrDir('htmlviewer', this.navigateTo.navigationPath, {filename: this.navigateTo.navigationFilename});
+            }
         }
     }
 }

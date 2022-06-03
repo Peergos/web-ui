@@ -1029,7 +1029,10 @@ module.exports = {
                         that.showHexViewer = true;
                     else if (app == "markdown")
                         that.showMarkdownViewer = true;
-                    else if (app == "search")
+                    else if (app == "htmlviewer") {
+                        that.sandboxAppName = "htmlviewer";
+                        that.showAppSandbox = true;
+                    } else if (app == "search")
                         that.showSearch = true;
 		},
 		openSearch(fromRoot) {
