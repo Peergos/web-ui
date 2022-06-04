@@ -145,6 +145,8 @@ function AppData() {
             return 200;
         } else if (code == '9') { //            PATCH_SUCCESS: 9,
             return 204;
+        } else if (code == '10') { //            NAVIGATE_TO: 10,
+            return 404;
         } else {
             return 400;
         }

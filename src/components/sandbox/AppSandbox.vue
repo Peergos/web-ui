@@ -42,6 +42,7 @@ module.exports = {
             UPDATE_SUCCESS: 7,
             GET_SUCCESS: 8,
             PATCH_SUCCESS: 9,
+            NAVIGATE_TO: 10,
             isIframeInitialised: false,
             appPath: '',
             appSubdomain: '',
@@ -437,19 +438,8 @@ module.exports = {
                         let prefix = !this.browserMode
                             && !(path == this.appPath || this.isAppPathAFolder && path.startsWith(this.appPath))
                             && !path.startsWith('/data') ? '/assets' : '';
-                        if (this.browserMode && path.toLowerCase().endsWith('.html')) {
-                            if (!this.running) {
-                                this.running = true;
-                                this.readFileOrFolder(headerFunc, path, params);
-                            } else if(this.extractWorkspace(path) == this.workspaceName){
-                                this.readFileOrFolder(headerFunc, path, params);
-                            } else {
-                                that.buildResponse(headerFunc(), null, that.ACTION_FAILED);
-                                let navigationPath = path.substring(0, path.lastIndexOf('/'));
-                                let navigationFilename = path.substring(path.lastIndexOf('/') + 1);
-                                this.navigateTo = { navigationPath: navigationPath, navigationFilename: navigationFilename};
-                                that.closeApp();
-                            }
+                        if (this.browserMode) {
+                            that.handleBrowserRequest(headerFunc, path, params);
                         } else {
                             that.readFileOrFolder(headerFunc, prefix + path, params);
                         }
@@ -496,6 +486,55 @@ module.exports = {
                 console.log('Exception:' + ex);
                 that.buildResponse(headerFunc(), null, that.ACTION_FAILED);
             }
+        },
+        handleBrowserRequest: function(headerFunc, path, params) {
+            let that = this;
+            this.findFile(path).thenApply(file => {
+                if (file == null) {
+                    that.showError("Resource not accessible :" + path);
+                    that.buildResponse(headerFunc(), null, that.ACTION_FAILED);
+                } else {
+                    let props = file.getFileProperties();
+                    if (props.isHidden) {
+                        that.showError('Path not accessible: ' + filePath);
+                        that.buildResponse(header, null, that.ACTION_FAILED);
+                    } else if(props.isDirectory) {
+                        that.closeAndLaunchApp(headerFunc, "Drive", path, "");
+                    } else {
+                        let navigationPath = path.substring(0, path.lastIndexOf('/'));
+                        let navigationFilename = path.substring(path.lastIndexOf('/') + 1);
+                        let app = that.getApp(file, path);
+                        if (app == 'editor' || path.toLowerCase().endsWith('.html') ) {
+                            if (!path.toLowerCase().endsWith('.html')) {
+                                that.readFileOrFolder(headerFunc, path, params);
+                            } else {
+                                if (!that.running) {
+                                    that.running = true;
+                                    that.readFileOrFolder(headerFunc, path, params);
+                                } else {
+                                    if(that.extractWorkspace(path) == that.workspaceName){
+                                        that.readFileOrFolder(headerFunc, path, params);
+                                    } else {
+                                        //navigate to location in another workspace
+                                        that.closeAndLaunchApp(headerFunc, 'htmlviewer', navigationPath, navigationFilename);
+                                    }
+                                }
+                            }
+                        } else if (app == 'hex') {
+                            that.closeAndLaunchApp(headerFunc, "Drive", navigationPath, "");
+                        } else if(app == 'Gallery') {
+                            that.readFileOrFolder(headerFunc, path, params);
+                        } else {
+                            that.closeAndLaunchApp(headerFunc, app, navigationPath, navigationFilename);
+                        }
+                    }
+                }
+            });
+        },
+        closeAndLaunchApp: function(headerFunc, app, path, filename) {
+            this.buildResponse(headerFunc(), null, this.NAVIGATE_TO);
+            this.navigateTo = { app: app, navigationPath: path, navigationFilename: filename};
+            this.closeApp();
         },
         readFileOrFolder: function(headerFunc, path, params, ignoreHiddenFolderCheck) {
             let that = this;
@@ -849,7 +888,7 @@ module.exports = {
             }
             this.$emit("hide-app-sandbox");
             if (this.navigateTo != null) {
-                this.openFileOrDir('htmlviewer', this.navigateTo.navigationPath, {filename: this.navigateTo.navigationFilename});
+                this.openFileOrDir(this.navigateTo.app, this.navigateTo.navigationPath, {filename: this.navigateTo.navigationFilename});
             }
         }
     }
