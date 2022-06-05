@@ -5,10 +5,6 @@
             <div class="modal-header-app">
                 <center v-if="browserMode"><h2>{{ getFullPathForDisplay() }}</h2></center>
                 <span style="position:absolute;top:0;right:2em;">
-                    <span v-if="browserMode && !isSecretLink" style="z-index:9999">
-                          <img v-if="displayToBookmark" src="/images/bookmark-o.png" @click="toggleBookmark(false)" style="color:black;font-size:2.5em;cursor:pointer;margin-bottom: 0.4em;margin-right: 0.3em;">
-                          <img v-if="!displayToBookmark" src="/images/bookmark.png" @click="toggleBookmark(true)" style="color:black;font-size:2.5em;cursor:pointer;margin-bottom: 0.4em;margin-right: 0.3em;">
-                    </span>
                     <span @click="closeApp" tabindex="0" v-on:keyup.enter="closeApp" style="color:black;font-size:3em;font-weight:bold;cursor:pointer;">&times;</span>
                 </span>
             </div>
@@ -53,7 +49,6 @@ module.exports = {
             PERMISSION_READ_CHOSEN_FOLDER: 'READ_CHOSEN_FOLDER',
             browserMode: false,
             fullPathForDisplay: '',
-            displayToBookmark: true,
             launcherApp: null,
             running: false,
             workspaceName: '',
@@ -65,7 +60,6 @@ module.exports = {
             'quotaBytes',
             'usageBytes',
             'context',
-            "bookmarks"
         ]),
         ...Vuex.mapGetters([
             'isSecretLink',
@@ -107,9 +101,7 @@ module.exports = {
                             that.sandboxedApp = sandboxedApp;
                             peergos.shared.user.App.getAppSubdomain(that.workspaceName, that.context.crypto.hasher).thenApply(appSubdomain => {
                                 that.appSubdomain = appSubdomain;
-                                that.loadBookmarks().thenApply(res => {
-                                    that.startListener();
-                                });
+                                that.startListener();
                             });
                         });
                     }
@@ -148,82 +140,6 @@ module.exports = {
         },
         setFullPathForDisplay: function(path) {
             this.fullPathForDisplay = path;
-            if (this.browserMode) {
-                if (this.bookmarks.bookmarksMap.get(this.fullPathForDisplay) == null) {
-                    this.displayToBookmark = true;
-                } else {
-                    this.displayToBookmark = false;
-                }
-            }
-        },
-        toggleBookmark: function(remove) {
-            if(this.showSpinner || this.isSecretLink) {
-                return;
-            }
-            let that = this;
-            let address = this.fullPathForDisplay;
-            if (address.length <= 1) {
-                return;
-            }
-            let bookmark = this.bookmarks.bookmarksMap.get(address);
-            if (remove) {
-                if (bookmark != null) {
-                    this.refreshAndDeleteBookmark(address);
-                }
-            } else {
-                if (bookmark == null) {
-                    this.refreshAndAddBookmark(address);
-                }
-            }
-        },
-        refreshAndAddBookmark(link) {
-            let that = this;
-            this.showSpinner = true;
-            this.loadBookmarksFile(this.launcherApp).thenApply(bookmarksMap => {
-                if (bookmarksMap.get(link) == null) {
-                    let entry = {added: new Date()};
-                    bookmarksMap.set(link, entry)
-                    that.updateBookmarksFile(that.launcherApp, bookmarksMap).thenApply(res => {
-                        that.showSpinner = false;
-                        that.displayToBookmark = false;
-                        that.$store.commit("SET_BOOKMARKS", bookmarksMap);
-                    });
-                } else {
-                    that.showSpinner = false;
-                }
-            })
-        },
-        refreshAndDeleteBookmark(link) {
-            let that = this;
-            this.showSpinner = true;
-            this.loadBookmarksFile(this.launcherApp).thenApply(bookmarksMap => {
-                if (bookmarksMap.get(link) != null) {
-                    bookmarksMap.delete(link)
-                    that.updateBookmarksFile(that.launcherApp, bookmarksMap).thenApply(res => {
-                        that.showSpinner = false;
-                        that.displayToBookmark = true;
-                        that.$store.commit("SET_BOOKMARKS", bookmarksMap);
-                    });
-                } else {
-                    that.showSpinner = false;
-                }
-            })
-        },
-        loadBookmarks: function() {
-            let that = this;
-            let future = peergos.shared.util.Futures.incomplete();
-            if (!this.browserMode || this.isSecretLink) {
-                future.complete(true);
-            } else {
-                peergos.shared.user.App.init(this.context, "launcher").thenApply(launcher => {
-                    that.launcherApp = launcher;
-                    that.loadBookmarksFile(launcher).thenApply(bookmarksMap => {
-                        that.$store.commit("SET_BOOKMARKS", bookmarksMap);
-                        future.complete(true);
-                    });
-                });
-            }
-            return future;
         },
         validatePermissions: function(props) {
             let allPermissions = new Map();
@@ -314,7 +230,6 @@ module.exports = {
                 window.addEventListener("resize", that.resizeHandler);
                 that.resizeHandler();
                 let func = function() {
-                    that.startTitleDetection();
                     that.postMessage({type: 'init', appName: that.sandboxAppName, appPath: that.appPath, allowBrowsing: that.browserMode});
                 };
                 that.setupIFrameMessaging(iframe, func);
@@ -522,6 +437,7 @@ module.exports = {
                             } else {
                                 if (!that.running) {
                                     that.running = true;
+                                    that.startTitleDetection();
                                     that.readFileOrFolder(headerFunc, path, params);
                                 } else {
                                     if(that.extractWorkspace(path) == that.workspaceName){

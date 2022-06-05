@@ -207,13 +207,10 @@ module.exports = {
             peergos.shared.user.App.init(this.context, "launcher").thenApply(launcher => {
                 that.loadShortcutsFile(launcher).thenApply(shortcutsMap => {
                     that.$store.commit("SET_SHORTCUTS", shortcutsMap);
-                    that.loadBookmarksFile(launcher).thenApply(bookmarksMap => {
-                    that.$store.commit("SET_BOOKMARKS", bookmarksMap);
-                        that.updateUsage();
-                        that.updateQuota();
-                        that.updatePayment();
-                        that.initSandboxedApps();
-                    })
+                    that.updateUsage();
+                    that.updateQuota();
+                    that.updatePayment();
+                    that.initSandboxedApps();
                 })
             });
 	    }

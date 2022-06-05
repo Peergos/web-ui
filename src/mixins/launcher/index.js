@@ -1,11 +1,5 @@
 module.exports = {
     methods: {
-        loadBookmarksFile: function(launcherApp) {
-            return this.loadJsonMapFile(launcherApp, 'bookmarks.json');
-        },
-        updateBookmarksFile: function(launcherApp, shortcutsMap) {
-            return this.updateJsonMapFile(launcherApp, 'bookmarks.json', shortcutsMap);
-        },
         loadShortcutsFile: function(launcherApp) {
             return this.loadJsonMapFile(launcherApp, 'shortcuts.json');
         },

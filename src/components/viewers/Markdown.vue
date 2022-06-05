@@ -5,10 +5,6 @@
         <div class="modal-header" style="padding:0">
             <center><h2>{{ getFullPathForDisplay() }}</h2></center>
           <span style="position:absolute;top:0;right:0.2em;">
-              <span v-if="!isSecretLink" style="z-index:9999">
-                    <img v-if="displayToBookmark" src="/images/bookmark-o.png" @click="toggleBookmark(false)" style="color:black;font-size:2.5em;cursor:pointer;margin-bottom: 0.4em;margin-right: 0.3em;">
-                    <img v-if="!displayToBookmark" src="/images/bookmark.png" @click="toggleBookmark(true)" style="color:black;font-size:2.5em;cursor:pointer;margin-bottom: 0.4em;margin-right: 0.3em;">
-              </span>
             <span v-if="isWritable()" @click="launchEditor" tabindex="0" v-on:keyup.enter="launchEditor"  style="color:black;font-size:2.5em;font-weight:bold;cursor:pointer;margin:.3em;" class='fas fa-edit' title="Edit file"></span>
             <span @click="close" tabindex="0" v-on:keyup.enter="close" style="color:black;font-size:3em;font-weight:bold;cursor:pointer;">&times;</span>
           </span>
@@ -71,17 +67,14 @@ module.exports = {
             confirm_message: "",
             confirm_body: "",
             confirm_consumer_cancel_func: () => {},
-            confirm_consumer_func: () => {},
-            launcherApp: null,
-            displayToBookmark: true
+            confirm_consumer_func: () => {}
         }
     },
     props: ['propAppArgs'],
     mixins:[mixins, routerMixins, launcherMixin],
     computed: {
         ...Vuex.mapState([
-            'context',
-            "bookmarks"
+            'context'
         ]),
         ...Vuex.mapGetters([
             'isSecretLink'
@@ -113,81 +106,13 @@ module.exports = {
             if (file != null) {
                 that.isFileWritable = file.isWritable();
                 that.readInFile(file).thenApply(data => {
-                    that.loadBookmarks().thenApply(res => {
-                        that.setFullPathForDisplay();
-                        that.startListener(data);
-                    });
+                    that.setFullPathForDisplay();
+                    that.startListener(data);
                 });
             }
         });
     },
     methods: {
-        toggleBookmark: function(remove) {
-            if(this.showSpinner || this.isSecretLink) {
-                return;
-            }
-            let that = this;
-            let address = this.currPath + '/' + this.currFilename;
-            let bookmark = this.bookmarks.bookmarksMap.get(address);
-            if (remove) {
-                if (bookmark != null) {
-                    this.refreshAndDeleteBookmark(address);
-                }
-            } else {
-                if (bookmark == null) {
-                    this.refreshAndAddBookmark(address);
-                }
-            }
-        },
-        refreshAndAddBookmark(link) {
-            let that = this;
-            this.showSpinner = true;
-            this.loadBookmarksFile(this.launcherApp).thenApply(bookmarksMap => {
-                if (bookmarksMap.get(link) == null) {
-                    let entry = {added: new Date()};
-                    bookmarksMap.set(link, entry)
-                    that.updateBookmarksFile(that.launcherApp, bookmarksMap).thenApply(res => {
-                        that.showSpinner = false;
-                        that.displayToBookmark = false;
-                        that.$store.commit("SET_BOOKMARKS", bookmarksMap);
-                    });
-                } else {
-                    that.showSpinner = false;
-                }
-            })
-        },
-        refreshAndDeleteBookmark(link) {
-            let that = this;
-            this.showSpinner = true;
-            this.loadBookmarksFile(this.launcherApp).thenApply(bookmarksMap => {
-                if (bookmarksMap.get(link) != null) {
-                    bookmarksMap.delete(link)
-                    that.updateBookmarksFile(that.launcherApp, bookmarksMap).thenApply(res => {
-                        that.showSpinner = false;
-                        that.displayToBookmark = true;
-                        that.$store.commit("SET_BOOKMARKS", bookmarksMap);
-                    });
-                } else {
-                    that.showSpinner = false;
-                }
-            })
-        },
-        loadBookmarks: function() {
-            let that = this;
-            let future = peergos.shared.util.Futures.incomplete();
-            if (this.isSecretLink) {
-                future.complete(true);
-            } else {
-                peergos.shared.user.App.init(this.context, "launcher").thenApply(launcher => {
-                    that.launcherApp = launcher;
-                    that.loadBookmarksFile(launcher).thenApply(bookmarksMap => {
-                        that.$store.commit("SET_BOOKMARKS", bookmarksMap);
-                        future.complete(true);
-                    });
-                });
-            }
-            return future;
-        },
         launchEditor: function() {
             this.openFileOrDir("editor", this.currPath, {filename:this.currFilename});
         },
@@ -206,16 +131,14 @@ module.exports = {
             this.findFile(completePath).thenApply(file => {
                 if (file != null) {
                     that.readInFile(file).thenApply(data => {
-                        that.loadBookmarks().thenApply(res => {
-                            that.setFullPathForDisplay();
-                            let iframe = document.getElementById("md-editor");
-                            let func = function() {
-                                iframe.contentWindow.postMessage({action: "respondToNavigateTo", text:new TextDecoder().decode(data)
-                                    , subPath: subPath}, '*');
-                                that.showSpinner = false;
-                            };
-                            that.setupIFrameMessaging(iframe, func);
-                        });
+                        that.setFullPathForDisplay();
+                        let iframe = document.getElementById("md-editor");
+                        let func = function() {
+                            iframe.contentWindow.postMessage({action: "respondToNavigateTo", text:new TextDecoder().decode(data)
+                                , subPath: subPath}, '*');
+                            that.showSpinner = false;
+                        };
+                        that.setupIFrameMessaging(iframe, func);
                     });
                 }
             });
@@ -286,11 +209,6 @@ module.exports = {
     },
     setFullPathForDisplay: function() {
         this.fullPathForDisplay = this.currPath + '/' + this.currFilename;
-        if (this.bookmarks.bookmarksMap.get(this.fullPathForDisplay) == null) {
-            this.displayToBookmark = true;
-        } else {
-            this.displayToBookmark = false;
-        }
     },
     showMessage: function(isError, title, body) {
         let bodyContents = body == null ? '' : ' ' + body;
