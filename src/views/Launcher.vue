@@ -433,7 +433,7 @@ module.exports = {
             that.launcherApp = launcher;
             that.setBookmarkList(new Map(that.bookmarks.bookmarksMap));
             that.setShortcutList(new Map(that.shortcuts.shortcutsMap));
-            that.appsList = this.sandboxedApps.appsInstalled.slice();
+            that.appsList = this.sandboxedApps.appsInstalled.slice().filter(a => a.name != "htmlviewer");
             that.loadAppIcons();
         });
     },

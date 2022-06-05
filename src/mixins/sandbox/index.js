@@ -291,7 +291,7 @@ module.exports = {
                     "version": "1.0.0-initial", "supportAddress": "", "folderAction": false,
                     "description": "for viewing HTML files", "source": "",
                     "launchable": false,
-                    "fileExtensions": ["html"], "mimeTypes": [], "fileTypes": [], "permissions": []
+                    "fileExtensions": [], "mimeTypes": [], "fileTypes": [], "permissions": []
                 };
                 let uint8Array = encoder.encode(JSON.stringify(props));
                 let bytes = convertToByteArray(uint8Array);

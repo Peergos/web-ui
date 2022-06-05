@@ -94,6 +94,9 @@ module.exports = {
         } else if (mimeType.startsWith("text/x-markdown") ||
             ( mimeType.startsWith("text/") && filename.endsWith('.md'))) {
             return writable ? "editor" : "markdown";
+        } else if (mimeType.startsWith("text/html") ||
+            ( mimeType.startsWith("text/") && filename.endsWith('.html'))) {
+            return writable ? "editor" : "htmlviewer";
 	    } else if (mimeType.startsWith("text/")) {
 		return "editor";
 	    } else {

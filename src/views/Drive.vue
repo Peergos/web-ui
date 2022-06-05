@@ -79,9 +79,11 @@
 				v-if="viewMenu"
 				@closeMenu="closeMenu()"
 			>
-				<li id='gallery' v-if="canOpen && !isMarkdown" @keyup.enter="viewFile()" @click="viewFile()">View</li>
-				<li id='gallery-view-markdown' v-if="isMarkdown" @keyup.enter="viewFile()" @click="viewFile()">View</li>
-				<li id='gallery-edit-markdown' v-if="isMarkdown" @keyup.enter="editFile()" @click="editFile()">Edit</li>
+				<li id='gallery' v-if="canOpen && !isMarkdown && !isHTML" @keyup.enter="viewFile()" @click="viewFile()">View</li>
+				<li id='view-markdown' v-if="isMarkdown" @keyup.enter="viewFile()" @click="viewFile()">View</li>
+				<li id='edit-markdown' v-if="isMarkdown" @keyup.enter="editFile()" @click="editFile()">Edit</li>
+				<li id='view-html' v-if="isHTML" @keyup.enter="viewFile()" @click="viewFile()">View</li>
+				<li id='edit-html' v-if="isHTML" @keyup.enter="editFile()" @click="editFile()">Edit</li>
 				<li id='open-in-app' v-for="app in availableApps" v-on:keyup.enter="appOpen(app.name)" v-on:click="appOpen(app.name)">{{app.contextMenuText}}</li>
 				<li id='download-folder' v-if="canOpen" @keyup.enter="downloadAll"  @click="downloadAll">Download</li>
 				<li id='rename-file' v-if="isWritable" @keyup.enter="rename"  @click="rename">Rename</li>
@@ -559,6 +561,22 @@ module.exports = {
                 let mimeType = file.getFileProperties().mimeType;
                 return mimeType.startsWith("text/x-markdown") ||
                     (mimeType.startsWith("text/") && file.getName().endsWith('.md'));
+            } catch (err) {
+                return false;
+            }
+        },
+        isHTML() {
+            try {
+                if (this.currentDir == null)
+                    return false;
+                if (this.selectedFiles.length != 1)
+                    return false;
+                if (this.selectedFiles[0].isDirectory())
+                    return false;
+                let file =  this.selectedFiles[0];
+                let mimeType = file.getFileProperties().mimeType;
+                return mimeType.startsWith("text/html") ||
+                    (mimeType.startsWith("text/") && file.getName().endsWith('.html'));
             } catch (err) {
                 return false;
             }

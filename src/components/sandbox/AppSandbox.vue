@@ -5,7 +5,7 @@
             <div class="modal-header-app">
                 <center v-if="browserMode"><h2>{{ getFullPathForDisplay() }}</h2></center>
                 <span style="position:absolute;top:0;right:2em;">
-                    <span v-if="browserMode" style="z-index:9999">
+                    <span v-if="browserMode && !isSecretLink" style="z-index:9999">
                           <img v-if="displayToBookmark" src="/images/bookmark-o.png" @click="toggleBookmark(false)" style="color:black;font-size:2.5em;cursor:pointer;margin-bottom: 0.4em;margin-right: 0.3em;">
                           <img v-if="!displayToBookmark" src="/images/bookmark.png" @click="toggleBookmark(true)" style="color:black;font-size:2.5em;cursor:pointer;margin-bottom: 0.4em;margin-right: 0.3em;">
                     </span>
@@ -68,7 +68,8 @@ module.exports = {
             "bookmarks"
         ]),
         ...Vuex.mapGetters([
-            'getPath',
+            'isSecretLink',
+            'getPath'
         ])
     },
     props: ['sandboxAppName', 'currentFile', 'currentPath', 'currentProps'],
@@ -90,23 +91,30 @@ module.exports = {
         if (!this.supportsStreaming()) {
             this.giveUp();
         } else {
-            this.loadAppProperties(that.sandboxAppName).thenApply(props => {
-                if (props == null) {
-                    that.fatalError('Application properties not found');
-                } else if (!that.validatePermissions(props)) {
-                    that.fatalError('Application configuration error. See console for further details');
-                } else {
-                    peergos.shared.user.App.init(that.context, that.sandboxAppName).thenApply(sandboxedApp => {
-                        that.sandboxedApp = sandboxedApp;
-                        peergos.shared.user.App.getAppSubdomain(that.workspaceName, that.context.crypto.hasher).thenApply(appSubdomain => {
-                            that.appSubdomain = appSubdomain;
-                            that.loadBookmarks().thenApply(res => {
-                                that.startListener();
+            if (this.isSecretLink) {
+                peergos.shared.user.App.getAppSubdomain(that.workspaceName, that.context.crypto.hasher).thenApply(appSubdomain => {
+                    that.appSubdomain = appSubdomain;
+                    that.startListener();
+                });
+            } else {
+                this.loadAppProperties(that.sandboxAppName).thenApply(props => {
+                    if (props == null) {
+                        that.fatalError('Application properties not found');
+                    } else if (!that.validatePermissions(props)) {
+                        that.fatalError('Application configuration error. See console for further details');
+                    } else {
+                        peergos.shared.user.App.init(that.context, that.sandboxAppName).thenApply(sandboxedApp => {
+                            that.sandboxedApp = sandboxedApp;
+                            peergos.shared.user.App.getAppSubdomain(that.workspaceName, that.context.crypto.hasher).thenApply(appSubdomain => {
+                                that.appSubdomain = appSubdomain;
+                                that.loadBookmarks().thenApply(res => {
+                                    that.startListener();
+                                });
                             });
                         });
-                    });
-                }
-            });
+                    }
+                });
+            }
         }
     },
     methods: {
@@ -489,6 +497,10 @@ module.exports = {
         },
         handleBrowserRequest: function(headerFunc, path, params) {
             let that = this;
+            if (path.includes('/.')) {
+                that.showError('Path not accessible: ' + path);
+                that.buildResponse(headerFunc(), null, that.ACTION_FAILED);
+            }
             this.findFile(path).thenApply(file => {
                 if (file == null) {
                     that.showError("Resource not accessible :" + path);
