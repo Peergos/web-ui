@@ -3,6 +3,7 @@ var origin;
 var streamWriter;
 var currentPath = '';
 var currentTitle = '';
+var failed = false;
 let msgHandler = function (e) {
       // You must verify that the origin of the message's sender matches your
       // expectations. In this case, we're only planning on accepting messages
@@ -50,25 +51,31 @@ window.addEventListener('message', msgHandler);
 window.addEventListener("resize", resizeHandler);
 
 function removeServiceWorkerRegistration(callback) {
-    if (navigator.serviceWorker == null) {
-        console.log("navigator.serviceWorker == null");
-        mainWindow.postMessage({action:'failedInit'}, origin);
+    if (failed) {
+        callback();
     } else {
-        navigator.serviceWorker.getRegistrations().then(
-            function(registrations) {
-                for(let registration of registrations) {
-                    try {
-                    registration.unregister();
-                    } catch(ex) {
-                        console.log(ex);
-                    }
-                }
-                callback();
-            }
-        ).catch(err => {
-            console.log("Failed initialisation:" + err);
+        if (navigator.serviceWorker == null) {
+            console.log("navigator.serviceWorker == null");
             mainWindow.postMessage({action:'failedInit'}, origin);
-        });
+            failed = true;
+        } else {
+            navigator.serviceWorker.getRegistrations().then(
+                function(registrations) {
+                    for(let registration of registrations) {
+                        try {
+                        registration.unregister();
+                        } catch(ex) {
+                            console.log(ex);
+                        }
+                    }
+                    callback();
+                }
+            ).catch(err => {
+                failed = true;
+                console.log("Failed initialisation:" + err);
+                mainWindow.postMessage({action:'failedInit'}, origin);
+            });
+        }
     }
 }
 function streamFile(seekHi, seekLo, seekLength, streamFilePath) {

@@ -173,7 +173,8 @@
         </AppInstall>
         <AppSandbox
             v-if="showAppSandbox"
-            v-on:hide-app-sandbox="closeAppSandbox"
+            v-on:hide-app-sandbox="closeAppSandbox(true)"
+            v-on:close-app-sandbox="closeAppSandbox(false)"
             v-on:refresh="forceSharedRefreshWithUpdate++"
             :sandboxAppName="sandboxAppName"
             :currentFile="selectedFiles[0]"
@@ -980,10 +981,11 @@ module.exports = {
 
 		closeApps() {
 		    this.showGallery = false;
-                    this.showIdentityProof = false;
+            this.showIdentityProof = false;
 		    this.showPdfViewer = false;
 		    this.showCodeEditor = false;
 		    this.showMarkdownViewer = false;
+		    this.showAppSandbox = false;
 		    this.showTextViewer = false;
 		    this.showHexViewer = false;
 		    this.showSearch = false;
@@ -1020,8 +1022,11 @@ module.exports = {
             this.showAppSandbox = true;
             this.sandboxAppName = appName;
         },
-        closeAppSandbox() {
+        closeAppSandbox(reloadDrive) {
             this.showAppSandbox = false;
+            if (reloadDrive) {
+                this.showDrive();
+            }
         },
 	    openInApp(args, app) {
                 if (app == null || app == "" || app == "Drive") {

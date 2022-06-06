@@ -164,7 +164,7 @@ module.exports = {
             return true;
         },
     	giveUp: function() {
-            this.fatalError('Your Web browser does not support sandbox applications. Are you running incognito-mode?');
+            this.fatalError('Unable to start sandbox. Are you running incognito mode? Perhaps restart browser');
     	},
         fatalError: function(msg) {
             this.showError(msg);
@@ -793,7 +793,7 @@ module.exports = {
         },
         showError: function(msg) {
             console.log(msg);
-            this.$toast.error(msg);
+            this.$toast.error(msg, {timeout:false});
         },
         closeApp: function () {
             let that = this;
@@ -814,9 +814,11 @@ module.exports = {
             if (!this.browserMode) {
                 this.$emit("refresh");
             }
-            this.$emit("hide-app-sandbox");
             if (this.navigateTo != null) {
+                this.$emit("close-app-sandbox");
                 this.openFileOrDir(this.navigateTo.app, this.navigateTo.navigationPath, {filename: this.navigateTo.navigationFilename});
+            } else {
+                this.$emit("hide-app-sandbox");
             }
         }
     }
