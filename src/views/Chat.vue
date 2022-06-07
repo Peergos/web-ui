@@ -567,26 +567,32 @@ module.exports = {
             that.buildMessageThread(conversation.id);
             that.updateScrollPane(true);
             that.checkChatState(conversation);
-
+            that.loadOutstandingMediaForConversation(conversation);
+        },
+        loadOutstandingMediaForConversation: function(conversation) {
+            let that = this;
             let chatController = this.allChatControllers.get(conversation.id);
             if (chatController.pendingAttachmentRefs.length > 0) {
                 this.loadAttachments(chatController).thenApply(attachmentMap => {
                     let currentMessageThread = that.allMessageThreads.get(conversation.id);
                     for(var i = 0; i < currentMessageThread.length; i++) {
                         let entry = currentMessageThread[i];
-                        if (entry.mediaFilePaths != null && entry.mediaFilePaths.length > 0) {
-                            let mediaFilePaths = entry.mediaFilePaths;
-                            entry.mediaFiles = [];
-                            for(var j = 0; j < mediaFilePaths.length; j++) {
-                                let path = mediaFilePaths[j];
-                                let mediaFile = attachmentMap.get(path);
-                                if (mediaFile != null) {
-                                    let fileType = mediaFile.getFileProperties().getType();
-                                    let thumbnail = mediaFile.getFileProperties().thumbnail.ref != null ? mediaFile.getBase64Thumbnail() : "";
-                                    entry.mediaFiles.push({path: path, file: mediaFile, fileType: fileType, thumbnail: thumbnail, hasThumbnail: thumbnail.length > 0});
+                        if (entry.mediaFiles != null && entry.mediaFiles.length > 0) {
+                            for(var j = 0; j < entry.mediaFiles.length; j++) {
+                                let item = entry.mediaFiles[j];
+                                if (!item.loaded) {
+                                    let mediaFile = attachmentMap.get(item.path);
+                                    if (mediaFile != null) {
+                                        let fileType = mediaFile.getFileProperties().getType();
+                                        let thumbnail = mediaFile.getFileProperties().thumbnail.ref != null ? mediaFile.getBase64Thumbnail() : "";
+                                        item.fileType = fileType;
+                                        item.file = mediaFile;
+                                        item.thumbnail = thumbnail;
+                                        item.hasThumbnail = thumbnail.length > 0;
+                                        item.loaded = true;
+                                    }
                                 }
                             }
-                            entry.mediaFilePaths = [];
                         }
                     }
                 });
@@ -992,7 +998,6 @@ module.exports = {
                         message.contents = "[Message Deleted]";
                         message.deleted = true;
                         message.mediaFiles = [];
-                        message.mediaFilePaths = [];
                         message.file = null;
                     }
                 } else if(type == 'ReplyTo') {
@@ -1914,7 +1919,8 @@ module.exports = {
                 : peergos.shared.messaging.messages.ApplicationMessage.text(text);
             let attachmentMap = new Map();
             for(var i = 0; i < this.attachmentList.length; i++) {
-                let path = this.attachmentList[i].mediaItem.path;
+                let mediaPath = this.attachmentList[i].mediaItem.path;
+                let path = mediaPath.startsWith("/") ? mediaPath : "/" + mediaPath;
                 attachmentMap.set(path, this.attachmentList[i].mediaFile);
             }
             that.attachmentList = [];
@@ -2062,7 +2068,6 @@ module.exports = {
         createMessage: function(author, messageEnvelope, body, attachmentMap, parentMessage) {
             let content = body[0].inlineText();
             let mediaFiles = [];
-            let mediaFilePaths = [];
             for(var i = 1; i < body.length; i++) {
                 let refPath = body[i].reference().ref.path;
                 let path = refPath.startsWith("/") ? refPath : "/" + refPath;
@@ -2070,14 +2075,13 @@ module.exports = {
                 if (mediaFile != null) {
                     let fileType = mediaFile.getFileProperties().getType();
                     let thumbnail = mediaFile.getFileProperties().thumbnail.ref != null ? mediaFile.getBase64Thumbnail() : "";
-                    mediaFiles.push({path: path, file: mediaFile, fileType: fileType, thumbnail: thumbnail, hasThumbnail: thumbnail.length > 0});
+                    mediaFiles.push({loaded: true, path: path, file: mediaFile, fileType: fileType, thumbnail: thumbnail, hasThumbnail: thumbnail.length > 0});
                 } else {
-                    mediaFilePaths.push(path);
-                    mediaFiles.push({path: path, file: null, fileType: null, thumbnail: "", hasThumbnail: false});
+                    mediaFiles.push({loaded: false, path: path, file: null, fileType: null, thumbnail: "", hasThumbnail: false});
                 }
             }
             let timestamp = messageEnvelope == null ? "" : this.fromUTCtoLocal(messageEnvelope.creationTime);
-            let entry = {isStatusMsg: false, mediaFiles: mediaFiles, mediaFilePaths: mediaFilePaths,
+            let entry = {isStatusMsg: false, mediaFiles: mediaFiles,
                 sender: author, sendTime: timestamp, contents: content
                 , envelope: messageEnvelope, parentMessage: parentMessage, edited: false, deleted : false};
             return entry;
