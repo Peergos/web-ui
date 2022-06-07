@@ -82,7 +82,7 @@
 				<li id='gallery' v-if="canOpen && !isMarkdown && !isHTML" @keyup.enter="viewFile()" @click="viewFile()">View</li>
 				<li id='view-markdown' v-if="isMarkdown" @keyup.enter="viewFile()" @click="viewFile()">View</li>
 				<li id='edit-markdown' v-if="isMarkdown" @keyup.enter="editFile()" @click="editFile()">Edit</li>
-				<li id='view-html' v-if="isHTML" @keyup.enter="viewFile()" @click="viewFile()">View</li>
+				<li id='view-html' v-if="isHTML && isHTMLViewable" @keyup.enter="viewFile()" @click="viewFile()">View</li>
 				<li id='edit-html' v-if="isHTML" @keyup.enter="editFile()" @click="editFile()">Edit</li>
 				<li id='open-in-app' v-for="app in availableApps" v-on:keyup.enter="appOpen(app.name)" v-on:click="appOpen(app.name)">{{app.contextMenuText}}</li>
 				<li id='download-folder' v-if="canOpen" @keyup.enter="downloadAll"  @click="downloadAll">Download</li>
@@ -565,6 +565,9 @@ module.exports = {
             } catch (err) {
                 return false;
             }
+        },
+        isHTMLViewable() {
+            return this.isStreamingAvailable;
         },
         isHTML() {
             try {
@@ -2161,7 +2164,6 @@ module.exports = {
         },
 
         buildNewAppSkeleton(appDisplayName) {
-            console.log('appDisplayName=' + appDisplayName);
             if (appDisplayName.length > 25) {
                 this.$toast.error('App name length must not exceed 25 characters');
                 return;
