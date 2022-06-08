@@ -1,16 +1,16 @@
 <template>
 <transition name="modal">
-    <div class="modal-mask-app" @click="closeApp">
+    <div class="modal-mask" @click="closeApp">
         <div class="modal-container full-height" @click.stop style="width:100%;overflow-y:auto;padding:0;display:flex;flex-flow:column;">
-            <div class="modal-header-app">
-                <center v-if="browserMode"><h2>{{ getFullPathForDisplay() }}</h2></center>
-                <span style="position:absolute;top:0;right:2em;">
-                    <span @click="closeApp" tabindex="0" v-on:keyup.enter="closeApp" style="color:black;font-size:3em;font-weight:bold;cursor:pointer;">&times;</span>
-                </span>
+            <div class="modal-header" style="padding:0">
+                <center><h2>{{ getFullPathForDisplay() }}</h2></center>
+              <span style="position:absolute;top:0;right:0.2em;">
+                <span @click="closeApp" tabindex="0" v-on:keyup.enter="closeApp" style="color:black;font-size:3em;font-weight:bold;cursor:pointer;">&times;</span>
+              </span>
             </div>
-            <div id='sandbox-container' class="modal-body" style="padding:0;display:flex;flex-grow:1;">
+            <div id='sandbox-container' class="modal-body" style="margin:0;padding:0;display:flex;flex-grow:1;">
             </div>
-            <spinner v-if="showSpinner" :message="spinnerMessage"></spinner>
+            <spinner v-if="showSpinner"></spinner>
         </div>
     </div>
 </transition>
@@ -201,8 +201,8 @@ module.exports = {
             if (iframe == null) {
                 return;
             }
-            iframe.style.width = window.innerWidth + 'px';
-            iframe.style.height = window.innerHeight + 'px';
+            iframe.style.width = '100%';
+            iframe.style.height = '100%';
         },
         messageHandler: function(e) {
             let that = this;
@@ -234,8 +234,8 @@ module.exports = {
             var iframeContainer = document.getElementById("sandbox-container");
             var iframe = document.createElement('iframe');
             iframe.id = 'sandboxId';
-            iframe.style.width = window.innerWidth + 'px';
-            iframe.style.height = window.innerHeight + 'px';
+            iframe.style.width = '100%';
+            iframe.style.height = '100%';
             iframe.frameBorder="0";
             iframe.scrolling="no";
             iframeContainer.appendChild(iframe);

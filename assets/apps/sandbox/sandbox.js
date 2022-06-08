@@ -44,7 +44,7 @@ function resizeHandler() {
     if (iframe == null) {
         return;
     }
-    iframe.style.width = window.innerWidth + 'px';
+    iframe.style.width = '100%';
     iframe.style.height = window.innerHeight + 'px';
 }
 window.addEventListener('message', msgHandler);
@@ -92,7 +92,7 @@ function currentTitleRequest(e) {
 function load(appName, appPath, allowBrowsing) {
     let that = this;
     let iframe = document.getElementById("appSandboxId");
-    iframe.style.width = window.innerWidth + 'px';
+    iframe.style.width = '100%';
     iframe.style.height = window.innerHeight + 'px';
     removeServiceWorkerRegistration(() => {
         let fileStream = streamSaver.createWriteStream(appName, "text/html", url => {
