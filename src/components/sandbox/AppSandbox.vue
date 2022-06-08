@@ -75,7 +75,8 @@ module.exports = {
             this.browserMode = true;
             this.workspaceName = this.extractWorkspace(this.appPath);
         } else {
-            this.workspaceName = this.sandboxAppName;
+            this.workspaceName = this.currentProps != null ?  this.getPath
+                : this.context.username + "/.apps/" + this.sandboxAppName;
         }
         if (this.currentFile != null) {
             if (this.currentFile.getFileProperties().isDirectory) {
@@ -86,7 +87,7 @@ module.exports = {
             this.giveUp();
         } else {
             if (this.isSecretLink) {
-                peergos.shared.user.App.getAppSubdomain(that.workspaceName, that.context.crypto.hasher).thenApply(appSubdomain => {
+                that.getAppSubdomain().thenApply(appSubdomain => {
                     that.appSubdomain = appSubdomain;
                     that.startListener();
                 });
@@ -99,7 +100,7 @@ module.exports = {
                     } else {
                         peergos.shared.user.App.init(that.context, that.sandboxAppName).thenApply(sandboxedApp => {
                             that.sandboxedApp = sandboxedApp;
-                            peergos.shared.user.App.getAppSubdomain(that.workspaceName, that.context.crypto.hasher).thenApply(appSubdomain => {
+                            that.getAppSubdomain().thenApply(appSubdomain => {
                                 that.appSubdomain = appSubdomain;
                                 that.startListener();
                             });
@@ -110,6 +111,20 @@ module.exports = {
         }
     },
     methods: {
+        getAppSubdomain: function() {
+            let that = this;
+            var future = peergos.shared.util.Futures.incomplete();
+            if (this.sandboxAppName == 'htmlviewer') {
+                peergos.shared.user.App.getAppSubdomainWithAnonymityClass(that.workspaceName, this.appPath, that.context.crypto.hasher).thenApply(appSubdomain => {
+                    future.complete(appSubdomain);
+                });
+            } else {
+                peergos.shared.user.App.getAppSubdomain(that.workspaceName, that.context.crypto.hasher).thenApply(appSubdomain => {
+                    future.complete(appSubdomain);
+                });
+            }
+            return future;
+        },
         extractWorkspace: function(path) {
                 return path.substring(1, path.indexOf('/', 1));
         },
@@ -725,18 +740,13 @@ module.exports = {
             }
         },
         expandFilePath(filePath) {
-            if (filePath == this.appPath) {
+            if ( (this.appPath.length > 0 && filePath.startsWith(this.appPath))
+                || this.browserMode) {
                 return filePath;
+            } else if (this.currentProps != null) { //running in-place
+                return this.getPath + filePath.substring(1);
             } else {
-                if (this.isAppPathAFolder && filePath.startsWith(this.appPath)) {
-                    return filePath;
-                } else if (this.currentProps != null) { //running in-place
-                    return this.getPath + filePath.substring(1);
-                } else if (this.browserMode){
-                    return filePath;
-                } else {
-                    return this.context.username + "/.apps/" + this.sandboxAppName + filePath;
-                }
+                return this.context.username + "/.apps/" + this.sandboxAppName + filePath;
             }
         },
         findFile: function(filePath) {
