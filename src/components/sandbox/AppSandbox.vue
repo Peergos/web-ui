@@ -63,7 +63,8 @@ module.exports = {
             'quotaBytes',
             'usageBytes',
             'context',
-            "sandboxedApps"
+            "sandboxedApps",
+            'mirrorBatId'
         ]),
         ...Vuex.mapGetters([
             'isSecretLink',
@@ -118,6 +119,9 @@ module.exports = {
         }
     },
     methods: {
+        getMirrorBatId(file) {
+            return file.getOwnerName() == this.context.username ? this.mirrorBatId : java.util.Optional.empty()
+        },
         appHasFileAssociation: function(props) {
             return props.fileExtensions.length > 0
                 || props.mimeTypes.length > 0
@@ -291,12 +295,18 @@ module.exports = {
         },
         streamFile: function(seekHi, seekLo, seekLength, streamFilePath) {
             let that = this;
+            let originalStreamFilePath = streamFilePath;
             if (this.browserMode && streamFilePath.includes('/.')) {
                 that.showError('Path not accessible: ' + streamFilePath);
             } else {
-                let prefix = !this.browserMode
-                    && streamFilePath != this.appPath
-                    && !streamFilePath.startsWith('/data') ? '/assets' : '';
+                var prefix = '';
+                if (!this.browserMode && streamFilePath != this.appPath) {
+                    if(streamFilePath.startsWith('/api/data')) {
+                        streamFilePath = streamFilePath.substring('/api'.length);
+                    } else {
+                        prefix = '/assets';
+                    }
+                }
                 this.findFile(prefix + streamFilePath).thenApply(file => {
                     if (file != null) {
                         let mimeType = file.getFileProperties().mimeType;
@@ -305,7 +315,7 @@ module.exports = {
                             mimeType.startsWith("image"))) {
                             that.showError('Unable to stream file: ' + file.getName());
                         } else {
-                            that.stream(seekHi, seekLo, seekLength, file, streamFilePath);
+                            that.stream(seekHi, seekLo, seekLength, file, originalStreamFilePath);
                         }
                     }
                 });
@@ -394,7 +404,7 @@ module.exports = {
             var bytes = convertToByteArray(new Int8Array(data));
             try {
                 if (apiMethod == 'GET') {
-                    //requestId is set if it is a GET request to /form or /data
+                    //requestId is set if it is a GET request to /api/form or /api/data
                     if (requestId.length > 0) {
                         if (!that.permissionsMap.get(that.PERMISSION_STORE_APP_DATA)) {
                             that.showError("App attempted to access file without permission :" + path);
@@ -405,7 +415,7 @@ module.exports = {
                     } else {
                         let prefix = !this.browserMode
                             && !(path == this.appPath || this.isAppPathAFolder && path.startsWith(this.appPath))
-                            && !path.startsWith('/data') ? '/assets' : '';
+                            && !path.startsWith('/api/data') ? '/assets' : '';
                         if (this.browserMode) {
                             that.handleBrowserRequest(headerFunc, path, params);
                         } else {
@@ -640,8 +650,7 @@ module.exports = {
         },
         putAction: function(header, filePath, bytes) {
             let that = this;
-            let dataPath = peergos.client.PathUtils.directoryToPath(filePath.split('/'));
-            this.sandboxedApp.existsInternal(dataPath).thenApply(function(existsResult) {
+            this.existsInternal(filePath).thenApply(function(existsResult) {
                 if (existsResult == -1) { // not found
                     that.updateAction(header, filePath, bytes, true);
                 } else if(existsResult == 0) { //file
@@ -654,10 +663,29 @@ module.exports = {
                 that.buildResponse(header, null, that.ACTION_FAILED);
             });
         },
+        exists: function(path) {
+            let future = peergos.shared.util.Futures.incomplete();
+            let expandedFilePath = this.expandFilePath(path);
+            this.context.getByPath(expandedFilePath).thenApply(opt => {
+                if(opt.ref == null) {
+                    future.complete(-1);
+                } else {
+                    future.complete(opt.get().getFileProperties().isDirectory ? 1 : 0);
+                }
+            });
+            return future;
+        },
+        existsInternal: function(filePath) {
+            if (this.currentProps != null) {
+                return this.exists('data/' + filePath);
+            }else {
+                let dataPath = peergos.client.PathUtils.directoryToPath(filePath.split('/'));
+                return this.sandboxedApp.existsInternal(dataPath);
+            }
+        },
         updateAction: function(header, filePath, bytes, newFile) {
             let that = this;
-            let dataPath = peergos.client.PathUtils.directoryToPath(filePath.split('/'));
-            this.sandboxedApp.writeInternal(dataPath, bytes).thenApply(function(res) {
+            this.writeInternal(filePath, bytes).thenApply(function(res) {
                 if (res) {
                     if (newFile) {
                         let encoder = new TextEncoder();
@@ -678,8 +706,7 @@ module.exports = {
         createAction: function(header, filePath, bytes, hasFormData) {
             let that = this;
             let relativePath = hasFormData ? filePath : filePath + "/" + this.generateUUID();
-            let dirPath = peergos.client.PathUtils.directoryToPath(relativePath.split('/'));
-            this.sandboxedApp.writeInternal(dirPath, bytes).thenApply(function(res) {
+            this.writeInternal(relativePath, bytes).thenApply(function(res) {
                 if (res) {
                     let encoder = new TextEncoder();
                     let relativePathBytes = encoder.encode(relativePath);
@@ -693,22 +720,71 @@ module.exports = {
                 that.buildResponse(header, null, that.ACTION_FAILED);
             });
         },
+        writeInternal: function(filePath, bytes) {
+            if (this.currentProps != null) {
+                let expandedFilePath = this.expandFilePath('data/' + filePath);
+                let dirPath = peergos.client.PathUtils.directoryToPath(expandedFilePath.split('/').filter(n => n.length > 0));
+                return this.writeFile(dirPath, bytes);
+            }else {
+                let dataPath = peergos.client.PathUtils.directoryToPath(filePath.split('/'));
+                return this.sandboxedApp.writeInternal(dirPath, bytes);
+            }
+        },
+        writeFile: function(path, data) {
+            let that = this;
+            let future = peergos.shared.util.Futures.incomplete();
+            let pathNameCount = peergos.client.PathUtils.getNameCount(path);
+            let pathWithoutUsername = peergos.client.PathUtils.subpath(path, 1, pathNameCount);
+            this.context.getByPath(this.context.username).thenApply(userRoot =>
+                userRoot.get().getOrMkdirs(peergos.client.PathUtils.getParent(pathWithoutUsername), that.context.network, false,
+                    that.getMirrorBatId(userRoot.get()), that.context.crypto)
+                    .thenApply(dir => dir.uploadOrReplaceFile(peergos.client.PathUtils.getFileName(path).toString(),
+                        new peergos.shared.user.fs.AsyncReader.build(data),
+                        0, data.length, that.context.network, that.context.crypto, x => {})
+                            .thenApply(fw => future.complete(true))
+                    ));
+            return future;
+        },
         patchAction: function(header, filePath, bytes) {
             let that = this;
-            let dataPath = peergos.client.PathUtils.directoryToPath(filePath.split('/'));
-            this.sandboxedApp.appendInternal(dataPath, bytes).thenApply(function(res) {
+            this.appendInternal(filePath, bytes).thenApply(function(res) {
                 if (res) {
                     let encoder = new TextEncoder();
                     let relativePathBytes = encoder.encode(filePath);
                     that.buildResponse(header, relativePathBytes, that.PATCH_SUCCESS);
                 } else {
-                    console.log("unable to append data: " + filePath);
+                    console.log("unable to append to file: " + filePath);
                     that.buildResponse(header, null, that.ACTION_FAILED);
                 }
             }).exceptionally(function(throwable) {
                 console.log(throwable.getMessage());
                 that.buildResponse(header, null, that.ACTION_FAILED);
             });
+        },
+        appendInternal: function(filePath, bytes) {
+            if (this.currentProps != null) {
+                let expandedFilePath = this.expandFilePath('data/' + filePath);
+                let fullPath = peergos.client.PathUtils.directoryToPath(expandedFilePath.split('/').filter(n => n.length > 0));
+                return this.appendFile(fullPath, bytes);
+            }else {
+                let dataPath = peergos.client.PathUtils.directoryToPath(filePath.split('/'));
+                return this.sandboxedApp.appendInternal(dataPath, bytes);
+            }
+        },
+        appendFile: function(path, data) {
+            let that = this;
+            let future = peergos.shared.util.Futures.incomplete();
+            let pathNameCount = peergos.client.PathUtils.getNameCount(path);
+            let pathWithoutUsername = peergos.client.PathUtils.subpath(path, 1, pathNameCount);
+            this.context.getByPath(this.context.username).thenApply(userRoot =>
+                userRoot.get().getOrMkdirs(peergos.client.PathUtils.getParent(pathWithoutUsername), that.context.network, false,
+                    that.getMirrorBatId(userRoot.get()), that.context.crypto)
+                    .thenApply(dir => dir.appendFileJS(peergos.client.PathUtils.getFileName(path).toString(),
+                        new peergos.shared.user.fs.AsyncReader.build(data), 0,
+                        data.length, that.context.network, that.context.crypto, x => {})
+                            .thenApply(fw => future.complete(true))
+                    ));
+            return future;
         },
         //https://stackoverflow.com/questions/105034/how-to-create-guid-uuid
         generateUUID: function() {
@@ -718,8 +794,7 @@ module.exports = {
         },
         deleteAction: function(header, filePath) {
             let that = this;
-            let dirPath = peergos.client.PathUtils.directoryToPath(filePath.split('/'));
-            this.sandboxedApp.deleteInternal(dirPath).thenApply(function(res) {
+            this.deleteInternal(filePath).thenApply(function(res) {
                 if (res) {
                     that.buildResponse(header, null, that.DELETE_SUCCESS);
                 } else {
@@ -730,6 +805,38 @@ module.exports = {
                 console.log(throwable.getMessage());
                 that.buildResponse(header, null, that.ACTION_FAILED);
             });
+        },
+
+        deleteInternal: function(filePath) {
+            if (this.currentProps != null) {
+                return this.deleteFile('data/' + filePath);
+            }else {
+                let dirPath = peergos.client.PathUtils.directoryToPath(filePath.split('/'));
+                return this.sandboxedApp.deleteInternal(dirPath);
+            }
+        },
+        deleteFile(path) {
+            let that = this;
+            let future = peergos.shared.util.Futures.incomplete();
+            let expandedFilePath = this.expandFilePath(path);
+            let parentPath = expandedFilePath.substring(0, expandedFilePath.lastIndexOf('/'));
+            this.context.getByPath(parentPath).thenApply(function(dirOpt){
+                if(dirOpt.ref == null || path.endsWith('/')) {
+                    future.complete(false);
+                } else {
+                    let dir = dirOpt.get();
+                    let filename = expandedFilePath.substring(expandedFilePath.lastIndexOf('/') + 1);
+                    let filePath = peergos.client.PathUtils.toPath(parentPath.split('/').filter(n => n.length > 0), filename);
+                    dir.getChild(filename, that.context.crypto.hasher, that.context.network)
+                        .thenApply(file => {
+                            if(file.ref == null) {
+                                future.complete(false);
+                            }
+                            file.get().remove(dir, filePath, that.context).thenApply(fw => future.complete(true))
+                        });
+                }
+            });
+            return future;
         },
         postData: function(bytes) {
             this.postMessage({type: 'respondToLoadedChunk', bytes: bytes});
@@ -809,7 +916,8 @@ module.exports = {
                 || this.browserMode) {
                 return filePath;
             } else if (this.currentProps != null) { //running in-place
-                return this.getPath + filePath.substring(1);
+                let filePathWithoutSlash = filePath.startsWith('/') ? filePath.substring(1) : filePath;
+                return this.getPath + filePathWithoutSlash;
             } else {
                 return this.context.username + "/.apps/" + this.sandboxAppName + filePath;
             }

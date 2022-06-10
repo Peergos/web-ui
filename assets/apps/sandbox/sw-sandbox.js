@@ -8,8 +8,9 @@ var appPort = null;
 var streamingFilePath = "";
 var streamingAppEntry = new StreamingEntry(-1);
 var downloadUrl = null;
-let dataRequest = "/data/";
-let formRequest = "/form/";
+let apiRequest = "/api";
+let dataRequest = apiRequest + "/data/";
+let formRequest = apiRequest + "/form/";
 
 self.onmessage = event => {
   if (event.data === 'ping') {
@@ -268,6 +269,10 @@ self.onfetch = event => {
                     return new Response('Unknown form action!', {status: 400})
                 }
                 restFilePath = restFilePath.substring(formRequest.length);
+            } else {
+                if (method != 'GET') {
+                    return new Response('Unexpected action!', {status: 400})
+                }
             }
             let uniqueId = method == 'GET' && restFilePath ==  filePath ? '' : uuid();
             if (uniqueId == '' && method != 'GET') {
