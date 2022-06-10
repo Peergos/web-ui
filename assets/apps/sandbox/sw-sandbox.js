@@ -221,8 +221,34 @@ self.onfetch = event => {
         headers: { 'Access-Control-Allow-Origin': '*' }
       }))
     }
-    const requestedResource = new URL(url)
+    const requestedResource = new URL(url);
     let filePath = requestedResource.pathname;
+    if (filePath.startsWith('/peergos/')) {
+        let csp = "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; style-src-elem 'self' 'unsafe-inline'; font-src 'self';img-src 'self' data:;";
+        let respHeaders = [
+            ['Content-type', 'text/html'],
+            ['content-security-policy', csp],
+            ['Cross-Origin-Embedder-Policy', 'require-corp'],
+            ['Cross-Origin-Opener-Policy', 'same-origin'],
+            ['Cross-Origin-Resource-Policy', 'same-origin'],
+            ['Origin-Agent-Cluster', '?1'],
+            ['x-xss-protection', '1; mode=block'],
+            ['x-dns-prefetch-control', 'off'],
+            ['x-content-type-options', 'nosniff'],
+            ['referrer-policy', 'no-referrer'],
+            ['permissions-policy', 'interest-cohort=(), geolocation=(), gyroscope=(), magnetometer=(), accelerometer=(), microphone=(), camera=(self), fullscreen=(self)']
+        ];
+        let redirectHTML= '<html><body><script>'
+        + 'let loc = window.location;'
+        + 'let index = loc.pathname.indexOf("/", 1);'
+        + 'let pathname = loc.pathname.substring(index);'
+        + 'let addr = loc.origin + pathname + loc.search;'
+        + 'console.log("addr=" + addr);'
+        + 'window.location.replace(addr);'
+        + '</script></body></html>';
+        return event.respondWith(new Response(redirectHTML,
+            { headers: respHeaders }));
+    }
     if (event.request.headers.get('range')) {
         if (filePath != streamingFilePath) {
             streamingFilePath = filePath;

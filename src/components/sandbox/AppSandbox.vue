@@ -473,7 +473,6 @@ module.exports = {
             }
             this.findFile(path).thenApply(file => {
                 if (file == null) {
-                    that.showError("Resource not accessible :" + path);
                     that.buildResponse(headerFunc(), null, that.ACTION_FAILED);
                 } else {
                     let props = file.getFileProperties();
@@ -483,11 +482,15 @@ module.exports = {
                     } else if(props.isDirectory) {
                         that.closeAndLaunchApp(headerFunc, "Drive", path, "");
                     } else {
-                        let navigationPath = path.substring(0, path.lastIndexOf('/'));
-                        let navigationFilename = path.substring(path.lastIndexOf('/') + 1);
-                        let app = that.getApp(file, path);
-                        if (app == 'editor' || path.toLowerCase().endsWith('.html') ) {
-                            if (!path.toLowerCase().endsWith('.html')) {
+                        let fullPath = that.expandFilePath(path);
+                        let navigationPath = fullPath.substring(0, fullPath.lastIndexOf('/'));
+                        let navigationFilename = fullPath.substring(fullPath.lastIndexOf('/') + 1);
+                        let app = that.getApp(file, fullPath);
+                        if (app == 'editor'
+                            || fullPath.toLowerCase().endsWith('.html')
+                            || fullPath.toLowerCase().endsWith('.woff')
+                            || fullPath.toLowerCase().endsWith('.wasm')) {
+                            if (!fullPath.toLowerCase().endsWith('.html')) {
                                 that.readFileOrFolder(headerFunc, path, params);
                             } else {
                                 if (!that.running) {
@@ -495,7 +498,7 @@ module.exports = {
                                     that.startTitleDetection();
                                     that.readFileOrFolder(headerFunc, path, params);
                                 } else {
-                                    if(that.extractWorkspace(path) == that.workspaceName){
+                                    if(that.extractWorkspace(fullPath) == that.workspaceName){
                                         that.readFileOrFolder(headerFunc, path, params);
                                     } else {
                                         //navigate to location in another workspace
@@ -912,8 +915,15 @@ module.exports = {
             }
         },
         expandFilePath(filePath) {
-            if ( (this.appPath.length > 0 && filePath.startsWith(this.appPath))
-                || this.browserMode) {
+             if (this.browserMode) {
+                if (filePath == this.appPath) {
+                    return filePath;
+                } else if (this.extractWorkspace(filePath) != this.workspaceName){
+                    return filePath;
+                }else {
+                    return this.currentPath.substring(0, this.currentPath.length -1) + filePath;
+                }
+            } else if (this.appPath.length > 0 && filePath.startsWith(this.appPath)) {
                 return filePath;
             } else if (this.currentProps != null) { //running in-place
                 let filePathWithoutSlash = filePath.startsWith('/') ? filePath.substring(1) : filePath;
