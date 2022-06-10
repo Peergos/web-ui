@@ -42,7 +42,10 @@
                     <p>
                         <span v-if="appProperties.folderAction==true" class="app-install-span">Is a Folder Action</span>
                     </p>
-                    <p v-if="appProperties.permissions.length == 0">
+                    <p v-if="appHasFileAssociation">
+                        <span class="app-install-span">Permissions:</span><span class="app-install-text">Can read files of the associated type</span>
+                    </p>
+                    <p v-if="!appHasFileAssociation && appProperties.permissions.length == 0">
                         <span class="app-install-span">Permissions:</span><span class="app-install-text">None Required</span>
                     </p>
                     <p v-if="appProperties.permissions.length > 0">
@@ -77,6 +80,7 @@ module.exports = {
             showSpinner: false,
             spinnerMessage: '',
             appProperties: null,
+            appHasFileAssociation: false,
             showConfirm: false,
             confirm_message: "",
             confirm_body: "",
@@ -117,6 +121,9 @@ module.exports = {
                     that.showError("Unable to install App: " + res.errors.join(', '));
                     that.close();
                 } else {
+                    that.appHasFileAssociation = res.props.fileExtensions.length > 0
+                        || res.props.mimeTypes.length > 0
+                        || res.props.fileTypes.length > 0;
                     that.appProperties = res.props;
                 }
             });

@@ -37,7 +37,10 @@
                     <p>
                         <span v-if="appProperties.folderAction==true" class="app-install-span">Is a Folder Action</span>
                     </p>
-                    <p v-if="appProperties.permissions.length == 0">
+                    <p v-if="appHasFileAssociation">
+                        <span class="app-install-span">Permissions:</span><span class="app-install-text">Can read files of the associated type</span>
+                    </p>
+                    <p v-if="!appHasFileAssociation && appProperties.permissions.length == 0">
                         <span class="app-install-span">Permissions:</span><span class="app-install-text">None Required</span>
                     </p>
                     <p v-if="appProperties.permissions.length > 0">
@@ -64,7 +67,8 @@ module.exports = {
         return {
             showSpinner: false,
             spinnerMessage: '',
-            appProperties: null
+            appProperties: null,
+            appHasFileAssociation: false
         }
     },
     props: ['appPropsFile'],
@@ -81,6 +85,7 @@ module.exports = {
             this.showSpinner = true;
             that.readJSONFile(this.appPropsFile).thenApply((res) => {
                 that.showSpinner = false;
+                that.appHasFileAssociation = res.fileExtensions.length > 0 || res.mimeTypes.length > 0 || res.fileTypes.length > 0;
                 that.appProperties = res;
             });
         },

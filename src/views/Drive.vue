@@ -479,7 +479,10 @@ module.exports = {
                 currentFileTypeMapping = currentFileTypeMapping == null ? [] : currentFileTypeMapping;
                 currentFileTypeMapping = currentFileTypeMapping.concat(this.sandboxedApps.appFileTypeWildcardRegistrationList);
 
-                let combinedMapping = currentFileExtensionMapping.concat(currentMimeTypeMapping).concat(currentFileTypeMapping);
+                let combinedMapping = currentFileExtensionMapping
+                    .concat(currentMimeTypeMapping)
+                    .concat(currentFileTypeMapping)
+                    .filter(a => !a.folderAction);
                 let dedupedItems = [];
                 combinedMapping.forEach(item => {
                     let foundIndex = dedupedItems.findIndex(v => v.name === item.name);

@@ -402,47 +402,45 @@ module.exports = {
                 folderAction: props.folderAction, appIcon: props.appIcon, contextMenuText: contextMenuText};
 
             appsInstalled.push(item);
-            if (!props.folderAction) {
-                props.fileExtensions.forEach(extension => {
-                    if (extension == '*') {
-                        appFileExtensionWildcardRegistrationList.push(item);
+            props.fileExtensions.forEach(extension => {
+                if (extension == '*') {
+                    appFileExtensionWildcardRegistrationList.push(item);
+                } else {
+                    let currentMapping = appFileExtensionRegistrationMap.get(extension);
+                    if (currentMapping == null) {
+                        currentMapping = [item];
                     } else {
-                        let currentMapping = appFileExtensionRegistrationMap.get(extension);
-                        if (currentMapping == null) {
-                            currentMapping = [item];
-                        } else {
-                            currentMapping.push(item);
-                        }
-                        appFileExtensionRegistrationMap.set(extension, currentMapping);
+                        currentMapping.push(item);
                     }
-                });
-                props.mimeTypes.forEach(mimeType => {
-                    if (mimeType == '*') {
-                        appMimeTypeWildcardRegistrationList.push(item);
+                    appFileExtensionRegistrationMap.set(extension, currentMapping);
+                }
+            });
+            props.mimeTypes.forEach(mimeType => {
+                if (mimeType == '*') {
+                    appMimeTypeWildcardRegistrationList.push(item);
+                } else {
+                    let currentMapping = appMimeTypeRegistrationMap.get(mimeType);
+                    if (currentMapping == null) {
+                        currentMapping = [item];
                     } else {
-                        let currentMapping = appMimeTypeRegistrationMap.get(mimeType);
-                        if (currentMapping == null) {
-                            currentMapping = [item];
-                        } else {
-                            currentMapping.push(item);
-                        }
-                        appMimeTypeRegistrationMap.set(mimeType, currentMapping);
+                        currentMapping.push(item);
                     }
-                });
-                props.fileTypes.forEach(fileType => {
-                    if (fileType == '*') {
-                        appFileTypeWildcardRegistrationList.push(item);
+                    appMimeTypeRegistrationMap.set(mimeType, currentMapping);
+                }
+            });
+            props.fileTypes.forEach(fileType => {
+                if (fileType == '*') {
+                    appFileTypeWildcardRegistrationList.push(item);
+                } else {
+                    let currentMapping = appFileTypeRegistrationMap.get(fileType);
+                    if (currentMapping == null) {
+                        currentMapping = [item];
                     } else {
-                        let currentMapping = appFileTypeRegistrationMap.get(fileType);
-                        if (currentMapping == null) {
-                            currentMapping = [item];
-                        } else {
-                            currentMapping.push(item);
-                        }
-                        appFileTypeRegistrationMap.set(fileType, currentMapping);
+                        currentMapping.push(item);
                     }
-                });
-            }
+                    appFileTypeRegistrationMap.set(fileType, currentMapping);
+                }
+            });
             this.$store.commit("SET_FILE_EXTENSION_REGISTRATIONS", appFileExtensionRegistrationMap);
             this.$store.commit("SET_MIMETYPE_REGISTRATIONS", appMimeTypeRegistrationMap);
             this.$store.commit("SET_FILETYPE_REGISTRATIONS", appFileTypeRegistrationMap);

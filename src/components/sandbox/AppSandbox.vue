@@ -2,7 +2,7 @@
 <transition name="modal">
     <div class="modal-mask" @click="closeApp">
         <div class="modal-container full-height" @click.stop style="width:100%;overflow-y:auto;padding:0;display:flex;flex-flow:column;">
-            <div class="modal-header" style="padding:0">
+            <div class="modal-header" style="padding:0;min-height: 52px;">
                 <center><h2>{{ getFullPathForDisplay() }}</h2></center>
               <span style="position:absolute;top:0;right:0.2em;">
                 <span @click="closeApp" tabindex="0" v-on:keyup.enter="closeApp" style="color:black;font-size:3em;font-weight:bold;cursor:pointer;">&times;</span>
@@ -52,7 +52,10 @@ module.exports = {
             launcherApp: null,
             running: false,
             workspaceName: '',
-            navigateTo: null
+            navigateTo: null,
+            appProperties: null,
+            appRegisteredWithFileAssociation: false,
+            appRegisteredWithWildcardFileAssociation : false
         }
     },
     computed: {
@@ -60,6 +63,7 @@ module.exports = {
             'quotaBytes',
             'usageBytes',
             'context',
+            "sandboxedApps"
         ]),
         ...Vuex.mapGetters([
             'isSecretLink',
@@ -98,6 +102,9 @@ module.exports = {
                     } else if (!that.validatePermissions(props)) {
                         that.fatalError('Application configuration error. See console for further details');
                     } else {
+                        that.appProperties = props;
+                        that.appRegisteredWithFileAssociation = that.appHasFileAssociation(props);
+                        that.appRegisteredWithWildcardFileAssociation = that.appHasWildcardFileRegistration(props);
                         peergos.shared.user.App.init(that.context, that.sandboxAppName).thenApply(sandboxedApp => {
                             that.sandboxedApp = sandboxedApp;
                             that.getAppSubdomain().thenApply(appSubdomain => {
@@ -111,6 +118,29 @@ module.exports = {
         }
     },
     methods: {
+        appHasFileAssociation: function(props) {
+            return props.fileExtensions.length > 0
+                || props.mimeTypes.length > 0
+                || props.fileTypes.length > 0;
+        },
+        appHasWildcardFileRegistration: function(props) {
+            let matchOnFileExtension = this.sandboxedApps.appFileExtensionWildcardRegistrationList
+                        .filter(a => a.name == props.name);
+            if (matchOnFileExtension.length > 0) {
+                return true;
+            }
+            let matchOnMimeType = this.sandboxedApps.appMimeTypeWildcardRegistrationList
+                        .filter(a => a.name == props.name);
+            if (matchOnMimeType.length > 0) {
+                return true;
+            }
+            let matchOnFileType = this.sandboxedApps.appFileTypeWildcardRegistrationList
+                        .filter(a => a.name == props.name);
+            if (matchOnFileType.length > 0) {
+                return true;
+            }
+            return false;
+        },
         getAppSubdomain: function() {
             let that = this;
             var future = peergos.shared.util.Futures.incomplete();
@@ -501,7 +531,12 @@ module.exports = {
                             that.buildResponse(headerFunc(), null, that.ACTION_FAILED);
                         } else {
                             if (props.isDirectory) {
-                                that.readFolderListing(headerFunc("text/plain"), resp);
+                                let filterResults =  !that.appRegisteredWithWildcardFileAssociation
+                                    && (that.appProperties.folderAction
+                                        && expandedFilePath.startsWith(that.appPath)
+                                        && that.appRegisteredWithFileAssociation
+                                        );
+                                that.readFolderListing(filterResults, headerFunc("text/plain"), resp);
                             } else {
                                 let fileType = props.getType();
                                 if (params.get('preview') == 'true') {
@@ -525,7 +560,7 @@ module.exports = {
             let data = encoder.encode(thumbnail);
             this.buildResponse(header, data, this.GET_SUCCESS);
         },
-        readFolderListing: function(header, folder) {
+        readFolderListing: function(filterResults, header, folder) {
             let that = this;
             folder.getChildren(that.context.crypto.hasher, that.context.network).thenApply(function(children) {
                 let arr = children.toArray();
@@ -536,7 +571,13 @@ module.exports = {
                         if(props.isDirectory) {
                             folderListing.subFolders.push(child.getName());
                         } else {
-                            folderListing.files.push(child.getName());
+                            if (filterResults) {
+                                if (that.isFileAssociatedWithApp(child)) {
+                                    folderListing.files.push(child.getName());
+                                }
+                            } else {
+                                folderListing.files.push(child.getName());
+                            }
                         }
                     }
                 });
@@ -544,6 +585,30 @@ module.exports = {
                 let data = encoder.encode(JSON.stringify(folderListing));
                 that.buildResponse(header, data, that.GET_SUCCESS);
             });
+        },
+        isFileAssociatedWithApp: function(file) {
+            let that = this;
+            let fileProperties = file.getFileProperties();
+            let filename = fileProperties.name;
+            let extension = filename.substring(filename.lastIndexOf(".") + 1);
+            var matchOnFileExtension = this.sandboxedApps.appFileExtensionRegistrationMap.get(extension);
+            matchOnFileExtension = matchOnFileExtension == null ? [] : matchOnFileExtension;
+            if (matchOnFileExtension.filter(a => a.name == that.appProperties.name).length > 0) {
+                return true;
+            }
+            let mimeType = fileProperties.mimeType;
+            var matchOnMimeType = this.sandboxedApps.appMimeTypeRegistrationMap.get(mimeType)
+            matchOnMimeType = matchOnMimeType == null ? [] : matchOnMimeType;
+            if (matchOnMimeType.filter(a => a.name == that.appProperties.name).length > 0) {
+                return true;
+            }
+            let fileType = fileProperties.getType();
+            var matchOnFileType = this.sandboxedApps.appFileTypeRegistrationMap.get(fileType)
+            matchOnFileType = matchOnFileType == null ? [] : matchOnFileType;
+            if (matchOnFileType.filter(a => a.name == that.appProperties.name).length > 0) {
+                return true;
+            }
+            return false;
         },
         overwriteFile: function(header, filePath, bytes) {
             let that = this;
