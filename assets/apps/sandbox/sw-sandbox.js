@@ -8,7 +8,7 @@ var appPort = null;
 var streamingFilePath = "";
 var streamingAppEntry = new StreamingEntry(-1);
 var downloadUrl = null;
-let apiRequest = "/api";
+let apiRequest = "/peergos-api";
 let dataRequest = apiRequest + "/data/";
 let formRequest = apiRequest + "/form/";
 
@@ -235,7 +235,6 @@ self.onfetch = event => {
             ['x-xss-protection', '1; mode=block'],
             ['x-dns-prefetch-control', 'off'],
             ['x-content-type-options', 'nosniff'],
-            ['referrer-policy', 'no-referrer'],
             ['permissions-policy', 'interest-cohort=(), geolocation=(), gyroscope=(), magnetometer=(), accelerometer=(), microphone=(), camera=(self), fullscreen=(self)']
         ];
         let redirectHTML= '<html><body><script>'
@@ -288,6 +287,7 @@ self.onfetch = event => {
             }));
         } else {
             var restFilePath = filePath;
+            var isFromRedirect = false;
             if (filePath.startsWith(dataRequest)) {
                 restFilePath = restFilePath.substring(dataRequest.length);
             } else if (filePath.startsWith(formRequest)) {
@@ -298,6 +298,12 @@ self.onfetch = event => {
             } else {
                 if (method != 'GET') {
                     return new Response('Unexpected action!', {status: 400})
+                }
+                if (event.request.referrer.length > 0) {
+                    let fromUrl = new URL(event.request.referrer);
+                    if (fromUrl.pathname.startsWith('/peergos/')) {
+                        isFromRedirect = true;
+                    }
                 }
             }
             let uniqueId = method == 'GET' && restFilePath ==  filePath ? '' : uuid();
@@ -325,7 +331,7 @@ self.onfetch = event => {
                         }
                     }
                     appPort.postMessage({ filePath: restFilePath, requestId: uniqueId, apiMethod: method, bytes: buffer,
-                        hasFormData: formData != null, params: params});
+                        hasFormData: formData != null, params: params, isFromRedirect: isFromRedirect});
                     return returnAppData(method, restFilePath, uniqueId);
                 })()
             )

@@ -254,7 +254,7 @@ module.exports = {
                         that.streamFile(e.data.seekHi, e.data.seekLo, e.data.seekLength, e.data.streamFilePath);
                     } else if(e.data.action == 'actionRequest') {
                         that.actionRequest(e.data.filePath, e.data.requestId, e.data.apiMethod, e.data.bytes,
-                            e.data.hasFormData, e.data.params);
+                            e.data.hasFormData, e.data.params, e.data.isFromRedirect);
                     } else if(e.data.action == 'currentTitleResponse') {
                         that.currentTitleResponse(e.data.path, e.data.title);
                     } else if(e.data.action == 'postShutdown') {
@@ -301,8 +301,8 @@ module.exports = {
             } else {
                 var prefix = '';
                 if (!this.browserMode && streamFilePath != this.appPath) {
-                    if(streamFilePath.startsWith('/api/data')) {
-                        streamFilePath = streamFilePath.substring('/api'.length);
+                    if(streamFilePath.startsWith('/peergos-api/data')) {
+                        streamFilePath = streamFilePath.substring('/peergos-api'.length);
                     } else {
                         prefix = '/assets';
                     }
@@ -324,14 +324,20 @@ module.exports = {
         fixMimeType: function (filePath, mimeTypeInput) {
             var mimeType = "application/octet-stream";
             if (mimeTypeInput != null && mimeTypeInput.trim().length > 0) {
-                if (filePath.endsWith('.html')) {
+                if (filePath.toLowerCase().endsWith('.html')) {
                     mimeType = "text/html";
-                } else if (filePath.endsWith('.css')) {
+                } else if (filePath.toLowerCase().endsWith('.css')) {
                     mimeType = "text/css";
-                } else if (filePath.endsWith('.js')) {
+                } else if (filePath.toLowerCase().endsWith('.js')) {
                     mimeType = "text/javascript";
                 } else {
-                    mimeType = mimeTypeInput;
+                    let lastSlashIdx = filePath.lastIndexOf('/');
+                    let dotIndex =  filePath.indexOf('.', lastSlashIdx);
+                    if (dotIndex == -1 && mimeTypeInput.startsWith('text/')) {
+                        mimeType = "text/html";
+                    } else {
+                        mimeType = mimeTypeInput;
+                    }
                 }
             }
             return mimeType;
@@ -391,7 +397,7 @@ module.exports = {
             let data = convertToByteArray(bytes);
             this.postData(data);
         },
-        actionRequest: function(path, requestId, apiMethod, data, hasFormData, params) {
+        actionRequest: function(path, requestId, apiMethod, data, hasFormData, params, isFromRedirect) {
             let that = this;
             let headerFunc = (mimeType) => that.buildHeader(path, mimeType, requestId);
             if (this.browserMode) {
@@ -404,7 +410,7 @@ module.exports = {
             var bytes = convertToByteArray(new Int8Array(data));
             try {
                 if (apiMethod == 'GET') {
-                    //requestId is set if it is a GET request to /api/form or /api/data
+                    //requestId is set if it is a GET request to /peergos-api/form or /peergos-api/data
                     if (requestId.length > 0) {
                         if (!that.permissionsMap.get(that.PERMISSION_STORE_APP_DATA)) {
                             that.showError("App attempted to access file without permission :" + path);
@@ -415,9 +421,9 @@ module.exports = {
                     } else {
                         let prefix = !this.browserMode
                             && !(path == this.appPath || this.isAppPathAFolder && path.startsWith(this.appPath))
-                            && !path.startsWith('/api/data') ? '/assets' : '';
+                            && !path.startsWith('/peergos-api/data') ? '/assets' : '';
                         if (this.browserMode) {
-                            that.handleBrowserRequest(headerFunc, path, params);
+                            that.handleBrowserRequest(headerFunc, path, params, isFromRedirect);
                         } else {
                             that.readFileOrFolder(headerFunc, prefix + path, params);
                         }
@@ -465,13 +471,13 @@ module.exports = {
                 that.buildResponse(headerFunc(), null, that.ACTION_FAILED);
             }
         },
-        handleBrowserRequest: function(headerFunc, path, params) {
+        handleBrowserRequest: function(headerFunc, path, params, isFromRedirect) {
             let that = this;
             if (path.includes('/.')) {
                 that.showError('Path not accessible: ' + path);
                 that.buildResponse(headerFunc(), null, that.ACTION_FAILED);
             }
-            this.findFile(path).thenApply(file => {
+            this.findFile(path, isFromRedirect).thenApply(file => {
                 if (file == null) {
                     that.buildResponse(headerFunc(), null, that.ACTION_FAILED);
                 } else {
@@ -482,7 +488,7 @@ module.exports = {
                     } else if(props.isDirectory) {
                         that.closeAndLaunchApp(headerFunc, "Drive", path, "");
                     } else {
-                        let fullPath = that.expandFilePath(path);
+                        let fullPath = that.expandFilePath(path, isFromRedirect);
                         let navigationPath = fullPath.substring(0, fullPath.lastIndexOf('/'));
                         let navigationFilename = fullPath.substring(fullPath.lastIndexOf('/') + 1);
                         let app = that.getApp(file, fullPath);
@@ -715,7 +721,7 @@ module.exports = {
                     let relativePathBytes = encoder.encode(relativePath);
                     that.buildResponse(header, relativePathBytes, hasFormData ? that.UPDATE_SUCCESS : that.CREATE_SUCCESS);
                 } else {
-                    console.log("unable to create file: " + dirPath);
+                    console.log("unable to create file: " + relativePath);
                     that.buildResponse(header, null, that.ACTION_FAILED);
                 }
             }).exceptionally(function(throwable) {
@@ -730,7 +736,7 @@ module.exports = {
                 return this.writeFile(dirPath, bytes);
             }else {
                 let dataPath = peergos.client.PathUtils.directoryToPath(filePath.split('/'));
-                return this.sandboxedApp.writeInternal(dirPath, bytes);
+                return this.sandboxedApp.writeInternal(dataPath, bytes);
             }
         },
         writeFile: function(path, data) {
@@ -914,13 +920,11 @@ module.exports = {
                 context.stream(seekHi, seekLo, seekLength);
             }
         },
-        expandFilePath(filePath) {
+        expandFilePath(filePath, isFromRedirect) {
              if (this.browserMode) {
-                if (filePath == this.appPath) {
+                if (filePath.startsWith(this.currentPath) || isFromRedirect) {
                     return filePath;
-                } else if (this.extractWorkspace(filePath) != this.workspaceName){
-                    return filePath;
-                }else {
+                } else {
                     return this.currentPath.substring(0, this.currentPath.length -1) + filePath;
                 }
             } else if (this.appPath.length > 0 && filePath.startsWith(this.appPath)) {
@@ -932,10 +936,10 @@ module.exports = {
                 return this.context.username + "/.apps/" + this.sandboxAppName + filePath;
             }
         },
-        findFile: function(filePath) {
+        findFile: function(filePath, isFromRedirect) {
             var future = peergos.shared.util.Futures.incomplete();
             let that = this;
-            let expandedFilePath = this.expandFilePath(filePath);
+            let expandedFilePath = this.expandFilePath(filePath, isFromRedirect);
             this.context.getByPath(expandedFilePath).thenApply(function(fileOpt){
                 if (fileOpt.ref == null) {
                     that.showError('file not found: ' + filePath);
