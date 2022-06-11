@@ -296,9 +296,6 @@ self.onfetch = event => {
                 }
                 restFilePath = restFilePath.substring(formRequest.length);
             } else {
-                if (method != 'GET') {
-                    return new Response('Unexpected action!', {status: 400})
-                }
                 if (event.request.referrer.length > 0) {
                     let fromUrl = new URL(event.request.referrer);
                     if (fromUrl.pathname.startsWith('/peergos/')) {

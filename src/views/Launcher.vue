@@ -47,6 +47,37 @@
                 :messages="messages">
             </Share>
             <div>
+                <h3>Apps</h3>
+                <div v-if="appsList.length ==0" class="table-responsive">
+                    No Apps currently installed
+                </div>
+                <div v-if="appsList!=0" class="table-responsive">
+                    <table class="table">
+                        <thead>
+                        <tr  v-if="appsList.length!=0" style="cursor:pointer;">
+                            <th></th>
+                            <th @click="setAppsSortBy('name')">Name <span v-if="appsSortBy=='name'" v-bind:class="['fas', appsNormalSortOrder ? 'fa-angle-down' : 'fa-angle-up']"/></th>
+                            <th></th>
+                            <th></th>
+                        </tr>
+                        </thead>
+                        <tbody>
+                        <tr v-for="app in sortedApps">
+                            <td>
+                                <img v-if="app.appIcon.length > 0 && app.thumbnail != null" v-bind:src="app.thumbnail" style="width:50px;height:50px;"/>
+                            </td>
+                            <td v-if="app.launchable"><button class="btn btn-success" @click="launchApp(app.name)">{{ app.displayName }}</button></td>
+                            <td v-if="!app.launchable">{{ app.displayName }}</td>
+                            <td> <button class="btn btn-info" @click="displayAppDetails(app)">Details</button>
+                            </td>
+                            <td> <button class="btn btn-danger" @click="removeApp(app)">Remove</button>
+                            </td>
+                        </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            <div>
                 <h3>Shortcuts</h3>
                 <div v-if="shortcutList.length ==0" class="table-responsive">
                     Entries can be added via context menu item 'Add to Launcher'
@@ -79,37 +110,6 @@
                                 {{ formatJSDate(shortcut.created) }}
                             </td>
                             <td> <button class="btn btn-danger" @click="removeShortcut(shortcut)">Remove</button>
-                            </td>
-                        </tr>
-                        </tbody>
-                    </table>
-                </div>
-            </div>
-            <div>
-                <h3>Apps</h3>
-                <div v-if="appsList.length ==0" class="table-responsive">
-                    No Apps currently installed
-                </div>
-                <div v-if="appsList!=0" class="table-responsive">
-                    <table class="table">
-                        <thead>
-                        <tr  v-if="appsList.length!=0" style="cursor:pointer;">
-                            <th></th>
-                            <th @click="setAppsSortBy('name')">Name <span v-if="appsSortBy=='name'" v-bind:class="['fas', appsNormalSortOrder ? 'fa-angle-down' : 'fa-angle-up']"/></th>
-                            <th></th>
-                            <th></th>
-                        </tr>
-                        </thead>
-                        <tbody>
-                        <tr v-for="app in sortedApps">
-                            <td>
-                                <img v-if="app.appIcon.length > 0 && app.thumbnail != null" v-bind:src="app.thumbnail" style="width:50px;height:50px;"/>
-                            </td>
-                            <td v-if="app.launchable"><button class="btn btn-success" @click="launchApp(app.name)">{{ app.displayName }}</button></td>
-                            <td v-if="!app.launchable">{{ app.displayName }}</td>
-                            <td> <button class="btn btn-info" @click="displayAppDetails(app)">Details</button>
-                            </td>
-                            <td> <button class="btn btn-danger" @click="removeApp(app)">Remove</button>
                             </td>
                         </tr>
                         </tbody>

@@ -55,7 +55,8 @@ module.exports = {
             navigateTo: null,
             appProperties: null,
             appRegisteredWithFileAssociation: false,
-            appRegisteredWithWildcardFileAssociation : false
+            appRegisteredWithWildcardFileAssociation : false,
+            targetFile: null
         }
     },
     computed: {
@@ -84,6 +85,7 @@ module.exports = {
                 : this.context.username + "/.apps/" + this.sandboxAppName;
         }
         if (this.currentFile != null) {
+            this.targetFile = this.currentFile;
             if (this.currentFile.getFileProperties().isDirectory) {
                 this.isAppPathAFolder = true;
             }
@@ -631,31 +633,32 @@ module.exports = {
         },
         overwriteFile: function(header, filePath, bytes) {
             let that = this;
-            this.findFile(filePath).thenApply(file => {
-                if (file != null) {
-                    let props = file.getFileProperties();
-                    if (props.isHidden) {
-                        that.showError('Path not accessible: ' + filePath);
+            let props = that.targetFile.getFileProperties();
+            if (props.isHidden) {
+                that.showError('Path not accessible: ' + filePath);
+                that.buildResponse(header, null, that.ACTION_FAILED);
+            } else if(props.isDirectory) {
+                that.showError('Unable to overwrite folder: ' + filePath);
+                that.buildResponse(header, null, that.ACTION_FAILED);
+            } else {
+                let java_reader = peergos.shared.user.fs.AsyncReader.build(bytes);
+                let sizeHi = (bytes.length - (bytes.length % Math.pow(2, 32)))/Math.pow(2, 32);
+                that.targetFile.overwriteFileJS(java_reader, sizeHi, bytes.length, that.context.network, that.context.crypto, len => {})
+                .thenApply(function(updatedFile) {
+                    that.targetFile = updatedFile;
+                    that.$emit("refresh");
+                    that.buildResponse(header, null, that.UPDATE_SUCCESS);
+                }).exceptionally(function(throwable) {
+                        if (throwable.detailMessage.includes("CAS exception updating cryptree node.")
+                            ||   throwable.detailMessage.includes("Mutable pointer update failed! Concurrent Modification.")) {
+                            that.showError("The file has been updated by another user. Your changes have not been saved.");
+                        } else {
+                            that.showError("Unexpected error: " + throwable.detailMessage);
+                            console.log(throwable.getMessage());
+                        }
                         that.buildResponse(header, null, that.ACTION_FAILED);
-                    } else if(props.isDirectory) {
-                        that.showError('Unable to overwrite folder: ' + filePath);
-                        that.buildResponse(header, null, that.ACTION_FAILED);
-                    } else {
-                        let java_reader = peergos.shared.user.fs.AsyncReader.build(bytes);
-                        let sizeHi = (bytes.length - (bytes.length % Math.pow(2, 32)))/Math.pow(2, 32);
-                        file.overwriteFileJS(java_reader, sizeHi, bytes.length, that.context.network, that.context.crypto, len => {})
-                        .thenApply(function(updatedFile) {
-                            that.buildResponse(header, null, that.UPDATE_SUCCESS);
-                        }).exceptionally(function(throwable) {
-                                that.showMessage(true, "Unexpected error", throwable.detailMessage);
-                                console.log('Error uploading file: ' + that.file.getName());
-                                console.log(throwable.getMessage());
-                                that.showError("Unexpected error. See console for details");
-                                that.buildResponse(header, null, that.ACTION_FAILED);
-                        });
-                    }
-                }
-            });
+                });
+            }
         },
         putAction: function(header, filePath, bytes) {
             let that = this;
