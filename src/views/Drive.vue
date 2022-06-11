@@ -1307,17 +1307,17 @@ module.exports = {
 					};
 					doBatch();
 				} else {
-					allFiles.push(item);
-					that.getEntries(items, ++itemIndex, that, allFiles);
+                    item.file(function (fileEntry) {
+                        if (fileEntry.name != '.DS_Store') {
+                            fileEntry.directory = that.extractDirectory(item);
+                            allFiles.push(fileEntry);
+                        }
+                        that.getEntries(items, ++itemIndex, that, allFiles);
+                    });
 				}
 			} else {
-				this.processFileUpload(allFiles, true);
+				this.processFileUpload(allFiles);
 			}
-		},
-		uploadFiles(evt) {
-			let uploadPath = this.getPath;
-			var files = evt.target.files || evt.dataTransfer.files;
-			this.processFileUpload(files, false);
 		},
         extractDirectory(file) {
             var path = null;
@@ -1333,90 +1333,76 @@ module.exports = {
             }
             return path.startsWith('/') ? path : '/' + path;
         },
-        collectFiles(fromDnd, index, filesToUpload, accumulatedFiles, collectFuture) {
+        uploadFiles(evt) {
+            var files = evt.target.files || evt.dataTransfer.files;
             let that = this;
-            if (index == filesToUpload.length) {
-                accumulatedFiles.sort(function(a, b){return a.size-b.size});
-                collectFuture.complete(accumulatedFiles);
-                return;
-            }
-            if (fromDnd) {
-                filesToUpload[index].file(function (fileEntry) {
-                    if (fileEntry.name != '.DS_Store') {
-                        fileEntry.directory = that.extractDirectory(filesToUpload[index]);
-                        accumulatedFiles.push(fileEntry);
-                    }
-                    that.collectFiles(fromDnd, index + 1, filesToUpload, accumulatedFiles, collectFuture);
-                });
-            } else {
-                let fileEntry = filesToUpload[index];
+            let accumulatedFiles = [];
+            for(var i = 0; i < files.length; i++) {
+                let fileEntry = files[i];
                 if (fileEntry.name != '.DS_Store') {
-                    fileEntry.directory = this.extractDirectory(fileEntry);
+                    fileEntry.directory = that.extractDirectory(fileEntry);
                     accumulatedFiles.push(fileEntry);
                 }
-                this.collectFiles(fromDnd, index + 1, filesToUpload, accumulatedFiles, collectFuture);
             }
+            this.processFileUpload(accumulatedFiles);
         },
-		processFileUpload(filesToUpload, fromDnd) {
-            let collectFuture = peergos.shared.util.Futures.incomplete();
-            this.collectFiles(fromDnd, 0, filesToUpload, [], collectFuture);
+		processFileUpload(files) {
+            files.sort(function(a, b){return a.size-b.size});
             let that = this;
             if (this.isSecretLink && !this.currentDir.isWritable()) {
                 return;
             }
             let isWritableSecretLink = this.isSecretLink && this.currentDir.isWritable();
-            collectFuture.thenApply(files => {
-                let totalSize = 0;
-                for(var i=0; i < files.length; i++) {
-                    totalSize += (files[i].size + (4096 - (files[i].size % 4096)));
-                }
-                if (!isWritableSecretLink && Number(that.quotaBytes.toString()) < totalSize) {
-                    let errMsg = "File upload operation exceeds total space\n" + "Please upgrade to get more space";
+            let totalSize = 0;
+            for(var i=0; i < files.length; i++) {
+                totalSize += (files[i].size + (4096 - (files[i].size % 4096)));
+            }
+            if (!isWritableSecretLink && Number(that.quotaBytes.toString()) < totalSize) {
+                let errMsg = "File upload operation exceeds total space\n" + "Please upgrade to get more space";
+                that.$toast.error(errMsg, {timeout:false, id: 'upload'})
+            } else {
+                let spaceAfterOperation = that.checkAvailableSpace(totalSize);
+                if (!isWritableSecretLink && spaceAfterOperation < 0) {
+                    let errMsg = "File upload operation exceeds available space\n" + "Please free up " + helpers.convertBytesToHumanReadable('' + -spaceAfterOperation) + " and try again";
                     that.$toast.error(errMsg, {timeout:false, id: 'upload'})
                 } else {
-                    let spaceAfterOperation = that.checkAvailableSpace(totalSize);
-                    if (!isWritableSecretLink && spaceAfterOperation < 0) {
-                        let errMsg = "File upload operation exceeds available space\n" + "Please free up " + helpers.convertBytesToHumanReadable('' + -spaceAfterOperation) + " and try again";
-                        that.$toast.error(errMsg, {timeout:false, id: 'upload'})
-                    } else {
-                        //resetting .value tricks browser into allowing subsequent upload of same file(s)
-                        document.getElementById('uploadFileInput').value = "";
-                        document.getElementById('uploadDirectoriesInput').value = "";
-                        let progressBars = [];
-                        for(var i=0; i < files.length; i++) {
-                            var resultingSize = files[i].size;
-                            var progress = {
-                                title:"Encrypting and uploading " + files[i].name,
-                                done:0,
-                                max:resultingSize,
-                                name: files[i].name
-                            };
-                            that.$toast({component: ProgressBar,props:  progress} , { icon: false , timeout:false, id: files[i].name})
-                            progressBars.push(progress);
-                        }
-                        let uploadDirectoryPath = that.getPath;
-                        const uploadParams = {
-                            applyReplaceToAll: false,
-                            replaceFile: false,
-                            directoryPath: uploadDirectoryPath,
-                            uploadPaths: [],
-                            fileUploadProperties: [],
-                            triggerRefresh: false
-                        }
-                        let prepareFuture = peergos.shared.util.Futures.incomplete();
-                        let previousDirectoryHolder = {
-                            fileWrapper: null,
-                            path: ''
+                    //resetting .value tricks browser into allowing subsequent upload of same file(s)
+                    document.getElementById('uploadFileInput').value = "";
+                    document.getElementById('uploadDirectoriesInput').value = "";
+                    let progressBars = [];
+                    for(var i=0; i < files.length; i++) {
+                        var resultingSize = files[i].size;
+                        var progress = {
+                            title:"Encrypting and uploading " + files[i].name,
+                            done:0,
+                            max:resultingSize,
+                            name: files[i].name
                         };
-                        that.reduceAllUploads(0, files, prepareFuture, uploadParams, progressBars, previousDirectoryHolder);
-                        prepareFuture.thenApply(preparationDone => {
-                            that.bulkUpload(uploadParams).thenApply(res => {
-                                console.log("upload complete");
-                            });
-                        });
+                        that.$toast({component: ProgressBar,props:  progress} , { icon: false , timeout:false, id: files[i].name})
+                        progressBars.push(progress);
                     }
+                    let uploadDirectoryPath = that.getPath;
+                    const uploadParams = {
+                        applyReplaceToAll: false,
+                        replaceFile: false,
+                        directoryPath: uploadDirectoryPath,
+                        uploadPaths: [],
+                        fileUploadProperties: [],
+                        triggerRefresh: false
+                    }
+                    let prepareFuture = peergos.shared.util.Futures.incomplete();
+                    let previousDirectoryHolder = {
+                        fileWrapper: null,
+                        path: ''
+                    };
+                    that.reduceAllUploads(0, files, prepareFuture, uploadParams, progressBars, previousDirectoryHolder);
+                    prepareFuture.thenApply(preparationDone => {
+                        that.bulkUpload(uploadParams).thenApply(res => {
+                            console.log("upload complete");
+                        });
+                    });
                 }
-            });
+            }
         },
         bulkUpload: function(uploadParams) {
             let uploadFuture = peergos.shared.util.Futures.incomplete();
