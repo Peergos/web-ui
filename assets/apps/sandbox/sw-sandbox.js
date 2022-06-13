@@ -222,7 +222,7 @@ self.onfetch = event => {
       }))
     }
     const requestedResource = new URL(url);
-    let filePath = requestedResource.pathname;
+    let filePath = decodeURI(requestedResource.pathname);
     if (filePath.startsWith('/peergos/')) {
         let csp = "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; style-src-elem 'self' 'unsafe-inline'; font-src 'self';img-src 'self' data:;";
         let respHeaders = [
@@ -277,7 +277,7 @@ self.onfetch = event => {
     } else {
         let params = new Map();
         requestedResource.searchParams.forEach( (value, key) => {
-            params.set(key, value);
+            params.set(key, decodeURI(value));
         });
 
         let method = event.request.method;
