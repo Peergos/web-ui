@@ -185,7 +185,7 @@ module.exports = {
                              let future = peergos.shared.util.Futures.incomplete();
                              that.backupPropertiesFile(appName, oldProperties).thenApply(done => {
                                  that.gatherAppFiles([{directory: srcDirectoryOpt.ref, path: srcPath}], 0, future, []);
-                                 future.thenApply(appFiles => that.copyAllFiles(appFiles, appName, displayName));
+                                 future.thenApply(appFiles => that.copyAppFiles(appFiles, appName, displayName));
                              });
                        });
                    }
@@ -201,7 +201,7 @@ module.exports = {
                peergos.shared.user.App.init(that.context, appName).thenApply(app => {
                     let filePath = peergos.client.PathUtils.directoryToPath(['peergos-app-previous.json']);
                     let encoder = new TextEncoder();
-                    let uint8Array = encoder.encode(JSON.stringify(oldProperties));
+                    let uint8Array = encoder.encode(JSON.stringify(oldProperties, null, 2));
                     let bytes = convertToByteArray(uint8Array);
                     app.writeInternal(filePath, bytes).thenApply(done => {
                         that.deletePropertiesFile(appName).thenApply(done => {
@@ -214,7 +214,8 @@ module.exports = {
        },
         gatherAppFiles: function(directoryEntries, index, future, accumulator) {
             if (index == directoryEntries.length) {
-                future.complete(accumulator);
+                let appFiles = peergos.client.JsUtil.asList(accumulator);
+                future.complete(appFiles);
             } else {
                 let that = this;
                 let directoryEntry = directoryEntries[index];
@@ -224,15 +225,41 @@ module.exports = {
                 } else {
                     directoryEntry.directory.getChildren(this.context.crypto.hasher, this.context.network).thenApply(function(children) {
                         let arr = children.toArray();
-                        arr.forEach(child => {
-                            let childProps = child.getFileProperties();
-                            if (childProps.isDirectory) {
-                                directoryEntries.push({directory: child, path: directoryEntry.path + "/" + child.getFileProperties().name});
+                        let fileUploadList = [];
+                        var lastEntryWasFolder = false;
+                        arr.forEach( (file, fileIndex) => {
+                            let fileProps = file.getFileProperties();
+                            if (fileProps.isDirectory) {
+                                directoryEntries.push({directory: file, path: directoryEntry.path + "/" + fileProps.name});
+                                if (fileIndex == arr.length -1) {
+                                    lastEntryWasFolder = true;
+                                    that.gatherAppFiles(directoryEntries, index +1, future, accumulator);
+                                }
                             } else {
-                                accumulator.push({path: directoryEntry.path, file: child});
+                                file.getInputStream(that.context.network, that.context.crypto, fileProps.sizeHigh(), fileProps.sizeLow(), function(read){})
+                                    .thenApply(function(reader) {
+                                        if (! (index == 0 && fileProps.name == 'peergos-app.json')) {
+                                            let fup = new peergos.shared.user.fs.FileWrapper.FileUploadProperties(fileProps.name, reader,
+                                                (fileProps.size_0 - (fileProps.size_0 % Math.pow(2, 32))) / Math.pow(2, 32), fileProps.size_0, false,
+                                                true, x => {});
+                                            fileUploadList.push(fup);
+                                        }
+                                        if (lastEntryWasFolder || fileIndex == arr.length -1) {
+                                            if (fileUploadList.length > 0) {
+                                                let basePath = that.getPath;
+                                                let relativePath = directoryEntry.path.substring(basePath.length);
+                                                let pathList = peergos.client.JsUtil.asList(relativePath.split('/').filter(n => n.length > 0));
+                                                let filePropsList = peergos.client.JsUtil.asList(fileUploadList);
+                                                let folderUP = new peergos.shared.user.fs.FileWrapper.FolderUploadProperties(pathList, filePropsList);
+                                                accumulator.push(folderUP);
+                                            }
+                                            if (!lastEntryWasFolder) {
+                                                that.gatherAppFiles(directoryEntries, index +1, future, accumulator);
+                                            }
+                                        }
+                                });
                             }
                         });
-                        that.gatherAppFiles(directoryEntries, index +1, future, accumulator);
                     });
                 }
             }
@@ -259,6 +286,27 @@ module.exports = {
             });
             return future;
         },
+        deleteAssetsFolder(appName) {
+            let that = this;
+            let future = peergos.shared.util.Futures.incomplete();
+            let folderPath = "/" + this.context.username + "/.apps/" + appName;
+            this.context.getByPath(folderPath).thenApply(appDirOpt => {
+                if (appDirOpt.ref != null) {
+                    appDirOpt.ref.getChild('assets', that.context.crypto.hasher, that.context.network).thenApply(assetsFolderToDeleteOpt => {
+                        if (assetsFolderToDeleteOpt.ref != null) {
+                            that.removeFile(folderPath + '/assets', assetsFolderToDeleteOpt.ref, appDirOpt.ref).thenApply(res => {
+                                future.complete(true);
+                            });
+                        } else {
+                            future.complete(false);
+                        }
+                    });
+                }else {
+                    future.complete(false);
+                }
+            });
+            return future;
+        },
         removeFile: function(filename, file, parent) {
             let future = peergos.shared.util.Futures.incomplete();
             let that = this;
@@ -271,84 +319,76 @@ module.exports = {
             });
             return future;
         },
-        copyAllFiles: function(appFiles, app, displayName) {
-            let that = this;
+        copyAppFiles: function(appFiles, app, displayName) {
             let future = peergos.shared.util.Futures.incomplete();
-            let appSourceDirName = appFiles[0].path.substring(appFiles[0].path.lastIndexOf("/"));
-            this.reduceCopyingAllAppFiles(appSourceDirName, appFiles, 0, future, app);
-            future.thenApply(res => {
-                that.registerApp(that.appProperties);
-                that.showMessage("Installed App: " + displayName);
-                that.showSpinner = false;
-                that.spinnerMessage = "";
-                that.close();
-            });
-        },
-        updateSourceInAppManifest: function(appFiles, appName) {
             let that = this;
-            let future = peergos.shared.util.Futures.incomplete();
-            let manifestItem = appFiles.slice().filter(item => item.file.getFileProperties().name == 'peergos-app.json');
-            that.readJSONFile(manifestItem[0].file).thenApply(props => {
-                props.source = props.source.length > 0 ? props.source : manifestItem[0].path;
-                let encoder = new TextEncoder();
-                let uint8Array = encoder.encode(JSON.stringify(props));
-                let bytes = convertToByteArray(uint8Array);
-                let reader = new peergos.shared.user.fs.AsyncReader.ArrayBacked(bytes);
-                let filename = 'peergos-app.json';
-                that.context.getByPath("/" + that.context.username + "/.apps/" + appName).thenApply(appDirOpt => {
-                      appDirOpt.get().uploadFileJS(filename, reader, 0, bytes.byteLength,
-                          true, that.getMirrorBatId(appDirOpt.get()), that.context.network, that.context.crypto, function (len) { },
-                          that.context.getTransactionService(), f => peergos.shared.util.Futures.of(true)
-                      ).thenApply(function (res) {
-                          future.complete(true);
-                      }).exceptionally(function (throwable) {
-                          console.log('unable to update manifest: ' + filename + ' error: ' + throwable.getMessage());
-                          future.complete(false);
-                      })
+            this.deleteAssetsFolder(app).thenApply(res => {
+                that.copyAllFiles(appFiles, app, displayName).thenApply(res => {
+                    future.complete(true);
                 });
             });
             return future;
         },
-        reduceCopyingAllAppFiles: function(appSourceDirName, appFiles, index, future, app) {
+        copyAllFiles: function(appFiles, app, displayName) {
             let that = this;
-            if (index == appFiles.length) {
-                this.updateSourceInAppManifest(appFiles, app).thenApply(function(res){
-                    future.complete(true);
-                });
-            } else {
-                let entry = appFiles[index];
-                that.copyFile(appSourceDirName, entry.path, entry.file, app).thenApply(function(res){
-                    that.reduceCopyingAllAppFiles(appSourceDirName, appFiles, index + 1, future, app);
-                }).exceptionally(function(throwable) {
+            let future = peergos.shared.util.Futures.incomplete();
+
+            var commitWatcher = {
+                get_0: function() {
+                    return true;
+                }
+            };
+
+            let folderStream = appFiles.stream();
+            let resumeFileUpload = function(f) {
+                let future = peergos.shared.util.Futures.incomplete();
+                future.complete(true);
+                return future;
+            }
+            let destinationPath = "/" + this.context.username + "/.apps/" + app;
+            this.context.getByPath(destinationPath).thenApply(appDirOpt => {
+                appDirOpt.ref.uploadSubtree(folderStream, that.getMirrorBatId(appDirOpt.ref), that.context.network,
+                    that.context.crypto, that.context.getTransactionService(),
+                    f => resumeFileUpload(f),commitWatcher).thenApply(res => {
+                        that.updateSourceInAppManifest(app).thenApply(function(res){
+                            that.registerApp(that.appProperties);
+                            that.showMessage("Installed App: " + displayName);
+                            that.showSpinner = false;
+                            that.spinnerMessage = "";
+                            that.close();
+                        });
+                }).exceptionally(function (throwable) {
+                    that.showSpinner = false;
+                    that.spinnerMessage = "";
                     console.log('Unable to install App. Error: ' +  + throwable.getMessage());
                     that.showError("Unable to install App. See console for details");
                 });
-            }
+            });
         },
-        copyFile: function(appSourceDirName, sourcePath, sourceFile, appName) {
-            let future = peergos.shared.util.Futures.incomplete();
+        updateSourceInAppManifest: function(appName) {
             let that = this;
-            if (sourceFile.getName() == 'peergos-app.json') {
-                future.complete(true);
-            } else {
-                let path = ".apps" + sourcePath.substring(sourcePath.indexOf(appSourceDirName)).replace(appSourceDirName, "/" + appName);
-                let appDir = peergos.client.PathUtils.directoryToPath(path.split('/'));
-                this.context.getByPath("/" + this.context.username).thenApply(rootOpt => {
-                    rootOpt.get().getOrMkdirs(appDir, that.context.network, false, that.getMirrorBatId(rootOpt.get()), that.context.crypto).thenApply(dir => {
-                        dir.getChild(sourceFile.getName(), this.context.crypto.hasher, this.context.network).thenApply(destFileOpt => {
-                            if (destFileOpt.ref != null) {
-                                destFileOpt.ref.replaceFile(sourceFile, that.context.network, this.context.crypto, () => {}).thenApply(() => {
-                                    future.complete(true);
-                                });
-                            } else {
-                                sourceFile.copyTo(dir, that.context).thenApply(function() {
-                                    future.complete(true);
-                                });
-                            }
-                        });
+            let future = peergos.shared.util.Futures.incomplete();
+            this.context.getByPath(this.getPath + 'peergos-app.json').thenApply(propsFileOpt => {
+                that.readJSONFile(propsFileOpt.ref).thenApply(props => {
+                    props.source = props.source.length > 0 ? props.source : that.getPath;
+                    let encoder = new TextEncoder();
+                    let uint8Array = encoder.encode(JSON.stringify(props, null, 2));
+                    let bytes = convertToByteArray(uint8Array);
+                    let reader = new peergos.shared.user.fs.AsyncReader.ArrayBacked(bytes);
+                    let filename = 'peergos-app.json';
+                    that.context.getByPath("/" + that.context.username + "/.apps/" + appName).thenApply(appDirOpt => {
+                          appDirOpt.get().uploadFileJS(filename, reader, 0, bytes.byteLength,
+                              true, that.getMirrorBatId(appDirOpt.get()), that.context.network, that.context.crypto, function (len) { },
+                              that.context.getTransactionService(), f => peergos.shared.util.Futures.of(true)
+                          ).thenApply(function (res) {
+                              future.complete(true);
+                          }).exceptionally(function (throwable) {
+                              console.log('unable to update manifest: ' + filename + ' error: ' + throwable.getMessage());
+                              future.complete(false);
+                          })
                     });
                 });
-            }
+            });
             return future;
         },
         showMessage: function(message) {
