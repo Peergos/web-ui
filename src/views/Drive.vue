@@ -25,14 +25,17 @@
 			v-if="showPrompt"
 			@hide-prompt="closePrompt()"
 			:message='prompt_message'
-			:note='prompt_note'
 			:placeholder="prompt_placeholder"
 			:max_input_size="prompt_max_input_size"
 			:value="prompt_value"
 			:consumer_func="prompt_consumer_func"
 			:action="prompt_action"
 		/>
-
+		<NewAppPrompt
+			v-if="showNewAppPrompt"
+			@hide-prompt="closeNewAppPrompt()"
+			:consumer_func="prompt_new_app_func"
+		/>
 		<FolderProperties
             v-if="showFolderProperties"
             v-on:hide-folder-properties-view="showFolderProperties = false"
@@ -235,6 +238,7 @@ const ProgressBar = require("../components/drive/ProgressBar.vue");
 const DriveMenu = require("../components/drive/DriveMenu.vue");
 
 const AppPrompt = require("../components/prompt/AppPrompt.vue");
+const NewAppPrompt = require("../components/sandbox/new-app/NewAppPrompt.vue");
 const FolderProperties = require("../components/FolderProperties.vue");
 
 const helpers = require("../mixins/storage/index.js");
@@ -256,6 +260,7 @@ module.exports = {
 		DriveTable,
 		DriveMenu,
 		AppPrompt,
+		NewAppPrompt,
 		FolderProperties,
 		ProgressBar,
 		Gallery,
@@ -315,13 +320,14 @@ module.exports = {
 			externalChange: 0,
 
 			prompt_message: '',
-			prompt_note: '',
 			prompt_placeholder: '',
 			prompt_max_input_size: null,
 			prompt_value: '',
 			prompt_consumer_func: () => { },
+			prompt_new_app_func: (name, permissions) => { },
 			prompt_action: 'ok',
 			showPrompt: false,
+			showNewAppPrompt: false,
             showFolderProperties: false,
             showAppInstallation: false,
             showAppRunner: false,
@@ -1188,7 +1194,6 @@ module.exports = {
 			this.prompt_placeholder = 'Folder name';
 			this.prompt_message = 'Create folder';
 			this.prompt_value = '';
-			this.prompt_note = '';
 			this.prompt_consumer_func = function (prompt_result) {
 				if (prompt_result === null)
 					return;
@@ -1207,7 +1212,6 @@ module.exports = {
 			this.prompt_placeholder = null;
 			this.prompt_message = `Are you sure you want to delete ${file.getName()} ${extra}?`;
 			this.prompt_value = '';
-            this.prompt_note = '';
 			this.prompt_consumer_func = deleteFn;
 			// this.prompt_action = 'Delete'
 			this.showPrompt = true;
@@ -2145,41 +2149,13 @@ module.exports = {
 		},
 
 		createNewApp() {
-            this.prompt_placeholder = 'App name';
-            this.prompt_message = 'Enter new App name';
-            this.prompt_value = '';
-            this.prompt_note = 'See documentation for instructions on building custom Apps';
-            this.prompt_consumer_func = function (prompt_result) {
-                if (prompt_result === null)
-                    return;
-                let appName = prompt_result.trim();
-                if (appName === '')
-                    return;
-                this.buildNewAppSkeleton(appName);
+            this.prompt_new_app_func = function (appName, permissions) {
+                this.buildNewAppSkeleton(appName, permissions);
             }.bind(this);
-            this.showPrompt = true;
+            this.showNewAppPrompt = true;
 		},
 
-        validateAppName: function(displayName) {
-            if (displayName === '')
-                return false;
-            if (displayName.includes('.') || displayName.includes('..'))
-                return false;
-            if (!displayName.match(/^[a-z\d\-_\s]+$/i)) {
-                return false;
-            }
-            return true;
-        },
-
-        buildNewAppSkeleton(appDisplayName) {
-            if (appDisplayName.length > 25) {
-                this.$toast.error('App name length must not exceed 25 characters');
-                return;
-            }
-            if (!this.validateAppName(appDisplayName)) {
-                this.$toast.error('App name invalid. Use only alphanumeric characters plus dash and underscore');
-                return;
-            }
+        buildNewAppSkeleton(appDisplayName, permissions) {
 			var that = this;
             let appNameLowercase = appDisplayName.toLowerCase();
             let dupApp = this.sandboxedApps.appsInstalled.slice().filter(app => app.displayName.toLowerCase() == appNameLowercase);
@@ -2187,13 +2163,15 @@ module.exports = {
                 this.$toast.error(`App with name ${appDisplayName} already exists!`);
                 return;
             }
+            let launchable = permissions.filter(p => p == 'EDIT_CHOSEN_FILE' || p == 'READ_CHOSEN_FOLDER').length == 0 ? true : false;
+            let folderAction = permissions.filter(p => p == 'READ_CHOSEN_FOLDER').length == 0 ? false : true;
 			this.showSpinner = true;
 			let appName = appDisplayName.replaceAll(' ', '').toLowerCase().trim();
             let encoder = new TextEncoder();
             let props = {"schemaVersion": "1", "displayName": appDisplayName, "name": appName,
-                "version": "0.0.1-initial", "supportAddress": "", "folderAction": false,
-                "description": "Please set...", "launchable": true,
-                "fileExtensions": [], "mimeTypes": [], "fileTypes": [], "permissions": []
+                "version": "0.0.1-initial", "supportAddress": "", "folderAction": folderAction,
+                "description": "", "launchable": launchable,
+                "fileExtensions": [], "mimeTypes": [], "fileTypes": [], "permissions": permissions
             };
             let manifestUint8Array = encoder.encode(JSON.stringify(props, null, 2));
             let appManifest = convertToByteArray(manifestUint8Array);
@@ -2257,7 +2235,6 @@ module.exports = {
 			this.prompt_placeholder = 'File name';
 			this.prompt_message = 'Enter a file name';
 			this.prompt_value = '';
-            this.prompt_note = '';
 			this.prompt_consumer_func = function (prompt_result) {
 				if (prompt_result === null)
 					return;
@@ -2307,7 +2284,6 @@ module.exports = {
 			this.prompt_placeholder = 'New name';
 			this.prompt_value = old_name;
 			this.prompt_message = 'Enter a new name';
-            this.prompt_note = '';
 			var that = this;
 			this.prompt_consumer_func = function (prompt_result) {
 				if (prompt_result === null)
@@ -2393,6 +2369,9 @@ module.exports = {
 		closePrompt() {
 			this.showPrompt = false;
 		},
+        closeNewAppPrompt() {
+            this.showNewAppPrompt = false;
+        },
 		closeMenu() {
 			this.viewMenu = false
 		},
