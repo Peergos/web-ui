@@ -723,6 +723,8 @@ module.exports = {
                                                 that.openFileOrDir(app, linkPath, {filename:""});
                                             }
 				 	};
+                                        // first init history with drive so back button/close app works
+                                        that.openFileOrDir("Drive", that.getPath, {filename:""}, false);
 				 	that.onUpdateCompletion.push(open);
                                     }
 				}
