@@ -47,9 +47,9 @@
                 :messages="messages">
             </Share>
             <div>
-                <h3>Apps</h3>
+                <h3>Custom Apps</h3>
                 <div v-if="appsList.length ==0" class="table-responsive">
-                    No Apps currently installed
+                    No Custom Apps currently installed.  Create an App from the "create app" menu item of the green plus.
                 </div>
                 <div v-if="appsList!=0" class="table-responsive">
                     <table class="table">

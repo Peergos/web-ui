@@ -25,6 +25,7 @@
 			v-if="showPrompt"
 			@hide-prompt="closePrompt()"
 			:message='prompt_message'
+			:note='prompt_note'
 			:placeholder="prompt_placeholder"
 			:max_input_size="prompt_max_input_size"
 			:value="prompt_value"
@@ -314,6 +315,7 @@ module.exports = {
 			externalChange: 0,
 
 			prompt_message: '',
+			prompt_note: '',
 			prompt_placeholder: '',
 			prompt_max_input_size: null,
 			prompt_value: '',
@@ -1186,6 +1188,7 @@ module.exports = {
 			this.prompt_placeholder = 'Folder name';
 			this.prompt_message = 'Create folder';
 			this.prompt_value = '';
+			this.prompt_note = '';
 			this.prompt_consumer_func = function (prompt_result) {
 				if (prompt_result === null)
 					return;
@@ -1204,6 +1207,7 @@ module.exports = {
 			this.prompt_placeholder = null;
 			this.prompt_message = `Are you sure you want to delete ${file.getName()} ${extra}?`;
 			this.prompt_value = '';
+            this.prompt_note = '';
 			this.prompt_consumer_func = deleteFn;
 			// this.prompt_action = 'Delete'
 			this.showPrompt = true;
@@ -2142,8 +2146,9 @@ module.exports = {
 
 		createNewApp() {
             this.prompt_placeholder = 'App name';
-            this.prompt_message = 'Enter App name';
+            this.prompt_message = 'Enter new App name';
             this.prompt_value = '';
+            this.prompt_note = 'See documentation for instructions on building custom Apps';
             this.prompt_consumer_func = function (prompt_result) {
                 if (prompt_result === null)
                     return;
@@ -2190,7 +2195,7 @@ module.exports = {
                 "description": "Please set...", "launchable": true,
                 "fileExtensions": [], "mimeTypes": [], "fileTypes": [], "permissions": []
             };
-            let manifestUint8Array = encoder.encode(JSON.stringify(props));
+            let manifestUint8Array = encoder.encode(JSON.stringify(props, null, 2));
             let appManifest = convertToByteArray(manifestUint8Array);
             let manifestReader = new peergos.shared.user.fs.AsyncReader.ArrayBacked(appManifest);
             let manifestProps =
@@ -2252,6 +2257,7 @@ module.exports = {
 			this.prompt_placeholder = 'File name';
 			this.prompt_message = 'Enter a file name';
 			this.prompt_value = '';
+            this.prompt_note = '';
 			this.prompt_consumer_func = function (prompt_result) {
 				if (prompt_result === null)
 					return;
@@ -2301,6 +2307,7 @@ module.exports = {
 			this.prompt_placeholder = 'New name';
 			this.prompt_value = old_name;
 			this.prompt_message = 'Enter a new name';
+            this.prompt_note = '';
 			var that = this;
 			this.prompt_consumer_func = function (prompt_result) {
 				if (prompt_result === null)

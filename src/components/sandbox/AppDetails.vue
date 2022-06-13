@@ -37,9 +37,6 @@
                     <p>
                         <span v-if="appProperties.folderAction==true" class="app-install-span">Is a Folder Action</span>
                     </p>
-                    <p v-if="appHasFileAssociation  && appProperties.permissions.length == 0">
-                        <span class="app-install-span">Permissions:</span><span class="app-install-text">Can read files of the associated type</span>
-                    </p>
                     <p v-if="!appHasFileAssociation && appProperties.permissions.length == 0">
                         <span class="app-install-span">Permissions:</span><span class="app-install-text">None Required</span>
                     </p>

@@ -31,7 +31,7 @@ module.exports = {
           } else if (permission === 'EDIT_CHOSEN_FILE') {
               return "Can modify file chosen by user";
           } else if (permission === 'READ_CHOSEN_FOLDER') {
-              return "Can read contents of folder chosen by user";
+              return "Can read selected files of the associated types from folder chosen by user";
           } else {
               console.log('Unknown permission: ' + permission);
               this.$toast.error('Unknown permission: ' + permission, {timeout:false});
@@ -293,7 +293,7 @@ module.exports = {
                     "launchable": false,
                     "fileExtensions": [], "mimeTypes": [], "fileTypes": [], "permissions": []
                 };
-                let uint8Array = encoder.encode(JSON.stringify(props));
+                let uint8Array = encoder.encode(JSON.stringify(props, null, 2));
                 let bytes = convertToByteArray(uint8Array);
                 let reader = new peergos.shared.user.fs.AsyncReader.ArrayBacked(bytes);
                 dir.uploadFileJS("peergos-app.json", reader, 0, bytes.byteLength,

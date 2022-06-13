@@ -20,6 +20,7 @@
 						autofocus
 					>
 					</input>
+					<span>{{note}}</span>
 				</div>
 				<footer class="prompt__footer">
 					<AppButton outline @click.native="closePrompt()">
@@ -49,6 +50,10 @@ module.exports = {
 	},
 	props: {
 		message: {
+			type: String,
+			default: ''
+		},
+		note: {
 			type: String,
 			default: ''
 		},
