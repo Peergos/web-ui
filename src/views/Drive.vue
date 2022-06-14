@@ -2185,7 +2185,6 @@ module.exports = {
             '        <meta charset="UTF-8">\n' +
             '        <meta name="viewport" content="width=device-width, initial-scale=1">\n' +
             '        <title>App: ' + appDisplayName + '</title>\n' +
-            '        <!-- link rel="apple-touch-icon" href="pwa-logo-192.png" -->\n' +
             '    </head>\n' +
             '    <body>\n' +
             '	<h1>' + appDisplayName + '</h1>\n' +
