@@ -9,7 +9,7 @@
 				</header>
                 <div class="prompt__body">
                     <span>
-                        See <a class="help-link" href="https://book.peergos.org/" target="_blank" rel="noopener noreferrer">documentation</a> for instructions on building custom Apps
+                        See <a class="help-link" href="https://book.peergos.org/features/apps.html" target="_blank" rel="noopener noreferrer">documentation</a> for instructions on building custom Apps
                     </span>
                 </div>
 				<div class="prompt__body">
