@@ -314,14 +314,7 @@ module.exports = {
                 }
                 this.findFile(prefix + streamFilePath).thenApply(file => {
                     if (file != null) {
-                        let mimeType = file.getFileProperties().mimeType;
-                        if (!(mimeType.startsWith("audio") ||
-                            mimeType.startsWith("video") ||
-                            mimeType.startsWith("image"))) {
-                            that.showError('Unable to stream file: ' + file.getName());
-                        } else {
-                            that.stream(seekHi, seekLo, seekLength, file, originalStreamFilePath);
-                        }
+                        that.stream(seekHi, seekLo, seekLength, file, originalStreamFilePath);
                     }
                 });
             }
