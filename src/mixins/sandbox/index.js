@@ -89,8 +89,8 @@ module.exports = {
                       if (!(typeof props.folderAction == "boolean")) {
                           errors.push("Invalid folderAction property. Must have boolean value of true or false");
                       }
-                      if (props.author.length > 25) {
-                          errors.push("Invalid Author property. Length must not exceed 25 characters");
+                      if (props.author.length > 32) {
+                          errors.push("Invalid Author property. Length must not exceed 32 characters");
                       }
                         if (props.createMenuText != null) {
                           if (props.createMenuText.length > 25) {
