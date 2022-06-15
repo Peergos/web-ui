@@ -8,7 +8,7 @@ var appPort = null;
 var streamingFilePath = "";
 var streamingAppEntry = new StreamingEntry(-1);
 var downloadUrl = null;
-let apiRequest = "/peergos-api";
+let apiRequest = "/peergos-api/v0";
 let dataRequest = apiRequest + "/data/";
 let formRequest = apiRequest + "/form/";
 

@@ -56,7 +56,8 @@ module.exports = {
             appProperties: null,
             appRegisteredWithFileAssociation: false,
             appRegisteredWithWildcardFileAssociation : false,
-            targetFile: null
+            targetFile: null,
+            apiRequest: "/peergos-api/v0"
         }
     },
     computed: {
@@ -280,8 +281,10 @@ module.exports = {
                 window.addEventListener('message', that.messageHandler);
                 window.addEventListener("resize", that.resizeHandler);
                 that.resizeHandler();
+                let theme = that.$store.getters.currentTheme;
                 let func = function() {
-                    that.postMessage({type: 'init', appName: that.sandboxAppName, appPath: that.appPath, allowBrowsing: that.browserMode});
+                    that.postMessage({type: 'init', appName: that.sandboxAppName, appPath: that.appPath,
+                    allowBrowsing: that.browserMode, theme: theme});
                 };
                 that.setupIFrameMessaging(iframe, func);
             });
@@ -303,8 +306,8 @@ module.exports = {
             } else {
                 var prefix = '';
                 if (!this.browserMode && streamFilePath != this.appPath) {
-                    if(streamFilePath.startsWith('/peergos-api/data')) {
-                        streamFilePath = streamFilePath.substring('/peergos-api'.length);
+                    if(streamFilePath.startsWith(that.apiRequest + '/data')) {
+                        streamFilePath = streamFilePath.substring(that.apiRequest.length);
                     } else {
                         prefix = '/assets';
                     }
@@ -412,7 +415,7 @@ module.exports = {
             var bytes = convertToByteArray(new Int8Array(data));
             try {
                 if (apiMethod == 'GET') {
-                    //requestId is set if it is a GET request to /peergos-api/form or /peergos-api/data
+                    //requestId is set if it is a GET request to /peergos-api/v0/form or /peergos-api/v0/data
                     if (requestId.length > 0) {
                         if (!that.permissionsMap.get(that.PERMISSION_STORE_APP_DATA)) {
                             that.showError("App attempted to access file without permission :" + path);
@@ -423,7 +426,7 @@ module.exports = {
                     } else {
                         let prefix = !this.browserMode
                             && !(path == this.appPath || this.isAppPathAFolder && path.startsWith(this.appPath))
-                            && !path.startsWith('/peergos-api/data') ? '/assets' : '';
+                            && !path.startsWith(that.apiRequest + '/data') ? '/assets' : '';
                         if (this.browserMode) {
                             that.handleBrowserRequest(headerFunc, path, params, isFromRedirect);
                         } else {

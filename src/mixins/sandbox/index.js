@@ -89,8 +89,8 @@ module.exports = {
                       if (!(typeof props.folderAction == "boolean")) {
                           errors.push("Invalid folderAction property. Must have boolean value of true or false");
                       }
-                      if (props.supportAddress.length > 100) {
-                          errors.push("Invalid supportAddress property. Length must not exceed 100 characters");
+                      if (props.author.length > 25) {
+                          errors.push("Invalid Author property. Length must not exceed 25 characters");
                       }
                         if (props.createMenuText != null) {
                           if (props.createMenuText.length > 25) {
@@ -186,8 +186,8 @@ module.exports = {
                           if (props.source == null) {
                               props.source = "";
                           }
-                          if (props.supportAddress == null) {
-                              props.supportAddress = "";
+                          if (props.author == null) {
+                              props.author = "";
                           }
                           if (props.folderAction == null) {
                               props.folderAction = false;
@@ -288,7 +288,7 @@ module.exports = {
               rootOpt.get().getOrMkdirs(appDir, that.context.network, true, that.mirrorBatId, that.context.crypto).thenApply(dir => {
                 let encoder = new TextEncoder();
                 let props = {"schemaVersion": "1", "displayName": "HTML Viewer", "name": "htmlviewer",
-                    "version": "1.0.0-initial", "supportAddress": "", "folderAction": false,
+                    "version": "1.0.0-initial", "author": "peergos", "folderAction": false,
                     "description": "for viewing HTML files", "source": "",
                     "launchable": false,
                     "fileExtensions": [], "mimeTypes": [], "fileTypes": [], "permissions": []

@@ -29,7 +29,7 @@ let msgHandler = function (e) {
       if (e.data.type == "ping") {
         mainWindow.postMessage({action:'pong'}, e.origin);
       } else if (e.data.type == "init") {
-          load(e.data.appName, e.data.appPath, e.data.allowBrowsing);
+          load(e.data.appName, e.data.appPath, e.data.allowBrowsing, e.data.theme);
       } else if(e.data.type == "respondToLoadedChunk") {
         respondToLoadedChunk(e.data.bytes);
       } else if(e.data.type == "currentTitleRequest") {
@@ -89,14 +89,15 @@ function actionRequest(filePath, requestId, apiMethod, bytes, hasFormData, param
 function currentTitleRequest(e) {
     e.source.postMessage({action:'currentTitleResponse', path: currentPath, title: currentTitle}, e.origin);
 }
-function load(appName, appPath, allowBrowsing) {
+function load(appName, appPath, allowBrowsing, theme) {
     let that = this;
     let iframe = document.getElementById("appSandboxId");
     iframe.style.width = '100%';
     iframe.style.height = window.innerHeight + 'px';
     removeServiceWorkerRegistration(() => {
         let fileStream = streamSaver.createWriteStream(appName, "text/html", url => {
-                let path = appPath.length > 0 ? "?path=" + appPath : '';
+                var path = appPath.length > 0 ? "?path=" + appPath : '';
+                path = path.length > 0 ? path + '&theme=' + theme : '?theme=' + theme;
                 let src = allowBrowsing ? appPath.substring(1) : "index.html" + path;
                 iframe.src= src;
             }, function(seekHi, seekLo, seekLength, streamFilePath){

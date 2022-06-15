@@ -2169,7 +2169,7 @@ module.exports = {
 			let appName = appDisplayName.replaceAll(' ', '').toLowerCase().trim();
             let encoder = new TextEncoder();
             let props = {"schemaVersion": "1", "displayName": appDisplayName, "name": appName,
-                "version": "0.0.1-initial", "supportAddress": "", "folderAction": folderAction,
+                "version": "0.0.1-initial", "author": this.context.username, "folderAction": folderAction,
                 "description": "", "launchable": launchable,
                 "fileExtensions": [], "mimeTypes": [], "fileTypes": [], "permissions": permissions
             };

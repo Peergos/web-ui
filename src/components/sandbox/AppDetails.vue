@@ -19,8 +19,8 @@
                     <p>
                         <span class="app-details-span">Description:</span><span class="app-details-text">{{appProperties.description}}</span>
                     </p>
-                    <p v-if="appProperties.supportAddress.length > 0">
-                        <span class="app-details-span">Support:</span><span class="app-details-text">{{appProperties.supportAddress}}</span>
+                    <p v-if="appProperties.author.length > 0">
+                        <span class="app-details-span">Author:</span><span class="app-details-text">{{appProperties.author}}</span>
                     </p>
                     <p v-if="appProperties.source.length > 0">
                         <span class="app-details-span">Source:</span><span class="app-details-text"><a @click="navigateToInstallFolder()" >{{appProperties.source}}</a></span>

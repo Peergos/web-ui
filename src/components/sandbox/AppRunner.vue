@@ -57,7 +57,7 @@ module.exports = {
                     that.close();
                 } else {
                     if (!res.props.launchable) {
-                        that.showError("App must be installed first! Launchable property==false");
+                        that.showError("App must be installed first!");
                         that.close();
                     } else {
                         that.runApp(res.props);

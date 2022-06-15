@@ -27,8 +27,8 @@
                     <p>
                         <span class="app-install-span">Description:</span><span class="app-install-text">{{appProperties.description}}</span>
                     </p>
-                    <p v-if="appProperties.supportAddress.length > 0">
-                        <span class="app-install-span">Support:</span><span class="app-install-text">{{appProperties.supportAddress}}</span>
+                    <p v-if="appProperties.author.length > 0">
+                        <span class="app-install-span">Author:</span><span class="app-install-text">{{appProperties.author}}</span>
                     </p>
                     <p>
                         <span v-if="appProperties.fileExtensions.length > 0" class="app-install-span">Associated File extensions:</span><span class="app-install-text">{{appProperties.fileExtensions.join(", ")}}</span>
