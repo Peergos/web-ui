@@ -491,7 +491,14 @@ module.exports = {
                         that.showError('Path not accessible: ' + filePath);
                         that.buildResponse(header, null, that.ACTION_FAILED);
                     } else if(props.isDirectory) {
-                        that.closeAndLaunchApp(headerFunc, "Drive", path, "");
+                        let indexPath = path + '/index.html';
+                        that.findFile(indexPath, isFromRedirect).thenApply(indexFile => {
+                            if (indexFile == null) {
+                                that.closeAndLaunchApp(headerFunc, "Drive", path, "");
+                            } else {
+                                that.handleBrowserRequest(headerFunc, indexPath, params, isFromRedirect);
+                            }
+                        });
                     } else {
                         let fullPath = that.expandFilePath(path, isFromRedirect);
                         let navigationPath = fullPath.substring(0, fullPath.lastIndexOf('/'));
@@ -948,7 +955,7 @@ module.exports = {
             let expandedFilePath = this.expandFilePath(filePath, isFromRedirect);
             this.context.getByPath(expandedFilePath).thenApply(function(fileOpt){
                 if (fileOpt.ref == null) {
-                    that.showError('file not found: ' + filePath);
+                    console.log('file not found: ' + filePath);
                     future.complete(null);
                 } else {
                     let file = fileOpt.get();
