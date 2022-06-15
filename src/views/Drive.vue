@@ -1351,7 +1351,7 @@ module.exports = {
                     + ', File(s): ' + statistics.fileCount
                     + ', Total size: ' + helpers.convertBytesToHumanReadable(statistics.actualSize);
             this.confirm_consumer_cancel_func = continueFunction;
-            this.confirm_consumer_func = deleteFunction;
+            this.confirm_consumer_func = cancelFunction;
             this.showConfirm = true;
         },
 		collectFilesToZip(prefix, file, path, accumulator, future) {
