@@ -404,7 +404,7 @@ module.exports = {
         },
         confirmRemoveApp(appName, replaceFunction, cancelFunction) {
             this.confirm_message = 'Remove App: ' + appName;
-            this.confirm_body = "Are you sure you want to remove this App?";
+            this.confirm_body = "Are you sure you want to remove this App (Including all associated data)?";
             this.confirm_consumer_cancel_func = cancelFunction;
             this.confirm_consumer_func = replaceFunction;
             this.showConfirm = true;
