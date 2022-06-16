@@ -418,7 +418,8 @@ module.exports = {
                         }
                     } else {
                         let prefix = !this.browserMode
-                            && !(path == this.appPath || this.isAppPathAFolder && path.startsWith(this.appPath))
+                            && !(path == this.appPath || (this.isAppPathAFolder && path.startsWith(this.appPath)))
+                            && !(this.appPath.length > 0 && !this.isAppPathAFolder && path.startsWith(that.getPath))
                             && !path.startsWith(that.apiRequest + '/data') ? '/assets' : '';
                         if (this.browserMode) {
                             that.handleBrowserRequest(headerFunc, path, params, isFromRedirect);
@@ -933,7 +934,7 @@ module.exports = {
                 } else {
                     return this.currentPath.substring(0, this.currentPath.length -1) + filePath;
                 }
-            } else if (this.appPath.length > 0 && filePath.startsWith(this.appPath)) {
+            } else if (this.appPath.length > 0 && filePath.startsWith(this.getPath)) {
                 return filePath;
             } else if (this.currentProps != null) { //running in-place
                 let filePathWithoutSlash = filePath.startsWith('/') ? filePath.substring(1) : filePath;
