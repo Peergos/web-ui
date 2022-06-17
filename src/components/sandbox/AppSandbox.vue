@@ -91,7 +91,7 @@ module.exports = {
                 this.isAppPathAFolder = true;
             }
         }
-        if (!this.supportsStreaming()) {
+        if (!this.appSandboxSupportAvailable()) {
             this.giveUp();
         } else {
             if (this.isSecretLink) {
@@ -122,6 +122,9 @@ module.exports = {
         }
     },
     methods: {
+        appSandboxSupportAvailable() {
+            return this.supportsStreaming() && window.crossOriginIsolated;
+        },
         getMirrorBatId(file) {
             return file.getOwnerName() == this.context.username ? this.mirrorBatId : java.util.Optional.empty()
         },
