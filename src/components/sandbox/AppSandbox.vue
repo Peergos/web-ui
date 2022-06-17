@@ -91,7 +91,9 @@ module.exports = {
                 this.isAppPathAFolder = true;
             }
         }
-        if (!this.appSandboxSupportAvailable()) {
+        if (!this.appSandboxIsCrossOriginIsolated()) {
+            this.fatalError('Cannot create secure app sandbox. Browser reports window.crossOriginIsolated=false');
+        } else if (!this.appSandboxSupportAvailable()) {
             this.giveUp();
         } else {
             if (this.isSecretLink) {
@@ -123,7 +125,10 @@ module.exports = {
     },
     methods: {
         appSandboxSupportAvailable() {
-            return this.supportsStreaming() && window.crossOriginIsolated;
+            return this.supportsStreaming();
+        },
+        appSandboxIsCrossOriginIsolated() {
+            return window.crossOriginIsolated;
         },
         getMirrorBatId(file) {
             return file.getOwnerName() == this.context.username ? this.mirrorBatId : java.util.Optional.empty()
