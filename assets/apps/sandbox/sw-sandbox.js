@@ -224,7 +224,7 @@ self.onfetch = event => {
     const requestedResource = new URL(url);
     let filePath = decodeURI(requestedResource.pathname);
     if (filePath.startsWith('/peergos/')) {
-        let csp = "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; style-src-elem 'self' 'unsafe-inline'; font-src 'self';img-src 'self' data:;";
+        let csp = "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; style-src-elem 'self' 'unsafe-inline'; font-src 'self';img-src 'self' data:; media-src 'self' data:;";
         let respHeaders = [
             ['Content-type', 'text/html'],
             ['content-security-policy', csp],
@@ -354,7 +354,7 @@ function returnAppData(method, filePath, uniqueId) {
         }
         pump()
     }).then(function(fileData, err) {
-        let csp = "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; style-src-elem 'self' 'unsafe-inline'; font-src 'self';img-src 'self' data:;";
+        let csp = "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; style-src-elem 'self' 'unsafe-inline'; font-src 'self';img-src 'self' data:; media-src 'self' data:;";
         let respHeaders = [
             ['content-security-policy', csp],
             ['Cross-Origin-Embedder-Policy', 'require-corp'],
@@ -446,7 +446,7 @@ function returnRangeRequest(start, end, streamingEntry) {
         const fileSize = streamingEntry.getFileSize();
         const mimeType = streamingEntry.getMimeType();
 
-        let csp = "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; style-src-elem 'self' 'unsafe-inline'; font-src 'self'";
+        let csp = "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; style-src-elem 'self' 'unsafe-inline'; font-src 'self';img-src 'self' data:; media-src 'self' data:;";
         let respHeaders = [
             ['content-security-policy', csp],
             ['content-security-policy', 'require-corp'],
