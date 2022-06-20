@@ -244,7 +244,7 @@ module.exports = {
                                                 true, x => {});
                                             fileUploadList.push(fup);
                                         }
-                                        if ((lastEntryWasFolder || fileIndex == arr.length -1) && accumulator.length <= index) {
+                                        if ((lastEntryWasFolder || fileIndex == arr.length -1) && (index == 0 || accumulator.length < index)) {
                                             if (fileUploadList.length > 0) {
                                                 let basePath = that.getPath;
                                                 let relativePath = directoryEntry.path.substring(basePath.length);
