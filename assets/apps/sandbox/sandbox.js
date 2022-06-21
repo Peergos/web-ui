@@ -100,6 +100,7 @@ function load(appName, appPath, allowBrowsing, theme) {
                 path = path.length > 0 ? path + '&theme=' + theme : '?theme=' + theme;
                 let src = allowBrowsing ? appPath.substring(1) : "index.html" + path;
                 iframe.src= src;
+                iframe.contentWindow.focus();
             }, function(seekHi, seekLo, seekLength, streamFilePath){
                 that.streamFile(seekHi, seekLo, seekLength, streamFilePath);
             }, 0
