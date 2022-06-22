@@ -263,7 +263,7 @@ self.onfetch = event => {
         const start = Number(bytes[1]);
         const desiredEnd = Number(bytes[2]);
         var firstBlockSize = oneMegBlockSize - 1;
-        if (desiredEnd == 1) {
+        if (desiredEnd == 1 || bytes[2] == null) {
             firstBlockSize = 1;
         }
         var end = streamingEntry.firstRun ? firstBlockSize : alignToChunkBoundary(start, Number(bytes[2]));
