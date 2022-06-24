@@ -15,7 +15,7 @@
 			@switchView="switchView()"
 			@goBackToLevel="goBackToLevel($event)"
 			@askMkdir="askMkdir()"
-			@createFile="createTextFile()"
+			@createFile="createBlankFile()"
 			@newApp="createNewApp()"
 		        @search="openSearch(false)"
                         @paste="paste()"
@@ -2230,7 +2230,7 @@ module.exports = {
             });
         },
 
-		createTextFile() {
+		createBlankFile() {
 			this.prompt_placeholder = 'File name';
 			this.prompt_message = 'Enter a file name';
 			this.prompt_value = '';
@@ -2249,9 +2249,9 @@ module.exports = {
 			this.showSpinner = true;
 			let that = this;
 			// let context = this.getContext();
-			let empty = peergos.shared.user.JavaScriptPoster.emptyArray();
-			let reader = new peergos.shared.user.fs.AsyncReader.ArrayBacked(empty);
-			this.currentDir.uploadFileJS(filename, reader, 0, 0,
+			let fileData = this.createBlankFileData(filename);
+			let reader = new peergos.shared.user.fs.AsyncReader.ArrayBacked(fileData);
+			this.currentDir.uploadFileJS(filename, reader, 0, fileData.length,
 				false, that.getMirrorBatId(that.currentDir), this.context.network, this.context.crypto, function (len) { },
 				this.context.getTransactionService(),
 				f => peergos.shared.util.Futures.of(false)
@@ -2268,7 +2268,33 @@ module.exports = {
 				that.showError = true;
 			})
 		},
-
+ 		createBlankFileData(filename) {
+        	var imageFormat = null;
+        	let dotIndex = filename.indexOf('.');
+            if (dotIndex > -1 && dotIndex < filename.length) {
+            	let fileExtension = filename.substring(filename.lastIndexOf('.') +1).toLowerCase();
+            	if (fileExtension == 'jpg') {
+            		imageFormat = "image/jpeg";
+        	    } else if (fileExtension == 'png') {
+        		    imageFormat = "image/png";
+        	    }
+            }
+        	if (imageFormat.length == null) {
+                return peergos.shared.user.JavaScriptPoster.emptyArray();
+        	} else {
+                var canvas = document.createElement('canvas');
+                canvas.width = window.innerWidth - 100;
+                canvas.height = window.innerHeight - 100;
+	    		let dataUrl = canvas.toDataURL(imageFormat);
+	    		let prefix = "data:" + imageFormat + ";base64,";
+	    		let binaryThumbnail = window.atob(dataUrl.substring(prefix.length));
+            	var data = new Int8Array(binaryThumbnail.length);
+            	for (var i = 0; i < binaryThumbnail.length; i++) {
+                	data[i] = binaryThumbnail.charCodeAt(i);
+            	}
+            	return convertToByteArray(data);
+    		}
+		},
 		rename() {
 			if (this.selectedFiles.length == 0)
 				return;
