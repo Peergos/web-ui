@@ -2,15 +2,20 @@
 	<header class="drive-header">
 
 			<nav class="drive-breadcrumb">
-				<AppButton class="breadcrumb__root" aria-label="global files" @click.native="$emit('goBackToLevel', 0 )">
+				<AppButton v-if="!path.length && !(path.length >2 && path[1] == '.apps')" class="breadcrumb__root" aria-label="global files" @click.native="$emit('goBackToLevel', 0 )">
 					<AppIcon icon="globe--24"/>
 					<span v-if="!path.length">global</span>
 				</AppButton>
 
-				<template v-for="(dir, index) in path">
+				<template v-if="!(path.length >2 && path[1] == '.apps')" v-for="(dir, index) in path">
 					<AppIcon v-if="index!==0" icon="chevron--24" class="breadcrumb__separator" aria-hidden="true"/>
 					<AppButton :key="index" class="breadcrumb__item" :aria-label="dir" tabindex="-1" @click.native="$emit('goBackToLevel', index + 1 )">{{ dir }}</AppButton>
 				</template>
+                <template v-if="path.length >2 && path[1] == '.apps'" v-for="(dir, index) in path">
+                    <AppIcon v-if="index>2" icon="chevron--24" class="breadcrumb__separator" aria-hidden="true"/>
+                    <AppButton v-if="index>2" :key="index" class="breadcrumb__item" :aria-label="dir" tabindex="-1" @click.native="$emit('goBackToLevel', index + 1 )">{{ dir }}</AppButton>
+                    <AppButton v-if="index==2" :key="index" class="breadcrumb__item" :aria-label="dir" tabindex="-1">{{ dir }}</AppButton>
+                </template>
 			</nav>
 
 			<div class="drive-tools">

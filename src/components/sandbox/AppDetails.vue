@@ -45,7 +45,8 @@
                     </p>
                     <p v-if="appProperties.permissions.length > 0">
                         <li v-for="permission in appProperties.permissions">
-                          {{ convertPermissionToHumanReadable(permission) }}
+                            {{ convertPermissionToHumanReadable(permission) }}
+                            <button v-if="permission === 'STORE_APP_DATA'" class="btn btn-info" @click="displayDataFolder()">Show Data Folder</button>
                         </li>
                     </p>
                 </div>
@@ -74,6 +75,10 @@ module.exports = {
         this.loadAppProperties();
     },
     methods: {
+        displayDataFolder() {
+            let path = '/' + this.context.username + '/.apps/' + this.appProperties.name + '/data';
+            this.openFileOrDir("Drive", path, {filename:""});
+        },
         close: function () {
             this.$emit("hide-app-details");
         },
