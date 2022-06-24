@@ -1,11 +1,11 @@
 <template>
 <transition name="modal">
-    <div class="modal-mask" @click="closeApp">
+    <div class="modal-mask" @click="closeAppFromToolbar">
         <div class="modal-container full-height" @click.stop style="width:100%;overflow-y:auto;padding:0;display:flex;flex-flow:column;">
             <div class="modal-header" style="padding:0;min-height: 52px;">
                 <center><h2>{{ getFullPathForDisplay() }}</h2></center>
               <span style="position:absolute;top:0;right:0.2em;">
-                <span @click="closeApp" tabindex="0" v-on:keyup.enter="closeApp" style="color:black;font-size:3em;font-weight:bold;cursor:pointer;">&times;</span>
+                <span @click="closeAppFromToolbar" tabindex="0" v-on:keyup.enter="closeAppFromToolbar" style="color:black;font-size:3em;font-weight:bold;cursor:pointer;">&times;</span>
               </span>
             </div>
             <div id='sandbox-container' class="modal-body" style="margin:0;padding:0;display:flex;flex-grow:1;">
@@ -57,7 +57,8 @@ module.exports = {
             appRegisteredWithFileAssociation: false,
             appRegisteredWithWildcardFileAssociation : false,
             targetFile: null,
-            apiRequest: "/peergos-api/v0"
+            apiRequest: "/peergos-api/v0",
+            recreateFileThumbnailOnClose : false
         }
     },
     computed: {
@@ -89,6 +90,12 @@ module.exports = {
             this.targetFile = this.currentFile;
             if (this.currentFile.getFileProperties().isDirectory) {
                 this.isAppPathAFolder = true;
+            } else {
+                let props = this.targetFile.getFileProperties();
+                let filename = props.name.toLowerCase();
+                if (filename.endsWith('jpg') || filename.endsWith('png')) {
+                    this.recreateFileThumbnailOnClose = true;
+                }
             }
         }
         if (!this.appSandboxIsCrossOriginIsolated()) {
@@ -1006,6 +1013,16 @@ module.exports = {
         showError: function(msg) {
             console.log(msg);
             this.$toast.error(msg, {timeout:false});
+        },
+        closeAppFromToolbar: function () {
+            let that = this;
+            if (this.recreateFileThumbnailOnClose) {
+                this.targetFile.calculateAndUpdateThumbnail(this.context.network, this.context.crypto).thenApply(res => {
+                    that.closeApp();
+                });
+            } else {
+                this.closeApp();
+            }
         },
         closeApp: function () {
             let that = this;
