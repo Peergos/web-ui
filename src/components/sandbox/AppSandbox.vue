@@ -1017,8 +1017,12 @@ module.exports = {
         closeAppFromToolbar: function () {
             let that = this;
             if (this.recreateFileThumbnailOnClose) {
-                this.targetFile.calculateAndUpdateThumbnail(this.context.network, this.context.crypto).thenApply(res => {
-                    that.closeApp();
+                this.findFile(this.appPath, false).thenApply(file => {
+                    if (file != null) {
+                        file.calculateAndUpdateThumbnail(that.context.network, that.context.crypto).thenApply(res => {
+                            that.closeApp();
+                        });
+                    }
                 });
             } else {
                 this.closeApp();
