@@ -2279,7 +2279,7 @@ module.exports = {
         		    imageFormat = "image/png";
         	    }
             }
-        	if (imageFormat.length == null) {
+        	if (imageFormat == null) {
                 return peergos.shared.user.JavaScriptPoster.emptyArray();
         	} else {
                 var canvas = document.createElement('canvas');

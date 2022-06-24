@@ -206,7 +206,7 @@ self.addEventListener('activate', event => {
 const maxBlockSize = 1024 * 1024 * 5;
 const oneMegBlockSize = 1024 * 1024 * 1;
 
-let csp = "default-src 'self'; script-src 'self' 'unsafe-inline' 'wasm-unsafe-eval'; style-src 'self' 'unsafe-inline'; style-src-elem 'self' 'unsafe-inline' data:; font-src 'self';img-src 'self' data: blob:; media-src 'self' data:;";
+let csp = "default-src 'self'; script-src 'self' 'unsafe-inline' 'wasm-unsafe-eval'; style-src 'self' 'unsafe-inline'; style-src-elem 'self' 'unsafe-inline' data:; font-src 'self';img-src 'self' data: blob:;connect-src 'self' data:; media-src 'self' data:;";
 
 self.onfetch = event => {
     const url = event.request.url;
