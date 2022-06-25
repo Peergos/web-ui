@@ -35,7 +35,7 @@
 
 		</template>
 		<template #footer>
-			<AppButton v-if="isPaid" @click.native="updateCardDetails()" type="primary" block accent>Update payment details</AppButton>
+			<AppButton v-if="isPaid" @click.native="updateCardDetails()" type="primary" block accent>Update payment details (opens in new tab)</AppButton>
 			<AppButton v-if="isPaid" @click.native="cancelPaid()" type="primary" block class="alert" >Cancel Peergos subscription</AppButton>
 		</template>
 	</AppModal>
@@ -53,6 +53,7 @@ module.exports = {
                         gettingCard: false,
                         paymentUrl:null,
 			showCard:false,
+                        currentFocusFunction:null,
 		};
 	},
 	computed: {
@@ -91,12 +92,12 @@ module.exports = {
             proButtonText(){
                 return (this.isPro)
 				? 'Your Current Plan'
-				: 'Select Pro'
+				: 'Select Pro (opens new tab)'
             },
             visionaryButtonText(){
                 return (this.isVisionary)
 				? 'Your Current Plan'
-				: 'Select Visionary'
+				: 'Select Visionary (opens new tab)'
             }
     },
 
@@ -110,35 +111,16 @@ module.exports = {
 			'updatePayment'
 		]),
             startAddCardListener: function(desired) {
-	        var that = this;
-	        var iframe = document.getElementById("paymentframe");
-	        if (iframe == null) {
-    		    setTimeout(() => that.startAddCardListener(desired), 1000);
-	    	    return;
-	        }
-                // Listen for result message from the iframe
-                window.addEventListener('message', function (e) {
-                    // Normally, you should verify that the origin of the message's sender
-                    // was the origin and source you expected. This is easily done for the
-                    // unsandboxed frame. The sandboxed frame, on the other hand is more
-                    // difficult. Sandboxed iframes which lack the 'allow-same-origin'
-                    // header have "null" rather than a valid origin. This means you still
-                    // have to be careful about accepting data via the messaging API you
-                    // create. Check that source, and validate those inputs!
-                    let frameDomain = new URL(that.paymentUrl).origin
-                    if ((e.origin === "null" || e.origin === frameDomain) && e.source === iframe.contentWindow) {
-                        if (e.data.action == 'payment-result') {
-                            let result = e.data.result;
-                            if (result == "succeeded")
-                                that.requestStorage(desired);
-                        }
-                    }
-                });
+                var that = this;
+                this.currentFocusFunction = function(event) {
+                    that.requestStorage(desired);
+                };
+	        window.addEventListener("focus", this.currentFocusFunction, false);
 	    },
 	    requestStorage(bytes) {
 		console.log('requestStorage:', bytes)
 		var that = this;
-                
+                window.removeEventListener("focus", this.currentFocusFunction);
 		this.context.requestSpace(bytes)
 		    .thenApply(x => that.updateQuota(quotaBytes => {
 			console.log(quotaBytes,'quotaBytes')
@@ -179,7 +161,13 @@ module.exports = {
 		var that = this;
 		this.context.getPaymentProperties(true).thenApply(function(props) {
 		    that.paymentUrl = props.getUrl() + "&username=" + that.context.username + "&client_secret=" + props.getClientSecret();
-		    that.showCard = true;
+                    //  open payment card page in new tab
+                    let link = document.createElement('a')
+                    let click = new MouseEvent('click')
+                    link.target = "_blank";
+                    link.href = that.paymentUrl;
+                    link.dispatchEvent(click);
+		    //that.showCard = true;
             	    that.startAddCardListener(desired);
 		});
 	    },
