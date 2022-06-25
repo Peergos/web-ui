@@ -11,7 +11,7 @@ var downloadUrl = null;
 let apiRequest = "/peergos-api/v0";
 let dataRequest = apiRequest + "/data/";
 let formRequest = apiRequest + "/form/";
-
+var host = null;
 self.onmessage = event => {
   if (event.data === 'ping') {
     return
@@ -224,6 +224,14 @@ self.onfetch = event => {
       }))
     }
     const requestedResource = new URL(url);
+    if (host == null) {
+        host = requestedResource.host;
+    }
+    if (requestedResource.host != host) {
+        return event.respondWith(new Response('', {
+            status: 404
+        }));
+    }
     let filePath = decodeURI(requestedResource.pathname);
     if (filePath.startsWith('/peergos/')) {
         let respHeaders = [
