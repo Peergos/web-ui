@@ -387,7 +387,7 @@ module.exports = {
         handleException: function(throwable, publicMessage, logMessage) {
             this.showSpinner = false;
             this.saving = false;
-            that.$toast.error(publicMessage, {timeout:false})
+            this.$toast.error(publicMessage, {timeout:false})
             console.log(logMessage);
             console.log(throwable.getMessage());
         },
