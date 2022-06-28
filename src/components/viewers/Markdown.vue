@@ -36,6 +36,7 @@
 
 <script>
     const Gallery = require("../drive/DriveGallery.vue");
+    const launcherMixin = require("../../mixins/launcher/index.js");
     const mixins = require("../../mixins/downloader/index.js");
     const routerMixins = require("../../mixins/router/index.js");
 
@@ -70,14 +71,14 @@ module.exports = {
         }
     },
     props: ['propAppArgs'],
-    mixins:[mixins, routerMixins],
+    mixins:[mixins, routerMixins, launcherMixin],
     computed: {
         ...Vuex.mapState([
             'context'
         ]),
         ...Vuex.mapGetters([
             'isSecretLink'
-        ]),
+        ])
     },
     watch: {
         propAppArgs(newQuestion, oldQuestion) {

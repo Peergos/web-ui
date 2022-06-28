@@ -50,7 +50,19 @@ module.exports = new Vuex.Store({
 			blocked: [],
 			groupsNameToUid: {},
 			groupsUidToName: {}
-		}
+		},
+        sandboxedApps: {
+            appFileExtensionRegistrationMap: new Map(),
+            appMimeTypeRegistrationMap: new Map(),
+            appFileTypeRegistrationMap: new Map(),
+            appFileExtensionWildcardRegistrationList: [],
+            appMimeTypeWildcardRegistrationList: [],
+            appFileTypeWildcardRegistrationList: [],
+            appsInstalled: []
+        },
+        shortcuts: {
+            shortcutsMap: new Map()
+        }
 	},
 
 	getters: {
@@ -216,6 +228,31 @@ module.exports = new Vuex.Store({
 		SET_BLOCKED(state, payload) {
 			state.socialData.blocked = payload;
 		},
+        //sandboxed Apps
+        SET_FILE_EXTENSION_REGISTRATIONS(state, payload) {
+            state.sandboxedApps.appFileExtensionRegistrationMap = payload;
+        },
+        SET_MIMETYPE_REGISTRATIONS(state, payload) {
+            state.sandboxedApps.appMimeTypeRegistrationMap = payload;
+        },
+        SET_FILETYPE_REGISTRATIONS(state, payload) {
+            state.sandboxedApps.appFileTypeRegistrationMap = payload;
+        },
+        SET_FILE_EXTENSION_WILDCARD_REGISTRATIONS(state, payload) {
+            state.sandboxedApps.appFileExtensionWildcardRegistrationList = payload;
+        },
+        SET_MIMETYPE_WILDCARD_REGISTRATIONS(state, payload) {
+            state.sandboxedApps.appMimeTypeWildcardRegistrationList = payload;
+        },
+        SET_FILETYPE_WILDCARD_REGISTRATIONS(state, payload) {
+            state.sandboxedApps.appFileTypeWildcardRegistrationList = payload;
+        },
+        SET_SANDBOXED_APPS(state, payload) {
+            state.sandboxedApps.appsInstalled = payload;
+        },
+        SET_SHORTCUTS(state, payload) {
+            state.shortcuts.shortcutsMap = payload;
+        }
 	},
 
 	// Async

@@ -15,7 +15,8 @@
 			@switchView="switchView()"
 			@goBackToLevel="goBackToLevel($event)"
 			@askMkdir="askMkdir()"
-			@createFile="createTextFile()"
+			@createFile="createBlankFile()"
+			@newApp="createNewApp()"
 		        @search="openSearch(false)"
                         @paste="paste()"
 		/>
@@ -30,7 +31,11 @@
 			:consumer_func="prompt_consumer_func"
 			:action="prompt_action"
 		/>
-
+		<NewAppPrompt
+			v-if="showNewAppPrompt"
+			@hide-prompt="closeNewAppPrompt()"
+			:consumer_func="prompt_new_app_func"
+		/>
 		<FolderProperties
             v-if="showFolderProperties"
             v-on:hide-folder-properties-view="showFolderProperties = false"
@@ -59,7 +64,7 @@
 						:file="file"
 						:itemIndex="index"
 					/>
-					<DriveGridDrop v-if="showDnDArea && sortedFiles.length==0 && currentDir != null && currentDir.isWritable()">
+					<DriveGridDrop v-if="getPath.length > 1 && sortedFiles.length==0 && currentDir != null && currentDir.isWritable()">
 					</DriveGridDrop>
 				</DriveGrid>
 
@@ -78,10 +83,13 @@
 				v-if="viewMenu"
 				@closeMenu="closeMenu()"
 			>
-				<li id='gallery' v-if="canOpen && !isMarkdown" @keyup.enter="viewFile()" @click="viewFile()">View</li>
-				<li id='gallery-view-markdown' v-if="isMarkdown" @keyup.enter="viewFile()" @click="viewFile()">View</li>
-				<li id='gallery-edit-markdown' v-if="isMarkdown" @keyup.enter="editFile()" @click="editFile()">Edit</li>
-				<li id='open-file' v-if="canOpen" @keyup.enter="downloadAll"  @click="downloadAll">Download</li>
+				<li id='gallery' v-if="canOpen && !isMarkdown && !isHTML" @keyup.enter="viewFile()" @click="viewFile()">View</li>
+				<li id='view-markdown' v-if="isMarkdown" @keyup.enter="viewFile()" @click="viewFile()">View</li>
+				<li id='edit-markdown' v-if="isMarkdown" @keyup.enter="editFile()" @click="editFile()">Edit</li>
+				<li id='view-html' v-if="isHTML && isHTMLViewable" @keyup.enter="viewFile()" @click="viewFile()">View</li>
+				<li id='edit-html' v-if="isHTML" @keyup.enter="editFile()" @click="editFile()">Edit</li>
+				<li id='open-in-app' v-for="app in availableApps" v-on:keyup.enter="appOpen(app.name)" v-on:click="appOpen(app.name)">{{app.contextMenuText}}</li>
+				<li id='download-folder' v-if="canOpen" @keyup.enter="downloadAll"  @click="downloadAll">Download</li>
 				<li id='rename-file' v-if="isWritable" @keyup.enter="rename"  @click="rename">Rename</li>
 				<li id='delete-file' v-if="isWritable" @keyup.enter="deleteFiles"  @click="deleteFiles">Delete</li>
 				<li id='copy-file' v-if="allowCopy" @keyup.enter="copy"  @click="copy">Copy</li>
@@ -91,6 +99,10 @@
 				<li id='zip-folder' v-if="allowDownloadFolder" @keyup.enter="zipAndDownload"  @click="zipAndDownload">Download as Zip</li>
 				<li id='create-thumbnail' v-if="isWritable && canCreateThumbnail" @keyup.enter="createThumbnail"  @click="createThumbnail">Create Thumbnail</li>
 				<li id='folder-props' v-if="allowViewFolderProperties" @keyup.enter="viewFolderProperties"  @click="viewFolderProperties">Properties</li>
+				<li id='add-to-launcher' v-if="allowAddingToLauncher" @keyup.enter="addToLauncher"  @click="addToLauncher">Add to Launcher</li>
+                <li id='app-run' v-if="isInstallable" @keyup.enter="runApp()" @click="runApp()">Run App</li>
+                <li id='app-install' v-if="isInstallable" @keyup.enter="installApp()" @click="installApp()">Install App</li>
+
 			</DriveMenu>
 		</transition>
 
@@ -153,6 +165,25 @@
 			:viewAction="viewAction"
 			:context="context">
 		</Search>
+        <AppRunner
+            v-if="showAppRunner"
+            v-on:hide-app-run="closeAppRunner"
+            :appPropsFile="selectedFiles[0]">
+        </AppRunner>
+        <AppInstall
+            v-if="showAppInstallation"
+            v-on:hide-app-installation="closeAppInstallation"
+            :appPropsFile="selectedFiles[0]">
+        </AppInstall>
+        <AppSandbox
+            v-if="showAppSandbox"
+            v-on:hide-app-sandbox="closeAppSandbox(true)"
+            v-on:close-app-sandbox="closeAppSandbox(false)"
+            v-on:refresh="forceSharedRefreshWithUpdate++"
+            :sandboxAppName="sandboxAppName"
+            :currentFile="selectedFiles[0]"
+            :currentPath="getPath">
+        </AppSandbox>
         <replace
             v-if="showReplace"
             v-on:hide-replace="showReplace = false"
@@ -188,6 +219,10 @@
 </template>
 
 <script>
+
+const AppInstall = require("../components/sandbox/AppInstall.vue");
+const AppRunner = require("../components/sandbox/AppRunner.vue");
+const AppSandbox = require("../components/sandbox/AppSandbox.vue");
 const DriveHeader = require("../components/drive/DriveHeader.vue");
 const DriveGrid = require("../components/drive/DriveGrid.vue");
 const DriveGridCard = require("../components/drive/DriveGridCard.vue");
@@ -203,6 +238,7 @@ const ProgressBar = require("../components/drive/ProgressBar.vue");
 const DriveMenu = require("../components/drive/DriveMenu.vue");
 
 const AppPrompt = require("../components/prompt/AppPrompt.vue");
+const NewAppPrompt = require("../components/sandbox/new-app/NewAppPrompt.vue");
 const FolderProperties = require("../components/FolderProperties.vue");
 
 const helpers = require("../mixins/storage/index.js");
@@ -210,9 +246,13 @@ const downloaderMixins = require("../mixins/downloader/index.js");
 const zipMixin = require("../mixins/zip/index.js");
 
 const router = require("../mixins/router/index.js");
+const launcherMixin = require("../mixins/launcher/index.js");
 
 module.exports = {
 	components: {
+	    AppInstall,
+	    AppRunner,
+	    AppSandbox,
 		DriveHeader,
 		DriveGrid,
 		DriveGridCard,
@@ -220,6 +260,7 @@ module.exports = {
 		DriveTable,
 		DriveMenu,
 		AppPrompt,
+		NewAppPrompt,
 		FolderProperties,
 		ProgressBar,
 		Gallery,
@@ -283,9 +324,15 @@ module.exports = {
 			prompt_max_input_size: null,
 			prompt_value: '',
 			prompt_consumer_func: () => { },
+			prompt_new_app_func: (name, permissions) => { },
 			prompt_action: 'ok',
 			showPrompt: false,
+			showNewAppPrompt: false,
             showFolderProperties: false,
+            showAppInstallation: false,
+            showAppRunner: false,
+            showAppSandbox: false,
+            sandboxAppName: '',
 			showSelect: false,
 			showWarning: false,
 			showReplace: false,
@@ -313,19 +360,12 @@ module.exports = {
             clickTimer: null,
             clickedFilename: null,
             isStreamingAvailable: false,
-            showDnDArea: false
+            launcherApp: null
 		};
 	},
-
-	mixins:[downloaderMixins, router, zipMixin],
-
+	mixins:[downloaderMixins, router, zipMixin, launcherMixin],
         mounted: function() {
-            let that = this;
-            this.updateCurrentDirectory(null,
-                () => {
-                    that.showDnDArea = true;
-                }
-            );
+
         },
 	computed: {
 		...Vuex.mapState([
@@ -337,7 +377,9 @@ module.exports = {
 			'open',
 			'initPath',
 			'isLoggedIn',
-			'path'
+			'path',
+            "sandboxedApps",
+            "shortcuts"
 		]),
 		...Vuex.mapGetters([
 			'isSecretLink',
@@ -402,6 +444,67 @@ module.exports = {
 			});
 		},
 
+        isInstallable: function() {
+           try {
+               if (this.selectedFiles.length != 1)
+                   return false;
+               if (!this.isLoggedIn && this.path.length > 0)
+                   return false;
+               return !this.selectedFiles[0].isDirectory()
+                    && this.selectedFiles[0].getFileProperties().name == "peergos-app.json";
+           } catch (err) {
+               return false;
+           }
+        },
+        availableApps: function() {
+           try {
+               if (this.currentDir == null)
+                   return [];
+               if (this.selectedFiles.length != 1)
+                   return [];
+               if (this.selectedFiles[0].getFileProperties().isHidden)
+                   return [];
+                if (this.selectedFiles[0].isDirectory()) {
+                    let folderApps = this.sandboxedApps.appsInstalled.slice().filter(app => app.folderAction);
+                    return folderApps.sort(function(a, b) {
+                        return a.displayName.localeCompare(b.displayName);
+                    });
+                }
+                let currentFilename = this.selectedFiles[0].getFileProperties().name;
+                let extension = currentFilename.substring(currentFilename.lastIndexOf(".") +1);
+
+                var currentFileExtensionMapping = this.sandboxedApps.appFileExtensionRegistrationMap.get(extension);
+                currentFileExtensionMapping = currentFileExtensionMapping == null ? [] : currentFileExtensionMapping;
+                currentFileExtensionMapping = currentFileExtensionMapping.concat(this.sandboxedApps.appFileExtensionWildcardRegistrationList);
+
+                let mimeType = this.selectedFiles[0].getFileProperties().mimeType;
+                var currentMimeTypeMapping = this.sandboxedApps.appMimeTypeRegistrationMap.get(mimeType);
+                currentMimeTypeMapping = currentMimeTypeMapping == null ? [] : currentMimeTypeMapping;
+                currentMimeTypeMapping = currentMimeTypeMapping.concat(this.sandboxedApps.appMimeTypeWildcardRegistrationList);
+
+                let fileType = this.selectedFiles[0].getFileProperties().getType();
+                var currentFileTypeMapping = this.sandboxedApps.appFileTypeRegistrationMap.get(fileType);
+                currentFileTypeMapping = currentFileTypeMapping == null ? [] : currentFileTypeMapping;
+                currentFileTypeMapping = currentFileTypeMapping.concat(this.sandboxedApps.appFileTypeWildcardRegistrationList);
+
+                let combinedMapping = currentFileExtensionMapping
+                    .concat(currentMimeTypeMapping)
+                    .concat(currentFileTypeMapping)
+                    .filter(a => !a.folderAction);
+                let dedupedItems = [];
+                combinedMapping.forEach(item => {
+                    let foundIndex = dedupedItems.findIndex(v => v.name === item.name);
+                    if (foundIndex == -1) {
+                        dedupedItems.push(item);
+                    }
+                });
+                return dedupedItems.sort(function(a, b) {
+                    return a.displayName.localeCompare(b.displayName);
+                });
+           } catch (err) {
+               return [];
+           }
+        },
 		isSearchable() {
 			try {
 				if (this.currentDir == null)
@@ -474,6 +577,25 @@ module.exports = {
                 return false;
             }
         },
+        isHTMLViewable() {
+            return this.isStreamingAvailable;
+        },
+        isHTML() {
+            try {
+                if (this.currentDir == null)
+                    return false;
+                if (this.selectedFiles.length != 1)
+                    return false;
+                if (this.selectedFiles[0].isDirectory())
+                    return false;
+                let file =  this.selectedFiles[0];
+                let mimeType = file.getFileProperties().mimeType;
+                return mimeType.startsWith("text/html") ||
+                    (mimeType.startsWith("text/") && file.getName().endsWith('.html'));
+            } catch (err) {
+                return false;
+            }
+        },
 		allowDownloadFolder() {
 			try {
                 if (!(this.path.length > 0)) {
@@ -510,6 +632,23 @@ module.exports = {
 		allowShare() {
 			return this.isLoggedIn && this.path.length > 0;
 		},
+		allowAddingToLauncher() {
+            try {
+                if (this.currentDir == null)
+                    return false;
+                if (this.selectedFiles.length != 1)
+                    return false;
+                if (!this.isLoggedIn && this.path.length > 0)
+                    return false;
+                let file = this.selectedFiles[0];
+                let postFix = file.isDirectory() ? '/' : '';
+                let link = this.path.join('/') + '/' + file.getName() + postFix;
+                let entry = this.shortcuts.shortcutsMap.get(link);
+                return entry == null;
+            } catch (err) {
+                return false;
+            }
+        },
 		isIcsFile() {
 			try {
 				if (this.currentDir == null)
@@ -569,10 +708,14 @@ module.exports = {
 
 
 	created() {
-		this.init();
+	    let that = this;
 		this.onResize()
 		// TODO: throttle onResize and make it global?
 		window.addEventListener('resize', this.onResize, {passive: true} );
+        peergos.shared.user.App.init(that.context, "launcher").thenApply(launcher => {
+            that.launcherApp = launcher;
+            that.init();
+        });
 	},
 
 	beforeDestroy() {
@@ -593,22 +736,7 @@ module.exports = {
 		},
 
 		path(newPath, oldPath) {
-		    if (!this.showDnDArea && oldPath.length == 0) {
-		        return;
-		    }
-			console.log('drive oldPath: ', oldPath )
-			console.log('drive newPath: ', newPath )
-			if (newPath.length != oldPath.length) {
-				this.updateCurrentDir();
-			} else {
-				for (var i = 0; i < newPath.length; i++) {
-					if (newPath[i] != oldPath[i]) {
-						this.updateCurrentDir();
-						return;
-					}
-				}
-			}
-
+            this.updateCurrentDir();
 		},
 		forceSharedRefreshWithUpdate(newCounter, oldCounter) {
 			this.updateCurrentDir();
@@ -740,7 +868,7 @@ module.exports = {
 				const appFromUrl = props == null ? null : props.app;
 				const argsFromUrl = props == null ? null : props.args;
 
-				const apps = ['Calendar', 'NewsFeed', 'Social', 'Tasks']
+				const apps = ['Calendar', 'NewsFeed', 'Social', 'Tasks', 'Launcher']
 
 				if (pathFromUrl !== null && !apps.includes(appFromUrl) ) {
 
@@ -784,6 +912,22 @@ module.exports = {
 			this.closeMenu()
 			this.$store.commit('SET_WINDOW_WIDTH', window.innerWidth)
 		},
+        installApp() {
+            this.closeMenu();
+            this.showAppInstallation = true;
+        },
+        closeAppInstallation() {
+            this.showAppInstallation = false;
+            this.forceSharedRefreshWithUpdate++;
+        },
+        runApp() {
+            this.closeMenu();
+            this.showAppRunner = true;
+        },
+        closeAppRunner() {
+            this.showAppRunner = false;
+            this.forceSharedRefreshWithUpdate++;
+        },
         createThumbnail() {
             this.closeMenu();
             if (this.selectedFiles.length != 1)
@@ -851,10 +995,11 @@ module.exports = {
 
 		closeApps() {
 		    this.showGallery = false;
-                    this.showIdentityProof = false;
+            this.showIdentityProof = false;
 		    this.showPdfViewer = false;
 		    this.showCodeEditor = false;
 		    this.showMarkdownViewer = false;
+		    this.showAppSandbox = false;
 		    this.showTextViewer = false;
 		    this.showHexViewer = false;
 		    this.showSearch = false;
@@ -886,7 +1031,17 @@ module.exports = {
 			this.updateHistory("Drive", path, {filename:""});
 			this.updateCurrentDirectory(filename);
 		},
-
+        appOpen(appName) {
+            this.closeMenu();
+            this.showAppSandbox = true;
+            this.sandboxAppName = appName;
+        },
+        closeAppSandbox(reloadDrive) {
+            this.showAppSandbox = false;
+            if (reloadDrive) {
+                this.showDrive();
+            }
+        },
 	    openInApp(args, app) {
                 if (app == null || app == "" || app == "Drive") {
                     this.closeApps();
@@ -911,7 +1066,10 @@ module.exports = {
                         that.showHexViewer = true;
                     else if (app == "markdown")
                         that.showMarkdownViewer = true;
-                    else if (app == "search")
+                    else if (app == "htmlviewer") {
+                        that.sandboxAppName = "htmlviewer";
+                        that.showAppSandbox = true;
+                    } else if (app == "search")
                         that.showSearch = true;
 		},
 		openSearch(fromRoot) {
@@ -1116,48 +1274,6 @@ module.exports = {
 					that.updateUsage();
 				});
 		},
-
-		calculateDirectoryStatistics(file, path, accumulator, future) {
-			let that = this;
-			file.getChildren(this.context.crypto.hasher, this.context.network).thenApply(function (children) {
-				let arr = children.toArray();
-				for (var i = 0; i < arr.length; i++) {
-					let child = arr[i];
-					let childProps = child.getFileProperties();
-					if (childProps.isDirectory) {
-            			accumulator.folderCount += 1;
-						accumulator.apparentSize += 4096;
-						let newPath = path + "/" + childProps.name;
-						accumulator.directoryMap.set(newPath, '');
-						that.calculateDirectoryStatistics(child, newPath, accumulator, future);
-					} else {
-            			accumulator.fileCount += 1;
-						let size = that.getFileSize(childProps);
-						accumulator.actualSize += size;
-						accumulator.apparentSize += (size + (4096 - (size % 4096)));
-					}
-				}
-                accumulator.directoryMap.delete(path);
-				if (accumulator.directoryMap.size == 0) {
-					future.complete(accumulator);
-				}
-			});
-		},
-		calculateTotalSize(file, path) {
-			let future = peergos.shared.util.Futures.incomplete();
-			let accumulator = { folderName: file.getFileProperties().name, actualSize: 0, apparentSize: 4096, directoryMap: new Map(), fileCount: 0, folderCount: 0 };
-			if (file.isDirectory()) {
-			    accumulator.folderName = file.getFileProperties().name;
-                this.calculateDirectoryStatistics(file, path + file.getFileProperties().name, accumulator, future);
-            } else {
-                accumulator.fileCount += 1;
-                let size = this.getFileSize(file.getFileProperties());
-                accumulator.actualSize += size;
-                accumulator.apparentSize += (size + (4096 - (size % 4096)));
-                future.complete(accumulator);
-            }
-			return future;
-		},
         showMessage: function(title, body) {
             this.messages.push({
                 title: title,
@@ -1229,13 +1345,13 @@ module.exports = {
                 that.$toast.error(throwable.getMessage())
             });
 		},
-        confirmZipAndDownloadOfFolder(folderName, statistics, deleteFunction, cancelFunction) {
+        confirmZipAndDownloadOfFolder(folderName, statistics, continueFunction, cancelFunction) {
             this.confirm_message='Are you sure you want to download folder: ' + folderName + " ?";
             this.confirm_body='Folder(s): ' + statistics.folderCount
                     + ', File(s): ' + statistics.fileCount
                     + ', Total size: ' + helpers.convertBytesToHumanReadable(statistics.actualSize);
-            this.confirm_consumer_cancel_func = cancelFunction;
-            this.confirm_consumer_func = deleteFunction;
+            this.confirm_consumer_cancel_func = continueFunction;
+            this.confirm_consumer_func = cancelFunction;
             this.showConfirm = true;
         },
 		collectFilesToZip(prefix, file, path, accumulator, future) {
@@ -1784,7 +1900,32 @@ module.exports = {
 					})
 				});
 		},
+		addToLauncher() {
+            if (this.selectedFiles.length != 1)
+                return false;
+            let file = this.selectedFiles[0];
+            this.closeMenu();
 
+            let postFix = file.isDirectory() ? '/' : '';
+            let link = this.path.join('/') + '/' + file.getName() + postFix;
+            this.refreshAndAddShortcutLink(link, new Date(file.getFileProperties().created.toString() + "+00:00"));
+		},
+		refreshAndAddShortcutLink(link, created) {
+		    let that = this;
+            this.showSpinner = true;
+            this.loadShortcutsFile(this.launcherApp).thenApply(shortcutsMap => {
+                if (shortcutsMap.get(link) == null) {
+                    let entry = {added: new Date(), created: created};
+                    shortcutsMap.set(link, entry)
+                    that.updateShortcutsFile(that.launcherApp, shortcutsMap).thenApply(res => {
+                        that.showSpinner = false;
+                        that.$store.commit("SET_SHORTCUTS", shortcutsMap);
+                    });
+                } else {
+                    that.showSpinner = false;
+                }
+            })
+		},
 		showShareWith() {
 			if (this.selectedFiles.length == 0)
 				return;
@@ -2007,7 +2148,89 @@ module.exports = {
 			});
 		},
 
-		createTextFile() {
+		createNewApp() {
+            this.prompt_new_app_func = function (appName, permissions) {
+                this.buildNewAppSkeleton(appName, permissions);
+            }.bind(this);
+            this.showNewAppPrompt = true;
+		},
+
+        buildNewAppSkeleton(appDisplayName, permissions) {
+			var that = this;
+            let appNameLowercase = appDisplayName.toLowerCase();
+            let dupApp = this.sandboxedApps.appsInstalled.slice().filter(app => app.displayName.toLowerCase() == appNameLowercase);
+            if (dupApp.length != 0) {
+                this.$toast.error(`App with name ${appDisplayName} already exists!`);
+                return;
+            }
+            let launchable = permissions.filter(p => p == 'EDIT_CHOSEN_FILE' || p == 'READ_CHOSEN_FOLDER').length == 0 ? true : false;
+            let folderAction = permissions.filter(p => p == 'READ_CHOSEN_FOLDER').length == 0 ? false : true;
+			this.showSpinner = true;
+			let appName = appDisplayName.replaceAll(' ', '').toLowerCase().trim();
+            let encoder = new TextEncoder();
+            let props = {"schemaVersion": "1", "displayName": appDisplayName, "name": appName,
+                "version": "0.0.1-initial", "author": this.context.username, "folderAction": folderAction,
+                "description": "", "launchable": launchable,
+                "fileExtensions": [], "mimeTypes": [], "fileTypes": [], "permissions": permissions
+            };
+            let manifestUint8Array = encoder.encode(JSON.stringify(props, null, 2));
+            let appManifest = convertToByteArray(manifestUint8Array);
+            let manifestReader = new peergos.shared.user.fs.AsyncReader.ArrayBacked(appManifest);
+            let manifestProps =
+                    new peergos.shared.user.fs.FileWrapper.FileUploadProperties("peergos-app.json", manifestReader, 0,
+                        manifestUint8Array.byteLength, false, true, x => {});
+            let html = '<!DOCTYPE html>\n' +
+            '<html lang="en">\n' +
+            '    <head>\n' +
+            '        <meta charset="UTF-8">\n' +
+            '        <meta name="viewport" content="width=device-width, initial-scale=1">\n' +
+            '        <title>App: ' + appDisplayName + '</title>\n' +
+            '    </head>\n' +
+            '    <body>\n' +
+            '	<h1>' + appDisplayName + '</h1>\n' +
+            '    </body>\n' +
+            '</html>';
+            let indexUint8Array = encoder.encode(html);
+            let appIndexPage = convertToByteArray(indexUint8Array);
+            let indexReader = new peergos.shared.user.fs.AsyncReader.ArrayBacked(appIndexPage);
+            let indexPageProps =
+                    new peergos.shared.user.fs.FileWrapper.FileUploadProperties("index.html", indexReader, 0,
+                        indexUint8Array.byteLength, false, true, x => {});
+            let folderUPList = [];
+            let appFolderProps = new peergos.shared.user.fs.FileWrapper.FolderUploadProperties(
+                peergos.client.JsUtil.asList([appName]), peergos.client.JsUtil.asList([manifestProps]));
+            folderUPList.push(appFolderProps);
+            let assetFolderProps = new peergos.shared.user.fs.FileWrapper.FolderUploadProperties(
+                peergos.client.JsUtil.asList([appName, 'assets']), peergos.client.JsUtil.asList([indexPageProps]));
+            folderUPList.push(assetFolderProps);
+
+            let folderStream = peergos.client.JsUtil.asList(folderUPList).stream();
+            let alwaysResumeFileUpload = function(f) {
+                let future = peergos.shared.util.Futures.incomplete();
+                future.complete(true);
+                return future;
+            }
+            var commitWatcher = {
+                get_0: function() {
+                    return true;
+                }
+            };
+            this.currentDir.uploadSubtree(folderStream, this.getMirrorBatId(this.currentDir), this.context.network,
+                this.context.crypto, this.context.getTransactionService(),
+                f => alwaysResumeFileUpload(f), commitWatcher).thenApply(res => {
+                    that.showSpinner = false;
+                    that.updateCurrentDir();
+                    that.updateFiles();
+                    that.updateUsage();
+            }).exceptionally(function (throwable) {
+                that.errorTitle = 'Error creating App';
+                that.errorBody = throwable.getMessage();
+                that.showError = true;
+                that.showSpinner = false;
+            });
+        },
+
+		createBlankFile() {
 			this.prompt_placeholder = 'File name';
 			this.prompt_message = 'Enter a file name';
 			this.prompt_value = '';
@@ -2026,9 +2249,9 @@ module.exports = {
 			this.showSpinner = true;
 			let that = this;
 			// let context = this.getContext();
-			let empty = peergos.shared.user.JavaScriptPoster.emptyArray();
-			let reader = new peergos.shared.user.fs.AsyncReader.ArrayBacked(empty);
-			this.currentDir.uploadFileJS(filename, reader, 0, 0,
+			let fileData = this.createBlankFileData(filename);
+			let reader = new peergos.shared.user.fs.AsyncReader.ArrayBacked(fileData);
+			this.currentDir.uploadFileJS(filename, reader, 0, fileData.length,
 				false, that.getMirrorBatId(that.currentDir), this.context.network, this.context.crypto, function (len) { },
 				this.context.getTransactionService(),
 				f => peergos.shared.util.Futures.of(false)
@@ -2045,7 +2268,33 @@ module.exports = {
 				that.showError = true;
 			})
 		},
-
+ 		createBlankFileData(filename) {
+        	var imageFormat = null;
+        	let dotIndex = filename.indexOf('.');
+            if (dotIndex > -1 && dotIndex < filename.length) {
+            	let fileExtension = filename.substring(filename.lastIndexOf('.') +1).toLowerCase();
+            	if (fileExtension == 'jpg') {
+            		imageFormat = "image/jpeg";
+        	    } else if (fileExtension == 'png') {
+        		    imageFormat = "image/png";
+        	    }
+            }
+        	if (imageFormat == null) {
+                return peergos.shared.user.JavaScriptPoster.emptyArray();
+        	} else {
+                var canvas = document.createElement('canvas');
+                canvas.width = window.innerWidth - 100;
+                canvas.height = window.innerHeight - 100;
+	    		let dataUrl = canvas.toDataURL(imageFormat);
+	    		let prefix = "data:" + imageFormat + ";base64,";
+	    		let binaryThumbnail = window.atob(dataUrl.substring(prefix.length));
+            	var data = new Int8Array(binaryThumbnail.length);
+            	for (var i = 0; i < binaryThumbnail.length; i++) {
+                	data[i] = binaryThumbnail.charCodeAt(i);
+            	}
+            	return convertToByteArray(data);
+    		}
+		},
 		rename() {
 			if (this.selectedFiles.length == 0)
 				return;
@@ -2145,6 +2394,9 @@ module.exports = {
 		closePrompt() {
 			this.showPrompt = false;
 		},
+        closeNewAppPrompt() {
+            this.showNewAppPrompt = false;
+        },
 		closeMenu() {
 			this.viewMenu = false
 		},

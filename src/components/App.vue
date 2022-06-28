@@ -78,10 +78,13 @@ const Social = require("../views/Social.vue");
 const Calendar = require("../views/Calendar.vue");
 const Chat = require("../views/Chat.vue");
 const Email = require("../views/Email.vue");
+const Launcher = require("../views/Launcher.vue");
 
 const ServerMessages = require("./ServerMessages.vue");
 
 const routerMixins = require("../mixins/router/index.js");
+const launcherMixin = require("../mixins/launcher/index.js");
+const sandboxAppMixins = require("../mixins/sandbox/index.js");
 
 module.exports = {
 	components: {
@@ -104,6 +107,7 @@ module.exports = {
 		Calendar,
 		Chat,
 		Email,
+		Launcher,
 		AppTab,
 		AppTabs,
 		Login,
@@ -126,7 +130,7 @@ module.exports = {
 		"currentView",
 		"crypto",
 		"network",
-		"context",
+		"context"
 	    ]),
 	    ...Vuex.mapGetters(["isSecretLink", "getPath"]),
 	    isDemo() {
@@ -143,7 +147,7 @@ module.exports = {
             }
 	},
 
-	mixins: [routerMixins],
+	mixins: [routerMixins, sandboxAppMixins, launcherMixin],
 
 	watch: {
 	    network(newNetwork) {
@@ -200,12 +204,17 @@ module.exports = {
 	    if (this.context != null && this.context.username == null) {
 		// App.vue from a secret link
 	    } else {
-		this.updateUsage();
-		this.updateQuota();
-		this.updatePayment();
+            peergos.shared.user.App.init(this.context, "launcher").thenApply(launcher => {
+                that.loadShortcutsFile(launcher).thenApply(shortcutsMap => {
+                    that.$store.commit("SET_SHORTCUTS", shortcutsMap);
+                    that.updateUsage();
+                    that.updateQuota();
+                    that.updatePayment();
+                    that.initSandboxedApps();
+                })
+            });
 	    }
 	},
-
         getSecretLinkProps() {
             var fragment = window.location.hash.substring(1);
 	    var props = {};
@@ -247,7 +256,7 @@ module.exports = {
 	    }
 
             const that = this;
-            const sidebarApps = ["Drive", "NewsFeed", "Tasks", "Social", "Calendar", "Chat", "Email"]
+            const sidebarApps = ["Drive", "NewsFeed", "Tasks", "Social", "Calendar", "Chat", "Email", "Launcher"]
             const inDrive = this.currentView == "Drive";
 	    if (app === "Drive") {
                 if (inDrive) {
