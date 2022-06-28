@@ -830,7 +830,12 @@ module.exports = {
                                                 that.appArgs = props.args;
                                                 const filename = props.args.filename;
                                                 that.selectedFiles = that.files.filter(f => f.getName() == filename);
-					        var app = props.app || that.getApp(that.files[0], that.getPath, false);
+                                                var app = null;
+                                                if (filename.toLowerCase().endsWith('.html') && that.selectedFiles.length == 1) {
+                            app = that.getApp(that.selectedFiles[0], that.getPath, false);
+                                                } else {
+					        app = props.app || that.getApp(that.files[0], that.getPath, false);
+					                            }
                                                 that.openInApp(props.args, app);
                                                 that.openFileOrDir(app, that.getPath, props.args, false);
                                             } else if (openSubdir) {
@@ -852,7 +857,9 @@ module.exports = {
                                             }
 				 	};
                                         // first init history with drive so back button/close app works
-                                        that.openFileOrDir("Drive", that.getPath, {filename:""}, false);
+                                        let filename = that.getPropsFromUrl().args.filename;
+                                        let argFilename = filename.toLowerCase().endsWith('.html') ? filename : '';
+                                        that.openFileOrDir("Drive", that.getPath, {filename:argFilename}, false);
 				 	that.onUpdateCompletion.push(open);
                                     }
 				}
