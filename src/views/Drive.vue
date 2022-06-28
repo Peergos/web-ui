@@ -821,9 +821,9 @@ module.exports = {
 				 	that.onUpdateCompletion.push(download);
                                     }
                                     if (that.open) {
+                                        const props = that.getPropsFromUrl();
                                         var open = () => {
                                             const oneFile = that.files.length == 1;
-                                            const props = that.getPropsFromUrl();
                                             const openSubdir = props.args != null && props.args.path != null;
                                             if (props.args != null && props.args.filename != null && props.args.filename != "") {
                                                 // if props name a file, open it
