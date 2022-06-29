@@ -272,42 +272,49 @@ function hashToKeyBytesProm(username, password, algorithm) {
     });
     return future;
 }
+var nacl = null;
+
+function initNacl(len) {
+    nacl_factory.instantiate(function (naclInstance) {
+        nacl = naclInstance;
+    });
+}
 
 function generateRandomBytes(len) {    
-    var bytes = nacl.randomBytes(len);
-    return convertToByteArray(new Int8Array(bytes));
+    var bytes = nacl.random_bytes(len);
+    return convertToByteArray(bytes);
 }
 
 function generateSecretbox(data, nonce, key) {
-    var bytes = nacl.secretbox(new Uint8Array(data), new Uint8Array(nonce), new Uint8Array(key));
-    return convertToByteArray(new Int8Array(bytes));
+    var bytes = nacl.crypto_secretbox(new Uint8Array(data), new Uint8Array(nonce), new Uint8Array(key));
+    return convertToByteArray(bytes);
 }
 
 function generateSecretbox_open(cipher, nonce, key) {
-    var bytes = nacl.secretbox.open(new Uint8Array(cipher), new Uint8Array(nonce), new Uint8Array(key));
+    var bytes = nacl.crypto_secretbox_open(new Uint8Array(cipher), new Uint8Array(nonce), new Uint8Array(key));
     if(bytes === false) {
         throw "Invalid encryption!";
     }
-    return convertToByteArray(new Int8Array(bytes.buffer, bytes.byteOffset, bytes.byteLength));
+    return convertToByteArray(bytes);
 }
 
 function generateCrypto_sign_open(signed, publicSigningKey) {    
-    var bytes = nacl.sign.open(new Uint8Array(signed), new Uint8Array(publicSigningKey));
-    return convertToByteArray(new Int8Array(bytes));
+    var bytes = nacl.crypto_sign_open(new Uint8Array(signed), new Uint8Array(publicSigningKey));
+    return convertToByteArray(bytes);
 }
 
 function generateCrypto_sign(message, secretSigningKey) {    
-    var bytes = nacl.sign(new Uint8Array(message), new Uint8Array(secretSigningKey));
-    return convertToByteArray(new Int8Array(bytes));
+    var bytes = nacl.crypto_sign(new Uint8Array(message), new Uint8Array(secretSigningKey));
+    return convertToByteArray(bytes);
 }
 
 function generateCrypto_sign_keypair(publicKey, secretKey) {    
     var signSeed = new Uint8Array(secretKey.slice(0, 32));
-    var signPair = nacl.sign.keyPair.fromSeed(signSeed);
-    for (var i=0; i < signPair.secretKey.length; i++)
-        secretKey[i] = signPair.secretKey[i];
-    for (var i=0; i < signPair.publicKey.length; i++)
-        publicKey[i] = signPair.publicKey[i];
+    var signPair = nacl.crypto_sign_keypair_from_seed(signSeed);
+    for (var i=0; i < signPair.signSk.length; i++)
+        secretKey[i] = signPair.signSk[i];
+    for (var i=0; i < signPair.signPk.length; i++)
+        publicKey[i] = signPair.signPk[i];
     
     var returnArrays = [];
     returnArrays.push(publicKey);
@@ -316,21 +323,19 @@ function generateCrypto_sign_keypair(publicKey, secretKey) {
 }
 
 function generateCrypto_box_open(cipher, nonce, theirPublicBoxingKey, ourSecretBoxingKey) {    
-    var res = nacl.box.open(new Uint8Array(cipher), new Uint8Array(nonce), new Uint8Array(theirPublicBoxingKey), new Uint8Array(ourSecretBoxingKey));
-    var i8Array = new Int8Array(res);
-    return convertToByteArray(i8Array);
+    var res = nacl.crypto_box.open(new Uint8Array(cipher), new Uint8Array(nonce), new Uint8Array(theirPublicBoxingKey), new Uint8Array(ourSecretBoxingKey));
+    return convertToByteArray(res);
 }
 
 function generateCrypto_box(message, nonce, theirPublicBoxingKey, ourSecretBoxingKey) {    
-    var res = nacl.box(new Uint8Array(message), new Uint8Array(nonce), new Uint8Array(theirPublicBoxingKey), new Uint8Array(ourSecretBoxingKey));
-    var i8Array = new Int8Array(res);
-    return convertToByteArray(i8Array);
+    var res = nacl.crypto_box(new Uint8Array(message), new Uint8Array(nonce), new Uint8Array(theirPublicBoxingKey), new Uint8Array(ourSecretBoxingKey));
+    return convertToByteArray(res);
 }
 
 function generateCrypto_box_keypair(publicKey, secretKey) {    
-    var boxPair = nacl.box.keyPair.fromSecretKey(new Uint8Array(secretKey));
-    for (var i=0; i < boxPair.publicKey.length; i++)
-        publicKey[i] = boxPair.publicKey[i];
+    var boxPair = nacl.crypto_box_keypair_from_raw_sk(new Uint8Array(secretKey));
+    for (var i=0; i < boxPair.boxPk.length; i++)
+        publicKey[i] = boxPair.boxPk[i];
     
     return publicKey;
 }
@@ -487,6 +492,7 @@ var thumbnail = {
 
 var tweetNaCl = {
     JSNaCl: function() {
+        this.init = initNacl;
         this.randombytes = generateRandomBytes;
         this.secretbox = generateSecretbox;
         this.secretbox_open = generateSecretbox_open;
