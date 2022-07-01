@@ -701,8 +701,7 @@ module.exports = {
 				return false;
 			}
 
-			return (this.currentDir.isWritable() || this.currentDir.getFileProperties().name == '/')
-			    && target.isDirectory();
+			return target.isWritable() && target.isDirectory();
 		},
 	},
 
