@@ -701,7 +701,8 @@ module.exports = {
 				return false;
 			}
 
-			return this.currentDir.isWritable() && target.isDirectory();
+			return (this.currentDir.isWritable() || this.currentDir.getFileProperties().name == '/')
+			    && target.isDirectory();
 		},
 	},
 
@@ -1136,8 +1137,6 @@ module.exports = {
                     if (selectedFilename != null) {
                         that.selectedFiles = that.files.filter(f => f.getName() == selectedFilename);
                         that.openFile();
-                    } else {
-                        that.sharedWithDataUpdate();
                     }
                     if (callback != null) {
                         callback();
@@ -1148,23 +1147,6 @@ module.exports = {
 			}).exceptionally(function (throwable) {
 				console.log(throwable.getMessage());
 			});
-		},
-
-		sharedWithDataUpdate() {
-
-			if (this.selectedFiles.length != 1 || this.selectedFiles[0] == null || this.context == null) {
-				this.sharedWithData = { read_shared_with_users: [], edit_shared_with_users: [] };
-				return;
-			}
-			var file = this.selectedFiles[0];
-			var filename = file.getFileProperties().name;
-
-			let latestFile = this.files.filter(f => f.getName() == filename)[0];
-			this.selectedFiles = [latestFile];
-			let fileSharedWithState = this.sharedWithState.get(filename);
-			let read_usernames = fileSharedWithState.readAccess.toArray([]);
-			let edit_usernames = fileSharedWithState.writeAccess.toArray([]);
-			this.sharedWithData = { read_shared_with_users: read_usernames, edit_shared_with_users: edit_usernames };
 		},
 
 		getThumbnailURL(file) {
@@ -1863,42 +1845,6 @@ module.exports = {
 		        return 0;
 		    }
 			return Number(this.quotaBytes.toString()) - (Number(this.usageBytes.toString()) + fileSize);
-		},
-		showShareWithForProfile(field, fieldName) {
-			let dirPath = this.context.username + "/.profile/";
-			this.showShareWithForFile(dirPath, field, false, false, fieldName);
-		},
-		showShareWithFromApp(app, filename, allowReadWriteSharing, allowCreateSecretLink, nameToDisplay) {
-			let dirPath = this.context.username + "/.apps/" + app;
-			this.showShareWithForFile(dirPath, filename, allowReadWriteSharing, allowCreateSecretLink, nameToDisplay);
-		},
-		showShareWithForFile(dirPath, filename, allowReadWriteSharing, allowCreateSecretLink, nameToDisplay) {
-			let that = this;
-
-			this.context.getByPath(dirPath)
-				.thenApply(function (dir) {
-					dir.get().getChild(filename, that.context.crypto.hasher, that.context.network).thenApply(function (child) {
-						let file = child.get();
-						if (file == null) {
-							return;
-						}
-						that.filesToShare = [file];
-						that.pathToFile = dirPath.split('/');
-						let directoryPath = peergos.client.PathUtils.directoryToPath(that.pathToFile);
-						taht.context.getDirectorySharingState(directoryPath).thenApply(function (updatedSharedWithState) {
-							let fileSharedWithState = updatedSharedWithState.get(file.getFileProperties().name);
-							let read_usernames = fileSharedWithState.readAccess.toArray([]);
-							let edit_usernames = fileSharedWithState.writeAccess.toArray([]);
-							that.sharedWithData = { read_shared_with_users: read_usernames, edit_shared_with_users: edit_usernames };
-							that.fromApp = true;
-							that.displayName = nameToDisplay != null && nameToDisplay.length > 0 ?
-								nameToDisplay : file.getFileProperties().name;
-							that.allowReadWriteSharing = allowReadWriteSharing;
-							that.allowCreateSecretLink = allowCreateSecretLink;
-							that.showShare = true;
-						});
-					})
-				});
 		},
 		addToLauncher() {
             if (this.selectedFiles.length != 1)
