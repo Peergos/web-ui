@@ -29,7 +29,7 @@ let msgHandler = function (e) {
       if (e.data.type == "ping") {
         mainWindow.postMessage({action:'pong'}, e.origin);
       } else if (e.data.type == "init") {
-          load(e.data.appName, e.data.appPath, e.data.allowBrowsing, e.data.theme);
+          load(e.data.appName, e.data.appPath, e.data.allowBrowsing, e.data.theme, e.data.chatId, e.data.username);
       } else if(e.data.type == "respondToLoadedChunk") {
         respondToLoadedChunk(e.data.bytes);
       } else if(e.data.type == "currentTitleRequest") {
@@ -82,14 +82,14 @@ function streamFile(seekHi, seekLo, seekLength, streamFilePath) {
     mainWindow.postMessage({action:'streamFile', seekHi: seekHi, seekLo: seekLo, seekLength: seekLength
         , streamFilePath: streamFilePath}, origin);
 }
-function actionRequest(filePath, requestId, apiMethod, bytes, hasFormData, params, isFromRedirect) {
-    mainWindow.postMessage({action:'actionRequest', requestId: requestId, filePath: filePath, apiMethod: apiMethod,
+function actionRequest(filePath, requestId, api, apiMethod, bytes, hasFormData, params, isFromRedirect) {
+    mainWindow.postMessage({action:'actionRequest', requestId: requestId, filePath: filePath, api: api, apiMethod: apiMethod,
     bytes: bytes, hasFormData: hasFormData, params: params, isFromRedirect: isFromRedirect}, origin);
 }
 function currentTitleRequest(e) {
     e.source.postMessage({action:'currentTitleResponse', path: currentPath, title: currentTitle}, e.origin);
 }
-function load(appName, appPath, allowBrowsing, theme) {
+function load(appName, appPath, allowBrowsing, theme, chatId, username) {
     let that = this;
     let iframe = document.getElementById("appSandboxId");
     iframe.style.width = '100%';
@@ -98,14 +98,16 @@ function load(appName, appPath, allowBrowsing, theme) {
         let fileStream = streamSaver.createWriteStream(appName, "text/html", url => {
                 var path = appPath.length > 0 ? "?path=" + appPath : '';
                 path = path.length > 0 ? path + '&theme=' + theme : '?theme=' + theme;
+                path = chatId.length > 0 ? path + '&chatId=' + chatId : path;
+                path = path + '&username=' + username;
                 let src = allowBrowsing ? appPath.substring(1) : "index.html" + path;
                 iframe.src= src;
                 iframe.contentWindow.focus();
             }, function(seekHi, seekLo, seekLength, streamFilePath){
                 that.streamFile(seekHi, seekLo, seekLength, streamFilePath);
             }, 0
-            ,function(filePath, requestId, apiMethod, bytes, hasFormData, params, isFromRedirect){
-                that.actionRequest(filePath, requestId, apiMethod, bytes, hasFormData, params, isFromRedirect);
+            ,function(filePath, requestId, api, apiMethod, bytes, hasFormData, params, isFromRedirect){
+                that.actionRequest(filePath, requestId, api, apiMethod, bytes, hasFormData, params, isFromRedirect);
             }
         );
         that.streamWriter = fileStream.getWriter();

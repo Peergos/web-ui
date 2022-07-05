@@ -11,6 +11,7 @@ var downloadUrl = null;
 let apiRequest = "/peergos-api/v0";
 let dataRequest = apiRequest + "/data/";
 let formRequest = apiRequest + "/form/";
+let chatRequest = apiRequest + "/chat/";
 var host = null;
 self.onmessage = event => {
   if (event.data === 'ping') {
@@ -297,13 +298,19 @@ self.onfetch = event => {
         } else {
             var restFilePath = filePath;
             var isFromRedirect = false;
+            var api = "";
             if (filePath.startsWith(dataRequest)) {
                 restFilePath = restFilePath.substring(dataRequest.length);
+                api = dataRequest;
             } else if (filePath.startsWith(formRequest)) {
                 if (method != 'POST') {
                     return new Response('Unknown form action!', {status: 400})
                 }
                 restFilePath = restFilePath.substring(formRequest.length);
+                api = formRequest;
+            } else if (filePath.startsWith(chatRequest)) {
+                restFilePath = restFilePath.substring(chatRequest.length);
+                api = chatRequest;
             } else {
                 if (event.request.referrer.length > 0) {
                     let fromUrl = new URL(event.request.referrer);
@@ -323,7 +330,7 @@ self.onfetch = event => {
                 (async function() {
                     var formData = null;
                     var buffer = null;
-                    if (method == 'POST') {
+                    if (method == 'POST' || method == 'PUT') {
                         formData = await event.request.clone().formData().catch(err => null);
                         if (formData != null) {
                             let encoder = new TextEncoder();
@@ -336,7 +343,7 @@ self.onfetch = event => {
                             return new Response('Unexpected error!', {status: 400})
                         }
                     }
-                    appPort.postMessage({ filePath: restFilePath, requestId: uniqueId, apiMethod: method, bytes: buffer,
+                    appPort.postMessage({ filePath: restFilePath, requestId: uniqueId, api: api, apiMethod: method, bytes: buffer,
                         hasFormData: formData != null, params: params, isFromRedirect: isFromRedirect});
                     return returnAppData(method, restFilePath, uniqueId);
                 })()
