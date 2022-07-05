@@ -536,31 +536,47 @@ module.exports = {
             let that = this;
             if(apiMethod == 'GET') {
                 let chatId = path;
-                let from = params.get("from");
-                let to = params.get("to");
-                if (!this.validateRange(from, to)) {
-                    console.log('Get messages paging parameters are invalid');
-                    that.buildResponse(header, null, that.ACTION_FAILED);
-                    return;
-                }
-                let startIndex = parseInt(from, 10);
-                let endIndex = startIndex + parseInt(to, 10);
                 let messenger = new peergos.shared.messaging.Messenger(this.context);
-                messenger.getChat(chatId).thenApply(function(controller) {
-                    messenger.mergeAllUpdates(controller, that.socialData).thenApply(updatedController => {
-                        updatedController.getMessages(startIndex, endIndex).thenApply(result => {
-                            let newMessages = result.toArray();
-                            let accumulator = {messages:[], count: newMessages.length};
-                            let future = peergos.shared.util.Futures.incomplete();
-                            that.buildOutputMessages(updatedController, 0, newMessages, accumulator, future);
-                            future.thenApply(done => {
-                                let encoder = new TextEncoder();
-                                let data = encoder.encode(JSON.stringify(accumulator));
-                                that.buildResponse(header, data, that.GET_SUCCESS);
+                if (chatId.length == 0) {
+                    messenger.listChats().thenApply(function(chats) {
+                        let allChats = chats.toArray();
+                        let filteredChats = [];
+                        for(var i = 0; i < allChats.length; i++) {
+                            let chat = allChats[i];
+                            if(chat.chatUuid.startsWith("chat-" + that.sandboxAppName + "$")) {
+                                filteredChats.push({chatId: chat.chatUuid, title: chat.getTitle()});
+                            }
+                        }
+                        let encoder = new TextEncoder();
+                        let data = encoder.encode(JSON.stringify(filteredChats));
+                        that.buildResponse(header, data, that.GET_SUCCESS);
+                    });
+                } else {
+                    let from = params.get("from");
+                    let to = params.get("to");
+                    if (!this.validateRange(from, to)) {
+                        console.log('Get messages paging parameters are invalid');
+                        that.buildResponse(header, null, that.ACTION_FAILED);
+                        return;
+                    }
+                    let startIndex = parseInt(from, 10);
+                    let endIndex = startIndex + parseInt(to, 10);
+                    messenger.getChat(chatId).thenApply(function(controller) {
+                        messenger.mergeAllUpdates(controller, that.socialData).thenApply(updatedController => {
+                            updatedController.getMessages(startIndex, endIndex).thenApply(result => {
+                                let newMessages = result.toArray();
+                                let accumulator = {messages:[], count: newMessages.length};
+                                let future = peergos.shared.util.Futures.incomplete();
+                                that.buildOutputMessages(updatedController, 0, newMessages, accumulator, future);
+                                future.thenApply(done => {
+                                    let encoder = new TextEncoder();
+                                    let data = encoder.encode(JSON.stringify(accumulator));
+                                    that.buildResponse(header, data, that.GET_SUCCESS);
+                                });
                             });
                         });
                     });
-                });
+                }
             } else if(apiMethod == 'DELETE') {
                 // not implemented
             } else if(apiMethod == 'POST') {
