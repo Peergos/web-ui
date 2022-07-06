@@ -2,6 +2,14 @@
 <transition name="modal">
     <div class="modal-mask" @click="closeAppFromToolbar">
         <div class="modal-container full-height" @click.stop style="width:100%;overflow-y:auto;padding:0;display:flex;flex-flow:column;">
+        <AddToChat
+                v-if="showInviteFriends"
+                v-on:hide-group="showInviteFriends = false"
+                :appDisplayName="appDisplayName"
+                :maxFriendsToAdd="maxFriendsToAdd"
+                :friendNames="friendnames"
+                :updateChat="updateChat">
+        </AddToChat>
             <div class="modal-header" style="padding:0;min-height: 52px;">
                 <center><h2>{{ getFullPathForDisplay() }}</h2></center>
               <span style="position:absolute;top:0;right:0.2em;">
@@ -17,6 +25,9 @@
 </template>
 
 <script>
+
+const AddToChat = require("AddToChat.vue");
+
 const downloaderMixins = require("../../mixins/downloader/index.js");
 const router = require("../../mixins/router/index.js");
 const sandboxMixin = require("../../mixins/sandbox/index.js");
@@ -24,6 +35,9 @@ const launcherMixin = require("../../mixins/launcher/index.js");
 
 module.exports = {
 	mixins:[downloaderMixins, router, sandboxMixin, launcherMixin],
+    components: {
+        AddToChat
+    },
     data: function() {
         return {
             showSpinner: false,
@@ -47,6 +61,7 @@ module.exports = {
             PERMISSION_STORE_APP_DATA: 'STORE_APP_DATA',
             PERMISSION_EDIT_CHOSEN_FILE: 'EDIT_CHOSEN_FILE',
             PERMISSION_READ_CHOSEN_FOLDER: 'READ_CHOSEN_FOLDER',
+            PERMISSION_EXCHANGE_MESSAGES_WITH_FRIENDS: 'EXCHANGE_MESSAGES_WITH_FRIENDS',
             browserMode: false,
             fullPathForDisplay: '',
             launcherApp: null,
@@ -58,7 +73,11 @@ module.exports = {
             appRegisteredWithWildcardFileAssociation : false,
             targetFile: null,
             apiRequest: "/peergos-api/v0",
-            recreateFileThumbnailOnClose : false
+            recreateFileThumbnailOnClose : false,
+            currentChatId: '',
+            showInviteFriends: false,
+            appDisplayName: '',
+            chatResponseHeader: null
         }
     },
     computed: {
@@ -67,14 +86,18 @@ module.exports = {
             'usageBytes',
             'context',
             "sandboxedApps",
-            'mirrorBatId'
+            'mirrorBatId',
+            "socialData"
         ]),
         ...Vuex.mapGetters([
             'isSecretLink',
             'getPath'
-        ])
+        ]),
+        friendnames: function() {
+            return this.socialData.friends;
+        }
     },
-    props: ['sandboxAppName', 'currentFile', 'currentPath', 'currentProps'],
+    props: ['sandboxAppName', 'currentFile', 'currentPath', 'currentProps', 'sandboxAppChatId'],
     created: function() {
         let that = this;
         let currentFilename = this.currentFile == null ? '' : this.currentFile.getName();
@@ -118,6 +141,7 @@ module.exports = {
                         that.appProperties = props;
                         that.appRegisteredWithFileAssociation = that.appHasFileAssociation(props);
                         that.appRegisteredWithWildcardFileAssociation = that.appHasWildcardFileRegistration(props);
+                        that.currentChatId = that.sandboxAppChatId != null ? that.sandboxAppChatId : '';
                         peergos.shared.user.App.init(that.context, that.sandboxAppName).thenApply(sandboxedApp => {
                             that.sandboxedApp = sandboxedApp;
                             that.getAppSubdomain().thenApply(appSubdomain => {
@@ -271,7 +295,7 @@ module.exports = {
                     } else if (e.data.action == 'streamFile') {
                         that.streamFile(e.data.seekHi, e.data.seekLo, e.data.seekLength, e.data.streamFilePath);
                     } else if(e.data.action == 'actionRequest') {
-                        that.actionRequest(e.data.filePath, e.data.requestId, e.data.apiMethod, e.data.bytes,
+                        that.actionRequest(e.data.filePath, e.data.requestId, e.data.api, e.data.apiMethod, e.data.bytes,
                             e.data.hasFormData, e.data.params, e.data.isFromRedirect);
                     } else if(e.data.action == 'currentTitleResponse') {
                         that.currentTitleResponse(e.data.path, e.data.title);
@@ -299,7 +323,7 @@ module.exports = {
                 let theme = that.$store.getters.currentTheme;
                 let func = function() {
                     that.postMessage({type: 'init', appName: that.sandboxAppName, appPath: that.appPath,
-                    allowBrowsing: that.browserMode, theme: theme});
+                    allowBrowsing: that.browserMode, theme: theme, chatId: that.currentChatId, username: that.context.username});
                 };
                 that.setupIFrameMessaging(iframe, func);
             });
@@ -410,7 +434,7 @@ module.exports = {
             let data = convertToByteArray(bytes);
             this.postData(data);
         },
-        actionRequest: function(path, requestId, apiMethod, data, hasFormData, params, isFromRedirect) {
+        actionRequest: function(path, requestId, api, apiMethod, data, hasFormData, params, isFromRedirect) {
             let that = this;
             let headerFunc = (mimeType) => that.buildHeader(path, mimeType, requestId);
             if (this.browserMode) {
@@ -420,63 +444,72 @@ module.exports = {
                     return;
                 }
             }
-            var bytes = convertToByteArray(new Int8Array(data));
             try {
-                if (apiMethod == 'GET') {
-                    //requestId is set if it is a GET request to /peergos-api/v0/form or /peergos-api/v0/data
-                    if (requestId.length > 0) {
-                        if (!that.permissionsMap.get(that.PERMISSION_STORE_APP_DATA)) {
-                            that.showError("App attempted to access file without permission :" + path);
-                            that.buildResponse(headerFunc(), null, that.ACTION_FAILED);
-                        } else {
-                            that.readFileOrFolder(headerFunc, '/data/' + path, params, true);
-                        }
+                if (api =='/peergos-api/v0/chat/') {
+                    if (!that.permissionsMap.get(that.PERMISSION_EXCHANGE_MESSAGES_WITH_FRIENDS)) {
+                        that.showError("App attempted to access chat without permission :" + path);
+                        that.buildResponse(headerFunc(), null, that.ACTION_FAILED);
                     } else {
-                        let prefix = !this.browserMode
-                            && !(path == this.appPath || (this.isAppPathAFolder && path.startsWith(this.appPath)))
-                            && !(this.appPath.length > 0 && !this.isAppPathAFolder && path.startsWith(that.getPath))
-                            && !path.startsWith(that.apiRequest + '/data') ? '/assets' : '';
-                        if (this.browserMode) {
-                            that.handleBrowserRequest(headerFunc, path, params, isFromRedirect);
-                        } else {
-                            that.readFileOrFolder(headerFunc, prefix + path, params);
-                        }
+                        that.handleChatRequest(headerFunc(), path, apiMethod, data, hasFormData, params);
                     }
                 } else {
-                    if (that.appPath.length > 0 && path == that.appPath) {
-                        if (path.includes('/.')) {
-                            that.showError('Path not accessible: ' + path);
-                            that.buildResponse(headerFunc(), null, that.ACTION_FAILED);
-                        }
-                        if (that.isAppPathAFolder) {
-                            that.showError("App attempted to write folder without permission :" + path);
-                            that.buildResponse(headerFunc(), null, that.ACTION_FAILED);
-                        } else {
-                            if (apiMethod == 'POST' || apiMethod == 'PUT') {
-                                if (!that.permissionsMap.get(that.PERMISSION_EDIT_CHOSEN_FILE)) {
-                                    that.showError("App attempted to write to file without permission :" + path);
-                                    that.buildResponse(headerFunc(), null, that.ACTION_FAILED);
-                                } else {
-                                    that.overwriteFile(headerFunc(), path, bytes);
-                                }
-                            } else {
-                                that.showError("App attempted unexpected action: " + apiMethod);
+                    var bytes = convertToByteArray(new Int8Array(data));
+                    if (apiMethod == 'GET') {
+                        //requestId is set if it is a GET request to /peergos-api/v0/form or /peergos-api/v0/data
+                        if (requestId.length > 0) {
+                            if (!that.permissionsMap.get(that.PERMISSION_STORE_APP_DATA)) {
+                                that.showError("App attempted to access file without permission :" + path);
                                 that.buildResponse(headerFunc(), null, that.ACTION_FAILED);
+                            } else {
+                                that.readFileOrFolder(headerFunc, '/data/' + path, params, true);
+                            }
+                        } else {
+                            let prefix = !this.browserMode
+                                && !(path == this.appPath || (this.isAppPathAFolder && path.startsWith(this.appPath)))
+                                && !(this.appPath.length > 0 && !this.isAppPathAFolder && path.startsWith(that.getPath))
+                                && !path.startsWith(that.apiRequest + '/data') ? '/assets' : '';
+                            if (this.browserMode) {
+                                that.handleBrowserRequest(headerFunc, path, params, isFromRedirect);
+                            } else {
+                                that.readFileOrFolder(headerFunc, prefix + path, params);
                             }
                         }
                     } else {
-                        if (!that.permissionsMap.get(that.PERMISSION_STORE_APP_DATA)) {
-                            that.showError("App attempted to access file without permission :" + path);
-                            that.buildResponse(headerFunc(), null, that.ACTION_FAILED);
-                        }
-                        if(apiMethod == 'DELETE') {
-                            that.deleteAction(headerFunc(), path);
-                        } else if(apiMethod == 'POST') {
-                            that.createAction(headerFunc(), path, bytes, hasFormData);
-                        } else if(apiMethod == 'PUT') {
-                            that.putAction(headerFunc(), path, bytes);
-                        } else if(apiMethod == 'PATCH') {
-                            that.patchAction(headerFunc(), path, bytes);
+                        if (that.appPath.length > 0 && path == that.appPath) {
+                            if (path.includes('/.')) {
+                                that.showError('Path not accessible: ' + path);
+                                that.buildResponse(headerFunc(), null, that.ACTION_FAILED);
+                            }
+                            if (that.isAppPathAFolder) {
+                                that.showError("App attempted to write folder without permission :" + path);
+                                that.buildResponse(headerFunc(), null, that.ACTION_FAILED);
+                            } else {
+                                if (apiMethod == 'POST' || apiMethod == 'PUT') {
+                                    if (!that.permissionsMap.get(that.PERMISSION_EDIT_CHOSEN_FILE)) {
+                                        that.showError("App attempted to write to file without permission :" + path);
+                                        that.buildResponse(headerFunc(), null, that.ACTION_FAILED);
+                                    } else {
+                                        that.overwriteFile(headerFunc(), path, bytes);
+                                    }
+                                } else {
+                                    that.showError("App attempted unexpected action: " + apiMethod);
+                                    that.buildResponse(headerFunc(), null, that.ACTION_FAILED);
+                                }
+                            }
+                        } else {
+                            if (!that.permissionsMap.get(that.PERMISSION_STORE_APP_DATA)) {
+                                that.showError("App attempted to access file without permission :" + path);
+                                that.buildResponse(headerFunc(), null, that.ACTION_FAILED);
+                            }
+                            if(apiMethod == 'DELETE') {
+                                that.deleteAction(headerFunc(), path);
+                            } else if(apiMethod == 'POST') {
+                                that.createAction(headerFunc(), path, bytes, hasFormData);
+                            } else if(apiMethod == 'PUT') {
+                                that.putAction(headerFunc(), path, bytes);
+                            } else if(apiMethod == 'PATCH') {
+                                that.patchAction(headerFunc(), path, bytes);
+                            }
                         }
                     }
                 }
@@ -484,6 +517,146 @@ module.exports = {
                 console.log('Exception:' + ex);
                 that.buildResponse(headerFunc(), null, that.ACTION_FAILED);
             }
+        },
+        validateRange: function(from, to) {
+            if (from == null || to == null) {
+                return false;
+            }
+            let fromNumber = parseInt(from, 10);
+            let toNumber = parseInt(to, 10);
+            if (isNaN(fromNumber) || isNaN(toNumber)) {
+                return false;
+            }
+            if (fromNumber < 0 || toNumber < 0 || fromNumber > toNumber) {
+                return false;
+            }
+            return true;
+        },
+        handleChatRequest: function(header, path, apiMethod, data, hasFormData, params) {
+            let that = this;
+            if(apiMethod == 'GET') {
+                let chatId = path;
+                let messenger = new peergos.shared.messaging.Messenger(this.context);
+                if (chatId.length == 0) {
+                    messenger.listChats().thenApply(function(chats) {
+                        let allChats = chats.toArray();
+                        let filteredChats = [];
+                        for(var i = 0; i < allChats.length; i++) {
+                            let chat = allChats[i];
+                            if(chat.chatUuid.startsWith("chat-" + that.sandboxAppName + "$")) {
+                                filteredChats.push({chatId: chat.chatUuid, title: chat.getTitle()});
+                            }
+                        }
+                        let encoder = new TextEncoder();
+                        let data = encoder.encode(JSON.stringify(filteredChats));
+                        that.buildResponse(header, data, that.GET_SUCCESS);
+                    });
+                } else {
+                    let from = params.get("from");
+                    let to = params.get("to");
+                    if (!this.validateRange(from, to)) {
+                        console.log('Get messages paging parameters are invalid');
+                        that.buildResponse(header, null, that.ACTION_FAILED);
+                        return;
+                    }
+                    let startIndex = parseInt(from, 10);
+                    let endIndex = startIndex + parseInt(to, 10);
+                    messenger.getChat(chatId).thenApply(function(controller) {
+                        messenger.mergeAllUpdates(controller, that.socialData).thenApply(updatedController => {
+                            updatedController.getMessages(startIndex, endIndex).thenApply(result => {
+                                let newMessages = result.toArray();
+                                let accumulator = {messages:[], count: newMessages.length};
+                                let future = peergos.shared.util.Futures.incomplete();
+                                that.buildOutputMessages(updatedController, 0, newMessages, accumulator, future);
+                                future.thenApply(done => {
+                                    let encoder = new TextEncoder();
+                                    let data = encoder.encode(JSON.stringify(accumulator));
+                                    that.buildResponse(header, data, that.GET_SUCCESS);
+                                });
+                            });
+                        });
+                    });
+                }
+            } else if(apiMethod == 'DELETE') {
+                // not implemented
+            } else if(apiMethod == 'POST') {
+                let requestBody = JSON.parse(new TextDecoder().decode(data));
+                let min = 1;
+                let max = requestBody.maxInvites;
+                if (max != "1") {
+                    console.log("CreateChat maxInvites of: " + max + " is not currently supported");
+                    that.buildResponse(header, null, that.ACTION_FAILED);
+                    return;
+                }
+                if (!this.validateRange(min, max)) {
+                    console.log('CreateChat params are invalid');
+                    that.buildResponse(header, null, that.ACTION_FAILED);
+                    return;
+                }
+                this.chatResponseHeader = header;
+                this.appDisplayName = this.appProperties.displayName;
+                this.maxFriendsToAdd = 1;//parseInt(max, 10);
+                this.showInviteFriends = true;
+            } else if(apiMethod == 'PUT') {
+                let requestBody = JSON.parse(new TextDecoder().decode(data));
+                let msg = peergos.shared.messaging.messages.ApplicationMessage.text(requestBody.text);
+                let chatId = path;
+                let messenger = new peergos.shared.messaging.Messenger(this.context);
+                messenger.getChat(chatId).thenApply(function(controller) {
+                    messenger.sendMessage(controller, msg).thenApply(function(updatedController) {
+                        let encoder = new TextEncoder();
+                        that.buildResponse(header, null, that.CREATE_SUCCESS);
+                    });
+                });
+            } else if(apiMethod == 'PATCH') {
+                // not implemented
+            }
+        },
+        updateChat: function(usersToAdd) {
+            let that = this;
+            let messenger = new peergos.shared.messaging.Messenger(this.context);
+            messenger.createAppChat(this.sandboxAppName).thenApply(function(controller){
+                that.context.getPublicKeys(usersToAdd[0]).thenApply(pkOpt => {
+                    let usernameList = peergos.client.JsUtil.asList(usersToAdd);
+                    let pkHashes = peergos.client.JsUtil.asList([pkOpt.get().left]);
+                    messenger.invite(controller, usernameList, pkHashes).thenApply(controller2 => {
+                        let encoder = new TextEncoder();
+                        let chatIdBytes = encoder.encode(controller2.chatUuid);
+                        that.buildResponse(that.chatResponseHeader, chatIdBytes, that.CREATE_SUCCESS);
+                    });
+                });
+            });
+        },
+        buildOutputMessages: function(chatController, index, messages, accumulator, future) {
+            let that = this;
+            if (index == messages.length) {
+                future.complete(true);
+            } else {
+                let envelope = messages[index];
+                chatController.generateHash(envelope).thenApply(messageRef => {
+                    let payload = envelope.payload;
+                    let timestamp = that.fromUTCtoLocal(envelope.creationTime);
+                    let type = payload.type().toString();
+                    let author = chatController.getUsername(envelope.author);
+                    if(type == 'Application') {
+                        let body = payload.body.toArray();
+                        let text = body[0].inlineText();
+                        accumulator.messages.push({type: type, id: messageRef.toString(), text: text, author: author, timestamp: timestamp});
+                    } else if(type== 'Join') {
+                        let username = envelope.payload.username;
+                        accumulator.messages.push({type: type, username: username, timestamp: timestamp});
+                    }
+                    that.buildOutputMessages(chatController, index + 1, messages, accumulator, future);
+                });
+            }
+        },
+        fromUTCtoLocal: function(dateTime) {
+            let date = new Date(dateTime.toString() + "+00:00");//adding UTC TZ in ISO_OFFSET_DATE_TIME ie 2021-12-03T10:25:30+00:00
+            let formatted = date.getFullYear() + '-' + (date.getMonth() + 1) + '-' + date.getDate()
+                + ' ' + (date.getHours() < 10 ? '0' : '') + date.getHours()
+                + ':' + (date.getMinutes() < 10 ? '0' : '') + date.getMinutes()
+                + ':' + (date.getSeconds() < 10 ? '0' : '') + date.getSeconds();
+            return formatted;
         },
         handleBrowserRequest: function(headerFunc, path, params, isFromRedirect) {
             let that = this;

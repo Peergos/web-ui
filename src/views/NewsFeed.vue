@@ -66,7 +66,12 @@
                     :consumer_cancel_func="confirm_consumer_cancel_func"
                     :consumer_func="confirm_consumer_func">
                 </confirm>
-
+                <AppSandbox
+                    v-if="showAppSandbox"
+                    v-on:hide-app-sandbox="closeAppSandbox"
+                    :sandboxAppName="sandboxAppName"
+                    :sandboxAppChatId="sandboxAppChatId">
+                </AppSandbox>
                 <div id="scroll-area">
                     <center v-if="data.length==0">
                         <h3>
@@ -226,6 +231,7 @@ const SocialPost = require("../components/social/SocialPost.vue");
 
 const Gallery = require("../components/drive/DriveGallery.vue");
 const ViewProfile = require("../components/profile/ViewProfile.vue");
+const AppSandbox = require("../components/sandbox/AppSandbox.vue");
 
 const routerMixins = require("../mixins/router/index.js");
 const mixins = require("../mixins/mixins.js");
@@ -235,6 +241,7 @@ module.exports = {
 		SocialPost,
 		Gallery,
 		ViewProfile,
+		AppSandbox,
 		AppHeader
     },
     data: function() {
@@ -278,7 +285,10 @@ module.exports = {
             knownChats: [],
             messenger: null,
             sharedItemsProcessedMap: new Map(),
-            entryTree: null
+            entryTree: null,
+            showAppSandbox: false,
+            sandboxAppName: '',
+            sandboxAppChatId: ''
         }
     },
     props: [],
@@ -922,7 +932,27 @@ module.exports = {
             });
         },
         openConversation: function (entry) {
-            this.viewAction(entry.path, entry.file);
+            if (entry.appName.length > 0) {
+                let app = this.sandboxedApps.appsInstalled.slice().filter(app => app.name == entry.appName);
+                if (app.length == 0) {
+                    this.$toast.error(`App with name ${entry.appName} not installed!`);
+                    return;
+                } else {
+                    this.launchApp(entry.appName, entry.path);
+                }
+            } else {
+                this.viewAction(entry.path, entry.file);
+            }
+        },
+        launchApp: function(appName, path) {
+            this.showAppSandbox = true;
+            this.sandboxAppName = appName;
+            this.sandboxAppChatId = this.extractChatUUIDFromPath(path);
+        },
+        closeAppSandbox() {
+            this.showAppSandbox = false;
+            this.sandboxAppName = '';
+            this.sandboxAppChatId = '';
         },
         viewFolder: function (entry) {
             this.openFileOrDir("Drive", entry.path, {filename:""})
@@ -983,7 +1013,7 @@ module.exports = {
             return formatted;
         },
         isNewChat: function(filePath, isChat) {
-            let pathParts = filePath.split('/');
+            let pathParts = filePath.split('/').filter(n => n.length > 0);
             if (pathParts[1] != ".messaging") {
                 return false;
             }
@@ -1028,12 +1058,23 @@ module.exports = {
                     return null;
                 }
             }
+            var appName = "";
             if (props.isDirectory) {
                 if (isSharedCalendar) {
                     info = info + " a calendar"; // - " + props.name;
                     displayFilename = false;
                 } else if(isChat) {
-                    info = "invited you to a chat";
+                    appName = this.extractChatApp(filePath);
+                    if (appName.length > 0) {
+                        let app = this.sandboxedApps.appsInstalled.slice().filter(app => app.name == appName);
+                        if (app.length > 0) {
+                            info = "invited you to the App " + app[0].displayName;
+                        } else {
+                            info = "invited you to the App " + appName;
+                        }
+                    } else {
+                        info = "invited you to a chat";
+                    }
                     displayFilename = false;
                 } else {
                     info = info + " the folder";
@@ -1088,7 +1129,8 @@ module.exports = {
                 status: status,
                 isMedia: isMedia,
                 isChat: isChat,
-                isNewChat: isNewChat
+                isNewChat: isNewChat,
+                appName: appName
             };
             return item;
         },
@@ -1300,17 +1342,32 @@ module.exports = {
             });
             return dedupedItems;
         },
+        extractChatUUIDFromPath: function(path) {
+            let pathParts = path.split('/').filter(n => n.length > 0);
+            return pathParts[pathParts.length -2];
+        },
         extractChatOwner: function(chatUuid) {
-            let withoutPrefix = chatUuid.substring(5);//chat:
+            let withoutPrefix = chatUuid.substring(chatUuid.indexOf("$") +1);
             return withoutPrefix.substring(0,withoutPrefix.indexOf("$"));
+        },
+        extractChatApp: function(filePath) {
+            if (filePath.includes("/.messaging/")) {
+                let chatUuid = this.extractChatUUIDFromPath(filePath);
+                if (chatUuid.startsWith("chat-")) {
+                    let prefix = chatUuid.substring(chatUuid.indexOf("-") + 1, chatUuid.indexOf("$"));
+                    return prefix;
+                } else {
+                    return "";
+                }
+            }
+            return "";
         },
         filterOutOwnChats: function(allPairs) {
             let remainingSharedItems = [];
             for(var i = 0; i < allPairs.length; i++) {
                 let currentSharedItem = allPairs[i];
                 if (currentSharedItem.left.path.includes("/.messaging/")) {
-                    let pathParts = currentSharedItem.left.path.split('/');
-                    let uuid = pathParts[pathParts.length -2];
+                    let uuid = this.extractChatUUIDFromPath(currentSharedItem.left.path);
                     let chatOwner = this.extractChatOwner(uuid);
                     if(chatOwner != this.context.username) {
                         remainingSharedItems.push(currentSharedItem);
@@ -1429,7 +1486,8 @@ module.exports = {
 		    'usageBytes',
                     'context',
                     'socialData',
-                    'path'
+                    'path',
+                    "sandboxedApps",
 		]),
 		...Vuex.mapGetters([
 			'isSecretLink',

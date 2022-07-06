@@ -32,6 +32,8 @@ module.exports = {
               return "Can modify file chosen by user";
           } else if (permission === 'READ_CHOSEN_FOLDER') {
               return "Can read selected files of the associated types from folder chosen by user";
+          } else if (permission === 'EXCHANGE_MESSAGES_WITH_FRIENDS') {
+              return "Can exchange messages with friends";
           } else {
               console.log('Unknown permission: ' + permission);
               this.$toast.error('Unknown permission: ' + permission, {timeout:false});
@@ -48,7 +50,7 @@ module.exports = {
                   let errors = [];
                   let mandatoryFields = ["displayName", "description", "launchable"];
                   let existingCreateMenuItems = ["upload files","upload folder","new folder","new file", "new app"];
-                  let validPermissions = ["STORE_APP_DATA", "EDIT_CHOSEN_FILE", "READ_CHOSEN_FOLDER"];
+                  let validPermissions = ["STORE_APP_DATA", "EDIT_CHOSEN_FILE", "READ_CHOSEN_FOLDER", "EXCHANGE_MESSAGES_WITH_FRIENDS"];
                   mandatoryFields.forEach(field => {
                       if (props[field] == null) {
                           errors.push("Missing property " + field);

@@ -355,7 +355,8 @@ module.exports = {
                 profileImage: "",
                 status: "",
                 webRoot: ""
-            }
+            },
+            hideAppToAppConversations: true
         }
     },
     props: [],
@@ -1105,8 +1106,7 @@ module.exports = {
                 this.spinner(true);
             }
 
-            this.messenger.listChats().thenApply(function(chats) {
-                let allChats = chats.toArray();
+            this.listChats().thenApply(function(allChats) {
                 if (!that.isInitialised) {
                     that.isInitialised = true;
                     that.initialiseChats(allChats);
@@ -1145,6 +1145,21 @@ module.exports = {
                     that.setupAutomaticRefresh();
                 }
                 future.complete(false);
+            });
+            return future;
+        },
+        listChats: function() {
+            let future = peergos.shared.util.Futures.incomplete();
+            this.messenger.listChats().thenApply(function(chats) {
+                let allChats = chats.toArray();
+                let filteredChats = [];
+                for(var i = 0; i < allChats.length; i++) {
+                    let chat = allChats[i];
+                    if(!chat.chatUuid.startsWith("chat-")) {
+                        filteredChats.push(chat);
+                    }
+                }
+                future.complete(filteredChats);
             });
             return future;
         },

@@ -217,8 +217,8 @@
             // We never remove this iframes b/c it can interrupt saving
             makeIframe(evt.data.download)
           }
-        } else if (evt.data.filePath) {
-            fileDataCallback(evt.data.filePath, evt.data.requestId, evt.data.apiMethod, evt.data.bytes,
+        } else if (evt.data.filePath != null) {
+            fileDataCallback(evt.data.filePath, evt.data.requestId, evt.data.api, evt.data.apiMethod, evt.data.bytes,
                 evt.data.hasFormData, evt.data.params, evt.data.isFromRedirect);
         } else if (evt.data.seekLength) {
             seekCallback(evt.data.seekHi, evt.data.seekLo, evt.data.seekLength, evt.data.streamFilePath)
