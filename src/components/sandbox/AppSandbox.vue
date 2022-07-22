@@ -321,9 +321,12 @@ module.exports = {
                 window.addEventListener("resize", that.resizeHandler);
                 that.resizeHandler();
                 let theme = that.$store.getters.currentTheme;
+                let href = window.location.href;
+                let appDevMode = href.includes("?local-app-dev=true");
                 let func = function() {
                     that.postMessage({type: 'init', appName: that.sandboxAppName, appPath: that.appPath,
-                    allowBrowsing: that.browserMode, theme: theme, chatId: that.currentChatId, username: that.context.username});
+                    allowBrowsing: that.browserMode, theme: theme, chatId: that.currentChatId,
+                    username: that.context.username, appDevMode: appDevMode});
                 };
                 that.setupIFrameMessaging(iframe, func);
             });

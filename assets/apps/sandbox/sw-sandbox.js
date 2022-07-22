@@ -258,6 +258,7 @@ self.onfetch = event => {
         return event.respondWith(new Response(redirectHTML,
             { headers: respHeaders }));
     }
+    let method = event.request.method;
     if (event.request.headers.get('range')) {
         if (filePath != streamingFilePath) {
             streamingFilePath = filePath;
@@ -290,12 +291,12 @@ self.onfetch = event => {
             params.set(key, decodeURI(value));
         });
 
-        let method = event.request.method;
         if (method == 'OPTIONS' || method == 'HEAD') {
             return event.respondWith(new Response('Not Implemented!', {
                 status: 400
             }));
         } else {
+
             var restFilePath = filePath;
             var isFromRedirect = false;
             var api = "";
@@ -326,28 +327,37 @@ self.onfetch = event => {
             if (method == 'PATCH' && "append" != event.request.headers.get('X-Update-Range').toLowerCase()) {
                 return new Response('X-Update-Range:append header expected', {status: 400})
             }
-            return event.respondWith(
+            if (method == 'GET' && uniqueId == '' && appName.endsWith('@APP_DEV_MODE')) {
+                return event.respondWith(
                 (async function() {
-                    var formData = null;
-                    var buffer = null;
-                    if (method == 'POST' || method == 'PUT') {
-                        formData = await event.request.clone().formData().catch(err => null);
-                        if (formData != null) {
-                            let encoder = new TextEncoder();
-                            buffer = encoder.encode(formToJSON(formData));
+                    const responseFromNetwork = await fetch(filePath, { method: 'GET' });
+                        return responseFromNetwork;
+                    })()
+                )
+            } else {
+                return event.respondWith(
+                    (async function() {
+                        var formData = null;
+                        var buffer = null;
+                        if (method == 'POST' || method == 'PUT') {
+                            formData = await event.request.clone().formData().catch(err => null);
+                            if (formData != null) {
+                                let encoder = new TextEncoder();
+                                buffer = encoder.encode(formToJSON(formData));
+                            }
                         }
-                    }
-                    if (formData == null) {
-                        buffer = await event.request.clone().arrayBuffer().catch(err => err)
-                        if (buffer instanceof Error) {
-                            return new Response('Unexpected error!', {status: 400})
+                        if (formData == null) {
+                            buffer = await event.request.clone().arrayBuffer().catch(err => err)
+                            if (buffer instanceof Error) {
+                                return new Response('Unexpected error!', {status: 400})
+                            }
                         }
-                    }
-                    appPort.postMessage({ filePath: restFilePath, requestId: uniqueId, api: api, apiMethod: method, bytes: buffer,
-                        hasFormData: formData != null, params: params, isFromRedirect: isFromRedirect});
-                    return returnAppData(method, restFilePath, uniqueId);
-                })()
-            )
+                        appPort.postMessage({ filePath: restFilePath, requestId: uniqueId, api: api, apiMethod: method, bytes: buffer,
+                            hasFormData: formData != null, params: params, isFromRedirect: isFromRedirect});
+                        return returnAppData(method, restFilePath, uniqueId);
+                    })()
+                )
+            }
         }
     }
 }

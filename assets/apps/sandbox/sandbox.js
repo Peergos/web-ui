@@ -29,7 +29,8 @@ let msgHandler = function (e) {
       if (e.data.type == "ping") {
         mainWindow.postMessage({action:'pong'}, e.origin);
       } else if (e.data.type == "init") {
-          load(e.data.appName, e.data.appPath, e.data.allowBrowsing, e.data.theme, e.data.chatId, e.data.username);
+          load(e.data.appName, e.data.appPath, e.data.allowBrowsing, e.data.theme, e.data.chatId,
+            e.data.username, e.data.appDevMode);
       } else if(e.data.type == "respondToLoadedChunk") {
         respondToLoadedChunk(e.data.bytes);
       } else if(e.data.type == "currentTitleRequest") {
@@ -89,13 +90,14 @@ function actionRequest(filePath, requestId, api, apiMethod, bytes, hasFormData, 
 function currentTitleRequest(e) {
     e.source.postMessage({action:'currentTitleResponse', path: currentPath, title: currentTitle}, e.origin);
 }
-function load(appName, appPath, allowBrowsing, theme, chatId, username) {
+function load(appName, appPath, allowBrowsing, theme, chatId, username, appDevMode) {
     let that = this;
     let iframe = document.getElementById("appSandboxId");
     iframe.style.width = '100%';
     iframe.style.height = window.innerHeight + 'px';
+    let appNameInSW = appDevMode ? appName + '@APP_DEV_MODE' : appName;
     removeServiceWorkerRegistration(() => {
-        let fileStream = streamSaver.createWriteStream(appName, "text/html", url => {
+        let fileStream = streamSaver.createWriteStream(appNameInSW, "text/html", url => {
                 var path = appPath.length > 0 ? "?path=" + appPath : '';
                 path = path.length > 0 ? path + '&theme=' + theme : '?theme=' + theme;
                 path = chatId.length > 0 ? path + '&chatId=' + chatId : path;
