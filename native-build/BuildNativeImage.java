@@ -25,6 +25,7 @@ public class BuildNativeImage {
         runCommand("graalvm-ce-" + JAVA_VERSION + "-"+VERSION + extraDirs + "/bin/native-image" + binExt +
                    " --allow-incomplete-classpath " +
                    "-H:EnableURLProtocols=http " +
+                   "-H:EnableURLProtocols=https " +
                    "-H:IncludeResources='./webroot/.*' " +
                    "-H:+ReportUnsupportedElementsAtRuntime " +
                    "-H:ConfigurationFileDirectories=META-INF/native-image " +
