@@ -207,7 +207,12 @@ self.addEventListener('activate', event => {
 const maxBlockSize = 1024 * 1024 * 5;
 const oneMegBlockSize = 1024 * 1024 * 1;
 
-let csp = "default-src 'self'; script-src 'self' 'unsafe-inline' 'wasm-unsafe-eval'; style-src 'self' 'unsafe-inline'; style-src-elem 'self' 'unsafe-inline' data:; font-src 'self';img-src 'self' data: blob:;connect-src 'self' data:; media-src 'self' data:;";
+let defaultSrcCSP = "default-src 'self'; ";
+let scriptSrcCSP = "script-src 'self' 'unsafe-inline' 'wasm-unsafe-eval'; ";
+let scriptSrcWithUnsafeCSP = "script-src 'self' 'unsafe-inline' 'unsafe-eval' 'wasm-unsafe-eval'; ";
+let remainderCSP = "style-src 'self' 'unsafe-inline'; style-src-elem 'self' 'unsafe-inline' data:; font-src 'self';img-src 'self' data: blob:;connect-src 'self' data:; media-src 'self' data:;";
+let defaultCSP = defaultSrcCSP + scriptSrcCSP + remainderCSP;
+let cspWithUnsafeEval = defaultSrcCSP + scriptSrcWithUnsafeCSP + remainderCSP;
 
 self.onfetch = event => {
     const url = event.request.url;
@@ -235,6 +240,7 @@ self.onfetch = event => {
     }
     let filePath = decodeURI(requestedResource.pathname);
     if (filePath.startsWith('/peergos/')) {
+        let csp = appName.includes('@CSP_UNSAFE_EVAL') ? cspWithUnsafeEval : defaultCSP;
         let respHeaders = [
             ['Content-type', 'text/html'],
             ['content-security-policy', csp],
@@ -258,7 +264,7 @@ self.onfetch = event => {
         return event.respondWith(new Response(redirectHTML,
             { headers: respHeaders }));
     }
-    let method = event.request.method;
+    var method = event.request.method;
     if (event.request.headers.get('range')) {
         if (filePath != streamingFilePath) {
             streamingFilePath = filePath;
@@ -291,12 +297,16 @@ self.onfetch = event => {
             params.set(key, decodeURI(value));
         });
 
-        if (method == 'OPTIONS' || method == 'HEAD') {
-            return event.respondWith(new Response('Not Implemented!', {
-                status: 400
-            }));
+        var ignoreBody = false;
+        if (method == 'OPTIONS') { //FIXME do not currently support http://www.webdav.org/specs/rfc2518.html
+              return event.respondWith(new Response('', {
+                headers: { 'DAV': '0' }
+              }))
         } else {
-
+            if (method == 'HEAD') { //https://datatracker.ietf.org/doc/html/rfc2068#page-50 The HEAD method is identical to GET except that the server MUST NOT return a message-body in the response.
+                method = 'GET';
+                ignoreBody = true;
+            }
             var restFilePath = filePath;
             var isFromRedirect = false;
             var api = "";
@@ -327,7 +337,7 @@ self.onfetch = event => {
             if (method == 'PATCH' && "append" != event.request.headers.get('X-Update-Range').toLowerCase()) {
                 return new Response('X-Update-Range:append header expected', {status: 400})
             }
-            if (method == 'GET' && uniqueId == '' && appName.endsWith('@APP_DEV_MODE')) {
+            if (method == 'GET' && uniqueId == '' && appName.includes('@APP_DEV_MODE')) {
                 return event.respondWith(
                 (async function() {
                     const responseFromNetwork = await fetch(filePath, { method: 'GET' });
@@ -354,7 +364,7 @@ self.onfetch = event => {
                         }
                         appPort.postMessage({ filePath: restFilePath, requestId: uniqueId, api: api, apiMethod: method, bytes: buffer,
                             hasFormData: formData != null, params: params, isFromRedirect: isFromRedirect});
-                        return returnAppData(method, restFilePath, uniqueId);
+                        return returnAppData(method, restFilePath, uniqueId, ignoreBody);
                     })()
                 )
             }
@@ -367,7 +377,7 @@ function uuid() {
     (c ^ crypto.getRandomValues(new Uint8Array(1))[0] & 15 >> c / 4).toString(16)
   );
 }
-function returnAppData(method, filePath, uniqueId) {
+function returnAppData(method, filePath, uniqueId, ignoreBody) {
     return new Promise(function(resolve, reject) {
         let key = filePath + uniqueId;
         let pump = () => {
@@ -380,6 +390,7 @@ function returnAppData(method, filePath, uniqueId) {
         }
         pump()
     }).then(function(fileData, err) {
+        let csp = appName.includes('@CSP_UNSAFE_EVAL') ? cspWithUnsafeEval : defaultCSP;
         let respHeaders = [
             ['content-security-policy', csp],
             ['Cross-Origin-Embedder-Policy', 'require-corp'],
@@ -411,7 +422,7 @@ function returnAppData(method, filePath, uniqueId) {
         } else {
             respHeaders.push(['Content-Type', fileData.mimeType]);
             respHeaders.push(['Content-Length', fileData.file.byteLength]);
-            return new Response(fileData.file.byteLength == 0 ? null : fileData.file, {
+            return new Response(fileData.file.byteLength == 0 || ignoreBody ? null : fileData.file, {
                 status: fileData.statusCode,
                 headers: respHeaders
             });
@@ -470,6 +481,7 @@ function returnRangeRequest(start, end, streamingEntry) {
     }).then(function(arrayBuffer, err) {
         const fileSize = streamingEntry.getFileSize();
         const mimeType = streamingEntry.getMimeType();
+        let csp = appName.includes('@CSP_UNSAFE_EVAL') ? cspWithUnsafeEval : defaultCSP;
 
         let respHeaders = [
             ['content-security-policy', csp],

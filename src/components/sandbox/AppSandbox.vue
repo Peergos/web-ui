@@ -62,6 +62,7 @@ module.exports = {
             PERMISSION_EDIT_CHOSEN_FILE: 'EDIT_CHOSEN_FILE',
             PERMISSION_READ_CHOSEN_FOLDER: 'READ_CHOSEN_FOLDER',
             PERMISSION_EXCHANGE_MESSAGES_WITH_FRIENDS: 'EXCHANGE_MESSAGES_WITH_FRIENDS',
+            PERMISSION_CSP_UNSAFE_EVAL: 'CSP_UNSAFE_EVAL',
             browserMode: false,
             fullPathForDisplay: '',
             launcherApp: null,
@@ -323,10 +324,12 @@ module.exports = {
                 let theme = that.$store.getters.currentTheme;
                 let href = window.location.href;
                 let appDevMode = href.includes("?local-app-dev=true");
+                let allowUnsafeEvalInCSP = that.permissionsMap.get(that.PERMISSION_CSP_UNSAFE_EVAL) != null;
+                let props = { appDevMode: appDevMode, allowUnsafeEvalInCSP: allowUnsafeEvalInCSP};
                 let func = function() {
                     that.postMessage({type: 'init', appName: that.sandboxAppName, appPath: that.appPath,
                     allowBrowsing: that.browserMode, theme: theme, chatId: that.currentChatId,
-                    username: that.context.username, appDevMode: appDevMode});
+                    username: that.context.username, props: props});
                 };
                 that.setupIFrameMessaging(iframe, func);
             });
