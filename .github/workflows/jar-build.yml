@@ -1,0 +1,21 @@
+name: Jar build
+
+on: [push]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v1
+    - name: Set up JDK
+      uses: actions/setup-java@v1
+      with:
+        java-version: 17
+    - name: Build with Ant
+      run: ant -noinput -buildfile build.xml peergos_submodule_sync dist 
+    - name: Upload jar artifact
+      uses: actions/upload-artifact@v2
+      with:
+        name: Peergos.jar
+        path: "./server/Peergos.jar"
+    
