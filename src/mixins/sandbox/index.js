@@ -35,7 +35,7 @@ module.exports = {
           } else if (permission === 'EXCHANGE_MESSAGES_WITH_FRIENDS') {
               return "Can exchange messages with friends";
           } else if (permission === 'CSP_UNSAFE_EVAL') {
-              return "Allow JavaScript calls to eval()";
+              return "Allow App to make dynamic JavaScript calls";
           } else {
               console.log('Unknown permission: ' + permission);
               this.$toast.error('Unknown permission: ' + permission, {timeout:false});
