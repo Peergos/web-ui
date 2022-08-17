@@ -210,7 +210,7 @@ const oneMegBlockSize = 1024 * 1024 * 1;
 let defaultSrcCSP = "default-src 'self'; ";
 let scriptSrcCSP = "script-src 'self' 'unsafe-inline' 'wasm-unsafe-eval'; ";
 let scriptSrcWithUnsafeCSP = "script-src 'self' 'unsafe-inline' 'unsafe-eval' 'wasm-unsafe-eval'; ";
-let remainderCSP = "style-src 'self' 'unsafe-inline'; style-src-elem 'self' 'unsafe-inline' data:; font-src 'self';img-src 'self' data: blob:;connect-src 'self' data:; media-src 'self' data:;";
+let remainderCSP = "style-src 'self' 'unsafe-inline'; style-src-elem 'self' 'unsafe-inline' data:; font-src 'self' data:;img-src 'self' data: blob:;connect-src 'self' data:; media-src 'self' data:;";
 let defaultCSP = defaultSrcCSP + scriptSrcCSP + remainderCSP;
 let cspWithUnsafeEval = defaultSrcCSP + scriptSrcWithUnsafeCSP + remainderCSP;
 
@@ -485,7 +485,6 @@ function returnRangeRequest(start, end, streamingEntry) {
 
         let respHeaders = [
             ['content-security-policy', csp],
-            ['content-security-policy', 'require-corp'],
             ['Cross-Origin-Embedder-Policy', 'require-corp'],
             ['Cross-Origin-Opener-Policy', 'same-origin'],
             ['Cross-Origin-Resource-Policy', 'same-origin'],
