@@ -63,6 +63,7 @@ module.exports = {
             PERMISSION_READ_CHOSEN_FOLDER: 'READ_CHOSEN_FOLDER',
             PERMISSION_EXCHANGE_MESSAGES_WITH_FRIENDS: 'EXCHANGE_MESSAGES_WITH_FRIENDS',
             PERMISSION_CSP_UNSAFE_EVAL: 'CSP_UNSAFE_EVAL',
+            PERMISSION_ALLOW_CAMERA: 'ALLOW_CAMERA',
             browserMode: false,
             fullPathForDisplay: '',
             launcherApp: null,
@@ -315,6 +316,9 @@ module.exports = {
             iframe.style.height = '100%';
             iframe.frameBorder="0";
             iframe.scrolling="no";
+            if (this.permissionsMap.get(this.PERMISSION_ALLOW_CAMERA)) {
+                iframe.allow="camera";
+            }
             iframeContainer.appendChild(iframe);
             Vue.nextTick(function() {
                 iframe.src = that.frameUrl();
