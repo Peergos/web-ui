@@ -16,7 +16,19 @@
                 <span @click="closeAppFromToolbar" tabindex="0" v-on:keyup.enter="closeAppFromToolbar" style="color:black;font-size:3em;font-weight:bold;cursor:pointer;">&times;</span>
               </span>
             </div>
-            <div id='sandbox-container' class="modal-body" style="margin:0;padding:0;display:flex;flex-grow:1;">
+            <div v-if="iframeAllowModeSet" id='sandbox-container' class="modal-body" style="margin:0;padding:0;display:flex;flex-grow:1;">
+                <div v-if="iframeAllowMode == 1">
+                    <iframe id="sandboxId" width="100%" height="100%" frameBorder="0" scrolling="no" allow="camera; microphone"></iframe>
+                </div>
+                <div v-if="iframeAllowMode == 2">
+                    <iframe id="sandboxId" width="100%" height="100%" frameBorder="0" scrolling="no" allow="camera"></iframe>
+                </div>
+                <div v-if="iframeAllowMode == 3">
+                    <iframe id="sandboxId" width="100%" height="100%" frameBorder="0" scrolling="no" allow="microphone"></iframe>
+                </div>
+                <div v-if="iframeAllowMode == 0">
+                    <iframe id="sandboxId" width="100%" height="100%" frameBorder="0" scrolling="no"></iframe>
+                </div>
             </div>
             <spinner v-if="showSpinner"></spinner>
         </div>
@@ -64,6 +76,7 @@ module.exports = {
             PERMISSION_EXCHANGE_MESSAGES_WITH_FRIENDS: 'EXCHANGE_MESSAGES_WITH_FRIENDS',
             PERMISSION_CSP_UNSAFE_EVAL: 'CSP_UNSAFE_EVAL',
             PERMISSION_ALLOW_CAMERA: 'ALLOW_CAMERA',
+            PERMISSION_ALLOW_MICROPHONE: 'ALLOW_MICROPHONE',
             browserMode: false,
             fullPathForDisplay: '',
             launcherApp: null,
@@ -79,7 +92,9 @@ module.exports = {
             currentChatId: '',
             showInviteFriends: false,
             appDisplayName: '',
-            chatResponseHeader: null
+            chatResponseHeader: null,
+            iframeAllowModeSet: false,
+            iframeAllowMode: 0,
         }
     },
     computed: {
@@ -157,6 +172,19 @@ module.exports = {
         }
     },
     methods: {
+        setIframe() {
+            if (this.permissionsMap.get(this.PERMISSION_ALLOW_CAMERA)
+                && this.permissionsMap.get(this.PERMISSION_ALLOW_MICROPHONE)) {
+                this.iframeAllowMode = 1;
+            } else if (this.permissionsMap.get(this.PERMISSION_ALLOW_CAMERA)) {
+                this.iframeAllowMode = 2;
+            } else if (this.permissionsMap.get(this.PERMISSION_ALLOW_MICROPHONE)) {
+                this.iframeAllowMode = 3;
+            } else {
+                this.iframeAllowMode = 0;
+            }
+            this.iframeAllowModeSet = true;
+        },
         appSandboxSupportAvailable() {
             return this.supportsStreaming();
         },
@@ -309,18 +337,9 @@ module.exports = {
         },
         startListener: function() {
             var that = this;
-            var iframeContainer = document.getElementById("sandbox-container");
-            var iframe = document.createElement('iframe');
-            iframe.id = 'sandboxId';
-            iframe.style.width = '100%';
-            iframe.style.height = '100%';
-            iframe.frameBorder="0";
-            iframe.scrolling="no";
-            if (this.permissionsMap.get(this.PERMISSION_ALLOW_CAMERA)) {
-                iframe.allow="camera";
-            }
-            iframeContainer.appendChild(iframe);
+            this.setIframe();
             Vue.nextTick(function() {
+                let iframe = document.getElementById("sandboxId");
                 iframe.src = that.frameUrl();
                 window.addEventListener('message', that.messageHandler);
                 window.addEventListener("resize", that.resizeHandler);

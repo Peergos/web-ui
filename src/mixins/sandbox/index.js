@@ -38,6 +38,8 @@ module.exports = {
               return "Allow app to modify its own code";
           } else if (permission === 'ALLOW_CAMERA') {
               return "Allow app to access Camera";
+          } else if (permission === 'ALLOW_MICROPHONE') {
+              return "Allow app to access Microphone";
           } else {
               console.log('Unknown permission: ' + permission);
               this.$toast.error('Unknown permission: ' + permission, {timeout:false});
@@ -54,7 +56,7 @@ module.exports = {
                   let errors = [];
                   let mandatoryFields = ["displayName", "description", "launchable"];
                   let existingCreateMenuItems = ["upload files","upload folder","new folder","new file", "new app"];
-                  let validPermissions = ["STORE_APP_DATA", "EDIT_CHOSEN_FILE", "READ_CHOSEN_FOLDER", "EXCHANGE_MESSAGES_WITH_FRIENDS", "CSP_UNSAFE_EVAL", "ALLOW_CAMERA"];
+                  let validPermissions = ["STORE_APP_DATA", "EDIT_CHOSEN_FILE", "READ_CHOSEN_FOLDER", "EXCHANGE_MESSAGES_WITH_FRIENDS", "CSP_UNSAFE_EVAL", "ALLOW_CAMERA", "ALLOW_MICROPHONE"];
                   mandatoryFields.forEach(field => {
                       if (props[field] == null) {
                           errors.push("Missing property " + field);
