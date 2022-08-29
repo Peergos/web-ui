@@ -506,15 +506,16 @@ module.exports = {
                             if (!that.permissionsMap.get(that.PERMISSION_STORE_APP_DATA)) {
                                 that.showError("App attempted to access file without permission :" + path);
                                 that.buildResponse(headerFunc(), null, that.ACTION_FAILED);
-                            }
-                            if(apiMethod == 'DELETE') {
-                                that.deleteAction(headerFunc(), path);
-                            } else if(apiMethod == 'POST') {
-                                that.createAction(headerFunc(), path, bytes, hasFormData);
-                            } else if(apiMethod == 'PUT') {
-                                that.putAction(headerFunc(), path, bytes);
-                            } else if(apiMethod == 'PATCH') {
-                                that.patchAction(headerFunc(), path, bytes);
+                            } else {
+                                if(apiMethod == 'DELETE') {
+                                    that.deleteAction(headerFunc(), path);
+                                } else if(apiMethod == 'POST') {
+                                    that.createAction(headerFunc(), path, bytes, hasFormData);
+                                } else if(apiMethod == 'PUT') {
+                                    that.putAction(headerFunc(), path, bytes);
+                                } else if(apiMethod == 'PATCH') {
+                                    that.patchAction(headerFunc(), path, bytes);
+                                }
                             }
                         }
                     }
@@ -669,6 +670,7 @@ module.exports = {
             if (path.includes('/.')) {
                 that.showError('Path not accessible: ' + path);
                 that.buildResponse(headerFunc(), null, that.ACTION_FAILED);
+                return;
             }
             this.findFile(path, isFromRedirect).thenApply(file => {
                 if (file == null) {
