@@ -12,6 +12,7 @@ let apiRequest = "/peergos-api/v0";
 let dataRequest = apiRequest + "/data/";
 let formRequest = apiRequest + "/form/";
 let chatRequest = apiRequest + "/chat/";
+let saveRequest = apiRequest + "/save/";
 var host = null;
 self.onmessage = event => {
   if (event.data === 'ping') {
@@ -322,6 +323,12 @@ self.onfetch = event => {
             } else if (filePath.startsWith(chatRequest)) {
                 restFilePath = restFilePath.substring(chatRequest.length);
                 api = chatRequest;
+            } else if (filePath.startsWith(saveRequest)) {
+                if (!(method == 'POST' || method == 'PUT')) {
+                    return new Response('Unknown save action!', {status: 400})
+                }
+                restFilePath = restFilePath.substring(saveRequest.length);
+                api = saveRequest;
             } else {
                 if (event.request.referrer.length > 0) {
                     let fromUrl = new URL(event.request.referrer);

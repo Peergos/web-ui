@@ -10,6 +10,16 @@
                 :friendNames="friendnames"
                 :updateChat="updateChat">
         </AddToChat>
+        <AppPrompt
+            v-if="showPrompt"
+            @hide-prompt="closePrompt()"
+            :message='prompt_message'
+            :placeholder="prompt_placeholder"
+            :max_input_size="prompt_max_input_size"
+            :value="prompt_value"
+            :consumer_func="prompt_consumer_func"
+            :action="prompt_action"
+        />
             <div class="modal-header" style="padding:0;min-height: 52px;">
                 <center><h2>{{ getFullPathForDisplay() }}</h2></center>
               <span style="position:absolute;top:0;right:0.2em;">
@@ -27,6 +37,7 @@
 <script>
 
 const AddToChat = require("AddToChat.vue");
+const AppPrompt = require("../prompt/AppPrompt.vue");
 
 const downloaderMixins = require("../../mixins/downloader/index.js");
 const router = require("../../mixins/router/index.js");
@@ -36,7 +47,8 @@ const launcherMixin = require("../../mixins/launcher/index.js");
 module.exports = {
 	mixins:[downloaderMixins, router, sandboxMixin, launcherMixin],
     components: {
-        AddToChat
+        AddToChat,
+        AppPrompt
     },
     data: function() {
         return {
@@ -62,6 +74,7 @@ module.exports = {
             PERMISSION_EDIT_CHOSEN_FILE: 'EDIT_CHOSEN_FILE',
             PERMISSION_READ_CHOSEN_FOLDER: 'READ_CHOSEN_FOLDER',
             PERMISSION_EXCHANGE_MESSAGES_WITH_FRIENDS: 'EXCHANGE_MESSAGES_WITH_FRIENDS',
+            PERMISSION_SAVE_FILE: 'SAVE_FILE',
             PERMISSION_CSP_UNSAFE_EVAL: 'CSP_UNSAFE_EVAL',
             browserMode: false,
             fullPathForDisplay: '',
@@ -78,7 +91,14 @@ module.exports = {
             currentChatId: '',
             showInviteFriends: false,
             appDisplayName: '',
-            chatResponseHeader: null
+            chatResponseHeader: null,
+            showPrompt: false,
+            prompt_message: '',
+            prompt_placeholder: '',
+            prompt_max_input_size: null,
+            prompt_value: '',
+            prompt_consumer_func: () => {},
+            prompt_action: 'ok'
         }
     },
     computed: {
@@ -250,6 +270,10 @@ module.exports = {
             if (this.isAppPathAFolder) {
                 if (!this.permissionsMap.get(this.PERMISSION_READ_CHOSEN_FOLDER)) {
                     console.log('App configured as a FolderAction, but permission READ_CHOSEN_FOLDER not set!');
+                    return false;
+                }
+                if (this.permissionsMap.get(this.PERMISSION_SAVE_FILE)) {
+                    console.log('App configured as a FolderAction, but permission SAVE_FILE set!');
                     return false;
                 }
             }
@@ -458,6 +482,13 @@ module.exports = {
                     } else {
                         that.handleChatRequest(headerFunc(), path, apiMethod, data, hasFormData, params);
                     }
+                } else if (api =='/peergos-api/v0/save/') {
+                    if (!that.permissionsMap.get(that.PERMISSION_SAVE_FILE)) {
+                        that.showError("App attempted to save file without permission :" + path);
+                        that.buildResponse(headerFunc(), null, that.ACTION_FAILED);
+                    } else {
+                        that.handleSaveFileRequest(headerFunc, path, apiMethod, data, hasFormData, params);
+                    }
                 } else {
                     var bytes = convertToByteArray(new Int8Array(data));
                     if (apiMethod == 'GET') {
@@ -495,7 +526,7 @@ module.exports = {
                                         that.showError("App attempted to write to file without permission :" + path);
                                         that.buildResponse(headerFunc(), null, that.ACTION_FAILED);
                                     } else {
-                                        that.overwriteFile(headerFunc(), path, bytes);
+                                        that.overwriteFile(headerFunc(), path, bytes, that.targetFile, true);
                                     }
                                 } else {
                                     that.showError("App attempted unexpected action: " + apiMethod);
@@ -524,6 +555,67 @@ module.exports = {
                 console.log('Exception:' + ex);
                 that.buildResponse(headerFunc(), null, that.ACTION_FAILED);
             }
+        },
+        handleSaveFileRequest: function(headerFunc, path, apiMethod, data, hasFormData, params) {
+            let that = this;
+            if (that.appPath.length > 0) {
+                if (path.includes('/.')) {
+                    that.showError('Path not accessible: ' + path);
+                    that.buildResponse(headerFunc(), null, that.ACTION_FAILED);
+                    return
+                }
+                if (apiMethod == 'POST' || apiMethod == 'PUT') {
+                    let folderPath = that.appPath.substring(0, that.appPath.lastIndexOf('/') + 1);
+                    this.prompt_placeholder = 'Save File';
+                    this.prompt_message = 'Folder: ' + folderPath;
+                    this.prompt_value = '';
+                    this.prompt_consumer_func = function (prompt_result) {
+                        this.showPrompt = false;
+                        if (prompt_result === null) {
+                            that.buildResponse(headerFunc(), null, that.ACTION_FAILED);
+                            return;
+                        }
+                        let filename = prompt_result.trim();
+                        if (filename === '') {
+                            that.buildResponse(headerFunc(), null, that.ACTION_FAILED);
+                            return;
+                        }
+                        if (filename.startsWith('.')) {
+                            that.buildResponse(headerFunc(), null, that.ACTION_FAILED);
+                            return;
+                        }
+                        if (filename.includes('/') || filename.includes('\\')) {
+                            that.buildResponse(headerFunc(), null, that.ACTION_FAILED);
+                            return;
+                        }
+                        if (folderPath + filename  == that.appPath) {
+                            that.buildResponse(headerFunc(), null, that.ACTION_FAILED);
+                            return;
+                        }
+                        var bytes = convertToByteArray(new Int8Array(data));
+                        let fullPathToNewFile = folderPath + filename;
+                        that.findFile(fullPathToNewFile, false).thenApply(file => {
+                            if (file != null) {
+                                that.overwriteFile(headerFunc(), fullPathToNewFile, bytes, file, false);
+                            } else {
+                                let filePath = peergos.client.PathUtils.directoryToPath(fullPathToNewFile.split('/').filter(n => n.length > 0));
+                                that.writeNewFile(filePath, bytes).thenApply(res => {
+                                    that.buildResponse(headerFunc(), null, that.UPDATE_SUCCESS);
+                                });
+                            }
+                        });
+                    }.bind(this);
+                    this.showPrompt = true;
+                } else {
+                    that.showError("App attempted unexpected action: " + apiMethod);
+                    that.buildResponse(headerFunc(), null, that.ACTION_FAILED);
+                }
+            } else {
+                that.buildResponse(headerFunc(), null, that.ACTION_FAILED);
+            }
+        },
+        closePrompt() {
+            this.showPrompt = false;
         },
         validateRange: function(from, to) {
             if (from == null || to == null) {
@@ -831,9 +923,9 @@ module.exports = {
             }
             return false;
         },
-        overwriteFile: function(header, filePath, bytes) {
+        overwriteFile: function(header, filePath, bytes, fileToOverwrite, refreshTargetFile) {
             let that = this;
-            let props = that.targetFile.getFileProperties();
+            let props = fileToOverwrite.getFileProperties();
             if (props.isHidden) {
                 that.showError('Path not accessible: ' + filePath);
                 that.buildResponse(header, null, that.ACTION_FAILED);
@@ -843,9 +935,11 @@ module.exports = {
             } else {
                 let java_reader = peergos.shared.user.fs.AsyncReader.build(bytes);
                 let sizeHi = (bytes.length - (bytes.length % Math.pow(2, 32)))/Math.pow(2, 32);
-                that.targetFile.overwriteFileJS(java_reader, sizeHi, bytes.length, that.context.network, that.context.crypto, len => {})
+                fileToOverwrite.overwriteFileJS(java_reader, sizeHi, bytes.length, that.context.network, that.context.crypto, len => {})
                 .thenApply(function(updatedFile) {
-                    that.targetFile = updatedFile;
+                    if (refreshTargetFile) {
+                        that.targetFile = updatedFile;
+                    }
                     that.$emit("refresh");
                     that.buildResponse(header, null, that.UPDATE_SUCCESS);
                 }).exceptionally(function(throwable) {
@@ -955,6 +1049,19 @@ module.exports = {
                         0, data.length, that.context.network, that.context.crypto, x => {})
                             .thenApply(fw => future.complete(true))
                     ));
+            return future;
+        },
+        writeNewFile: function(path, data) {
+            let that = this;
+            let future = peergos.shared.util.Futures.incomplete();
+            let pathNameCount = peergos.client.PathUtils.getNameCount(path);
+            let pathWithoutFilename = peergos.client.PathUtils.subpath(path, 0, pathNameCount -1);
+            this.context.getByPath(pathWithoutFilename.toString()).thenApply(dirOpt =>
+                dirOpt.get().uploadOrReplaceFile(peergos.client.PathUtils.getFileName(path).toString(),
+                        new peergos.shared.user.fs.AsyncReader.build(data),
+                        0, data.length, that.context.network, that.context.crypto, x => {})
+                            .thenApply(fw => future.complete(true))
+            );
             return future;
         },
         patchAction: function(header, filePath, bytes) {
