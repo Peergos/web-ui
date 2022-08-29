@@ -277,6 +277,10 @@ module.exports = {
                     return false;
                 }
             }
+            if (props.launchable && this.permissionsMap.get(this.PERMISSION_SAVE_FILE)) {
+                console.log('App configured as Launchable, but permission SAVE_FILE set!');
+                return false;
+            }
             return true;
         },
     	giveUp: function() {
