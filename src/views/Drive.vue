@@ -1331,8 +1331,8 @@ module.exports = {
             this.confirm_body='Folder(s): ' + statistics.folderCount
                     + ', File(s): ' + statistics.fileCount
                     + ', Total size: ' + helpers.convertBytesToHumanReadable(statistics.actualSize);
-            this.confirm_consumer_cancel_func = continueFunction;
-            this.confirm_consumer_func = cancelFunction;
+            this.confirm_consumer_cancel_func = cancelFunction;
+            this.confirm_consumer_func = continueFunction;
             this.showConfirm = true;
         },
 		collectFilesToZip(prefix, file, path, accumulator, future) {
