@@ -1445,8 +1445,37 @@ module.exports = {
             }
             this.processFileUpload(accumulatedFiles);
         },
-		processFileUpload(files) {
-            files.sort(function(a, b){return a.size-b.size});
+        sortFilesByDirectory(files, directoryPath) {
+            let that = this;
+            let uploadPaths = [];
+            let uploadFileLists = [];
+            for(var j = 0; j < files.length; j++) {
+                var foundDirectoryIndex = -1;
+                let file = files[j];
+                let uploadDirectoryPath = file.directory.length == 0 ? directoryPath
+                    : directoryPath.substring(0, directoryPath.length -1) + file.directory;
+                for(var i = 0 ; i < uploadPaths.length; i++) {
+                    if (uploadDirectoryPath == uploadPaths[i]) {
+                        foundDirectoryIndex = i;
+                        break;
+                    }
+                }
+                if (foundDirectoryIndex == -1) {
+                    uploadPaths.push(uploadDirectoryPath);
+                    uploadFileLists.push([]);
+                    foundDirectoryIndex = uploadPaths.length -1;
+                }
+                let fileUploadList = uploadFileLists[foundDirectoryIndex];
+                fileUploadList.push(file);
+            }
+            let combinedSortedFileList = [];
+            for(var i = 0 ; i < uploadPaths.length; i++) {
+                uploadFileLists[i].sort(function(a, b){return a.size-b.size});
+                combinedSortedFileList = combinedSortedFileList.concat(uploadFileLists[i]);
+            }
+            return combinedSortedFileList;
+        },
+	processFileUpload(files) {
             let that = this;
             if (this.isSecretLink && !this.currentDir.isWritable()) {
                 return;
@@ -1469,13 +1498,14 @@ module.exports = {
                     document.getElementById('uploadFileInput').value = "";
                     document.getElementById('uploadDirectoriesInput').value = "";
                     let progressBars = [];
-                    for(var i=0; i < files.length; i++) {
-                        var resultingSize = files[i].size;
+        		    let sortedFiles = this.sortFilesByDirectory(files, this.getPath);
+                    for(var i=0; i < sortedFiles.length; i++) {
+                        var resultingSize = sortedFiles[i].size;
                         var progress = {
-                            title:"Encrypting and uploading " + files[i].name,
+                            title:"Encrypting and uploading " + sortedFiles[i].name,
                             done:0,
                             max:resultingSize,
-                            name: files[i].name
+                            name: sortedFiles[i].name
                         };
                         that.$toast({component: ProgressBar,props:  progress} , { icon: false , timeout:false, id: files[i].name})
                         progressBars.push(progress);
@@ -1494,7 +1524,7 @@ module.exports = {
                         fileWrapper: null,
                         path: ''
                     };
-                    that.reduceAllUploads(0, files, prepareFuture, uploadParams, progressBars, previousDirectoryHolder);
+                    that.reduceAllUploads(0, sortedFiles, prepareFuture, uploadParams, progressBars, previousDirectoryHolder);
                     prepareFuture.thenApply(preparationDone => {
                         that.bulkUpload(uploadParams).thenApply(res => {
                             console.log("upload complete");
