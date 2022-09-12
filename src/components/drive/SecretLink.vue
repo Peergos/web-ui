@@ -88,12 +88,13 @@
                 var type;
                 this.links.forEach(link => {
                     let href = that.buildHref(link, true);
-                    body += "<a href='"+href+"'>" + link.name + "</a><br/>"
+                    body += link.name + ": " + href + "\n";
                     if (link.isFile)
                         type = "file";
                     else
                         type = "folder";
                 });
+                body = "Click on the following link to view the " + type + "\n\n" + body;
                 var subject = this.username + " shared a "+type+" with you!";
                 var link = document.getElementById('downloadAnchor')
                 link.href = "mailto:?body="+encodeURIComponent(body)+"&subject="+encodeURIComponent(subject);
