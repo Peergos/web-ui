@@ -142,11 +142,12 @@
 						</AppButton>
 					</div>
 
-					<modal
-						v-if="showModal"
-						v-on:hide-modal="showModal = false"
-						:title="modalTitle"
-						:links="modalLinks"
+					<SecretLink
+					    v-if="showModal"
+					    v-on:hide-modal="showModal = false"
+					    :title="modalTitle"
+					    :links="modalLinks"
+                                            :username="this.context.username"
 					/>
 				</div>
 			</div>
@@ -156,11 +157,12 @@
 
 <script>
 const FormAutocomplete = require("../form/FormAutocomplete.vue");
-
+const SecretLink = require("SecretLink.vue");
 
 module.exports = {
 	components: {
-		FormAutocomplete,
+	    FormAutocomplete,
+            SecretLink,
 	},
 	data() {
 		return {
