@@ -160,10 +160,10 @@ module.exports = {
 	    } else if (that.password == '') {
 		this.$toast.error('Please generate your password',{id:'signup'})
             } else {
-                let usernameRegEx = /^[a-z0-9](?:[a-z0-9]|[_-](?=[a-z0-9])){0,31}$/;
+                let usernameRegEx = /^[a-z0-9](?:[a-z0-9]|[-](?=[a-z0-9])){0,31}$/;
 
 		if(!usernameRegEx.test(that.username)) {
-		    that.$toast.error('Invalid username. Usernames must consist of between 1 and 32 characters, containing only digits, lowercase letters, underscore and hyphen. They also cannot have two consecutive hyphens or underscores, or start or end with a hyphen or underscore.',{id:'signup',timeout:false})
+		    that.$toast.error('Invalid username. Usernames must consist of between 1 and 32 characters, containing only digits, lowercase letters and hyphen. They also cannot have two consecutive hyphens, or start or end with a hyphen.',{id:'signup',timeout:false})
                 } else if (BannedUsernames.includes(that.username)) {
 		    that.$toast.error(`Banned username: ${that.username}`,{id:'signup', timeout:false})
                 } else {
