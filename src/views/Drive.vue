@@ -1275,7 +1275,17 @@ module.exports = {
                 that.folder_properties = statistics;
             });
         },
-		zipAndDownload() {
+	showToastError: function(message) {
+            this.$toast.error(message, {timeout:false});
+        },
+	zipAndDownload() {
+            if (this.isStreamingAvailable) {
+                this.zipAndDownloadFolder();
+            } else {
+                this.showToastError("Download as Zip only supported where Streaming available (like Chrome)");
+            }
+        },
+	zipAndDownloadFolder() {
             if (this.selectedFiles.length != 1)
                 return;
             this.closeMenu();
