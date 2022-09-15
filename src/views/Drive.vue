@@ -1282,7 +1282,7 @@ module.exports = {
             if (this.isStreamingAvailable) {
                 this.zipAndDownloadFolder();
             } else {
-                this.showToastError("Download as Zip only supported where Streaming available (like Chrome)");
+                this.showToastError("Download as Zip only available where Streaming supported (like Chrome)");
             }
         },
 	zipAndDownloadFolder() {
