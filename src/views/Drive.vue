@@ -601,8 +601,6 @@ module.exports = {
                 if (!(this.path.length > 0)) {
                     return false;
                 }
-                if (!this.isStreamingAvailable)
-                    return false;
 				if (this.currentDir == null)
 					return false;
 				if (this.selectedFiles.length != 1)
@@ -1275,7 +1273,17 @@ module.exports = {
                 that.folder_properties = statistics;
             });
         },
-		zipAndDownload() {
+	showToastError: function(message) {
+            this.$toast.error(message, {timeout:false});
+        },
+	zipAndDownload() {
+            if (this.isStreamingAvailable) {
+                this.zipAndDownloadFolder();
+            } else {
+                this.showToastError("Download as Zip only available where Streaming supported (like Chrome)");
+            }
+        },
+	zipAndDownloadFolder() {
             if (this.selectedFiles.length != 1)
                 return;
             this.closeMenu();
