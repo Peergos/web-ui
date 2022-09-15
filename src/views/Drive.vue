@@ -601,8 +601,6 @@ module.exports = {
                 if (!(this.path.length > 0)) {
                     return false;
                 }
-                if (!this.isStreamingAvailable)
-                    return false;
 				if (this.currentDir == null)
 					return false;
 				if (this.selectedFiles.length != 1)
