@@ -335,6 +335,21 @@ function generateCrypto_box_keypair(publicKey, secretKey) {
     return publicKey;
 }
 
+if (window.crypto.subtle == null) { // polyfill webcrypto if it is absent
+    console.log("Using webcrypto polyfill.");
+    window.crypto.subtle = {
+        digest: function(props, data) {
+            return new Promise(function(resolve, reject) {
+                if (props.name != "SHA-256") {
+                    reject(Error("Unknown hash function: " + props.name));
+                    return;
+                }
+                resolve(sha256(data));
+            });
+        }
+    }
+}
+
 var tryProofOfWork = function(counter, difficulty, combined, future) {
     // Put the counter into the first 8 bytes little endian (JS can't reach 8th byte)
     combined[0] = counter;
