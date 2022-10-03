@@ -71,7 +71,7 @@
   </target>
 
   <target name="css_vendor" description="concat the vendor CSS">
-    <concat destfile="${ui}/css/vendor.css">
+    <concat destfile="${ui}/css/vendor.css" encoding="utf8">
       <fileset dir="${vendor}/priors" includes="*.css"/>
       <fileset dir="${vendor}/min" includes="*.css"/>
       <fileset dir="${vendor}/common" includes="*.css"/>
