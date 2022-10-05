@@ -47,27 +47,19 @@
   </target>
 
   <target name="js_vendor_dev" description="concat (don't minify) the vendor JS for development">
-    <concat destfile="${ui}/js/vendor.js">
+    <concat destfile="${ui}/js/vendor.js" encoding="utf8">
       <fileset dir="${vendor}/priors" includes="*.js"/>
       <fileset dir="${vendor}/dev" includes="*.js"/>
       <fileset dir="${vendor}/common" includes="*.js"/>
     </concat>
   </target>
 
-  <target name="js_vendor_prod" description="concat and minify the vendor JS for production">
-    <concat destfile="tmp.js">
+  <target name="js_vendor_prod" description="concat the vendor JS for production">
+    <concat destfile="${ui}/js/vendor.js" encoding="utf8">
       <fileset dir="${vendor}/priors" includes="*.js"/>
       <fileset dir="${vendor}/min" includes="*.js"/>
       <fileset dir="${vendor}/common" includes="*.js"/>
     </concat>
-    <exec executable="java" dir="." failonerror="true">
-      <arg value="-jar"/>
-      <arg value="yuicompressor-2.4.8.jar"/>
-      <arg value="-o"/>
-      <arg value="${ui}/js/vendor.js"/>
-      <arg value="tmp.js"/>
-    </exec>
-    <delete file="tmp.js"/>
   </target>
 
   <target name="css_vendor" description="concat the vendor CSS">
@@ -78,18 +70,10 @@
     </concat>
   </target>
 
-  <target name="css" description="concat and minify the CSS">
-    <concat destfile="tmp.css">
+  <target name="css" description="concat the CSS">
+    <concat destfile="${ui}/css/peergos.css" encoding="utf8">
       <fileset dir="${ui_src}/" includes="*.css"/>
     </concat>
-    <exec executable="java" dir="." failonerror="true">
-      <arg value="-jar"/>
-      <arg value="yuicompressor-2.4.8.jar"/>
-      <arg value="-o"/>
-      <arg value="${ui}/css/peergos.css"/>
-      <arg value="tmp.css"/>
-    </exec>
-    <delete file="tmp.css"/>
   </target>
 
   <target name="ui_dev_vendor" depends="assets,js_vendor_dev,css_vendor" description="build the ui vendor dependencies in development mode">
@@ -110,7 +94,7 @@
       <arg value="-css-out"/>
       <arg value="tmp.css"/>
     </exec>
-    <concat destfile="peergos.css">
+    <concat destfile="peergos.css" encoding="utf8">
       <fileset dir="${ui}/css/" includes="peergos.css"/>
       <fileset dir="." includes="tmp.css"/>
     </concat>
@@ -134,7 +118,7 @@
       <arg value="-css-out"/>
       <arg value="tmp.css"/>
     </exec>
-    <concat destfile="peergos.css">
+    <concat destfile="peergos.css" encoding="utf8">
       <fileset dir="${ui}/css/" includes="peergos.css"/>
       <fileset dir="." includes="tmp.css"/>
     </concat>
