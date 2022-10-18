@@ -26,10 +26,10 @@ function getProm(url) {
     return getWithHeadersProm(url, []);
 }
 function getWithHeadersProm(url, headers) {
-    return this.isDirectS3 ? getWithHeadersPromViaProxy(url, headers) : getWithHeadersPromDirect(url, headers);
+    return this.isDirectS3 ? getWithHeadersPromViaProxy(this.proxy, url, headers) : getWithHeadersPromDirect(url, headers);
 }
 
-function getWithHeadersPromViaProxy(url, headers) {
+function getWithHeadersPromViaProxy(proxy, url, headers) {
     let future = peergos.shared.util.Futures.incomplete();
     let reqHeaders = new Map();
 
@@ -40,7 +40,7 @@ function getWithHeadersPromViaProxy(url, headers) {
         if (name != "Host" && name != "Content-Length")
             reqHeaders.set(name, value);
     }
-    this.proxy.fetch(url, { method: 'GET', headers: reqHeaders })
+    proxy.fetch(url, { method: 'GET', headers: reqHeaders })
     	.then(function(response) {
       		if (response.status === 200) {
       		    response.arrayBuffer().then(function(arrayBuf) {
@@ -95,7 +95,7 @@ function getWithHeadersPromDirect(url, headers) {
 }
 
 function postProm(url, data, timeout) {
-    return this.isDirectS3 ? postPromViaProxy(url, data, timeout) : postPromDirect(url, data, timeout);
+    return this.isDirectS3 ? postPromViaProxy(proxy, url, data, timeout) : postPromDirect(url, data, timeout);
 }
 //https://dmitripavlutin.com/timeout-fetch-request/
 async function fetchWithTimeout(proxy, resource, options = {}) {
@@ -111,9 +111,9 @@ async function fetchWithTimeout(proxy, resource, options = {}) {
   return response;
 }
 
-function postPromViaProxy(url, data, timeout) {
+function postPromViaProxy(proxy, url, data, timeout) {
     let future = peergos.shared.util.Futures.incomplete();
-    fetchWithTimeout(this.proxy, url, {timeout: timeout, method: 'POST', body: data}).then(function(response) {
+    fetchWithTimeout(proxy, url, {timeout: timeout, method: 'POST', body: data}).then(function(response) {
         if (response.status === 200) {
             response.arrayBuffer().then(function(arrayBuf) {
                 future.complete(convertToByteArray(new Int8Array(arrayBuf)));
@@ -198,17 +198,17 @@ function postPromDirect(url, data, timeout) {
 }
 
 function postMultipartProm(url, dataArrays) {
-    return this.isDirectS3 ? postMultipartPromViaProxy(url, dataArrays) : postMultipartPromDirect(url, dataArrays);
+    return this.isDirectS3 ? postMultipartPromViaProxy(this.proxy, url, dataArrays) : postMultipartPromDirect(url, dataArrays);
 }
 
-function postMultipartPromViaProxy(url, dataArrays) {
+function postMultipartPromViaProxy(proxy, url, dataArrays) {
     let future = peergos.shared.util.Futures.incomplete();
 
 	var form = new FormData();
 	for (var i=0; i < dataArrays.array.length; i++)
 	    form.append(i, new Blob([dataArrays.array[i]]));
 
-    fetchWithTimeout(this.proxy, url, {method: 'POST', body: form}).then(function(response) {
+    fetchWithTimeout(proxy, url, {method: 'POST', body: form}).then(function(response) {
         if (response.status === 200) {
             response.arrayBuffer().then(function(arrayBuf) {
                 future.complete(convertToByteArray(new Int8Array(arrayBuf)));
@@ -294,10 +294,10 @@ function postMultipartPromDirect(url, dataArrays) {
 }
 
 function putProm(url, data, headers) {
-    return this.isDirectS3 ? putPromViaProxy(url, data, headers) : putPromDirect(url, data, headers);
+    return this.isDirectS3 ? putPromViaProxy(this.proxy, url, data, headers) : putPromDirect(url, data, headers);
 }
 
-function putPromViaProxy(url, data, headers) {
+function putPromViaProxy(proxy, url, data, headers) {
     let future = peergos.shared.util.Futures.incomplete();
     let reqHeaders = new Map();
 
@@ -308,7 +308,7 @@ function putPromViaProxy(url, data, headers) {
         if (name != "Host" && name != "Content-Length")
             reqHeaders.set(name, value);
     }
-    this.proxy.fetch(url, { method: 'PUT', headers: reqHeaders })
+    proxy.fetch(url, { method: 'PUT', headers: reqHeaders })
     	.then(function(response) {
       		if (response.status === 200) {
                 response.arrayBuffer().then(function(arrayBuf) {
