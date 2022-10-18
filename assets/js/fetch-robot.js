@@ -816,7 +816,7 @@
                 });
             }
             function onWindowReady(win) {
-                var timeout = arguments.length > 1 && void 0 !== arguments[1] ? arguments[1] : 5e3, name = arguments.length > 2 && void 0 !== arguments[2] ? arguments[2] : "Window", promise = global.readyPromises.get(win);
+                var timeout = arguments.length > 1 && void 0 !== arguments[1] ? arguments[1] : 5e4, name = arguments.length > 2 && void 0 !== arguments[2] ? arguments[2] : "Window", promise = global.readyPromises.get(win);
                 if (promise) return promise;
                 promise = new promise_ZalgoPromise();
                 global.readyPromises.set(win, promise);
