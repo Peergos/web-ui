@@ -381,7 +381,7 @@ var http = {
         this.init = function init(directS3) {
             this.isDirectS3 = directS3;
             if (directS3) {
-                this.proxy = fetchRobot.connect({ url: 'http://peergos-test.us-east-1.linodeobjects.com/fetch-robot-proxy.html' });
+                this.proxy = fetchRobot.connect({ url: 'https://peergos-test.us-east-1.linodeobjects.com/fetch-robot-proxy.html' });
             }
         }
         this.get = getProm;
