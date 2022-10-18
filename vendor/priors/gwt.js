@@ -40,12 +40,12 @@ function getWithHeadersPromViaProxy(url, headers) {
         if (name != "Host" && name != "Content-Length")
             reqHeaders.set(name, value);
     }
-
     this.proxy.fetch(url, { method: 'GET', headers: reqHeaders })
     	.then(function(response) {
       		if (response.status === 200) {
-      		    let arrayBuf = await response.arrayBuffer();
-                future.complete(convertToByteArray(new Int8Array(arrayBuf)));
+      		    response.arrayBuffer().then(function(arrayBuf) {
+                    future.complete(convertToByteArray(new Int8Array(arrayBuf)));
+                });
             } else if (response.status == 404) {
                 future.completeExceptionally(new peergos.shared.storage.HttpFileNotFoundException());
             } else if (response.status == 429) {
@@ -113,36 +113,34 @@ async function fetchWithTimeout(proxy, resource, options = {}) {
 
 function postPromViaProxy(url, data, timeout) {
     let future = peergos.shared.util.Futures.incomplete();
-  try {
-    const response = await fetchWithTimeout(this.proxy, url, {
-      timeout: timeout, method: 'POST', body: data
-    });
-    if (response.status === 200) {
-        let arrayBuf = await response.arrayBuffer();
-        future.complete(convertToByteArray(new Int8Array(arrayBuf)));
-    } else {
-        try {
-            let trailer = req.getResponseHeader("Trailer");
-            if (trailer == null) {
-                future.completeExceptionally(java.lang.Throwable.of('Unexpected error from server'));
-            } else {
-                if (trailer.startsWith('Storage+quota+reached')) {
-                    future.completeExceptionally(new peergos.shared.storage.StorageQuotaExceededException(trailer));
+    fetchWithTimeout(this.proxy, url, {timeout: timeout, method: 'POST', body: data}).then(function(response) {
+        if (response.status === 200) {
+            response.arrayBuffer().then(function(arrayBuf) {
+                future.complete(convertToByteArray(new Int8Array(arrayBuf)));
+            });
+        } else {
+            try {
+                let trailer = req.getResponseHeader("Trailer");
+                if (trailer == null) {
+                    future.completeExceptionally(java.lang.Throwable.of('Unexpected error from server'));
                 } else {
-                    future.completeExceptionally(java.lang.Throwable.of(trailer));
+                    if (trailer.startsWith('Storage+quota+reached')) {
+                        future.completeExceptionally(new peergos.shared.storage.StorageQuotaExceededException(trailer));
+                    } else {
+                        future.completeExceptionally(java.lang.Throwable.of(trailer));
+                    }
                 }
+            } catch (e) {
+                future.completeExceptionally(java.lang.Throwable.of(e));
             }
-        } catch (e) {
-            future.completeExceptionally(java.lang.Throwable.of(e));
         }
-    }
-  } catch (err) {
+    }).catch(function(err) {
         if (err.name === 'AbortError') {
             future.completeExceptionally(java.lang.Throwable.of(Error("Network timeout")));
         } else {
     	    future.completeExceptionally(java.lang.Throwable.of(Error("Network Error")));
     	}
-  }
+    });
     return future;
 }
 
@@ -205,41 +203,40 @@ function postMultipartProm(url, dataArrays) {
 
 function postMultipartPromViaProxy(url, dataArrays) {
     let future = peergos.shared.util.Futures.incomplete();
-  try {
+
 	var form = new FormData();
 	for (var i=0; i < dataArrays.array.length; i++)
 	    form.append(i, new Blob([dataArrays.array[i]]));
 
-    const response = await fetchWithTimeout(this.proxy, url, {
-      timeout: timeout, method: 'POST', body: form
-    });
-    if (response.status === 200) {
-        let arrayBuf = await response.arrayBuffer();
-        future.complete(convertToByteArray(new Int8Array(arrayBuf)));
-    } else {
-        try {
-            let trailer = req.getResponseHeader("Trailer");
-            if (trailer == null) {
-                future.completeExceptionally(java.lang.Throwable.of('Unexpected error from server'));
-            } else {
-                if (trailer.startsWith('Storage+quota+reached')) {
-                    future.completeExceptionally(new peergos.shared.storage.StorageQuotaExceededException(trailer));
+    fetchWithTimeout(this.proxy, url, {method: 'POST', body: form}).then(function(response) {
+        if (response.status === 200) {
+            response.arrayBuffer().then(function(arrayBuf) {
+                future.complete(convertToByteArray(new Int8Array(arrayBuf)));
+            });
+        } else {
+            try {
+                let trailer = req.getResponseHeader("Trailer");
+                if (trailer == null) {
+                    future.completeExceptionally(java.lang.Throwable.of('Unexpected error from server'));
                 } else {
-                    future.completeExceptionally(java.lang.Throwable.of(trailer));
+                    if (trailer.startsWith('Storage+quota+reached')) {
+                        future.completeExceptionally(new peergos.shared.storage.StorageQuotaExceededException(trailer));
+                    } else {
+                        future.completeExceptionally(java.lang.Throwable.of(trailer));
+                    }
                 }
+            } catch (e) {
+                future.completeExceptionally(java.lang.Throwable.of(e));
             }
-        } catch (e) {
-            future.completeExceptionally(java.lang.Throwable.of(e));
         }
-    }
-  } catch (err) {
-	    console.log(err);
+    }).catch(function(err) {
+        console.log(err);
         if (err.name === 'AbortError') {
             future.completeExceptionally(java.lang.Throwable.of(Error("Network timeout")));
         } else {
-    	    future.completeExceptionally(java.lang.Throwable.of(Error("Network Error")));
-    	}
-  }
+            future.completeExceptionally(java.lang.Throwable.of(Error("Network Error")));
+        }
+    });
     return future;
 }
 
@@ -314,8 +311,9 @@ function putPromViaProxy(url, data, headers) {
     this.proxy.fetch(url, { method: 'PUT', headers: reqHeaders })
     	.then(function(response) {
       		if (response.status === 200) {
-      		    let arrayBuf = await response.arrayBuffer();
-                future.complete(convertToByteArray(new Int8Array(arrayBuf)));
+                response.arrayBuffer().then(function(arrayBuf) {
+                    future.complete(convertToByteArray(new Int8Array(arrayBuf)));
+                });
             } else {
                 future.completeExceptionally(java.lang.Throwable.of("HTTP " + response.status));
             }
