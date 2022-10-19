@@ -25,20 +25,17 @@ function fragmentToProps(fragment) {
 function getProm(url) {
     return getWithHeadersProm(url, []);
 }
-function getWithHeadersProm(url, headers) {
-    if (this.isDirectS3 && this.isRobotReady) {
-        let plainArray = [];
-        var index = 0;
-        while (index < headers.length){
-    	    var name = headers[index++];
-    	    plainArray.push(name);
-        	var value = headers[index++];
-    	    plainArray.push(value);
-        }
-        return this.sendRequest({type: 'getWithHeadersProm', url: url, headers: plainArray});
-    } else {
-        return getWithHeadersPromDirect(url, headers);
+function cloneHeaders(headers) {
+    var index = 0;
+    let plainArray = [];
+    while (index < headers.length){
+        plainArray.push(headers[index++]);
     }
+    return plainArray;
+}
+function getWithHeadersProm(url, headers) {
+    return this.isDirectS3 && this.isRobotReady ? this.sendRequest({type: 'getWithHeadersProm', url: url, headers: cloneHeaders(headers)})
+        : getWithHeadersPromDirect(url, headers);
 }
 
 function getWithHeadersPromDirect(url, headers) {
@@ -188,19 +185,8 @@ function postMultipartProm(url, dataArrays) {
 }
 
 function putProm(url, data, headers) {
-    if (this.isDirectS3 && this.isRobotReady) {
-        let plainArray = [];
-        var index = 0;
-        while (index < headers.length){
-            var name = headers[index++];
-            plainArray.push(name);
-            var value = headers[index++];
-            plainArray.push(value);
-        }
-        return this.sendRequest({type: 'putProm', url: url, data: data, headers: plainArray})
-    } else {
-        return putPromDirect(url, data, headers);
-    }
+    return this.isDirectS3 && this.isRobotReady ? this.sendRequest({type: 'putProm', url: url, data: data, headers: cloneHeaders(headers)})
+        : putPromDirect(url, data, headers);
 }
 
 function putPromDirect(url, data, headers) {
@@ -298,10 +284,10 @@ var http = {
                                     if (e.data.errMsg.startsWith('Storage+quota+reached')) {
                                         future.completeExceptionally(new peergos.shared.storage.StorageQuotaExceededException(e.data.errMsg));
                                     } else {
-                                        that.handleError(e.data.wrapInError, e.data.errMsg);
+                                        that.handleError(future, e.data.wrapInError, e.data.errMsg);
                                     }
                                 } else if (e.data.action == 'putProm') {
-                                    that.handleError(e.data.wrapInError, e.data.errMsg);
+                                    that.handleError(future, e.data.wrapInError, e.data.errMsg);
                                 }
                             }
                         }
