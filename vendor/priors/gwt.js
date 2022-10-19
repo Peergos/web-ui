@@ -26,8 +26,21 @@ function getProm(url) {
     return getWithHeadersProm(url, []);
 }
 function getWithHeadersProm(url, headers) {
-    return this.isDirectS3 && this.isRobotReady ? this.sendRequest({type: 'getWithHeadersProm', url: url, headers: headers})
-        : getWithHeadersPromDirect(url, headers);
+    //return this.isDirectS3 && this.isRobotReady ? this.sendRequest({type: 'getWithHeadersProm', url: url, headers: headers})
+    //    : getWithHeadersPromDirect(url, headers);
+    if (this.isDirectS3 && this.isRobotReady) {
+        let plainArray = [];
+        var index = 0;
+        while (index < headers.length){
+    	    var name = headers[index++];
+    	    plainArray.push(name);
+        	var value = headers[index++];
+    	    plainArray.push(value);
+        }
+        return this.sendRequest({type: 'getWithHeadersProm', url: url, headers: plainArray});
+    } else {
+        return getWithHeadersPromDirect(url, headers);
+    }
 }
 
 function getWithHeadersPromDirect(url, headers) {
