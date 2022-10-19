@@ -26,37 +26,8 @@ function getProm(url) {
     return getWithHeadersProm(url, []);
 }
 function getWithHeadersProm(url, headers) {
-    return this.isDirectS3 ? getWithHeadersPromViaProxy(this.proxy, url, headers) : getWithHeadersPromDirect(url, headers);
-}
-
-function getWithHeadersPromViaProxy(proxy, url, headers) {
-    let future = peergos.shared.util.Futures.incomplete();
-    let reqHeaders = new Map();
-
-    var index = 0;
-    while (index < headers.length){
-        var name = headers[index++];
-        var value = headers[index++];
-        if (name != "Host" && name != "Content-Length")
-            reqHeaders.set(name, value);
-    }
-    proxy.fetch(url, { method: 'GET', headers: reqHeaders })
-    	.then(function(response) {
-      		if (response.status === 200) {
-      		    response.arrayBuffer().then(function(arrayBuf) {
-                    future.complete(convertToByteArray(new Int8Array(arrayBuf)));
-                });
-            } else if (response.status == 404) {
-                future.completeExceptionally(new peergos.shared.storage.HttpFileNotFoundException());
-            } else if (response.status == 429) {
-                future.completeExceptionally(new peergos.shared.storage.RateLimitException());
-            } else {
-                future.completeExceptionally(java.lang.Throwable.of(Error(req.getResponseHeader("Trailer"))));
-            }
-        }).catch(e => {
-            future.completeExceptionally(java.lang.Throwable.of(Error("Network Error")));
-        });
-    return future;
+    return this.isDirectS3 && this.isRobotReady ? this.sendRequest({type: 'getWithHeadersProm', url: url, headers: headers})
+        : getWithHeadersPromDirect(url, headers);
 }
 
 function getWithHeadersPromDirect(url, headers) {
@@ -95,53 +66,8 @@ function getWithHeadersPromDirect(url, headers) {
 }
 
 function postProm(url, data, timeout) {
-    return this.isDirectS3 ? postPromViaProxy(proxy, url, data, timeout) : postPromDirect(url, data, timeout);
-}
-//https://dmitripavlutin.com/timeout-fetch-request/
-async function fetchWithTimeout(proxy, resource, options = {}) {
-  const { timeout = 8000 } = options;
-
-  const controller = new AbortController();
-  const id = setTimeout(() => controller.abort(), timeout);
-  const response = await proxy.fetch(resource, {
-    ...options,
-    signal: controller.signal
-  });
-  clearTimeout(id);
-  return response;
-}
-
-function postPromViaProxy(proxy, url, data, timeout) {
-    let future = peergos.shared.util.Futures.incomplete();
-    fetchWithTimeout(proxy, url, {timeout: timeout, method: 'POST', body: data}).then(function(response) {
-        if (response.status === 200) {
-            response.arrayBuffer().then(function(arrayBuf) {
-                future.complete(convertToByteArray(new Int8Array(arrayBuf)));
-            });
-        } else {
-            try {
-                let trailer = req.getResponseHeader("Trailer");
-                if (trailer == null) {
-                    future.completeExceptionally(java.lang.Throwable.of('Unexpected error from server'));
-                } else {
-                    if (trailer.startsWith('Storage+quota+reached')) {
-                        future.completeExceptionally(new peergos.shared.storage.StorageQuotaExceededException(trailer));
-                    } else {
-                        future.completeExceptionally(java.lang.Throwable.of(trailer));
-                    }
-                }
-            } catch (e) {
-                future.completeExceptionally(java.lang.Throwable.of(e));
-            }
-        }
-    }).catch(function(err) {
-        if (err.name === 'AbortError') {
-            future.completeExceptionally(java.lang.Throwable.of(Error("Network timeout")));
-        } else {
-    	    future.completeExceptionally(java.lang.Throwable.of(Error("Network Error")));
-    	}
-    });
-    return future;
+    return this.isDirectS3 && this.isRobotReady ? this.sendRequest({type: 'postProm', url: url, data: data, timeout: timeout})
+        : postPromDirect(url, data, timeout);
 }
 
 function postPromDirect(url, data, timeout) {
@@ -198,49 +124,6 @@ function postPromDirect(url, data, timeout) {
 }
 
 function postMultipartProm(url, dataArrays) {
-    return this.isDirectS3 ? postMultipartPromViaProxy(this.proxy, url, dataArrays) : postMultipartPromDirect(url, dataArrays);
-}
-
-function postMultipartPromViaProxy(proxy, url, dataArrays) {
-    let future = peergos.shared.util.Futures.incomplete();
-
-	var form = new FormData();
-	for (var i=0; i < dataArrays.array.length; i++)
-	    form.append(i, new Blob([dataArrays.array[i]]));
-
-    fetchWithTimeout(proxy, url, {method: 'POST', body: form}).then(function(response) {
-        if (response.status === 200) {
-            response.arrayBuffer().then(function(arrayBuf) {
-                future.complete(convertToByteArray(new Int8Array(arrayBuf)));
-            });
-        } else {
-            try {
-                let trailer = req.getResponseHeader("Trailer");
-                if (trailer == null) {
-                    future.completeExceptionally(java.lang.Throwable.of('Unexpected error from server'));
-                } else {
-                    if (trailer.startsWith('Storage+quota+reached')) {
-                        future.completeExceptionally(new peergos.shared.storage.StorageQuotaExceededException(trailer));
-                    } else {
-                        future.completeExceptionally(java.lang.Throwable.of(trailer));
-                    }
-                }
-            } catch (e) {
-                future.completeExceptionally(java.lang.Throwable.of(e));
-            }
-        }
-    }).catch(function(err) {
-        console.log(err);
-        if (err.name === 'AbortError') {
-            future.completeExceptionally(java.lang.Throwable.of(Error("Network timeout")));
-        } else {
-            future.completeExceptionally(java.lang.Throwable.of(Error("Network Error")));
-        }
-    });
-    return future;
-}
-
-function postMultipartPromDirect(url, dataArrays) {
     var future = peergos.shared.util.Futures.incomplete();
     new Promise(function(resolve, reject) {
 	var req = new XMLHttpRequest();
@@ -294,33 +177,8 @@ function postMultipartPromDirect(url, dataArrays) {
 }
 
 function putProm(url, data, headers) {
-    return this.isDirectS3 ? putPromViaProxy(this.proxy, url, data, headers) : putPromDirect(url, data, headers);
-}
-
-function putPromViaProxy(proxy, url, data, headers) {
-    let future = peergos.shared.util.Futures.incomplete();
-    let reqHeaders = new Map();
-
-    var index = 0;
-    while (index < headers.length){
-        var name = headers[index++];
-        var value = headers[index++];
-        if (name != "Host" && name != "Content-Length")
-            reqHeaders.set(name, value);
-    }
-    proxy.fetch(url, { method: 'PUT', headers: reqHeaders })
-    	.then(function(response) {
-      		if (response.status === 200) {
-                response.arrayBuffer().then(function(arrayBuf) {
-                    future.complete(convertToByteArray(new Int8Array(arrayBuf)));
-                });
-            } else {
-                future.completeExceptionally(java.lang.Throwable.of("HTTP " + response.status));
-            }
-        }).catch(e => {
-            future.completeExceptionally(java.lang.Throwable.of(Error("Network Error")));
-        });
-    return future;
+    return this.isDirectS3 && this.isRobotReady ? this.sendRequest({type: 'putProm', url: url, data: data, headers: headers})
+        : putPromDirect(url, data, headers);
 }
 
 function putPromDirect(url, data, headers) {
@@ -377,13 +235,96 @@ var callback = {
 var http = {
     NativeJSHttp: function() {
         this.isDirectS3 = false;
-        this.proxy = null;
+        this.robotIframeId = 'robot-proxy';
+        this.isRobotInitialised= false;
+        this.isRobotReady= false;
+        this.currentRequests = new Map();
         this.init = function init(directS3) {
             this.isDirectS3 = directS3;
-            if (directS3) {
-                this.proxy = fetchRobot.connect({ url: 'https://peergos-test.us-east-1.linodeobjects.com/fetch-robot-proxy.html' });
+            if (this.isDirectS3) {
+                this.startRobot('https://peergos-test.us-east-1.linodeobjects.com/robot-proxy.html');
+                //this.startRobot('robot-proxy.html');
+            }
+        };
+        this.startRobot = function(url) {
+            let that = this;
+            var iframe = document.createElement('iframe');
+            iframe.id = this.robotIframeId;
+            document.body.appendChild(iframe);
+            window.setTimeout(function(){
+                iframe.src = url;
+                window.addEventListener('message', function(e) {
+                    let win = iframe.contentWindow;
+                    if (win != null ) {
+                        if (e.source === iframe.contentWindow) {
+                            if (e.data.action == 'pong') {
+                                that.isRobotInitialised = true;
+                            } else {
+                                let future = that.currentRequests.get(e.data.id);
+                                that.currentRequests.delete(e.data.id);
+                                if (e.data.status == 200) {
+                                    future.complete(convertToByteArray(new Int8Array(e.data.response)));
+                                } else if (e.data.action == 'getWithHeadersProm') {
+                                    if (e.data.status == 404) {
+                                        future.completeExceptionally(new peergos.shared.storage.HttpFileNotFoundException());
+                                    } else if (e.data.status == 429) {
+                                        future.completeExceptionally(new peergos.shared.storage.RateLimitException());
+                                    } else {
+                                        future.completeExceptionally(java.lang.Throwable.of(Error(e.data.errMsg)));
+                                    }
+                                } else if (e.data.action == 'postProm') {
+                                    if (e.data.errMsg.startsWith('Storage+quota+reached')) {
+                                        future.completeExceptionally(new peergos.shared.storage.StorageQuotaExceededException(e.data.errMsg));
+                                    } else {
+                                        that.handleError(e.data.wrapInError, e.data.errMsg);
+                                    }
+                                } else if (e.data.action == 'putProm') {
+                                    that.handleError(e.data.wrapInError, e.data.errMsg);
+                                }
+                            }
+                        }
+                    }
+                });
+                that.isRobotReady = true;
+            });
+        };
+        this.handleError = function(future, wrapInError, errMsg) {
+            if (e.data.wrapInError) {
+                future.completeExceptionally(java.lang.Throwable.of(Error(e.data.errMsg)));
+            } else {
+                future.completeExceptionally(java.lang.Throwable.of(e.data.errMsg));
+            }
+        };
+        this.postMessage = function(obj) {
+            let iframe = document.getElementById(this.robotIframeId);
+            iframe.contentWindow.postMessage(obj, '*');
+        };
+        this.sendRobotMessage = function(func) {
+            if (this.isRobotInitialised) {
+                func();
+            } else {
+                let iframe = document.getElementById(this.robotIframeId);
+                iframe.contentWindow.postMessage({type: 'ping'}, '*');
+                let that = this;
+                window.setTimeout(function() {that.sendRobotMessage(func);}, 3000);
             }
         }
+        this.sendRequest = function(obj, fut) {
+            var that = this;
+            obj.id = this.generateUUID();
+            let future = peergos.shared.util.Futures.incomplete();
+            this.currentRequests.set(obj.id, future);
+            let func = function() {
+                that.postMessage(obj);
+            };
+            this.sendRobotMessage(func);
+            return future;
+        }
+        this.generateUUID = function() {
+          return ([1e7]+-1e3+-4e3+-8e3+-1e11).replace(/[018]/g, c =>
+            (c ^ crypto.getRandomValues(new Uint8Array(1))[0] & 15 >> c / 4).toString(16)
+          );
+        };
         this.get = getProm;
         this.getWithHeaders = getWithHeadersProm;
         this.post = postProm;
