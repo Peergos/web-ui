@@ -26,8 +26,6 @@ function getProm(url) {
     return getWithHeadersProm(url, []);
 }
 function getWithHeadersProm(url, headers) {
-    //return this.isDirectS3 && this.isRobotReady ? this.sendRequest({type: 'getWithHeadersProm', url: url, headers: headers})
-    //    : getWithHeadersPromDirect(url, headers);
     if (this.isDirectS3 && this.isRobotReady) {
         let plainArray = [];
         var index = 0;
@@ -190,8 +188,19 @@ function postMultipartProm(url, dataArrays) {
 }
 
 function putProm(url, data, headers) {
-    return this.isDirectS3 && this.isRobotReady ? this.sendRequest({type: 'putProm', url: url, data: data, headers: headers})
-        : putPromDirect(url, data, headers);
+    if (this.isDirectS3 && this.isRobotReady) {
+        let plainArray = [];
+        var index = 0;
+        while (index < headers.length){
+            var name = headers[index++];
+            plainArray.push(name);
+            var value = headers[index++];
+            plainArray.push(value);
+        }
+        return this.sendRequest({type: 'putProm', url: url, data: data, headers: plainArray})
+    } else {
+        return putPromDirect(url, data, headers);
+    }
 }
 
 function putPromDirect(url, data, headers) {
