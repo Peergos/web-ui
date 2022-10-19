@@ -228,6 +228,55 @@ var http = {
     }
 };
 
+var cache = {
+    NativeJSCache: function() {
+    this.cacheStore = createStoreIDBKV('data', 'keyval');
+    this.cacheEntrySizes = new Map();
+    this.init = function init(directS3) {
+        //const customStore3 = createStore('db3', 'keyval');
+        //const customStore4 = createStore('db4', 'keyval');
+        keysIDBKV(this.cacheStore).then((keys) => {
+            keys.forEach(key => this.cacheEntrySizes.set(key, 0));
+            console.log('Block Cache loaded. Items:' + keys.length);
+        });
+    };
+	this.put = putIntoCacheProm;
+	this.get = getFromCacheProm;
+	this.hasBlock = hasBlockInCache;
+	this.clear = clearCache;
+    }
+};
+//public native CompletableFuture<Boolean> put(Cid hash, byte[] data);
+function putIntoCacheProm(hash, data) {
+    let future = peergos.shared.util.Futures.incomplete();
+    setIDBKV(hash.toString(), data, this.cacheStore).then((val) =>
+        future.complete(true)
+    );
+    return future;
+}
+//public native CompletableFuture<Optional<byte[]>> get(Cid hash);
+function getFromCacheProm(hash) {
+    let future = peergos.shared.util.Futures.incomplete();
+    getIDBKV(hash.toString(), this.cacheStore).then((val) => {
+        if (val == null) {
+            future.complete(peergos.client.JsUtil.emptyOptional());
+        } else {
+            future.complete(peergos.client.JsUtil.optionalOf(convertToByteArray(val)));
+        }
+    });
+    return future;
+}
+//public native boolean hasBlock(Cid hash);
+function hasBlockInCache(hash) {
+    return this.cacheEntrySizes.get(hash.toString()) != null;
+}
+//public native CompletableFuture<Boolean> clear();
+function clearCache() {
+    let future = peergos.shared.util.Futures.incomplete();
+    clearIDBKV(this.cacheStore).then((val) => future.complete(val));
+    return future;
+}
+
 function decodeUTF8(s) {
   var i, d = unescape(encodeURIComponent(s)), b = new Uint8Array(d.length);
   for (i = 0; i < d.length; i++) b[i] = d.charCodeAt(i);
