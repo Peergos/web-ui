@@ -57,6 +57,12 @@
                 >
                     Cleanup Failed Uploads
                 </li>
+                <li
+                    v-on:keyup.enter="clearCaches()"
+                    @click="clearCaches()"
+                >
+                    Clear Cache
+                </li>
 				<li
 					v-on:keyup.enter="showViewAccount()"
 					@click="showViewAccount()"
@@ -130,6 +136,12 @@ module.exports = {
                 console.log(errMsg);
                 that.$toast.error('Upload cleanup failed. Please try again. Error: ' + errMsg, {timeout:false});
                 that.showSettingsSpinner = false;
+            });
+        },
+        clearCaches() {
+            let that = this;
+            clearAllCaches().thenApply(() => {
+                that.$toast('Caches Cleared');
             });
         },
 		displayProfile() {

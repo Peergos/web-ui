@@ -167,7 +167,7 @@ function delManyIDBKV(keys) {
   var customStore = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : defaultGetStore();
   return customStore('readwrite', function (store) {
     keys.forEach(function (key) {
-      return store.delete(key);
+       store.delete(key);
     });
     return promisifyRequest(store.transaction);
   });

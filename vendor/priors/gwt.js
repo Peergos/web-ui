@@ -231,13 +231,24 @@ var http = {
 var cache = {
     NativeJSCache: function() {
     this.cacheStore = createStoreIDBKV('data', 'keyval');
-    this.cacheEntrySizes = new Map();
-    this.init = function init(directS3) {
-        //const customStore3 = createStore('db3', 'keyval');
-        //const customStore4 = createStore('db4', 'keyval');
-        keysIDBKV(this.cacheStore).then((keys) => {
-            keys.forEach(key => this.cacheEntrySizes.set(key, 0));
-            console.log('Block Cache loaded. Items:' + keys.length);
+    this.cacheStoreMetadata = createStoreIDBKV('metadata', 'keyval');
+    this.cacheMetadataArray = [];
+    this.maxSizeBytes = 0;
+    this.currentCacheSize = 0;
+    this.evicting = false;
+    this.init = function init(maxSizeBytes) {
+        bindCacheStores(this);
+        getBrowserStorageQuota().then(browserStorageQuota => {
+            this.maxSizeBytes = calculateCacheSize(maxSizeBytes, browserStorageQuota);
+            let that = this;
+            valuesIDBKV(this.cacheStoreMetadata).then((values) => {
+                values.forEach(value => {
+                    let json = JSON.parse(value);
+                    that.cacheMetadataArray.push(json);
+                    that.currentCacheSize = that.currentCacheSize + json.length;
+                });
+                console.log('Block Cache. Objects:' + values.length + " Size:" + that.currentCacheSize + " bytes" + " Max:" + this.maxSizeBytes);
+            });
         });
     };
 	this.put = putIntoCacheProm;
@@ -246,12 +257,102 @@ var cache = {
 	this.clear = clearCache;
     }
 };
+var blockStoreCache;
+function bindCacheStores(storeCache) {
+    blockStoreCache = storeCache;
+}
+function clearAllCaches() {
+    let future = peergos.shared.util.Futures.incomplete();
+    clearCacheFully(this, function() {
+        future.complete(true);
+    });
+    return future;
+}
+function getBrowserStorageQuota() {
+    if (navigator.storage && navigator.storage.estimate) {
+        return navigator.storage.estimate().then(quota => quota.quota);
+    } else {
+        let prom = new Promise(function(resolve, reject) { resolve(0)});
+        return prom;
+    }
+}
+function calculateCacheSize(maxSizeBytes, maxBrowserStorageBytes) {
+    if (maxBrowserStorageBytes == 0) {
+        return 0;//no cache
+    } else if (maxSizeBytes <= 0) {
+        return maxBrowserStorageBytes;
+    } else {
+        if (maxSizeBytes > maxBrowserStorageBytes) {
+            return maxBrowserStorageBytes;
+        } else {
+            return maxSizeBytes;
+        }
+    }
+}
+function triggerEviction(cache) {
+    //above 90% of max
+    return (cache.currentCacheSize / cache.maxSizeBytes) * 100.0 > 90.0;
+}
+function reclaim(cache) {
+    //80% of max
+    return Math.floor(cache.maxSizeBytes / 100 * 80);
+}
+function evictLRU(cache, callback) {
+    if (cache.evicting) {
+        return;
+    }
+    cache.evicting = true;
+    let sorted = cache.cacheMetadataArray.slice().sort((a, b) => a.timestamp < b.timestamp);
+    var cacheSize = cache.currentCacheSize;
+    let maxSize = cache.maxSizeBytes;
+    let toDelete = [];
+    let newLimit = reclaim(cache);
+    for(var i=0; i < sorted.length; i++) {
+        cacheSize = cacheSize - sorted[i].length;
+        toDelete.push(sorted[i].key);
+        if (cacheSize < newLimit) {
+            cache.currentCacheSize = cacheSize;
+            break;
+        }
+    }
+    for (var i=0; i < toDelete.length; i++) {
+        sorted.splice(sorted.findIndex(v => v.key === toDelete[i]), 1);
+    }
+    cache.cacheMetadataArray = sorted;
+    delManyIDBKV(toDelete, cache.cacheStore)
+        .then(() => {
+            delManyIDBKV(toDelete, cache.cacheStoreMetadata)
+                .then(() => { callback();cache.evicting=false;})
+                .catch((err) => {
+                      clearCacheFully(cache, function(){callback();cache.evicting=false;});
+                });
+        }).catch((err) => {
+            clearCacheFully(cache, function(){callback();cache.evicting=false;});
+    });
+}
 //public native CompletableFuture<Boolean> put(Cid hash, byte[] data);
 function putIntoCacheProm(hash, data) {
     let future = peergos.shared.util.Futures.incomplete();
-    setIDBKV(hash.toString(), data, this.cacheStore).then((val) =>
-        future.complete(true)
-    );
+    if (this.maxSizeBytes == 0) {
+        future.complete(true);
+    } else {
+        let that = this;
+        let key = hash.toString();
+        setIDBKV(key, data, this.cacheStore).then(() => {
+            let now = new Date();
+            let json = {key: key, length: data.length, timestamp: now.getTime()};
+            let value = JSON.stringify(json);
+            that.currentCacheSize = that.currentCacheSize + data.length;
+            setIDBKV(key, value, that.cacheStoreMetadata).then(() => {
+                that.cacheMetadataArray.push(json);
+                if (triggerEviction(this)) {
+                    evictLRU(this, function() {future.complete(true)});
+                } else {
+                    future.complete(true);
+                }
+            });
+        });
+    }
     return future;
 }
 //public native CompletableFuture<Optional<byte[]>> get(Cid hash);
@@ -273,10 +374,17 @@ function hasBlockInCache(hash) {
 //public native CompletableFuture<Boolean> clear();
 function clearCache() {
     let future = peergos.shared.util.Futures.incomplete();
-    clearIDBKV(this.cacheStore).then((val) => future.complete(val));
+    clearCacheFully(this, function() {
+        future.complete(true);
+    });
     return future;
 }
-
+function clearCacheFully(cache, func) {
+    cache.cacheMetadataArray = [];
+    clearIDBKV(cache.cacheStore).then((res1) => {
+        clearIDBKV(cache.cacheStoreMetadata).then((res2) => func());
+    });
+}
 function decodeUTF8(s) {
   var i, d = unescape(encodeURIComponent(s)), b = new Uint8Array(d.length);
   for (i = 0; i < d.length; i++) b[i] = d.charCodeAt(i);
