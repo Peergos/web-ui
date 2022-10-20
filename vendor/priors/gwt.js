@@ -237,7 +237,7 @@ var cache = {
     this.currentCacheSize = 0;
     this.evicting = false;
     this.init = function init(maxSizeBytes) {
-        bindCacheStores(this);
+        bindCacheStore(this);
         getBrowserStorageQuota().then(browserStorageQuota => {
             this.maxSizeBytes = calculateCacheSize(maxSizeBytes, browserStorageQuota);
             let that = this;
@@ -258,13 +258,16 @@ var cache = {
     }
 };
 var blockStoreCache;
-function bindCacheStores(storeCache) {
+var pointerStoreCache;
+function bindCacheStore(storeCache) {
     blockStoreCache = storeCache;
 }
 function clearAllCaches() {
     let future = peergos.shared.util.Futures.incomplete();
-    clearCacheFully(this, function() {
-        future.complete(true);
+    clearCacheFully(blockStoreCache, function() {
+        clearPointerCacheFully(pointerStoreCache, function() {
+            future.complete(true);
+        });
     });
     return future;
 }
@@ -304,13 +307,12 @@ function evictLRU(cache, callback) {
     cache.evicting = true;
     let sorted = cache.cacheMetadataArray.slice().sort((a, b) => a.timestamp < b.timestamp);
     var cacheSize = cache.currentCacheSize;
-    let maxSize = cache.maxSizeBytes;
     let toDelete = [];
     let newLimit = reclaim(cache);
     for(var i=0; i < sorted.length; i++) {
         cacheSize = cacheSize - sorted[i].length;
         toDelete.push(sorted[i].key);
-        if (cacheSize < newLimit) {
+        if (cacheSize <= newLimit) {
             cache.currentCacheSize = cacheSize;
             break;
         }
@@ -340,9 +342,12 @@ function putIntoCacheProm(hash, data) {
         let key = hash.toString();
         setIDBKV(key, data, this.cacheStore).then(() => {
             let now = new Date();
-            let json = {key: key, length: data.length, timestamp: now.getTime()};
-            let value = JSON.stringify(json);
-            that.currentCacheSize = that.currentCacheSize + data.length;
+            let length = data.length + (key.length * 2);
+            let json = {key: key, length: length, timestamp: now.getTime()};
+            var value = JSON.stringify(json);
+            json.length = length + value.length; //close enough
+            value = JSON.stringify(json);
+            that.currentCacheSize = that.currentCacheSize + json.length;
             setIDBKV(key, value, that.cacheStoreMetadata).then(() => {
                 that.cacheMetadataArray.push(json);
                 if (triggerEviction(this)) {
@@ -385,6 +390,122 @@ function clearCacheFully(cache, func) {
         clearIDBKV(cache.cacheStoreMetadata).then((res2) => func());
     });
 }
+
+var pointerCache = {
+    NativeJSPointerCache: function() {
+    this.cachePointerStore = createStoreIDBKV('pointers', 'keyval');
+    this.cachePointerStoreMetadata = createStoreIDBKV('metadata', 'keyval');
+    this.cachePointerMetadataArray = [];
+    this.maxItems = 2000;
+    this.currentCacheSize = 0;
+    this.evicting = false;
+    this.init = function init(maxItems) {
+        bindPointerCacheStore(this);
+        let that = this;
+        valuesIDBKV(this.cachePointerStoreMetadata).then((values) => {
+            values.forEach(value => {
+                let json = JSON.parse(value);
+                that.cachePointerMetadataArray.push(json);
+            });
+            console.log('Block Cache. Objects:' + values.length);
+        });
+    };
+	this.put = putIntoPointerCacheProm;
+	this.get = getFromPointerCacheProm;
+    }
+};
+
+function bindPointerCacheStore(storeCache) {
+    pointerStoreCache = storeCache;
+}
+function triggerPointerCacheEviction(cache) {
+    //above 90% of max
+    return (cache.currentCacheSize / cache.maxItems) * 100.0 > 90.0;
+}
+function reclaimPointerCache(cache) {
+    //80% of max
+    return Math.floor(cache.maxItems / 100 * 80);
+}
+function evictPointerCacheLRU(cache, callback) {
+    if (cache.evicting) {
+        return;
+    }
+    cache.evicting = true;
+    let sorted = cache.cachePointerMetadataArray.slice().sort((a, b) => a.timestamp < b.timestamp);
+    var cacheSize = cache.currentCacheSize;
+    let toDelete = [];
+    let newLimit = reclaimPointerCache(cache);
+    for(var i=0; i < sorted.length; i++) {
+        cacheSize--;
+        toDelete.push(sorted[i].key);
+        if (cacheSize <= newLimit) {
+            cache.currentCacheSize = cacheSize;
+            break;
+        }
+    }
+    for (var i=0; i < toDelete.length; i++) {
+        sorted.splice(sorted.findIndex(v => v.key === toDelete[i]), 1);
+    }
+    cache.cachePointerMetadataArray = sorted;
+    delManyIDBKV(toDelete, cache.cachePointerStore)
+        .then(() => {
+            delManyIDBKV(toDelete, cache.cachePointerStoreMetadata)
+                .then(() => { callback();cache.evicting=false;})
+                .catch((err) => {
+                      clearPointerCacheFully(cache, function(){callback();cache.evicting=false;});
+                });
+        }).catch((err) => {
+            clearPointerCacheFully(cache, function(){callback();cache.evicting=false;});
+    });
+}
+//    public native CompletableFuture<Boolean> put(PublicKeyHash owner, PublicKeyHash writer, byte[] writerSignedBtreeRootHash);
+function putIntoPointerCacheProm(owner, writer, writerSignedBtreeRootHash) {
+    let future = peergos.shared.util.Futures.incomplete();
+    if (this.maxSizeBytes == 0) {
+        future.complete(true);
+    } else {
+        let that = this;
+        let key = owner.toString() + "-" + writer.toString();
+        setIDBKV(key, writerSignedBtreeRootHash, this.cachePointerStore).then(() => {
+            let now = new Date();
+            let length = writerSignedBtreeRootHash.length + (key.length * 2);
+            let json = {key: key, length: length, timestamp: now.getTime()};
+            var value = JSON.stringify(json);
+            json.length = length + value.length; //close enough
+            value = JSON.stringify(json);
+            that.currentCacheSize++;
+            setIDBKV(key, value, that.cachePointerStoreMetadata).then(() => {
+                that.cachePointerMetadataArray.push(json);
+                if (triggerPointerCacheEviction(this)) {
+                    evictPointerCacheLRU(this, function() {future.complete(true)});
+                } else {
+                    future.complete(true);
+                }
+            });
+        });
+    }
+    return future;
+}
+//    public native CompletableFuture<Optional<byte[]>> get(PublicKeyHash owner, PublicKeyHash writer);
+function getFromPointerCacheProm(owner, writer) {
+    let future = peergos.shared.util.Futures.incomplete();
+    let key = owner.toString() + "-" + writer.toString();
+    getIDBKV(key, this.cachePointerStore).then((val) => {
+        if (val == null) {
+            future.complete(peergos.client.JsUtil.emptyOptional());
+        } else {
+            future.complete(peergos.client.JsUtil.optionalOf(convertToByteArray(val)));
+        }
+    });
+    return future;
+}
+function clearPointerCacheFully(cache, func) {
+    cache.cachePointerMetadataArray = [];
+    clearIDBKV(cache.cachePointerStore).then((res1) => {
+        clearIDBKV(cache.cachePointerStoreMetadata).then((res2) => func());
+    });
+}
+
 function decodeUTF8(s) {
   var i, d = unescape(encodeURIComponent(s)), b = new Uint8Array(d.length);
   for (i = 0; i < d.length; i++) b[i] = d.charCodeAt(i);
