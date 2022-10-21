@@ -74,7 +74,6 @@ module.exports = {
             PERMISSION_EDIT_CHOSEN_FILE: 'EDIT_CHOSEN_FILE',
             PERMISSION_READ_CHOSEN_FOLDER: 'READ_CHOSEN_FOLDER',
             PERMISSION_EXCHANGE_MESSAGES_WITH_FRIENDS: 'EXCHANGE_MESSAGES_WITH_FRIENDS',
-            PERMISSION_SAVE_FILE: 'SAVE_FILE',
             PERMISSION_CSP_UNSAFE_EVAL: 'CSP_UNSAFE_EVAL',
             browserMode: false,
             fullPathForDisplay: '',
@@ -98,7 +97,8 @@ module.exports = {
             prompt_max_input_size: null,
             prompt_value: '',
             prompt_consumer_func: () => {},
-            prompt_action: 'ok'
+            prompt_action: 'ok',
+            isSaveActionEnabled: true
         }
     },
     computed: {
@@ -272,14 +272,10 @@ module.exports = {
                     console.log('App configured as a FolderAction, but permission READ_CHOSEN_FOLDER not set!');
                     return false;
                 }
-                if (this.permissionsMap.get(this.PERMISSION_SAVE_FILE)) {
-                    console.log('App configured as a FolderAction, but permission SAVE_FILE set!');
-                    return false;
-                }
+                this.isSaveActionEnabled = false;
             }
-            if (props.launchable && this.permissionsMap.get(this.PERMISSION_SAVE_FILE)) {
-                console.log('App configured as Launchable, but permission SAVE_FILE set!');
-                return false;
+            if (props.launchable) {
+                this.isSaveActionEnabled = false;
             }
             return true;
         },
@@ -487,11 +483,10 @@ module.exports = {
                         that.handleChatRequest(headerFunc(), path, apiMethod, data, hasFormData, params);
                     }
                 } else if (api =='/peergos-api/v0/save/') {
-                    if (!that.permissionsMap.get(that.PERMISSION_SAVE_FILE)) {
-                        that.showError("App attempted to save file without permission :" + path);
-                        that.buildResponse(headerFunc(), null, that.ACTION_FAILED);
-                    } else {
+                    if (this.isSaveActionEnabled) {
                         that.handleSaveFileRequest(headerFunc, path, apiMethod, data, hasFormData, params);
+                    } else {
+                        that.buildResponse(headerFunc(), null, that.ACTION_FAILED);
                     }
                 } else {
                     var bytes = convertToByteArray(new Int8Array(data));
