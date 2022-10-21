@@ -1111,7 +1111,7 @@ function scheduleSameMonth(oldScheduleStart, newScheduleStart) {
     return oldStart.year() == newStart.year() && oldStart.month() == newStart.month();
 }
 function validateEvent(event) {
-    if (isEmptyValue(event.Id) || isEmptyValue(event.title) || event.start == null || event.end == null) {
+    if (isEmptyValue(event.Id) || event.title == null || event.start == null || event.end == null) {
         showImportError("Event missing all required fields: UID, SUMMARY, DTSTART, DTEND. UID:" + event.Id);
         return false;
     }
