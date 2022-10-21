@@ -944,8 +944,9 @@ function importICSFile(contents, username, isSharedWithUs, loadCalendarAsGuest, 
         if (validateEvent(event)) {
             let schedule = buildScheduleFromEvent(event);
             if (event.recurrenceId == null) {
+                if (LoadedEvents[schedule.id] == null)
+                    schedules.push(schedule);    
                 scheduleMap[schedule.id] = schedule;
-                schedules.push(schedule);
                 LoadedEvents[schedule.id] = buildComponentFromEvent(icalComponent, vvent);
             } else {
                 let origSchedule = scheduleMap[schedule.raw.parentId];
@@ -1015,6 +1016,8 @@ function confirmImportICSFile(contents, username, isSharedWithUs, loadCalendarAs
         if (validateEvent(event)) {
             let schedule = buildScheduleFromEvent(event);
             if (event.recurrenceId == null) {
+                if (LoadedEvents[schedule.id] == null)
+                    tempSchedules.push(schedule);    
                 scheduleMap[schedule.id] = schedule;
                 tempSchedules.push(schedule);
                 tempLoadedEvents[schedule.id] = buildComponentFromEvent(icalComponent, vvent);
@@ -1116,7 +1119,7 @@ function validateEvent(event) {
         return false;
     }
     if (!eventSameDay(event)) {
-        showImportError("Only single day events supported");
+        showImportError("Only single day events supported. Event id: " + event.Id);
         return false;
     }
     if (event.recurrenceRule != null) {
