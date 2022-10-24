@@ -305,12 +305,12 @@ function evictLRU(cache, callback) {
         return;
     }
     cache.evicting = true;
-    let sorted = cache.cacheMetadataArray.slice().sort((a, b) => a.timestamp < b.timestamp);
+    let sorted = cache.cacheMetadataArray.slice().sort((a, b) => a.t < b.t);
     var cacheSize = cache.currentCacheSize;
     let toDelete = [];
     let newLimit = reclaim(cache);
     for(var i=0; i < sorted.length; i++) {
-        cacheSize = cacheSize - sorted[i].length;
+        cacheSize = cacheSize - sorted[i].l;
         toDelete.push(sorted[i].key);
         if (cacheSize <= newLimit) {
             cache.currentCacheSize = cacheSize;
@@ -326,9 +326,11 @@ function evictLRU(cache, callback) {
             delManyIDBKV(toDelete, cache.cacheStoreMetadata)
                 .then(() => { callback();cache.evicting=false;})
                 .catch((err) => {
-                      clearCacheFully(cache, function(){callback();cache.evicting=false;});
+                    console.log("block cache metadata evict error:" + err);
+                    clearCacheFully(cache, function(){callback();cache.evicting=false;});
                 });
         }).catch((err) => {
+            console.log("block cache evict error:" + err);
             clearCacheFully(cache, function(){callback();cache.evicting=false;});
     });
 }
@@ -343,7 +345,7 @@ function putIntoCacheProm(hash, data) {
         setIDBKV(key, data, this.cacheStore).then(() => {
             let now = new Date();
             let length = data.length + (key.length * 2);
-            let json = {key: key, length: length, timestamp: now.getTime()};
+            let json = {key: key, l: length, t: now.getTime()};
             var value = JSON.stringify(json);
             json.length = length + value.length; //close enough
             value = JSON.stringify(json);
@@ -431,7 +433,7 @@ function evictPointerCacheLRU(cache, callback) {
         return;
     }
     cache.evicting = true;
-    let sorted = cache.cachePointerMetadataArray.slice().sort((a, b) => a.timestamp < b.timestamp);
+    let sorted = cache.cachePointerMetadataArray.slice().sort((a, b) => a.t < b.t);
     var cacheSize = cache.currentCacheSize;
     let toDelete = [];
     let newLimit = reclaimPointerCache(cache);
@@ -452,9 +454,11 @@ function evictPointerCacheLRU(cache, callback) {
             delManyIDBKV(toDelete, cache.cachePointerStoreMetadata)
                 .then(() => { callback();cache.evicting=false;})
                 .catch((err) => {
-                      clearPointerCacheFully(cache, function(){callback();cache.evicting=false;});
+                    console.log("pointer cache metadata evict error:" + err);
+                    clearPointerCacheFully(cache, function(){callback();cache.evicting=false;});
                 });
         }).catch((err) => {
+            console.log("pointer cache evict error:" + err);
             clearPointerCacheFully(cache, function(){callback();cache.evicting=false;});
     });
 }
@@ -468,11 +472,8 @@ function putIntoPointerCacheProm(owner, writer, writerSignedBtreeRootHash) {
         let key = owner.toString() + "-" + writer.toString();
         setIDBKV(key, writerSignedBtreeRootHash, this.cachePointerStore).then(() => {
             let now = new Date();
-            let length = writerSignedBtreeRootHash.length + (key.length * 2);
-            let json = {key: key, length: length, timestamp: now.getTime()};
-            var value = JSON.stringify(json);
-            json.length = length + value.length; //close enough
-            value = JSON.stringify(json);
+            let json = {key: key, t: now.getTime()};
+            let value = JSON.stringify(json);
             that.currentCacheSize++;
             setIDBKV(key, value, that.cachePointerStoreMetadata).then(() => {
                 that.cachePointerMetadataArray.push(json);

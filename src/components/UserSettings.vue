@@ -57,12 +57,6 @@
                 >
                     Cleanup Failed Uploads
                 </li>
-                <li
-                    v-on:keyup.enter="clearCaches()"
-                    @click="clearCaches()"
-                >
-                    Clear Cache
-                </li>
 				<li
 					v-on:keyup.enter="showViewAccount()"
 					@click="showViewAccount()"
