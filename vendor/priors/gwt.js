@@ -396,7 +396,7 @@ function clearCacheFully(cache, func) {
 var pointerCache = {
     NativeJSPointerCache: function() {
     this.cachePointerStore = createStoreIDBKV('pointers', 'keyval');
-    this.cachePointerStoreMetadata = createStoreIDBKV('metadata', 'keyval');
+    this.cachePointerStoreMetadata = createStoreIDBKV('pmetadata', 'keyval');
     this.cachePointerMetadataArray = [];
     this.maxItems = 2000;
     this.currentCacheSize = 0;
