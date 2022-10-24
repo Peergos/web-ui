@@ -90,12 +90,13 @@ module.exports = {
 
 	methods: {
 		closePrompt() {
+			this.consumer_func(null);
 			this.$emit("hide-prompt");
 		},
 
 		getPrompt() {
 			this.consumer_func(this.prompt_result);
-			this.closePrompt();
+			this.$emit("hide-prompt");
 		}
 	}
 }

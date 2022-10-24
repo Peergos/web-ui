@@ -2339,9 +2339,10 @@ module.exports = {
 				var parent = this.currentDir;
 
 				// console.log('deleteFiles:',file, parent, this.context )
-
-				this.confirmDelete(file, () => {
-					that.deleteOne(file, parent, this.context);
+				this.confirmDelete(file, (prompt_result) => {
+				    if (prompt_result != null) {
+					    that.deleteOne(file, parent, this.context);
+					}
 				});
 			}
 		},
