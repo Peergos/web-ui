@@ -236,10 +236,10 @@ var cache = {
     this.maxSizeBytes = 0;
     this.currentCacheSize = 0;
     this.evicting = false;
-    this.init = function init(maxSizeBytes) {
+    this.init = function init(maxSizeMiB) {
         bindCacheStore(this);
         getBrowserStorageQuota().then(browserStorageQuota => {
-            this.maxSizeBytes = calculateCacheSize(maxSizeBytes, browserStorageQuota);
+            this.maxSizeBytes = calculateCacheSize(maxSizeMiB * 1024 * 1024, browserStorageQuota);
             let that = this;
             valuesIDBKV(this.cacheStoreMetadata).then((values) => {
                 values.forEach(value => {
