@@ -1,6 +1,16 @@
 <template>
 	<nav class="user-settings">
     	<spinner v-if="showSettingsSpinner"></spinner>
+        <AppPrompt
+            v-if="showPrompt"
+            @hide-prompt="closePrompt()"
+            :message='prompt_message'
+            :placeholder="prompt_placeholder"
+            :max_input_size="prompt_max_input_size"
+            :value="prompt_value"
+            :consumer_func="prompt_consumer_func"
+            :action="prompt_action"
+        />
 		<AppDropdown
 			v-if="isLoggedIn"
 			aria-expanded="true"
@@ -57,6 +67,12 @@
                 >
                     Cleanup Failed Uploads
                 </li>
+                <li
+                    v-on:keyup.enter="modifyCacheSize()"
+                    @click="modifyCacheSize()"
+                >
+                    Set Cache size
+                </li>
 				<li
 					v-on:keyup.enter="showViewAccount()"
 					@click="showViewAccount()"
@@ -98,18 +114,28 @@
 <script>
 const Admin = require("./admin")
 const AppDropdown = require("./AppDropdown.vue");
+const AppPrompt = require("./prompt/AppPrompt.vue");
 
 module.exports = {
     components: {
         Admin,
-	AppDropdown,
+	    AppDropdown,
+        AppPrompt
     },
 	data() {
 		return {
 		    profileImage: "",
                     showAdmin: false,
                     admindata: {pending:[]},
-                    showSettingsSpinner: false
+                    showSettingsSpinner: false,
+                    chatResponseHeader: null,
+                    showPrompt: false,
+                    prompt_message: '',
+                    prompt_placeholder: '',
+                    prompt_max_input_size: null,
+                    prompt_value: '',
+                    prompt_consumer_func: () => {},
+                    prompt_action: 'set'
 		};
 	},
 	computed: {
@@ -132,11 +158,53 @@ module.exports = {
                 that.showSettingsSpinner = false;
             });
         },
-        clearCaches() {
+        modifyCacheSize: function() {
             let that = this;
-            clearAllCaches().thenApply(() => {
-                that.$toast('Caches Cleared');
+            getBrowserStorageQuota().then(maxStorage => {
+                let maxStorageMiB = Math.floor(maxStorage /1024 /1024);
+                this.prompt_message = 'Set Cache Size (MiB)';
+                let roundedCurrentCacheSize = Math.floor(getCurrentCacheSizeMiB());
+                this.prompt_value = '' + roundedCurrentCacheSize;
+
+                this.prompt_placeholder = '0';
+                this.prompt_consumer_func = function (prompt_result) {
+                    that.showPrompt = false;
+                    let newCacheSizeMiB = prompt_result.trim();
+                    if (!that.validateCacheSize(newCacheSizeMiB, maxStorageMiB)) {
+                        that.$toast.error('Cache size value not valid', {timeout:false});
+                        return;
+                    }
+                    let validNewCacheSize = Number(newCacheSizeMiB);
+                    if (validNewCacheSize > maxStorageMiB) {
+                        that.$toast.error('Invalid Cache size. Maximum Cache Size: ' + maxStorageMiB + ' MiB', {timeout:false});
+                    } else {
+                        if (roundedCurrentCacheSize != validNewCacheSize) {
+                            that.showSettingsSpinner = true;
+                            modifyCacheSize(validNewCacheSize).thenApply(() => {
+                                that.showSettingsSpinner = false;
+                                that.$toast('Caches Size Updated');
+                            });
+                        }
+                    }
+                };
+                this.showPrompt = true;
             });
+        },
+        validateCacheSize: function(num, maxNum) {
+            if (num == null || num == '') {
+                return false;
+            }
+            let numInt = parseInt(num, 10);
+            if (isNaN(numInt)) {
+                return false;
+            }
+            if (numInt < 0) {
+                return false;
+            }
+            return true;
+        },
+        closePrompt() {
+            this.showPrompt = false;
         },
 		displayProfile() {
 			let that = this;

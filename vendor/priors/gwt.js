@@ -262,13 +262,30 @@ var pointerStoreCache;
 function bindCacheStore(storeCache) {
     blockStoreCache = storeCache;
 }
-function clearAllCaches() {
+function getCurrentCacheSizeMiB() {
+    return blockStoreCache.maxSizeBytes /1024 /1024;
+}
+function modifyCacheSize(newCacheSizeMiB) {
+    let newSizeBytes = newCacheSizeMiB * 1024 * 1024;
     let future = peergos.shared.util.Futures.incomplete();
-    clearCacheFully(blockStoreCache, function() {
-        clearPointerCacheFully(pointerStoreCache, function() {
-            future.complete(true);
+    if (newSizeBytes == 0) {
+        clearCacheFully(blockStoreCache, function() {
+            clearPointerCacheFully(pointerStoreCache, function() {
+                blockStoreCache.maxSizeBytes = 0;
+                future.complete(true);
+            });
         });
-    });
+    } else if (newSizeBytes < blockStoreCache.maxSizeBytes) {
+        blockStoreCache.maxSizeBytes = newSizeBytes;
+        if (triggerEviction(blockStoreCache)) {
+            evictLRU(blockStoreCache, function() {future.complete(true)});
+        } else {
+            future.complete(true);
+        }
+    } else {
+        blockStoreCache.maxSizeBytes = newSizeBytes;
+        future.complete(true);
+    }
     return future;
 }
 function getBrowserStorageQuota() {
