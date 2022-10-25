@@ -167,14 +167,14 @@ module.exports = {
             getBrowserStorageQuota().then(maxStorage => {
                 let maxStorageMiB = Math.floor(maxStorage /1024 /1024);
                 this.prompt_message = 'Set Cache Size (MiB)';
-                let roundedCurrentCacheSize = Math.floor(getCurrentCacheSizeMiB());
+                let roundedCurrentCacheSize = Math.floor(getCurrentDesiredCacheSize());
                 this.prompt_value = '' + roundedCurrentCacheSize;
 
                 this.prompt_placeholder = '0';
                 this.prompt_consumer_func = function (prompt_result) {
                     that.showPrompt = false;
                     let newCacheSizeMiB = prompt_result.trim();
-                    if (!that.validateCacheSize(newCacheSizeMiB, maxStorageMiB)) {
+                    if (!that.validateCacheSize(newCacheSizeMiB)) {
                         that.$toast.error('Cache size value not valid', {timeout:false});
                         return;
                     }
@@ -194,7 +194,7 @@ module.exports = {
                 this.showPrompt = true;
             });
         },
-        validateCacheSize: function(num, maxNum) {
+        validateCacheSize: function(num) {
             if (num == null || num == '') {
                 return false;
             }

@@ -232,11 +232,13 @@ var cache = {
     NativeJSCache: function() {
     this.cacheStore = null;
     this.cacheStoreMetadata = null;
+    this.cacheDesiredSizeStore = null;
     this.cacheMetadataArray = [];
     this.maxSizeBytes = 0;
     this.currentCacheSize = 0;
     this.evicting = false;
     this.isCachingEnabled = false;
+    this.desiredCacheSize = 0;
     this.init = function init(maxSizeMiB) {
         let that = this;
         bindCacheStore(that);
@@ -245,15 +247,21 @@ var cache = {
             if (isCachingEnabled) {
                 that.cacheStore = createStoreIDBKV('data', 'keyval');
                 that.cacheStoreMetadata = createStoreIDBKV('metadata', 'keyval');
-                getBrowserStorageQuota().then(browserStorageQuota => {
-                    that.maxSizeBytes = calculateCacheSize(maxSizeMiB * 1024 * 1024, browserStorageQuota);
-                    valuesIDBKV(that.cacheStoreMetadata).then((values) => {
-                        values.forEach(value => {
-                            let json = JSON.parse(value);
-                            that.cacheMetadataArray.push(json);
-                            that.currentCacheSize = that.currentCacheSize + json.length;
+                that.cacheDesiredSizeStore = createStoreIDBKV('size', 'keyval');
+                getDesiredCacheSize().thenApply(desiredCacheSize => {
+                    getBrowserStorageQuota().then(browserStorageQuota => {
+                        that.maxSizeBytes = calculateCacheSize(maxSizeMiB * 1024 * 1024, browserStorageQuota, desiredCacheSize);
+                        setDesiredCacheSize(that.maxSizeBytes).thenApply(done => {
+                            that.desiredCacheSize = that.maxSizeBytes;
+                            valuesIDBKV(that.cacheStoreMetadata).then((values) => {
+                                values.forEach(value => {
+                                    let json = JSON.parse(value);
+                                    that.cacheMetadataArray.push(json);
+                                    that.currentCacheSize = that.currentCacheSize + json.length;
+                                });
+                                console.log('Block Cache. Objects:' + values.length + " Size:" + that.currentCacheSize + " bytes" + " Max:" + that.maxSizeBytes);
+                            });
                         });
-                        console.log('Block Cache. Objects:' + values.length + " Size:" + that.currentCacheSize + " bytes" + " Max:" + this.maxSizeBytes);
                     });
                 });
             }
@@ -298,30 +306,58 @@ function isCachingAvailable() {
 function getCurrentCacheSizeMiB() {
     return blockStoreCache.maxSizeBytes /1024 /1024;
 }
+function getCurrentDesiredCacheSize() {
+    return blockStoreCache.desiredCacheSize /1024/1024;
+}
+function getDesiredCacheSize() {
+    let future = peergos.shared.util.Futures.incomplete();
+    getIDBKV("desiredSize", blockStoreCache.cacheDesiredSizeStore).then((val) => {
+        if (val == null) {
+            future.complete(-1);
+        } else {
+            future.complete(val);
+        }
+    });
+    return future;
+}
+function setDesiredCacheSize(desiredSize) {
+    let future = peergos.shared.util.Futures.incomplete();
+    if (!blockStoreCache.isCachingEnabled) {
+        future.complete(true);
+    } else {
+        setIDBKV("desiredSize", desiredSize, blockStoreCache.cacheDesiredSizeStore).then(() => {
+            future.complete(true);
+        });
+    }
+    return future;
+}
 function modifyCacheSize(newCacheSizeMiB) {
     let newSizeBytes = newCacheSizeMiB * 1024 * 1024;
     let future = peergos.shared.util.Futures.incomplete();
     if (!blockStoreCache.isCachingEnabled) {
         future.complete(true);
     } else {
-        if (newSizeBytes == 0) {
-            clearCacheFully(blockStoreCache, function() {
-                clearPointerCacheFully(pointerStoreCache, function() {
-                    blockStoreCache.maxSizeBytes = 0;
-                    future.complete(true);
+        setDesiredCacheSize(newSizeBytes).thenApply(done => {
+            blockStoreCache.desiredCacheSize = newSizeBytes;
+            if (newSizeBytes == 0) {
+                clearCacheFully(blockStoreCache, function() {
+                    clearPointerCacheFully(pointerStoreCache, function() {
+                        blockStoreCache.maxSizeBytes = 0;
+                        future.complete(true);
+                    });
                 });
-            });
-        } else if (newSizeBytes < blockStoreCache.maxSizeBytes) {
-            blockStoreCache.maxSizeBytes = newSizeBytes;
-            if (triggerEviction(blockStoreCache)) {
-                evictLRU(blockStoreCache, function() {future.complete(true)});
+            } else if (newSizeBytes < blockStoreCache.maxSizeBytes) { //less than current max
+                blockStoreCache.maxSizeBytes = newSizeBytes;
+                if (triggerEviction(blockStoreCache)) {
+                    evictLRU(blockStoreCache, function() {future.complete(true)});
+                } else {
+                    future.complete(true);
+                }
             } else {
+                blockStoreCache.maxSizeBytes = newSizeBytes;
                 future.complete(true);
             }
-        } else {
-            blockStoreCache.maxSizeBytes = newSizeBytes;
-            future.complete(true);
-        }
+        });
     }
     return future;
 }
@@ -333,16 +369,21 @@ function getBrowserStorageQuota() {
         return prom;
     }
 }
-function calculateCacheSize(maxSizeBytes, maxBrowserStorageBytes) {
+function calculateCacheSize(maxSizeBytes, maxBrowserStorageBytes, desiredCacheSize) {
     if (maxBrowserStorageBytes == 0) {
         return 0;//no cache
     } else if (maxSizeBytes <= 0) {
-        return maxBrowserStorageBytes;
-    } else {
-        if (maxSizeBytes > maxBrowserStorageBytes) {
-            return maxBrowserStorageBytes;
+        if (desiredCacheSize > -1 && desiredCacheSize < maxBrowserStorageBytes) {
+            return desiredCacheSize;
         } else {
-            return maxSizeBytes;
+            return maxBrowserStorageBytes;
+        }
+    } else {
+        let newLimit  = maxSizeBytes > maxBrowserStorageBytes ? maxBrowserStorageBytes : maxSizeBytes;
+        if (desiredCacheSize > -1 && desiredCacheSize < maxBrowserStorageBytes && desiredCacheSize < newLimit) {
+            return desiredCacheSize;
+        } else {
+            return newLimit;
         }
     }
 }
