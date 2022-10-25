@@ -230,25 +230,33 @@ var http = {
 
 var cache = {
     NativeJSCache: function() {
-    this.cacheStore = createStoreIDBKV('data', 'keyval');
-    this.cacheStoreMetadata = createStoreIDBKV('metadata', 'keyval');
+    this.cacheStore = null;
+    this.cacheStoreMetadata = null;
     this.cacheMetadataArray = [];
     this.maxSizeBytes = 0;
     this.currentCacheSize = 0;
     this.evicting = false;
+    this.isCachingEnabled = false;
     this.init = function init(maxSizeMiB) {
-        bindCacheStore(this);
-        getBrowserStorageQuota().then(browserStorageQuota => {
-            this.maxSizeBytes = calculateCacheSize(maxSizeMiB * 1024 * 1024, browserStorageQuota);
-            let that = this;
-            valuesIDBKV(this.cacheStoreMetadata).then((values) => {
-                values.forEach(value => {
-                    let json = JSON.parse(value);
-                    that.cacheMetadataArray.push(json);
-                    that.currentCacheSize = that.currentCacheSize + json.length;
+        let that = this;
+        bindCacheStore(that);
+        isIndexedDBAvailable().thenApply(function(isCachingEnabled) {
+            that.isCachingEnabled = isCachingEnabled;
+            if (isCachingEnabled) {
+                that.cacheStore = createStoreIDBKV('data', 'keyval');
+                that.cacheStoreMetadata = createStoreIDBKV('metadata', 'keyval');
+                getBrowserStorageQuota().then(browserStorageQuota => {
+                    that.maxSizeBytes = calculateCacheSize(maxSizeMiB * 1024 * 1024, browserStorageQuota);
+                    valuesIDBKV(that.cacheStoreMetadata).then((values) => {
+                        values.forEach(value => {
+                            let json = JSON.parse(value);
+                            that.cacheMetadataArray.push(json);
+                            that.currentCacheSize = that.currentCacheSize + json.length;
+                        });
+                        console.log('Block Cache. Objects:' + values.length + " Size:" + that.currentCacheSize + " bytes" + " Max:" + this.maxSizeBytes);
+                    });
                 });
-                console.log('Block Cache. Objects:' + values.length + " Size:" + that.currentCacheSize + " bytes" + " Max:" + this.maxSizeBytes);
-            });
+            }
         });
     };
 	this.put = putIntoCacheProm;
@@ -257,10 +265,35 @@ var cache = {
 	this.clear = clearCache;
     }
 };
+//Firefox private mode does not support IndexedDB.  https://bugzilla.mozilla.org/show_bug.cgi?id=781982
+function isIndexedDBAvailable() {
+    let future = peergos.shared.util.Futures.incomplete();
+    if (navigator.userAgent.toLowerCase().indexOf("firefox") > -1){
+        //console.log("Firefox")
+        try {
+          var db = indexedDB.open("IsPBMode");
+          db.onerror = function() {
+                future.complete(false);
+          };
+          db.onsuccess = function() {
+                future.complete(true);
+          };
+        }
+        catch(err) {
+            future.complete(false);
+        }
+    } else {
+        future.complete(true);
+    }
+    return future;
+}
 var blockStoreCache;
 var pointerStoreCache;
 function bindCacheStore(storeCache) {
     blockStoreCache = storeCache;
+}
+function isCachingAvailable() {
+    return blockStoreCache.isCachingEnabled;
 }
 function getCurrentCacheSizeMiB() {
     return blockStoreCache.maxSizeBytes /1024 /1024;
@@ -268,23 +301,27 @@ function getCurrentCacheSizeMiB() {
 function modifyCacheSize(newCacheSizeMiB) {
     let newSizeBytes = newCacheSizeMiB * 1024 * 1024;
     let future = peergos.shared.util.Futures.incomplete();
-    if (newSizeBytes == 0) {
-        clearCacheFully(blockStoreCache, function() {
-            clearPointerCacheFully(pointerStoreCache, function() {
-                blockStoreCache.maxSizeBytes = 0;
-                future.complete(true);
+    if (!blockStoreCache.isCachingEnabled) {
+        future.complete(true);
+    } else {
+        if (newSizeBytes == 0) {
+            clearCacheFully(blockStoreCache, function() {
+                clearPointerCacheFully(pointerStoreCache, function() {
+                    blockStoreCache.maxSizeBytes = 0;
+                    future.complete(true);
+                });
             });
-        });
-    } else if (newSizeBytes < blockStoreCache.maxSizeBytes) {
-        blockStoreCache.maxSizeBytes = newSizeBytes;
-        if (triggerEviction(blockStoreCache)) {
-            evictLRU(blockStoreCache, function() {future.complete(true)});
+        } else if (newSizeBytes < blockStoreCache.maxSizeBytes) {
+            blockStoreCache.maxSizeBytes = newSizeBytes;
+            if (triggerEviction(blockStoreCache)) {
+                evictLRU(blockStoreCache, function() {future.complete(true)});
+            } else {
+                future.complete(true);
+            }
         } else {
+            blockStoreCache.maxSizeBytes = newSizeBytes;
             future.complete(true);
         }
-    } else {
-        blockStoreCache.maxSizeBytes = newSizeBytes;
-        future.complete(true);
     }
     return future;
 }
@@ -310,6 +347,9 @@ function calculateCacheSize(maxSizeBytes, maxBrowserStorageBytes) {
     }
 }
 function triggerEviction(cache) {
+    if (!cache.isCachingEnabled) {
+        return false;
+    }
     //above 90% of max
     return (cache.currentCacheSize / cache.maxSizeBytes) * 100.0 > 90.0;
 }
@@ -318,6 +358,9 @@ function reclaim(cache) {
     return Math.floor(cache.maxSizeBytes / 100 * 80);
 }
 function evictLRU(cache, callback) {
+    if (!cache.isCachingEnabled) {
+        return;
+    }
     if (cache.evicting) {
         return;
     }
@@ -354,7 +397,7 @@ function evictLRU(cache, callback) {
 //public native CompletableFuture<Boolean> put(Cid hash, byte[] data);
 function putIntoCacheProm(hash, data) {
     let future = peergos.shared.util.Futures.incomplete();
-    if (this.maxSizeBytes == 0) {
+    if (this.maxSizeBytes == 0 || !this.isCachingEnabled) {
         future.complete(true);
     } else {
         let that = this;
@@ -382,13 +425,17 @@ function putIntoCacheProm(hash, data) {
 //public native CompletableFuture<Optional<byte[]>> get(Cid hash);
 function getFromCacheProm(hash) {
     let future = peergos.shared.util.Futures.incomplete();
-    getIDBKV(hash.toString(), this.cacheStore).then((val) => {
-        if (val == null) {
-            future.complete(peergos.client.JsUtil.emptyOptional());
-        } else {
-            future.complete(peergos.client.JsUtil.optionalOf(convertToByteArray(val)));
-        }
-    });
+    if (!this.isCachingEnabled) {
+        future.complete(peergos.client.JsUtil.emptyOptional());
+    } else {
+        getIDBKV(hash.toString(), this.cacheStore).then((val) => {
+            if (val == null) {
+                future.complete(peergos.client.JsUtil.emptyOptional());
+            } else {
+                future.complete(peergos.client.JsUtil.optionalOf(convertToByteArray(val)));
+            }
+        });
+    }
     return future;
 }
 //public native boolean hasBlock(Cid hash);
@@ -398,16 +445,22 @@ function hasBlockInCache(hash) {
 //public native CompletableFuture<Boolean> clear();
 function clearCache() {
     let future = peergos.shared.util.Futures.incomplete();
-    clearCacheFully(this, function() {
+    if (cache.isCachingEnabled) {
+        clearCacheFully(this, function() {
+            future.complete(true);
+        });
+    } else {
         future.complete(true);
-    });
+    }
     return future;
 }
 function clearCacheFully(cache, func) {
     cache.cacheMetadataArray = [];
-    clearIDBKV(cache.cacheStore).then((res1) => {
-        clearIDBKV(cache.cacheStoreMetadata).then((res2) => func());
-    });
+    if (cache.isCachingEnabled) {
+        clearIDBKV(cache.cacheStore).then((res1) => {
+            clearIDBKV(cache.cacheStoreMetadata).then((res2) => func());
+        });
+    }
 }
 
 var pointerCache = {
@@ -418,15 +471,21 @@ var pointerCache = {
     this.maxItems = 2000;
     this.currentCacheSize = 0;
     this.evicting = false;
+    this.isCachingEnabled = false;
     this.init = function init(maxItems) {
-        bindPointerCacheStore(this);
         let that = this;
-        valuesIDBKV(this.cachePointerStoreMetadata).then((values) => {
-            values.forEach(value => {
-                let json = JSON.parse(value);
-                that.cachePointerMetadataArray.push(json);
-            });
-            console.log('Block Cache. Objects:' + values.length);
+        bindPointerCacheStore(that);
+        isIndexedDBAvailable().thenApply(function(isCachingEnabled) {
+            that.isCachingEnabled = isCachingEnabled;
+            if (isCachingEnabled) {
+                valuesIDBKV(that.cachePointerStoreMetadata).then((values) => {
+                    values.forEach(value => {
+                        let json = JSON.parse(value);
+                        that.cachePointerMetadataArray.push(json);
+                    });
+                    console.log('Block Cache. Objects:' + values.length);
+                });
+            }
         });
     };
 	this.put = putIntoPointerCacheProm;
@@ -446,7 +505,7 @@ function reclaimPointerCache(cache) {
     return Math.floor(cache.maxItems / 100 * 80);
 }
 function evictPointerCacheLRU(cache, callback) {
-    if (cache.evicting) {
+    if (cache.evicting || !cache.isCachingEnabled) {
         return;
     }
     cache.evicting = true;
@@ -482,7 +541,7 @@ function evictPointerCacheLRU(cache, callback) {
 //    public native CompletableFuture<Boolean> put(PublicKeyHash owner, PublicKeyHash writer, byte[] writerSignedBtreeRootHash);
 function putIntoPointerCacheProm(owner, writer, writerSignedBtreeRootHash) {
     let future = peergos.shared.util.Futures.incomplete();
-    if (this.maxSizeBytes == 0) {
+    if (!this.isCachingEnabled) {
         future.complete(true);
     } else {
         let that = this;
@@ -507,21 +566,27 @@ function putIntoPointerCacheProm(owner, writer, writerSignedBtreeRootHash) {
 //    public native CompletableFuture<Optional<byte[]>> get(PublicKeyHash owner, PublicKeyHash writer);
 function getFromPointerCacheProm(owner, writer) {
     let future = peergos.shared.util.Futures.incomplete();
-    let key = owner.toString() + "-" + writer.toString();
-    getIDBKV(key, this.cachePointerStore).then((val) => {
-        if (val == null) {
-            future.complete(peergos.client.JsUtil.emptyOptional());
-        } else {
-            future.complete(peergos.client.JsUtil.optionalOf(convertToByteArray(val)));
-        }
-    });
+    if (!this.isCachingEnabled) {
+        future.complete(peergos.client.JsUtil.emptyOptional());
+    } else {
+        let key = owner.toString() + "-" + writer.toString();
+        getIDBKV(key, this.cachePointerStore).then((val) => {
+            if (val == null) {
+                future.complete(peergos.client.JsUtil.emptyOptional());
+            } else {
+                future.complete(peergos.client.JsUtil.optionalOf(convertToByteArray(val)));
+            }
+        });
+    }
     return future;
 }
 function clearPointerCacheFully(cache, func) {
-    cache.cachePointerMetadataArray = [];
-    clearIDBKV(cache.cachePointerStore).then((res1) => {
-        clearIDBKV(cache.cachePointerStoreMetadata).then((res2) => func());
-    });
+    if (cache.isCachingEnabled) {
+        cache.cachePointerMetadataArray = [];
+        clearIDBKV(cache.cachePointerStore).then((res1) => {
+            clearIDBKV(cache.cachePointerStoreMetadata).then((res2) => func());
+        });
+    }
 }
 
 function decodeUTF8(s) {

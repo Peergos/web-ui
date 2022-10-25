@@ -160,6 +160,10 @@ module.exports = {
         },
         modifyCacheSize: function() {
             let that = this;
+            if (!isCachingAvailable()) {
+                that.$toast('Cache not available');
+                return;
+            }
             getBrowserStorageQuota().then(maxStorage => {
                 let maxStorageMiB = Math.floor(maxStorage /1024 /1024);
                 this.prompt_message = 'Set Cache Size (MiB)';
@@ -182,7 +186,7 @@ module.exports = {
                             that.showSettingsSpinner = true;
                             modifyCacheSize(validNewCacheSize).thenApply(() => {
                                 that.showSettingsSpinner = false;
-                                that.$toast('Caches Size Updated');
+                                that.$toast('Cache Size Updated');
                             });
                         }
                     }
