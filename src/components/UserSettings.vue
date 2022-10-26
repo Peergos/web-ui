@@ -169,10 +169,12 @@ module.exports = {
                 this.prompt_message = 'Set Cache Size (MiB)';
                 let roundedCurrentCacheSize = Math.floor(getCurrentDesiredCacheSize());
                 this.prompt_value = '' + roundedCurrentCacheSize;
-
-                this.prompt_placeholder = '0';
+                this.prompt_placeholder = " ";
                 this.prompt_consumer_func = function (prompt_result) {
                     that.showPrompt = false;
+                    if (prompt_result == null) {
+                        return;
+                    }
                     let newCacheSizeMiB = prompt_result.trim();
                     if (!that.validateCacheSize(newCacheSizeMiB)) {
                         that.$toast.error('Cache size value not valid', {timeout:false});
