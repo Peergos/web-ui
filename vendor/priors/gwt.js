@@ -251,15 +251,24 @@ var cache = {
                 getDesiredCacheSize().thenApply(desiredCacheSize => {
                     getBrowserStorageQuota().then(browserStorageQuota => {
                         that.maxSizeBytes = calculateCacheSize(maxSizeMiB * 1024 * 1024, browserStorageQuota, desiredCacheSize);
-                        setDesiredCacheSize(that.maxSizeBytes).thenApply(done => {
-                            that.desiredCacheSize = that.maxSizeBytes;
-                            valuesIDBKV(that.cacheStoreMetadata).then((values) => {
-                                values.forEach(value => {
-                                    let json = JSON.parse(value);
-                                    that.cacheMetadataArray.push(json);
-                                    that.currentCacheSize = that.currentCacheSize + json.length;
+                        that.desiredCacheSize = that.maxSizeBytes;
+                        valuesIDBKV(that.cacheStoreMetadata).then((values) => {
+                            values.forEach(value => {
+                                let json = JSON.parse(value);
+                                that.cacheMetadataArray.push(json);
+                                that.currentCacheSize = that.currentCacheSize + json.l;
+                            });
+                            prepareLRU().thenApply(lruInitialised => {
+                                setDesiredCacheSize(that.maxSizeBytes).thenApply(done => {
+                                    let currentMiB = (that.currentCacheSize /1024 /1024).toFixed(2);
+                                    let maxMiB = (that.maxSizeBytes /1024 /1024).toFixed(2);
+                                    getBrowserStorageUsage().then(browserStorageUsage => {
+                                        console.log('Block Cache. Actual usage:' + browserStorageUsage);
+                                        //audit(that.currentCacheSize).thenApply(auditResult => {
+                                            console.log('Block Cache. Objects:' + values.length + " Size:" + currentMiB + " MiB" + " Max:" + maxMiB + " MiB");
+                                        //});
+                                    });
                                 });
-                                console.log('Block Cache. Objects:' + values.length + " Size:" + that.currentCacheSize + " bytes" + " Max:" + that.maxSizeBytes);
                             });
                         });
                     });
@@ -273,6 +282,11 @@ var cache = {
 	this.clear = clearCache;
     }
 };
+function prepareLRU() {
+    let future = peergos.shared.util.Futures.incomplete();
+    evictLRU(blockStoreCache, function() {future.complete(true)});
+    return future;
+}
 //Firefox private mode does not support IndexedDB.  https://bugzilla.mozilla.org/show_bug.cgi?id=781982
 function isIndexedDBAvailable() {
     let future = peergos.shared.util.Futures.incomplete();
@@ -321,12 +335,22 @@ function getDesiredCacheSize() {
     return future;
 }
 function setDesiredCacheSize(desiredSize) {
+    let that = this;
     let future = peergos.shared.util.Futures.incomplete();
     if (!blockStoreCache.isCachingEnabled) {
         future.complete(true);
     } else {
         setIDBKV("desiredSize", desiredSize, blockStoreCache.cacheDesiredSizeStore).then(() => {
             future.complete(true);
+        }).catch(err => {
+            console.error("unable to update desired size!", err.message);
+            clearCacheFully(blockStoreCache, function() {
+                setIDBKV("desiredSize", desiredSize, blockStoreCache.cacheDesiredSizeStore).then(() => {
+                    future.complete(true);
+                }).catch(err => {
+                    future.complete(true);
+                });
+            });
         });
     }
     return future;
@@ -361,6 +385,15 @@ function modifyCacheSize(newCacheSizeMiB) {
     }
     return future;
 }
+function getBrowserStorageUsage() {
+    if (navigator.storage && navigator.storage.estimate) {
+        return navigator.storage.estimate().then(quota => quota.usage);
+    } else {
+        let prom = new Promise(function(resolve, reject) { resolve(0)});
+        return prom;
+    }
+}
+
 function getBrowserStorageQuota() {
     if (navigator.storage && navigator.storage.estimate) {
         return navigator.storage.estimate().then(quota => quota.quota);
@@ -435,6 +468,47 @@ function evictLRU(cache, callback) {
             clearCacheFully(cache, function(){callback();cache.evicting=false;});
     });
 }
+function createBlockCacheMetadataRecord(key, blockLength) {
+    let now = new Date();
+    let length = blockLength + (key.length * 2);
+    let json = {key: key, l: length, t: now.getTime()};
+    var record = JSON.stringify(json);
+    json.l = length + record.length;//close enough
+    return json;
+}
+
+function audit(calcValue) {
+    let future = peergos.shared.util.Futures.incomplete();
+    var actualSize = 0;
+    var cacheStoreCount = 0;
+    var cacheStoreMetadataCount = 0;
+    valuesIDBKV(blockStoreCache.cacheStore).then((values) => {
+        values.forEach(value => {
+            actualSize = actualSize + value.byteLength;
+            cacheStoreCount++;
+        });
+        keysIDBKV(blockStoreCache.cacheStore).then((keys) => {
+            keys.forEach(key => {
+                actualSize = actualSize + key.length;
+            });
+            valuesIDBKV(blockStoreCache.cacheStoreMetadata).then((values) => {
+                values.forEach(value => {
+                    actualSize = actualSize + value.length;
+                    cacheStoreMetadataCount++;
+                });
+                keysIDBKV(blockStoreCache.cacheStoreMetadata).then((keys) => {
+                    keys.forEach(key => {
+                        actualSize = actualSize + key.length;
+                    });
+                    let diff = calcValue - actualSize;
+                    console.log("currentCacheSize=" + calcValue +" actual size=" + actualSize + " diff=" + diff + " cache count=" + cacheStoreCount+" metadataCount=" + cacheStoreMetadataCount);
+                    future.complete(true);
+                });
+            });
+        });
+    });
+    return future;
+}
 //public native CompletableFuture<Boolean> put(Cid hash, byte[] data);
 function putIntoCacheProm(hash, data) {
     let future = peergos.shared.util.Futures.incomplete();
@@ -444,35 +518,50 @@ function putIntoCacheProm(hash, data) {
         let that = this;
         let key = hash.toString();
         setIDBKV(key, data, this.cacheStore).then(() => {
-            let now = new Date();
-            let length = data.length + (key.length * 2);
-            let json = {key: key, l: length, t: now.getTime()};
-            var value = JSON.stringify(json);
-            json.length = length + value.length; //close enough
-            value = JSON.stringify(json);
-            that.currentCacheSize = that.currentCacheSize + json.length;
-            setIDBKV(key, value, that.cacheStoreMetadata).then(() => {
-                that.cacheMetadataArray.push(json);
-                if (triggerEviction(this)) {
-                    evictLRU(this, function() {future.complete(true)});
-                } else {
+            let metaData = createBlockCacheMetadataRecord(key, data.byteLength);
+            that.currentCacheSize = that.currentCacheSize + metaData.l;
+            setIDBKV(key, JSON.stringify(metaData), that.cacheStoreMetadata).then(() => {
+                //audit(that.currentCacheSize).thenApply(auditResult => {
+                    that.cacheMetadataArray.push(metaData);
+                    if (triggerEviction(this)) {
+                        evictLRU(this, function() {future.complete(true)});
+                    } else {
+                        future.complete(true);
+                    }
+                //});
+            }).catch(err => {
+                delIDBKV(key, that.cacheStore).then(() => {
                     future.complete(true);
-                }
+                });
             });
+        }).catch(err => {
+            evictLRU(blockStoreCache, function() {future.complete(true)});
         });
     }
     return future;
 }
+function noop() {
+}
 //public native CompletableFuture<Optional<byte[]>> get(Cid hash);
 function getFromCacheProm(hash) {
+    let that = this;
     let future = peergos.shared.util.Futures.incomplete();
     if (!this.isCachingEnabled) {
         future.complete(peergos.client.JsUtil.emptyOptional());
     } else {
-        getIDBKV(hash.toString(), this.cacheStore).then((val) => {
+        let key = hash.toString();
+        getIDBKV(key, this.cacheStore).then((val) => {
             if (val == null) {
                 future.complete(peergos.client.JsUtil.emptyOptional());
             } else {
+                setTimeout(() => {
+                    let metaData = createBlockCacheMetadataRecord(key, val.length);
+                    setIDBKV(key, JSON.stringify(metaData), that.cacheStoreMetadata).then(() => {
+                        noop();
+                    }).catch(err => {
+                        noop();
+                    });
+                });
                 future.complete(peergos.client.JsUtil.optionalOf(convertToByteArray(val)));
             }
         });
@@ -496,8 +585,9 @@ function clearCache() {
     return future;
 }
 function clearCacheFully(cache, func) {
-    cache.cacheMetadataArray = [];
     if (cache.isCachingEnabled) {
+        cache.cacheMetadataArray = [];
+        cache.currentCacheSize = 0
         clearIDBKV(cache.cacheStore).then((res1) => {
             clearIDBKV(cache.cacheStoreMetadata).then((res2) => func());
         });
@@ -524,7 +614,8 @@ var pointerCache = {
                         let json = JSON.parse(value);
                         that.cachePointerMetadataArray.push(json);
                     });
-                    console.log('Block Cache. Objects:' + values.length);
+                    that.currentCacheSize = values.length;
+                    console.log('Pointer Cache. Objects:' + that.currentCacheSize);
                 });
             }
         });
@@ -599,13 +690,20 @@ function putIntoPointerCacheProm(owner, writer, writerSignedBtreeRootHash) {
                 } else {
                     future.complete(true);
                 }
+            }).catch(err => {
+                delIDBKV(key, that.cachePointerStore).then(() => {
+                    future.complete(true);
+                });
             });
+        }).catch(err => {
+            future.complete(true);
         });
     }
     return future;
 }
 //    public native CompletableFuture<Optional<byte[]>> get(PublicKeyHash owner, PublicKeyHash writer);
 function getFromPointerCacheProm(owner, writer) {
+    let that = this;
     let future = peergos.shared.util.Futures.incomplete();
     if (!this.isCachingEnabled) {
         future.complete(peergos.client.JsUtil.emptyOptional());
@@ -615,6 +713,15 @@ function getFromPointerCacheProm(owner, writer) {
             if (val == null) {
                 future.complete(peergos.client.JsUtil.emptyOptional());
             } else {
+                setTimeout(() => {
+                    let now = new Date();
+                    let json = {key: key, t: now.getTime()};
+                    setIDBKV(key, JSON.stringify(json), that.cachePointerStoreMetadata).then(() => {
+                        noop();
+                    }).catch(err => {
+                        noop();
+                    });
+                });
                 future.complete(peergos.client.JsUtil.optionalOf(convertToByteArray(val)));
             }
         });
@@ -624,6 +731,7 @@ function getFromPointerCacheProm(owner, writer) {
 function clearPointerCacheFully(cache, func) {
     if (cache.isCachingEnabled) {
         cache.cachePointerMetadataArray = [];
+        cache.currentCacheSize = 0;
         clearIDBKV(cache.cachePointerStore).then((res1) => {
             clearIDBKV(cache.cachePointerStoreMetadata).then((res2) => func());
         });
