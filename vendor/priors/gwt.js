@@ -536,6 +536,8 @@ function putIntoCacheProm(hash, data) {
     }
     return future;
 }
+function noop() {
+}
 //public native CompletableFuture<Optional<byte[]>> get(Cid hash);
 function getFromCacheProm(hash) {
     let that = this;
@@ -548,12 +550,13 @@ function getFromCacheProm(hash) {
             if (val == null) {
                 future.complete(peergos.client.JsUtil.emptyOptional());
             } else {
-                let metaData = createBlockCacheMetadataRecord(key, val.length);
-                setIDBKV(key, JSON.stringify(metaData), that.cacheStoreMetadata).then(() => {
-                    future.complete(peergos.client.JsUtil.optionalOf(convertToByteArray(val)));
-                }).catch(err => {
-                    future.complete(peergos.client.JsUtil.optionalOf(convertToByteArray(val)));
+                setTimeout(() => {
+                    let metaData = createBlockCacheMetadataRecord(key, val.length);
+                    setIDBKV(key, JSON.stringify(metaData), that.cacheStoreMetadata).then(() => {
+                        noop();
+                    });
                 });
+                future.complete(peergos.client.JsUtil.optionalOf(convertToByteArray(val)));
             }
         });
     }
@@ -700,13 +703,14 @@ function getFromPointerCacheProm(owner, writer) {
             if (val == null) {
                 future.complete(peergos.client.JsUtil.emptyOptional());
             } else {
-                let now = new Date();
-                let json = {key: key, t: now.getTime()};
-                setIDBKV(key, JSON.stringify(json), that.cachePointerStoreMetadata).then(() => {
-                    future.complete(peergos.client.JsUtil.optionalOf(convertToByteArray(val)));
-                }).catch(err => {
-                    future.complete(peergos.client.JsUtil.optionalOf(convertToByteArray(val)));
+                setTimeout(() => {
+                    let now = new Date();
+                    let json = {key: key, t: now.getTime()};
+                    setIDBKV(key, JSON.stringify(json), that.cachePointerStoreMetadata).then(() => {
+                        noop();
+                    });
                 });
+                future.complete(peergos.client.JsUtil.optionalOf(convertToByteArray(val)));
             }
         });
     }
