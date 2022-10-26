@@ -1515,7 +1515,9 @@ module.exports = {
                             max:resultingSize,
                             name: sortedFiles[i].name
                         };
-                        that.$toast({component: ProgressBar,props:  progress} , { icon: false , timeout:false, id: files[i].name})
+                        that.$toast(
+                            {component: ProgressBar,props:  progress} ,
+                            { icon: false , timeout:false, id: sortedFiles[i].name})
                         progressBars.push(progress);
                     }
                     let uploadDirectoryPath = that.getPath;
