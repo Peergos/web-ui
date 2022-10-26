@@ -529,6 +529,10 @@ function putIntoCacheProm(hash, data) {
                         future.complete(true);
                     }
                 //});
+            }).catch(err => {
+                delIDBKV(key, that.cacheStore).then(() => {
+                    future.complete(true);
+                });
             });
         }).catch(err => {
             evictLRU(blockStoreCache, function() {future.complete(true)});
@@ -553,6 +557,8 @@ function getFromCacheProm(hash) {
                 setTimeout(() => {
                     let metaData = createBlockCacheMetadataRecord(key, val.length);
                     setIDBKV(key, JSON.stringify(metaData), that.cacheStoreMetadata).then(() => {
+                        noop();
+                    }).catch(err => {
                         noop();
                     });
                 });
@@ -684,6 +690,10 @@ function putIntoPointerCacheProm(owner, writer, writerSignedBtreeRootHash) {
                 } else {
                     future.complete(true);
                 }
+            }).catch(err => {
+                delIDBKV(key, that.cachePointerStore).then(() => {
+                    future.complete(true);
+                });
             });
         }).catch(err => {
             future.complete(true);
@@ -707,6 +717,8 @@ function getFromPointerCacheProm(owner, writer) {
                     let now = new Date();
                     let json = {key: key, t: now.getTime()};
                     setIDBKV(key, JSON.stringify(json), that.cachePointerStoreMetadata).then(() => {
+                        noop();
+                    }).catch(err => {
                         noop();
                     });
                 });
