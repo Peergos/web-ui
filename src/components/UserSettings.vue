@@ -266,9 +266,12 @@ module.exports = {
 			this.$store.commit("CURRENT_MODAL", "ModalAccount");
 		},
 		logout() {
-			this.$store.commit("SET_CONTEXT", null);
-			window.location.fragment = "";
-			window.location.reload();
+		    let that = this;
+		    clearLoginData(cleared =>  {
+                that.$store.commit("SET_CONTEXT", null);
+                window.location.fragment = "";
+                window.location.reload();
+            });
 		},
 		toggleSidebar() {
 			this.$store.commit("TOGGLE_SIDEBAR");

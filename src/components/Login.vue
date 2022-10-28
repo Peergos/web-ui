@@ -12,6 +12,16 @@
 
 		<FormPassword v-model="password" @keyup.native.enter="login()"/>
 
+        <label class="checkbox__group">
+            Insert allow offline login text here ....
+            <input
+                type="checkbox"
+                name="loginOffline"
+                v-model="loginOffline"
+            />
+            <span class="checkmark"></span>
+        </label>
+
 		<AppButton class="login" @click.native="login()" type="primary" block accent  icon="arrow-right">
 			Sign in
 		</AppButton>
@@ -33,6 +43,7 @@ module.exports = {
 			password: [],
 			passwordIsVisible: false,
 			demo: true,
+            loginOffline: false
 		};
 	},
 	computed: {

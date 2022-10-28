@@ -394,16 +394,25 @@ function clearAllCaches(future) {
     clearCacheFully(blockStoreCache, function() {
         blockStoreCache.maxSizeBytes = 0;
         clearPointerCacheFully(pointerStoreCache, function() {
-            clearBatCacheFully(function() {
-                clearAccountCacheFully(function() {
-                    clearPkiCacheFully(function() {
-                        future.complete(true);
-                    });
-                });
+            clearLoginData(function() {
+                future.complete(true);
             });
         });
     });
     return future;
+}
+function clearLoginData(func) {
+    if (accountStoreCache != null && accountStoreCache.offlineAccess) {
+        clearBatCacheFully(function() {
+            clearAccountCacheFully(function() {
+                clearPkiCacheFully(function() {
+                    func();
+                });
+            });
+        });
+    } else {
+        func();
+    }
 }
 function getBrowserStorageUsage() {
     if (navigator.storage && navigator.storage.estimate) {
@@ -836,6 +845,7 @@ var accountCache = {
     NativeJSAccountCache: function() {
     this.cacheAccountStore = createStoreIDBKV('account', 'keyval');
     this.isCachingEnabled = false;
+    this.offlineAccess = true;
     this.init = function init() {
         let that = this;
         bindAccountCacheStore(that);
