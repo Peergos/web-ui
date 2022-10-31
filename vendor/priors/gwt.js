@@ -313,6 +313,7 @@ function isIndexedDBAvailable() {
 var blockStoreCache;
 var pointerStoreCache;
 var batStoreCache;
+var rootKeyStoreCache;
 var accountStoreCache;
 var pkiStoreCache;
 
@@ -404,9 +405,11 @@ function clearAllCaches(future) {
 function clearLoginData(func) {
     if (accountStoreCache != null && accountStoreCache.offlineAccess) {
         clearBatCacheFully(function() {
-            clearAccountCacheFully(function() {
-                clearPkiCacheFully(function() {
-                    func();
+            clearRootKeyCacheFully(function() {
+                clearAccountCacheFully(function() {
+                    clearPkiCacheFully(function() {
+                        func();
+                    });
                 });
             });
         });
@@ -795,18 +798,14 @@ var batCache = {
 function bindBatCacheStore(storeCache) {
     batStoreCache = storeCache;
 }
-//        public native CompletableFuture<Boolean> setUserBats(String username, String[] serialisedBats);
+//        public native CompletableFuture<Boolean> setUserBats(String username, byte[] serialisedBats);
 function setUserBatsIntoCacheProm(username, serialisedBats) {
     let future = peergos.shared.util.Futures.incomplete();
     if (!this.isCachingEnabled) {
         future.complete(true);
     } else {
         let that = this;
-        let jsBats = [];
-        for(var i = 0; i < serialisedBats.length; i++) {
-            jsBats.push(serialisedBats[i]);
-        }
-        setIDBKV(username, jsBats, this.cacheBatStore).then(() => {
+        setIDBKV(username, serialisedBats, this.cacheBatStore).then(() => {
             future.complete(true);
         }).catch(err => {
             future.complete(true);
@@ -815,18 +814,18 @@ function setUserBatsIntoCacheProm(username, serialisedBats) {
     return future;
 }
 
-//        public native CompletableFuture<List<BatWithId>> getUserBats(String username);
+//    public native CompletableFuture<byte[]> getUserBats(String username);
 function getUserBatsFromCacheProm(username) {
     let that = this;
     let future = peergos.shared.util.Futures.incomplete();
     if (!this.isCachingEnabled) {
-        future.complete(peergos.client.JsUtil.emptyList());
+        future.complete(null);
     } else {
         getIDBKV(username, this.cacheBatStore).then((val) => {
             if (val == null) {
-                future.complete(peergos.client.JsUtil.emptyList());
+                future.complete(null);
             } else {
-                future.complete(peergos.client.JsUtil.asList(val));
+                future.complete(convertToByteArray(val));
             }
         });
     }
@@ -836,6 +835,68 @@ function getUserBatsFromCacheProm(username) {
 function clearBatCacheFully(func) {
     if (batStoreCache.isCachingEnabled) {
         clearIDBKV(batStoreCache.cacheBatStore).then(res => func());
+    } else {
+        func();
+    }
+}
+
+var rootKeyCache = {
+    NativeJSRootKeyCache: function() {
+    this.cacheRootKeyStore = createStoreIDBKV('rootKey', 'keyval');
+    this.isCachingEnabled = false;
+    this.init = function init() {
+        let that = this;
+        bindRootKeyCacheStore(that);
+        isIndexedDBAvailable().thenApply(function(isCachingEnabled) {
+            that.isCachingEnabled = isCachingEnabled;
+        });
+    };
+	this.setRootKey = setRootKeyIntoCacheProm;
+	this.getRootKey = getRootKeyFromCacheProm;
+    }
+};
+
+function bindRootKeyCacheStore(storeCache) {
+    rootKeyStoreCache = storeCache;
+}
+
+//  public native CompletableFuture<Boolean> setRootKey(String username, byte[] rootKeySerialised);
+function setRootKeyIntoCacheProm(username, rootKeySerialised) {
+    let future = peergos.shared.util.Futures.incomplete();
+    if (!this.isCachingEnabled) {
+        future.complete(true);
+    } else {
+        let that = this;
+        setIDBKV(username, rootKeySerialised, this.cacheRootKeyStore).then(() => {
+            future.complete(true);
+        }).catch(err => {
+            future.complete(true);
+        });
+    }
+    return future;
+}
+
+//    public native CompletableFuture<byte[]> getRootKey(String username);
+function getRootKeyFromCacheProm(username) {
+    let that = this;
+    let future = peergos.shared.util.Futures.incomplete();
+    if (!this.isCachingEnabled) {
+        future.complete(null);
+    } else {
+        getIDBKV(username, this.cacheRootKeyStore).then((val) => {
+            if (val == null) {
+                future.complete(null);
+            } else {
+                future.complete(convertToByteArray(val));
+            }
+        });
+    }
+    return future;
+}
+
+function clearRootKeyCacheFully(func) {
+    if (rootKeyStoreCache != null && rootKeyStoreCache.isCachingEnabled) {
+        clearIDBKV(rootKeyStoreCache.cacheRootKeyStore).then(res => func());
     } else {
         func();
     }
