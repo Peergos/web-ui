@@ -1488,6 +1488,10 @@ module.exports = {
             if (this.isSecretLink && !this.currentDir.isWritable()) {
                 return;
             }
+            if (this.quotaBytes.toString() == 0) {
+                this.$toast.error("Client Offline!", {timeout:false, id: 'upload'})
+                return;
+            }
             let isWritableSecretLink = this.isSecretLink && this.currentDir.isWritable();
             let totalSize = 0;
             for(var i=0; i < files.length; i++) {
@@ -1825,6 +1829,10 @@ module.exports = {
 						});
 				} else if (clipboard.op == "copy") {
 					console.log("paste-copy");
+                    if (this.quotaBytes.toString() == 0) {
+                        this.$toast.error("Client Offline!", {timeout:false, id: 'upload'})
+                        return;
+                    }
 					this.calculateTotalSize(clipboard.fileTreeNode, clipboard.path).thenApply(statistics => {
                         if (Number(that.quotaBytes.toString()) < statistics.apparentSize) {
                             let errMsg = "File copy operation exceeds total space\n" + "Please upgrade to get more space";

@@ -391,32 +391,7 @@ function modifyCacheSize(newCacheSizeMiB) {
     }
     return future;
 }
-function clearAllCaches(future) {
-    clearCacheFully(blockStoreCache, function() {
-        blockStoreCache.maxSizeBytes = 0;
-        clearPointerCacheFully(pointerStoreCache, function() {
-            clearLoginData(function() {
-                future.complete(true);
-            });
-        });
-    });
-    return future;
-}
-function clearLoginData(func) {
-    if (accountStoreCache != null && accountStoreCache.offlineAccess) {
-        clearBatCacheFully(function() {
-            clearRootKeyCacheFully(function() {
-                clearAccountCacheFully(function() {
-                    clearPkiCacheFully(function() {
-                        func();
-                    });
-                });
-            });
-        });
-    } else {
-        func();
-    }
-}
+
 function getBrowserStorageUsage() {
     if (navigator.storage && navigator.storage.estimate) {
         return navigator.storage.estimate().then(quota => quota.usage);

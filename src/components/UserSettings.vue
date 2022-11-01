@@ -267,7 +267,7 @@ module.exports = {
 		},
 		logout() {
 		    let that = this;
-		    clearLoginData(cleared =>  {
+		    clearRootKeyCacheFully(cleared =>  {
                 that.$store.commit("SET_CONTEXT", null);
                 window.location.fragment = "";
                 window.location.reload();
