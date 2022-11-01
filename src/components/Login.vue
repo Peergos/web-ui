@@ -13,7 +13,7 @@
 		<FormPassword v-model="password" @keyup.native.enter="login()"/>
 
         <label class="checkbox__group">
-            Insert allow offline login text here ....
+            Stay logged in
             <input
                 type="checkbox"
                 name="loginOffline"
@@ -61,26 +61,43 @@ module.exports = {
 	mounted() {
 		this.$refs.username.focus()
 		// :)
-		setTimeout(() => this.loginDEV(), 0);
+		setTimeout(() => this.autoLogin(), 0);
 	},
 	methods: {
 		...Vuex.mapActions([
 			'updateSocial'
 		]),
-		loginDEV() {
+		autoLogin() {
 		    // bypass login on DEV
 			if (this.network == null) {
-				setTimeout(() => this.loginDEV(), 100);
+				setTimeout(() => this.autoLogin(), 100);
 				return;
 			}
 		    if( window.location.hostname == "localhost"){
 				var query = new URLSearchParams(window.location.search)
 				this.username = query.get("username")
-				if (this.username == null)
-					return;
-				this.password = query.get("password")
-				this.login()
+				if (this.username != null) {
+				    this.password = query.get("password")
+				    this.login()
+				}
 		    }
+            const creationStart = Date.now();
+            const that = this;
+            getRootKeyEntryFromCacheProm().thenApply(function (rootKeyPair) {
+                if (rootKeyPair != null) {
+                    let loginRoot = peergos.shared.crypto.symmetric.SymmetricKey.fromByteArray(rootKeyPair.rootKey);
+                    directGetEntryDataFromCacheProm(rootKeyPair.username).thenApply(function (entryPoints) {
+                        if (entryPoints != null) {
+                            let entryData = peergos.shared.user.UserStaticData.fromByteArray(entryPoints);
+                            peergos.shared.user.UserContext.restoreContext(rootKeyPair.username, loginRoot, entryData,
+                                that.network, that.crypto, { accept: (x) => (that.$toast.info(x,{ id: 'login' })) }
+                            ).thenApply(function (context) {
+                                  that.postLogin(creationStart, context);
+                            })
+                        }
+                    });
+                }
+            });
 		},
 		togglePassword() {
 			this.passwordIsVisible = !this.passwordIsVisible
@@ -98,26 +115,39 @@ module.exports = {
 				 { accept: (x) => (that.$toast.info(x,{ id: 'login' })) }
 				)
 				.thenApply(function (context) {
-
-					that.$toast.dismiss('login');
-
-					that.$store.commit('SET_CONTEXT', context);
-
-					that.$store.commit('CURRENT_VIEW', that.appFromUrl());
-
-					that.$store.commit('USER_LOGIN', true);
-
-					that.$emit("initApp")
-
-					that.updateSocial()
-
-					// that.$store.commit('CURRENT_MODAL', 'ModalTour');
-
-					console.log("Signing in/up took " + (Date.now()-creationStart)+" mS from function call");
+                    that.postLogin(creationStart, context);
 				})
 				.exceptionally(function (throwable) {
 					that.$toast.error(that.uriDecode(throwable.getMessage()), {timeout:false, id: 'login'})
 				});
+		},
+		postLogin(creationStart, context) {
+			const that = this;
+            that.$toast.dismiss('login');
+
+            that.$store.commit('SET_CONTEXT', context);
+
+            that.$store.commit('CURRENT_VIEW', that.appFromUrl());
+
+            that.$store.commit('USER_LOGIN', true);
+
+            that.$emit("initApp")
+
+            that.updateSocial()
+
+            // that.$store.commit('CURRENT_MODAL', 'ModalTour');
+
+            console.log("Signing in/up took " + (Date.now()-creationStart)+" mS from function call");
+            if (that.loginOffline) {
+                let rootKey = context.rootKey.toByteArray();
+                setRootKeyIntoCacheProm(context.username, rootKey).thenApply(function (isSupported) {
+                    if (isSupported) {
+                        console.log("Offline support enabled");
+                    } else {
+                        console.log("Offline support not available");
+                    }
+                });
+            }
 		},
 		appFromUrl(){
 			const props = this.getPropsFromUrl();

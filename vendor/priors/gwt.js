@@ -313,9 +313,9 @@ function isIndexedDBAvailable() {
 var blockStoreCache;
 var pointerStoreCache;
 var batStoreCache;
-var rootKeyStoreCache;
 var accountStoreCache;
 var pkiStoreCache;
+var rootKeyCache;
 
 function bindCacheStore(storeCache) {
     blockStoreCache = storeCache;
@@ -840,63 +840,48 @@ function clearBatCacheFully(func) {
     }
 }
 
-var rootKeyCache = {
-    NativeJSRootKeyCache: function() {
-    this.cacheRootKeyStore = createStoreIDBKV('rootKey', 'keyval');
-    this.isCachingEnabled = false;
-    this.init = function init() {
-        let that = this;
-        bindRootKeyCacheStore(that);
-        isIndexedDBAvailable().thenApply(function(isCachingEnabled) {
-            that.isCachingEnabled = isCachingEnabled;
-        });
-    };
-	this.setRootKey = setRootKeyIntoCacheProm;
-	this.getRootKey = getRootKeyFromCacheProm;
-    }
-};
-
-function bindRootKeyCacheStore(storeCache) {
-    rootKeyStoreCache = storeCache;
-}
-
-//  public native CompletableFuture<Boolean> setRootKey(String username, byte[] rootKeySerialised);
-function setRootKeyIntoCacheProm(username, rootKeySerialised) {
-    let future = peergos.shared.util.Futures.incomplete();
-    if (!this.isCachingEnabled) {
-        future.complete(true);
-    } else {
-        let that = this;
-        setIDBKV(username, rootKeySerialised, this.cacheRootKeyStore).then(() => {
-            future.complete(true);
-        }).catch(err => {
-            future.complete(true);
-        });
-    }
-    return future;
-}
-
-//    public native CompletableFuture<byte[]> getRootKey(String username);
-function getRootKeyFromCacheProm(username) {
+function getRootKeyEntryFromCacheProm() {
     let that = this;
     let future = peergos.shared.util.Futures.incomplete();
-    if (!this.isCachingEnabled) {
-        future.complete(null);
-    } else {
-        getIDBKV(username, this.cacheRootKeyStore).then((val) => {
-            if (val == null) {
-                future.complete(null);
-            } else {
-                future.complete(convertToByteArray(val));
-            }
-        });
-    }
+    isIndexedDBAvailable().thenApply(function(isCachingEnabled) {
+        if (isCachingEnabled) {
+            that.rootKeyCache = createStoreIDBKV('rootKey', 'keyval');
+            entriesIDBKV(that.rootKeyCache).then((val) => {
+                if (val == null || val.length == 0) {
+                    future.complete(null);
+                } else {
+                    let storedUsername = val[0][0];
+                    let storedRootKey = convertToByteArray(val[0][1]);
+                    future.complete({username: storedUsername, rootKey: storedRootKey});
+                }
+            });
+        } else {
+            future.complete(null);
+        }
+    });
+    return future;
+}
+function setRootKeyIntoCacheProm(username, rootKeySerialised) {
+    let that = this;
+    let future = peergos.shared.util.Futures.incomplete();
+    isIndexedDBAvailable().thenApply(function(isCachingEnabled) {
+        if (isCachingEnabled) {
+            that.rootKeyCache = createStoreIDBKV('rootKey', 'keyval');
+            setIDBKV(username, rootKeySerialised, that.rootKeyCache).then(() => {
+                future.complete(true);
+            }).catch(err => {
+                future.complete(false);
+            });
+        } else {
+            future.complete(false);
+        }
+    });
     return future;
 }
 
 function clearRootKeyCacheFully(func) {
-    if (rootKeyStoreCache != null && rootKeyStoreCache.isCachingEnabled) {
-        clearIDBKV(rootKeyStoreCache.cacheRootKeyStore).then(res => func());
+    if (rootKeyCache != null) {
+        clearIDBKV(rootKeyCache).then(res => func());
     } else {
         func();
     }
@@ -953,6 +938,26 @@ function getEntryDataFromCacheProm(key) {
             }
         });
     }
+    return future;
+}
+
+function directGetEntryDataFromCacheProm(key) {
+    let that = this;
+    let future = peergos.shared.util.Futures.incomplete();
+    isIndexedDBAvailable().thenApply(function(isCachingEnabled) {
+        if (!isCachingEnabled) {
+            future.complete(null);
+        } else {
+            let accountStoreCache = createStoreIDBKV('account', 'keyval');
+            getIDBKV(key, accountStoreCache).then((val) => {
+                if (val == null) {
+                    future.complete(null);
+                } else {
+                    future.complete(convertToByteArray(val));
+                }
+            });
+        }
+    });
     return future;
 }
 
