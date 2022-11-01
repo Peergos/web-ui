@@ -54,7 +54,7 @@ function getWithHeadersProm(url, headers) {
     };
     
     req.onerror = function(e) {
-        future.completeExceptionally(java.lang.Throwable.of(Error("Network Error")));
+        future.completeExceptionally(new java.net.ConnectException("Unable to connect"));
     };
     
     req.send();
@@ -95,7 +95,7 @@ function postProm(url, data, timeout) {
 	};
 	
 	req.onerror = function(e) {
-            reject(Error("Network Error"));
+            future.completeExceptionally(new java.net.ConnectException("Unable to connect"));
 	};
 
         req.ontimeout = function() {
