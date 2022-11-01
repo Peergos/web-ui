@@ -91,7 +91,9 @@ module.exports = {
                     if (rootKeyPair != null) {
                         let loginRoot = peergos.shared.crypto.symmetric.SymmetricKey.fromByteArray(rootKeyPair.rootKey);
                         directGetEntryDataFromCacheProm(rootKeyPair.username).thenApply(function (entryPoints) {
-                            if (entryPoints != null) {
+                            if (entryPoints == null) {
+                                that.$toast.error("Legacy accounts can't stay logged in. Please change your password to upgrade your account", {timeout:false, id: 'login'})
+                            } else {
                                 that.isLoggingIn = true;
                                 let entryData = peergos.shared.user.UserStaticData.fromByteArray(entryPoints);
                                 peergos.shared.user.UserContext.restoreContext(rootKeyPair.username, loginRoot, entryData,
