@@ -22,7 +22,7 @@
             <span class="checkmark"></span>
         </label>
 
-		<AppButton class="login" @click.native="login()" type="primary" block accent  icon="arrow-right">
+		<AppButton :disabled="isLoggingIn" class="login" @click.native="login()" type="primary" block accent  icon="arrow-right">
 			Sign in
 		</AppButton>
 	</div>
@@ -43,7 +43,8 @@ module.exports = {
 			password: [],
 			passwordIsVisible: false,
 			demo: true,
-            loginOffline: false
+            loginOffline: false,
+            isLoggingIn: false
 		};
 	},
 	computed: {
@@ -73,51 +74,64 @@ module.exports = {
 				setTimeout(() => this.autoLogin(), 100);
 				return;
 			}
+			let devLogin = false;
 		    if( window.location.hostname == "localhost"){
 				var query = new URLSearchParams(window.location.search)
 				this.username = query.get("username")
 				if (this.username != null) {
 				    this.password = query.get("password")
+				    devLogin = true;
 				    this.login()
 				}
 		    }
-            const creationStart = Date.now();
-            const that = this;
-            getRootKeyEntryFromCacheProm().thenApply(function (rootKeyPair) {
-                if (rootKeyPair != null) {
-                    let loginRoot = peergos.shared.crypto.symmetric.SymmetricKey.fromByteArray(rootKeyPair.rootKey);
-                    directGetEntryDataFromCacheProm(rootKeyPair.username).thenApply(function (entryPoints) {
-                        if (entryPoints != null) {
-                            let entryData = peergos.shared.user.UserStaticData.fromByteArray(entryPoints);
-                            peergos.shared.user.UserContext.restoreContext(rootKeyPair.username, loginRoot, entryData,
-                                that.network, that.crypto, { accept: (x) => (that.$toast.info(x,{ id: 'login' })) }
-                            ).thenApply(function (context) {
-                                  that.postLogin(creationStart, context);
-                            })
-                        }
-                    });
-                }
-            });
+		    if (!devLogin) {
+                const creationStart = Date.now();
+                const that = this;
+                getRootKeyEntryFromCacheProm().thenApply(function (rootKeyPair) {
+                    if (rootKeyPair != null) {
+                        that.isLoggingIn = true;
+                        let loginRoot = peergos.shared.crypto.symmetric.SymmetricKey.fromByteArray(rootKeyPair.rootKey);
+                        directGetEntryDataFromCacheProm(rootKeyPair.username).thenApply(function (entryPoints) {
+                            if (entryPoints != null) {
+                                let entryData = peergos.shared.user.UserStaticData.fromByteArray(entryPoints);
+                                peergos.shared.user.UserContext.restoreContext(rootKeyPair.username, loginRoot, entryData,
+                                    that.network, that.crypto, { accept: (x) => (that.$toast.info(x,{ id: 'login' })) }
+                                ).thenApply(function (context) {
+                                      that.postLogin(creationStart, context);
+                                })
+                                .exceptionally(function (throwable) {
+                                    that.isLoggingIn = false;
+                                    that.$toast.error(that.uriDecode(throwable.getMessage()), {timeout:false, id: 'login'})
+                                });
+                            }
+                        });
+                    }
+                });
+            }
 		},
 		togglePassword() {
 			this.passwordIsVisible = !this.passwordIsVisible
 		},
 		login() {
+		    if (this.isLoggingIn) {
+		        return;
+		    }
 			const creationStart = Date.now();
 			const that = this;
-
+            this.isLoggingIn = true;
 			return peergos.shared.user.UserContext.signIn(
 				that.username,
 				that.password,
 				that.network,
 				that.crypto,
 				// { accept: (x) => (that.spinnerMessage = x) }
-				 { accept: (x) => (that.$toast.info(x,{ id: 'login' })) }
+				 { accept: (x) => (that.$toast.info(x,{ id: 'login', timeout:false })) }
 				)
 				.thenApply(function (context) {
                     that.postLogin(creationStart, context);
 				})
 				.exceptionally(function (throwable) {
+				            that.isLoggingIn = false;
 					that.$toast.error(that.uriDecode(throwable.getMessage()), {timeout:false, id: 'login'})
 				});
 		},
