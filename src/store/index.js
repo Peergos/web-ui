@@ -266,7 +266,11 @@ module.exports = new Vuex.Store({
 				if (callback != null) {
 					callback(q)
 				}
-			});
+            }).exceptionally(err => {
+				if (callback != null) {
+					callback(null);
+				}
+            });
 		},
 
 		updateUsage({ commit, state }) {
