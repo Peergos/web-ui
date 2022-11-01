@@ -89,10 +89,10 @@ module.exports = {
                 const that = this;
                 getRootKeyEntryFromCacheProm().thenApply(function (rootKeyPair) {
                     if (rootKeyPair != null) {
-                        that.isLoggingIn = true;
                         let loginRoot = peergos.shared.crypto.symmetric.SymmetricKey.fromByteArray(rootKeyPair.rootKey);
                         directGetEntryDataFromCacheProm(rootKeyPair.username).thenApply(function (entryPoints) {
                             if (entryPoints != null) {
+                                that.isLoggingIn = true;
                                 let entryData = peergos.shared.user.UserStaticData.fromByteArray(entryPoints);
                                 peergos.shared.user.UserContext.restoreContext(rootKeyPair.username, loginRoot, entryData,
                                     that.network, that.crypto, { accept: (x) => (that.$toast.info(x,{ id: 'login' })) }
@@ -137,6 +137,7 @@ module.exports = {
 		},
 		postLogin(creationStart, context) {
 			const that = this;
+			this.isLoggingIn = false;
             that.$toast.dismiss('login');
 
             that.$store.commit('SET_CONTEXT', context);
