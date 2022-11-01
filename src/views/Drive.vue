@@ -1483,63 +1483,79 @@ module.exports = {
             }
             return combinedSortedFileList;
         },
-	processFileUpload(files) {
+	processFileUpload(files, retrying) {
             let that = this;
             if (this.isSecretLink && !this.currentDir.isWritable()) {
                 return;
             }
-            let isWritableSecretLink = this.isSecretLink && this.currentDir.isWritable();
-            let totalSize = 0;
-            for(var i=0; i < files.length; i++) {
-                totalSize += (files[i].size + (4096 - (files[i].size % 4096)));
-            }
-            if (!isWritableSecretLink && Number(that.quotaBytes.toString()) < totalSize) {
-                let errMsg = "File upload operation exceeds total space\n" + "Please upgrade to get more space";
-                that.$toast.error(errMsg, {timeout:false, id: 'upload'})
+            if (this.quotaBytes.toString() == '0') {
+                if (retrying == null) {
+                    this.updateQuota(quotaBytes => {
+                        if (quotaBytes != null) {
+                            that.updateUsage(usageBytes => {
+                                that.processFileUpload(files, true);
+                            });
+                        } else {
+                            that.processFileUpload(files, true);
+                        }
+                    });
+                } else {
+                    this.$toast.error("Client Offline!", {timeout:false, id: 'upload'})
+                }
             } else {
-                let spaceAfterOperation = that.checkAvailableSpace(totalSize);
-                if (!isWritableSecretLink && spaceAfterOperation < 0) {
-                    let errMsg = "File upload operation exceeds available space\n" + "Please free up " + helpers.convertBytesToHumanReadable('' + -spaceAfterOperation) + " and try again";
+                let isWritableSecretLink = this.isSecretLink && this.currentDir.isWritable();
+                let totalSize = 0;
+                for(var i=0; i < files.length; i++) {
+                    totalSize += (files[i].size + (4096 - (files[i].size % 4096)));
+                }
+                if (!isWritableSecretLink && Number(that.quotaBytes.toString()) < totalSize) {
+                    let errMsg = "File upload operation exceeds total space\n" + "Please upgrade to get more space";
                     that.$toast.error(errMsg, {timeout:false, id: 'upload'})
                 } else {
-                    //resetting .value tricks browser into allowing subsequent upload of same file(s)
-                    document.getElementById('uploadFileInput').value = "";
-                    document.getElementById('uploadDirectoriesInput').value = "";
-                    let progressBars = [];
-        		    let sortedFiles = this.sortFilesByDirectory(files, this.getPath);
-                    for(var i=0; i < sortedFiles.length; i++) {
-                        var resultingSize = sortedFiles[i].size;
-                        var progress = {
-                            title:"Encrypting and uploading " + sortedFiles[i].name,
-                            done:0,
-                            max:resultingSize,
-                            name: sortedFiles[i].name
+                    let spaceAfterOperation = that.checkAvailableSpace(totalSize);
+                    if (!isWritableSecretLink && spaceAfterOperation < 0) {
+                        let errMsg = "File upload operation exceeds available space\n" + "Please free up " + helpers.convertBytesToHumanReadable('' + -spaceAfterOperation) + " and try again";
+                        that.$toast.error(errMsg, {timeout:false, id: 'upload'})
+                    } else {
+                        //resetting .value tricks browser into allowing subsequent upload of same file(s)
+                        document.getElementById('uploadFileInput').value = "";
+                        document.getElementById('uploadDirectoriesInput').value = "";
+                        let progressBars = [];
+                        let sortedFiles = this.sortFilesByDirectory(files, this.getPath);
+                        for(var i=0; i < sortedFiles.length; i++) {
+                            var resultingSize = sortedFiles[i].size;
+                            var progress = {
+                                title:"Encrypting and uploading " + sortedFiles[i].name,
+                                done:0,
+                                max:resultingSize,
+                                name: sortedFiles[i].name
+                            };
+                            that.$toast(
+                                {component: ProgressBar,props:  progress} ,
+                                { icon: false , timeout:false, id: sortedFiles[i].name})
+                            progressBars.push(progress);
+                        }
+                        let uploadDirectoryPath = that.getPath;
+                        const uploadParams = {
+                            applyReplaceToAll: false,
+                            replaceFile: false,
+                            directoryPath: uploadDirectoryPath,
+                            uploadPaths: [],
+                            fileUploadProperties: [],
+                            triggerRefresh: false
+                        }
+                        let prepareFuture = peergos.shared.util.Futures.incomplete();
+                        let previousDirectoryHolder = {
+                            fileWrapper: null,
+                            path: ''
                         };
-                        that.$toast(
-                            {component: ProgressBar,props:  progress} ,
-                            { icon: false , timeout:false, id: sortedFiles[i].name})
-                        progressBars.push(progress);
-                    }
-                    let uploadDirectoryPath = that.getPath;
-                    const uploadParams = {
-                        applyReplaceToAll: false,
-                        replaceFile: false,
-                        directoryPath: uploadDirectoryPath,
-                        uploadPaths: [],
-                        fileUploadProperties: [],
-                        triggerRefresh: false
-                    }
-                    let prepareFuture = peergos.shared.util.Futures.incomplete();
-                    let previousDirectoryHolder = {
-                        fileWrapper: null,
-                        path: ''
-                    };
-                    that.reduceAllUploads(0, sortedFiles, prepareFuture, uploadParams, progressBars, previousDirectoryHolder);
-                    prepareFuture.thenApply(preparationDone => {
-                        that.bulkUpload(uploadParams).thenApply(res => {
-                            console.log("upload complete");
+                        that.reduceAllUploads(0, sortedFiles, prepareFuture, uploadParams, progressBars, previousDirectoryHolder);
+                        prepareFuture.thenApply(preparationDone => {
+                            that.bulkUpload(uploadParams).thenApply(res => {
+                                console.log("upload complete");
+                            });
                         });
-                    });
+                    }
                 }
             }
         },
@@ -1790,7 +1806,7 @@ module.exports = {
 			this.closeMenu();
 		},
 
-		paste() {
+		paste(e, retrying) {
 			if (this.selectedFiles.length > 1)
 				return;
 			var target = this.selectedFiles.length == 1 ? this.selectedFiles[0] : this.currentDir;
@@ -1823,37 +1839,55 @@ module.exports = {
 							that.showError = true;
 							that.showSpinner = false;
 						});
+                        this.clipboard.op = null;
 				} else if (clipboard.op == "copy") {
 					console.log("paste-copy");
-					this.calculateTotalSize(clipboard.fileTreeNode, clipboard.path).thenApply(statistics => {
-                        if (Number(that.quotaBytes.toString()) < statistics.apparentSize) {
-                            let errMsg = "File copy operation exceeds total space\n" + "Please upgrade to get more space";
-                            that.$toast.error(errMsg, {timeout:false, id: 'upload'})
+                    if (this.quotaBytes.toString() == '0') {
+                        if (retrying == null) {
+                            this.updateQuota(quotaBytes => {
+                                if (quotaBytes != null) {
+                                    that.updateUsage(usageBytes => {
+                                        that.paste(e, true);
+                                    });
+                                } else {
+                                    that.paste(e, true);
+                                }
+                            });
                         } else {
-                            let spaceAfterOperation = that.checkAvailableSpace(statistics.apparentSize);
-                            if (spaceAfterOperation < 0) {
-                                let errMsg = "File copy operation exceeds available space\n" + "Please free up " + helpers.convertBytesToHumanReadable('' + -spaceAfterOperation) + " and try again";
+                            this.$toast.error("Client Offline!", {timeout:false, id: 'upload'});
+                            this.showSpinner = false;
+                        }
+                    } else {
+                        this.calculateTotalSize(clipboard.fileTreeNode, clipboard.path).thenApply(statistics => {
+                            if (Number(that.quotaBytes.toString()) < statistics.apparentSize) {
+                                let errMsg = "File copy operation exceeds total space\n" + "Please upgrade to get more space";
                                 that.$toast.error(errMsg, {timeout:false, id: 'upload'})
-                                that.showSpinner = false;
-                                return;
-                            }
-                            clipboard.fileTreeNode.copyTo(target, that.context)
-                                .thenApply(function () {
-                                    that.currentDirChanged();
-                                    that.onUpdateCompletion.push(function () {
-                                        that.updateUsage();
+                            } else {
+                                let spaceAfterOperation = that.checkAvailableSpace(statistics.apparentSize);
+                                if (spaceAfterOperation < 0) {
+                                    let errMsg = "File copy operation exceeds available space\n" + "Please free up " + helpers.convertBytesToHumanReadable('' + -spaceAfterOperation) + " and try again";
+                                    that.$toast.error(errMsg, {timeout:false, id: 'upload'})
+                                    that.showSpinner = false;
+                                    return;
+                                }
+                                clipboard.fileTreeNode.copyTo(target, that.context)
+                                    .thenApply(function () {
+                                        that.currentDirChanged();
+                                        that.onUpdateCompletion.push(function () {
+                                            that.updateUsage();
+                                            that.showSpinner = false;
+                                        });
+                                    }).exceptionally(function (throwable) {
+                                        that.errorTitle = 'Error copying file';
+                                        that.errorBody = throwable.getMessage();
+                                        that.showError = true;
                                         that.showSpinner = false;
                                     });
-                                }).exceptionally(function (throwable) {
-                                    that.errorTitle = 'Error copying file';
-                                    that.errorBody = throwable.getMessage();
-                                    that.showError = true;
-                                    that.showSpinner = false;
-                                });
-                        }
-					});
+                            }
+                        });
+                        this.clipboard.op = null;
+                    }
 				}
-				this.clipboard.op = null;
 			}
 		},
 		calculateDirectorySize(file, path, accumulator, future) {

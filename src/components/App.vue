@@ -290,7 +290,7 @@ module.exports = {
 	    peergos.shared.NetworkAccess.buildJS(
 		"QmVdFZgHnEgcedCS2G2ZNiEN59LuVrnRm7z3yXtEBv2XiF",
 		!that.isLocalhost,
-		0
+		0, true
 	    ).thenApply(function (network) {
 		that.$store.commit("SET_NETWORK", network);
 	    });

@@ -54,7 +54,7 @@ function getWithHeadersProm(url, headers) {
     };
     
     req.onerror = function(e) {
-        future.completeExceptionally(java.lang.Throwable.of(Error("Network Error")));
+        future.completeExceptionally(new java.net.ConnectException("Unable to connect"));
     };
     
     req.send();
@@ -95,7 +95,7 @@ function postProm(url, data, timeout) {
 	};
 	
 	req.onerror = function(e) {
-            reject(Error("Network Error"));
+            future.completeExceptionally(new java.net.ConnectException("Unable to connect"));
 	};
 
         req.ontimeout = function() {
@@ -263,7 +263,8 @@ var cache = {
                                     let currentMiB = (that.currentCacheSize /1024 /1024).toFixed(2);
                                     let maxMiB = (that.maxSizeBytes /1024 /1024).toFixed(2);
                                     getBrowserStorageUsage().then(browserStorageUsage => {
-                                        console.log('Block Cache. Actual usage:' + browserStorageUsage);
+                                        let actualMiB = (browserStorageUsage /1024 /1024).toFixed(2);
+                                        console.log('Block Cache. Actual usage:' + actualMiB + ' MiB');
                                         //audit(that.currentCacheSize).thenApply(auditResult => {
                                             console.log('Block Cache. Objects:' + values.length + " Size:" + currentMiB + " MiB" + " Max:" + maxMiB + " MiB");
                                         //});
@@ -311,6 +312,11 @@ function isIndexedDBAvailable() {
 }
 var blockStoreCache;
 var pointerStoreCache;
+var batStoreCache;
+var accountStoreCache;
+var pkiStoreCache;
+var rootKeyCache;
+
 function bindCacheStore(storeCache) {
     blockStoreCache = storeCache;
 }
@@ -385,6 +391,7 @@ function modifyCacheSize(newCacheSizeMiB) {
     }
     return future;
 }
+
 function getBrowserStorageUsage() {
     if (navigator.storage && navigator.storage.estimate) {
         return navigator.storage.estimate().then(quota => quota.usage);
@@ -591,6 +598,8 @@ function clearCacheFully(cache, func) {
         clearIDBKV(cache.cacheStore).then((res1) => {
             clearIDBKV(cache.cacheStoreMetadata).then((res2) => func());
         });
+    } else {
+        func();
     }
 }
 
@@ -735,6 +744,300 @@ function clearPointerCacheFully(cache, func) {
         clearIDBKV(cache.cachePointerStore).then((res1) => {
             clearIDBKV(cache.cachePointerStoreMetadata).then((res2) => func());
         });
+    } else {
+        func();
+    }
+}
+
+var batCache = {
+    NativeJSBatCache: function() {
+    this.cacheBatStore = createStoreIDBKV('bats', 'keyval');
+    this.isCachingEnabled = false;
+    this.init = function init() {
+        let that = this;
+        bindBatCacheStore(that);
+        isIndexedDBAvailable().thenApply(function(isCachingEnabled) {
+            that.isCachingEnabled = isCachingEnabled;
+            if (isCachingEnabled) {
+                valuesIDBKV(that.cacheBatStore).then((values) => {
+                    console.log('Bat Cache. Objects:' + values.length);
+                });
+            }
+        });
+    };
+	this.setUserBats = setUserBatsIntoCacheProm;
+	this.getUserBats = getUserBatsFromCacheProm;
+    }
+};
+
+function bindBatCacheStore(storeCache) {
+    batStoreCache = storeCache;
+}
+//        public native CompletableFuture<Boolean> setUserBats(String username, byte[] serialisedBats);
+function setUserBatsIntoCacheProm(username, serialisedBats) {
+    let future = peergos.shared.util.Futures.incomplete();
+    if (!this.isCachingEnabled) {
+        future.complete(true);
+    } else {
+        let that = this;
+        setIDBKV(username, serialisedBats, this.cacheBatStore).then(() => {
+            future.complete(true);
+        }).catch(err => {
+            future.complete(true);
+        });
+    }
+    return future;
+}
+
+//    public native CompletableFuture<byte[]> getUserBats(String username);
+function getUserBatsFromCacheProm(username) {
+    let that = this;
+    let future = peergos.shared.util.Futures.incomplete();
+    if (!this.isCachingEnabled) {
+        future.complete(null);
+    } else {
+        getIDBKV(username, this.cacheBatStore).then((val) => {
+            if (val == null) {
+                future.complete(null);
+            } else {
+                future.complete(convertToByteArray(val));
+            }
+        });
+    }
+    return future;
+}
+
+function clearBatCacheFully(func) {
+    if (batStoreCache.isCachingEnabled) {
+        clearIDBKV(batStoreCache.cacheBatStore).then(res => func());
+    } else {
+        func();
+    }
+}
+
+function getRootKeyEntryFromCacheProm() {
+    let that = this;
+    let future = peergos.shared.util.Futures.incomplete();
+    isIndexedDBAvailable().thenApply(function(isCachingEnabled) {
+        if (isCachingEnabled) {
+            that.rootKeyCache = createStoreIDBKV('rootKey', 'keyval');
+            entriesIDBKV(that.rootKeyCache).then((val) => {
+                if (val == null || val.length == 0) {
+                    future.complete(null);
+                } else {
+                    let storedUsername = val[0][0];
+                    let storedRootKey = convertToByteArray(val[0][1]);
+                    future.complete({username: storedUsername, rootKey: storedRootKey});
+                }
+            });
+        } else {
+            future.complete(null);
+        }
+    });
+    return future;
+}
+function setRootKeyIntoCacheProm(username, rootKeySerialised) {
+    let that = this;
+    let future = peergos.shared.util.Futures.incomplete();
+    isIndexedDBAvailable().thenApply(function(isCachingEnabled) {
+        if (isCachingEnabled) {
+            that.rootKeyCache = createStoreIDBKV('rootKey', 'keyval');
+            setIDBKV(username, rootKeySerialised, that.rootKeyCache).then(() => {
+                future.complete(true);
+            }).catch(err => {
+                future.complete(false);
+            });
+        } else {
+            future.complete(false);
+        }
+    });
+    return future;
+}
+
+function clearRootKeyCacheFully(func) {
+    if (rootKeyCache != null) {
+        clearIDBKV(rootKeyCache).then(res => func());
+    } else {
+        func();
+    }
+}
+
+var accountCache = {
+    NativeJSAccountCache: function() {
+    this.cacheAccountStore = createStoreIDBKV('account', 'keyval');
+    this.isCachingEnabled = false;
+    this.offlineAccess = true;
+    this.init = function init() {
+        let that = this;
+        bindAccountCacheStore(that);
+        isIndexedDBAvailable().thenApply(function(isCachingEnabled) {
+            that.isCachingEnabled = isCachingEnabled;
+        });
+    };
+	this.setLoginData = setLoginDataIntoCacheProm;
+	this.getEntryData = getEntryDataFromCacheProm;
+    }
+};
+
+function bindAccountCacheStore(storeCache) {
+    accountStoreCache = storeCache;
+}
+//      public native CompletableFuture<Boolean> setLoginData(String key, byte[] entryPoints);
+function setLoginDataIntoCacheProm(key, entryPoints) {
+    let future = peergos.shared.util.Futures.incomplete();
+    if (!this.isCachingEnabled) {
+        future.complete(true);
+    } else {
+        let that = this;
+        setIDBKV(key, entryPoints, this.cacheAccountStore).then(() => {
+            future.complete(true);
+        }).catch(err => {
+            future.complete(true);
+        });
+    }
+    return future;
+}
+
+//      public native CompletableFuture<byte[]> getEntryData(String key);
+function getEntryDataFromCacheProm(key) {
+    let that = this;
+    let future = peergos.shared.util.Futures.incomplete();
+    if (!this.isCachingEnabled) {
+        future.complete(null);
+    } else {
+        getIDBKV(key, this.cacheAccountStore).then((val) => {
+            if (val == null) {
+                future.complete(null);
+            } else {
+                future.complete(convertToByteArray(val));
+            }
+        });
+    }
+    return future;
+}
+
+function directGetEntryDataFromCacheProm(key) {
+    let that = this;
+    let future = peergos.shared.util.Futures.incomplete();
+    isIndexedDBAvailable().thenApply(function(isCachingEnabled) {
+        if (!isCachingEnabled) {
+            future.complete(null);
+        } else {
+            let accountStoreCache = createStoreIDBKV('account', 'keyval');
+            getIDBKV(key, accountStoreCache).then((val) => {
+                if (val == null) {
+                    future.complete(null);
+                } else {
+                    future.complete(convertToByteArray(val));
+                }
+            });
+        }
+    });
+    return future;
+}
+
+function clearAccountCacheFully(func) {
+    if (accountStoreCache.isCachingEnabled) {
+        clearIDBKV(accountStoreCache.cacheAccountStore).then(res => func());
+    } else {
+        func();
+    }
+}
+
+var pkiCache = {
+    NativeJSPkiCache: function() {
+    this.cachePkiStore = createStoreIDBKV('pki', 'keyval');
+    this.cachePkiOwnerToUsernameStore = createStoreIDBKV('pkiOwnerToUsername', 'keyval');
+    this.isCachingEnabled = false;
+    this.init = function init() {
+        let that = this;
+        bindPkiCacheStore(that);
+        isIndexedDBAvailable().thenApply(function(isCachingEnabled) {
+            that.isCachingEnabled = isCachingEnabled;
+        });
+    };
+	this.getChain = getChainFromCacheProm;
+	this.setChain = setChainIntoCacheProm;
+	this.getUsername = getUsernameFromCacheProm;
+    }
+};
+
+function bindPkiCacheStore(storeCache) {
+    pkiStoreCache = storeCache;
+}
+
+//    public native CompletableFuture<Boolean> setChain(String username, String[] serialisedUserPublicKeyLinkChain, String serialisedOwner);
+function setChainIntoCacheProm(username, serialisedUserPublicKeyLinkChain, serialisedOwner) {
+    let that = this;
+    let future = peergos.shared.util.Futures.incomplete();
+    if (!this.isCachingEnabled) {
+        future.complete(true);
+    } else {
+        let that = this;
+        let jsChain = [];
+        for(var i = 0; i < serialisedUserPublicKeyLinkChain.length; i++) {
+            jsChain.push(serialisedUserPublicKeyLinkChain[i]);
+        }
+        setIDBKV(username, jsChain, this.cachePkiStore).then(() => {
+            setIDBKV(serialisedOwner, username, that.cachePkiOwnerToUsernameStore).then(() => {
+                future.complete(true);
+            }).catch(err => {
+                delIDBKV(username, that.cachePkiStore).then(() => {
+                    future.complete(true);
+                });
+            });
+        }).catch(err => {
+            future.complete(true);
+        });
+    }
+    return future;
+}
+
+//    public native CompletableFuture<List<String>> getChain(String username);
+function getChainFromCacheProm(username) {
+    let that = this;
+    let future = peergos.shared.util.Futures.incomplete();
+    if (!this.isCachingEnabled) {
+        future.complete(peergos.client.JsUtil.emptyList());
+    } else {
+        getIDBKV(username, this.cachePkiStore).then((val) => {
+            if (val == null) {
+                future.complete(peergos.client.JsUtil.emptyList());
+            } else {
+                future.complete(peergos.client.JsUtil.asList(val));
+            }
+        });
+    }
+    return future;
+}
+
+//    public native CompletableFuture<String> getUsername(String serialisedPublicKeyHash);
+function getUsernameFromCacheProm(serialisedPublicKeyHash) {
+    let that = this;
+    let future = peergos.shared.util.Futures.incomplete();
+    if (!this.isCachingEnabled) {
+        future.complete("");
+    } else {
+        getIDBKV(serialisedPublicKeyHash, this.cachePkiOwnerToUsernameStore).then((username) => {
+            if (username == null) {
+                future.complete("");
+            } else {
+                future.complete(username);
+            }
+        });
+    }
+    return future;
+}
+
+function clearPkiCacheFully(func) {
+    if (pkiStoreCache.isCachingEnabled) {
+        clearIDBKV(pkiStoreCache.cachePkiStore).then(res => {
+            clearIDBKV(pkiStoreCache.cachePkiOwnerToUsernameStore).then(res => {
+                func();
+            });
+        });
+    } else {
+        func();
     }
 }
 
