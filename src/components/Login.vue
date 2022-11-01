@@ -16,8 +16,8 @@
             Stay logged in
             <input
                 type="checkbox"
-                name="loginOffline"
-                v-model="loginOffline"
+                name="stayLoggedIn"
+                v-model="stayLoggedIn"
             />
             <span class="checkmark"></span>
         </label>
@@ -43,7 +43,7 @@ module.exports = {
 			password: [],
 			passwordIsVisible: false,
 			demo: true,
-            loginOffline: false,
+            stayLoggedIn: false,
             isLoggingIn: false
 		};
 	},
@@ -152,7 +152,7 @@ module.exports = {
             // that.$store.commit('CURRENT_MODAL', 'ModalTour');
 
             console.log("Signing in/up took " + (Date.now()-creationStart)+" mS from function call");
-            if (that.loginOffline) {
+            if (that.stayLoggedIn) {
                 let rootKey = context.rootKey.toByteArray();
                 setRootKeyIntoCacheProm(context.username, rootKey).thenApply(function (isSupported) {
                     if (isSupported) {

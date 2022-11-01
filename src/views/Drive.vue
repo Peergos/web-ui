@@ -1488,7 +1488,7 @@ module.exports = {
             if (this.isSecretLink && !this.currentDir.isWritable()) {
                 return;
             }
-            if (this.quotaBytes.toString() == 0) {
+            if (this.quotaBytes.toString() == '0') {
                 if (retrying == null) {
                     this.updateQuota(quotaBytes => {
                         if (quotaBytes != null) {
@@ -1842,7 +1842,7 @@ module.exports = {
                         this.clipboard.op = null;
 				} else if (clipboard.op == "copy") {
 					console.log("paste-copy");
-                    if (this.quotaBytes.toString() == 0) {
+                    if (this.quotaBytes.toString() == '0') {
                         if (retrying == null) {
                             this.updateQuota(quotaBytes => {
                                 if (quotaBytes != null) {
