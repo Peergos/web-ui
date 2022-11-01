@@ -1491,7 +1491,13 @@ module.exports = {
             if (this.quotaBytes.toString() == 0) {
                 if (retrying == null) {
                     this.updateQuota(quotaBytes => {
-                        that.processFileUpload(files, true);
+                        if (quotaBytes != null) {
+                            that.updateUsage(usageBytes => {
+                                that.processFileUpload(files, true);
+                            });
+                        } else {
+                            that.processFileUpload(files, true);
+                        }
                     });
                 } else {
                     this.$toast.error("Client Offline!", {timeout:false, id: 'upload'})
@@ -1839,7 +1845,13 @@ module.exports = {
                     if (this.quotaBytes.toString() == 0) {
                         if (retrying == null) {
                             this.updateQuota(quotaBytes => {
-                                that.paste(e, true);
+                                if (quotaBytes != null) {
+                                    that.updateUsage(usageBytes => {
+                                        that.paste(e, true);
+                                    });
+                                } else {
+                                    that.paste(e, true);
+                                }
                             });
                         } else {
                             this.$toast.error("Client Offline!", {timeout:false, id: 'upload'});
