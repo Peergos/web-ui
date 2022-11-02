@@ -121,7 +121,7 @@ module.exports = {
 			const creationStart = Date.now();
 			const that = this;
             this.isLoggingIn = true;
-			return peergos.shared.user.UserContext.signIn(
+			peergos.shared.user.UserContext.signIn(
 				that.username,
 				that.password,
 				that.network,
