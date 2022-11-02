@@ -8,7 +8,7 @@ module.exports = {
                 .split("\\%29").join(")")
                 .split("\\%7E").join("~")
                 .split("+").join("%20");
-            
+
             let str = decodeURIComponent(jsErrorBody);
             let token = 'java.lang.JsException: ';
             return str.startsWith(token) ? str.substring(token.length) : str;
