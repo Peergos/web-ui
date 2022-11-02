@@ -821,12 +821,18 @@ function getRootKeyEntryFromCacheProm() {
     isIndexedDBAvailable().thenApply(function(isCachingEnabled) {
         if (isCachingEnabled) {
             that.rootKeyCache = createStoreIDBKV('rootKey', 'keyval');
-            entriesIDBKV(that.rootKeyCache).then((val) => {
-                if (val == null || val.length == 0) {
+            getIDBKV('rootKey', that.rootKeyCache).then((val) => {
+                if (val == null) {
                     future.complete(null);
                 } else {
-                    let storedUsername = val[0][0];
-                    let storedRootKey = convertToByteArray(val[0][1]);
+                    let json = JSON.parse(val);
+                    let storedUsername = json.username;
+                    let binary = window.atob(json.rootKey);
+                    var data = new Int8Array(binary.length);
+                    for (var i = 0; i < binary.length; i++) {
+                        data[i] = binary.charCodeAt(i);
+                    }
+                    let storedRootKey =  convertToByteArray(data);
                     future.complete({username: storedUsername, rootKey: storedRootKey});
                 }
             });
@@ -842,7 +848,15 @@ function setRootKeyIntoCacheProm(username, rootKeySerialised) {
     isIndexedDBAvailable().thenApply(function(isCachingEnabled) {
         if (isCachingEnabled) {
             that.rootKeyCache = createStoreIDBKV('rootKey', 'keyval');
-            setIDBKV(username, rootKeySerialised, that.rootKeyCache).then(() => {
+            let json = {};
+            json.username = username;
+            var str = "";
+            for (let i = 0; i < rootKeySerialised.byteLength; i++) {
+                str = str + String.fromCharCode(rootKeySerialised[i] & 0xff);
+            }
+            json.rootKey = window.btoa(str);
+            let asStr = JSON.stringify(json);
+            setIDBKV('rootKey', asStr, that.rootKeyCache).then(() => {
                 future.complete(true);
             }).catch(err => {
                 future.complete(false);
