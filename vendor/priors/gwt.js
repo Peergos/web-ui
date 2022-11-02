@@ -450,30 +450,35 @@ function evictLRU(cache, callback) {
     var cacheSize = cache.currentCacheSize;
     let toDelete = [];
     let newLimit = reclaim(cache);
-    for(var i=0; i < sorted.length; i++) {
-        cacheSize = cacheSize - sorted[i].l;
-        toDelete.push(sorted[i].key);
-        if (cacheSize <= newLimit) {
-            cache.currentCacheSize = cacheSize;
-            break;
+    if (cacheSize <= newLimit) {
+        callback();
+        cache.evicting=false;
+    } else {
+        for(var i=0; i < sorted.length; i++) {
+            cacheSize = cacheSize - sorted[i].l;
+            toDelete.push(sorted[i].key);
+            if (cacheSize <= newLimit) {
+                cache.currentCacheSize = cacheSize;
+                break;
+            }
         }
+        for (var i=0; i < toDelete.length; i++) {
+            sorted.splice(sorted.findIndex(v => v.key === toDelete[i]), 1);
+        }
+        cache.cacheMetadataArray = sorted;
+        delManyIDBKV(toDelete, cache.cacheStore)
+            .then(() => {
+                delManyIDBKV(toDelete, cache.cacheStoreMetadata)
+                    .then(() => { callback();cache.evicting=false;})
+                    .catch((err) => {
+                        console.log("block cache metadata evict error:" + err);
+                        clearCacheFully(cache, function(){callback();cache.evicting=false;});
+                    });
+            }).catch((err) => {
+                console.log("block cache evict error:" + err);
+                clearCacheFully(cache, function(){callback();cache.evicting=false;});
+        });
     }
-    for (var i=0; i < toDelete.length; i++) {
-        sorted.splice(sorted.findIndex(v => v.key === toDelete[i]), 1);
-    }
-    cache.cacheMetadataArray = sorted;
-    delManyIDBKV(toDelete, cache.cacheStore)
-        .then(() => {
-            delManyIDBKV(toDelete, cache.cacheStoreMetadata)
-                .then(() => { callback();cache.evicting=false;})
-                .catch((err) => {
-                    console.log("block cache metadata evict error:" + err);
-                    clearCacheFully(cache, function(){callback();cache.evicting=false;});
-                });
-        }).catch((err) => {
-            console.log("block cache evict error:" + err);
-            clearCacheFully(cache, function(){callback();cache.evicting=false;});
-    });
 }
 function createBlockCacheMetadataRecord(key, blockLength) {
     let now = new Date();
@@ -654,30 +659,35 @@ function evictPointerCacheLRU(cache, callback) {
     var cacheSize = cache.currentCacheSize;
     let toDelete = [];
     let newLimit = reclaimPointerCache(cache);
-    for(var i=0; i < sorted.length; i++) {
-        cacheSize--;
-        toDelete.push(sorted[i].key);
-        if (cacheSize <= newLimit) {
-            cache.currentCacheSize = cacheSize;
-            break;
+    if (cacheSize <= newLimit) {
+        callback();
+        cache.evicting=false;
+    } else {
+        for(var i=0; i < sorted.length; i++) {
+            cacheSize--;
+            toDelete.push(sorted[i].key);
+            if (cacheSize <= newLimit) {
+                cache.currentCacheSize = cacheSize;
+                break;
+            }
         }
+        for (var i=0; i < toDelete.length; i++) {
+            sorted.splice(sorted.findIndex(v => v.key === toDelete[i]), 1);
+        }
+        cache.cachePointerMetadataArray = sorted;
+        delManyIDBKV(toDelete, cache.cachePointerStore)
+            .then(() => {
+                delManyIDBKV(toDelete, cache.cachePointerStoreMetadata)
+                    .then(() => { callback();cache.evicting=false;})
+                    .catch((err) => {
+                        console.log("pointer cache metadata evict error:" + err);
+                        clearPointerCacheFully(cache, function(){callback();cache.evicting=false;});
+                    });
+            }).catch((err) => {
+                console.log("pointer cache evict error:" + err);
+                clearPointerCacheFully(cache, function(){callback();cache.evicting=false;});
+        });
     }
-    for (var i=0; i < toDelete.length; i++) {
-        sorted.splice(sorted.findIndex(v => v.key === toDelete[i]), 1);
-    }
-    cache.cachePointerMetadataArray = sorted;
-    delManyIDBKV(toDelete, cache.cachePointerStore)
-        .then(() => {
-            delManyIDBKV(toDelete, cache.cachePointerStoreMetadata)
-                .then(() => { callback();cache.evicting=false;})
-                .catch((err) => {
-                    console.log("pointer cache metadata evict error:" + err);
-                    clearPointerCacheFully(cache, function(){callback();cache.evicting=false;});
-                });
-        }).catch((err) => {
-            console.log("pointer cache evict error:" + err);
-            clearPointerCacheFully(cache, function(){callback();cache.evicting=false;});
-    });
 }
 //    public native CompletableFuture<Boolean> put(PublicKeyHash owner, PublicKeyHash writer, byte[] writerSignedBtreeRootHash);
 function putIntoPointerCacheProm(owner, writer, writerSignedBtreeRootHash) {
