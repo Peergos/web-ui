@@ -57,13 +57,15 @@
 <script>
 const AppHeader = require("../components/AppHeader.vue");
 const Share = require("../components/drive/DriveShare.vue");
+const ProgressBar = require("../components/drive/ProgressBar.vue");
 
 const routerMixins = require("../mixins/router/index.js");
 
 module.exports = {
     components: {
 		Share,
-		AppHeader
+		AppHeader,
+		ProgressBar
 	},
 	data: function() {
         return {
@@ -105,7 +107,8 @@ module.exports = {
 	computed: {
 		...Vuex.mapState([
 			'context',
-			'socialData'
+			'socialData',
+			'mirrorBatId',
 		]),
 		...Vuex.mapGetters([
 			'isSecretLink',
@@ -784,48 +787,178 @@ module.exports = {
             that.removeSpinner();
         });
     },
+    getMirrorBatId(file) {
+        return file.getOwnerName() == this.context.username ? this.mirrorBatId : java.util.Optional.empty()
+    },
+    bulkUpload: function(uploadParams) {
+       let uploadFuture = peergos.shared.util.Futures.incomplete();
+       if (uploadParams.uploadPaths.length == 0) {
+           uploadFuture.complete(true);
+       } else {
+           let folderUPList = [];
+           for(var i = 0 ; i <  uploadParams.uploadPaths.length; i++) {
+               let relativePath = uploadParams.uploadPaths[i];
+               let pathList = peergos.client.JsUtil.asList(relativePath.split('/').filter(n => n.length > 0));
+               let filePropsList = peergos.client.JsUtil.asList(uploadParams.fileUploadProperties[i]);
+               let folderUP = new peergos.shared.user.fs.FileWrapper.FolderUploadProperties(pathList, filePropsList);
+               folderUPList.push(folderUP);
+           }
+           var commitWatcher = {
+               get_0: function() {
+                   if (uploadParams.progress.done >= uploadParams.progress.max) {
+                       setTimeout(() => that.$toast.dismiss(uploadParams.progress.name), 1000);
+                   }
+                   return true;
+               }
+           };
+
+           let folderStream = peergos.client.JsUtil.asList(folderUPList).stream();
+           let that = this;
+           let resumeFileUpload = function(f) {
+               let future = peergos.shared.util.Futures.incomplete();
+               future.complete(true);
+               return future;
+           }
+           this.context.getByPath(uploadParams.directoryPath).thenApply(uploadDir => {
+               uploadDir.ref.uploadSubtree(folderStream, that.getMirrorBatId(uploadDir.ref), that.context.network,
+                   that.context.crypto, that.context.getTransactionService(),
+                   f => resumeFileUpload(f),
+                   commitWatcher).thenApply(res => {
+                       uploadFuture.complete(true);
+               }).exceptionally(function (throwable) {
+                    that.removeSpinner();
+                    that.showMessage(true, "Unable to upload event(s). Please close calendar.");
+                    console.log(throwable.getMessage());
+                    uploadFuture.complete(false);
+               });
+           });
+       }
+       return uploadFuture;
+    },
+    prepareImportCalendarEvent: function(item, uploadParams) {
+        let that = this;
+
+        let calendarDirectory = this.findCalendarDirectory(item.calendarName);
+        let dirPath =  item.isRecurring ? calendarDirectory + "/recurring" : calendarDirectory + "/" + item.year + "/" + item.month;
+        let filename = item.Id + this.CALENDAR_FILE_EXTENSION;
+        let encoder = new TextEncoder();
+        let uint8Array = encoder.encode(item.item);
+        let bytes = convertToByteArray(uint8Array);
+        let fileSize = uint8Array.byteLength;
+
+        var updater = {
+            done:0,
+            max:fileSize,
+        };
+
+        let updateProgressBar = function(len){
+            updater.done += len.value_0;
+            if (updater.done > updater.max) {
+                uploadParams.progress.done  = uploadParams.progress.done + 1;
+                //console.log('uploadParams.progress.done=' + uploadParams.progress.done + " uploadParams.progress.max=" + uploadParams.progress.max);
+                that.$toast.update(uploadParams.progress.name,
+                   {content:
+                        {
+                            component: ProgressBar,
+                            props:  {
+                            title: uploadParams.progress.title,
+                            done: uploadParams.progress.done,
+                            max: uploadParams.progress.max
+                            },
+                        }
+                   });
+            }
+        };
+
+        var foundDirectoryIndex = -1;
+        let uploadDirectoryPath = dirPath;
+        for(var i = 0 ; i < uploadParams.uploadPaths.length; i++) {
+            if (uploadDirectoryPath == uploadParams.uploadPaths[i]) {
+                foundDirectoryIndex = i;
+                break;
+            }
+        }
+        if (foundDirectoryIndex == -1) {
+            uploadParams.uploadPaths.push(uploadDirectoryPath);
+            uploadParams.fileUploadProperties.push([]);
+            foundDirectoryIndex = uploadParams.uploadPaths.length -1;
+        }
+        let reader = new peergos.shared.user.fs.AsyncReader.ArrayBacked(bytes);
+        let fup = new peergos.shared.user.fs.FileWrapper.FileUploadProperties(filename, reader,
+            (fileSize - (fileSize % Math.pow(2, 32))) / Math.pow(2, 32), fileSize, false,
+            true, updateProgressBar);
+        let fileUploadList = uploadParams.fileUploadProperties[foundDirectoryIndex];
+        fileUploadList.push(fup);
+    },
     saveAllEvents: function(calendar, data) {
         this.removeSpinner();
-        this.saveAllEventsRecursive(calendar, data.items, 0, data.showConfirmation);
+        let name = 'bulkImport';
+        let title = "Importing " + data.items.length + " calendar events";
+        var progress = {
+            title:title,
+            done:0,
+            max:data.items.length,
+            name: name
+        };
+        let uploads = {
+            directoryPath: this.context.username + "/.apps/calendar/data/",
+            uploadPaths: [],
+            fileUploadProperties: [],
+            progress: progress,
+            name: name,
+            title: title
+        };
+        if (!data.showConfirmation) {
+            this.$toast(
+                {component: ProgressBar,props:  progress} ,
+                { icon: false , timeout:false, id: name});
+        }
+        this.saveAllEventsRecursive(calendar, data.items, 0, data.showConfirmation, uploads);
     },
-    saveAllEventsRecursive: function(calendar, items, index, showConfirmation) {
+    saveAllEventsRecursive: function(calendar, items, index, showConfirmation, uploads) {
         const that = this;
         if (index == items.length) {
-            that.removeSpinner();
             if (showConfirmation) {
+                that.removeSpinner();
                 that.close();
             } else {
-                that.showMessage(false, "Completed importing event(s)");
+                this.bulkUpload(uploads).thenApply(done => {
+                    that.removeSpinner();
+                    if (done) {
+                        that.showMessage(false, "Completed importing event(s)");
+                    }
+                });
             }
         } else {
             let item = items[index];
             if (showConfirmation) {
                 this.confirmImportEventFile(item.summary,
-                    () => { that.showConfirm = false; that.importEventFile(calendar, items, index, showConfirmation);},
-                    () => { that.showConfirm = false; that.saveAllEventsRecursive(calendar, items, ++index, showConfirmation);}
+                    () => { that.showConfirm = false; that.importEventFile(calendar, items, index, showConfirmation, uploads);},
+                    () => { that.showConfirm = false; that.saveAllEventsRecursive(calendar, items, ++index, showConfirmation, uploads);}
                 );
             } else {
-                this.importEventFile(calendar, items, index, showConfirmation);
+                this.importEventFile(calendar, items, index, showConfirmation, uploads);
             }
         }
     },
-    importEventFile: function(calendar, items, index, showConfirmation) {
+    importEventFile: function(calendar, items, index, showConfirmation, uploads) {
         let that = this;
         let item = items[index];
         that.displaySpinner();
-        this.updateCalendarEvent(calendar, item).thenApply(function(res) {
-            if (showConfirmation) {
+        if (showConfirmation) {
+            this.updateCalendarEvent(calendar, item).thenApply(function(res) {
                 that.postMessage({type: 'respondConfirmImportICSFile', item: item, index: index});
-            }
-           that.saveAllEventsRecursive(calendar, items, ++index, showConfirmation);
-        }).exceptionally(function(throwable) {
-           that.removeSpinner();
-           if (showConfirmation) {
+                that.saveAllEventsRecursive(calendar, items, ++index, showConfirmation, uploads);
+            }).exceptionally(function(throwable) {
+                that.removeSpinner();
                 that.close();
-           }
-           that.showMessage(true, "Unable to import event");
-           console.log(throwable.getMessage());
-        });
+                that.showMessage(true, "Unable to import event(s)");
+                console.log(throwable.getMessage());
+            });
+        } else {
+            this.prepareImportCalendarEvent(item, uploads);
+            this.saveAllEventsRecursive(calendar, items, ++index, showConfirmation, uploads);
+        }
     },
     confirmImportEventFile: function(summary, importFunction, cancelFunction) {
         this.confirm_message='Do you wish to import Event: ' + summary.datetime

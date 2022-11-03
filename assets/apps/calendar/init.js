@@ -1019,7 +1019,6 @@ function confirmImportICSFile(contents, username, isSharedWithUs, loadCalendarAs
                 if (LoadedEvents[schedule.id] == null)
                     tempSchedules.push(schedule);    
                 scheduleMap[schedule.id] = schedule;
-                tempSchedules.push(schedule);
                 tempLoadedEvents[schedule.id] = buildComponentFromEvent(icalComponent, vvent);
             } else {
                 let origSchedule = scheduleMap[schedule.raw.parentId];
