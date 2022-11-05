@@ -92,9 +92,9 @@
                             <div v-for="conversation in conversations">
                                 <div @click="selectConversation(conversation)" v-bind:class="{ conversationContainer: true, activeConversation: isConversationSelected(conversation) }">
                                     <div class="chat_img">
-                                        <img v-if="conversation.profileImage !=null && conversation.profileImage.length > 0" v-on:click="viewProfile(conversation)" v-bind:src="conversation.profileImage" class="img-thumbail-chat">
-                                        <span v-if="conversation.profileImage == null && conversation.participants.length <= 1" v-on:click="viewProfile(conversation)" class="fa fa-user picon-chat img-thumbail-chat"> </span>
-                                        <span v-if="conversation.profileImage == null && conversation.participants.length > 1" class="fa fa-users picon-chat img-thumbail-chat"> </span>
+                                        <img v-if="conversation.hasProfileImage" v-on:click="viewProfile(conversation)" v-bind:src="conversation.profileImage" class="img-thumbnail-chat">
+                                        <span v-if="!conversation.hasProfileImage && conversation.participants.length <= 1" v-on:click="viewProfile(conversation)" class="fa fa-user picon-chat img-thumbnail-chat"> </span>
+                                        <span v-if="!conversation.hasProfileImage && conversation.participants.length > 1" class="fa fa-users picon-chat img-thumbnail-chat"> </span>
                                     </div>
                                     <div class="conversation" v-if="conversation.hasUnreadMessages">
                                         <h5><b>{{displayTitle(conversation)}}</b><span>{{conversation.lastModified}}</span></h5>
@@ -613,29 +613,23 @@ module.exports = {
             let that = this;
             if (index < items.length) {
                 let item = items[index];
+                item.triedLoadingProfileImage = true;
                 peergos.shared.user.ProfilePaths.getProfilePhoto(item.participants[0], this.context).thenApply(result => {
                     if (result.ref != null) {
-                        Vue.nextTick(function() {
-                            item.profileImage = that.toBase64Image(result.ref);
-                        });
+                        item.profileImage = that.toBase64Image(result.ref);
+                        item.hasProfileImage = true;
                     } else {
-                        item.profileImageNA = true;
+                        item.hasProfileImage = false;
                     }
-                    that.reduceLoadAllConversationIconsAsync(index+1, items);
+                    that.reduceLoadAllConversationIcons(index+1, items);
                 }).exceptionally(function(throwable) {
-                    that.reduceLoadAllConversationIconsAsync(index+1, items);
+                    item.hasProfileImage = false;
+                    that.reduceLoadAllConversationIcons(index+1, items);
                 });
             }
         },
-        reduceLoadAllConversationIconsAsync: function(index, items) {
-            let that = this;
-            let func = function(){
-                that.reduceLoadAllConversationIcons(index, items);
-            };
-            Vue.nextTick(func);
-        },
         loadConversationIcons: function(items) {
-            //todo this.reduceLoadAllConversationIconsAsync(0, items);
+            this.reduceLoadAllConversationIcons(0, items);
         },
         launchEmojiPicker: function() {
             this.emojiPicker.togglePicker(this.emojiChooserBtn);
@@ -1214,9 +1208,6 @@ module.exports = {
                 conversation.participants = participants;
                 conversation.readonly = origParticipants.length == participants.length || participants.length == 0;
                 that.checkChatState(conversation);
-                if (participants.length == 1) {
-                    conversation.profileImageNA = false;
-                }
                 if (conversation.readonly) {
                     that.buildConversations();
                     that.buildMessageThread(conversationId);
@@ -1368,10 +1359,7 @@ module.exports = {
                         {controller: controller, startIndex: 0, pendingAttachmentRefs: []});
                     let item = {id: conversationId, title: updatedGroupTitle, participants: updatedMembers
                         , readonly: false, currentAdmins: [that.context.username], currentMembers: [that.context.username]
-                        , hasUnreadMessages: false, chatVisibilityWarningDisplayed: false};
-                    if (updatedMembers.length == 1) {
-                        item.profileImageNA = false;
-                    }
+                        , hasUnreadMessages: false, chatVisibilityWarningDisplayed: false, triedLoadingProfileImage: false, hasProfileImage: false };
                     that.allConversations.set(conversationId, item);
                     that.allMessageThreads.set(conversationId, []);
 
@@ -1395,8 +1383,10 @@ module.exports = {
                     future.complete(false);
                 });
             } else {
+                conversation.hasProfileImage = false;
+                conversation.profileImage = "";
                 if (updatedMembers.length == 1) {
-                    conversation.profileImageNA = false;
+                    conversation.triedLoadingProfileImage = false;
                 }
                 let added = this.extractAddedParticipants(conversation.participants, updatedMembers);
                 let removed = this.extractRemovedParticipants(conversation.participants, updatedMembers);
@@ -1671,9 +1661,6 @@ module.exports = {
                 let conversation = {id: controller.chatUuid, participants: participants, readonly: readonly
                     , title: controller.getTitle(), currentAdmins: [], currentMembers: [], hasUnreadMessages: false
                     , chatVisibilityWarningDisplayed: false};
-                if (participants.length == 1) {
-                    conversation.profileImageNA = false;
-                }
                 let recentMessages = controller.getRecent().toArray();
                 let latestMessage = recentMessages.length == 0 ? null : recentMessages[recentMessages.length-1];
                 if (latestMessage != null) {
@@ -1683,6 +1670,8 @@ module.exports = {
                     conversation.blurb = "";
                     conversation.lastModified = "";
                 }
+                conversation.triedLoadingProfileImage = false;
+                conversation.hasProfileImage = false;
                 that.allConversations.set(controller.chatUuid, conversation);
             });
         },
@@ -1697,9 +1686,6 @@ module.exports = {
                 let participants = that.removeSelfFromParticipants(origParticipants);
                 conversation.participants = participants;
                 conversation.readonly = origParticipants.length == participants.length || participants.length == 0;
-                if (participants.length == 1) {
-                    conversation.profileImageNA = false;
-                }
                 let firstGet = chatController.startIndex == 0;
                 let loadAttachments = controller.chatUuid == that.selectedConversationId;
                 that.retrieveChatMessages(chatController, loadAttachments).thenApply(messages => {
@@ -1868,7 +1854,7 @@ module.exports = {
                         }
                         conversationList.push(val);
                     }
-                    if (val.participants.length == 1 && val.profileImage == null && !val.profileImageNA) {
+                    if (val.participants.length == 1 && !val.triedLoadingProfileImage) {
                         conversationIconCandidates.push(val);
                     }
                 });
@@ -1879,9 +1865,7 @@ module.exports = {
             this.conversations = conversationList;
             let that = this;
             if (conversationIconCandidates.length > 0) {
-                Vue.nextTick(function() {
-                    that.loadConversationIcons(conversationIconCandidates);
-                });
+                that.loadConversationIcons(conversationIconCandidates);
             }
         },
         formatParticipants: function (participants) {
@@ -2123,7 +2107,7 @@ module.exports = {
 .picon-chat {
     font-size: 3em;
 }
-.img-thumbail-chat {
+.img-thumbnail-chat {
     height: 50px;
     width: 50px;
     border-radius: 50%;
