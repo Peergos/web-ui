@@ -294,30 +294,39 @@ module.exports = {
 		that.$store.commit("SET_NETWORK", network);
 	    });
 	},
-
 	checkIfDomainNeedsUnblocking() {
 	    if (this.network == null) return;
 	    var that = this;
 	    this.network.otherDomain().thenApply(function (domainOpt) {
-		if (domainOpt.isPresent()) {
+            if (domainOpt.isPresent()) {
+                let domain = domainOpt.get();
+                that.sendNotABlockRequest(domain, (errCb1) => {
+                    that.sendNotABlockRequest(domain, (errCb2) => {
+                        that.sendNotABlockRequest(domain, (errCb3) => {
+                            that.$toast.error("Please unblock the following domain for Peergos to function correctly: " +
+                                domain);
+                        }, 4000);
+                    }, 2000);
+                }, 1000);
+            }
+	    });
+	},
+
+	sendNotABlockRequest(domain, errorCb, delayMs) {
+	    setTimeout(() => {
 		    var req = new XMLHttpRequest();
-		    var url = domainOpt.get() + "notablock";
+		    var url = domain + "notablock";
 		    req.open("GET", url);
 		    req.responseType = "arraybuffer";
 		    req.onload = function () {
-			console.log("S3 test returned: " + req.status);
+			    console.log("S3 test returned: " + req.status);
 		    };
-
 		    req.onerror = function (e) {
-			that.$toast.error(
-			    "Please unblock the following domain for Peergos to function correctly: " +
-				domainOpt.get()
-			);
+			    console.log('Unable to contact: ' + domain);
+			    errorCb(e);
 		    };
-
 		    req.send();
-		}
-	    });
+        }, delayMs);
 	},
 
 	// still need to check this
