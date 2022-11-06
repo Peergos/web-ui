@@ -28,9 +28,9 @@
                 :consumer_cancel_func="confirm_consumer_cancel_func"
                 :consumer_func="confirm_consumer_func">
         </confirm>
-        <Group
+        <ChatGroup
                 v-if="showGroupMembership"
-                v-on:hide-group="showGroupMembership = false"
+                v-on:hide-chat-group="showGroupMembership = false"
                 :groupId="groupId"
                 :groupTitle="groupTitle"
                 :existingGroupMembers="existingGroupMembers"
@@ -38,7 +38,7 @@
                 :friendNames="friendnames"
                 :updatedGroupMembership="updatedGroupMembership"
                 :existingGroups="existingGroups">
-        </Group>
+        </ChatGroup>
         <message
                 v-for="message in messages"
                 v-on:remove-message="messages.splice(messages.indexOf(message), 1)"
@@ -287,7 +287,7 @@
 const AppHeader = require("../components/AppHeader.vue");
 const Gallery = require("../components/drive/DriveGallery.vue");
 const ViewProfile = require("../components/profile/ViewProfile.vue");
-const Group = require("../components/Group.vue");
+const ChatGroup = require("../components/ChatGroup.vue");
 const mixins = require("../mixins/mixins.js");
 const routerMixins = require("../mixins/router/index.js");
 const downloaderMixins = require("../mixins/downloader/index.js");
@@ -297,7 +297,7 @@ module.exports = {
     components: {
 		Gallery,
 		ViewProfile,
-		Group,
+		ChatGroup,
         ProgressBar,
 		AppHeader
     },

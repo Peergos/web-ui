@@ -79,7 +79,7 @@ module.exports = {
     },
     methods: {
         close: function () {
-            this.$emit("hide-group");
+            this.$emit("hide-add-to-chat");
         },
         addFriends: function() {
             var usersToAdd = this.targetUsernames.slice();

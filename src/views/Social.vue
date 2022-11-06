@@ -17,10 +17,20 @@
 		</fingerprint>
 		<spinner v-if="showSpinner"></spinner>
 		<ViewProfile
-                    v-if="showProfileViewForm"
-                    v-on:hide-profile-view="showProfileViewForm = false"
-                    :profile="profile">
-                </ViewProfile>
+            v-if="showProfileViewForm"
+            v-on:hide-profile-view="showProfileViewForm = false"
+            :profile="profile">
+        </ViewProfile>
+        <Group
+                v-if="showGroupMembership"
+                v-on:hide-group="showGroupMembership = false"
+                :groupId="groupId"
+                :groupTitle="groupTitle"
+                :existingGroupMembers="existingGroupMembers"
+                :friendNames="friendNames"
+                :updatedGroupMembership="updatedGroupMembership"
+                :existingGroups="existingGroupNames">
+        </Group>
                 <section>
 			<h3>Send follow request:</h3>
 			<FormAutocomplete
@@ -122,6 +132,30 @@
                   </tr>
                 </div>
             </div>
+            <div>
+                <section>
+                    <h3>Groups</h3>
+                    <AppButton
+                        accent
+                        aria-label="Send"
+                        @click.native="newGroup()"
+                    >
+                        New
+                    </AppButton>
+                </section>
+            </div>
+            <div>
+                <div class="table flex-container" style="flex-flow:column;">
+                  <tr v-for="group in existingGroups" class="flex-container vspace-5" style="justify-content:space-between; max-width:700px;">
+                        <div style="font-size:1.5em;">
+                            {{ group }}
+                        </div>
+                        <div>
+                          <button class="btn btn-danger" @click="editGroup(group)">Edit</button>
+                        </div>
+                  </tr>
+                </div>
+            </div>
 		</main>
    </article>
 </template>
@@ -131,12 +165,14 @@ const AppHeader = require("../components/AppHeader.vue");
 const ViewProfile = require("../components/profile/ViewProfile.vue");
 const FormAutocomplete = require("../components/form/FormAutocomplete.vue");
 const routerMixins = require("../mixins/router/index.js");
+const Group = require("../components/Group.vue");
 
 module.exports = {
 	components: {
 	    FormAutocomplete,
 		ViewProfile,
-		AppHeader
+		AppHeader,
+		Group
 	},
     data() {
         return {
@@ -157,7 +193,13 @@ module.exports = {
 	    showProfileViewForm: false,
             initialIsVerified: false,
 	    fingerprint: null,
-	    friendname: null
+	    friendname: null,
+        groupId: "",
+        groupTitle: "",
+        showGroupMembership: false,
+        existingGroupMembers: [],
+        existingGroupNames: [],
+        existingGroups: []
         }
     },
     props: [],
@@ -190,6 +232,25 @@ module.exports = {
 		...Vuex.mapActions([
 			'updateSocial'
 		]),
+        updatedGroupMembership: function(conversationId, updatedGroupTitle, updatedMembers) {
+            console.log('updatedGroupMembership called');
+        },
+        newGroup: function() {
+            this.groupId = "";
+            this.groupTitle = "New Group";
+            this.friendNames = this.socialData.friends;
+            this.existingGroupNames = [];//KEV that.getExistingConversationTitles();
+            this.existingGroupMembers = [];
+            this.showGroupMembership = true;
+        },
+        editGroup: function(group) {
+            this.groupId = group.Id;
+            this.groupTitle = group.title;
+            this.friendNames = this.socialData.friends;
+            this.existingGroupNames = [];//kev this.getExistingConversationTitles();
+            this.existingGroupMembers = [];//kev conversation.participants.slice();
+            this.showGroupMembership = true;
+        },
         displayProfile: function(username){
             this.showSpinner = true;
             let that = this;

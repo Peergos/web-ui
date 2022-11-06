@@ -14,9 +14,11 @@
         </prompt>
         <div class="modal-header">
             <span>
-                <h4 style="text-align: center;" @click="changeGroupTitle()">{{ displayedTitle }}&nbsp;&nbsp;<i @click="changeGroupTitle()" class="fa fa-edit" aria-hidden="true"></i></h4>
+                <h4 style="text-align: center;" @click="changeGroupTitle()">{{ displayedTitle }}&nbsp;&nbsp;<i v-if="isAdmin" @click="changeGroupTitle()" class="fa fa-edit" aria-hidden="true"></i></h4>
+
             </span>
         </div>
+
         <div class="modal-body">
             <div class="container">
               <div class="flex-container">
@@ -27,22 +29,68 @@
                             :maxitems="5"
                             placeholder="please select user"
                     />
+                  <div class="hspace-5" v-if="isAdmin" style="margin-top: 20px;">
+                        <label class="checkbox__group">
+                            <input type="radio" id="member-access" value="Member" v-model="memberAccess">
+                            <span class="checkmark"></span>
+                            Member
+                        </label>
+                  </div>
+                  <div class="hspace-5" v-if="isAdmin"  style="margin-top: 20px;">
+                        <label for="admin-access" data-toggle="tooltip" data-placement="bottom" title="Admins can change chat title and membership" class="checkbox__group">
+                            <input type="radio" id="admin-access" value="Admin" v-model="memberAccess">
+                            <span class="checkmark"></span>
+                            Admin
+                        </label>
+                  </div>
                 <div style="padding:5px; margin-top: 10px;">
                   <button :disabled="this.targetUsernames.slice().length == 0" class="btn btn-success" @click="addUsersToGroup()"> {{ addLabel }}</button>
                 </div>
               </div>
             </div>
-            <div class="modal-prominent">
-                <div class="container"><p style="word-wrap;break-all;">
-                    Members:</p>
-                    <div v-for="user in existingGroupMembers">
+            <div v-if="isAdmin" class="modal-prominent">
+                <div class="container" ><p style="word-wrap;break-all;">
+                    Admins:</p>
+                    <div v-for="user in existingAdmins">
                         <label class="checkbox__group">
-                            <input type="checkbox" v-bind:id="user" v-bind:value="user" v-model="membersSelected">
+                            <input :disabled="existingAdmins.length <= 1" type="checkbox" v-bind:id="user" v-bind:value="user" v-model="adminsToRemove">
                             <span class="checkmark"></span>
                             <span style="margin-left:10px">{{ user }}</span>
                         </label>
                     </div>
-                    <button :disabled="this.membersSelected.length == 0" class="btn btn-success" v-on:click="removeUserFromGroup()">Remove</button>
+                    <button :disabled="existingAdmins.length <= 1 || adminsToRemove.length == 0" class="btn btn-success" v-on:click="removeAdminFromGroup()">Remove</button>
+                </div>
+            </div>
+            <div class="modal-prominent">
+                <div class="container" v-if="existingGroupMembers.length > 0"><p style="word-wrap;break-all;">
+                    Members:</p>
+                    <div v-if="!haveRemovedSelf">
+                        <label class="checkbox__group">
+                            <input :disabled="isAdmin" type="checkbox" v-bind:value="context.username" v-model="selectSelf">
+                            <span class="checkmark"></span>
+                            <span style="margin-left:10px">{{ context.username }}</span>
+                        </label>
+                    </div>
+                    <div v-for="user in existingGroupMembers">
+                        <label class="checkbox__group">
+                            <input :disabled="!isAdmin" type="checkbox" v-bind:id="user" v-bind:value="user" v-model="membersSelected">
+                            <span class="checkmark"></span>
+                            <span style="margin-left:10px">{{ user }}</span>
+                        </label>
+                    </div>
+                    <button :disabled="this.membersSelected.length == 0 && this.selectSelf.length == 0" class="btn btn-success" v-on:click="removeUserFromGroup()">Remove</button>
+                    <button v-if="isAdmin" :disabled="this.membersSelected.length == 0 && this.selectSelf.length == 0" class="btn btn-info" v-on:click="promoteToGroupAdmin()">Promote to Admin</button>
+                </div>
+                <div class="container" v-if="existingGroupMembers.length == 0"><p style="word-wrap;break-all;">
+                    Members:</p>
+                    <div v-if="!haveRemovedSelf">
+                        <label class="checkbox__group">
+                            <input :disabled="isAdmin" type="checkbox" v-bind:value="context.username" v-model="selectSelf">
+                            <span class="checkmark"></span>
+                            <span style="margin-left:10px">{{ context.username }}</span>
+                        </label>
+                    </div>
+                    <button v-if="!haveRemovedSelf" :disabled="this.selectSelf.length == 0" class="btn btn-success" v-on:click="removeUserFromGroup()">Remove</button>
                 </div>
             </div>
             <error
@@ -80,6 +128,8 @@ module.exports = {
             errorBody:'',
             showError:false,
             membersSelected: [],
+            adminsToRemove: [],
+            selectSelf: [],
             showPrompt: false,
             prompt_message: '',
             prompt_placeholder: '',
@@ -88,12 +138,15 @@ module.exports = {
             prompt_consumer_func: () => {},
             displayedTitle: "",
             updateLabel: "Apply Changes",
-            addLabel: "Add to Group",
-            genericLabel: "group"
+            addLabel: "Invite to Chat",
+            genericLabel: "chat",
+            isAdmin: false,
+            haveRemovedSelf: false,
+            memberAccess: "Member"
         }
     },
     props: ['existingGroups', 'groupId', 'groupTitle', 'existingGroupMembers', 'friendNames'
-        , 'updatedGroupMembership'],
+        , 'updatedGroupMembership', 'existingAdmins'],
     computed: {
         ...Vuex.mapState([
             'context',
@@ -104,17 +157,22 @@ module.exports = {
         if (this.groupId == "") {
             this.updateLabel = "Create";
         }
+        this.isAdmin = this.existingAdmins.findIndex(v => v === this.context.username) > -1;
     },
     methods: {
         updateGroupMembership: function () {
             if (this.groupId == "" && this.displayedTitle == this.groupTitle) {
                 this.showMessage(true, "Click on title to set " + this.genericLabel + " name");
             } else {
-                this.updatedGroupMembership(this.groupId, this.displayedTitle, this.existingGroupMembers.slice());
+                this.updatedGroupMembership(this.groupId, this.displayedTitle, this.existingGroupMembers.slice()
+                    , this.existingAdmins.slice(), this.haveRemovedSelf);
                 this.close();
             }
         },
         changeGroupTitle: function () {
+            if (!this.isAdmin) {
+                return;
+            }
             let that = this;
             this.prompt_placeholder = 'New ' + this.genericLabel + ' name';
             this.prompt_value = this.displayedTitle;
@@ -149,7 +207,7 @@ module.exports = {
             this.showPrompt =  true;
         },
         close: function () {
-            this.$emit("hide-group");
+            this.$emit("hide-chat-group");
         },
         showMessage : function (isError, title, body) {
             let bodyContents = body == null ? '' : ' ' + body;
@@ -160,21 +218,57 @@ module.exports = {
             }
         },
         removeUserFromGroup : function () {
+            if(this.selectSelf.length > 0) {
+                this.haveRemovedSelf = true;
+            }
             for (var i = 0; i < this.membersSelected.length; i++) {
                 let targetUsername = this.membersSelected[i];
                 let index = this.existingGroupMembers.indexOf(targetUsername);
                 if (index > -1) {
                     this.existingGroupMembers.splice(index, 1);
                 }
+                index = this.existingAdmins.indexOf(targetUsername);
+                if (index > -1) {
+                    this.existingAdmins.splice(index, 1);
+                }
             }
             this.membersSelected = [];
+        },
+        promoteToGroupAdmin : function () {
+            let usersToAdd = [];
+            if(this.selectSelf.length > 0) {
+                usersToAdd.push(this.context.username);
+            }
+            for (var i = 0; i < this.membersSelected.length; i++) {
+                let targetUsername = this.membersSelected[i];
+                usersToAdd.push(targetUsername);
+            }
+            this.addAdminsToGroup(usersToAdd);
+            this.membersSelected = [];
+        },
+        removeAdminFromGroup : function () {
+            if (!this.isAdmin) {
+                return;
+            }
+            for (var i = 0; i < this.adminsToRemove.length; i++) {
+                let targetUsername = this.adminsToRemove[i];
+                let index = this.existingAdmins.indexOf(targetUsername);
+                if (index > -1) {
+                    this.existingAdmins.splice(index, 1);
+                }
+            }
+            this.adminsToRemove = [];
         },
         addUsersToGroup: function() {
             var usersToAdd = this.targetUsernames.slice();
             if (usersToAdd.length == 0) {
                 return;
             }
-            this.addMembersToGroup(usersToAdd);
+            if (this.memberAccess == "Member") {
+                this.addMembersToGroup(usersToAdd);
+            } else {
+                this.addAdminsToGroup(usersToAdd);
+            }
         },
         addMembersToGroup: function(usersToAdd) {
             if (usersToAdd.length == 0) {
@@ -196,9 +290,41 @@ module.exports = {
             } else {
                 this.targetUsernames = [];
             }
+        },
+        addAdminsToGroup: function(usersToAdd) {
+            if (!this.isAdmin) {
+                return;
+            }
+            var that = this;
+            let membersToAdd = [];
+            for (var i = 0; i < usersToAdd.length; i++) {
+                let targetUsername = usersToAdd[i];
+                if(this.existingGroupMembers.indexOf(targetUsername) == -1) {
+                    membersToAdd.push(targetUsername);
+                }
+            }
+
+            for (var i = usersToAdd.length - 1; i >= 0; i--) {
+                let targetUsername = usersToAdd[i];
+                if(this.existingAdmins.indexOf(targetUsername) > -1) {
+                    usersToAdd.splice(i, 1);
+                } else {
+                    this.existingAdmins.push(targetUsername);
+                }
+            }
+            if (usersToAdd.length == 0) {
+                that.errorTitle = "Already an Admin!";
+                that.errorBody = "";
+                that.showError = true;
+            } else {
+                this.addMembersToGroup(membersToAdd);
+            }
         }
     }
 }
 </script>
+
 <style>
+
+
 </style>

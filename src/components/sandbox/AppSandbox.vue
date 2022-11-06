@@ -4,7 +4,7 @@
         <div class="modal-container full-height" @click.stop style="width:100%;overflow-y:auto;padding:0;display:flex;flex-flow:column;">
         <AddToChat
                 v-if="showInviteFriends"
-                v-on:hide-group="showInviteFriends = false"
+                v-on:hide-add-to-chat="showInviteFriends = false"
                 :appDisplayName="appDisplayName"
                 :maxFriendsToAdd="maxFriendsToAdd"
                 :friendNames="friendnames"
