@@ -390,6 +390,9 @@ module.exports = {
         },
         fixMimeType: function (filePath, mimeTypeInput) {
             var mimeType = "application/octet-stream";
+            if (filePath.endsWith(".br") { //Brotli compression
+                filePath = filePath.substring(0, filePath.length - 3);
+            }
             if (mimeTypeInput != null && mimeTypeInput.trim().length > 0) {
                 if (filePath.toLowerCase().endsWith('.html')) {
                     mimeType = "text/html";

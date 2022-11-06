@@ -291,7 +291,7 @@ self.onfetch = event => {
         const seekLength = end-start + 1;
         streamingEntry.setSkip();
         port.postMessage({ seekHi: seekHi, seekLo: start, seekLength: seekLength, streamFilePath: filePath })
-        return event.respondWith(returnRangeRequest(start, end, streamingEntry))
+        return event.respondWith(returnRangeRequest(filePath, start, end, streamingEntry))
     } else {
         let params = new Map();
         requestedResource.searchParams.forEach( (value, key) => {
@@ -428,6 +428,9 @@ function returnAppData(method, filePath, uniqueId, ignoreBody) {
             });
         } else {
             respHeaders.push(['Content-Type', fileData.mimeType]);
+            if (filePath.endsWith(".br") { //Brotli compression
+                respHeaders.push(['Content-Encoding', 'br']);
+            }
             respHeaders.push(['Content-Length', fileData.file.byteLength]);
             return new Response(fileData.file.byteLength == 0 || ignoreBody ? null : fileData.file, {
                 status: fileData.statusCode,
@@ -470,7 +473,7 @@ function formToJSON( formData ) {
   );
   return JSON.stringify( output );
 }
-function returnRangeRequest(start, end, streamingEntry) {
+function returnRangeRequest(filePath, start, end, streamingEntry) {
     return new Promise(function(resolve, reject) {
         let pump = (currentCount) => {
             const store = streamingEntry.bytes;
@@ -515,7 +518,9 @@ function returnRangeRequest(start, end, streamingEntry) {
             respHeaders.push(['accept-ranges', 'bytes']);
             respHeaders.push(['Content-Range', `bytes ${start}-${bytesProvided}/${fileSize}`]);
             respHeaders.push(['content-length', arrayBuffer.byteLength]);
-
+            if (filePath.endsWith(".br") { //Brotli compression
+                respHeaders.push(['Content-Encoding', 'br']);
+            }
             return new Response(arrayBuffer, {
               status: 206,
               statusText: 'Partial Content',
