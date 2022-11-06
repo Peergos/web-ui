@@ -681,11 +681,6 @@ module.exports = {
                 let requestBody = JSON.parse(new TextDecoder().decode(data));
                 let min = 1;
                 let max = requestBody.maxInvites;
-                if (max != "1") {
-                    console.log("CreateChat maxInvites of: " + max + " is not currently supported");
-                    that.buildResponse(header, null, that.ACTION_FAILED);
-                    return;
-                }
                 if (!this.validateRange(min, max)) {
                     console.log('CreateChat params are invalid');
                     that.buildResponse(header, null, that.ACTION_FAILED);
@@ -693,7 +688,7 @@ module.exports = {
                 }
                 this.chatResponseHeader = header;
                 this.appDisplayName = this.appProperties.displayName;
-                this.maxFriendsToAdd = 1;//parseInt(max, 10);
+                this.maxFriendsToAdd = parseInt(max, 10);
                 this.showInviteFriends = true;
             } else if(apiMethod == 'PUT') {
                 let requestBody = JSON.parse(new TextDecoder().decode(data));
@@ -714,16 +709,47 @@ module.exports = {
             let that = this;
             let messenger = new peergos.shared.messaging.Messenger(this.context);
             messenger.createAppChat(this.sandboxAppName).thenApply(function(controller){
-                that.context.getPublicKeys(usersToAdd[0]).thenApply(pkOpt => {
-                    let usernameList = peergos.client.JsUtil.asList(usersToAdd);
-                    let pkHashes = peergos.client.JsUtil.asList([pkOpt.get().left]);
-                    messenger.invite(controller, usernameList, pkHashes).thenApply(controller2 => {
+                that.inviteChatParticipants(messenger, controller, usersToAdd).thenApply(updatedController => {
+                    if (updatedController != null) {
                         let encoder = new TextEncoder();
-                        let chatIdBytes = encoder.encode(controller2.chatUuid);
+                        let chatIdBytes = encoder.encode(controller.chatUuid);
                         that.buildResponse(that.chatResponseHeader, chatIdBytes, that.CREATE_SUCCESS);
-                    });
+                    }
                 });
             });
+        },
+        getPublicKeyHashes: function(usernames) {
+            let that = this;
+            const usernameToPKH = new Map();
+            let future = peergos.shared.util.Futures.incomplete();
+            usernames.forEach(username => {
+                that.context.getPublicKeys(username).thenApply(pkOpt => {
+                    usernameToPKH.set(username, pkOpt.get().left);
+                    if(usernameToPKH.size == usernames.length) {
+                        let pkhs = [];
+                        usernames.forEach(user => {
+                            pkhs.push(usernameToPKH.get(user));
+                        });
+                        future.complete(peergos.client.JsUtil.asList(pkhs));
+                    }
+                });
+            });
+            return future;
+        },
+        inviteChatParticipants: function(messenger, controller, usernames) {
+            let that = this;
+            let future = peergos.shared.util.Futures.incomplete();
+            this.getPublicKeyHashes(usernames).thenApply(pkhList => {
+                let usernameList = peergos.client.JsUtil.asList(usernames);
+                messenger.invite(controller, usernameList, pkhList).thenApply(updatedController => {
+                    future.complete(updatedController);
+                }).exceptionally(err => {
+                    that.showToastError("Unable to add users to chat");
+                    console.log(err);
+                    future.complete(null);
+                });
+            });
+            return future;
         },
         buildOutputMessages: function(chatController, index, messages, accumulator, future) {
             let that = this;

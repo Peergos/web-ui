@@ -1093,7 +1093,7 @@ module.exports = {
                 console.log("full refresh");
                 that.init(false, true);
             };
-            setTimeout(intervalFunc, 30 * 1000);
+            setTimeout(intervalFunc, 10 * 1000);
         },
         executeInit: function(updateSpinner, periodicInit) {
             let future = peergos.shared.util.Futures.incomplete();
