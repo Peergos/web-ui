@@ -23,7 +23,7 @@ self.onmessage = event => {
       setupStreamingEntry(port, entry)
       streamingMap = new Map()
       streamingMap.set(uniqLink, {entry: entry, port: port, mimeType: event.data.mimeType})
-  } else {
+  } else if (event.data.mimeType != null) {
       // Make filename RFC5987 compatible
       filename = encodeURIComponent(filename).replace(/['()]/g, escape)
           .replace(/\*/g, '%2A')
@@ -110,8 +110,36 @@ function createStream (port) {
   })
 }
 
+const cacheName = 'BrowserCache_v1';
+
+const precachedAssets = [
+//  'favicon.ico',
+  'index.html',
+//  '/assets/init-sw.js',
+  'privacy.html',
+  'pro.html',
+//  '/assets/sw.js',
+  'terms.html',
+//  '/assets/worker.html',
+  '/js/blake2b.js',
+  '/js/emoji-button-3.1.1.min.js',
+  '/js/idb-keyval.js',
+  '/js/nacl.min.js',
+  '/js/nacl-fast.js',
+  '/js/nacl-fast.min.js',
+  '/js/scrypt.js',
+  '/js/sha256.min.js',
+  '/js/sha256stream.min.js',
+  '/js/StreamSaver.js',
+  '/js/wrapper.js',
+  '/images/logo.png',
+  '/images/pwa-logo-192.png',
+];
+
 self.addEventListener('install', event =>  {
-    self.skipWaiting();
+      event.waitUntil(caches.open(cacheName).then((cache) => {
+        return cache.addAll(precachedAssets);
+      }));
 });
 self.addEventListener('activate', event => {
     clients.claim();
@@ -156,12 +184,30 @@ self.onfetch = event => {
         port.postMessage({ seekHi: seekHi, seekLo: start, seekLength: seekLength })
         return event.respondWith(returnRangeRequest(start, end, cacheEntry, mimeType))
     } else {
-        const downloadEntry = downloadMap.get(url)
-        if (!downloadEntry) return;
+        let requestURL = new URL(url);
+          if (event.request.mode === 'navigate' && !requestURL.pathname.startsWith('/intercept-me-nr')) {
+            // Open the cache
+            if (requestURL.pathname == '/') {
+                return event.respondWith(Response.redirect('index.html', 302));
+            } else {
+                event.respondWith(caches.open(cacheName).then((cache) => {
+                  return fetch(event.request.url).then((fetchedResponse) => {
+                    cache.put(event.request, fetchedResponse.clone());
+    
+                    return fetchedResponse;
+                  }).catch(() => {
+                    return cache.match(event.request.url);
+                  });
+                }));
+            }
+          } else {
+                const downloadEntry = downloadMap.get(url)
+                if (!downloadEntry) return;
 
-        const [stream, headers] = downloadEntry
-        downloadMap.delete(url)
-        return event.respondWith(new Response(stream, { headers }))
+                const [stream, headers] = downloadEntry
+                downloadMap.delete(url)
+                return event.respondWith(new Response(stream, { headers }))
+          }
     }
 }
 function alignToChunkBoundary(start, end) {
