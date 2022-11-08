@@ -112,9 +112,34 @@ function createStream (port) {
 
 const cacheName = 'BrowserCache_v1';
 
+const precachedAssets = [
+//  'favicon.ico',
+  'index.html',
+//  'init-sw.js',
+  'privacy.html',
+  'pro.html',
+//  'sw.js',
+  'terms.html',
+  'worker.html?version=1.1.0',
+  '/js/blake2b.js',
+  '/js/emoji-button-3.1.1.min.js',
+  '/js/idb-keyval.js',
+  '/js/nacl.min.js',
+  '/js/nacl-fast.js',
+  '/js/nacl-fast.min.js',
+  '/js/scrypt.js',
+  '/js/sha256.min.js',
+  '/js/sha256stream.min.js',
+  '/js/StreamSaver.js',
+  '/js/wrapper.js',
+  '/images/logo.png',
+  '/images/pwa-logo-192.png',
+];
 
 self.addEventListener('install', event =>  {
-    self.skipWaiting();
+      event.waitUntil(caches.open(cacheName).then((cache) => {
+        return cache.addAll(precachedAssets);
+      }));
 });
 self.addEventListener('activate', event => {
     clients.claim();
