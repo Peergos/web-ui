@@ -163,9 +163,6 @@ self.onfetch = event => {
           if (event.request.mode === 'navigate' && !requestURL.pathname.startsWith('/intercept-me-nr')) {
             // Open the cache
             if (requestURL.pathname == '/') {
-               //let redirectHTML = '<meta http-equiv="refresh" content="0; URL=index.html">';
-               //let respHeaders = [['Content-type', 'text/html']];
-               //return event.respondWith(new Response(redirectHTML,{ headers: respHeaders }));
                return event.respondWith(Response.redirect('index.html', 302));
             } else {
                 event.respondWith(caches.open(cacheName).then((cache) => {
