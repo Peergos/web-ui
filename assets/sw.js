@@ -134,7 +134,6 @@ const precachedAssets = [
   'css/peergos.css',
   'fonts/inter/Inter-Regular.woff2',//?v=3.19
   'fonts/inter/Inter-Regular.woff',//?v=3.19
-  //'manifest.json',
   'favicon.ico',
   'fonts/inter/Inter-SemiBold.woff2',//?v=3.19
   'fonts/inter/Inter-SemiBold.woff',//?v=3.19
@@ -144,6 +143,7 @@ self.addEventListener('install', event =>  {
       event.waitUntil(caches.open(cacheName).then((cache) => {
         return cache.addAll(precachedAssets);
       }));
+    self.skipWaiting();
 });
 self.addEventListener('activate', event => {
     clients.claim();
