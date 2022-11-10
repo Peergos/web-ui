@@ -113,27 +113,11 @@ function createStream (port) {
 const cacheName = 'BrowserCache_v1';
 
 const precachedAssets = [
-//  'favicon.ico',
   'index.html',
-//  'init-sw.js',
+  'worker.html?version=1.1.0',
   'privacy.html',
   'pro.html',
-//  'sw.js',
   'terms.html',
-  'worker.html?version=1.1.0',
-  '/js/blake2b.js',
-  '/js/emoji-button-3.1.1.min.js',
-  '/js/idb-keyval.js',
-  '/js/nacl.min.js',
-  '/js/nacl-fast.js',
-  '/js/nacl-fast.min.js',
-  '/js/scrypt.js',
-  '/js/sha256.min.js',
-  '/js/sha256stream.min.js',
-  '/js/StreamSaver.js',
-  '/js/wrapper.js',
-  '/images/logo.png',
-  '/images/pwa-logo-192.png',
 ];
 
 self.addEventListener('install', event =>  {
@@ -186,7 +170,6 @@ self.onfetch = event => {
     } else {
         let requestURL = new URL(url);
           if (event.request.mode === 'navigate' && !requestURL.pathname.startsWith('/intercept-me-nr')) {
-            // Open the cache
             if (requestURL.pathname == '/') {
                return event.respondWith(Response.redirect('index.html', 302));
             } else {
