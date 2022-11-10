@@ -129,15 +129,15 @@ module.exports = {
     created() {
         let that = this;
         this.displaySpinner();
-        this.getInputParameters().thenCompose(inputParameters => {
-            that.loadInputParameters(inputParameters).thenCompose(loadedParameters => {
+        this.getInputParameters().thenApply(inputParameters => {
+            that.loadInputParameters(inputParameters).thenApply(loadedParameters => {
                 if (loadedParameters != null) {
                     that.importFile = loadedParameters.importFile;
                     that.importCalendarPath = loadedParameters.importCalendarPath;
                     that.owner = loadedParameters.owner;
                     that.hasEmail = loadedParameters.hasEmail;
                     that.loadCalendarAsGuest = that.isSecretLink;
-                    peergos.shared.user.App.init(that.context, "calendar").thenCompose(calendar => {
+                    peergos.shared.user.App.init(that.context, "calendar").thenApply(calendar => {
                         if (that.loadCalendarAsGuest) {
                             that.startListener(calendar);
                         } else {
