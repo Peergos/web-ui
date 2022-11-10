@@ -118,6 +118,26 @@ const precachedAssets = [
   'privacy.html',
   'pro.html',
   'terms.html',
+  'js/sha256.min.js',
+  'js/sha256stream.min.js',
+  'js/nacl-fast.min.js',
+  'js/scrypt.js',
+  'js/blake2b.js',
+  'js/vendor.js',
+  'js/peergoslib.nocache.js',
+  'js/wrapper.js',
+  'js/StreamSaver.js',
+  'js/emoji-button-3.1.1.min.js',
+  'js/idb-keyval.js',
+  'js/peergos.js',
+  'css/vendor.css',
+  'css/peergos.css',
+  'fonts/inter/Inter-Regular.woff2',//?v=3.19
+  'fonts/inter/Inter-Regular.woff',//?v=3.19
+  'manifest.json',
+  'favicon.ico',
+  'fonts/inter/Inter-SemiBold.woff2',//?v=3.19
+  'fonts/inter/Inter-SemiBold.woff',//?v=3.19
 ];
 
 self.addEventListener('install', event =>  {
