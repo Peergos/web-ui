@@ -1,0 +1,23 @@
+{
+    "name": "Peergos",
+    "short_name": "Peergos",
+    "lang": "en-US",
+    "start_url": "/index.html",
+    "display": "standalone",
+    "background_color": "white",
+    "theme_color": "white",
+    "icons": [{
+        "src": "images/pwa-logo-144.png",
+        "sizes": "144x144",
+        "type": "image/png"
+    },{
+        "src": "images/pwa-logo-720.png",
+        "sizes": "720x720",
+        "type": "image/png"
+    },{
+        "src": "images/pwa-logo-maskable-192.png",
+        "sizes": "192x192",
+        "type": "image/png",
+        "purpose": "any maskable"
+    }]
+}
