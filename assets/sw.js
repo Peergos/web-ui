@@ -23,7 +23,7 @@ self.onmessage = event => {
       setupStreamingEntry(port, entry)
       streamingMap = new Map()
       streamingMap.set(uniqLink, {entry: entry, port: port, mimeType: event.data.mimeType})
-  } else {
+  } else if (event.data.mimeType != null) {
       // Make filename RFC5987 compatible
       filename = encodeURIComponent(filename).replace(/['()]/g, escape)
           .replace(/\*/g, '%2A')
@@ -110,7 +110,39 @@ function createStream (port) {
   })
 }
 
+const cacheName = 'BrowserCache_v1';
+
+const precachedAssets = [
+  'index.html',
+  'worker.html?version=1.1.0',
+  'privacy.html',
+  'pro.html',
+  'terms.html',
+  'js/sha256.min.js',
+  'js/sha256stream.min.js',
+  'js/nacl-fast.min.js',
+  'js/scrypt.js',
+  'js/blake2b.js',
+  'js/vendor.js',
+  'js/peergoslib.nocache.js',
+  'js/wrapper.js',
+  'js/StreamSaver.js',
+  'js/emoji-button-3.1.1.min.js',
+  'js/idb-keyval.js',
+  'js/peergos.js',
+  'css/vendor.css',
+  'css/peergos.css',
+  'fonts/inter/Inter-Regular.woff2',//?v=3.19
+  'fonts/inter/Inter-Regular.woff',//?v=3.19
+  'favicon.ico',
+  'fonts/inter/Inter-SemiBold.woff2',//?v=3.19
+  'fonts/inter/Inter-SemiBold.woff',//?v=3.19
+];
+
 self.addEventListener('install', event =>  {
+      event.waitUntil(caches.open(cacheName).then((cache) => {
+        return cache.addAll(precachedAssets);
+      }));
     self.skipWaiting();
 });
 self.addEventListener('activate', event => {
@@ -156,12 +188,29 @@ self.onfetch = event => {
         port.postMessage({ seekHi: seekHi, seekLo: start, seekLength: seekLength })
         return event.respondWith(returnRangeRequest(start, end, cacheEntry, mimeType))
     } else {
-        const downloadEntry = downloadMap.get(url)
-        if (!downloadEntry) return;
+        let requestURL = new URL(url);
+          if (event.request.mode === 'navigate' && !requestURL.pathname.startsWith('/intercept-me-nr')) {
+            if (requestURL.pathname == '/') {
+               return event.respondWith(Response.redirect('index.html', 302));
+            } else {
+                event.respondWith(caches.open(cacheName).then((cache) => {
+                  return fetch(event.request.url).then((fetchedResponse) => {
+                    cache.put(event.request, fetchedResponse.clone());
+    
+                    return fetchedResponse;
+                  }).catch(() => {
+                    return cache.match(event.request.url);
+                  });
+                }));
+            }
+          } else {
+                const downloadEntry = downloadMap.get(url)
+                if (!downloadEntry) return;
 
-        const [stream, headers] = downloadEntry
-        downloadMap.delete(url)
-        return event.respondWith(new Response(stream, { headers }))
+                const [stream, headers] = downloadEntry
+                downloadMap.delete(url)
+                return event.respondWith(new Response(stream, { headers }))
+          }
     }
 }
 function alignToChunkBoundary(start, end) {

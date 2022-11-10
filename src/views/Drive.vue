@@ -781,6 +781,18 @@ module.exports = {
 
 		init() {
 		    this.isStreamingAvailable = this.supportsStreaming();
+		    let that = this;
+            streamSaver.createWriteStream("init-sw", null,
+                function (url) {
+        		    that.setup();
+                },
+                function (seekHi, seekLo, seekLength) {
+                },
+                undefined,
+                0
+            );
+        },
+		setup() {
 			const that = this;
 			if (this.context != null && this.context.username == null) {
 			    // open drive from a secret link

@@ -288,7 +288,6 @@ module.exports = {
 	updateNetwork() {
 	    let that = this;
 	    peergos.shared.NetworkAccess.buildJS(
-		"QmVdFZgHnEgcedCS2G2ZNiEN59LuVrnRm7z3yXtEBv2XiF",
 		!that.isLocalhost,
 		0, true
 	    ).thenApply(function (network) {
