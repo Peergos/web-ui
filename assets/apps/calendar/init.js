@@ -944,8 +944,10 @@ function importICSFile(contents, username, isSharedWithUs, loadCalendarAsGuest, 
         if (validateEvent(event)) {
             let schedule = buildScheduleFromEvent(event);
             if (event.recurrenceId == null) {
-                if (LoadedEvents[schedule.id] == null)
-                    schedules.push(schedule);    
+                if (LoadedEvents[schedule.id] != null && cal != null) {
+                    cal.deleteSchedule(schedule.id, schedule.calendarId);
+                }
+                schedules.push(schedule);
                 scheduleMap[schedule.id] = schedule;
                 LoadedEvents[schedule.id] = buildComponentFromEvent(icalComponent, vvent);
             } else {
@@ -1016,8 +1018,10 @@ function confirmImportICSFile(contents, username, isSharedWithUs, loadCalendarAs
         if (validateEvent(event)) {
             let schedule = buildScheduleFromEvent(event);
             if (event.recurrenceId == null) {
-                if (LoadedEvents[schedule.id] == null)
-                    tempSchedules.push(schedule);    
+                if (LoadedEvents[schedule.id] != null && cal != null) {
+                    cal.deleteSchedule(schedule.id, schedule.calendarId);
+                }
+                tempSchedules.push(schedule);
                 scheduleMap[schedule.id] = schedule;
                 tempLoadedEvents[schedule.id] = buildComponentFromEvent(icalComponent, vvent);
             } else {
