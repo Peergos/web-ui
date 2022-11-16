@@ -309,19 +309,15 @@ self.onfetch = event => {
 
     let requestURL = new URL(url);
     if (event.request.mode === 'navigate' && !requestURL.pathname.startsWith('/api')) {
-        if (requestURL.pathname == '/') {
-            return event.respondWith(Response.redirect('index.html', 302));
-        } else {
-            event.respondWith(caches.open(cacheName).then((cache) => {
-                return fetch(event.request.url).then((fetchedResponse) => {
-                    cache.put(event.request, fetchedResponse.clone());
-                    
-                    return fetchedResponse;
-                }).catch(() => {
-                    return cache.match(event.request.url);
-                });
-            }));
-        }
+        event.respondWith(caches.open(cacheName).then((cache) => {
+            return fetch(event.request.url).then((fetchedResponse) => {
+                cache.put(event.request, fetchedResponse.clone());
+                
+                return fetchedResponse;
+            }).catch(() => {
+                return cache.match(event.request.url);
+            });
+        }));
     }    
 }
 
