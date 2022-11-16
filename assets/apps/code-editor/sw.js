@@ -5,8 +5,6 @@ const precachedAssets = [
     'init.js',
     'codemirror.js',
     'codemirror.css',
-    'mode/markdown/markdown.js',
-    'mode/markdown/index.js',
     'addon/mode/simple.js',
     'mode/modelica/modelica.js',
     'mode/modelica/index.html',
@@ -39,7 +37,7 @@ const precachedAssets = [
     'mode/ecl/index.html',
     'mode/puppet/puppet.js',
     'mode/puppet/index.html',
-    'mode/tiddlywiki/tiddlywiki.css'
+    'mode/tiddlywiki/tiddlywiki.css',
     'mode/tiddlywiki/tiddlywiki.js',
     'mode/tiddlywiki/index.html',
     'mode/javascript/typescript.html',
@@ -280,7 +278,7 @@ const precachedAssets = [
     'mode/clojure/clojure.js',
     'mode/vhdl/index.html',
     'mode/vhdl/vhdl.js',
-    'mode/tiki/tiki.css'
+    'mode/tiki/tiki.css',
     'mode/tiki/tiki.js',
     'mode/tiki/index.html',
     'mode/verilog/verilog.js',
@@ -306,9 +304,10 @@ self.addEventListener('activate', event => {
 
 self.onfetch = event => {
     const url = event.request.url
+    console.log(url)
 
     let requestURL = new URL(url);
-    if (event.request.mode === 'navigate' && !requestURL.pathname.startsWith('/api')) {
+    if ((event.request.mode === 'navigate' || event.request.mode === 'no-cors') && !requestURL.pathname.startsWith('/api')) {
         event.respondWith(caches.open(cacheName).then((cache) => {
             return fetch(event.request.url).then((fetchedResponse) => {
                 cache.put(event.request, fetchedResponse.clone());
