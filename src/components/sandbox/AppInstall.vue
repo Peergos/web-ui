@@ -402,7 +402,6 @@ module.exports = {
 </script>
 <style>
 .app-install-container {
-    width: 40%;
     height: 100%;
     overflow-y: auto;
     position: fixed;
