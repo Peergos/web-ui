@@ -99,7 +99,6 @@ module.exports = {
 </script>
 <style>
 .app-details-container {
-    width: 40%;
     overflow-y: auto;
     position: fixed;
     left: 50%;
