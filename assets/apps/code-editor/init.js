@@ -45,3 +45,7 @@ window.addEventListener('message', function (e) {
         }
     }
 });
+
+navigator.serviceWorker.getRegistration('./').then(swReg => {
+    return swReg || navigator.serviceWorker.register('sw.js', {scope: './'})
+})
