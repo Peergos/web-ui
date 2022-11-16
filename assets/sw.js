@@ -190,19 +190,18 @@ self.onfetch = event => {
     } else {
         let requestURL = new URL(url);
           if (event.request.mode === 'navigate' && !requestURL.pathname.startsWith('/intercept-me-nr')) {
-            if (requestURL.pathname == '/') {
-               return event.respondWith(Response.redirect('index.html', 302));
-            } else {
                 event.respondWith(caches.open(cacheName).then((cache) => {
                   return fetch(event.request.url).then((fetchedResponse) => {
                     cache.put(event.request, fetchedResponse.clone());
     
                     return fetchedResponse;
                   }).catch(() => {
-                    return cache.match(event.request.url);
+                    if (requestURL.pathname == '/') {
+                        requestURL.pathname = '/index.html';
+                    }
+                    return cache.match(requestURL.toString());
                   });
                 }));
-            }
           } else {
                 const downloadEntry = downloadMap.get(url)
                 if (!downloadEntry) return;
