@@ -300,19 +300,18 @@ module.exports = {
 	    this.network.otherDomain().thenApply(function (domainOpt) {
             if (domainOpt.isPresent()) {
                 let domain = domainOpt.get();
-                that.sendNotABlockRequest(domain, (errCb1) => {
-                    that.sendNotABlockRequest(domain, (errCb2) => {
-                        that.sendNotABlockRequest(domain, (errCb3) => {
-                            that.$toast.error("Please unblock the following domain for Peergos to function correctly: " +
-                                domain);
-                        }, 4000);
-                    }, 2000);
-                }, 1000);
+                that.sendNotABlockRequest(domain
+                , () => {
+                    //fine
+                }, (err) => {
+                    that.$toast.error("Please unblock the following domain for Peergos to function correctly: " + domain + " error:" + err);
+                }, 1000 , 2);
             }
 	    });
 	},
 
-	sendNotABlockRequest(domain, errorCb, delayMs) {
+	sendNotABlockRequest(domain, callback, errorCallBack, delayMs, numberOfRetries) {
+	    let that = this;
 	    setTimeout(() => {
 		    var req = new XMLHttpRequest();
 		    var url = domain + "notablock";
@@ -321,12 +320,22 @@ module.exports = {
 		    req.onload = function () {
 			    console.log("S3 test returned: " + req.status);
 			    if (req.status == 503) {
-    			    errorCb(Error("Rate Limited Error"));
+			        if (numberOfRetries <= 0) {
+    			        errorCallBack("Rate Limited Error");
+    			    } else {
+    			        that.sendNotABlockRequest(domain, callback, errorCallBack, delayMs * 2, numberOfRetries -1);
+    			    }
+			    } else {
+			        callback();
 			    }
 		    };
 		    req.onerror = function (e) {
-			    console.log('Unable to contact: ' + domain);
-			    errorCb(e);
+			    console.log('Unable to contact: ' + domain + ' error:' + e);
+                if (numberOfRetries <= 0) {
+                    errorCallBack("Unable to contact Error");
+                } else {
+                    that.sendNotABlockRequest(domain, callback, errorCallBack, delayMs * 2, numberOfRetries -1);
+                }
 		    };
 		    req.send();
         }, delayMs);
