@@ -320,6 +320,9 @@ module.exports = {
 		    req.responseType = "arraybuffer";
 		    req.onload = function () {
 			    console.log("S3 test returned: " + req.status);
+			    if (req.status == 503) {
+    			    errorCb(Error("Rate Limited Error"));
+			    }
 		    };
 		    req.onerror = function (e) {
 			    console.log('Unable to contact: ' + domain);
