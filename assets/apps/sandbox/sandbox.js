@@ -35,10 +35,6 @@ let msgHandler = function (e) {
         respondToLoadedChunk(e.data.bytes);
       } else if(e.data.type == "currentTitleRequest") {
         currentTitleRequest(e);
-      } else if(e.data.type == "shutdown") {
-        window.removeEventListener("resize", this.resizeHandler);
-        //removeServiceWorkerRegistration(() => { mainWindow.postMessage({action:'postShutdown'}, origin)});
-        mainWindow.postMessage({action:'postShutdown'}, origin);
       }
 };
 function resizeHandler() {
@@ -52,34 +48,6 @@ function resizeHandler() {
 window.addEventListener('message', msgHandler);
 window.addEventListener("resize", resizeHandler);
 
-function removeServiceWorkerRegistration(callback) {
-    if (failed) {
-        callback();
-    } else {
-        if (navigator.serviceWorker == null) {
-            console.log("navigator.serviceWorker == null");
-            mainWindow.postMessage({action:'failedInit'}, origin);
-            failed = true;
-        } else {
-            navigator.serviceWorker.getRegistrations().then(
-                function(registrations) {
-                    for(let registration of registrations) {
-                        try {
-                        registration.unregister();
-                        } catch(ex) {
-                            console.log(ex);
-                        }
-                    }
-                    callback();
-                }
-            ).catch(err => {
-                failed = true;
-                console.log("Failed initialisation:" + err);
-                mainWindow.postMessage({action:'failedInit'}, origin);
-            });
-        }
-    }
-}
 function streamFile(seekHi, seekLo, seekLength, streamFilePath) {
     mainWindow.postMessage({action:'streamFile', seekHi: seekHi, seekLo: seekLo, seekLength: seekLength
         , streamFilePath: streamFilePath}, origin);
@@ -99,24 +67,22 @@ function load(appName, appPath, allowBrowsing, theme, chatId, username, props) {
     var appNameInSW = props.appDevMode != null && props.appDevMode == true ? appName + '@APP_DEV_MODE' : appName;
     appNameInSW = props.allowUnsafeEvalInCSP != null && props.allowUnsafeEvalInCSP == true ? appNameInSW + '@CSP_UNSAFE_EVAL' : appNameInSW;
 
-    //removeServiceWorkerRegistration(() => {
-        let fileStream = streamSaver.createWriteStream(appNameInSW, "text/html", url => {
-                var path = appPath.length > 0 ? "?path=" + appPath : '';
-                path = path.length > 0 ? path + '&theme=' + theme : '?theme=' + theme;
-                path = chatId.length > 0 ? path + '&chatId=' + chatId : path;
-                path = path + '&username=' + username;
-                let src = allowBrowsing ? appPath.substring(1) : "index.html" + path;
-                iframe.src= src;
-                iframe.contentWindow.focus();
-            }, function(seekHi, seekLo, seekLength, streamFilePath){
-                that.streamFile(seekHi, seekLo, seekLength, streamFilePath);
-            }, 0
-            ,function(filePath, requestId, api, apiMethod, bytes, hasFormData, params, isFromRedirect, isNavigate){
-                that.actionRequest(filePath, requestId, api, apiMethod, bytes, hasFormData, params, isFromRedirect, isNavigate);
-            }
-        );
-        that.streamWriter = fileStream.getWriter();
-    //});
+    let fileStream = streamSaver.createWriteStream(appNameInSW, "text/html", url => {
+            var path = appPath.length > 0 ? "?path=" + appPath : '';
+            path = path.length > 0 ? path + '&theme=' + theme : '?theme=' + theme;
+            path = chatId.length > 0 ? path + '&chatId=' + chatId : path;
+            path = path + '&username=' + username;
+            let src = allowBrowsing ? appPath.substring(1) : "index.html" + path;
+            iframe.src= src;
+            iframe.contentWindow.focus();
+        }, function(seekHi, seekLo, seekLength, streamFilePath){
+            that.streamFile(seekHi, seekLo, seekLength, streamFilePath);
+        }, 0
+        ,function(filePath, requestId, api, apiMethod, bytes, hasFormData, params, isFromRedirect, isNavigate){
+            that.actionRequest(filePath, requestId, api, apiMethod, bytes, hasFormData, params, isFromRedirect, isNavigate);
+        }
+    );
+    that.streamWriter = fileStream.getWriter();
 }
 function respondToLoadedChunk(bytes) {
     streamWriter.write(bytes);

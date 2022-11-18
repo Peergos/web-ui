@@ -284,7 +284,7 @@ module.exports = {
     	},
         fatalError: function(msg) {
             this.showError(msg);
-            this.closeApp();
+            this.closeSandbox();
         },
         frameUrl: function() {
             let url= this.frameDomain() + "/sandbox.html";
@@ -328,8 +328,6 @@ module.exports = {
                             e.data.hasFormData, e.data.params, e.data.isFromRedirect, e.data.isNavigate);
                     } else if(e.data.action == 'currentTitleResponse') {
                         that.currentTitleResponse(e.data.path, e.data.title);
-                    } else if(e.data.action == 'postShutdown') {
-                        that.closeSandbox();
                     }
                 }
             }
@@ -846,7 +844,7 @@ module.exports = {
         closeAndLaunchApp: function(headerFunc, app, path, filename) {
             this.buildResponse(headerFunc(), null, this.NAVIGATE_TO);
             this.navigateTo = { app: app, navigationPath: path, navigationFilename: filename};
-            this.closeApp();
+            this.closeSandbox();
         },
         readFileOrFolder: function(headerFunc, path, params, ignoreHiddenFolderCheck) {
             let that = this;
@@ -1334,18 +1332,10 @@ module.exports = {
                 this.findFile(this.appPath, false).thenApply(file => {
                     if (file != null) {
                         file.calculateAndUpdateThumbnail(that.context.network, that.context.crypto).thenApply(res => {
-                            that.closeApp();
+                            that.closeSandbox();
                         });
                     }
                 });
-            } else {
-                this.closeApp();
-            }
-        },
-        closeApp: function () {
-            let that = this;
-            if (this.isIframeInitialised) {
-                this.postMessage({type: 'shutdown'});
             } else {
                 this.closeSandbox();
             }
