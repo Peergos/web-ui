@@ -44,6 +44,8 @@ module.exports = {
             if ((e.origin === "null" || e.origin === that.frameDomain()) && e.source === iframe.contentWindow) {
                 if (e.data.action == 'pong') {
                     that.isIframeInitialised = true;
+                } else if (e.data == "sw-registration-failure" ) {
+                    console.log("failed to register service worker for editor")
                 } else if (that.expectingSave) {
                     that.expectingSave = false;
                     that.save(e.data.text);
@@ -137,6 +139,10 @@ module.exports = {
             console.log('Error loading file: ' + that.file.getName());
             console.log(throwable.getMessage());
         });
+            setTimeout(() => {
+                if (!that.isIframeInitialised)
+                    that.$toast.error("Unable to register service worker. Editor will not work offline. \nTo enable offline usage, allow 3rd party cookies for " + window.location.protocol + "//[*]." + window.location.host + "\n Note: this is not tracking", {timeout:false});
+            }, 2500)
 	},
 
 	setupIFrameMessaging: function(iframe, func) {
