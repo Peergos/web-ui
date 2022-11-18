@@ -404,7 +404,7 @@ function appFetch(event) {
                             }
                         }
                         appPort.postMessage({ filePath: restFilePath, requestId: uniqueId, api: api, apiMethod: method, bytes: buffer,
-                            hasFormData: formData != null, params: params, isFromRedirect: isFromRedirect});
+                            hasFormData: formData != null, params: params, isFromRedirect: isFromRedirect, isNavigate: event.request.mode == 'navigate'});
                         return returnAppData(method, restFilePath, uniqueId, ignoreBody);
                     })()
                 )
