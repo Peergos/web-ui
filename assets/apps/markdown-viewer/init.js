@@ -73,3 +73,11 @@ function uuid() {
         (c ^ crypto.getRandomValues(new Uint8Array(1))[0] & 15 >> c / 4).toString(16)
       );
 }
+
+navigator.serviceWorker.getRegistration('./').then(swReg => {
+    return swReg || navigator.serviceWorker.register('sw.js', {scope: './'})
+}).catch(e => {
+    console.log(e);
+    let parentHost = window.location.protocol + "//" + window.location.host.substring(window.location.host.indexOf(".")+1)
+    window.parent.postMessage("sw-registration-failure", parentHost)
+})

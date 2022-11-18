@@ -327,6 +327,10 @@ module.exports = {
                 that.load(calendar, year, month);
             }
         });
+        setTimeout(() => {
+                if (!that.isIframeInitialised)
+                    that.$toast.error("Unable to register service worker. Calendar will not work offline. \nTo enable offline usage, allow 3rd party cookies for " + window.location.protocol + "//[*]." + window.location.host + "\n Note: this is not tracking", {timeout:false});
+            }, 2500)
 	},
 	closeShare: function() {
             this.showShare = false;

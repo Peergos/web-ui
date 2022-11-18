@@ -36,7 +36,9 @@ module.exports = {
 		if ((e.origin === "null" || e.origin === that.frameDomain()) && e.source === iframe.contentWindow) {
             if (e.data.action == 'pong') {
                 that.isIframeInitialised = true;
-            } else {
+            } else if (e.data == "sw-registration-failure" ) {
+                console.log("failed to register service worker for PDF viewer")
+                } else {
     		    console.log('Message from Iframe: ' + e.data);
             }
 		}
@@ -58,6 +60,10 @@ module.exports = {
                 that.setupIFrameMessaging(iframe, func);
 		    });
 	    });
+            setTimeout(() => {
+                if (!that.isIframeInitialised)
+                    that.$toast.error("Unable to register service worker. PDF viewer will not work offline. \nTo enable offline usage, allow 3rd party cookies for " + window.location.protocol + "//[*]." + window.location.host + "\n Note: this is not tracking", {timeout:false});
+            }, 2500)
 	},
         setupIFrameMessaging: function(iframe, func) {
             if (this.isIframeInitialised) {
