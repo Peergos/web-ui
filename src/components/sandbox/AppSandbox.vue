@@ -746,7 +746,7 @@ module.exports = {
                 messenger.invite(controller, usernameList, pkhList).thenApply(updatedController => {
                     future.complete(updatedController);
                 }).exceptionally(err => {
-                    that.showToastError("Unable to add users to chat");
+                    that.showError("Unable to add users to chat");
                     console.log(err);
                     future.complete(null);
                 });
@@ -1332,6 +1332,10 @@ module.exports = {
                 this.findFile(this.appPath, false).thenApply(file => {
                     if (file != null) {
                         file.calculateAndUpdateThumbnail(that.context.network, that.context.crypto).thenApply(res => {
+                            that.closeSandbox();
+                        }).exceptionally(err => {
+                            that.showError("Unable to update file");
+                            console.log(err);
                             that.closeSandbox();
                         });
                     }
