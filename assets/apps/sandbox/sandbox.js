@@ -37,7 +37,8 @@ let msgHandler = function (e) {
         currentTitleRequest(e);
       } else if(e.data.type == "shutdown") {
         window.removeEventListener("resize", this.resizeHandler);
-        removeServiceWorkerRegistration(() => { mainWindow.postMessage({action:'postShutdown'}, origin)});
+        //removeServiceWorkerRegistration(() => { mainWindow.postMessage({action:'postShutdown'}, origin)});
+        mainWindow.postMessage({action:'postShutdown'}, origin);
       }
 };
 function resizeHandler() {
@@ -98,7 +99,7 @@ function load(appName, appPath, allowBrowsing, theme, chatId, username, props) {
     var appNameInSW = props.appDevMode != null && props.appDevMode == true ? appName + '@APP_DEV_MODE' : appName;
     appNameInSW = props.allowUnsafeEvalInCSP != null && props.allowUnsafeEvalInCSP == true ? appNameInSW + '@CSP_UNSAFE_EVAL' : appNameInSW;
 
-    removeServiceWorkerRegistration(() => {
+    //removeServiceWorkerRegistration(() => {
         let fileStream = streamSaver.createWriteStream(appNameInSW, "text/html", url => {
                 var path = appPath.length > 0 ? "?path=" + appPath : '';
                 path = path.length > 0 ? path + '&theme=' + theme : '?theme=' + theme;
@@ -115,7 +116,7 @@ function load(appName, appPath, allowBrowsing, theme, chatId, username, props) {
             }
         );
         that.streamWriter = fileStream.getWriter();
-    });
+    //});
 }
 function respondToLoadedChunk(bytes) {
     streamWriter.write(bytes);
