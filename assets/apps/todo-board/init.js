@@ -459,3 +459,10 @@ function save() {
     return contents;
 }
 
+navigator.serviceWorker.getRegistration('./').then(swReg => {
+    return swReg || navigator.serviceWorker.register('sw.js', {scope: './'})
+}).catch(e => {
+    console.log(e);
+    let parentHost = window.location.protocol + "//" + window.location.host.substring(window.location.host.indexOf(".")+1)
+    window.parent.postMessage("sw-registration-failure", parentHost)
+})
