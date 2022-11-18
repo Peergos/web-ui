@@ -219,7 +219,7 @@
           }
         } else if (evt.data.filePath != null) {
             fileDataCallback(evt.data.filePath, evt.data.requestId, evt.data.api, evt.data.apiMethod, evt.data.bytes,
-                evt.data.hasFormData, evt.data.params, evt.data.isFromRedirect);
+                evt.data.hasFormData, evt.data.params, evt.data.isFromRedirect, evt.data.isNavigate);
         } else if (evt.data.seekLength) {
             seekCallback(evt.data.seekHi, evt.data.seekLo, evt.data.seekLength, evt.data.streamFilePath)
         }

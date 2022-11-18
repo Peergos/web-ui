@@ -26,7 +26,7 @@ self.onmessage = event => {
   const metadata = new Array(3) // [stream, data, port]
   metadata[1] = data
   metadata[2] = port
-  
+
   let headers = new Headers(data.headers || {})
 
   let size = Number(headers.get('Content-Length'));
@@ -198,7 +198,20 @@ function setupNewApp(port) {
     }
 }
 
+const cacheName = 'BrowserCache_v1';
+
+const precachedAssets = [
+    'sandbox.html',
+    'sandbox.js',
+    'StreamSaver-sandbox.js',
+    'worker-sandbox.html',
+    'init-sw-sandbox.js',
+];
+
 self.addEventListener('install', event =>  {
+      event.waitUntil(caches.open(cacheName).then((cache) => {
+        return cache.addAll(precachedAssets);
+      }));
     self.skipWaiting();
 });
 self.addEventListener('activate', event => {
@@ -216,6 +229,27 @@ let defaultCSP = defaultSrcCSP + scriptSrcCSP + remainderCSP;
 let cspWithUnsafeEval = defaultSrcCSP + scriptSrcWithUnsafeCSP + remainderCSP;
 
 self.onfetch = event => {
+    const url = event.request.url;
+    let requestURL = new URL(url);
+    let cacheKey = requestURL.pathname.substring(1);
+    let isInCache = precachedAssets.indexOf(cacheKey) > -1;
+    if (isInCache) {
+        return cacheFetch(event);
+    } else {
+        return appFetch(event);
+    }
+};
+function cacheFetch(event) {
+    event.respondWith(caches.open(cacheName).then((cache) => {
+        return fetch(event.request.url).then((fetchedResponse) => {
+            cache.put(event.request, fetchedResponse.clone());
+            return fetchedResponse;
+        }).catch(() => {
+            return cache.match(event.request.url);
+        });
+    }));
+}
+function appFetch(event) {
     const url = event.request.url;
     if (url.endsWith('/ping')) {
       return event.respondWith(new Response('pong', {
@@ -370,7 +404,7 @@ self.onfetch = event => {
                             }
                         }
                         appPort.postMessage({ filePath: restFilePath, requestId: uniqueId, api: api, apiMethod: method, bytes: buffer,
-                            hasFormData: formData != null, params: params, isFromRedirect: isFromRedirect});
+                            hasFormData: formData != null, params: params, isFromRedirect: isFromRedirect, isNavigate: event.request.mode == 'navigate'});
                         return returnAppData(method, restFilePath, uniqueId, ignoreBody);
                     })()
                 )

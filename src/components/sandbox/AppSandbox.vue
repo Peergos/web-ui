@@ -284,7 +284,7 @@ module.exports = {
     	},
         fatalError: function(msg) {
             this.showError(msg);
-            this.closeApp();
+            this.closeSandbox();
         },
         frameUrl: function() {
             let url= this.frameDomain() + "/sandbox.html";
@@ -295,7 +295,11 @@ module.exports = {
         },
         postMessage: function(obj) {
             let iframe = document.getElementById("sandboxId");
-            iframe.contentWindow.postMessage(obj, '*');
+            try {
+                iframe.contentWindow.postMessage(obj, '*');
+            } catch(ex) {
+                this.closeSandbox();
+            }
         },
         resizeHandler: function() {
             let iframe = document.getElementById("sandboxId");
@@ -321,11 +325,9 @@ module.exports = {
                         that.streamFile(e.data.seekHi, e.data.seekLo, e.data.seekLength, e.data.streamFilePath);
                     } else if(e.data.action == 'actionRequest') {
                         that.actionRequest(e.data.filePath, e.data.requestId, e.data.api, e.data.apiMethod, e.data.bytes,
-                            e.data.hasFormData, e.data.params, e.data.isFromRedirect);
+                            e.data.hasFormData, e.data.params, e.data.isFromRedirect, e.data.isNavigate);
                     } else if(e.data.action == 'currentTitleResponse') {
                         that.currentTitleResponse(e.data.path, e.data.title);
-                    } else if(e.data.action == 'postShutdown') {
-                        that.closeSandbox();
                     }
                 }
             }
@@ -464,7 +466,7 @@ module.exports = {
             let data = convertToByteArray(bytes);
             this.postData(data);
         },
-        actionRequest: function(path, requestId, api, apiMethod, data, hasFormData, params, isFromRedirect) {
+        actionRequest: function(path, requestId, api, apiMethod, data, hasFormData, params, isFromRedirect, isNavigate) {
             let that = this;
             let headerFunc = (mimeType) => that.buildHeader(path, mimeType, requestId);
             if (this.browserMode) {
@@ -505,7 +507,7 @@ module.exports = {
                                 && !(this.appPath.length > 0 && !this.isAppPathAFolder && path.startsWith(that.getPath))
                                 && !path.startsWith(that.apiRequest + '/data') ? '/assets' : '';
                             if (this.browserMode) {
-                                that.handleBrowserRequest(headerFunc, path, params, isFromRedirect);
+                                that.handleBrowserRequest(headerFunc, path, params, isFromRedirect, isNavigate);
                             } else {
                                 that.readFileOrFolder(headerFunc, prefix + path, params);
                             }
@@ -744,7 +746,7 @@ module.exports = {
                 messenger.invite(controller, usernameList, pkhList).thenApply(updatedController => {
                     future.complete(updatedController);
                 }).exceptionally(err => {
-                    that.showToastError("Unable to add users to chat");
+                    that.showError("Unable to add users to chat");
                     console.log(err);
                     future.complete(null);
                 });
@@ -782,7 +784,7 @@ module.exports = {
                 + ':' + (date.getSeconds() < 10 ? '0' : '') + date.getSeconds();
             return formatted;
         },
-        handleBrowserRequest: function(headerFunc, path, params, isFromRedirect) {
+        handleBrowserRequest: function(headerFunc, path, params, isFromRedirect, isNavigate) {
             let that = this;
             if (path.includes('/.')) {
                 that.showError('Path not accessible: ' + path);
@@ -803,7 +805,7 @@ module.exports = {
                             if (indexFile == null) {
                                 that.closeAndLaunchApp(headerFunc, "Drive", path, "");
                             } else {
-                                that.handleBrowserRequest(headerFunc, indexPath, params, isFromRedirect);
+                                that.handleBrowserRequest(headerFunc, indexPath, params, isFromRedirect, isNavigate);
                             }
                         });
                     } else {
@@ -811,10 +813,7 @@ module.exports = {
                         let navigationPath = fullPath.substring(0, fullPath.lastIndexOf('/'));
                         let navigationFilename = fullPath.substring(fullPath.lastIndexOf('/') + 1);
                         let app = that.getApp(file, fullPath);
-                        if (app == 'editor'
-                            || fullPath.toLowerCase().endsWith('.html')
-                            || fullPath.toLowerCase().endsWith('.woff')
-                            || fullPath.toLowerCase().endsWith('.wasm')) {
+                        if (app == 'editor' || isNavigate) {
                             if (!fullPath.toLowerCase().endsWith('.html')) {
                                 that.readFileOrFolder(headerFunc, path, params);
                             } else {
@@ -845,7 +844,7 @@ module.exports = {
         closeAndLaunchApp: function(headerFunc, app, path, filename) {
             this.buildResponse(headerFunc(), null, this.NAVIGATE_TO);
             this.navigateTo = { app: app, navigationPath: path, navigationFilename: filename};
-            this.closeApp();
+            this.closeSandbox();
         },
         readFileOrFolder: function(headerFunc, path, params, ignoreHiddenFolderCheck) {
             let that = this;
@@ -1333,18 +1332,14 @@ module.exports = {
                 this.findFile(this.appPath, false).thenApply(file => {
                     if (file != null) {
                         file.calculateAndUpdateThumbnail(that.context.network, that.context.crypto).thenApply(res => {
-                            that.closeApp();
+                            that.closeSandbox();
+                        }).exceptionally(err => {
+                            that.showError("Unable to update file");
+                            console.log(err);
+                            that.closeSandbox();
                         });
                     }
                 });
-            } else {
-                this.closeApp();
-            }
-        },
-        closeApp: function () {
-            let that = this;
-            if (this.isIframeInitialised) {
-                this.postMessage({type: 'shutdown'});
             } else {
                 this.closeSandbox();
             }
