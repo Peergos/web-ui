@@ -246,6 +246,19 @@ module.exports = {
         let theme = this.$store.getters.currentTheme;
         iframe.contentWindow.postMessage({type: 'ping', currentTheme: theme, hasEmail: this.hasEmail}, '*');
     },
+    initialiseIFrameCommunication: function(iframe, callback, retryCount){
+        if (this.isIframeInitialised) {
+            callback();
+        } else {
+            if (retryCount == 0) {
+                this.$toast.error("Unable to register service worker. Calendar will not work offline. \nTo enable offline usage, allow 3rd party cookies for " + window.location.protocol + "//[*]." + window.location.host + "\n Note: this is not tracking", {timeout:false});
+            }else {
+                let that = this;
+                this.sendPing(iframe);
+                window.setTimeout(function() {that.initialiseIFrameCommunication(iframe, callback, retryCount - 1);}, 50);
+            }
+        }
+    },
     startListener: function(calendar) {
 	    var that = this;
 	    var iframe = document.getElementById("calendar-iframe");
@@ -309,8 +322,7 @@ module.exports = {
         let date = new Date();
         let year = 1900 + date.getYear();
         let month = date.getMonth() + 1;
-        setTimeout(function(){
-            that.sendPing(iframe);
+        that.initialiseIFrameCommunication(iframe, function(){
             if (that.importFile != null) {
                 that.importICSFile(calendar, year, month);
             } else if (that.importCalendarPath != null) {
@@ -330,11 +342,7 @@ module.exports = {
             } else {
                 that.load(calendar, year, month);
             }
-        });
-        setTimeout(() => {
-                if (!that.isIframeInitialised)
-                    that.$toast.error("Unable to register service worker. Calendar will not work offline. \nTo enable offline usage, allow 3rd party cookies for " + window.location.protocol + "//[*]." + window.location.host + "\n Note: this is not tracking", {timeout:false});
-            }, 5000)
+        }, 10);
 	},
 	closeShare: function() {
             this.showShare = false;
