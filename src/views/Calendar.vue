@@ -237,11 +237,14 @@ module.exports = {
         if (this.isIframeInitialised) {
             iframe.contentWindow.postMessage(obj, '*');
         } else {
-            let theme = this.$store.getters.currentTheme;
-            iframe.contentWindow.postMessage({type: 'ping', currentTheme: theme, hasEmail: this.hasEmail}, '*');
             let that = this;
+            this.sendPing(iframe);
             window.setTimeout(function() {that.postMessage(obj);}, 30);
         }
+    },
+    sendPing: function(iframe) {
+        let theme = this.$store.getters.currentTheme;
+        iframe.contentWindow.postMessage({type: 'ping', currentTheme: theme, hasEmail: this.hasEmail}, '*');
     },
     startListener: function(calendar) {
 	    var that = this;
@@ -307,6 +310,7 @@ module.exports = {
         let year = 1900 + date.getYear();
         let month = date.getMonth() + 1;
         setTimeout(function(){
+            that.sendPing(iframe);
             if (that.importFile != null) {
                 that.importICSFile(calendar, year, month);
             } else if (that.importCalendarPath != null) {
