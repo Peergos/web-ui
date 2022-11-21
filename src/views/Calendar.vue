@@ -255,7 +255,7 @@ module.exports = {
             }else {
                 let that = this;
                 this.sendPing(iframe);
-                window.setTimeout(function() {that.initialiseIFrameCommunication(iframe, callback, retryCount - 1);}, 50);
+                window.setTimeout(function() {that.initialiseIFrameCommunication(iframe, callback, retryCount - 1);}, 100);
             }
         }
     },
@@ -342,7 +342,7 @@ module.exports = {
             } else {
                 that.load(calendar, year, month);
             }
-        }, 10);
+        }, 100);
 	},
 	closeShare: function() {
             this.showShare = false;
