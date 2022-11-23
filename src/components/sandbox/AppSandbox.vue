@@ -809,33 +809,30 @@ module.exports = {
                             }
                         });
                     } else {
-                        let fullPath = that.expandFilePath(path, isFromRedirect);
-                        let navigationPath = fullPath.substring(0, fullPath.lastIndexOf('/'));
-                        let navigationFilename = fullPath.substring(fullPath.lastIndexOf('/') + 1);
-                        let app = that.getApp(file, fullPath);
-                        if (app == 'editor' || isNavigate) {
-                            if (!fullPath.toLowerCase().endsWith('.html')) {
+                        if (isNavigate) {
+                            if (!that.running) {
+                                that.running = true;
+                                that.startTitleDetection();
                                 that.readFileOrFolder(headerFunc, path, params);
                             } else {
-                                if (!that.running) {
-                                    that.running = true;
-                                    that.startTitleDetection();
-                                    that.readFileOrFolder(headerFunc, path, params);
-                                } else {
+                                let fullPath = that.expandFilePath(path, isFromRedirect);
+                                let app = that.getApp(file, fullPath);
+                                let navigationPath = fullPath.substring(0, fullPath.lastIndexOf('/'));
+                                let navigationFilename = fullPath.substring(fullPath.lastIndexOf('/') + 1);
+                                if (app == 'htmlviewer' || app == 'editor' && fullPath.toLowerCase().endsWith('.html')) {
                                     if(that.extractWorkspace(fullPath) == that.workspaceName){
                                         that.readFileOrFolder(headerFunc, path, params);
                                     } else {
-                                        //navigate to location in another workspace
                                         that.closeAndLaunchApp(headerFunc, 'htmlviewer', navigationPath, navigationFilename);
                                     }
+                                } else if (app == 'hex') {
+                                    that.closeAndLaunchApp(headerFunc, "Drive", navigationPath, "");
+                                } else {
+                                    that.closeAndLaunchApp(headerFunc, app, navigationPath, navigationFilename);
                                 }
                             }
-                        } else if (app == 'hex') {
-                            that.closeAndLaunchApp(headerFunc, "Drive", navigationPath, "");
-                        } else if(app == 'Gallery') {
-                            that.readFileOrFolder(headerFunc, path, params);
                         } else {
-                            that.closeAndLaunchApp(headerFunc, app, navigationPath, navigationFilename);
+                            that.readFileOrFolder(headerFunc, path, params);
                         }
                     }
                 }
