@@ -819,7 +819,7 @@ module.exports = {
                                 let app = that.getApp(file, fullPath);
                                 let navigationPath = fullPath.substring(0, fullPath.lastIndexOf('/'));
                                 let navigationFilename = fullPath.substring(fullPath.lastIndexOf('/') + 1);
-                                if (app == 'htmlviewer' || app == 'editor' && fullPath.toLowerCase().endsWith('.html')) {
+                                if (app == 'htmlviewer') {
                                     if(that.extractWorkspace(fullPath) == that.workspaceName){
                                         that.readFileOrFolder(headerFunc, path, params);
                                     } else {
