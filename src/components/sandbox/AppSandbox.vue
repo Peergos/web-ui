@@ -816,17 +816,16 @@ module.exports = {
                                 that.readFileOrFolder(headerFunc, path, params);
                             } else {
                                 let fullPath = that.expandFilePath(path, isFromRedirect);
-                                let app = that.getApp(file, fullPath);
+                                var app = that.getApp(file, fullPath);
                                 let navigationPath = fullPath.substring(0, fullPath.lastIndexOf('/'));
-                                let navigationFilename = fullPath.substring(fullPath.lastIndexOf('/') + 1);
-                                if (app == 'htmlviewer') {
-                                    if(that.extractWorkspace(fullPath) == that.workspaceName){
-                                        that.readFileOrFolder(headerFunc, path, params);
-                                    } else {
-                                        that.closeAndLaunchApp(headerFunc, 'htmlviewer', navigationPath, navigationFilename);
-                                    }
-                                } else if (app == 'hex') {
-                                    that.closeAndLaunchApp(headerFunc, "Drive", navigationPath, "");
+                                var navigationFilename = fullPath.substring(fullPath.lastIndexOf('/') + 1);
+                                if (app == 'hex') {
+                                   app = 'Drive';
+                                   navigationFilename = '';
+                                }
+                                // If we are navigating to an 'external' link, use a new context on a different subdomain
+                                if (app == 'htmlviewer' && that.extractWorkspace(fullPath) == that.workspaceName) {
+                                    that.readFileOrFolder(headerFunc, path, params);
                                 } else {
                                     that.closeAndLaunchApp(headerFunc, app, navigationPath, navigationFilename);
                                 }
