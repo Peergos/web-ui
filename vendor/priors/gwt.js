@@ -1594,11 +1594,17 @@ function createVideoThumbnailStreamingProm(future, asyncReader, size, filename, 
                                blockSize = currentSize > thatRef.maxBlockSize ? thatRef.maxBlockSize : currentSize;
                                thatRef.writer.write(data);
                                pump(reader);
+                        }).exceptionally(function (throwable) {
+                            console.log('createVideoThumbnailStreamingProm readIntoArray failed: ' + throwable);
+                            future.complete("");
                         });
                     }
                 }
                 asyncReader.seekJS(seekHi, seekLo).thenApply(function(seekReader){
                     pump(seekReader);
+                }).exceptionally(function (throwable) {
+                    console.log('createVideoThumbnailStreamingProm seekJS failed: ' + throwable);
+                    future.complete("");
                 })
             }
             var empty = convertToByteArray(new Uint8Array(0));
