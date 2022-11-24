@@ -229,6 +229,14 @@ var http = {
     }
 };
 
+var online = {
+    NativeJSOnlineState: function() {
+	this.isOnline = function() {
+            return window.navigator.onLine;
+        };
+    }
+};
+
 var cache = {
     NativeJSCache: function() {
     this.cacheStore = null;
