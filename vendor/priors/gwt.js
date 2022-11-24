@@ -146,8 +146,7 @@ function postMultipartProm(url, dataArrays) {
 	};
 	
 	req.onerror = function(e) {
-	    console.log(e);
-            reject(Error("Network Error"));
+            future.completeExceptionally(new java.net.ConnectException("Unable to connect"));
 	};
 
 	var form = new FormData();
@@ -194,7 +193,7 @@ function putProm(url, data, headers) {
 	};
 	
 	req.onerror = function(e) {
-            reject(Error("Network Error"));
+            future.completeExceptionally(new java.net.ConnectException("Unable to connect"));
 	};
 
 	req.send(data);
