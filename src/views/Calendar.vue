@@ -252,6 +252,7 @@ module.exports = {
         } else {
             if (retryCount == 0) {
                 this.$toast.error("Unable to register service worker. Calendar will not work offline. \nTo enable offline usage, allow 3rd party cookies for " + window.location.protocol + "//[*]." + window.location.host + "\n Note: this is not tracking", {timeout:false});
+                callback();
             }else {
                 let that = this;
                 this.sendPing(iframe);
