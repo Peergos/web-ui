@@ -230,7 +230,7 @@ var http = {
 };
 
 var online = {
-    NativeJSOnlineState: function() {
+    NativeJsOnlineState: function() {
 	this.isOnline = function() {
             return window.navigator.onLine;
         };
