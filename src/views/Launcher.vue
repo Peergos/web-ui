@@ -47,7 +47,7 @@
                 :messages="messages">
             </Share>
             <div>
-                <h3>Custom Apps <button class="btn btn-success" @click="navigateToSuggestedApps()" style="margin-left: 40px;">Suggested Apps</button></h3>
+                <h3>Custom Apps <button class="btn btn-success" @click="navigateToRecommendedApps()" style="margin-left: 40px;">Recommended Apps</button></h3>
 
                 <div v-if="appsList.length ==0" class="table-responsive">
                     No Custom Apps currently installed.  Create an App from the "create app" menu item of the green plus.
@@ -344,8 +344,8 @@ module.exports = {
         });
     },
     methods: {
-        navigateToSuggestedApps: function() {
-            this.openFileOrDir('htmlviewer', '/peergos/suggested-apps', {filename: 'index.html'});
+        navigateToRecommendedApps: function() {
+            this.openFileOrDir('htmlviewer', '/peergos/recommended-apps', {filename: 'index.html'});
         },
         loadAppIcons: function() {
             let that = this;
