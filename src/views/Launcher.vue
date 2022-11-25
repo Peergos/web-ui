@@ -345,7 +345,7 @@ module.exports = {
     },
     methods: {
         navigateToSuggestedApps: function() {
-            this.openFileOrDir('htmlviewer', '/peergos/app-gallery', {filename: 'index.html'});
+            this.openFileOrDir('htmlviewer', '/peergos/suggested-apps', {filename: 'index.html'});
         },
         loadAppIcons: function() {
             let that = this;

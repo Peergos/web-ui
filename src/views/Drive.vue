@@ -1103,23 +1103,6 @@ module.exports = {
 		closeSearch() {
 			this.showSearch = false;
 		},
-        getByPath: function(path) {
-            let future = peergos.shared.util.Futures.incomplete();
-            let that = this;
-            this.context.getByPath(path).thenApply(function(respOpt){
-                if (respOpt.ref == null) {
-                    let publicFilePath = peergos.client.PathUtils.directoryToPath(path.split('/').filter(n => n.length > 0));
-                    that.context.getPublicFile(publicFilePath).thenApply(resp2Opt => {
-                        future.complete(resp2Opt);
-                    }).exceptionally(function(throwable) {
-                        future.complete(respOpt);
-                    })
-                } else {
-                    future.complete(respOpt);
-                }
-            });
-            return future;
-        },
 		updateCurrentDir() {
 			this.updateCurrentDirectory(null, null);
 		},
@@ -1128,7 +1111,7 @@ module.exports = {
 			return Promise.resolve(null);
 		    var path = this.getPath;
 		    var that = this;
-		    this.getByPath(path).thenApply(function (file) {
+		    this.context.getByPath(path).thenApply(function (file) {
                         if (! file.get().isDirectory()) {
                             // go to parent if we tried to navigate to file
                             if (path.endsWith("/"))
