@@ -884,7 +884,9 @@ module.exports = {
 
 					this.showSpinner = true;
 
-					let open = () => { that.openInApp(argsFromUrl, appFromUrl) };
+					let open = () => {
+					    that.openInApp(argsFromUrl, appFromUrl)
+					};
 					this.onUpdateCompletion.push(open);
 
 					this.$store.commit('SET_PATH', pathFromUrl.split('/').filter(n => n.length > 0))
