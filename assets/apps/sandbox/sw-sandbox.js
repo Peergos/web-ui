@@ -274,7 +274,7 @@ function appFetch(event) {
         }));
     }
     let filePath = decodeURI(requestedResource.pathname);
-    if (filePath.startsWith('/peergos/')) {
+    if (filePath.startsWith('/peergos/') && !filePath.startsWith('/peergos/recommended-apps/')) {
         let csp = appName.includes('@CSP_UNSAFE_EVAL') ? cspWithUnsafeEval : defaultCSP;
         let respHeaders = [
             ['Content-type', 'text/html'],
