@@ -155,6 +155,7 @@
 			:allowCreateSecretLink="allowCreateSecretLink"
 			:files="filesToShare"
 			:path="pathToFile"
+			:currentDir="currentDir"
 			:messages="messages">
 		</Share>
 		<Search
@@ -840,7 +841,7 @@ module.exports = {
                                                 that.appArgs = props.args;
                                                 const filename = props.args.filename;
                                                 that.selectedFiles = that.files.filter(f => f.getName() == filename);
-					        var app = props.app || that.getApp(that.files[0], that.getPath, false);
+					        var app = props.app || that.getApp(oneFile ? that.files[0] : that.selectedFiles[0], that.getPath, false);
                                                 that.openInApp(props.args, app);
                                                 that.openFileOrDir(app, that.getPath, props.args, false);
                                             } else if (openSubdir) {

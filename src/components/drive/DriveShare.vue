@@ -187,6 +187,7 @@ module.exports = {
 		"displayName",
 		"allowReadWriteSharing",
 		"allowCreateSecretLink",
+		"currentDir"
 	],
 	computed: {
 		...Vuex.mapState([
@@ -217,23 +218,31 @@ module.exports = {
 				throw "Unimplemented multiple file share call";
 
 			let file = this.files[0];
-			var links = [];
+			var link = [];
 			let props = file.getFileProperties();
 			var name = this.displayName;
+			let shareFolderWithFile = this.currentDir != null
+			        && (name.toLowerCase().endsWith('.html') || name.toLowerCase().endsWith('.md'));
 			let isFile = !props.isDirectory;
-			links.push({
+			link.push({
 			        fileLink: file.toLink(),
+			        folderLink: this.currentDir != null ? this.currentDir.toLink(): null,
                                 filename:props.name,
                                 path:this.getPath,
 				name: name,
 				id: "secret_link_" + name,
 				isFile: isFile,
+				shareFolderWithFile: shareFolderWithFile
 			});
-			var title =
-				links.length > 1
-					? "Secret links to files: "
-					: "Secret link to file: ";
-			this.showLinkModal(title, links);
+			var title = "";
+			if (shareFolderWithFile) {
+                title = "Secret link to current folder with file: ";
+			} else if (isFile) {
+                title = "Secret link to file: ";
+            } else {
+                title = "Secret link to folder: ";
+            }
+			this.showLinkModal(title, link);
 		},
 
 		showLinkModal(title, links) {
