@@ -842,6 +842,27 @@ module.exports = {
             this.navigateTo = { app: app, navigationPath: path, navigationFilename: filename};
             this.closeSandbox();
         },
+        getByPath: function(expandedFilePath) {
+            let future = peergos.shared.util.Futures.incomplete();
+            let that = this;
+            this.context.getByPath(expandedFilePath).thenApply(function(respOpt){
+                if (respOpt.ref == null) {
+                    if (that.browserMode) {
+                        let publicFilePath = peergos.client.PathUtils.directoryToPath(expandedFilePath.split('/').filter(n => n.length > 0));
+                        that.context.getPublicFile(publicFilePath).thenApply(resp2Opt => {
+                            future.complete(resp2Opt);
+                        }).exceptionally(function(throwable) {
+                            future.complete(respOpt);
+                        })
+                    } else {
+                        future.complete(respOpt);
+                    }
+                } else {
+                    future.complete(respOpt);
+                }
+            });
+            return future;
+        },
         readFileOrFolder: function(headerFunc, path, params, ignoreHiddenFolderCheck) {
             let that = this;
             let expandedFilePath = this.expandFilePath(path);
@@ -849,7 +870,7 @@ module.exports = {
                 that.showError('Path not accessible: ' + expandedFilePath);
                 that.buildResponse(headerFunc(), null, that.ACTION_FAILED);
             } else {
-                this.context.getByPath(expandedFilePath).thenApply(function(respOpt){
+                this.getByPath(expandedFilePath).thenApply(function(respOpt){
                     if (respOpt.ref == null) {
                         console.log('Path not found: ' + expandedFilePath);
                         that.buildResponse(headerFunc(), null, that.FILE_NOT_FOUND);
@@ -1270,7 +1291,7 @@ module.exports = {
             var future = peergos.shared.util.Futures.incomplete();
             let that = this;
             let expandedFilePath = this.expandFilePath(filePath, isFromRedirect);
-            this.context.getByPath(expandedFilePath).thenApply(function(fileOpt){
+            this.getByPath(expandedFilePath).thenApply(function(fileOpt){
                 if (fileOpt.ref == null) {
                     console.log('file not found: ' + filePath);
                     future.complete(null);
