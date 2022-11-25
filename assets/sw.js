@@ -189,6 +189,10 @@ self.onfetch = event => {
         return event.respondWith(returnRangeRequest(start, end, cacheEntry, mimeType))
     } else {
         let requestURL = new URL(url);
+        if (requestURL.pathname.startsWith('/public/')) {
+            return;
+        }
+
           if (event.request.mode === 'navigate' && !requestURL.pathname.startsWith('/intercept-me-nr')) {
                 event.respondWith(caches.open(cacheName).then((cache) => {
                   return fetch(event.request.url).then((fetchedResponse) => {
