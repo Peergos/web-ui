@@ -49,7 +49,7 @@ module.exports = {
                     link.href = url
                     link.dispatchEvent(click)
                     that.startZipDownload(zipFilename, allFiles, progress, zipFuture, writerContainer);
-                },function (seekHi, seekLo, seekLength) {},undefined, progress.max);
+                },function (seekHi, seekLo, seekLength, uuid) {},undefined, progress.max);
             writerContainer.writer = fileStream.getWriter();
             return zipFuture;
         },
