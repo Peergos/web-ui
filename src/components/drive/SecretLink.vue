@@ -61,13 +61,18 @@
         },
         methods: {
             buildHref: function (link, autoOpenOverride) {
-                let json = {secretLink:true,link:link.fileLink};
+                let json = link.shareFolderWithFile ? {secretLink:true,link:link.folderLink} : {secretLink:true,link:link.fileLink};
                 if (autoOpenOverride || link.autoOpen) {
                     json.open = true;
-                    if (link.isFile)
+                    if (link.shareFolderWithFile) {
+                        json.path = link.path.substring(1);// do not pass starting '/'
+                        json.args = {};
+                        json.args.filename = link.filename;
+                    } else if (link.isFile) {
                         json.filename = link.filename;
-                    else
+                    } else {
                         json.path = link.path;
+                    }
                 }
                 return window.location.origin + window.location.pathname + "#" + propsToFragment(json);
             },
