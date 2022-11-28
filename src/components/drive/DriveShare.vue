@@ -141,7 +141,14 @@
 							Create Secret Link
 						</AppButton>
 					</div>
-
+                    <choice
+                        v-if="showChoice"
+                        v-on:hide-choice="showChoice = false"
+                        :choice_message='choice_message'
+                        :choice_body="choice_body"
+                        :choice_consumer_func="choice_consumer_func"
+                        :choice_options="choice_options">
+                    </choice>
 					<SecretLink
 					    v-if="showModal"
 					    v-on:hide-modal="showModal = false"
@@ -177,6 +184,11 @@ module.exports = {
 			showModal: false,
 			modalTitle: "",
 			modalLinks: [],
+            showChoice: false,
+            choice_message: '',
+            choice_body: '',
+            choice_consumer_func: () => {},
+            choice_options: [],
 		};
 	},
 	props: [
@@ -217,12 +229,25 @@ module.exports = {
 			if (this.files.length != 1)
 				throw "Unimplemented multiple file share call";
 
-			let file = this.files[0];
-			var link = [];
-			let props = file.getFileProperties();
-			var name = this.displayName;
-			let shareFolderWithFile = this.currentDir != null
-			        && (name.toLowerCase().endsWith('.html') || name.toLowerCase().endsWith('.md'));
+			let name = this.displayName.toLowerCase();
+		    let that = this;
+			if (this.currentDir != null && (name.endsWith('.html') || name.endsWith('.md') || name == 'peergos-app.json')) {
+                this.choice_message = 'Confirm Action';
+                this.choice_body = '';
+                this.choice_consumer_func = (index) => {
+                    that.buildSecretLink(index == 1 ? true: false);
+                };
+                this.choice_options = ['Create secret link to file' ,'Create secret link to current folder with file'];
+                this.showChoice = true;
+            } else {
+                this.buildSecretLink(false);
+            }
+        },
+		buildSecretLink(shareFolderWithFile) {
+            let file = this.files[0];
+            var link = [];
+            let props = file.getFileProperties();
+            var name = this.displayName;
 			let isFile = !props.isDirectory;
 			link.push({
 			        fileLink: file.toLink(),

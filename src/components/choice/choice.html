@@ -13,8 +13,11 @@
       </div>
       <div class="choice-row">
         <div v-for="(option, key) in choice_options" class="choice-block">
-          <input type="radio" :id="key" :value="key" v-model="picked">
-          <label>{{ option }}</label>
+          <label class="checkbox__group">
+            {{ option }}
+            <input type="radio" :id="key" :value="key" name="" v-model="picked">
+            <span class="checkmark"></span>
+          </label>
         </div>
       </div>
       <button class="btn btn-success btn-lg" @click="confirm()" >
