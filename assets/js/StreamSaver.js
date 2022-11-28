@@ -78,7 +78,7 @@
           channel.port1.onmessage = null
           */
         } else if (evt.data.seekLength) {
-            seekCallback(evt.data.seekHi, evt.data.seekLo, evt.data.seekLength)
+            seekCallback(evt.data.seekHi, evt.data.seekLo, evt.data.seekLength, evt.data.uuid)
         }
       }
 
