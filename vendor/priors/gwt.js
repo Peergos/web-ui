@@ -1575,10 +1575,20 @@ function isLikelyValidImage(imageData, blackWhiteThreshold) {
     }
     return isValidImage;
 }
-
+function buildHeader(uuid) {
+    let encoder = new TextEncoder();
+    let uuidBytes = encoder.encode(uuid);
+    let uuidSize = uuidBytes.byteLength;
+    let headerSize = 1 + uuidSize;
+    var data = new Uint8Array(headerSize);
+    var offset = 0;
+    data.set([uuidSize], offset);
+    offset = offset + 1;
+    data.set(uuidBytes, offset);
+    return data;
+}
 function createVideoThumbnailStreamingProm(future, asyncReader, size, filename, mimeType) {
     let maxBlockSize = 1024 * 1024 * 5;
-    var blockSize = size > maxBlockSize ? maxBlockSize : size;
     var result = { done: false};
     function Context(asyncReader, sizeHigh, sizeLow) {
         this.maxBlockSize = 1024 * 1024 * 5;
@@ -1586,17 +1596,18 @@ function createVideoThumbnailStreamingProm(future, asyncReader, size, filename, 
         this.asyncReader = asyncReader;
         this.sizeHigh = sizeHigh,
         this.sizeLow = sizeLow;
-        this.counter = 0;
-        this.stream = function(seekHi, seekLo, length) {
-            this.counter++;
-            var work = function(thatRef, currentCount) {
+        this.stream = function(seekHi, seekLo, length, uuid) {
+            var work = function(thatRef, header) {
                 var currentSize = length;
                 var blockSize = currentSize > this.maxBlockSize ? this.maxBlockSize : currentSize;
                 var pump = function(reader) {
-                    if(! result.done && blockSize > 0 && thatRef.counter == currentCount) {
-                        var data = convertToByteArray(new Uint8Array(blockSize));
-                        data.length = blockSize;
-                        reader.readIntoArray(data, 0, blockSize).thenApply(function(read){
+                    if(blockSize > 0) {
+                        var bytes = new Uint8Array(blockSize + header.byteLength);
+                        for(var i=0;i < header.byteLength;i++){
+                            bytes[i] = header[i];
+                        }
+                        var data = convertToByteArray(bytes);
+                        reader.readIntoArray(data, header.byteLength, blockSize).thenApply(function(read){
                                currentSize = currentSize - read.value_0;
                                blockSize = currentSize > thatRef.maxBlockSize ? thatRef.maxBlockSize : currentSize;
                                thatRef.writer.write(data);
@@ -1614,9 +1625,7 @@ function createVideoThumbnailStreamingProm(future, asyncReader, size, filename, 
                     future.complete("");
                 })
             }
-            var empty = convertToByteArray(new Uint8Array(0));
-            this.writer.write(empty);
-            work(this, this.counter);
+            work(this, buildHeader(uuid));
         }
     }
     const context = new Context(asyncReader, 0, size);
@@ -1689,10 +1698,8 @@ function createVideoThumbnailStreamingProm(future, asyncReader, size, filename, 
         }
         video.src = url;
         video.play();
-    }, function(seekHi, seekLo, seekLength){
-        if(! result.done) {
-            context.stream(seekHi, seekLo, seekLength);
-        }
+    }, function(seekHi, seekLo, seekLength, uuid){
+        context.stream(seekHi, seekLo, seekLength, uuid);
     }, undefined, size);
     context.writer = fileStream.getWriter();
     return future;

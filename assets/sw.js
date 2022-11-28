@@ -45,42 +45,36 @@ self.onmessage = event => {
 
 function CacheEntry(fileSize) {
     this.fileSize = fileSize;
-    this.bytes = new Uint8Array(0);
-    this.skip = false;
     this.firstRun = true;
+    this.fileMap = new Map();
     this.getFileSize = function() {
         return this.fileSize;
     }
-    this.setSkip = function() {
-        if(this.firstRun) {
-            this.firstRun = false;
-        } else {
-            this.skip = true;
-        }
-    }
-    this.getSkip = function() {
-        return this.skip;
-    }
-    this.reset = function() {
-        this.bytes = new Uint8Array(0);
-        this.skip = false;
-    }
     this.enqueue = function(moreData) {
-        const currentBytes = this.bytes;
-        const combinedSize = currentBytes.byteLength + moreData.byteLength;
-        var newStore = new Uint8Array(combinedSize);
-        newStore.set(currentBytes);
-        newStore.set(moreData, currentBytes.byteLength);
-        this.bytes = newStore;
+        var offset = 0;
+        let uuidSize = moreData[offset];
+        var offset = offset + 1;
+        let uuidBytes = moreData.subarray(offset, uuidSize + offset);
+        let uuid = new TextDecoder().decode(uuidBytes);
+
+        offset =  offset + uuidSize;
+
+        var file = this.fileMap.get(uuid)
+        if(file == null) {
+            file = new Uint8Array(0);
+        }
+        const combinedSize = file.byteLength + moreData.byteLength - offset;
+        var newFile = new Uint8Array(combinedSize);
+        newFile.set(file);
+        newFile.set(moreData.subarray(offset), file.byteLength);
+        this.fileMap.set(uuid, newFile);
     }
 }
 
 function setupStreamingEntry(port, entry) {
     port.onmessage = ({ data }) => {
         if (data != 'end' && data != 'abort') {
-            if (data.byteLength == 0) {
-                entry.reset()
-            } else {
+            if (data.byteLength != 0) {
                 entry.enqueue(data)
             }
         }
@@ -182,11 +176,12 @@ self.onfetch = event => {
         if(end > cacheEntry.fileSize - 1) {
             end = cacheEntry.fileSize - 1;
         }
+        cacheEntry.firstRun = false;
         const seekHi = (start - (start % Math.pow(2, 32)))/Math.pow(2, 32);
         const seekLength = end-start + 1;
-        cacheEntry.setSkip();
-        port.postMessage({ seekHi: seekHi, seekLo: start, seekLength: seekLength })
-        return event.respondWith(returnRangeRequest(start, end, cacheEntry, mimeType))
+        let id = uuid();
+        port.postMessage({ seekHi: seekHi, seekLo: start, seekLength: seekLength, uuid: id})
+        return event.respondWith(returnRangeRequest(start, end, cacheEntry, mimeType, id))
     } else {
         let requestURL = new URL(url);
         if (requestURL.pathname.startsWith('/public/')) {
@@ -230,11 +225,11 @@ function alignToChunkBoundary(start, end) {
         return endOfRange;
     }
 }
-function returnRangeRequest(start, end, cacheEntry, mimeType) {
+function returnRangeRequest(start, end, cacheEntry, mimeType, uuid) {
     return new Promise(function(resolve, reject) {
         let pump = (currentCount) => {
-            const store = cacheEntry.bytes;
-            if (cacheEntry.getSkip() || store.byteLength != end-start + 1) {
+            const store = cacheEntry.fileMap.get(uuid);
+            if (store == null || store.byteLength != end-start + 1) {
                 if(currentCount > 30) {
                     resolve(null);
                 } else {
@@ -247,6 +242,7 @@ function returnRangeRequest(start, end, cacheEntry, mimeType) {
         pump(0);
     }).then(function(arrayBuffer, err) {
         const fileSize = cacheEntry.getFileSize();
+        cacheEntry.fileMap.delete(uuid);
         if (arrayBuffer == null) {
             return new Response(null, {
               status: 416,
@@ -267,5 +263,11 @@ function returnRangeRequest(start, end, cacheEntry, mimeType) {
             });
         }
     });
+}
+//https://stackoverflow.com/questions/105034/how-to-create-guid-uuid
+function uuid() {
+  return '-' + ([1e7]+-1e3+-4e3+-8e3+-1e11).replace(/[018]/g, c =>
+    (c ^ crypto.getRandomValues(new Uint8Array(1))[0] & 15 >> c / 4).toString(16)
+  );
 }
 

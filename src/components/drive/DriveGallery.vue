@@ -277,27 +277,23 @@ module.exports = {
 					this.network = network;
 					this.crypto = crypto;
 					(this.sizeHigh = sizeHigh), (this.sizeLow = sizeLow);
-					this.counter = 0;
 					this.readerFuture = null;
-					this.stream = function (seekHi, seekLo, length) {
-						this.counter++;
-						var work = function (thatRef, currentCount) {
+					this.stream = function (seekHi, seekLo, length, uuid) {
+						var work = function (thatRef, header) {
 							var currentSize = length;
 							var blockSize =
 								currentSize > this.maxBlockSize
 									? this.maxBlockSize
 									: currentSize;
 							var pump = function (reader) {
-								if (
-									blockSize > 0 &&
-									thatRef.counter == currentCount
-								) {
-									var data = convertToByteArray(
-										new Uint8Array(blockSize)
-									);
-									data.length = blockSize;
+								if (blockSize > 0) {
+                                    var bytes = new Uint8Array(blockSize + header.byteLength);
+                                    for(var i=0;i < header.byteLength;i++){
+                                        bytes[i] = header[i];
+                                    }
+                                    var data = convertToByteArray(bytes);
 									return reader
-										.readIntoArray(data, 0, blockSize)
+										.readIntoArray(data, header.byteLength, blockSize)
 										.thenApply(function (read) {
 											currentSize =
 												currentSize - read.value_0;
@@ -317,8 +313,7 @@ module.exports = {
 								}
 							};
 							var updated =
-								thatRef.readerFuture != null &&
-								thatRef.counter == currentCount
+								thatRef.readerFuture != null
 									? thatRef.readerFuture
 									: file.getBufferedInputStream(
 											network,
@@ -340,9 +335,7 @@ module.exports = {
 									});
 							});
 						};
-						var empty = convertToByteArray(new Uint8Array(0));
-						this.writer.write(empty);
-						return work(this, this.counter);
+						return work(this, buildHeader(uuid));
 					};
 				}
 				const context = new Context(
@@ -362,8 +355,8 @@ module.exports = {
 						that.pinging = true;
 						that.startPing(url + "/ping");
 					},
-					function (seekHi, seekLo, seekLength) {
-						context.stream(seekHi, seekLo, seekLength);
+					function (seekHi, seekLo, seekLength, uuid) {
+						context.stream(seekHi, seekLo, seekLength, uuid);
 					},
 					undefined,
 					size
@@ -392,6 +385,18 @@ module.exports = {
 				});
 			}
 		},
+		buildHeader(uuid) {
+            let encoder = new TextEncoder();
+            let uuidBytes = encoder.encode(uuid);
+            let uuidSize = uuidBytes.byteLength;
+            let headerSize = 1 + uuidSize;
+            var data = new Uint8Array(headerSize);
+            var offset = 0;
+            data.set([uuidSize], offset);
+            offset = offset + 1;
+            data.set(uuidBytes, offset);
+            return data;
+        },
 		isImage(file) {
 			if (file == null) return false;
 			var mimeType = file.getFileProperties().mimeType;
