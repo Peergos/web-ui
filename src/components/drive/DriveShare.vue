@@ -237,7 +237,7 @@ module.exports = {
                 this.choice_consumer_func = (index) => {
                     that.buildSecretLink(index == 1 ? true: false);
                 };
-                this.choice_options = ['Create secret link to file' ,'Create secret link to current folder with file'];
+                this.choice_options = ['Create secret link to file' ,'Create secret link to current folder and open file'];
                 this.showChoice = true;
             } else {
                 this.buildSecretLink(false);
@@ -261,7 +261,7 @@ module.exports = {
 			});
 			var title = "";
 			if (shareFolderWithFile) {
-                title = "Secret link to current folder with file: ";
+                title = "Secret link to current folder and open file: ";
 			} else if (isFile) {
                 title = "Secret link to file: ";
             } else {
