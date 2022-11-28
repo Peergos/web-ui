@@ -52,12 +52,12 @@ function CacheEntry(fileSize) {
     }
     this.enqueue = function(moreData) {
         var offset = 0;
-        let filePathSize = moreData[offset];
+        let uuidSize = moreData[offset];
         var offset = offset + 1;
-        let filePathBytes = moreData.subarray(offset, filePathSize + offset);
-        let uuid = new TextDecoder().decode(filePathBytes);
+        let uuidBytes = moreData.subarray(offset, uuidSize + offset);
+        let uuid = new TextDecoder().decode(uuidBytes);
 
-        offset =  offset + filePathSize;
+        offset =  offset + uuidSize;
 
         var file = this.fileMap.get(uuid)
         if(file == null) {

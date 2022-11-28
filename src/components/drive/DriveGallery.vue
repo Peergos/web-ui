@@ -387,14 +387,14 @@ module.exports = {
 		},
 		buildHeader(uuid) {
             let encoder = new TextEncoder();
-            let filePathBytes = encoder.encode(uuid);
-            let pathSize = filePathBytes.byteLength;
-            let headerSize = 1 + pathSize;
+            let uuidBytes = encoder.encode(uuid);
+            let uuidSize = uuidBytes.byteLength;
+            let headerSize = 1 + uuidSize;
             var data = new Uint8Array(headerSize);
             var offset = 0;
-            data.set([pathSize], offset);
+            data.set([uuidSize], offset);
             offset = offset + 1;
-            data.set(filePathBytes, offset);
+            data.set(uuidBytes, offset);
             return data;
         },
 		isImage(file) {
