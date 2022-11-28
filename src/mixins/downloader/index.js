@@ -155,7 +155,7 @@ module.exports = {
                 link.href = url
                 link.dispatchEvent(click)
               },
-              function (seekHi, seekLo, seekLength) {},
+              function (seekHi, seekLo, seekLength, uuid) {},
               undefined,
               size
             )

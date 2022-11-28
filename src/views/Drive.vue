@@ -786,7 +786,7 @@ module.exports = {
                 function (url) {
         		    that.setup();
                 },
-                function (seekHi, seekLo, seekLength) {
+                function (seekHi, seekLo, seekLength, uuid) {
                 },
                 undefined,
                 0
