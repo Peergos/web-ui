@@ -1498,6 +1498,11 @@ module.exports = {
             }
             return combinedSortedFileList;
         },
+        uuid() {
+          return '-' + ([1e7]+-1e3+-4e3+-8e3+-1e11).replace(/[018]/g, c =>
+            (c ^ crypto.getRandomValues(new Uint8Array(1))[0] & 15 >> c / 4).toString(16)
+          );
+        },
 	processFileUpload(files, retrying) {
             let that = this;
             if (this.isSecretLink && !this.currentDir.isWritable()) {
@@ -1535,7 +1540,7 @@ module.exports = {
                         //resetting .value tricks browser into allowing subsequent upload of same file(s)
                         document.getElementById('uploadFileInput').value = "";
                         document.getElementById('uploadDirectoriesInput').value = "";
-                        let name = 'bulkUpload';
+                        let name = 'bulkUpload-' + this.uuid();
                         let title = "Encrypting and uploading file(s)";
                         let sortedFiles = this.sortFilesByDirectory(files, this.getPath);
                         let progress = {
