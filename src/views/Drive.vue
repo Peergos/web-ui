@@ -1667,6 +1667,9 @@ module.exports = {
         reduceAllUploads: function(index, files, future, uploadParams, previousDirectoryHolder) {
             let that = this;
             if (index == files.length) {
+                if (uploadParams.progress.total == 0) {
+                    setTimeout(() => that.$toast.dismiss(uploadParams.progress.name), 1000);
+                }
                 future.complete(true);
             } else {
                 this.uploadFile(files[index], uploadParams, previousDirectoryHolder).thenApply(result => {
