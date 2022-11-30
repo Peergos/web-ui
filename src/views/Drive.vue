@@ -1760,28 +1760,31 @@ module.exports = {
             };
             let thumbnailOffset = 20 * 1024;
             let updateProgressBar = function(len){
-                let title = '[' + uploadParams.progress.current + '/' + uploadParams.progress.total + '] ' + uploadParams.title;
+                let firstUpdate = updater.done == 0;
                 updater.done += len.value_0;
                 uploadParams.progress.done += len.value_0;
-                Vue.nextTick(() => {
-                    that.$toast.update(uploadParams.name,
-                    {content:
-                        {
-                            component: ProgressBar,
-                            props:  {
-                            title: title,
-                            subtitle: that.formatTitle(file.name),
-                            done: uploadParams.progress.done,
-                            max: uploadParams.progress.max
-                            },
-                        }
-                    });
-                });
                 if (!updater.finished && updater.done >= (updater.max + thumbnailOffset)) {
                     updater.finished = true;
                     console.log('uploadParams.progress.done=' + uploadParams.progress.done + " uploadParams.progress.max=" + uploadParams.progress.max);
                     uploadParams.progress.current  = uploadParams.progress.current + 1;
                     uploadParams.triggerRefresh = true;
+                }
+                let title = '[' + uploadParams.progress.current + '/' + uploadParams.progress.total + '] ' + uploadParams.title;
+                if (!firstUpdate) {
+                    Vue.nextTick(() => {
+                        that.$toast.update(uploadParams.name,
+                        {content:
+                            {
+                                component: ProgressBar,
+                                props:  {
+                                title: title,
+                                subtitle: that.formatTitle(file.name),
+                                done: uploadParams.progress.done,
+                                max: uploadParams.progress.max
+                                },
+                            }
+                        });
+                    });
                 }
             };
             var foundDirectoryIndex = -1;
