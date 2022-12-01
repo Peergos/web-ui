@@ -1,6 +1,6 @@
 <template>
 	<div class="app-signup">
-		<template v-if="acceptingSignups">
+		<template v-if="showSignup()">
 			<input
 				type="text"
 				autofocus
@@ -41,10 +41,33 @@
 			</label>
 
 			<AppButton class="signup" type="primary" block accent @click.native="signup()" icon="arrow-right">
-				Sign up
+				{{ signupButtonText }}
 			</AppButton>
 		</template>
 
+                <template v-else-if="showPaidPlans()">
+                        <div class="options_container">
+			    <div class="card__meta options">
+				<h3>Pro Account</h3>
+				<ul>
+				    <li>50 GB of hyper secure storage</li>
+				    <li>All our bundled private applications</li>
+				    <li>&#x00A3;5 / month</li>
+				</ul>
+                                <AppButton @click.native="setPlan(53687091200)" type="primary" block accent>Select Pro</AppButton>
+			    </div>
+                            <div class="card__meta options">
+				<h3>Visionary Account</h3>
+				<ul>
+				    <li>500 GB of hyper secure storage</li>
+				    <li>All our bundled private applications</li>
+				    <li>&#x00A3;25 / month</li>
+				</ul>
+                                <AppButton @click.native="setPlan(536870912000)" type="primary" block accent>Select Visionary</AppButton>
+			    </div>
+                        </div>
+                </template>
+                
 		<template v-else>
 			<h2>This server is currently not accepting signups</h2>
 			<p>Join the waiting list to be notified when there are more places.</p>
@@ -93,8 +116,10 @@ module.exports = {
 	    password: '',
 	    password2: '',
 	    email: '',
+            desiredQuota: 0,
             showPasswords: false,
-	    acceptingSignups: true,
+	    acceptingFreeSignups: true,
+            acceptingPaidSignups: false,
 	    tosAccepted:false,
 	    safePassword:false,
 	};
@@ -105,14 +130,18 @@ module.exports = {
 	    'crypto',
 	    'network'
 	]),
+        signupButtonText() {
+            return this.desiredQuota > 0 ? "Add payment card and sign up" : "Sign up";
+        },
     },
     mounted() {
 	this.$refs.username.focus()
 	let that = this;
 	this.network.instanceAdmin.acceptingSignups().thenApply(function(res) {
 	    if (that.token.length > 0) return;
-	    that.acceptingSignups = res;
-	    console.log("accepting signups: " + res);
+	    that.acceptingFreeSignups = res.free;
+            that.acceptingPaidSignups = res.paid;
+	    console.log("accepting signups - free: " + res.free + ", paid: " + res.paid);
 	});
     },
 
@@ -122,6 +151,15 @@ module.exports = {
 	    'updateUsage',
 	    'updatePayment'
 	]),
+        showPaidPlans() {
+            return this.token.length == 0 && this.acceptingPaidSignups && this.desiredQuota == 0;
+        },
+	showSignup() {
+            return this.token.length > 0 || this.acceptingFreeSignups || this.desiredQuota > 0;
+        },
+	setPlan(quotaBytes) {
+            this.desiredQuota = quotaBytes;
+        },
 	lowercaseUsername(){
 	    this.username.toLowerCase()
 	},
@@ -147,6 +185,28 @@ module.exports = {
 	    this.password = password;
             this.showPasswords = true;
         },
+        startAddCardListener(future) {
+            var that = this;
+            this.currentFocusFunction = function(event) {
+                that.$toast.info('Completing signup', {id:'signup', timeout:false})
+                window.removeEventListener("focus", that.currentFocusFunction);
+                future.complete(peergos.shared.util.LongUtil.box(that.desiredQuota))
+            };
+	    window.addEventListener("focus", this.currentFocusFunction, false);
+	},
+        addPaymentCard(props) {
+            this.$toast.info('Opening payment provider', {id:'signup', timeout:false})
+            this.paymentUrl = props.getUrl() + "&username=" + this.username + "&client_secret=" + props.getClientSecret();
+            //  open payment card page in new tab
+            let link = document.createElement('a')
+            let click = new MouseEvent('click')
+            link.target = "_blank";
+            link.href = this.paymentUrl;
+            link.dispatchEvent(click);
+            let future = peergos.shared.util.Futures.incomplete();
+            this.startAddCardListener(future);
+            return future;
+        },
         signup() {
             const creationStart = Date.now();
             const that = this;
@@ -167,18 +227,25 @@ module.exports = {
                 } else if (BannedUsernames.includes(that.username)) {
 		    that.$toast.error(`Banned username: ${that.username}`,{id:'signup', timeout:false})
                 } else {
-                    that.$toast.info('signing up!', {id:'signup'})
+                    that.$toast.info('Signing up...', {id:'signup', timeout:false})
+                    var addCard;
+                    if (this.acceptingPaidSignups && this.token.length == 0) {
+                        addCard = java.util.Optional.of(props => that.addPaymentCard(props));
+                    } else {
+                        addCard = java.util.Optional.empty();
+                    }
                     return peergos.shared.user.UserContext.signUp(
-					that.username,
-					that.password,
-					that.token,
-					that.network,
-					that.crypto,
-					{"accept" : x => that.$toast.info(x, {id:'signup', timeout:false})}
-					).thenApply(function(context) {
+			that.username,
+			that.password,
+			that.token,
+                        addCard,
+			that.network,
+			that.crypto,
+			{"accept" : x => that.$toast.info(x, {id:'signup', timeout:false})}
+		    ).thenApply(function(context) {
                         that.$store.commit('SET_CONTEXT', context);
                         that.$store.commit('USER_LOGIN', true);
-					    that.installDefaultApp().thenApply(function(props) {
+			that.installDefaultApp().thenApply(function(props) {
                             that.initSandboxedApps();
                             that.$store.commit('CURRENT_VIEW', 'Drive');
                             that.$store.commit('CURRENT_MODAL', 'ModalTour');
