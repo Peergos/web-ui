@@ -361,7 +361,10 @@ module.exports = {
             clickTimer: null,
             clickedFilename: null,
             isStreamingAvailable: false,
-            launcherApp: null
+            launcherApp: null,
+            uploadProgressQueue: { entries:[]},
+            executingUploadProgressCommands: false,
+            progressBarUpdateFrequency: 100
 		};
 	},
 	mixins:[downloaderMixins, router, zipMixin, launcherMixin],
@@ -1595,6 +1598,9 @@ module.exports = {
                     let folderUP = new peergos.shared.user.fs.FileWrapper.FolderUploadProperties(pathList, filePropsList);
                     folderUPList.push(folderUP);
                 }
+                let commitContext = {
+                    completed: false
+                }
                 var commitWatcher = {
                     get_0: function() {
                         if (uploadParams.triggerRefresh) {
@@ -1606,22 +1612,10 @@ module.exports = {
                             }
                             that.updateCurrentDirectory();
                         }
-                        if (uploadParams.progress.current >= uploadParams.progress.total) {
-                            let title = 'Completing upload and refreshing folder...\n';
-                            Vue.nextTick(() => {
-                                that.$toast.update(uploadParams.name,
-                                   {content:
-                                        {
-                                            component: ProgressBar,
-                                            props:  {
-                                            title: title,
-                                            done: uploadParams.progress.done,
-                                            max: uploadParams.progress.max
-                                            },
-                                        }
-                                   });
-                            });
-                            setTimeout(() => that.$toast.dismiss(uploadParams.progress.name), 2000);
+                        if (!commitContext.completed && uploadParams.progress.current >= uploadParams.progress.total) {
+                            commitContext.completed = true;
+                            let title = 'Completing upload and refreshing folder...';
+                            that.addUploadProgressMessage(uploadParams, title, '', '', true);
                         }
                         return true;
                     }
@@ -1673,7 +1667,7 @@ module.exports = {
             let that = this;
             if (index == files.length) {
                 if (uploadParams.progress.total == 0) {
-                    setTimeout(() => that.$toast.dismiss(uploadParams.progress.name), 1000);
+                    that.addUploadProgressMessage(uploadParams, 'Nothing to upload', '', '', true);
                 }
                 future.complete(true);
             } else {
@@ -1756,11 +1750,12 @@ module.exports = {
             let updater = {
                 done:0,
                 max:file.size,
-                finished:false
+                finished:false,
+                lastUpdate: false
             };
             let thumbnailOffset = 20 * 1024;
             let updateProgressBar = function(len){
-                let firstUpdate = updater.done == 0;
+                let firstUpdate = updater.done == 0 && updater.max < 1048661;
                 updater.done += len.value_0;
                 uploadParams.progress.done += len.value_0;
                 if (!updater.finished && updater.done >= (updater.max + thumbnailOffset)) {
@@ -1770,21 +1765,11 @@ module.exports = {
                     uploadParams.triggerRefresh = true;
                 }
                 let title = '[' + uploadParams.progress.current + '/' + uploadParams.progress.total + '] ' + uploadParams.title;
-                if (!firstUpdate) {
-                    Vue.nextTick(() => {
-                        that.$toast.update(uploadParams.name,
-                        {content:
-                            {
-                                component: ProgressBar,
-                                props:  {
-                                title: title,
-                                subtitle: that.formatTitle(file.name),
-                                done: uploadParams.progress.done,
-                                max: uploadParams.progress.max
-                                },
-                            }
-                        });
-                    });
+                if (!firstUpdate && !updater.lastUpdate) {
+                    if (updater.finished) {
+                        updater.lastUpdate = true;
+                    }
+                    that.addUploadProgressMessage(uploadParams, title, that.formatTitle(file.name), file.directory, false);
                 }
             };
             var foundDirectoryIndex = -1;
@@ -1811,7 +1796,81 @@ module.exports = {
             fileUploadList.push(fup);
             future.complete(true);
 		},
-
+        addUploadProgressMessage: function(uploadParams, title, subtitle, directory, finalCall) {
+            let that = this;
+            function update(message, conversationId) {
+                let future = peergos.shared.util.Futures.incomplete();
+                setTimeout( () => {
+                    that.$toast.update(uploadParams.name,
+                    {content:
+                        {
+                            component: ProgressBar,
+                            props:  {
+                            title: title,
+                            subtitle: subtitle,
+                            done: uploadParams.progress.done,
+                            max: uploadParams.progress.max
+                            },
+                        }
+                    });
+                    future.complete(true);
+                }, that.progressBarUpdateFrequency);
+                return future;
+            }
+            let command = {
+                func: () => update(),
+                path: title + '-' + directory + '-' + subtitle,
+            };
+            this.drainProgressBarQueue(uploadParams, command, finalCall, false);
+        },
+        reduceProgressBarUpdates: function(uploadParams, future, finalCall) {
+            let that = this;
+            let queueCopy = this.uploadProgressQueue.entries.slice();
+            let command = queueCopy.shift();
+            if (command == null) {
+                if (finalCall) {
+                    setTimeout(() => that.$toast.dismiss(uploadParams.progress.name), 1000);
+                }
+                future.complete(true);
+            } else {
+                try {
+                    let newQueue = [];
+                    for(var i=0;i < queueCopy.length; i++) {
+                        let entry = queueCopy[i];
+                        if (command.path == entry.path) {
+                            command = entry;
+                        } else {
+                            newQueue.push(entry);
+                        }
+                    }
+                    this.uploadProgressQueue.entries = newQueue;
+                    command.func().thenApply(function(res){
+                        that.reduceProgressBarUpdates(uploadParams, future, finalCall);
+                    });
+                } catch(ex) {
+                    future.complete(true);
+                }
+            }
+            return future;
+        },
+        drainProgressBarQueue: function(uploadParams, newCommand, finalCall, repeated) {
+            if (!repeated) {
+                this.uploadProgressQueue.entries.push(newCommand);
+            }
+            let that = this;
+            if (!that.executingUploadProgressCommands) {
+                that.executingUploadProgressCommands = true;
+                let future = peergos.shared.util.Futures.incomplete();
+                that.reduceProgressBarUpdates(uploadParams, future, finalCall);
+                future.thenApply(res => {
+                    that.executingUploadProgressCommands = false;
+                });
+            } else {
+                if (finalCall) {
+                    setTimeout(() => that.drainProgressBarQueue(uploadParams, newCommand, finalCall, true), 1000);
+                }
+            }
+        },
 		toggleFeedbackForm() {
 			this.showFeedbackForm = !this.showFeedbackForm;
 			// this.clearTabNavigation();
