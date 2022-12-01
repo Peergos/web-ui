@@ -87,6 +87,13 @@
 				Join waiting list
 			</AppButton>
 		</template>
+                <continue
+                    v-if="showContinue"
+                    v-on:hide-continue="showContinue = false"
+                    :message='continue_message'
+                    :body="continue_body"
+                    :ok_func="continue_func">
+                </continue>
 	</div>
 </template>
 
@@ -96,9 +103,11 @@ const BannedUsernames = require('../mixins/password/bannedUsernames.json');
 const FormPassword = require("./form/FormPassword.vue");
 const UriDecoder = require('../mixins/uridecoder/index.js');
 const sandboxMixin = require("../mixins/sandbox/index.js");
+const Continue = require("Continue.vue");
 module.exports = {
     components: {
 	FormPassword,
+        Continue,
     },
 
     mixins:[UriDecoder, sandboxMixin],
@@ -122,6 +131,11 @@ module.exports = {
             acceptingPaidSignups: false,
 	    tosAccepted:false,
 	    safePassword:false,
+            showContinue: false,
+            continue_message: "Add a payment card",
+            continue_body: "Continue to our payment processor to enter your card details",
+            continue_func: function(){},
+            cardFuture: null,
 	};
     },
 
@@ -194,18 +208,25 @@ module.exports = {
             };
 	    window.addEventListener("focus", this.currentFocusFunction, false);
 	},
-        addPaymentCard(props) {
-            this.$toast.info('Opening payment provider', {id:'signup', timeout:false})
-            this.paymentUrl = props.getUrl() + "&username=" + this.username + "&client_secret=" + props.getClientSecret();
+        confirmAddCard() {
+            this.continue_func = this.addCard;
+            this.showContinue = true;
+        },
+        addCard() {
             //  open payment card page in new tab
             let link = document.createElement('a')
             let click = new MouseEvent('click')
             link.target = "_blank";
             link.href = this.paymentUrl;
             link.dispatchEvent(click);
-            let future = peergos.shared.util.Futures.incomplete();
-            this.startAddCardListener(future);
-            return future;
+            this.startAddCardListener(this.cardFuture);
+            this.$toast.info('Opening payment provider', {id:'signup', timeout:false})
+        },
+        addPaymentCard(props) {
+            this.paymentUrl = props.getUrl() + "&username=" + this.username + "&client_secret=" + props.getClientSecret();
+            this.cardFuture = peergos.shared.util.Futures.incomplete();
+            this.confirmAddCard();
+            return this.cardFuture;
         },
         signup() {
             const creationStart = Date.now();
