@@ -1755,7 +1755,7 @@ module.exports = {
             };
             let thumbnailOffset = 20 * 1024;
             let updateProgressBar = function(len){
-                let firstUpdate = updater.done == 0 && updater.max < 1048661;
+                let firstUpdate = updater.done == 0;
                 updater.done += len.value_0;
                 uploadParams.progress.done += len.value_0;
                 if (!updater.finished && updater.done >= (updater.max + thumbnailOffset)) {
