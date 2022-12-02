@@ -361,7 +361,10 @@ module.exports = {
             clickTimer: null,
             clickedFilename: null,
             isStreamingAvailable: false,
-            launcherApp: null
+            launcherApp: null,
+            uploadProgressQueue: { entries:[]},
+            executingUploadProgressCommands: false,
+            progressBarUpdateFrequency: 100
 		};
 	},
 	mixins:[downloaderMixins, router, zipMixin, launcherMixin],
@@ -1498,6 +1501,11 @@ module.exports = {
             }
             return combinedSortedFileList;
         },
+        uuid() {
+          return '-' + ([1e7]+-1e3+-4e3+-8e3+-1e11).replace(/[018]/g, c =>
+            (c ^ crypto.getRandomValues(new Uint8Array(1))[0] & 15 >> c / 4).toString(16)
+          );
+        },
 	processFileUpload(files, retrying) {
             let that = this;
             if (this.isSecretLink && !this.currentDir.isWritable()) {
@@ -1535,21 +1543,20 @@ module.exports = {
                         //resetting .value tricks browser into allowing subsequent upload of same file(s)
                         document.getElementById('uploadFileInput').value = "";
                         document.getElementById('uploadDirectoriesInput').value = "";
-                        let progressBars = [];
+                        let name = 'bulkUpload-' + this.uuid();
+                        let title = "Encrypting and uploading file(s)";
                         let sortedFiles = this.sortFilesByDirectory(files, this.getPath);
-                        for(var i=0; i < sortedFiles.length; i++) {
-                            var resultingSize = sortedFiles[i].size;
-                            var progress = {
-                                title:"Encrypting and uploading " + sortedFiles[i].name,
-                                done:0,
-                                max:resultingSize,
-                                name: sortedFiles[i].name
-                            };
-                            that.$toast(
-                                {component: ProgressBar,props:  progress} ,
-                                { icon: false , timeout:false, id: sortedFiles[i].name})
-                            progressBars.push(progress);
-                        }
+                        let progress = {
+                            title: title,
+                            done:0,
+                            max:totalSize,
+                            name:name,
+                            current: 0,
+                            total: files.length,
+                        };
+                        that.$toast(
+                            {component: ProgressBar,props:  progress} ,
+                            { icon: false , timeout:false, id: name})
                         let uploadDirectoryPath = that.getPath;
                         const uploadParams = {
                             applyReplaceToAll: false,
@@ -1557,14 +1564,17 @@ module.exports = {
                             directoryPath: uploadDirectoryPath,
                             uploadPaths: [],
                             fileUploadProperties: [],
-                            triggerRefresh: false
+                            triggerRefresh: false,
+                            progress: progress,
+                            name: name,
+                            title: title
                         }
                         let prepareFuture = peergos.shared.util.Futures.incomplete();
                         let previousDirectoryHolder = {
                             fileWrapper: null,
                             path: ''
                         };
-                        that.reduceAllUploads(0, sortedFiles, prepareFuture, uploadParams, progressBars, previousDirectoryHolder);
+                        that.reduceAllUploads(0, sortedFiles, prepareFuture, uploadParams, previousDirectoryHolder);
                         prepareFuture.thenApply(preparationDone => {
                             that.bulkUpload(uploadParams).thenApply(res => {
                                 console.log("upload complete");
@@ -1575,6 +1585,7 @@ module.exports = {
             }
         },
         bulkUpload: function(uploadParams) {
+            let that = this;
             let uploadFuture = peergos.shared.util.Futures.incomplete();
             if (uploadParams.uploadPaths.length == 0) {
                 uploadFuture.complete(true);
@@ -1587,6 +1598,9 @@ module.exports = {
                     let folderUP = new peergos.shared.user.fs.FileWrapper.FolderUploadProperties(pathList, filePropsList);
                     folderUPList.push(folderUP);
                 }
+                let commitContext = {
+                    completed: false
+                }
                 var commitWatcher = {
                     get_0: function() {
                         if (uploadParams.triggerRefresh) {
@@ -1598,12 +1612,16 @@ module.exports = {
                             }
                             that.updateCurrentDirectory();
                         }
+                        if (!commitContext.completed && uploadParams.progress.current >= uploadParams.progress.total) {
+                            commitContext.completed = true;
+                            let title = 'Completing upload and refreshing folder...';
+                            that.addUploadProgressMessage(uploadParams, title, '', '', true);
+                        }
                         return true;
                     }
                 };
 
                 let folderStream = peergos.client.JsUtil.asList(folderUPList).stream();
-                let that = this;
                 let resumeFileUpload = function(f) {
                     let future = peergos.shared.util.Futures.incomplete();
                     let path = f.getPath();
@@ -1645,13 +1663,16 @@ module.exports = {
             this.confirm_consumer_func = confirmFunction;
             this.showConfirm = true;
         },
-        reduceAllUploads: function(index, files, future, uploadParams, progressBars, previousDirectoryHolder) {
+        reduceAllUploads: function(index, files, future, uploadParams, previousDirectoryHolder) {
             let that = this;
             if (index == files.length) {
+                if (uploadParams.progress.total == 0) {
+                    that.addUploadProgressMessage(uploadParams, 'Nothing to upload', '', '', true);
+                }
                 future.complete(true);
             } else {
-                this.uploadFile(files[index], uploadParams, progressBars[index], previousDirectoryHolder).thenApply(result => {
-                    that.reduceAllUploads(index+1, files, future, uploadParams, progressBars, previousDirectoryHolder);
+                this.uploadFile(files[index], uploadParams, previousDirectoryHolder).thenApply(result => {
+                    that.reduceAllUploads(index+1, files, future, uploadParams, previousDirectoryHolder);
                 });
             }
         },
@@ -1670,20 +1691,21 @@ module.exports = {
             }
             return future;
         },
-        uploadFile: function(file, uploadParams, progress, previousDirectoryHolder) {
+        uploadFile: function(file, uploadParams, previousDirectoryHolder) {
             let that = this;
             let future = peergos.shared.util.Futures.incomplete();
             this.getUploadDirectory(previousDirectoryHolder, uploadParams.directoryPath, file).thenApply(function (updatedDir) {
                 if (updatedDir == null) {
-                    that.uploadFileJS(file, false, future, uploadParams, progress);
+                    that.uploadFileJS(file, false, future, uploadParams);
                 } else {
                     updatedDir.hasChild(file.name, that.context.crypto.hasher, that.context.network).thenApply(function (alreadyExists) {
                         if (alreadyExists) {
                             if (uploadParams.applyReplaceToAll) {
                                 if (uploadParams.replaceFile) {
-                                    that.uploadFileJS(file, true, future, uploadParams, progress)
+                                    that.uploadFileJS(file, true, future, uploadParams)
                                 } else {
-                                    that.$toast.dismiss(file.name);
+                                    uploadParams.progress.total = uploadParams.progress.total - 1;
+                                    uploadParams.progress.max = uploadParams.progress.max - file.size;
                                     future.complete(true);
                                 }
                             } else {
@@ -1691,18 +1713,19 @@ module.exports = {
                                     (applyToAll) => {
                                         uploadParams.applyReplaceToAll = applyToAll;
                                         uploadParams.replaceFile = false;
-                                        that.$toast.dismiss(file.name);
+                                        uploadParams.progress.total = uploadParams.progress.total - 1;
+                                        uploadParams.progress.max = uploadParams.progress.max - file.size;
                                         future.complete(true);
                                     },
                                     (applyToAll) => {
                                         uploadParams.applyReplaceToAll = applyToAll;
                                         uploadParams.replaceFile = true;
-                                        that.uploadFileJS(file, true, future, uploadParams, progress)
+                                        that.uploadFileJS(file, true, future, uploadParams)
                                     }
                                 );
                             }
                         } else {
-                            that.uploadFileJS(file, false, future, uploadParams, progress);
+                            that.uploadFileJS(file, false, future, uploadParams);
                         }
                     });
                 }
@@ -1718,25 +1741,35 @@ module.exports = {
 			this.replace_showApplyAll = true;
 			this.showReplace = true;
 		},
-		uploadFileJS(file, overwriteExisting, future, uploadParams, progress) {
+		formatTitle(text) {
+            let width = 32;
+            return text.length > width ? text.substring(0, width-3) + '... ' : text;
+		},
+		uploadFileJS(file, overwriteExisting, future, uploadParams) {
             let that = this;
+            let updater = {
+                done:0,
+                max:file.size,
+                finished:false,
+                lastUpdate: false
+            };
+            let thumbnailOffset = 20 * 1024;
             let updateProgressBar = function(len){
-                progress.done += len.value_0;
-                that.$toast.update(progress.name,
-                   {content:
-                        {
-                            component: ProgressBar,
-                            props:  {
-                            title: progress.title,
-                            done: progress.done,
-                            max: progress.max
-                            },
-                        }
-                   });
-                let thumbnailOffset = 20 * 1024;
-                if (progress.done >= (progress.max + thumbnailOffset)) {
+                let firstUpdate = updater.done == 0;
+                updater.done += len.value_0;
+                uploadParams.progress.done += len.value_0;
+                if (!updater.finished && updater.done >= (updater.max + thumbnailOffset)) {
+                    updater.finished = true;
+                    console.log('uploadParams.progress.done=' + uploadParams.progress.done + " uploadParams.progress.max=" + uploadParams.progress.max);
+                    uploadParams.progress.current  = uploadParams.progress.current + 1;
                     uploadParams.triggerRefresh = true;
-                    setTimeout(() => that.$toast.dismiss(progress.name), 1000)
+                }
+                let title = '[' + uploadParams.progress.current + '/' + uploadParams.progress.total + '] ' + uploadParams.title;
+                if (!firstUpdate && !updater.lastUpdate) {
+                    if (updater.finished) {
+                        updater.lastUpdate = true;
+                    }
+                    that.addUploadProgressMessage(uploadParams, title, that.formatTitle(file.name), file.directory, false);
                 }
             };
             var foundDirectoryIndex = -1;
@@ -1763,7 +1796,81 @@ module.exports = {
             fileUploadList.push(fup);
             future.complete(true);
 		},
-
+        addUploadProgressMessage: function(uploadParams, title, subtitle, directory, finalCall) {
+            let that = this;
+            function update(message, conversationId) {
+                let future = peergos.shared.util.Futures.incomplete();
+                setTimeout( () => {
+                    that.$toast.update(uploadParams.name,
+                    {content:
+                        {
+                            component: ProgressBar,
+                            props:  {
+                            title: title,
+                            subtitle: subtitle,
+                            done: uploadParams.progress.done,
+                            max: uploadParams.progress.max
+                            },
+                        }
+                    });
+                    future.complete(true);
+                }, that.progressBarUpdateFrequency);
+                return future;
+            }
+            let command = {
+                func: () => update(),
+                path: title + '-' + directory + '-' + subtitle,
+            };
+            this.drainProgressBarQueue(uploadParams, command, finalCall, false);
+        },
+        reduceProgressBarUpdates: function(uploadParams, future, finalCall) {
+            let that = this;
+            let queueCopy = this.uploadProgressQueue.entries.slice();
+            let command = queueCopy.shift();
+            if (command == null) {
+                if (finalCall) {
+                    setTimeout(() => that.$toast.dismiss(uploadParams.progress.name), 1000);
+                }
+                future.complete(true);
+            } else {
+                try {
+                    let newQueue = [];
+                    for(var i=0;i < queueCopy.length; i++) {
+                        let entry = queueCopy[i];
+                        if (command.path == entry.path) {
+                            command = entry;
+                        } else {
+                            newQueue.push(entry);
+                        }
+                    }
+                    this.uploadProgressQueue.entries = newQueue;
+                    command.func().thenApply(function(res){
+                        that.reduceProgressBarUpdates(uploadParams, future, finalCall);
+                    });
+                } catch(ex) {
+                    future.complete(true);
+                }
+            }
+            return future;
+        },
+        drainProgressBarQueue: function(uploadParams, newCommand, finalCall, repeated) {
+            if (!repeated) {
+                this.uploadProgressQueue.entries.push(newCommand);
+            }
+            let that = this;
+            if (!that.executingUploadProgressCommands) {
+                that.executingUploadProgressCommands = true;
+                let future = peergos.shared.util.Futures.incomplete();
+                that.reduceProgressBarUpdates(uploadParams, future, finalCall);
+                future.thenApply(res => {
+                    that.executingUploadProgressCommands = false;
+                });
+            } else {
+                if (finalCall) {
+                    setTimeout(() => that.drainProgressBarQueue(uploadParams, newCommand, finalCall, true), 1000);
+                }
+            }
+        },
 		toggleFeedbackForm() {
 			this.showFeedbackForm = !this.showFeedbackForm;
 			// this.clearTabNavigation();

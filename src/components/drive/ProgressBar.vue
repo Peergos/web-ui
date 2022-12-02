@@ -2,6 +2,7 @@
 <template>
 	<div class="app-progressbar">
 		<p>{{ title }}</p>
+		<p v-if="subtitle.length > 0">{{ subtitle }}</p>
 		<div role="progressbar" class="progress__bar">
 			<div :style="{width: progress + '%'}"></div>
 		</div>
@@ -16,6 +17,10 @@ module.exports = {
 			type: String,
 			default: ''
 		},
+        subtitle: {
+            type: String,
+            default: ''
+        },
 		done: {
 			type: Number,
 			default: 0
