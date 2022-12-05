@@ -54,7 +54,7 @@ function getWithHeadersProm(url, headers) {
     };
     
     req.onerror = function(e) {
-        future.completeExceptionally(new java.net.ConnectException("Unable to connect"));
+        future.completeExceptionally(new peergos.shared.storage.RateLimitException());
     };
     
     req.send();
@@ -193,7 +193,7 @@ function putProm(url, data, headers) {
 	};
 	
 	req.onerror = function(e) {
-            future.completeExceptionally(new java.net.ConnectException("Unable to connect"));
+            future.completeExceptionally(new peergos.shared.storage.RateLimitException());
 	};
 
 	req.send(data);
