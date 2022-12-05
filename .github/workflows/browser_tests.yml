@@ -13,7 +13,7 @@ jobs:
         java-version: 11
     - uses: actions/setup-python@v2
       with:
-        python-version: '3.6'
+        python-version: '3.11.0'
     - name: Build with Ant
       run: ant -noinput -buildfile build.xml peergos_submodule_sync dist 
     - name: echo chrome
