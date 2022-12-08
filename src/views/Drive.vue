@@ -1760,7 +1760,7 @@ module.exports = {
                 uploadParams.progress.done += len.value_0;
                 if (!updater.finished && updater.done >= (updater.max + thumbnailOffset)) {
                     updater.finished = true;
-                    console.log('uploadParams.progress.done=' + uploadParams.progress.done + " uploadParams.progress.max=" + uploadParams.progress.max);
+                    //console.log('uploadParams.progress.done=' + uploadParams.progress.done + " uploadParams.progress.max=" + uploadParams.progress.max);
                     uploadParams.progress.current  = uploadParams.progress.current + 1;
                     uploadParams.triggerRefresh = true;
                 }

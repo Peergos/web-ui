@@ -560,8 +560,8 @@ module.exports = {
         handleSaveFileRequest: function(headerFunc, path, apiMethod, data, hasFormData, params) {
             let that = this;
             if (that.appPath.length > 0) {
-                if (path.includes('/.')) {
-                    that.showError('Path not accessible: ' + path);
+                if (path.includes('/')) {
+                    that.showError('Path includes invalid filename: ' + path);
                     that.buildResponse(headerFunc(), null, that.ACTION_FAILED);
                     return
                 }
@@ -569,7 +569,7 @@ module.exports = {
                     let folderPath = that.appPath.substring(0, that.appPath.lastIndexOf('/') + 1);
                     this.prompt_placeholder = 'Save File';
                     this.prompt_message = 'Folder: ' + folderPath;
-                    this.prompt_value = '';
+                    this.prompt_value = path;
                     this.prompt_consumer_func = function (prompt_result) {
                         this.showPrompt = false;
                         if (prompt_result === null) {
