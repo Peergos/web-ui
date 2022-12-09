@@ -75,6 +75,8 @@ module.exports = {
             PERMISSION_READ_CHOSEN_FOLDER: 'READ_CHOSEN_FOLDER',
             PERMISSION_EXCHANGE_MESSAGES_WITH_FRIENDS: 'EXCHANGE_MESSAGES_WITH_FRIENDS',
             PERMISSION_CSP_UNSAFE_EVAL: 'CSP_UNSAFE_EVAL',
+            PERMISSION_ACCESS_CAMERA: 'ACCESS_CAMERA',
+            PERMISSION_ACCESS_MICROPHONE: 'ACCESS_MICROPHONE',
             browserMode: false,
             fullPathForDisplay: '',
             launcherApp: null,
@@ -341,6 +343,18 @@ module.exports = {
             iframe.style.height = '100%';
             iframe.frameBorder="0";
             iframe.scrolling="no";
+            var allow = null;
+            if (this.permissionsMap.get(this.PERMISSION_ACCESS_CAMERA)
+                && this.permissionsMap.get(this.PERMISSION_ACCESS_MICROPHONE)) {
+                allow = "microphone " + this.frameDomain() + " ; camera " + this.frameDomain();
+            } else if (this.permissionsMap.get(this.PERMISSION_ACCESS_CAMERA)) {
+                allow = "camera " + this.frameDomain();
+            } else if (this.permissionsMap.get(this.PERMISSION_ACCESS_MICROPHONE)) {
+                allow = "microphone " + this.frameDomain();
+            }
+            if (allow != null) {
+                iframe.setAttribute("allow", allow);
+            }
             iframeContainer.appendChild(iframe);
             Vue.nextTick(function() {
                 iframe.src = that.frameUrl();
@@ -351,7 +365,7 @@ module.exports = {
                 let href = window.location.href;
                 let appDevMode = href.includes("?local-app-dev=true");
                 let allowUnsafeEvalInCSP = that.permissionsMap.get(that.PERMISSION_CSP_UNSAFE_EVAL) != null;
-                let props = { appDevMode: appDevMode, allowUnsafeEvalInCSP: allowUnsafeEvalInCSP};
+                let props = { appDevMode: appDevMode, allowUnsafeEvalInCSP: allowUnsafeEvalInCSP, iframeAllow: allow};
                 let func = function() {
                     that.postMessage({type: 'init', appName: that.sandboxAppName, appPath: that.appPath,
                     allowBrowsing: that.browserMode, theme: theme, chatId: that.currentChatId,

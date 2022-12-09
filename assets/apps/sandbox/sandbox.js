@@ -73,6 +73,10 @@ function load(appName, appPath, allowBrowsing, theme, chatId, username, props) {
             path = chatId.length > 0 ? path + '&chatId=' + chatId : path;
             path = path + '&username=' + username;
             let src = allowBrowsing ? appPath.substring(1) : "index.html" + path;
+            /*//not required
+            if (props.iframeAllow != null) {
+                iframe.setAttribute("allow", "microphone; camera");
+            }*/
             iframe.src= src;
             iframe.contentWindow.focus();
         }, function(seekHi, seekLo, seekLength, streamFilePath){
