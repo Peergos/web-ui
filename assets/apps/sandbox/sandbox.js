@@ -75,7 +75,7 @@ function load(appName, appPath, allowBrowsing, theme, chatId, username, props) {
             let src = allowBrowsing ? appPath.substring(1) : "index.html" + path;
             /*//not required
             if (props.iframeAllow != null) {
-                iframe.setAttribute("allow", "microphone; camera");
+                iframe.setAttribute("allow", props.iframeAllow);
             }*/
             iframe.src= src;
             iframe.contentWindow.focus();

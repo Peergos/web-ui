@@ -286,7 +286,7 @@ function appFetch(event) {
             ['x-xss-protection', '1; mode=block'],
             ['x-dns-prefetch-control', 'off'],
             ['x-content-type-options', 'nosniff'],
-            ['permissions-policy', 'interest-cohort=(), geolocation=(), gyroscope=(), magnetometer=(), accelerometer=(), microphone=(), camera=(self), fullscreen=(self)']
+            ['permissions-policy', 'interest-cohort=(), geolocation=(), gyroscope=(), magnetometer=(), accelerometer=(), microphone=(self), camera=(self), fullscreen=(self)']
         ];
         let redirectHTML= '<html><body><script>'
         + 'let loc = window.location;'
@@ -442,7 +442,7 @@ function returnAppData(method, filePath, uniqueId, ignoreBody) {
             ['x-dns-prefetch-control', 'off'],
             ['x-content-type-options', 'nosniff'],
             ['referrer-policy', 'no-referrer'],
-            ['permissions-policy', 'interest-cohort=(), geolocation=(), gyroscope=(), magnetometer=(), accelerometer=(), microphone=(), camera=(self), fullscreen=(self)']
+            ['permissions-policy', 'interest-cohort=(), geolocation=(), gyroscope=(), magnetometer=(), accelerometer=(), microphone=(self), camera=(self), fullscreen=(self)']
         ];
         if (fileData.statusCode == 201) {
             //https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/201
@@ -534,7 +534,7 @@ function returnRangeRequest(start, end, streamingEntry) {
             ['x-dns-prefetch-control', 'off'],
             ['x-content-type-options', 'nosniff'],
             ['referrer-policy', 'no-referrer'],
-            ['permissions-policy', 'interest-cohort=(), geolocation=(), gyroscope=(), magnetometer=(), accelerometer=(), microphone=(), camera=(self), fullscreen=(self)']
+            ['permissions-policy', 'interest-cohort=(), geolocation=(), gyroscope=(), magnetometer=(), accelerometer=(), microphone=(self), camera=(self), fullscreen=(self)']
         ];
         if (arrayBuffer == null) {
             respHeaders.push(['Content-Range', `*/${fileSize}`]);
