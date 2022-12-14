@@ -4,7 +4,7 @@
     <div class="modal-container search full-height" @click.stop style="overflow-y:auto">
       <span @click="close" tabindex="0" v-on:keyup.enter="close" aria-label="close" class="close">&times;</span>
         <div class="modal-header">
-            <h2>Search</h2>
+            <h2>Search: {{ path }}</h2>
         </div>
         <div class="modal-body">
             <div v-bind:class="errorClass">
@@ -15,6 +15,7 @@
                     <div class="flex-item search" style="margin: 10px; border-width: 1px; border-style: solid;">
                         <select v-model="selectedSearchType">
                             <option value="contains">Filename contains</option>
+                            <option value="textContents">Text file contains</option>
                             <option value="modifiedAfter">File modified after</option>
                             <option value="modifiedBefore">File modified before</option>
                             <option value="createdAfter">File created after</option>
@@ -27,8 +28,8 @@
                     <div class="flex-item" v-if="selectedSearchType=='modifiedAfter' || selectedSearchType=='modifiedBefore' || selectedSearchType=='createdAfter' || selectedSearchType=='createdBefore'" style="margin: 10px;">
                         <input v-model="selectedDate" type="date" min="1900-01-01" max="3000-01-01" maxlength="12" ></input>
                     </div>
-                    <div class="flex-item" v-if="selectedSearchType=='contains'" style="margin: 10px;">
-                        <input v-focus v-if="selectedSearchType=='contains'" v-on:keyup.enter="search" v-model="searchFilenameContains" placeholder=""type="text" maxlength="60" style="width: 200px;" ></input>
+                    <div class="flex-item" v-if="selectedSearchType=='contains' || selectedSearchType=='textContents'" style="margin: 10px;">
+                        <input v-focus v-on:keyup.enter="search" v-model="searchContains" placeholder=""type="text" maxlength="60" style="width: 200px;" ></input>
                     </div>
                     <div class="flex-item" v-if="selectedSearchType=='fileSizeGreaterThan' || selectedSearchType=='fileSizeLessThan'" style="margin: 10px;">
                         <input v-focus v-on:keyup.enter="search" v-model="searchFileSize" placeholder="1" type="number" min="1" style="width: 100px;" ></input>
@@ -104,7 +105,7 @@
 module.exports = {
     data: function() {
         return {
-            searchFilenameContains: "",
+            searchContains: "",
             showSpinner: false,
             walkCounter: 0,
             matches: [],
@@ -193,6 +194,36 @@ module.exports = {
         let filename = props.name;
         if (filename.toLowerCase().indexOf(searchTerm) > -1) {
             this.addMatch(props, path);
+        }
+    },
+    textFileContainsTest: function(file, path, searchTerm) {
+        let that = this;
+        let props = file.getFileProperties();
+        let mimeType = props.mimeType;
+        if (mimeType.startsWith('text/')) {
+            file.getInputStream(this.context.network,this.context.crypto,props.sizeHigh(),props.sizeLow(), r => {})
+                .thenCompose(function (reader) {
+                    let size = that.getFileSize(props)
+                    let maxBlockSize = 1024 * 1024 * 1;
+                    var blockSize = size > maxBlockSize ? maxBlockSize : size;
+                    let pump = (previousBlockSnippet) => {
+                        if (blockSize > 0) {
+                            var data = convertToByteArray(new Uint8Array(blockSize))
+                            reader.readIntoArray(data, 0, blockSize).thenApply(function (read) {
+                                size = size - read.value_0;
+                                blockSize = size > maxBlockSize ? maxBlockSize : size;
+                                let textBlock = previousBlockSnippet + new TextDecoder().decode(data);
+                                if(textBlock.includes(searchTerm)){
+                                    that.addMatch(props, path);
+                                } else {
+                                    let limit = Math.max(0, textBlock.length - (searchTerm.length -1));
+                                    setTimeout(() => { pump(textBlock.substring(limit));});
+                                }
+                            })
+                        }
+                    }
+                    pump("");
+                });
         }
     },
     modifiedAfterTest: function(file, path, searchTerm) {
@@ -294,13 +325,13 @@ module.exports = {
             this.errorClass = "";
 
             var that = this;
-            let path = this.path;
+            let path = this.path == '' ? '/' + this.context.username : this.path;
             this.matches = [];
             this.walkCounter = 0;
             let filterFunction = null;
 	        let searchTerm = null;
             if(this.selectedSearchType == "contains") {
-	            searchTerm = this.searchFilenameContains.trim().toLowerCase();
+	            searchTerm = this.searchContains.trim().toLowerCase();
                 if (searchTerm.length == 0) {
                     this.isError = true;
                     this.error = "Missing text!";
@@ -308,6 +339,15 @@ module.exports = {
                     return;
                 }
                 filterFunction = this.containsTest;
+            } else if(this.selectedSearchType == "textContents") {
+	            searchTerm = this.searchContains.trim().toLowerCase();
+                if (searchTerm.length == 0) {
+                    this.isError = true;
+                    this.error = "Missing text!";
+                    this.errorClass = "has-error has-feedback alert alert-danger";
+                    return;
+                }
+                filterFunction = this.textFileContainsTest;
             } else if(this.selectedSearchType == "modifiedAfter") {
                 filterFunction = this.modifiedAfterTest;
                 searchTerm = this.extractDate(this.selectedDate.trim());
