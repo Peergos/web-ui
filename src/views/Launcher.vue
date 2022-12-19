@@ -10,6 +10,13 @@
                     :title="message.title"
                     :message="message.body">
             </message>
+            <AppInstall
+                v-if="showAppInstallation"
+                v-on:hide-app-installation="closeAppInstallation"
+                v-on:app-install-success="appInstallSuccess"
+                :appPropsFile="appInstallPropsFile"
+                :installFolder="appInstallFolder">
+            </AppInstall>
             <AppSandbox
                 v-if="showAppSandbox"
                 v-on:hide-app-sandbox="closeAppSandbox"
@@ -47,8 +54,11 @@
                 :messages="messages">
             </Share>
             <div>
-                <h3>Custom Apps <button class="btn btn-success" @click="navigateToRecommendedApps()" style="margin-left: 40px;">Recommended Apps</button></h3>
-
+                <h3>Custom Apps
+                    <button class="btn btn-success" @click="navigateToRecommendedApps()" style="margin-left: 40px;">Recommended Apps</button>
+                    <button class="btn btn-info" @click="checkForAppUpdates()" style="margin-left: 40px;">Check for Updates</button>
+                    <span style="margin-left: 40px;">{{updateMessage}}</span>
+                </h3>
                 <div v-if="appsList.length ==0" class="table-responsive">
                     No Custom Apps currently installed.  Create an App from the "create app" menu item of the green plus.
                 </div>
@@ -58,6 +68,7 @@
                         <tr  v-if="appsList.length!=0" style="cursor:pointer;">
                             <th></th>
                             <th @click="setAppsSortBy('name')">Name <span v-if="appsSortBy=='name'" v-bind:class="['fas', appsNormalSortOrder ? 'fa-angle-down' : 'fa-angle-up']"/></th>
+                            <th></th>
                             <th></th>
                             <th></th>
                         </tr>
@@ -72,6 +83,8 @@
                             <td> <button class="btn btn-info" @click="displayAppDetails(app)">Details</button>
                             </td>
                             <td> <button class="btn btn-danger" @click="removeApp(app)">Remove</button>
+                            </td>
+                            <td> <button v-if="app.updateAvailable" class="btn btn-info" @click="updateApp(app)">Update</button>
                             </td>
                         </tr>
                         </tbody>
@@ -163,6 +176,7 @@
 </template>
 
 <script>
+const AppInstall = require("../components/sandbox/AppInstall.vue");
 const AppHeader = require("../components/AppHeader.vue");
 const AppDetails = require("../components/sandbox/AppDetails.vue");
 const AppSandbox = require("../components/sandbox/AppSandbox.vue");
@@ -173,6 +187,7 @@ const launcherMixin = require("../mixins/launcher/index.js");
 const sandboxMixin = require("../mixins/sandbox/index.js");
 module.exports = {
     components: {
+        AppInstall,
 		AppHeader,
 		AppDetails,
 		AppSandbox,
@@ -206,7 +221,12 @@ module.exports = {
             currentEntry: null,
             currentFile: null,
             currentPath: null,
-            showSharedItems: false
+            showSharedItems: false,
+            updateMessage:'',
+            showAppInstallation: false,
+            installingAppName: '',
+            appInstallPropsFile: null,
+            appInstallFolder: '',
         }
     },
     props: [],
@@ -215,7 +235,8 @@ module.exports = {
         ...Vuex.mapState([
             'context',
             "shortcuts",
-            'socialData'
+            'socialData',
+            "sandboxedApps",
         ]),
         friendnames: function() {
             return this.socialData.friends;
@@ -339,11 +360,95 @@ module.exports = {
         peergos.shared.user.App.init(that.context, "launcher").thenCompose(launcher => {
             that.launcherApp = launcher;
             that.setShortcutList(new Map(that.shortcuts.shortcutsMap));
-            that.appsList = this.sandboxedApps.appsInstalled.slice().filter(a => a.name != "htmlviewer");
+            let installedApps = this.sandboxedApps.appsInstalled.slice().filter(a => a.name != "htmlviewer");
+            for(var i=0; i < installedApps.length; i++) {
+                let appRow = installedApps[i];
+                appRow.updateAvailable = false;
+            }
+            that.appsList = installedApps;
             that.loadAppIcons();
         });
     },
     methods: {
+        appInstallSuccess() {
+            if (this.installingAppName.length > 0) {
+                let appIndex = this.appsList.findIndex(v => v.name === this.installingAppName);
+                let appRow = this.appsList[appIndex];
+                this.appsList.splice(appIndex, 1);
+                appRow.updateAvailable = false;
+                this.appsList.push(appRow);
+                this.installingAppName = '';
+                this.updateMessage = '';
+            }
+        },
+        closeAppInstallation() {
+            this.showAppInstallation = false;
+        },
+        updateApp: function(app) {
+            let that = this;
+            this.installingAppName = app.name;
+            let pathStr = app.source.endsWith('/') ? app.source  : app.source + '/';
+            this.context.getByPath(pathStr + 'peergos-app.json').thenApply(propsFileOpt => {
+                if (propsFileOpt.ref != null) {
+                    that.appInstallPropsFile = propsFileOpt.ref;
+                    that.appInstallFolder = pathStr;
+                    that.showAppInstallation = true;
+                }
+            });
+        },
+        checkForAppUpdates: function() {
+            let that = this;
+            let appsInstalledWithSource = this.sandboxedApps.appsInstalled.slice().filter(a => a.source.length > 0);
+            let future = peergos.shared.util.Futures.incomplete();
+            this.gatherAppsWithUpdates(appsInstalledWithSource, 0, [], future);
+            future.thenApply(appsWithUpdates => {
+                if (appsWithUpdates.length == 0) {
+                    that.updateMessage = 'All up-to-date';
+                } else if (appsWithUpdates.length == 1) {
+                    that.updateMessage = '1 has an update';
+                } else {
+                    that.updateMessage = appsWithUpdates.length + ' have updates';
+                }
+                for(var i=0; i < appsWithUpdates.length; i++) {
+                    let appName = appsWithUpdates[i].name;
+                    let appIndex = that.appsList.findIndex(v => v.name === appName);
+                    let appRow = that.appsList[appIndex];
+                    that.appsList.splice(appIndex, 1);
+                    appRow.updateAvailable = true;
+                    that.appsList.push(appRow);
+                }
+            });
+        },
+        gatherAppsWithUpdates: function(appsInstalledWithSource, index, accumulator, future) {
+            if (index == appsInstalledWithSource.length) {
+                future.complete(accumulator);
+            } else {
+                let that = this;
+                let app = appsInstalledWithSource[index];
+                let pathStr = app.source.endsWith('/') ? app.source + 'peergos-app.json' : app.source + '/peergos-app.json';
+                this.context.getByPath(pathStr).thenApply(propsFileOpt => {
+                    if (propsFileOpt.ref != null) {
+                        that.readJSONFile(propsFileOpt.ref).thenApply(props => {
+                            if (that.isAppVersionNewer(app.version, props.version)) {
+                                accumulator.push(app);
+                            }
+                            that.gatherAppsWithUpdates(appsInstalledWithSource, index + 1, accumulator, future);
+                        });
+                    } else {
+                        that.gatherAppsWithUpdates(appsInstalledWithSource, index + 1, accumulator, future);
+                    }
+                });
+            }
+        },
+        isAppVersionNewer: function(existingVersionStr, sourceVersionStr) {
+            try {
+                let existingVersion = peergos.shared.util.Version.parse(existingVersionStr);
+                let sourceVersion = peergos.shared.util.Version.parse(sourceVersionStr);
+                return existingVersion.isBefore(sourceVersion);
+            } catch {
+                return false;
+            }
+        },
         navigateToRecommendedApps: function() {
             this.openFileOrDir('htmlviewer', '/peergos/recommended-apps', {filename: 'index.html'});
         },

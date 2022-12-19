@@ -347,7 +347,7 @@ module.exports = {
                 let updatedList = [];
                 value.forEach(entry => {
                     if (entry.name != app.name) {
-                        updatedList.push({name: entry.name, displayName: entry.displayName});
+                        updatedList.push(entry);
                     }
                 });
                 if (updatedList.length > 0) {
@@ -358,7 +358,7 @@ module.exports = {
                 let updatedList = [];
                 value.forEach(entry => {
                     if (entry.name != app.name) {
-                        updatedList.push({name: entry.name, displayName: entry.displayName});
+                        updatedList.push(entry);
                     }
                 });
                 if (updatedList.length > 0) {
@@ -369,7 +369,7 @@ module.exports = {
                 let updatedList = [];
                 value.forEach(entry => {
                     if (entry.name != app.name) {
-                        updatedList.push({name: entry.name, displayName: entry.displayName});
+                        updatedList.push(entry);
                     }
                 });
                 if (updatedList.length > 0) {
@@ -403,7 +403,8 @@ module.exports = {
                 'Edit in ' + props.displayName : 'View in ' + props.displayName;
             let item = {name: props.name, displayName: props.displayName,
                 createMenuText: props.createMenuText, launchable: props.launchable,
-                folderAction: props.folderAction, appIcon: props.appIcon, contextMenuText: contextMenuText};
+                folderAction: props.folderAction, appIcon: props.appIcon, contextMenuText: contextMenuText,
+                source: props.source, version: props.version};
 
             appsInstalled.push(item);
             props.fileExtensions.forEach(extension => {
