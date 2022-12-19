@@ -213,7 +213,7 @@ module.exports = {
                                 size = size - read.value_0;
                                 blockSize = size > maxBlockSize ? maxBlockSize : size;
                                 let textBlock = previousBlockSnippet + new TextDecoder().decode(data);
-                                if(textBlock.includes(searchTerm)){
+                                if(textBlock.search(new RegExp(searchTerm, "i")) != -1){
                                     that.addMatch(props, path);
                                 } else {
                                     let limit = Math.max(0, textBlock.length - (searchTerm.length -1));
