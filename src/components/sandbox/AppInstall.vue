@@ -82,10 +82,11 @@ module.exports = {
             confirm_message: "",
             confirm_body: "",
             confirm_consumer_cancel_func: () => {},
-            confirm_consumer_func: () => {}
+            confirm_consumer_func: () => {},
+            installAppFromFolder: "",
         }
     },
-    props: ['appPropsFile'],
+    props: ['appPropsFile','installFolder'],
     mixins:[mixins, downloaderMixin, sandboxMixin],
     computed: {
         ...Vuex.mapState([
@@ -94,11 +95,10 @@ module.exports = {
             'context',
             'mirrorBatId'
         ]),
-        ...Vuex.mapGetters([
-            'getPath',
-        ])
     },
     created: function() {
+        this.installAppFromFolder = this.installFolder.endsWith('/')  ?
+            this.installFolder.substring(0, this.installFolder.length -1) : this.installFolder;
         this.loadAppProperties();
     },
     methods: {
@@ -108,11 +108,13 @@ module.exports = {
         close: function () {
             this.$emit("hide-app-installation");
         },
+        indicateAppInstallSuccess: function () {
+            this.$emit("app-install-success");
+        },
         loadAppProperties: function() {
             let that = this;
             this.showSpinner = true;
-            let appPath = that.getPath.substring(0, that.getPath.length -1);
-            that.verifyJSONFile(this.appPropsFile, appPath).thenApply((res) => {
+            that.verifyJSONFile(this.appPropsFile, this.installAppFromFolder).thenApply((res) => {
                 that.showSpinner = false;
                 if (res.errors.length > 0) {
                     that.showError("Unable to install App: " + res.errors.join(', '));
@@ -129,7 +131,7 @@ module.exports = {
             return Number(this.quotaBytes.toString()) - (Number(this.usageBytes.toString()) + fileSize);
         },
         confirmReplaceAppInstall(appName, oldVersion, newVersion, replaceFunction, cancelFunction) {
-            this.confirm_message = 'App: ' + appName + ' ' + oldVersion + ' already installed!';
+            this.confirm_message = 'App: ' + appName + ' ' + oldVersion + ' currently installed';
             this.confirm_body = "Are you sure you want to replace with version: " + newVersion + "?";
             this.confirm_consumer_cancel_func = cancelFunction;
             this.confirm_consumer_func = replaceFunction;
@@ -159,6 +161,7 @@ module.exports = {
                                 () => {
                                     that.showConfirm = false;
                                     that.showSpinner = false;
+                                    that.close();
                                 }
                             );
                         }
@@ -172,9 +175,8 @@ module.exports = {
            let that = this;
            let displayName = this.appProperties.displayName;
            let appName = this.appProperties.name;
-           let srcPath = that.getPath.substring(0, that.getPath.length -1);
-           that.context.getByPath(that.getPath).thenApply(srcDirectoryOpt => {
-               that.calculateTotalSize(srcDirectoryOpt.ref, srcPath).thenApply(statistics => {
+           that.context.getByPath(that.installAppFromFolder).thenApply(srcDirectoryOpt => {
+               that.calculateTotalSize(srcDirectoryOpt.ref, that.installAppFromFolder).thenApply(statistics => {
                    let spaceAfterOperation = that.checkAvailableSpace(statistics.apparentSize);
                    if (spaceAfterOperation < 0) {
                        that.showError("App installation size exceeds available Space.  Please free up " + that.convertBytesToHumanReadable('' + -spaceAfterOperation) + " and try again");
@@ -182,10 +184,9 @@ module.exports = {
                    } else {
                        that.spinnerMessage = "Installing App: " + displayName;
                        peergos.shared.user.App.init(that.context, appName).thenApply(ready => {
-                             let future = peergos.shared.util.Futures.incomplete();
                              that.backupPropertiesFile(appName, oldProperties).thenApply(done => {
-                                 that.gatherAppFiles([{directory: srcDirectoryOpt.ref, path: srcPath}], 0, future, []);
-                                 future.thenApply(appFiles => that.copyAppFiles(appFiles, appName, displayName));
+                                 let future = that.gatherDataFiles(appName, srcDirectoryOpt.ref);
+                                 future.thenApply(dataFiles => that.copyAppFiles(dataFiles, appName, displayName));
                              });
                        });
                    }
@@ -212,7 +213,21 @@ module.exports = {
             }
             return future;
        },
-        gatherAppFiles: function(directoryEntries, index, future, accumulator) {
+        gatherDataFiles: function(appName, appDirectory) {
+            let future = peergos.shared.util.Futures.incomplete();
+            let dataFolderName = 'data';
+            let that = this;
+            appDirectory.getChild(dataFolderName, this.context.crypto.hasher, this.context.network).thenApply(dataFolderOpt => {
+                if (dataFolderOpt.ref != null) {
+                    let dataFolderEntries = [{directory: dataFolderOpt.ref, path: that.installAppFromFolder + "/" + dataFolderName}];
+                    that.gatherDataFilesRecursively(dataFolderEntries, 0, future, []);
+                } else {
+                    future.complete([]);
+                }
+            });
+            return future;
+        },
+        gatherDataFilesRecursively: function(directoryEntries, index, future, accumulator) {
             if (index == directoryEntries.length) {
                 let appFiles = peergos.client.JsUtil.asList(accumulator);
                 future.complete(appFiles);
@@ -221,45 +236,46 @@ module.exports = {
                 let directoryEntry = directoryEntries[index];
                 let fileProperties = directoryEntry.directory.getFileProperties();
                 if (fileProperties.isHidden) {
-                    this.gatherAppFiles(directoryEntries, index +1, future, accumulator);
+                    this.gatherDataFilesRecursively(directoryEntries, index +1, future, accumulator);
                 } else {
                     directoryEntry.directory.getChildren(this.context.crypto.hasher, this.context.network).thenApply(function(children) {
                         let arr = children.toArray();
                         let fileUploadList = [];
                         var lastEntryWasFolder = false;
-                        arr.forEach( (file, fileIndex) => {
+                        let files = [];
+                        arr.forEach(file => {
                             let fileProps = file.getFileProperties();
                             if (fileProps.isDirectory) {
                                 directoryEntries.push({directory: file, path: directoryEntry.path + "/" + fileProps.name});
-                                if (fileIndex == arr.length -1) {
-                                    lastEntryWasFolder = true;
-                                    that.gatherAppFiles(directoryEntries, index +1, future, accumulator);
-                                }
                             } else {
-                                file.getInputStream(that.context.network, that.context.crypto, fileProps.sizeHigh(), fileProps.sizeLow(), function(read){})
-                                    .thenApply(function(reader) {
-                                        if (! (index == 0 && fileProps.name == 'peergos-app.json')) {
-                                            let fup = new peergos.shared.user.fs.FileWrapper.FileUploadProperties(fileProps.name, reader,
-                                                (fileProps.size_0 - (fileProps.size_0 % Math.pow(2, 32))) / Math.pow(2, 32), fileProps.size_0, false,
-                                                true, x => {});
-                                            fileUploadList.push(fup);
-                                        }
-                                        if ((lastEntryWasFolder || fileIndex == arr.length -1) && (index == 0 || accumulator.length < index)) {
-                                            if (fileUploadList.length > 0) {
-                                                let basePath = that.getPath;
-                                                let relativePath = directoryEntry.path.substring(basePath.length);
-                                                let pathList = peergos.client.JsUtil.asList(relativePath.split('/').filter(n => n.length > 0));
-                                                let filePropsList = peergos.client.JsUtil.asList(fileUploadList);
-                                                let folderUP = new peergos.shared.user.fs.FileWrapper.FolderUploadProperties(pathList, filePropsList);
-                                                accumulator.push(folderUP);
-                                            }
-                                            if (!lastEntryWasFolder) {
-                                                that.gatherAppFiles(directoryEntries, index +1, future, accumulator);
-                                            }
-                                        }
-                                });
+                                files.push(file);
                             }
                         });
+                        if (files.length == 0) {
+                            this.gatherDataFilesRecursively(directoryEntries, index +1, future, accumulator);
+                        } else {
+                            var filesProcessedCounter = 0;
+                            files.forEach( (file) => {
+                                let fileProps = file.getFileProperties();
+                                file.getInputStream(that.context.network, that.context.crypto, fileProps.sizeHigh(), fileProps.sizeLow(), function(read){})
+                                    .thenApply(function(reader) {
+                                        filesProcessedCounter++;
+                                        let fup = new peergos.shared.user.fs.FileWrapper.FileUploadProperties(fileProps.name, reader,
+                                            (fileProps.size_0 - (fileProps.size_0 % Math.pow(2, 32))) / Math.pow(2, 32), fileProps.size_0, false,
+                                            true, x => {});
+                                        fileUploadList.push(fup);
+                                        if (filesProcessedCounter == files.length) {
+                                            let basePath = that.installAppFromFolder;
+                                            let relativePath = directoryEntry.path.substring(basePath.length);
+                                            let pathList = peergos.client.JsUtil.asList(relativePath.split('/').filter(n => n.length > 0));
+                                            let filePropsList = peergos.client.JsUtil.asList(fileUploadList);
+                                            let folderUP = new peergos.shared.user.fs.FileWrapper.FolderUploadProperties(pathList, filePropsList);
+                                            accumulator.push(folderUP);
+                                            that.gatherDataFilesRecursively(directoryEntries, index +1, future, accumulator);
+                                        }
+                                });
+                            });
+                        }
                     });
                 }
             }
@@ -286,6 +302,27 @@ module.exports = {
             });
             return future;
         },
+        copyAssetsFolder(appName) {
+            let that = this;
+            let future = peergos.shared.util.Futures.incomplete();
+            let appFolderPath = "/" + this.context.username + "/.apps/" + appName;
+            this.context.getByPath(this.installAppFromFolder + '/assets').thenApply(srcAssetsDirOpt => {
+                if (srcAssetsDirOpt.ref != null) {
+                    that.context.getByPath(appFolderPath).thenApply(destAppDirOpt => {
+                        srcAssetsDirOpt.ref.copyTo(destAppDirOpt.ref, that.context)
+                            .thenApply(function () {
+                                future.complete(true);
+                            }).exceptionally(function (throwable) {
+                                console.log('unable to copy app assets. error: ' + throwable.getMessage());
+                                future.complete(false);
+                            });
+                    });
+                }else {
+                    future.complete(false);
+                }
+            });
+            return future;
+        },
         deleteAssetsFolder(appName) {
             let that = this;
             let future = peergos.shared.util.Futures.incomplete();
@@ -298,7 +335,7 @@ module.exports = {
                                 future.complete(true);
                             });
                         } else {
-                            future.complete(false);
+                            future.complete(true);
                         }
                     });
                 }else {
@@ -319,58 +356,71 @@ module.exports = {
             });
             return future;
         },
-        copyAppFiles: function(appFiles, app, displayName) {
+        copyAppFiles: function(appDataFiles, app, displayName) {
             let future = peergos.shared.util.Futures.incomplete();
             let that = this;
             this.deleteAssetsFolder(app).thenApply(res => {
-                that.copyAllFiles(appFiles, app, displayName).thenApply(res => {
-                    future.complete(true);
+                that.copyAssetsFolder(app).thenApply(res2 => {
+                    that.copyAllDataFiles(appDataFiles, app, displayName).thenApply(res3 => {
+                        if (res3) {
+                            that.updateSourceInAppManifest(app).thenApply(function(props){
+                                that.appProperties = props;
+                                that.showSpinner = false;
+                                that.spinnerMessage = "";
+                                that.registerApp(that.appProperties);
+                                that.showMessage("Installed App: " + displayName);
+                                that.indicateAppInstallSuccess();
+                                that.close();
+                                future.complete(true);
+                            });
+                        } else {
+                            that.showSpinner = false;
+                            that.spinnerMessage = "";
+                            that.showError("Unable to install App. See console for details");
+                            future.complete(false);
+                        }
+                    });
                 });
             });
             return future;
         },
-        copyAllFiles: function(appFiles, app, displayName) {
+        copyAllDataFiles: function(appDataFiles, app, displayName) {
             let that = this;
             let future = peergos.shared.util.Futures.incomplete();
-
-            var commitWatcher = {
-                get_0: function() {
-                    return true;
-                }
-            };
-
-            let folderStream = appFiles.stream();
-            let resumeFileUpload = function(f) {
-                let future = peergos.shared.util.Futures.incomplete();
+            if (appDataFiles.length == 0) {
                 future.complete(true);
-                return future;
-            }
-            let destinationPath = "/" + this.context.username + "/.apps/" + app;
-            this.context.getByPath(destinationPath).thenApply(appDirOpt => {
-                appDirOpt.ref.uploadSubtree(folderStream, that.getMirrorBatId(appDirOpt.ref), that.context.network,
-                    that.context.crypto, that.context.getTransactionService(),
-                    f => resumeFileUpload(f),commitWatcher).thenApply(res => {
-                        that.updateSourceInAppManifest(app).thenApply(function(res){
-                            that.registerApp(that.appProperties);
-                            that.showMessage("Installed App: " + displayName);
-                            that.showSpinner = false;
-                            that.spinnerMessage = "";
-                            that.close();
+            } else {
+                var commitWatcher = {
+                    get_0: function() {
+                        return true;
+                    }
+                };
+                let folderStream = appDataFiles.stream();
+                let resumeFileUpload = function(f) {
+                    let resumeFuture = peergos.shared.util.Futures.incomplete();
+                    resumeFuture.complete(true);
+                    return resumeFuture;
+                }
+                let destinationPath = "/" + this.context.username + "/.apps/" + app;
+                this.context.getByPath(destinationPath).thenApply(appDirOpt => {
+                    appDirOpt.ref.uploadSubtree(folderStream, that.getMirrorBatId(appDirOpt.ref), that.context.network,
+                        that.context.crypto, that.context.getTransactionService(),
+                        f => resumeFileUpload(f),commitWatcher).thenApply(res => {
+                            future.complete(true);
+                        }).exceptionally(function (throwable) {
+                            console.log('Unable to install App. Error: ' +  + throwable.getMessage());
+                            future.complete(false);
                         });
-                }).exceptionally(function (throwable) {
-                    that.showSpinner = false;
-                    that.spinnerMessage = "";
-                    console.log('Unable to install App. Error: ' +  + throwable.getMessage());
-                    that.showError("Unable to install App. See console for details");
                 });
-            });
+            }
+            return future;
         },
         updateSourceInAppManifest: function(appName) {
             let that = this;
             let future = peergos.shared.util.Futures.incomplete();
-            this.context.getByPath(this.getPath + 'peergos-app.json').thenApply(propsFileOpt => {
+            this.context.getByPath(this.installAppFromFolder + '/peergos-app.json').thenApply(propsFileOpt => {
                 that.readJSONFile(propsFileOpt.ref).thenApply(props => {
-                    props.source = props.source.length > 0 ? props.source : that.getPath;
+                    props.source = props.source.length > 0 ? props.source : that.installAppFromFolder;
                     let encoder = new TextEncoder();
                     let uint8Array = encoder.encode(JSON.stringify(props, null, 2));
                     let bytes = convertToByteArray(uint8Array);
@@ -381,10 +431,10 @@ module.exports = {
                               true, that.getMirrorBatId(appDirOpt.get()), that.context.network, that.context.crypto, function (len) { },
                               that.context.getTransactionService(), f => peergos.shared.util.Futures.of(true)
                           ).thenApply(function (res) {
-                              future.complete(true);
+                              future.complete(props);
                           }).exceptionally(function (throwable) {
                               console.log('unable to update manifest: ' + filename + ' error: ' + throwable.getMessage());
-                              future.complete(false);
+                              future.complete(props);
                           })
                     });
                 });
