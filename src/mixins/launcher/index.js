@@ -6,22 +6,31 @@ module.exports = {
         updateShortcutsFile: function(launcherApp, shortcutsMap) {
             return this.updateJsonMapFile(launcherApp, 'shortcuts.json', shortcutsMap);
         },
-        loadJsonMapFile: function(launcherApp, filenaname) {
+        loadJsonMapFile: function(launcherApp, filename) {
             let that = this;
-            let filePath = peergos.client.PathUtils.directoryToPath([filenaname]);
-            return launcherApp.readInternal(filePath).thenApply(data => {
-                let obj = JSON.parse(new TextDecoder().decode(data));
-                let map = new Map(Object.entries(obj));
-                return map;
-            }).exceptionally(function(throwable) {//File not found
-                that.showSpinner = false;
-                if (throwable.detailMessage.startsWith("File not found")) {
-                    return new Map();
+            let filePath = peergos.client.PathUtils.directoryToPath([filename]);
+            let future = peergos.shared.util.Futures.incomplete();
+
+            launcherApp.existsInternal(filePath).thenApply(status => {
+                if (status.value_0 != 0) {
+                    future.complete(new Map());
                 } else {
-                    console.log('Unable to load file: ' + filenaname);
-                    return new Map();
+                    launcherApp.readInternal(filePath).thenApply(data => {
+                        let obj = JSON.parse(new TextDecoder().decode(data));
+                        let map = new Map(Object.entries(obj));
+                        future.complete(map);
+                    }).exceptionally(function(throwable) {//File not found
+                        that.showSpinner = false;
+                        if (throwable.detailMessage.startsWith("File not found")) {
+                            future.complete(new Map());
+                        } else {
+                            console.log('Unable to load file: ' + filename);
+                            future.complete(new Map());
+                        }
+                    });
                 }
             });
+            return future;
         },
         updateJsonMapFile: function(launcherApp, filename, map) {
             let obj = Object.fromEntries(map);

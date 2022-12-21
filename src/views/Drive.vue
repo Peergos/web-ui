@@ -1388,21 +1388,6 @@ module.exports = {
 				}
 			});
 		},
-        reduceZippingFiles(allFiles, index, future, progress, writer, zipFilename, state) {
-            let that = this;
-            if (index == allFiles.length) {
-                future.complete(true);
-            } else {
-                let fileEntry = allFiles[index];
-                this.zipFile(fileEntry, progress, writer, zipFilename, state).thenApply(res => {
-                    that.reduceZippingFiles(allFiles, ++index, future, progress, writer, zipFilename, state);
-                }).exceptionally(function(throwable) {
-                    console.log(throwable);
-                    that.showToastError("Unable to process file: " + file.getName());
-                    future.complete(false);
-                });
-            }
-        },
 		dndDrop(evt) {
 			evt.preventDefault();
 			let entries = evt.dataTransfer.items;

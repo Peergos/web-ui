@@ -357,19 +357,29 @@ module.exports = {
     },
     created: function() {
         let that = this;
-        peergos.shared.user.App.init(that.context, "launcher").thenCompose(launcher => {
+        this.showSpinner = true;
+        peergos.shared.user.App.init(that.context, "launcher").thenApply(launcher => {
             that.launcherApp = launcher;
             that.setShortcutList(new Map(that.shortcuts.shortcutsMap));
-            let installedApps = this.sandboxedApps.appsInstalled.slice().filter(a => a.name != "htmlviewer");
-            for(var i=0; i < installedApps.length; i++) {
-                let appRow = installedApps[i];
-                appRow.updateAvailable = false;
-            }
-            that.appsList = installedApps;
-            that.loadAppIcons();
+            that.loadInstalledApps();
         });
     },
     methods: {
+        loadInstalledApps() {
+            let that = this;
+            if(!this.sandboxedApps.appsLoaded) {
+                setTimeout( () => { that.loadInstalledApps();}, 1000);
+            } else {
+                let installedApps = that.sandboxedApps.appsInstalled.slice().filter(a => a.name != "htmlviewer");
+                for(var i=0; i < installedApps.length; i++) {
+                    let appRow = installedApps[i];
+                    appRow.updateAvailable = false;
+                }
+                that.appsList = installedApps;
+                that.loadAppIcons();
+                that.showSpinner = false;
+            }
+        },
         appInstallSuccess() {
             if (this.installingAppName.length > 0) {
                 let appIndex = this.appsList.findIndex(v => v.name === this.installingAppName);
@@ -456,7 +466,7 @@ module.exports = {
             let that = this;
             this.appsList.filter(app => app.appIcon.length > 0).forEach(app => {
                 let fullPathToAppIcon = "/" + that.context.username + "/.apps/" + app.name + '/assets/' + app.appIcon;
-                that.findFile(fullPathToAppIcon).thenCompose(file => {
+                that.findFile(fullPathToAppIcon).thenApply(file => {
                     if (file != null) {
                        let appIndex = that.appsList.findIndex(v => v.name === app.name);
                        if (appIndex > -1) {
@@ -632,7 +642,7 @@ module.exports = {
                 let pathWithoutEndingSlash = path.endsWith('/') ? path.substring(0, path.length -1) : path;
                 let directoryPath = peergos.client.PathUtils.directoryToPath(pathWithoutEndingSlash.substring(1).split("/"));
                 this.context.getDirectorySharingState(directoryPath).thenApply(function (updatedSharedWithState) {
-                    file.getChildren(that.context.crypto.hasher, that.context.network).thenCompose(function(children) {
+                    file.getChildren(that.context.crypto.hasher, that.context.network).thenApply(function(children) {
                         let arr = children.toArray();
                         let size = arr.length;
                         if (size == 0) {
