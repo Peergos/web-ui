@@ -218,6 +218,9 @@ module.exports = {
         getSecretLinkProps() {
             var fragment = window.location.hash.substring(1);
 	    var props = {};
+	    if (fragment.length == 0) {
+	        return props;
+	    }
 	    try {
 		props = fragmentToProps(fragment);
 	    } catch (e) {
