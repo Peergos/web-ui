@@ -673,7 +673,8 @@ module.exports = {
                 return;
             }
             let requestBody = JSON.parse(new TextDecoder().decode(data));
-            let appPath = requestBody.path.startsWith('/') ? requestBody.path : '/' + requestBody.path;
+            var appPath = requestBody.path.startsWith('/') ? requestBody.path : '/' + requestBody.path;
+            appPath = appPath.endsWith('/') ? appPath.substring(0, appPath.length -1) : appPath;
             let appName = requestBody.appName;
             let pathStr = appPath + '/' + appName + '/';
             this.context.getByPath(pathStr + 'peergos-app.json').thenApply(propsFileOpt => {
