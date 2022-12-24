@@ -15,15 +15,18 @@ module.exports = {
   methods: {
       initSandboxedApps() {
           let that = this;
+          let future = peergos.shared.util.Futures.incomplete();
           this.context.getByPath(this.context.username + "/.apps").thenApply(appsDirOpt => {
               if (appsDirOpt.ref != null) {
                   appsDirOpt.get().getChildren(that.context.crypto.hasher, that.context.network).thenApply(children => {
                       that.loadAllAppProperties(children.toArray()).thenApply(sandboxedAppsPropsList => {
                           that.registerApps(sandboxedAppsPropsList);
+                          future.complete(true);
                       });
                   });
               }
           });
+          return future;
       },
       convertPermissionToHumanReadable: function(permission) {
           if (permission === 'STORE_APP_DATA') {

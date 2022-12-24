@@ -460,7 +460,14 @@ module.exports = {
             }
         },
         navigateToRecommendedApps: function() {
-            this.openFileOrDir('htmlviewer', '/peergos/recommended-apps', {filename: 'index.html'});
+            let that = this;
+            let path = "/peergos/recommended-apps/";
+            that.findFile(path + "index.html").thenApply(file => {
+                if (file != null) {
+                    that.launchApp('app-gallery', file, path);
+                }
+            });
+
         },
         loadAppIcons: function() {
             let that = this;
@@ -506,6 +513,7 @@ module.exports = {
         },
         closeAppSandbox() {
             this.showAppSandbox = false;
+            this.loadInstalledApps();
         },
         displayAppDetails: function(app) {
             let that = this;

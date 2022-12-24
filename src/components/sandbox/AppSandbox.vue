@@ -20,6 +20,13 @@
             :consumer_func="prompt_consumer_func"
             :action="prompt_action"
         />
+            <AppInstall
+                v-if="showAppInstallation"
+                v-on:hide-app-installation="closeAppInstallation"
+                v-on:app-install-success="appInstallSuccess"
+                :appPropsFile="appInstallPropsFile"
+                :installFolder="appInstallFolder">
+            </AppInstall>
             <div class="modal-header" style="padding:0;min-height: 52px;">
                 <center><h2>{{ getFullPathForDisplay() }}</h2></center>
               <span style="position:absolute;top:0;right:0.2em;">
@@ -37,6 +44,7 @@
 <script>
 
 const AddToChat = require("AddToChat.vue");
+const AppInstall = require("AppInstall.vue");
 const AppPrompt = require("../prompt/AppPrompt.vue");
 
 const downloaderMixins = require("../../mixins/downloader/index.js");
@@ -48,7 +56,8 @@ module.exports = {
 	mixins:[downloaderMixins, router, sandboxMixin, launcherMixin],
     components: {
         AddToChat,
-        AppPrompt
+        AppInstall,
+        AppPrompt,
     },
     data: function() {
         return {
@@ -98,7 +107,12 @@ module.exports = {
             prompt_value: '',
             prompt_consumer_func: () => {},
             prompt_action: 'ok',
-            isSaveActionEnabled: true
+            isSaveActionEnabled: true,
+            isAppGalleryMode: false,
+            showAppInstallation: false,
+            appInstallPropsFile: null,
+            appInstallFolder: '',
+            currentAppName: null,
         }
     },
     computed: {
@@ -121,14 +135,20 @@ module.exports = {
     props: ['sandboxAppName', 'currentFile', 'currentPath', 'currentProps', 'sandboxAppChatId'],
     created: function() {
         let that = this;
+        this.currentAppName = this.sandboxAppName;
         let currentFilename = this.currentFile == null ? '' : this.currentFile.getName();
         this.appPath = this.currentFile == null ? '' : this.currentPath + currentFilename;
-        if (this.sandboxAppName == 'htmlviewer') {
+        if (this.currentAppName == 'htmlviewer') {
             this.browserMode = true;
+            this.workspaceName = this.extractWorkspace(this.appPath);
+        }else if (this.currentAppName == 'app-gallery') {
+            this.currentAppName = 'htmlviewer'
+            this.browserMode = true;
+            this.isAppGalleryMode = true;
             this.workspaceName = this.extractWorkspace(this.appPath);
         } else {
             this.workspaceName = this.currentProps != null ?  this.getPath
-                : this.context.username + "/.apps/" + this.sandboxAppName;
+                : this.context.username + "/.apps/" + this.currentAppName;
         }
         if (this.currentFile != null) {
             this.targetFile = this.currentFile;
@@ -153,7 +173,7 @@ module.exports = {
                     that.startListener();
                 });
             } else {
-                this.loadAppProperties(that.sandboxAppName).thenApply(props => {
+                this.loadAppProperties(that.currentAppName).thenApply(props => {
                     if (props == null) {
                         that.fatalError('Application properties not found');
                     } else if (!that.validatePermissions(props)) {
@@ -163,7 +183,7 @@ module.exports = {
                         that.appRegisteredWithFileAssociation = that.appHasFileAssociation(props);
                         that.appRegisteredWithWildcardFileAssociation = that.appHasWildcardFileRegistration(props);
                         that.currentChatId = that.sandboxAppChatId != null ? that.sandboxAppChatId : '';
-                        peergos.shared.user.App.init(that.context, that.sandboxAppName).thenApply(sandboxedApp => {
+                        peergos.shared.user.App.init(that.context, that.currentAppName).thenApply(sandboxedApp => {
                             that.sandboxedApp = sandboxedApp;
                             that.getAppSubdomain().thenApply(appSubdomain => {
                                 that.appSubdomain = appSubdomain;
@@ -176,6 +196,11 @@ module.exports = {
         }
     },
     methods: {
+        appInstallSuccess() {
+        },
+        closeAppInstallation() {
+            this.showAppInstallation = false;
+        },
         appSandboxSupportAvailable() {
             return this.supportsStreaming();
         },
@@ -211,7 +236,7 @@ module.exports = {
         getAppSubdomain: function() {
             let that = this;
             var future = peergos.shared.util.Futures.incomplete();
-            if (this.sandboxAppName == 'htmlviewer') {
+            if (this.currentAppName == 'htmlviewer') {
                 peergos.shared.user.App.getAppSubdomainWithAnonymityClass(that.workspaceName, this.appPath, that.context.crypto.hasher).thenApply(appSubdomain => {
                     future.complete(appSubdomain);
                 });
@@ -236,7 +261,7 @@ module.exports = {
            if (this.currentProps != null) {
                 future.complete(this.currentProps);
            } else {
-                this.readAppProperties(that.sandboxAppName).thenApply(props => {
+                this.readAppProperties(that.currentAppName).thenApply(props => {
                     future.complete(props);
                 });
             }
@@ -353,7 +378,7 @@ module.exports = {
                 let allowUnsafeEvalInCSP = that.permissionsMap.get(that.PERMISSION_CSP_UNSAFE_EVAL) != null;
                 let props = { appDevMode: appDevMode, allowUnsafeEvalInCSP: allowUnsafeEvalInCSP};
                 let func = function() {
-                    that.postMessage({type: 'init', appName: that.sandboxAppName, appPath: that.appPath,
+                    that.postMessage({type: 'init', appName: that.currentAppName, appPath: that.appPath,
                     allowBrowsing: that.browserMode, theme: theme, chatId: that.currentChatId,
                     username: that.context.username, props: props});
                 };
@@ -470,14 +495,22 @@ module.exports = {
             let that = this;
             let headerFunc = (mimeType) => that.buildHeader(path, mimeType, requestId);
             if (this.browserMode) {
-                if (apiMethod != 'GET') {
+                if (this.isAppGalleryMode) {
+                    if (!(apiMethod == 'GET' || apiMethod == 'POST' )) {
+                        that.showError("app-gallery does not support: " + apiMethod);
+                        that.buildResponse(headerFunc(), null, that.ACTION_FAILED);
+                        return;
+                    }
+                } else if (apiMethod != 'GET') {
                     that.showError("HTMLViewer does not support: " + apiMethod);
                     that.buildResponse(headerFunc(), null, that.ACTION_FAILED);
                     return;
                 }
             }
             try {
-                if (api =='/peergos-api/v0/chat/') {
+                if (api =='/peergos-api/v0/install-app/') {
+                    that.handleInstallAppRequest(headerFunc(), path, apiMethod, data, hasFormData, params);
+                }else if (api =='/peergos-api/v0/chat/') {
                     if (!that.permissionsMap.get(that.PERMISSION_EXCHANGE_MESSAGES_WITH_FRIENDS)) {
                         that.showError("App attempted to access chat without permission :" + path);
                         that.buildResponse(headerFunc(), null, that.ACTION_FAILED);
@@ -632,6 +665,29 @@ module.exports = {
             }
             return true;
         },
+        handleInstallAppRequest: function(header, path, apiMethod, data, hasFormData, params) {
+            let that = this;
+            if (!this.isAppGalleryMode || !hasFormData || apiMethod != 'POST') {
+                console.log('Install App API call is invalid');
+                that.buildResponse(headerFunc(), null, that.ACTION_FAILED);
+                return;
+            }
+            let requestBody = JSON.parse(new TextDecoder().decode(data));
+            let appPath = requestBody.path.startsWith('/') ? requestBody.path : '/' + requestBody.path;
+            let appName = requestBody.appName;
+            let pathStr = appPath + '/' + appName + '/';
+            this.context.getByPath(pathStr + 'peergos-app.json').thenApply(propsFileOpt => {
+                if (propsFileOpt.ref != null) {
+                    that.appInstallPropsFile = propsFileOpt.ref;
+                    that.appInstallFolder = pathStr;
+                    that.showAppInstallation = true;
+                    that.buildResponse(header, null, that.CREATE_SUCCESS);
+                } else {
+                    console.log('App manifest file not found!');
+                    that.buildResponse(header, null, that.ACTION_FAILED);
+                }
+            });
+        },
         handleChatRequest: function(header, path, apiMethod, data, hasFormData, params) {
             let that = this;
             if(apiMethod == 'GET') {
@@ -643,7 +699,7 @@ module.exports = {
                         let filteredChats = [];
                         for(var i = 0; i < allChats.length; i++) {
                             let chat = allChats[i];
-                            if(chat.chatUuid.startsWith("chat-" + that.sandboxAppName + "$")) {
+                            if(chat.chatUuid.startsWith("chat-" + that.currentAppName + "$")) {
                                 filteredChats.push({chatId: chat.chatUuid, title: chat.getTitle()});
                             }
                         }
@@ -710,7 +766,7 @@ module.exports = {
         updateChat: function(usersToAdd) {
             let that = this;
             let messenger = new peergos.shared.messaging.Messenger(this.context);
-            messenger.createAppChat(this.sandboxAppName).thenApply(function(controller){
+            messenger.createAppChat(this.currentAppName).thenApply(function(controller){
                 that.inviteChatParticipants(messenger, controller, usersToAdd).thenApply(updatedController => {
                     if (updatedController != null) {
                         let encoder = new TextEncoder();
@@ -1263,7 +1319,7 @@ module.exports = {
                 let filePathWithoutSlash = filePath.startsWith('/') ? filePath.substring(1) : filePath;
                 return this.getPath + filePathWithoutSlash;
             } else {
-                return this.context.username + "/.apps/" + this.sandboxAppName + filePath;
+                return this.context.username + "/.apps/" + this.currentAppName + filePath;
             }
         },
         findFile: function(filePath, isFromRedirect) {

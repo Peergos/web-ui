@@ -13,6 +13,8 @@ let dataRequest = apiRequest + "/data/";
 let formRequest = apiRequest + "/form/";
 let chatRequest = apiRequest + "/chat/";
 let saveRequest = apiRequest + "/save/";
+let installAppRequest = apiRequest + "/install-app/";
+
 var host = null;
 self.onmessage = event => {
   if (event.data === 'ping') {
@@ -357,6 +359,9 @@ function appFetch(event) {
             } else if (filePath.startsWith(chatRequest)) {
                 restFilePath = restFilePath.substring(chatRequest.length);
                 api = chatRequest;
+            } else if (filePath.startsWith(installAppRequest)) {
+                restFilePath = restFilePath.substring(installAppRequest.length);
+                api = installAppRequest;
             } else if (filePath.startsWith(saveRequest)) {
                 if (!(method == 'POST' || method == 'PUT')) {
                     return new Response('Unknown save action!', {status: 400})
