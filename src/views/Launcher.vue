@@ -464,7 +464,7 @@ module.exports = {
             let path = "/peergos/recommended-apps/";
             that.findFile(path + "index.html").thenApply(file => {
                 if (file != null) {
-                    that.launchApp('app-gallery', file, path);
+                    that.launchApp('$$app-gallery$$', file, path);
                 }
             });
 

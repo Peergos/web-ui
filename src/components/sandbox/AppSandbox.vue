@@ -141,7 +141,7 @@ module.exports = {
         if (this.currentAppName == 'htmlviewer') {
             this.browserMode = true;
             this.workspaceName = this.extractWorkspace(this.appPath);
-        }else if (this.currentAppName == 'app-gallery') {
+        }else if (this.currentAppName == '$$app-gallery$$') {
             this.currentAppName = 'htmlviewer'
             this.browserMode = true;
             this.isAppGalleryMode = true;
