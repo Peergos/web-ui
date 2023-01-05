@@ -34,6 +34,13 @@
     <main v-else class="newsfeed__container">
             <spinner v-if="showSpinner"></spinner>
             <div @click="closeMenus($event)" style="flex-grow:1">
+                <AppInstall
+                    v-if="showAppInstallation"
+                    v-on:hide-app-installation="closeAppInstallation"
+                    v-on:app-install-success="appInstallSuccess"
+                    :appPropsFile="appInstallPropsFile"
+                    :installFolder="appInstallFolder">
+                </AppInstall>
                 <SocialPost
                     v-if="showSocialPostForm"
                     :closeSocialPostForm="closeSocialPostForm"
@@ -227,6 +234,7 @@
 
 <script>
 const AppHeader = require("../components/AppHeader.vue");
+const AppInstall = require("../components/sandbox/AppInstall.vue");
 const SocialPost = require("../components/social/SocialPost.vue");
 
 const Gallery = require("../components/drive/DriveGallery.vue");
@@ -242,7 +250,8 @@ module.exports = {
 		Gallery,
 		ViewProfile,
 		AppSandbox,
-		AppHeader
+		AppHeader,
+		AppInstall,
     },
     data: function() {
         return {
@@ -288,7 +297,11 @@ module.exports = {
             entryTree: null,
             showAppSandbox: false,
             sandboxAppName: '',
-            sandboxAppChatId: ''
+            sandboxAppChatId: '',
+            showAppInstallation: false,
+            appInstallPropsFile: null,
+            appInstallFolder: '',
+            appInstalledEntry: null,
         }
     },
     props: [],
@@ -917,32 +930,54 @@ module.exports = {
             });
         },
         showMessage: function(title, body) {
-            this.$toast.error(title + body, {timeout:false, id: 'error'})
+            let bodyText = body == null ? '' : body;
+            this.$toast.error(title + bodyText, {timeout:false, id: 'error'})
         },
         joinConversation: function (entry) {
             let that = this;
             that.showSpinner = true;
             this.messenger.cloneLocallyAndJoin(entry.file).thenApply(res => {
                 that.showSpinner = false;
+                entry.isNewChat = false;
                 that.openConversation(entry);
             }).exceptionally(function(throwable) {
-                console.log("Unable to join Chat. Error:" + throwable.getMessage());
-                that.showMessage("Unable to join Chat");
                 that.showSpinner = false;
+                if (throwable.getMessage().startsWith('Child already exists with name:')) {
+                    that.openConversation(entry);
+                } else {
+                    console.log("Unable to join Chat. Error:" + throwable.getMessage());
+                    that.showMessage("Unable to join Chat");
+                }
             });
         },
         openConversation: function (entry) {
             if (entry.appName.length > 0) {
+                let that = this;
                 let app = this.sandboxedApps.appsInstalled.slice().filter(app => app.name == entry.appName);
                 if (app.length == 0) {
-                    this.$toast.error(`App with name ${entry.appName} not installed!`);
-                    return;
+                    var pathStr = '/peergos/recommended-apps/' + entry.appName + '/';
+                    this.context.getByPath(pathStr + 'peergos-app.json').thenApply(propsFileOpt => {
+                        if (propsFileOpt.ref != null) {
+                            that.appInstallPropsFile = propsFileOpt.ref;
+                            that.appInstallFolder = pathStr;
+                            that.showAppInstallation = true;
+                            that.appInstalledEntry = entry;
+                        } else {
+                            that.showMessage("App with name: " + entry.appName + " not installed!");
+                        }
+                    });
                 } else {
                     this.launchApp(entry.appName, entry.path);
                 }
             } else {
                 this.viewAction(entry.path, entry.file);
             }
+        },
+        appInstallSuccess() {
+            this.launchApp(this.appInstalledEntry.appName, this.appInstalledEntry.path);
+        },
+        closeAppInstallation() {
+            this.showAppInstallation = false;
         },
         launchApp: function(appName, path) {
             this.showAppSandbox = true;

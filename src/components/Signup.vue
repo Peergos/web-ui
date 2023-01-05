@@ -267,14 +267,15 @@ module.exports = {
                         that.$store.commit('SET_CONTEXT', context);
                         that.$store.commit('USER_LOGIN', true);
 			that.installDefaultApp().thenApply(function(props) {
-                            that.initSandboxedApps();
-                            that.$store.commit('CURRENT_VIEW', 'Drive');
-                            that.$store.commit('CURRENT_MODAL', 'ModalTour');
-                            that.updatePayment()
-                            that.updateSocial()
-                            that.updateUsage()
-                            console.log("Signing in/up took " + (Date.now()-creationStart)+" mS from function call");
-                            that.$toast.dismiss('signup');
+                            that.initSandboxedApps().thenApply(function(res) {
+                                that.$store.commit('CURRENT_VIEW', 'Drive');
+                                that.$store.commit('CURRENT_MODAL', 'ModalTour');
+                                that.updatePayment()
+                                that.updateSocial()
+                                that.updateUsage()
+                                console.log("Signing in/up took " + (Date.now()-creationStart)+" mS from function call");
+                                that.$toast.dismiss('signup');
+                            });
                         });
                     }).exceptionally(function(throwable) {
                         that.$toast.error(that.uriDecode(throwable.getMessage()),{timeout:false, id: 'signup'})
