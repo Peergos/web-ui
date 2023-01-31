@@ -1217,9 +1217,9 @@ function calcRangeStart(icalComponent, schedule, month, year) {
           year: year,
           month: month,
           day: day,
-          hour: schedule.start.getHours(),
-          minute: schedule.start.getMinutes(),
-          second: schedule.start.getSeconds(),
+          hour: 0,
+          minute: 0,
+          second: 0,
           isDate: schedule.isAllDay
         }, timeZone);
         return dateTime;
