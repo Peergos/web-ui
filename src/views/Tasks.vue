@@ -45,13 +45,14 @@
 <script>
 const downloader = require("../mixins/downloader/index.js");
 const routerMixins = require("../mixins/router/index.js");
+const UriDecoder = require('../mixins/uridecoder/index.js');
 const AppHeader = require("../components/AppHeader.vue");
 
 module.exports = {
     components: {
 	AppHeader,
     },
-    mixins:[routerMixins],
+    mixins:[routerMixins, UriDecoder],
 
     data: function() {
         return {
@@ -378,8 +379,9 @@ module.exports = {
                         that.$emit("update-refresh");
                     }).exceptionally(function(throwable) {
                         that.showSpinner = false;
-                        if (throwable.detailMessage.includes("CAS exception updating cryptree node.")
-                            ||   throwable.detailMessage.includes("Mutable pointer update failed! Concurrent Modification.")) {
+                        let msg = that.uriDecode(throwable.detailMessage);
+                        if (msg.includes("CAS exception updating cryptree node.")
+                            || msg.includes("Mutable pointer update failed! Concurrent Modification.")) {
                             that.showMessage("Concurrent modification detected", "The file has been updated by another user. Your changes have not been saved.");
                         } else {
                             that.handleException(throwable, "Unexpected error", 'Error uploading file: ' + that.currentFile.getName());

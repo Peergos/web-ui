@@ -51,9 +51,10 @@ const downloaderMixins = require("../../mixins/downloader/index.js");
 const router = require("../../mixins/router/index.js");
 const sandboxMixin = require("../../mixins/sandbox/index.js");
 const launcherMixin = require("../../mixins/launcher/index.js");
+const UriDecoder = require('../../mixins/uridecoder/index.js');
 
 module.exports = {
-	mixins:[downloaderMixins, router, sandboxMixin, launcherMixin],
+	mixins:[downloaderMixins, router, sandboxMixin, launcherMixin, UriDecoder],
     components: {
         AddToChat,
         AppInstall,
@@ -1020,8 +1021,9 @@ module.exports = {
                     that.$emit("refresh");
                     that.buildResponse(header, null, that.UPDATE_SUCCESS);
                 }).exceptionally(function(throwable) {
-                        if (throwable.detailMessage.includes("CAS exception updating cryptree node.")
-                            ||   throwable.detailMessage.includes("Mutable pointer update failed! Concurrent Modification.")) {
+                        let msg = that.uriDecode(throwable.detailMessage);
+                        if (msg.includes("CAS exception updating cryptree node.")
+                            || msg.includes("Mutable pointer update failed! Concurrent Modification.")) {
                             that.showError("The file has been updated by another user. Your changes have not been saved.");
                         } else {
                             that.showError("Unexpected error: " + throwable.detailMessage);
