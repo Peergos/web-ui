@@ -181,8 +181,7 @@ module.exports = {
             that.$emit("update-refresh");
         }).exceptionally(function(throwable) {
             let msg = that.uriDecode(throwable.detailMessage);
-            if (msg.includes("CAS exception updating cryptree node.")
-                ||   msg.includes("Mutable pointer update failed! Concurrent Modification.")) {
+            if (msg.includes("CAS exception updating cryptree node.")) {
                 that.showMessage(true, "Concurrent modification detected", "The file has been updated by another user. Your changes have not been saved.");
             } else {
                 that.showMessage(true, "Unexpected error", throwable.detailMessage);

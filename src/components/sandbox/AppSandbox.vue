@@ -1022,8 +1022,7 @@ module.exports = {
                     that.buildResponse(header, null, that.UPDATE_SUCCESS);
                 }).exceptionally(function(throwable) {
                         let msg = that.uriDecode(throwable.detailMessage);
-                        if (msg.includes("CAS exception updating cryptree node.")
-                            || msg.includes("Mutable pointer update failed! Concurrent Modification.")) {
+                        if (msg.includes("CAS exception updating cryptree node.")) {
                             that.showError("The file has been updated by another user. Your changes have not been saved.");
                         } else {
                             that.showError("Unexpected error: " + throwable.detailMessage);
