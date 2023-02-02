@@ -84,6 +84,8 @@ function postProm(url, data, timeout) {
             } else {
                 if (trailer.startsWith('Storage+quota+reached')) {
                     future.completeExceptionally(new peergos.shared.storage.StorageQuotaExceededException(trailer));
+                } else if (trailer.startsWith('CAS+exception') || trailer.startsWith('Mutable+pointer+update+failed')) {
+                    future.completeExceptionally(new peergos.shared.storage.CasException(trailer));
                 } else {
                     reject(trailer);
                 }
@@ -135,6 +137,8 @@ function postMultipartProm(url, dataArrays) {
             } else {
                 if (trailer.startsWith('Storage+quota+reached')) {
                     future.completeExceptionally(new peergos.shared.storage.StorageQuotaExceededException(trailer));
+                } else if (trailer.startsWith('CAS+exception') || trailer.startsWith('Mutable+pointer+update+failed')) {
+                    future.completeExceptionally(new peergos.shared.storage.CasException(trailer));
                 } else {
                     reject(trailer);
                 }

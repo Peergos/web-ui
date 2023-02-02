@@ -1,3 +1,4 @@
+const UriDecoder = require('../../mixins/uridecoder/index.js');
 module.exports = {
     template: require('code-editor.html'),
     data: function() {
@@ -18,6 +19,7 @@ module.exports = {
         this.isFileWritable = this.file.isWritable();
         this.startListener();
     },
+    mixins:[UriDecoder],
     methods: {
 	frameUrl: function() {
             return this.frameDomain() + "/apps/code-editor/index.html";
@@ -178,8 +180,8 @@ module.exports = {
             that.currentFile = updatedFile;
             that.$emit("update-refresh");
         }).exceptionally(function(throwable) {
-            if (throwable.detailMessage.includes("CAS exception updating cryptree node.")
-                ||   throwable.detailMessage.includes("Mutable pointer update failed! Concurrent Modification.")) {
+            let msg = that.uriDecode(throwable.detailMessage);
+            if (msg.includes("CAS exception updating cryptree node.")) {
                 that.showMessage(true, "Concurrent modification detected", "The file has been updated by another user. Your changes have not been saved.");
             } else {
                 that.showMessage(true, "Unexpected error", throwable.detailMessage);
