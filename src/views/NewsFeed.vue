@@ -79,6 +79,9 @@
                     :sandboxAppName="sandboxAppName"
                     :sandboxAppChatId="sandboxAppChatId">
                 </AppSandbox>
+                <ul id="appMenu" v-if="showAppMenu" class="dropdown-menu" v-bind:style="{top:menutop, left:menuleft}" style="cursor:pointer;display:block;min-width:100px;padding: 10px;">
+                    <li id='open-in-app' style="padding-bottom: 5px;" v-for="app in availableApps" v-on:keyup.enter="appOpen($event, app.name, app.path, app.file)" v-on:click="appOpen($event, app.name, app.path, app.file)">{{app.contextMenuText}}</li>
+                </ul>
                 <div id="scroll-area">
                     <center v-if="data.length==0">
                         <h3>
@@ -115,9 +118,9 @@
                                         <div v-if="!entry[0].isPost && !entry[0].isMedia">
                                             <span class="grid_icon_wrapper fa">
                                                 <a v-if="!entry[0].hasThumbnail && !entry[0].isChat">
-                                                    <AppIcon style="height:100px" @click.stop.native="view(entry[0])" class="card__icon" :icon="getFileIconFromFileAndType(entry[0].file, entry[0].fileType)"></AppIcon>
+                                                    <AppIcon style="height:100px" @click.stop.native="view($event, entry[0])" class="card__icon" :icon="getFileIconFromFileAndType(entry[0].file, entry[0].fileType)"></AppIcon>
                                                 </a>
-                                                <img v-if="entry[0].hasThumbnail && !entry[0].isChat" v-on:click="view(entry[0])" v-bind:src="entry[0].thumbnail" style="cursor: pointer"/>
+                                                <img v-if="entry[0].hasThumbnail && !entry[0].isChat" v-on:click="view($event, entry[0])" v-bind:src="entry[0].thumbnail" style="cursor: pointer"/>
                                                 <button v-if="entry[0].isChat && entry[0].isNewChat" class="btn btn-success" @click="joinConversation(entry[0])" style="font-weight: bold;">Join</button>
                                                 <button v-if="entry[0].isChat && !entry[0].isNewChat" class="btn btn-success" @click="openConversation(entry[0])" style="font-weight: bold;">View</button>
                                             </span>
@@ -280,6 +283,7 @@ module.exports = {
             filesToViewInGallery: [],
             showEditMenu: false,
             showFriendMenu: false,
+            showAppMenu: false,
             menutop:"",
             menuleft:"",
             currentRow: {},
@@ -302,6 +306,7 @@ module.exports = {
             appInstallPropsFile: null,
             appInstallFolder: '',
             appInstalledEntry: null,
+            availableApps: []
         }
     },
     props: [],
@@ -428,8 +433,11 @@ module.exports = {
 		},
 	closeMenus: function(e) {
 	    this.showEditMenu = false;
-            this.showFriendMenu = false;
-	    e.stopPropagation();
+        this.showFriendMenu = false;
+        this.showAppMenu = false;
+        if (e != null) {
+	        e.stopPropagation();
+	    }
 	},
 	displayEditMenu: function(event, row) {
             this.currentRow = row;
@@ -970,7 +978,7 @@ module.exports = {
                     this.launchApp(entry.appName, entry.path);
                 }
             } else {
-                this.viewAction(entry.path, entry.file);
+                this.viewAction(null, entry.path, entry.file);
             }
         },
         appInstallSuccess() {
@@ -992,20 +1000,88 @@ module.exports = {
         viewFolder: function (entry) {
             this.openFileOrDir("Drive", entry.path, {filename:""})
         },
-        view: function (entry) {
+        view: function (event, entry) {
             let type = entry.file.props.getType();
             if(type == "image" || type == "audio" || type == "video") {
                 this.openInGallery(entry);
             } else {
-                if (entry.file.isDirectory())
-                    this.viewAction(entry.path, entry.file);
-                else
-                    this.viewAction(entry.path, entry.file);
+                this.viewAction(event, entry.path, entry.file);
             }
         },
-        viewAction: function(path, file) {
-            let app = this.getApp(file, '/' + path)
-            this.openFileOrDir(app, path, {filename:file.isDirectory() ? "" : file.getName()})
+        viewAction: function(event, path, file) {
+            if (file.isDirectory()) {
+                let pathParts = ('/' + path).split("/");
+                if (pathParts.length == 6 && pathParts[0] == '' &&
+                    pathParts[2] == '.apps' &&
+                    pathParts[3] == 'calendar' &&
+                    pathParts[4] == 'data') {
+                    this.openFileOrDir("Calendar", path, {filename:""});
+                } else if (pathParts.length >= 3 && pathParts[0] == '' && pathParts[2] == '.messaging') {
+                    this.openFileOrDir("Chat", path, {filename:""});
+                } else {
+                    this.openFileOrDir("Drive", path, {filename:""});
+                }
+            } else {
+                let userApps = this.availableAppsForFile(file);
+                let inbuiltApp = this.getInbuiltApp(file);
+                if (userApps.length == 0) {
+                    this.openFileOrDir(inbuiltApp.name, path, {filename:file.isDirectory() ? "" : file.getName()})
+                } else {
+                    this.showAppContextMenu(event, inbuiltApp, userApps, path, file);
+                }
+            }
+        },
+        getInbuiltApp(file) {
+            let filename = file.getName();
+            let mimeType = file.getFileProperties().mimeType;
+            if (mimeType.startsWith("audio") || mimeType.startsWith("video") || mimeType.startsWith("image")) {
+                return {name:'Gallery', contextMenuText: 'View in Gallery'};
+            } else if (mimeType === "application/vnd.peergos-todo") {
+                return {name:"Tasks", contextMenuText: 'View in Tasks'};
+            } else if (mimeType === "application/pdf") {
+                return {name:"pdf", contextMenuText: 'Open PDF Viewer'};
+            } else if (mimeType === "text/calendar") {
+                return {name:"Calendar", contextMenuText: 'Open Calendar'};
+            } else if (mimeType === "application/vnd.peergos-identity-proof") {
+                return {name:"identity-proof", contextMenuText: 'Open in Identify Proof Viewer'};
+            } else if (mimeType.startsWith("text/x-markdown") ||
+                ( mimeType.startsWith("text/") && filename.endsWith('.md'))) {
+                return {name:"markdown", contextMenuText:'Open in Markdown Viewer'};
+            } else if (mimeType.startsWith("text/html") ||
+                ( mimeType.startsWith("text/") && filename.endsWith('.html'))) {
+                return {name:"htmlviewer", contextMenuText:'Open in HTML Viewer'};
+            } else if (mimeType.startsWith("text/")) {
+                return {name:"editor", contextMenuText:'Open in Text Editor'};
+            } else {
+                return {name:"hex", contextMenuText:'Open in Hex Viewer'};
+            }
+        },
+        showAppContextMenu(event, inbuiltApp, userApps, path, file) {
+            let appOptions = [];
+            for(var i = 0; i < userApps.length; i++) {
+                let app = userApps[i];
+                let option = {'name': app.name, 'path': path, 'file': file, 'contextMenuText': app.contextMenuText};
+                appOptions.push(option);
+            }
+            if (inbuiltApp != null) {
+                let inbuiltAppOption = {name: inbuiltApp.name, path: path, file: file, contextMenuText: inbuiltApp.contextMenuText};
+                appOptions.push(inbuiltAppOption);
+            }
+            this.availableApps = appOptions;
+            var pos = this.getPosition(event);
+            Vue.nextTick(function() {
+                var top = pos.y;
+                var left = pos.x;
+                this.menutop = top + 'px';
+                this.menuleft = left + 'px';
+            }.bind(this));
+            this.showAppMenu = true;
+            event.stopPropagation();
+        },
+        appOpen(event, appName, path, file) {
+            this.closeMenus(event);
+            this.availableApps = [];
+            this.openFileOrDir(appName, path, {filename:file.isDirectory() ? "" : file.getName()})
         },
         viewMediaList: function (mediaList, mediaIndex) {
             let files = [];
@@ -1086,12 +1162,8 @@ module.exports = {
             }
             let props = file.props;
             var isSharedCalendar = false;
-            if (props.isHidden) {
-                if (this.isSharedCalendar(filePath)) {
-                    isSharedCalendar = true;
-                } else {
-                    return null;
-                }
+            if (this.isSharedCalendar(filePath)) {
+                isSharedCalendar = true;
             }
             var appName = "";
             if (props.isDirectory) {
