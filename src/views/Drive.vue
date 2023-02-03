@@ -463,53 +463,11 @@ module.exports = {
            }
         },
         availableApps: function() {
-           try {
-               if (this.currentDir == null)
-                   return [];
-               if (this.selectedFiles.length != 1)
-                   return [];
-               if (this.selectedFiles[0].getFileProperties().isHidden)
-                   return [];
-                if (this.selectedFiles[0].isDirectory()) {
-                    let folderApps = this.sandboxedApps.appsInstalled.slice().filter(app => app.folderAction);
-                    return folderApps.sort(function(a, b) {
-                        return a.displayName.localeCompare(b.displayName);
-                    });
-                }
-                let currentFilename = this.selectedFiles[0].getFileProperties().name;
-                let extension = currentFilename.substring(currentFilename.lastIndexOf(".") +1);
-
-                var currentFileExtensionMapping = this.sandboxedApps.appFileExtensionRegistrationMap.get(extension);
-                currentFileExtensionMapping = currentFileExtensionMapping == null ? [] : currentFileExtensionMapping;
-                currentFileExtensionMapping = currentFileExtensionMapping.concat(this.sandboxedApps.appFileExtensionWildcardRegistrationList);
-
-                let mimeType = this.selectedFiles[0].getFileProperties().mimeType;
-                var currentMimeTypeMapping = this.sandboxedApps.appMimeTypeRegistrationMap.get(mimeType);
-                currentMimeTypeMapping = currentMimeTypeMapping == null ? [] : currentMimeTypeMapping;
-                currentMimeTypeMapping = currentMimeTypeMapping.concat(this.sandboxedApps.appMimeTypeWildcardRegistrationList);
-
-                let fileType = this.selectedFiles[0].getFileProperties().getType();
-                var currentFileTypeMapping = this.sandboxedApps.appFileTypeRegistrationMap.get(fileType);
-                currentFileTypeMapping = currentFileTypeMapping == null ? [] : currentFileTypeMapping;
-                currentFileTypeMapping = currentFileTypeMapping.concat(this.sandboxedApps.appFileTypeWildcardRegistrationList);
-
-                let combinedMapping = currentFileExtensionMapping
-                    .concat(currentMimeTypeMapping)
-                    .concat(currentFileTypeMapping)
-                    .filter(a => !a.folderAction);
-                let dedupedItems = [];
-                combinedMapping.forEach(item => {
-                    let foundIndex = dedupedItems.findIndex(v => v.name === item.name);
-                    if (foundIndex == -1) {
-                        dedupedItems.push(item);
-                    }
-                });
-                return dedupedItems.sort(function(a, b) {
-                    return a.displayName.localeCompare(b.displayName);
-                });
-           } catch (err) {
-               return [];
-           }
+            if (this.currentDir == null)
+                return [];
+            if (this.selectedFiles.length != 1)
+                return [];
+            return this.availableAppsForFile(this.selectedFiles[0]);
         },
 		isSearchable() {
 			try {
@@ -1090,8 +1048,11 @@ module.exports = {
                     else if (app == "htmlviewer") {
                         that.sandboxAppName = "htmlviewer";
                         that.showAppSandbox = true;
-                    } else if (app == "search")
+                    } else if (app == "search") {
                         that.showSearch = true;
+                    } else {
+                        that.appOpen(app);
+                    }
 		},
 		openSearch(fromRoot) {
 			var path = fromRoot ? "/" + this.context.username : this.getPath;

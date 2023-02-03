@@ -138,7 +138,8 @@ module.exports = {
         let that = this;
         this.currentAppName = this.sandboxAppName;
         let currentFilename = this.currentFile == null ? '' : this.currentFile.getName();
-        this.appPath = this.currentFile == null ? '' : this.currentPath + currentFilename;
+        let path = this.currentPath.endsWith('/') ? this.currentPath : this.currentPath + '/';
+        this.appPath = this.currentFile == null ? '' : path + currentFilename;
         if (this.currentAppName == 'htmlviewer') {
             this.browserMode = true;
             this.workspaceName = this.extractWorkspace(this.appPath);

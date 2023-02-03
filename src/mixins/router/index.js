@@ -63,6 +63,52 @@ module.exports = {
 	    const ciphertext = both.base64Ciphertext;
 	    return { nonce: nonce, ciphertext: ciphertext };
 	},
+
+    availableAppsForFile: function(file) {
+       try {
+           if (file.getFileProperties().isHidden)
+               return [];
+            if (file.isDirectory()) {
+                let folderApps = this.sandboxedApps.appsInstalled.slice().filter(app => app.folderAction);
+                return folderApps.sort(function(a, b) {
+                    return a.displayName.localeCompare(b.displayName);
+                });
+            }
+            let currentFilename = file.getFileProperties().name;
+            let extension = currentFilename.substring(currentFilename.lastIndexOf(".") +1);
+
+            var currentFileExtensionMapping = this.sandboxedApps.appFileExtensionRegistrationMap.get(extension);
+            currentFileExtensionMapping = currentFileExtensionMapping == null ? [] : currentFileExtensionMapping;
+            currentFileExtensionMapping = currentFileExtensionMapping.concat(this.sandboxedApps.appFileExtensionWildcardRegistrationList);
+
+            let mimeType = file.getFileProperties().mimeType;
+            var currentMimeTypeMapping = this.sandboxedApps.appMimeTypeRegistrationMap.get(mimeType);
+            currentMimeTypeMapping = currentMimeTypeMapping == null ? [] : currentMimeTypeMapping;
+            currentMimeTypeMapping = currentMimeTypeMapping.concat(this.sandboxedApps.appMimeTypeWildcardRegistrationList);
+
+            let fileType = file.getFileProperties().getType();
+            var currentFileTypeMapping = this.sandboxedApps.appFileTypeRegistrationMap.get(fileType);
+            currentFileTypeMapping = currentFileTypeMapping == null ? [] : currentFileTypeMapping;
+            currentFileTypeMapping = currentFileTypeMapping.concat(this.sandboxedApps.appFileTypeWildcardRegistrationList);
+
+            let combinedMapping = currentFileExtensionMapping
+                .concat(currentMimeTypeMapping)
+                .concat(currentFileTypeMapping)
+                .filter(a => !a.folderAction);
+            let dedupedItems = [];
+            combinedMapping.forEach(item => {
+                let foundIndex = dedupedItems.findIndex(v => v.name === item.name);
+                if (foundIndex == -1) {
+                    dedupedItems.push(item);
+                }
+            });
+            return dedupedItems.sort(function(a, b) {
+                return a.displayName.localeCompare(b.displayName);
+            });
+       } catch (err) {
+           return [];
+       }
+    },
         
         getApp(file, path, writable) {
             if (file.isDirectory()) {
