@@ -53,6 +53,9 @@
                 :groups="groups"
                 :messages="messages">
             </Share>
+            <ul id="appMenu" v-if="showAppMenu" class="dropdown-menu" v-bind:style="{top:menutop, left:menuleft}" style="cursor:pointer;display:block;min-width:100px;padding: 10px;">
+                <li id='open-in-app' style="padding-bottom: 5px;" v-for="app in availableApps" v-on:keyup.enter="appOpen($event, app.name, app.path, app.file)" v-on:click="appOpen($event, app.name, app.path, app.file)">{{app.contextMenuText}}</li>
+            </ul>
             <div>
                 <h3>Custom Apps
                     <button class="btn btn-success" @click="navigateToRecommendedApps()" style="margin-left: 40px;">Recommended Apps</button>
@@ -113,7 +116,7 @@
                             <td v-bind:class="[shortcut.missing ? 'deleted-entry' : '']">
                                 {{ formatJSDate(shortcut.added) }}
                             </td>
-                            <td v-bind:class="[shortcut.missing ? 'deleted-entry' : '']" v-on:click="view(shortcut, true)" style="cursor:pointer;">{{ shortcut.name }}</td>
+                            <td v-bind:class="[shortcut.missing ? 'deleted-entry' : '']" v-on:click="view($event, shortcut)" style="cursor:pointer;">{{ shortcut.name }}</td>
                             <td v-bind:class="[shortcut.missing ? 'deleted-entry' : '']"  v-on:click="navigateTo(shortcut)" style="cursor:pointer;">
                                 {{ shortcut.path }}
                             </td>
@@ -151,7 +154,7 @@
                         </thead>
                         <tbody>
                         <tr v-for="match in sortedSharedItems">
-                            <td v-on:click="view(match, true)" style="cursor:pointer;">{{ match.name }}</td>
+                            <td v-on:click="view($event, match)" style="cursor:pointer;">{{ match.name }}</td>
                             <td v-on:click="navigateTo(match)" style="cursor:pointer;">
                                 {{ match.path }}
                             </td>
@@ -227,6 +230,10 @@ module.exports = {
             installingAppName: '',
             appInstallPropsFile: null,
             appInstallFolder: '',
+            availableApps: [],
+            showAppMenu: false,
+            menutop:"",
+            menuleft:"",
         }
     },
     props: [],
@@ -365,6 +372,12 @@ module.exports = {
         });
     },
     methods: {
+        appOpen(event, appName, path, file) {
+            this.showAppMenu = false;
+            event.stopPropagation();
+            this.availableApps = [];
+            this.openFileOrDir(appName, path, {filename:file.isDirectory() ? "" : file.getName()})
+        },
         loadInstalledApps() {
             let that = this;
             if(!this.sandboxedApps.appsLoaded) {
@@ -408,6 +421,7 @@ module.exports = {
         },
         checkForAppUpdates: function() {
             let that = this;
+            this.showSpinner = true;
             let appsInstalledWithSource = this.sandboxedApps.appsInstalled.slice().filter(a => a.source.length > 0);
             let future = peergos.shared.util.Futures.incomplete();
             this.gatherAppsWithUpdates(appsInstalledWithSource, 0, [], future);
@@ -427,6 +441,7 @@ module.exports = {
                     appRow.updateAvailable = true;
                     that.appsList.push(appRow);
                 }
+                that.showSpinner = false;
             });
         },
         gatherAppsWithUpdates: function(appsInstalledWithSource, index, accumulator, future) {
@@ -760,7 +775,7 @@ module.exports = {
             });
             return future;
         },
-        view: function (entry) {
+        view: function (event, entry) {
             if (entry.name.length == 0 || entry.missing) {
                 return;
             }
@@ -768,28 +783,60 @@ module.exports = {
             let fullPath = entry.path + (entry.isDirectory ? "" : '/' + entry.name);
             this.findFile(fullPath).thenApply(file => {
                 if (file != null) {
-                    let mimeType = file.getFileProperties().mimeType;
-                    if (mimeType == 'text/html') {
-                        that.launchApp('htmlviewer', file, '/' + entry.path + '/');
-                    } else {
-                        let app = that.getApp(file, entry.path, file.isWritable());
-                        if (app == 'hex') {
-                            that.openFileOrDir("Drive", entry.path, {filename:""});
-                        } else {
-                            if (app == 'editor') {
-                                if (mimeType.startsWith("text/x-markdown") ||
-                                    ( mimeType.startsWith("text/") && entry.name.endsWith('.md'))) {
-                                    that.openFileOrDir("markdown", entry.path, {filename:entry.name});
-                                } else {
-                                    that.openFileOrDir("editor", entry.path, {filename:entry.name});
-                                }
+                    let userApps = this.availableAppsForFile(file);
+                    let inbuiltApps = this.getInbuiltApps(file);
+                    if (userApps.length == 0) {
+                        if (inbuiltApps.length == 1) {
+                            if (inbuiltApps[0].name == 'hex') {
+                                that.openFileOrDir("Drive", entry.path, {filename:""});
                             } else {
-                                that.openFileOrDir(app, entry.path, {filename:entry.name});
+                                this.openFileOrDir(inbuiltApps[0].name, entry.path, {filename:file.isDirectory() ? "" : file.getName()})
                             }
+                        } else {
+                            this.showAppContextMenu(event, inbuiltApps, userApps, entry.path, file);
                         }
+                    } else {
+                        this.showAppContextMenu(event, inbuiltApps, userApps, entry.path, file);
                     }
                 }
             });
+        },
+        showAppContextMenu(event, inbuiltApps, userApps, path, file) {
+            let appOptions = [];
+            for(var i = 0; i < userApps.length; i++) {
+                let app = userApps[i];
+                let option = {'name': app.name, 'path': path, 'file': file, 'contextMenuText': app.contextMenuText};
+                appOptions.push(option);
+            }
+            for(var i = 0; i < inbuiltApps.length; i++) {
+                let app = inbuiltApps[i];
+                let option = {'name': app.name, 'path': path, 'file': file, 'contextMenuText': app.contextMenuText};
+                appOptions.push(option);
+            }
+            this.availableApps = appOptions;
+            var pos = this.getPosition(event);
+            Vue.nextTick(function() {
+                var top = pos.y;
+                var left = pos.x;
+                this.menutop = top + 'px';
+                this.menuleft = left + 'px';
+            }.bind(this));
+            this.showAppMenu = true;
+            event.stopPropagation();
+        },
+        getPosition: function(e) {
+            var posx = 0;
+            var posy = 0;
+
+            if (!e) var e = window.event;
+            if (e.clientX || e.clientY) {
+                posx = e.clientX - 100; //todo remove arbitrary offset
+                posy = e.clientY - 100;
+            }
+            return {
+                x: posx,
+                y: posy
+            }
         },
         navigateTo: function (entry) {
             if (entry.missing) {
