@@ -109,7 +109,46 @@ module.exports = {
            return [];
        }
     },
-        
+    getInbuiltApps(file) {
+        let filename = file.getName();
+        let mimeType = file.getFileProperties().mimeType;
+        let matchingInbuiltApps = [];
+        if (mimeType.startsWith("audio") || mimeType.startsWith("video") || mimeType.startsWith("image")) {
+            let gallery = {name:'Gallery', contextMenuText: 'View in Gallery'};
+            matchingInbuiltApps.push(gallery);
+        } else if (mimeType === "application/vnd.peergos-todo") {
+            let tasks = {name:"Tasks", contextMenuText: 'View in Tasks'};
+            matchingInbuiltApps.push(tasks);
+        } else if (mimeType === "application/pdf") {
+            let pdf = {name:"pdf", contextMenuText: 'Open PDF Viewer'};
+            matchingInbuiltApps.push(pdf);
+        } else if (mimeType === "text/calendar") {
+            let calendar = {name:"Calendar", contextMenuText: 'Open Calendar'};
+            matchingInbuiltApps.push(calendar);
+        } else if (mimeType === "application/vnd.peergos-identity-proof") {
+            let identity = {name:"identity-proof", contextMenuText: 'Open in Identify Proof Viewer'};
+            matchingInbuiltApps.push(identity);
+        }
+        if (mimeType.startsWith("text/x-markdown") ||
+            ( mimeType.startsWith("text/") && filename.endsWith('.md'))) {
+            let markdown = {name:"markdown", contextMenuText:'Open in Markdown Viewer'};
+            matchingInbuiltApps.push(markdown);
+        }
+        if (mimeType.startsWith("text/html") ||
+            ( mimeType.startsWith("text/") && filename.endsWith('.html'))) {
+            let htmlviewer = {name:"htmlviewer", contextMenuText:'Open in HTML Viewer'};
+            matchingInbuiltApps.push(htmlviewer);
+        }
+        if (mimeType.startsWith("text/")) {
+            let editor = {name:"editor", contextMenuText:'Open in Text Editor'};
+            matchingInbuiltApps.push(editor);
+        }
+        if (matchingInbuiltApps.length == 0) {
+            let hex = {name:"hex", contextMenuText:'Open in Hex Viewer'};
+            matchingInbuiltApps.push(hex);
+        }
+        return matchingInbuiltApps;
+    },
         getApp(file, path, writable) {
             if (file.isDirectory()) {
                 let pathParts = path.split("/");

@@ -1023,49 +1023,33 @@ module.exports = {
                 }
             } else {
                 let userApps = this.availableAppsForFile(file);
-                let inbuiltApp = this.getInbuiltApp(file);
+                let inbuiltApps = this.getInbuiltApps(file);
                 if (userApps.length == 0) {
-                    this.openFileOrDir(inbuiltApp.name, path, {filename:file.isDirectory() ? "" : file.getName()})
+                    if (inbuiltApps.length == 1) {
+                        if (inbuiltApps[0].name == 'hex') {
+                            this.openFileOrDir("Drive", path, {filename:""});
+                        } else {
+                            this.openFileOrDir(inbuiltApps[0].name, path, {filename:file.isDirectory() ? "" : file.getName()})
+                        }
+                    } else {
+                        this.showAppContextMenu(event, inbuiltApps, userApps, path, file);
+                    }
                 } else {
-                    this.showAppContextMenu(event, inbuiltApp, userApps, path, file);
+                    this.showAppContextMenu(event, inbuiltApps, userApps, path, file);
                 }
             }
         },
-        getInbuiltApp(file) {
-            let filename = file.getName();
-            let mimeType = file.getFileProperties().mimeType;
-            if (mimeType.startsWith("audio") || mimeType.startsWith("video") || mimeType.startsWith("image")) {
-                return {name:'Gallery', contextMenuText: 'View in Gallery'};
-            } else if (mimeType === "application/vnd.peergos-todo") {
-                return {name:"Tasks", contextMenuText: 'View in Tasks'};
-            } else if (mimeType === "application/pdf") {
-                return {name:"pdf", contextMenuText: 'Open PDF Viewer'};
-            } else if (mimeType === "text/calendar") {
-                return {name:"Calendar", contextMenuText: 'Open Calendar'};
-            } else if (mimeType === "application/vnd.peergos-identity-proof") {
-                return {name:"identity-proof", contextMenuText: 'Open in Identify Proof Viewer'};
-            } else if (mimeType.startsWith("text/x-markdown") ||
-                ( mimeType.startsWith("text/") && filename.endsWith('.md'))) {
-                return {name:"markdown", contextMenuText:'Open in Markdown Viewer'};
-            } else if (mimeType.startsWith("text/html") ||
-                ( mimeType.startsWith("text/") && filename.endsWith('.html'))) {
-                return {name:"htmlviewer", contextMenuText:'Open in HTML Viewer'};
-            } else if (mimeType.startsWith("text/")) {
-                return {name:"editor", contextMenuText:'Open in Text Editor'};
-            } else {
-                return {name:"hex", contextMenuText:'Open in Hex Viewer'};
-            }
-        },
-        showAppContextMenu(event, inbuiltApp, userApps, path, file) {
+        showAppContextMenu(event, inbuiltApps, userApps, path, file) {
             let appOptions = [];
             for(var i = 0; i < userApps.length; i++) {
                 let app = userApps[i];
                 let option = {'name': app.name, 'path': path, 'file': file, 'contextMenuText': app.contextMenuText};
                 appOptions.push(option);
             }
-            if (inbuiltApp != null) {
-                let inbuiltAppOption = {name: inbuiltApp.name, path: path, file: file, contextMenuText: inbuiltApp.contextMenuText};
-                appOptions.push(inbuiltAppOption);
+            for(var i = 0; i < inbuiltApps.length; i++) {
+                let app = inbuiltApps[i];
+                let option = {'name': app.name, 'path': path, 'file': file, 'contextMenuText': app.contextMenuText};
+                appOptions.push(option);
             }
             this.availableApps = appOptions;
             var pos = this.getPosition(event);
