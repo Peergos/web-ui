@@ -255,21 +255,22 @@ module.exports = {
                     } else {
                         addCard = java.util.Optional.empty();
                     }
-                    let saltKey = that.username + "$salt";
-                    let salt = sessionStorage.getItem(saltKey);
-                    let saltOpt = salt == null ? java.util.Optional.empty() : java.util.Optional.of(salt);
-                    let saltStore = (saltVal) => sessionStorage.setItem(saltKey, saltVal);
+                    let idKey = that.username + "$id";
+                    let id = sessionStorage.getItem(idKey);
+                    let idOpt = id == null ? java.util.Optional.empty() : java.util.Optional.of(id);
+                    let idStore = (idVal) => sessionStorage.setItem(idKey, idVal);
                     return peergos.shared.user.UserContext.signUp(
 			that.username,
 			that.password,
 			that.token,
-			saltOpt,
-			{ accept: (x) => saltStore(x) },
+			idOpt,
+			{ accept: (x) => idStore(x) },
                         addCard,
 			that.network,
 			that.crypto,
 			{"accept" : x => that.$toast.info(x, {id:'signup', timeout:false})}
 		    ).thenApply(function(context) {
+            		    sessionStorage.removeItem(idKey);
                         that.$store.commit('SET_CONTEXT', context);
                         that.$store.commit('USER_LOGIN', true);
 			that.installDefaultApp().thenApply(function(props) {
