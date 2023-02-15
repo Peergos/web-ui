@@ -255,10 +255,16 @@ module.exports = {
                     } else {
                         addCard = java.util.Optional.empty();
                     }
+                    let saltKey = that.username + "$salt";
+                    let salt = sessionStorage.getItem(saltKey);
+                    let saltOpt = salt == null ? java.util.Optional.empty() : java.util.Optional.of(salt);
+                    let saltStore = (saltVal) => sessionStorage.setItem(saltKey, saltVal);
                     return peergos.shared.user.UserContext.signUp(
 			that.username,
 			that.password,
 			that.token,
+			saltOpt,
+			{ accept: (x) => saltStore(x) },
                         addCard,
 			that.network,
 			that.crypto,
