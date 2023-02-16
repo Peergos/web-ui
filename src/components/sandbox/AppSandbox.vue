@@ -381,7 +381,7 @@ module.exports = {
                 let href = window.location.href;
                 let appDevMode = href.includes("?local-app-dev=true");
                 let allowUnsafeEvalInCSP = that.permissionsMap.get(that.PERMISSION_CSP_UNSAFE_EVAL) != null;
-                let props = { appDevMode: appDevMode, allowUnsafeEvalInCSP: allowUnsafeEvalInCSP, isFileWritable: that.isFileWritable()};
+                let props = { appDevMode: appDevMode, allowUnsafeEvalInCSP: allowUnsafeEvalInCSP, isPathWritable: that.isPathWritable()};
                 let func = function() {
                     that.postMessage({type: 'init', appName: that.currentAppName, appPath: that.appPath,
                     allowBrowsing: that.browserMode, theme: theme, chatId: that.currentChatId,
@@ -399,8 +399,8 @@ module.exports = {
                 window.setTimeout(function() {that.setupIFrameMessaging(iframe, func);}, 30);
             }
         },
-        isFileWritable: function() {
-            if (this.isSaveActionEnabled && !this.appProperties.launchable && !this.appProperties.folderAction) {
+        isPathWritable: function() {
+            if (this.isSaveActionEnabled && !this.appProperties.launchable) {
                 return this.targetFile != null && this.targetFile.isWritable();
             }
             return false;
