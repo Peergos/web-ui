@@ -72,6 +72,9 @@ function load(appName, appPath, allowBrowsing, theme, chatId, username, props) {
             path = path.length > 0 ? path + '&theme=' + theme : '?theme=' + theme;
             path = chatId.length > 0 ? path + '&chatId=' + chatId : path;
             path = path + '&username=' + username;
+            if (props.isPathWritable == true) {
+                path = path + '&isPathWritable=' + props.isPathWritable;
+            }
             let src = allowBrowsing ? appPath.substring(1) : "index.html" + path;
             iframe.src= src;
             iframe.contentWindow.focus();

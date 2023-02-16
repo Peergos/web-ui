@@ -138,7 +138,10 @@ module.exports = {
         let that = this;
         this.currentAppName = this.sandboxAppName;
         let currentFilename = this.currentFile == null ? '' : this.currentFile.getName();
-        let path = this.currentPath.endsWith('/') ? this.currentPath : this.currentPath + '/';
+        var path = '';
+        if (this.currentPath != null) {
+            path = this.currentPath.endsWith('/') ? this.currentPath : this.currentPath + '/';
+        }
         this.appPath = this.currentFile == null ? '' : path + currentFilename;
         if (this.currentAppName == 'htmlviewer') {
             this.browserMode = true;
@@ -160,7 +163,7 @@ module.exports = {
                 let props = this.targetFile.getFileProperties();
                 let filename = props.name.toLowerCase();
                 if (filename.endsWith('jpg') || filename.endsWith('png')) {
-                    this.recreateFileThumbnailOnClose = true;
+                    this.recreateFileThumbnailOnClose = this.targetFile.isWritable();
                 }
             }
         }
@@ -378,7 +381,7 @@ module.exports = {
                 let href = window.location.href;
                 let appDevMode = href.includes("?local-app-dev=true");
                 let allowUnsafeEvalInCSP = that.permissionsMap.get(that.PERMISSION_CSP_UNSAFE_EVAL) != null;
-                let props = { appDevMode: appDevMode, allowUnsafeEvalInCSP: allowUnsafeEvalInCSP};
+                let props = { appDevMode: appDevMode, allowUnsafeEvalInCSP: allowUnsafeEvalInCSP, isPathWritable: that.isPathWritable()};
                 let func = function() {
                     that.postMessage({type: 'init', appName: that.currentAppName, appPath: that.appPath,
                     allowBrowsing: that.browserMode, theme: theme, chatId: that.currentChatId,
@@ -395,6 +398,12 @@ module.exports = {
                 let that = this;
                 window.setTimeout(function() {that.setupIFrameMessaging(iframe, func);}, 30);
             }
+        },
+        isPathWritable: function() {
+            if (this.isSaveActionEnabled && !this.appProperties.launchable) {
+                return this.targetFile != null && this.targetFile.isWritable();
+            }
+            return false;
         },
         streamFile: function(seekHi, seekLo, seekLength, streamFilePath) {
             let that = this;
