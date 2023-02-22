@@ -10,7 +10,7 @@
 		<section v-if="isSecretLink && this.context == null">
 		    <AppIcon icon="logo-full" class="sprite-test" />
                     <center>
-			<h2>Loading secret link...</h2>
+			<h2>Loading file...</h2>
                     </center>
 		</section>
 
