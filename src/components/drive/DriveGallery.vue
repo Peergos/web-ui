@@ -320,7 +320,7 @@ module.exports = {
 											crypto,
 											sizeHigh,
 											sizeLow,
-											4,
+											10,
 											function (read) {}
 									  );
 							updated.thenCompose(function (reader) {
