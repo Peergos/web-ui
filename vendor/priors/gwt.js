@@ -271,13 +271,15 @@ var cache = {
                             that.maxSizeBytes = calculateCacheSize(maxSizeMiB * 1024 * 1024, browserStorageQuota, desiredCacheSize);
                             that.desiredCacheSize = that.maxSizeBytes;
                             if (isOpfsCachingEnabled) {
-                                valuesOPFSKV(that.cacheStore).thenApply((values) => {
-                                    values.forEach((json, idx) => {
-                                        that.cacheMetadataArray.push(json);
-                                        that.cacheMetadataRefs['k'+json.key] = that.cacheMetadataArray[idx]; // 'k' prefix as key may start with a digit
-                                        that.currentCacheSize = that.currentCacheSize + json.l;
+                                removeIndexedDBIfExists().thenApply((done) => {
+                                    valuesOPFSKV(that.cacheStore).thenApply((values) => {
+                                        values.forEach((json, idx) => {
+                                            that.cacheMetadataArray.push(json);
+                                            that.cacheMetadataRefs['k'+json.key] = that.cacheMetadataArray[idx]; // 'k' prefix as key may start with a digit
+                                            that.currentCacheSize = that.currentCacheSize + json.l;
+                                        });
+                                        that.prepare(values);
                                     });
-                                    that.prepare(values);
                                 });
                             } else {
                                 valuesIDBKV(that.cacheStoreMetadata).then((values) => {
@@ -791,6 +793,14 @@ function clearCache() {
     } else {
         future.complete(true);
     }
+    return future;
+}
+function removeIndexedDBIfExists() {
+    let future = peergos.shared.util.Futures.incomplete();
+    let cacheStore = createStoreIDBKV('data', 'keyval');
+    clearIDBKV(cacheStore).then((res1) => {
+        future.complete(true);
+    });
     return future;
 }
 function clearCacheFully(cache, func) {
