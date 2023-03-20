@@ -301,22 +301,23 @@ function prepareLRU() {
 var rootDirectory = null;
 
 function delManyOPFSKV(filesArray, directory) {
-    getDirectoryHandle(directory).then(dirHandle => {
-        deleteFiles(filesArray, dirHandle).then(() => {
-            future.complete(true);
-        })
-    });
+    let future = peergos.shared.util.Futures.incomplete();
+    deleteFiles(filesArray, directory).then(() => {
+        future.complete(true);
+    })
     return future;
 }
-async function deleteFiles(filesArray, dirHandle) {
+async function deleteFiles(filesArray, directory) {
       const promises = [];
       for await (const filename of filesArray) {
         let prom = new Promise(function(resolve, reject) {
-            dirHandle.removeEntry(keyToFilename(filename)).then(() => {
-                resolve(true);
-            }).catch(e => {
-                console.log(e);
-                resolve(false);
+            getParentDirectoryHandle(filename, directory).then(parentDirHandle => {
+                parentDirHandle.removeEntry(filename).then(() => {
+                    resolve(true);
+                }).catch(e => {
+                    console.log(e);
+                    resolve(false);
+                });
             });
         });
         promises.push(prom);
@@ -330,25 +331,26 @@ function clearOPFSKV(directory) {
     });
     return future;
 }
-function keyToFilename(key) {
-    return key.replaceAll('/','-');
-}
-function getFileHandle(filename, directory) {
+function getParentDirectoryHandle(filename, directory) {
+    let blockFolder = filename.substring(filename.length - 3, filename.length - 1);
     return rootDirectory.getDirectoryHandle(directory, { create: true })
         .then(dirHandle =>
-            dirHandle.getFileHandle(keyToFilename(filename)));
+            dirHandle.getDirectoryHandle(blockFolder, { create: true }));
+}
+
+function getFileHandle(filename, directory) {
+    return getParentDirectoryHandle(filename, directory)
+        .then(blockDirHandle =>
+            blockDirHandle.getFileHandle(filename));
 }
 function getFileHandleCreateIfNecessary(filename, directory) {
-    return rootDirectory.getDirectoryHandle(directory, { create: true })
-        .then(dirHandle =>
-            dirHandle.getFileHandle(keyToFilename(filename), { create: true }));
-}
-function getDirectoryHandle(directory) {
-    return rootDirectory.getDirectoryHandle(directory, { create: true });
+    return getParentDirectoryHandle(filename, directory)
+        .then(blockDirHandle =>
+            blockDirHandle.getFileHandle(filename, { create: true }));
 }
 function setOPFSKV(filename, value, directory) {
     let future = peergos.shared.util.Futures.incomplete();
-    getFileHandleCreateIfNecessary(keyToFilename(filename), directory).then(file => {
+    getFileHandleCreateIfNecessary(filename, directory).then(file => {
       writeFileContents(file, value).thenApply(done => {
           future.complete(true);
       });
@@ -359,7 +361,7 @@ function setOPFSKV(filename, value, directory) {
 }
 function getOPFSKV(filename, directory) {
     let future = peergos.shared.util.Futures.incomplete();
-    getFileHandle(keyToFilename(filename), directory).then(file => {
+    getFileHandle(filename, directory).then(file => {
       readFileContents(file).thenApply(contents => {
             let data = new Int8Array(contents);
             if (data.byteLength == 0) { //file has been created, but contents not written yet
@@ -376,28 +378,32 @@ function getOPFSKV(filename, directory) {
 }
 function valuesOPFSKV(directory) {
     let future = peergos.shared.util.Futures.incomplete();
-    getDirectoryHandle(directory).then(dirHandle => {
-        getDirectoryMetadata(dirHandle).then(values => {
+    rootDirectory.getDirectoryHandle(directory, { create: true }).then(dirHandle => {
+        getFilesMetadata(dirHandle).then(values => {
             future.complete(values);
         });
     });
     return future;
 }
-async function getDirectoryMetadata(dirHandle) {
-      const promises = [];
-      for await (const entry of dirHandle.values()) {
-        if (entry.kind !== 'file') {
-          continue;
-        }
-        let prom = new Promise(function(resolve, reject) {
-            entry.getFile().then((file) => {
-                let json = {key: file.name, l: file.size, t: file.lastModifiedDate.getTime()};
-                resolve(json);
-            });
-        });
-        promises.push(prom);
-      }
-      return Promise.all(promises);
+async function getFilesMetadata(directoryHandle) {
+    const filesMetadata = [];
+    for await (const file of getFilesRecursively(directoryHandle)) {
+        let json = {key: file.name, l: file.size, t: file.lastModifiedDate.getTime()};
+        filesMetadata.push(json);
+    }
+    return filesMetadata;
+}
+async function* getFilesRecursively(entry) { //https://developer.mozilla.org/en-US/docs/Web/API/FileSystemDirectoryHandle
+  if (entry.kind === "file") {
+    const file = await entry.getFile();
+    if (file !== null) {
+      yield file;
+    }
+  } else if (entry.kind === "directory") {
+    for await (const handle of entry.values()) {
+      yield* getFilesRecursively(handle);
+    }
+  }
 }
 function readFileContents(fileHandle) {
     let future = peergos.shared.util.Futures.incomplete();
@@ -610,7 +616,9 @@ function evictLRU(cache, callback) {
         }
         for (var i=0; i < toDelete.length; i++) {
             sorted.splice(sorted.findIndex(v => v.key === toDelete[i]), 1);
-            delete cache.cacheMetadataRefs['k' + toDelete[i]];
+            try {
+                delete cache.cacheMetadataRefs['k' + toDelete[i]];
+            } catch(e) {}
         }
         cache.cacheMetadataArray = sorted;
        delManyOPFSKV(toDelete, cache.cacheStore)
@@ -655,8 +663,10 @@ function getFromCacheProm(hash) {
             if (val == null) {
                 future.complete(peergos.client.JsUtil.emptyOptional());
             } else {
-                let now = new Date();
-                that.cacheMetadataRefs['k'+key].t = now.getTime();
+                try {
+                    let now = new Date();
+                    that.cacheMetadataRefs['k'+key].t = now.getTime();
+                } catch(e) {}
                 future.complete(peergos.client.JsUtil.optionalOf(convertToByteArray(val)));
             }
         });
@@ -757,7 +767,9 @@ function evictPointerCacheLRU(cache, callback) {
         }
         for (var i=0; i < toDelete.length; i++) {
             sorted.splice(sorted.findIndex(v => v.key === toDelete[i]), 1);
-            delete cache.cachePointerRefs['k' + toDelete[i]];
+            try {
+                delete cache.cachePointerRefs['k' + toDelete[i]];
+            } catch(e) {}
         }
         cache.cachePointerMetadataArray = sorted;
         delManyIDBKV(toDelete, cache.cachePointerStore)
@@ -823,8 +835,10 @@ function getFromPointerCacheProm(owner, writer) {
                     let now = new Date();
                     let json = {key: key, t: now.getTime()};
                     setIDBKV(key, JSON.stringify(json), that.cachePointerStoreMetadata).then(() => {
-                        let now = new Date();
-                        that.cachePointerRefs['k'+key].t = now.getTime();
+                        try {
+                            let now = new Date();
+                            that.cachePointerRefs['k'+key].t = now.getTime();
+                        } catch(e) {}
                     }).catch(err => {
                         noop();
                     });

@@ -366,7 +366,7 @@ module.exports = {
             launcherApp: null,
             uploadProgressQueue: { entries:[]},
             executingUploadProgressCommands: false,
-            progressBarUpdateFrequency: 100
+            progressBarUpdateFrequency: 75
 		};
 	},
 	mixins:[downloaderMixins, router, zipMixin, launcherMixin],
