@@ -267,7 +267,7 @@ var cache = {
                         valuesOPFSKV(that.cacheStore).thenApply((values) => {
                             values.forEach((json, idx) => {
                                 that.cacheMetadataArray.push(json);
-                                that.cacheMetadataRefs['k'+json.key] = that.cacheMetadataArray[idx];
+                                that.cacheMetadataRefs['k'+json.key] = that.cacheMetadataArray[idx]; // 'k' prefix as key may start with a digit
                                 that.currentCacheSize = that.currentCacheSize + json.l;
                             });
                             prepareLRU().thenApply(lruInitialised => {
@@ -388,7 +388,7 @@ function valuesOPFSKV(directory) {
 async function getFilesMetadata(directoryHandle) {
     const filesMetadata = [];
     for await (const file of getFilesRecursively(directoryHandle)) {
-        let json = {key: file.name, l: file.size, t: file.lastModifiedDate.getTime()};
+        let json = {key: file.name, l: file.size, t: file.lastModified};
         filesMetadata.push(json);
     }
     return filesMetadata;
