@@ -242,7 +242,7 @@ var online = {
 
 var cache = {
     NativeJSCache: function() {
-    this.cacheStore = 'data';
+    this.cacheStore = null;
     this.cacheStoreMetadata = null;
     this.cacheDesiredSizeStore = null;
     this.cacheMetadataArray = [];
@@ -251,41 +251,64 @@ var cache = {
     this.currentCacheSize = 0;
     this.evicting = false;
     this.isCachingEnabled = false;
+    this.isOpfsCachingEnabled = false;
+    this.isIndexedDBCachingEnabled = false;
     this.desiredCacheSize = 0;
     this.init = function init(maxSizeMiB) {
         let that = this;
         bindCacheStore(that);
-        isOPFSAvailable().thenApply(function(isCachingEnabled) {
-            that.isCachingEnabled = isCachingEnabled;
-            if (isCachingEnabled) {
-                that.cacheStoreMetadata = createStoreIDBKV('metadata', 'keyval');
-                that.cacheDesiredSizeStore = createStoreIDBKV('size', 'keyval');
-                getDesiredCacheSize().thenApply(desiredCacheSize => {
-                    getBrowserStorageQuota().then(browserStorageQuota => {
-                        that.maxSizeBytes = calculateCacheSize(maxSizeMiB * 1024 * 1024, browserStorageQuota, desiredCacheSize);
-                        that.desiredCacheSize = that.maxSizeBytes;
-                        valuesOPFSKV(that.cacheStore).thenApply((values) => {
-                            values.forEach((json, idx) => {
-                                that.cacheMetadataArray.push(json);
-                                that.cacheMetadataRefs['k'+json.key] = that.cacheMetadataArray[idx]; // 'k' prefix as key may start with a digit
-                                that.currentCacheSize = that.currentCacheSize + json.l;
-                            });
-                            prepareLRU().thenApply(lruInitialised => {
-                                setDesiredCacheSize(that.maxSizeBytes).thenApply(done => {
-                                    let currentMiB = (that.currentCacheSize /1024 /1024).toFixed(2);
-                                    let maxMiB = (that.maxSizeBytes /1024 /1024).toFixed(2);
-                                    getBrowserStorageUsage().then(browserStorageUsage => {
-                                        let actualMiB = (browserStorageUsage /1024 /1024).toFixed(2);
-                                        console.log('Block Cache. Actual usage:' + actualMiB + ' MiB');
-                                        console.log('Block Cache. Objects:' + values.length + " Size:" + currentMiB + " MiB" + " Max:" + maxMiB + " MiB");                                    });
+        isOPFSAvailable().thenApply(function(isOpfsCachingEnabled) {
+            that.isOpfsCachingEnabled = isOpfsCachingEnabled;
+            isIndexedDBAvailable().thenApply(function(isIndexedDBCachingEnabled) {
+                that.isIndexedDBCachingEnabled = isIndexedDBCachingEnabled;
+                that.isCachingEnabled = isOpfsCachingEnabled || isIndexedDBCachingEnabled;
+                if (that.isCachingEnabled) {
+                    that.cacheStore = isOpfsCachingEnabled ? 'data' : createStoreIDBKV('data', 'keyval');
+                    that.cacheStoreMetadata = isOpfsCachingEnabled ? null : createStoreIDBKV('metadata', 'keyval');
+                    that.cacheDesiredSizeStore = createStoreIDBKV('size', 'keyval');
+                    getDesiredCacheSize().thenApply(desiredCacheSize => {
+                        getBrowserStorageQuota().then(browserStorageQuota => {
+                            that.maxSizeBytes = calculateCacheSize(maxSizeMiB * 1024 * 1024, browserStorageQuota, desiredCacheSize);
+                            that.desiredCacheSize = that.maxSizeBytes;
+                            if (isOpfsCachingEnabled) {
+                                valuesOPFSKV(that.cacheStore).thenApply((values) => {
+                                    values.forEach((json, idx) => {
+                                        that.cacheMetadataArray.push(json);
+                                        that.cacheMetadataRefs['k'+json.key] = that.cacheMetadataArray[idx]; // 'k' prefix as key may start with a digit
+                                        that.currentCacheSize = that.currentCacheSize + json.l;
+                                    });
+                                    that.prepare(values);
                                 });
-                            });
+                            } else {
+                                valuesIDBKV(that.cacheStoreMetadata).then((values) => {
+                                    values.forEach((value, idx) => {
+                                        let json = JSON.parse(value);
+                                        that.cacheMetadataArray.push(json);
+                                        that.cacheMetadataRefs['k'+json.key] = that.cacheMetadataArray[idx]; // 'k' prefix as key may start with a digit
+                                        that.currentCacheSize = that.currentCacheSize + json.l;
+                                    });
+                                    that.prepare(values);
+                                });
+                            }
                         });
                     });
-                });
-            }
+                }
+            });
         });
     };
+    this.prepare = function(values) {
+        let that = this;
+        prepareLRU().thenApply(lruInitialised => {
+            setDesiredCacheSize(that.maxSizeBytes).thenApply(done => {
+                let currentMiB = (that.currentCacheSize /1024 /1024).toFixed(2);
+                let maxMiB = (that.maxSizeBytes /1024 /1024).toFixed(2);
+                getBrowserStorageUsage().then(browserStorageUsage => {
+                    let actualMiB = (browserStorageUsage /1024 /1024).toFixed(2);
+                    console.log('Block Cache. Actual usage:' + actualMiB + ' MiB');
+                    console.log('Block Cache. Objects:' + values.length + " Size:" + currentMiB + " MiB" + " Max:" + maxMiB + " MiB");                                    });
+            });
+        });
+    }
 	this.put = putIntoCacheProm;
 	this.get = getFromCacheProm;
 	this.hasBlock = hasBlockInCache;
@@ -427,20 +450,34 @@ function writeFileContents(file, value) {
     });
     return future;
 }
+/*
+as of March 2023 OPFS works in Chrome, but not Firefox or Safari due to browser bugs...
+Firefox - unclear what is going wrong. When stepping through in debugger it (sometimes) works?
+Safari - unclear what is going wrong. When recursively navigating the OPFS, safari completes early for no good reason?
+*/
 function isOPFSAvailable() {
     let future = peergos.shared.util.Futures.incomplete();
-    navigator.storage.getDirectory().then(root => {
-        if (rootDirectory == null) {
-            rootDirectory = root;
-        }
-        future.complete(true);
-    }).catch(e => {
-        console.log('OPFS not available:' + e);
+    //https://stackoverflow.com/questions/57660234/how-can-i-check-if-a-browser-is-chromium-based
+    let isChromiumTest1 = !!window.chrome;
+    var isChromiumTest2 = !!navigator.userAgentData && navigator.userAgentData.brands.some(data => data.brand == 'Chromium');
+    if (isChromiumTest1 || isChromiumTest2) {
+        navigator.storage.getDirectory().then(root => {
+            if (rootDirectory == null) {
+                rootDirectory = root;
+            }
+            future.complete(true);
+        }).catch(e => {
+            console.log('OPFS not available:' + e);
+            future.complete(false);
+        });
+    } else {
+        console.log('OPFS not currently available on non-chrome browsers');
         future.complete(false);
-    });
+    }
     return future;
 }
 //Firefox private mode does not support IndexedDB.  https://bugzilla.mozilla.org/show_bug.cgi?id=781982
+//Safari does not support StorageManager.estimate().  https://developer.mozilla.org/en-US/docs/Web/API/StorageManager/estimate
 function isIndexedDBAvailable() {
     let future = peergos.shared.util.Futures.incomplete();
     if (navigator.userAgent.toLowerCase().indexOf("firefox") > -1){
@@ -621,9 +658,32 @@ function evictLRU(cache, callback) {
             } catch(e) {}
         }
         cache.cacheMetadataArray = sorted;
-       delManyOPFSKV(toDelete, cache.cacheStore)
-            .thenApply(() => { callback();cache.evicting=false;});
+        if (cache.isOpfsCachingEnabled) {
+           delManyOPFSKV(toDelete, cache.cacheStore)
+                .thenApply(() => { callback();cache.evicting=false;});
+        } else {
+            delManyIDBKV(toDelete, cache.cacheStore)
+                .then(() => {
+                    delManyIDBKV(toDelete, cache.cacheStoreMetadata)
+                        .then(() => { callback();cache.evicting=false;})
+                        .catch((err) => {
+                            console.log("block cache metadata evict error:" + err);
+                            clearCacheFully(cache, function(){callback();cache.evicting=false;});
+                        });
+                }).catch((err) => {
+                    console.log("block cache evict error:" + err);
+                    clearCacheFully(cache, function(){callback();cache.evicting=false;});
+            });
+        }
     }
+}
+function createBlockCacheMetadataRecord(key, blockLength) {
+    let now = new Date();
+    let length = blockLength + (key.length * 2);
+    let json = {key: key, l: length, t: now.getTime()};
+    var record = JSON.stringify(json);
+    json.l = length + record.length;//close enough
+    return json;
 }
 //public native CompletableFuture<Boolean> put(Cid hash, byte[] data);
 function putIntoCacheProm(hash, data) {
@@ -633,19 +693,42 @@ function putIntoCacheProm(hash, data) {
     } else {
         let that = this;
         let key = hash.toString();
-        setOPFSKV(key, data, this.cacheStore).thenApply(() => {
-            that.currentCacheSize = that.currentCacheSize + data.byteLength;
-            let now = new Date();
-            let metaData = {key: key, l: data.byteLength, t: now.getTime()};
-            let length = that.cacheMetadataArray.length;
-            that.cacheMetadataArray.push(metaData);
-            that.cacheMetadataRefs['k'+metaData.key] = that.cacheMetadataArray[length];
-            if (triggerEviction(this)) {
-                evictLRU(this, function() {future.complete(true)});
-            } else {
-                future.complete(true);
-            }
-        });
+        if (this.isOpfsCachingEnabled) {
+            setOPFSKV(key, data, this.cacheStore).thenApply(() => {
+                that.currentCacheSize = that.currentCacheSize + data.byteLength;
+                let now = new Date();
+                let metaData = {key: key, l: data.byteLength, t: now.getTime()};
+                let length = that.cacheMetadataArray.length;
+                that.cacheMetadataArray.push(metaData);
+                that.cacheMetadataRefs['k'+metaData.key] = that.cacheMetadataArray[length];
+                if (triggerEviction(this)) {
+                    evictLRU(this, function() {future.complete(true)});
+                } else {
+                    future.complete(true);
+                }
+            });
+        } else {
+            setIDBKV(key, data, this.cacheStore).then(() => {
+                let metaData = createBlockCacheMetadataRecord(key, data.byteLength);
+                that.currentCacheSize = that.currentCacheSize + metaData.l;
+                setIDBKV(key, JSON.stringify(metaData), that.cacheStoreMetadata).then(() => {
+                    let length = that.cacheMetadataArray.length;
+                    that.cacheMetadataArray.push(metaData);
+                    that.cacheMetadataRefs['k'+metaData.key] = that.cacheMetadataArray[length];
+                    if (triggerEviction(this)) {
+                        evictLRU(this, function() {future.complete(true)});
+                    } else {
+                        future.complete(true);
+                    }
+                }).catch(err => {
+                    delIDBKV(key, that.cacheStore).then(() => {
+                        future.complete(true);
+                    });
+                });
+            }).catch(err => {
+                evictLRU(blockStoreCache, function() {future.complete(true)});
+            });
+        }
     }
     return future;
 }
@@ -659,17 +742,38 @@ function getFromCacheProm(hash) {
         future.complete(peergos.client.JsUtil.emptyOptional());
     } else {
         let key = hash.toString();
-        getOPFSKV(key, this.cacheStore).thenApply((val) => {
-            if (val == null) {
-                future.complete(peergos.client.JsUtil.emptyOptional());
-            } else {
-                try {
-                    let now = new Date();
-                    that.cacheMetadataRefs['k'+key].t = now.getTime();
-                } catch(e) {}
-                future.complete(peergos.client.JsUtil.optionalOf(convertToByteArray(val)));
-            }
-        });
+        if (this.isOpfsCachingEnabled) {
+            getOPFSKV(key, this.cacheStore).thenApply((val) => {
+                if (val == null) {
+                    future.complete(peergos.client.JsUtil.emptyOptional());
+                } else {
+                    try {
+                        let now = new Date();
+                        that.cacheMetadataRefs['k'+key].t = now.getTime();
+                    } catch(e) {}
+                    future.complete(peergos.client.JsUtil.optionalOf(convertToByteArray(val)));
+                }
+            });
+        } else {
+            getIDBKV(key, this.cacheStore).then((val) => {
+                if (val == null) {
+                    future.complete(peergos.client.JsUtil.emptyOptional());
+                } else {
+                    setTimeout(() => {
+                        let metaData = createBlockCacheMetadataRecord(key, val.length);
+                        setIDBKV(key, JSON.stringify(metaData), that.cacheStoreMetadata).then(() => {
+                            try {
+                                let now = new Date();
+                                that.cacheMetadataRefs['k'+key].t = now.getTime();
+                            } catch(e) {}
+                        }).catch(err => {
+                            noop();
+                        });
+                    });
+                    future.complete(peergos.client.JsUtil.optionalOf(convertToByteArray(val)));
+                }
+            });
+        }
     }
     return future;
 }
@@ -693,8 +797,14 @@ function clearCacheFully(cache, func) {
     if (cache.isCachingEnabled) {
         cache.cacheMetadataArray = [];
         cache.cacheMetadataRefs = {};
-        cache.currentCacheSize = 0
-        clearOPFSKV(cache.cacheStore).thenApply((res2) => func());
+        cache.currentCacheSize = 0;
+        if (cache.isOpfsCachingEnabled) {
+            clearOPFSKV(cache.cacheStore).thenApply((res2) => func());
+        } else {
+            clearIDBKV(cache.cacheStore).then((res1) => {
+                clearIDBKV(cache.cacheStoreMetadata).then((res2) => func());
+            });
+        }
     } else {
         func();
     }
