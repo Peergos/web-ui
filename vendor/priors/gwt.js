@@ -753,16 +753,25 @@ function noop() {
 }
 //public native CompletableFuture<Optional<byte[]>> get(Cid hash);
 function getFromCacheProm(hash) {
-    let that = this;
     let future = peergos.shared.util.Futures.incomplete();
-    if (!this.isCachingEnabled) {
+    return getFromCachePromWithRetry(this, future, hash, 0);
+}
+function getFromCachePromWithRetry(context, future, hash, retryCount) {
+    let that = context;
+    if (!that.isCachingEnabled) {
         future.complete(peergos.client.JsUtil.emptyOptional());
     } else {
         let key = hash.toString();
-        if (this.isOpfsCachingEnabled) {
-            getOPFSKV(key, this.cacheStore).thenApply((val) => {
+        if (that.isOpfsCachingEnabled) {
+            getOPFSKV(key, that.cacheStore).thenApply((val) => {
                 if (val == null) {
-                    future.complete(peergos.client.JsUtil.emptyOptional());
+                    if (retryCount < 3) {
+                        setTimeout(() => {
+                            getFromCachePromWithRetry(that, future, hash, retryCount + 1);
+                        }, 100);
+                    } else {
+                        future.complete(peergos.client.JsUtil.emptyOptional());
+                    }
                 } else {
                     try {
                         let now = new Date();
@@ -772,7 +781,7 @@ function getFromCacheProm(hash) {
                 }
             });
         } else {
-            getIDBKV(key, this.cacheStore).then((val) => {
+            getIDBKV(key, that.cacheStore).then((val) => {
                 if (val == null) {
                     future.complete(peergos.client.JsUtil.emptyOptional());
                 } else {
