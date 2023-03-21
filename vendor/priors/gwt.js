@@ -798,8 +798,11 @@ function clearCache() {
 function removeIndexedDBIfExists() {
     let future = peergos.shared.util.Futures.incomplete();
     let cacheStore = createStoreIDBKV('data', 'keyval');
+    let cacheStoreMetadata = createStoreIDBKV('metadata', 'keyval');
     clearIDBKV(cacheStore).then((res1) => {
-        future.complete(true);
+        clearIDBKV(cacheStoreMetadata).then((res2) => {
+            future.complete(true);
+        });
     });
     return future;
 }
