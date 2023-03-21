@@ -373,11 +373,16 @@ function getFileHandleCreateIfNecessary(filename, directory) {
         .then(blockDirHandle =>
             blockDirHandle.getFileHandle(filename, { create: true }));
 }
+let pendingWrites = new Map();
+
 function setOPFSKV(filename, value, directory) {
+      pendingWrites.set(filename, value)
+
     let future = peergos.shared.util.Futures.incomplete();
     getFileHandleCreateIfNecessary(filename, directory).then(file => {
       writeFileContents(file, value).thenApply(done => {
-          future.complete(true);
+            pendingWrites.delete(filename);
+            future.complete(true);
       });
     }).catch(e => {
         future.complete(false);
@@ -386,19 +391,24 @@ function setOPFSKV(filename, value, directory) {
 }
 function getOPFSKV(filename, directory) {
     let future = peergos.shared.util.Futures.incomplete();
-    getFileHandle(filename, directory).then(file => {
-      readFileContents(file).thenApply(contents => {
-            let data = new Int8Array(contents);
-            if (data.byteLength == 0) { //file has been created, but contents not written yet
-                console.log('cache miss in directory: ' + directory);
-                future.complete(null);
-            } else {
-                future.complete(data);
-            }
-      });
-    }).catch(e => {
-        future.complete(null);
-    });
+    const pending = pendingWrites.get(filename);
+    if (pending != null) {
+        future.complete(pending);
+    } else {
+        getFileHandle(filename, directory).then(file => {
+          readFileContents(file).thenApply(contents => {
+                let data = new Int8Array(contents);
+                if (data.byteLength == 0) { //file has been created, but contents not written yet
+                    console.log('cache miss in directory: ' + directory);
+                    future.complete(null);
+                } else {
+                    future.complete(data);
+                }
+          });
+        }).catch(e => {
+            future.complete(null);
+        });
+    }
     return future;
 }
 function valuesOPFSKV(directory) {
@@ -453,16 +463,21 @@ function writeFileContents(file, value) {
     return future;
 }
 /*
-as of March 2023 OPFS works in Chrome, but not Firefox or Safari due to browser bugs...
-Firefox - unclear what is going wrong. When stepping through in debugger it (sometimes) works?
+as of March 2023 OPFS works in Chrome and Firefox, but not Safari due to browser bugs...
 Safari - unclear what is going wrong. When recursively navigating the OPFS, safari completes early for no good reason?
 */
 function isOPFSAvailable() {
     let future = peergos.shared.util.Futures.incomplete();
     //https://stackoverflow.com/questions/57660234/how-can-i-check-if-a-browser-is-chromium-based
-    let isChromiumTest1 = !!window.chrome;
-    var isChromiumTest2 = !!navigator.userAgentData && navigator.userAgentData.brands.some(data => data.brand == 'Chromium');
-    if (isChromiumTest1 || isChromiumTest2) {
+    //let isChromiumTest1 = !!window.chrome;
+    //var isChromiumTest2 = !!navigator.userAgentData && navigator.userAgentData.brands.some(data => data.brand == 'Chromium');
+    //if (isChromiumTest1 || isChromiumTest2) {
+    let isSafari =
+    		/constructor/i.test(window.HTMLElement) ||
+    		    (function (p) {
+    			return p.toString() === "[object SafariRemoteNotification]";
+    		    })(!window["safari"] || safari.pushNotification);
+    if (!isSafari) {
         navigator.storage.getDirectory().then(root => {
             if (rootDirectory == null) {
                 rootDirectory = root;
@@ -473,7 +488,7 @@ function isOPFSAvailable() {
             future.complete(false);
         });
     } else {
-        console.log('OPFS not currently available on non-chrome browsers');
+        console.log('OPFS support not currently available for your browser');
         future.complete(false);
     }
     return future;
@@ -738,16 +753,25 @@ function noop() {
 }
 //public native CompletableFuture<Optional<byte[]>> get(Cid hash);
 function getFromCacheProm(hash) {
-    let that = this;
     let future = peergos.shared.util.Futures.incomplete();
-    if (!this.isCachingEnabled) {
+    return getFromCachePromWithRetry(this, future, hash, 0);
+}
+function getFromCachePromWithRetry(context, future, hash, retryCount) {
+    let that = context;
+    if (!that.isCachingEnabled) {
         future.complete(peergos.client.JsUtil.emptyOptional());
     } else {
         let key = hash.toString();
-        if (this.isOpfsCachingEnabled) {
-            getOPFSKV(key, this.cacheStore).thenApply((val) => {
+        if (that.isOpfsCachingEnabled) {
+            getOPFSKV(key, that.cacheStore).thenApply((val) => {
                 if (val == null) {
-                    future.complete(peergos.client.JsUtil.emptyOptional());
+                    if (retryCount < 3) {
+                        setTimeout(() => {
+                            getFromCachePromWithRetry(that, future, hash, retryCount + 1);
+                        }, 100);
+                    } else {
+                        future.complete(peergos.client.JsUtil.emptyOptional());
+                    }
                 } else {
                     try {
                         let now = new Date();
@@ -757,7 +781,7 @@ function getFromCacheProm(hash) {
                 }
             });
         } else {
-            getIDBKV(key, this.cacheStore).then((val) => {
+            getIDBKV(key, that.cacheStore).then((val) => {
                 if (val == null) {
                     future.complete(peergos.client.JsUtil.emptyOptional());
                 } else {
