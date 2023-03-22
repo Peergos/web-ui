@@ -310,7 +310,8 @@ var cache = {
                 getBrowserStorageUsage().then(browserStorageUsage => {
                     let actualMiB = (browserStorageUsage /1024 /1024).toFixed(2);
                     console.log('Block Cache. Actual usage:' + actualMiB + ' MiB');
-                    console.log('Block Cache. Objects:' + that.currentCacheBlockCount + " Size:" + currentMiB + " MiB" + " Max:" + maxMiB + " MiB");                                    });
+                    console.log('Block Cache. Objects:' + that.currentCacheBlockCount + " Size:" + currentMiB + " MiB" + " Max:" + maxMiB + " MiB");
+                });
             });
         });
     }
