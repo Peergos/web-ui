@@ -43,7 +43,7 @@
 			<AppButton class="signup" type="primary" block accent @click.native="signup()" icon="arrow-right">
 				{{ signupButtonText }}
 			</AppButton>
-                        <label>Or you can try it out for free on our <u><a href="https://peergos-demo.net/?signup=true">demo server</a></u>.
+                        <label>Or you can try it out for free on our <u><a href="https://peergos-demo.net/?signup=true" target="_blank">demo server</a></u>.
                         </label>
 		</template>
 
