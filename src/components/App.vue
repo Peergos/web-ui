@@ -18,19 +18,18 @@
 			<AppIcon icon="logo-full" class="sprite-test" />
 
 			<AppTabs ref="tabs">
-				<AppTab title="Login">
+				<p class="demo--warning" v-if="isDemo">
+				    <strong>WARNING:</strong> This is a demo server and all data
+				    will be cleared periodically. If you want to create a
+				    <i>permanent</i> account, please go 
+				    <a class="line" href="https://peergos.net?signup=true">here</a>.
+			        </p>
+                                <AppTab title="Login">
 					<Login @initApp="init()" />
 				</AppTab>
 				<AppTab title="Signup">
 					<Signup :token="token" />
 				</AppTab>
-                                <p class="demo--warning" v-if="isDemo">
-				    <strong>WARNING:</strong> This is a demo server and all data
-				    will be occasionally cleared. If you want to create a
-				    <i>permanent</i> account, please go to our
-				    <a class="line" href="https://peergos.net?signup=true"
-				       >permanent network</a>
-			        </p>
 			</AppTabs>
 			
 		</section>
@@ -383,7 +382,7 @@ section.login-register {
 }
 
 section.login-register .demo--warning {
-	padding: 0 var(--app-margin) var(--app-margin);
+	padding-top: var(--app-margin);
 	max-width: 400px;
 	margin: 0 auto;
 	color: red;

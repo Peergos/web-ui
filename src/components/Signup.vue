@@ -43,8 +43,6 @@
 			<AppButton class="signup" type="primary" block accent @click.native="signup()" icon="arrow-right">
 				{{ signupButtonText }}
 			</AppButton>
-                        <label>Or you can try it out for free on our <u><a href="https://peergos-demo.net/?signup=true" target="_blank">demo server</a></u>.
-                        </label>
 		</template>
 
                 <template v-else-if="showPaidPlans()">
@@ -66,6 +64,11 @@
 				    <li>&#x00A3;25 / month</li>
 				</ul>
                                 <AppButton @click.native="setPlan(536870912000)" type="primary" block accent>Select Visionary</AppButton>
+			    </div>
+                            <div class="card__meta options">
+				<h3>Want to try it first?</h3>
+				<label>Try it for free on our <u><a href="https://peergos-demo.net/?signup=true" target="_blank">demo server</a></u>.
+                                </label>
 			    </div>
                         </div>
                 </template>
