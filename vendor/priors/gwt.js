@@ -251,7 +251,7 @@ var cache = {
     this.currentCacheSize = 0;
     this.currentCacheBlockCount = 0;
     this.MAX_CACHE_BLOCKS = 30000; // must be > 1000
-    this.enablePolicyEvictOnBlockCount = true;
+    this.enablePolicyEvictOnBlockCount = false;
     this.evicting = false;
     this.isCachingEnabled = false;
     this.isOpfsCachingEnabled = false;
@@ -386,10 +386,15 @@ function setOPFSKV(filename, value, directory) {
     let future = peergos.shared.util.Futures.incomplete();
     getFileHandleCreateIfNecessary(filename, directory).then(file => {
       writeFileContents(file, value).thenApply(done => {
-            pendingWrites.delete(filename);
-            future.complete(true);
+            if (done) {
+                setTimeout(() => {
+                  pendingWrites.delete(filename);
+                }, 5000);
+            }
+            future.complete(done);
       });
     }).catch(e => {
+        console.log('setOPFSKV error: ' + e);
         future.complete(false);
     });
     return future;
@@ -401,15 +406,20 @@ function getOPFSKV(filename, directory) {
         future.complete(pending);
     } else {
         getFileHandle(filename, directory).then(file => {
-          readFileContents(file).thenApply(contents => {
-                let data = new Int8Array(contents);
-                if (data.byteLength == 0) { //file has been created, but contents not written yet
-                    console.log('cache miss in directory: ' + directory);
+            readFileContents(file).thenApply(contents => {
+                if (contents == null) {
+                    console.log('unable to read opfs file contents: ' + filename);
                     future.complete(null);
                 } else {
-                    future.complete(data);
+                    let data = new Int8Array(contents);
+                    if (data.byteLength == 0) { //file has been created, but contents not written yet
+                        console.log('cache miss in directory: ' + directory);
+                        future.complete(null);
+                    } else {
+                        future.complete(data);
+                    }
                 }
-          });
+            });
         }).catch(e => {
             future.complete(null);
         });
@@ -453,6 +463,9 @@ function readFileContents(fileHandle) {
             future.complete(this.result);
         };
         reader.readAsArrayBuffer(file);
+    }).catch(e => {
+        console.log('readFileContents error: ' + e);
+        future.complete(null);
     });
     return future;
 }
@@ -462,20 +475,32 @@ function writeFileContents(file, value) {
         writableStream.write(value).then( () => {
             writableStream.close().then( () => {
                 future.complete(true);
+            }).catch(e1 => {
+                console.log('writableStream.close error: ' + e1);
+                future.complete(false);
             });
+        }).catch(e2 => {
+            console.log('writableStream.write error: ' + e2);
+            future.complete(false);
         });
+    }).catch(e3 => {
+        console.log('file.createWritable error: ' + e3);
+        future.complete(false);
     });
     return future;
 }
 /*
 as of March 2023 OPFS works in Chrome and Firefox, but...
-Chrome - issue with read before write - needs investigation
 Safari - When recursively navigating the OPFS, safari completes early for no good reason?
 */
 function isOPFSAvailable() {
     let future = peergos.shared.util.Futures.incomplete();
-    var isEnabled = false;
-    if (isEnabled) {
+    let isSafari =
+    		/constructor/i.test(window.HTMLElement) ||
+    		    (function (p) {
+    			return p.toString() === "[object SafariRemoteNotification]";
+    		    })(!window["safari"] || safari.pushNotification);
+    if (!isSafari) {
         navigator.storage.getDirectory().then(root => {
             if (rootDirectory == null) {
                 rootDirectory = root;
@@ -486,7 +511,7 @@ function isOPFSAvailable() {
             future.complete(false);
         });
     } else {
-        //console.log('OPFS support not currently available for your browser');
+        console.log('OPFS support not currently available for your browser');
         future.complete(false);
     }
     return future;
