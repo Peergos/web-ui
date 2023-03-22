@@ -249,6 +249,8 @@ var cache = {
     this.cacheMetadataRefs = {};
     this.maxSizeBytes = 0;
     this.currentCacheSize = 0;
+    this.currentCacheBlockCount = 0;
+    this.MAX_CACHE_BLOCKS = 30000; // must be > 1000
     this.evicting = false;
     this.isCachingEnabled = false;
     this.isOpfsCachingEnabled = false;
@@ -300,6 +302,7 @@ var cache = {
     };
     this.prepare = function(values) {
         let that = this;
+        that.currentCacheBlockCount = values.length;
         prepareLRU().thenApply(lruInitialised => {
             setDesiredCacheSize(that.maxSizeBytes).thenApply(done => {
                 let currentMiB = (that.currentCacheSize /1024 /1024).toFixed(2);
@@ -307,7 +310,7 @@ var cache = {
                 getBrowserStorageUsage().then(browserStorageUsage => {
                     let actualMiB = (browserStorageUsage /1024 /1024).toFixed(2);
                     console.log('Block Cache. Actual usage:' + actualMiB + ' MiB');
-                    console.log('Block Cache. Objects:' + values.length + " Size:" + currentMiB + " MiB" + " Max:" + maxMiB + " MiB");                                    });
+                    console.log('Block Cache. Objects:' + that.currentCacheBlockCount + " Size:" + currentMiB + " MiB" + " Max:" + maxMiB + " MiB");                                    });
             });
         });
     }
@@ -463,21 +466,14 @@ function writeFileContents(file, value) {
     return future;
 }
 /*
-as of March 2023 OPFS works in Chrome and Firefox, but not Safari due to browser bugs...
-Safari - unclear what is going wrong. When recursively navigating the OPFS, safari completes early for no good reason?
+as of March 2023 OPFS works in Chrome and Firefox, but...
+Chrome - issue with read before write - needs investigation
+Safari - When recursively navigating the OPFS, safari completes early for no good reason?
 */
 function isOPFSAvailable() {
     let future = peergos.shared.util.Futures.incomplete();
-    //https://stackoverflow.com/questions/57660234/how-can-i-check-if-a-browser-is-chromium-based
-    //let isChromiumTest1 = !!window.chrome;
-    //var isChromiumTest2 = !!navigator.userAgentData && navigator.userAgentData.brands.some(data => data.brand == 'Chromium');
-    //if (isChromiumTest1 || isChromiumTest2) {
-    let isSafari =
-    		/constructor/i.test(window.HTMLElement) ||
-    		    (function (p) {
-    			return p.toString() === "[object SafariRemoteNotification]";
-    		    })(!window["safari"] || safari.pushNotification);
-    if (!isSafari) {
+    var isEnabled = false;
+    if (isEnabled) {
         navigator.storage.getDirectory().then(root => {
             if (rootDirectory == null) {
                 rootDirectory = root;
@@ -488,7 +484,7 @@ function isOPFSAvailable() {
             future.complete(false);
         });
     } else {
-        console.log('OPFS support not currently available for your browser');
+        //console.log('OPFS support not currently available for your browser');
         future.complete(false);
     }
     return future;
@@ -638,7 +634,8 @@ function triggerEviction(cache) {
         return false;
     }
     //above 90% of max
-    return (cache.currentCacheSize / cache.maxSizeBytes) * 100.0 > 90.0;
+    return (cache.currentCacheSize / cache.maxSizeBytes) * 100.0 > 90.0
+        || cache.currentCacheBlockCount > cache.MAX_CACHE_BLOCKS;
 }
 function reclaim(cache) {
     //80% of max
@@ -652,19 +649,24 @@ function evictLRU(cache, callback) {
         return;
     }
     cache.evicting = true;
-    let sorted = cache.cacheMetadataArray.slice().sort((a, b) => a.t < b.t);
     var cacheSize = cache.currentCacheSize;
+    var cacheBlockCount = cache.currentCacheBlockCount;
     let toDelete = [];
     let newLimit = reclaim(cache);
-    if (cacheSize <= newLimit) {
+    let isOverBlockCountLimit = cache.currentCacheBlockCount > cache.MAX_CACHE_BLOCKS;
+    let newBlockCountLimit = isOverBlockCountLimit ? cache.MAX_CACHE_BLOCKS - 1000 : cache.MAX_CACHE_BLOCKS;
+    if (!isOverBlockCountLimit && cacheSize <= newLimit) {
         callback();
         cache.evicting=false;
     } else {
+        let sorted = cache.cacheMetadataArray.slice().sort((a, b) => a.t < b.t);
         for(var i=0; i < sorted.length; i++) {
             cacheSize = cacheSize - sorted[i].l;
             toDelete.push(sorted[i].key);
-            if (cacheSize <= newLimit) {
+            cacheBlockCount = cacheBlockCount - 1;
+            if (cacheSize <= newLimit && cacheBlockCount <= newBlockCountLimit) {
                 cache.currentCacheSize = cacheSize;
+                cache.currentCacheBlockCount = cacheBlockCount;
                 break;
             }
         }
@@ -718,6 +720,7 @@ function putIntoCacheProm(hash, data) {
                 let length = that.cacheMetadataArray.length;
                 that.cacheMetadataArray.push(metaData);
                 that.cacheMetadataRefs['k'+metaData.key] = that.cacheMetadataArray[length];
+                that.currentCacheBlockCount = that.currentCacheBlockCount + 1;
                 if (triggerEviction(this)) {
                     evictLRU(this, function() {future.complete(true)});
                 } else {
@@ -732,6 +735,7 @@ function putIntoCacheProm(hash, data) {
                     let length = that.cacheMetadataArray.length;
                     that.cacheMetadataArray.push(metaData);
                     that.cacheMetadataRefs['k'+metaData.key] = that.cacheMetadataArray[length];
+                    that.currentCacheBlockCount = that.currentCacheBlockCount + 1;
                     if (triggerEviction(this)) {
                         evictLRU(this, function() {future.complete(true)});
                     } else {
@@ -754,9 +758,9 @@ function noop() {
 //public native CompletableFuture<Optional<byte[]>> get(Cid hash);
 function getFromCacheProm(hash) {
     let future = peergos.shared.util.Futures.incomplete();
-    return getFromCachePromWithRetry(this, future, hash, 0);
+    return getFromCachePromWithRetry(this, future, hash);
 }
-function getFromCachePromWithRetry(context, future, hash, retryCount) {
+function getFromCachePromWithRetry(context, future, hash) {
     let that = context;
     if (!that.isCachingEnabled) {
         future.complete(peergos.client.JsUtil.emptyOptional());
@@ -765,13 +769,7 @@ function getFromCachePromWithRetry(context, future, hash, retryCount) {
         if (that.isOpfsCachingEnabled) {
             getOPFSKV(key, that.cacheStore).thenApply((val) => {
                 if (val == null) {
-                    if (retryCount < 3) {
-                        setTimeout(() => {
-                            getFromCachePromWithRetry(that, future, hash, retryCount + 1);
-                        }, 100);
-                    } else {
-                        future.complete(peergos.client.JsUtil.emptyOptional());
-                    }
+                    future.complete(peergos.client.JsUtil.emptyOptional());
                 } else {
                     try {
                         let now = new Date();
