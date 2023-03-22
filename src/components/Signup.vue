@@ -15,9 +15,9 @@
 				Generate password
 			</AppButton>
 
-			<FormPassword v-model="password" :passwordIsVisible="showPasswords" firstOfTwo />
+			<FormPassword v-model="password" :passwordIsVisible="showPasswords" placeholder="Click generate password" firstOfTwo />
 
-			<FormPassword v-model="password2" :passwordIsVisible="showPasswords" @keyup.native.enter="signup()"/>
+			<FormPassword v-model="password2" :passwordIsVisible="showPasswords" placeholder="Re-enter password" @keyup.native.enter="signup()"/>
 
 			<label class="checkbox__group">
 				I understand that passwords cannot be reset or recovered - if I forget my password, then I will lose access to my

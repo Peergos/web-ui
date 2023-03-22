@@ -6,15 +6,15 @@
 		<template #body>
             <spinner v-if="showSpinner"></spinner>
 
-			<FormPassword v-model="existing" />
+			<FormPassword v-model="existing" :placeholder="'Existing password'"/>
 
 			<AppButton class="generate-password" type="primary" block accent @click.native="generatePassword()">
 				Generate password
 			</AppButton>
 
-			<FormPassword v-model="password" :passwordIsVisible="showPasswords" firstOfTwo />
+			<FormPassword v-model="password"  placeholder="New password" :passwordIsVisible="showPasswords" firstOfTwo />
 
-			<FormPassword v-model="password2" :passwordIsVisible="showPasswords"/>
+			<FormPassword v-model="password2" placeholder="Re-enter new password" :passwordIsVisible="showPasswords"/>
 
 		</template>
 		<template #footer>

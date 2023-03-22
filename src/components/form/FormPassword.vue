@@ -2,7 +2,8 @@
 	<div class="password__wrapper">
 		<input
 			class="password"
-			name="password"
+		        name="password"
+                        :placeholder="placeholder"
 			:type="passwordIsVisible ? 'text' : 'password'"
 			:value="value"
     		@input="$emit('input', $event.target.value)"

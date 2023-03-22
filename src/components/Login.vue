@@ -10,7 +10,7 @@
 			@input="(val) => (username = username.toLowerCase())"
 		/>
 
-		<FormPassword v-model="password" @keyup.native.enter="login()"/>
+		<FormPassword v-model="password" placeholder="password" @keyup.native.enter="login()"/>
 
         <label class="checkbox__group">
             Stay logged in
@@ -40,7 +40,7 @@ module.exports = {
 	data() {
 		return {
 			username: '',
-			password: [],
+		        password: [],
 			passwordIsVisible: false,
 			demo: true,
             stayLoggedIn: false,
