@@ -251,6 +251,7 @@ var cache = {
     this.currentCacheSize = 0;
     this.currentCacheBlockCount = 0;
     this.MAX_CACHE_BLOCKS = 30000; // must be > 1000
+    this.enablePolicyEvictOnBlockCount = true;
     this.evicting = false;
     this.isCachingEnabled = false;
     this.isOpfsCachingEnabled = false;
@@ -636,7 +637,7 @@ function triggerEviction(cache) {
     }
     //above 90% of max
     return (cache.currentCacheSize / cache.maxSizeBytes) * 100.0 > 90.0
-        || cache.currentCacheBlockCount > cache.MAX_CACHE_BLOCKS;
+        || (cache.enablePolicyEvictOnBlockCount && cache.currentCacheBlockCount > cache.MAX_CACHE_BLOCKS);
 }
 function reclaim(cache) {
     //80% of max
@@ -654,7 +655,7 @@ function evictLRU(cache, callback) {
     var cacheBlockCount = cache.currentCacheBlockCount;
     let toDelete = [];
     let newLimit = reclaim(cache);
-    let isOverBlockCountLimit = cache.currentCacheBlockCount > cache.MAX_CACHE_BLOCKS;
+    let isOverBlockCountLimit = (cache.enablePolicyEvictOnBlockCount && cache.currentCacheBlockCount > cache.MAX_CACHE_BLOCKS);
     let newBlockCountLimit = isOverBlockCountLimit ? cache.MAX_CACHE_BLOCKS - 1000 : cache.MAX_CACHE_BLOCKS;
     if (!isOverBlockCountLimit && cacheSize <= newLimit) {
         callback();
