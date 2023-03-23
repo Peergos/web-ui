@@ -490,8 +490,9 @@ function writeFileContents(file, value) {
     return future;
 }
 /*
-as of March 2023 OPFS works in Chrome and Firefox, but...
+as of March 2023 OPFS works in Chrome and Firefox desktop, but...
 Safari - When recursively navigating the OPFS, safari completes early for no good reason?
+mobile browsers - not confirmed to work and difficult to debug.
 */
 function isOPFSAvailable() {
     let future = peergos.shared.util.Futures.incomplete();
@@ -500,7 +501,8 @@ function isOPFSAvailable() {
     		    (function (p) {
     			return p.toString() === "[object SafariRemoteNotification]";
     		    })(!window["safari"] || safari.pushNotification);
-    if (!isSafari) {
+    let isMobile = /Mobi|Android/i.test(navigator.userAgent); // https://stackoverflow.com/a/24600597
+    if (!isSafari && !isMobile) {
         navigator.storage.getDirectory().then(root => {
             if (rootDirectory == null) {
                 rootDirectory = root;
