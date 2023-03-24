@@ -437,32 +437,30 @@ function valuesOPFSKV(directory) {
 }
 async function getFilesMetadata(directoryHandle) {
     const filesMetadata = [];
-    for await (const file of getFilesRecursively(directoryHandle)) {
-        let json = {key: file.name, l: file.size, t: file.lastModified};
-        filesMetadata.push(json);
+    for await (const stats of getFileStatsRecursively(directoryHandle)) {
+        filesMetadata.push(stats);
     }
     return filesMetadata;
 }
-async function* getFilesRecursively(entry) { //https://developer.mozilla.org/en-US/docs/Web/API/FileSystemDirectoryHandle
+async function* getFileStatsRecursively(entry) { //https://developer.mozilla.org/en-US/docs/Web/API/FileSystemDirectoryHandle
   if (entry.kind === "file") {
     const file = await entry.getFile();
     if (file !== null) {
-      yield file;
+        let json = {key: file.name, l: file.size, t: file.lastModified};
+        yield json;
     }
   } else if (entry.kind === "directory") {
     for await (const handle of entry.values()) {
-      yield* getFilesRecursively(handle);
+      yield* getFileStatsRecursively(handle);
     }
   }
 }
 function readFileContents(fileHandle) {
     let future = peergos.shared.util.Futures.incomplete();
     fileHandle.getFile().then(file => {
-        let reader = new FileReader;
-        reader.onload = function() {
-            future.complete(this.result);
-        };
-        reader.readAsArrayBuffer(file);
+        file.arrayBuffer().then(contents => {
+            future.complete(contents);
+        });
     }).catch(e => {
         console.log('readFileContents error: ' + e);
         future.complete(null);
@@ -490,8 +488,8 @@ function writeFileContents(file, value) {
     return future;
 }
 /*
-as of March 2023 OPFS works in Chrome and Firefox desktop, but...
-Safari - When recursively navigating the OPFS, safari completes early for no good reason?
+as of March 2023 OPFS works in Chrome and Firefox desktop
+Safari doesn't implement FileSystemFileHandle.createWritable() - https://developer.mozilla.org/en-US/docs/Web/API/FileSystemFileHandle
 mobile browsers - not confirmed to work and difficult to debug.
 */
 function isOPFSAvailable() {
