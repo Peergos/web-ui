@@ -400,7 +400,7 @@ module.exports = {
             }
         },
         isPathWritable: function() {
-            if (this.isSaveActionEnabled && !this.appProperties.launchable) {
+            if (this.isSaveActionEnabled && this.appProperties != null && !this.appProperties.launchable) {
                 return this.targetFile != null && this.targetFile.isWritable();
             }
             return false;
