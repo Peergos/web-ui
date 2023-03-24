@@ -460,6 +460,9 @@ function readFileContents(fileHandle) {
     fileHandle.getFile().then(file => {
         file.arrayBuffer().then(contents => {
             future.complete(contents);
+        }).catch(e2 => {
+            console.log("unexpected file read exception: " + e2);
+            future.complete(null);
         });
     }).catch(e => {
         console.log('readFileContents error: ' + e);
