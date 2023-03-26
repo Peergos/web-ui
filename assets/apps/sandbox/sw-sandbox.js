@@ -226,9 +226,11 @@ const oneMegBlockSize = 1024 * 1024 * 1;
 let defaultSrcCSP = "default-src 'self'; ";
 let scriptSrcCSP = "script-src 'self' 'unsafe-inline' 'wasm-unsafe-eval'; ";
 let scriptSrcWithUnsafeCSP = "script-src 'self' 'unsafe-inline' 'unsafe-eval' 'wasm-unsafe-eval'; ";
+let sandboxCSP = "sandbox allow-same-origin allow-scripts allow-forms allow-modals;";
+
 let remainderCSP = "style-src 'self' 'unsafe-inline'; style-src-elem 'self' 'unsafe-inline' data:; font-src 'self' data:;img-src 'self' data: blob:;connect-src 'self' data:; media-src 'self' data:;";
-let defaultCSP = defaultSrcCSP + scriptSrcCSP + remainderCSP;
-let cspWithUnsafeEval = defaultSrcCSP + scriptSrcWithUnsafeCSP + remainderCSP;
+let defaultCSP = defaultSrcCSP + scriptSrcCSP + sandboxCSP + remainderCSP;
+let cspWithUnsafeEval = defaultSrcCSP + scriptSrcWithUnsafeCSP + sandboxCSP + remainderCSP;
 
 self.onfetch = event => {
     const url = event.request.url;
@@ -261,9 +263,24 @@ function appFetch(event) {
     if (appPort == null) {
         return;
     }
+    let csp = appName.includes('@CSP_UNSAFE_EVAL') ? cspWithUnsafeEval : defaultCSP;
+    let respHeaders = [
+        //['Content-type', 'text/html'],
+        //['content-security-policy', csp],
+        ['Cross-Origin-Embedder-Policy', 'require-corp'],
+        ['Cross-Origin-Opener-Policy', 'same-origin'],
+        ['Cross-Origin-Resource-Policy', 'same-origin'],
+        ['Origin-Agent-Cluster', '?1'],
+        ['x-xss-protection', '1; mode=block'],
+        ['x-dns-prefetch-control', 'off'],
+        ['x-content-type-options', 'nosniff'],
+        ['permissions-policy', 'interest-cohort=(), geolocation=(), gyroscope=(), magnetometer=(), accelerometer=(), microphone=(), camera=(self), fullscreen=(self)']
+    ];
+
     if (url == downloadUrl) {
+        respHeaders.push(['Content-type', 'text/html']);
       return event.respondWith(new Response('', {
-        headers: { 'Access-Control-Allow-Origin': '*' }
+        headers: respHeaders //{ 'Access-Control-Allow-Origin': '*' }
       }))
     }
     const requestedResource = new URL(url);
@@ -277,19 +294,8 @@ function appFetch(event) {
     }
     let filePath = decodeURI(requestedResource.pathname);
     if (filePath.startsWith('/peergos/') && !filePath.startsWith('/peergos/recommended-apps/')) {
-        let csp = appName.includes('@CSP_UNSAFE_EVAL') ? cspWithUnsafeEval : defaultCSP;
-        let respHeaders = [
-            ['Content-type', 'text/html'],
-            ['content-security-policy', csp],
-            ['Cross-Origin-Embedder-Policy', 'require-corp'],
-            ['Cross-Origin-Opener-Policy', 'same-origin'],
-            ['Cross-Origin-Resource-Policy', 'same-origin'],
-            ['Origin-Agent-Cluster', '?1'],
-            ['x-xss-protection', '1; mode=block'],
-            ['x-dns-prefetch-control', 'off'],
-            ['x-content-type-options', 'nosniff'],
-            ['permissions-policy', 'interest-cohort=(), geolocation=(), gyroscope=(), magnetometer=(), accelerometer=(), microphone=(), camera=(self), fullscreen=(self)']
-        ];
+        respHeaders.push(['Content-type', 'text/html']);
+        respHeaders.push(['content-security-policy', csp]);
         let redirectHTML= '<html><body><script>'
         + 'let loc = window.location;'
         + 'let index = loc.pathname.indexOf("/", 1);'
@@ -385,9 +391,22 @@ function appFetch(event) {
             }
             if (method == 'GET' && uniqueId == '' && appName.includes('@APP_DEV_MODE')) {
                 return event.respondWith(
-                (async function() {
-                    const responseFromNetwork = await fetch(filePath, { method: 'GET' });
-                        return responseFromNetwork;
+                    (async function() {
+                        const responseFromNetwork = await fetch(filePath, { method: 'GET' });
+                        let clonedResponse = responseFromNetwork.clone();
+                        if (clonedResponse.status == 200) {
+                            return clonedResponse.arrayBuffer().then(data => {
+                                respHeaders.push(['content-security-policy', csp]);
+                                respHeaders.push(['content-type', clonedResponse.headers.get('content-type')]);
+                                respHeaders.push(['content-length', clonedResponse.headers.get('content-length')]);
+                                return new Response(data, {
+                                  status: 200,
+                                  headers: respHeaders
+                                });
+                            });
+                        } else {
+                            return responseFromNetwork;
+                        }
                     })()
                 )
             } else {
