@@ -56,7 +56,8 @@ module.exports = {
                     that.showError("Unable to run App: " + res.errors.join(', '));
                     that.close();
                 } else {
-                    if (!res.props.launchable) {
+                    let messagePermission = res.props.permissions.filter(p => p === "EXCHANGE_MESSAGES_WITH_FRIENDS");
+                    if (!res.props.launchable || messagePermission.length > 0) {
                         that.showError("App must be installed first!");
                         that.close();
                     } else {
