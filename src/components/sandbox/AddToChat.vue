@@ -68,7 +68,7 @@ module.exports = {
             addLabel: "Invite to App",
         }
     },
-    props: ['appDisplayName', 'maxFriendsToAdd', 'friendNames', 'updateChat'],
+    props: ['appDisplayName', 'maxFriendsToAdd', 'chatTitle', 'friendNames', 'updateChat'],
     computed: {
         ...Vuex.mapState([
             'context',
@@ -104,7 +104,7 @@ module.exports = {
             this.friendsSelected = [];
         },
         applyChange: function() {
-            this.updateChat(this.addedFriends);
+            this.updateChat(this.addedFriends, this.chatTitle);
             this.close();
         }
     }

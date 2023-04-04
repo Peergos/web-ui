@@ -7,6 +7,7 @@
                 v-on:hide-group="showInviteFriends = false"
                 :appDisplayName="appDisplayName"
                 :maxFriendsToAdd="maxFriendsToAdd"
+                :chatTitle="chatTitle"
                 :friendNames="friendnames"
                 :updateChat="updateChat">
         </AddToChat>
@@ -775,7 +776,19 @@ module.exports = {
                     });
                 }
             } else if(apiMethod == 'DELETE') {
-                // not implemented
+                let chatId = path;
+                let messenger = new peergos.shared.messaging.Messenger(this.context);
+                messenger.getChat(chatId).thenApply(function(controller) {
+                    messenger.deleteChat(controller).thenApply(res => {
+                        that.buildResponse(header, null, that.DELETE_SUCCESS);
+                    }).exceptionally(err => {
+                        console.log('deleteChat call failed: ' + err);
+                        that.buildResponse(header, null, that.ACTION_FAILED);
+                    });
+                }).exceptionally(err => {
+                    console.log('getChat call failed: ' + err);
+                    that.buildResponse(header, null, that.ACTION_FAILED);
+                });
             } else if(apiMethod == 'POST') {
                 let requestBody = JSON.parse(new TextDecoder().decode(data));
                 let min = 1;
@@ -788,6 +801,7 @@ module.exports = {
                 this.chatResponseHeader = header;
                 this.appDisplayName = this.appProperties.displayName;
                 this.maxFriendsToAdd = parseInt(max, 10);
+                this.chatTitle = requestBody.title;
                 this.showInviteFriends = true;
             } else if(apiMethod == 'PUT') {
                 let requestBody = JSON.parse(new TextDecoder().decode(data));
@@ -796,7 +810,6 @@ module.exports = {
                 let messenger = new peergos.shared.messaging.Messenger(this.context);
                 messenger.getChat(chatId).thenApply(function(controller) {
                     messenger.sendMessage(controller, msg).thenApply(function(updatedController) {
-                        let encoder = new TextEncoder();
                         that.buildResponse(header, null, that.CREATE_SUCCESS);
                     });
                 });
@@ -804,17 +817,26 @@ module.exports = {
                 // not implemented
             }
         },
-        updateChat: function(usersToAdd) {
+        updateChat: function(usersToAdd, chatTitle) {
             let that = this;
             let messenger = new peergos.shared.messaging.Messenger(this.context);
             messenger.createAppChat(this.currentAppName).thenApply(function(controller){
                 that.inviteChatParticipants(messenger, controller, usersToAdd).thenApply(updatedController => {
-                    if (updatedController != null) {
+                    messenger.setGroupProperty(updatedController, "title", chatTitle).thenApply(function(updatedController2) {
                         let encoder = new TextEncoder();
-                        let chatIdBytes = encoder.encode(controller.chatUuid);
+                        let chatIdBytes = encoder.encode(updatedController2.chatUuid);
                         that.buildResponse(that.chatResponseHeader, chatIdBytes, that.CREATE_SUCCESS);
-                    }
+                    }).exceptionally(err => {
+                        console.log('setTitle call failed: ' + err);
+                        that.buildResponse(that.chatResponseHeader, null, that.ACTION_FAILED);
+                    });
+                }).exceptionally(err => {
+                    console.log('inviteChatParticipants call failed: ' + err);
+                    that.buildResponse(that.chatResponseHeader, null, that.ACTION_FAILED);
                 });
+            }).exceptionally(err => {
+                console.log('createAppChat call failed: ' + err);
+                that.buildResponse(that.chatResponseHeader, null, that.ACTION_FAILED);
             });
         },
         getPublicKeyHashes: function(usernames) {
