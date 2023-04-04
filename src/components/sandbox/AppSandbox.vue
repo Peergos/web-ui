@@ -33,6 +33,9 @@
                 <span @click="closeAppFromToolbar" tabindex="0" v-on:keyup.enter="closeAppFromToolbar" style="color:black;font-size:3em;font-weight:bold;cursor:pointer;">&times;</span>
               </span>
             </div>
+            <div>
+                <iframe id="print-data-container" style="display:none" aria-hidden="true" tabindex="-1"></iframe>
+            </div>
             <div id='sandbox-container' class="modal-body" style="margin:0;padding:0;display:flex;flex-grow:1;">
             </div>
             <spinner v-if="showSpinner"></spinner>
@@ -320,6 +323,10 @@ module.exports = {
             let url= this.frameDomain() + "/sandbox.html";
             return url;
         },
+        printFrameUrl: function() {
+            let url= this.frameDomain() + "/print-preview.html";
+            return url;
+        },
         frameDomain: function() {
             return window.location.protocol + "//" + this.appSubdomain + "." + window.location.host;
         },
@@ -329,6 +336,14 @@ module.exports = {
                 iframe.contentWindow.postMessage(obj, '*');
             } catch(ex) {
                 this.closeSandbox();
+            }
+        },
+        postPrintMessage: function(obj) {
+            let iframe = document.getElementById("print-data-container");
+            try {
+                iframe.contentWindow.postMessage(obj, '*');
+            } catch(ex) {
+                console.log('unable to open print preview modal: ' + ex);
             }
         },
         resizeHandler: function() {
@@ -389,6 +404,8 @@ module.exports = {
                 };
                 that.setupIFrameMessaging(iframe, func);
             });
+            let iframeForPrint = document.getElementById("print-data-container");
+            iframeForPrint.src = that.printFrameUrl();
         },
         setupIFrameMessaging: function(iframe, func) {
             if (this.isIframeInitialised) {
@@ -528,6 +545,8 @@ module.exports = {
                     } else {
                         that.handleChatRequest(headerFunc(), path, apiMethod, data, hasFormData, params);
                     }
+                } else if (api =='/peergos-api/v0/print/') {
+                    that.handlePrintPreviewRequest(headerFunc, path, apiMethod, data, hasFormData, params);
                 } else if (api =='/peergos-api/v0/save/') {
                     if (this.isSaveActionEnabled) {
                         that.handleSaveFileRequest(headerFunc, path, apiMethod, data, hasFormData, params);
@@ -598,6 +617,16 @@ module.exports = {
                 }
             } catch(ex) {
                 console.log('Exception:' + ex);
+                that.buildResponse(headerFunc(), null, that.ACTION_FAILED);
+            }
+        },
+        handlePrintPreviewRequest: function(headerFunc, path, apiMethod, data, hasFormData, params) {
+            let that = this;
+            if (apiMethod == 'POST' && hasFormData) {
+                let requestBody = JSON.parse(new TextDecoder().decode(data));
+                that.postPrintMessage({type: 'printPreviewRequest', html: requestBody.html, css: requestBody.css, title: requestBody.title});
+                that.buildResponse(headerFunc(), null, that.UPDATE_SUCCESS);
+            } else {
                 that.buildResponse(headerFunc(), null, that.ACTION_FAILED);
             }
         },

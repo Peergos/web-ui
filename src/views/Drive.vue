@@ -366,7 +366,7 @@ module.exports = {
             launcherApp: null,
             uploadProgressQueue: { entries:[]},
             executingUploadProgressCommands: false,
-            progressBarUpdateFrequency: 75
+            progressBarUpdateFrequency: 50
 		};
 	},
 	mixins:[downloaderMixins, router, zipMixin, launcherMixin],
@@ -2375,8 +2375,8 @@ module.exports = {
                 return peergos.shared.user.JavaScriptPoster.emptyArray();
         	} else {
                 var canvas = document.createElement('canvas');
-                canvas.width = window.innerWidth - 100;
-                canvas.height = window.innerHeight - 100;
+                canvas.width = 800;
+                canvas.height = 600;
 	    		let dataUrl = canvas.toDataURL(imageFormat);
 	    		let prefix = "data:" + imageFormat + ";base64,";
 	    		let binaryThumbnail = window.atob(dataUrl.substring(prefix.length));

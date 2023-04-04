@@ -13,6 +13,7 @@ let dataRequest = apiRequest + "/data/";
 let formRequest = apiRequest + "/form/";
 let chatRequest = apiRequest + "/chat/";
 let saveRequest = apiRequest + "/save/";
+let printRequest = apiRequest + "/print/";
 let installAppRequest = apiRequest + "/install-app/";
 
 var host = null;
@@ -205,6 +206,9 @@ const cacheName = 'BrowserCache_v1';
 const precachedAssets = [
     'sandbox.html',
     'sandbox.js',
+    'print-preview.html',
+    'print-preview.js',
+    'purify.min.js',
     'StreamSaver-sandbox.js',
     'worker-sandbox.html',
     'init-sw-sandbox.js',
@@ -226,11 +230,10 @@ const oneMegBlockSize = 1024 * 1024 * 1;
 let defaultSrcCSP = "default-src 'self'; ";
 let scriptSrcCSP = "script-src 'self' 'unsafe-inline' 'wasm-unsafe-eval'; ";
 let scriptSrcWithUnsafeCSP = "script-src 'self' 'unsafe-inline' 'unsafe-eval' 'wasm-unsafe-eval'; ";
-let sandboxCSP = "sandbox allow-same-origin allow-scripts allow-forms allow-modals;";
 
 let remainderCSP = "style-src 'self' 'unsafe-inline'; style-src-elem 'self' 'unsafe-inline' data:; font-src 'self' data:;img-src 'self' data: blob:;connect-src 'self' data:; media-src 'self' data:;";
-let defaultCSP = defaultSrcCSP + scriptSrcCSP + sandboxCSP + remainderCSP;
-let cspWithUnsafeEval = defaultSrcCSP + scriptSrcWithUnsafeCSP + sandboxCSP + remainderCSP;
+let defaultCSP = defaultSrcCSP + scriptSrcCSP + remainderCSP;
+let cspWithUnsafeEval = defaultSrcCSP + scriptSrcWithUnsafeCSP + remainderCSP;
 
 self.onfetch = event => {
     const url = event.request.url;
@@ -374,6 +377,12 @@ function appFetch(event) {
                 }
                 restFilePath = restFilePath.substring(saveRequest.length);
                 api = saveRequest;
+            } else if (filePath.startsWith(printRequest)) {
+                if (!(method == 'POST')) {
+                    return new Response('Unknown print action!', {status: 400})
+                }
+                restFilePath = restFilePath.substring(printRequest.length);
+                api = printRequest;
             } else {
                 if (event.request.referrer.length > 0) {
                     let fromUrl = new URL(event.request.referrer);
