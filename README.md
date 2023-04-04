@@ -41,6 +41,20 @@ Apache Ant(TM) version 1.10.8 compiled on May 10 2020
 
 The output will be server/Peergos.jar
 
+### Container Image (Docker)
+
+Package Peergos into a container image with: 
+
+```bash
+docker build --file Containerfile --tag peergos:dev .
+```
+
+Then start Peergos inside the container with: 
+```bash
+docker run --volume $(PEERGOS_PATH):/opt/peergos/data peergos:dev daemon -log-to-console true
+```
+
+
 ## Development
 
 ### Server
