@@ -230,11 +230,11 @@ const oneMegBlockSize = 1024 * 1024 * 1;
 let defaultSrcCSP = "default-src 'self'; ";
 let scriptSrcCSP = "script-src 'self' 'unsafe-inline' 'wasm-unsafe-eval'; ";
 let scriptSrcWithUnsafeCSP = "script-src 'self' 'unsafe-inline' 'unsafe-eval' 'wasm-unsafe-eval'; ";
+let sandboxCSP = "sandbox allow-same-origin allow-scripts allow-forms allow-modals;";
 
 let remainderCSP = "style-src 'self' 'unsafe-inline'; style-src-elem 'self' 'unsafe-inline' data:; font-src 'self' data:;img-src 'self' data: blob:;connect-src 'self' data:; media-src 'self' data:;";
-let defaultCSP = defaultSrcCSP + scriptSrcCSP + remainderCSP;
-let cspWithUnsafeEval = defaultSrcCSP + scriptSrcWithUnsafeCSP + remainderCSP;
-
+let defaultCSP = defaultSrcCSP + scriptSrcCSP + sandboxCSP + remainderCSP;
+let cspWithUnsafeEval = defaultSrcCSP + scriptSrcWithUnsafeCSP + sandboxCSP + remainderCSP;
 self.onfetch = event => {
     const url = event.request.url;
     let requestURL = new URL(url);
