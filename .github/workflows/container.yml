@@ -2,7 +2,7 @@ name: Create and publish a Container image
 
 on: [push]
 
-# TODO: revert to building on `main` branch only
+# TODO: revert to building on `main` branch only 
 #on:
 #  push:
 #    branches: ['main']
