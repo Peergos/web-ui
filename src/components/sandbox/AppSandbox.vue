@@ -11,6 +11,10 @@
                 :friendNames="friendnames"
                 :updateChat="updateChat">
         </AddToChat>
+        <FolderPicker
+            v-if="showFolderPicker"
+            :baseFolder="folderPickerBaseFolder" :selectedFolder_func="selectedFoldersFromPicker">
+        </FolderPicker>
         <AppPrompt
             v-if="showPrompt"
             @hide-prompt="closePrompt()"
@@ -118,6 +122,9 @@ module.exports = {
             appInstallPropsFile: null,
             appInstallFolder: '',
             currentAppName: null,
+            showFolderPicker: false,
+            folderPickerBaseFolder: "",
+            selectedFolders: []
         }
     },
     computed: {
@@ -554,6 +561,8 @@ module.exports = {
                     } else {
                         that.buildResponse(headerFunc(), null, that.ACTION_FAILED);
                     }
+                } else if (api =='/peergos-api/v0/folders/') {
+                    that.handleFolderPickerRequest(headerFunc, path, apiMethod, data, hasFormData, params);
                 } else {
                     var bytes = convertToByteArray(new Int8Array(data));
                     if (apiMethod == 'GET') {
@@ -569,7 +578,9 @@ module.exports = {
                             let prefix = !this.browserMode
                                 && !(path == this.appPath || (this.isAppPathAFolder && path.startsWith(this.appPath)))
                                 && !(this.appPath.length > 0 && !this.isAppPathAFolder && path.startsWith(that.getPath))
-                                && !path.startsWith(that.apiRequest + '/data') ? '/assets' : '';
+                                && !path.startsWith(that.apiRequest + '/data')
+                                && !(this.isSelectedFolder(path))
+                                ? '/assets' : '';
                             if (this.browserMode) {
                                 that.handleBrowserRequest(headerFunc, path, params, isFromRedirect, isNavigate);
                             } else {
@@ -691,6 +702,23 @@ module.exports = {
         },
         closePrompt() {
             this.showPrompt = false;
+        },
+        handleFolderPickerRequest: function(headerFunc, path, apiMethod, data, hasFormData, params) {
+            let that = this;
+            if (apiMethod == 'GET') {
+                this.folderPickerBaseFolder = "/" + this.context.username;
+                this.selectedFoldersFromPicker = function (chosenFolders) {
+                    that.selectedFolders = chosenFolders;
+                    that.showFolderPicker = false;
+                    let encoder = new TextEncoder();
+                    let data = encoder.encode(JSON.stringify(chosenFolders));
+                    that.buildResponse(headerFunc(), data, that.UPDATE_SUCCESS);
+                }.bind(this);
+                this.showFolderPicker = true;
+            } else {
+                that.showError("App attempted unexpected action: " + apiMethod);
+                that.buildResponse(headerFunc(), null, that.ACTION_FAILED);
+            }
         },
         validateRange: function(from, to) {
             if (from == null || to == null) {
@@ -1369,6 +1397,10 @@ module.exports = {
                 context.stream(seekHi, seekLo, seekLength);
             }
         },
+        isSelectedFolder(folderPath) {
+            return this.permissionsMap.get(this.PERMISSION_READ_CHOSEN_FOLDER) != null
+                && this.selectedFolders.filter(e => e.startsWith(folderPath)).length > 0;
+        },
         expandFilePath(filePath, isFromRedirect) {
              if (this.browserMode) {
                 if (filePath.startsWith(this.currentPath) || isFromRedirect) {
@@ -1376,7 +1408,7 @@ module.exports = {
                 } else {
                     return this.currentPath.substring(0, this.currentPath.length -1) + filePath;
                 }
-            } else if (this.appPath.length > 0 && filePath.startsWith(this.getPath)) {
+            } else if ( (this.appPath.length > 0 && filePath.startsWith(this.getPath)) || this.isSelectedFolder(filePath)) {
                 return filePath;
             } else if (this.currentProps != null) { //running in-place
                 let filePathWithoutSlash = filePath.startsWith('/') ? filePath.substring(1) : filePath;
