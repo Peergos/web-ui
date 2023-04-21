@@ -20,7 +20,7 @@
 
 					{{ file.getFileProperties().name }}
 				</td>
-				<td class="size">{{ getFileSize(file.getFileProperties()) }}</td>
+				<td class="size">{{ convertBytesToHumanReadable(getFileSize(file.getFileProperties())) }}</td>
 				<td class="type">{{ file.getFileProperties().getType() }}</td>
 				<td class="date">{{ formatDateTime(file.getFileProperties().modified) }}</td>
 				<td class="date">{{ formatDateTime(file.getFileProperties().created) }}</td>
@@ -67,6 +67,18 @@ module.exports = {
 				+ ':' + (date.getSeconds() < 10 ? '0' : '') + date.getSeconds();
 			return formatted;
 		},
+        convertBytesToHumanReadable:function(bytes) {
+            if (bytes < 1024)
+                return bytes + " Bytes";
+            if (bytes < 1024 * 1024)
+                return this.roundToDisplay(bytes / 1024) + " KiB";
+            if (bytes < 1024 * 1024 * 1024)
+                return this.roundToDisplay(bytes / 1024 / 1024) + " MiB";
+            return this.roundToDisplay(bytes / 1024 / 1024 / 1024) + " GiB";
+        },
+        roundToDisplay:function(x) {
+                return Math.round(x * 100) / 100;
+        },
 	},
 
 }
