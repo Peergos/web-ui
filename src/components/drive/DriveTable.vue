@@ -67,8 +67,7 @@ module.exports = {
 				+ ':' + (date.getSeconds() < 10 ? '0' : '') + date.getSeconds();
 			return formatted;
 		},
-        convertBytesToHumanReadable:function(bytesAsString) {
-            let bytes = Number(bytesAsString);
+        convertBytesToHumanReadable:function(bytes) {
             if (bytes < 1024)
                 return bytes + " Bytes";
             if (bytes < 1024 * 1024)
