@@ -83,7 +83,7 @@
 				v-if="viewMenu"
 				@closeMenu="closeMenu()"
 			>
-				<li id='gallery' v-if="canOpen && !isMarkdown && !isHTML" @keyup.enter="viewFile()" @click="viewFile()">View</li>
+				<li id='gallery' v-if="canOpen && !isMarkdown && !isHTML && !hexViewerAlternativeAvailable" @keyup.enter="viewFile()" @click="viewFile()">View</li>
 				<li id='view-markdown' v-if="isMarkdown" @keyup.enter="viewFile()" @click="viewFile()">View</li>
 				<li id='edit-markdown' v-if="isMarkdown" @keyup.enter="editFile()" @click="editFile()">Edit</li>
 				<li id='view-html' v-if="isHTML && isHTMLViewable" @keyup.enter="viewFile()" @click="viewFile()">View</li>
@@ -524,6 +524,14 @@ module.exports = {
             } catch (err) {
                 return false;
             }
+        },
+        hexViewerAlternativeAvailable() {
+            if (this.selectedFiles.length == 0)
+                return;
+            let file = this.selectedFiles[0];
+            let filename = file.getName();
+            let app = this.getApp(file, this.getPath, false);
+            return this.availableApps.length > 0 && app === "hex";
         },
         isMarkdown() {
             try {
