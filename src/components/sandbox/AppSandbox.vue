@@ -124,7 +124,8 @@ module.exports = {
             currentAppName: null,
             showFolderPicker: false,
             folderPickerBaseFolder: "",
-            selectedFolders: []
+            selectedFolders: [],
+            selectedFolderStems: []
         }
     },
     computed: {
@@ -709,6 +710,7 @@ module.exports = {
                 this.folderPickerBaseFolder = "/" + this.context.username;
                 this.selectedFoldersFromPicker = function (chosenFolders) {
                     that.selectedFolders = chosenFolders;
+                    that.selectedFolderStems = chosenFolders.map(n => n + '/');
                     that.showFolderPicker = false;
                     let encoder = new TextEncoder();
                     let data = encoder.encode(JSON.stringify(chosenFolders));
@@ -1398,8 +1400,15 @@ module.exports = {
             }
         },
         isSelectedFolder(folderPath) {
-            return this.permissionsMap.get(this.PERMISSION_READ_CHOSEN_FOLDER) != null
-                && this.selectedFolders.filter(e => e.startsWith(folderPath)).length > 0;
+            if (this.permissionsMap.get(this.PERMISSION_READ_CHOSEN_FOLDER) != null) {
+                if (this.selectedFolders.includes(folderPath)) {
+                    return true;
+                } else {
+                    return this.selectedFolderStems.filter(e => e.startsWith(folderPath)).length > 0;
+                }
+            } else {
+                return false;
+            }
         },
         expandFilePath(filePath, isFromRedirect) {
              if (this.browserMode) {
