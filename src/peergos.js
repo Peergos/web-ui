@@ -6,6 +6,7 @@ var CodeEditor      = require('./components/code-editor');
 var Downloader      = require('./components/downloader');
 var Error           = require('./components/error');
 var Fingerprint     = require('./components/fingerprint');
+var FolderPicker         = require('./components/picker/FolderPicker.vue');
 var Hex             = require('./components/viewers/hex.vue');
 var Identity        = require('./components/identity-proof-viewer.vue');
 var Message         = require('./components/message');
@@ -50,8 +51,7 @@ Vue.component('App', Vue.extend(App));
 Vue.component('AppButton', Vue.extend(AppButton));
 Vue.component('AppIcon', Vue.extend(AppIcon));
 Vue.component('AppModal', Vue.extend(AppModal));
-
-
+Vue.component('FolderPicker', Vue.extend(FolderPicker));
 
 Vue.directive('focus', {
   inserted: function (el) {
