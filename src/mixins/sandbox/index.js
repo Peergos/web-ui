@@ -402,12 +402,16 @@ module.exports = {
             let appMimeTypeWildcardRegistrationList = this.sandboxedApps.appMimeTypeWildcardRegistrationList.slice();
             let appFileTypeWildcardRegistrationList = this.sandboxedApps.appFileTypeWildcardRegistrationList.slice();
 
-            let contextMenuText = props.permissions.filter(p => p == 'EDIT_CHOSEN_FILE').length > 0 ?
-                'Edit in ' + props.displayName : 'View in ' + props.displayName;
+            let editPermission = props.permissions.filter(p => p == 'EDIT_CHOSEN_FILE').length > 0;
+            let contextMenuText = editPermission ? 'Edit in ' + props.displayName : 'View in ' + props.displayName;
+
+            let hasFileExtensions = props.fileExtensions.length > 0;
+            let createFile = editPermission && hasFileExtensions;
+            let primaryFileExtension = hasFileExtensions ? props.fileExtensions[0] : '';
             let item = {name: props.name, displayName: props.displayName,
-                createMenuText: props.createMenuText, launchable: props.launchable,
+                createFile: createFile, launchable: props.launchable,
                 folderAction: props.folderAction, appIcon: props.appIcon, contextMenuText: contextMenuText,
-                source: props.source, version: props.version};
+                source: props.source, version: props.version, createFile: createFile, primaryFileExtension: primaryFileExtension};
 
             appsInstalled.push(item);
             props.fileExtensions.forEach(extension => {

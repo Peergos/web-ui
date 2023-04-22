@@ -47,8 +47,8 @@
 						<li @click="askForDirectories()">Upload folder</li>
 						<li @click="$emit('askMkdir')">New folder</li>
 						<li @click="$emit('createFile')">New file</li>
+						<li @click="$emit('createImageFile')">New Image file</li>
 						<li @click="$emit('newApp')">New App</li>
-                        <li v-for="app in creatableApps" v-on:keyup.enter="appCreateNewInstance(app.name)" v-on:click="appCreateNewInstance(app.name)">APP: {{app.createMenuText}}</li>
                         <li v-if="canPaste" @click="$emit('paste')">Paste</li>
 					</ul>
 				</AppDropdown>
@@ -103,17 +103,6 @@ module.exports = {
         ...Vuex.mapState([
             "sandboxedApps"
         ]),
-        creatableApps: function() {
-            return [];
-           /* TODO try {
-                let appsInstalled = this.sandboxedApps.appsInstalled.slice().filter(app => app.createMenuText != null);
-                return appsInstalled.sort(function(a, b) {
-                    return a.createMenuText.localeCompare(b.createMenuText);
-                });
-           } catch (err) {
-               return [];
-           }*/
-        },
 	},
 	methods: {
 	    appCreateNewInstance(appName) {
