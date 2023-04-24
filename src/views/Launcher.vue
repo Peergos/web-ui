@@ -10,6 +10,21 @@
                     :title="message.title"
                     :message="message.body">
             </message>
+            <replace
+                v-if="showReplace"
+                v-on:hide-replace="showReplace = false"
+                :replace_message='replace_message'
+                :replace_body="replace_body"
+                :consumer_cancel_func="replace_consumer_cancel_func"
+                :consumer_func="replace_consumer_func"
+                :showApplyAll=replace_showApplyAll>
+            </replace>
+            <NewFilePicker
+                v-if="showNewFilePicker"
+                @hide-prompt="closeNewFilePicker()"
+                :pickerFileExtension="pickerFileExtension"
+                :consumer_func="prompt_consumer_func"
+            />
             <AppInstall
                 v-if="showAppInstallation"
                 v-on:hide-app-installation="closeAppInstallation"
@@ -66,7 +81,7 @@
                     No Custom Apps currently installed.  Create an App from the "create app" menu item of the green plus.
                 </div>
                 <div v-if="appsList!=0" class="table-responsive">
-                    <table class="table">
+                    <table class="table" style="width: 70%;">
                         <thead>
                         <tr  v-if="appsList.length!=0" style="cursor:pointer;">
                             <th></th>
@@ -81,7 +96,7 @@
                             <td>
                                 <img v-if="app.appIcon.length > 0 && app.thumbnail != null" v-bind:src="app.thumbnail" style="width:50px;height:50px;"/>
                             </td>
-                            <td v-if="app.launchable"><button class="btn btn-success" @click="launchApp(app.name)">{{ app.displayName }}</button></td>
+                            <td v-if="app.launchable"><button class="btn btn-success" @click="launchAppFromButton(app)">{{ app.displayName }}</button></td>
                             <td v-if="!app.launchable">{{ app.displayName }}</td>
                             <td> <button class="btn btn-info" @click="displayAppDetails(app)">Details</button>
                             </td>
@@ -183,6 +198,7 @@ const AppInstall = require("../components/sandbox/AppInstall.vue");
 const AppHeader = require("../components/AppHeader.vue");
 const AppDetails = require("../components/sandbox/AppDetails.vue");
 const AppSandbox = require("../components/sandbox/AppSandbox.vue");
+const NewFilePicker = require("../components/picker/NewFilePicker.vue");
 const Share = require("../components/drive/DriveShare.vue");
 const routerMixins = require("../mixins/router/index.js");
 const mixins = require("../mixins/mixins.js");
@@ -194,6 +210,7 @@ module.exports = {
 		AppHeader,
 		AppDetails,
 		AppSandbox,
+		NewFilePicker,
 		Share
     },
     data: function() {
@@ -234,6 +251,14 @@ module.exports = {
             showAppMenu: false,
             menutop:"",
             menuleft:"",
+            showNewFilePicker: false,
+            prompt_consumer_func: () => { },
+            pickerFileExtension: '',
+            showReplace: false,
+            replace_message: "",
+            replace_body: "",
+            replace_consumer_cancel_func: (applyToAll) => { },
+            replace_consumer_func: (applyToAll) => { },
         }
     },
     props: [],
@@ -244,6 +269,7 @@ module.exports = {
             "shortcuts",
             'socialData',
             "sandboxedApps",
+            'mirrorBatId',
         ]),
         friendnames: function() {
             return this.socialData.friends;
@@ -372,6 +398,113 @@ module.exports = {
         });
     },
     methods: {
+        confirmReplaceFile(filename, cancelFn, replaceFn) {
+            this.showSpinner = false;
+            this.replace_message = 'File: "' + filename + '" already exists in this location. Do you wish to replace it?';
+            this.replace_body = '';
+            this.replace_consumer_cancel_func = cancelFn;
+            this.replace_consumer_func = replaceFn;
+            this.showReplace = true;
+        },
+        launchAppFromButton: function(app) {
+            if (app.createFile) {
+                let that = this;
+                this.prompt_consumer_func = function (prompt_result, folder) {
+                    if (prompt_result === null)
+                        return;
+                    let fileName = prompt_result.trim();
+                    if (fileName === '')
+                        return;
+                    that.uploadEmptyFileToFolder(app.name, folder, fileName).thenApply(fileCreated => {
+                        if (fileCreated != null && fileCreated === true) {
+                            let pathString = '/' + folder;
+                            that.findFile(pathString + "/" + fileName).thenApply(file => {
+                                that.showAppSandbox = true;
+                                that.sandboxAppName = app.name;
+                                that.currentFile = file;
+                                that.currentPath = pathString;
+                            });
+                        }
+                    });
+                };
+                this.pickerFileExtension = app.primaryFileExtension;
+                this.showNewFilePicker = true;
+            } else {
+                this.launchApp(app.name);
+            }
+        },
+        getMirrorBatId(file) {
+            return file.getOwnerName() == this.context.username ? this.mirrorBatId : java.util.Optional.empty()
+        },
+        uploadEmptyFileToFolder(appName, folder, filename) {
+            this.showSpinner = true;
+            let that = this;
+            let future = peergos.shared.util.Futures.incomplete();
+            this.context.getByPath(folder).thenApply(function (optDir) {
+                let dir = optDir.get();
+                dir.hasChild(filename, that.context.crypto.hasher, that.context.network).thenApply(function (alreadyExists) {
+                    if (alreadyExists) {
+                        that.confirmReplaceFile(filename,
+                            () => {
+                                future.complete(null);
+                            },
+                            () => {
+                                that.uploadEmptyFile(appName, dir, filename, future);
+                            }
+                        );
+                    } else {
+                        that.uploadEmptyFile(appName, dir, filename, future);
+                    }
+                });
+            });
+            return future;
+        },
+        readInEmptyFile: function(fullPathToFile) {
+            let that = this;
+            var future = peergos.shared.util.Futures.incomplete();
+            this.findFile(fullPathToFile).thenApply(file => {
+                if (file == null) {
+                    future.complete(peergos.shared.user.JavaScriptPoster.emptyArray());
+                } else {
+                    const props = file.getFileProperties();
+                    file.getInputStream(that.context.network, that.context.crypto, props.sizeHigh(), props.sizeLow(), function(read){})
+                        .thenCompose(function(reader) {
+                            var size = that.getFileSize(props);
+                            var data = convertToByteArray(new Int8Array(size));
+                            return reader.readIntoArray(data, 0, data.length).thenApply(function(read){
+                                future.complete(data);
+                            });
+                    });
+                }
+            });
+            return future;
+        },
+
+        uploadEmptyFile(appName, dir, filename, future) {
+            let that = this;
+            let extension = filename.substring(filename.lastIndexOf('.') + 1);
+            let fullPathToAppEmptyFile = "/" + this.context.username + "/.apps/" + appName + '/assets/empty.' + extension;
+            this.readInEmptyFile(fullPathToAppEmptyFile).thenApply(fileData => {
+                let reader = new peergos.shared.user.fs.AsyncReader.ArrayBacked(fileData);
+                dir.uploadFileJS(filename, reader, 0, fileData.length,
+                    true, that.getMirrorBatId(dir), that.context.network, that.context.crypto, function (len) { },
+                    that.context.getTransactionService(),
+                    f => peergos.shared.util.Futures.of(false)
+                ).thenApply(function (res) {
+                    that.showMessage(false, "File created");
+                    that.showSpinner = false;
+                    future.complete(true);
+                }).exceptionally(function (throwable) {
+                    that.showSpinner = false;
+                    that.showMessage(true, "File creation failed");
+                    future.complete(false);
+                });
+            });
+            return future;
+        },
+        closeNewFilePicker() {
+            this.showNewFilePicker = false;
+        },
         appOpen(event, appName, path, file) {
             this.showAppMenu = false;
             event.stopPropagation();

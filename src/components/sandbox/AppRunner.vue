@@ -57,7 +57,10 @@ module.exports = {
                     that.close();
                 } else {
                     let messagePermission = res.props.permissions.filter(p => p === "EXCHANGE_MESSAGES_WITH_FRIENDS");
-                    if (!res.props.launchable || messagePermission.length > 0) {
+                    let editPermission = res.props.permissions.filter(p => p == 'EDIT_CHOSEN_FILE').length > 0;
+                    let hasFileExtensions = res.props.fileExtensions.length > 0;
+                    let createFile = editPermission && hasFileExtensions;
+                    if (!res.props.launchable || (res.props.launchable && createFile) || messagePermission.length > 0) {
                         that.showError("App must be installed first!");
                         that.close();
                     } else {

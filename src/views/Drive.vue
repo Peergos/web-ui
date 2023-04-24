@@ -16,6 +16,7 @@
 			@goBackToLevel="goBackToLevel($event)"
 			@askMkdir="askMkdir()"
 			@createFile="createBlankFile()"
+			@createImageFile="createBlankImageFile()"
 			@newApp="createNewApp()"
 		        @search="openSearch(false)"
                         @paste="paste()"
@@ -31,6 +32,13 @@
 			:consumer_func="prompt_consumer_func"
 			:action="prompt_action"
 		/>
+
+		<NewImageFilePrompt
+			v-if="showNewImageFilePrompt"
+			@hide-prompt="closeNewImageFilePrompt()"
+			:consumer_func="prompt_consumer_func"
+		/>
+
 		<NewAppPrompt
 			v-if="showNewAppPrompt"
 			@hide-prompt="closeNewAppPrompt()"
@@ -241,6 +249,7 @@ const ProgressBar = require("../components/drive/ProgressBar.vue");
 const DriveMenu = require("../components/drive/DriveMenu.vue");
 
 const AppPrompt = require("../components/prompt/AppPrompt.vue");
+const NewImageFilePrompt = require("../components/NewImageFilePrompt.vue");
 const NewAppPrompt = require("../components/sandbox/new-app/NewAppPrompt.vue");
 const FolderProperties = require("../components/FolderProperties.vue");
 
@@ -263,6 +272,7 @@ module.exports = {
 		DriveTable,
 		DriveMenu,
 		AppPrompt,
+		NewImageFilePrompt,
 		NewAppPrompt,
 		FolderProperties,
 		ProgressBar,
@@ -330,6 +340,7 @@ module.exports = {
 			prompt_new_app_func: (name, permissions) => { },
 			prompt_action: 'ok',
 			showPrompt: false,
+			showNewImageFilePrompt: false,
 			showNewAppPrompt: false,
             showFolderProperties: false,
             showAppInstallation: false,
@@ -2340,16 +2351,29 @@ module.exports = {
 				let fileName = prompt_result.trim();
 				if (fileName === '')
 					return;
-				this.uploadEmptyFile(fileName);
+    			let fileData = peergos.shared.user.JavaScriptPoster.emptyArray();
+				this.uploadEmptyFile(fileName, fileData);
 			}.bind(this);
 			this.showPrompt = true;
 		},
 
-		uploadEmptyFile(filename) {
+		createBlankImageFile() {
+			this.prompt_consumer_func = function (prompt_result) {
+				if (prompt_result === null)
+					return;
+				let fileName = prompt_result.trim();
+				if (fileName === '')
+					return;
+    			let fileData = this.createBlankImage(fileName);
+				this.uploadEmptyFile(fileName, fileData);
+			}.bind(this);
+			this.showNewImageFilePrompt = true;
+		},
+
+		uploadEmptyFile(filename, fileData) {
 			this.showSpinner = true;
 			let that = this;
 			// let context = this.getContext();
-			let fileData = this.createBlankFileData(filename);
 			let reader = new peergos.shared.user.fs.AsyncReader.ArrayBacked(fileData);
 			this.currentDir.uploadFileJS(filename, reader, 0, fileData.length,
 				false, that.getMirrorBatId(that.currentDir), this.context.network, this.context.crypto, function (len) { },
@@ -2368,32 +2392,26 @@ module.exports = {
 				that.showError = true;
 			})
 		},
- 		createBlankFileData(filename) {
+ 		createBlankImage(filename) {
         	var imageFormat = null;
         	let dotIndex = filename.indexOf('.');
-            if (dotIndex > -1 && dotIndex < filename.length) {
-            	let fileExtension = filename.substring(filename.lastIndexOf('.') +1).toLowerCase();
-            	if (fileExtension == 'jpg') {
-            		imageFormat = "image/jpeg";
-        	    } else if (fileExtension == 'png') {
-        		    imageFormat = "image/png";
-        	    }
+            let fileExtension = filename.substring(filename.lastIndexOf('.') + 1);
+            if (fileExtension == 'jpg') {
+                imageFormat = "image/jpeg";
+            } else if (fileExtension == 'png') {
+                imageFormat = "image/png";
             }
-        	if (imageFormat == null) {
-                return peergos.shared.user.JavaScriptPoster.emptyArray();
-        	} else {
-                var canvas = document.createElement('canvas');
-                canvas.width = 800;
-                canvas.height = 600;
-	    		let dataUrl = canvas.toDataURL(imageFormat);
-	    		let prefix = "data:" + imageFormat + ";base64,";
-	    		let binaryThumbnail = window.atob(dataUrl.substring(prefix.length));
-            	var data = new Int8Array(binaryThumbnail.length);
-            	for (var i = 0; i < binaryThumbnail.length; i++) {
-                	data[i] = binaryThumbnail.charCodeAt(i);
-            	}
-            	return convertToByteArray(data);
-    		}
+            var canvas = document.createElement('canvas');
+            canvas.width = 800;
+            canvas.height = 600;
+            let dataUrl = canvas.toDataURL(imageFormat);
+            let prefix = "data:" + imageFormat + ";base64,";
+            let binaryThumbnail = window.atob(dataUrl.substring(prefix.length));
+            var data = new Int8Array(binaryThumbnail.length);
+            for (var i = 0; i < binaryThumbnail.length; i++) {
+                data[i] = binaryThumbnail.charCodeAt(i);
+            }
+            return convertToByteArray(data);
 		},
 		rename() {
 			if (this.selectedFiles.length == 0)
@@ -2494,6 +2512,9 @@ module.exports = {
 
 		closePrompt() {
 			this.showPrompt = false;
+		},
+		closeNewImageFilePrompt() {
+			this.showNewImageFilePrompt = false;
 		},
         closeNewAppPrompt() {
             this.showNewAppPrompt = false;

@@ -316,9 +316,6 @@ module.exports = {
                 }
                 this.isSaveActionEnabled = false;
             }
-            if (props.launchable) {
-                this.isSaveActionEnabled = false;
-            }
             return true;
         },
     	giveUp: function() {
@@ -426,10 +423,7 @@ module.exports = {
             }
         },
         isPathWritable: function() {
-            if (this.isSaveActionEnabled && this.appProperties != null && !this.appProperties.launchable) {
                 return this.targetFile != null && this.targetFile.isWritable();
-            }
-            return false;
         },
         streamFile: function(seekHi, seekLo, seekLength, streamFilePath) {
             let that = this;

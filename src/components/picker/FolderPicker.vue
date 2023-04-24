@@ -41,6 +41,7 @@
 <script>
 
 const TreeItem = require("TreeItem.vue");
+const folderTreeMixin = require("../../mixins/tree-walker/index.js");
 
 module.exports = {
     components: {
@@ -56,73 +57,22 @@ module.exports = {
         }
     },
     props: ['baseFolder', 'selectedFolder_func'],
-    mixins:[],
+    mixins:[folderTreeMixin],
     computed: {
         ...Vuex.mapState([
             'context',
         ]),
     },
     created: function() {
-        this.loadFolders();
+        let that = this;
+        let callback = (baseOfFolderTree) => {
+            that.treeData = baseOfFolderTree;
+            that.showSpinner = false;
+            that.spinnerMessage = '';
+        };
+        this.loadFolders(this.baseFolder + "/", callback);
     },
     methods: {
-        loadFolders: function() {
-            var that = this;
-            let path = this.baseFolder + "/";
-            this.walkCounter = 0;
-            let baseOfFolderTree = {};
-            this.context.getByPath(path).thenApply(function(dir){
-                that.walk(dir.get(), path, baseOfFolderTree, () => that.ready(baseOfFolderTree));
-            }).exceptionally(function(throwable) {
-                that.showSpinner = false;
-                this.spinnerMessage = 'Unable to load folders...';
-                throwable.printStackTrace();
-            });
-        },
-        ready: function(baseOfFolderTree) {
-            this.treeData = baseOfFolderTree;
-            this.showSpinner = false;
-            this.spinnerMessage = '';
-        },
-        walk: function(file, path, currentTreeData, cb) {
-            let fileProperties = file.getFileProperties();
-            if (fileProperties.isHidden)
-                return;
-            currentTreeData.path = path.substring(0, path.length -1);
-            currentTreeData.children = [];
-            let that = this;
-            if (fileProperties.isDirectory) {
-                that.walkCounter++;
-                if (that.walkCounter == 1) {
-                    that.showSpinner = true;
-                }
-                file.getChildren(that.context.crypto.hasher, that.context.network).thenApply(function(children) {
-                    let arr = children.toArray();
-                    let size = arr.length;
-                    if (size == 0) {
-                        that.walkCounter--;
-                        if (that.walkCounter == 0) {
-                            cb();
-                        }
-                    }
-                    arr.forEach(function(child, index){
-                        let childProps = child.getFileProperties();
-                        let newPath = childProps.isDirectory ? path + child.getFileProperties().name + '/' : path;
-                        if (childProps.isDirectory && !childProps.isHidden) {
-                            let node = {};
-                            currentTreeData.children.push(node);
-                            that.walk(child, newPath, node, cb);
-                        }
-                        if (index == size - 1) {
-                            that.walkCounter--;
-                            if (that.walkCounter == 0) {
-                                cb();
-                            }
-                        }
-                    });
-                });
-            }
-        },
         close: function () {
             this.selectedFolder_func([]);
         },
@@ -192,5 +142,7 @@ module.exports = {
 .scroll-style {
     max-height: 250px;
     overflow-y: scroll;
+    border: 2px solid var(--green-500);
+    margin: 8px 0;
 }
 </style>
