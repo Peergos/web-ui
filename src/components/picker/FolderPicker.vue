@@ -41,7 +41,7 @@
 <script>
 
 const TreeItem = require("TreeItem.vue");
-const folderTreeMixin = require("../../mixins/folder/index.js");
+const folderTreeMixin = require("../../mixins/treeWalker/index.js");
 
 module.exports = {
     components: {

@@ -54,7 +54,7 @@
 	</transition>
 </template>
 const SelectableTreeItem = require("SelectableTreeItem.vue");
-const folderTreeMixin = require("../../mixins/folder/index.js");
+const folderTreeMixin = require("../../mixins/treeWalker/index.js");
 <script>
 module.exports = {
     components: {
