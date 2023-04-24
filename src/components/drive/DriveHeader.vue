@@ -47,7 +47,7 @@
 						<li @click="askForDirectories()">Upload folder</li>
 						<li @click="$emit('askMkdir')">New folder</li>
 						<li @click="$emit('createFile')">New file</li>
-						<li @click="$emit('createImageFile')">New Image file</li>
+						<!-- li @click="$emit('createImageFile')">New Image file</li -->
 						<li @click="$emit('newApp')">New App</li>
                         <li v-if="canPaste" @click="$emit('paste')">Paste</li>
 					</ul>
