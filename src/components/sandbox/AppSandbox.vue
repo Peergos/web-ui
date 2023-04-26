@@ -28,7 +28,7 @@
             <AppInstall
                 v-if="showAppInstallation"
                 v-on:hide-app-installation="closeAppInstallation"
-                v-on:app-install-success="appInstallSuccess"
+                :appInstallSuccessFunc="appInstallSuccess"
                 :appPropsFile="appInstallPropsFile"
                 :installFolder="appInstallFolder">
             </AppInstall>
@@ -213,7 +213,7 @@ module.exports = {
         }
     },
     methods: {
-        appInstallSuccess() {
+        appInstallSuccess(appName) {
         },
         closeAppInstallation() {
             this.showAppInstallation = false;

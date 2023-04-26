@@ -1,5 +1,5 @@
 <template>
-<div class="fillspace">
+<div class="fillspace" style="display:flex;flex-direction:column;justify-content:space-between;">
     <div class="appgrid">
         <transition name="app-grid-context-menu">
             <AppGridMenu
