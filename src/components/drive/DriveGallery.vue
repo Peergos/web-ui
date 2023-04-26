@@ -58,8 +58,8 @@
 					@keyup.right="next"
 					@keyup.left="previous"
 				/>
-				<video
-					v-if="currentIsVideoOrAudio"
+				<video id="video-element"
+					v-if="currentIsVideo"
 					style="
 						height: 100%;
 						max-width: 100%;
@@ -72,6 +72,20 @@
 					alt="Video loading..."
 					controls
 				/>
+                <audio id="audio-element"
+                    v-if="currentIsAudio"
+                    style="
+                        height: 100%;
+                        max-width: 100%;
+                        max-height: 100%;
+                        text-align: center;
+                        line-height: 200px;
+                    "
+                    v-bind:src="dataURL"
+                    autoplay="true"
+                    alt="Audio loading..."
+                    controls
+                />
 			</center>
 		</div>
 	</div>
@@ -86,13 +100,14 @@ module.exports = {
 		    showSpinner: false,
 		    fileIndex: 0,
 		    imageData: null,
-		    videoUrl: null,
+		    mediaUrl: null,
 		    pinging: false,
                     showMedia: false,
                     showWarning: false,
 		    warning_message: "",
 		    warning_body: "",
-		    warning_consumer_func: () => { }			
+		    warning_consumer_func: () => { },
+		    initialised : false
 		};
 	},
 	props: ["files", "initialFileName", "hideGalleryTitle"],
@@ -105,14 +120,24 @@ module.exports = {
 			if (this.showableFiles == null || this.showableFiles.length == 0)
 				return null;
 			var file = this.showableFiles[this.fileIndex];
+			let thumbnail = file.getBase64Thumbnail();
+			let that = this;
+			if ('mediaSession' in navigator) {
+                if (this.isAudio(file) || this.isVideo(file)) {
+                    navigator.mediaSession.metadata = new MediaMetadata({
+                        title: that.showGalleryTitle(file),
+                        artwork: [{ src: thumbnail}]
+                    });
+                    that.addMediaHandlers(file);
+                }
+            }
 			return file;
 		},
 		dataURL() {
 			console.log("Getting data url");
-
-			if (this.videoUrl != null) {
-				var url = this.videoUrl;
-				this.videoUrl = null;
+			if (this.mediaUrl != null) {
+				var url = this.mediaUrl;
+				this.mediaUrl = null;
 				return url;
 			}
 			if (this.imageData == null) {
@@ -144,33 +169,23 @@ module.exports = {
 				var is_image = that.isImage(file);
 				var is_video = that.isVideo(file);
 				var is_audio = that.isAudio(file);
-				// console.log(
-				// 	"is_image " +
-				// 		is_image +
-				// 		", is_video " +
-				// 		is_video +
-				// 		", is_audio " +
-				// 		is_audio
-				// );
 				return is_image || is_video || is_audio;
 			});
 		},
 	},
 	created() {
-	    console.debug("Gallery module created!");
-	    console.log('gallery files:', this.files)
 	    var showable = this.showableFiles;
 	    for (var i = 0; i < showable.length; i++)
 		if (showable[i].getFileProperties().name == this.initialFileName)
 		    this.fileIndex = i;
 	    console.log("Set initial gallery index to " + this.fileIndex);
 	    window.addEventListener("keyup", this.keyup);
-            let that = this;
-            this.confirmView(this.current, () => {
-                that.showWarning = false;
-                that.showMedia = true;
-                that.updateCurrentFileData();
-            })
+        let that = this;
+        this.confirmView(this.current, () => {
+            that.showWarning = false;
+            that.showMedia = true;
+            that.updateCurrentFileData();
+        })
 	},
 
 	watch: {
@@ -179,8 +194,43 @@ module.exports = {
 			this.updateCurrentFileData();
 		},
 	},
-
+    updated: function () {
+        let that = this;
+        if (!this.initialised) {
+            this.initialised = true;
+            this.$nextTick(function () {
+                that.addMediaHandlers(this.current);
+            })
+        }
+    },
 	methods: {
+	    addMediaHandlers(file) {
+	        let that = this;
+	        if ('mediaSession' in navigator && (this.isAudio(file) || this.isVideo(file))) {
+                let mediaElement = document.getElementById(this.isAudio(file) ? "audio-element" : "video-element");
+                if (mediaElement != null) {
+                    navigator.mediaSession.setActionHandler('pause', () => {
+                        mediaElement.pause();
+                    });
+                    navigator.mediaSession.setActionHandler('play', () => {
+                        mediaElement.play();
+                    });
+                    let defaultSeekOffset = 10;
+                    navigator.mediaSession.setActionHandler('seekbackward', (details) => {
+                        mediaElement.currentTime = mediaElement.currentTime - (details.seekOffset || defaultSeekOffset);
+                    });
+                    navigator.mediaSession.setActionHandler('seekforward', (details) => {
+                        mediaElement.currentTime = mediaElement.currentTime + (details.seekOffset || defaultSeekOffset);
+                    });
+                    navigator.mediaSession.setActionHandler('previoustrack', () => {
+                        that.previous();
+                    });
+                    navigator.mediaSession.setActionHandler('nexttrack', () => {
+                        that.next();
+                    });
+                }
+            }
+	    },
 		showGalleryTitle(current) {
 			if (this.hideGalleryTitle) {
 				return "";
@@ -263,6 +313,7 @@ module.exports = {
 			var props = file.getFileProperties();
 			var that = this;
 			this.showSpinner = true;
+
 			var isLargeAudioFile =
 				that.isAudio(file) && that.getFileSize(props) > 1024 * 1024 * 5;
 			if (
@@ -350,7 +401,7 @@ module.exports = {
 					"media-" + props.name,
 					props.mimeType,
 					function (url) {
-						that.videoUrl = url;
+						that.mediaUrl = url;
 						that.showSpinner = false;
 						that.pinging = true;
 						that.startPing(url + "/ping");
