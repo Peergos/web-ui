@@ -93,7 +93,7 @@ module.exports = {
             this.closeMenu();
         },
         updateApp: function() {
-            if (!app.updateAvailable) {
+            if (!this.selectedApp.updateAvailable) {
                 this.$toast("No update for App: " + this.selectedApp.displayName);
             } else {
                 this.updateAppFunc(this.selectedApp);

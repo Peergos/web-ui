@@ -28,7 +28,7 @@
             <AppInstall
                 v-if="showAppInstallation"
                 v-on:hide-app-installation="closeAppInstallation"
-                v-on:app-install-success="appInstallSuccess"
+                :appInstallSuccessFunc="appInstallSuccess"
                 :appPropsFile="appInstallPropsFile"
                 :installFolder="appInstallFolder">
             </AppInstall>
@@ -228,7 +228,6 @@ module.exports = {
             showSharedItems: false,
             updateMessage:'',
             showAppInstallation: false,
-            installingAppName: '',
             appInstallPropsFile: null,
             appInstallFolder: '',
             availableApps: [],
@@ -243,11 +242,25 @@ module.exports = {
             replace_body: "",
             replace_consumer_cancel_func: (applyToAll) => { },
             replace_consumer_func: (applyToAll) => { },
-            showAppGrid: false
+            showAppGrid: false,
+            forceAppDisplayUpdate: 0,
+            appGridItems: []
         }
     },
     props: [],
     mixins:[routerMixins, mixins, launcherMixin, sandboxMixin],
+	watch: {
+		forceAppDisplayUpdate(newUpdateCounter, oldUpdateCounter) {
+		    let that = this;
+            this.showAppGrid = false;
+			this.appGridItems = this.appsList.slice().sort(function (a, b) {
+                 return ('' + a.name).localeCompare(b.name);
+             });
+            Vue.nextTick(function() {
+                that.showAppGrid = true;
+            });
+		},
+    },
     computed: {
         ...Vuex.mapState([
             'context',
@@ -315,11 +328,6 @@ module.exports = {
                     }
                 });
             }
-        },
-        appGridItems(){
-            return this.appsList.sort(function (a, b) {
-                return ('' + a.name).localeCompare(b.name);
-            });
         },
         sortedSharedItems(){
             var sortBy = this.sortBy;
@@ -503,23 +511,20 @@ module.exports = {
                 that.showSpinner = false;
             }
         },
-        appInstallSuccess() {
-            if (this.installingAppName.length > 0) {
-                let appIndex = this.appsList.findIndex(v => v.name === this.installingAppName);
-                let appRow = this.appsList[appIndex];
-                this.appsList.splice(appIndex, 1);
-                appRow.updateAvailable = false;
-                this.appsList.push(appRow);
-                this.installingAppName = '';
-                this.updateMessage = '';
-            }
+        appInstallSuccess(appName) {
+            let appIndex = this.appsList.findIndex(v => v.name === appName);
+            let appRow = this.appsList[appIndex];
+            this.appsList.splice(appIndex, 1);
+            appRow.updateAvailable = false;
+            this.appsList.push(appRow);
+            this.updateMessage = '';
+            this.forceAppDisplayUpdate++;
         },
         closeAppInstallation() {
             this.showAppInstallation = false;
         },
         updateApp: function(app) {
             let that = this;
-            this.installingAppName = app.name;
             let pathStr = app.source.endsWith('/') ? app.source  : app.source + '/';
             this.context.getByPath(pathStr + 'peergos-app.json').thenApply(propsFileOpt => {
                 if (propsFileOpt.ref != null) {
@@ -547,9 +552,8 @@ module.exports = {
                     let appName = appsWithUpdates[i].name;
                     let appIndex = that.appsList.findIndex(v => v.name === appName);
                     let appRow = that.appsList[appIndex];
-                    that.appsList.splice(appIndex, 1);
                     appRow.updateAvailable = true;
-                    that.appsList.push(appRow);
+                    that.forceAppDisplayUpdate++;
                 }
                 that.showSpinner = false;
             });
@@ -596,7 +600,9 @@ module.exports = {
         },
         loadAppIcons: function() {
             let that = this;
-            this.loadAppIconsRecursively(this.appsList, 0, () => that.showAppGrid = true);
+            this.loadAppIconsRecursively(this.appsList, 0, () => {
+                    that.forceAppDisplayUpdate++;
+                });
         },
         loadAppIconsRecursively: function(apps, index, cb) {
             if (index == apps.length) {
@@ -613,9 +619,7 @@ module.exports = {
                            let appIndex = that.appsList.findIndex(v => v.name === app.name);
                            if (appIndex > -1) {
                                let appRow = that.appsList[appIndex];
-                               that.appsList.splice(appIndex, 1);
                                appRow.thumbnail = file.getBase64Thumbnail();
-                               that.appsList.push(appRow);
                            }
                         }
                         that.loadAppIconsRecursively(apps, index + 1, cb);
@@ -713,6 +717,7 @@ module.exports = {
                 let appIndex = that.appsList.findIndex(v => v.name === app.name);
                 if (appIndex > -1) {
                     that.appsList.splice(appIndex, 1);
+                    that.forceAppDisplayUpdate++;
                 }
                 that.showSpinner = false;
             }).exceptionally(function(throwable) {
