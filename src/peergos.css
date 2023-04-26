@@ -494,6 +494,7 @@ h3 {word-wrap:break-word; white-space:normal;}
     justify-content: center;
     flex-direction: column;
     align-items: center;
+    font-size: xxx-large;
 }
 
 .app-icon-title {

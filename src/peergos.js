@@ -1,6 +1,5 @@
 var Account         = require('./components/account');
 var Admin           = require('./components/admin');
-var AppGrid         = require('./components/appgrid');
 var Choice         = require('./components/choice');
 var CodeEditor      = require('./components/code-editor');
 var Downloader      = require('./components/downloader');
@@ -29,7 +28,6 @@ var App  			= require('./components/App.vue');
 // Loading components
 Vue.component('account', Vue.extend(Account));
 Vue.component('admin', Vue.extend(Admin));
-Vue.component('appgrid', Vue.extend(AppGrid));
 Vue.component('choice', Vue.extend(Choice));
 Vue.component('code-editor', Vue.extend(Downloader).extend(CodeEditor));
 Vue.component('error', Vue.extend(Error));
