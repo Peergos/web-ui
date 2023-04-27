@@ -332,15 +332,10 @@ table {
 
 .pending-badge {
     display: inline-block;
-    min-width: 30px;
-    padding: 7px;
-    font-size: 16px;
-    font-weight: 700;
-    line-height: 1;
-    white-space: nowrap;
-    vertical-align: baseline;
+    padding: 5px;
+    font-size: 1px;
     background-color: #26b99a;
-    color: #3c5980;
+    color: #26b99a;
     border-radius: 30px;
 }
 

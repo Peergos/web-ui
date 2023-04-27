@@ -34,7 +34,6 @@ module.exports = new Vuex.Store({
 		isLoggedIn: false,
 		isAdmin: false,
 
-		launcherMenuTarget: null,
 		driveMenuTarget: null,
 		path: [],
 		currentFilename: "",
@@ -179,9 +178,6 @@ module.exports = new Vuex.Store({
         SET_MIRROR_BAT_ID(state, payload) {
 			state.mirrorBatId = payload;
 		},
-        SET_LAUNCHER_MENU_TARGET(state, payload) {
-            state.launcherMenuTarget = payload;
-        },
 		//Drive
 		// SET_DRIVE_MENU_POSITION(state, payload) {
 		// 	state.driveMenuPosition = payload;
