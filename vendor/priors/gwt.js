@@ -497,24 +497,28 @@ mobile browsers - not confirmed to work and difficult to debug.
 */
 function isOPFSAvailable() {
     let future = peergos.shared.util.Futures.incomplete();
-    let isSafari =
-    		/constructor/i.test(window.HTMLElement) ||
-    		    (function (p) {
-    			return p.toString() === "[object SafariRemoteNotification]";
-    		    })(!window["safari"] || safari.pushNotification);
-    let isMobile = /Mobi|Android/i.test(navigator.userAgent); // https://stackoverflow.com/a/24600597
-    if (!isSafari && !isMobile) {
-        navigator.storage.getDirectory().then(root => {
-            if (rootDirectory == null) {
-                rootDirectory = root;
-            }
-            future.complete(true);
-        }).catch(e => {
-            console.log('OPFS not available:' + e);
+    try {
+        let isSafari =
+    	    /constructor/i.test(window.HTMLElement) ||
+    	    (function (p) {
+    		return p.toString() === "[object SafariRemoteNotification]";
+    	    })(!window["safari"] || safari.pushNotification);
+        let isMobile = /Mobi|Android/i.test(navigator.userAgent); // https://stackoverflow.com/a/24600597
+        if (!isSafari && !isMobile) {
+            navigator.storage.getDirectory().then(root => {
+                if (rootDirectory == null) {
+                    rootDirectory = root;
+                }
+                future.complete(true);
+            }).catch(e => {
+                console.log('OPFS not available:' + e);
+                future.complete(false);
+            });
+        } else {
+            console.log('OPFS support not currently available for your browser');
             future.complete(false);
-        });
-    } else {
-        console.log('OPFS support not currently available for your browser');
+        }
+    } catch (e) {
         future.complete(false);
     }
     return future;
