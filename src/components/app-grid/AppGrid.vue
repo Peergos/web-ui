@@ -1,6 +1,6 @@
 <template>
-<div class="fillspace" style="display:flex;flex-direction:column;justify-content:space-between;">
-    <div class="appgrid">
+<div>
+    <div class="app-grid-flex-container">
         <transition name="app-grid-context-menu">
             <ul id="appMenu" v-if="showAppMenu" class="dropdown-menu" @mouseleave="menuLeave($event)" v-bind:style="{top:menutop, left:menuleft}" style="cursor:pointer;display:block;min-width:100px;padding: 10px;">
                 <li style="padding-bottom: 5px;" @mouseover="contextMenuHoverOver($event)" @mouseout="contextMenuHoverOut($event)" @keyup.enter="showDetails($event)" @click="showDetails($event)">Details</li>
@@ -21,12 +21,6 @@
                 </span>
             </a>
         </div>
-        <div v-if="this.iconCount() % 2 == 1" class="app-grid-item app-grid-filler-2"></div>
-        <div v-if="this.iconCount() % 3 == 1" class="app-grid-item app-grid-filler-3"></div>
-        <div v-if="this.iconCount() % 3 == 2 || this.iconCount() % 3 == 1" class="app-grid-item app-grid-filler-3"></div>
-        <div v-if="this.iconCount() % 4 == 1" class="app-grid-item app-grid-filler-4"></div>
-        <div v-if="this.iconCount() % 4 == 2 || this.iconCount() % 4 == 1" class="app-grid-item app-grid-filler-4"></div>
-        <div v-if="this.iconCount() % 4 == 3 || this.iconCount() % 4 == 2 || this.iconCount() % 4 == 1" class="app-grid-item app-grid-filler-4"></div>
     </div>
 </div>
 </template>
@@ -62,8 +56,8 @@ module.exports = {
 
             if (!e) var e = window.event;
             if (e.clientX || e.clientY) {
-                posx = e.clientX - 100;
-                posy = e.clientY - 170;
+                posx = e.clientX - 60;
+                posy = e.clientY - 100;
             }
             return {
                 x: posx,
@@ -97,6 +91,7 @@ module.exports = {
             this.closeMenu(e);
         },
         launch: function(app) {
+            this.closeMenu();
             if (!app.launchable) {
                 return;
             }
@@ -118,5 +113,14 @@ module.exports = {
 };
 </script>
 <style>
+.app-grid-flex-container {
+  display: flex;
+  flex-wrap: wrap;
+}
 
+.app-grid-flex-container > div {
+    width: 130px;
+    margin: 10px;
+    text-align: center;
+}
 </style>

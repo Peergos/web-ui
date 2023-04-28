@@ -331,6 +331,7 @@ table {
 }
 
 .pending-badge {
+    margin-left: 2px;
     display: inline-block;
     padding: 5px;
     font-size: 1px;

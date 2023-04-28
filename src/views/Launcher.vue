@@ -73,14 +73,14 @@
             </ul>
             <div>
                 <h3>Custom Apps
-                    <button class="btn btn-success" @click="navigateToRecommendedApps()" style="margin-left: 40px;">Recommended Apps</button>
-                    <button class="btn btn-info" @click="checkForAppUpdates()" style="margin-left: 40px;">Check for Updates</button>
+                    <button class="btn btn-success" @click="navigateToRecommendedApps()" style="margin-left: 10px;">Recommended Apps</button>
+                    <button class="btn btn-info" @click="checkForAppUpdates()" style="margin-left: 10px;">Check for Updates</button>
                     <span style="margin-left: 40px;">{{updateMessage}}</span>
                 </h3>
                 <div v-if="appsList.length ==0" class="table-responsive">
                     No Custom Apps currently installed.  Create an App from the "create app" menu item of the green plus.
                 </div>
-                <div v-if="appsList!=0" class="table-responsive">
+                <div v-if="appsList!=0">
                     <AppGrid
                         v-if="showAppGrid"
                         :launchAppFunc="launchAppFromUI"
