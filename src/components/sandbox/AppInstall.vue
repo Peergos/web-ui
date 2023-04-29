@@ -86,7 +86,7 @@ module.exports = {
             installAppFromFolder: "",
         }
     },
-    props: ['appPropsFile','installFolder'],
+    props: ['appPropsFile','installFolder', "appInstallSuccessFunc"],
     mixins:[mixins, downloaderMixin, sandboxMixin],
     computed: {
         ...Vuex.mapState([
@@ -108,8 +108,8 @@ module.exports = {
         close: function () {
             this.$emit("hide-app-installation");
         },
-        indicateAppInstallSuccess: function () {
-            this.$emit("app-install-success");
+        indicateAppInstallSuccess: function (appName) {
+            this.appInstallSuccessFunc(appName);
         },
         loadAppProperties: function() {
             let that = this;
@@ -369,7 +369,7 @@ module.exports = {
                                 that.spinnerMessage = "";
                                 that.registerApp(that.appProperties);
                                 that.showMessage("Installed App: " + displayName);
-                                that.indicateAppInstallSuccess();
+                                that.indicateAppInstallSuccess(app);
                                 that.close();
                                 future.complete(true);
                             });

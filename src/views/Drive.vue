@@ -182,7 +182,7 @@
         <AppInstall
             v-if="showAppInstallation"
             v-on:hide-app-installation="closeAppInstallation"
-            v-on:app-install-success="appInstallSuccess"
+            :appInstallSuccessFunc="appInstallSuccess"
             :appPropsFile="selectedFiles[0]"
             :installFolder="getPath">
         </AppInstall>
@@ -897,7 +897,7 @@ module.exports = {
 			this.showPendingServerMessages();
 		},
 
-        appInstallSuccess() {
+        appInstallSuccess(appName) {
         },
 
 		setSortBy(prop) {

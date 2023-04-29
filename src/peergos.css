@@ -330,20 +330,6 @@ table {
     }
 }
 
-.pending-badge {
-    display: inline-block;
-    min-width: 30px;
-    padding: 7px;
-    font-size: 16px;
-    font-weight: 700;
-    line-height: 1;
-    white-space: nowrap;
-    vertical-align: baseline;
-    background-color: #26b99a;
-    color: #3c5980;
-    border-radius: 30px;
-}
-
 .column {
     display: inline-block;
     vertical-align: top;
@@ -485,20 +471,6 @@ h3 {word-wrap:break-word; white-space:normal;}
   .app-grid-filler-4 {
       display: block;
   }
-}
-
-.app-icon {
-    margin: .25em;
-    margin-bottom: 0;
-    display: flex;
-    justify-content: center;
-    flex-direction: column;
-    align-items: center;
-}
-
-.app-icon-title {
-    font-size: .3em;
-    text-align: center;
 }
 
 .sidenav {

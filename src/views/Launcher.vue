@@ -28,7 +28,7 @@
             <AppInstall
                 v-if="showAppInstallation"
                 v-on:hide-app-installation="closeAppInstallation"
-                v-on:app-install-success="appInstallSuccess"
+                :appInstallSuccessFunc="appInstallSuccess"
                 :appPropsFile="appInstallPropsFile"
                 :installFolder="appInstallFolder">
             </AppInstall>
@@ -73,40 +73,22 @@
             </ul>
             <div>
                 <h3>Custom Apps
-                    <button class="btn btn-success" @click="navigateToRecommendedApps()" style="margin-left: 40px;">Recommended Apps</button>
-                    <button class="btn btn-info" @click="checkForAppUpdates()" style="margin-left: 40px;">Check for Updates</button>
+                    <button class="btn btn-success" @click="navigateToRecommendedApps()" style="margin-left: 10px;">Recommended Apps</button>
+                    <button class="btn btn-info" @click="checkForAppUpdates()" style="margin-left: 10px;">Check for Updates</button>
                     <span style="margin-left: 40px;">{{updateMessage}}</span>
                 </h3>
                 <div v-if="appsList.length ==0" class="table-responsive">
                     No Custom Apps currently installed.  Create an App from the "create app" menu item of the green plus.
                 </div>
-                <div v-if="appsList!=0" class="table-responsive">
-                    <table class="table" style="width: 70%;">
-                        <thead>
-                        <tr  v-if="appsList.length!=0" style="cursor:pointer;">
-                            <th></th>
-                            <th @click="setAppsSortBy('name')">Name <span v-if="appsSortBy=='name'" v-bind:class="['fas', appsNormalSortOrder ? 'fa-angle-down' : 'fa-angle-up']"/></th>
-                            <th></th>
-                            <th></th>
-                            <th></th>
-                        </tr>
-                        </thead>
-                        <tbody>
-                        <tr v-for="app in sortedApps">
-                            <td>
-                                <img v-if="app.appIcon.length > 0 && app.thumbnail != null" v-bind:src="app.thumbnail" style="width:50px;height:50px;"/>
-                            </td>
-                            <td v-if="app.launchable"><button class="btn btn-success" @click="launchAppFromButton(app)">{{ app.displayName }}</button></td>
-                            <td v-if="!app.launchable">{{ app.displayName }}</td>
-                            <td> <button class="btn btn-info" @click="displayAppDetails(app)">Details</button>
-                            </td>
-                            <td> <button class="btn btn-danger" @click="removeApp(app)">Remove</button>
-                            </td>
-                            <td> <button v-if="app.updateAvailable" class="btn btn-info" @click="updateApp(app)">Update</button>
-                            </td>
-                        </tr>
-                        </tbody>
-                    </table>
+                <div v-if="appsList!=0">
+                    <AppGrid
+                        v-if="showAppGrid"
+                        :launchAppFunc="launchAppFromUI"
+                        :appDetailsFunc="displayAppDetails"
+                        :removeAppFunc="removeApp"
+                        :updateAppFunc="updateApp"
+                        :apps="appGridItems">
+                    </AppGrid>
                 </div>
             </div>
             <div>
@@ -197,6 +179,7 @@
 const AppInstall = require("../components/sandbox/AppInstall.vue");
 const AppHeader = require("../components/AppHeader.vue");
 const AppDetails = require("../components/sandbox/AppDetails.vue");
+const AppGrid = require("../components/app-grid/AppGrid.vue");
 const AppSandbox = require("../components/sandbox/AppSandbox.vue");
 const NewFilePicker = require("../components/picker/NewFilePicker.vue");
 const Share = require("../components/drive/DriveShare.vue");
@@ -209,6 +192,7 @@ module.exports = {
         AppInstall,
 		AppHeader,
 		AppDetails,
+		AppGrid,
 		AppSandbox,
 		NewFilePicker,
 		Share
@@ -244,7 +228,6 @@ module.exports = {
             showSharedItems: false,
             updateMessage:'',
             showAppInstallation: false,
-            installingAppName: '',
             appInstallPropsFile: null,
             appInstallFolder: '',
             availableApps: [],
@@ -259,10 +242,25 @@ module.exports = {
             replace_body: "",
             replace_consumer_cancel_func: (applyToAll) => { },
             replace_consumer_func: (applyToAll) => { },
+            showAppGrid: false,
+            forceAppDisplayUpdate: 0,
+            appGridItems: []
         }
     },
     props: [],
     mixins:[routerMixins, mixins, launcherMixin, sandboxMixin],
+	watch: {
+		forceAppDisplayUpdate(newUpdateCounter, oldUpdateCounter) {
+		    let that = this;
+            this.showAppGrid = false;
+			this.appGridItems = this.appsList.slice().sort(function (a, b) {
+                 return ('' + a.name).localeCompare(b.name);
+             });
+            Vue.nextTick(function() {
+                that.showAppGrid = true;
+            });
+		},
+    },
     computed: {
         ...Vuex.mapState([
             'context',
@@ -331,19 +329,6 @@ module.exports = {
                 });
             }
         },
-        sortedApps(){
-            var sortBy = this.appsSortBy;
-            var reverseOrder = ! this.appsNormalSortOrder;
-            if(sortBy == "name") {
-                return this.appsList.sort(function (a, b) {
-                    if (reverseOrder) {
-                        return ('' + b.name).localeCompare(a.name);
-                    } else {
-                        return ('' + a.name).localeCompare(b.name);
-                    }
-                });
-            }
-        },
         sortedSharedItems(){
             var sortBy = this.sortBy;
             var reverseOrder = ! this.normalSortOrder;
@@ -406,7 +391,7 @@ module.exports = {
             this.replace_consumer_func = replaceFn;
             this.showReplace = true;
         },
-        launchAppFromButton: function(app) {
+        launchAppFromUI: function(app) {
             if (app.createFile) {
                 let that = this;
                 this.prompt_consumer_func = function (prompt_result, folder) {
@@ -526,23 +511,20 @@ module.exports = {
                 that.showSpinner = false;
             }
         },
-        appInstallSuccess() {
-            if (this.installingAppName.length > 0) {
-                let appIndex = this.appsList.findIndex(v => v.name === this.installingAppName);
-                let appRow = this.appsList[appIndex];
-                this.appsList.splice(appIndex, 1);
-                appRow.updateAvailable = false;
-                this.appsList.push(appRow);
-                this.installingAppName = '';
-                this.updateMessage = '';
-            }
+        appInstallSuccess(appName) {
+            let appIndex = this.appsList.findIndex(v => v.name === appName);
+            let appRow = this.appsList[appIndex];
+            this.appsList.splice(appIndex, 1);
+            appRow.updateAvailable = false;
+            this.appsList.push(appRow);
+            this.updateMessage = '';
+            this.forceAppDisplayUpdate++;
         },
         closeAppInstallation() {
             this.showAppInstallation = false;
         },
         updateApp: function(app) {
             let that = this;
-            this.installingAppName = app.name;
             let pathStr = app.source.endsWith('/') ? app.source  : app.source + '/';
             this.context.getByPath(pathStr + 'peergos-app.json').thenApply(propsFileOpt => {
                 if (propsFileOpt.ref != null) {
@@ -570,9 +552,8 @@ module.exports = {
                     let appName = appsWithUpdates[i].name;
                     let appIndex = that.appsList.findIndex(v => v.name === appName);
                     let appRow = that.appsList[appIndex];
-                    that.appsList.splice(appIndex, 1);
                     appRow.updateAvailable = true;
-                    that.appsList.push(appRow);
+                    that.forceAppDisplayUpdate++;
                 }
                 that.showSpinner = false;
             });
@@ -619,20 +600,32 @@ module.exports = {
         },
         loadAppIcons: function() {
             let that = this;
-            this.appsList.filter(app => app.appIcon.length > 0).forEach(app => {
-                let fullPathToAppIcon = "/" + that.context.username + "/.apps/" + app.name + '/assets/' + app.appIcon;
-                that.findFile(fullPathToAppIcon).thenApply(file => {
-                    if (file != null) {
-                       let appIndex = that.appsList.findIndex(v => v.name === app.name);
-                       if (appIndex > -1) {
-                           let appRow = that.appsList[appIndex];
-                           that.appsList.splice(appIndex, 1);
-                           appRow.thumbnail = file.getBase64Thumbnail();
-                           that.appsList.push(appRow);
-                       }
-                    }
+            this.loadAppIconsRecursively(this.appsList, 0, () => {
+                    that.forceAppDisplayUpdate++;
                 });
-            });
+        },
+        loadAppIconsRecursively: function(apps, index, cb) {
+            if (index == apps.length) {
+                cb();
+            } else {
+                let that = this;
+                let app = apps[index];
+                if (app.appIcon.length == 0) {
+                    this.loadAppIconsRecursively(apps, index + 1, cb);
+                } else {
+                    let fullPathToAppIcon = "/" + this.context.username + "/.apps/" + app.name + '/assets/' + app.appIcon;
+                    that.findFile(fullPathToAppIcon).thenApply(file => {
+                        if (file != null) {
+                           let appIndex = that.appsList.findIndex(v => v.name === app.name);
+                           if (appIndex > -1) {
+                               let appRow = that.appsList[appIndex];
+                               appRow.thumbnail = file.getBase64Thumbnail();
+                           }
+                        }
+                        that.loadAppIconsRecursively(apps, index + 1, cb);
+                    });
+                }
+            }
         },
         setShortcutList: function(shortcutsMap) {
             let that = this;
@@ -724,6 +717,7 @@ module.exports = {
                 let appIndex = that.appsList.findIndex(v => v.name === app.name);
                 if (appIndex > -1) {
                     that.appsList.splice(appIndex, 1);
+                    that.forceAppDisplayUpdate++;
                 }
                 that.showSpinner = false;
             }).exceptionally(function(throwable) {
