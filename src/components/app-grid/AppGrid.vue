@@ -123,4 +123,30 @@ module.exports = {
     margin: 10px;
     text-align: center;
 }
+
+.pending-badge {
+    margin-left: 2px;
+    display: inline-block;
+    padding: 5px;
+    font-size: 1px;
+    background-color: #26b99a;
+    color: #26b99a;
+    border-radius: 30px;
+}
+
+.app-icon {
+    margin: .25em;
+    margin-bottom: 0;
+    display: flex;
+    justify-content: center;
+    flex-direction: column;
+    align-items: center;
+    font-size: xxx-large;
+}
+
+.app-icon-title {
+    font-size: .3em;
+    text-align: center;
+}
+
 </style>

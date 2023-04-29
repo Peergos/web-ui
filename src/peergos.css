@@ -330,16 +330,6 @@ table {
     }
 }
 
-.pending-badge {
-    margin-left: 2px;
-    display: inline-block;
-    padding: 5px;
-    font-size: 1px;
-    background-color: #26b99a;
-    color: #26b99a;
-    border-radius: 30px;
-}
-
 .column {
     display: inline-block;
     vertical-align: top;
@@ -481,21 +471,6 @@ h3 {word-wrap:break-word; white-space:normal;}
   .app-grid-filler-4 {
       display: block;
   }
-}
-
-.app-icon {
-    margin: .25em;
-    margin-bottom: 0;
-    display: flex;
-    justify-content: center;
-    flex-direction: column;
-    align-items: center;
-    font-size: xxx-large;
-}
-
-.app-icon-title {
-    font-size: .3em;
-    text-align: center;
 }
 
 .sidenav {
