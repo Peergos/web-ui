@@ -52,8 +52,7 @@ module.exports = {
             showSpinner: true,
             spinnerMessage: 'Loading folders...',
             treeData: {},
-            selectedFoldersList: [],
-            walkCounter: 0,
+            selectedFoldersList: []
         }
     },
     props: ['baseFolder', 'selectedFolder_func'],

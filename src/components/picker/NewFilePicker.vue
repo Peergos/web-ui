@@ -68,10 +68,9 @@ module.exports = {
 			max_input_size: 30,
 			action: 'ok',
 			folder_result: '',
-            showSpinner: true,
+            showSpinner: false,
             spinnerMessage: 'Loading...',
-            treeData: {},
-            walkCounter: 0,
+            treeData: {}
 		}
 	},
 	props: {
@@ -103,6 +102,7 @@ module.exports = {
     created: function() {
         let that = this;
         this.placeholder = 'filename.' + this.pickerFileExtension;
+        this.showSpinner = true;
         let callback = (baseOfFolderTree) => {
             that.treeData = baseOfFolderTree;
             that.showSpinner = false;
@@ -118,11 +118,13 @@ module.exports = {
 
 		getPrompt() {
 		    var filename = this.prompt_result;
-		    if (!filename.endsWith(this.pickerFileExtension)) {
-		        filename = filename + '.' + this.pickerFileExtension;
-		    }
-			this.consumer_func(filename, this.folder_result);
-			this.$emit("hide-prompt");
+		    if (filename.length > 0 && this.folder_result.length > 0) {
+                if (!filename.endsWith(this.pickerFileExtension)) {
+                    filename = filename + '.' + this.pickerFileExtension;
+                }
+                this.consumer_func(filename, this.folder_result);
+                this.$emit("hide-prompt");
+            }
 		},
 
         selectFolder: function (folderName) {
