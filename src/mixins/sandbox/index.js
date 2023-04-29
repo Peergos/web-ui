@@ -405,7 +405,9 @@ module.exports = {
             let editPermission = props.permissions.filter(p => p == 'EDIT_CHOSEN_FILE').length > 0;
             let contextMenuText = editPermission ? 'Edit in ' + props.displayName : 'View in ' + props.displayName;
 
-            let hasFileExtensions = props.fileExtensions.length > 0;
+            let hasFileExtensions = props.fileExtensions.length > 0
+                && props.fileExtensions[0].trim().length > 0
+                && props.fileExtensions[0] != '*';
             let createFile = editPermission && hasFileExtensions;
             let primaryFileExtension = hasFileExtensions ? props.fileExtensions[0] : '';
             let item = {name: props.name, displayName: props.displayName,
