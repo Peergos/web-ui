@@ -59,6 +59,8 @@ module.exports = {
                 posx = e.clientX - 60;
                 posy = e.clientY - 100;
             }
+            if (e.layerX) // This fixes too large X when side bar is open
+                posx = e.layerX;
             return {
                 x: posx,
                 y: posy
