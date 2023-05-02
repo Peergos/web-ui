@@ -11,11 +11,17 @@
         <div v-for="app in apps">
             <a @click="launch(app)" class="app-grid-item" v-on:keyup.enter="launch(app)" @contextmenu="showMenu($event, app)">
                 <span class="app-icon">
-                    <div v-if="app.thumbnail == null" >
+                    <div v-if="app.thumbnail == null && app.launchable" >
                         <i data-placement="bottom" class="fa fa-cog" style="cursor: pointer;"></i>
                     </div>
-                    <div v-if="app.thumbnail != null" >
+                    <div v-if="app.thumbnail == null && !app.launchable" >
+                        <i data-placement="bottom" class="fa fa-cog"></i>
+                    </div>
+                    <div v-if="app.thumbnail != null && app.launchable" >
                         <img v-bind:src="app.thumbnail" style="width:50px;height:50px;cursor: pointer;"/>
+                    </div>
+                    <div v-if="app.thumbnail != null && !app.launchable" >
+                        <img v-bind:src="app.thumbnail" style="width:50px;height:50px;"/>
                     </div>
                     <label class="app-icon-title">{{app.displayName}}<span v-if="app.updateAvailable" id="pendingSpan" class="pending-badge" >{{0}}</span></label>
                 </span>
