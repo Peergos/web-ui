@@ -1,92 +1,22 @@
 <template>
-	<div class="modal-mask" @click="close">
-		<div
-			class="modal-container gallery full-height"
-			@click.stop
-			style="overflow-y: auto"
-			@keyup.right="next"
-			@keyup.left="previous"
-		>
-			<span
-				@click="close"
-				tabindex="0"
-				v-on:keyup.enter="close"
-				aria-label="close"
-				class="close"
-				>&times;</span
-			>
+	<div class="gallery-mask" @click="close">
+		<div class="gallery-container gallery" @click.stop @keyup.right="next" @keyup.left="previous">
+			<div tabindex="0" @click="close" v-on:keyup.enter="close" aria-label="close" class="slideshow-close"><span>&times;</span></div>
 			<spinner v-if="showSpinner"></spinner>
-			<center>
-				<h2 v-if="current != null">{{ showGalleryTitle(current) }}</h2>
-			</center>
-                        <warning 
-                            v-if="showWarning" 
-                            v-on:hide-warning="hideWarning"
-                            :warning_message='warning_message'
-                            :warning_body="warning_body"
-                            :consumer_func="warning_consumer_func">
-                        </warning>
-			<center v-if="showMedia && showableFiles.length > 1">
-			    <div class="btn-group" style="padding: 10px">
-                                <button class="btn btn-success flex-grow" @click="start()" >First</button>
-                                <button class="btn btn-success flex-grow" @click="previous()" >Previous</button>
-                                <button class="btn btn-success flex-grow" @click="next()" >Next</button>
-                                <button class="btn btn-success flex-grow" @click="end()" >Last</button>
-			    </div>
-			</center>
-			<center
-                                v-if="showMedia"
-				style="height: 75%"
-				@keyup.right="next"
-				@keyup.left="previous"
-			>
-				<img
-					v-if="currentIsImage"
-					style="
-						height: 100%;
-						max-width: 100%;
-						max-height: 100%;
-						text-align: center;
-						line-height: 200px;
-                                                object-fit: contain;
-					"
-					@click="next()"
-					v-on:longpress="openMenu($event, current)"
-					v-on:contextmenu="openMenu($event, current)"
-					v-bind:src="dataURL"
-					alt="Image loading..."
-					@keyup.right="next"
-					@keyup.left="previous"
-				/>
-				<video id="video-element"
-					v-if="currentIsVideo"
-					style="
-						height: 100%;
-						max-width: 100%;
-						max-height: 100%;
-						text-align: center;
-						line-height: 200px;
-					"
-					v-bind:src="dataURL"
-					autoplay="true"
-					alt="Video loading..."
-					controls
-				/>
-                <audio id="audio-element"
-                    v-if="currentIsAudio"
-                    style="
-                        height: 100%;
-                        max-width: 100%;
-                        max-height: 100%;
-                        text-align: center;
-                        line-height: 200px;
-                    "
-                    v-bind:src="dataURL"
-                    autoplay="true"
-                    alt="Audio loading..."
-                    controls
-                />
-			</center>
+            <warning
+                v-if="showWarning"
+                v-on:hide-warning="hideWarning"
+                :warning_message='warning_message'
+                :warning_body="warning_body"
+                :consumer_func="warning_consumer_func">
+            </warning>
+            <div id="slideshow-container">
+            	<div id="slideshow-info-id" :class="{ 'hidden-info': isInfoHidden, 'slideshow-info': true }"></div>
+            	<button id="slideshow-next" style="cursor:auto"><span @click="next" style="cursor:pointer">▶</span></button>
+            	<button id="slideshow-prev" style="cursor:auto"><span @click="previous" style="cursor:pointer">◀</span></button>
+            	<div id="slideshow-wrapper-id" class="slideshow-wrapper">
+            	</div>
+            </div>
 		</div>
 	</div>
 </template>
@@ -99,15 +29,11 @@ module.exports = {
 		return {
 		    showSpinner: false,
 		    fileIndex: 0,
-		    imageData: null,
-		    mediaUrl: null,
 		    pinging: false,
-                    showMedia: false,
-                    showWarning: false,
+            showWarning: false,
 		    warning_message: "",
 		    warning_body: "",
-		    warning_consumer_func: () => { },
-		    initialised : false
+		    warning_consumer_func: () => {}
 		};
 	},
 	props: ["files", "initialFileName", "hideGalleryTitle"],
@@ -116,52 +42,6 @@ module.exports = {
 		...Vuex.mapState([
 			'context',
 		]),
-		current() {
-			if (this.showableFiles == null || this.showableFiles.length == 0)
-				return null;
-			var file = this.showableFiles[this.fileIndex];
-			let thumbnail = file.getBase64Thumbnail();
-			let that = this;
-			if ('mediaSession' in navigator) {
-                if (this.isAudio(file) || this.isVideo(file)) {
-                    navigator.mediaSession.metadata = new MediaMetadata({
-                        title: that.showGalleryTitle(file),
-                        artwork: [{ src: thumbnail}]
-                    });
-                    that.addMediaHandlers(file);
-                }
-            }
-			return file;
-		},
-		dataURL() {
-			console.log("Getting data url");
-			if (this.mediaUrl != null) {
-				var url = this.mediaUrl;
-				this.mediaUrl = null;
-				return url;
-			}
-			if (this.imageData == null) {
-				console.log("No URL for null imageData");
-				return null;
-			}
-            let type = this.current.getFileProperties().mimeType;
-			var blob = new Blob([this.imageData], { type: type });
-			var dataURL = window.URL.createObjectURL(blob);
-			console.log("Setting data url to " + dataURL);
-			return dataURL;
-		},
-		currentIsVideo() {
-			return this.isVideo(this.current);
-		},
-		currentIsImage() {
-			return this.isImage(this.current);
-		},
-		currentIsAudio() {
-			return this.isAudio(this.current);
-		},
-		currentIsVideoOrAudio() {
-			return this.isVideo(this.current) || this.isAudio(this.current);
-		},
 		showableFiles() {
 			if (this.files == null) return null;
 			var that = this;
@@ -172,97 +52,71 @@ module.exports = {
 				return is_image || is_video || is_audio;
 			});
 		},
+        isInfoHidden() {
+            return this.hideGalleryTitle;
+        },
 	},
 	created() {
 	    var showable = this.showableFiles;
-	    for (var i = 0; i < showable.length; i++)
-		if (showable[i].getFileProperties().name == this.initialFileName)
-		    this.fileIndex = i;
+	    for (var i = 0; i < showable.length; i++) {
+		    if (showable[i].getFileProperties().name == this.initialFileName) {
+		        this.fileIndex = i;
+		        break;
+		    }
+        }
 	    console.log("Set initial gallery index to " + this.fileIndex);
 	    window.addEventListener("keyup", this.keyup);
+	},
+	mounted() {
         let that = this;
-        this.confirmView(this.current, () => {
+        if (this.showableFiles.length == 0) {
+            this.close();
+        }
+        let currentFile =  this.showableFiles[this.fileIndex];
+        this.confirmView(currentFile, () => {
             that.showWarning = false;
-            that.showMedia = true;
-            that.updateCurrentFileData();
+            that.update();
         })
 	},
-
-	watch: {
-		files(newFiles) {
-			this.files = newFiles;
-			this.updateCurrentFileData();
-		},
-	},
-    updated: function () {
-        let that = this;
-        if (!this.initialised) {
-            this.initialised = true;
-            this.$nextTick(function () {
-                that.addMediaHandlers(this.current);
-            })
-        }
-    },
 	methods: {
-	    addMediaHandlers(file) {
-	        let that = this;
-	        if ('mediaSession' in navigator && (this.isAudio(file) || this.isVideo(file))) {
-                let mediaElement = document.getElementById(this.isAudio(file) ? "audio-element" : "video-element");
-                if (mediaElement != null) {
-                    navigator.mediaSession.setActionHandler('pause', () => {
-                        mediaElement.pause();
-                    });
-                    navigator.mediaSession.setActionHandler('play', () => {
-                        mediaElement.play();
-                    });
-                    let defaultSeekOffset = 10;
-                    navigator.mediaSession.setActionHandler('seekbackward', (details) => {
-                        mediaElement.currentTime = mediaElement.currentTime - (details.seekOffset || defaultSeekOffset);
-                    });
-                    navigator.mediaSession.setActionHandler('seekforward', (details) => {
-                        mediaElement.currentTime = mediaElement.currentTime + (details.seekOffset || defaultSeekOffset);
-                    });
-                    navigator.mediaSession.setActionHandler('previoustrack', () => {
-                        that.previous();
-                    });
-                    navigator.mediaSession.setActionHandler('nexttrack', () => {
-                        that.next();
-                    });
-                }
-            }
-	    },
-		showGalleryTitle(current) {
-			if (this.hideGalleryTitle) {
-				return "";
-			} else {
-				return current.getFileProperties().name;
+		showGalleryTitle() {
+			if (!this.hideGalleryTitle) {
+			    let index = this.showableFiles.length > 1 ? (this.fileIndex + 1) + "/" + this.showableFiles.length + ' ' : '';
+				let text =  index + this.showableFiles[this.fileIndex].getFileProperties().name;
+				let infoElement = document.getElementById("slideshow-info-id");
+				infoElement.innerText = text;
 			}
 		},
 		close() {
 		    this.pinging = false;
-                    this.showWarning = false;
+            this.showWarning = false;
 		    this.$emit("hide-gallery");
 		},
 
 		hideWarning() {
-                    this.showWarning = false;
+            this.showWarning = false;
 		},
 
 		keyup(e) {
-			if (e.keyCode == 37) this.previous();
-			else if (e.keyCode == 39) this.next();
+    		e.preventDefault();
+			if (e.key === "ArrowLeft") this.previous();
+			else if (e.key === "ArrowRight") this.next();
+            else if (e.key === "ArrowUp") this.start();
+            else if (e.key === "ArrowDown") this.end();
 		},
 
 		start() {
-			this.fileIndex = 0;
-			this.updateCurrentFileData();
+		    if (this.fileIndex != 0) {
+	    		this.fileIndex = 0;
+    			this.update();
+			}
 		},
 
 		end() {
-			if (this.showableFiles == null || this.showableFiles.length == 0)
-				this.fileIndex = 0;
-			else this.fileIndex = this.showableFiles.length - 1;
-			this.updateCurrentFileData();
+			if (this.fileIndex != this.showableFiles.length - 1) {
+                this.fileIndex = this.showableFiles.length - 1;
+    			this.update();
+            }
 		},
 
 		startPing(pingUrl) {
@@ -272,28 +126,23 @@ module.exports = {
 		},
 
 		next() {
-			if (this.showableFiles == null || this.showableFiles.length == 0)
-				this.fileIndex = 0;
-			else if (this.fileIndex < this.showableFiles.length - 1)
+            if (this.fileIndex < this.showableFiles.length - 1) {
 				this.fileIndex++;
-			this.updateCurrentFileData();
+			    this.update();
+			}
 		},
 
 		previous() {
-			if (
-				this.showableFiles == null ||
-				this.showableFiles.length == 0 ||
-				this.fileIndex == 0
-			)
-				this.fileIndex = 0;
-			else this.fileIndex--;
-			this.updateCurrentFileData();
+			if (this.fileIndex > 0) {
+                this.fileIndex--;
+    			this.update();
+            }
 		},
 		confirmView(file, viewFn) {
-			var size = this.getFileSize(file.getFileProperties());
+			let size = this.getFileSize(file.getFileProperties());
 			if (this.supportsVideoStreaming() || size < 50 * 1024 * 1024)
 				return viewFn();
-			var sizeMb = (size / 1024 / 1024) | 0;
+			let sizeMb = (size / 1024 / 1024) | 0;
 			this.warning_message = 'Are you sure you want to view ' + file.getName() + " of size " + sizeMb + 'MiB?';
 			if (this.detectFirefoxWritableSteams()) {
 				this.warning_body = "Firefox has added support for streaming behind a feature flag. To enable streaming; open about:config, enable 'javascript.options.writable_streams' and then open a new tab";
@@ -303,24 +152,95 @@ module.exports = {
 			this.warning_consumer_func = viewFn;
 			this.showWarning = true;
 		},
-        updateCurrentFileData() {
-			var file = this.current;
-			if (file == null) {
-				console.log("null file in gallery");
-				return;
-			}
+        addMediaHandlers(mediaElement, file) {
+            let that = this;
+            if ('mediaSession' in navigator) {
+                let thumbnail = file.getBase64Thumbnail();
+                navigator.mediaSession.metadata = new MediaMetadata({
+                    title: file.getFileProperties().name,
+                    artwork: [{ src: thumbnail}]
+                });
+                navigator.mediaSession.setActionHandler('pause', () => {
+                    mediaElement.pause();
+                });
+                navigator.mediaSession.setActionHandler('play', () => {
+                    mediaElement.play();
+                });
+                let defaultSeekOffset = 10;
+                navigator.mediaSession.setActionHandler('seekbackward', (details) => {
+                    mediaElement.currentTime = mediaElement.currentTime - (details.seekOffset || defaultSeekOffset);
+                });
+                navigator.mediaSession.setActionHandler('seekforward', (details) => {
+                    mediaElement.currentTime = mediaElement.currentTime + (details.seekOffset || defaultSeekOffset);
+                });
+                navigator.mediaSession.setActionHandler('previoustrack', () => {
+                    that.previous();
+                });
+                navigator.mediaSession.setActionHandler('nexttrack', () => {
+                    that.next();
+                });
+            }
+        },
+        updateMediaElement(index, url) {
+            let that = this;
+            this.showGalleryTitle();
+            let file = this.showableFiles[index];
+            this.$nextTick(function () {
+                let next = document.getElementById("slideshow-next");
+                let prev = document.getElementById("slideshow-prev");
+                if (index === 0) {
+                    prev.classList.add('hidden');
+                } else {
+                    prev.classList.remove('hidden');
+                }
+                if (index === this.showableFiles.length - 1) {
+                    next.classList.add('hidden');
+                } else {
+                    next.classList.remove('hidden');
+                }
+                let wrapper = document.getElementById("slideshow-wrapper-id");
+                wrapper.innerText = '';
+                if(that.isVideo(file)) {
+                    wrapper.style.backgroundImage = '';
+                    let vid = document.createElement('video');
+                    vid.setAttribute('autoplay','true');
+                    vid.setAttribute('controls','true');
+                    vid.setAttribute('src', url);
+                    wrapper.appendChild(vid);
+                    that.addMediaHandlers(vid, file);
+                } else if(that.isAudio(file)) {
+                    wrapper.style.backgroundImage = '';
+                    let audio = document.createElement('audio');
+                    audio.setAttribute('autoplay','true');
+                    audio.setAttribute('controls','true');
+                    audio.setAttribute('src', url);
+                    wrapper.appendChild(audio);
+                    that.addMediaHandlers(audio, file);
+                } else {
+                    wrapper.innerText = '';
+                    let img = new Image();
+                    img.src = url;
+                    img.onload = function() {
+                        wrapper.style.backgroundImage = `url(${url})`;
+                    }
+                }
+            });
+        },
+        update() {
+            let index = this.fileIndex;
+			let file = this.showableFiles[this.fileIndex];
 			if (file.isDirectory()) return;
-			var props = file.getFileProperties();
-			var that = this;
+			let props = file.getFileProperties();
+			let that = this;
 			this.showSpinner = true;
 
-			var isLargeAudioFile =
+			let isLargeAudioFile =
 				that.isAudio(file) && that.getFileSize(props) > 1024 * 1024 * 5;
 			if (
 				that.supportsVideoStreaming() &&
 				(that.isVideo(file) || isLargeAudioFile)
 			) {
-				var size = that.getFileSize(props);
+				let size = that.getFileSize(props);
 				function Context(file, network, crypto, sizeHigh, sizeLow) {
 					this.maxBlockSize = 1024 * 1024 * 5;
 					this.writer = null;
@@ -330,56 +250,39 @@ module.exports = {
 					(this.sizeHigh = sizeHigh), (this.sizeLow = sizeLow);
 					this.readerFuture = null;
 					this.stream = function (seekHi, seekLo, length, uuid) {
-						var work = function (thatRef, header) {
+						let work = function (thatRef, header) {
 							var currentSize = length;
-							var blockSize =
-								currentSize > this.maxBlockSize
-									? this.maxBlockSize
-									: currentSize;
-							var pump = function (reader) {
+							var blockSize = currentSize > this.maxBlockSize ? this.maxBlockSize: currentSize;
+							let pump = function (reader) {
 								if (blockSize > 0) {
-                                    var bytes = new Uint8Array(blockSize + header.byteLength);
+                                    let bytes = new Uint8Array(blockSize + header.byteLength);
                                     for(var i=0;i < header.byteLength;i++){
                                         bytes[i] = header[i];
                                     }
-                                    var data = convertToByteArray(bytes);
+                                    let data = convertToByteArray(bytes);
 									return reader
 										.readIntoArray(data, header.byteLength, blockSize)
 										.thenApply(function (read) {
-											currentSize =
-												currentSize - read.value_0;
-											blockSize =
-												currentSize >
-												thatRef.maxBlockSize
-													? thatRef.maxBlockSize
+											currentSize = currentSize - read.value_0;
+											blockSize = currentSize > thatRef.maxBlockSize ? thatRef.maxBlockSize
 													: currentSize;
 											thatRef.writer.write(data);
 											return pump(reader);
 										});
 								} else {
-									var future =
-										peergos.shared.util.Futures.incomplete();
+									var future = peergos.shared.util.Futures.incomplete();
 									future.complete(true);
 									return future;
 								}
 							};
-							var updated =
-								thatRef.readerFuture != null
-									? thatRef.readerFuture
-									: file.getBufferedInputStream(
-											network,
-											crypto,
-											sizeHigh,
-											sizeLow,
-											10,
-											function (read) {}
-									  );
-							updated.thenCompose(function (reader) {
+							var update = thatRef.readerFuture != null ? thatRef.readerFuture
+									: file.getBufferedInputStream(network, crypto, sizeHigh, sizeLow, 10,
+											function (read) {});
+							update.thenCompose(function (reader) {
 								return reader
 									.seekJS(seekHi, seekLo)
 									.thenApply(function (seekReader) {
-										var readerFuture =
-											peergos.shared.util.Futures.incomplete();
+										var readerFuture = peergos.shared.util.Futures.incomplete();
 										readerFuture.complete(seekReader);
 										thatRef.readerFuture = readerFuture;
 										return pump(seekReader);
@@ -389,19 +292,12 @@ module.exports = {
 						return work(this, buildHeader(uuid));
 					};
 				}
-				const context = new Context(
-					file,
-					this.context.network,
-					this.context.crypto,
-					props.sizeHigh(),
-					props.sizeLow()
-				);
+				const context = new Context(file, this.context.network, this.context.crypto, props.sizeHigh(),
+					props.sizeLow());
 				console.log("streaming data of length " + size);
-				let fileStream = streamSaver.createWriteStream(
-					"media-" + props.name,
-					props.mimeType,
+				let fileStream = streamSaver.createWriteStream("media-" + props.name, props.mimeType,
 					function (url) {
-						that.mediaUrl = url;
+					    that.updateMediaElement(index, url);
 						that.showSpinner = false;
 						that.pinging = true;
 						that.startPing(url + "/ping");
@@ -409,29 +305,22 @@ module.exports = {
 					function (seekHi, seekLo, seekLength, uuid) {
 						context.stream(seekHi, seekLo, seekLength, uuid);
 					},
-					undefined,
-					size
-				);
+					undefined, size);
 				context.writer = fileStream.getWriter();
 			} else {
-				file.getInputStream(
-					this.context.network,
-					this.context.crypto,
-					props.sizeHigh(),
-					props.sizeLow(),
+				file.getInputStream(this.context.network, this.context.crypto, props.sizeHigh(), props.sizeLow(),
 					function (read) {}
 				).thenCompose(function (reader) {
-					var size = that.getFileSize(props);
-					var data = convertToByteArray(new Int8Array(size));
-					return reader
-						.readIntoArray(data, 0, data.length)
+					let size = that.getFileSize(props);
+					let data = convertToByteArray(new Int8Array(size));
+					return reader.readIntoArray(data, 0, data.length)
 						.thenApply(function (read) {
-							that.imageData = data;
+                            let type = file.getFileProperties().mimeType;
+                            let blob = new Blob([data], { type: type });
+                            let url = window.URL.createObjectURL(blob);
+    						that.updateMediaElement(index, url);
 							that.showSpinner = false;
-							console.log(
-								"Finished retrieving media of size " +
-									data.length
-							);
+							console.log("Finished retrieving media of size " + data.length);
 						});
 				});
 			}
@@ -441,7 +330,7 @@ module.exports = {
             let uuidBytes = encoder.encode(uuid);
             let uuidSize = uuidBytes.byteLength;
             let headerSize = 1 + uuidSize;
-            var data = new Uint8Array(headerSize);
+            let data = new Uint8Array(headerSize);
             var offset = 0;
             data.set([uuidSize], offset);
             offset = offset + 1;
@@ -450,26 +339,95 @@ module.exports = {
         },
 		isImage(file) {
 			if (file == null) return false;
-			var mimeType = file.getFileProperties().mimeType;
+			let mimeType = file.getFileProperties().mimeType;
 			return mimeType.startsWith("image");
 		},
 		isVideo(file) {
 			if (file == null) return false;
-			var mimeType = file.getFileProperties().mimeType;
+			let mimeType = file.getFileProperties().mimeType;
 			return mimeType.startsWith("video");
 		},
 		isAudio(file) {
 			if (file == null) return false;
-			var mimeType = file.getFileProperties().mimeType;
+			let mimeType = file.getFileProperties().mimeType;
 			return mimeType.startsWith("audio");
 		},
 	}
 };
 </script>
 
-<style>
+<style> /* inspired from https://github.com/codepo8/slide-show */
+.hidden-info {
+  display: none;
+}
+.gallery-mask {
+  position: fixed;
+  z-index: 2500;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0, 0, 0, .5);
+  transition: opacity .3s ease;
+}
+.gallery-container {
+    height:100%;
+    margin: 0px auto;
+	color: var(--color);
+    background-color: var(--bg);
+    border-radius: 2px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, .33);
+    transition: all .3s ease;
+    /* font-family: Helvetica, Arial, sans-serif; */
+}
 .gallery {
     color: var(--color);
     background-color: var(--bg);
+}
+
+.slideshow-info {
+  position: absolute;
+  padding: 5px 10px;
+  background: rgba(0,0,0,.8);
+  color: #fff;
+}
+
+.slideshow-close {
+  position: absolute;
+  right: 10px;
+  text-align: right;
+  font-size: xx-large;
+  cursor: pointer;
+  z-index: 20;
+}
+.slideshow-close span {
+  display: block;
+}
+
+.slideshow-wrapper {
+  height:100vh;
+  background-position: center;
+  background-size: contain;
+  background-repeat: no-repeat;
+}
+.slideshow-wrapper video, audio {
+  object-fit: contain;
+  width:100%;
+  height:100%;
+  z-index: 20;
+}
+#slideshow-next, #slideshow-prev {
+  position: absolute;
+  font-size: 2em;
+  height: calc(100vh - 50px);
+  background: rgba(0,0,0,0);
+  border: none;
+  z-index: 10;
+}
+#slideshow-next.hidden, #slideshow-prev.hidden {
+  display: none;
+}
+#slideshow-next {
+  right: 0;
 }
 </style>
