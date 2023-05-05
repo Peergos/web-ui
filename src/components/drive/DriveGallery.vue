@@ -81,7 +81,8 @@ module.exports = {
 	methods: {
 		showGalleryTitle() {
 			if (!this.hideGalleryTitle) {
-				let text = (this.fileIndex + 1) + "/" + this.showableFiles.length + ' ' + this.showableFiles[this.fileIndex].getFileProperties().name;
+			    let index = this.showableFiles.length > 1 ? (this.fileIndex + 1) + "/" + this.showableFiles.length + ' ' : '';
+				let text =  index + this.showableFiles[this.fileIndex].getFileProperties().name;
 				let infoElement = document.getElementById("slideshow-info-id");
 				infoElement.innerText = text;
 			}
