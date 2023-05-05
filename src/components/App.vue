@@ -294,7 +294,11 @@ module.exports = {
 		0, true
 	    ).thenApply(function (network) {
 		that.$store.commit("SET_NETWORK", network);
-	    });
+	    }).exceptionally(function (throwable) {
+		    that.$toast.error(
+			"Error connecting to network: " + throwable.getMessage()
+		    );
+		});
 	},
 
 	checkIfDomainNeedsUnblocking() {
