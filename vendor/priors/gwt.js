@@ -200,6 +200,10 @@ function putProm(url, data, headers) {
             future.completeExceptionally(new peergos.shared.storage.RateLimitException());
 	};
 
+	req.ontimeout = function(e) {
+            future.completeExceptionally(new peergos.shared.storage.RateLimitException());
+	};
+
 	req.send(data);
     }).then(function(result, err) {
         if (err != null)
