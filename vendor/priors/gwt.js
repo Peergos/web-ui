@@ -349,7 +349,7 @@ async function deleteFiles(filesArray, directory) {
                 parentDirHandle.removeEntry(filename).then(() => {
                     resolve(true);
                 }).catch(e => {
-                    console.log(e);
+                    //console.log(e);
                     resolve(false);
                 });
             });
