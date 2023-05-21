@@ -8,12 +8,12 @@ onmessage = async (e) => {
         that.rootDirectory = rootDir;
       });
   } else if (message.action =="set") {
-    setOPFSKV(message.filename, message.value, message.directory);
+    setOPFSKV(message.filename, message.value, message.directory, 0);
   } else if(message.action =="get") {
-    getOPFSKV(message.filename, message.directory);
+    getOPFSKV(message.filename, message.directory, 0);
   }
 };
-function getOPFSKV(filename, directory) {
+function getOPFSKV(filename, directory, retryCount) {
     getFileHandle(filename, directory).then( fileHandle => {
         fileHandle.createSyncAccessHandle().then(accessHandle => {
             const size = accessHandle.getSize();
@@ -21,20 +21,31 @@ function getOPFSKV(filename, directory) {
             accessHandle.read(dataView);
             accessHandle.close();
             postMessage({filename: filename, contents: dataView});
+        }).catch(e => {
+            if (retryCount < 3) {
+                setTimeout(() => getOPFSKV(filename, directory, retryCount + 1));
+            } else {
+                console.log('getOPFSKV error: ' + e + " filename:" + filename);
+                postMessage({filename: filename, contents: null});
+            }
         });
     }).catch(e => {
         postMessage({filename: filename, contents: null});
     });
 }
-function setOPFSKV(filename, value, directory) {
-    console.log('setOPFSKV opening:' + filename);
+function setOPFSKV(filename, value, directory, retryCount) {
+    //console.log('setOPFSKV opening:' + filename);
     getSyncFileHandleCreateIfNecessary(filename, directory).then(accessHandle => {
         accessHandle.write(value);
         accessHandle.flush();
         accessHandle.close();
-        console.log('setOPFSKV closing:' + filename);
+        //console.log('setOPFSKV closing:' + filename);
     }).catch(e => {
-        console.log('setOPFSKV error: ' + e + " filename:" + filename);
+        if (retryCount < 3) {
+            setTimeout(() => setOPFSKV(filename, value, directory, retryCount + 1));
+        } else {
+            console.log('setOPFSKV error: ' + e + " filename:" + filename);
+        }
     });
 }
 function getFileHandle(filename, directory) {
@@ -43,7 +54,7 @@ function getFileHandle(filename, directory) {
         .then(dirHandle => dirHandle.getDirectoryHandle(blockFolder)
             .then(blockDirHandle => blockDirHandle.getFileHandle(filename))
         ).catch(e => {
-            console.log('getFileHandle error: ' + e);
+            //console.log('getFileHandle error: ' + e);
             postMessage({filename: filename, contents: null});
         });
 }

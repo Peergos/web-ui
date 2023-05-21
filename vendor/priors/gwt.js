@@ -374,6 +374,7 @@ function getParentDirectoryHandle(filename, directory) {
 
 let pendingWrites = new Map(); //  filename => value
 let pendingReads = new Map(); //   filename => [future] Note: possibility of multiple futures
+
 opfsWorker = new Worker("js/opfs.js");
 opfsWorker.postMessage({action: 'init'});
 
@@ -395,11 +396,13 @@ opfsWorker.onmessage = function(event) { // reads
 };
 
 function setOPFSKV(filename, value, directory) {
-    pendingWrites.set(filename, value);
-    opfsWorker.postMessage({action: 'set', filename: filename, value: value, directory: directory});
-    setTimeout(() => {
-        pendingWrites.delete(filename);
-    }, 5000);
+    if (!pendingWrites.has(filename)) {
+        pendingWrites.set(filename, value);
+        opfsWorker.postMessage({action: 'set', filename: filename, value: value, directory: directory});
+        setTimeout(() => {
+            pendingWrites.delete(filename);
+        }, 5000);
+    }
 }
 function getOPFSKV(filename, context, future) {
     let directory = context.cacheStore;
@@ -411,8 +414,8 @@ function getOPFSKV(filename, context, future) {
             pendingReads.get(filename).push(future);
         } else {
             pendingReads.set(filename, [future]);
+            opfsWorker.postMessage({action: 'get', filename: filename, directory: directory});
         }
-        opfsWorker.postMessage({action: 'get', filename: filename, directory: directory});
         let that = this;
         setTimeout(() => {
             let entry = context.cacheMetadataRefs['k'+filename];
