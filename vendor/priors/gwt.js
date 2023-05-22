@@ -343,16 +343,23 @@ function delManyOPFSKV(filesArray, directory) {
 }
 async function deleteFiles(filesArray, directory) {
       const promises = [];
-      for await (const filename of filesArray) {
+      for await (const name of filesArray) {
         let prom = new Promise(function(resolve, reject) {
-            getParentDirectoryHandle(filename, directory).then(parentDirHandle => {
-                parentDirHandle.removeEntry(filename).then(() => {
-                    resolve(true);
-                }).catch(e => {
-                    //console.log(e);
-                    resolve(false);
+            let work = function(filename, retryCount) {
+                getParentDirectoryHandle(filename, directory).then(parentDirHandle => {
+                    parentDirHandle.removeEntry(filename).then(() => {
+                        resolve(true);
+                    }).catch(e => {
+                        if (retryCount < 5) {
+                            setTimeout(() => work(filename, retryCount + 1), 10);
+                        } else {
+                            console.log(e);
+                            resolve(false);
+                        }
+                    });
                 });
-            });
+            };
+            work(name, 0);
         });
         promises.push(prom);
       }
