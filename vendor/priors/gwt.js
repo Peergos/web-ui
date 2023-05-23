@@ -476,7 +476,9 @@ function isOPFSAvailable() {
     		return p.toString() === "[object SafariRemoteNotification]";
     	    })(!window["safari"] || safari.pushNotification);
         let isMobile = /Mobi|Android/i.test(navigator.userAgent); // https://stackoverflow.com/a/24600597
-        if (!isSafari && !isMobile) {
+        let isLinuxOnFirefox = navigator.userAgent.search('Linux')!==-1 && navigator.userAgent.search('X11')!==-1
+            && navigator.userAgent.toLowerCase().indexOf("firefox") > -1;
+        if (!isSafari && !isMobile && !isLinuxOnFirefox) {
             navigator.storage.getDirectory().then(root => {
                 if (rootDirectory == null) {
                     rootDirectory = root;
