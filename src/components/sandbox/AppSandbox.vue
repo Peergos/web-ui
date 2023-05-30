@@ -129,7 +129,8 @@ module.exports = {
             showFolderPicker: false,
             folderPickerBaseFolder: "",
             selectedFolders: [],
-            selectedFolderStems: []
+            selectedFolderStems: [],
+            portalName: ''
         }
     },
     computed: {
@@ -178,8 +179,14 @@ module.exports = {
             } else {
                 let props = this.targetFile.getFileProperties();
                 let filename = props.name.toLowerCase();
-                if (filename.endsWith('jpg') || filename.endsWith('png')) {
-                    this.recreateFileThumbnailOnClose = this.targetFile.isWritable();
+                let portalToken = '.portal';
+                if (filename.endsWith(portalToken)) {
+                    this.browserMode = false;
+                    this.portalName = filename.substring(0, filename.length - portalToken.length);
+                } else {
+                    if (filename.endsWith('jpg') || filename.endsWith('png')) {
+                        this.recreateFileThumbnailOnClose = this.targetFile.isWritable();
+                    }
                 }
             }
         }
@@ -201,6 +208,9 @@ module.exports = {
                         that.fatalError('Application configuration error. See console for further details');
                     } else {
                         that.appProperties = props;
+                        if (that.portalName.length == 0) {
+                            that.portalName = props.portal;
+                        }
                         that.appRegisteredWithFileAssociation = that.appHasFileAssociation(props);
                         that.appRegisteredWithWildcardFileAssociation = that.appHasWildcardFileRegistration(props);
                         that.currentChatId = that.sandboxAppChatId != null ? that.sandboxAppChatId : '';
@@ -404,9 +414,8 @@ module.exports = {
                 that.resizeHandler();
                 let theme = that.$store.getters.currentTheme;
                 let href = window.location.href;
-                let appDevMode = href.includes("?local-app-dev=true");
                 let allowUnsafeEvalInCSP = that.permissionsMap.get(that.PERMISSION_CSP_UNSAFE_EVAL) != null;
-                let props = { appDevMode: appDevMode, allowUnsafeEvalInCSP: allowUnsafeEvalInCSP, isPathWritable: that.isPathWritable()};
+                let props = { portal: that.portalName, allowUnsafeEvalInCSP: allowUnsafeEvalInCSP, isPathWritable: that.isPathWritable()};
                 let func = function() {
                     that.postMessage({type: 'init', appName: that.currentAppName, appPath: that.appPath,
                     allowBrowsing: that.browserMode, theme: theme, chatId: that.currentChatId,

@@ -64,7 +64,7 @@ function load(appName, appPath, allowBrowsing, theme, chatId, username, props) {
     let iframe = document.getElementById("appSandboxId");
     iframe.style.width = '100%';
     iframe.style.height = window.innerHeight + 'px';
-    var appNameInSW = props.appDevMode != null && props.appDevMode == true ? appName + '@APP_DEV_MODE' : appName;
+    var appNameInSW = props.portal.length > 0 ? props.portal + '@PORTAL_MODE' : appName;
     appNameInSW = props.allowUnsafeEvalInCSP != null && props.allowUnsafeEvalInCSP == true ? appNameInSW + '@CSP_UNSAFE_EVAL' : appNameInSW;
 
     let fileStream = streamSaver.createWriteStream(appNameInSW, "text/html", url => {
@@ -76,7 +76,8 @@ function load(appName, appPath, allowBrowsing, theme, chatId, username, props) {
                 path = path + '&isPathWritable=' + props.isPathWritable;
             }
             let src = allowBrowsing ? appPath.substring(1) : "index.html" + path;
-            iframe.src= src;
+            let srcPrefix = props.portal.length > 0 ? props.portal + "/" : "";
+            iframe.src = srcPrefix + src;
             iframe.contentWindow.focus();
         }, function(seekHi, seekLo, seekLength, streamFilePath){
             that.streamFile(seekHi, seekLo, seekLength, streamFilePath);

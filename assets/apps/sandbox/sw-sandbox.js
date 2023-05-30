@@ -404,7 +404,7 @@ function appFetch(event) {
             if (method == 'PATCH' && "append" != event.request.headers.get('X-Update-Range').toLowerCase()) {
                 return new Response('X-Update-Range:append header expected', {status: 400})
             }
-            if (method == 'GET' && uniqueId == '' && appName.includes('@APP_DEV_MODE')) {
+            if (method == 'GET' && uniqueId == '' && appName.includes('@PORTAL_MODE')) {
                 return event.respondWith(
                     (async function() {
                         const responseFromNetwork = await fetch(filePath, { method: 'GET' });

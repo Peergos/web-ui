@@ -54,7 +54,6 @@ module.exports = {
               } else {
                   let errors = [];
                   let mandatoryFields = ["displayName", "description", "launchable"];
-                  let existingCreateMenuItems = ["upload files","upload folder","new folder","new file", "new app"];
                   let validPermissions = ["STORE_APP_DATA", "EDIT_CHOSEN_FILE", "READ_CHOSEN_FOLDER", "EXCHANGE_MESSAGES_WITH_FRIENDS", "CSP_UNSAFE_EVAL"];
                   mandatoryFields.forEach(field => {
                       if (props[field] == null) {
@@ -78,7 +77,7 @@ module.exports = {
                         if (props.displayName.length > 25) {
                             errors.push("Invalid displayName property. Length must not exceed 25 characters");
                         }
-                        if (!that.validateDisplayName(props.displayName)) {
+                        if (!that.validateTextCharacters(props.displayName)) {
                             errors.push("Invalid displayName property. Use only alphanumeric characters plus dash and underscore");
                         }
                       const versionStr = props.version;
@@ -99,16 +98,6 @@ module.exports = {
                       if (props.author.length > 32) {
                           errors.push("Invalid Author property. Length must not exceed 32 characters");
                       }
-                        if (props.createMenuText != null) {
-                          if (props.createMenuText.length > 25) {
-                              errors.push("Invalid createMenuText property. Length must not exceed 25 characters");
-                          }
-                          let lowercaseText = props.createMenuText.toLowerCase().trim();
-                          let itemIndex = existingCreateMenuItems.findIndex(v => v.name === lowercaseText);
-                          if (itemIndex > -1) {
-                              errors.push("Invalid createMenuText property. Menu text already exists!");
-                          }
-                        }
                       if (!(props.fileExtensions.constructor === Array)) {
                           errors.push("Invalid fileExtensions property. Must be an array. Can be empty []");
                       }
@@ -117,6 +106,14 @@ module.exports = {
                       }
                       if (!(props.fileTypes.constructor === Array)) {
                           errors.push("Invalid fileTypes property. Must be an array. Can be empty []");
+                      }
+                      if (props.portal.length > 0) {
+                          if (props.portal.length > 32) {
+                              errors.push("Invalid Portal property. Length must not exceed 32 characters");
+                          }
+                          if (!that.validateTextCharacters(props.portal)) {
+                              errors.push("Invalid portal property. Use only alphanumeric characters plus dash and underscore");
+                          }
                       }
                   }
                     if (errors.length == 0 && appPath != null) {
@@ -160,12 +157,12 @@ module.exports = {
             }
             return future;
       },
-      validateDisplayName: function(displayName) {
-          if (displayName === '')
+      validateTextCharacters: function(text) {
+          if (text === '')
               return false;
-          if (displayName.includes('.') || displayName.includes('..'))
+          if (text.includes('.') || text.includes('..'))
               return false;
-          if (!displayName.match(/^[a-z\d\-_\s]+$/i)) {
+          if (!text.match(/^[a-z\d\-_\s]+$/i)) {
               return false;
           }
           return true;
@@ -213,6 +210,9 @@ module.exports = {
                           }
                           if (props.permissions == null) {
                               props.permissions = [];
+                          }
+                          if (props.portal == null) {
+                              props.portal = "";
                           }
                           props.name = props.displayName.replaceAll(' ', '').toLowerCase().trim();
                           future.complete(props);

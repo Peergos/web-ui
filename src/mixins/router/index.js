@@ -135,7 +135,8 @@ module.exports = {
             matchingInbuiltApps.push(markdown);
         }
         if (mimeType.startsWith("text/html") ||
-            ( mimeType.startsWith("text/") && filename.endsWith('.html'))) {
+            ( mimeType.startsWith("text/") && filename.endsWith('.html'))
+            || filename.endsWith('.portal')) {
             let htmlviewer = {name:"htmlviewer", contextMenuText:'Open in HTML Viewer'};
             matchingInbuiltApps.push(htmlviewer);
         }
@@ -164,11 +165,7 @@ module.exports = {
             }
             var filename = file.getName();
 	    var mimeType = file.getFileProperties().mimeType;
-            if (mimeType.startsWith("audio") ||
-		mimeType.startsWith("video") ||
-		mimeType.startsWith("image")) {
-		return 'Gallery';
-	    } else if (mimeType === "application/vnd.peergos-todo") {
+	    if (mimeType === "application/vnd.peergos-todo") {
 		return "Tasks";
 	    } else if (mimeType === "application/pdf") {
 		return "pdf";
@@ -180,10 +177,15 @@ module.exports = {
             ( mimeType.startsWith("text/") && filename.endsWith('.md'))) {
             return writable ? "editor" : "markdown";
         } else if (mimeType.startsWith("text/html") ||
-            ( mimeType.startsWith("text/") && filename.endsWith('.html'))) {
+            ( mimeType.startsWith("text/") && filename.endsWith('.html'))
+            || filename.endsWith('.portal')) {
             return writable ? "editor" : "htmlviewer";
 	    } else if (mimeType.startsWith("text/")) {
 		return "editor";
+        } else if (mimeType.startsWith("audio") ||
+        		mimeType.startsWith("video") ||
+        		mimeType.startsWith("image")) {
+        		return 'Gallery';
 	    } else {
 		return "hex";
 	    }

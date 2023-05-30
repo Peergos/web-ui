@@ -589,7 +589,8 @@ module.exports = {
                 let file =  this.selectedFiles[0];
                 let mimeType = file.getFileProperties().mimeType;
                 return mimeType.startsWith("text/html") ||
-                    (mimeType.startsWith("text/") && file.getName().endsWith('.html'));
+                    (mimeType.startsWith("text/") && file.getName().endsWith('.html'))
+                    || file.getName().endsWith('.portal');
             } catch (err) {
                 return false;
             }
