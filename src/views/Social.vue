@@ -8,13 +8,13 @@
 		<main>
 
 
-		<fingerprint v-if="showFingerprint"
+		<Fingerprint v-if="showFingerprint"
 			v-on:hide-fingerprint="hideFingerprint"
 			:fingerprint="fingerprint"
 			:friendname="friendname"
 			:initialIsVerified="initialIsVerified"
 			:context="context">
-		</fingerprint>
+		</Fingerprint>
 		<spinner v-if="showSpinner"></spinner>
 		<ViewProfile
                     v-if="showProfileViewForm"
@@ -129,11 +129,13 @@
 <script>
 const AppHeader = require("../components/AppHeader.vue");
 const ViewProfile = require("../components/profile/ViewProfile.vue");
+const Fingerprint = require("../components/fingerprint/Fingerprint.vue");
 const FormAutocomplete = require("../components/form/FormAutocomplete.vue");
 const routerMixins = require("../mixins/router/index.js");
 
 module.exports = {
 	components: {
+    	Fingerprint,
 	    FormAutocomplete,
 		ViewProfile,
 		AppHeader
