@@ -35,12 +35,6 @@
                 <tr/>
             </table>
         </center>
-        <error 
-            v-if="showError"
-            v-on:hide-error="showError = false"
-            :title="errorTitle" 
-            :body="errorBody">
-        </error>
     </div>
 </div>
 </transition>
@@ -61,9 +55,6 @@ const downloaderMixins = require("../../mixins/downloader/index.js");
             offsetHigh:0,
             maxOffsetLow: 0,
             bytesPerPage: 16 * 32,
-            errorTitle:'',
-            errorBody:'',
-            showError:false
         };
     },
     props: ['file', 'context'],

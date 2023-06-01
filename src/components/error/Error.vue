@@ -1,5 +1,33 @@
+<template>
+<transition name="modal">
+<div class="modal-mask" @click="close">
+    <div style="height:30%"></div>
+    <div class="modal-container" @click.stop>
+
+        <div class="modal-header">
+            <h3 id="error-header-id">{{ title }}</h3>
+        </div>
+
+        <div class="modal-body">
+            <div class="container" style="word-wrap:break-word;width:auto">
+                <p id='error-body-id' >{{  decodeError(body)  }}</p>
+            </div>
+        </div>
+
+        <div class="modal-footer">
+            <slot name="footer">
+            <button id='modal-button-id' class="modal-default-button" @click="close">
+                OK
+            </button>
+            </slot>
+        </div>
+    </div>
+</div>
+</transition>
+</template>
+
+<script>
 module.exports = {
-    template: require('error.html'),
     props: ['title', 'body'],
     created: function() {
     },
@@ -22,3 +50,6 @@ module.exports = {
         }
     }
 }
+</script>
+<style>
+</style>

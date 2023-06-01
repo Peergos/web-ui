@@ -93,12 +93,12 @@
                     <button v-if="!haveRemovedSelf" :disabled="this.selectSelf.length == 0" class="btn btn-success" v-on:click="removeUserFromGroup()">Remove</button>
                 </div>
             </div>
-            <error
+            <Error
                     v-if="showError"
                     v-on:hide-error="showError = false"
                     :title="errorTitle"
                     :body="errorBody">
-            </error>
+            </Error>
         </div>
         <div class="modal-footer">
             <slot name="footer">
@@ -112,11 +112,13 @@
 </template>
 
 <script>
+const Error = require("../components/error/Error.vue");
 const FormAutocomplete = require("../components/form/FormAutocomplete.vue");
 const routerMixins = require("../mixins/router/index.js");
 
 module.exports = {
 	components: {
+	    Error,
 	    FormAutocomplete,
 	},
     data() {

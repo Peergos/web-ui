@@ -1,5 +1,4 @@
 var CodeEditor      = require('./components/code-editor');
-var Error           = require('./components/error');
 var Fingerprint     = require('./components/fingerprint');
 var FolderPicker         = require('./components/picker/FolderPicker.vue');
 var Identity        = require('./components/identity-proof-viewer.vue');
@@ -21,7 +20,6 @@ var App  			= require('./components/App.vue');
 
 // Loading components
 Vue.component('code-editor', Vue.extend(CodeEditor));
-Vue.component('error', Vue.extend(Error));
 Vue.component('fingerprint', Vue.extend(Fingerprint));
 Vue.component('identity', Vue.extend(Identity));
 Vue.component('message', Vue.extend(Message));

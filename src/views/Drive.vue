@@ -211,13 +211,13 @@
             :warning_body="warning_body"
             :consumer_func="warning_consumer_func">
         </warning>
-		<error
+		<Error
 			v-if="showError"
 			@hide-error="showError = false"
 			:title="errorTitle"
 			:body="errorBody"
 			:messageId="messageId">
-		</error>
+		</Error>
         <Confirm
                 v-if="showConfirm"
                 v-on:hide-confirm="showConfirm = false"
@@ -240,6 +240,7 @@ const DriveGrid = require("../components/drive/DriveGrid.vue");
 const DriveGridCard = require("../components/drive/DriveGridCard.vue");
 const DriveGridDrop = require("../components/drive/DriveGridDrop.vue");
 const DriveTable = require("../components/drive/DriveTable.vue");
+const Error = require("../components/error/Error.vue");
 const Gallery = require("../components/drive/DriveGallery.vue");
 const Identity = require("../components/identity-proof-viewer.vue");
 const Share = require("../components/drive/DriveShare.vue");
@@ -273,6 +274,7 @@ module.exports = {
 		DriveGridDrop,
 		DriveTable,
 		DriveMenu,
+		Error,
 		AppPrompt,
 		NewImageFilePrompt,
 		NewAppPrompt,
