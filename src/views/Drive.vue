@@ -195,7 +195,7 @@
             :currentFile="selectedFiles[0]"
             :currentPath="getPath">
         </AppSandbox>
-        <replace
+        <Replace
             v-if="showReplace"
             v-on:hide-replace="showReplace = false"
             :replace_message='replace_message'
@@ -203,7 +203,7 @@
             :consumer_cancel_func="replace_consumer_cancel_func"
             :consumer_func="replace_consumer_func"
             :showApplyAll=replace_showApplyAll>
-        </replace>
+        </Replace>
         <warning
             v-if="showWarning"
             v-on:hide-warning="closeWarning"
@@ -255,6 +255,7 @@ const NewImageFilePrompt = require("../components/NewImageFilePrompt.vue");
 const NewAppPrompt = require("../components/sandbox/new-app/NewAppPrompt.vue");
 const FolderProperties = require("../components/FolderProperties.vue");
 const Pdf = require("../components/pdf/PDF.vue");
+const Replace = require("../components/replace/Replace.vue");
 
 const helpers = require("../mixins/storage/index.js");
 const downloaderMixins = require("../mixins/downloader/index.js");
@@ -287,7 +288,8 @@ module.exports = {
 		Search,
 		Markdown,
 		Hex,
-		Pdf
+		Pdf,
+		Replace
 	},
 	data() {
 		return {

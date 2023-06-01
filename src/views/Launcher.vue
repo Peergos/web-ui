@@ -4,7 +4,7 @@
 	</AppHeader>
         <div class="modal-body">
             <spinner v-if="showSpinner"></spinner>
-            <replace
+            <Replace
                 v-if="showReplace"
                 v-on:hide-replace="showReplace = false"
                 :replace_message='replace_message'
@@ -12,7 +12,7 @@
                 :consumer_cancel_func="replace_consumer_cancel_func"
                 :consumer_func="replace_consumer_func"
                 :showApplyAll=replace_showApplyAll>
-            </replace>
+            </Replace>
             <NewFilePicker
                 v-if="showNewFilePicker"
                 @hide-prompt="closeNewFilePicker()"
@@ -173,7 +173,9 @@ const AppGrid = require("../components/app-grid/AppGrid.vue");
 const AppSandbox = require("../components/sandbox/AppSandbox.vue");
 const Confirm = require("../components/confirm/Confirm.vue");
 const NewFilePicker = require("../components/picker/NewFilePicker.vue");
+const Replace = require("../components/replace/Replace.vue");
 const Share = require("../components/drive/DriveShare.vue");
+
 const routerMixins = require("../mixins/router/index.js");
 const mixins = require("../mixins/mixins.js");
 const launcherMixin = require("../mixins/launcher/index.js");
@@ -187,6 +189,7 @@ module.exports = {
 		AppSandbox,
 		Confirm,
 		NewFilePicker,
+		Replace,
 		Share
     },
     data: function() {
