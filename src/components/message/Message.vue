@@ -1,3 +1,4 @@
+<template>
 <transition name="modal">
 <div class="modal-mask" @click="closeMessage">
     <div class="modal-container" @click.stop>
@@ -18,3 +19,23 @@
     </div>
 </div>
 </transition>
+</template>
+
+<script>
+module.exports = {
+    data: function() {
+        return {
+        }
+    },
+    props: ['title', 'message'],
+    created: function() {
+    },
+    methods: {
+        closeMessage: function () {
+            this.$emit("remove-message");
+        }
+    }
+}
+</script>
+<style>
+</style>

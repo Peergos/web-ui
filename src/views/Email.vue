@@ -41,12 +41,6 @@
                     :consumer_cancel_func="confirm_consumer_cancel_func"
                     :consumer_func="confirm_consumer_func">
             </Confirm>
-            <message
-                    v-for="message in messages"
-                    v-on:remove-message="messages.splice(messages.indexOf(message), 1)"
-                    :title="message.title"
-                    :message="message.body">
-            </message>
         </div>
     </div>
 </article>
@@ -91,7 +85,6 @@ module.exports = {
             messageToTimestamp: new Map(),
             directoryPrefix: 'default',
             isIframeInitialised: false,
-            messages: [],
             icalEventTitle: '',
             icalEvent: ''
         }
@@ -856,13 +849,6 @@ module.exports = {
             this.showSpinner = false;
             this.spinnerMessage = '';
         },
-        showMessage: function(title, body) {
-            this.messages.push({
-                title: title,
-                body: body,
-                show: true
-            });
-        },
         showError: function(message) {
             this.$toast.error(message, {timeout:false});
         },
@@ -870,7 +856,7 @@ module.exports = {
             this.$toast(message)
         },
         requestShowMessage: function(msg) {
-            this.showMessage(msg);
+            this.showToast(msg);
         },
         close: function () {
             this.openFileOrDir("Drive", this.context.username, {filename:""});

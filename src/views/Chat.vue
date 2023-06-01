@@ -39,12 +39,12 @@
                 :updatedGroupMembership="updatedGroupMembership"
                 :existingGroups="existingGroups">
         </Group>
-        <message
+        <Message
                 v-for="message in messages"
                 v-on:remove-message="messages.splice(messages.indexOf(message), 1)"
                 :title="message.title"
                 :message="message.body">
-        </message>
+        </Message>
         <Gallery
                 v-if="showEmbeddedGallery"
                 v-on:hide-gallery="showEmbeddedGallery = false"
@@ -293,6 +293,7 @@ const mixins = require("../mixins/mixins.js");
 const routerMixins = require("../mixins/router/index.js");
 const downloaderMixins = require("../mixins/downloader/index.js");
 const ProgressBar = require("../components/drive/ProgressBar.vue");
+const Message = require("../components/message/Message.vue");
 
 module.exports = {
     components: {
@@ -301,7 +302,8 @@ module.exports = {
 		ViewProfile,
 		Group,
         ProgressBar,
-		AppHeader
+		AppHeader,
+		Message
     },
     data: function() {
         return {

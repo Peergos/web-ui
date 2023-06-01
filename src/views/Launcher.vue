@@ -4,12 +4,6 @@
 	</AppHeader>
         <div class="modal-body">
             <spinner v-if="showSpinner"></spinner>
-            <message
-                    v-for="message in messages"
-                    v-on:remove-message="messages.splice(messages.indexOf(message), 1)"
-                    :title="message.title"
-                    :message="message.body">
-            </message>
             <replace
                 v-if="showReplace"
                 v-on:hide-replace="showReplace = false"
@@ -62,11 +56,7 @@
                 :allowReadWriteSharing="allowReadWriteSharing"
                 :allowCreateSecretLink="allowCreateSecretLink"
                 :files="filesToShare"
-                :path="pathToFile"
-                :followernames="followernames"
-                :friendnames="friendnames"
-                :groups="groups"
-                :messages="messages">
+                :path="pathToFile">
             </Share>
             <ul id="appMenu" v-if="showAppMenu" class="dropdown-menu" v-bind:style="{top:menutop, left:menuleft}" style="cursor:pointer;display:block;min-width:100px;padding: 10px;">
                 <li id='open-in-app' style="padding-bottom: 5px;" v-for="app in availableApps" v-on:keyup.enter="appOpen($event, app.name, app.path, app.file)" v-on:click="appOpen($event, app.name, app.path, app.file)">{{app.contextMenuText}}</li>
@@ -267,19 +257,9 @@ module.exports = {
         ...Vuex.mapState([
             'context',
             "shortcuts",
-            'socialData',
             "sandboxedApps",
             'mirrorBatId',
         ]),
-        friendnames: function() {
-            return this.socialData.friends;
-        },
-        followernames: function() {
-            return this.socialData.followers;
-        },
-        groups: function() {
-            return {groupsNameToUid: this.socialData.groupsNameToUid, groupsUidToName: this.socialData.groupsUidToName};
-        },
         sortedShortcuts(){
             var sortBy = this.shortcutsSortBy;
             var reverseOrder = ! this.shortcutsNormalSortOrder;

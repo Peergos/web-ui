@@ -54,6 +54,7 @@
 const AddToChat = require("AddToChat.vue");
 const AppInstall = require("AppInstall.vue");
 const AppPrompt = require("../prompt/AppPrompt.vue");
+const FolderPicker = require('../picker/FolderPicker.vue');
 
 const downloaderMixins = require("../../mixins/downloader/index.js");
 const router = require("../../mixins/router/index.js");
@@ -67,6 +68,7 @@ module.exports = {
         AddToChat,
         AppInstall,
         AppPrompt,
+        FolderPicker
     },
     data: function() {
         return {
