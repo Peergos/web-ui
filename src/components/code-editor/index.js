@@ -147,6 +147,12 @@ module.exports = {
             }, 2500)
 	},
 
+	getFileSize: function(props) {
+            var low = props.sizeLow();
+            if (low < 0) low = low + Math.pow(2, 32);
+            return low + (props.sizeHigh() * Math.pow(2, 32));
+	},
+
 	setupIFrameMessaging: function(iframe, func) {
         if (this.isIframeInitialised) {
             func();

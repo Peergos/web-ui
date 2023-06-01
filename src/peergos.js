@@ -1,9 +1,7 @@
 var CodeEditor      = require('./components/code-editor');
-var Downloader      = require('./components/downloader');
 var Error           = require('./components/error');
 var Fingerprint     = require('./components/fingerprint');
 var FolderPicker         = require('./components/picker/FolderPicker.vue');
-var Hex             = require('./components/viewers/hex.vue');
 var Identity        = require('./components/identity-proof-viewer.vue');
 var Message         = require('./components/message');
 var Password        = require('./components/password');
@@ -22,19 +20,18 @@ var AppModal 		= require('./components/modal/AppModal.vue');
 var App  			= require('./components/App.vue');
 
 // Loading components
-Vue.component('code-editor', Vue.extend(Downloader).extend(CodeEditor));
+Vue.component('code-editor', Vue.extend(CodeEditor));
 Vue.component('error', Vue.extend(Error));
 Vue.component('fingerprint', Vue.extend(Fingerprint));
-Vue.component('hex', Vue.extend(Downloader).extend(Hex));
-Vue.component('identity', Vue.extend(Downloader).extend(Identity));
+Vue.component('identity', Vue.extend(Identity));
 Vue.component('message', Vue.extend(Message));
 Vue.component('password', Vue.extend(PasswordUtil).extend(Password));
-Vue.component('pdf', Vue.extend(Downloader).extend(Pdf));
+Vue.component('pdf', Vue.extend(Pdf));
 Vue.component('prompt', Vue.extend(Prompt));
 Vue.component('replace', Vue.extend(Replace));
 Vue.component('select-create', Vue.extend(SelectCreate));
 Vue.component('spinner', Vue.extend(Spinner));
-Vue.component('text-viewer', Vue.extend(Downloader).extend(Text));
+Vue.component('text-viewer', Vue.extend(Text));
 Vue.component('warning', Vue.extend(Warning));
 
 Vue.component('App', Vue.extend(App));

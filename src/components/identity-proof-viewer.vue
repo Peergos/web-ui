@@ -17,7 +17,6 @@
 </div>
 </div>
 </template>
-
 <script>
 module.exports = {
     data: function() {
@@ -30,9 +29,6 @@ module.exports = {
         this.updateCurrentFileData();
     },
     methods: {
-        downloadCurrentFile: function() {
-            this.downloadFile(this.file);
-        },
         close: function() {
             this.$emit("hide-identity-proof");
         },

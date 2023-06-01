@@ -45,7 +45,7 @@
 </div>
 </transition>
 </template>
-
+const downloaderMixins = require("../../mixins/downloader/index.js");
 <script>
     module.exports = {
     data: function() {
@@ -67,6 +67,7 @@
         };
     },
     props: ['file', 'context'],
+    mixins:[downloaderMixins],
     created: function() {
         console.debug('Hex viewer created!');
         window.addEventListener('keyup', this.keyup);

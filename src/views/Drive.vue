@@ -121,12 +121,12 @@
 			:initial-file-name="appArgs.filename">
 		</Gallery>
 
-		<hex
+		<Hex
 			v-if="showHexViewer"
 			v-on:hide-hex-viewer="back()"
 			:file="selectedFiles[0]"
 			:context="context">
-		</hex>
+		</Hex>
 		<pdf
 			v-if="showPdfViewer"
 			v-on:hide-pdf-viewer="back()"
@@ -245,7 +245,7 @@ const Identity = require("../components/identity-proof-viewer.vue");
 const Share = require("../components/drive/DriveShare.vue");
 const Search = require("../components/Search.vue");
 const Markdown = require("../components/viewers/Markdown.vue");
-
+const Hex = require("../components/viewers/Hex.vue");
 const ProgressBar = require("../components/drive/ProgressBar.vue");
 const DriveMenu = require("../components/drive/DriveMenu.vue");
 
@@ -282,7 +282,8 @@ module.exports = {
 		Identity,
 		Share,
 		Search,
-		Markdown
+		Markdown,
+		Hex
 	},
 	data() {
 		return {

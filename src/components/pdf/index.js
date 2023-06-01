@@ -65,6 +65,11 @@ module.exports = {
                     that.$toast.error("Unable to register service worker. PDF viewer will not work offline. \nTo enable offline usage, allow 3rd party cookies for " + window.location.protocol + "//[*]." + window.location.host + "\n Note: this is not tracking", {timeout:false});
             }, 5000)
 	},
+		getFileSize: function(props) {
+                var low = props.sizeLow();
+                if (low < 0) low = low + Math.pow(2, 32);
+                return low + (props.sizeHigh() * Math.pow(2, 32));
+    	},
         setupIFrameMessaging: function(iframe, func) {
             if (this.isIframeInitialised) {
                 func();
