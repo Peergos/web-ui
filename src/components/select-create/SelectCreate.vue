@@ -1,5 +1,40 @@
+<template>
+<transition name="modal">
+    <div class="modal-mask" @click="close">
+        <div style="height:30%"></div>
+        <div class="modal-container" @click.stop>
+
+            <div class="modal-header">
+                <h3>{{select_message}}</h3>
+            </div>
+
+            <div class="modal-body">
+                <div class="container app-tabs">
+                    <div style="display: flex;align-items: center; flex-wrap: wrap; flex-direction: column;">
+                        <div style="margin: 10px; width: 100%;">
+                            <select v-model="selected" @change="onChange($event)" class="form-control" style="min-width: 125px; margin: 0;">
+                                <option v-for="option in options" v-bind:value="option.value" v-bind:disabled="option.disabled">
+                                    {{ option.text }}
+                                </option>
+                            </select>
+                        </div>
+                        <div id="name-input" style="display: none; margin: 10px; width: 100%;">
+                            <input id="create-input" v-model="select_result" type="text"
+                                   v-bind:placeholder="select_placeholder" class="form-control" maxlength="25" v-on:keyup.enter="setResult" autofocus></input>
+                        </div>
+                        <div id="name-input-button" style="display: none; margin: 10px; width: 100%;">
+                            <button id='create-new-button-id' class="btn btn-success" @click="setResult()" style="width: 100%;">OK</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</transition>
+</template>
+
+<script>
 module.exports = {
-    template: require('select-create.html'),
     data: function() {
         return {
             selected: '',
@@ -65,3 +100,6 @@ module.exports = {
         }
     }
 }
+</script>
+<style>
+</style>

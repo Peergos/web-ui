@@ -204,13 +204,13 @@
             :consumer_func="replace_consumer_func"
             :showApplyAll=replace_showApplyAll>
         </Replace>
-        <warning
+        <Warning
             v-if="showWarning"
             v-on:hide-warning="closeWarning"
             :warning_message='warning_message'
             :warning_body="warning_body"
             :consumer_func="warning_consumer_func">
-        </warning>
+        </Warning>
 		<Error
 			v-if="showError"
 			@hide-error="showError = false"
@@ -256,6 +256,7 @@ const NewAppPrompt = require("../components/sandbox/new-app/NewAppPrompt.vue");
 const FolderProperties = require("../components/FolderProperties.vue");
 const Pdf = require("../components/pdf/PDF.vue");
 const Replace = require("../components/replace/Replace.vue");
+const Warning = require('../components/Warning.vue');
 
 const helpers = require("../mixins/storage/index.js");
 const downloaderMixins = require("../mixins/downloader/index.js");
@@ -289,7 +290,8 @@ module.exports = {
 		Markdown,
 		Hex,
 		Pdf,
-		Replace
+		Replace,
+		Warning
 	},
 	data() {
 		return {

@@ -14,21 +14,21 @@
 	    <iframe id="task-editor" :src="frameUrl()" style="width:100%;height:100%;" frameBorder="0"></iframe>
         </div>
 	<spinner v-if="showSpinner" :message="spinnerMessage"></spinner>
-	<select-create
+	    <SelectCreate
             v-if="showSelect"
             v-on:hide-select="closeSelect"
             :select_message= "select_message"
             :select_placeholder="select_placeholder"
             :select_items="select_items"
             :select_consumer_func="select_consumer_func">
-        </select-create>
-        <warning
-	    v-if="showWarning"
-	    v-on:hide-warning="showWarning = false"
-	    :warning_message='warning_message'
-	    :warning_body="warning_body"
-	    :consumer_func="warning_consumer_func">
-	</warning>
+        </SelectCreate>
+        <Warning
+            v-if="showWarning"
+            v-on:hide-warning="showWarning = false"
+            :warning_message='warning_message'
+            :warning_body="warning_body"
+            :consumer_func="warning_consumer_func">
+        </Warning>
 	<Prompt
 	    v-if="showPrompt"
 	    v-on:hide-prompt="showPrompt = false"
@@ -48,11 +48,15 @@ const routerMixins = require("../mixins/router/index.js");
 const UriDecoder = require('../mixins/uridecoder/index.js');
 const AppHeader = require("../components/AppHeader.vue");
 const Prompt = require("../components/prompt/Prompt.vue");
+const SelectCreate = require('../components/select-create/SelectCreate.vue');
+const Warning = require('../components/Warning.vue');
 
 module.exports = {
     components: {
 	    AppHeader,
-	    Prompt
+	    Prompt,
+	    SelectCreate,
+	    Warning
     },
     mixins:[routerMixins, UriDecoder],
 

@@ -3,13 +3,13 @@
 		<div class="gallery-container gallery" @click.stop @keyup.right="next" @keyup.left="previous">
 			<div tabindex="0" @click="close" v-on:keyup.enter="close" aria-label="close" class="slideshow-close"><span>&times;</span></div>
 			<spinner v-if="showSpinner"></spinner>
-            <warning
+            <Warning
                 v-if="showWarning"
                 v-on:hide-warning="hideWarning"
                 :warning_message='warning_message'
                 :warning_body="warning_body"
                 :consumer_func="warning_consumer_func">
-            </warning>
+            </Warning>
             <div id="slideshow-container">
             	<div id="slideshow-info-id" :class="{ 'hidden-info': isInfoHidden, 'slideshow-info': true }"></div>
             	<button id="slideshow-next" style="cursor:auto"><span @click="next" style="cursor:pointer">▶</span></button>
@@ -22,9 +22,13 @@
 </template>
 
 <script>
+const Warning = require('../Warning.vue');
 const downloaderMixins = require("../../mixins/downloader/index.js");
 
 module.exports = {
+	components: {
+	    Warning,
+	},
 	data() {
 		return {
 		    showSpinner: false,
