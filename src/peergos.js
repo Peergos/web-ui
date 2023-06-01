@@ -1,8 +1,6 @@
 var CodeEditor      = require('./components/code-editor');
-var Identity        = require('./components/identity-proof-viewer.vue');
 var Password        = require('./components/password');
 var PasswordUtil    = require('./components/passwordutil');
-var Pdf             = require('./components/pdf');
 var Prompt          = require('./components/prompt');
 var Replace         = require('./components/replace');
 var SelectCreate    = require('./components/select-create');
@@ -17,9 +15,7 @@ var App  			= require('./components/App.vue');
 
 // Loading components
 Vue.component('code-editor', Vue.extend(CodeEditor));
-Vue.component('identity', Vue.extend(Identity));
 Vue.component('password', Vue.extend(PasswordUtil).extend(Password));
-Vue.component('pdf', Vue.extend(Pdf));
 Vue.component('prompt', Vue.extend(Prompt));
 Vue.component('replace', Vue.extend(Replace));
 Vue.component('select-create', Vue.extend(SelectCreate));

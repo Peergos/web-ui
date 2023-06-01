@@ -1,5 +1,23 @@
+<template>
+<transition name="modal">
+<div class="modal-mask" @click="close">
+    <div class="modal-container full-height" @click.stop style="width:100%;overflow-y:auto;padding:0;display:flex;flex-flow:column;">
+
+
+        <div class="modal-header" style="padding:0">
+            <center><h2>{{ file.getName() }}</h2></center><span @click="close" tabindex="0" v-on:keyup.enter="close" style="color:black;font-size:3em;font-weight:bold;position:absolute;top:0;right:0.2em;cursor:pointer;">&times;</span>
+        </div>
+
+        <div class="modal-body" style="margin:0;padding:0;display:flex;flex-grow:1;">
+	  <iframe id="pdf" :src="frameUrl()" style="width:100%;height:100%;" frameBorder="0"></iframe>
+        </div>
+    </div>
+</div>
+</transition>
+</template>
+
+<script>
 module.exports = {
-    template: require('pdf.html'),
     data: function() {
         return {
             showSpinner: false,
@@ -84,3 +102,6 @@ module.exports = {
         }
     },
 }
+</script>
+<style>
+</style>

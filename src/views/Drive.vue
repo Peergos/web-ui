@@ -127,12 +127,12 @@
 			:file="selectedFiles[0]"
 			:context="context">
 		</Hex>
-		<pdf
+		<Pdf
 			v-if="showPdfViewer"
 			v-on:hide-pdf-viewer="back()"
 			:file="selectedFiles[0]"
 			:context="context">
-		</pdf>
+		</Pdf>
 		<code-editor
 			v-if="showCodeEditor"
 			v-on:hide-code-editor="back()"
@@ -145,12 +145,12 @@
             v-on:hide-markdown-viewer="showDrive()"
             :propAppArgs = "appArgs">
         </Markdown>
-                <identity
+                <Identity
                     v-if="showIdentityProof"
                     v-on:hide-identity-proof="back()"
                     :file="selectedFiles[0]"
                     :context="context">
-                </identity>
+                </Identity>
 
 		<Share
 			v-if="showShare"
@@ -254,6 +254,7 @@ const AppPrompt = require("../components/prompt/AppPrompt.vue");
 const NewImageFilePrompt = require("../components/NewImageFilePrompt.vue");
 const NewAppPrompt = require("../components/sandbox/new-app/NewAppPrompt.vue");
 const FolderProperties = require("../components/FolderProperties.vue");
+const Pdf = require("../components/pdf/PDF.vue");
 
 const helpers = require("../mixins/storage/index.js");
 const downloaderMixins = require("../mixins/downloader/index.js");
@@ -285,7 +286,8 @@ module.exports = {
 		Share,
 		Search,
 		Markdown,
-		Hex
+		Hex,
+		Pdf
 	},
 	data() {
 		return {
