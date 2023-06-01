@@ -133,13 +133,13 @@
 			:file="selectedFiles[0]"
 			:context="context">
 		</Pdf>
-		<code-editor
+		<CodeEditor
 			v-if="showCodeEditor"
 			v-on:hide-code-editor="back()"
 			v-on:update-refresh="forceUpdate++"
 			:file="selectedFiles[0]"
 			:context="context">
-		</code-editor>
+		</CodeEditor>
         <Markdown
             v-if="showMarkdownViewer"
             v-on:hide-markdown-viewer="showDrive()"
@@ -234,6 +234,7 @@
 const AppInstall = require("../components/sandbox/AppInstall.vue");
 const AppRunner = require("../components/sandbox/AppRunner.vue");
 const AppSandbox = require("../components/sandbox/AppSandbox.vue");
+const CodeEditor = require("../components/code-editor/CodeEditor.vue");
 const Confirm = require("../components/confirm/Confirm.vue");
 const DriveHeader = require("../components/drive/DriveHeader.vue");
 const DriveGrid = require("../components/drive/DriveGrid.vue");
@@ -270,6 +271,7 @@ module.exports = {
 	    AppInstall,
 	    AppRunner,
 	    AppSandbox,
+	    CodeEditor,
 	    Confirm,
 		DriveHeader,
 		DriveGrid,
