@@ -12,14 +12,14 @@
 
         <div class="modal-body" style="margin:0;padding:0;display:flex;flex-grow:1;">
             <spinner v-if="showSpinner"></spinner>
-            <confirm
+            <Confirm
                     v-if="showConfirm"
                     v-on:hide-confirm="showConfirm = false"
                     :confirm_message='confirm_message'
                     :confirm_body="confirm_body"
                     :consumer_cancel_func="confirm_consumer_cancel_func"
                     :consumer_func="confirm_consumer_func">
-            </confirm>
+            </Confirm>
             <Gallery
                     v-if="showEmbeddedGallery"
                     v-on:hide-gallery="showEmbeddedGallery = false"
@@ -35,6 +35,7 @@
 </template>
 
 <script>
+    const Confirm = require("../confirm/Confirm.vue");
     const Gallery = require("../drive/DriveGallery.vue");
     const launcherMixin = require("../../mixins/launcher/index.js");
     const mixins = require("../../mixins/downloader/index.js");
@@ -42,6 +43,7 @@
 
 module.exports = {
     components: {
+        Confirm,
         Gallery
     },
     data: function() {

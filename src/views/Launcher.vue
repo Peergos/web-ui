@@ -39,14 +39,14 @@
                 :currentFile="currentFile"
                 :currentPath="currentPath">
             </AppSandbox>
-            <confirm
+            <Confirm
                     v-if="showConfirm"
                     v-on:hide-confirm="showConfirm = false"
                     :confirm_message='confirm_message'
                     :confirm_body="confirm_body"
                     :consumer_cancel_func="confirm_consumer_cancel_func"
                     :consumer_func="confirm_consumer_func">
-            </confirm>
+            </Confirm>
             <AppDetails
                 v-if="showAppDetails"
                 v-on:hide-app-details="closeAppDetails"
@@ -181,6 +181,7 @@ const AppHeader = require("../components/AppHeader.vue");
 const AppDetails = require("../components/sandbox/AppDetails.vue");
 const AppGrid = require("../components/app-grid/AppGrid.vue");
 const AppSandbox = require("../components/sandbox/AppSandbox.vue");
+const Confirm = require("../components/confirm/Confirm.vue");
 const NewFilePicker = require("../components/picker/NewFilePicker.vue");
 const Share = require("../components/drive/DriveShare.vue");
 const routerMixins = require("../mixins/router/index.js");
@@ -194,6 +195,7 @@ module.exports = {
 		AppDetails,
 		AppGrid,
 		AppSandbox,
+		Confirm,
 		NewFilePicker,
 		Share
     },

@@ -92,12 +92,13 @@
 			@click.native="toggleTheme()"
 			aria-label="Toggle theme"
 		/>
-                <admin
+                <Admin
                     v-if="showAdmin"
                     v-on:hide-admin="showAdmin=false"
+                    v-on:recalc-admin="recalculateAdminData()"
                     :data="admindata"
                     :context="context">
-                </admin>
+                </Admin>
 		<!-- mobile menu trigger -->
 		<AppButton
 			v-if="isLoggedIn"
@@ -112,7 +113,7 @@
 </template>
 
 <script>
-const Admin = require("./admin")
+const Admin = require("./admin/Admin.vue")
 const AppDropdown = require("./AppDropdown.vue");
 const AppPrompt = require("./prompt/AppPrompt.vue");
 
@@ -239,6 +240,12 @@ module.exports = {
 			that.admindata.pending = reqs.toArray([]);
 			that.showAdmin = true;
 		    });
+		},
+		recalculateAdminData() {
+		    const that = this;
+            this.context.getAndDecodePendingSpaceRequests().thenApply(reqs => {
+                that.admindata.pending = reqs.toArray([]);
+            });
 		},
 	    showRequestStorage() {
                 if(this.isPaid){

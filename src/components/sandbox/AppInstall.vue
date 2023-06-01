@@ -9,14 +9,14 @@
         </div>
         <div class="modal-body">
             <spinner v-if="showSpinner"></spinner>
-            <confirm
+            <Confirm
                     v-if="showConfirm"
                     v-on:hide-confirm="showConfirm = false"
                     :confirm_message='confirm_message'
                     :confirm_body="confirm_body"
                     :consumer_cancel_func="confirm_consumer_cancel_func"
                     :consumer_func="confirm_consumer_func">
-            </confirm>
+            </Confirm>
             <div v-if="appProperties != null">
                 <div class="app-install-view">
                     <p>
@@ -67,11 +67,15 @@
 </template>
 
 <script>
+const Confirm = require("../confirm/Confirm.vue");
 const mixins = require("../../mixins/mixins.js");
 const downloaderMixin = require("../../mixins/downloader/index.js");
 const sandboxMixin = require("../../mixins/sandbox/index.js");
 
 module.exports = {
+    components: {
+        Confirm,
+    },
     data: function() {
         return {
             showSpinner: false,

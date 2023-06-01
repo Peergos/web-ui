@@ -65,14 +65,14 @@
                     v-on:hide-profile-view="showProfileViewForm = false"
                     :profile="profile">
                 </ViewProfile>
-                <confirm
+                <Confirm
                     v-if="showConfirm"
                     v-on:hide-confirm="showConfirm = false"
                     :confirm_message='confirm_message'
                     :confirm_body="confirm_body"
                     :consumer_cancel_func="confirm_consumer_cancel_func"
                     :consumer_func="confirm_consumer_func">
-                </confirm>
+                </Confirm>
                 <AppSandbox
                     v-if="showAppSandbox"
                     v-on:hide-app-sandbox="closeAppSandbox"
@@ -238,8 +238,8 @@
 <script>
 const AppHeader = require("../components/AppHeader.vue");
 const AppInstall = require("../components/sandbox/AppInstall.vue");
+const Confirm = require("../components/confirm/Confirm.vue");
 const SocialPost = require("../components/social/SocialPost.vue");
-
 const Gallery = require("../components/drive/DriveGallery.vue");
 const ViewProfile = require("../components/profile/ViewProfile.vue");
 const AppSandbox = require("../components/sandbox/AppSandbox.vue");
@@ -255,6 +255,7 @@ module.exports = {
 		AppSandbox,
 		AppHeader,
 		AppInstall,
+		Confirm,
     },
     data: function() {
         return {

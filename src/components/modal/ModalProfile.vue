@@ -5,15 +5,15 @@
 		</template>
 		<template #body>
             <spinner v-if="showSpinner"></spinner>
-		    <confirm
-                        v-if="showConfirm"
-                        v-on:hide-confirm="showConfirm = false"
-                        :confirm_message='confirm_message'
-                        :confirm_body="confirm_body"
-                        :consumer_cancel_func="confirm_consumer_cancel_func"
-                        :consumer_func="confirm_consumer_func">
-                    </confirm>
-                    <Share
+		    <Confirm
+                v-if="showConfirm"
+                v-on:hide-confirm="showConfirm = false"
+                :confirm_message='confirm_message'
+                :confirm_body="confirm_body"
+                :consumer_cancel_func="confirm_consumer_cancel_func"
+                :consumer_func="confirm_consumer_func">
+            </Confirm>
+            <Share
 			v-if="showShare"
 			v-on:hide-share-with="showShare = false"
 			v-on:update-shared-refresh="forceSharedRefreshWithUpdate++"
@@ -136,11 +136,13 @@
 </template>
 
 <script>
+const Confirm = require("../confirm/Confirm.vue");
 const Share = require("../drive/DriveShare.vue");
     
 module.exports = {
     components: {
-	Share,
+        Confirm,
+	    Share,
     },
     data: function() {
         return {

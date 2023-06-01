@@ -33,14 +33,14 @@
                     :value="prompt_value"
                     :consumer_func="prompt_consumer_func">
             </prompt>
-            <confirm
+            <Confirm
                     v-if="showConfirm"
                     v-on:hide-confirm="showConfirm = false"
                     :confirm_message='confirm_message'
                     :confirm_body="confirm_body"
                     :consumer_cancel_func="confirm_consumer_cancel_func"
                     :consumer_func="confirm_consumer_func">
-            </confirm>
+            </Confirm>
             <message
                     v-for="message in messages"
                     v-on:remove-message="messages.splice(messages.indexOf(message), 1)"
@@ -54,6 +54,7 @@
 
 <script>
 const AppHeader = require("../components/AppHeader.vue");
+const Confirm = require("../components/confirm/Confirm.vue");
 const Gallery = require("../components/drive/DriveGallery.vue");
 const ProgressBar = require("../components/drive/ProgressBar.vue");
 const mixins = require("../mixins/mixins.js");
@@ -62,6 +63,7 @@ const downloaderMixins = require("../mixins/downloader/index.js");
 
 module.exports = {
     components: {
+        Confirm,
 		Gallery,
 		AppHeader,
 		ProgressBar

@@ -20,14 +20,14 @@
                     :done="progress.done"
                     :max="progress.max" />
         </div>
-        <confirm
+        <Confirm
                 v-if="showConfirm"
                 v-on:hide-confirm="showConfirm = false"
                 :confirm_message='confirm_message'
                 :confirm_body="confirm_body"
                 :consumer_cancel_func="confirm_consumer_cancel_func"
                 :consumer_func="confirm_consumer_func">
-        </confirm>
+        </Confirm>
         <Group
                 v-if="showGroupMembership"
                 v-on:hide-group="showGroupMembership = false"
@@ -285,6 +285,7 @@
 
 <script>
 const AppHeader = require("../components/AppHeader.vue");
+const Confirm = require("../components/confirm/Confirm.vue");
 const Gallery = require("../components/drive/DriveGallery.vue");
 const ViewProfile = require("../components/profile/ViewProfile.vue");
 const Group = require("../components/Group.vue");
@@ -295,6 +296,7 @@ const ProgressBar = require("../components/drive/ProgressBar.vue");
 
 module.exports = {
     components: {
+        Confirm,
 		Gallery,
 		ViewProfile,
 		Group,

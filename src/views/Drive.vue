@@ -218,14 +218,14 @@
 			:body="errorBody"
 			:messageId="messageId">
 		</error>
-        <confirm
+        <Confirm
                 v-if="showConfirm"
                 v-on:hide-confirm="showConfirm = false"
                 :confirm_message='confirm_message'
                 :confirm_body="confirm_body"
                 :consumer_cancel_func="confirm_consumer_cancel_func"
                 :consumer_func="confirm_consumer_func">
-        </confirm>
+        </Confirm>
 	</article>
 </template>
 
@@ -234,6 +234,7 @@
 const AppInstall = require("../components/sandbox/AppInstall.vue");
 const AppRunner = require("../components/sandbox/AppRunner.vue");
 const AppSandbox = require("../components/sandbox/AppSandbox.vue");
+const Confirm = require("../components/confirm/Confirm.vue");
 const DriveHeader = require("../components/drive/DriveHeader.vue");
 const DriveGrid = require("../components/drive/DriveGrid.vue");
 const DriveGridCard = require("../components/drive/DriveGridCard.vue");
@@ -265,6 +266,7 @@ module.exports = {
 	    AppInstall,
 	    AppRunner,
 	    AppSandbox,
+	    Confirm,
 		DriveHeader,
 		DriveGrid,
 		DriveGridCard,
@@ -1256,13 +1258,6 @@ module.exports = {
 					that.updateUsage();
 				});
 		},
-        showMessage: function(title, body) {
-            this.messages.push({
-                title: title,
-                body: body,
-                show: true
-            });
-        },
         viewFolderProperties() {
             if (this.selectedFiles.length != 1)
                 return;

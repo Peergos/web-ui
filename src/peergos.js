@@ -1,6 +1,3 @@
-var Account         = require('./components/account');
-var Admin           = require('./components/admin');
-var Choice         = require('./components/choice');
 var CodeEditor      = require('./components/code-editor');
 var Downloader      = require('./components/downloader');
 var Error           = require('./components/error');
@@ -17,7 +14,6 @@ var Replace         = require('./components/replace');
 var SelectCreate    = require('./components/select-create');
 var Spinner         = require('./components/spinner');
 var Text            = require('./components/viewers/text-viewer');
-var Confirm         = require('./components/confirm');
 var Warning         = require('./components/warning.vue');
 
 var AppButton 		= require('./components/AppButton.vue');
@@ -26,9 +22,6 @@ var AppModal 		= require('./components/modal/AppModal.vue');
 var App  			= require('./components/App.vue');
 
 // Loading components
-Vue.component('account', Vue.extend(Account));
-Vue.component('admin', Vue.extend(Admin));
-Vue.component('choice', Vue.extend(Choice));
 Vue.component('code-editor', Vue.extend(Downloader).extend(CodeEditor));
 Vue.component('error', Vue.extend(Error));
 Vue.component('fingerprint', Vue.extend(Fingerprint));
@@ -42,7 +35,6 @@ Vue.component('replace', Vue.extend(Replace));
 Vue.component('select-create', Vue.extend(SelectCreate));
 Vue.component('spinner', Vue.extend(Spinner));
 Vue.component('text-viewer', Vue.extend(Downloader).extend(Text));
-Vue.component('confirm', Vue.extend(Confirm));
 Vue.component('warning', Vue.extend(Warning));
 
 Vue.component('App', Vue.extend(App));

@@ -9,14 +9,14 @@
             <spinner v-if="showSpinner" :message="spinnerMessage"></spinner>
             <a id="downloadEventAnchor" style="display:none"></a>
 	    <iframe id="calendar-iframe" :src="frameUrl()" style="width:100%; min-height:100vh" frameBorder="0"></iframe>
-            <choice
+            <Choice
                 v-if="showChoice"
                 v-on:hide-choice="showChoice = false"
                 :choice_message='choice_message'
                 :choice_body="choice_body"
                 :choice_consumer_func="choice_consumer_func"
                 :choice_options="choice_options">
-            </choice>
+            </Choice>
             <prompt
                 v-if="showPrompt"
                 v-on:hide-prompt="showPrompt = false"
@@ -26,14 +26,14 @@
                 :value="prompt_value"
                 :consumer_func="prompt_consumer_func">
             </prompt>
-            <confirm
+            <Confirm
                 v-if="showConfirm"
                 v-on:hide-confirm="showConfirm = false"
                 :confirm_message='confirm_message'
                 :confirm_body="confirm_body"
                 :consumer_cancel_func="confirm_consumer_cancel_func"
                 :consumer_func="confirm_consumer_func">
-            </confirm>
+            </Confirm>
             <Share
 		v-if="showShare"
 		v-on:hide-share-with="closeShare"
@@ -56,6 +56,8 @@
 
 <script>
 const AppHeader = require("../components/AppHeader.vue");
+const Choice = require('../components/choice/Choice.vue');
+const Confirm = require("../components/confirm/Confirm.vue");
 const Share = require("../components/drive/DriveShare.vue");
 const ProgressBar = require("../components/drive/ProgressBar.vue");
 
@@ -63,6 +65,8 @@ const routerMixins = require("../mixins/router/index.js");
 
 module.exports = {
     components: {
+        Choice,
+        Confirm,
 		Share,
 		AppHeader,
 		ProgressBar
