@@ -24,7 +24,7 @@
                     :warning_body="warning_body"
                     :consumer_func="warning_consumer_func">
             </warning>
-            <prompt
+            <Prompt
                     v-if="showPrompt"
                     v-on:hide-prompt="showPrompt = false"
                     :prompt_message='prompt_message'
@@ -32,7 +32,7 @@
                     :max_input_size="prompt_max_input_size"
                     :value="prompt_value"
                     :consumer_func="prompt_consumer_func">
-            </prompt>
+            </Prompt>
             <Confirm
                     v-if="showConfirm"
                     v-on:hide-confirm="showConfirm = false"
@@ -51,6 +51,8 @@ const AppHeader = require("../components/AppHeader.vue");
 const Confirm = require("../components/confirm/Confirm.vue");
 const Gallery = require("../components/drive/DriveGallery.vue");
 const ProgressBar = require("../components/drive/ProgressBar.vue");
+const Prompt = require("../components/prompt/Prompt.vue");
+
 const mixins = require("../mixins/mixins.js");
 const routerMixins = require("../mixins/router/index.js");
 const downloaderMixins = require("../mixins/downloader/index.js");
@@ -60,7 +62,8 @@ module.exports = {
         Confirm,
 		Gallery,
 		AppHeader,
-		ProgressBar
+		ProgressBar,
+		Prompt
     },
     data: function() {
         return {
@@ -70,7 +73,6 @@ module.exports = {
             showSpinner: false,
             spinnerMessage: '',
             showWarning: false,
-            showPrompt: false,
             showPrompt: false,
             prompt_message: '',
             prompt_placeholder: '',

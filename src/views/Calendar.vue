@@ -17,7 +17,7 @@
                 :choice_consumer_func="choice_consumer_func"
                 :choice_options="choice_options">
             </Choice>
-            <prompt
+            <Prompt
                 v-if="showPrompt"
                 v-on:hide-prompt="showPrompt = false"
                 :prompt_message='prompt_message'
@@ -25,7 +25,7 @@
                 :max_input_size="prompt_max_input_size"
                 :value="prompt_value"
                 :consumer_func="prompt_consumer_func">
-            </prompt>
+            </Prompt>
             <Confirm
                 v-if="showConfirm"
                 v-on:hide-confirm="showConfirm = false"
@@ -60,7 +60,7 @@ const Choice = require('../components/choice/Choice.vue');
 const Confirm = require("../components/confirm/Confirm.vue");
 const Share = require("../components/drive/DriveShare.vue");
 const ProgressBar = require("../components/drive/ProgressBar.vue");
-
+const Prompt = require("../components/prompt/Prompt.vue");
 const routerMixins = require("../mixins/router/index.js");
 
 module.exports = {
@@ -69,7 +69,8 @@ module.exports = {
         Confirm,
 		Share,
 		AppHeader,
-		ProgressBar
+		ProgressBar,
+		Prompt
 	},
 	data: function() {
         return {

@@ -3,7 +3,7 @@
     <div class="modal-container full-height" @click.stop style="overflow-y:auto; max-width:1000px;">
         <span @click="close" class="close">&times;</span>
         <spinner v-if="showSpinner"></spinner>
-        <prompt
+        <Prompt
                 v-if="showPrompt"
                 v-on:hide-prompt="showPrompt = false"
                 :prompt_message='prompt_message'
@@ -11,7 +11,7 @@
                 :max_input_size="prompt_max_input_size"
                 :value="prompt_value"
                 :consumer_func="prompt_consumer_func">
-        </prompt>
+        </Prompt>
         <div class="modal-header">
             <span>
                 <h4 style="text-align: center;" @click="changeGroupTitle()">{{ displayedTitle }}&nbsp;&nbsp;<i v-if="isAdmin" @click="changeGroupTitle()" class="fa fa-edit" aria-hidden="true"></i></h4>
@@ -114,12 +114,14 @@
 <script>
 const Error = require("../components/error/Error.vue");
 const FormAutocomplete = require("../components/form/FormAutocomplete.vue");
+const Prompt = require("../components/prompt/Prompt.vue");
 const routerMixins = require("../mixins/router/index.js");
 
 module.exports = {
 	components: {
 	    Error,
 	    FormAutocomplete,
+	    Prompt
 	},
     data() {
         return {

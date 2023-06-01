@@ -29,7 +29,7 @@
 	    :warning_body="warning_body"
 	    :consumer_func="warning_consumer_func">
 	</warning>
-	<prompt
+	<Prompt
 	    v-if="showPrompt"
 	    v-on:hide-prompt="showPrompt = false"
 	    :prompt_message='prompt_message'
@@ -37,7 +37,7 @@
 	    :max_input_size="prompt_max_input_size"
 	    :value="prompt_value"
 	    :consumer_func="prompt_consumer_func">
-	</prompt>
+	</Prompt>
     </main>
 </article>
 </template>
@@ -47,10 +47,12 @@ const downloader = require("../mixins/downloader/index.js");
 const routerMixins = require("../mixins/router/index.js");
 const UriDecoder = require('../mixins/uridecoder/index.js');
 const AppHeader = require("../components/AppHeader.vue");
+const Prompt = require("../components/prompt/Prompt.vue");
 
 module.exports = {
     components: {
-	AppHeader,
+	    AppHeader,
+	    Prompt
     },
     mixins:[routerMixins, UriDecoder],
 
