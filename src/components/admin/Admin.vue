@@ -1,3 +1,4 @@
+<template>
 <transition name="modal">
 <div class="modal-mask" @click="close">
     <div style="height:10%"></div>
@@ -9,7 +10,6 @@
 
         <div class="modal-body">
             <spinner v-if="showSpinner"></spinner>
-
             <div>
                 <h3>Pending space requests</h3>
                 <table class="table table-responsive table-striped table-hover">
@@ -30,3 +30,48 @@
     </div>
 </div>
 </transition>
+</template>
+<script>
+module.exports = {
+    data: function() {
+        return {
+            showSpinner: false
+        }
+    },
+    props: ['data', 'context'],
+    created: function() {
+    },
+    methods: {
+        showMessage: function(body) {
+            this.$toast(body);
+        },
+        approve: function(req) {
+            var that = this;
+            this.showSpinner = true;
+            this.context.approveSpaceRequest(req)
+                .thenApply(function(success) {
+		    that.showSpinner = false;
+                    that.showMessage("User: " + req.getUsername() + ". Space request approved!");
+                    that.$emit("recalc-admin");
+                });
+        },
+
+        reject: function(req) {
+            var that = this;
+            this.showSpinner = true;
+            this.context.rejectSpaceRequest(req)
+                .thenApply(function(success) {
+                    that.showMessage("User: " + req.getUsername() + ". Space request rejected!");
+                    that.showSpinner = false;
+                    that.$emit("recalc-admin");
+                });
+        },
+
+        close: function () {
+            this.$emit("hide-admin");
+        }
+    }
+}
+</script>
+<style>
+</style>

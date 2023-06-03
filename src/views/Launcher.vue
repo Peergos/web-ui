@@ -4,13 +4,7 @@
 	</AppHeader>
         <div class="modal-body">
             <spinner v-if="showSpinner"></spinner>
-            <message
-                    v-for="message in messages"
-                    v-on:remove-message="messages.splice(messages.indexOf(message), 1)"
-                    :title="message.title"
-                    :message="message.body">
-            </message>
-            <replace
+            <Replace
                 v-if="showReplace"
                 v-on:hide-replace="showReplace = false"
                 :replace_message='replace_message'
@@ -18,7 +12,7 @@
                 :consumer_cancel_func="replace_consumer_cancel_func"
                 :consumer_func="replace_consumer_func"
                 :showApplyAll=replace_showApplyAll>
-            </replace>
+            </Replace>
             <NewFilePicker
                 v-if="showNewFilePicker"
                 @hide-prompt="closeNewFilePicker()"
@@ -39,14 +33,14 @@
                 :currentFile="currentFile"
                 :currentPath="currentPath">
             </AppSandbox>
-            <confirm
+            <Confirm
                     v-if="showConfirm"
                     v-on:hide-confirm="showConfirm = false"
                     :confirm_message='confirm_message'
                     :confirm_body="confirm_body"
                     :consumer_cancel_func="confirm_consumer_cancel_func"
                     :consumer_func="confirm_consumer_func">
-            </confirm>
+            </Confirm>
             <AppDetails
                 v-if="showAppDetails"
                 v-on:hide-app-details="closeAppDetails"
@@ -62,11 +56,7 @@
                 :allowReadWriteSharing="allowReadWriteSharing"
                 :allowCreateSecretLink="allowCreateSecretLink"
                 :files="filesToShare"
-                :path="pathToFile"
-                :followernames="followernames"
-                :friendnames="friendnames"
-                :groups="groups"
-                :messages="messages">
+                :path="pathToFile">
             </Share>
             <ul id="appMenu" v-if="showAppMenu" class="dropdown-menu" v-bind:style="{top:menutop, left:menuleft}" style="cursor:pointer;display:block;min-width:100px;padding: 10px;">
                 <li id='open-in-app' style="padding-bottom: 5px;" v-for="app in availableApps" v-on:keyup.enter="appOpen($event, app.name, app.path, app.file)" v-on:click="appOpen($event, app.name, app.path, app.file)">{{app.contextMenuText}}</li>
@@ -181,8 +171,11 @@ const AppHeader = require("../components/AppHeader.vue");
 const AppDetails = require("../components/sandbox/AppDetails.vue");
 const AppGrid = require("../components/app-grid/AppGrid.vue");
 const AppSandbox = require("../components/sandbox/AppSandbox.vue");
+const Confirm = require("../components/confirm/Confirm.vue");
 const NewFilePicker = require("../components/picker/NewFilePicker.vue");
+const Replace = require("../components/replace/Replace.vue");
 const Share = require("../components/drive/DriveShare.vue");
+
 const routerMixins = require("../mixins/router/index.js");
 const mixins = require("../mixins/mixins.js");
 const launcherMixin = require("../mixins/launcher/index.js");
@@ -194,7 +187,9 @@ module.exports = {
 		AppDetails,
 		AppGrid,
 		AppSandbox,
+		Confirm,
 		NewFilePicker,
+		Replace,
 		Share
     },
     data: function() {
@@ -265,19 +260,9 @@ module.exports = {
         ...Vuex.mapState([
             'context',
             "shortcuts",
-            'socialData',
             "sandboxedApps",
             'mirrorBatId',
         ]),
-        friendnames: function() {
-            return this.socialData.friends;
-        },
-        followernames: function() {
-            return this.socialData.followers;
-        },
-        groups: function() {
-            return {groupsNameToUid: this.socialData.groupsNameToUid, groupsUidToName: this.socialData.groupsUidToName};
-        },
         sortedShortcuts(){
             var sortBy = this.shortcutsSortBy;
             var reverseOrder = ! this.shortcutsNormalSortOrder;

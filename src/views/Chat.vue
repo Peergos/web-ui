@@ -20,14 +20,14 @@
                     :done="progress.done"
                     :max="progress.max" />
         </div>
-        <confirm
+        <Confirm
                 v-if="showConfirm"
                 v-on:hide-confirm="showConfirm = false"
                 :confirm_message='confirm_message'
                 :confirm_body="confirm_body"
                 :consumer_cancel_func="confirm_consumer_cancel_func"
                 :consumer_func="confirm_consumer_func">
-        </confirm>
+        </Confirm>
         <Group
                 v-if="showGroupMembership"
                 v-on:hide-group="showGroupMembership = false"
@@ -39,12 +39,12 @@
                 :updatedGroupMembership="updatedGroupMembership"
                 :existingGroups="existingGroups">
         </Group>
-        <message
+        <Message
                 v-for="message in messages"
                 v-on:remove-message="messages.splice(messages.indexOf(message), 1)"
                 :title="message.title"
                 :message="message.body">
-        </message>
+        </Message>
         <Gallery
                 v-if="showEmbeddedGallery"
                 v-on:hide-gallery="showEmbeddedGallery = false"
@@ -285,6 +285,7 @@
 
 <script>
 const AppHeader = require("../components/AppHeader.vue");
+const Confirm = require("../components/confirm/Confirm.vue");
 const Gallery = require("../components/drive/DriveGallery.vue");
 const ViewProfile = require("../components/profile/ViewProfile.vue");
 const Group = require("../components/Group.vue");
@@ -292,14 +293,17 @@ const mixins = require("../mixins/mixins.js");
 const routerMixins = require("../mixins/router/index.js");
 const downloaderMixins = require("../mixins/downloader/index.js");
 const ProgressBar = require("../components/drive/ProgressBar.vue");
+const Message = require("../components/message/Message.vue");
 
 module.exports = {
     components: {
+        Confirm,
 		Gallery,
 		ViewProfile,
 		Group,
         ProgressBar,
-		AppHeader
+		AppHeader,
+		Message
     },
     data: function() {
         return {

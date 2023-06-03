@@ -98,14 +98,16 @@ module.exports = {
       link.click()
     },
 
-    downloadFile: function (file) {
+    downloadFile: function (file, fileLabel) {
       console.log('downloading ' + file.getFileProperties().name)
       var props = file.getFileProperties()
       var that = this
       var resultingSize = this.getFileSize(props)
+      let filename = fileLabel != null ? fileLabel : props.name;
+
       var progress = {
         show: true,
-        title: 'Downloading and decrypting ' + props.name,
+        title: 'Downloading and decrypting ' + filename,
         done: 0,
         max: resultingSize
       }
@@ -113,7 +115,7 @@ module.exports = {
         that.$toast({
 	    component: ProgressBar,
 	    props:  progress,
-	} , { icon: false , timeout:false, id: props.name})
+	} , { icon: false , timeout:false, id: filename})
     //   var context = this.getContext()
       file
         .getInputStream(
@@ -125,7 +127,7 @@ module.exports = {
             progress.done += read.value_0
               if (progress.done >= progress.max) {
                 setTimeout(function () {
-                    that.$toast.dismiss(props.name);
+                    that.$toast.dismiss(filename);
                 }, 100)
               }
           }
@@ -136,10 +138,10 @@ module.exports = {
             var maxBlockSize = 1024 * 1024 * 5
             var blockSize = size > maxBlockSize ? maxBlockSize : size
 
-            console.log('saving data of length ' + size + ' to ' + props.name)
+            console.log('saving data of length ' + size + ' to ' + filename)
             let result = peergos.shared.util.Futures.incomplete()
             let fileStream = streamSaver.createWriteStream(
-              props.name,
+              filename,
               props.mimeType,
               function (url) {
                 let link = document.createElement('a')
@@ -178,13 +180,13 @@ module.exports = {
             return reader
               .readIntoArray(data, 0, data.length)
               .thenApply(function (read) {
-                that.openItem(props.name, data, props.mimeType)
+                that.openItem(filename, data, props.mimeType)
               })
           }
         })
         .exceptionally(function (throwable) {
           progress.show = false
-          that.errorTitle = 'Error downloading file: ' + props.name
+          that.errorTitle = 'Error downloading file: ' + filename
           that.errorBody = throwable.getMessage()
           that.showError = true
         })

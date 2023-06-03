@@ -141,14 +141,14 @@
 							Create Secret Link
 						</AppButton>
 					</div>
-                    <choice
+                    <Choice
                         v-if="showChoice"
                         v-on:hide-choice="showChoice = false"
                         :choice_message='choice_message'
                         :choice_body="choice_body"
                         :choice_consumer_func="choice_consumer_func"
                         :choice_options="choice_options">
-                    </choice>
+                    </Choice>
 					<SecretLink
 					    v-if="showModal"
 					    v-on:hide-modal="showModal = false"
@@ -163,11 +163,13 @@
 </template>
 
 <script>
+const Choice = require('../choice/Choice.vue');
 const FormAutocomplete = require("../form/FormAutocomplete.vue");
 const SecretLink = require("SecretLink.vue");
 
 module.exports = {
 	components: {
+	    Choice,
 	    FormAutocomplete,
             SecretLink,
 	},

@@ -1,3 +1,4 @@
+<template>
 <transition name="modal">
 <div class="modal-mask" @click="close">
   <div style="height:30%"></div>
@@ -21,3 +22,30 @@
   </div>
 </div>
 </transition>
+</template>
+<script>
+module.exports = {
+    data: function() {
+        return {
+        }
+    },
+    props: ['confirm_message', 'confirm_body', 'consumer_cancel_func', 'consumer_func'],
+    created: function() {
+    },
+    methods: {
+        close: function() {
+            this.$emit("hide-confirm");
+        },
+        no: function() {
+            this.close();
+            this.consumer_cancel_func();
+        },
+        yes: function() {
+            this.close();
+            this.consumer_func();
+        }
+    }
+}
+</script>
+<style>
+</style>

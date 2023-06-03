@@ -1,5 +1,23 @@
+<template>
+<transition name="modal">
+<div class="modal-mask" @click="close">
+    <div class="modal-container full-height" @click.stop style="width:100%;overflow-y:auto;padding:0;display:flex;flex-flow:column;">
+
+
+        <div class="modal-header" style="padding:0">
+            <center><h2>{{ file.getName() }}</h2></center><span @click="close" tabindex="0" v-on:keyup.enter="close" style="color:black;font-size:3em;font-weight:bold;position:absolute;top:0;right:0.2em;cursor:pointer;">&times;</span>
+        </div>
+
+        <div class="modal-body" style="margin:0;padding:0;display:flex;flex-grow:1;">
+	  <iframe id="pdf" :src="frameUrl()" style="width:100%;height:100%;" frameBorder="0"></iframe>
+        </div>
+    </div>
+</div>
+</transition>
+</template>
+
+<script>
 module.exports = {
-    template: require('pdf.html'),
     data: function() {
         return {
             showSpinner: false,
@@ -65,6 +83,11 @@ module.exports = {
                     that.$toast.error("Unable to register service worker. PDF viewer will not work offline. \nTo enable offline usage, allow 3rd party cookies for " + window.location.protocol + "//[*]." + window.location.host + "\n Note: this is not tracking", {timeout:false});
             }, 5000)
 	},
+		getFileSize: function(props) {
+                var low = props.sizeLow();
+                if (low < 0) low = low + Math.pow(2, 32);
+                return low + (props.sizeHigh() * Math.pow(2, 32));
+    	},
         setupIFrameMessaging: function(iframe, func) {
             if (this.isIframeInitialised) {
                 func();
@@ -79,3 +102,6 @@ module.exports = {
         }
     },
 }
+</script>
+<style>
+</style>

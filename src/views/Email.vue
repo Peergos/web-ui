@@ -17,14 +17,7 @@
                 <iframe id="email-client" :src="frameUrl()" style="width:100%;height:100%" frameBorder="0"></iframe>
             </div>
             <spinner v-if="showSpinner" :message="spinnerMessage"></spinner>
-            <warning
-                    v-if="showWarning"
-                    v-on:hide-warning="showWarning = false"
-                    :warning_message='warning_message'
-                    :warning_body="warning_body"
-                    :consumer_func="warning_consumer_func">
-            </warning>
-            <prompt
+            <Prompt
                     v-if="showPrompt"
                     v-on:hide-prompt="showPrompt = false"
                     :prompt_message='prompt_message'
@@ -32,21 +25,15 @@
                     :max_input_size="prompt_max_input_size"
                     :value="prompt_value"
                     :consumer_func="prompt_consumer_func">
-            </prompt>
-            <confirm
+            </Prompt>
+            <Confirm
                     v-if="showConfirm"
                     v-on:hide-confirm="showConfirm = false"
                     :confirm_message='confirm_message'
                     :confirm_body="confirm_body"
                     :consumer_cancel_func="confirm_consumer_cancel_func"
                     :consumer_func="confirm_consumer_func">
-            </confirm>
-            <message
-                    v-for="message in messages"
-                    v-on:remove-message="messages.splice(messages.indexOf(message), 1)"
-                    :title="message.title"
-                    :message="message.body">
-            </message>
+            </Confirm>
         </div>
     </div>
 </article>
@@ -54,17 +41,22 @@
 
 <script>
 const AppHeader = require("../components/AppHeader.vue");
+const Confirm = require("../components/confirm/Confirm.vue");
 const Gallery = require("../components/drive/DriveGallery.vue");
 const ProgressBar = require("../components/drive/ProgressBar.vue");
+const Prompt = require("../components/prompt/Prompt.vue");
+
 const mixins = require("../mixins/mixins.js");
 const routerMixins = require("../mixins/router/index.js");
 const downloaderMixins = require("../mixins/downloader/index.js");
 
 module.exports = {
     components: {
+        Confirm,
 		Gallery,
 		AppHeader,
-		ProgressBar
+		ProgressBar,
+		Prompt,
     },
     data: function() {
         return {
@@ -73,8 +65,6 @@ module.exports = {
             emailClientProperties: null,
             showSpinner: false,
             spinnerMessage: '',
-            showWarning: false,
-            showPrompt: false,
             showPrompt: false,
             prompt_message: '',
             prompt_placeholder: '',
@@ -89,7 +79,6 @@ module.exports = {
             messageToTimestamp: new Map(),
             directoryPrefix: 'default',
             isIframeInitialised: false,
-            messages: [],
             icalEventTitle: '',
             icalEvent: ''
         }
@@ -854,13 +843,6 @@ module.exports = {
             this.showSpinner = false;
             this.spinnerMessage = '';
         },
-        showMessage: function(title, body) {
-            this.messages.push({
-                title: title,
-                body: body,
-                show: true
-            });
-        },
         showError: function(message) {
             this.$toast.error(message, {timeout:false});
         },
@@ -868,7 +850,7 @@ module.exports = {
             this.$toast(message)
         },
         requestShowMessage: function(msg) {
-            this.showMessage(msg);
+            this.showToast(msg);
         },
         close: function () {
             this.openFileOrDir("Drive", this.context.username, {filename:""});

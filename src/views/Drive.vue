@@ -121,36 +121,36 @@
 			:initial-file-name="appArgs.filename">
 		</Gallery>
 
-		<hex
+		<Hex
 			v-if="showHexViewer"
 			v-on:hide-hex-viewer="back()"
 			:file="selectedFiles[0]"
 			:context="context">
-		</hex>
-		<pdf
+		</Hex>
+		<Pdf
 			v-if="showPdfViewer"
 			v-on:hide-pdf-viewer="back()"
 			:file="selectedFiles[0]"
 			:context="context">
-		</pdf>
-		<code-editor
+		</Pdf>
+		<CodeEditor
 			v-if="showCodeEditor"
 			v-on:hide-code-editor="back()"
 			v-on:update-refresh="forceUpdate++"
 			:file="selectedFiles[0]"
 			:context="context">
-		</code-editor>
+		</CodeEditor>
         <Markdown
             v-if="showMarkdownViewer"
             v-on:hide-markdown-viewer="showDrive()"
             :propAppArgs = "appArgs">
         </Markdown>
-                <identity
+                <Identity
                     v-if="showIdentityProof"
                     v-on:hide-identity-proof="back()"
                     :file="selectedFiles[0]"
                     :context="context">
-                </identity>
+                </Identity>
 
 		<Share
 			v-if="showShare"
@@ -195,7 +195,7 @@
             :currentFile="selectedFiles[0]"
             :currentPath="getPath">
         </AppSandbox>
-        <replace
+        <Replace
             v-if="showReplace"
             v-on:hide-replace="showReplace = false"
             :replace_message='replace_message'
@@ -203,29 +203,29 @@
             :consumer_cancel_func="replace_consumer_cancel_func"
             :consumer_func="replace_consumer_func"
             :showApplyAll=replace_showApplyAll>
-        </replace>
-        <warning
+        </Replace>
+        <Warning
             v-if="showWarning"
             v-on:hide-warning="closeWarning"
             :warning_message='warning_message'
             :warning_body="warning_body"
             :consumer_func="warning_consumer_func">
-        </warning>
-		<error
+        </Warning>
+		<Error
 			v-if="showError"
 			@hide-error="showError = false"
 			:title="errorTitle"
 			:body="errorBody"
 			:messageId="messageId">
-		</error>
-        <confirm
+		</Error>
+        <Confirm
                 v-if="showConfirm"
                 v-on:hide-confirm="showConfirm = false"
                 :confirm_message='confirm_message'
                 :confirm_body="confirm_body"
                 :consumer_cancel_func="confirm_consumer_cancel_func"
                 :consumer_func="confirm_consumer_func">
-        </confirm>
+        </Confirm>
 	</article>
 </template>
 
@@ -234,17 +234,20 @@
 const AppInstall = require("../components/sandbox/AppInstall.vue");
 const AppRunner = require("../components/sandbox/AppRunner.vue");
 const AppSandbox = require("../components/sandbox/AppSandbox.vue");
+const CodeEditor = require("../components/code-editor/CodeEditor.vue");
+const Confirm = require("../components/confirm/Confirm.vue");
 const DriveHeader = require("../components/drive/DriveHeader.vue");
 const DriveGrid = require("../components/drive/DriveGrid.vue");
 const DriveGridCard = require("../components/drive/DriveGridCard.vue");
 const DriveGridDrop = require("../components/drive/DriveGridDrop.vue");
 const DriveTable = require("../components/drive/DriveTable.vue");
+const Error = require("../components/error/Error.vue");
 const Gallery = require("../components/drive/DriveGallery.vue");
 const Identity = require("../components/identity-proof-viewer.vue");
 const Share = require("../components/drive/DriveShare.vue");
 const Search = require("../components/Search.vue");
 const Markdown = require("../components/viewers/Markdown.vue");
-
+const Hex = require("../components/viewers/Hex.vue");
 const ProgressBar = require("../components/drive/ProgressBar.vue");
 const DriveMenu = require("../components/drive/DriveMenu.vue");
 
@@ -252,6 +255,9 @@ const AppPrompt = require("../components/prompt/AppPrompt.vue");
 const NewImageFilePrompt = require("../components/NewImageFilePrompt.vue");
 const NewAppPrompt = require("../components/sandbox/new-app/NewAppPrompt.vue");
 const FolderProperties = require("../components/FolderProperties.vue");
+const Pdf = require("../components/pdf/PDF.vue");
+const Replace = require("../components/replace/Replace.vue");
+const Warning = require('../components/Warning.vue');
 
 const helpers = require("../mixins/storage/index.js");
 const downloaderMixins = require("../mixins/downloader/index.js");
@@ -265,12 +271,15 @@ module.exports = {
 	    AppInstall,
 	    AppRunner,
 	    AppSandbox,
+	    CodeEditor,
+	    Confirm,
 		DriveHeader,
 		DriveGrid,
 		DriveGridCard,
 		DriveGridDrop,
 		DriveTable,
 		DriveMenu,
+		Error,
 		AppPrompt,
 		NewImageFilePrompt,
 		NewAppPrompt,
@@ -280,7 +289,11 @@ module.exports = {
 		Identity,
 		Share,
 		Search,
-		Markdown
+		Markdown,
+		Hex,
+		Pdf,
+		Replace,
+		Warning
 	},
 	data() {
 		return {
@@ -1256,13 +1269,6 @@ module.exports = {
 					that.updateUsage();
 				});
 		},
-        showMessage: function(title, body) {
-            this.messages.push({
-                title: title,
-                body: body,
-                show: true
-            });
-        },
         viewFolderProperties() {
             if (this.selectedFiles.length != 1)
                 return;

@@ -110,7 +110,7 @@ module.exports = {
 		},
 		action:{
 			type: String,
-			default: 'create'
+			default: 'Create'
 		}
 
 
