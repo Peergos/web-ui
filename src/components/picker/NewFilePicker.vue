@@ -7,7 +7,7 @@
 					<AppButton class="close" icon="close" @click.native="closePrompt()"/>
 					<h3>Create new &quot{{pickerFileExtension}}&quot file</h3>
 				</header>
-                <spinner v-if="showSpinner"></spinner>
+                <Spinner v-if="showSpinner"></Spinner>
                 <div class="prompt__body">
                     <div class="folder-picker-view" class="scroll-style">
                       <ul>
@@ -54,11 +54,13 @@
 	</transition>
 </template>
 const SelectableTreeItem = require("SelectableTreeItem.vue");
+const Spinner = require("../spinner/Spinner.vue");
 const folderTreeMixin = require("../../mixins/tree-walker/index.js");
 <script>
 module.exports = {
     components: {
-        SelectableTreeItem
+        SelectableTreeItem,
+        Spinner
     },
 	data() {
 		return {

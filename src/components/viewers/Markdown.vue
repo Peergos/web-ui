@@ -11,7 +11,7 @@
         </div>
 
         <div class="modal-body" style="margin:0;padding:0;display:flex;flex-grow:1;">
-            <spinner v-if="showSpinner"></spinner>
+            <Spinner v-if="showSpinner"></Spinner>
             <Confirm
                     v-if="showConfirm"
                     v-on:hide-confirm="showConfirm = false"
@@ -37,6 +37,8 @@
 <script>
     const Confirm = require("../confirm/Confirm.vue");
     const Gallery = require("../drive/DriveGallery.vue");
+    const Spinner = require("../spinner/Spinner.vue");
+
     const launcherMixin = require("../../mixins/launcher/index.js");
     const mixins = require("../../mixins/downloader/index.js");
     const routerMixins = require("../../mixins/router/index.js");
@@ -44,7 +46,8 @@
 module.exports = {
     components: {
         Confirm,
-        Gallery
+        Gallery,
+        Spinner
     },
     data: function() {
         return {

@@ -13,7 +13,7 @@
         <div class="" style="padding:0;display:flex;flex-grow:1;">
 	    <iframe id="task-editor" :src="frameUrl()" style="width:100%;height:100%;" frameBorder="0"></iframe>
         </div>
-	<spinner v-if="showSpinner" :message="spinnerMessage"></spinner>
+	    <Spinner v-if="showSpinner" :message="spinnerMessage"></Spinner>
 	    <SelectCreate
             v-if="showSelect"
             v-on:hide-select="closeSelect"
@@ -49,6 +49,7 @@ const UriDecoder = require('../mixins/uridecoder/index.js');
 const AppHeader = require("../components/AppHeader.vue");
 const Prompt = require("../components/prompt/Prompt.vue");
 const SelectCreate = require('../components/select-create/SelectCreate.vue');
+const Spinner = require("../components/spinner/Spinner.vue");
 const Warning = require('../components/Warning.vue');
 
 module.exports = {
@@ -56,6 +57,7 @@ module.exports = {
 	    AppHeader,
 	    Prompt,
 	    SelectCreate,
+	    Spinner,
 	    Warning
     },
     mixins:[routerMixins, UriDecoder],

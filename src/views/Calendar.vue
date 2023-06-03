@@ -6,7 +6,7 @@
 			</template>
 		</AppHeader>
 		<main>
-            <spinner v-if="showSpinner" :message="spinnerMessage"></spinner>
+            <Spinner v-if="showSpinner" :message="spinnerMessage"></Spinner>
             <a id="downloadEventAnchor" style="display:none"></a>
 	    <iframe id="calendar-iframe" :src="frameUrl()" style="width:100%; min-height:100vh" frameBorder="0"></iframe>
             <Choice
@@ -61,6 +61,8 @@ const Confirm = require("../components/confirm/Confirm.vue");
 const Share = require("../components/drive/DriveShare.vue");
 const ProgressBar = require("../components/drive/ProgressBar.vue");
 const Prompt = require("../components/prompt/Prompt.vue");
+const Spinner = require("../components/spinner/Spinner.vue");
+
 const routerMixins = require("../mixins/router/index.js");
 
 module.exports = {
@@ -70,7 +72,8 @@ module.exports = {
 		Share,
 		AppHeader,
 		ProgressBar,
-		Prompt
+		Prompt,
+		Spinner
 	},
 	data: function() {
         return {

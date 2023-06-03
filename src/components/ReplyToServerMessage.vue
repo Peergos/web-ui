@@ -9,7 +9,7 @@
                 <h2>{{title}}</h2>
         </div>
         <div class="modal-body">
-            <spinner v-if="showSpinner"></spinner>
+            <Spinner v-if="showSpinner"></Spinner>
             <div id="feedback-main">
                 <div v-if="isFeedback" >
         	      <h3>You can tell us here how we can improve, or you can chat with us on <a href="https://reddit.com/r/peergos" target="_blank" rel="noopener noreferrer">reddit</a> or send us an email: <a href="mailto:feedback@peergos.org">feedback@peergos.org</a></h3>
@@ -76,7 +76,12 @@
 </template>
 
 <script>
+const Spinner = require("./spinner/Spinner.vue");
+
 module.exports = {
+	components: {
+	    Spinner
+	},
     data: function() {
         return {
             showSpinner: false,

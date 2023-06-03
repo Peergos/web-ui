@@ -10,7 +10,7 @@
             <div v-bind:class="errorClass">
                 <label v-if="isError">{{ error }}</label>
             </div>
-            <spinner v-if="showSpinner"></spinner>
+            <Spinner v-if="showSpinner"></Spinner>
                 <div class="flex-container">
                     <div class="flex-item search" style="margin: 10px; border-width: 1px; border-style: solid;">
                         <select v-model="selectedSearchType">
@@ -102,7 +102,12 @@
 </template>
 
 <script>
+const Spinner = require("./spinner/Spinner.vue");
+
 module.exports = {
+	components: {
+	    Spinner
+	},
     data: function() {
         return {
             searchContains: "",

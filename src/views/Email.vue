@@ -16,7 +16,7 @@
             <div class="modal-body" style="padding:0;display:flex;flex-grow:1;">
                 <iframe id="email-client" :src="frameUrl()" style="width:100%;height:100%" frameBorder="0"></iframe>
             </div>
-            <spinner v-if="showSpinner" :message="spinnerMessage"></spinner>
+            <Spinner v-if="showSpinner" :message="spinnerMessage"></Spinner>
             <Prompt
                     v-if="showPrompt"
                     v-on:hide-prompt="showPrompt = false"
@@ -45,6 +45,7 @@ const Confirm = require("../components/confirm/Confirm.vue");
 const Gallery = require("../components/drive/DriveGallery.vue");
 const ProgressBar = require("../components/drive/ProgressBar.vue");
 const Prompt = require("../components/prompt/Prompt.vue");
+const Spinner = require("../components/spinner/Spinner.vue");
 
 const mixins = require("../mixins/mixins.js");
 const routerMixins = require("../mixins/router/index.js");
@@ -57,6 +58,7 @@ module.exports = {
 		AppHeader,
 		ProgressBar,
 		Prompt,
+		Spinner,
     },
     data: function() {
         return {

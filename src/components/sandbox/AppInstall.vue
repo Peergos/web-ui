@@ -8,7 +8,7 @@
             <h2>App Installation</h2>
         </div>
         <div class="modal-body">
-            <spinner v-if="showSpinner"></spinner>
+            <Spinner v-if="showSpinner"></Spinner>
             <Confirm
                     v-if="showConfirm"
                     v-on:hide-confirm="showConfirm = false"
@@ -68,6 +68,7 @@
 
 <script>
 const Confirm = require("../confirm/Confirm.vue");
+const Spinner = require("../spinner/Spinner.vue");
 const mixins = require("../../mixins/mixins.js");
 const downloaderMixin = require("../../mixins/downloader/index.js");
 const sandboxMixin = require("../../mixins/sandbox/index.js");
@@ -75,6 +76,7 @@ const sandboxMixin = require("../../mixins/sandbox/index.js");
 module.exports = {
     components: {
         Confirm,
+        Spinner
     },
     data: function() {
         return {

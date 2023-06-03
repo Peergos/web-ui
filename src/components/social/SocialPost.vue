@@ -7,7 +7,7 @@
 	    <div class="modal-header">
 		<h2>{{title}}</h2>
 	    </div>
-	    <spinner v-if="showSpinner"></spinner>
+	    <Spinner v-if="showSpinner"></Spinner>
             <div class="modal-body">
                 <div id="social-post-main">
                     <p>
@@ -62,9 +62,12 @@
 
 <script>
 const ProgressBar = require("../drive/ProgressBar.vue");
+const Spinner = require("../spinner/Spinner.vue");
+
 module.exports = {
     components: {
 		ProgressBar,
+		Spinner
 	},
 	data: function() {
         return {

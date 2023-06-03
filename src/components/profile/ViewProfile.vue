@@ -8,7 +8,7 @@
             <h2>Profile</h2>
         </div>
         <div class="modal-body">
-            <spinner v-if="showSpinner"></spinner>
+            <Spinner v-if="showSpinner"></Spinner>
             <div id="profile-container" class="profile-image" v-if="hasProfileImage()">
                 <img id="profile-image" alt="profile image" style="width:150px; height:150px" v-bind:src="getProfileImage()"/>
             </div>
@@ -40,7 +40,12 @@
 </template>
 
 <script>
+const Spinner = require("../spinner/Spinner.vue");
+
 module.exports = {
+	components: {
+	    Spinner
+	},
     data: function() {
         return {
         firstName: "",

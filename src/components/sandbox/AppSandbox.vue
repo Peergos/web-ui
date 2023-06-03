@@ -43,7 +43,7 @@
             </div>
             <div id='sandbox-container' class="modal-body" style="margin:0;padding:0;display:flex;flex-grow:1;">
             </div>
-            <spinner v-if="showSpinner"></spinner>
+            <Spinner v-if="showSpinner"></Spinner>
         </div>
     </div>
 </transition>
@@ -55,6 +55,7 @@ const AddToChat = require("AddToChat.vue");
 const AppInstall = require("AppInstall.vue");
 const AppPrompt = require("../prompt/AppPrompt.vue");
 const FolderPicker = require('../picker/FolderPicker.vue');
+const Spinner = require("../spinner/Spinner.vue");
 
 const downloaderMixins = require("../../mixins/downloader/index.js");
 const router = require("../../mixins/router/index.js");
@@ -68,7 +69,8 @@ module.exports = {
         AddToChat,
         AppInstall,
         AppPrompt,
-        FolderPicker
+        FolderPicker,
+        Spinner
     },
     data: function() {
         return {
