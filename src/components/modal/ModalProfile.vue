@@ -136,12 +136,14 @@
 </template>
 
 <script>
+const AppModal = require("AppModal.vue");
 const Confirm = require("../confirm/Confirm.vue");
 const Share = require("../drive/DriveShare.vue");
 const Spinner = require("../spinner/Spinner.vue");
 
 module.exports = {
     components: {
+        AppModal,
         Confirm,
 	    Share,
 	    Spinner

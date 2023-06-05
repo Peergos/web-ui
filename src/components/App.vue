@@ -54,6 +54,7 @@
 </template>
 
 <script>
+const AppIcon = require("AppIcon.vue");
 const AppNavigation = require("./navigation/AppNavigation.vue");
 const ModalTour = require("./modal/ModalTour.vue");
 const ModalHelp = require("./modal/ModalHelp.vue");
@@ -87,6 +88,7 @@ const sandboxAppMixins = require("../mixins/sandbox/index.js");
 
 module.exports = {
 	components: {
+	    AppIcon,
 		AppNavigation,
 		ModalTour,
 		ModalHelp,

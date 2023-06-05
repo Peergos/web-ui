@@ -26,6 +26,8 @@
 </template>
 
 <script>
+const AppButton = require("../AppButton.vue");
+const AppModal = require("AppModal.vue");
 const UriDecoder = require('../../mixins/uridecoder/index.js');
 const Bip39 = require('../../mixins/password/bip-0039-english.json');
 const FormPassword = require("../form/FormPassword.vue");
@@ -33,8 +35,10 @@ const Spinner = require("../spinner/Spinner.vue");
 
 module.exports = {
     components: {
+        AppButton,
+        AppModal,
 	    FormPassword,
-    	Spinner
+        Spinner,
     },
     
     data() {

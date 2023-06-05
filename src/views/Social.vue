@@ -127,6 +127,7 @@
 </template>
 
 <script>
+const AppButton = require("../components/AppButton.vue");
 const AppHeader = require("../components/AppHeader.vue");
 const ViewProfile = require("../components/profile/ViewProfile.vue");
 const Fingerprint = require("../components/fingerprint/Fingerprint.vue");
@@ -140,6 +141,7 @@ module.exports = {
     	Fingerprint,
 	    FormAutocomplete,
 		ViewProfile,
+		AppButton,
 		AppHeader,
 		Spinner,
 	},

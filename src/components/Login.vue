@@ -29,12 +29,14 @@
 </template>
 
 <script>
+const AppButton = require("AppButton.vue");
 const FormPassword = require("./form/FormPassword.vue");
 const routerMixins = require("../mixins/router/index.js");
 const UriDecoder = require('../mixins/uridecoder/index.js');
 
 module.exports = {
 	components: {
+    	AppButton,
 		FormPassword,
 	},
 	data() {

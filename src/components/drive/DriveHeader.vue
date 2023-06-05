@@ -65,13 +65,17 @@
 </template>
 
 <script>
+const AppButton = require("../AppButton.vue");
 const AppDropdown = require("../AppDropdown.vue");
+const AppIcon = require("../AppIcon.vue");
 const AppSandbox = require("../sandbox/AppSandbox.vue");
 const UserSettings = require("../UserSettings.vue");
 
 module.exports = {
 	components: {
+	    AppButton,
 		AppDropdown,
+		AppIcon,
         AppSandbox,
 		UserSettings
 	},

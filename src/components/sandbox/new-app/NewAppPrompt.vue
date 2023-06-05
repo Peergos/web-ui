@@ -79,7 +79,12 @@
 </template>
 
 <script>
+const AppButton = require("../../AppButton.vue");
+
 module.exports = {
+    components: {
+        AppButton,
+    },
 	data() {
 		return {
 			prompt_result: '',

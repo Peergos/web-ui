@@ -38,11 +38,15 @@
 </template>
 
 <script>
+const AppButton = require("../AppButton.vue");
+const AppIcon = require("../AppIcon.vue");
 const MenuItem = require('./NavigationMenuItem.vue');
 const NavigationStorage = require('./NavigationStorage.vue');
 
 module.exports = {
 	components: {
+	    AppButton,
+    	AppIcon,
 		MenuItem,
 		NavigationStorage,
 	},

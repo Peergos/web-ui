@@ -19,9 +19,13 @@
 </template>
 
 <script>
+const AppButton = require("../AppButton.vue");
 const CommonPasswords = require('../../mixins/password/passwords.json');
 
 module.exports = {
+	components: {
+	    AppButton,
+	},
     props: {
 	value:{
 	    type: [String, Array],

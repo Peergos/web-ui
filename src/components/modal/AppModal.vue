@@ -21,7 +21,12 @@
 </template>
 
 <script>
+const AppButton = require("../AppButton.vue");
+
 module.exports = {
+	components: {
+	    AppButton,
+	},
 	name: 'AppModal',
 	props: {
 		position:{

@@ -20,8 +20,13 @@
 </template>
 
 <script>
+const AppButton = require("../AppButton.vue");
+const AppModal = require("AppModal.vue");
+
 module.exports = {
 	components: {
+	    AppButton,
+    	AppModal
 	},
 	data() {
 		return {

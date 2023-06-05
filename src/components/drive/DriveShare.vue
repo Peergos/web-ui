@@ -163,6 +163,7 @@
 </template>
 
 <script>
+const AppButton = require("../AppButton.vue");
 const Choice = require('../choice/Choice.vue');
 const Spinner = require("../spinner/Spinner.vue");
 const FormAutocomplete = require("../form/FormAutocomplete.vue");
@@ -170,10 +171,11 @@ const SecretLink = require("SecretLink.vue");
 
 module.exports = {
 	components: {
+	    AppButton,
 	    Choice,
 	    FormAutocomplete,
         SecretLink,
-        Spinner
+        Spinner,
 	},
 	data() {
 		return {
