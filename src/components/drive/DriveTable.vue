@@ -38,11 +38,13 @@
 </template>
 
 <script>
-
+const AppButton = require("../AppButton.vue");
 const mixins = require("../../mixins/downloader/index.js");
 
 module.exports = {
-
+	components: {
+	    AppButton,
+	},
 	props: {
 		files: {
 			type: Array,

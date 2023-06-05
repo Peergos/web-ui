@@ -1,12 +1,6 @@
-var AppButton 		= require('./components/AppButton.vue');
-var AppIcon 		= require('./components/AppIcon.vue');
-var AppModal 		= require('./components/modal/AppModal.vue');
-var App  			= require('./components/App.vue');
 
+var App  			= require('./components/App.vue');
 Vue.component('App', Vue.extend(App));
-Vue.component('AppButton', Vue.extend(AppButton));
-Vue.component('AppIcon', Vue.extend(AppIcon));
-Vue.component('AppModal', Vue.extend(AppModal));
 
 Vue.directive('focus', {
   inserted: function (el) {

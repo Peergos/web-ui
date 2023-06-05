@@ -103,6 +103,7 @@
 </template>
 
 <script>
+const AppButton = require("AppButton.vue");
 const Bip39 = require('../mixins/password/bip-0039-english.json');
 const BannedUsernames = require('../mixins/password/bannedUsernames.json');
 const FormPassword = require("./form/FormPassword.vue");
@@ -111,7 +112,8 @@ const sandboxMixin = require("../mixins/sandbox/index.js");
 const Continue = require("Continue.vue");
 module.exports = {
     components: {
-	FormPassword,
+        AppButton,
+	    FormPassword,
         Continue,
     },
 

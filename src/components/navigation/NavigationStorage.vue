@@ -8,7 +8,11 @@
 </template>
 
 <script>
+const AppButton = require("../AppButton.vue");
 module.exports = {
+	components: {
+	    AppButton,
+	},
 	props: {
 		isPro: {
 			type: Boolean,

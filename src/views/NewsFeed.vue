@@ -236,7 +236,9 @@
 </template>
 
 <script>
+const AppButton = require("../components/AppButton.vue");
 const AppHeader = require("../components/AppHeader.vue");
+const AppIcon = require("../components/AppIcon.vue");
 const AppInstall = require("../components/sandbox/AppInstall.vue");
 const Confirm = require("../components/confirm/Confirm.vue");
 const SocialPost = require("../components/social/SocialPost.vue");
@@ -253,8 +255,10 @@ module.exports = {
 		SocialPost,
 		Gallery,
 		ViewProfile,
+		AppButton,
 		AppSandbox,
 		AppHeader,
+		AppIcon,
 		AppInstall,
 		Confirm,
 		Spinner,

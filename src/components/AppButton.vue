@@ -18,7 +18,11 @@
 </template>
 
 <script>
+const AppIcon = require("AppIcon.vue");
 module.exports = {
+	components: {
+	    AppIcon,
+	},
 	props: {
 		tag: {
 			type: String,

@@ -285,6 +285,7 @@
 
 <script>
 const AppHeader = require("../components/AppHeader.vue");
+const AppIcon = require("../components/AppIcon.vue");
 const Confirm = require("../components/confirm/Confirm.vue");
 const Gallery = require("../components/drive/DriveGallery.vue");
 const ViewProfile = require("../components/profile/ViewProfile.vue");
@@ -298,6 +299,7 @@ const Spinner = require("../components/spinner/Spinner.vue");
 
 module.exports = {
     components: {
+        AppIcon,
         Confirm,
 		Gallery,
 		ViewProfile,

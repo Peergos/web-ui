@@ -9,8 +9,14 @@
 </template>
 
 <script>
+const AppButton = require("../AppButton.vue");
+const AppIcon = require("../AppIcon.vue");
 const router = require("../../mixins/router/index.js");
 module.exports = {
+	components: {
+	    AppButton,
+    	AppIcon,
+	},
 	props: {
 		icon: {
 			type: String,

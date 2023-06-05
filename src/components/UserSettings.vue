@@ -114,16 +114,20 @@
 
 <script>
 const Admin = require("./admin/Admin.vue")
+const AppButton = require("AppButton.vue");
 const AppDropdown = require("./AppDropdown.vue");
+const AppIcon = require("AppIcon.vue");
 const AppPrompt = require("./prompt/AppPrompt.vue");
 const Spinner = require("./spinner/Spinner.vue");
 
 module.exports = {
     components: {
         Admin,
+        AppButton,
 	    AppDropdown,
         AppPrompt,
-        Spinner
+        Spinner,
+	    AppIcon,
     },
 	data() {
 		return {

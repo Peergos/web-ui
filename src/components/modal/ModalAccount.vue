@@ -26,9 +26,15 @@
 </template>
 
 <script>
+const AppButton = require("../AppButton.vue");
+const AppModal = require("AppModal.vue");
+const AppIcon = require("../AppIcon.vue");
 const FormPassword = require("../form/FormPassword.vue");
 module.exports = {
 	components: {
+	    AppButton,
+	    AppModal,
+	    AppIcon,
 		FormPassword,
 	},
 	data() {

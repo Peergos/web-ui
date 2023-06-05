@@ -22,8 +22,14 @@
 </template>
 
 <script>
+const AppButton = require("../AppButton.vue");
+const AppIcon = require("../AppIcon.vue");
 
 module.exports = {
+    components: {
+        AppButton,
+	    AppIcon,
+    },
 	props: [
 		'filename',
 		'src',

@@ -12,10 +12,12 @@
 </template>
 
 <script>
+const AppModal = require("AppModal.vue");
 const Slider = require("../slider/Slider.vue");
 
 module.exports = {
 components: {
+    AppModal,
 	Slider,
 },
 data() {
