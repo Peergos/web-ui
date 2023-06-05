@@ -8,7 +8,7 @@
             <h2>Folder Picker</h2>
         </div>
         <div class="modal-body">
-            <spinner v-if="showSpinner"></spinner>
+            <Spinner v-if="showSpinner"></Spinner>
             <div class="folder-picker-view" class="scroll-style">
               <ul>
                 <TreeItem class="item" :model="treeData" :selectFolder_func="selectFolder"></TreeItem>
@@ -39,12 +39,13 @@
 </template>
 
 <script>
-
+const Spinner = require("../spinner/Spinner.vue");
 const TreeItem = require("TreeItem.vue");
 const folderTreeMixin = require("../../mixins/tree-walker/index.js");
 
 module.exports = {
     components: {
+        Spinner,
         TreeItem
     },
     data: function() {

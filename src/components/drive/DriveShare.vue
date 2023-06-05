@@ -3,7 +3,7 @@
 		<div class="modal-mask" @click="close">
 			<div class="drive-share modal-container full-height" @click.stop style="overflow-y:auto; max-width:1000px;">
 				<span @click="close" tabindex="0" v-on:keyup.enter="close" aria-label="close" class="close">&times;</span>
-				<spinner v-if="showSpinner"></spinner>
+				<Spinner v-if="showSpinner"></Spinner>
 				<div class="modal-header">
 					<h4>Share {{ displayName }}</h4>
 				</div>
@@ -164,6 +164,7 @@
 
 <script>
 const Choice = require('../choice/Choice.vue');
+const Spinner = require("../spinner/Spinner.vue");
 const FormAutocomplete = require("../form/FormAutocomplete.vue");
 const SecretLink = require("SecretLink.vue");
 
@@ -171,7 +172,8 @@ module.exports = {
 	components: {
 	    Choice,
 	    FormAutocomplete,
-            SecretLink,
+        SecretLink,
+        Spinner
 	},
 	data() {
 		return {

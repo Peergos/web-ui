@@ -3,7 +3,7 @@
 	<AppHeader>
 	</AppHeader>
         <div class="modal-body">
-            <spinner v-if="showSpinner"></spinner>
+            <Spinner v-if="showSpinner"></Spinner>
             <Replace
                 v-if="showReplace"
                 v-on:hide-replace="showReplace = false"
@@ -175,6 +175,7 @@ const Confirm = require("../components/confirm/Confirm.vue");
 const NewFilePicker = require("../components/picker/NewFilePicker.vue");
 const Replace = require("../components/replace/Replace.vue");
 const Share = require("../components/drive/DriveShare.vue");
+const Spinner = require("../components/spinner/Spinner.vue");
 
 const routerMixins = require("../mixins/router/index.js");
 const mixins = require("../mixins/mixins.js");
@@ -190,7 +191,8 @@ module.exports = {
 		Confirm,
 		NewFilePicker,
 		Replace,
-		Share
+		Share,
+		Spinner,
     },
     data: function() {
         return {

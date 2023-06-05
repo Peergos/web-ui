@@ -8,7 +8,7 @@
             <h2>App Details</h2>
         </div>
         <div class="modal-body">
-            <spinner v-if="showSpinner"></spinner>
+            <Spinner v-if="showSpinner"></Spinner>
             <div v-if="appProperties != null">
                 <div class="app-details-view">
                     <p>
@@ -58,9 +58,13 @@
 </template>
 
 <script>
+const Spinner = require("../spinner/Spinner.vue");
 const sandboxMixin = require("../../mixins/sandbox/index.js");
 const routerMixins = require("../../mixins/router/index.js");
 module.exports = {
+	components: {
+	    Spinner
+	},
     data: function() {
         return {
             showSpinner: false,

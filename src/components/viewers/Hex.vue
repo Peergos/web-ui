@@ -2,7 +2,7 @@
 <transition name="modal">
 <div class="modal-mask" @click="close">
     <div class="modal-container hex-viewer" @click.stop style="height:95%;width:95%;overflow-y:auto">
-        <spinner v-if="showSpinner"></spinner>
+        <Spinner v-if="showSpinner"></Spinner>
         <center>
             <h2 v-if="file != null">
                 <p>{{ file.getFileProperties().name }} (hex view)&nbsp;
@@ -39,9 +39,14 @@
 </div>
 </transition>
 </template>
-const downloaderMixins = require("../../mixins/downloader/index.js");
 <script>
+    const Spinner = require("../spinner/Spinner.vue");
+    const downloaderMixins = require("../../mixins/downloader/index.js");
+
     module.exports = {
+    	components: {
+    	    Spinner
+    	},
     data: function() {
         return {
 	    lookup: ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'A', 'B', 'C', 'D', 'E', 'F'],

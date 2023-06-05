@@ -1,6 +1,6 @@
 <template>
 	<nav class="user-settings">
-    	<spinner v-if="showSettingsSpinner"></spinner>
+    	<Spinner v-if="showSettingsSpinner"></Spinner>
         <AppPrompt
             v-if="showPrompt"
             @hide-prompt="closePrompt()"
@@ -116,12 +116,14 @@
 const Admin = require("./admin/Admin.vue")
 const AppDropdown = require("./AppDropdown.vue");
 const AppPrompt = require("./prompt/AppPrompt.vue");
+const Spinner = require("./spinner/Spinner.vue");
 
 module.exports = {
     components: {
         Admin,
 	    AppDropdown,
-        AppPrompt
+        AppPrompt,
+        Spinner
     },
 	data() {
 		return {

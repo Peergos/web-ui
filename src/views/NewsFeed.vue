@@ -32,7 +32,7 @@
             </h3>
         </center>
     <main v-else class="newsfeed__container">
-            <spinner v-if="showSpinner"></spinner>
+            <Spinner v-if="showSpinner"></Spinner>
             <div @click="closeMenus($event)" style="flex-grow:1">
                 <AppInstall
                     v-if="showAppInstallation"
@@ -243,6 +243,7 @@ const SocialPost = require("../components/social/SocialPost.vue");
 const Gallery = require("../components/drive/DriveGallery.vue");
 const ViewProfile = require("../components/profile/ViewProfile.vue");
 const AppSandbox = require("../components/sandbox/AppSandbox.vue");
+const Spinner = require("../components/spinner/Spinner.vue");
 
 const routerMixins = require("../mixins/router/index.js");
 const mixins = require("../mixins/mixins.js");
@@ -256,6 +257,7 @@ module.exports = {
 		AppHeader,
 		AppInstall,
 		Confirm,
+		Spinner,
     },
     data: function() {
         return {

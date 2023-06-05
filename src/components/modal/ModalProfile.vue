@@ -4,7 +4,7 @@
 			<h2>Profile</h2>
 		</template>
 		<template #body>
-            <spinner v-if="showSpinner"></spinner>
+            <Spinner v-if="showSpinner"></Spinner>
 		    <Confirm
                 v-if="showConfirm"
                 v-on:hide-confirm="showConfirm = false"
@@ -138,11 +138,13 @@
 <script>
 const Confirm = require("../confirm/Confirm.vue");
 const Share = require("../drive/DriveShare.vue");
-    
+const Spinner = require("../spinner/Spinner.vue");
+
 module.exports = {
     components: {
         Confirm,
 	    Share,
+	    Spinner
     },
     data: function() {
         return {

@@ -4,7 +4,7 @@
 			<h2>Change password</h2>
 		</template>
 		<template #body>
-            <spinner v-if="showSpinner"></spinner>
+            <Spinner v-if="showSpinner"></Spinner>
 
 			<FormPassword v-model="existing" :placeholder="'Existing password'"/>
 
@@ -29,9 +29,12 @@
 const UriDecoder = require('../../mixins/uridecoder/index.js');
 const Bip39 = require('../../mixins/password/bip-0039-english.json');
 const FormPassword = require("../form/FormPassword.vue");
+const Spinner = require("../spinner/Spinner.vue");
+
 module.exports = {
     components: {
-	FormPassword,
+	    FormPassword,
+    	Spinner
     },
     
     data() {

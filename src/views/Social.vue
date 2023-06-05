@@ -15,7 +15,7 @@
 			:initialIsVerified="initialIsVerified"
 			:context="context">
 		</Fingerprint>
-		<spinner v-if="showSpinner"></spinner>
+		<Spinner v-if="showSpinner"></Spinner>
 		<ViewProfile
                     v-if="showProfileViewForm"
                     v-on:hide-profile-view="showProfileViewForm = false"
@@ -131,6 +131,8 @@ const AppHeader = require("../components/AppHeader.vue");
 const ViewProfile = require("../components/profile/ViewProfile.vue");
 const Fingerprint = require("../components/fingerprint/Fingerprint.vue");
 const FormAutocomplete = require("../components/form/FormAutocomplete.vue");
+const Spinner = require("../components/spinner/Spinner.vue");
+
 const routerMixins = require("../mixins/router/index.js");
 
 module.exports = {
@@ -138,7 +140,8 @@ module.exports = {
     	Fingerprint,
 	    FormAutocomplete,
 		ViewProfile,
-		AppHeader
+		AppHeader,
+		Spinner,
 	},
     data() {
         return {

@@ -2,7 +2,7 @@
 	<div class="gallery-mask" @click="close">
 		<div class="gallery-container gallery" @click.stop @keyup.right="next" @keyup.left="previous">
 			<div tabindex="0" @click="close" v-on:keyup.enter="close" aria-label="close" class="slideshow-close"><span>&times;</span></div>
-			<spinner v-if="showSpinner"></spinner>
+			<Spinner v-if="showSpinner"></Spinner>
             <Warning
                 v-if="showWarning"
                 v-on:hide-warning="hideWarning"
@@ -22,11 +22,13 @@
 </template>
 
 <script>
+const Spinner = require("../spinner/Spinner.vue");
 const Warning = require('../Warning.vue');
 const downloaderMixins = require("../../mixins/downloader/index.js");
 
 module.exports = {
 	components: {
+    	Spinner,
 	    Warning,
 	},
 	data() {

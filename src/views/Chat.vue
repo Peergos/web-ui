@@ -57,7 +57,7 @@
             v-on:hide-profile-view="showProfileViewForm = false"
             :profile="profile">
         </ViewProfile>
-        <spinner v-if="showSpinner" :message="spinnerMessage"></spinner>
+        <Spinner v-if="showSpinner" :message="spinnerMessage"></Spinner>
         <div class="chat-container">
             <div class="chat-messaging">
                 <div class="chat-border">
@@ -294,6 +294,7 @@ const routerMixins = require("../mixins/router/index.js");
 const downloaderMixins = require("../mixins/downloader/index.js");
 const ProgressBar = require("../components/drive/ProgressBar.vue");
 const Message = require("../components/message/Message.vue");
+const Spinner = require("../components/spinner/Spinner.vue");
 
 module.exports = {
     components: {
@@ -303,7 +304,8 @@ module.exports = {
 		Group,
         ProgressBar,
 		AppHeader,
-		Message
+		Message,
+		Spinner
     },
     data: function() {
         return {

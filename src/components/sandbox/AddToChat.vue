@@ -2,7 +2,7 @@
 <div class="modal-mask" @click="close">
     <div class="modal-container full-height" @click.stop style="overflow-y:auto; max-width:1000px;">
         <span @click="close" class="close">&times;</span>
-        <spinner v-if="showSpinner"></spinner>
+        <Spinner v-if="showSpinner"></Spinner>
         <div class="modal-header">
             <span>
                 <h4 style="text-align: center;">{{ title }}&nbsp;{{ appDisplayName}}</h4>
@@ -50,11 +50,13 @@
 
 <script>
 const FormAutocomplete = require("../form/FormAutocomplete.vue");
+const Spinner = require("../spinner/Spinner.vue");
 const routerMixins = require("../../mixins/router/index.js");
 
 module.exports = {
 	components: {
 	    FormAutocomplete,
+	    Spinner
 	},
     data() {
         return {

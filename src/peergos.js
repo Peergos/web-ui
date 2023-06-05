@@ -1,12 +1,7 @@
-var Spinner         = require('./components/spinner');
-
 var AppButton 		= require('./components/AppButton.vue');
 var AppIcon 		= require('./components/AppIcon.vue');
 var AppModal 		= require('./components/modal/AppModal.vue');
 var App  			= require('./components/App.vue');
-
-// Loading components
-Vue.component('spinner', Vue.extend(Spinner));
 
 Vue.component('App', Vue.extend(App));
 Vue.component('AppButton', Vue.extend(AppButton));

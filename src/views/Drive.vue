@@ -3,7 +3,7 @@
 		<input type="file" id="uploadFileInput" @change="uploadFiles" style="display:none;" multiple />
 		<input type="file" id="uploadDirectoriesInput" @change="uploadFiles" style="display:none;" multiple directory mozDirectory webkitDirectory/>
 
-		<spinner v-if="showSpinner" :message="spinnerMessage"></spinner>
+		<Spinner v-if="showSpinner" :message="spinnerMessage"></Spinner>
 
 		<a id="downloadAnchor" style="display:none"></a>
 
@@ -257,6 +257,7 @@ const NewAppPrompt = require("../components/sandbox/new-app/NewAppPrompt.vue");
 const FolderProperties = require("../components/FolderProperties.vue");
 const Pdf = require("../components/pdf/PDF.vue");
 const Replace = require("../components/replace/Replace.vue");
+const Spinner = require("../components/spinner/Spinner.vue");
 const Warning = require('../components/Warning.vue');
 
 const helpers = require("../mixins/storage/index.js");
@@ -293,6 +294,7 @@ module.exports = {
 		Hex,
 		Pdf,
 		Replace,
+		Spinner,
 		Warning
 	},
 	data() {

@@ -1,7 +1,7 @@
 <template>
     <div class="modal-mask" @click="close">
         <div class="modal-container" @click.stop style="height:95%;width:95%;overflow-y:auto;max-width:800px;">
-            <spinner v-if="showSpinner"></spinner>
+            <Spinner v-if="showSpinner"></Spinner>
 <div>
     <h2>Identity Link</h2>
     <div v-if="proof != null">
@@ -18,7 +18,12 @@
 </div>
 </template>
 <script>
+const Spinner = require("./spinner/Spinner.vue");
+
 module.exports = {
+	components: {
+	    Spinner
+	},
     data: function() {
         return {
             proof: null

@@ -4,7 +4,7 @@
     <meta http-equiv="content-type" content="text/html; charset=utf-8" />
         <span @click="close" tabindex="0" v-on:keyup.enter="close" aria-label="close" class="close">&times;</span>
         <div class="modal-body">
-            <spinner v-if="showSpinner"></spinner>
+            <Spinner v-if="showSpinner"></Spinner>
         </div>
         <AppSandbox
             v-if="showAppSandbox"
@@ -19,10 +19,12 @@
 <script>
 const sandboxMixin = require("../../mixins/sandbox/index.js");
 const AppSandbox = require("./AppSandbox.vue");
+const Spinner = require("../spinner/Spinner.vue");
 
 module.exports = {
     components: {
-		AppSandbox
+		AppSandbox,
+		Spinner
     },
     data: function() {
         return {

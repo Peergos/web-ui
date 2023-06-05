@@ -2,7 +2,7 @@
 <div class="modal-mask" @click="close">
     <div class="modal-container full-height" @click.stop style="overflow-y:auto; max-width:1000px;">
         <span @click="close" class="close">&times;</span>
-        <spinner v-if="showSpinner"></spinner>
+        <Spinner v-if="showSpinner"></Spinner>
         <Prompt
                 v-if="showPrompt"
                 v-on:hide-prompt="showPrompt = false"
@@ -115,13 +115,16 @@
 const Error = require("../components/error/Error.vue");
 const FormAutocomplete = require("../components/form/FormAutocomplete.vue");
 const Prompt = require("../components/prompt/Prompt.vue");
+const Spinner = require("../components/spinner/Spinner.vue");
+
 const routerMixins = require("../mixins/router/index.js");
 
 module.exports = {
 	components: {
 	    Error,
 	    FormAutocomplete,
-	    Prompt
+	    Prompt,
+	    Spinner
 	},
     data() {
         return {

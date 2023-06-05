@@ -1,5 +1,13 @@
+<template>
+<div style="width:100%; height:100%; position:absolute; left:0; top:0; z-index:100;">
+    <div id="spinner" style="width:100%; height:100%; ">
+        <div v-if="isMessageSet()" class="spinner-text">{{ message }}</div>
+    </div>
+</div>
+</template>
+
+<script>
 module.exports = {
-    template: require('spinner.html'),
     data: function() {
         return {
         };
@@ -46,3 +54,6 @@ module.exports = {
         }
     }
 };
+</script>
+<style>
+</style>
