@@ -1,13 +1,10 @@
 <template>
 <transition name="modal">
 <div class="modal-mask" @click="close">
-  <div style="height:30%"></div>
   <div class="modal-container" @click.stop>
-
     <div class="modal-header">
       <h3 id="confirm-header-id">Scan QR Code with Authenticator App</h3>
     </div>
-
     <div class="modal-body">
         <center>
     	  <div class="qrcode-container">
@@ -40,10 +37,10 @@
 module.exports = {
     data: function() {
         return {
-            totpUid: '',
+            credentialId: '',
             totp: '',
             isReady: false,
-            QRCodeURL: ''
+            QRCodeURL: '',
         }
     },
     props: ['consumer_func'],
@@ -54,35 +51,33 @@ module.exports = {
     },
     created: function() {
         let that = this;
-
         /*
         this.context.network.account.addTotpFactor(this.context.username, this.context.signer).thenApply(totpKey => {
             that.context.network.account.getSecondAuthMethods(that.context.username, that.context.signer).thenApply(mfaMethods => {
                 let totpMethod = mfaMethods.toArray([]).filter(method => method.type.toString() == MultiFactorAuthMethod.Type.TOTP.toString())[0];
-
-                //let algorithm = peergos.shared.login.mfa.TotpKey.ALGORITHM;
-                //let totp = new TimeBasedOneTimePasswordGenerator(Duration.ofSeconds(30L), 6, algorithm);
-                let key = new SecretKeySpec(totpKey.key, algorithm);
-
-                let now = java.time.Instant.now();
-                //let clientCode = totp.generateOneTimePasswordString(key, now);
-                that.context.network.account.enableTotpFactor(that.context.username, totpMethod.uid, clientCode).thenApply((res) => {
-                    that.totpUid = totpMethod.uid;
-                });
+                that.credentialId = totpMethod.credentialId;
+                that.QRCodeURL = peergos.client.MfaUtils.getQRCode(totpKey);
+                that.isReady = true;
+            });
         });*/
-        //todo replace code
-        this.context.generateFingerPrint(this.context.username).thenApply(fingerprint => {
-            that.QRCodeURL = fingerprint.right.getBase64Thumbnail();
-            that.isReady = true; //todo move
-        });
     },
     methods: {
         close: function() {
             this.$emit("hide-totp");
         },
         confirm: function() {
-            this.close();
-            this.consumer_func(this.totpUid);
+            let that = this;
+            if (this.isReady) {
+                let clientCode = this.totp.trim();
+                that.context.network.account.enableTotpFactor(that.context.username, this.totpMethod.credentialId, clientCode).thenApply(res => {
+                    if (res) {
+                        that.close();
+                        that.consumer_func(that.credentialId);
+                    } else {
+                        that.$toast.error('Incorrect code', {timeout:false});
+                    }
+                });
+            }
         }
     }
 }
