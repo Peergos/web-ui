@@ -56,6 +56,7 @@
 <script>
 const AppIcon = require("AppIcon.vue");
 const AppNavigation = require("./navigation/AppNavigation.vue");
+const ModalAuthSettings = require("./modal/ModalAuthSettings.vue");
 const ModalTour = require("./modal/ModalTour.vue");
 const ModalHelp = require("./modal/ModalHelp.vue");
 const ModalSpace = require("./modal/ModalSpace.vue");
@@ -90,6 +91,7 @@ module.exports = {
 	components: {
 	    AppIcon,
 		AppNavigation,
+		ModalAuthSettings,
 		ModalTour,
 		ModalHelp,
 		// TODO: lazy load dynamic components

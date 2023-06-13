@@ -75,7 +75,11 @@ module.exports = {
             if (this.password == this.password2) {
                 let that = this;
                 this.showSpinner = true;
-                this.context.changePassword(this.existing, this.password).thenApply(function(newContext){
+                let mfa = function(mfaReq) {
+                    console.log('inside deleteAccount mfa');
+                    return null;
+                };
+                this.context.changePassword(this.existing, this.password, mfa).thenApply(function(newContext){
                     that.$store.commit("SET_CONTEXT", newContext);
                     that.$store.commit("SET_MODAL", false);
                     that.$toast.info('Password changed')

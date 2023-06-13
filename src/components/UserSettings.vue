@@ -56,6 +56,12 @@
 					Help/FAQ
 				</li>
 				<li
+					v-on:keyup.enter="showAuthenticationScreen()"
+					@click="showAuthenticationScreen()"
+				>
+					Authentication Method
+				</li>
+				<li
 					v-on:keyup.enter="showChangePassword()"
 					@click="showChangePassword()"
 				>
@@ -272,6 +278,9 @@ module.exports = {
 		showFeedback() {
 			this.$store.commit("CURRENT_MODAL", "ModalFeedback");
 		},
+        showAuthenticationScreen() {
+            this.$store.commit("CURRENT_MODAL", "ModalAuthSettings");
+        },
 		showChangePassword() {
 			this.$store.commit("CURRENT_MODAL", "ModalPassword");
 		},

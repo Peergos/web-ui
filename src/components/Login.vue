@@ -123,9 +123,14 @@ module.exports = {
 			const creationStart = Date.now();
 			const that = this;
             this.isLoggingIn = true;
+            let mfa = function(mfaReq) {
+                console.log('inside signIn mfa');
+                return null;
+            };
 			peergos.shared.user.UserContext.signIn(
 				that.username,
 				that.password,
+				mfa,
 				that.network,
 				that.crypto,
 				// { accept: (x) => (that.spinnerMessage = x) }

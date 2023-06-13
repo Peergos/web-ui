@@ -62,7 +62,11 @@ module.exports = {
 		deleteAccount() {
             console.log("Deleting Account");
             var that = this;
-            this.context.deleteAccount(this.password).thenApply(function(result){
+            let mfa = function(mfaReq) {
+                console.log('inside deleteAccount mfa');
+                return null;
+            };
+            this.context.deleteAccount(this.password, mfa).thenApply(function(result){
                 if (result) {
 					that.$toast('Account Deleted!',{position: 'bottom-left' })
 					that.$store.commit("SET_MODAL", false);
