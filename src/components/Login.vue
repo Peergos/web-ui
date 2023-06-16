@@ -9,7 +9,13 @@
 			ref="username"
 			@input="(val) => (username = username.toLowerCase())"
 		/>
-
+        <MultiFactorAuth
+                v-if="showMultiFactorAuth"
+                v-on:hide-confirm="showMultiFactorAuth = false"
+                :mfaMethods="mfaMethods"
+                :consumer_cancel_func="consumer_cancel_func"
+                :consumer_func="consumer_func">
+        </MultiFactorAuth>
 		<FormPassword v-model="password" placeholder="password" @keyup.native.enter="login()"/>
 
         <label class="checkbox__group">
@@ -31,6 +37,7 @@
 <script>
 const AppButton = require("AppButton.vue");
 const FormPassword = require("./form/FormPassword.vue");
+const MultiFactorAuth = require("./auth/MultiFactorAuth.vue");
 const routerMixins = require("../mixins/router/index.js");
 const UriDecoder = require('../mixins/uridecoder/index.js');
 
@@ -46,7 +53,8 @@ module.exports = {
 			passwordIsVisible: false,
 			demo: true,
             stayLoggedIn: false,
-            isLoggingIn: false
+            isLoggingIn: false,
+            showMultiFactorAuth: false,
 		};
 	},
 	computed: {
@@ -123,10 +131,27 @@ module.exports = {
 			const creationStart = Date.now();
 			const that = this;
             this.isLoggingIn = true;
-            let mfa = function(mfaReq) {
-                console.log('inside signIn mfa');
-                return null;
+            let mfa = {
+                authorise: function(mfaReq) {
+                    console.log('inside signIn mfa');
+                    let future = peergos.shared.util.Futures.incomplete();
+                    let mfaMethods = mfaReq.methods.toArray([]);
+                    that.multiFactorAuth(mfaMethods,
+                        (credentialId, authCode) => {
+                            that.showMultiFactorAuth = false;
+                            let resp = peergos.client.JsUtil.generateAuthResponse(credentialId, authCode);
+                            future.complete(resp);
+                        },
+                        (credentialId) => {
+                            that.showMultiFactorAuth = false;
+                            let resp = peergos.client.JsUtil.generateAuthResponse(credentialId, '');
+                            future.complete(resp);
+                        }
+                    );
+                    return future;
+                }
             };
+
 			peergos.shared.user.UserContext.signIn(
 				that.username,
 				that.password,
@@ -144,6 +169,12 @@ module.exports = {
 					that.$toast.error(that.uriDecode(throwable.getMessage()), {timeout:false, id: 'login'})
 				});
 		},
+        multiFactorAuth(mfaMethods, confirmFunction, cancelFunction) {
+            this.mfaMethods = mfaMethods;
+            this.consumer_func = confirmFunction;
+            this.consumer_cancel_func = cancelFunction;
+            this.showMultiFactorAuth = true;
+        },
 		postLogin(creationStart, context) {
 			const that = this;
 			this.isLoggingIn = false;

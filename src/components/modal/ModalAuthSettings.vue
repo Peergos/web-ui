@@ -96,14 +96,13 @@ module.exports = {
     },
     mixins:[],
     created: function() {
-        /*
         let that = this;
         this.showSpinner = true;
         this.context.network.account.getSecondAuthMethods(this.context.username, this.context.signer).thenApply(mfaMethods => {
             let methods = mfaMethods.toArray([]);
             for(var i=0; i < methods.length;i++) {
                 let method = methods[i];
-                if (method.type.toString() == MultiFactorAuthMethod.Type.TOTP.toString()) {
+                if (method.type.toString() == peergos.shared.login.mfa.MultiFactorAuthMethod.Type.TOTP.toString()) {
                     that.totpKey.push({credentialId: method.credentialId});
                 } else {
                     that.webAuthKeys.push({credentialId: method.credentialId});
@@ -112,7 +111,7 @@ module.exports = {
             this.showSpinner = false;
         }).exceptionally(function(throwable) {
             console.log(throwable);
-        });*/
+        });
     },
     methods: {
         setupAuthenticatorApp() {
