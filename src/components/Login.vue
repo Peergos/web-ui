@@ -45,6 +45,7 @@ module.exports = {
 	components: {
     	AppButton,
 		FormPassword,
+		MultiFactorAuth,
 	},
 	data() {
 		return {
@@ -131,31 +132,29 @@ module.exports = {
 			const creationStart = Date.now();
 			const that = this;
             this.isLoggingIn = true;
-            let mfa = {
-                authorise: function(mfaReq) {
+
+            let handleMfa = function(mfaReq) {
                     console.log('inside signIn mfa');
                     let future = peergos.shared.util.Futures.incomplete();
                     let mfaMethods = mfaReq.methods.toArray([]);
-                    that.multiFactorAuth(mfaMethods,
-                        (credentialId, authCode) => {
-                            that.showMultiFactorAuth = false;
-                            let resp = peergos.client.JsUtil.generateAuthResponse(credentialId, authCode);
-                            future.complete(resp);
-                        },
-                        (credentialId) => {
-                            that.showMultiFactorAuth = false;
-                            let resp = peergos.client.JsUtil.generateAuthResponse(credentialId, '');
-                            future.complete(resp);
-                        }
-                    );
+                    that.mfaMethods = mfaMethods;
+                    that.consumer_func = (credentialId, authCode) => {
+                        that.showMultiFactorAuth = false;
+                        let resp = peergos.client.JsUtil.generateAuthResponse(credentialId, authCode);
+                        future.complete(resp);
+                    };
+                    that.consumer_cancel_func = (credentialId) => {
+                        that.showMultiFactorAuth = false;
+                        let resp = peergos.client.JsUtil.generateAuthResponse(credentialId, '');
+                        future.complete(resp);
+                    }
+                    that.showMultiFactorAuth = true;
                     return future;
-                }
             };
-
 			peergos.shared.user.UserContext.signIn(
 				that.username,
 				that.password,
-				mfa,
+				mfaReq => handleMfa(mfaReq),
 				that.network,
 				that.crypto,
 				// { accept: (x) => (that.spinnerMessage = x) }
@@ -169,12 +168,6 @@ module.exports = {
 					that.$toast.error(that.uriDecode(throwable.getMessage()), {timeout:false, id: 'login'})
 				});
 		},
-        multiFactorAuth(mfaMethods, confirmFunction, cancelFunction) {
-            this.mfaMethods = mfaMethods;
-            this.consumer_func = confirmFunction;
-            this.consumer_cancel_func = cancelFunction;
-            this.showMultiFactorAuth = true;
-        },
 		postLogin(creationStart, context) {
 			const that = this;
 			this.isLoggingIn = false;

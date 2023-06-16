@@ -20,12 +20,13 @@
             placeholder=""
             ref="totp"
             :disabled="!isReady"
+            v-on:keyup.enter="confirm"
             style="width:200px"
         />
         </center>
     </div>
     <div class="modal-footer">
-      <button class="btn btn-success btn-lg" @click="confirm()" style="margin:10%;">
+      <button class="btn btn-success btn-lg" @click="confirm()">
         Confirm
       </button>
     </div>

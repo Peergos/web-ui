@@ -70,7 +70,7 @@ module.exports = {
     created: function() {
         let that = this;
         for(var i=0; i < this.mfaMethods.length;i++) {
-            let method = methods[i];
+            let method = this.mfaMethods[i];
             if (method.type.toString() == peergos.shared.login.mfa.MultiFactorAuthMethod.Type.TOTP.toString()) {
                 that.mfaOptions.push({type:'Authenticator App', credentialId: method.credentialId});
             } else {
