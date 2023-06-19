@@ -16,6 +16,7 @@
             <Totp
                     v-if="showTOTPSetup"
                     v-on:hide-totp="showTOTPSetup = false"
+                    :enableTotpOnly="enableTotpOnly"
                     :consumer_func="totp_confirmed_func">
             </Totp>
             <WebAuth
@@ -28,7 +29,7 @@
                     <thead>
                     <tr style="cursor:pointer;">
                         <th> Type </th>
-                        <th> Action </th>
+                        <th></th>
                         <th></th>
                     </tr>
                     </thead>
@@ -38,7 +39,12 @@
                         <td v-if="totpKey.length == 0" >
                             <button class="btn btn-success" @click="setupAuthenticatorApp()"> Add </button>
                         </td>
-                        <td v-if="totpKey.length > 0">
+                        <td v-if="totpKey.length == 1 && !totpKey[0].enabled">
+                            <button class="btn btn-info" @click="enableAuthenticatorApp()"> Enable</button>
+                        </td>
+                        <td v-if="totpKey.length == 1 && totpKey[0].enabled">
+                        </td>
+                        <td v-if="totpKey.length == 1">
                             <button class="btn btn-danger" @click="removeAuthenticatorApp()"> Remove</button>
                         </td>
                     </tr>
@@ -77,14 +83,14 @@ module.exports = {
         return {
             showSpinner: false,
             totpKey: [],
-            webAuthKeys: [
-            ],
+            webAuthKeys: [],
             showConfirm: false,
             confirm_message: "",
             confirm_body: "",
             confirm_consumer_cancel_func: () => {},
             confirm_consumer_func: () => {},
             showTOTPSetup: false,
+            enableTotpOnly: false,
             showWebAuthSetup: false,
         };
     },
@@ -103,7 +109,7 @@ module.exports = {
             for(var i=0; i < methods.length;i++) {
                 let method = methods[i];
                 if (method.type.toString() == peergos.shared.login.mfa.MultiFactorAuthMethod.Type.TOTP.toString()) {
-                    that.totpKey.push({credentialId: method.credentialId});
+                    that.totpKey.push({credentialId: method.credentialId, enabled: method.enabled});
                 } else {
                     that.webAuthKeys.push({credentialId: method.credentialId});
                 }
@@ -115,7 +121,10 @@ module.exports = {
     },
     methods: {
         setupAuthenticatorApp() {
-            console.log('setupAuthenticatorApp');
+            this.showTOTPSetup = true;
+        },
+        enableAuthenticatorApp() {
+            this.enableTotpOnly = true;
             this.showTOTPSetup = true;
         },
         removeAuthenticatorApp() {
@@ -132,12 +141,14 @@ module.exports = {
             );
         },
         deleteAuthenticatorApp() {
-            console.log('deleteAuthenticatorApp');
             let that = this;
             this.showSpinner = true;
             let credentialId = this.totpKey[0].credentialId;
             this.context.network.account.deleteSecondFactor(this.context.username, credentialId, this.context.signer).thenApply(res => {
-                this.showSpinner = false;
+                if (res) {
+                    that.totpKey = [];
+                }
+                that.showSpinner = false;
             });
         },
 	    addWebAuthKey() {
@@ -184,12 +195,15 @@ module.exports = {
             this.confirm_consumer_func = replaceFunction;
             this.showConfirm = true;
         },
-        totp_confirmed_func(credentialId) {
-            console.log('totp_confirmed_func');
-            this.totpKey.push({credentialId: credentialId});
+        totp_confirmed_func(credentialId, success) {
+            if (this.totpKey.length == 0) {
+                this.totpKey.push({credentialId: credentialId, enabled: success});
+            } else {
+                let existingTotp = this.totpKey[0];
+                existingTotp.enabled = success;
+            }
         },
         webauth_confirmed_func(webAuth) {
-            console.log('webauth_confirmed_func');
             this.webAuthKeys.push(webAuth);
         },
     },

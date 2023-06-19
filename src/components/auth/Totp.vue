@@ -3,16 +3,16 @@
 <div class="modal-mask" @click="close">
   <div class="modal-container" @click.stop>
     <div class="modal-header">
-      <h3 id="confirm-header-id">Scan QR Code with Authenticator App</h3>
+      <h3 id="confirm-header-id">Setup Authenticator App</h3>
     </div>
     <div class="modal-body">
-        <center>
+        <center v-if="QRCodeURL.length > 0">
     	  <div class="qrcode-container">
-                <img v-if="QRCodeURL.length > 0" v-bind:src="QRCodeURL" alt="QR code" class="qrcode"></img>
+                <img v-bind:src="QRCodeURL" alt="QR code" class="qrcode"></img>
     	  </div>
         </center>
         <center>
-        <input
+        Password code:&nbsp;<input
             type="text"
             autofocus
             name="totp"
@@ -44,7 +44,7 @@ module.exports = {
             QRCodeURL: '',
         }
     },
-    props: ['consumer_func'],
+    props: ['enableTotpOnly', 'consumer_func'],
     computed: {
         ...Vuex.mapState([
             'context'
@@ -52,18 +52,29 @@ module.exports = {
     },
     created: function() {
         let that = this;
-        this.context.network.account.addTotpFactor(this.context.username, this.context.signer).thenApply(totpKey => {
+        if (this.enableTotpOnly) {
             that.context.network.account.getSecondAuthMethods(that.context.username, that.context.signer).thenApply(mfaMethods => {
                 let totpMethod = mfaMethods.toArray([]).filter(method => method.type.toString() == peergos.shared.login.mfa.MultiFactorAuthMethod.Type.TOTP.toString())[0];
                 that.credentialId = totpMethod.credentialId;
-                that.QRCodeURL = totpKey.getQRCode(that.context.username);
                 that.isReady = true;
             });
-        });
+        } else {
+            this.context.network.account.addTotpFactor(this.context.username, this.context.signer).thenApply(totpKey => {
+                that.context.network.account.getSecondAuthMethods(that.context.username, that.context.signer).thenApply(mfaMethods => {
+                    let totpMethod = mfaMethods.toArray([]).filter(method => method.type.toString() == peergos.shared.login.mfa.MultiFactorAuthMethod.Type.TOTP.toString())[0];
+                    that.credentialId = totpMethod.credentialId;
+                    if (!that.enableOnly) {
+                        that.QRCodeURL = totpKey.getQRCode(that.context.username);
+                    }
+                    that.isReady = true;
+                });
+            });
+        }
     },
     methods: {
-        close: function() {
+        close: function(success) {
             this.$emit("hide-totp");
+            this.consumer_func(this.credentialId, success === true);
         },
         confirm: function() {
             let that = this;
@@ -71,10 +82,18 @@ module.exports = {
                 let clientCode = this.totp.trim();
                 that.context.network.account.enableTotpFactor(this.context.username, this.credentialId, clientCode, this.context.signer).thenApply(res => {
                     if (res) {
-                        that.close();
-                        that.consumer_func(that.credentialId);
+                        this.$toast('Authenticator App has been enabled');
+                        that.close(true);
                     } else {
                         that.$toast.error('Incorrect code', {timeout:false});
+                    }
+                }).exceptionally(function (throwable) {
+                    if(throwable.detailMessage.startsWith('Invalid+TOTP+code+for+credId')) {
+                        that.$toast.error('Unable to enable Authenticator app', {timeout:false});
+                        console.log('Unable to enable Authenticator app. Error: ' + throwable);
+                    } else {
+                        that.$toast.error('Unknown error', {timeout:false});
+                        console.log('Unknown error: ' + throwable);
                     }
                 });
             }

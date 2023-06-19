@@ -50,7 +50,7 @@ module.exports = {
 	data() {
 		return {
 			username: '',
-		        password: [],
+            password: [],
 			passwordIsVisible: false,
 			demo: true,
             stayLoggedIn: false,
@@ -164,8 +164,12 @@ module.exports = {
                     that.postLogin(creationStart, context);
 				})
 				.exceptionally(function (throwable) {
-				            that.isLoggingIn = false;
-					that.$toast.error(that.uriDecode(throwable.getMessage()), {timeout:false, id: 'login'})
+                    that.isLoggingIn = false;
+                    if (throwable.getMessage().startsWith('Invalid+TOTP+code')) {
+                        that.$toast.error('Invalid Multi Factor Authenticator code', {timeout:false, id: 'login'})
+                    } else {
+					    that.$toast.error(that.uriDecode(throwable.getMessage()), {timeout:false, id: 'login'})
+					}
 				});
 		},
 		postLogin(creationStart, context) {
