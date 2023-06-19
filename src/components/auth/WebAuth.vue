@@ -35,6 +35,7 @@ module.exports = {
     data: function() {
         return {
             webAuthName: '',
+            credentialId: '',
         }
     },
     props: ['consumer_func'],
@@ -46,14 +47,9 @@ module.exports = {
     created: function() {
     },
     methods: {
-        hexToBytes: function(hex) {
-            let res = new Uint8Array(hex.length/2);
-            for (var i=0; i < hex.length/2; i++)
-                res[i] = parseInt(hex.substring(2*i, 2*(i+1)), 16);
-            return res;
-        },
-        close: function() {
+        close: function(success) {
             this.$emit("hide-webauth");
+            this.consumer_func(this.credentialId, this.webAuthName, success === true);
         },
         confirm: function() {
             let name = this.webAuthName.trim();
@@ -87,10 +83,13 @@ module.exports = {
                     }
                 };
                 navigator.credentials.create(data).then(credential => {
-                    let keyName = that.context.username;
+                    that.credentialId =  credential.rawId;
                     let rawAttestation = convertToByteArray(new Int8Array(credential.response.attestationObject));
-                    let resp = peergos.client.JsUtil.generateWebAuthnResponse(rawAttestation);
-                    that.context.network.account.registerSecurityKeyComplete(that.context.username, keyName, resp, that.context.signer).thenApply(done => {
+                    let clientDataJson = convertToByteArray(new Int8Array(credential.response.clientDataJSON));
+                    let signature = convertToByteArray(new Int8Array(0));//credential.response.signature));
+
+                    let resp = peergos.client.JsUtil.generateWebAuthnResponse(credential.rawId, rawAttestation, clientDataJson, signature);
+                    that.context.network.account.registerSecurityKeyComplete(that.context.username, that.webAuthName, resp, that.context.signer).thenApply(done => {
                         //let res = await fetch(\"/registerComplete\", {'method':'POST','body':JSON.stringify({
                         //      'attestationObject':toHexString(credential.response.attestationObject),
                         //      'clientDataJSON': toHexString(credential.response.clientDataJSON)
@@ -98,9 +97,7 @@ module.exports = {
                         //}).then(response=>response.json());
                         //document.getElementById(\"register\").textContent = res.status;
                         //}
-                        console.log('done:' + done);
-                        that.close();
-                        that.consumer_func({key:'abcde'});
+                        that.close(true);
                     });
                 });
             });

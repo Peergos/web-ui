@@ -13,6 +13,7 @@
                 v-if="showMultiFactorAuth"
                 v-on:hide-confirm="showMultiFactorAuth = false"
                 :mfaMethods="mfaMethods"
+                :challenge="challenge"
                 :consumer_cancel_func="consumer_cancel_func"
                 :consumer_func="consumer_func">
         </MultiFactorAuth>
@@ -134,13 +135,12 @@ module.exports = {
             this.isLoggingIn = true;
 
             let handleMfa = function(mfaReq) {
-                    console.log('inside signIn mfa');
                     let future = peergos.shared.util.Futures.incomplete();
                     let mfaMethods = mfaReq.methods.toArray([]);
+                    that.challenge = mfaReq.challenge;
                     that.mfaMethods = mfaMethods;
-                    that.consumer_func = (credentialId, authCode) => {
+                    that.consumer_func = (credentialId, resp) => {
                         that.showMultiFactorAuth = false;
-                        let resp = peergos.client.JsUtil.generateAuthResponse(credentialId, authCode);
                         future.complete(resp);
                     };
                     that.consumer_cancel_func = (credentialId) => {

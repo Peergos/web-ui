@@ -25,7 +25,7 @@
                         <span class="checkmark"></span>
                       </label>
                     </td>
-                    <td>{{ option.type }} </td>
+                    <td v-if="option.type == 'Authenticator App'">{{ option.type }} </td>
                     <td v-if="option.type == 'Authenticator App'">
                         <input
                             type="text"
@@ -37,6 +37,7 @@
                             v-on:keyup.enter="confirm"
                         />
                     </td>
+                    <td v-if="option.type != 'Authenticator App'">{{ option.type }} {{ option.name }}</td>
                     <td v-if="option.type != 'Authenticator App'">
                     BLAH
                     </td>
@@ -64,7 +65,7 @@ module.exports = {
             showSpinner: false,
         }
     },
-    props: ['mfaMethods', 'consumer_cancel_func', 'consumer_func'],
+    props: ['mfaMethods', 'challenge', 'consumer_cancel_func', 'consumer_func'],
     computed: {
         ...Vuex.mapState([
             'context'
@@ -77,20 +78,44 @@ module.exports = {
             if (method.type.toString() == peergos.shared.login.mfa.MultiFactorAuthMethod.Type.TOTP.toString()) {
                 that.mfaOptions.push({type:'Authenticator App', credentialId: method.credentialId});
             } else {
-                that.mfaOptions.push({type:'WebKey', credentialId: method.credentialId});
+                that.mfaOptions.push({type:'WebKey', credentialId: method.credentialId, name: method.name});
             }
         }
     },
     methods: {
         close: function() {
-            this.$emit("hide-auth");
             let credentialId = this.mfaOptions[this.preferredAuthMethod].credentialId;
             this.consumer_cancel_func(credentialId);
         },
         confirm: function() {
-            this.$emit("hide-auth");
             let credentialId = this.mfaOptions[this.preferredAuthMethod].credentialId;
-            this.consumer_func(credentialId, this.mfaCode);
+            if (this.mfaOptions[this.preferredAuthMethod].type == 'Authenticator App') {
+                let resp = peergos.client.JsUtil.generateAuthResponse(credentialId, this.mfaCode);
+                this.consumer_func(credentialId, resp);
+            } else {
+                confirmWebAuth(this.mfaOptions[this.preferredAuthMethod]);
+            }
+        },
+        confirmWebAuth: function(webAuthMethod) {
+           let that = this;
+           let data = {
+              publicKey: {
+                 challenge: that.challenge,
+                 allowCredentials: [{
+                    type: "public-key",
+                    id: webAuthMethod.credentialId
+                 }],
+                 timeout: 60000,
+                 userVerification: "preferred",
+              }
+           };
+           navigator.credentials.get(data).then(credential => {
+                let rawAttestation = convertToByteArray(new Int8Array(credential.response.attestationObject));
+                let clientDataJson = convertToByteArray(new Int8Array(credential.response.clientDataJSON));
+                let signature = convertToByteArray(new Int8Array(credential.response.signature));
+                let resp = peergos.client.JsUtil.generateWebAuthnResponse(credential.rawId, rawAttestation, clientDataJson, signature);
+                that.consumer_func(credential.rawId, resp);
+           });
         }
     }
 }

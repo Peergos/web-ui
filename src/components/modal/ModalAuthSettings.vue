@@ -49,7 +49,7 @@
                         </td>
                     </tr>
                     <tr v-for="(webAuthKey, index) in webAuthKeys">
-                        <td>Web Auth: {{ webAuthKey.credentialId }}</td>
+                        <td>{{ webAuthKey.name }}</td>
                         <td> <button class="btn btn-danger" @click="removeWebAuthKey(webAuthKey)">Remove</button>
                         </td>
                         <td></td>
@@ -111,7 +111,7 @@ module.exports = {
                 if (method.type.toString() == peergos.shared.login.mfa.MultiFactorAuthMethod.Type.TOTP.toString()) {
                     that.totpKey.push({credentialId: method.credentialId, enabled: method.enabled});
                 } else {
-                    that.webAuthKeys.push({credentialId: method.credentialId});
+                    that.webAuthKeys.push({credentialId: method.credentialId, name: method.name});
                 }
             }
             this.showSpinner = false;
@@ -203,8 +203,10 @@ module.exports = {
                 existingTotp.enabled = success;
             }
         },
-        webauth_confirmed_func(webAuth) {
-            this.webAuthKeys.push(webAuth);
+        webauth_confirmed_func(credentialId, name, success) {
+            if (success) {
+                this.webAuthKeys.push({credentialId: credentialId, name: name});
+            }
         },
     },
 };
