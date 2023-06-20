@@ -86,9 +86,9 @@ module.exports = {
                     that.credentialId =  credential.rawId;
                     let rawAttestation = convertToByteArray(new Int8Array(credential.response.attestationObject));
                     let clientDataJson = convertToByteArray(new Int8Array(credential.response.clientDataJSON));
-                    let signature = convertToByteArray(new Int8Array(0));//credential.response.signature));
-
-                    let resp = peergos.client.JsUtil.generateWebAuthnResponse(credential.rawId, rawAttestation, clientDataJson, signature);
+                    let signature = convertToByteArray(new Int8Array(0));
+                    let rawId = convertToByteArray(new Int8Array(credential.rawId));
+                    let resp = peergos.client.JsUtil.generateWebAuthnResponse(rawId, rawAttestation, clientDataJson, signature);
                     that.context.network.account.registerSecurityKeyComplete(that.context.username, that.webAuthName, resp, that.context.signer).thenApply(done => {
                         //let res = await fetch(\"/registerComplete\", {'method':'POST','body':JSON.stringify({
                         //      'attestationObject':toHexString(credential.response.attestationObject),

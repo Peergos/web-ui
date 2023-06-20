@@ -37,9 +37,8 @@
                             v-on:keyup.enter="confirm"
                         />
                     </td>
-                    <td v-if="option.type != 'Authenticator App'">{{ option.type }} {{ option.name }}</td>
+                    <td v-if="option.type != 'Authenticator App'">{{ option.type }} &nbsp;:&nbsp;{{ option.name }}</td>
                     <td v-if="option.type != 'Authenticator App'">
-                    BLAH
                     </td>
                 </tr>
                 </tbody>
