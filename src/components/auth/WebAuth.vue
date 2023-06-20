@@ -90,13 +90,7 @@ module.exports = {
                     let rawId = convertToByteArray(new Int8Array(credential.rawId));
                     let resp = peergos.client.JsUtil.generateWebAuthnResponse(rawId, rawAttestation, clientDataJson, signature);
                     that.context.network.account.registerSecurityKeyComplete(that.context.username, that.webAuthName, resp, that.context.signer).thenApply(done => {
-                        //let res = await fetch(\"/registerComplete\", {'method':'POST','body':JSON.stringify({
-                        //      'attestationObject':toHexString(credential.response.attestationObject),
-                        //      'clientDataJSON': toHexString(credential.response.clientDataJSON)
-                        //   })
-                        //}).then(response=>response.json());
-                        //document.getElementById(\"register\").textContent = res.status;
-                        //}
+                        that.$toast('Web Auth Key has been enabled');
                         that.close(true);
                     });
                 });

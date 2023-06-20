@@ -92,7 +92,7 @@ module.exports = {
                 let resp = peergos.client.JsUtil.generateAuthResponse(credentialId, this.mfaCode);
                 this.consumer_func(credentialId, resp);
             } else {
-                confirmWebAuth(this.mfaOptions[this.preferredAuthMethod]);
+                this.confirmWebAuth(this.mfaOptions[this.preferredAuthMethod]);
             }
         },
         confirmWebAuth: function(webAuthMethod) {
@@ -109,11 +109,11 @@ module.exports = {
               }
            };
            navigator.credentials.get(data).then(credential => {
-                let rawAttestation = convertToByteArray(new Int8Array(credential.response.attestationObject));
+                let authenticatorData = convertToByteArray(new Int8Array(credential.response.authenticatorData));
                 let clientDataJson = convertToByteArray(new Int8Array(credential.response.clientDataJSON));
                 let signature = convertToByteArray(new Int8Array(credential.response.signature));
-                let resp = peergos.client.JsUtil.generateWebAuthnResponse(credential.rawId, rawAttestation, clientDataJson, signature);
-                that.consumer_func(credential.rawId, resp);
+                let resp = peergos.client.JsUtil.generateWebAuthnResponse(webAuthMethod.credentialId, authenticatorData, clientDataJson, signature);
+                that.consumer_func(webAuthMethod.credentialId, resp);
            });
         }
     }
