@@ -161,12 +161,12 @@ function buildUI(isCalendarReadonly) {
     cal = new tui.Calendar('#calendar', {
         usageStatistics: false,
         defaultView: 'month',
-        //week: {
-        //	startDayOfWeek: 1
-        //},
-        //month: {
-        //	startDayOfWeek: 1
-        //},
+        week: {
+        	startDayOfWeek: 1
+        },
+        month: {
+        	startDayOfWeek: 1
+        },
         taskView: false,
         useCreationPopup: useCreationPopup,
         useDetailPopup: useDetailPopup,
