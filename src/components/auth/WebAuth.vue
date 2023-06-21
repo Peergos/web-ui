@@ -1,41 +1,57 @@
 <template>
-<transition name="modal">
-<div class="modal-mask" @click="close">
-  <div style="height:30%"></div>
-  <div class="modal-container" @click.stop>
+	<transition name="modal" appear>
+		<div class="app-prompt app-modal__overlay" @click="close()">
+			<div class="app-prompt__container" @click.stop>
+				<header class="prompt__header">
+					<AppButton class="close" icon="close" @click.native="close()"/>
+					<h3>Add new Web Auth Key</h3>
+				</header>
+                <Spinner v-if="showSpinner"></Spinner>
+                <div class="prompt__body">
+                    <center>
+                        Name:&nbsp;<input
+                            type="text"
+                            autofocus
+                            name="webAuthName"
+                            v-model="webAuthName"
+                            placeholder=""
+                            v-on:keyup.enter="confirm"
+                            style="width:200px"
+                        />
+                    </center>
+                </div>
+				<footer class="prompt__footer">
+					<AppButton outline @click.native="close()">
+						Cancel
+					</AppButton>
 
-    <div class="modal-header">
-      <h3 id="confirm-header-id">WebAuthn Setup</h3>
-    </div>
-
-    <div class="modal-body">
-        <center>
-            Name:&nbsp;<input
-                type="text"
-                autofocus
-                name="webAuthName"
-                v-model="webAuthName"
-                placeholder=""
-                v-on:keyup.enter="confirm"
-                style="width:200px"
-            />
-        </center>
-    </div>
-    <div class="modal-footer">
-      <button class="btn btn-success btn-lg" @click="confirm()">
-        Confirm
-      </button>
-    </div>
-  </div>
-</div>
-</transition>
+					<AppButton
+						id='prompt-button-id'
+						type="primary"
+						accent
+						@click.native="confirm()"
+					>
+					Confirm
+					</AppButton>
+				</footer>
+			</div>
+		</div>
+	</transition>
 </template>
 <script>
+const AppButton = require("../AppButton.vue");
+const Spinner = require("../spinner/Spinner.vue");
+
 module.exports = {
+    components: {
+        AppButton,
+        Spinner,
+    },
     data: function() {
         return {
             webAuthName: '',
             credentialId: '',
+            showSpinner: false,
         }
     },
     props: ['consumer_func'],
@@ -55,12 +71,15 @@ module.exports = {
             let name = this.webAuthName.trim();
             if (name.length == 0) {
                 this.$toast.error('Please enter a name', {timeout:false});
+            }else if (name.length > 20) {
+                this.$toast.error('Name max-length is 20 characters', {timeout:false});
             } else {
                 this.register();
             }
         },
         register: function() {
             let that = this;
+            this.showSpinner = true;
             that.context.network.account.registerSecurityKeyStart(that.context.username, that.context.signer).thenApply(challenge => {
                 let enc = new TextEncoder();
                 let userId = new Uint8Array(that.context.username.length);
@@ -91,9 +110,22 @@ module.exports = {
                     let resp = peergos.client.JsUtil.generateWebAuthnResponse(rawId, rawAttestation, clientDataJson, signature);
                     that.context.network.account.registerSecurityKeyComplete(that.context.username, that.webAuthName, resp, that.context.signer).thenApply(done => {
                         that.$toast('Web Auth Key has been enabled');
+                        that.showSpinner = false;
                         that.close(true);
+                    }).exceptionally(function (completeThrowable) {
+                        that.$toast.error('Unable to complete registration of security key', {timeout:false});
+                        console.log('Unable to complete registration of security key: ' + completeThrowable);
+                        that.showSpinner = false;
                     });
+                }).catch(createException => {
+                    that.$toast.error('Unable to create registration of security key', {timeout:false});
+                    console.log('Unable to create registration of security key: ' + createException);
+                    that.showSpinner = false;
                 });
+            }).exceptionally(function (throwable) {
+                that.$toast.error('Unable to register security key', {timeout:false});
+                console.log('Unable to register security key: ' + throwable);
+                that.showSpinner = false;
             });
         }
     }

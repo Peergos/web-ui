@@ -1,67 +1,94 @@
 <template>
-<transition name="modal">
-<div class="modal-mask" @click="close">
-  <div style="height:30%"></div>
-  <div class="modal-container" @click.stop>
-    <div class="modal-header">
-      <h3 id="confirm-header-id">Multi Factor Authentication</h3>
-    </div>
-    <div class="modal-body">
-        <Spinner v-if="showSpinner"></Spinner>
-        <div class="table-responsive">
-            <table class="table">
-                <thead>
-                <tr style="cursor:pointer;">
-                    <th> Preferred Method </th>
-                    <th> Type </th>
-                    <th></th>
-                </tr>
-                </thead>
-                <tbody>
-                <tr v-for="(option, index) in mfaOptions">
-                    <td>
-                      <label class="checkbox__group">
-                        <input type="radio" :id="index" :value="index" v-model="preferredAuthMethod">
-                        <span class="checkmark"></span>
-                      </label>
-                    </td>
-                    <td v-if="option.type == 'Authenticator App'">{{ option.type }} </td>
-                    <td v-if="option.type == 'Authenticator App'">
-                        <input
-                            type="text"
-                            autofocus
-                            name="mfaCode"
-                            v-model="mfaCode"
-                            placeholder=""
-                            style="width:200px"
-                            v-on:keyup.enter="confirm"
-                        />
-                    </td>
-                    <td v-if="option.type != 'Authenticator App'">{{ option.type }} &nbsp;:&nbsp;{{ option.name }}</td>
-                    <td v-if="option.type != 'Authenticator App'">
-                    </td>
-                </tr>
-                </tbody>
-            </table>
-        </div>
-    </div>
-      <div class="modal-footer">
-        <button class="btn btn-success btn-lg" @click="confirm()">
-          Confirm
-        </button>
-      </div>
-  </div>
-</div>
-</transition>
+	<transition name="modal" appear>
+		<div class="app-prompt app-modal__overlay" @click="close()">
+
+			<div class="app-prompt__container" @click.stop>
+				<header class="prompt__header">
+					<AppButton class="close" icon="close" @click.native="close()"/>
+					<h3>Multi Factor Authentication</h3>
+				</header>
+				<div v-if="isReady">
+    				<div v-if="mfaOptions.length > 1">
+                        <div class="prompt__body">
+                            <div class="table-responsive">
+                                <table class="table">
+                                    <thead>
+                                    <tr style="cursor:pointer;">
+                                        <th> Preferred Method </th>
+                                        <th> Type </th>
+                                        <th></th>
+                                    </tr>
+                                    </thead>
+                                    <tbody>
+                                    <tr v-for="(option, index) in mfaOptions">
+                                        <td>
+                                          <label class="checkbox__group">
+                                            <input type="radio" :id="index" :value="index" v-model="preferredAuthMethod">
+                                            <span class="checkmark"></span>
+                                          </label>
+                                        </td>
+                                        <td v-if="option.type == 'Authenticator App'">{{ option.type }} </td>
+                                        <td v-if="option.type != 'Authenticator App'">{{ option.type }} &nbsp;:&nbsp;{{ option.name }}</td>
+                                    </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                            <center v-if="isSelectedMethodTotp">
+                                Password code:&nbsp;<input
+                                    type="text"
+                                    autofocus
+                                    name="mfaCode"
+                                    v-model="mfaCode"
+                                    placeholder=""
+                                    style="width:200px"
+                                    v-on:keyup.enter="confirm"
+                                />
+                            </center>
+                        </div>
+                    </div>
+                    <div v-if="mfaOptions.length == 1 && mfaOptions[preferredAuthMethod].type == 'Authenticator App'">
+                        <center v-if="isSelectedMethodTotp">
+                            Password code:&nbsp;<input
+                                type="text"
+                                autofocus
+                                name="mfaCode"
+                                v-model="mfaCode"
+                                placeholder=""
+                                style="width:200px"
+                                v-on:keyup.enter="confirm"
+                            />
+                        </center>
+                    </div>
+                    <div v-if="mfaOptions.length == 1 && mfaOptions[preferredAuthMethod].type == 'WebKey'">
+                        Using Web Auth Key
+                    </div>
+                </div>
+				<footer class="prompt__footer">
+					<AppButton
+						id='prompt-button-id'
+						type="primary"
+						accent
+						@click.native="confirm()"
+					>
+					Confirm
+					</AppButton>
+				</footer>
+			</div>
+		</div>
+	</transition>
 </template>
 <script>
+const AppButton = require("../AppButton.vue");
 module.exports = {
+    components: {
+        AppButton,
+    },
     data: function() {
         return {
             mfaCode: '',
             mfaOptions: [],
             preferredAuthMethod: 0,
-            showSpinner: false,
+            isReady: false,
         }
     },
     props: ['mfaMethods', 'challenge', 'consumer_cancel_func', 'consumer_func'],
@@ -69,6 +96,16 @@ module.exports = {
         ...Vuex.mapState([
             'context'
         ]),
+        isSelectedMethodTotp: function() {
+            if (this.mfaOptions.length == 0) {
+                return false;
+            }
+            try {
+                return this.mfaOptions[this.preferredAuthMethod].type == 'Authenticator App';
+            } catch (err) {
+                return false;
+            }
+        },
     },
     created: function() {
         let that = this;
@@ -79,6 +116,10 @@ module.exports = {
             } else {
                 that.mfaOptions.push({type:'WebKey', credentialId: method.credentialId, name: method.name});
             }
+        }
+        this.isReady = true;
+        if (this.mfaOptions.length == 1 && this.mfaOptions[0].type == 'WebKey') {
+            this.confirm();
         }
     },
     methods: {
@@ -114,6 +155,9 @@ module.exports = {
                 let signature = convertToByteArray(new Int8Array(credential.response.signature));
                 let resp = peergos.client.JsUtil.generateWebAuthnResponse(webAuthMethod.credentialId, authenticatorData, clientDataJson, signature);
                 that.consumer_func(webAuthMethod.credentialId, resp);
+           }).catch(getCredentialsException => {
+                that.$toast.error('Unable to get credentials', {timeout:false});
+                console.log('Unable to get credentials: ' + getCredentialsException);
            });
         }
     }

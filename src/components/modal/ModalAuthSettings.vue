@@ -36,13 +36,12 @@
                     <tbody>
                     <tr>
                         <td>Authenticator App</td>
+                        <td></td>
                         <td v-if="totpKey.length == 0" >
                             <button class="btn btn-success" @click="setupAuthenticatorApp()"> Add </button>
                         </td>
                         <td v-if="totpKey.length == 1 && !totpKey[0].enabled">
                             <button class="btn btn-info" @click="enableAuthenticatorApp()"> Enable</button>
-                        </td>
-                        <td v-if="totpKey.length == 1 && totpKey[0].enabled">
                         </td>
                         <td v-if="totpKey.length == 1">
                             <button class="btn btn-danger" @click="removeAuthenticatorApp()"> Remove</button>
@@ -50,9 +49,9 @@
                     </tr>
                     <tr v-for="(webAuthKey, index) in webAuthKeys">
                         <td>{{ webAuthKey.name }}</td>
+                        <td></td>
                         <td> <button class="btn btn-danger" @click="removeWebAuthKey(webAuthKey)">Remove</button>
                         </td>
-                        <td></td>
                     </tr>
                     </tbody>
                 </table>
@@ -114,9 +113,11 @@ module.exports = {
                     that.webAuthKeys.push({credentialId: method.credentialId, name: method.name});
                 }
             }
-            this.showSpinner = false;
+            that.showSpinner = false;
         }).exceptionally(function(throwable) {
-            console.log(throwable);
+            that.$toast.error('Unable to retrieve authentication methods', {timeout:false});
+            console.log('Unable to retrieve authentication methods: ' + throwable);
+            that.showSpinner = false;
         });
     },
     methods: {
@@ -147,17 +148,21 @@ module.exports = {
             this.context.network.account.deleteSecondFactor(this.context.username, credentialId, this.context.signer).thenApply(res => {
                 if (res) {
                     that.totpKey = [];
+                    that.enableTotpOnly = false;
                 }
+                that.showSpinner = false;
+            }).exceptionally(function(throwable) {
+                that.$toast.error('Unable to delete authentication method', {timeout:false});
+                console.log('Unable to delete authentication method: ' + throwable);
                 that.showSpinner = false;
             });
         },
 	    addWebAuthKey() {
-            console.log('addWebAuthKey');
             this.showWebAuthSetup = true;
         },
         removeWebAuthKey(webAuthKey) {
             let that = this;
-            this.confirmRemoveWebAuthKey(webAuthKey.credentialId,
+            this.confirmRemoveWebAuthKey(webAuthKey.name,
                 () => {
                     that.showConfirm = false;
                     that.deleteWebAuthKey(webAuthKey);
@@ -169,7 +174,6 @@ module.exports = {
             );
         },
         deleteWebAuthKey(webAuthKey) {
-            console.log('deleteWebAuthKey credentialId:' + webAuthKey.credentialId);
             let that = this;
             this.showSpinner = true;
             let credentialId = webAuthKey.credentialId;
@@ -179,10 +183,14 @@ module.exports = {
                     that.webAuthKeys.splice(index, 1);
                 }
                 that.showSpinner = false;
+            }).exceptionally(function(throwable) {
+                that.$toast.error('Unable to delete web authentication method', {timeout:false});
+                console.log('Unable to delete web authentication method: ' + throwable);
+                that.showSpinner = false;
             });
         },
-        confirmRemoveWebAuthKey(credentialId, replaceFunction, cancelFunction) {
-            this.confirm_message = 'Remove Web Auth Key: ' + credentialId;
+        confirmRemoveWebAuthKey(name, replaceFunction, cancelFunction) {
+            this.confirm_message = 'Remove Web Auth Key: ' + name;
             this.confirm_body = "Are you sure you want to remove this key?";
             this.confirm_consumer_cancel_func = cancelFunction;
             this.confirm_consumer_func = replaceFunction;
