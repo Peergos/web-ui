@@ -87,6 +87,7 @@ module.exports = {
         return {
             mfaCode: '',
             mfaOptions: [],
+            webauthnMethods: [],
             preferredAuthMethod: 0,
             isReady: false,
         }
@@ -115,6 +116,10 @@ module.exports = {
                 that.mfaOptions.push({type:'Authenticator App', credentialId: method.credentialId});
             } else {
                 that.mfaOptions.push({type:'WebKey', credentialId: method.credentialId, name: method.name});
+                that.webauthnMethods.push({
+                    type: "public-key",
+                    id: method.credentialId
+                });
             }
         }
         this.isReady = true;
@@ -133,28 +138,26 @@ module.exports = {
                 let resp = peergos.client.JsUtil.generateAuthResponse(credentialId, this.mfaCode);
                 this.consumer_func(credentialId, resp);
             } else {
-                this.confirmWebAuth(this.mfaOptions[this.preferredAuthMethod]);
+                this.confirmWebAuth();
             }
         },
-        confirmWebAuth: function(webAuthMethod) {
+        confirmWebAuth: function() {
            let that = this;
            let data = {
               publicKey: {
                  challenge: that.challenge,
-                 allowCredentials: [{
-                    type: "public-key",
-                    id: webAuthMethod.credentialId
-                 }],
+                 allowCredentials: this.webauthnMethods,
                  timeout: 60000,
                  userVerification: "preferred",
               }
            };
-           navigator.credentials.get(data).then(credential => {
+            navigator.credentials.get(data).then(credential => {
+                let credentialId = convertToByteArray(new Int8Array(credential.rawId))
                 let authenticatorData = convertToByteArray(new Int8Array(credential.response.authenticatorData));
                 let clientDataJson = convertToByteArray(new Int8Array(credential.response.clientDataJSON));
                 let signature = convertToByteArray(new Int8Array(credential.response.signature));
-                let resp = peergos.client.JsUtil.generateWebAuthnResponse(webAuthMethod.credentialId, authenticatorData, clientDataJson, signature);
-                that.consumer_func(webAuthMethod.credentialId, resp);
+                let resp = peergos.client.JsUtil.generateWebAuthnResponse(credentialId, authenticatorData, clientDataJson, signature);
+                that.consumer_func(credentialId, resp);
            }).catch(getCredentialsException => {
                 that.$toast.error('Unable to get credentials', {timeout:false});
                 console.log('Unable to get credentials: ' + getCredentialsException);
