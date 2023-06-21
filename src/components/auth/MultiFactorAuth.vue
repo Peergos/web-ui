@@ -8,70 +8,54 @@
 					<h3>Multi Factor Authentication</h3>
 				</header>
 				<div v-if="isReady">
-    				<div v-if="mfaOptions.length > 1">
-                        <div class="prompt__body">
-                            <div class="table-responsive">
-                                <table class="table">
-                                    <thead>
-                                    <tr style="cursor:pointer;">
-                                        <th> Preferred Method </th>
-                                        <th> Type </th>
-                                        <th></th>
-                                    </tr>
-                                    </thead>
-                                    <tbody>
-                                    <tr v-for="(option, index) in mfaOptions">
-                                        <td>
-                                          <label class="checkbox__group">
-                                            <input type="radio" :id="index" :value="index" v-model="preferredAuthMethod">
-                                            <span class="checkmark"></span>
-                                          </label>
-                                        </td>
-                                        <td v-if="option.type == 'Authenticator App'">{{ option.type }} </td>
-                                        <td v-if="option.type != 'Authenticator App'">{{ option.type }} &nbsp;:&nbsp;{{ option.name }}</td>
-                                    </tr>
-                                    </tbody>
-                                </table>
-                            </div>
-                            <center v-if="isSelectedMethodTotp">
-                                Password code:&nbsp;<input
-                                    type="text"
-                                    autofocus
-                                    name="mfaCode"
-                                    v-model="mfaCode"
-                                    placeholder=""
-                                    style="width:200px"
-                                    v-on:keyup.enter="confirm"
-                                />
-                            </center>
-                        </div>
-                    </div>
-                    <div v-if="mfaOptions.length == 1 && mfaOptions[preferredAuthMethod].type == 'Authenticator App'">
-                        <center v-if="isSelectedMethodTotp">
-                            Password code:&nbsp;<input
+    				<div v-if="hasTotp && hasWebauthn && !showTotp">
+                                    <div class="mfa_buttons">
+                                        <AppButton
+					    id='prompt-totpbutton-id'
+					    type="primary"
+					    accent
+					    @click.native="useTotp()"
+                                            class="mfa_button"
+                                            style="margin:10px;"
+					    >
+					    Use authenticator app
+					</AppButton>
+                                        <AppButton
+					    id='prompt-webauthn-button-id'
+					    type="primary"
+					    accent
+					    @click.native="confirmWebauthn()"
+					    class="mfa_button"
+					    style="margin:10px;"
+					    >
+					    Use security key
+					</AppButton>
+                                    </div>
+                                </div>
+                    <div>
+                        <center v-if="showTotp">
+                            Verification code from app:&nbsp;<input
                                 type="text"
                                 autofocus
                                 name="mfaCode"
                                 v-model="mfaCode"
                                 placeholder=""
                                 style="width:200px"
-                                v-on:keyup.enter="confirm"
+                                v-on:keyup.enter="confirmTotp"
                             />
                         </center>
                     </div>
-                    <div v-if="mfaOptions.length == 1 && mfaOptions[preferredAuthMethod].type == 'WebKey'">
-                        Using Web Auth Key
-                    </div>
                 </div>
-				<footer class="prompt__footer">
-					<AppButton
-						id='prompt-button-id'
-						type="primary"
-						accent
-						@click.native="confirm()"
+				<footer class="mfa_login">
+				    <AppButton
+                                        v-if="showTotp"
+					id='prompt-button-id'
+					type="primary"
+					accent
+					@click.native="confirmTotp()"
 					>
 					Confirm
-					</AppButton>
+				    </AppButton>
 				</footer>
 			</div>
 		</div>
@@ -88,7 +72,10 @@ module.exports = {
             mfaCode: '',
             mfaOptions: [],
             webauthnMethods: [],
-            preferredAuthMethod: 0,
+            hasTotp: false,
+            hasWebauthn: false,
+            showTotp: false,
+            totpIndex: 0,
             isReady: false,
         }
     },
@@ -97,25 +84,18 @@ module.exports = {
         ...Vuex.mapState([
             'context'
         ]),
-        isSelectedMethodTotp: function() {
-            if (this.mfaOptions.length == 0) {
-                return false;
-            }
-            try {
-                return this.mfaOptions[this.preferredAuthMethod].type == 'Authenticator App';
-            } catch (err) {
-                return false;
-            }
-        },
     },
     created: function() {
         let that = this;
-        for(var i=0; i < this.mfaMethods.length;i++) {
+        for (var i=0; i < this.mfaMethods.length;i++) {
             let method = this.mfaMethods[i];
             if (method.type.toString() == peergos.shared.login.mfa.MultiFactorAuthMethod.Type.TOTP.toString()) {
                 that.mfaOptions.push({type:'Authenticator App', credentialId: method.credentialId});
+                this.hasTotp = true;
+                this.totpIndex = i;
             } else {
                 that.mfaOptions.push({type:'WebKey', credentialId: method.credentialId, name: method.name});
+                this.hasWebauthn = true;
                 that.webauthnMethods.push({
                     type: "public-key",
                     id: method.credentialId
@@ -123,25 +103,26 @@ module.exports = {
             }
         }
         this.isReady = true;
-        if (this.mfaOptions.length == 1 && this.mfaOptions[0].type == 'WebKey') {
-            this.confirm();
+        if (this.hasWebauthn && ! this.hasTotp) {
+            this.confirmWebAuthn();
         }
+        if (! this.hasWebauthn && this.hasTotp)
+            this.showTotp= true;
     },
     methods: {
         close: function() {
-            let credentialId = this.mfaOptions[this.preferredAuthMethod].credentialId;
+            let credentialId = this.mfaOptions[this.totpIndex].credentialId;
             this.consumer_cancel_func(credentialId);
         },
-        confirm: function() {
-            let credentialId = this.mfaOptions[this.preferredAuthMethod].credentialId;
-            if (this.mfaOptions[this.preferredAuthMethod].type == 'Authenticator App') {
-                let resp = peergos.client.JsUtil.generateAuthResponse(credentialId, this.mfaCode);
-                this.consumer_func(credentialId, resp);
-            } else {
-                this.confirmWebAuth();
-            }
+        useTotp: function() {
+            this.showTotp = true;
         },
-        confirmWebAuth: function() {
+        confirmTotp: function() {
+            let credentialId = this.mfaOptions[this.totpIndex].credentialId;
+            let resp = peergos.client.JsUtil.generateAuthResponse(credentialId, this.mfaCode);
+            this.consumer_func(credentialId, resp);
+        },
+        confirmWebauthn: function() {
            let that = this;
            let data = {
               publicKey: {
@@ -167,4 +148,19 @@ module.exports = {
 }
 </script>
 <style>
+.mfa_login {
+   display: flex;
+   justify-content: center;
+}
+
+.mfa_buttons {
+   display: flex;
+   justify-content: center;
+   flex-direction: column;
+   align-items: center;
+}
+
+.mfa_button {
+  width:60%
+}
 </style>
