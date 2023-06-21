@@ -9,6 +9,7 @@
                     v-if="showMultiFactorAuth"
                     v-on:hide-confirm="showMultiFactorAuth = false"
                     :mfaMethods="mfaMethods"
+                    :challenge="challenge"
                     :consumer_cancel_func="consumer_cancel_func"
                     :consumer_func="consumer_func">
             </MultiFactorAuth>
@@ -84,18 +85,13 @@ module.exports = {
             if (this.password == this.password2) {
                 let that = this;
                 this.showSpinner = true;
-                let mfa = function(mfaReq) {
-                    console.log('inside deleteAccount mfa');
-                    return null;
-                };
                 let handleMfa = function(mfaReq) {
-                        console.log('inside signIn mfa');
                         let future = peergos.shared.util.Futures.incomplete();
                         let mfaMethods = mfaReq.methods.toArray([]);
+                        that.challenge = mfaReq.challenge;
                         that.mfaMethods = mfaMethods;
-                        that.consumer_func = (credentialId, authCode) => {
+                        that.consumer_func = (credentialId, resp) => {
                             that.showMultiFactorAuth = false;
-                            let resp = peergos.client.JsUtil.generateAuthResponse(credentialId, authCode);
                             future.complete(resp);
                         };
                         that.consumer_cancel_func = (credentialId) => {
@@ -112,8 +108,12 @@ module.exports = {
                     that.$toast.info('Password changed')
                     that.showSpinner = false;
                 }).exceptionally(function(throwable) {
+                    if (throwable.getMessage().startsWith('Invalid+TOTP+code')) {
+                        that.$toast.error('Invalid Multi Factor Authenticator code', {timeout:false})
+                    } else {
+                        that.$toast.error(that.uriDecode(throwable.getMessage()), {timeout:false})
+                    }
                     that.showSpinner = false;
-                    that.$toast.error(that.uriDecode(throwable.getMessage()),{timeout:false})
                     console.log(throwable.getMessage())
                 });
             } else {

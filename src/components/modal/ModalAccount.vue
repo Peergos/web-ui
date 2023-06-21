@@ -8,6 +8,7 @@
                     v-if="showMultiFactorAuth"
                     v-on:hide-confirm="showMultiFactorAuth = false"
                     :mfaMethods="mfaMethods"
+                    :challenge="challenge"
                     :consumer_cancel_func="consumer_cancel_func"
                     :consumer_func="consumer_func">
             </MultiFactorAuth>
@@ -73,13 +74,12 @@ module.exports = {
             console.log("Deleting Account");
             var that = this;
             let handleMfa = function(mfaReq) {
-                    console.log('inside signIn mfa');
                     let future = peergos.shared.util.Futures.incomplete();
                     let mfaMethods = mfaReq.methods.toArray([]);
+                    that.challenge = mfaReq.challenge;
                     that.mfaMethods = mfaMethods;
-                    that.consumer_func = (credentialId, authCode) => {
+                    that.consumer_func = (credentialId, resp) => {
                         that.showMultiFactorAuth = false;
-                        let resp = peergos.client.JsUtil.generateAuthResponse(credentialId, authCode);
                         future.complete(resp);
                     };
                     that.consumer_cancel_func = (credentialId) => {
@@ -99,7 +99,12 @@ module.exports = {
 					that.$toast(`Error Deleting Account: ${throwable.getMessage()}`,{position: 'bottom-left' })
                 }
             }).exceptionally(function(throwable) {
-                that.$toast(`Error Deleting Account: ${throwable.getMessage()}`,{position: 'bottom-left' })
+                if (throwable.getMessage().startsWith('Invalid+TOTP+code')) {
+                    that.$toast.error('Invalid Multi Factor Authenticator code', {timeout:false})
+                } else {
+                    that.$toast.error(that.uriDecode(throwable.getMessage()), {timeout:false})
+                }
+                console.log(throwable.getMessage())
             });
         },
 		exit(){
