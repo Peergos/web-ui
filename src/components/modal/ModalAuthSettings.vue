@@ -37,6 +37,10 @@
                     <tr>
                         <td>Authenticator App</td>
                         <td></td>
+                        <td v-if="false && totpKey.length == 0"></td>
+                        <td v-if="false && totpKey.length == 1">
+                            <button class="btn btn-info" @click="editAuthenticatorApp()"> Edit </button>
+                        </td>
                         <td v-if="totpKey.length == 0" >
                             <button class="btn btn-success" @click="setupAuthenticatorApp()"> Add </button>
                         </td>
@@ -48,14 +52,14 @@
                         </td>
                     </tr>
                     <tr v-for="(webAuthKey, index) in webAuthKeys">
-                        <td>{{ webAuthKey.name }}</td>
+                        <td>SecurityKey:&nbsp;{{ webAuthKey.name }}</td>
                         <td></td>
                         <td> <button class="btn btn-danger" @click="removeWebAuthKey(webAuthKey)">Remove</button>
                         </td>
                     </tr>
                     </tbody>
                 </table>
-                <button class="btn btn-success" @click="addWebAuthKey()">Add Web Auth Key</button>
+                <button class="btn btn-success" @click="addWebAuthKey()">Add Security Key</button>
             </div>
 		</template>
 	</AppModal>
@@ -122,6 +126,11 @@ module.exports = {
     },
     methods: {
         setupAuthenticatorApp() {
+            this.enableTotpOnly = false;
+            this.showTOTPSetup = true;
+        },
+        editAuthenticatorApp() {
+            this.enableTotpOnly = false;
             this.showTOTPSetup = true;
         },
         enableAuthenticatorApp() {
@@ -190,7 +199,7 @@ module.exports = {
             });
         },
         confirmRemoveWebAuthKey(name, replaceFunction, cancelFunction) {
-            this.confirm_message = 'Remove Web Auth Key: ' + name;
+            this.confirm_message = 'Remove Security Key: ' + name;
             this.confirm_body = "Are you sure you want to remove this key?";
             this.confirm_consumer_cancel_func = cancelFunction;
             this.confirm_consumer_func = replaceFunction;

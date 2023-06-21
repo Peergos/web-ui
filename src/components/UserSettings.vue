@@ -59,7 +59,7 @@
 					v-on:keyup.enter="showAuthenticationScreen()"
 					@click="showAuthenticationScreen()"
 				>
-					Authentication Method
+					Authentication
 				</li>
 				<li
 					v-on:keyup.enter="showChangePassword()"

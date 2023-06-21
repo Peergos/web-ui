@@ -4,7 +4,7 @@
 			<div class="app-prompt__container" @click.stop>
 				<header class="prompt__header">
 					<AppButton class="close" icon="close" @click.native="close()"/>
-					<h3>Add new Web Auth Key</h3>
+					<h3>Add new Security Key</h3>
 				</header>
                 <Spinner v-if="showSpinner"></Spinner>
                 <div class="prompt__body">
@@ -109,7 +109,7 @@ module.exports = {
                     let rawId = convertToByteArray(new Int8Array(credential.rawId));
                     let resp = peergos.client.JsUtil.generateWebAuthnResponse(rawId, rawAttestation, clientDataJson, signature);
                     that.context.network.account.registerSecurityKeyComplete(that.context.username, that.webAuthName, resp, that.context.signer).thenApply(done => {
-                        that.$toast('Web Auth Key has been enabled');
+                        that.$toast('Security Key has been enabled');
                         that.showSpinner = false;
                         that.close(true);
                     }).exceptionally(function (completeThrowable) {
