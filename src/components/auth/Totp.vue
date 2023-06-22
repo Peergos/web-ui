@@ -8,12 +8,18 @@
 					<h3>Setup Authenticator App</h3>
 				</header>
                 <Spinner v-if="showSpinner"></Spinner>
+                        <Message v-if="showMessage"
+                                v-on:remove-message="showMessage = false;"
+                                :title="messageTitle"
+                                :message="manualCode">
+                        </Message>
                 <div class="prompt__body">
                     <center v-if="QRCodeURL.length > 0">
                       <div class="auth-qrcode-container">
                             <img v-bind:src="QRCodeURL" alt="QR code" class="auth-qrcode"></img>
                       </div>
                     </center>
+                    <center v-if="isReady"><a href="#" @click="enterCodeManually()"><u>Enter code manually</u></a></center>
                     <center>
                         Verification code from app:&nbsp;<input
                             type="text"
@@ -49,10 +55,12 @@
 <script>
 const AppButton = require("../AppButton.vue");
 const Spinner = require("../spinner/Spinner.vue");
+const Message = require("../message/Message.vue");
 
 module.exports = {
     components: {
         AppButton,
+        Message,
         Spinner,
     },
     data: function() {
@@ -62,6 +70,9 @@ module.exports = {
             isReady: false,
             QRCodeURL: '',
             showSpinner: false,
+            manualCode:'',
+            messageTitle: 'Enter Code',
+            showMessage: false,
         }
     },
     props: ['consumer_func'],
@@ -75,9 +86,9 @@ module.exports = {
         this.showSpinner = true;
         this.context.network.account.addTotpFactor(this.context.username, this.context.signer).thenApply(totpKey => {
             that.credentialId = totpKey.credentialId;
-            if (!that.enableOnly) {
-                that.QRCodeURL = totpKey.getQRCode(that.context.username);
-            }
+            that.QRCodeURL = totpKey.getQRCode(that.context.username);
+            let encoded = totpKey.encode();
+            that.manualCode = encoded.substring(encoded.indexOf(':') + 1);
             that.showSpinner = false;
             that.isReady = true;
         }).exceptionally(function (addException) {
@@ -87,6 +98,9 @@ module.exports = {
         });
     },
     methods: {
+        enterCodeManually: function() {
+            this.showMessage = true;
+        },
         close: function(success) {
             this.$emit("hide-totp");
             this.consumer_func(this.credentialId, success === true);
