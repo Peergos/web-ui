@@ -104,7 +104,7 @@ module.exports = {
         }
         this.isReady = true;
         if (this.hasWebauthn && ! this.hasTotp) {
-            this.confirmWebAuthn();
+            this.confirmWebauthn();
         }
         if (! this.hasWebauthn && this.hasTotp)
             this.showTotp= true;
