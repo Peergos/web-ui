@@ -4,6 +4,14 @@
 			<h2>Delete Account</h2>
 		</template>
 		<template #body>
+            <MultiFactorAuth
+                    v-if="showMultiFactorAuth"
+                    v-on:hide-confirm="showMultiFactorAuth = false"
+                    :mfaMethods="mfaMethods"
+                    :challenge="challenge"
+                    :consumer_cancel_func="consumer_cancel_func"
+                    :consumer_func="consumer_func">
+            </MultiFactorAuth>
 			<p>If you choose to proceed you will lose access to your account and data!</p>
             <p>This action is not reversible</p>
             <p>You must enter your password to confirm you want to delete your account and all your data</p>
@@ -30,18 +38,21 @@ const AppButton = require("../AppButton.vue");
 const AppModal = require("AppModal.vue");
 const AppIcon = require("../AppIcon.vue");
 const FormPassword = require("../form/FormPassword.vue");
+const MultiFactorAuth = require("../auth/MultiFactorAuth.vue");
+
 module.exports = {
 	components: {
 	    AppButton,
 	    AppModal,
 	    AppIcon,
 		FormPassword,
+		MultiFactorAuth,
 	},
 	data() {
 		return {
 			password: "",
-			warning: false
-
+			warning: false,
+            showMultiFactorAuth: false,
 		};
 	},
 	computed: {
@@ -62,7 +73,24 @@ module.exports = {
 		deleteAccount() {
             console.log("Deleting Account");
             var that = this;
-            this.context.deleteAccount(this.password).thenApply(function(result){
+            let handleMfa = function(mfaReq) {
+                    let future = peergos.shared.util.Futures.incomplete();
+                    let mfaMethods = mfaReq.methods.toArray([]);
+                    that.challenge = mfaReq.challenge;
+                    that.mfaMethods = mfaMethods;
+                    that.consumer_func = (credentialId, resp) => {
+                        that.showMultiFactorAuth = false;
+                        future.complete(resp);
+                    };
+                    that.consumer_cancel_func = (credentialId) => {
+                        that.showMultiFactorAuth = false;
+                        let resp = peergos.client.JsUtil.generateAuthResponse(credentialId, '');
+                        future.complete(resp);
+                    }
+                    that.showMultiFactorAuth = true;
+                    return future;
+            };
+            this.context.deleteAccount(this.password, mfaReq => handleMfa(mfaReq)).thenApply(function(result){
                 if (result) {
 					that.$toast('Account Deleted!',{position: 'bottom-left' })
 					that.$store.commit("SET_MODAL", false);
@@ -71,7 +99,12 @@ module.exports = {
 					that.$toast(`Error Deleting Account: ${throwable.getMessage()}`,{position: 'bottom-left' })
                 }
             }).exceptionally(function(throwable) {
-                that.$toast(`Error Deleting Account: ${throwable.getMessage()}`,{position: 'bottom-left' })
+                if (throwable.getMessage().startsWith('Invalid+TOTP+code')) {
+                    that.$toast.error('Invalid Multi Factor Authenticator code', {timeout:false})
+                } else {
+                    that.$toast.error(that.uriDecode(throwable.getMessage()), {timeout:false})
+                }
+                console.log(throwable.getMessage())
             });
         },
 		exit(){

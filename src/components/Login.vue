@@ -9,7 +9,14 @@
 			ref="username"
 			@input="(val) => (username = username.toLowerCase())"
 		/>
-
+        <MultiFactorAuth
+                v-if="showMultiFactorAuth"
+                v-on:hide-confirm="showMultiFactorAuth = false"
+                :mfaMethods="mfaMethods"
+                :challenge="challenge"
+                :consumer_cancel_func="consumer_cancel_func"
+                :consumer_func="consumer_func">
+        </MultiFactorAuth>
 		<FormPassword v-model="password" placeholder="password" @keyup.native.enter="login()"/>
 
         <label class="checkbox__group">
@@ -31,6 +38,7 @@
 <script>
 const AppButton = require("AppButton.vue");
 const FormPassword = require("./form/FormPassword.vue");
+const MultiFactorAuth = require("./auth/MultiFactorAuth.vue");
 const routerMixins = require("../mixins/router/index.js");
 const UriDecoder = require('../mixins/uridecoder/index.js');
 
@@ -38,15 +46,17 @@ module.exports = {
 	components: {
     	AppButton,
 		FormPassword,
+		MultiFactorAuth,
 	},
 	data() {
 		return {
 			username: '',
-		        password: [],
+            password: [],
 			passwordIsVisible: false,
 			demo: true,
             stayLoggedIn: false,
-            isLoggingIn: false
+            isLoggingIn: false,
+            showMultiFactorAuth: false,
 		};
 	},
 	computed: {
@@ -123,9 +133,28 @@ module.exports = {
 			const creationStart = Date.now();
 			const that = this;
             this.isLoggingIn = true;
+
+            let handleMfa = function(mfaReq) {
+                    let future = peergos.shared.util.Futures.incomplete();
+                    let mfaMethods = mfaReq.methods.toArray([]);
+                    that.challenge = mfaReq.challenge;
+                    that.mfaMethods = mfaMethods;
+                    that.consumer_func = (credentialId, resp) => {
+                        that.showMultiFactorAuth = false;
+                        future.complete(resp);
+                    };
+                    that.consumer_cancel_func = (credentialId) => {
+                        that.showMultiFactorAuth = false;
+                        let resp = peergos.client.JsUtil.generateAuthResponse(credentialId, '');
+                        future.complete(resp);
+                    }
+                    that.showMultiFactorAuth = true;
+                    return future;
+            };
 			peergos.shared.user.UserContext.signIn(
 				that.username,
 				that.password,
+				mfaReq => handleMfa(mfaReq),
 				that.network,
 				that.crypto,
 				// { accept: (x) => (that.spinnerMessage = x) }
@@ -135,8 +164,12 @@ module.exports = {
                     that.postLogin(creationStart, context);
 				})
 				.exceptionally(function (throwable) {
-				            that.isLoggingIn = false;
-					that.$toast.error(that.uriDecode(throwable.getMessage()), {timeout:false, id: 'login'})
+                    that.isLoggingIn = false;
+                    if (throwable.getMessage().startsWith('Invalid+TOTP+code')) {
+                        that.$toast.error('Invalid Multi Factor Authenticator code', {timeout:false, id: 'login'})
+                    } else {
+					    that.$toast.error(that.uriDecode(throwable.getMessage()), {timeout:false, id: 'login'})
+					}
 				});
 		},
 		postLogin(creationStart, context) {

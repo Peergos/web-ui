@@ -5,7 +5,14 @@
 		</template>
 		<template #body>
             <Spinner v-if="showSpinner"></Spinner>
-
+            <MultiFactorAuth
+                    v-if="showMultiFactorAuth"
+                    v-on:hide-confirm="showMultiFactorAuth = false"
+                    :mfaMethods="mfaMethods"
+                    :challenge="challenge"
+                    :consumer_cancel_func="consumer_cancel_func"
+                    :consumer_func="consumer_func">
+            </MultiFactorAuth>
 			<FormPassword v-model="existing" :placeholder="'Existing password'"/>
 
 			<AppButton class="generate-password" type="primary" block accent @click.native="generatePassword()">
@@ -31,6 +38,7 @@ const AppModal = require("AppModal.vue");
 const UriDecoder = require('../../mixins/uridecoder/index.js');
 const Bip39 = require('../../mixins/password/bip-0039-english.json');
 const FormPassword = require("../form/FormPassword.vue");
+const MultiFactorAuth = require("../auth/MultiFactorAuth.vue");
 const Spinner = require("../spinner/Spinner.vue");
 
 module.exports = {
@@ -38,16 +46,18 @@ module.exports = {
         AppButton,
         AppModal,
 	    FormPassword,
+	    MultiFactorAuth,
         Spinner,
     },
     
     data() {
         return {
-        showSpinner: false,
-	    existing: "",
-	    password: "",
-	    password2: "",
-            showPasswords: false
+            showSpinner: false,
+            existing: "",
+            password: "",
+            password2: "",
+            showPasswords: false,
+            showMultiFactorAuth: false,
         };
     },
     
@@ -75,14 +85,35 @@ module.exports = {
             if (this.password == this.password2) {
                 let that = this;
                 this.showSpinner = true;
-                this.context.changePassword(this.existing, this.password).thenApply(function(newContext){
+                let handleMfa = function(mfaReq) {
+                        let future = peergos.shared.util.Futures.incomplete();
+                        let mfaMethods = mfaReq.methods.toArray([]);
+                        that.challenge = mfaReq.challenge;
+                        that.mfaMethods = mfaMethods;
+                        that.consumer_func = (credentialId, resp) => {
+                            that.showMultiFactorAuth = false;
+                            future.complete(resp);
+                        };
+                        that.consumer_cancel_func = (credentialId) => {
+                            that.showMultiFactorAuth = false;
+                            let resp = peergos.client.JsUtil.generateAuthResponse(credentialId, '');
+                            future.complete(resp);
+                        }
+                        that.showMultiFactorAuth = true;
+                        return future;
+                };
+                this.context.changePassword(this.existing, this.password, mfaReq => handleMfa(mfaReq)).thenApply(function(newContext){
                     that.$store.commit("SET_CONTEXT", newContext);
                     that.$store.commit("SET_MODAL", false);
                     that.$toast.info('Password changed')
                     that.showSpinner = false;
                 }).exceptionally(function(throwable) {
+                    if (throwable.getMessage().startsWith('Invalid+TOTP+code')) {
+                        that.$toast.error('Invalid Multi Factor Authenticator code', {timeout:false})
+                    } else {
+                        that.$toast.error(that.uriDecode(throwable.getMessage()), {timeout:false})
+                    }
                     that.showSpinner = false;
-                    that.$toast.error(that.uriDecode(throwable.getMessage()),{timeout:false})
                     console.log(throwable.getMessage())
                 });
             } else {
