@@ -167,7 +167,11 @@ module.exports = {
             });
         },
 	    addWebAuthKey() {
-            this.showWebAuthSetup = true;
+	        if (this.webAuthKeys.length + this.totpKey.length >= 10) {
+                that.$toast.error('Reached maximum number of Security Keys', {timeout:false});
+	        } else {
+                this.showWebAuthSetup = true;
+            }
         },
         removeWebAuthKey(webAuthKey) {
             let that = this;
