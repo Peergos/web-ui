@@ -15,7 +15,7 @@
                       </div>
                     </center>
                     <center>
-                        Password code:&nbsp;<input
+                        Verification code from app:&nbsp;<input
                             type="text"
                             autofocus
                             name="totp"
