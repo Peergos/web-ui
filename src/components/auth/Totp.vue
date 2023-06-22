@@ -64,7 +64,7 @@ module.exports = {
             showSpinner: false,
         }
     },
-    props: ['enableTotpOnly', 'consumer_func'],
+    props: ['consumer_func'],
     computed: {
         ...Vuex.mapState([
             'context'
@@ -73,38 +73,18 @@ module.exports = {
     created: function() {
         let that = this;
         this.showSpinner = true;
-        if (this.enableTotpOnly) {
-            that.context.network.account.getSecondAuthMethods(that.context.username, that.context.signer).thenApply(mfaMethods => {
-                let totpMethod = mfaMethods.toArray([]).filter(method => method.type.toString() == peergos.shared.login.mfa.MultiFactorAuthMethod.Type.TOTP.toString())[0];
-                that.credentialId = totpMethod.credentialId;
-                that.showSpinner = false;
-                that.isReady = true;
-            }).exceptionally(function (throwable) {
-                that.$toast.error('Unable to retrieve existing authentication methods', {timeout:false});
-                console.log('Unable to retrieve existing authentication methods: ' + throwable);
-                that.showSpinner = false;
-            });
-        } else {
-            this.context.network.account.addTotpFactor(this.context.username, this.context.signer).thenApply(totpKey => {
-                that.context.network.account.getSecondAuthMethods(that.context.username, that.context.signer).thenApply(mfaMethods => {
-                    let totpMethod = mfaMethods.toArray([]).filter(method => method.type.toString() == peergos.shared.login.mfa.MultiFactorAuthMethod.Type.TOTP.toString())[0];
-                    that.credentialId = totpMethod.credentialId;
-                    if (!that.enableOnly) {
-                        that.QRCodeURL = totpKey.getQRCode(that.context.username);
-                    }
-                    that.showSpinner = false;
-                    that.isReady = true;
-                }).exceptionally(function (getException) {
-                    that.$toast.error('Unable to retrieve new authentication method', {timeout:false});
-                    console.log('Unable to retrieve new authentication method: ' + getException);
-                    that.showSpinner = false;
-                });
-            }).exceptionally(function (addException) {
-                that.$toast.error('Unable to add new authentication method', {timeout:false});
-                console.log('Unable to add new authentication method: ' + addException);
-                that.showSpinner = false;
-            });
-        }
+        this.context.network.account.addTotpFactor(this.context.username, this.context.signer).thenApply(totpKey => {
+            that.credentialId = totpKey.credentialId;
+            if (!that.enableOnly) {
+                that.QRCodeURL = totpKey.getQRCode(that.context.username);
+            }
+            that.showSpinner = false;
+            that.isReady = true;
+        }).exceptionally(function (addException) {
+            that.$toast.error('Unable to add new authentication method', {timeout:false});
+            console.log('Unable to add new authentication method: ' + addException);
+            that.showSpinner = false;
+        });
     },
     methods: {
         close: function(success) {

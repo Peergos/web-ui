@@ -16,7 +16,6 @@
             <Totp
                     v-if="showTOTPSetup"
                     v-on:hide-totp="showTOTPSetup = false"
-                    :enableTotpOnly="enableTotpOnly"
                     :consumer_func="totp_confirmed_func">
             </Totp>
             <WebAuth
@@ -37,15 +36,12 @@
                     <tr>
                         <td>Authenticator App</td>
                         <td></td>
-                        <td v-if="false && totpKey.length == 0"></td>
-                        <td v-if="false && totpKey.length == 1">
+                        <td v-if="totpKey.length == 0"></td>
+                        <td v-if="totpKey.length == 1">
                             <button class="btn btn-info" @click="editAuthenticatorApp()"> Edit </button>
                         </td>
                         <td v-if="totpKey.length == 0" >
                             <button class="btn btn-success" @click="setupAuthenticatorApp()"> Add </button>
-                        </td>
-                        <td v-if="totpKey.length == 1 && !totpKey[0].enabled">
-                            <button class="btn btn-info" @click="enableAuthenticatorApp()"> Enable</button>
                         </td>
                         <td v-if="totpKey.length == 1">
                             <button class="btn btn-danger" @click="removeAuthenticatorApp()"> Remove</button>
@@ -93,7 +89,6 @@ module.exports = {
             confirm_consumer_cancel_func: () => {},
             confirm_consumer_func: () => {},
             showTOTPSetup: false,
-            enableTotpOnly: false,
             showWebAuthSetup: false,
         };
     },
@@ -112,7 +107,7 @@ module.exports = {
             for(var i=0; i < methods.length;i++) {
                 let method = methods[i];
                 if (method.type.toString() == peergos.shared.login.mfa.MultiFactorAuthMethod.Type.TOTP.toString()) {
-                    that.totpKey.push({credentialId: method.credentialId, enabled: method.enabled});
+                    that.totpKey.push({credentialId: method.credentialId});
                 } else {
                     that.webAuthKeys.push({credentialId: method.credentialId, name: method.name});
                 }
@@ -126,15 +121,9 @@ module.exports = {
     },
     methods: {
         setupAuthenticatorApp() {
-            this.enableTotpOnly = false;
             this.showTOTPSetup = true;
         },
         editAuthenticatorApp() {
-            this.enableTotpOnly = false;
-            this.showTOTPSetup = true;
-        },
-        enableAuthenticatorApp() {
-            this.enableTotpOnly = true;
             this.showTOTPSetup = true;
         },
         removeAuthenticatorApp() {
@@ -157,7 +146,6 @@ module.exports = {
             this.context.network.account.deleteSecondFactor(this.context.username, credentialId, this.context.signer).thenApply(res => {
                 if (res) {
                     that.totpKey = [];
-                    that.enableTotpOnly = false;
                 }
                 that.showSpinner = false;
             }).exceptionally(function(throwable) {
@@ -217,11 +205,8 @@ module.exports = {
             this.showConfirm = true;
         },
         totp_confirmed_func(credentialId, success) {
-            if (this.totpKey.length == 0) {
-                this.totpKey.push({credentialId: credentialId, enabled: success});
-            } else {
-                let existingTotp = this.totpKey[0];
-                existingTotp.enabled = success;
+            if (success && this.totpKey.length == 0) {
+                this.totpKey.push({credentialId: credentialId});
             }
         },
         webauth_confirmed_func(credentialId, name, success) {
