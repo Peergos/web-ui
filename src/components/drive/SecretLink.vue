@@ -9,7 +9,8 @@
                 </div>
                 
                 <div class="modal-body">
-                    <div class="container"><p style="word-wrap;break-all;">
+                    <div class="container">
+                        <p style="word-wrap;break-all;">
                             <div v-for="link in urlLinks" style="font-size: 1.2em;">
                                 <div v-if="link.isFile">
                                     <input type="checkbox" @change="onAutoOpen(link.id)" v-model="link.autoOpen">
@@ -19,8 +20,8 @@
                                 <input v-bind:id="link.id" type="text" v-bind:value="link.href" style="display: none">
                                 <button class="fa fa-clipboard" style="padding: 6px 12px; background-color:var(--bg);" @click="copyUrlToClipboard($event)">&nbsp;Copy to clipboard</button>
                                 <button class="fa fa-envelope" style="padding: 6px 12px; background-color:var(--bg);" @click="email($event)">&nbsp;Share via email</button>
+                            </div>
                         </p>
-                        </div>
                     </div>
                 </div>
                 

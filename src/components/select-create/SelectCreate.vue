@@ -20,7 +20,7 @@
                         </div>
                         <div id="name-input" style="display: none; margin: 10px; width: 100%;">
                             <input id="create-input" v-model="select_result" type="text"
-                                   v-bind:placeholder="select_placeholder" class="form-control" maxlength="25" v-on:keyup.enter="setResult" autofocus></input>
+                                   v-bind:placeholder="select_placeholder" class="form-control" maxlength="25" v-on:keyup.enter="setResult" autofocus />
                         </div>
                         <div id="name-input-button" style="display: none; margin: 10px; width: 100%;">
                             <button id='create-new-button-id' class="btn btn-success" @click="setResult()" style="width: 100%;">OK</button>

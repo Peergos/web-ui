@@ -8,7 +8,7 @@
         </center>
         <center style="font-size:1.6em">
 	  <div class="qrcode-container">
-            <img v-if="stream == null" v-bind:src="QRCodeURL" alt="QR code" class="qrcode"></img>
+            <img v-if="stream == null" v-bind:src="QRCodeURL" alt="QR code" class="qrcode" />
 	    <video v-if="stream != null" id="video" class="qrcode"></video>
 	  </div>
 	  <div>

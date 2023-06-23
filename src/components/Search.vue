@@ -26,13 +26,13 @@
                         </select>
                     </div>
                     <div class="flex-item" v-if="selectedSearchType=='modifiedAfter' || selectedSearchType=='modifiedBefore' || selectedSearchType=='createdAfter' || selectedSearchType=='createdBefore'" style="margin: 10px;">
-                        <input v-model="selectedDate" type="date" min="1900-01-01" max="3000-01-01" maxlength="12" ></input>
+                        <input v-model="selectedDate" type="date" min="1900-01-01" max="3000-01-01" maxlength="12" />
                     </div>
                     <div class="flex-item" v-if="selectedSearchType=='contains' || selectedSearchType=='textContents'" style="margin: 10px;">
-                        <input v-focus v-on:keyup.enter="search" v-model="searchContains" placeholder=""type="text" maxlength="60" style="width: 200px;" ></input>
+                        <input v-focus v-on:keyup.enter="search" v-model="searchContains" placeholder="" type="text" maxlength="60" style="width: 200px;" />
                     </div>
                     <div class="flex-item" v-if="selectedSearchType=='fileSizeGreaterThan' || selectedSearchType=='fileSizeLessThan'" style="margin: 10px;">
-                        <input v-focus v-on:keyup.enter="search" v-model="searchFileSize" placeholder="1" type="number" min="1" style="width: 100px;" ></input>
+                        <input v-focus v-on:keyup.enter="search" v-model="searchFileSize" placeholder="1" type="number" min="1" style="width: 100px;" />
                     </div>
                     <div class="flex-item" v-if="selectedSearchType=='fileSizeGreaterThan' || selectedSearchType=='fileSizeLessThan'" style="margin: 10px;">
                         <select v-model="selectedSizeUnit">
@@ -95,7 +95,6 @@
 
 
             </div>
-        </div>
     </div>
 </div>
 </transition>

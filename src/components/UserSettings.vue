@@ -120,9 +120,9 @@
 
 <script>
 import Admin from "./admin/Admin.vue";
-import AppButton from "AppButton.vue";
+import AppButton from "./AppButton.vue";
 import AppDropdown  from "./AppDropdown.vue";
-import AppIcon from "AppIcon.vue";
+import AppIcon from "./AppIcon.vue";
 import AppPrompt from "./prompt/AppPrompt.vue";
 import Spinner from "./spinner/Spinner.vue";
 

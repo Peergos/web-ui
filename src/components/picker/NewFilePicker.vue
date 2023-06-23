@@ -9,7 +9,7 @@
 				</header>
                 <Spinner v-if="showSpinner"></Spinner>
                 <div class="prompt__body">
-                    <div class="folder-picker-view" class="scroll-style">
+                    <div class="folder-picker-view scroll-style">
                       <ul>
                         <SelectableTreeItem class="item" :model="treeData" :selectFolder_func="selectFolder"></SelectableTreeItem>
                       </ul>
@@ -18,8 +18,7 @@
                         v-model="folder_result"
                         type="text"
                         disabled="true"
-                    >
-                    </input>
+                    />
                 </div>
 				<div class="prompt__body">
 					<input
@@ -32,8 +31,7 @@
 						:maxlength="maxLength"
 						@keyup.enter="getPrompt(this.prompt_result)"
 						autofocus
-					>
-					</input>
+					/>
 				</div>
 				<footer class="prompt__footer">
 					<AppButton outline @click.native="closePrompt()">
@@ -56,7 +54,7 @@
 
 <script>
 import AppButton from "../AppButton.vue";
-import SelectableTreeItem from "SelectableTreeItem.vue";
+import SelectableTreeItem from "./SelectableTreeItem.vue";
 import Spinner from "../spinner/Spinner.vue";
 import folderTreeMixin from "../../mixins/tree-walker/index.js";
 

@@ -14,7 +14,7 @@
           <tr>
             <td style="text-align:right; padding:20px">
               <input id="prompt-input" v-model="prompt_result" type="text"
-              v-bind:placeholder="placeholder" class="form-control" :maxlength="input_length" style="width:200px" v-on:keyup.enter="getPrompt" autofocus></input>
+              v-bind:placeholder="placeholder" class="form-control" :maxlength="input_length" style="width:200px" v-on:keyup.enter="getPrompt" autofocus />
             </td>
             <td style="text-align:right"><button id='prompt-button-id' class="btn btn-success" @click="getPrompt(this.prompt_result)">OK</button></td>
           </tr>

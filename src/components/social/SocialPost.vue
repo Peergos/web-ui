@@ -51,11 +51,10 @@
                             </button>
                         </div>
                     </div>
-                </p>
+                </div>
             </div>
         </div>
     </div>
-</div>
 </transition>
 
 </template>

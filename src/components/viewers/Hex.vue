@@ -32,7 +32,7 @@
                     <td style="padding-left:25px">
                         <span v-for="(n, i) in 16">{{line.ascii[i] != null ? line.ascii[i] : ""}}</span>
                     </td>
-                <tr/>
+                </tr>
             </table>
         </center>
     </div>

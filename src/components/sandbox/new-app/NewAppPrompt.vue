@@ -24,8 +24,7 @@
 						:placeholder="placeholder"
 						:maxlength="maxLength"
 						autofocus
-					>
-					</input>
+					/>
 				</div>
                 <div class="prompt__body">
                     <span>

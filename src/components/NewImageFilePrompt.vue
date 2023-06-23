@@ -18,8 +18,7 @@
 						:maxlength="maxLength"
 						@keyup.enter="getPrompt(this.prompt_result)"
 						autofocus
-					>
-					</input>
+					/>
                     <div>
                         <label class="checkbox__group">
                             JPG
@@ -64,7 +63,7 @@
 </template>
 
 <script>
-import AppButton from "AppButton.vue";
+import AppButton from "./AppButton.vue";
 export default {
 	components: {
     	AppButton,

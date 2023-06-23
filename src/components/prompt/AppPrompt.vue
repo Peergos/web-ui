@@ -18,8 +18,7 @@
 						:maxlength="maxLength"
 						@keyup.enter="getPrompt(this.prompt_result)"
 						autofocus
-					>
-					</input>
+					/>
 				</div>
 				<footer class="prompt__footer">
 					<AppButton outline @click.native="closePrompt()">

@@ -9,7 +9,7 @@
         </div>
         <div class="modal-body">
             <Spinner v-if="showSpinner"></Spinner>
-            <div class="folder-picker-view" class="scroll-style">
+            <div class="folder-picker-view scroll-style">
               <ul>
                 <TreeItem class="item" :model="treeData" :selectFolder_func="selectFolder"></TreeItem>
               </ul>
@@ -19,7 +19,7 @@
             No folders selected...
             </div>
             <div v-if="selectedFoldersList.length != 0">
-                <div class="selected-folders-view" class="scroll-style">
+                <div class="selected-folders-view scroll-style">
                     <ul>
                         <li v-for="selectedFolder in selectedFoldersList">
                             {{ selectedFolder }}
