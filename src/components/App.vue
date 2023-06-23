@@ -87,6 +87,9 @@ import routerMixins from "../mixins/router/index.js";
 import launcherMixin from "../mixins/launcher/index.js";
 import sandboxAppMixins from "../mixins/sandbox/index.js";
 
+import { inject } from 'vue'
+const store = inject('store')
+
 export default {
 	components: {
 	    AppIcon,
@@ -183,7 +186,7 @@ export default {
 	},
 
     created() {
-	this.$store.commit("SET_CRYPTO", peergos.shared.Crypto.initJS());
+	store.commit("SET_CRYPTO", peergos.shared.Crypto.initJS());
 	this.updateNetwork();
 
 	window.addEventListener("hashchange", this.onUrlChange, false);
@@ -192,7 +195,7 @@ export default {
     mounted() {
 	let localTheme = localStorage.getItem("theme");
 	document.documentElement.setAttribute("data-theme", localTheme);
-	this.$store.commit("SET_THEME", localTheme == "dark-mode");
+	store.commit("SET_THEME", localTheme == "dark-mode");
     },
 
     methods: {
@@ -209,7 +212,7 @@ export default {
 	    } else {
             peergos.shared.user.App.init(this.context, "launcher").thenApply(launcher => {
                 that.loadShortcutsFile(launcher).thenApply(shortcutsMap => {
-                    that.$store.commit("SET_SHORTCUTS", shortcutsMap);
+                    store.commit("SET_SHORTCUTS", shortcutsMap);
                     that.updateUsage();
                     that.updateQuota();
                     that.updatePayment();
@@ -255,7 +258,7 @@ export default {
 
 	    if (differentPath && path != null) {
 		console.log('onUrlChange differentPath so we do: ', path.split("/").filter(x => x.length > 0))
-		this.$store.commit(
+		store.commit(
 		    "SET_PATH",
 		    path.split("/").filter((x) => x.length > 0)
 		);
@@ -268,9 +271,9 @@ export default {
                 if (inDrive) {
                     this.$refs.appView.closeApps()
                 } else 
-		    this.$store.commit("CURRENT_VIEW", app);
+		    store.commit("CURRENT_VIEW", app);
 	    } else if (sidebarApps.includes(app)) {
-		this.$store.commit("CURRENT_VIEW", app);
+		store.commit("CURRENT_VIEW", app);
 	    } else {
                 // Drive sub-apps
                 if (inDrive) {
@@ -282,7 +285,7 @@ export default {
                     } else
                         that.$refs.appView.openInApp(args, app);
                 } else {
-		    this.$store.commit("CURRENT_VIEW", "Drive");
+		    store.commit("CURRENT_VIEW", "Drive");
                     // TODO: find a cleaner way to do this
                     this.$refs.appView._data.onUpdateCompletion.push(() => {
 		        that.$refs.appView.openInApp(args, app);
@@ -297,7 +300,7 @@ export default {
 		!that.isLocalhost,
 		0, true
 	    ).thenApply(function (network) {
-		that.$store.commit("SET_NETWORK", network);
+		store.commit("SET_NETWORK", network);
 	    }).exceptionally(function (throwable) {
 		    that.$toast.error(
 			"Error connecting to network: " + throwable.getMessage()
@@ -333,18 +336,18 @@ export default {
 	// still need to check this
 	gotoSecretLink(props) {
 	    var that = this;
-            this.$store.commit("SET_IS_SECRET_LINK", true);
+            store.commit("SET_IS_SECRET_LINK", true);
 	    peergos.shared.user.UserContext.fromSecretLink(
 		props.link,
 		that.network,
 		that.crypto
 	    )
 		.thenApply(function (context) {
-		    that.$store.commit("SET_CONTEXT", context);
-		    that.$store.commit("SET_DOWNLOAD", props.download);
-		    that.$store.commit("SET_OPEN", props.open);
-		    that.$store.commit("SET_INIT_PATH", props.path);
-                    that.$store.commit("CURRENT_VIEW", "Drive");
+		    store.commit("SET_CONTEXT", context);
+		    store.commit("SET_DOWNLOAD", props.download);
+		    store.commit("SET_OPEN", props.open);
+		    store.commit("SET_INIT_PATH", props.path);
+                    store.commit("CURRENT_VIEW", "Drive");
 		})
 		.exceptionally(function (throwable) {
 		    that.$toast.error(

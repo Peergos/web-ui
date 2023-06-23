@@ -45,6 +45,9 @@
 import AppButton from "../AppButton.vue";
 import AppModal from "./AppModal.vue";
 
+import { inject } from 'vue'
+const store = inject('store')
+
 export default {
 	components: {
 	    AppButton,
@@ -133,11 +136,11 @@ export default {
                         
 			if (quotaBytes >= bytes && bytes > 0) {
 			    that.updatePayment()
-			    that.$store.commit("SET_MODAL", false)
+			    store.commit("SET_MODAL", false)
 			    that.$toast.info('Thank you for signing up to a paid Peergos account!',{timeout:false, id: 'pro'})                            
 			} else if (bytes == 0) {
 			    that.updatePayment()
-			    that.$store.commit("SET_MODAL", false)
+			    store.commit("SET_MODAL", false)
 			    that.$toast.error("Sorry to see you go. We'd love to know what we can do better. Make sure to delete enough data to return within your Basic quota. You will revert to the Basic quota at the end of the billing month.", {timeout:false, id: 'pro'})
 			} else if (quotaBytes < bytes && bytes > 0 ) {
                             that.updatePayment(() => {
@@ -180,7 +183,7 @@ export default {
             
 	    cancelPaid() {
                 this.requestStorage(0);
-		this.$store.commit("SET_MODAL", false);
+		store.commit("SET_MODAL", false);
             },
 	},
 };

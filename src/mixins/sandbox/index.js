@@ -1,5 +1,8 @@
 import ProgressBar from "../../components/drive/ProgressBar.vue";
 
+import { inject } from 'vue'
+const store = inject('store')
+
 export default {
     data() {
         return {
@@ -345,7 +348,7 @@ export default {
             let appIndex = appsInstalled.findIndex(v => v.name === app.name);
             if (appIndex > -1) {
                 appsInstalled.splice(appIndex, 1);
-                this.$store.commit("SET_SANDBOXED_APPS", appsInstalled);
+                store.commit("SET_SANDBOXED_APPS", appsInstalled);
             }
             this.sandboxedApps.appFileExtensionRegistrationMap.forEach(function(value, key) {
                 let updatedList = [];
@@ -380,13 +383,13 @@ export default {
                     appFileTypeRegistrationMap.set(key, updatedList);
                 }
             });
-            this.$store.commit("SET_FILE_EXTENSION_REGISTRATIONS", appFileExtensionRegistrationMap);
-            this.$store.commit("SET_MIMETYPE_REGISTRATIONS", appMimeTypeRegistrationMap);
-            this.$store.commit("SET_FILETYPE_REGISTRATIONS", appFileTypeRegistrationMap);
+            store.commit("SET_FILE_EXTENSION_REGISTRATIONS", appFileExtensionRegistrationMap);
+            store.commit("SET_MIMETYPE_REGISTRATIONS", appMimeTypeRegistrationMap);
+            store.commit("SET_FILETYPE_REGISTRATIONS", appFileTypeRegistrationMap);
 
-            this.$store.commit("SET_FILE_EXTENSION_WILDCARD_REGISTRATIONS", appFileExtensionWildcardRegistrationList);
-            this.$store.commit("SET_MIMETYPE_WILDCARD_REGISTRATIONS", appMimeTypeWildcardRegistrationList);
-            this.$store.commit("SET_FILETYPE_WILDCARD_REGISTRATIONS", appFileTypeWildcardRegistrationList);
+            store.commit("SET_FILE_EXTENSION_WILDCARD_REGISTRATIONS", appFileExtensionWildcardRegistrationList);
+            store.commit("SET_MIMETYPE_WILDCARD_REGISTRATIONS", appMimeTypeWildcardRegistrationList);
+            store.commit("SET_FILETYPE_WILDCARD_REGISTRATIONS", appFileTypeWildcardRegistrationList);
         },
         registerApp: function(props) {
             var appsInstalled = this.sandboxedApps.appsInstalled.slice();
@@ -456,15 +459,15 @@ export default {
                     appFileTypeRegistrationMap.set(fileType, currentMapping);
                 }
             });
-            this.$store.commit("SET_FILE_EXTENSION_REGISTRATIONS", appFileExtensionRegistrationMap);
-            this.$store.commit("SET_MIMETYPE_REGISTRATIONS", appMimeTypeRegistrationMap);
-            this.$store.commit("SET_FILETYPE_REGISTRATIONS", appFileTypeRegistrationMap);
+            store.commit("SET_FILE_EXTENSION_REGISTRATIONS", appFileExtensionRegistrationMap);
+            store.commit("SET_MIMETYPE_REGISTRATIONS", appMimeTypeRegistrationMap);
+            store.commit("SET_FILETYPE_REGISTRATIONS", appFileTypeRegistrationMap);
 
-            this.$store.commit("SET_FILE_EXTENSION_WILDCARD_REGISTRATIONS", appFileExtensionWildcardRegistrationList);
-            this.$store.commit("SET_MIMETYPE_WILDCARD_REGISTRATIONS", appMimeTypeWildcardRegistrationList);
-            this.$store.commit("SET_FILETYPE_WILDCARD_REGISTRATIONS", appFileTypeWildcardRegistrationList);
+            store.commit("SET_FILE_EXTENSION_WILDCARD_REGISTRATIONS", appFileExtensionWildcardRegistrationList);
+            store.commit("SET_MIMETYPE_WILDCARD_REGISTRATIONS", appMimeTypeWildcardRegistrationList);
+            store.commit("SET_FILETYPE_WILDCARD_REGISTRATIONS", appFileTypeWildcardRegistrationList);
 
-            this.$store.commit("SET_SANDBOXED_APPS", appsInstalled);
+            store.commit("SET_SANDBOXED_APPS", appsInstalled);
         },
   }
 }

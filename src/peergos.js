@@ -2,8 +2,6 @@
 import { createApp } from 'vue'
 import App from './components/App.vue'
 
-createApp(App).mount('#app')
-
 Vue.directive('focus', {
   inserted: function (el) {
     // Focus the element

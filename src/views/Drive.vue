@@ -267,6 +267,9 @@ import zipMixin from "../mixins/zip/index.js";
 import router from "../mixins/router/index.js";
 import launcherMixin from "../mixins/launcher/index.js";
 
+import { inject } from 'vue'
+const store = inject('store')
+
 export default {
 	components: {
 	    AppInstall,
@@ -797,7 +800,7 @@ export default {
 			    this.context.getEntryPath().thenApply(function (linkPath) {
 				var path = that.initPath == null ? null : decodeURIComponent(that.initPath);
 				if (path != null && (path.startsWith(linkPath) || linkPath.startsWith(path))) {
-                                    that.$store.commit('SET_PATH', path.split('/').filter(n => n.length > 0))
+                                    store.commit('SET_PATH', path.split('/').filter(n => n.length > 0))
                                     if (that.download || that.open) {
 				        that.context.getByPath(path)
 				            .thenApply(function (file) {
@@ -821,7 +824,7 @@ export default {
 				            });
                                     }
 				} else {
-                                    that.$store.commit('SET_PATH', linkPath.split('/').filter(n => n.length > 0))
+                                    store.commit('SET_PATH', linkPath.split('/').filter(n => n.length > 0))
                                     if (that.download) {
                                         var download = () => {
                                             that.downloadFile(that.files[0]);
@@ -887,10 +890,10 @@ export default {
 					};
 					this.onUpdateCompletion.push(open);
 
-					this.$store.commit('SET_PATH', pathFromUrl.split('/').filter(n => n.length > 0))
+					store.commit('SET_PATH', pathFromUrl.split('/').filter(n => n.length > 0))
 
 				} else {
-					this.$store.commit('SET_PATH', [this.context.username])
+					store.commit('SET_PATH', [this.context.username])
 					this.updateHistory('Drive', this.getPath, {filename:""})
 				}
 
@@ -905,7 +908,7 @@ export default {
 					} else
 						that.context.getPendingSpaceRequests().thenApply(reqs => {
 							if (reqs.toArray([]).length > 0)
-								that.$store.commit('USER_ADMIN', true);
+								store.commit('USER_ADMIN', true);
 						});
 				});
 			}
@@ -923,7 +926,7 @@ export default {
 
 		onResize() {
 			this.closeMenu()
-			this.$store.commit('SET_WINDOW_WIDTH', window.innerWidth)
+			store.commit('SET_WINDOW_WIDTH', window.innerWidth)
 		},
         installApp() {
             this.closeMenu();
@@ -988,7 +991,7 @@ export default {
 		},
 		showFiles(data) {
 			// this.path = data.path;
-			this.$store.commit('SET_PATH', data.path)
+			store.commit('SET_PATH', data.path)
 
 		},
 		processPending() {
@@ -1585,7 +1588,7 @@ export default {
                             uploadParams.triggerRefresh = false;
                             if (!that.isSecretLink) {
                                 that.context.getSpaceUsage().thenApply(u => {
-                                    that.$store.commit('SET_USAGE', u);
+                                    store.commit('SET_USAGE', u);
                                 });
                             }
                             that.updateCurrentDirectory();
@@ -2038,7 +2041,7 @@ export default {
                     shortcutsMap.set(link, entry)
                     that.updateShortcutsFile(that.launcherApp, shortcutsMap).thenApply(res => {
                         that.showSpinner = false;
-                        that.$store.commit("SET_SHORTCUTS", shortcutsMap);
+                        store.commit("SET_SHORTCUTS", shortcutsMap);
                     });
                 } else {
                     that.showSpinner = false;
@@ -2072,7 +2075,7 @@ export default {
 
 		updateContext(newContext) {
 			// this.context = newContext;
-			this.$store.commit('SET_CONTEXT', newContext);
+			store.commit('SET_CONTEXT', newContext);
 
 		},
 
@@ -2086,7 +2089,7 @@ export default {
 
 			// this.path = path ? path.split('/') : [];
 		        let pathArr = path.length > 0 ? path.split('/') : []
-                        this.$store.commit('SET_PATH', pathArr)
+                        store.commit('SET_PATH', pathArr)
 
 			this.showSpinner = true;
 			this.updateHistory("Drive", path, {filename:""});

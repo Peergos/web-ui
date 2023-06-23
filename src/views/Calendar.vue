@@ -65,6 +65,9 @@ import Spinner from "../components/spinner/Spinner.vue";
 
 import routerMixins from "../mixins/router/index.js";
 
+import { inject } from 'vue'
+const store = inject('store')
+
 export default {
     components: {
         Choice,
@@ -251,7 +254,7 @@ export default {
         }
     },
     sendPing: function(iframe) {
-        let theme = this.$store.getters.currentTheme;
+        let theme = store.getters.currentTheme;
         iframe.contentWindow.postMessage({type: 'ping', currentTheme: theme, hasEmail: this.hasEmail}, '*');
     },
     initialiseIFrameCommunication: function(iframe, callback, retryCount){

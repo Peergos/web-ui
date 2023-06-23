@@ -23,6 +23,9 @@
 import AppButton from "../AppButton.vue";
 import AppModal from "./AppModal.vue";
 
+import { inject } from 'vue'
+const store = inject('store')
+
 export default {
 	components: {
 	    AppButton,
@@ -40,10 +43,10 @@ export default {
 		]),
       currentFeedback: {
         get () {
-          return this.$store.getters.getCurrentFeedback;
+          return store.getters.getCurrentFeedback;
         },
         set (value) {
-          this.$store.commit("SET_CURRENT_FEEDBACK", value);
+          store.commit("SET_CURRENT_FEEDBACK", value);
         }
       }
     },
@@ -60,8 +63,8 @@ export default {
                             if (res) {
                                 console.log("Feedback submitted!");
                                 that.$toast.info('Feedback sent. Thank you!',{timeout:false, position: 'bottom-left' })
-                                that.$store.commit("SET_MODAL", false);
-                                that.$store.commit("SET_CURRENT_FEEDBACK", "");
+                                store.commit("SET_MODAL", false);
+                                store.commit("SET_CURRENT_FEEDBACK", "");
                             } else {
                                 that.$toast.error('Error sending feedback',{timeout:false, position: 'bottom-left' })
                             }

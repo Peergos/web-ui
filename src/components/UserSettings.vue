@@ -126,6 +126,9 @@ import AppIcon from "./AppIcon.vue";
 import AppPrompt from "./prompt/AppPrompt.vue";
 import Spinner from "./spinner/Spinner.vue";
 
+import { inject } from 'vue'
+const store = inject('store')
+
 export default {
     components: {
         Admin,
@@ -162,7 +165,7 @@ export default {
             this.context.cleanPartialUploads().thenApply(snapshot => {
                 that.showSettingsSpinner = false;
                 that.context.getSpaceUsage().thenApply(u => {
-                    that.$store.commit('SET_USAGE', u);
+                    store.commit('SET_USAGE', u);
                 });
             }).exceptionally(function(throwable) {
                 let errMsg = throwable.getMessage();
@@ -261,45 +264,45 @@ export default {
 		},
 	    showRequestStorage() {
                 if(this.isPaid){
-		    this.$store.commit('CURRENT_MODAL', 'ModalPro');
+		    store.commit('CURRENT_MODAL', 'ModalPro');
 		}else{
-		    this.$store.commit('CURRENT_MODAL', 'ModalSpace');
+		    store.commit('CURRENT_MODAL', 'ModalSpace');
 		}
 	    },
 		showProfile() {
-			this.$store.commit("CURRENT_MODAL", "ModalProfile");
+			store.commit("CURRENT_MODAL", "ModalProfile");
 		},
 		launchHelp() {
-			this.$store.commit("CURRENT_MODAL", "ModalHelp");
+			store.commit("CURRENT_MODAL", "ModalHelp");
 		},
 		showTour() {
-			this.$store.commit("CURRENT_MODAL", "ModalTour");
+			store.commit("CURRENT_MODAL", "ModalTour");
 		},
 		showFeedback() {
-			this.$store.commit("CURRENT_MODAL", "ModalFeedback");
+			store.commit("CURRENT_MODAL", "ModalFeedback");
 		},
         showAuthenticationScreen() {
-            this.$store.commit("CURRENT_MODAL", "ModalAuthSettings");
+            store.commit("CURRENT_MODAL", "ModalAuthSettings");
         },
 		showChangePassword() {
-			this.$store.commit("CURRENT_MODAL", "ModalPassword");
+			store.commit("CURRENT_MODAL", "ModalPassword");
 		},
 		showViewAccount() {
-			this.$store.commit("CURRENT_MODAL", "ModalAccount");
+			store.commit("CURRENT_MODAL", "ModalAccount");
 		},
 		logout() {
 		    let that = this;
 		    clearRootKeyCacheFully(cleared =>  {
-                that.$store.commit("SET_CONTEXT", null);
+                store.commit("SET_CONTEXT", null);
                 window.location.fragment = "";
                 window.location.reload();
             });
 		},
 		toggleSidebar() {
-			this.$store.commit("TOGGLE_SIDEBAR");
+			store.commit("TOGGLE_SIDEBAR");
 		},
 		toggleTheme() {
-			this.$store.commit("TOGGLE_THEME");
+			store.commit("TOGGLE_THEME");
 			document.documentElement.setAttribute(
 				"data-theme",
 				this.currentTheme

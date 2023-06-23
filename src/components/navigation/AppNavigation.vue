@@ -43,6 +43,9 @@ import AppIcon from "../AppIcon.vue";
 import MenuItem from './NavigationMenuItem.vue';
 import NavigationStorage from './NavigationStorage.vue';
 
+import { inject } from 'vue'
+const store = inject('store')
+
 export default {
 	components: {
 	    AppButton,
@@ -52,13 +55,13 @@ export default {
 	},
 	computed: {
 		isOpen() {
-			return this.$store.state.isSidebarOpen;
+			return store.state.isSidebarOpen;
 		},
 		currentTheme() {
-			return this.$store.getters.currentTheme;
+			return store.getters.currentTheme;
 		},
 		isDark() {
-			return this.$store.state.isDark;
+			return store.state.isDark;
 		},
         showChat() {
             var query = new URLSearchParams(window.location.search)
@@ -71,10 +74,10 @@ export default {
 	},
 	methods: {
 		toggleSidebar() {
-			this.$store.commit("TOGGLE_SIDEBAR");
+			store.commit("TOGGLE_SIDEBAR");
 		},
 		toggleTheme() {
-			this.$store.commit("TOGGLE_THEME");
+			store.commit("TOGGLE_THEME");
 
 			document.documentElement.setAttribute(
 				"data-theme",

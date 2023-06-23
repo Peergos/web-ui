@@ -101,6 +101,9 @@
     <copy todir="${ui}/css/" overwrite="true">
       <fileset dir="." includes="peergos.css"/>
     </copy>
+    <copy todir="${ui}/js">
+      <fileset file="${peergos_project_root}/war/peergoslib/*cache.js"/>
+    </copy>
     <delete file="tmp.css"/>
     <delete file="peergos.css"/>
   </target>
@@ -129,7 +132,19 @@
     <delete file="peergos.css"/>
   </target>
 
-  <target name="ui" depends="init,ui_dev_vendor,assets,css,js" description="build our part of the ui">
+  <target name="vite">
+    <exec executable="./native-build/graalvm-community-openjdk-17.0.7+7.1/bin/node" dir="." failonerror="true" >
+      <arg value="--experimental-options"/>
+      <arg value="--js.webassembly"/>
+      <arg value="--polyglot"/>
+      <arg value="node_modules/vite/bin/vite.js"/>
+      <arg value="build"/>
+      <arg value="--outDir"/>
+      <arg value="server/webroot"/>
+    </exec>
+  </target>
+  
+  <target name="ui" depends="init,vite,ui_dev_vendor,assets,css,js" description="build our part of the ui">
   </target>
 
   <target name="ui_dev" depends="init,ui_dev_vendor,assets,css,js_dev" description="build our part of the ui in dev mode">

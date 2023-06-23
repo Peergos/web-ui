@@ -33,6 +33,9 @@
 import AppButton from "../AppButton.vue";
 import AppModal from "./AppModal.vue";
 
+import { inject } from 'vue'
+const store = inject('store')
+
 export default {
     components: {
         AppButton,
@@ -86,7 +89,7 @@ export default {
             })
         },
 		close(){
-			this.$store.commit("SET_MODAL", false);
+			store.commit("SET_MODAL", false);
 		}
 
 	},

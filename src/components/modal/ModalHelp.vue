@@ -121,6 +121,9 @@
 </template>
 
 <script>
+import { inject } from 'vue'
+const store = inject('store')
+    
 export default {
     components: {
     },
@@ -144,7 +147,7 @@ export default {
     },
     methods: {
         close: function () {
-            this.$store.commit("SET_MODAL", false);
+            store.commit("SET_MODAL", false);
         }
     }
 }

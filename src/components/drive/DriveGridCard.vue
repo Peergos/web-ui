@@ -25,6 +25,9 @@
 import AppButton from "../AppButton.vue";
 import AppIcon from "../AppIcon.vue";
 
+import { inject } from 'vue'
+const store = inject('store')
+
 export default {
     components: {
         AppButton,
@@ -61,7 +64,7 @@ export default {
 	},
 	methods:{
 		showMenu(e){
-			this.$store.commit('SET_DRIVE_MENU_TARGET', e.currentTarget)
+			store.commit('SET_DRIVE_MENU_TARGET', e.currentTarget)
 			this.$emit('openMenu')
 		}
 	}

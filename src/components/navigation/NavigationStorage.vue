@@ -10,6 +10,9 @@
 <script>
 import AppButton from "../AppButton.vue";
 
+import { inject } from 'vue'
+const store = inject('store')
+
 export default {
 	components: {
 	    AppButton,
@@ -30,9 +33,9 @@ export default {
 	methods: {
 		showRequestStorage() {
 			if(this.isPaid){
-				this.$store.commit('CURRENT_MODAL', 'ModalPro');
+				store.commit('CURRENT_MODAL', 'ModalPro');
 			}else{
-				this.$store.commit('CURRENT_MODAL', 'ModalSpace');
+				store.commit('CURRENT_MODAL', 'ModalSpace');
 			}
 		},
 	},

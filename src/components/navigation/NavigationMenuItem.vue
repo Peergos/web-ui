@@ -13,6 +13,9 @@ import AppButton from "../AppButton.vue";
 import AppIcon from "../AppIcon.vue";
 import router from "../../mixins/router/index.js";
 
+import { inject } from 'vue'
+const store = inject('store')
+
 export default {
 	components: {
 	    AppButton,
@@ -41,14 +44,14 @@ export default {
                     'getPath'
 		]),
 		isCurrentView() {
-			return  this.view === this.$store.state.currentView;
+			return  this.view === store.state.currentView;
 		},
 
 	},
 	methods: {
 		setView(view) {
 			if(this.isMobile){
-				this.$store.commit("TOGGLE_SIDEBAR");
+				store.commit("TOGGLE_SIDEBAR");
 			}
 			this.openFileOrDir(view, this.context.username, {filename:""});
 		},
