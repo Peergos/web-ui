@@ -5,8 +5,7 @@
 </template>
 
 <script>
-// export default {
-module.exports = {
+ export default {
 	name: "AppIcon",
 	props: {
 		icon: {

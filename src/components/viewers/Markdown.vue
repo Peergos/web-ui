@@ -35,15 +35,15 @@
 </template>
 
 <script>
-    const Confirm = require("../confirm/Confirm.vue");
-    const Gallery = require("../drive/DriveGallery.vue");
-    const Spinner = require("../spinner/Spinner.vue");
+    import Confirm from "../confirm/Confirm.vue";
+    import Gallery from "../drive/DriveGallery.vue";
+    import Spinner from "../spinner/Spinner.vue";
 
-    const launcherMixin = require("../../mixins/launcher/index.js");
-    const mixins = require("../../mixins/downloader/index.js");
-    const routerMixins = require("../../mixins/router/index.js");
+    import launcherMixin from "../../mixins/launcher/index.js";
+    import mixins from "../../mixins/downloader/index.js";
+    import routerMixins from "../../mixins/router/index.js";
 
-module.exports = {
+export default {
     components: {
         Confirm,
         Gallery,

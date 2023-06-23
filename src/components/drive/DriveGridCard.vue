@@ -22,10 +22,10 @@
 </template>
 
 <script>
-const AppButton = require("../AppButton.vue");
-const AppIcon = require("../AppIcon.vue");
+import AppButton from "../AppButton.vue";
+import AppIcon from "../AppIcon.vue";
 
-module.exports = {
+export default {
     components: {
         AppButton,
 	    AppIcon,

@@ -236,21 +236,21 @@
 </template>
 
 <script>
-const AppButton = require("../components/AppButton.vue");
-const AppHeader = require("../components/AppHeader.vue");
-const AppIcon = require("../components/AppIcon.vue");
-const AppInstall = require("../components/sandbox/AppInstall.vue");
-const Confirm = require("../components/confirm/Confirm.vue");
-const SocialPost = require("../components/social/SocialPost.vue");
-const Gallery = require("../components/drive/DriveGallery.vue");
-const ViewProfile = require("../components/profile/ViewProfile.vue");
-const AppSandbox = require("../components/sandbox/AppSandbox.vue");
-const Spinner = require("../components/spinner/Spinner.vue");
+import AppButton from "../components/AppButton.vue";
+import AppHeader from "../components/AppHeader.vue";
+import AppIcon from "../components/AppIcon.vue";
+import AppInstall from "../components/sandbox/AppInstall.vue";
+import Confirm from "../components/confirm/Confirm.vue";
+import SocialPost from "../components/social/SocialPost.vue";
+import Gallery from "../components/drive/DriveGallery.vue";
+import ViewProfile from "../components/profile/ViewProfile.vue";
+import AppSandbox from "../components/sandbox/AppSandbox.vue";
+import Spinner from "../components/spinner/Spinner.vue";
 
-const routerMixins = require("../mixins/router/index.js");
-const mixins = require("../mixins/mixins.js");
+import routerMixins from "../mixins/router/index.js";
+import mixins from "../mixins/mixins.js";
 
-module.exports = {
+export default {
     components: {
 		SocialPost,
 		Gallery,

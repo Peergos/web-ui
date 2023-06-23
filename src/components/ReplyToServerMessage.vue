@@ -62,6 +62,7 @@
                 <p>
                     <textarea id="feedback-text" spellcheck="true" style="width:100%" rows=5 :placeholder="textAreaPlaceholder" maxlength="1000"></textarea>
                 </p>
+                <p>
                 <button class="btn btn-success" 
                         style = "width:100%"
                     @click="submitFeedback()">
@@ -76,9 +77,9 @@
 </template>
 
 <script>
-const Spinner = require("./spinner/Spinner.vue");
+import Spinner from "./spinner/Spinner.vue";
 
-module.exports = {
+export default {
 	components: {
 	    Spinner
 	},

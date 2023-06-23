@@ -166,22 +166,23 @@
 </template>
 
 <script>
-const AppInstall = require("../components/sandbox/AppInstall.vue");
-const AppHeader = require("../components/AppHeader.vue");
-const AppDetails = require("../components/sandbox/AppDetails.vue");
-const AppGrid = require("../components/app-grid/AppGrid.vue");
-const AppSandbox = require("../components/sandbox/AppSandbox.vue");
-const Confirm = require("../components/confirm/Confirm.vue");
-const NewFilePicker = require("../components/picker/NewFilePicker.vue");
-const Replace = require("../components/replace/Replace.vue");
-const Share = require("../components/drive/DriveShare.vue");
-const Spinner = require("../components/spinner/Spinner.vue");
+import AppInstall from "../components/sandbox/AppInstall.vue";
+import AppHeader from "../components/AppHeader.vue";
+import AppDetails from "../components/sandbox/AppDetails.vue";
+import AppGrid from "../components/app-grid/AppGrid.vue";
+import AppSandbox from "../components/sandbox/AppSandbox.vue";
+import Confirm from "../components/confirm/Confirm.vue";
+import NewFilePicker from "../components/picker/NewFilePicker.vue";
+import Replace from "../components/replace/Replace.vue";
+import Share from "../components/drive/DriveShare.vue";
+import Spinner from "../components/spinner/Spinner.vue";
 
-const routerMixins = require("../mixins/router/index.js");
-const mixins = require("../mixins/mixins.js");
-const launcherMixin = require("../mixins/launcher/index.js");
-const sandboxMixin = require("../mixins/sandbox/index.js");
-module.exports = {
+import routerMixins from "../mixins/router/index.js";
+import mixins from "../mixins/mixins.js";
+import launcherMixin from "../mixins/launcher/index.js";
+import sandboxMixin from "../mixins/sandbox/index.js";
+
+export default {
     components: {
         AppInstall,
 		AppHeader,

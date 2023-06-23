@@ -17,11 +17,11 @@
 </template>
 
 <script>
-const sandboxMixin = require("../../mixins/sandbox/index.js");
-const AppSandbox = require("./AppSandbox.vue");
-const Spinner = require("../spinner/Spinner.vue");
+import sandboxMixin from "../../mixins/sandbox/index.js";
+import AppSandbox from "./AppSandbox.vue";
+import Spinner from "../spinner/Spinner.vue";
 
-module.exports = {
+export default {
     components: {
 		AppSandbox,
 		Spinner

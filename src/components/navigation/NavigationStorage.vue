@@ -8,8 +8,9 @@
 </template>
 
 <script>
-const AppButton = require("../AppButton.vue");
-module.exports = {
+import AppButton from "../AppButton.vue";
+
+export default {
 	components: {
 	    AppButton,
 	},

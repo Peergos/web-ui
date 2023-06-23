@@ -127,16 +127,16 @@
 </template>
 
 <script>
-const AppButton = require("../components/AppButton.vue");
-const AppHeader = require("../components/AppHeader.vue");
-const ViewProfile = require("../components/profile/ViewProfile.vue");
-const Fingerprint = require("../components/fingerprint/Fingerprint.vue");
-const FormAutocomplete = require("../components/form/FormAutocomplete.vue");
-const Spinner = require("../components/spinner/Spinner.vue");
+import AppButton from "../components/AppButton.vue";
+import AppHeader from "../components/AppHeader.vue";
+import ViewProfile from "../components/profile/ViewProfile.vue";
+import Fingerprint from "../components/fingerprint/Fingerprint.vue";
+import FormAutocomplete from "../components/form/FormAutocomplete.vue";
+import Spinner from "../components/spinner/Spinner.vue";
 
-const routerMixins = require("../mixins/router/index.js");
+import routerMixins from "../mixins/router/index.js";
 
-module.exports = {
+export default {
 	components: {
     	Fingerprint,
 	    FormAutocomplete,

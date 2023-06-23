@@ -19,7 +19,7 @@
 </template>
 
 <script>
-module.exports = {
+export default {
   name: 'TreeItem', // necessary for self-reference
   props: {
     model: Object,

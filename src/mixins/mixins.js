@@ -1,4 +1,4 @@
-module.exports = {
+export default {
 	// created() {
 	// 	console.log('hello from mixing')
 	// },

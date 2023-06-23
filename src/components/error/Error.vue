@@ -27,7 +27,7 @@
 </template>
 
 <script>
-module.exports = {
+export default {
     props: ['title', 'body'],
     created: function() {
     },

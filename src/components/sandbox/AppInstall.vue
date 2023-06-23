@@ -67,13 +67,13 @@
 </template>
 
 <script>
-const Confirm = require("../confirm/Confirm.vue");
-const Spinner = require("../spinner/Spinner.vue");
-const mixins = require("../../mixins/mixins.js");
-const downloaderMixin = require("../../mixins/downloader/index.js");
-const sandboxMixin = require("../../mixins/sandbox/index.js");
+import Confirm from "../confirm/Confirm.vue";
+import Spinner from "../spinner/Spinner.vue";
+import mixins from "../../mixins/mixins.js";
+import downloaderMixin from "../../mixins/downloader/index.js";
+import sandboxMixin from "../../mixins/sandbox/index.js";
 
-module.exports = {
+export default {
     components: {
         Confirm,
         Spinner

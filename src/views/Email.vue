@@ -40,18 +40,18 @@
 </template>
 
 <script>
-const AppHeader = require("../components/AppHeader.vue");
-const Confirm = require("../components/confirm/Confirm.vue");
-const Gallery = require("../components/drive/DriveGallery.vue");
-const ProgressBar = require("../components/drive/ProgressBar.vue");
-const Prompt = require("../components/prompt/Prompt.vue");
-const Spinner = require("../components/spinner/Spinner.vue");
+import AppHeader from "../components/AppHeader.vue";
+import Confirm from "../components/confirm/Confirm.vue";
+import Gallery from "../components/drive/DriveGallery.vue";
+import ProgressBar from "../components/drive/ProgressBar.vue";
+import Prompt from "../components/prompt/Prompt.vue";
+import Spinner from "../components/spinner/Spinner.vue";
 
-const mixins = require("../mixins/mixins.js");
-const routerMixins = require("../mixins/router/index.js");
-const downloaderMixins = require("../mixins/downloader/index.js");
+import mixins from "../mixins/mixins.js";
+import routerMixins from "../mixins/router/index.js";
+import downloaderMixins from "../mixins/downloader/index.js";
 
-module.exports = {
+export default {
     components: {
         Confirm,
 		Gallery,

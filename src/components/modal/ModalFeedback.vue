@@ -20,10 +20,10 @@
 </template>
 
 <script>
-const AppButton = require("../AppButton.vue");
-const AppModal = require("AppModal.vue");
+import AppButton from "../AppButton.vue";
+import AppModal from "./AppModal.vue";
 
-module.exports = {
+export default {
 	components: {
 	    AppButton,
     	AppModal

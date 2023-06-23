@@ -231,43 +231,43 @@
 
 <script>
 
-const AppInstall = require("../components/sandbox/AppInstall.vue");
-const AppRunner = require("../components/sandbox/AppRunner.vue");
-const AppSandbox = require("../components/sandbox/AppSandbox.vue");
-const CodeEditor = require("../components/code-editor/CodeEditor.vue");
-const Confirm = require("../components/confirm/Confirm.vue");
-const DriveHeader = require("../components/drive/DriveHeader.vue");
-const DriveGrid = require("../components/drive/DriveGrid.vue");
-const DriveGridCard = require("../components/drive/DriveGridCard.vue");
-const DriveGridDrop = require("../components/drive/DriveGridDrop.vue");
-const DriveTable = require("../components/drive/DriveTable.vue");
-const Error = require("../components/error/Error.vue");
-const Gallery = require("../components/drive/DriveGallery.vue");
-const Identity = require("../components/identity-proof-viewer.vue");
-const Share = require("../components/drive/DriveShare.vue");
-const Search = require("../components/Search.vue");
-const Markdown = require("../components/viewers/Markdown.vue");
-const Hex = require("../components/viewers/Hex.vue");
-const ProgressBar = require("../components/drive/ProgressBar.vue");
-const DriveMenu = require("../components/drive/DriveMenu.vue");
+import AppInstall from "../components/sandbox/AppInstall.vue";
+import AppRunner from "../components/sandbox/AppRunner.vue";
+import AppSandbox from "../components/sandbox/AppSandbox.vue";
+import CodeEditor from "../components/code-editor/CodeEditor.vue";
+import Confirm from "../components/confirm/Confirm.vue";
+import DriveHeader from "../components/drive/DriveHeader.vue";
+import DriveGrid from "../components/drive/DriveGrid.vue";
+import DriveGridCard from "../components/drive/DriveGridCard.vue";
+import DriveGridDrop from "../components/drive/DriveGridDrop.vue";
+import DriveTable from "../components/drive/DriveTable.vue";
+import Error from "../components/error/Error.vue";
+import Gallery from "../components/drive/DriveGallery.vue";
+import Identity from "../components/identity-proof-viewer.vue";
+import Share from "../components/drive/DriveShare.vue";
+import Search from "../components/Search.vue";
+import Markdown from "../components/viewers/Markdown.vue";
+import Hex from "../components/viewers/Hex.vue";
+import ProgressBar from "../components/drive/ProgressBar.vue";
+import DriveMenu from "../components/drive/DriveMenu.vue";
 
-const AppPrompt = require("../components/prompt/AppPrompt.vue");
-const NewImageFilePrompt = require("../components/NewImageFilePrompt.vue");
-const NewAppPrompt = require("../components/sandbox/new-app/NewAppPrompt.vue");
-const FolderProperties = require("../components/FolderProperties.vue");
-const Pdf = require("../components/pdf/PDF.vue");
-const Replace = require("../components/replace/Replace.vue");
-const Spinner = require("../components/spinner/Spinner.vue");
-const Warning = require('../components/Warning.vue');
+import AppPrompt from "../components/prompt/AppPrompt.vue";
+import NewImageFilePrompt from "../components/NewImageFilePrompt.vue";
+import NewAppPrompt from "../components/sandbox/new-app/NewAppPrompt.vue";
+import FolderProperties from "../components/FolderProperties.vue";
+import Pdf from "../components/pdf/PDF.vue";
+import Replace from "../components/replace/Replace.vue";
+import Spinner from "../components/spinner/Spinner.vue";
+import Warning from '../components/Warning.vue';
 
-const helpers = require("../mixins/storage/index.js");
-const downloaderMixins = require("../mixins/downloader/index.js");
-const zipMixin = require("../mixins/zip/index.js");
+import helpers from "../mixins/storage/index.js";
+import downloaderMixins from "../mixins/downloader/index.js";
+import zipMixin from "../mixins/zip/index.js";
 
-const router = require("../mixins/router/index.js");
-const launcherMixin = require("../mixins/launcher/index.js");
+import router from "../mixins/router/index.js";
+import launcherMixin from "../mixins/launcher/index.js";
 
-module.exports = {
+export default {
 	components: {
 	    AppInstall,
 	    AppRunner,

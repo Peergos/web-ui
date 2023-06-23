@@ -61,10 +61,10 @@
 </template>
 
 <script>
-const ProgressBar = require("../drive/ProgressBar.vue");
-const Spinner = require("../spinner/Spinner.vue");
+import ProgressBar from "../drive/ProgressBar.vue";
+import Spinner from "../spinner/Spinner.vue";
 
-module.exports = {
+export default {
     components: {
 		ProgressBar,
 		Spinner

@@ -49,11 +49,11 @@
 </template>
 
 <script>
-const FormAutocomplete = require("../form/FormAutocomplete.vue");
-const Spinner = require("../spinner/Spinner.vue");
-const routerMixins = require("../../mixins/router/index.js");
+import FormAutocomplete from "../form/FormAutocomplete.vue";
+import Spinner from "../spinner/Spinner.vue";
+import routerMixins from "../../mixins/router/index.js";
 
-module.exports = {
+export default {
 	components: {
 	    FormAutocomplete,
 	    Spinner

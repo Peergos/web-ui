@@ -24,9 +24,9 @@
 </template>
 
 <script>
-const AppButton = require("AppButton.vue");
+import AppButton from "AppButton.vue";
 
-module.exports = {
+export default {
     components: {
         AppButton,
     },

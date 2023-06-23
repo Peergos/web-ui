@@ -1,6 +1,8 @@
 
-var App  			= require('./components/App.vue');
-Vue.component('App', Vue.extend(App));
+import { createApp } from 'vue'
+import App from './components/App.vue'
+
+createApp(App).mount('#app')
 
 Vue.directive('focus', {
   inserted: function (el) {
@@ -12,7 +14,7 @@ Vue.directive('focus', {
 Vue.config.productionTip = false;
 
 Vue.use(Vuex);
-var store = require('./store/index.js');
+import store from './store/index.js';
 
 const ToastOptions = {
 	hideProgressBar: true,
@@ -25,16 +27,7 @@ Vue.use( VueToastification.default, ToastOptions);
 
 // Initializing Vue after GWT has finished
 setTimeout(function() {
-    var vueRoot = new Vue({
-		el: '#app',
-		store,
-        data: {
-            currentView: 'App',
-        },
-        render: function() {
-            with(this){return _c('div',{staticClass:"fillspace",attrs:{"id":"app"}},[_c(currentView,{tag:"component"})],1)}
-        }
-    });
+    createApp(App).provide('store', store).mount('#app');
 }, 500);
 
 console.log("█╗█╗█╗█╗   ██████╗ ███████╗███████╗██████╗  ██████╗  ██████╗ ███████╗   █╗█╗█╗█╗\n" +

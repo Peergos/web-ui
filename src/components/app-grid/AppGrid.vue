@@ -32,7 +32,7 @@
 </template>
 <script>
 
-module.exports = {
+export default {
     components: {
     },
     data: function() {

@@ -15,7 +15,7 @@
 </template>
 
 <script>
-module.exports = {
+export default {
   name: 'SelectableTreeItem', // necessary for self-reference
   props: {
     model: Object,

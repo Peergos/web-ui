@@ -18,8 +18,8 @@
 </template>
 
 <script>
-const AppIcon = require("AppIcon.vue");
-module.exports = {
+import AppIcon from "./AppIcon.vue";
+export default {
 	components: {
 	    AppIcon,
 	},

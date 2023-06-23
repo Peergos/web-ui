@@ -22,11 +22,11 @@
 </template>
 
 <script>
-const Spinner = require("../spinner/Spinner.vue");
-const Warning = require('../Warning.vue');
-const downloaderMixins = require("../../mixins/downloader/index.js");
+import Spinner from "../spinner/Spinner.vue";
+import Warning from '../Warning.vue';
+import downloaderMixins from "../../mixins/downloader/index.js";
 
-module.exports = {
+export default {
 	components: {
     	Spinner,
 	    Warning,

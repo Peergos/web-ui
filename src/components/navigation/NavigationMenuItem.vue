@@ -9,10 +9,11 @@
 </template>
 
 <script>
-const AppButton = require("../AppButton.vue");
-const AppIcon = require("../AppIcon.vue");
-const router = require("../../mixins/router/index.js");
-module.exports = {
+import AppButton from "../AppButton.vue";
+import AppIcon from "../AppIcon.vue";
+import router from "../../mixins/router/index.js";
+
+export default {
 	components: {
 	    AppButton,
     	AppIcon,

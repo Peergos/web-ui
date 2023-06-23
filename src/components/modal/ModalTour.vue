@@ -12,10 +12,10 @@
 </template>
 
 <script>
-const AppModal = require("AppModal.vue");
-const Slider = require("../slider/Slider.vue");
+import AppModal from "./AppModal.vue";
+import Slider from "../slider/Slider.vue";
 
-module.exports = {
+export default {
 components: {
     AppModal,
 	Slider,

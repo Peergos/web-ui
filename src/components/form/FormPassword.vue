@@ -19,10 +19,10 @@
 </template>
 
 <script>
-const AppButton = require("../AppButton.vue");
-const CommonPasswords = require('../../mixins/password/passwords.json');
+import AppButton  from "../AppButton.vue";
+import CommonPasswords from '../../mixins/password/passwords.js';
 
-module.exports = {
+export default {
 	components: {
 	    AppButton,
 	},

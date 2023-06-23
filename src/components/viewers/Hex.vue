@@ -40,10 +40,10 @@
 </transition>
 </template>
 <script>
-    const Spinner = require("../spinner/Spinner.vue");
-    const downloaderMixins = require("../../mixins/downloader/index.js");
+    import Spinner from "../spinner/Spinner.vue";
+    import downloaderMixins from "../../mixins/downloader/index.js";
 
-    module.exports = {
+    export default {
     	components: {
     	    Spinner
     	},

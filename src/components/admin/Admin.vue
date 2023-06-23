@@ -32,9 +32,9 @@
 </transition>
 </template>
 <script>
-const Spinner = require("../spinner/Spinner.vue");
+import Spinner from "../spinner/Spinner.vue";
 
-module.exports = {
+export default {
 	components: {
 	    Spinner
 	},

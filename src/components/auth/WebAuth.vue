@@ -39,10 +39,10 @@
 	</transition>
 </template>
 <script>
-const AppButton = require("../AppButton.vue");
-const Spinner = require("../spinner/Spinner.vue");
+import AppButton from "../AppButton.vue";
+import Spinner from "../spinner/Spinner.vue";
 
-module.exports = {
+export default {
     components: {
         AppButton,
         Spinner,

@@ -24,10 +24,10 @@
 </template>
 
 <script>
-    const MessageBar = require("./MessageBar.vue");
-    const ReplyToServerMessage = require("./ReplyToServerMessage.vue");
+    import MessageBar from "./MessageBar.vue";
+    import ReplyToServerMessage from "./ReplyToServerMessage.vue";
 
-    module.exports = {
+    export default {
 	components: {
 		MessageBar,
                 ReplyToServerMessage,

@@ -119,14 +119,14 @@
 </template>
 
 <script>
-const Admin = require("./admin/Admin.vue")
-const AppButton = require("AppButton.vue");
-const AppDropdown = require("./AppDropdown.vue");
-const AppIcon = require("AppIcon.vue");
-const AppPrompt = require("./prompt/AppPrompt.vue");
-const Spinner = require("./spinner/Spinner.vue");
+import Admin from "./admin/Admin.vue";
+import AppButton from "AppButton.vue";
+import AppDropdown  from "./AppDropdown.vue";
+import AppIcon from "AppIcon.vue";
+import AppPrompt from "./prompt/AppPrompt.vue";
+import Spinner from "./spinner/Spinner.vue";
 
-module.exports = {
+export default {
     components: {
         Admin,
         AppButton,

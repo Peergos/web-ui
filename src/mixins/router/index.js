@@ -1,4 +1,4 @@
-module.exports = {
+export default {
     methods: {
         canonical(path){
             if (path == null)

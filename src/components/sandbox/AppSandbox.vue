@@ -51,19 +51,19 @@
 
 <script>
 
-const AddToChat = require("AddToChat.vue");
-const AppInstall = require("AppInstall.vue");
-const AppPrompt = require("../prompt/AppPrompt.vue");
-const FolderPicker = require('../picker/FolderPicker.vue');
-const Spinner = require("../spinner/Spinner.vue");
+import AddToChat from "./AddToChat.vue";
+import AppInstall from "./AppInstall.vue";
+import AppPrompt from "../prompt/AppPrompt.vue";
+import FolderPicker from '../picker/FolderPicker.vue';
+import Spinner from "../spinner/Spinner.vue";
 
-const downloaderMixins = require("../../mixins/downloader/index.js");
-const router = require("../../mixins/router/index.js");
-const sandboxMixin = require("../../mixins/sandbox/index.js");
-const launcherMixin = require("../../mixins/launcher/index.js");
-const UriDecoder = require('../../mixins/uridecoder/index.js');
+import downloaderMixins from "../../mixins/downloader/index.js";
+import router from "../../mixins/router/index.js";
+import sandboxMixin from "../../mixins/sandbox/index.js";
+import launcherMixin from "../../mixins/launcher/index.js";
+import UriDecoder from '../../mixins/uridecoder/index.js';
 
-module.exports = {
+export default {
 	mixins:[downloaderMixins, router, sandboxMixin, launcherMixin, UriDecoder],
     components: {
         AddToChat,

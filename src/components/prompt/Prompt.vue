@@ -27,7 +27,7 @@
 </template>
 
 <script>
-module.exports = {
+export default {
     data: function() {
         return {'prompt_result': '',
                 input_length: 255

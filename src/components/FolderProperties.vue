@@ -26,8 +26,8 @@
 </template>
 
 <script>
-const helpers = require("../mixins/storage/index.js");
-module.exports = {
+import helpers from "../mixins/storage/index.js";
+export default {
     data: function() {
         return {
             fileCount: 0,

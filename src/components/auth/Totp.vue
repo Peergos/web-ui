@@ -16,7 +16,7 @@
                 <div class="prompt__body">
                     <center v-if="QRCodeURL.length > 0">
                       <div class="auth-qrcode-container">
-                            <img v-bind:src="QRCodeURL" alt="QR code" class="auth-qrcode"></img>
+                            <img v-bind:src="QRCodeURL" alt="QR code" class="auth-qrcode" />
                       </div>
                     </center>
                     <center v-if="isReady"><a href="#" @click="enterCodeManually()"><u>Enter code manually</u></a></center>
@@ -53,11 +53,11 @@
 	</transition>
 </template>
 <script>
-const AppButton = require("../AppButton.vue");
-const Spinner = require("../spinner/Spinner.vue");
-const Message = require("../message/Message.vue");
+import AppButton from "../AppButton.vue";
+import Spinner from "../spinner/Spinner.vue";
+import Message from "../message/Message.vue";
 
-module.exports = {
+export default {
     components: {
         AppButton,
         Message,

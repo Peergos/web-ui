@@ -19,8 +19,8 @@
 </template>
 
 <script>
-const UriDecoder = require('../../mixins/uridecoder/index.js');
-module.exports = {
+import UriDecoder from '../../mixins/uridecoder/index.js';
+export default {
     data: function() {
         return {
             showSpinner: false,

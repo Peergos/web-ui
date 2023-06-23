@@ -11,9 +11,9 @@
 </template>
 
 <script>
-const UserSettings = require("./UserSettings.vue");
+import UserSettings from "./UserSettings.vue";
 
-module.exports = {
+export default {
 	components: {
 		UserSettings
 	}

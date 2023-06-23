@@ -33,15 +33,15 @@
 </template>
 
 <script>
-const AppButton = require("../AppButton.vue");
-const AppModal = require("AppModal.vue");
-const UriDecoder = require('../../mixins/uridecoder/index.js');
-const Bip39 = require('../../mixins/password/bip-0039-english.json');
-const FormPassword = require("../form/FormPassword.vue");
-const MultiFactorAuth = require("../auth/MultiFactorAuth.vue");
-const Spinner = require("../spinner/Spinner.vue");
+import AppButton from "../AppButton.vue";
+import AppModal from "./AppModal.vue";
+import UriDecoder from '../../mixins/uridecoder/index.js';
+import Bip39 from '../../mixins/password/bip-0039-english.js';
+import FormPassword from "../form/FormPassword.vue";
+import MultiFactorAuth from "../auth/MultiFactorAuth.vue";
+import Spinner from "../spinner/Spinner.vue";
 
-module.exports = {
+export default {
     components: {
         AppButton,
         AppModal,

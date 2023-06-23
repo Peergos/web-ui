@@ -39,11 +39,11 @@
 </template>
 
 <script>
-const Spinner = require("../spinner/Spinner.vue");
-const TreeItem = require("TreeItem.vue");
-const folderTreeMixin = require("../../mixins/tree-walker/index.js");
+import Spinner from "../spinner/Spinner.vue";
+import TreeItem from "./TreeItem.vue";
+import folderTreeMixin from "../../mixins/tree-walker/index.js";
 
-module.exports = {
+export default {
     components: {
         Spinner,
         TreeItem

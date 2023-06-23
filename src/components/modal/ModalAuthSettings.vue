@@ -62,14 +62,14 @@
 </template>
 
 <script>
-const AppButton = require("../AppButton.vue");
-const AppModal = require("AppModal.vue");
-const Confirm = require("../confirm/Confirm.vue");
-const Spinner = require("../spinner/Spinner.vue");
-const Totp = require("../auth/Totp.vue");
-const WebAuth = require("../auth/WebAuth.vue");
+import AppButton from "../AppButton.vue";
+import AppModal from "./AppModal.vue";
+import Confirm from "../confirm/Confirm.vue";
+import Spinner from "../spinner/Spinner.vue";
+import Totp from "../auth/Totp.vue";
+import WebAuth from "../auth/WebAuth.vue";
 
-module.exports = {
+export default {
     components: {
         AppButton,
         AppModal,

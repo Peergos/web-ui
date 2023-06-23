@@ -36,13 +36,13 @@
 </template>
 
 <script>
-const AppButton = require("AppButton.vue");
-const FormPassword = require("./form/FormPassword.vue");
-const MultiFactorAuth = require("./auth/MultiFactorAuth.vue");
-const routerMixins = require("../mixins/router/index.js");
-const UriDecoder = require('../mixins/uridecoder/index.js');
+import AppButton from "./AppButton.vue";
+import FormPassword from "./form/FormPassword.vue";
+import MultiFactorAuth from "./auth/MultiFactorAuth.vue";
+import routerMixins from "../mixins/router/index.js";
+import UriDecoder from '../mixins/uridecoder/index.js';
 
-module.exports = {
+export default {
 	components: {
     	AppButton,
 		FormPassword,

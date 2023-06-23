@@ -15,7 +15,7 @@
 </template>
 
 <script>
-module.exports = {
+export default {
 
 	computed: {
 		...Vuex.mapState([

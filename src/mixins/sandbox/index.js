@@ -1,5 +1,6 @@
-const ProgressBar = require("../../components/drive/ProgressBar.vue");
-module.exports = {
+import ProgressBar from "../../components/drive/ProgressBar.vue";
+
+export default {
     data() {
         return {
             currentAppSchema: "1"

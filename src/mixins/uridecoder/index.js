@@ -1,4 +1,4 @@
-module.exports = {
+export default {
     methods: {
         uriDecode: function(urlencoded) {
             let jsErrorBody = urlencoded.split("\\+").join("%20")

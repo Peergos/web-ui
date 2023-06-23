@@ -1,6 +1,6 @@
 // TODO: split store in modules (UI, Settings, Storage, Drive,...)
 
-const helpers = require("../mixins/storage/index.js");
+import helpers from "../mixins/storage/index.js";
 function shallow(val) {
     // tag a value so vue will only shallow watch it
     if (val != null) {
@@ -8,7 +8,7 @@ function shallow(val) {
     }
     return val;
 }
-module.exports = new Vuex.Store({
+export default new Vuex.Store({
 	state: {
 		windowWidth: null,
 		currentView: null,

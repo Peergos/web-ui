@@ -55,17 +55,17 @@
 </template>
 
 <script>
-const AppHeader = require("../components/AppHeader.vue");
-const Choice = require('../components/choice/Choice.vue');
-const Confirm = require("../components/confirm/Confirm.vue");
-const Share = require("../components/drive/DriveShare.vue");
-const ProgressBar = require("../components/drive/ProgressBar.vue");
-const Prompt = require("../components/prompt/Prompt.vue");
-const Spinner = require("../components/spinner/Spinner.vue");
+import AppHeader from "../components/AppHeader.vue";
+import Choice from '../components/choice/Choice.vue';
+import Confirm from "../components/confirm/Confirm.vue";
+import Share from "../components/drive/DriveShare.vue";
+import ProgressBar from "../components/drive/ProgressBar.vue";
+import Prompt from "../components/prompt/Prompt.vue";
+import Spinner from "../components/spinner/Spinner.vue";
 
-const routerMixins = require("../mixins/router/index.js");
+import routerMixins from "../mixins/router/index.js";
 
-module.exports = {
+export default {
     components: {
         Choice,
         Confirm,

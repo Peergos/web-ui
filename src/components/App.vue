@@ -54,40 +54,40 @@
 </template>
 
 <script>
-const AppIcon = require("AppIcon.vue");
-const AppNavigation = require("./navigation/AppNavigation.vue");
-const ModalAuthSettings = require("./modal/ModalAuthSettings.vue");
-const ModalTour = require("./modal/ModalTour.vue");
-const ModalHelp = require("./modal/ModalHelp.vue");
-const ModalSpace = require("./modal/ModalSpace.vue");
-const ModalPro = require("./modal/ModalPro.vue");
-const ModalPassword = require("./modal/ModalPassword.vue");
-const ModalAccount = require("./modal/ModalAccount.vue");
-const ModalProfile = require("./modal/ModalProfile.vue");
-const ModalFeedback = require("./modal/ModalFeedback.vue");
+import AppIcon from "./AppIcon.vue";
+import AppNavigation from "./navigation/AppNavigation.vue";
+import ModalAuthSettings from "./modal/ModalAuthSettings.vue";
+import ModalTour from "./modal/ModalTour.vue";
+import ModalHelp from "./modal/ModalHelp.vue";
+import ModalSpace from "./modal/ModalSpace.vue";
+import ModalPro from "./modal/ModalPro.vue";
+import ModalPassword from "./modal/ModalPassword.vue";
+import ModalAccount from "./modal/ModalAccount.vue";
+import ModalProfile from "./modal/ModalProfile.vue";
+import ModalFeedback from "./modal/ModalFeedback.vue";
 
-const AppTab = require("./tabs/AppTab.vue");
-const AppTabs = require("./tabs/AppTabs.vue");
+import AppTab from "./tabs/AppTab.vue";
+import AppTabs from "./tabs/AppTabs.vue";
 
-const Login = require("./Login.vue");
-const Signup = require("./Signup.vue");
+import Login from "./Login.vue";
+import Signup from "./Signup.vue";
 
-const Drive = require("../views/Drive.vue");
-const NewsFeed = require("../views/NewsFeed.vue");
-const Tasks = require("../views/Tasks.vue");
-const Social = require("../views/Social.vue");
-const Calendar = require("../views/Calendar.vue");
-const Chat = require("../views/Chat.vue");
-const Email = require("../views/Email.vue");
-const Launcher = require("../views/Launcher.vue");
+import Drive from "../views/Drive.vue";
+import NewsFeed from "../views/NewsFeed.vue";
+import Tasks from "../views/Tasks.vue";
+import Social from "../views/Social.vue";
+import Calendar from "../views/Calendar.vue";
+import Chat from "../views/Chat.vue";
+import Email from "../views/Email.vue";
+import Launcher from "../views/Launcher.vue";
 
-const ServerMessages = require("./ServerMessages.vue");
+import ServerMessages from "./ServerMessages.vue";
 
-const routerMixins = require("../mixins/router/index.js");
-const launcherMixin = require("../mixins/launcher/index.js");
-const sandboxAppMixins = require("../mixins/sandbox/index.js");
+import routerMixins from "../mixins/router/index.js";
+import launcherMixin from "../mixins/launcher/index.js";
+import sandboxAppMixins from "../mixins/sandbox/index.js";
 
-module.exports = {
+export default {
 	components: {
 	    AppIcon,
 		AppNavigation,

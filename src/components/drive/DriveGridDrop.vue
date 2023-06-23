@@ -6,9 +6,9 @@
 </template>
 
 <script>
-const AppIcon = require("../AppIcon.vue");
+import AppIcon from "../AppIcon.vue";
 
-module.exports = {
+export default {
     components: {
 	    AppIcon,
     },

@@ -163,13 +163,13 @@
 </template>
 
 <script>
-const AppButton = require("../AppButton.vue");
-const Choice = require('../choice/Choice.vue');
-const Spinner = require("../spinner/Spinner.vue");
-const FormAutocomplete = require("../form/FormAutocomplete.vue");
-const SecretLink = require("SecretLink.vue");
+import AppButton from "../AppButton.vue";
+import Choice from '../choice/Choice.vue';
+import Spinner from "../spinner/Spinner.vue";
+import FormAutocomplete from "../form/FormAutocomplete.vue";
+import SecretLink from "./SecretLink.vue";
 
-module.exports = {
+export default {
 	components: {
 	    AppButton,
 	    Choice,

@@ -43,16 +43,16 @@
 </template>
 
 <script>
-const downloader = require("../mixins/downloader/index.js");
-const routerMixins = require("../mixins/router/index.js");
-const UriDecoder = require('../mixins/uridecoder/index.js');
-const AppHeader = require("../components/AppHeader.vue");
-const Prompt = require("../components/prompt/Prompt.vue");
-const SelectCreate = require('../components/select-create/SelectCreate.vue');
-const Spinner = require("../components/spinner/Spinner.vue");
-const Warning = require('../components/Warning.vue');
+import downloader from "../mixins/downloader/index.js";
+import routerMixins from "../mixins/router/index.js";
+import UriDecoder from '../mixins/uridecoder/index.js';
+import AppHeader from "../components/AppHeader.vue";
+import Prompt from "../components/prompt/Prompt.vue";
+import SelectCreate from '../components/select-create/SelectCreate.vue';
+import Spinner from "../components/spinner/Spinner.vue";
+import Warning from '../components/Warning.vue';
 
-module.exports = {
+export default {
     components: {
 	    AppHeader,
 	    Prompt,

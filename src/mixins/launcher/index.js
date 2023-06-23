@@ -1,4 +1,4 @@
-module.exports = {
+export default {
     methods: {
         loadShortcutsFile: function(launcherApp) {
             return this.loadJsonMapFile(launcherApp, 'shortcuts.json');

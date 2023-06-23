@@ -112,14 +112,14 @@
 </template>
 
 <script>
-const Error = require("../components/error/Error.vue");
-const FormAutocomplete = require("../components/form/FormAutocomplete.vue");
-const Prompt = require("../components/prompt/Prompt.vue");
-const Spinner = require("../components/spinner/Spinner.vue");
+import Error from "../components/error/Error.vue";
+import FormAutocomplete from "../components/form/FormAutocomplete.vue";
+import Prompt from "../components/prompt/Prompt.vue";
+import Spinner from "../components/spinner/Spinner.vue";
 
-const routerMixins = require("../mixins/router/index.js");
+import routerMixins from "../mixins/router/index.js";
 
-module.exports = {
+export default {
 	components: {
 	    Error,
 	    FormAutocomplete,

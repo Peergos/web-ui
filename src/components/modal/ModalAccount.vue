@@ -34,13 +34,13 @@
 </template>
 
 <script>
-const AppButton = require("../AppButton.vue");
-const AppModal = require("AppModal.vue");
-const AppIcon = require("../AppIcon.vue");
-const FormPassword = require("../form/FormPassword.vue");
-const MultiFactorAuth = require("../auth/MultiFactorAuth.vue");
+import AppButton from "../AppButton.vue";
+import AppModal from "./AppModal.vue";
+import AppIcon from "../AppIcon.vue";
+import FormPassword from "../form/FormPassword.vue";
+import MultiFactorAuth from "../auth/MultiFactorAuth.vue";
 
-module.exports = {
+export default {
 	components: {
 	    AppButton,
 	    AppModal,

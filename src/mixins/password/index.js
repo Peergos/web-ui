@@ -1,5 +1,5 @@
-var bip39 = require('bip-0039-english.json');
-module.exports = {
+import bip39 from 'bip-0039-english.js';
+export default {
     data() {
 		return {
 			"bip39": bip39

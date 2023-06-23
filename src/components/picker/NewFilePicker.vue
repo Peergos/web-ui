@@ -53,12 +53,14 @@
 		</div>
 	</transition>
 </template>
-const AppButton = require("../AppButton.vue");
-const SelectableTreeItem = require("SelectableTreeItem.vue");
-const Spinner = require("../spinner/Spinner.vue");
-const folderTreeMixin = require("../../mixins/tree-walker/index.js");
+
 <script>
-module.exports = {
+import AppButton from "../AppButton.vue";
+import SelectableTreeItem from "SelectableTreeItem.vue";
+import Spinner from "../spinner/Spinner.vue";
+import folderTreeMixin from "../../mixins/tree-walker/index.js";
+
+export default {
     components: {
         AppButton,
         SelectableTreeItem,
@@ -136,7 +138,6 @@ module.exports = {
         },
 	}
 }
-
 </script>
 
 <style>

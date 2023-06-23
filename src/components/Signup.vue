@@ -103,14 +103,14 @@
 </template>
 
 <script>
-const AppButton = require("AppButton.vue");
-const Bip39 = require('../mixins/password/bip-0039-english.json');
-const BannedUsernames = require('../mixins/password/bannedUsernames.json');
-const FormPassword = require("./form/FormPassword.vue");
-const UriDecoder = require('../mixins/uridecoder/index.js');
-const sandboxMixin = require("../mixins/sandbox/index.js");
-const Continue = require("Continue.vue");
-module.exports = {
+import AppButton from "./AppButton.vue";
+import Bip39 from '../mixins/password/bip-0039-english.js';
+import BannedUsernames from '../mixins/password/bannedUsernames.js';
+import FormPassword from "./form/FormPassword.vue";
+import UriDecoder from '../mixins/uridecoder/index.js';
+import sandboxMixin from "../mixins/sandbox/index.js";
+import Continue from "./Continue.vue";
+export default {
     components: {
         AppButton,
 	    FormPassword,

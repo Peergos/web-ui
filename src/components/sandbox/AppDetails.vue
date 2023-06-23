@@ -58,10 +58,11 @@
 </template>
 
 <script>
-const Spinner = require("../spinner/Spinner.vue");
-const sandboxMixin = require("../../mixins/sandbox/index.js");
-const routerMixins = require("../../mixins/router/index.js");
-module.exports = {
+import Spinner from "../spinner/Spinner.vue";
+import sandboxMixin from "../../mixins/sandbox/index.js";
+import routerMixins from "../../mixins/router/index.js";
+
+export default {
 	components: {
 	    Spinner
 	},

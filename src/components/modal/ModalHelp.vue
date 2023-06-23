@@ -28,7 +28,7 @@
             <button type="button" class="collapsible-help-item">Create and share a Profile?</button>
             <div class="help-item-content">
               <p>Select 'Profile' menu item after clicking on the user settings menu (the person icon in the top right-hand corner). Add desired details and click save. Profile image will be previewed after upload. Click the share button next to each completed field to set the viewable audience.</p>
-              <p>You can view someone else's profile via the links generated on the social view or on the newsfeed view.
+              <p>You can view someone else's profile via the links generated on the social view or on the newsfeed view.</p>
             </div>
             <button type="button" class="collapsible-help-item">Share a file/folder with another Peergos user?</button>
             <div class="help-item-content">
@@ -39,7 +39,7 @@
             <button type="button" class="collapsible-help-item">View files/folders shared with me?</button>
             <div class="help-item-content">
               <p>Select the newsfeed icon on the left menu. It will take some time to assemble a custom page consisting of the posts sent to you. The posts may be messages or links to files/folders shared with you.</p>
-              <p>Alternatively if you know the username of the person who shared the file/folder, select the globe icon on top toolbar and navigate to their drive space.
+              <p>Alternatively if you know the username of the person who shared the file/folder, select the globe icon on top toolbar and navigate to their drive space.</p>
             </div>
             <button type="button" class="collapsible-help-item">Share a secret link to a file/folder?</button>
             <div class="help-item-content">
@@ -54,7 +54,7 @@
             <button type="button" class="collapsible-help-item">Share a whole calendar?</button>
             <div class="help-item-content">
               <p>Your primary calendar cannot be shared. You can create multiple calendars. From the calendar view, click the gears icon in the toolbar. Select the 'Calendar Settings' button to display the currently configured Calendars.</p>
-              <p>Click the share button to set the read-only audience for the calendar<p>
+              <p>Click the share button to set the read-only audience for the calendar</p>
               <p>Calendars shared with you will first need to be imported via the newsfeed view</p>
             </div>
             <button type="button" class="collapsible-help-item">Share a calendar event?</button>
@@ -106,12 +106,12 @@
             <button type="button" class="collapsible-help-item">Why is everything so slow?</button>
             <div class="help-item-content">
               <p>It isn't! The whole story is always more complicated. In an end-to-end encrypted and peer-to-peer system, the client is required to do a lot of work (and not just decrypting/encryption). If you are technically minded, open the browser console and watch the stream of 100's of requests to get a flavour.</p>
-              <p>There are still a lot of speed improvements we are planning on implementing. Performance will also improve as browsers implement some of the primitives we need for signing and encryption.<p>
+              <p>There are still a lot of speed improvements we are planning on implementing. Performance will also improve as browsers implement some of the primitives we need for signing and encryption.</p>
             </div>
             <button type="button" class="collapsible-help-item">I heard Peergos is written in Java, are you crazy?</button>
             <div class="help-item-content">
-              <p>In fact Java is an ideal language for Peergos. The JVM is rock solid and provides good performance and resource utilization. The client is written mostly in java and trans-complied to Javascript via the battle-hardened GWT</p>
-              <p>Having a single language codebase for server and most of the client has multiple benefits. We are not language zealots, other choices would be appropriate in different circumstances.
+              <p>In fact Java is an ideal language for Peergos. The JVM is rock solid and provides good performance and resource utilization. The client is written mostly in java and trans-compiled to Javascript via the battle-hardened GWT</p>
+              <p>Having a single language codebase for server and most of the client has multiple benefits. We are not language zealots, other choices would be appropriate in different circumstances.</p>
             </div>
 
         </div>
@@ -121,7 +121,7 @@
 </template>
 
 <script>
-module.exports = {
+export default {
     components: {
     },
     data() {

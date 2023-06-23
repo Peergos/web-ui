@@ -1,4 +1,4 @@
-module.exports = {
+export default {
     methods: {
         loadFolders: function(path, callback) {
             var that = this;

@@ -38,10 +38,10 @@
 </template>
 
 <script>
-const AppButton = require("../AppButton.vue");
-const mixins = require("../../mixins/downloader/index.js");
+import AppButton from "../AppButton.vue";
+import mixins from "../../mixins/downloader/index.js";
 
-module.exports = {
+export default {
 	components: {
 	    AppButton,
 	},
