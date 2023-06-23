@@ -7,9 +7,9 @@
 					<span v-if="!path.length">global</span>
 				</AppButton>
 
-				<template v-if="!(path.length >2 && path[1] == '.apps')" v-for="(dir, index) in path">
+				<template v-if="!(path.length >2 && path[1] == '.apps')" v-for="(dir, index) in path" :key="index">
 					<AppIcon v-if="index!==0" icon="chevron--24" class="breadcrumb__separator" aria-hidden="true"/>
-					<AppButton :key="index" class="breadcrumb__item" :aria-label="dir" tabindex="-1" @click.native="$emit('goBackToLevel', index + 1 )">{{ dir }}</AppButton>
+					<AppButton class="breadcrumb__item" :aria-label="dir" tabindex="-1" @click.native="$emit('goBackToLevel', index + 1 )">{{ dir }}</AppButton>
 				</template>
                 <template v-if="path.length >2 && path[1] == '.apps'" v-for="(dir, index) in path">
                     <AppIcon v-if="index>2" icon="chevron--24" class="breadcrumb__separator" aria-hidden="true"/>
