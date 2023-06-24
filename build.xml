@@ -132,6 +132,12 @@
     <delete file="peergos.css"/>
   </target>
 
+  <target name="installgraal">
+    <exec executable="java" dir="native-build" failonerror="true" >
+      <arg value="InstallGraalNode.java"/>
+    </exec>
+  </target>
+
   <target name="vite">
     <exec executable="java" dir="." failonerror="true" >
       <arg value="native-build/RunNode.java"/>
@@ -194,7 +200,7 @@
     </exec>
   </target>
 
-  <target name="dist" depends="peergos_submodule_sync, clean, clean_server, compile_server, ui, git.revision, javac_version" description="regenerate the server">
+  <target name="dist" depends="peergos_submodule_sync, installgraal, clean, clean_server, compile_server, ui, git.revision, javac_version" description="regenerate the server">
     <mkdir dir="${server}"/>
     <mkdir dir="${server}/webroot"/>
 
