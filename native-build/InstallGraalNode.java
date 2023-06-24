@@ -91,7 +91,7 @@ public class InstallNativeImage {
 
     private static String canonicaliseOS(String os) {
         if (os.startsWith("mac"))
-            return "darwin";
+            return "macos";
         if (os.startsWith("windows"))
             return "windows";
         return os;
