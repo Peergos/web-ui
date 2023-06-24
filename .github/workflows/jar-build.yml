@@ -12,6 +12,9 @@ jobs:
       with:
         distribution: temurin
         java-version: 17
+    - name: Install graalvm
+      shell: bash
+      run:  cd native-build && java InstallGraalNode.java
     - name: Build with Ant
       run: ant -noinput -buildfile build.xml peergos_submodule_sync dist 
     - name: Upload jar artifact
