@@ -133,10 +133,8 @@
   </target>
 
   <target name="vite">
-    <exec executable="./native-build/graalvm-community-openjdk-17.0.7+7.1/bin/node" dir="." failonerror="true" >
-      <arg value="--experimental-options"/>
-      <arg value="--js.webassembly"/>
-      <arg value="--polyglot"/>
+    <exec executable="java" dir="." failonerror="true" >
+      <arg value="native-build/RunNode.java"/>
       <arg value="node_modules/vite/bin/vite.js"/>
       <arg value="build"/>
       <arg value="--outDir"/>

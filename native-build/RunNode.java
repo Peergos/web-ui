@@ -3,7 +3,7 @@ import java.net.*;
 import java.nio.file.*;
 import java.util.zip.*;
 
-public class RunVite {
+public class RunNode {
 
     public static void main(String[] a) throws Exception {
         String VERSION = "17.0.7"; // This is graalvm 23.0.0
@@ -24,8 +24,10 @@ public class RunVite {
             throw new IllegalStateException("native-image not installed...");
         String ext = OS.equals("windows") ? ".exe" : "";
 
-        // run vite in graal nodejs
-        runCommand(dir + extraDirs + "/bin/node" + binExt + "vite build" + Stream.of(a).collect(Collectors.joining(" ")));
+        // run command in graal nodejs
+        runCommand(dir + extraDirs + "/bin/node" + binExt +
+                   " --experimental-options --js.webassembly --polyglot " +
+                   Stream.of(a).collect(Collectors.joining(" ")));
     }
 
     public static int runCommand(String command) throws Exception {
