@@ -13,7 +13,7 @@ public class RunNode {
         String OS_ARCH = getOsArch();
         System.out.println("OS-ARCH: " + OS_ARCH);
         String binExt = OS.equals("windows") ? ".cmd" : "";
-        String extraDirs = OS.equals("darwin") ? "/Contents/Home" : "";
+        String extraDirs = OS.equals("macos") ? "/Contents/Home" : "";
         String dir = Stream.of(new File("native-build").listFiles())
             .filter(f -> f.isDirectory() && f.getName().startsWith("graalvm-community"))
             .map(f -> "native-build/" + f.getName())

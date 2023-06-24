@@ -26,7 +26,7 @@ public class InstallNativeImage {
 
         // install native-image
         String binExt = OS.equals("windows") ? ".cmd" : "";
-        String extraDirs = OS.equals("darwin") ? "/Contents/Home" : "";
+        String extraDirs = OS.equals("macos") ? "/Contents/Home" : "";
         String dir = Stream.of(new File(".").listFiles())
             .filter(f -> f.isDirectory() && f.getName().startsWith("graalvm-community"))
             .map(f -> f.getName())
