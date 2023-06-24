@@ -15,6 +15,9 @@ jobs:
     - uses: actions/setup-python@v2
       with:
         python-version: '3.11.0'
+    - name: Install graalvm
+      shell: bash
+      run:  cd native-build && java InstallGraalNode.java
     - name: Build with Ant
       run: ant -noinput -buildfile build.xml peergos_submodule_sync dist 
     - name: echo chrome
