@@ -148,7 +148,10 @@
     </exec>
   </target>
   
-  <target name="ui" depends="init,vite,ui_dev_vendor,assets,css,js" description="build our part of the ui">
+  <target name="ui" depends="init,vite,ui_dev_vendor,assets,css" description="build our part of the ui">
+  </target>
+
+  <target name="ui-native" depends="init,ui_dev_vendor,assets,css" description="build our part of the ui">
   </target>
 
   <target name="ui_dev" depends="init,ui_dev_vendor,assets,css,js_dev" description="build our part of the ui in dev mode">
