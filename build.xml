@@ -136,6 +136,9 @@
     <exec executable="java" dir="native-build" failonerror="true" >
       <arg value="InstallGraalNode.java"/>
     </exec>
+    <exec executable="java" dir="native-build" failonerror="true" >
+      <arg value="NpmInstall.java"/>
+    </exec>
   </target>
 
   <target name="vite">
