@@ -69,7 +69,8 @@ import Spinner from "../spinner/Spinner.vue";
 import Totp from "../auth/Totp.vue";
 import WebAuth from "../auth/WebAuth.vue";
 
-import Vuex from "vuex"
+// import Vuex from "vuex"
+import { mapState } from 'vuex'
 
 export default {
     components: {
@@ -94,9 +95,9 @@ export default {
             showWebAuthSetup: false,
         };
     },
-    
+
     computed: {
-	...Vuex.mapState([
+	...mapState([
 	    'context'
 	]),
     },

@@ -122,9 +122,10 @@
 
 <script>
 import { inject } from 'vue'
-import Vuex from "vuex"
-const store = inject('store')
-    
+// import Vuex from "vuex"
+
+// const store = inject('store')
+
 export default {
     components: {
     },
@@ -148,7 +149,7 @@ export default {
     },
     methods: {
         close: function () {
-            store.commit("SET_MODAL", false);
+            this.$store.commit("SET_MODAL", false);
         }
     }
 }

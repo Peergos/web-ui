@@ -250,7 +250,8 @@ import Spinner from "../components/spinner/Spinner.vue";
 import routerMixins from "../mixins/router/index.js";
 import mixins from "../mixins/mixins.js";
 
-import Vuex from "vuex"
+// import Vuex from "vuex"
+import { mapState,mapGetters  } from 'vuex'
 
 export default {
     components: {
@@ -1581,7 +1582,7 @@ export default {
         }
     },
     computed: {
-		...Vuex.mapState([
+		...mapState([
 		    'quotaBytes',
 		    'usageBytes',
                     'context',
@@ -1589,7 +1590,7 @@ export default {
                     'path',
                     "sandboxedApps",
 		]),
-		...Vuex.mapGetters([
+		...mapGetters([
 			'isSecretLink',
 			'getPath'
 		]),

@@ -42,7 +42,8 @@
 import AppButton from "../AppButton.vue";
 import Spinner from "../spinner/Spinner.vue";
 
-import Vuex from "vuex"
+// import Vuex from "vuex"
+import { mapState } from 'vuex'
 
 export default {
     components: {
@@ -58,7 +59,7 @@ export default {
     },
     props: ['consumer_func'],
     computed: {
-        ...Vuex.mapState([
+        ...mapState([
             'context'
         ]),
     },

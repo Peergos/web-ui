@@ -26,7 +26,8 @@
 <script>
     import MessageBar from "./MessageBar.vue";
     import ReplyToServerMessage from "./ReplyToServerMessage.vue";
-import Vuex from "vuex"
+// import Vuex from "vuex"
+import { mapState } from 'vuex'
 
     export default {
 	components: {
@@ -43,23 +44,23 @@ import Vuex from "vuex"
 	},
 
 	computed: {
-		...Vuex.mapState([
+		...mapState([
 			"isLoggedIn",
 			"isDark",
 			"context",
 		]),
         },
-        
+
         mounted() {
 	    this.showPendingServerMessages();
 	},
-            
+
         methods: {
             showPendingServerMessages: function () {
 		let context = this.context;
                 if (context == null || context.username == null)
                     return;
-                    
+
 		let that = this;
 		context
 		    .getServerConversations()
@@ -108,7 +109,7 @@ import Vuex from "vuex"
 			throwable.printStackTrace();
 		    });
 	    },
-            
+
 	    popConversation: function (msgId) {
 		if (msgId != null) {
 		    for (var i = 0; i < this.conversationMonitors.length; i++) {
@@ -152,7 +153,7 @@ import Vuex from "vuex"
 		}
 		return null;
 	    },
-            
+
 	    replyToMessage: function (msgId) {
 		if (this.showFeedbackForm) {
 		    return;
@@ -160,7 +161,7 @@ import Vuex from "vuex"
 		this.messageId = msgId;
 		this.showFeedbackForm = true;
 	    },
-            
+
 	    dismissMessage: function (msgId) {
 		if (this.showFeedbackForm) {
 		    return;

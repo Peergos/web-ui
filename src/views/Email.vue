@@ -51,7 +51,8 @@ import mixins from "../mixins/mixins.js";
 import routerMixins from "../mixins/router/index.js";
 import downloaderMixins from "../mixins/downloader/index.js";
 
-import Vuex from "vuex"
+// import Vuex from "vuex"
+import { mapState,mapGetters  } from 'vuex'
 
 export default {
     components: {
@@ -89,14 +90,14 @@ export default {
     },
     props: [],
     computed: {
-        ...Vuex.mapState([
+        ...mapState([
             'quotaBytes',
             'usageBytes',
              'context',
              'socialData',
              'path'
         ]),
-        ...Vuex.mapGetters([
+        ...mapGetters([
             'isSecretLink',
             'getPath'
         ]),

@@ -43,7 +43,8 @@ import Spinner from "../spinner/Spinner.vue";
 import TreeItem from "./TreeItem.vue";
 import folderTreeMixin from "../../mixins/tree-walker/index.js";
 
-import Vuex from "vuex"
+// import Vuex from "vuex"
+import { mapState } from 'vuex'
 
 export default {
     components: {
@@ -61,7 +62,7 @@ export default {
     props: ['baseFolder', 'selectedFolder_func'],
     mixins:[folderTreeMixin],
     computed: {
-        ...Vuex.mapState([
+        ...mapState([
             'context',
         ]),
     },

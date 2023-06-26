@@ -52,7 +52,8 @@ import SelectCreate from '../components/select-create/SelectCreate.vue';
 import Spinner from "../components/spinner/Spinner.vue";
 import Warning from '../components/Warning.vue';
 
-import Vuex from "vuex"
+// import Vuex from "vuex"
+import { mapState,mapGetters  } from 'vuex'
 
 export default {
     components: {
@@ -90,13 +91,13 @@ export default {
             taskSelected: false
         }
     },
-    
+
     computed: {
-	...Vuex.mapState([
+	...mapState([
 	    'context',
 	    'mirrorBatId',
 	]),
-	...Vuex.mapGetters([
+	...mapGetters([
 	    'isSecretLink',
 	    'getPath',
 	    'currentFilename',
@@ -122,10 +123,10 @@ export default {
                 this.selectOrCreateModal();
                 return;
             }
-            
+
             this.loadFile(path, filename);
         },
-        
+
         loadFile: function(path, filename) {
             if (!path.endsWith("/"))
                 path = path + "/";
@@ -149,7 +150,7 @@ export default {
                 }
             });
         },
-        
+
         selectOrCreateModal: function() {
             let that = this;
             this.select_placeholder='Todo Board';
@@ -306,7 +307,7 @@ export default {
 	    if(this.saving) {
 	        return;
 	    }
-            
+
 	    var iframe = document.getElementById("task-editor");
 	    this.expectingSave = true;
 	    iframe.contentWindow.postMessage({type:"save"}, '*');
@@ -324,7 +325,7 @@ export default {
             this.showSpinner = true;
 	    const that = this;
 	    that.saving = true;
-            
+
 	    let todoLists = [];
 	    for(var i = 0; i < lists.length; i++) {
 	        let list = lists[i];
@@ -337,7 +338,7 @@ export default {
     	        let todoList = peergos.shared.user.TodoList.buildFromJs(list.name, list.id, listItems);
     	        todoLists.push(todoList);
 	    }
-            
+
 	    let todoBoard = peergos.shared.user.TodoBoard.buildFromJs(this.todoBoardName, todoLists);
             let bytes = todoBoard.toByteArray();
             let java_reader = peergos.shared.user.fs.AsyncReader.build(bytes);

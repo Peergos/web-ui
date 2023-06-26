@@ -41,7 +41,8 @@ import FormPassword from "./form/FormPassword.vue";
 import MultiFactorAuth from "./auth/MultiFactorAuth.vue";
 import routerMixins from "../mixins/router/index.js";
 import UriDecoder from '../mixins/uridecoder/index.js';
-import Vuex from "vuex"
+// import Vuex from "vuex"
+import { mapState, mapGetters, mapActions } from 'vuex'
 
 export default {
 	components: {
@@ -61,12 +62,12 @@ export default {
 		};
 	},
 	computed: {
-		...Vuex.mapState([
+		...mapState([
 			'crypto',
 			'network',
 			'context'
 		]),
-		...Vuex.mapGetters([
+		...mapGetters([
 			'isSecretLink',
 		]),
 	},
@@ -78,7 +79,7 @@ export default {
 		setTimeout(() => this.autoLogin(), 0);
 	},
 	methods: {
-		...Vuex.mapActions([
+		...mapActions([
 			'updateSocial'
 		]),
 		autoLogin() {

@@ -7,3 +7,7 @@ server/**
 [._]*.s[a-w][a-z]
 [._]s[a-w][a-z]
 chromedriver
+node_modules
+native-build
+
+```

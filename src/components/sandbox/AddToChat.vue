@@ -53,7 +53,8 @@ import FormAutocomplete from "../form/FormAutocomplete.vue";
 import Spinner from "../spinner/Spinner.vue";
 import routerMixins from "../../mixins/router/index.js";
 
-import Vuex from "vuex"
+// import Vuex from "vuex"
+import { mapState } from 'vuex'
 
 export default {
 	components: {
@@ -74,7 +75,7 @@ export default {
     },
     props: ['appDisplayName', 'maxFriendsToAdd', 'chatTitle', 'friendNames', 'updateChat'],
     computed: {
-        ...Vuex.mapState([
+        ...mapState([
             'context',
         ])
     },

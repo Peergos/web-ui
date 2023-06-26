@@ -71,7 +71,8 @@ import AppIcon from "../AppIcon.vue";
 import AppSandbox from "../sandbox/AppSandbox.vue";
 import UserSettings from "../UserSettings.vue";
 
-import Vuex from "vuex"
+// import Vuex from "vuex"
+import { mapState } from 'vuex'
 
 export default {
 	components: {
@@ -106,7 +107,7 @@ export default {
 		}
 	},
 	computed: {
-        ...Vuex.mapState([
+        ...mapState([
             "sandboxedApps"
         ]),
 	},

@@ -40,7 +40,8 @@ import AppIcon from "../AppIcon.vue";
 import FormPassword from "../form/FormPassword.vue";
 import MultiFactorAuth from "../auth/MultiFactorAuth.vue";
 
-import Vuex from "vuex"
+// import Vuex from "vuex"
+import { mapState } from 'vuex'
 
 export default {
 	components: {
@@ -58,7 +59,7 @@ export default {
 		};
 	},
 	computed: {
-		...Vuex.mapState([
+		...mapState([
 			'context'
 		]),
     },

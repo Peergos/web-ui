@@ -26,8 +26,9 @@ import AppButton from "../AppButton.vue";
 import AppIcon from "../AppIcon.vue";
 
 import { inject } from 'vue'
-import Vuex from "vuex"
-const store = inject('store')
+// import Vuex from "vuex"
+
+// const store = inject('store')
 
 export default {
     components: {
@@ -65,7 +66,7 @@ export default {
 	},
 	methods:{
 		showMenu(e){
-			store.commit('SET_DRIVE_MENU_TARGET', e.currentTarget)
+			this.$store.commit('SET_DRIVE_MENU_TARGET', e.currentTarget)
 			this.$emit('openMenu')
 		}
 	}

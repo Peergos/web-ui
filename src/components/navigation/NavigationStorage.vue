@@ -10,9 +10,10 @@
 <script>
 import AppButton from "../AppButton.vue";
 
-import { inject } from 'vue'
-import Vuex from "vuex"
-const store = inject('store')
+// import { inject } from 'vue'
+// import Vuex from "vuex"
+import { mapGetters  } from 'vuex'
+// const store = inject('store')
 
 export default {
 	components: {
@@ -25,7 +26,7 @@ export default {
 		},
 	},
 	computed: {
-		...Vuex.mapGetters([
+		...mapGetters([
 			'quota',
 			'usage',
 			'isPaid'
@@ -34,9 +35,9 @@ export default {
 	methods: {
 		showRequestStorage() {
 			if(this.isPaid){
-				store.commit('CURRENT_MODAL', 'ModalPro');
+				this.$store.commit('CURRENT_MODAL', 'ModalPro');
 			}else{
-				store.commit('CURRENT_MODAL', 'ModalSpace');
+				this.$store.commit('CURRENT_MODAL', 'ModalSpace');
 			}
 		},
 	},

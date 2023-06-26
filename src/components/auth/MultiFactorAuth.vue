@@ -64,7 +64,8 @@
 <script>
 import AppButton from "../AppButton.vue";
 
-import Vuex from "vuex"
+// import Vuex from "vuex"
+import { mapState } from 'vuex'
 
 export default {
     components: {
@@ -84,7 +85,7 @@ export default {
     },
     props: ['mfaMethods', 'challenge', 'consumer_cancel_func', 'consumer_func'],
     computed: {
-        ...Vuex.mapState([
+        ...mapState([
             'context'
         ]),
     },

@@ -41,7 +41,8 @@ import FormPassword from "../form/FormPassword.vue";
 import MultiFactorAuth from "../auth/MultiFactorAuth.vue";
 import Spinner from "../spinner/Spinner.vue";
 
-import Vuex from "vuex"
+// import Vuex from "vuex"
+import { mapState } from 'vuex'
 
 export default {
     components: {
@@ -51,7 +52,7 @@ export default {
 	    MultiFactorAuth,
         Spinner,
     },
-    
+
     data() {
         return {
             showSpinner: false,
@@ -62,9 +63,9 @@ export default {
             showMultiFactorAuth: false,
         };
     },
-    
+
     computed: {
-	...Vuex.mapState([
+	...mapState([
 	    'context'
 	]),
     },
@@ -79,7 +80,7 @@ export default {
 	    this.password = password;
             this.showPasswords = true;
         },
-        
+
 	updatePassword() {
         if(this.existing.length == 0 || this.password.length == 0 || this.password2.length == 0) {
             this.$toast.error('All fields must be populated!',{timeout:false, position: 'bottom-left' })

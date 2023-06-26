@@ -267,9 +267,10 @@ import zipMixin from "../mixins/zip/index.js";
 import router from "../mixins/router/index.js";
 import launcherMixin from "../mixins/launcher/index.js";
 
-import { inject } from 'vue'
-import Vuex from "vuex"
-const store = inject('store')
+// import { inject } from 'vue'
+// import Vuex from "vuex"
+import { mapState, mapGetters, mapActions  } from 'vuex'
+// const store = inject('store')
 
 export default {
 	components: {
@@ -323,7 +324,7 @@ export default {
 			forceSharedRefreshWithUpdate: 0,
 
                         appArgs: {},
-                    
+
 			showAdmin: false,
 			showGallery: false,
 			showIdentityProof: false,
@@ -404,7 +405,7 @@ export default {
 
         },
 	computed: {
-		...Vuex.mapState([
+		...mapState([
 			'quotaBytes',
 			'usageBytes',
 			'context',
@@ -417,7 +418,7 @@ export default {
             "sandboxedApps",
             "shortcuts"
 		]),
-		...Vuex.mapGetters([
+		...mapGetters([
 			'isSecretLink',
 			'getPath'
 		]),
@@ -692,7 +693,7 @@ export default {
 			if (this.selectedFiles.length > 1)
 				return false;
 			var target = this.selectedFiles.length == 1 ? this.selectedFiles[0] : this.currentDir;
-			
+
 			if (target == null) {
 				return false;
 			}
@@ -774,7 +775,7 @@ export default {
 
 
 	methods: {
-		...Vuex.mapActions([
+		...mapActions([
 			'updateQuota',
 			'updateUsage',
             'updateSocial',
@@ -801,7 +802,7 @@ export default {
 			    this.context.getEntryPath().thenApply(function (linkPath) {
 				var path = that.initPath == null ? null : decodeURIComponent(that.initPath);
 				if (path != null && (path.startsWith(linkPath) || linkPath.startsWith(path))) {
-                                    store.commit('SET_PATH', path.split('/').filter(n => n.length > 0))
+                                    that.$store.commit('SET_PATH', path.split('/').filter(n => n.length > 0))
                                     if (that.download || that.open) {
 				        that.context.getByPath(path)
 				            .thenApply(function (file) {
@@ -825,7 +826,7 @@ export default {
 				            });
                                     }
 				} else {
-                                    store.commit('SET_PATH', linkPath.split('/').filter(n => n.length > 0))
+					that.$store.commit('SET_PATH', linkPath.split('/').filter(n => n.length > 0))
                                     if (that.download) {
                                         var download = () => {
                                             that.downloadFile(that.files[0]);
@@ -891,10 +892,10 @@ export default {
 					};
 					this.onUpdateCompletion.push(open);
 
-					store.commit('SET_PATH', pathFromUrl.split('/').filter(n => n.length > 0))
+					this.$store.commit('SET_PATH', pathFromUrl.split('/').filter(n => n.length > 0))
 
 				} else {
-					store.commit('SET_PATH', [this.context.username])
+					this.$store.commit('SET_PATH', [this.context.username])
 					this.updateHistory('Drive', this.getPath, {filename:""})
 				}
 
@@ -902,14 +903,14 @@ export default {
 				this.updateUsage()
                 this.updateQuota()
                 this.updateMirrorBatId()
-                            
+
 				this.context.getPaymentProperties(false).thenApply(function (paymentProps) {
 					if (paymentProps.isPaid()) {
 						that.paymentProperties = paymentProps;
 					} else
 						that.context.getPendingSpaceRequests().thenApply(reqs => {
 							if (reqs.toArray([]).length > 0)
-								store.commit('USER_ADMIN', true);
+							that.$store.commit('USER_ADMIN', true);
 						});
 				});
 			}
@@ -927,7 +928,7 @@ export default {
 
 		onResize() {
 			this.closeMenu()
-			store.commit('SET_WINDOW_WIDTH', window.innerWidth)
+			this.$store.commit('SET_WINDOW_WIDTH', window.innerWidth)
 		},
         installApp() {
             this.closeMenu();
@@ -992,7 +993,7 @@ export default {
 		},
 		showFiles(data) {
 			// this.path = data.path;
-			store.commit('SET_PATH', data.path)
+			this.$store.commit('SET_PATH', data.path)
 
 		},
 		processPending() {
@@ -1257,9 +1258,9 @@ export default {
 		},
 
 		getMirrorBatId(file) {
-			return file.getOwnerName() == this.context.username ? this.mirrorBatId : java.util.Optional.empty()				
+			return file.getOwnerName() == this.context.username ? this.mirrorBatId : java.util.Optional.empty()
 		},
-				
+
 		mkdir(name) {
 			this.showSpinner = true;
 			var that = this;
@@ -1589,7 +1590,7 @@ export default {
                             uploadParams.triggerRefresh = false;
                             if (!that.isSecretLink) {
                                 that.context.getSpaceUsage().thenApply(u => {
-                                    store.commit('SET_USAGE', u);
+                                    this.$store.commit('SET_USAGE', u);
                                 });
                             }
                             that.updateCurrentDirectory();
@@ -2042,7 +2043,7 @@ export default {
                     shortcutsMap.set(link, entry)
                     that.updateShortcutsFile(that.launcherApp, shortcutsMap).thenApply(res => {
                         that.showSpinner = false;
-                        store.commit("SET_SHORTCUTS", shortcutsMap);
+						that.$store.commit("SET_SHORTCUTS", shortcutsMap);
                     });
                 } else {
                     that.showSpinner = false;
@@ -2076,7 +2077,7 @@ export default {
 
 		updateContext(newContext) {
 			// this.context = newContext;
-			store.commit('SET_CONTEXT', newContext);
+			this.$store.commit('SET_CONTEXT', newContext);
 
 		},
 
@@ -2090,7 +2091,7 @@ export default {
 
 			// this.path = path ? path.split('/') : [];
 		        let pathArr = path.length > 0 ? path.split('/') : []
-                        store.commit('SET_PATH', pathArr)
+                        this.$store.commit('SET_PATH', pathArr)
 
 			this.showSpinner = true;
 			this.updateHistory("Drive", path, {filename:""});
@@ -2120,7 +2121,7 @@ export default {
 		    this.closeMenu();
 		    if (this.selectedFiles.length == 0)
 			return;
-                    
+
 		    var file = this.selectedFiles[0];
 		    var filename = file.getName();
 
@@ -2129,7 +2130,7 @@ export default {
                     this.appArgs = args;
                     this.openFileOrDir(app, this.getPath, args, writable)
 		},
-            
+
 		navigateOrDownload(file) {
 			if (this.showSpinner) // disable user input whilst refreshing
 				return;

@@ -33,9 +33,10 @@
 import AppButton from "../AppButton.vue";
 import AppModal from "./AppModal.vue";
 
-import { inject } from 'vue'
-import Vuex from "vuex"
-const store = inject('store')
+// import { inject } from 'vue'
+// import Vuex from "vuex"
+import { mapState,mapGetters  } from 'vuex'
+// const store = inject('store')
 
 export default {
     components: {
@@ -49,10 +50,10 @@ export default {
 		};
 	},
 	computed: {
-		...Vuex.mapState([
+		...mapState([
 			'context'
 		]),
-		...Vuex.mapGetters([
+		...mapGetters([
 			'quota',
 			'usage'
 		]),
@@ -90,7 +91,7 @@ export default {
             })
         },
 		close(){
-			store.commit("SET_MODAL", false);
+			this.$store.commit("SET_MODAL", false);
 		}
 
 	},

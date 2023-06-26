@@ -21,7 +21,8 @@ import sandboxMixin from "../../mixins/sandbox/index.js";
 import AppSandbox from "./AppSandbox.vue";
 import Spinner from "../spinner/Spinner.vue";
 
-import Vuex from "vuex"
+// import Vuex from "vuex"
+import { mapState } from 'vuex'
 
 export default {
     components: {
@@ -40,7 +41,7 @@ export default {
     props: ['appPropsFile'],
     mixins:[sandboxMixin],
     computed: {
-        ...Vuex.mapState([
+        ...mapState([
             'context',
         ])
     },

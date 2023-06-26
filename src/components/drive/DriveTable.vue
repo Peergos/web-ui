@@ -42,8 +42,9 @@ import AppButton from "../AppButton.vue";
 import mixins from "../../mixins/downloader/index.js";
 
 import { inject } from 'vue'
-import Vuex from "vuex"
-const store = inject('store')
+// import Vuex from "vuex"
+
+// const store = inject('store')
 
 export default {
 	components: {
@@ -61,7 +62,7 @@ export default {
 	methods: {
 		showMenu(e, file){
 			// https://stackoverflow.com/questions/53738919/emit-event-with-parameters-in-vue/53739018
-			store.commit('SET_DRIVE_MENU_TARGET', e.currentTarget)
+			this.$store.commit('SET_DRIVE_MENU_TARGET', e.currentTarget)
 			this.$emit('openMenu', file)
 		},
 

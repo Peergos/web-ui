@@ -72,7 +72,7 @@
 			    </div>
                         </div>
                 </template>
-                
+
 		<template v-else>
 			<h2>This server is currently not accepting signups</h2>
 			<p>Join the waiting list to be notified when there are more places.</p>
@@ -111,7 +111,8 @@ import UriDecoder from '../mixins/uridecoder/index.js';
 import sandboxMixin from "../mixins/sandbox/index.js";
 import Continue from "./Continue.vue";
 
-import Vuex from "vuex"
+// import Vuex from "vuex"
+import { mapState, mapActions } from 'vuex'
 
 export default {
     components: {
@@ -150,7 +151,7 @@ export default {
     },
 
     computed: {
-	...Vuex.mapState([
+	...mapState([
 	    'crypto',
 	    'network'
 	]),
@@ -170,7 +171,7 @@ export default {
     },
 
     methods: {
-	...Vuex.mapActions([
+	...mapActions([
 	    'updateSocial',
 	    'updateUsage',
 	    'updatePayment'

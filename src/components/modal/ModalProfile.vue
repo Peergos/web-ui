@@ -128,7 +128,7 @@
                     </div>
 		</template>
 		<template #footer>
-                    
+
 			 <!-- <AppButton @click.native="showWarning()" type="primary" block accent>Delete account</AppButton> -->
 
 		</template>
@@ -141,7 +141,8 @@ import Confirm from "../confirm/Confirm.vue";
 import Share from "../drive/DriveShare.vue";
 import Spinner from "../spinner/Spinner.vue";
 
-import Vuex from "vuex"
+// import Vuex from "vuex"
+import { mapState } from 'vuex'
 
 export default {
     components: {
@@ -207,7 +208,7 @@ export default {
         this.updateProfile();
     },
     computed: {
-	...Vuex.mapState([
+	...mapState([
             'socialData',
             'context',
 	]),

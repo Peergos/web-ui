@@ -21,7 +21,7 @@
 				<p class="demo--warning" v-if="isDemo">
 				    <strong>WARNING:</strong> This is a demo server and all data
 				    will be cleared periodically. If you want to create a
-				    <i>permanent</i> account, please go 
+				    <i>permanent</i> account, please go
 				    <a class="line" href="https://peergos.net?signup=true">here</a>.
 			        </p>
                                 <AppTab title="Login">
@@ -31,7 +31,7 @@
 					<Signup :token="token" />
 				</AppTab>
 			</AppTabs>
-			
+
 		</section>
 
     	<ServerMessages v-if="context != null"/>
@@ -87,9 +87,10 @@ import routerMixins from "../mixins/router/index.js";
 import launcherMixin from "../mixins/launcher/index.js";
 import sandboxAppMixins from "../mixins/sandbox/index.js";
 
-import { inject } from 'vue'
-import Vuex from "vuex"
-const store = inject('store')
+// import { inject } from 'vue'
+// import Vuex from "vuex"
+// // const store = inject('store')
+import { mapState, mapGetters, mapActions } from 'vuex'
 
 export default {
 	components: {
@@ -128,7 +129,7 @@ export default {
 	},
 
 	computed: {
-	    ...Vuex.mapState([
+	    ...mapState([
 		"isLoggedIn",
 		"isDark",
 		"isSidebarOpen",
@@ -139,7 +140,7 @@ export default {
 		"network",
 		"context"
 	    ]),
-	    ...Vuex.mapGetters(["isSecretLink", "getPath"]),
+	    ...mapGetters(["isSecretLink", "getPath"]),
 	    isDemo() {
 		return (
 		    window.location.hostname == "peergos-demo.net" &&
@@ -187,7 +188,7 @@ export default {
 	},
 
     created() {
-	store.commit("SET_CRYPTO", peergos.shared.Crypto.initJS());
+	this.$store.commit("SET_CRYPTO", peergos.shared.Crypto.initJS());
 	this.updateNetwork();
 
 	window.addEventListener("hashchange", this.onUrlChange, false);
@@ -196,11 +197,11 @@ export default {
     mounted() {
 	let localTheme = localStorage.getItem("theme");
 	document.documentElement.setAttribute("data-theme", localTheme);
-	store.commit("SET_THEME", localTheme == "dark-mode");
+	this.$store.commit("SET_THEME", localTheme == "dark-mode");
     },
 
     methods: {
-        ...Vuex.mapActions([
+        ...mapActions([
 	    'updateQuota',
 	    'updateUsage',
 	    'updatePayment'
@@ -213,7 +214,7 @@ export default {
 	    } else {
             peergos.shared.user.App.init(this.context, "launcher").thenApply(launcher => {
                 that.loadShortcutsFile(launcher).thenApply(shortcutsMap => {
-                    store.commit("SET_SHORTCUTS", shortcutsMap);
+                    this.$store.commit("SET_SHORTCUTS", shortcutsMap);
                     that.updateUsage();
                     that.updateQuota();
                     that.updatePayment();
@@ -259,7 +260,7 @@ export default {
 
 	    if (differentPath && path != null) {
 		console.log('onUrlChange differentPath so we do: ', path.split("/").filter(x => x.length > 0))
-		store.commit(
+		this.$store.commit(
 		    "SET_PATH",
 		    path.split("/").filter((x) => x.length > 0)
 		);
@@ -271,10 +272,10 @@ export default {
 	    if (app === "Drive") {
                 if (inDrive) {
                     this.$refs.appView.closeApps()
-                } else 
-		    store.commit("CURRENT_VIEW", app);
+                } else
+		    this.$store.commit("CURRENT_VIEW", app);
 	    } else if (sidebarApps.includes(app)) {
-		store.commit("CURRENT_VIEW", app);
+		this.$store.commit("CURRENT_VIEW", app);
 	    } else {
                 // Drive sub-apps
                 if (inDrive) {
@@ -286,7 +287,7 @@ export default {
                     } else
                         that.$refs.appView.openInApp(args, app);
                 } else {
-		    store.commit("CURRENT_VIEW", "Drive");
+		    this.$store.commit("CURRENT_VIEW", "Drive");
                     // TODO: find a cleaner way to do this
                     this.$refs.appView._data.onUpdateCompletion.push(() => {
 		        that.$refs.appView.openInApp(args, app);
@@ -301,7 +302,7 @@ export default {
 		!that.isLocalhost,
 		0, true
 	    ).thenApply(function (network) {
-		store.commit("SET_NETWORK", network);
+		this.$store.commit("SET_NETWORK", network);
 	    }).exceptionally(function (throwable) {
 		    that.$toast.error(
 			"Error connecting to network: " + throwable.getMessage()
@@ -337,18 +338,18 @@ export default {
 	// still need to check this
 	gotoSecretLink(props) {
 	    var that = this;
-            store.commit("SET_IS_SECRET_LINK", true);
+            this.$store.commit("SET_IS_SECRET_LINK", true);
 	    peergos.shared.user.UserContext.fromSecretLink(
 		props.link,
 		that.network,
 		that.crypto
 	    )
 		.thenApply(function (context) {
-		    store.commit("SET_CONTEXT", context);
-		    store.commit("SET_DOWNLOAD", props.download);
-		    store.commit("SET_OPEN", props.open);
-		    store.commit("SET_INIT_PATH", props.path);
-                    store.commit("CURRENT_VIEW", "Drive");
+		    this.$store.commit("SET_CONTEXT", context);
+		    this.$store.commit("SET_DOWNLOAD", props.download);
+		    this.$store.commit("SET_OPEN", props.open);
+		    this.$store.commit("SET_INIT_PATH", props.path);
+                    this.$store.commit("CURRENT_VIEW", "Drive");
 		})
 		.exceptionally(function (throwable) {
 		    that.$toast.error(

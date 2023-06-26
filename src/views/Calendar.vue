@@ -66,8 +66,9 @@ import Spinner from "../components/spinner/Spinner.vue";
 import routerMixins from "../mixins/router/index.js";
 
 import { inject } from 'vue'
-import Vuex from "vuex"
-const store = inject('store')
+// import Vuex from "vuex"
+import { mapState,mapGetters  } from 'vuex'
+// const store = inject('store')
 
 export default {
     components: {
@@ -117,12 +118,12 @@ export default {
     },
     props: ['messages'],
 	computed: {
-		...Vuex.mapState([
+		...mapState([
 			'context',
 			'socialData',
 			'mirrorBatId',
 		]),
-		...Vuex.mapGetters([
+		...mapGetters([
 			'isSecretLink',
 			'getPath',
 			'currentFilename'
@@ -170,7 +171,7 @@ export default {
         let that = this;
         let future = peergos.shared.util.Futures.incomplete();
         const props = this.getPropsFromUrl();
-        
+
         let filename = props.args.filename;
         let isFile = filename != null && filename.length > 0;
         if (!isFile) {

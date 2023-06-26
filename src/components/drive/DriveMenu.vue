@@ -15,12 +15,13 @@
 </template>
 
 <script>
-import Vuex from "vuex"
+// import Vuex from "vuex"
+import { mapState } from 'vuex'
 
 export default {
 
 	computed: {
-		...Vuex.mapState([
+		...mapState([
 			'driveMenuTarget',
 			'windowWidth'
 		]),

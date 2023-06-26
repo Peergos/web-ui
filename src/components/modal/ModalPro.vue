@@ -45,9 +45,10 @@
 import AppButton from "../AppButton.vue";
 import AppModal from "./AppModal.vue";
 
-import { inject } from 'vue'
-import Vuex from "vuex"
-const store = inject('store')
+// import { inject } from 'vue'
+// import Vuex from "vuex"
+import { mapState, mapGetters, mapActions } from 'vuex'
+// const store = inject('store')
 
 export default {
 	components: {
@@ -67,13 +68,13 @@ export default {
 		};
 	},
 	computed: {
-		...Vuex.mapState([
+		...mapState([
 			'context',
 			'quotaBytes',
 			'usageBytes',
 			'paymentProperties'
 		]),
-		...Vuex.mapGetters([
+		...mapGetters([
 			'quota',
 			'usage'
 		]),
@@ -114,9 +115,9 @@ export default {
     mounted() {
         this.updateError()
     },
-    
+
 	methods: {
-		...Vuex.mapActions([
+		...mapActions([
 			'updateQuota',
 			'updatePayment'
 		]),
@@ -134,14 +135,14 @@ export default {
 		this.context.requestSpace(bytes)
 		    .thenApply(x => that.updateQuota(quotaBytes => {
 			console.log(quotaBytes,'quotaBytes')
-                        
+
 			if (quotaBytes >= bytes && bytes > 0) {
 			    that.updatePayment()
-			    store.commit("SET_MODAL", false)
-			    that.$toast.info('Thank you for signing up to a paid Peergos account!',{timeout:false, id: 'pro'})                            
+			    that.store.commit("SET_MODAL", false)
+			    that.$toast.info('Thank you for signing up to a paid Peergos account!',{timeout:false, id: 'pro'})
 			} else if (bytes == 0) {
 			    that.updatePayment()
-			    store.commit("SET_MODAL", false)
+			    that.$store.commit("SET_MODAL", false)
 			    that.$toast.error("Sorry to see you go. We'd love to know what we can do better. Make sure to delete enough data to return within your Basic quota. You will revert to the Basic quota at the end of the billing month.", {timeout:false, id: 'pro'})
 			} else if (quotaBytes < bytes && bytes > 0 ) {
                             that.updatePayment(() => {
@@ -155,7 +156,7 @@ export default {
                         that.$toast.error("Error requesting more storage: " + t.getMessage())
                     })
 	    },
-            
+
 	    updateError() {
 		if (this.paymentProperties.hasError()) {
 		    this.$toast.error(this.paymentProperties.getError(),{timeout:false, id: 'payment', position: 'bottom-left'})
@@ -165,7 +166,7 @@ export default {
             updateCardDetails() {
                 this.updateCard(this.paymentProperties.desiredMb()*1024*1024)
             },
-            
+
     	    updateCard(desired) {
 		console.log('updateCard')
 		var that = this;
@@ -181,10 +182,10 @@ export default {
             	    that.startAddCardListener(desired);
 		});
 	    },
-            
+
 	    cancelPaid() {
                 this.requestStorage(0);
-		store.commit("SET_MODAL", false);
+		this.$store.commit("SET_MODAL", false);
             },
 	},
 };
@@ -228,7 +229,7 @@ export default {
         justify-content: space-around;
 }
 .app-modal__container .options{
-	
+
 }
 .app-modal__container button:disabled{
 	background-color: gray;

@@ -169,7 +169,8 @@ import Spinner from "../spinner/Spinner.vue";
 import FormAutocomplete from "../form/FormAutocomplete.vue";
 import SecretLink from "./SecretLink.vue";
 
-import Vuex from "vuex"
+// import Vuex from "vuex"
+import { mapState,mapGetters  } from 'vuex'
 
 export default {
 	components: {
@@ -210,11 +211,11 @@ export default {
 		"currentDir"
 	],
 	computed: {
-		...Vuex.mapState([
+		...mapState([
 			'context',
 			'socialData'
 		]),
-                ...Vuex.mapGetters([
+                ...mapGetters([
 	            'getPath',
 	        ]),
 		allNames() {

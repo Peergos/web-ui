@@ -118,7 +118,8 @@ import Prompt from "../components/prompt/Prompt.vue";
 import Spinner from "../components/spinner/Spinner.vue";
 
 import routerMixins from "../mixins/router/index.js";
-import Vuex from "vuex"
+// import Vuex from "vuex"
+import { mapState } from 'vuex'
 
 export default {
 	components: {
@@ -156,7 +157,7 @@ export default {
     props: ['existingGroups', 'groupId', 'groupTitle', 'existingGroupMembers', 'friendNames'
         , 'updatedGroupMembership', 'existingAdmins'],
     computed: {
-        ...Vuex.mapState([
+        ...mapState([
             'context',
         ])
     },

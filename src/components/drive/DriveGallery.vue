@@ -26,7 +26,8 @@ import Spinner from "../spinner/Spinner.vue";
 import Warning from '../Warning.vue';
 import downloaderMixins from "../../mixins/downloader/index.js";
 
-import Vuex from "vuex"
+// import Vuex from "vuex"
+import { mapState } from 'vuex'
 
 export default {
 	components: {
@@ -47,7 +48,7 @@ export default {
 	props: ["files", "initialFileName", "hideGalleryTitle"],
 	mixins: [downloaderMixins],
 	computed: {
-		...Vuex.mapState([
+		...mapState([
 			'context',
 		]),
 		showableFiles() {

@@ -23,9 +23,10 @@
 import AppButton from "../AppButton.vue";
 import AppModal from "./AppModal.vue";
 
-import { inject } from 'vue'
-import Vuex from "vuex"
-const store = inject('store')
+// import { inject } from 'vue'
+// import Vuex from "vuex"
+import { mapState } from 'vuex'
+// const store = inject('store')
 
 export default {
 	components: {
@@ -39,7 +40,7 @@ export default {
 		};
 	},
 	computed: {
-		...Vuex.mapState([
+		...mapState([
 			'context'
 		]),
       currentFeedback: {
@@ -47,7 +48,7 @@ export default {
           return store.getters.getCurrentFeedback;
         },
         set (value) {
-          store.commit("SET_CURRENT_FEEDBACK", value);
+          this.$this.$store.commit("SET_CURRENT_FEEDBACK", value);
         }
       }
     },
@@ -64,8 +65,8 @@ export default {
                             if (res) {
                                 console.log("Feedback submitted!");
                                 that.$toast.info('Feedback sent. Thank you!',{timeout:false, position: 'bottom-left' })
-                                store.commit("SET_MODAL", false);
-                                store.commit("SET_CURRENT_FEEDBACK", "");
+                                that.$store.commit("SET_MODAL", false);
+                                that.$store.commit("SET_CURRENT_FEEDBACK", "");
                             } else {
                                 that.$toast.error('Error sending feedback',{timeout:false, position: 'bottom-left' })
                             }

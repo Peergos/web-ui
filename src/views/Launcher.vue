@@ -182,7 +182,8 @@ import mixins from "../mixins/mixins.js";
 import launcherMixin from "../mixins/launcher/index.js";
 import sandboxMixin from "../mixins/sandbox/index.js";
 
-import Vuex from "vuex"
+// import Vuex from "vuex"
+import { mapState } from 'vuex'
 
 export default {
     components: {
@@ -262,7 +263,7 @@ export default {
 		},
     },
     computed: {
-        ...Vuex.mapState([
+        ...mapState([
             'context',
             "shortcuts",
             "sandboxedApps",

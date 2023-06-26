@@ -297,7 +297,8 @@ import ProgressBar from "../components/drive/ProgressBar.vue";
 import Message from "../components/message/Message.vue";
 import Spinner from "../components/spinner/Spinner.vue";
 
-import Vuex from "vuex"
+// import Vuex from "vuex"
+import { mapState } from 'vuex'
 
 export default {
     components: {
@@ -371,7 +372,7 @@ export default {
     },
     props: [],
     computed: {
-		...Vuex.mapState([
+		...mapState([
             'quotaBytes',
             'usageBytes',
 		    'context',

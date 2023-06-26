@@ -44,8 +44,9 @@ import MenuItem from './NavigationMenuItem.vue';
 import NavigationStorage from './NavigationStorage.vue';
 
 import { inject } from 'vue'
-import Vuex from "vuex"
-const store = inject('store')
+// import Vuex from "vuex"
+
+// const store = inject('store')
 
 export default {
 	components: {
@@ -75,10 +76,10 @@ export default {
 	},
 	methods: {
 		toggleSidebar() {
-			store.commit("TOGGLE_SIDEBAR");
+			this.$store.commit("TOGGLE_SIDEBAR");
 		},
 		toggleTheme() {
-			store.commit("TOGGLE_THEME");
+			this.$store.commit("TOGGLE_THEME");
 
 			document.documentElement.setAttribute(
 				"data-theme",

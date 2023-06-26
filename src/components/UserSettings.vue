@@ -126,9 +126,10 @@ import AppIcon from "./AppIcon.vue";
 import AppPrompt from "./prompt/AppPrompt.vue";
 import Spinner from "./spinner/Spinner.vue";
 
-import { inject } from 'vue'
-import Vuex from "vuex"
-const store = inject('store')
+// import { inject } from 'vue'
+// import Vuex from "vuex"
+import { mapState, mapGetters } from 'vuex'
+// const store = inject('store')
 
 export default {
     components: {
@@ -156,8 +157,8 @@ export default {
 		};
 	},
 	computed: {
-		...Vuex.mapState(['isLoggedIn', 'isAdmin', 'context', 'isDark']),
-		...Vuex.mapGetters(['currentTheme', 'isPaid'])
+		...mapState(['isLoggedIn', 'isAdmin', 'context', 'isDark']),
+		...mapGetters(['currentTheme', 'isPaid'])
 	},
 	methods: {
         cleanupFailedUploads() {
@@ -166,7 +167,7 @@ export default {
             this.context.cleanPartialUploads().thenApply(snapshot => {
                 that.showSettingsSpinner = false;
                 that.context.getSpaceUsage().thenApply(u => {
-                    store.commit('SET_USAGE', u);
+                    this.$store.commit('SET_USAGE', u);
                 });
             }).exceptionally(function(throwable) {
                 let errMsg = throwable.getMessage();
@@ -265,45 +266,45 @@ export default {
 		},
 	    showRequestStorage() {
                 if(this.isPaid){
-		    store.commit('CURRENT_MODAL', 'ModalPro');
+		    this.$store.commit('CURRENT_MODAL', 'ModalPro');
 		}else{
-		    store.commit('CURRENT_MODAL', 'ModalSpace');
+		    this.$store.commit('CURRENT_MODAL', 'ModalSpace');
 		}
 	    },
 		showProfile() {
-			store.commit("CURRENT_MODAL", "ModalProfile");
+			this.$store.commit("CURRENT_MODAL", "ModalProfile");
 		},
 		launchHelp() {
-			store.commit("CURRENT_MODAL", "ModalHelp");
+			this.$store.commit("CURRENT_MODAL", "ModalHelp");
 		},
 		showTour() {
-			store.commit("CURRENT_MODAL", "ModalTour");
+			this.$store.commit("CURRENT_MODAL", "ModalTour");
 		},
 		showFeedback() {
-			store.commit("CURRENT_MODAL", "ModalFeedback");
+			this.$store.commit("CURRENT_MODAL", "ModalFeedback");
 		},
         showAuthenticationScreen() {
-            store.commit("CURRENT_MODAL", "ModalAuthSettings");
+            this.$store.commit("CURRENT_MODAL", "ModalAuthSettings");
         },
 		showChangePassword() {
-			store.commit("CURRENT_MODAL", "ModalPassword");
+			this.$store.commit("CURRENT_MODAL", "ModalPassword");
 		},
 		showViewAccount() {
-			store.commit("CURRENT_MODAL", "ModalAccount");
+			this.$store.commit("CURRENT_MODAL", "ModalAccount");
 		},
 		logout() {
 		    let that = this;
 		    clearRootKeyCacheFully(cleared =>  {
-                store.commit("SET_CONTEXT", null);
+                this.$store.commit("SET_CONTEXT", null);
                 window.location.fragment = "";
                 window.location.reload();
             });
 		},
 		toggleSidebar() {
-			store.commit("TOGGLE_SIDEBAR");
+			this.$store.commit("TOGGLE_SIDEBAR");
 		},
 		toggleTheme() {
-			store.commit("TOGGLE_THEME");
+			this.$store.commit("TOGGLE_THEME");
 			document.documentElement.setAttribute(
 				"data-theme",
 				this.currentTheme

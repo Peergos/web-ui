@@ -73,7 +73,8 @@ import mixins from "../../mixins/mixins.js";
 import downloaderMixin from "../../mixins/downloader/index.js";
 import sandboxMixin from "../../mixins/sandbox/index.js";
 
-import Vuex from "vuex"
+// import Vuex from "vuex"
+import { mapState } from 'vuex'
 
 export default {
     components: {
@@ -97,7 +98,7 @@ export default {
     props: ['appPropsFile','installFolder', "appInstallSuccessFunc"],
     mixins:[mixins, downloaderMixin, sandboxMixin],
     computed: {
-        ...Vuex.mapState([
+        ...mapState([
             'quotaBytes',
             'usageBytes',
             'context',

@@ -1,6 +1,8 @@
-// TODO: split store in modules (UI, Settings, Storage, Drive,...)
+// // import Vuex from "vuex"
 
+import { createStore } from 'vuex'
 import helpers from "../mixins/storage/index.js";
+
 function shallow(val) {
     // tag a value so vue will only shallow watch it
     if (val != null) {
@@ -8,9 +10,9 @@ function shallow(val) {
     }
     return val;
 }
-import Vuex from "vuex"
 
-export default new Vuex.Store({
+
+export default createStore({
 	state: {
 		windowWidth: null,
 		currentView: null,

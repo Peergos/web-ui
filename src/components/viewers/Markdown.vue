@@ -1,6 +1,6 @@
 <template>
 <transition name="modal">
-<div class="modal-mask" @click="close"> 
+<div class="modal-mask" @click="close">
     <div class="modal-container full-height" @click.stop style="width:100%;overflow-y:auto;padding:0;display:flex;flex-flow:column;">
         <div class="modal-header" style="padding:0">
             <center><h2>{{ getFullPathForDisplay() }}</h2></center>
@@ -43,9 +43,10 @@
     import mixins from "../../mixins/downloader/index.js";
     import routerMixins from "../../mixins/router/index.js";
 
-import { inject } from 'vue'
-import Vuex from "vuex"
-const store = inject('store')
+// import { inject } from 'vue'
+// import Vuex from "vuex"
+import { mapState,mapGetters  } from 'vuex'
+// const store = inject('store')
 
 export default {
     components: {
@@ -82,10 +83,10 @@ export default {
     props: ['propAppArgs'],
     mixins:[mixins, routerMixins, launcherMixin],
     computed: {
-        ...Vuex.mapState([
+        ...mapState([
             'context'
         ]),
-        ...Vuex.mapGetters([
+        ...mapGetters([
             'isSecretLink'
         ])
     },
@@ -96,7 +97,7 @@ export default {
     },
     created: function() {
         const props = this.getPropsFromUrl();
-        
+
         let filename = props.args.filename;
         let subPath = props.args.subPath != null && props.args.subPath.length > 0 ? props.args.subPath + "/" : "";
         let path = '/' + props.path;

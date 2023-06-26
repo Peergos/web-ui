@@ -1,8 +1,9 @@
 import ProgressBar from "../../components/drive/ProgressBar.vue";
 
 import { inject } from 'vue'
-import Vuex from "vuex"
-const store = inject('store')
+// import Vuex from "vuex"
+import { mapState } from 'vuex'
+// const store = inject('store')
 
 export default {
     data() {
@@ -11,7 +12,7 @@ export default {
         };
     },
     computed: {
-        ...Vuex.mapState([
+        ...mapState([
         "context",
         "sandboxedApps",
         'mirrorBatId',
