@@ -137,7 +137,7 @@
       <arg value="InstallGraalNode.java"/>
     </exec>
     <exec executable="java" dir="." failonerror="true" >
-      <arg value="NpmInstall.java"/>
+      <arg value="native-build/NpmInstall.java"/>
     </exec>
   </target>
 
