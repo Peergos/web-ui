@@ -53,6 +53,8 @@ import FormAutocomplete from "../form/FormAutocomplete.vue";
 import Spinner from "../spinner/Spinner.vue";
 import routerMixins from "../../mixins/router/index.js";
 
+import Vuex from "vuex"
+
 export default {
 	components: {
 	    FormAutocomplete,

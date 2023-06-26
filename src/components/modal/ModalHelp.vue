@@ -122,6 +122,7 @@
 
 <script>
 import { inject } from 'vue'
+import Vuex from "vuex"
 const store = inject('store')
     
 export default {

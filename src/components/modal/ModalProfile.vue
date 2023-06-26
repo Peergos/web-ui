@@ -141,6 +141,8 @@ import Confirm from "../confirm/Confirm.vue";
 import Share from "../drive/DriveShare.vue";
 import Spinner from "../spinner/Spinner.vue";
 
+import Vuex from "vuex"
+
 export default {
     components: {
         AppModal,

@@ -43,6 +43,8 @@ import Spinner from "../spinner/Spinner.vue";
 import TreeItem from "./TreeItem.vue";
 import folderTreeMixin from "../../mixins/tree-walker/index.js";
 
+import Vuex from "vuex"
+
 export default {
     components: {
         Spinner,

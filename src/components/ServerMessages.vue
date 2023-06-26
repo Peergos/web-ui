@@ -26,6 +26,7 @@
 <script>
     import MessageBar from "./MessageBar.vue";
     import ReplyToServerMessage from "./ReplyToServerMessage.vue";
+import Vuex from "vuex"
 
     export default {
 	components: {

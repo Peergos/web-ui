@@ -297,6 +297,8 @@ import ProgressBar from "../components/drive/ProgressBar.vue";
 import Message from "../components/message/Message.vue";
 import Spinner from "../components/spinner/Spinner.vue";
 
+import Vuex from "vuex"
+
 export default {
     components: {
         AppIcon,

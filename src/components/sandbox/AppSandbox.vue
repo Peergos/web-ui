@@ -63,6 +63,8 @@ import sandboxMixin from "../../mixins/sandbox/index.js";
 import launcherMixin from "../../mixins/launcher/index.js";
 import UriDecoder from '../../mixins/uridecoder/index.js';
 
+import Vuex from "vuex"
+
 export default {
 	mixins:[downloaderMixins, router, sandboxMixin, launcherMixin, UriDecoder],
     components: {

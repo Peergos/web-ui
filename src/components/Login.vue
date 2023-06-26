@@ -41,6 +41,7 @@ import FormPassword from "./form/FormPassword.vue";
 import MultiFactorAuth from "./auth/MultiFactorAuth.vue";
 import routerMixins from "../mixins/router/index.js";
 import UriDecoder from '../mixins/uridecoder/index.js';
+import Vuex from "vuex"
 
 export default {
 	components: {

@@ -110,6 +110,9 @@ import FormPassword from "./form/FormPassword.vue";
 import UriDecoder from '../mixins/uridecoder/index.js';
 import sandboxMixin from "../mixins/sandbox/index.js";
 import Continue from "./Continue.vue";
+
+import Vuex from "vuex"
+
 export default {
     components: {
         AppButton,

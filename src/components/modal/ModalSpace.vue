@@ -34,6 +34,7 @@ import AppButton from "../AppButton.vue";
 import AppModal from "./AppModal.vue";
 
 import { inject } from 'vue'
+import Vuex from "vuex"
 const store = inject('store')
 
 export default {

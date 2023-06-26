@@ -127,6 +127,7 @@ import AppPrompt from "./prompt/AppPrompt.vue";
 import Spinner from "./spinner/Spinner.vue";
 
 import { inject } from 'vue'
+import Vuex from "vuex"
 const store = inject('store')
 
 export default {

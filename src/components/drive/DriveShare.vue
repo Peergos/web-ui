@@ -169,6 +169,8 @@ import Spinner from "../spinner/Spinner.vue";
 import FormAutocomplete from "../form/FormAutocomplete.vue";
 import SecretLink from "./SecretLink.vue";
 
+import Vuex from "vuex"
+
 export default {
 	components: {
 	    AppButton,

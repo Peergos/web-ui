@@ -118,6 +118,7 @@ import Prompt from "../components/prompt/Prompt.vue";
 import Spinner from "../components/spinner/Spinner.vue";
 
 import routerMixins from "../mixins/router/index.js";
+import Vuex from "vuex"
 
 export default {
 	components: {

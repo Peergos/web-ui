@@ -21,6 +21,8 @@ import sandboxMixin from "../../mixins/sandbox/index.js";
 import AppSandbox from "./AppSandbox.vue";
 import Spinner from "../spinner/Spinner.vue";
 
+import Vuex from "vuex"
+
 export default {
     components: {
 		AppSandbox,

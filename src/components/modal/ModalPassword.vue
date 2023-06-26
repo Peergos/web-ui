@@ -41,6 +41,8 @@ import FormPassword from "../form/FormPassword.vue";
 import MultiFactorAuth from "../auth/MultiFactorAuth.vue";
 import Spinner from "../spinner/Spinner.vue";
 
+import Vuex from "vuex"
+
 export default {
     components: {
         AppButton,

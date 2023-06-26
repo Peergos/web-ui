@@ -182,6 +182,8 @@ import mixins from "../mixins/mixins.js";
 import launcherMixin from "../mixins/launcher/index.js";
 import sandboxMixin from "../mixins/sandbox/index.js";
 
+import Vuex from "vuex"
+
 export default {
     components: {
         AppInstall,

@@ -52,6 +52,8 @@ import SelectCreate from '../components/select-create/SelectCreate.vue';
 import Spinner from "../components/spinner/Spinner.vue";
 import Warning from '../components/Warning.vue';
 
+import Vuex from "vuex"
+
 export default {
     components: {
 	    AppHeader,

@@ -268,6 +268,7 @@ import router from "../mixins/router/index.js";
 import launcherMixin from "../mixins/launcher/index.js";
 
 import { inject } from 'vue'
+import Vuex from "vuex"
 const store = inject('store')
 
 export default {

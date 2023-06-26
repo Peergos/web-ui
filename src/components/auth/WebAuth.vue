@@ -42,6 +42,8 @@
 import AppButton from "../AppButton.vue";
 import Spinner from "../spinner/Spinner.vue";
 
+import Vuex from "vuex"
+
 export default {
     components: {
         AppButton,

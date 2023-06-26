@@ -1,6 +1,7 @@
 
 import { createApp } from 'vue'
 import App from './components/App.vue'
+import Vuex from "vuex"
 
 Vue.directive('focus', {
   inserted: function (el) {

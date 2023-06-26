@@ -69,6 +69,8 @@ import Spinner from "../spinner/Spinner.vue";
 import Totp from "../auth/Totp.vue";
 import WebAuth from "../auth/WebAuth.vue";
 
+import Vuex from "vuex"
+
 export default {
     components: {
         AppButton,

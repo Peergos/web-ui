@@ -40,6 +40,8 @@ import AppIcon from "../AppIcon.vue";
 import FormPassword from "../form/FormPassword.vue";
 import MultiFactorAuth from "../auth/MultiFactorAuth.vue";
 
+import Vuex from "vuex"
+
 export default {
 	components: {
 	    AppButton,

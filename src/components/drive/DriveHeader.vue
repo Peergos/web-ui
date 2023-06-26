@@ -71,6 +71,8 @@ import AppIcon from "../AppIcon.vue";
 import AppSandbox from "../sandbox/AppSandbox.vue";
 import UserSettings from "../UserSettings.vue";
 
+import Vuex from "vuex"
+
 export default {
 	components: {
 	    AppButton,

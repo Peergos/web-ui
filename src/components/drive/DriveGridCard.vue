@@ -26,6 +26,7 @@ import AppButton from "../AppButton.vue";
 import AppIcon from "../AppIcon.vue";
 
 import { inject } from 'vue'
+import Vuex from "vuex"
 const store = inject('store')
 
 export default {

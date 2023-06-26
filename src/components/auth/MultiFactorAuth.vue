@@ -63,6 +63,9 @@
 </template>
 <script>
 import AppButton from "../AppButton.vue";
+
+import Vuex from "vuex"
+
 export default {
     components: {
         AppButton,

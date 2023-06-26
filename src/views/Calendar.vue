@@ -66,6 +66,7 @@ import Spinner from "../components/spinner/Spinner.vue";
 import routerMixins from "../mixins/router/index.js";
 
 import { inject } from 'vue'
+import Vuex from "vuex"
 const store = inject('store')
 
 export default {

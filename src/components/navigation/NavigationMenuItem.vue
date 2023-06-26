@@ -14,6 +14,7 @@ import AppIcon from "../AppIcon.vue";
 import router from "../../mixins/router/index.js";
 
 import { inject } from 'vue'
+import Vuex from "vuex"
 const store = inject('store')
 
 export default {

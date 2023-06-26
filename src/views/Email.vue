@@ -51,6 +51,8 @@ import mixins from "../mixins/mixins.js";
 import routerMixins from "../mixins/router/index.js";
 import downloaderMixins from "../mixins/downloader/index.js";
 
+import Vuex from "vuex"
+
 export default {
     components: {
         Confirm,
