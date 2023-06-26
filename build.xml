@@ -148,6 +148,8 @@
       <arg value="build"/>
       <arg value="--outDir"/>
       <arg value="server/webroot"/>
+      <arg value="--minify"/>
+      <arg value="false"/>
     </exec>
   </target>
   
