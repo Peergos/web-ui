@@ -9,7 +9,6 @@
   },
   "dependencies": {
     "@vue/compat": "3.3.4",
-    "esbuild-wasm": "^0.18.9",
     "vue": "^3.3.4",
     "vuex": "^4.1.0"
   },
