@@ -49,7 +49,6 @@
   <target name="js_vendor_dev" description="concat (don't minify) the vendor JS for development">
     <concat destfile="${ui}/js/vendor.js" encoding="utf8">
       <fileset dir="${vendor}/priors" includes="*.js"/>
-      <fileset dir="${vendor}/dev" includes="*.js"/>
       <fileset dir="${vendor}/common" includes="*.js"/>
     </concat>
   </target>
