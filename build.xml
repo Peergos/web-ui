@@ -189,6 +189,9 @@
       <arg value="CompileSubmodule.java"/>
       <arg value="${peergos_project_root}"/>
     </exec>
+    <exec executable="java" failonerror="true">
+      <arg value="RemoveGwtError.java"/>
+    </exec>
   </target>
 
   <available file=".git" type="dir" property="git.present"/>
