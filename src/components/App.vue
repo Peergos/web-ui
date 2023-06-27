@@ -214,7 +214,7 @@ export default {
 	    } else {
             peergos.shared.user.App.init(this.context, "launcher").thenApply(launcher => {
                 that.loadShortcutsFile(launcher).thenApply(shortcutsMap => {
-                    this.$store.commit("SET_SHORTCUTS", shortcutsMap);
+                    that.$store.commit("SET_SHORTCUTS", shortcutsMap);
                     that.updateUsage();
                     that.updateQuota();
                     that.updatePayment();
@@ -345,11 +345,11 @@ export default {
 		that.crypto
 	    )
 		.thenApply(function (context) {
-		    this.$store.commit("SET_CONTEXT", context);
-		    this.$store.commit("SET_DOWNLOAD", props.download);
-		    this.$store.commit("SET_OPEN", props.open);
-		    this.$store.commit("SET_INIT_PATH", props.path);
-                    this.$store.commit("CURRENT_VIEW", "Drive");
+		    that.$store.commit("SET_CONTEXT", context);
+		    that.$store.commit("SET_DOWNLOAD", props.download);
+		    that.$store.commit("SET_OPEN", props.open);
+		    that.$store.commit("SET_INIT_PATH", props.path);
+                    that.$store.commit("CURRENT_VIEW", "Drive");
 		})
 		.exceptionally(function (throwable) {
 		    that.$toast.error(
