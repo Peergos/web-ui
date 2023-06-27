@@ -43,6 +43,8 @@ import routerMixins from "../mixins/router/index.js";
 import UriDecoder from '../mixins/uridecoder/index.js';
 // import Vuex from "vuex"
 import { mapState, mapGetters, mapActions } from 'vuex'
+import { toast } from 'vue3-toastify';
+import 'vue3-toastify/dist/index.css';
 
 export default {
 	components: {
@@ -106,18 +108,18 @@ export default {
                         let loginRoot = peergos.shared.crypto.symmetric.SymmetricKey.fromByteArray(rootKeyPair.rootKey);
                         directGetEntryDataFromCacheProm(rootKeyPair.username).thenApply(function (entryPoints) {
                             if (entryPoints == null) {
-                                that.$toast.error("Legacy accounts can't stay logged in. Please change your password to upgrade your account", {timeout:false, id: 'login'})
+                                toast.error("Legacy accounts can't stay logged in. Please change your password to upgrade your account", {timeout:false, id: 'login'})
                             } else {
                                 that.isLoggingIn = true;
                                 let entryData = peergos.shared.user.UserStaticData.fromByteArray(entryPoints);
                                 peergos.shared.user.UserContext.restoreContext(rootKeyPair.username, loginRoot, entryData,
-                                    that.network, that.crypto, { accept: (x) => (that.$toast.info(x,{ id: 'login' })) }
+                                    that.network, that.crypto, { accept: (x) => (toast.info(x,{ id: 'login' })) }
                                 ).thenApply(function (context) {
                                       that.postLogin(creationStart, context);
                                 })
                                 .exceptionally(function (throwable) {
                                     that.isLoggingIn = false;
-                                    that.$toast.error(that.uriDecode(throwable.getMessage()), {timeout:false, id: 'login'})
+                                    toast.error(that.uriDecode(throwable.getMessage()), {timeout:false, id: 'login'})
                                 });
                             }
                         });
@@ -160,7 +162,7 @@ export default {
 				that.network,
 				that.crypto,
 				// { accept: (x) => (that.spinnerMessage = x) }
-				 { accept: (x) => (that.$toast.info(x,{ id: 'login', timeout:false })) }
+				 { accept: (x) => (toast.info(x,{ id: 'login', timeout:false })) }
 				)
 				.thenApply(function (context) {
                     that.postLogin(creationStart, context);
@@ -168,16 +170,16 @@ export default {
 				.exceptionally(function (throwable) {
                     that.isLoggingIn = false;
                     if (throwable.getMessage().startsWith('Invalid+TOTP+code')) {
-                        that.$toast.error('Invalid Multi Factor Authenticator code', {timeout:false, id: 'login'})
+                        toast.error('Invalid Multi Factor Authenticator code', {timeout:false, id: 'login'})
                     } else {
-					    that.$toast.error(that.uriDecode(throwable.getMessage()), {timeout:false, id: 'login'})
+					    toast.error(that.uriDecode(throwable.getMessage()), {timeout:false, id: 'login'})
 					}
 				});
 		},
 		postLogin(creationStart, context) {
 			const that = this;
 			this.isLoggingIn = false;
-            that.$toast.dismiss('login');
+            toast.dismiss('login');
 
             that.$store.commit('SET_CONTEXT', context);
 

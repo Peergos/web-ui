@@ -113,6 +113,8 @@ import Continue from "./Continue.vue";
 
 // import Vuex from "vuex"
 import { mapState, mapActions } from 'vuex'
+import { toast } from 'vue3-toastify';
+import 'vue3-toastify/dist/index.css';
 
 export default {
     components: {
@@ -192,12 +194,12 @@ export default {
 	    var that = this;
 	    let emailRegEx = /^(([^<>()\[\]\\.,;:\s@"]+(\.[^<>()\[\]\\.,;:\s@"]+)*)|(".+"))@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}])|(([a-zA-Z\-0-9]+\.)+[a-zA-Z]{2,24}))$/ ;
 	    if(!emailRegEx.test(that.email)) {
-		that.$toast.error('Invalid email.',{timeout:false})
+		toast.error('Invalid email.',{timeout:false})
                 return
 	    }
 	    this.network.instanceAdmin.addToWaitList(that.email).thenApply(function(res) {
 		that.email='';
-		that.$toast.info("Congratulations, you have joined the waiting list. We'll be in touch as soon as a place is available.")
+		toast.info("Congratulations, you have joined the waiting list. We'll be in touch as soon as a place is available.")
 	    });
 
 	},
@@ -213,7 +215,7 @@ export default {
         startAddCardListener(future) {
             var that = this;
             this.currentFocusFunction = function(event) {
-                that.$toast.info('Completing signup', {id:'signup', timeout:false})
+                toast.info('Completing signup', {id:'signup', timeout:false})
                 window.removeEventListener("focus", that.currentFocusFunction);
                 future.complete(peergos.shared.util.LongUtil.box(that.desiredQuota))
             };
@@ -231,7 +233,7 @@ export default {
             link.href = this.paymentUrl;
             link.dispatchEvent(click);
             this.startAddCardListener(this.cardFuture);
-            this.$toast.info('Opening payment provider', {id:'signup', timeout:false})
+            toast.info('Opening payment provider', {id:'signup', timeout:false})
         },
         addPaymentCard(props) {
             this.paymentUrl = props.getUrl() + "&username=" + this.username + "&client_secret=" + props.getClientSecret();
@@ -244,22 +246,22 @@ export default {
             const that = this;
 
             if(!that.safePassword) {
-		this.$toast.error('You must accept the password safety warning', {id:'signup'})
+		toast.error('You must accept the password safety warning', {id:'signup'})
 	    } else if (!that.tosAccepted) {
-		this.$toast.error('You must accept the Terms of Service',{id:'signup'})
+		toast.error('You must accept the Terms of Service',{id:'signup'})
             } else if (that.password != that.password2) {
-		this.$toast.error('Passwords do not match!',{id:'signup'})
+		toast.error('Passwords do not match!',{id:'signup'})
 	    } else if (that.password == '') {
-		this.$toast.error('Please generate your password',{id:'signup'})
+		toast.error('Please generate your password',{id:'signup'})
             } else {
                 let usernameRegEx = /^[a-z0-9](?:[a-z0-9]|[-](?=[a-z0-9])){0,31}$/;
 
 		if(!usernameRegEx.test(that.username)) {
-		    that.$toast.error('Invalid username. Usernames must consist of between 1 and 32 characters, containing only digits, lowercase letters and hyphen. They also cannot have two consecutive hyphens, or start or end with a hyphen.',{id:'signup',timeout:false})
+		    toast.error('Invalid username. Usernames must consist of between 1 and 32 characters, containing only digits, lowercase letters and hyphen. They also cannot have two consecutive hyphens, or start or end with a hyphen.',{id:'signup',timeout:false})
                 } else if (BannedUsernames.includes(that.username)) {
-		    that.$toast.error(`Banned username: ${that.username}`,{id:'signup', timeout:false})
+		    toast.error(`Banned username: ${that.username}`,{id:'signup', timeout:false})
                 } else {
-                    that.$toast.info('Signing up...', {id:'signup', timeout:false})
+                    toast.info('Signing up...', {id:'signup', timeout:false})
                     var addCard;
                     if (this.acceptingPaidSignups && this.token.length == 0) {
                         addCard = java.util.Optional.of(props => that.addPaymentCard(props));
@@ -279,7 +281,7 @@ export default {
                         addCard,
 			that.network,
 			that.crypto,
-			{"accept" : x => that.$toast.info(x, {id:'signup', timeout:false})}
+			{"accept" : x => toast.info(x, {id:'signup', timeout:false})}
 		    ).thenApply(function(context) {
             		    sessionStorage.removeItem(idKey);
                         that.$store.commit('SET_CONTEXT', context);
@@ -292,11 +294,11 @@ export default {
                                 that.updateSocial()
                                 that.updateUsage()
                                 console.log("Signing in/up took " + (Date.now()-creationStart)+" mS from function call");
-                                that.$toast.dismiss('signup');
+                                toast.dismiss('signup');
                             });
                         });
                     }).exceptionally(function(throwable) {
-                        that.$toast.error(that.uriDecode(throwable.getMessage()),{timeout:false, id: 'signup'})
+                        toast.error(that.uriDecode(throwable.getMessage()),{timeout:false, id: 'signup'})
                     });
                 }
             }

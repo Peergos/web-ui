@@ -87,10 +87,9 @@ import routerMixins from "../mixins/router/index.js";
 import launcherMixin from "../mixins/launcher/index.js";
 import sandboxAppMixins from "../mixins/sandbox/index.js";
 
-// import { inject } from 'vue'
-// import Vuex from "vuex"
-// // const store = inject('store')
 import { mapState, mapGetters, mapActions } from 'vuex'
+import { toast } from 'vue3-toastify';
+import 'vue3-toastify/dist/index.css';
 
 export default {
 	components: {
@@ -304,7 +303,7 @@ export default {
 	    ).thenApply(function (network) {
 		that.$store.commit("SET_NETWORK", network);
 	    }).exceptionally(function (throwable) {
-		    that.$toast.error(
+		    toast.error(
 			"Error connecting to network: " + throwable.getMessage()
 		    );
 		});
@@ -324,7 +323,7 @@ export default {
 		    };
 
 		    req.onerror = function (e) {
-			that.$toast.error(
+			toast.error(
 			    "Please unblock the following domain for Peergos to function correctly: " +
 				domainOpt.get()
 			);
@@ -352,7 +351,7 @@ export default {
                     that.$store.commit("CURRENT_VIEW", "Drive");
 		})
 		.exceptionally(function (throwable) {
-		    that.$toast.error(
+		    toast.error(
 			"Secret link not found! Url copy/paste error?"
 		    );
 		});

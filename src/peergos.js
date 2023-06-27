@@ -15,20 +15,20 @@ Vue.config.productionTip = false;
 
 // Vue.use(Vuex);
 import store from './store'
-
-const ToastOptions = {
-	hideProgressBar: true,
-	maxToasts: 3,
-	showCloseButtonOnHover: true,
-	position: 'bottom-right'
-};
-
-Vue.use( VueToastification.default, ToastOptions);
+import Vue3Toastify from 'vue3-toastify';
+import { toast } from 'vue3-toastify';
 
 // Initializing Vue after GWT has finished
 setTimeout(function() {
     // createApp(App).provide('store', store).mount('#app');
-	createApp(App).use(store).mount('#app');
+    createApp(App)
+        .use(store)
+        .use(Vue3Toastify, {
+            autoClose: 3000,
+            limit: 3,
+            position: toast.POSITION.BOTTOM_RIGHT,
+            hideProgressBar: true,
+        }).mount('#app');
 }, 500);
 
 console.log("█╗█╗█╗█╗   ██████╗ ███████╗███████╗██████╗  ██████╗  ██████╗ ███████╗   █╗█╗█╗█╗\n" +

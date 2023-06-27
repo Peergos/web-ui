@@ -20,6 +20,10 @@
 
 <script>
 import UriDecoder from '../../mixins/uridecoder/index.js';
+
+import { toast } from 'vue3-toastify';
+import 'vue3-toastify/dist/index.css';
+
 export default {
     data: function() {
         return {
@@ -163,7 +167,7 @@ export default {
         });
             setTimeout(() => {
                 if (!that.isIframeInitialised)
-                    that.$toast.error("Unable to register service worker. Editor will not work offline. \nTo enable offline usage, allow 3rd party cookies for " + window.location.protocol + "//[*]." + window.location.host + "\n Note: this is not tracking", {timeout:false});
+                    toast.error("Unable to register service worker. Editor will not work offline. \nTo enable offline usage, allow 3rd party cookies for " + window.location.protocol + "//[*]." + window.location.host + "\n Note: this is not tracking", {timeout:false});
             }, 2500)
 	},
 
