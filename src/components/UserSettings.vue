@@ -167,7 +167,7 @@ export default {
             this.context.cleanPartialUploads().thenApply(snapshot => {
                 that.showSettingsSpinner = false;
                 that.context.getSpaceUsage().thenApply(u => {
-                    this.$store.commit('SET_USAGE', u);
+                    that.$store.commit('SET_USAGE', u);
                 });
             }).exceptionally(function(throwable) {
                 let errMsg = throwable.getMessage();
@@ -295,7 +295,7 @@ export default {
 		logout() {
 		    let that = this;
 		    clearRootKeyCacheFully(cleared =>  {
-                this.$store.commit("SET_CONTEXT", null);
+                that.$store.commit("SET_CONTEXT", null);
                 window.location.fragment = "";
                 window.location.reload();
             });

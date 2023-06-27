@@ -1590,7 +1590,7 @@ export default {
                             uploadParams.triggerRefresh = false;
                             if (!that.isSecretLink) {
                                 that.context.getSpaceUsage().thenApply(u => {
-                                    this.$store.commit('SET_USAGE', u);
+                                    that.$store.commit('SET_USAGE', u);
                                 });
                             }
                             that.updateCurrentDirectory();
