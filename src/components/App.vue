@@ -302,7 +302,7 @@ export default {
 		!that.isLocalhost,
 		0, true
 	    ).thenApply(function (network) {
-		this.$store.commit("SET_NETWORK", network);
+		that.$store.commit("SET_NETWORK", network);
 	    }).exceptionally(function (throwable) {
 		    that.$toast.error(
 			"Error connecting to network: " + throwable.getMessage()
