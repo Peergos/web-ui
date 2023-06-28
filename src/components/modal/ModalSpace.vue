@@ -33,10 +33,9 @@
 import AppButton from "../AppButton.vue";
 import AppModal from "./AppModal.vue";
 
-// import { inject } from 'vue'
-// import Vuex from "vuex"
 import { mapState,mapGetters  } from 'vuex'
-// const store = inject('store')
+import { toast } from 'vue3-toastify';
+import 'vue3-toastify/dist/index.css';
 
 export default {
     components: {
@@ -70,11 +69,11 @@ export default {
 
             var bytes = parseInt(this.getRequestedBytes())
             if (bytes != this.getRequestedBytes()) {
-				this.$toast.error('Space must be a positive integer', { position: 'bottom-left' })
+				toast.error('Space must be a positive integer', { position: 'bottom-left' })
                 return false;
             }
             if (bytes < this.usage) {
-                this.$toast.error(`You can't request space smaller than your current usage, please delete some files and try again.`, { position: 'bottom-left' })
+                toast.error(`You can't request space smaller than your current usage, please delete some files and try again.`, { position: 'bottom-left' })
                 return false;
             }
             return true;
@@ -86,7 +85,7 @@ export default {
 
             const that = this;
             this.context.requestSpace(this.getRequestedBytes()).thenApply(x => {
-                that.$toast("Space request sent!");
+                toast("Space request sent!");
                 that.close();
             })
         },

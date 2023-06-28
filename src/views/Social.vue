@@ -136,8 +136,9 @@ import Spinner from "../components/spinner/Spinner.vue";
 
 import routerMixins from "../mixins/router/index.js";
 
-// import Vuex from "vuex"
 import { mapState, mapGetters, mapActions  } from 'vuex'
+import { toast } from 'vue3-toastify';
+import 'vue3-toastify/dist/index.css';
 
 export default {
 	components: {
@@ -280,7 +281,7 @@ export default {
                 }
             });
 	        if (this.targetUsernames.length == 0) {
-		        that.$toast('Follow request already sent')
+		        toast('Follow request already sent')
                 return;
 	        }
 	        let alreadyBlockedUsers = [];
@@ -292,12 +293,12 @@ export default {
             });
             if (alreadyBlockedUsers.length > 0) {
                 if (alreadyBlockedUsers.length > 1) {
-                    that.$toast('The following users are blocked: ' +
+                    toast('The following users are blocked: ' +
                         alreadyBlockedUsers.join(", ") +
                         '');
                     return;
                 } else {
-                    that.$toast('User: ' + alreadyBlockedUsers[0] + ' is blocked');
+                    toast('User: ' + alreadyBlockedUsers[0] + ' is blocked');
                     return;
                 }
             }
@@ -307,11 +308,11 @@ export default {
             .thenApply(function(success) {
                 if(success) {
                     // that.resetTypeahead();
-                    that.$toast('Follow request(s) sent')
+                    toast('Follow request(s) sent')
                     that.updateSocial();
                     that.targetUsernames = [];
                 } else {
-                    that.$toast('Follow request(s) failed')
+                    toast('Follow request(s) failed')
                                 // that.resetTypeahead();
                 }
                 that.showSpinner = false;
@@ -320,7 +321,7 @@ export default {
                     //     // that.resetTypeahead();
                     // }
                 that.showSpinner = false;
-                that.$toast.error(`${throwable.getMessage()}`, {timeout:false, id: 'social'})
+                toast.error(`${throwable.getMessage()}`, {timeout:false, id: 'social'})
             });
         },
 
@@ -330,7 +331,7 @@ export default {
             this.context.sendReplyFollowRequest(req, true, true)
                 .thenApply(function(success) {
 		    that.showSpinner = false;
-		    that.$toast('Follow request reciprocated')
+		    toast('Follow request reciprocated')
 		    that.updateSocial();
                 });
         },
@@ -341,7 +342,7 @@ export default {
             this.context.sendReplyFollowRequest(req, true, false)
                 .thenApply(function(success) {
 		    that.showSpinner = false;
-		    that.$toast('Follow request accepted')
+		    toast('Follow request accepted')
 		    that.updateSocial();
                 });
         },
@@ -352,7 +353,7 @@ export default {
             this.context.sendReplyFollowRequest(req, false, false)
                 .thenApply(function(success) {
                     that.showSpinner = false;
-		    that.$toast('Follow request rejected')
+		    toast('Follow request rejected')
 		    that.updateSocial();
                 });
         },
@@ -363,7 +364,7 @@ export default {
             this.context.removeFollower(username)
                 .thenApply(function(success) {
                     that.showSpinner = false;
-		    that.$toast(`Removed follower ${username}`)
+		    toast(`Removed follower ${username}`)
 		    that.updateSocial();
                 });
         },
@@ -374,7 +375,7 @@ export default {
             this.context.unfollow(username)
                 .thenApply(function(success) {
 		    that.showSpinner = false;
-		    that.$toast(`Stopped following ${username}`)
+		    toast(`Stopped following ${username}`)
 		    that.updateSocial();
                 });
         },
@@ -384,7 +385,7 @@ export default {
             this.showSpinner = true;
             this.context.unblock(username).thenApply(function(success) {
 		        that.showSpinner = false;
-		        that.$toast(`${username} unblocked`);
+		        toast(`${username} unblocked`);
 		        that.updateSocial();
             });
         },

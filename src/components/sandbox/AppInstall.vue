@@ -73,8 +73,9 @@ import mixins from "../../mixins/mixins.js";
 import downloaderMixin from "../../mixins/downloader/index.js";
 import sandboxMixin from "../../mixins/sandbox/index.js";
 
-// import Vuex from "vuex"
 import { mapState } from 'vuex'
+import { toast } from 'vue3-toastify';
+import 'vue3-toastify/dist/index.css';
 
 export default {
     components: {
@@ -451,10 +452,10 @@ export default {
             return future;
         },
         showMessage: function(message) {
-            this.$toast(message)
+            toast(message)
         },
         showError: function(message) {
-            this.$toast.error(message, {timeout:false});
+            toast.error(message, {timeout:false});
         }
     }
 }

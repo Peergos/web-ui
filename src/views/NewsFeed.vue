@@ -250,8 +250,9 @@ import Spinner from "../components/spinner/Spinner.vue";
 import routerMixins from "../mixins/router/index.js";
 import mixins from "../mixins/mixins.js";
 
-// import Vuex from "vuex"
 import { mapState,mapGetters  } from 'vuex'
+import { toast } from 'vue3-toastify';
+import 'vue3-toastify/dist/index.css';
 
 export default {
     components: {
@@ -949,7 +950,7 @@ export default {
         },
         showMessage: function(title, body) {
             let bodyText = body == null ? '' : body;
-            this.$toast.error(title + bodyText, {timeout:false, id: 'error'})
+            toast.error(title + bodyText, {timeout:false, id: 'error'})
         },
         joinConversation: function (entry) {
             let that = this;

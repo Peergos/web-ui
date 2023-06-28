@@ -64,8 +64,9 @@
 <script>
 import AppButton from "../AppButton.vue";
 
-// import Vuex from "vuex"
 import { mapState } from 'vuex'
+import { toast } from 'vue3-toastify';
+import 'vue3-toastify/dist/index.css';
 
 export default {
     components: {
@@ -144,7 +145,7 @@ export default {
                 let resp = peergos.client.JsUtil.generateWebAuthnResponse(credentialId, authenticatorData, clientDataJson, signature);
                 that.consumer_func(credentialId, resp);
            }).catch(getCredentialsException => {
-                that.$toast.error('Unable to get credentials', {timeout:false});
+                toast.error('Unable to get credentials', {timeout:false});
                 console.log('Unable to get credentials: ' + getCredentialsException);
            });
         }

@@ -40,8 +40,9 @@ import AppIcon from "../AppIcon.vue";
 import FormPassword from "../form/FormPassword.vue";
 import MultiFactorAuth from "../auth/MultiFactorAuth.vue";
 
-// import Vuex from "vuex"
 import { mapState } from 'vuex'
+import { toast } from 'vue3-toastify';
+import 'vue3-toastify/dist/index.css';
 
 export default {
 	components: {
@@ -67,7 +68,7 @@ export default {
 	methods: {
 		showWarning() {
 			if(this.password.length == 0) {
-				this.$toast.error('Password must be populated!',{timeout:false, position: 'bottom-left' })
+				toast.error('Password must be populated!',{timeout:false, position: 'bottom-left' })
 			} else {
 				this.warning = true
 			}
@@ -95,17 +96,17 @@ export default {
             };
             this.context.deleteAccount(this.password, mfaReq => handleMfa(mfaReq)).thenApply(function(result){
                 if (result) {
-					that.$toast('Account Deleted!',{position: 'bottom-left' })
+					toast('Account Deleted!',{position: 'bottom-left' })
 					that.$store.commit("SET_MODAL", false);
                 	that.exit()
                 } else {
-					that.$toast(`Error Deleting Account: ${throwable.getMessage()}`,{position: 'bottom-left' })
+					toast(`Error Deleting Account: ${throwable.getMessage()}`,{position: 'bottom-left' })
                 }
             }).exceptionally(function(throwable) {
                 if (throwable.getMessage().startsWith('Invalid+TOTP+code')) {
-                    that.$toast.error('Invalid Multi Factor Authenticator code', {timeout:false})
+                    toast.error('Invalid Multi Factor Authenticator code', {timeout:false})
                 } else {
-                    that.$toast.error(that.uriDecode(throwable.getMessage()), {timeout:false})
+                    toast.error(that.uriDecode(throwable.getMessage()), {timeout:false})
                 }
                 console.log(throwable.getMessage())
             });

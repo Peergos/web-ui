@@ -41,8 +41,9 @@ import FormPassword from "../form/FormPassword.vue";
 import MultiFactorAuth from "../auth/MultiFactorAuth.vue";
 import Spinner from "../spinner/Spinner.vue";
 
-// import Vuex from "vuex"
 import { mapState } from 'vuex'
+import { toast } from 'vue3-toastify';
+import 'vue3-toastify/dist/index.css';
 
 export default {
     components: {
@@ -83,7 +84,7 @@ export default {
 
 	updatePassword() {
         if(this.existing.length == 0 || this.password.length == 0 || this.password2.length == 0) {
-            this.$toast.error('All fields must be populated!',{timeout:false, position: 'bottom-left' })
+            toast.error('All fields must be populated!',{timeout:false, position: 'bottom-left' })
         } else {
             if (this.password == this.password2) {
                 let that = this;
@@ -108,19 +109,19 @@ export default {
                 this.context.changePassword(this.existing, this.password, mfaReq => handleMfa(mfaReq)).thenApply(function(newContext){
                     that.$store.commit("SET_CONTEXT", newContext);
                     that.$store.commit("SET_MODAL", false);
-                    that.$toast.info('Password changed')
+                    toast.info('Password changed')
                     that.showSpinner = false;
                 }).exceptionally(function(throwable) {
                     if (throwable.getMessage().startsWith('Invalid+TOTP+code')) {
-                        that.$toast.error('Invalid Multi Factor Authenticator code', {timeout:false})
+                        toast.error('Invalid Multi Factor Authenticator code', {timeout:false})
                     } else {
-                        that.$toast.error(that.uriDecode(throwable.getMessage()), {timeout:false})
+                        toast.error(that.uriDecode(throwable.getMessage()), {timeout:false})
                     }
                     that.showSpinner = false;
                     console.log(throwable.getMessage())
                 });
             } else {
-                this.$toast.error('Passwords do not match',{timeout:false})
+                toast.error('Passwords do not match',{timeout:false})
             }
         }
     },

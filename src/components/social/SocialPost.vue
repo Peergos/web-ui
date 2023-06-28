@@ -63,6 +63,9 @@
 import ProgressBar from "../drive/ProgressBar.vue";
 import Spinner from "../spinner/Spinner.vue";
 
+import { toast } from 'vue3-toastify';
+import 'vue3-toastify/dist/index.css';
+
 export default {
     components: {
 		ProgressBar,
@@ -250,7 +253,7 @@ export default {
                 let updateProgressBar = function(len){
                     progress.done += len.value_0;
 
-                    that.$toast.update(progress.name,
+                    toast.update(progress.name,
                                        {content:
 					{
 					    component: ProgressBar,
@@ -263,7 +266,7 @@ export default {
 				       });
 
 		    if (progress.done >= progress.max) {
-			that.$toast.dismiss(progress.name);
+			toast.dismiss(progress.name);
 		    }
                 };
                 this.uploadMedia(this.mediaFiles[index], updateProgressBar).thenApply(result => {
@@ -291,7 +294,7 @@ export default {
                     max:resultingSize,
                     name: file.name
                 };
-                that.$toast({
+                toast({
 		    component: ProgressBar,
 		    props:  progress,
 		} , { icon: false , timeout:false, id: file.name})

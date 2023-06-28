@@ -43,10 +43,9 @@
     import mixins from "../../mixins/downloader/index.js";
     import routerMixins from "../../mixins/router/index.js";
 
-// import { inject } from 'vue'
-// import Vuex from "vuex"
 import { mapState,mapGetters  } from 'vuex'
-// const store = inject('store')
+import { toast } from 'vue3-toastify';
+import 'vue3-toastify/dist/index.css';
 
 export default {
     components: {
@@ -205,7 +204,7 @@ export default {
             that.setupIFrameMessaging(iframe, func);
             setTimeout(() => {
                 if (!that.isIframeInitialised)
-                    that.$toast.error("Unable to register service worker. Markdown viewer will not work offline. \nTo enable offline usage, allow 3rd party cookies for " + window.location.protocol + "//[*]." + window.location.host + "\n Note: this is not tracking", {timeout:false});
+                    toast.error("Unable to register service worker. Markdown viewer will not work offline. \nTo enable offline usage, allow 3rd party cookies for " + window.location.protocol + "//[*]." + window.location.host + "\n Note: this is not tracking", {timeout:false});
             }, 2500)
 	},
 
@@ -227,9 +226,9 @@ export default {
     showMessage: function(isError, title, body) {
         let bodyContents = body == null ? '' : ' ' + body;
         if (isError) {
-            this.$toast.error(title + bodyContents, {timeout:false});
+            toast.error(title + bodyContents, {timeout:false});
         } else {
-            this.$toast(title + bodyContents)
+            toast(title + bodyContents)
         }
     },
     showErrorMessage(errMsg) {

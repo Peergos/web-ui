@@ -1,5 +1,8 @@
 import ProgressBar from "../../components/drive/ProgressBar.vue";
 
+import { toast } from 'vue3-toastify';
+import 'vue3-toastify/dist/index.css';
+
 export default {
 	data() {
 		return {
@@ -145,7 +148,7 @@ export default {
                     progress.done += read.value_0;
                     if (progress.done >= progress.max) {
                         setTimeout(function () {
-                            that.$toast.dismiss(zipFilename);
+                            toast.dismiss(zipFilename);
                         }, 100);
                     }
                 }

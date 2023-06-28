@@ -69,8 +69,9 @@ import Spinner from "../spinner/Spinner.vue";
 import Totp from "../auth/Totp.vue";
 import WebAuth from "../auth/WebAuth.vue";
 
-// import Vuex from "vuex"
 import { mapState } from 'vuex'
+import { toast } from 'vue3-toastify';
+import 'vue3-toastify/dist/index.css';
 
 export default {
     components: {
@@ -117,7 +118,7 @@ export default {
             }
             that.showSpinner = false;
         }).exceptionally(function(throwable) {
-            that.$toast.error('Unable to retrieve authentication methods', {timeout:false});
+            toast.error('Unable to retrieve authentication methods', {timeout:false});
             console.log('Unable to retrieve authentication methods: ' + throwable);
             that.showSpinner = false;
         });
@@ -152,14 +153,14 @@ export default {
                 }
                 that.showSpinner = false;
             }).exceptionally(function(throwable) {
-                that.$toast.error('Unable to delete authentication method', {timeout:false});
+                toast.error('Unable to delete authentication method', {timeout:false});
                 console.log('Unable to delete authentication method: ' + throwable);
                 that.showSpinner = false;
             });
         },
 	    addWebAuthKey() {
 	        if (this.webAuthKeys.length + this.totpKey.length >= 10) {
-                that.$toast.error('Reached maximum number of Security Keys', {timeout:false});
+                toast.error('Reached maximum number of Security Keys', {timeout:false});
 	        } else {
                 this.showWebAuthSetup = true;
             }
@@ -188,7 +189,7 @@ export default {
                 }
                 that.showSpinner = false;
             }).exceptionally(function(throwable) {
-                that.$toast.error('Unable to delete web authentication method', {timeout:false});
+                toast.error('Unable to delete web authentication method', {timeout:false});
                 console.log('Unable to delete web authentication method: ' + throwable);
                 that.showSpinner = false;
             });

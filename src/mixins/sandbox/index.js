@@ -1,9 +1,8 @@
 import ProgressBar from "../../components/drive/ProgressBar.vue";
 
-import { inject } from 'vue'
-// import Vuex from "vuex"
 import { mapState } from 'vuex'
-// const store = inject('store')
+import { toast } from 'vue3-toastify';
+import 'vue3-toastify/dist/index.css';
 
 export default {
     data() {
@@ -47,7 +46,7 @@ export default {
               return "Allow app to modify its own code";
           } else {
               console.log('Unknown permission: ' + permission);
-              this.$toast.error('Unknown permission: ' + permission, {timeout:false});
+              toast.error('Unknown permission: ' + permission, {timeout:false});
           }
       },
       verifyJSONFile: function(file, appPath) {

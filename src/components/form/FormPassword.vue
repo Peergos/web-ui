@@ -22,6 +22,9 @@
 import AppButton  from "../AppButton.vue";
 import CommonPasswords from '../../mixins/password/passwords.js';
 
+import { toast } from 'vue3-toastify';
+import 'vue3-toastify/dist/index.css';
+
 export default {
 	components: {
 	    AppButton,
@@ -64,14 +67,14 @@ export default {
 	    let suffix = ["th", "st", "nd", "rd", "th", "th", "th", "th", "th", "th"][(index+1) % 10];
             
 	    if (index != -1) {
-		this.$toast.error(`your password is the ${index+1} ${suffix} most common password!`,{ id: 'password', timeout:false });
+		toast.error(`your password is the ${index+1} ${suffix} most common password!`,{ id: 'password', timeout:false });
 		this.passwordUpdate = true
 	    } else if (passwd.length < this.passwordThreshold) {
-		this.$toast.error(`passwords less than ${this.passwordThreshold} characters are considered unsafe.`,{ id: 'password', timeout:false });
+		toast.error(`passwords less than ${this.passwordThreshold} characters are considered unsafe.`,{ id: 'password', timeout:false });
 		this.passwordUpdate = true
 	    }else{
 		if (this.passwordUpdate)
-		    this.$toast.error(`That's a better password.`,{ id: 'password', timeout:4000 });
+		    toast.error(`That's a better password.`,{ id: 'password', timeout:4000 });
 	    }
 	}
     },

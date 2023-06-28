@@ -57,8 +57,9 @@ import AppButton from "../AppButton.vue";
 import Spinner from "../spinner/Spinner.vue";
 import Message from "../message/Message.vue";
 
-// import Vuex from "vuex"
 import { mapState } from 'vuex'
+import { toast } from 'vue3-toastify';
+import 'vue3-toastify/dist/index.css';
 
 export default {
     components: {
@@ -95,7 +96,7 @@ export default {
             that.showSpinner = false;
             that.isReady = true;
         }).exceptionally(function (addException) {
-            that.$toast.error('Unable to add new authentication method', {timeout:false});
+            toast.error('Unable to add new authentication method', {timeout:false});
             console.log('Unable to add new authentication method: ' + addException);
             that.showSpinner = false;
         });
@@ -114,16 +115,16 @@ export default {
                 this.showSpinner = true;
                 let clientCode = this.totp.trim();
                 that.context.network.account.enableTotpFactor(this.context.username, this.credentialId, clientCode, this.context.signer).thenApply(res => {
-                    this.$toast('Authenticator App has been enabled');
+                    toast('Authenticator App has been enabled');
                     that.showSpinner = false;
                     that.close(true);
                 }).exceptionally(function (throwable) {
                     that.showSpinner = false;
                     if(throwable.detailMessage.startsWith('Invalid+TOTP+code+for+credId')) {
-                        that.$toast.error('Incorrect code', {timeout:false});
+                        toast.error('Incorrect code', {timeout:false});
                         console.log('Incorrect code: ' + throwable);
                     } else {
-                        that.$toast.error('Unable to enable Authenticator app', {timeout:false});
+                        toast.error('Unable to enable Authenticator app', {timeout:false});
                         console.log('Unable to enable Authenticator app. Error: ' + throwable);
                     }
                 });

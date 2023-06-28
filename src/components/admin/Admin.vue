@@ -34,6 +34,9 @@
 <script>
 import Spinner from "../spinner/Spinner.vue";
 
+import { toast } from 'vue3-toastify';
+import 'vue3-toastify/dist/index.css';
+
 export default {
 	components: {
 	    Spinner
@@ -48,7 +51,7 @@ export default {
     },
     methods: {
         showMessage: function(body) {
-            this.$toast(body);
+            toast(body);
         },
         approve: function(req) {
             var that = this;

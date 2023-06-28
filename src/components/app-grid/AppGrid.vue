@@ -31,6 +31,8 @@
 </div>
 </template>
 <script>
+import { toast } from 'vue3-toastify';
+import 'vue3-toastify/dist/index.css';
 
 export default {
     components: {
@@ -111,7 +113,7 @@ export default {
         },
         updateApp: function(e) {
             if (!this.selectedApp.updateAvailable) {
-                this.$toast("No update for App: " + this.selectedApp.displayName);
+                toast("No update for App: " + this.selectedApp.displayName);
             } else {
                 this.updateAppFunc(this.selectedApp);
             }

@@ -63,8 +63,9 @@ import sandboxMixin from "../../mixins/sandbox/index.js";
 import launcherMixin from "../../mixins/launcher/index.js";
 import UriDecoder from '../../mixins/uridecoder/index.js';
 
-// import Vuex from "vuex"
 import { mapState,mapGetters  } from 'vuex'
+import { toast } from 'vue3-toastify';
+import 'vue3-toastify/dist/index.css';
 
 export default {
 	mixins:[downloaderMixins, router, sandboxMixin, launcherMixin, UriDecoder],
@@ -1481,7 +1482,7 @@ export default {
         },
         showError: function(msg) {
             console.log(msg);
-            this.$toast.error(msg, {timeout:false});
+            toast.error(msg, {timeout:false});
         },
         closeAppFromToolbar: function () {
             let that = this;

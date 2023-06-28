@@ -34,6 +34,9 @@
 </template>
 
 <script>
+import { toast } from 'vue3-toastify';
+import 'vue3-toastify/dist/index.css';
+
 export default {
     data: function() {
         return {
@@ -61,7 +64,7 @@ export default {
     },
     methods: {
         showMessage: function(message) {
-            this.$toast.error(message, {timeout:false});
+            toast.error(message, {timeout:false});
         },
         onChange: function (event) {
             let newVal = event.target.value;

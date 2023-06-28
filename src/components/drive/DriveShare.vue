@@ -169,8 +169,9 @@ import Spinner from "../spinner/Spinner.vue";
 import FormAutocomplete from "../form/FormAutocomplete.vue";
 import SecretLink from "./SecretLink.vue";
 
-// import Vuex from "vuex"
 import { mapState,mapGetters  } from 'vuex'
+import { toast } from 'vue3-toastify';
+import 'vue3-toastify/dist/index.css';
 
 export default {
 	components: {
@@ -321,7 +322,7 @@ export default {
 				})
 				.exceptionally(function (throwable) {
 					that.showSpinner = false;
-					that.$toast.error(`Error sharing file ${that.files[0].getFileProperties().name}: ${throwable.getMessage()}`, {timeout:false, id: 'share'})
+					toast.error(`Error sharing file ${that.files[0].getFileProperties().name}: ${throwable.getMessage()}`, {timeout:false, id: 'share'})
 				});
 		},
 		unshareFileWith(read_usernames, edit_usernames, sharedWithAccess) {
@@ -338,7 +339,7 @@ export default {
 					)
 					.thenApply(function (b) {
 						that.showSpinner = false;
-						that.$toast('Read access revoked')
+						toast('Read access revoked')
 						that.close();
 						console.log(
 							"unshared read access to " +
@@ -350,7 +351,7 @@ export default {
 					})
 					.exceptionally(function (throwable) {
 						that.showSpinner = false;
-						that.$toast.error(`Error unsharing file ${filename}: ${throwable.getMessage()}`, {timeout:false, id: 'share'})
+						toast.error(`Error unsharing file ${filename}: ${throwable.getMessage()}`, {timeout:false, id: 'share'})
 
 					});
 			} else {
@@ -363,7 +364,7 @@ export default {
 					)
 					.thenApply(function (b) {
 						that.showSpinner = false;
-						that.$toast('Read & Write access revoked')
+						toast('Read & Write access revoked')
 						that.close();
 						console.log(
 							"unshared write access to " +
@@ -375,20 +376,20 @@ export default {
 					})
 					.exceptionally(function (throwable) {
 						that.showSpinner = false;
-						that.$toast.error(`Error unsharing file ${filename}: ${throwable.getMessage()}`, {timeout:false, id: 'share'})
+						toast.error(`Error unsharing file ${filename}: ${throwable.getMessage()}`, {timeout:false, id: 'share'})
 					});
 			}
 		},
 		allowedToShare(file) {
 			if (file.isUserRoot()) {
-				this.$toast.error('You cannot share your home directory', {timeout:false, id: 'share'})
+				toast.error('You cannot share your home directory', {timeout:false, id: 'share'})
 				return false;
 			}
 			if (
 				this.sharedWithAccess == "Edit" &&
 				file.getOwnerName() != this.context.username
 			) {
-				this.$toast.error('Only the owner of a file can grant write access', {timeout:false, id: 'share'})
+				toast.error('Only the owner of a file can grant write access', {timeout:false, id: 'share'})
 				return false;
 			}
 			return true;
@@ -423,7 +424,7 @@ export default {
 				})
 				.exceptionally(function (throwable) {
 					that.showSpinner = false;
-					that.$toast.error(`Error sharing file ${that.files[0].getFileProperties().name}: ${throwable.getMessage()} `, {timeout:false, id: 'share'})
+					toast.error(`Error sharing file ${that.files[0].getFileProperties().name}: ${throwable.getMessage()} `, {timeout:false, id: 'share'})
 				});
 		},
 		isFriend(name) {
@@ -577,7 +578,7 @@ export default {
 				}
 			}
 			if (usersToShareWith.length == 0) {
-				that.$toast.error('Already shared', {timeout:false, id: 'share'})
+				toast.error('Already shared', {timeout:false, id: 'share'})
 				return;
 			}
 			var filename = that.files[0].getFileProperties().name;
@@ -591,7 +592,7 @@ export default {
 					)
 					.thenApply(function (b) {
 						that.showSpinner = false;
-						that.$toast('Secure sharing complete')
+						toast('Secure sharing complete')
 						that.close();
 						// that.resetTypeahead();
 						console.log("shared read access to " + filename);
@@ -599,7 +600,7 @@ export default {
 					})
 					.exceptionally(function (throwable) {
 						that.showSpinner = false;
-						that.$toast.error(`Error sharing file ${filename}: ${throwable.getMessage()}`, {timeout:false, id: 'share'})
+						toast.error(`Error sharing file ${filename}: ${throwable.getMessage()}`, {timeout:false, id: 'share'})
 
 					});
 			} else {
@@ -610,7 +611,7 @@ export default {
 					)
 					.thenApply(function (b) {
 						that.showSpinner = false;
-						that.$toast('Secure sharing complete')
+						toast('Secure sharing complete')
 						// that.resetTypeahead();
 						that.close();
 						console.log("shared write access to " + filename);
@@ -618,7 +619,7 @@ export default {
 					})
 					.exceptionally(function (throwable) {
 						that.showSpinner = false;
-						that.$toast.error(`Error sharing file ${filename}: ${throwable.getMessage()}`, {timeout:false, id: 'share'})
+						toast.error(`Error sharing file ${filename}: ${throwable.getMessage()}`, {timeout:false, id: 'share'})
 					});
 			}
 		},

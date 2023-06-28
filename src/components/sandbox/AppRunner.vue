@@ -21,8 +21,9 @@ import sandboxMixin from "../../mixins/sandbox/index.js";
 import AppSandbox from "./AppSandbox.vue";
 import Spinner from "../spinner/Spinner.vue";
 
-// import Vuex from "vuex"
 import { mapState } from 'vuex'
+import { toast } from 'vue3-toastify';
+import 'vue3-toastify/dist/index.css';
 
 export default {
     components: {
@@ -75,7 +76,7 @@ export default {
             });
         },
         showError: function(message) {
-            this.$toast.error(message, {timeout:false});
+            toast.error(message, {timeout:false});
         },
         runApp: function(props) {
             this.showAppSandbox = true;

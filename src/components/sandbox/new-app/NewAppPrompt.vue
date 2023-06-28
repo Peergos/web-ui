@@ -80,6 +80,9 @@
 <script>
 import AppButton from "../../AppButton.vue";
 
+import { toast } from 'vue3-toastify';
+import 'vue3-toastify/dist/index.css';
+
 export default {
     components: {
         AppButton,
@@ -150,15 +153,15 @@ export default {
 		getPrompt() {
 		    let appName = this.prompt_result.trim();
             if (appName === '') {
-                this.$toast.error('Invalid App name',{timeout:false});
+                toast.error('Invalid App name',{timeout:false});
                 return;
             }
             if (!this.validateAppName(appName)) {
-                this.$toast.error('App name invalid. Use only alphanumeric characters plus dash and underscore');
+                toast.error('App name invalid. Use only alphanumeric characters plus dash and underscore');
                 return;
             }
             if (this.EDIT_CHOSEN_FILE && this.READ_CHOSEN_FOLDER) {
-                this.$toast.error('Invalid permission selection. Cannot select both modify file and read folder!',{timeout:false});
+                toast.error('Invalid permission selection. Cannot select both modify file and read folder!',{timeout:false});
                 return;
             }
             let permissions = [];

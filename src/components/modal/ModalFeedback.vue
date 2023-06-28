@@ -23,10 +23,9 @@
 import AppButton from "../AppButton.vue";
 import AppModal from "./AppModal.vue";
 
-// import { inject } from 'vue'
-// import Vuex from "vuex"
 import { mapState } from 'vuex'
-// const store = inject('store')
+import { toast } from 'vue3-toastify';
+import 'vue3-toastify/dist/index.css';
 
 export default {
 	components: {
@@ -64,14 +63,14 @@ export default {
                         .thenApply(function(res) {
                             if (res) {
                                 console.log("Feedback submitted!");
-                                that.$toast.info('Feedback sent. Thank you!',{timeout:false, position: 'bottom-left' })
+                                toast.info('Feedback sent. Thank you!',{timeout:false, position: 'bottom-left' })
                                 that.$store.commit("SET_MODAL", false);
                                 that.$store.commit("SET_CURRENT_FEEDBACK", "");
                             } else {
-                                that.$toast.error('Error sending feedback',{timeout:false, position: 'bottom-left' })
+                                toast.error('Error sending feedback',{timeout:false, position: 'bottom-left' })
                             }
                         }).exceptionally(function(throwable) {
-                            that.$toast.error('Error sending feedback: ' + throwable.getMessage(),{timeout:false, position: 'bottom-left' })
+                            toast.error('Error sending feedback: ' + throwable.getMessage(),{timeout:false, position: 'bottom-left' })
                         });
                 },
 	},

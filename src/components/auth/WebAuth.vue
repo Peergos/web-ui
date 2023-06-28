@@ -42,8 +42,9 @@
 import AppButton from "../AppButton.vue";
 import Spinner from "../spinner/Spinner.vue";
 
-// import Vuex from "vuex"
 import { mapState } from 'vuex'
+import { toast } from 'vue3-toastify';
+import 'vue3-toastify/dist/index.css';
 
 export default {
     components: {
@@ -73,9 +74,9 @@ export default {
         confirm: function() {
             let name = this.webAuthName.trim();
             if (name.length == 0) {
-                this.$toast.error('Please enter a name', {timeout:false});
+                toast.error('Please enter a name', {timeout:false});
             }else if (name.length > 20) {
-                this.$toast.error('Name max-length is 20 characters', {timeout:false});
+                toast.error('Name max-length is 20 characters', {timeout:false});
             } else {
                 this.register();
             }
@@ -112,21 +113,21 @@ export default {
                     let rawId = convertToByteArray(new Int8Array(credential.rawId));
                     let resp = peergos.client.JsUtil.generateWebAuthnResponse(rawId, rawAttestation, clientDataJson, signature);
                     that.context.network.account.registerSecurityKeyComplete(that.context.username, that.webAuthName, resp, that.context.signer).thenApply(done => {
-                        that.$toast('Security Key has been enabled');
+                        toast('Security Key has been enabled');
                         that.showSpinner = false;
                         that.close(true);
                     }).exceptionally(function (completeThrowable) {
-                        that.$toast.error('Unable to complete registration of security key', {timeout:false});
+                        toast.error('Unable to complete registration of security key', {timeout:false});
                         console.log('Unable to complete registration of security key: ' + completeThrowable);
                         that.showSpinner = false;
                     });
                 }).catch(createException => {
-                    that.$toast.error('Unable to create registration of security key', {timeout:false});
+                    toast.error('Unable to create registration of security key', {timeout:false});
                     console.log('Unable to create registration of security key: ' + createException);
                     that.showSpinner = false;
                 });
             }).exceptionally(function (throwable) {
-                that.$toast.error('Unable to register security key', {timeout:false});
+                toast.error('Unable to register security key', {timeout:false});
                 console.log('Unable to register security key: ' + throwable);
                 that.showSpinner = false;
             });

@@ -126,10 +126,9 @@ import AppIcon from "./AppIcon.vue";
 import AppPrompt from "./prompt/AppPrompt.vue";
 import Spinner from "./spinner/Spinner.vue";
 
-// import { inject } from 'vue'
-// import Vuex from "vuex"
 import { mapState, mapGetters } from 'vuex'
-// const store = inject('store')
+import { toast } from 'vue3-toastify';
+import 'vue3-toastify/dist/index.css';
 
 export default {
     components: {
@@ -172,14 +171,14 @@ export default {
             }).exceptionally(function(throwable) {
                 let errMsg = throwable.getMessage();
                 console.log(errMsg);
-                that.$toast.error('Upload cleanup failed. Please try again. Error: ' + errMsg, {timeout:false});
+                toast.error('Upload cleanup failed. Please try again. Error: ' + errMsg, {timeout:false});
                 that.showSettingsSpinner = false;
             });
         },
         modifyCacheSize: function() {
             let that = this;
             if (!isCachingAvailable()) {
-                that.$toast('Cache not available');
+                toast('Cache not available');
                 return;
             }
             getBrowserStorageQuota().then(maxStorage => {
@@ -195,18 +194,18 @@ export default {
                     }
                     let newCacheSizeMiB = prompt_result.trim();
                     if (!that.validateCacheSize(newCacheSizeMiB)) {
-                        that.$toast.error('Cache size value not valid', {timeout:false});
+                        toast.error('Cache size value not valid', {timeout:false});
                         return;
                     }
                     let validNewCacheSize = Number(newCacheSizeMiB);
                     if (validNewCacheSize > maxStorageMiB) {
-                        that.$toast.error('Invalid Cache size. Maximum Cache Size: ' + maxStorageMiB + ' MiB', {timeout:false});
+                        toast.error('Invalid Cache size. Maximum Cache Size: ' + maxStorageMiB + ' MiB', {timeout:false});
                     } else {
                         if (roundedCurrentCacheSize != validNewCacheSize) {
                             that.showSettingsSpinner = true;
                             modifyCacheSize(validNewCacheSize).thenApply(() => {
                                 that.showSettingsSpinner = false;
-                                that.$toast('Cache Size Updated');
+                                toast('Cache Size Updated');
                             });
                         }
                     }

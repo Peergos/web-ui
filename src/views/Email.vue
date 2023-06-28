@@ -51,8 +51,9 @@ import mixins from "../mixins/mixins.js";
 import routerMixins from "../mixins/router/index.js";
 import downloaderMixins from "../mixins/downloader/index.js";
 
-// import Vuex from "vuex"
 import { mapState,mapGetters  } from 'vuex'
+import { toast } from 'vue3-toastify';
+import 'vue3-toastify/dist/index.css';
 
 export default {
     components: {
@@ -110,7 +111,7 @@ export default {
         let that = this;
         var query = new URLSearchParams(window.location.search)
         if (query.get("email") == null) {
-            this.$toast.error("Email client not configured", {timeout:false});
+            toast.error("Email client not configured", {timeout:false});
             Vue.nextTick(function() {
                 that.close();
             });
@@ -152,7 +153,7 @@ export default {
             } else {
                 this.context.getByPath(urlProps.path + '/' + filename).thenApply(fileOpt => {
                     if (! fileOpt.isPresent()) {
-                        that.$toast.error("Couldn't load calendar event file", {timeout:false});
+                        toast.error("Couldn't load calendar event file", {timeout:false});
                         future.complete(false);
                     } else {
                         let file = fileOpt.get();
@@ -849,10 +850,10 @@ export default {
             this.spinnerMessage = '';
         },
         showError: function(message) {
-            this.$toast.error(message, {timeout:false});
+            toast.error(message, {timeout:false});
         },
         showToast: function(message) {
-            this.$toast(message)
+            toast(message)
         },
         requestShowMessage: function(msg) {
             this.showToast(msg);

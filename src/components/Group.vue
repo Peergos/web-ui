@@ -118,8 +118,10 @@ import Prompt from "../components/prompt/Prompt.vue";
 import Spinner from "../components/spinner/Spinner.vue";
 
 import routerMixins from "../mixins/router/index.js";
-// import Vuex from "vuex"
+
 import { mapState } from 'vuex'
+import { toast } from 'vue3-toastify';
+import 'vue3-toastify/dist/index.css';
 
 export default {
 	components: {
@@ -221,9 +223,9 @@ export default {
         showMessage : function (isError, title, body) {
             let bodyContents = body == null ? '' : ' ' + body;
             if (isError) {
-                this.$toast.error(title + bodyContents, {timeout:false});
+                toast.error(title + bodyContents, {timeout:false});
             } else {
-                this.$toast(title + bodyContents)
+                toast(title + bodyContents)
             }
         },
         removeUserFromGroup : function () {

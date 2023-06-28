@@ -65,10 +65,9 @@ import Spinner from "../components/spinner/Spinner.vue";
 
 import routerMixins from "../mixins/router/index.js";
 
-import { inject } from 'vue'
-// import Vuex from "vuex"
 import { mapState,mapGetters  } from 'vuex'
-// const store = inject('store')
+import { toast } from 'vue3-toastify';
+import 'vue3-toastify/dist/index.css';
 
 export default {
     components: {
@@ -201,7 +200,7 @@ export default {
             } else {
                 that.context.getByPath(path).thenApply(dirOpt => {
                     if (! dirOpt.isPresent()) {
-                        that.$toast.error("Couldn't load calendar", {timeout:false});
+                        toast.error("Couldn't load calendar", {timeout:false});
                         future.complete(null);
                     } else {
                         let dir = dirOpt.get();
@@ -214,7 +213,7 @@ export default {
       } else {
             that.context.getByPath(path + (path.endsWith("/") ? "" : '/') + filename).thenApply(fileOpt => {
                 if (! fileOpt.isPresent()) {
-                    that.$toast.error("Couldn't load calendar file", {timeout:false});
+                    toast.error("Couldn't load calendar file", {timeout:false});
                     future.complete(null);
                     return;
                 }
@@ -264,7 +263,7 @@ export default {
             callback();
         } else {
             if (retryCount == 0) {
-                this.$toast.error("Unable to register service worker. Calendar will not work offline. \nTo enable offline usage, allow 3rd party cookies for " + window.location.protocol + "//[*]." + window.location.host + "\n Note: this is not tracking", {timeout:false});
+                toast.error("Unable to register service worker. Calendar will not work offline. \nTo enable offline usage, allow 3rd party cookies for " + window.location.protocol + "//[*]." + window.location.host + "\n Note: this is not tracking", {timeout:false});
                 callback();
             }else {
                 let that = this;
@@ -836,7 +835,7 @@ export default {
            var commitWatcher = {
                get_0: function() {
                    if (uploadParams.progress.done >= uploadParams.progress.max) {
-                       setTimeout(() => that.$toast.dismiss(uploadParams.progress.name), 1000);
+                       setTimeout(() => toast.dismiss(uploadParams.progress.name), 1000);
                    }
                    return true;
                }
@@ -886,7 +885,7 @@ export default {
             if (updater.done > updater.max) {
                 uploadParams.progress.done  = uploadParams.progress.done + 1;
                 //console.log('uploadParams.progress.done=' + uploadParams.progress.done + " uploadParams.progress.max=" + uploadParams.progress.max);
-                that.$toast.update(uploadParams.progress.name,
+                toast.update(uploadParams.progress.name,
                    {content:
                         {
                             component: ProgressBar,
@@ -939,7 +938,7 @@ export default {
             title: title
         };
         if (!data.showConfirmation) {
-            this.$toast(
+            toast(
                 {component: ProgressBar,props:  progress} ,
                 { icon: false , timeout:false, id: name});
         }
@@ -1166,9 +1165,9 @@ export default {
     },
     showMessage: function(isError, message) {
         if (isError) {
-            this.$toast.error(message, {timeout:false});
+            toast.error(message, {timeout:false});
         } else {
-            this.$toast(message)
+            toast(message)
         }
     },
     close: function () {

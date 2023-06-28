@@ -182,8 +182,9 @@ import mixins from "../mixins/mixins.js";
 import launcherMixin from "../mixins/launcher/index.js";
 import sandboxMixin from "../mixins/sandbox/index.js";
 
-// import Vuex from "vuex"
 import { mapState } from 'vuex'
+import { toast } from 'vue3-toastify';
+import 'vue3-toastify/dist/index.css';
 
 export default {
     components: {
@@ -862,9 +863,9 @@ export default {
         showMessage: function(isError, title, body) {
             let bodyContents = body == null ? '' : ' ' + body;
             if (isError) {
-                this.$toast.error(title + bodyContents, {timeout:false});
+                toast.error(title + bodyContents, {timeout:false});
             } else {
-                this.$toast(title + bodyContents)
+                toast(title + bodyContents)
             }
         },
         showErrorMessage(errMsg) {

@@ -267,10 +267,9 @@ import zipMixin from "../mixins/zip/index.js";
 import router from "../mixins/router/index.js";
 import launcherMixin from "../mixins/launcher/index.js";
 
-// import { inject } from 'vue'
-// import Vuex from "vuex"
 import { mapState, mapGetters, mapActions  } from 'vuex'
-// const store = inject('store')
+import { toast } from 'vue3-toastify';
+import 'vue3-toastify/dist/index.css';
 
 export default {
 	components: {
@@ -1272,7 +1271,7 @@ export default {
 					that.showSpinner = false;
 				}.bind(this)).exceptionally(function (throwable) {
 					that.showSpinner = false;
-					that.$toast.error(throwable.getMessage(), {timeout:false, id: 'mkdir'})
+					toast.error(throwable.getMessage(), {timeout:false, id: 'mkdir'})
 					that.updateUsage();
 				});
 		},
@@ -1290,7 +1289,7 @@ export default {
             });
         },
 	showToastError: function(message) {
-            this.$toast.error(message, {timeout:false});
+            toast.error(message, {timeout:false});
         },
 	zipAndDownload() {
             if (this.isStreamingAvailable) {
@@ -1309,9 +1308,9 @@ export default {
             this.calculateTotalSize(file, this.getPath).thenApply(statistics => {
                 that.showSpinner = false;
                 if (statistics.fileCount == 0) {
-                    that.$toast('Folder:' + file.getName() + ' contains no files. Nothing to download');
+                    toast('Folder:' + file.getName() + ' contains no files. Nothing to download');
                 }else if (statistics.actualSize > 1024 * 1024 * 1024 * 4) { //4GiB
-                    that.$toast('Download of a Folder greater than 4GiB in size is not supported');
+                    toast('Download of a Folder greater than 4GiB in size is not supported');
                 } else {
                     let filename = file.getName();
                     this.confirmZipAndDownloadOfFolder(filename, statistics,
@@ -1330,15 +1329,15 @@ export default {
                             that.collectFilesToZip(that.getPath, file,
                                 that.getPath + file.getFileProperties().name, accumulator, future);
                             future.thenApply(allFiles => {
-                                that.$toast({component: ProgressBar,props: progress}
+                                toast({component: ProgressBar,props: progress}
                                     , { icon: false , timeout:false, id: zipFilename});
                                 that.zipFiles(zipFilename, allFiles.files, progress).thenApply(res => {
                                     console.log('folder download complete');
                                 }).exceptionally(function (throwable) {
-                                    that.$toast.error(throwable.getMessage())
+                                    toast.error(throwable.getMessage())
                                 });
                             }).exceptionally(function (throwable) {
-                                that.$toast.error(throwable.getMessage())
+                                toast.error(throwable.getMessage())
                             })
                         },
                         () => {
@@ -1347,7 +1346,7 @@ export default {
                     );
                 }
             }).exceptionally(function (throwable) {
-                that.$toast.error(throwable.getMessage())
+                toast.error(throwable.getMessage())
             });
 		},
         confirmZipAndDownloadOfFolder(folderName, statistics, continueFunction, cancelFunction) {
@@ -1506,7 +1505,7 @@ export default {
                         }
                     });
                 } else {
-                    this.$toast.error("Client Offline!", {timeout:false, id: 'upload'})
+                    toast.error("Client Offline!", {timeout:false, id: 'upload'})
                 }
             } else {
                 let isWritableSecretLink = this.isSecretLink && this.currentDir.isWritable();
@@ -1516,12 +1515,12 @@ export default {
                 }
                 if (!isWritableSecretLink && Number(that.quotaBytes.toString()) < totalSize) {
                     let errMsg = "File upload operation exceeds total space\n" + "Please upgrade to get more space";
-                    that.$toast.error(errMsg, {timeout:false, id: 'upload'})
+                    toast.error(errMsg, {timeout:false, id: 'upload'})
                 } else {
                     let spaceAfterOperation = that.checkAvailableSpace(totalSize);
                     if (!isWritableSecretLink && spaceAfterOperation < 0) {
                         let errMsg = "File upload operation exceeds available space\n" + "Please free up " + helpers.convertBytesToHumanReadable('' + -spaceAfterOperation) + " and try again";
-                        that.$toast.error(errMsg, {timeout:false, id: 'upload'})
+                        toast.error(errMsg, {timeout:false, id: 'upload'})
                     } else {
                         //resetting .value tricks browser into allowing subsequent upload of same file(s)
                         document.getElementById('uploadFileInput').value = "";
@@ -1537,7 +1536,7 @@ export default {
                             current: 0,
                             total: files.length,
                         };
-                        that.$toast(
+                        toast(
                             {component: ProgressBar,props:  progress} ,
                             { icon: false , timeout:false, id: name})
                         let uploadDirectoryPath = that.getPath;
@@ -1633,7 +1632,7 @@ export default {
                         that.errorTitle = 'Error Uploading files';
                         that.errorBody = throwable.getMessage();
                         that.showError = true;
-                        that.$toast.clear();
+                        toast.clear();
                     });
                 });
             }
@@ -1784,7 +1783,7 @@ export default {
             function update(message, conversationId) {
                 let future = peergos.shared.util.Futures.incomplete();
                 setTimeout( () => {
-                    that.$toast.update(uploadParams.name,
+                    toast.update(uploadParams.name,
                     {content:
                         {
                             component: ProgressBar,
@@ -1812,7 +1811,7 @@ export default {
             let command = queueCopy.shift();
             if (command == null) {
                 if (finalCall) {
-                    setTimeout(() => that.$toast.dismiss(uploadParams.progress.name), 1000);
+                    setTimeout(() => toast.dismiss(uploadParams.progress.name), 1000);
                 }
                 future.complete(true);
             } else {
@@ -1959,19 +1958,19 @@ export default {
                                 }
                             });
                         } else {
-                            this.$toast.error("Client Offline!", {timeout:false, id: 'upload'});
+                            toast.error("Client Offline!", {timeout:false, id: 'upload'});
                             this.showSpinner = false;
                         }
                     } else {
                         this.calculateTotalSize(clipboard.fileTreeNode, clipboard.path).thenApply(statistics => {
                             if (Number(that.quotaBytes.toString()) < statistics.apparentSize) {
                                 let errMsg = "File copy operation exceeds total space\n" + "Please upgrade to get more space";
-                                that.$toast.error(errMsg, {timeout:false, id: 'upload'})
+                                toast.error(errMsg, {timeout:false, id: 'upload'})
                             } else {
                                 let spaceAfterOperation = that.checkAvailableSpace(statistics.apparentSize);
                                 if (spaceAfterOperation < 0) {
                                     let errMsg = "File copy operation exceeds available space\n" + "Please free up " + helpers.convertBytesToHumanReadable('' + -spaceAfterOperation) + " and try again";
-                                    that.$toast.error(errMsg, {timeout:false, id: 'upload'})
+                                    toast.error(errMsg, {timeout:false, id: 'upload'})
                                     that.showSpinner = false;
                                     return;
                                 }
@@ -2284,7 +2283,7 @@ export default {
             let appNameLowercase = appDisplayName.toLowerCase();
             let dupApp = this.sandboxedApps.appsInstalled.slice().filter(app => app.displayName.toLowerCase() == appNameLowercase);
             if (dupApp.length != 0) {
-                this.$toast.error(`App with name ${appDisplayName} already exists!`);
+                toast.error(`App with name ${appDisplayName} already exists!`);
                 return;
             }
             let launchable = permissions.filter(p => p == 'EDIT_CHOSEN_FILE' || p == 'READ_CHOSEN_FOLDER').length == 0 ? true : false;
@@ -2507,7 +2506,7 @@ export default {
 					that.showSpinner = false;
 					that.updateUsage();
 				}).exceptionally(function (throwable) {
-					that.$toast.error(`Error deleting file: ${file.getFileProperties().name}: ${ throwable.getMessage() }`, {timeout:false, id: 'deleteFile'})
+					toast.error(`Error deleting file: ${file.getFileProperties().name}: ${ throwable.getMessage() }`, {timeout:false, id: 'deleteFile'})
 					that.updateUsage();
 				});
 		},

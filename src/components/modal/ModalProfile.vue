@@ -141,8 +141,9 @@ import Confirm from "../confirm/Confirm.vue";
 import Share from "../drive/DriveShare.vue";
 import Spinner from "../spinner/Spinner.vue";
 
-// import Vuex from "vuex"
 import { mapState } from 'vuex'
+import { toast } from 'vue3-toastify';
+import 'vue3-toastify/dist/index.css';
 
 export default {
     components: {
@@ -234,9 +235,9 @@ export default {
             });*/
             let bodyContents = body == null ? '' : ' ' + body;
             if (isError) {
-                this.$toast.error(title + bodyContents, {timeout:false});
+                toast.error(title + bodyContents, {timeout:false});
             } else {
-                this.$toast(title + bodyContents)
+                toast(title + bodyContents)
             }
         },
         processProfileUpdate: function() {

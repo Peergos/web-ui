@@ -45,10 +45,9 @@
 import AppButton from "../AppButton.vue";
 import AppModal from "./AppModal.vue";
 
-// import { inject } from 'vue'
-// import Vuex from "vuex"
 import { mapState, mapGetters, mapActions } from 'vuex'
-// const store = inject('store')
+import { toast } from 'vue3-toastify';
+import 'vue3-toastify/dist/index.css';
 
 export default {
 	components: {
@@ -139,27 +138,27 @@ export default {
 			if (quotaBytes >= bytes && bytes > 0) {
 			    that.updatePayment()
 			    that.store.commit("SET_MODAL", false)
-			    that.$toast.info('Thank you for signing up to a paid Peergos account!',{timeout:false, id: 'pro'})
+			    toast.info('Thank you for signing up to a paid Peergos account!',{timeout:false, id: 'pro'})
 			} else if (bytes == 0) {
 			    that.updatePayment()
 			    that.$store.commit("SET_MODAL", false)
-			    that.$toast.error("Sorry to see you go. We'd love to know what we can do better. Make sure to delete enough data to return within your Basic quota. You will revert to the Basic quota at the end of the billing month.", {timeout:false, id: 'pro'})
+			    toast.error("Sorry to see you go. We'd love to know what we can do better. Make sure to delete enough data to return within your Basic quota. You will revert to the Basic quota at the end of the billing month.", {timeout:false, id: 'pro'})
 			} else if (quotaBytes < bytes && bytes > 0 ) {
                             that.updatePayment(() => {
                                 that.updateError()
                                 if (! that.paymentProperties.hasError())
-			            that.$toast.error(`Card details required. Add a payment card to complete your upgrade. `,{timeout:false, id: 'pro', position: 'bottom-left'})
+			            toast.error(`Card details required. Add a payment card to complete your upgrade. `,{timeout:false, id: 'pro', position: 'bottom-left'})
                             });
 			} else
                             that.updatePayment(() => that.updateError());
 		    })).exceptionally(t => {
-                        that.$toast.error("Error requesting more storage: " + t.getMessage())
+                        toast.error("Error requesting more storage: " + t.getMessage())
                     })
 	    },
 
 	    updateError() {
 		if (this.paymentProperties.hasError()) {
-		    this.$toast.error(this.paymentProperties.getError(),{timeout:false, id: 'payment', position: 'bottom-left'})
+		    toast.error(this.paymentProperties.getError(),{timeout:false, id: 'payment', position: 'bottom-left'})
 		}
 	    },
 

@@ -297,8 +297,9 @@ import ProgressBar from "../components/drive/ProgressBar.vue";
 import Message from "../components/message/Message.vue";
 import Spinner from "../components/spinner/Spinner.vue";
 
-// import Vuex from "vuex"
 import { mapState } from 'vuex'
+import { toast } from 'vue3-toastify';
+import 'vue3-toastify/dist/index.css';
 
 export default {
     components: {
@@ -507,11 +508,11 @@ export default {
         },
         showToastError: function(title, message) {
             let bodyContents = body == null ? '' : ' ' + body;
-            this.$toast.error(title + bodyContents, {timeout:false});
+            toast.error(title + bodyContents, {timeout:false});
         },
         showToastWarning: function(title, message) {
             let bodyContents = body == null ? '' : ' ' + body;
-            this.$toast(title + bodyContents);
+            toast(title + bodyContents);
         },
         resizeHandler: function() {
             var left = document.getElementById("chat-left-panel");
@@ -836,7 +837,7 @@ export default {
                     max:resultingSize,
                     name: mediaFile.name
                 };
-                this.$toast({component: ProgressBar,props:  progress,}
+                toast({component: ProgressBar,props:  progress,}
                     , { icon: false , timeout:false, id: mediaFile.name})
                 this.progressMonitors.push(progress);
                 progressBars.push(progress);
@@ -892,7 +893,7 @@ export default {
             let that = this;
             let updateProgressBar = function(len){
                 progress.done += len.value_0;
-                that.$toast.update(progress.name, {content:
+                toast.update(progress.name, {content:
                     {
                         component: ProgressBar,
                         props:  {
@@ -903,7 +904,7 @@ export default {
                     }
                 });
                 if (progress.done >= progress.max) {
-                    that.$toast.dismiss(progress.name);
+                    toast.dismiss(progress.name);
                 }
             };
             this.uploadMedia(mediaFile, updateProgressBar, conversationId).thenApply(function(mediaResponse) {
