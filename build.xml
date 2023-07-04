@@ -107,30 +107,6 @@
     <delete file="peergos.css"/>
   </target>
 
-  <target name="js_dev" description="bundle all our vuejs components into js without precompiling vue templates">
-    <exec executable="java" dir="." failonerror="true" >
-      <arg value="-jar"/>
-      <arg value="JPack.jar"/>
-      <arg value="-root"/>
-      <arg value="${ui_src}/peergos.js"/>
-      <arg value="-out"/>
-      <arg value="${ui}/js/peergos.js"/>
-      <arg value="-compile-templates"/>
-      <arg value="false"/>
-      <arg value="-css-out"/>
-      <arg value="tmp.css"/>
-    </exec>
-    <concat destfile="peergos.css" encoding="utf8">
-      <fileset dir="${ui}/css/" includes="peergos.css"/>
-      <fileset dir="." includes="tmp.css"/>
-    </concat>
-    <copy todir="${ui}/css/" overwrite="true">
-      <fileset dir="." includes="peergos.css"/>
-    </copy>
-    <delete file="tmp.css"/>
-    <delete file="peergos.css"/>
-  </target>
-
   <target name="installgraal">
     <exec executable="java" dir="native-build" failonerror="true" >
       <arg value="InstallGraalNode.java"/>
@@ -153,6 +129,19 @@
       <arg value="development"/>
     </exec>
   </target>
+
+  <target name="vite_native">
+    <exec executable="npx" dir="." failonerror="true" >
+      <arg value="vite"/>
+      <arg value="build"/>
+      <arg value="--outDir"/>
+      <arg value="server/webroot"/>
+      <arg value="--minify"/>
+      <arg value="false"/>
+      <arg value="--mode"/>
+      <arg value="development"/>
+    </exec>
+  </target>
   
   <target name="ui" depends="init,vite,ui_dev_vendor,assets,css" description="build our part of the ui">
     <copy todir="${ui}/js">
@@ -160,13 +149,16 @@
     </copy>
   </target>
 
-  <target name="ui_native" depends="init,ui_dev_vendor,assets,css" description="build our part of the ui">
+  <target name="ui_native" depends="init,vite_native,ui_dev_vendor,assets,css" description="build our part of the ui">
     <copy todir="${ui}/js">
       <fileset file="${peergos_project_root}/war/peergoslib/*cache.js"/>
     </copy>
   </target>
 
-  <target name="ui_dev" depends="init,ui_dev_vendor,assets,css,js_dev" description="build our part of the ui in dev mode">
+  <target name="ui_dev" depends="init,vite,ui_dev_vendor,assets,css" description="build our part of the ui in dev mode">
+  </target>
+
+  <target name="ui_dev_native" depends="init,vite_native,ui_dev_vendor,assets,css" description="build our part of the ui in dev mode">
   </target>
 
   <taskdef name="watch"
