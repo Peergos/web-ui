@@ -84,7 +84,7 @@ export default {
 
 	updatePassword() {
         if(this.existing.length == 0 || this.password.length == 0 || this.password2.length == 0) {
-            toast.error('All fields must be populated!',{timeout:false, position: 'bottom-left' })
+            toast.error('All fields must be populated!',{autoClose:false, position: 'bottom-left' })
         } else {
             if (this.password == this.password2) {
                 let that = this;
@@ -113,15 +113,15 @@ export default {
                     that.showSpinner = false;
                 }).exceptionally(function(throwable) {
                     if (throwable.getMessage().startsWith('Invalid+TOTP+code')) {
-                        toast.error('Invalid Multi Factor Authenticator code', {timeout:false})
+                        toast.error('Invalid Multi Factor Authenticator code', {autoClose:false})
                     } else {
-                        toast.error(that.uriDecode(throwable.getMessage()), {timeout:false})
+                        toast.error(that.uriDecode(throwable.getMessage()), {autoClose:false})
                     }
                     that.showSpinner = false;
                     console.log(throwable.getMessage())
                 });
             } else {
-                toast.error('Passwords do not match',{timeout:false})
+                toast.error('Passwords do not match',{autoClose:false})
             }
         }
     },

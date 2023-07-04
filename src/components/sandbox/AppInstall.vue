@@ -455,7 +455,7 @@ export default {
             toast(message)
         },
         showError: function(message) {
-            toast.error(message, {timeout:false});
+            toast.error(message, {autoClose:false});
         }
     }
 }

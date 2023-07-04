@@ -64,7 +64,7 @@ export default {
     },
     methods: {
         showMessage: function(message) {
-            toast.error(message, {timeout:false});
+            toast.error(message, {autoClose:false});
         },
         onChange: function (event) {
             let newVal = event.target.value;

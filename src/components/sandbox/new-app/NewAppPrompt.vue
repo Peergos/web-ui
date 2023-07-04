@@ -153,7 +153,7 @@ export default {
 		getPrompt() {
 		    let appName = this.prompt_result.trim();
             if (appName === '') {
-                toast.error('Invalid App name',{timeout:false});
+                toast.error('Invalid App name',{autoClose:false});
                 return;
             }
             if (!this.validateAppName(appName)) {
@@ -161,7 +161,7 @@ export default {
                 return;
             }
             if (this.EDIT_CHOSEN_FILE && this.READ_CHOSEN_FOLDER) {
-                toast.error('Invalid permission selection. Cannot select both modify file and read folder!',{timeout:false});
+                toast.error('Invalid permission selection. Cannot select both modify file and read folder!',{autoClose:false});
                 return;
             }
             let permissions = [];

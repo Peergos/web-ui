@@ -297,7 +297,7 @@ export default {
                 toast({
 		    component: ProgressBar,
 		    props:  progress,
-		} , { icon: false , timeout:false, id: file.name})
+		} , { icon: false , autoClose:false, id: file.name})
                 that.progressMonitors.push(progress);
                 progressStore.push(progress);
             }

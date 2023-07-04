@@ -200,7 +200,7 @@ export default {
             } else {
                 that.context.getByPath(path).thenApply(dirOpt => {
                     if (! dirOpt.isPresent()) {
-                        toast.error("Couldn't load calendar", {timeout:false});
+                        toast.error("Couldn't load calendar", {autoClose:false});
                         future.complete(null);
                     } else {
                         let dir = dirOpt.get();
@@ -213,7 +213,7 @@ export default {
       } else {
             that.context.getByPath(path + (path.endsWith("/") ? "" : '/') + filename).thenApply(fileOpt => {
                 if (! fileOpt.isPresent()) {
-                    toast.error("Couldn't load calendar file", {timeout:false});
+                    toast.error("Couldn't load calendar file", {autoClose:false});
                     future.complete(null);
                     return;
                 }
@@ -263,7 +263,7 @@ export default {
             callback();
         } else {
             if (retryCount == 0) {
-                toast.error("Unable to register service worker. Calendar will not work offline. \nTo enable offline usage, allow 3rd party cookies for " + window.location.protocol + "//[*]." + window.location.host + "\n Note: this is not tracking", {timeout:false});
+                toast.error("Unable to register service worker. Calendar will not work offline. \nTo enable offline usage, allow 3rd party cookies for " + window.location.protocol + "//[*]." + window.location.host + "\n Note: this is not tracking", {autoClose:false});
                 callback();
             }else {
                 let that = this;
@@ -940,7 +940,7 @@ export default {
         if (!data.showConfirmation) {
             toast(
                 {component: ProgressBar,props:  progress} ,
-                { icon: false , timeout:false, id: name});
+                { icon: false , autoClose:false, id: name});
         }
         this.saveAllEventsRecursive(calendar, data.items, 0, data.showConfirmation, uploads);
     },
@@ -1165,7 +1165,7 @@ export default {
     },
     showMessage: function(isError, message) {
         if (isError) {
-            toast.error(message, {timeout:false});
+            toast.error(message, {autoClose:false});
         } else {
             toast(message)
         }

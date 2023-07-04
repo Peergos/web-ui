@@ -83,7 +83,7 @@ export default {
 	    });
             setTimeout(() => {
                 if (!that.isIframeInitialised)
-                    toast.error("Unable to register service worker. PDF viewer will not work offline. \nTo enable offline usage, allow 3rd party cookies for " + window.location.protocol + "//[*]." + window.location.host + "\n Note: this is not tracking", {timeout:false});
+                    toast.error("Unable to register service worker. PDF viewer will not work offline. \nTo enable offline usage, allow 3rd party cookies for " + window.location.protocol + "//[*]." + window.location.host + "\n Note: this is not tracking", {autoClose:false});
             }, 5000)
 	},
 		getFileSize: function(props) {

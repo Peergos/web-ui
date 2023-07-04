@@ -235,7 +235,7 @@ export default {
             });*/
             let bodyContents = body == null ? '' : ' ' + body;
             if (isError) {
-                toast.error(title + bodyContents, {timeout:false});
+                toast.error(title + bodyContents, {autoClose:false});
             } else {
                 toast(title + bodyContents)
             }

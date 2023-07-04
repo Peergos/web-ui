@@ -63,14 +63,14 @@ export default {
                         .thenApply(function(res) {
                             if (res) {
                                 console.log("Feedback submitted!");
-                                toast.info('Feedback sent. Thank you!',{timeout:false, position: 'bottom-left' })
+                                toast.info('Feedback sent. Thank you!',{autoClose:false, position: 'bottom-left' })
                                 that.$store.commit("SET_MODAL", false);
                                 that.$store.commit("SET_CURRENT_FEEDBACK", "");
                             } else {
-                                toast.error('Error sending feedback',{timeout:false, position: 'bottom-left' })
+                                toast.error('Error sending feedback',{autoClose:false, position: 'bottom-left' })
                             }
                         }).exceptionally(function(throwable) {
-                            toast.error('Error sending feedback: ' + throwable.getMessage(),{timeout:false, position: 'bottom-left' })
+                            toast.error('Error sending feedback: ' + throwable.getMessage(),{autoClose:false, position: 'bottom-left' })
                         });
                 },
 	},

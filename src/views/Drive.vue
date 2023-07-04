@@ -1271,7 +1271,7 @@ export default {
 					that.showSpinner = false;
 				}.bind(this)).exceptionally(function (throwable) {
 					that.showSpinner = false;
-					toast.error(throwable.getMessage(), {timeout:false, id: 'mkdir'})
+					toast.error(throwable.getMessage(), {autoClose:false, id: 'mkdir'})
 					that.updateUsage();
 				});
 		},
@@ -1289,7 +1289,7 @@ export default {
             });
         },
 	showToastError: function(message) {
-            toast.error(message, {timeout:false});
+            toast.error(message, {autoClose:false});
         },
 	zipAndDownload() {
             if (this.isStreamingAvailable) {
@@ -1330,7 +1330,7 @@ export default {
                                 that.getPath + file.getFileProperties().name, accumulator, future);
                             future.thenApply(allFiles => {
                                 toast({component: ProgressBar,props: progress}
-                                    , { icon: false , timeout:false, id: zipFilename});
+                                    , { icon: false , autoClose:false, id: zipFilename});
                                 that.zipFiles(zipFilename, allFiles.files, progress).thenApply(res => {
                                     console.log('folder download complete');
                                 }).exceptionally(function (throwable) {
@@ -1505,7 +1505,7 @@ export default {
                         }
                     });
                 } else {
-                    toast.error("Client Offline!", {timeout:false, id: 'upload'})
+                    toast.error("Client Offline!", {autoClose:false, id: 'upload'})
                 }
             } else {
                 let isWritableSecretLink = this.isSecretLink && this.currentDir.isWritable();
@@ -1515,12 +1515,12 @@ export default {
                 }
                 if (!isWritableSecretLink && Number(that.quotaBytes.toString()) < totalSize) {
                     let errMsg = "File upload operation exceeds total space\n" + "Please upgrade to get more space";
-                    toast.error(errMsg, {timeout:false, id: 'upload'})
+                    toast.error(errMsg, {autoClose:false, id: 'upload'})
                 } else {
                     let spaceAfterOperation = that.checkAvailableSpace(totalSize);
                     if (!isWritableSecretLink && spaceAfterOperation < 0) {
                         let errMsg = "File upload operation exceeds available space\n" + "Please free up " + helpers.convertBytesToHumanReadable('' + -spaceAfterOperation) + " and try again";
-                        toast.error(errMsg, {timeout:false, id: 'upload'})
+                        toast.error(errMsg, {autoClose:false, id: 'upload'})
                     } else {
                         //resetting .value tricks browser into allowing subsequent upload of same file(s)
                         document.getElementById('uploadFileInput').value = "";
@@ -1538,7 +1538,7 @@ export default {
                         };
                         toast(
                             {component: ProgressBar,props:  progress} ,
-                            { icon: false , timeout:false, id: name})
+                            { icon: false , autoClose:false, id: name})
                         let uploadDirectoryPath = that.getPath;
                         const uploadParams = {
                             applyReplaceToAll: false,
@@ -1958,19 +1958,19 @@ export default {
                                 }
                             });
                         } else {
-                            toast.error("Client Offline!", {timeout:false, id: 'upload'});
+                            toast.error("Client Offline!", {autoClose:false, id: 'upload'});
                             this.showSpinner = false;
                         }
                     } else {
                         this.calculateTotalSize(clipboard.fileTreeNode, clipboard.path).thenApply(statistics => {
                             if (Number(that.quotaBytes.toString()) < statistics.apparentSize) {
                                 let errMsg = "File copy operation exceeds total space\n" + "Please upgrade to get more space";
-                                toast.error(errMsg, {timeout:false, id: 'upload'})
+                                toast.error(errMsg, {autoClose:false, id: 'upload'})
                             } else {
                                 let spaceAfterOperation = that.checkAvailableSpace(statistics.apparentSize);
                                 if (spaceAfterOperation < 0) {
                                     let errMsg = "File copy operation exceeds available space\n" + "Please free up " + helpers.convertBytesToHumanReadable('' + -spaceAfterOperation) + " and try again";
-                                    toast.error(errMsg, {timeout:false, id: 'upload'})
+                                    toast.error(errMsg, {autoClose:false, id: 'upload'})
                                     that.showSpinner = false;
                                     return;
                                 }
@@ -2506,7 +2506,7 @@ export default {
 					that.showSpinner = false;
 					that.updateUsage();
 				}).exceptionally(function (throwable) {
-					toast.error(`Error deleting file: ${file.getFileProperties().name}: ${ throwable.getMessage() }`, {timeout:false, id: 'deleteFile'})
+					toast.error(`Error deleting file: ${file.getFileProperties().name}: ${ throwable.getMessage() }`, {autoClose:false, id: 'deleteFile'})
 					that.updateUsage();
 				});
 		},

@@ -96,7 +96,7 @@ export default {
             that.showSpinner = false;
             that.isReady = true;
         }).exceptionally(function (addException) {
-            toast.error('Unable to add new authentication method', {timeout:false});
+            toast.error('Unable to add new authentication method', {autoClose:false});
             console.log('Unable to add new authentication method: ' + addException);
             that.showSpinner = false;
         });
@@ -121,10 +121,10 @@ export default {
                 }).exceptionally(function (throwable) {
                     that.showSpinner = false;
                     if(throwable.detailMessage.startsWith('Invalid+TOTP+code+for+credId')) {
-                        toast.error('Incorrect code', {timeout:false});
+                        toast.error('Incorrect code', {autoClose:false});
                         console.log('Incorrect code: ' + throwable);
                     } else {
-                        toast.error('Unable to enable Authenticator app', {timeout:false});
+                        toast.error('Unable to enable Authenticator app', {autoClose:false});
                         console.log('Unable to enable Authenticator app. Error: ' + throwable);
                     }
                 });

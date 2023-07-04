@@ -137,7 +137,7 @@ export default {
             let that = this;
             that.context.getByPath(path).thenApply(fileOpt => {
                 if (! fileOpt.isPresent()) {
-                    toast.error("Couldn't load file: " + path, {timeout:false})
+                    toast.error("Couldn't load file: " + path, {autoClose:false})
                     return;
                 }
                 let file = fileOpt.get();
@@ -265,14 +265,14 @@ export default {
                         });
                     }).exceptionally(function(throwable) {
                         that.showSpinner = false;
-                        toast.error("Unexpected error: " + throwable.detailMessage, {timeout:false})
+                        toast.error("Unexpected error: " + throwable.detailMessage, {autoClose:false})
                         console.log('Error loading file: ' + that.currentFile.getName());
                         console.log(throwable.getMessage());
                     });
             }
             setTimeout(() => {
                 if (!that.isIframeInitialised)
-                    toast.error("Unable to register service worker. Task board will not work offline. \nTo enable offline usage, allow 3rd party cookies for " + window.location.protocol + "//[*]." + window.location.host + "\n Note: this is not tracking", {timeout:false});
+                    toast.error("Unable to register service worker. Task board will not work offline. \nTo enable offline usage, allow 3rd party cookies for " + window.location.protocol + "//[*]." + window.location.host + "\n Note: this is not tracking", {autoClose:false});
             }, 2500)
 	},
         setupIFrameMessaging: function(iframe, func) {
@@ -355,7 +355,7 @@ export default {
                         if(alreadyExists) {
                             that.showSpinner = false;
                             that.saving = false;
-                            toast.error("TodoBoard with same filename already exists! File has not been saved", {timeout:false})
+                            toast.error("TodoBoard with same filename already exists! File has not been saved", {autoClose:false})
                         } else {
                             dir.uploadFileJS(filename, java_reader, sizeHi, bytes.length,
                                              false, that.mirrorBatId, context.network, context.crypto, function(len){},
@@ -404,12 +404,12 @@ export default {
         handleException: function(throwable, publicMessage, logMessage) {
             this.showSpinner = false;
             this.saving = false;
-            toast.error(publicMessage, {timeout:false})
+            toast.error(publicMessage, {autoClose:false})
             console.log(logMessage);
             console.log(throwable.getMessage());
         },
         showMessage: function(title, detail) {
-            toast.error(title + " " + detail, {timeout:false});
+            toast.error(title + " " + detail, {autoClose:false});
         },
         closeTodoBoard: function () {
             let that = this;

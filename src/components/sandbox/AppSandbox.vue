@@ -1482,7 +1482,7 @@ export default {
         },
         showError: function(msg) {
             console.log(msg);
-            toast.error(msg, {timeout:false});
+            toast.error(msg, {autoClose:false});
         },
         closeAppFromToolbar: function () {
             let that = this;

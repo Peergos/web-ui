@@ -171,7 +171,7 @@ export default {
             }).exceptionally(function(throwable) {
                 let errMsg = throwable.getMessage();
                 console.log(errMsg);
-                toast.error('Upload cleanup failed. Please try again. Error: ' + errMsg, {timeout:false});
+                toast.error('Upload cleanup failed. Please try again. Error: ' + errMsg, {autoClose:false});
                 that.showSettingsSpinner = false;
             });
         },
@@ -194,12 +194,12 @@ export default {
                     }
                     let newCacheSizeMiB = prompt_result.trim();
                     if (!that.validateCacheSize(newCacheSizeMiB)) {
-                        toast.error('Cache size value not valid', {timeout:false});
+                        toast.error('Cache size value not valid', {autoClose:false});
                         return;
                     }
                     let validNewCacheSize = Number(newCacheSizeMiB);
                     if (validNewCacheSize > maxStorageMiB) {
-                        toast.error('Invalid Cache size. Maximum Cache Size: ' + maxStorageMiB + ' MiB', {timeout:false});
+                        toast.error('Invalid Cache size. Maximum Cache Size: ' + maxStorageMiB + ' MiB', {autoClose:false});
                     } else {
                         if (roundedCurrentCacheSize != validNewCacheSize) {
                             that.showSettingsSpinner = true;

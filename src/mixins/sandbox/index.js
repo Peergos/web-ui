@@ -46,7 +46,7 @@ export default {
               return "Allow app to modify its own code";
           } else {
               console.log('Unknown permission: ' + permission);
-              toast.error('Unknown permission: ' + permission, {timeout:false});
+              toast.error('Unknown permission: ' + permission, {autoClose:false});
           }
       },
       verifyJSONFile: function(file, appPath) {

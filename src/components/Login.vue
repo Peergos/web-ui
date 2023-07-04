@@ -108,18 +108,18 @@ export default {
                         let loginRoot = peergos.shared.crypto.symmetric.SymmetricKey.fromByteArray(rootKeyPair.rootKey);
                         directGetEntryDataFromCacheProm(rootKeyPair.username).thenApply(function (entryPoints) {
                             if (entryPoints == null) {
-                                toast.error("Legacy accounts can't stay logged in. Please change your password to upgrade your account", {timeout:false, id: 'login'})
+                                toast.error("Legacy accounts can't stay logged in. Please change your password to upgrade your account", {autoClose:false, id: 'login'})
                             } else {
                                 that.isLoggingIn = true;
                                 let entryData = peergos.shared.user.UserStaticData.fromByteArray(entryPoints);
                                 peergos.shared.user.UserContext.restoreContext(rootKeyPair.username, loginRoot, entryData,
-                                    that.network, that.crypto, { accept: (x) => (toast.info(x,{ id: 'login' })) }
+                                    that.network, that.crypto, { accept: (x) => (toast.info(x,{ {autoClose:false, id: 'login' })) }
                                 ).thenApply(function (context) {
                                       that.postLogin(creationStart, context);
                                 })
                                 .exceptionally(function (throwable) {
                                     that.isLoggingIn = false;
-                                    toast.error(that.uriDecode(throwable.getMessage()), {timeout:false, id: 'login'})
+                                    toast.error(that.uriDecode(throwable.getMessage()), {{autoClose:false, id: 'login'})
                                 });
                             }
                         });
@@ -162,7 +162,7 @@ export default {
 				that.network,
 				that.crypto,
 				// { accept: (x) => (that.spinnerMessage = x) }
-				 { accept: (x) => (toast.info(x,{ id: 'login', timeout:false })) }
+				 { accept: (x) => (toast.info(x,{ id: 'login', autoClose:false })) }
 				)
 				.thenApply(function (context) {
                     that.postLogin(creationStart, context);
@@ -170,9 +170,9 @@ export default {
 				.exceptionally(function (throwable) {
                     that.isLoggingIn = false;
                     if (throwable.getMessage().startsWith('Invalid+TOTP+code')) {
-                        toast.error('Invalid Multi Factor Authenticator code', {timeout:false, id: 'login'})
+                        toast.error('Invalid Multi Factor Authenticator code', {autoClose:false, id: 'login'})
                     } else {
-					    toast.error(that.uriDecode(throwable.getMessage()), {timeout:false, id: 'login'})
+					    toast.error(that.uriDecode(throwable.getMessage()), {autoClose:false, id: 'login'})
 					}
 				});
 		},

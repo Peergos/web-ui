@@ -194,7 +194,7 @@ export default {
 	    var that = this;
 	    let emailRegEx = /^(([^<>()\[\]\\.,;:\s@"]+(\.[^<>()\[\]\\.,;:\s@"]+)*)|(".+"))@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}])|(([a-zA-Z\-0-9]+\.)+[a-zA-Z]{2,24}))$/ ;
 	    if(!emailRegEx.test(that.email)) {
-		toast.error('Invalid email.',{timeout:false})
+		toast.error('Invalid email.',{autoClose:false})
                 return
 	    }
 	    this.network.instanceAdmin.addToWaitList(that.email).thenApply(function(res) {
@@ -215,7 +215,7 @@ export default {
         startAddCardListener(future) {
             var that = this;
             this.currentFocusFunction = function(event) {
-                toast.info('Completing signup', {id:'signup', timeout:false})
+                toast.info('Completing signup', {id:'signup', autoClose:false})
                 window.removeEventListener("focus", that.currentFocusFunction);
                 future.complete(peergos.shared.util.LongUtil.box(that.desiredQuota))
             };
@@ -233,7 +233,7 @@ export default {
             link.href = this.paymentUrl;
             link.dispatchEvent(click);
             this.startAddCardListener(this.cardFuture);
-            toast.info('Opening payment provider', {id:'signup', timeout:false})
+            toast.info('Opening payment provider', {id:'signup', autoClose:false})
         },
         addPaymentCard(props) {
             this.paymentUrl = props.getUrl() + "&username=" + this.username + "&client_secret=" + props.getClientSecret();
@@ -257,11 +257,11 @@ export default {
                 let usernameRegEx = /^[a-z0-9](?:[a-z0-9]|[-](?=[a-z0-9])){0,31}$/;
 
 		if(!usernameRegEx.test(that.username)) {
-		    toast.error('Invalid username. Usernames must consist of between 1 and 32 characters, containing only digits, lowercase letters and hyphen. They also cannot have two consecutive hyphens, or start or end with a hyphen.',{id:'signup',timeout:false})
+		    toast.error('Invalid username. Usernames must consist of between 1 and 32 characters, containing only digits, lowercase letters and hyphen. They also cannot have two consecutive hyphens, or start or end with a hyphen.',{id:'signup',autoClose:false})
                 } else if (BannedUsernames.includes(that.username)) {
-		    toast.error(`Banned username: ${that.username}`,{id:'signup', timeout:false})
+		    toast.error(`Banned username: ${that.username}`,{id:'signup', autoClose:false})
                 } else {
-                    toast.info('Signing up...', {id:'signup', timeout:false})
+                    toast.info('Signing up...', {id:'signup', autoClose:false})
                     var addCard;
                     if (this.acceptingPaidSignups && this.token.length == 0) {
                         addCard = java.util.Optional.of(props => that.addPaymentCard(props));
@@ -281,7 +281,7 @@ export default {
                         addCard,
 			that.network,
 			that.crypto,
-			{"accept" : x => toast.info(x, {id:'signup', timeout:false})}
+			{"accept" : x => toast.info(x, {id:'signup', autoClose:false})}
 		    ).thenApply(function(context) {
             		    sessionStorage.removeItem(idKey);
                         that.$store.commit('SET_CONTEXT', context);
@@ -298,7 +298,7 @@ export default {
                             });
                         });
                     }).exceptionally(function(throwable) {
-                        toast.error(that.uriDecode(throwable.getMessage()),{timeout:false, id: 'signup'})
+                        toast.error(that.uriDecode(throwable.getMessage()),{autoClose:false, id: 'signup'})
                     });
                 }
             }

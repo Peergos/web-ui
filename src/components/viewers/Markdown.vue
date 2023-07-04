@@ -204,7 +204,7 @@ export default {
             that.setupIFrameMessaging(iframe, func);
             setTimeout(() => {
                 if (!that.isIframeInitialised)
-                    toast.error("Unable to register service worker. Markdown viewer will not work offline. \nTo enable offline usage, allow 3rd party cookies for " + window.location.protocol + "//[*]." + window.location.host + "\n Note: this is not tracking", {timeout:false});
+                    toast.error("Unable to register service worker. Markdown viewer will not work offline. \nTo enable offline usage, allow 3rd party cookies for " + window.location.protocol + "//[*]." + window.location.host + "\n Note: this is not tracking", {autoClose:false});
             }, 2500)
 	},
 
@@ -226,7 +226,7 @@ export default {
     showMessage: function(isError, title, body) {
         let bodyContents = body == null ? '' : ' ' + body;
         if (isError) {
-            toast.error(title + bodyContents, {timeout:false});
+            toast.error(title + bodyContents, {autoClose:false});
         } else {
             toast(title + bodyContents)
         }

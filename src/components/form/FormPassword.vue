@@ -67,14 +67,14 @@ export default {
 	    let suffix = ["th", "st", "nd", "rd", "th", "th", "th", "th", "th", "th"][(index+1) % 10];
             
 	    if (index != -1) {
-		toast.error(`your password is the ${index+1} ${suffix} most common password!`,{ id: 'password', timeout:false });
+		toast.error(`your password is the ${index+1} ${suffix} most common password!`,{ id: 'password', autoClose:false });
 		this.passwordUpdate = true
 	    } else if (passwd.length < this.passwordThreshold) {
-		toast.error(`passwords less than ${this.passwordThreshold} characters are considered unsafe.`,{ id: 'password', timeout:false });
+		toast.error(`passwords less than ${this.passwordThreshold} characters are considered unsafe.`,{ id: 'password', autoClose:false });
 		this.passwordUpdate = true
 	    }else{
 		if (this.passwordUpdate)
-		    toast.error(`That's a better password.`,{ id: 'password', timeout:4000 });
+		    toast.error(`That's a better password.`,{ id: 'password', autoClose:4000 });
 	    }
 	}
     },

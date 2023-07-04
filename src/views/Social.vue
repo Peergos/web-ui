@@ -321,7 +321,7 @@ export default {
                     //     // that.resetTypeahead();
                     // }
                 that.showSpinner = false;
-                toast.error(`${throwable.getMessage()}`, {timeout:false, id: 'social'})
+                toast.error(`${throwable.getMessage()}`, {autoClose:false, id: 'social'})
             });
         },
 

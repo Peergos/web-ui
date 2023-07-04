@@ -74,9 +74,9 @@ export default {
         confirm: function() {
             let name = this.webAuthName.trim();
             if (name.length == 0) {
-                toast.error('Please enter a name', {timeout:false});
+                toast.error('Please enter a name', {autoClose:false});
             }else if (name.length > 20) {
-                toast.error('Name max-length is 20 characters', {timeout:false});
+                toast.error('Name max-length is 20 characters', {autoClose:false});
             } else {
                 this.register();
             }
@@ -117,17 +117,17 @@ export default {
                         that.showSpinner = false;
                         that.close(true);
                     }).exceptionally(function (completeThrowable) {
-                        toast.error('Unable to complete registration of security key', {timeout:false});
+                        toast.error('Unable to complete registration of security key', {autoClose:false});
                         console.log('Unable to complete registration of security key: ' + completeThrowable);
                         that.showSpinner = false;
                     });
                 }).catch(createException => {
-                    toast.error('Unable to create registration of security key', {timeout:false});
+                    toast.error('Unable to create registration of security key', {autoClose:false});
                     console.log('Unable to create registration of security key: ' + createException);
                     that.showSpinner = false;
                 });
             }).exceptionally(function (throwable) {
-                toast.error('Unable to register security key', {timeout:false});
+                toast.error('Unable to register security key', {autoClose:false});
                 console.log('Unable to register security key: ' + throwable);
                 that.showSpinner = false;
             });

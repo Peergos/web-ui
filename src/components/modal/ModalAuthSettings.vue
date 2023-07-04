@@ -118,7 +118,7 @@ export default {
             }
             that.showSpinner = false;
         }).exceptionally(function(throwable) {
-            toast.error('Unable to retrieve authentication methods', {timeout:false});
+            toast.error('Unable to retrieve authentication methods', {autoClose:false});
             console.log('Unable to retrieve authentication methods: ' + throwable);
             that.showSpinner = false;
         });
@@ -153,14 +153,14 @@ export default {
                 }
                 that.showSpinner = false;
             }).exceptionally(function(throwable) {
-                toast.error('Unable to delete authentication method', {timeout:false});
+                toast.error('Unable to delete authentication method', {autoClose:false});
                 console.log('Unable to delete authentication method: ' + throwable);
                 that.showSpinner = false;
             });
         },
 	    addWebAuthKey() {
 	        if (this.webAuthKeys.length + this.totpKey.length >= 10) {
-                toast.error('Reached maximum number of Security Keys', {timeout:false});
+                toast.error('Reached maximum number of Security Keys', {autoClose:false});
 	        } else {
                 this.showWebAuthSetup = true;
             }
@@ -189,7 +189,7 @@ export default {
                 }
                 that.showSpinner = false;
             }).exceptionally(function(throwable) {
-                toast.error('Unable to delete web authentication method', {timeout:false});
+                toast.error('Unable to delete web authentication method', {autoClose:false});
                 console.log('Unable to delete web authentication method: ' + throwable);
                 that.showSpinner = false;
             });

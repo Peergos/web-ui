@@ -76,7 +76,7 @@ export default {
             });
         },
         showError: function(message) {
-            toast.error(message, {timeout:false});
+            toast.error(message, {autoClose:false});
         },
         runApp: function(props) {
             this.showAppSandbox = true;

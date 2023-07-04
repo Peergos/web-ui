@@ -950,7 +950,7 @@ export default {
         },
         showMessage: function(title, body) {
             let bodyText = body == null ? '' : body;
-            toast.error(title + bodyText, {timeout:false, id: 'error'})
+            toast.error(title + bodyText, {autoClose:false, id: 'error'})
         },
         joinConversation: function (entry) {
             let that = this;

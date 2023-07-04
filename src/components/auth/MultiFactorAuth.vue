@@ -145,7 +145,7 @@ export default {
                 let resp = peergos.client.JsUtil.generateWebAuthnResponse(credentialId, authenticatorData, clientDataJson, signature);
                 that.consumer_func(credentialId, resp);
            }).catch(getCredentialsException => {
-                toast.error('Unable to get credentials', {timeout:false});
+                toast.error('Unable to get credentials', {autoClose:false});
                 console.log('Unable to get credentials: ' + getCredentialsException);
            });
         }

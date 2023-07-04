@@ -508,7 +508,7 @@ export default {
         },
         showToastError: function(title, message) {
             let bodyContents = body == null ? '' : ' ' + body;
-            toast.error(title + bodyContents, {timeout:false});
+            toast.error(title + bodyContents, {autoClose:false});
         },
         showToastWarning: function(title, message) {
             let bodyContents = body == null ? '' : ' ' + body;
@@ -838,7 +838,7 @@ export default {
                     name: mediaFile.name
                 };
                 toast({component: ProgressBar,props:  progress,}
-                    , { icon: false , timeout:false, id: mediaFile.name})
+                    , { icon: false , autoClose:false, id: mediaFile.name})
                 this.progressMonitors.push(progress);
                 progressBars.push(progress);
             }

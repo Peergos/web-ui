@@ -119,7 +119,7 @@ export default {
         toast({
 	    component: ProgressBar,
 	    props:  progress,
-	} , { icon: false , timeout:false, id: filename})
+	} , { icon: false , autoClose:false, id: filename})
     //   var context = this.getContext()
       file
         .getInputStream(

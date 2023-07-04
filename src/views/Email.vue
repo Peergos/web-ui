@@ -111,7 +111,7 @@ export default {
         let that = this;
         var query = new URLSearchParams(window.location.search)
         if (query.get("email") == null) {
-            toast.error("Email client not configured", {timeout:false});
+            toast.error("Email client not configured", {autoClose:false});
             Vue.nextTick(function() {
                 that.close();
             });
@@ -153,7 +153,7 @@ export default {
             } else {
                 this.context.getByPath(urlProps.path + '/' + filename).thenApply(fileOpt => {
                     if (! fileOpt.isPresent()) {
-                        toast.error("Couldn't load calendar event file", {timeout:false});
+                        toast.error("Couldn't load calendar event file", {autoClose:false});
                         future.complete(false);
                     } else {
                         let file = fileOpt.get();
@@ -850,7 +850,7 @@ export default {
             this.spinnerMessage = '';
         },
         showError: function(message) {
-            toast.error(message, {timeout:false});
+            toast.error(message, {autoClose:false});
         },
         showToast: function(message) {
             toast(message)

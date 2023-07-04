@@ -68,7 +68,7 @@ export default {
 	methods: {
 		showWarning() {
 			if(this.password.length == 0) {
-				toast.error('Password must be populated!',{timeout:false, position: 'bottom-left' })
+				toast.error('Password must be populated!',{autoClose:false, position: 'bottom-left' })
 			} else {
 				this.warning = true
 			}
@@ -104,9 +104,9 @@ export default {
                 }
             }).exceptionally(function(throwable) {
                 if (throwable.getMessage().startsWith('Invalid+TOTP+code')) {
-                    toast.error('Invalid Multi Factor Authenticator code', {timeout:false})
+                    toast.error('Invalid Multi Factor Authenticator code', {autoClose:false})
                 } else {
-                    toast.error(that.uriDecode(throwable.getMessage()), {timeout:false})
+                    toast.error(that.uriDecode(throwable.getMessage()), {autoClose:false})
                 }
                 console.log(throwable.getMessage())
             });
