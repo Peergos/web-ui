@@ -322,7 +322,7 @@ export default {
 				})
 				.exceptionally(function (throwable) {
 					that.showSpinner = false;
-					toast.error(`Error sharing file ${that.files[0].getFileProperties().name}: ${throwable.getMessage()}`, {autoClose:false, id: 'share'})
+					toast.error(`Error sharing file ${that.files[0].getFileProperties().name}: ${throwable.getMessage()}`, {autoClose:false, toastId: 'share'})
 				});
 		},
 		unshareFileWith(read_usernames, edit_usernames, sharedWithAccess) {
@@ -351,7 +351,7 @@ export default {
 					})
 					.exceptionally(function (throwable) {
 						that.showSpinner = false;
-						toast.error(`Error unsharing file ${filename}: ${throwable.getMessage()}`, {autoClose:false, id: 'share'})
+						toast.error(`Error unsharing file ${filename}: ${throwable.getMessage()}`, {autoClose:false, toastId: 'share'})
 
 					});
 			} else {
@@ -376,20 +376,20 @@ export default {
 					})
 					.exceptionally(function (throwable) {
 						that.showSpinner = false;
-						toast.error(`Error unsharing file ${filename}: ${throwable.getMessage()}`, {autoClose:false, id: 'share'})
+						toast.error(`Error unsharing file ${filename}: ${throwable.getMessage()}`, {autoClose:false, toastId: 'share'})
 					});
 			}
 		},
 		allowedToShare(file) {
 			if (file.isUserRoot()) {
-				toast.error('You cannot share your home directory', {autoClose:false, id: 'share'})
+				toast.error('You cannot share your home directory', {autoClose:false, toastId: 'share'})
 				return false;
 			}
 			if (
 				this.sharedWithAccess == "Edit" &&
 				file.getOwnerName() != this.context.username
 			) {
-				toast.error('Only the owner of a file can grant write access', {autoClose:false, id: 'share'})
+				toast.error('Only the owner of a file can grant write access', {autoClose:false, toastId: 'share'})
 				return false;
 			}
 			return true;
@@ -424,7 +424,7 @@ export default {
 				})
 				.exceptionally(function (throwable) {
 					that.showSpinner = false;
-					toast.error(`Error sharing file ${that.files[0].getFileProperties().name}: ${throwable.getMessage()} `, {autoClose:false, id: 'share'})
+					toast.error(`Error sharing file ${that.files[0].getFileProperties().name}: ${throwable.getMessage()} `, {autoClose:false, toastId: 'share'})
 				});
 		},
 		isFriend(name) {
@@ -578,7 +578,7 @@ export default {
 				}
 			}
 			if (usersToShareWith.length == 0) {
-				toast.error('Already shared', {autoClose:false, id: 'share'})
+				toast.error('Already shared', {autoClose:false, toastId: 'share'})
 				return;
 			}
 			var filename = that.files[0].getFileProperties().name;
@@ -600,7 +600,7 @@ export default {
 					})
 					.exceptionally(function (throwable) {
 						that.showSpinner = false;
-						toast.error(`Error sharing file ${filename}: ${throwable.getMessage()}`, {autoClose:false, id: 'share'})
+						toast.error(`Error sharing file ${filename}: ${throwable.getMessage()}`, {autoClose:false, toastId: 'share'})
 
 					});
 			} else {
@@ -619,7 +619,7 @@ export default {
 					})
 					.exceptionally(function (throwable) {
 						that.showSpinner = false;
-						toast.error(`Error sharing file ${filename}: ${throwable.getMessage()}`, {autoClose:false, id: 'share'})
+						toast.error(`Error sharing file ${filename}: ${throwable.getMessage()}`, {autoClose:false, toastId: 'share'})
 					});
 			}
 		},

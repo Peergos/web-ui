@@ -215,7 +215,7 @@ export default {
         startAddCardListener(future) {
             var that = this;
             this.currentFocusFunction = function(event) {
-                toast.info('Completing signup', {id:'signup', autoClose:false})
+                toast.info('Completing signup', {toastId:'signup', autoClose:false})
                 window.removeEventListener("focus", that.currentFocusFunction);
                 future.complete(peergos.shared.util.LongUtil.box(that.desiredQuota))
             };
@@ -233,7 +233,7 @@ export default {
             link.href = this.paymentUrl;
             link.dispatchEvent(click);
             this.startAddCardListener(this.cardFuture);
-            toast.info('Opening payment provider', {id:'signup', autoClose:false})
+            toast.info('Opening payment provider', {toastId:'signup', autoClose:false})
         },
         addPaymentCard(props) {
             this.paymentUrl = props.getUrl() + "&username=" + this.username + "&client_secret=" + props.getClientSecret();
@@ -246,22 +246,22 @@ export default {
             const that = this;
 
             if(!that.safePassword) {
-		toast.error('You must accept the password safety warning', {id:'signup'})
+		toast.error('You must accept the password safety warning', {toastId:'signup'})
 	    } else if (!that.tosAccepted) {
-		toast.error('You must accept the Terms of Service',{id:'signup'})
+		toast.error('You must accept the Terms of Service',{toastId:'signup'})
             } else if (that.password != that.password2) {
-		toast.error('Passwords do not match!',{id:'signup'})
+		toast.error('Passwords do not match!',{toastId:'signup'})
 	    } else if (that.password == '') {
-		toast.error('Please generate your password',{id:'signup'})
+		toast.error('Please generate your password',{toastId:'signup'})
             } else {
                 let usernameRegEx = /^[a-z0-9](?:[a-z0-9]|[-](?=[a-z0-9])){0,31}$/;
 
 		if(!usernameRegEx.test(that.username)) {
-		    toast.error('Invalid username. Usernames must consist of between 1 and 32 characters, containing only digits, lowercase letters and hyphen. They also cannot have two consecutive hyphens, or start or end with a hyphen.',{id:'signup',autoClose:false})
+		    toast.error('Invalid username. Usernames must consist of between 1 and 32 characters, containing only digits, lowercase letters and hyphen. They also cannot have two consecutive hyphens, or start or end with a hyphen.',{toastId:'signup',autoClose:false})
                 } else if (BannedUsernames.includes(that.username)) {
-		    toast.error(`Banned username: ${that.username}`,{id:'signup', autoClose:false})
+		    toast.error(`Banned username: ${that.username}`,{toastId:'signup', autoClose:false})
                 } else {
-                    toast.info('Signing up...', {id:'signup', autoClose:false})
+                    toast.info('Signing up...', {toastId:'signup', autoClose:false})
                     var addCard;
                     if (this.acceptingPaidSignups && this.token.length == 0) {
                         addCard = java.util.Optional.of(props => that.addPaymentCard(props));
@@ -281,7 +281,7 @@ export default {
                         addCard,
 			that.network,
 			that.crypto,
-			{"accept" : x => toast.info(x, {id:'signup', autoClose:false})}
+			{"accept" : x => toast.info(x, {toastId:'signup', autoClose:false})}
 		    ).thenApply(function(context) {
             		    sessionStorage.removeItem(idKey);
                         that.$store.commit('SET_CONTEXT', context);
@@ -298,7 +298,7 @@ export default {
                             });
                         });
                     }).exceptionally(function(throwable) {
-                        toast.error(that.uriDecode(throwable.getMessage()),{autoClose:false, id: 'signup'})
+                        toast.error(that.uriDecode(throwable.getMessage()),{autoClose:false, toastId: 'signup'})
                     });
                 }
             }
