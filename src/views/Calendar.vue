@@ -255,7 +255,7 @@ export default {
         }
     },
     sendPing: function(iframe) {
-        let theme = store.getters.currentTheme;
+        let theme = this.$store.getters.currentTheme;
         iframe.contentWindow.postMessage({type: 'ping', currentTheme: theme, hasEmail: this.hasEmail}, '*');
     },
     initialiseIFrameCommunication: function(iframe, callback, retryCount){

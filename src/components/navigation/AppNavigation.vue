@@ -43,11 +43,6 @@ import AppIcon from "../AppIcon.vue";
 import MenuItem from './NavigationMenuItem.vue';
 import NavigationStorage from './NavigationStorage.vue';
 
-import { inject } from 'vue'
-// import Vuex from "vuex"
-
-// const store = inject('store')
-
 export default {
 	components: {
 	    AppButton,
@@ -57,13 +52,13 @@ export default {
 	},
 	computed: {
 		isOpen() {
-			return store.state.isSidebarOpen;
+			return this.$store.state.isSidebarOpen;
 		},
 		currentTheme() {
-			return store.getters.currentTheme;
+			return this.$store.getters.currentTheme;
 		},
 		isDark() {
-			return store.state.isDark;
+			return this.$store.state.isDark;
 		},
         showChat() {
             var query = new URLSearchParams(window.location.search)

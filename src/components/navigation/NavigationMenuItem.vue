@@ -13,10 +13,7 @@ import AppButton from "../AppButton.vue";
 import AppIcon from "../AppIcon.vue";
 import router from "../../mixins/router/index.js";
 
-// import { inject } from 'vue'
-// import Vuex from "vuex"
 import { mapState,mapGetters  } from 'vuex'
-// const store = inject('store')
 
 export default {
 	components: {
@@ -47,7 +44,7 @@ export default {
                     'getPath'
 		]),
 		isCurrentView() {
-			return  this.view === store.state.currentView;
+			return  this.view === this.$store.state.currentView;
 		},
 
 	},

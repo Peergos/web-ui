@@ -44,10 +44,10 @@ export default {
 		]),
       currentFeedback: {
         get () {
-          return store.getters.getCurrentFeedback;
+          return this.$store.getters.getCurrentFeedback;
         },
         set (value) {
-          this.$this.$store.commit("SET_CURRENT_FEEDBACK", value);
+          this.$store.commit("SET_CURRENT_FEEDBACK", value);
         }
       }
     },

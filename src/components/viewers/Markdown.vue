@@ -193,7 +193,7 @@ export default {
         // don't have an origin which you can target: you'll have to send to any
         // origin, which might alow some esoteric attacks. Validate your output!
         this.showSpinner = true;
-        let theme = store.getters.currentTheme;
+        let theme = this.$store.getters.currentTheme;
         let subPath = this.propAppArgs.subPath != null ? this.propAppArgs.subPath
                         : this.scopedPath.substring(0, this.scopedPath.length -1);
         let func = function() {

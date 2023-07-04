@@ -7,6 +7,8 @@
 </template>
 
 <script>
+import { nextTick } from 'vue'
+    
 export default {
     data: function() {
         return {
@@ -15,7 +17,7 @@ export default {
     props: ['message'],
     created: function() {
         var that = this;
-        Vue.nextTick(function() {
+        nextTick(function() {
             that.spinner.spin(document.getElementById("spinner"));
         });
     },
