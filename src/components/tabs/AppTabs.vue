@@ -24,7 +24,9 @@ export default {
 		};
 	},
 	created() {
-		this.tabs = this.$children;
+		// this.$children is depracated
+		// temp workaround: use this.$parent.tabs.push(this); on the child component
+		// this.tabs = this.$children;
 	},
 	mounted() {
 		this.selectTab(0);

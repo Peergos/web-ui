@@ -19,6 +19,9 @@ export default {
 			isActive: false,
 		};
 	},
+	created() {
+		this.$parent.tabs.push(this);
+	},
 };
 </script>
 
