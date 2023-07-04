@@ -179,7 +179,7 @@ export default {
 		postLogin(creationStart, context) {
 			const that = this;
 			this.isLoggingIn = false;
-            toast.dismiss('login');
+            toast.remove('login');
 
             that.$store.commit('SET_CONTEXT', context);
 

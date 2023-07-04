@@ -294,7 +294,7 @@ export default {
                                 that.updateSocial()
                                 that.updateUsage()
                                 console.log("Signing in/up took " + (Date.now()-creationStart)+" mS from function call");
-                                toast.dismiss('signup');
+                                toast.remove('signup');
                             });
                         });
                     }).exceptionally(function(throwable) {

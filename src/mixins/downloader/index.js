@@ -131,7 +131,7 @@ export default {
             progress.done += read.value_0
               if (progress.done >= progress.max) {
                 setTimeout(function () {
-                    toast.dismiss(filename);
+                    toast.remove(filename);
                 }, 100)
               }
           }

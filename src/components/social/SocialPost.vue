@@ -266,7 +266,7 @@ export default {
 				       });
 
 		    if (progress.done >= progress.max) {
-			toast.dismiss(progress.name);
+			toast.remove(progress.name);
 		    }
                 };
                 this.uploadMedia(this.mediaFiles[index], updateProgressBar).thenApply(result => {

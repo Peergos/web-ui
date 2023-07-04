@@ -1811,7 +1811,7 @@ export default {
             let command = queueCopy.shift();
             if (command == null) {
                 if (finalCall) {
-                    setTimeout(() => toast.dismiss(uploadParams.progress.name), 1000);
+                    setTimeout(() => toast.remove(uploadParams.progress.name), 1000);
                 }
                 future.complete(true);
             } else {

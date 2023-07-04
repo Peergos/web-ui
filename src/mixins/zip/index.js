@@ -148,7 +148,7 @@ export default {
                     progress.done += read.value_0;
                     if (progress.done >= progress.max) {
                         setTimeout(function () {
-                            toast.dismiss(zipFilename);
+                            toast.remove(zipFilename);
                         }, 100);
                     }
                 }

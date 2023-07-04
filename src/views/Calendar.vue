@@ -835,7 +835,7 @@ export default {
            var commitWatcher = {
                get_0: function() {
                    if (uploadParams.progress.done >= uploadParams.progress.max) {
-                       setTimeout(() => toast.dismiss(uploadParams.progress.name), 1000);
+                       setTimeout(() => toast.remove(uploadParams.progress.name), 1000);
                    }
                    return true;
                }
