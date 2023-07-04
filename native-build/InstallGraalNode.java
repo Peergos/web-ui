@@ -16,6 +16,16 @@ public class InstallNativeImage {
         String filename = "graalvm-community-jdk-" + VERSION + "_" + OS_ARCH + "_bin"+ext;
         String url = "https://github.com/graalvm/graalvm-ce-builds/releases/download/jdk-" +VERSION +"/" + filename;
 
+        // don't reinstall
+        Optional<String> existingDir = Stream.of(new File(".").listFiles())
+            .filter(f -> f.isDirectory() && f.getName().startsWith("graalvm-community"))
+            .map(f -> f.getName())
+            .findFirst();
+        if (existingDir.isPresent()) {
+            System.out.println("graal nodejs already installed");
+            return;
+        }
+        
         // Download graalVM
         if (! new File(filename).exists())
             download(url, new File(filename));
