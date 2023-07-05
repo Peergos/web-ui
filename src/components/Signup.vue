@@ -241,6 +241,12 @@ export default {
             this.confirmAddCard();
             return this.cardFuture;
         },
+        toastInfo(msg, id) {
+            if (! toast.isActive(id))
+                toast.info(msg,{ toastId: id, autoClose:false });
+            else
+                toast.update(id, { render:msg, autoClose:false });
+        ,
         signup() {
             const creationStart = Date.now();
             const that = this;
@@ -261,7 +267,7 @@ export default {
                 } else if (BannedUsernames.includes(that.username)) {
 		    toast.error(`Banned username: ${that.username}`,{toastId:'signup', autoClose:false})
                 } else {
-                    toast.info('Signing up...', {toastId:'signup', autoClose:false})
+                    toastInfo('Signing up...', 'signup')
                     var addCard;
                     if (this.acceptingPaidSignups && this.token.length == 0) {
                         addCard = java.util.Optional.of(props => that.addPaymentCard(props));
@@ -281,7 +287,7 @@ export default {
                         addCard,
 			that.network,
 			that.crypto,
-			{"accept" : x => toast.info(x, {toastId:'signup', autoClose:false})}
+			{"accept" : x => this.toastInfo(x, 'signup')}
 		    ).thenApply(function(context) {
             		    sessionStorage.removeItem(idKey);
                         that.$store.commit('SET_CONTEXT', context);
