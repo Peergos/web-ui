@@ -267,7 +267,7 @@ export default {
                 } else if (BannedUsernames.includes(that.username)) {
 		    toast.error(`Banned username: ${that.username}`,{toastId:'signup', autoClose:false})
                 } else {
-                    toastInfo('Signing up...', 'signup')
+                    that.toastInfo('Signing up...', 'signup')
                     var addCard;
                     if (this.acceptingPaidSignups && this.token.length == 0) {
                         addCard = java.util.Optional.of(props => that.addPaymentCard(props));
