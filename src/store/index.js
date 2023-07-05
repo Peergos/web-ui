@@ -7,6 +7,7 @@ function shallow(val) {
     // tag a value so vue will only shallow watch it
     if (val != null) {
         val.__isVue = true;
+        val.__v_isShallow = true;
     }
     return val;
 }
