@@ -130,6 +130,12 @@ export default {
 		togglePassword() {
 			this.passwordIsVisible = !this.passwordIsVisible
 		},
+                toastInfo(msg, id) {
+                    if (! toast.isActive(id))
+                        toast.info(msg,{ toastId: id, autoClose:false });
+                    else
+                        toast.update(id, { render:msg, autoClose:false });
+                },
 		login() {
 		    if (this.isLoggingIn) {
 		        return;
@@ -162,7 +168,7 @@ export default {
 				that.network,
 				that.crypto,
 				// { accept: (x) => (that.spinnerMessage = x) }
-				 { accept: (x) => (toast.info(x,{ toastId: 'login', autoClose:false })) }
+				 { accept: (x) => (this.toastInfo(x, 'login')) }
 				)
 				.thenApply(function (context) {
                     that.postLogin(creationStart, context);
