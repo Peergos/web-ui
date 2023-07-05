@@ -6,7 +6,7 @@ import helpers from "../mixins/storage/index.js";
 function shallow(val) {
     // tag a value so vue will only shallow watch it
     if (val != null) {
-        val._isVue = true;
+        val.__isVue = true;
     }
     return val;
 }
