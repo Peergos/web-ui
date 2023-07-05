@@ -246,7 +246,7 @@ export default {
                 toast.info(msg,{ toastId: id, autoClose:false });
             else
                 toast.update(id, { render:msg, autoClose:false });
-        ,
+        },
         signup() {
             const creationStart = Date.now();
             const that = this;
