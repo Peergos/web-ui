@@ -113,13 +113,13 @@ export default {
                                 that.isLoggingIn = true;
                                 let entryData = peergos.shared.user.UserStaticData.fromByteArray(entryPoints);
                                 peergos.shared.user.UserContext.restoreContext(rootKeyPair.username, loginRoot, entryData,
-                                    that.network, that.crypto, { accept: (x) => (toast.info(x,{ {autoClose:false, toastId: 'login' })) }
+                                    that.network, that.crypto, { accept: (x) => (toast.info(x,{ autoClose:false, toastId: 'login' })) }
                                 ).thenApply(function (context) {
                                       that.postLogin(creationStart, context);
                                 })
                                 .exceptionally(function (throwable) {
                                     that.isLoggingIn = false;
-                                    toast.error(that.uriDecode(throwable.getMessage()), {{autoClose:false, toastId: 'login'})
+                                    toast.error(that.uriDecode(throwable.getMessage()), {autoClose:false, toastId: 'login'})
                                 });
                             }
                         });
