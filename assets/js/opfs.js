@@ -15,20 +15,22 @@ onmessage = async (e) => {
 };
 function getOPFSKV(filename, directory, retryCount) {
     getFileHandle(filename, directory).then( fileHandle => {
-        fileHandle.createSyncAccessHandle().then(accessHandle => {
-            const size = accessHandle.getSize();
-            const dataView = new Int8Array(size);
-            accessHandle.read(dataView);
-            accessHandle.close();
-            postMessage({filename: filename, contents: dataView});
-        }).catch(e => {
-            if (retryCount < 3) {
-                setTimeout(() => getOPFSKV(filename, directory, retryCount + 1));
-            } else {
-                console.log('getOPFSKV error: ' + e + " filename:" + filename);
-                postMessage({filename: filename, contents: null});
-            }
-        });
+        if (fileHandle != null) {
+            fileHandle.createSyncAccessHandle().then(accessHandle => {
+                const size = accessHandle.getSize();
+                const dataView = new Int8Array(size);
+                accessHandle.read(dataView);
+                accessHandle.close();
+                postMessage({filename: filename, contents: dataView});
+            }).catch(e => {
+                if (retryCount < 3) {
+                    setTimeout(() => getOPFSKV(filename, directory, retryCount + 1));
+                } else {
+                    console.log('getOPFSKV error: ' + e + " filename:" + filename);
+                    postMessage({filename: filename, contents: null});
+                }
+            });
+        }
     }).catch(e => {
         postMessage({filename: filename, contents: null});
     });
