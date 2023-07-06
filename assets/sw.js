@@ -123,7 +123,7 @@ const precachedAssets = [
   'js/StreamSaver.js',
   'js/emoji-button-3.1.1.min.js',
   'js/idb-keyval.js',
-  'js/peergos.js',
+  //'js/peergos.js', FIXME currently the vue3 build process creates a js file with a random filename
   'css/vendor.css',
   'css/peergos.css',
   'fonts/inter/Inter-Regular.woff2',//?v=3.19

@@ -7,7 +7,8 @@ function shallow(val) {
     // tag a value so vue will only shallow watch it
     if (val != null) {
         val.__isVue = true;
-        val.__v_isShallow = true;
+        //val.__v_isShallow = true; replaced by v_skip below
+        val.__v_skip = true; // from the definition of markRaw
     }
     return val;
 }
