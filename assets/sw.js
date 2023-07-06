@@ -123,7 +123,6 @@ const precachedAssets = [
   'js/StreamSaver.js',
   'js/emoji-button-3.1.1.min.js',
   'js/idb-keyval.js',
-  'js/peergos.js',
   'css/vendor.css',
   'css/peergos.css',
   'fonts/inter/Inter-Regular.woff2',//?v=3.19
