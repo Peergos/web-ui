@@ -21,6 +21,15 @@
 		        @search="openSearch(false)"
                         @paste="paste()"
 		/>
+        
+        <DriveSelected 
+            :selectedFiles="selectedFiles"
+            @copy="copy"
+            @cut="cut"
+            @download="downloadAll"
+            @deleteFiles="deleteFiles"
+            @zip="zipAndDownload"
+        />
 
 		<AppPrompt
 			v-if="showPrompt"
@@ -49,7 +58,6 @@
             v-on:hide-folder-properties-view="showFolderProperties = false"
             :folder_properties="folder_properties">
         </FolderProperties>
-
 		<div id="dnd"
 			@drop="dndDrop($event)"
 			@dragover.prevent
@@ -78,6 +86,7 @@
 
 				<DriveTable v-else
 					:files="sortedFiles"
+                    :selectedFiles.sync="selectedFiles"
 					@sortBy="setSortBy"
 					@openMenu="openMenu"
 					@navigateDrive="navigateDrive"
@@ -112,7 +121,7 @@
                 <li id='app-install' v-if="isInstallable" @keyup.enter="installApp()" @click="installApp()">Install App</li>
 
 			</DriveMenu>
-		</transition>
+        </transition>
 
 		<Gallery
 			v-if="showGallery"
@@ -250,6 +259,7 @@ const Markdown = require("../components/viewers/Markdown.vue");
 const Hex = require("../components/viewers/Hex.vue");
 const ProgressBar = require("../components/drive/ProgressBar.vue");
 const DriveMenu = require("../components/drive/DriveMenu.vue");
+const DriveSelected = require("../components/drive/DriveSelected.vue");
 
 const AppPrompt = require("../components/prompt/AppPrompt.vue");
 const NewImageFilePrompt = require("../components/NewImageFilePrompt.vue");
@@ -280,6 +290,7 @@ module.exports = {
 		DriveGridDrop,
 		DriveTable,
 		DriveMenu,
+        DriveSelected,
 		Error,
 		AppPrompt,
 		NewImageFilePrompt,
@@ -418,7 +429,7 @@ module.exports = {
 			'getPath'
 		]),
 
-		sortedFiles() {
+        sortedFiles() {
 			if (this.files == null) {
 				return [];
 			}
@@ -622,7 +633,7 @@ module.exports = {
 				return false;
 			}
         },
-        allowCopy() {
+        allowCopy() { 
             return this.isLoggedIn && this.path.length > 0;
         },
 		allowShare() {

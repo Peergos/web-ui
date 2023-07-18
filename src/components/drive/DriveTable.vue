@@ -2,6 +2,7 @@
 	<table class="drive-table">
 		<thead>
 			<tr>
+                <th class="select"></th>
 				<th class="file" @click="$emit('sortBy', 'name')">Name</th>  <!-- <span v-if="sortBy=='size'" :class="['fas', normalSortOrder ? 'fa-angle-down' : 'fa-angle-up']"/> -->
 				<th class="size" @click="$emit('sortBy', 'size')">Size</th>
 				<th class="type" @click="$emit('sortBy', 'type')">Type</th>
@@ -12,12 +13,12 @@
 		</thead>
 		<tbody role="presentation">
 			<tr v-for="file in files" tabindex="1" role="row" class="table__item">
+                <td class="select"><input type="checkbox" :value="file" v-model="selected" /></td>
 				<td class="file"
 					:id="file.getFileProperties().name"
-					@click="$emit('navigateDrive', file)"
+					@click="$emit('navigationteDrive', file)"
 				>
-				<!-- :class="{ shared: isShared(file) }"-->
-
+                <!-- :class="{ shared: isShared(file) }"-->
 					{{ file.getFileProperties().name }}
 				</td>
 				<td class="size">{{ convertBytesToHumanReadable(getFileSize(file.getFileProperties())) }}</td>
@@ -50,11 +51,23 @@ module.exports = {
 			type: Array,
 			default: ()=>[]
 		},
+        selectedFiles: {
+            type: Array,
+            default: ()=>[]
+        },
 	},
-
-	mixins:[mixins],
-
-	methods: {
+    mixins:[mixins],
+    data: function () {
+        return {
+            selected: this.selectedFiles,
+        }
+    },
+    watch: {
+        selected: function(newSelected, oldSelected) {
+            this.$emit('update:selectedFiles', newSelected)
+        }
+    },
+    methods: {
 		showMenu(e, file){
 			// https://stackoverflow.com/questions/53738919/emit-event-with-parameters-in-vue/53739018
 			this.$store.commit('SET_DRIVE_MENU_TARGET', e.currentTarget)
@@ -119,7 +132,8 @@ module.exports = {
 
 .drive-table .size,
 .drive-table .type,
-.drive-table .date{
+.drive-table .date,
+.drive-table .select {
 	padding: 0 16px;
 }
 
