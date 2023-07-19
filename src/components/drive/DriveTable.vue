@@ -9,7 +9,7 @@
 				<th class="date" @click="$emit('sortBy', 'modified')">Modified</th>
 				<th class="date" @click="$emit('sortBy', 'created')">Created</th>
 				<th/>
-			</tr>
+            </tr>
 		</thead>
 		<tbody role="presentation">
 			<tr v-for="file in files" tabindex="1" role="row" class="table__item">
@@ -64,8 +64,13 @@ module.exports = {
         }
     },
     watch: {
-        selected: function(newSelected, oldSelected) {
+        selected(newSelected, oldSelected) {
+            if(newSelected != this.selectedFiles){
             this.$emit('update:selectedFiles', newSelected)
+            }
+        },
+        selectedFiles(newSelected, oldSelected){
+            this.selected = newSelected
         }
     },
     methods: {

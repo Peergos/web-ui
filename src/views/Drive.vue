@@ -1,241 +1,379 @@
 <template>
-	<article class="drive-view">
-		<input type="file" id="uploadFileInput" @change="uploadFiles" style="display:none;" multiple />
-		<input type="file" id="uploadDirectoriesInput" @change="uploadFiles" style="display:none;" multiple directory mozDirectory webkitDirectory/>
+  <article class="drive-view">
+    <input
+      type="file"
+      id="uploadFileInput"
+      @change="uploadFiles"
+      style="display: none"
+      multiple
+    />
+    <input
+      type="file"
+      id="uploadDirectoriesInput"
+      @change="uploadFiles"
+      style="display: none"
+      multiple
+      directory
+      mozDirectory
+      webkitDirectory
+    />
 
-		<Spinner v-if="showSpinner" :message="spinnerMessage"></Spinner>
+    <Spinner v-if="showSpinner" :message="spinnerMessage"></Spinner>
 
-		<a id="downloadAnchor" style="display:none"></a>
+    <a id="downloadAnchor" style="display: none"></a>
 
-		<DriveHeader
-			:gridView="isGrid"
-			:isWritable="isWritable"
-			:canPaste="isPasteAvailable"
-			:path="path"
-			@switchView="switchView()"
-			@goBackToLevel="goBackToLevel($event)"
-			@askMkdir="askMkdir()"
-			@createFile="createBlankFile()"
-			@createImageFile="createBlankImageFile()"
-			@newApp="createNewApp()"
-		        @search="openSearch(false)"
-                        @paste="paste()"
-		/>
-        
-        <DriveSelected 
-            :selectedFiles="selectedFiles"
-            @copy=""
-            @cut=""
-            @delete=""
-            @download=""
-            @zip=""
+    <DriveHeader
+      :gridView="isGrid"
+      :isWritable="isWritable"
+      :canPaste="isPasteAvailable"
+      :path="path"
+      @switchView="switchView()"
+      @goBackToLevel="goBackToLevel($event)"
+      @askMkdir="askMkdir()"
+      @createFile="createBlankFile()"
+      @createImageFile="createBlankImageFile()"
+      @newApp="createNewApp()"
+      @search="openSearch(false)"
+      @paste="paste()"
+    />
+
+    <AppPrompt
+      v-if="showPrompt"
+      @hide-prompt="closePrompt()"
+      :message="prompt_message"
+      :placeholder="prompt_placeholder"
+      :max_input_size="prompt_max_input_size"
+      :value="prompt_value"
+      :consumer_func="prompt_consumer_func"
+      :action="prompt_action"
+    />
+
+    <NewImageFilePrompt
+      v-if="showNewImageFilePrompt"
+      @hide-prompt="closeNewImageFilePrompt()"
+      :consumer_func="prompt_consumer_func"
+    />
+
+    <NewAppPrompt
+      v-if="showNewAppPrompt"
+      @hide-prompt="closeNewAppPrompt()"
+      :consumer_func="prompt_new_app_func"
+    />
+    <FolderProperties
+      v-if="showFolderProperties"
+      v-on:hide-folder-properties-view="showFolderProperties = false"
+      :folder_properties="folder_properties"
+    >
+    </FolderProperties>
+
+    <DriveSelected :selectedFiles="selectedFiles">
+      <li id="copy" @keyup.enter="" @click="">Copy</li>
+      <li id="cut" @keyup.enter="" @click="">Cut</li>
+      <li id="delete" @keyup.enter="" @click="">Delete</li>
+      <li id="download" @keyup.enter="" @click="">Download</li>
+      <li id="zip" @keyup.enter="" @click="">Zip</li>
+      <li id="deselect" @keyup.enter="selectedFiles = []" @click="selectedFiles = []">
+        Deselect
+      </li>
+    </DriveSelected>
+
+    <div
+      id="dnd"
+      @drop="dndDrop($event)"
+      @dragover.prevent
+      :class="{ not_owner: isNotMe, dnd: 'dnd' }"
+    >
+      <transition name="fade" mode="out-in" appear>
+        <DriveGrid v-if="isGrid" appear>
+          <DriveGridCard
+            v-for="(file, index) in sortedFiles"
+            :class="{ shared: isShared(file) }"
+            :key="file.getFileProperties().name"
+            :filename="file.getFileProperties().name"
+            :src="getThumbnailURL(file)"
+            :type="file.getFileProperties().getType()"
+            @click.native="navigateDrive(file)"
+            @openMenu="openMenu(file)"
+            :dragstartFunc="dragStart"
+            :dropFunc="drop"
+            :file="file"
+            :itemIndex="index"
+            :selected="isSelected(file)"
+            @toggleSelection="toggleSelection(file)"
+          />
+          <DriveGridDrop
+            v-if="
+              getPath.length > 1 &&
+              sortedFiles.length == 0 &&
+              currentDir != null &&
+              currentDir.isWritable()
+            "
+          >
+          </DriveGridDrop>
+        </DriveGrid>
+
+        <DriveTable
+          v-else
+          :files="sortedFiles"
+          :selectedFiles.sync="selectedFiles"
+          @sortBy="setSortBy"
+          @openMenu="openMenu"
+          @navigateDrive="navigateDrive"
         />
+      </transition>
+    </div>
 
-		<AppPrompt
-			v-if="showPrompt"
-			@hide-prompt="closePrompt()"
-			:message='prompt_message'
-			:placeholder="prompt_placeholder"
-			:max_input_size="prompt_max_input_size"
-			:value="prompt_value"
-			:consumer_func="prompt_consumer_func"
-			:action="prompt_action"
-		/>
+    <transition name="drop">
+      <DriveMenu ref="driveMenu" v-if="viewMenu" @closeMenu="closeMenu()">
+        <li
+          id="gallery"
+          v-if="canOpen && !isMarkdown && !isHTML && !hexViewerAlternativeAvailable"
+          @keyup.enter="viewFile()"
+          @click="viewFile()"
+        >
+          View
+        </li>
+        <li
+          id="view-markdown"
+          v-if="isMarkdown"
+          @keyup.enter="viewFile()"
+          @click="viewFile()"
+        >
+          View
+        </li>
+        <li
+          id="edit-markdown"
+          v-if="isMarkdown"
+          @keyup.enter="editFile()"
+          @click="editFile()"
+        >
+          Edit
+        </li>
+        <li
+          id="view-html"
+          v-if="isHTML && isHTMLViewable"
+          @keyup.enter="viewFile()"
+          @click="viewFile()"
+        >
+          View
+        </li>
+        <li id="edit-html" v-if="isHTML" @keyup.enter="editFile()" @click="editFile()">
+          Edit
+        </li>
+        <li
+          id="open-in-app"
+          v-for="app in availableApps"
+          v-on:keyup.enter="appOpen(app.name)"
+          v-on:click="appOpen(app.name)"
+        >
+          {{ app.contextMenuText }}
+        </li>
+        <li
+          id="download-folder"
+          v-if="canOpen"
+          @keyup.enter="downloadAll"
+          @click="downloadAll"
+        >
+          Download
+        </li>
+        <li id="rename-file" v-if="isWritable" @keyup.enter="rename" @click="rename">
+          Rename
+        </li>
+        <li
+          id="delete-file"
+          v-if="isWritable"
+          @keyup.enter="deleteFiles"
+          @click="deleteFiles"
+        >
+          Delete
+        </li>
+        <li id="copy-file" v-if="allowCopy" @keyup.enter="copy" @click="copy">Copy</li>
+        <li id="cut-file" v-if="isWritable" @keyup.enter="cut" @click="cut">Cut</li>
+        <li id="paste-file" v-if="isPasteAvailable" @keyup.enter="paste" @click="paste">
+          Paste
+        </li>
+        <li
+          id="share-file"
+          v-if="allowShare"
+          @keyup.enter="showShareWith"
+          @click="showShareWith"
+        >
+          Share
+        </li>
+        <li
+          id="zip-folder"
+          v-if="allowDownloadFolder"
+          @keyup.enter="zipAndDownload"
+          @click="zipAndDownload"
+        >
+          Download as Zip
+        </li>
+        <li
+          id="create-thumbnail"
+          v-if="isWritable && canCreateThumbnail"
+          @keyup.enter="createThumbnail"
+          @click="createThumbnail"
+        >
+          Create Thumbnail
+        </li>
+        <li
+          id="folder-props"
+          v-if="allowViewFolderProperties"
+          @keyup.enter="viewFolderProperties"
+          @click="viewFolderProperties"
+        >
+          Properties
+        </li>
+        <li
+          id="add-to-launcher"
+          v-if="allowAddingToLauncher"
+          @keyup.enter="addToLauncher"
+          @click="addToLauncher"
+        >
+          Add to Launcher
+        </li>
+        <li id="app-run" v-if="isInstallable" @keyup.enter="runApp()" @click="runApp()">
+          Run App
+        </li>
+        <li
+          id="app-install"
+          v-if="isInstallable"
+          @keyup.enter="installApp()"
+          @click="installApp()"
+        >
+          Install App
+        </li>
+      </DriveMenu>
+    </transition>
 
-		<NewImageFilePrompt
-			v-if="showNewImageFilePrompt"
-			@hide-prompt="closeNewImageFilePrompt()"
-			:consumer_func="prompt_consumer_func"
-		/>
+    <Gallery
+      v-if="showGallery"
+      @hide-gallery="back()"
+      :files="sortedFiles"
+      :initial-file-name="appArgs.filename"
+    >
+    </Gallery>
 
-		<NewAppPrompt
-			v-if="showNewAppPrompt"
-			@hide-prompt="closeNewAppPrompt()"
-			:consumer_func="prompt_new_app_func"
-		/>
-		<FolderProperties
-            v-if="showFolderProperties"
-            v-on:hide-folder-properties-view="showFolderProperties = false"
-            :folder_properties="folder_properties">
-        </FolderProperties>
-		<div id="dnd"
-			@drop="dndDrop($event)"
-			@dragover.prevent
-			:class="{ not_owner: isNotMe, dnd: 'dnd' }"
-		>
+    <Hex
+      v-if="showHexViewer"
+      v-on:hide-hex-viewer="back()"
+      :file="selectedFiles[0]"
+      :context="context"
+    >
+    </Hex>
+    <Pdf
+      v-if="showPdfViewer"
+      v-on:hide-pdf-viewer="back()"
+      :file="selectedFiles[0]"
+      :context="context"
+    >
+    </Pdf>
+    <CodeEditor
+      v-if="showCodeEditor"
+      v-on:hide-code-editor="back()"
+      v-on:update-refresh="forceUpdate++"
+      :file="selectedFiles[0]"
+      :context="context"
+    >
+    </CodeEditor>
+    <Markdown
+      v-if="showMarkdownViewer"
+      v-on:hide-markdown-viewer="showDrive()"
+      :propAppArgs="appArgs"
+    >
+    </Markdown>
+    <Identity
+      v-if="showIdentityProof"
+      v-on:hide-identity-proof="back()"
+      :file="selectedFiles[0]"
+      :context="context"
+    >
+    </Identity>
 
-			<transition name="fade" mode="out-in" appear>
-
-				<DriveGrid v-if="isGrid" appear>
-					<DriveGridCard v-for="(file, index) in sortedFiles"
-						:class="{ shared: isShared(file) }"
-						:key="file.getFileProperties().name"
-						:filename="file.getFileProperties().name"
-						:src="getThumbnailURL(file)"
-						:type="file.getFileProperties().getType()"
-						@click.native="navigateDrive(file)"
-						@openMenu="openMenu(file)"
-						:dragstartFunc="dragStart"
-						:dropFunc="drop"
-						:file="file"
-						:itemIndex="index"
-					/>
-					<DriveGridDrop v-if="getPath.length > 1 && sortedFiles.length==0 && currentDir != null && currentDir.isWritable()">
-					</DriveGridDrop>
-				</DriveGrid>
-
-				<DriveTable v-else
-					:files="sortedFiles"
-                    :selectedFiles.sync="selectedFiles"
-					@sortBy="setSortBy"
-					@openMenu="openMenu"
-					@navigateDrive="navigateDrive"
-				/>
-			</transition>
-		</div>
-
-		<transition name="drop">
-			<DriveMenu
-				ref="driveMenu"
-				v-if="viewMenu"
-				@closeMenu="closeMenu()"
-			>
-				<li id='gallery' v-if="canOpen && !isMarkdown && !isHTML && !hexViewerAlternativeAvailable" @keyup.enter="viewFile()" @click="viewFile()">View</li>
-				<li id='view-markdown' v-if="isMarkdown" @keyup.enter="viewFile()" @click="viewFile()">View</li>
-				<li id='edit-markdown' v-if="isMarkdown" @keyup.enter="editFile()" @click="editFile()">Edit</li>
-				<li id='view-html' v-if="isHTML && isHTMLViewable" @keyup.enter="viewFile()" @click="viewFile()">View</li>
-				<li id='edit-html' v-if="isHTML" @keyup.enter="editFile()" @click="editFile()">Edit</li>
-				<li id='open-in-app' v-for="app in availableApps" v-on:keyup.enter="appOpen(app.name)" v-on:click="appOpen(app.name)">{{app.contextMenuText}}</li>
-				<li id='download-folder' v-if="canOpen" @keyup.enter="downloadAll"  @click="downloadAll">Download</li>
-				<li id='rename-file' v-if="isWritable" @keyup.enter="rename"  @click="rename">Rename</li>
-				<li id='delete-file' v-if="isWritable" @keyup.enter="deleteFiles"  @click="deleteFiles">Delete</li>
-				<li id='copy-file' v-if="allowCopy" @keyup.enter="copy"  @click="copy">Copy</li>
-				<li id='cut-file' v-if="isWritable" @keyup.enter="cut"  @click="cut">Cut</li>
-				<li id='paste-file' v-if="isPasteAvailable" @keyup.enter="paste"  @click="paste">Paste</li>
-				<li id='share-file' v-if="allowShare" @keyup.enter="showShareWith"  @click="showShareWith">Share</li>
-				<li id='zip-folder' v-if="allowDownloadFolder" @keyup.enter="zipAndDownload"  @click="zipAndDownload">Download as Zip</li>
-				<li id='create-thumbnail' v-if="isWritable && canCreateThumbnail" @keyup.enter="createThumbnail"  @click="createThumbnail">Create Thumbnail</li>
-				<li id='folder-props' v-if="allowViewFolderProperties" @keyup.enter="viewFolderProperties"  @click="viewFolderProperties">Properties</li>
-				<li id='add-to-launcher' v-if="allowAddingToLauncher" @keyup.enter="addToLauncher"  @click="addToLauncher">Add to Launcher</li>
-                <li id='app-run' v-if="isInstallable" @keyup.enter="runApp()" @click="runApp()">Run App</li>
-                <li id='app-install' v-if="isInstallable" @keyup.enter="installApp()" @click="installApp()">Install App</li>
-
-			</DriveMenu>
-        </transition>
-
-		<Gallery
-			v-if="showGallery"
-			@hide-gallery="back()"
-			:files="sortedFiles"
-			:initial-file-name="appArgs.filename">
-		</Gallery>
-
-		<Hex
-			v-if="showHexViewer"
-			v-on:hide-hex-viewer="back()"
-			:file="selectedFiles[0]"
-			:context="context">
-		</Hex>
-		<Pdf
-			v-if="showPdfViewer"
-			v-on:hide-pdf-viewer="back()"
-			:file="selectedFiles[0]"
-			:context="context">
-		</Pdf>
-		<CodeEditor
-			v-if="showCodeEditor"
-			v-on:hide-code-editor="back()"
-			v-on:update-refresh="forceUpdate++"
-			:file="selectedFiles[0]"
-			:context="context">
-		</CodeEditor>
-        <Markdown
-            v-if="showMarkdownViewer"
-            v-on:hide-markdown-viewer="showDrive()"
-            :propAppArgs = "appArgs">
-        </Markdown>
-                <Identity
-                    v-if="showIdentityProof"
-                    v-on:hide-identity-proof="back()"
-                    :file="selectedFiles[0]"
-                    :context="context">
-                </Identity>
-
-		<Share
-			v-if="showShare"
-			v-on:hide-share-with="closeShare"
-			v-on:update-shared-refresh="forceSharedRefreshWithUpdate++"
-			:data="sharedWithData"
-			:fromApp="fromApp"
-			:displayName="displayName"
-			:allowReadWriteSharing="allowReadWriteSharing"
-			:allowCreateSecretLink="allowCreateSecretLink"
-			:files="filesToShare"
-			:path="pathToFile"
-			:currentDir="currentDir"
-			:messages="messages">
-		</Share>
-		<Search
-			v-if="showSearch"
-			v-on:hide-search="closeSearch"
-			:path="searchPath"
-			:navigateToAction="navigateToAction"
-			:viewAction="viewAction"
-			:context="context">
-		</Search>
-        <AppRunner
-            v-if="showAppRunner"
-            v-on:hide-app-run="closeAppRunner"
-            :appPropsFile="selectedFiles[0]">
-        </AppRunner>
-        <AppInstall
-            v-if="showAppInstallation"
-            v-on:hide-app-installation="closeAppInstallation"
-            :appInstallSuccessFunc="appInstallSuccess"
-            :appPropsFile="selectedFiles[0]"
-            :installFolder="getPath">
-        </AppInstall>
-        <AppSandbox
-            v-if="showAppSandbox"
-            v-on:hide-app-sandbox="closeAppSandbox(true)"
-            v-on:close-app-sandbox="closeAppSandbox(false)"
-            v-on:refresh="forceSharedRefreshWithUpdate++"
-            :sandboxAppName="sandboxAppName"
-            :currentFile="selectedFiles[0]"
-            :currentPath="getPath">
-        </AppSandbox>
-        <Replace
-            v-if="showReplace"
-            v-on:hide-replace="showReplace = false"
-            :replace_message='replace_message'
-            :replace_body="replace_body"
-            :consumer_cancel_func="replace_consumer_cancel_func"
-            :consumer_func="replace_consumer_func"
-            :showApplyAll=replace_showApplyAll>
-        </Replace>
-        <Warning
-            v-if="showWarning"
-            v-on:hide-warning="closeWarning"
-            :warning_message='warning_message'
-            :warning_body="warning_body"
-            :consumer_func="warning_consumer_func">
-        </Warning>
-		<Error
-			v-if="showError"
-			@hide-error="showError = false"
-			:title="errorTitle"
-			:body="errorBody"
-			:messageId="messageId">
-		</Error>
-        <Confirm
-                v-if="showConfirm"
-                v-on:hide-confirm="showConfirm = false"
-                :confirm_message='confirm_message'
-                :confirm_body="confirm_body"
-                :consumer_cancel_func="confirm_consumer_cancel_func"
-                :consumer_func="confirm_consumer_func">
-        </Confirm>
-	</article>
+    <Share
+      v-if="showShare"
+      v-on:hide-share-with="closeShare"
+      v-on:update-shared-refresh="forceSharedRefreshWithUpdate++"
+      :data="sharedWithData"
+      :fromApp="fromApp"
+      :displayName="displayName"
+      :allowReadWriteSharing="allowReadWriteSharing"
+      :allowCreateSecretLink="allowCreateSecretLink"
+      :files="filesToShare"
+      :path="pathToFile"
+      :currentDir="currentDir"
+      :messages="messages"
+    >
+    </Share>
+    <Search
+      v-if="showSearch"
+      v-on:hide-search="closeSearch"
+      :path="searchPath"
+      :navigateToAction="navigateToAction"
+      :viewAction="viewAction"
+      :context="context"
+    >
+    </Search>
+    <AppRunner
+      v-if="showAppRunner"
+      v-on:hide-app-run="closeAppRunner"
+      :appPropsFile="selectedFiles[0]"
+    >
+    </AppRunner>
+    <AppInstall
+      v-if="showAppInstallation"
+      v-on:hide-app-installation="closeAppInstallation"
+      :appInstallSuccessFunc="appInstallSuccess"
+      :appPropsFile="selectedFiles[0]"
+      :installFolder="getPath"
+    >
+    </AppInstall>
+    <AppSandbox
+      v-if="showAppSandbox"
+      v-on:hide-app-sandbox="closeAppSandbox(true)"
+      v-on:close-app-sandbox="closeAppSandbox(false)"
+      v-on:refresh="forceSharedRefreshWithUpdate++"
+      :sandboxAppName="sandboxAppName"
+      :currentFile="selectedFiles[0]"
+      :currentPath="getPath"
+    >
+    </AppSandbox>
+    <Replace
+      v-if="showReplace"
+      v-on:hide-replace="showReplace = false"
+      :replace_message="replace_message"
+      :replace_body="replace_body"
+      :consumer_cancel_func="replace_consumer_cancel_func"
+      :consumer_func="replace_consumer_func"
+      :showApplyAll="replace_showApplyAll"
+    >
+    </Replace>
+    <Warning
+      v-if="showWarning"
+      v-on:hide-warning="closeWarning"
+      :warning_message="warning_message"
+      :warning_body="warning_body"
+      :consumer_func="warning_consumer_func"
+    >
+    </Warning>
+    <Error
+      v-if="showError"
+      @hide-error="showError = false"
+      :title="errorTitle"
+      :body="errorBody"
+      :messageId="messageId"
+    >
+    </Error>
+    <Confirm
+      v-if="showConfirm"
+      v-on:hide-confirm="showConfirm = false"
+      :confirm_message="confirm_message"
+      :confirm_body="confirm_body"
+      :consumer_cancel_func="confirm_consumer_cancel_func"
+      :consumer_func="confirm_consumer_func"
+    >
+    </Confirm>
+  </article>
 </template>
 
 <script>
@@ -330,7 +468,7 @@ module.exports = {
 			forceSharedRefreshWithUpdate: 0,
 
                         appArgs: {},
-                    
+
 			showAdmin: false,
 			showGallery: false,
 			showIdentityProof: false,
@@ -633,7 +771,7 @@ module.exports = {
 				return false;
 			}
         },
-        allowCopy() { 
+        allowCopy() {
             return this.isLoggedIn && this.path.length > 0;
         },
 		allowShare() {
@@ -699,7 +837,7 @@ module.exports = {
 			if (this.selectedFiles.length > 1)
 				return false;
 			var target = this.selectedFiles.length == 1 ? this.selectedFiles[0] : this.currentDir;
-			
+
 			if (target == null) {
 				return false;
 			}
@@ -909,7 +1047,7 @@ module.exports = {
 				this.updateUsage()
                 this.updateQuota()
                 this.updateMirrorBatId()
-                            
+
 				this.context.getPaymentProperties(false).thenApply(function (paymentProps) {
 					if (paymentProps.isPaid()) {
 						that.paymentProperties = paymentProps;
@@ -1264,9 +1402,9 @@ module.exports = {
 		},
 
 		getMirrorBatId(file) {
-			return file.getOwnerName() == this.context.username ? this.mirrorBatId : java.util.Optional.empty()				
+			return file.getOwnerName() == this.context.username ? this.mirrorBatId : java.util.Optional.empty()
 		},
-				
+
 		mkdir(name) {
 			this.showSpinner = true;
 			var that = this;
@@ -2127,7 +2265,7 @@ module.exports = {
 		    this.closeMenu();
 		    if (this.selectedFiles.length == 0)
 			return;
-                    
+
 		    var file = this.selectedFiles[0];
 		    var filename = file.getName();
 
@@ -2136,7 +2274,7 @@ module.exports = {
                     this.appArgs = args;
                     this.openFileOrDir(app, this.getPath, args, writable)
 		},
-            
+
 		navigateOrDownload(file) {
 			if (this.showSpinner) // disable user input whilst refreshing
 				return;
@@ -2537,10 +2675,23 @@ module.exports = {
 		},
         closeNewAppPrompt() {
             this.showNewAppPrompt = false;
-        }, 
+        },
 		closeMenu() {
 			this.viewMenu = false
 		},
+
+        isSelected(file) {
+            return this.selectedFiles.findIndex(selected => selected == file) > -1
+        },
+        toggleSelection(file) {
+            let index = this.selectedFiles.findIndex(selected=> selected == file)
+            if (index > -1) {
+                this.selectedFiles.splice(index, 1)
+            } else {
+                this.selectedFiles.push(file)
+            }
+        }
+
 	},
 
 };
@@ -2548,19 +2699,19 @@ module.exports = {
 
 <style>
 .drive-view {
-    min-height: 100vh;
-    display: flex;
-    flex-direction: column;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
 }
 
 .dnd {
-    flex-grow: 1;
+  flex-grow: 1;
 }
 
 @media (max-width: 1024px) {
-	#dnd{
-		/* enable table scroll */
-		overflow-x:auto;
-	}
+  #dnd {
+    /* enable table scroll */
+    overflow-x: auto;
+  }
 }
 </style>

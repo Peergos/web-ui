@@ -1,6 +1,15 @@
 <template>
 	<article class="grid-card">
-		<AppButton
+
+        <AppButton 
+            class="card__select" 
+            :class="{selected: selected}" 
+            :accent="selected" 
+            round 
+            outline 
+            @click.stop.native="$emit('toggleSelection')" 
+        />
+        <AppButton
 			class="card__menu"
 			icon="dot-menu"
 			aria-label="menu"
@@ -39,7 +48,8 @@ module.exports = {
 		'dragstartFunc',
 		'dropFunc',
 		'file',
-		'itemIndex'
+		'itemIndex',
+        'selected'
 	],
 	computed:{
 		cardIcon(){
@@ -86,6 +96,24 @@ module.exports = {
  	content: "";
 	position: relative;
     padding-top: 75%;
+}
+
+.grid-card .card__select {
+    position: absolute;
+    top: 16px;
+    left: 16px;
+    z-index: 10;
+    opacity: 0;
+    width: 24px;
+    height: 24px;
+    padding: 0;
+    background-color: var(--bg-50);
+    color: var(--color);
+}
+
+.grid-card:hover .card__select,
+.grid-card .card__select.selected {
+    opacity: 1;
 }
 
 .grid-card figure{
