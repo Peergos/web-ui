@@ -24,11 +24,11 @@
         
         <DriveSelected 
             :selectedFiles="selectedFiles"
-            @copy="copy"
-            @cut="cut"
-            @download="downloadAll"
-            @deleteFiles="deleteFiles"
-            @zip="zipAndDownload"
+            @copy=""
+            @cut=""
+            @delete=""
+            @download=""
+            @zip=""
         />
 
 		<AppPrompt
@@ -2537,7 +2537,7 @@ module.exports = {
 		},
         closeNewAppPrompt() {
             this.showNewAppPrompt = false;
-        },
+        }, 
 		closeMenu() {
 			this.viewMenu = false
 		},
