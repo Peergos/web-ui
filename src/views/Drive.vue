@@ -66,17 +66,24 @@
     >
     </FolderProperties>
 
-    <DriveSelected v-if="selectedFiles.length > 0" :selectedFiles="selectedFiles">
+    <DriveSelected v-if="selectedFiles.length > 1" :selectedFiles="selectedFiles">
       <li id="copy" v-if="allowCopy" @keyup.enter="copyMultiSelect()" @click="copyMultiSelect()">Copy</li>
       <li id="cut" v-if="isWritable" @keyup.enter="cutMultiSelect()" @click="cutMultiSelect()">Cut</li>
       <li id="delete" v-if="isWritable" @keyup.enter="deleteFilesMultiSelect()" @click="deleteFilesMultiSelect()">Delete</li>
-      <li id="paste" v-if="isPasteMultiSelectAvailable" @keyup.enter="pasteMultiSelect()" @click="pasteMultiSelect()">Paste here</li>
       <li id="download" @keyup.enter="downloadAllMultiSelect()" @click="downloadAllMultiSelect()">Download</li>
       <li id="zip" @keyup.enter="zipAndDownloadMultiSelect()" @click="zipAndDownloadMultiSelect()">Zip</li>
       <li id="deselect" @keyup.enter="selectedFiles = []" @click="selectedFiles = []">
         Deselect
       </li>
     </DriveSelected>
+
+    <transition name="drop">
+      <DriveMenu ref="drivePasteMenu" v-if="viewPasteMenu" @closeMenu="closePasteMenu()">
+        <li id="paste-files" @keyup.enter="pasteMultiSelect" @click="pasteMultiSelect">
+          Paste
+        </li>
+      </DriveMenu>
+    </transition>
 
     <div
       id="dnd"
@@ -460,6 +467,7 @@ module.exports = {
 			selectedFiles: [],
 			url: null,
 			viewMenu: false,
+			viewPasteMenu: false,
 			showShare: false,
 			sharedWithState: null,
 			sharedWithData: {
@@ -829,20 +837,6 @@ module.exports = {
 			}
 			return true;
 		},
-        isPasteMultiSelectAvailable() {
-            if (this.currentDir == null)
-                return false;
-
-            if (typeof (this.clipboardMultiSelect) == undefined || this.clipboardMultiSelect == null ||
-                this.clipboardMultiSelect.op == null || typeof (this.clipboardMultiSelect.op) == "undefined")
-                return false;
-
-            if (this.getPath == this.clipboardMultiSelect.path) {
-                return  false;
-            }
-            let target = this.currentDir;
-            return target.isWritable() && target.isDirectory();
-        },
 		isPasteAvailable() {
 			if (this.currentDir == null)
 				return false;
@@ -1317,6 +1311,9 @@ module.exports = {
                     if (selectedFilename != null) {
                         that.selectedFiles = that.files.filter(f => f.getName() == selectedFilename);
                         that.openFile();
+                    } else {
+                        that.selectedFiles = [];
+                        that.multiSelectTargetFolder = null;
                     }
                     if (callback != null) {
                         callback();
@@ -2213,7 +2210,7 @@ module.exports = {
             this.closeMenu();
         },
 
-        reduceMove(index, path, parent, fileTreeNodes, future) {
+        reduceMove(index, path, parent, target, fileTreeNodes, future) {
             let that = this;
             if (index == fileTreeNodes.length) {
                 future.complete(true);
@@ -2221,39 +2218,41 @@ module.exports = {
                 let fileTreeNode = fileTreeNodes[index];
                 let name = fileTreeNode.getFileProperties().name;
                 let filePath = peergos.client.PathUtils.toPath(path, name);
-                let target = this.currentDir;
-                parent.getLatest(this.context.network).thenApply(updatedParent => {
-                    fileTreeNode.moveTo(target, updatedParent, filePath, that.context).thenApply(() => {
-                        that.updateCurrentDirectory(null , () =>
-                            that.reduceMove(index + 1, path, parent, fileTreeNodes, future)
-                        );
-                    }).exceptionally(function (throwable) {
-                        that.errorTitle = 'Error moving file: ' + name;
-                        that.errorBody = throwable.getMessage();
-                        that.showError = true;
-                        future.complete(false);
+                target.getLatest(this.context.network).thenApply(updatedTarget => {
+                    parent.getLatest(that.context.network).thenApply(updatedParent => {
+                        fileTreeNode.moveTo(updatedTarget, updatedParent, filePath, that.context).thenApply(() => {
+                            that.updateCurrentDirectory(null , () =>
+                                that.reduceMove(index + 1, path, updatedParent, updatedTarget, fileTreeNodes, future)
+                            );
+                        }).exceptionally(function (throwable) {
+                            that.errorTitle = 'Error moving file: ' + name;
+                            that.errorBody = throwable.getMessage();
+                            that.showError = true;
+                            future.complete(false);
+                        });
                     });
                 });
             }
         },
-        reduceCopy(index, fileTreeNodes, future) {
+        reduceCopy(index, fileTreeNodes, target, future) {
             let that = this;
             if (index == fileTreeNodes.length) {
                 future.complete(true);
             } else {
                 let fileTreeNode = fileTreeNodes[index];
-                let target = this.currentDir;
-                fileTreeNode.copyTo(target, that.context).thenApply(function () {
-                    that.updateUsage(usageBytes => {
-                        that.updateCurrentDirectory(null , () =>
-                            that.reduceCopy(index + 1, fileTreeNodes, future)
-                        );
+                target.getLatest(this.context.network).thenApply(updatedTarget => {
+                    fileTreeNode.copyTo(updatedTarget, that.context).thenApply(function () {
+                        that.updateUsage(usageBytes => {
+                            that.updateCurrentDirectory(null , () =>
+                                that.reduceCopy(index + 1, fileTreeNodes, updatedTarget, future)
+                            );
+                        });
+                    }).exceptionally(function (throwable) {
+                        that.errorTitle = 'Error copying file: ' + fileTreeNode.getFileProperties().name;
+                        that.errorBody = throwable.getMessage();
+                        that.showError = true;
+                        future.complete(false);
                     });
-                }).exceptionally(function (throwable) {
-                    that.errorTitle = 'Error copying file: ' + fileTreeNode.getFileProperties().name;
-                    that.errorBody = throwable.getMessage();
-                    that.showError = true;
-                    future.complete(false);
                 });
             }
         },
@@ -2284,7 +2283,10 @@ module.exports = {
             }
         },
 		pasteMultiSelect(e, retrying) {
-			var target = this.currentDir;
+			var target = this.multiSelectTargetFolder;
+            if (target == null) {
+                return;
+            }
 			var that = this;
 			if (!target.isDirectory()) {
 			    return;
@@ -2299,10 +2301,11 @@ module.exports = {
                     return;
                 }
             }
+            this.closePasteMenu();
             that.showSpinner = true;
             if (clipboard.op == "cut") {
                 let future = peergos.shared.util.Futures.incomplete();
-                this.reduceMove(0, that.path, clipboard.parent, clipboard.fileTreeNodes, future);
+                this.reduceMove(0, that.path, clipboard.parent, target, clipboard.fileTreeNodes, future);
                 future.thenApply(res => {
                     that.showSpinner = false;
                     clipboard.op = null;
@@ -2329,7 +2332,7 @@ module.exports = {
                     this.reduceSizeCalculation(0, clipboard.path, clipboard.fileTreeNodes, 0, sizeFuture);
                     sizeFuture.thenApply(res => {
                         let copyFuture = peergos.shared.util.Futures.incomplete();
-                        that.reduceCopy(0, clipboard.fileTreeNodes, copyFuture);
+                        that.reduceCopy(0, clipboard.fileTreeNodes, target, copyFuture);
                         copyFuture.thenApply(res => {
                             that.showSpinner = false;
                             clipboard.op = null;
@@ -2724,16 +2727,33 @@ module.exports = {
            }
         },
 
+        isPasteToFolderMultiSelectAvailable(target) {
+            if (this.currentDir == null)
+                return false;
+
+            if (typeof (this.clipboardMultiSelect) == undefined || this.clipboardMultiSelect == null ||
+                this.clipboardMultiSelect.op == null || typeof (this.clipboardMultiSelect.op) == "undefined")
+                return false;
+            if (target == null)
+                return false;
+            return target.isWritable() && target.isDirectory();
+        },
+
 		openMenu(file) {
 			// console.log(file)
-			if (file) {
-				this.selectedFiles = [file];
+			if (this.selectedFiles.length > 1 && this.isPasteToFolderMultiSelectAvailable(file)) {
+                this.multiSelectTargetFolder = file;
+                this.viewPasteMenu = true
 			} else {
-				this.selectedFiles = [this.currentDir];
-			}
+			    this.multiSelectTargetFolder = null;
+                if (file) {
+                    this.selectedFiles = [file];
+                } else {
+                    this.selectedFiles = [this.currentDir];
+                }
 
-			this.viewMenu = true
-
+                this.viewMenu = true
+            }
 			Vue.nextTick(() => {
 				this.$refs.driveMenu.$el.focus()
 			});
@@ -3051,7 +3071,9 @@ module.exports = {
 		closeMenu() {
 			this.viewMenu = false
 		},
-
+		closePasteMenu() {
+			this.viewPasteMenu = false
+		},
         isSelected(file) {
             return this.selectedFiles.findIndex(selected => selected == file) > -1
         },
