@@ -136,7 +136,7 @@ module.exports = {
         zipFile(fileEntry, progress, writer, zipFilename, state) {
             let future = peergos.shared.util.Futures.incomplete();
             let file = fileEntry.file;
-            let path = fileEntry.path;
+            let path = fileEntry.path == '' ? '' : fileEntry.path + '/';
             var props = file.getFileProperties()
             var that = this;
             file.getInputStream(this.context.network, this.context.crypto, props.sizeHigh(), props.sizeLow(),
@@ -149,9 +149,9 @@ module.exports = {
                     }
                 }
             ).thenApply(function (reader) {
-                console.log('zipping: ' + path + '/' + file.getName());
+                console.log('zipping: ' + path + file.getName());
                 var crc = -1; // Begin with all bits set ( 0xffffffff )
-                let fileEncodedName = new TextEncoder().encode(path + '/' + file.getName());
+                let fileEncodedName = new TextEncoder().encode(path + file.getName());
                 let header = that.createZipFileHeader(props, fileEncodedName);
                 let fileSize = that.getFileSize(props);
                 writer.write(header).then(() => {

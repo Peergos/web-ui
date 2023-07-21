@@ -1488,26 +1488,29 @@ module.exports = {
             });
         }
     },
-    reduceCollectFilesToZip(zipFilename, index, path, files, accumulatorList, progress, futureCollectFiles) {
+    reduceCollectFilesToZip(index, path, files, accumulatorList, futureCollectFiles) {
         let that = this;
         if (files.length == index) {
             futureCollectFiles.complete(true);
         } else {
             let file = files[index];
             let accumulator = {directoryMap: new Map(), files: []};
-            let future = peergos.shared.util.Futures.incomplete();
-            that.collectFilesToZip(path, file, path + file.getFileProperties().name, accumulator, future);
-            future.thenApply(allFiles => {
-                that.$toast({component: ProgressBar,props: progress}
-                    , { icon: false , timeout:false, id: zipFilename});
-                for(var i = 0; i < allFiles.files.length; i++) {
-                    accumulatorList.push(allFiles.files[i]);
-                }
-                that.reduceCollectFilesToZip(zipFilename, index +1, path, files, accumulatorList, progress, futureCollectFiles);
-            }).exceptionally(function (throwable) {
-                that.$toast.error(throwable.getMessage())
-                futureCollectFiles.complete(false);
-            })
+            if (file.isDirectory()) {
+                let future = peergos.shared.util.Futures.incomplete();
+                that.collectFilesToZip(path, file, path + file.getFileProperties().name, accumulator, future);
+                future.thenApply(allFiles => {
+                    for(var i = 0; i < allFiles.files.length; i++) {
+                        accumulatorList.push(allFiles.files[i]);
+                    }
+                    that.reduceCollectFilesToZip(index +1, path, files, accumulatorList, futureCollectFiles);
+                }).exceptionally(function (throwable) {
+                    that.$toast.error(throwable.getMessage())
+                    futureCollectFiles.complete(false);
+                })
+            } else {
+                accumulatorList.push({path: '', file: file});
+                that.reduceCollectFilesToZip(index +1, path, files, accumulatorList, futureCollectFiles);
+            }
         }
     },
     confirmZipAndDownloadOfFolders(numberOfFoldersSelected, statisticsList, continueFunction, cancelFunction) {
@@ -1554,7 +1557,8 @@ module.exports = {
                 let accumulator = {directoryMap: new Map(), files: []};
                 let future = peergos.shared.util.Futures.incomplete();
                 let allFilesList = [];
-                that.reduceCollectFilesToZip(zipFilename, 0, path, files, allFilesList, progress, future);
+                that.$toast({component: ProgressBar,props: progress}, { icon: false , timeout:false, id: zipFilename});
+                that.reduceCollectFilesToZip(0, path, files, allFilesList, future);
                 future.thenApply(res => {
                     that.showSpinner = false;
                     if (res) {
