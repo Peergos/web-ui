@@ -66,12 +66,13 @@
     >
     </FolderProperties>
 
-    <DriveSelected :selectedFiles="selectedFiles">
-      <li id="copy" @keyup.enter="" @click="">Copy</li>
-      <li id="cut" @keyup.enter="" @click="">Cut</li>
-      <li id="delete" @keyup.enter="" @click="">Delete</li>
-      <li id="download" @keyup.enter="" @click="">Download</li>
-      <li id="zip" @keyup.enter="" @click="">Zip</li>
+    <DriveSelected v-if="selectedFiles.length > 0" :selectedFiles="selectedFiles">
+      <li id="copy" v-if="allowCopy" @keyup.enter="copyMultiSelect()" @click="copyMultiSelect()">Copy</li>
+      <li id="cut" v-if="isWritable" @keyup.enter="cutMultiSelect()" @click="cutMultiSelect()">Cut</li>
+      <li id="delete" v-if="isWritable" @keyup.enter="deleteFilesMultiSelect()" @click="deleteFilesMultiSelect()">Delete</li>
+      <li id="paste" v-if="isPasteMultiSelectAvailable" @keyup.enter="pasteMultiSelect()" @click="pasteMultiSelect()">Paste here</li>
+      <li id="download" @keyup.enter="downloadAllMultiSelect()" @click="downloadAllMultiSelect()">Download</li>
+      <li id="zip" @keyup.enter="zipAndDownloadMultiSelect()" @click="zipAndDownloadMultiSelect()">Zip</li>
       <li id="deselect" @keyup.enter="selectedFiles = []" @click="selectedFiles = []">
         Deselect
       </li>
@@ -182,8 +183,8 @@
         <li
           id="delete-file"
           v-if="isWritable"
-          @keyup.enter="deleteFiles"
-          @click="deleteFiles"
+          @keyup.enter="deleteFile"
+          @click="deleteFile"
         >
           Delete
         </li>
@@ -541,7 +542,8 @@ module.exports = {
             launcherApp: null,
             uploadProgressQueue: { entries:[]},
             executingUploadProgressCommands: false,
-            progressBarUpdateFrequency: 50
+            progressBarUpdateFrequency: 50,
+            zipAndDownloadFoldersCount: 0
 		};
 	},
 	mixins:[downloaderMixins, router, zipMixin, launcherMixin],
@@ -827,6 +829,20 @@ module.exports = {
 			}
 			return true;
 		},
+        isPasteMultiSelectAvailable() {
+            if (this.currentDir == null)
+                return false;
+
+            if (typeof (this.clipboardMultiSelect) == undefined || this.clipboardMultiSelect == null ||
+                this.clipboardMultiSelect.op == null || typeof (this.clipboardMultiSelect.op) == "undefined")
+                return false;
+
+            if (this.getPath == this.clipboardMultiSelect.path) {
+                return  false;
+            }
+            let target = this.currentDir;
+            return target.isWritable() && target.isDirectory();
+        },
 		isPasteAvailable() {
 			if (this.currentDir == null)
 				return false;
@@ -1436,13 +1452,133 @@ module.exports = {
 	showToastError: function(message) {
             this.$toast.error(message, {timeout:false});
         },
-	zipAndDownload() {
-            if (this.isStreamingAvailable) {
-                this.zipAndDownloadFolder();
-            } else {
-                this.showToastError("Download as Zip only available where Streaming supported (like Chrome)");
+    zipAndDownloadMultiSelect() {
+        if (this.currentDir == null)
+            return false;
+        if (this.isStreamingAvailable) {
+            this.zipAndDownloadFolders();
+        } else {
+            this.showToastError("Download as Zip only available where Streaming supported (like Chrome)");
+        }
+    },
+    reduceTotalSize(index, path, files, accumTotalSize, stats, future) {
+        let that = this;
+        if (files.length == index) {
+            this.confirmZipAndDownloadOfFolders(files.length, stats,
+                () => {
+                    that.showConfirm = false;
+                    future.complete(true);
+                },
+                () => {
+                    that.showConfirm = false;
+                    future.complete(false);
+                }
+            );
+        } else {
+            let file = files[index];
+            this.calculateTotalSize(file, path).thenApply(statistics => {
+                let updatedAccumTotalSize = statistics.actualSize + accumTotalSize;
+                stats.push(statistics);
+                if (file.isDirectory() && statistics.fileCount == 0) {
+                    that.$toast('Folder:' + file.getName() + ' contains no files. Nothing to download');
+                    future.complete(false);
+                }else if (updatedAccumTotalSize > 1024 * 1024 * 1024 * 4) { //4GiB
+                    that.$toast('Download of a Folder greater than 4GiB in size is not supported');
+                    future.complete(false);
+                } else {
+                    that.reduceTotalSize(index + 1, path, files, updatedAccumTotalSize, stats, future);
+                }
+            });
+        }
+    },
+    reduceCollectFilesToZip(zipFilename, index, path, files, accumulatorList, progress, futureCollectFiles) {
+        let that = this;
+        if (files.length == index) {
+            futureCollectFiles.complete(true);
+        } else {
+            let file = files[index];
+            let accumulator = {directoryMap: new Map(), files: []};
+            let future = peergos.shared.util.Futures.incomplete();
+            that.collectFilesToZip(path, file, path + file.getFileProperties().name, accumulator, future);
+            future.thenApply(allFiles => {
+                that.$toast({component: ProgressBar,props: progress}
+                    , { icon: false , timeout:false, id: zipFilename});
+                for(var i = 0; i < allFiles.files.length; i++) {
+                    accumulatorList.push(allFiles.files[i]);
+                }
+                that.reduceCollectFilesToZip(zipFilename, index +1, path, files, accumulatorList, progress, futureCollectFiles);
+            }).exceptionally(function (throwable) {
+                that.$toast.error(throwable.getMessage())
+                futureCollectFiles.complete(false);
+            })
+        }
+    },
+    confirmZipAndDownloadOfFolders(numberOfFoldersSelected, statisticsList, continueFunction, cancelFunction) {
+        var folderCount = numberOfFoldersSelected;
+        var fileCount = 0;
+        var actualSize = 0;
+        for(var i = 0; i < statisticsList.length; i++) {
+            folderCount = folderCount + statisticsList[i].folderCount;
+            fileCount = fileCount + statisticsList[i].fileCount;
+            actualSize = actualSize + statisticsList[i].actualSize;
+        }
+        this.confirm_message='Are you sure you want to download selected folders?';
+        this.confirm_body='Folder(s): ' + folderCount
+                + ', File(s): ' + fileCount
+                + ', Total size: ' + helpers.convertBytesToHumanReadable(actualSize);
+        this.confirm_consumer_cancel_func = cancelFunction;
+        this.confirm_consumer_func = continueFunction;
+        this.showConfirm = true;
+    },
+    zipAndDownloadFolders() {
+        this.showSpinner = true;
+        let that = this;
+        let futureTotalSize = peergos.shared.util.Futures.incomplete();
+        let files = this.selectedFiles.slice();
+        let path = this.getPath;
+        let statisticsList = [];
+        that.reduceTotalSize(0, path, files, 0, statisticsList, futureTotalSize);
+        futureTotalSize.thenApply(res => {
+            that.showSpinner = false;
+            if (res) {
+                that.showSpinner = true;
+                var actualSize = 0;
+                for(var i = 0; i < statisticsList.length; i++) {
+                    actualSize = actualSize + statisticsList[i].actualSize;
+                }
+                let progress = {
+                    show: true,
+                    title: 'Downloading selected folders',
+                    done: 0,
+                    max: actualSize
+                }
+                let zipFilename = 'archive-' + that.zipAndDownloadFoldersCount + '.zip';
+                that.zipAndDownloadFoldersCount = that.zipAndDownloadFoldersCount + 1;
+                let accumulator = {directoryMap: new Map(), files: []};
+                let future = peergos.shared.util.Futures.incomplete();
+                let allFilesList = [];
+                that.reduceCollectFilesToZip(zipFilename, 0, path, files, allFilesList, progress, future);
+                future.thenApply(res => {
+                    that.showSpinner = false;
+                    if (res) {
+                        that.zipFiles(zipFilename, allFilesList, progress).thenApply(res => {
+                            console.log('folders download complete');
+                            that.selectedFiles = [];
+                        }).exceptionally(function (throwable) {
+                            that.$toast.error(throwable.getMessage())
+                        });
+                    }
+                });
             }
-        },
+        });
+    },
+	zipAndDownload() {
+        if (this.isStreamingAvailable) {
+            this.zipAndDownloadFolder();
+        } else {
+            this.showToastError("Download as Zip only available where Streaming supported (like Chrome)");
+        }
+    },
 	zipAndDownloadFolder() {
             if (this.selectedFiles.length != 1)
                 return;
@@ -1458,7 +1594,7 @@ module.exports = {
                     that.$toast('Download of a Folder greater than 4GiB in size is not supported');
                 } else {
                     let filename = file.getName();
-                    this.confirmZipAndDownloadOfFolder(filename, statistics,
+                    that.confirmZipAndDownloadOfFolder(filename, statistics,
                         () => {
                             that.showConfirm = false;
                             var progress = {
@@ -2028,33 +2164,181 @@ module.exports = {
 			return null;
 		},
 
-		copy() {
-			if (this.selectedFiles.length != 1)
+		copyMultiSelect() {
+			if (this.selectedFiles.length < 1)
 				return;
-			var file = this.selectedFiles[0];
-
-			this.clipboard = {
-				fileTreeNode: file,
+			let files = this.selectedFiles.slice();
+			this.clipboardMultiSelect = {
+				fileTreeNodes: files,
 				op: "copy",
 				path: this.getPath
 			};
-			this.closeMenu();
 		},
 
-		cut() {
-			if (this.selectedFiles.length != 1)
+		cutMultiSelect() {
+			if (this.selectedFiles.length < 1)
 				return;
-			var file = this.selectedFiles[0];
-
-			this.clipboard = {
+			let files = this.selectedFiles.slice();
+			this.clipboardMultiSelect = {
 				parent: this.currentDir,
-				fileTreeNode: file,
+				fileTreeNodes: files,
 				op: "cut",
 				path: this.getPath
 			};
-			this.closeMenu();
 		},
 
+        copy() {
+            if (this.selectedFiles.length != 1)
+                return;
+            var file = this.selectedFiles[0];
+            this.clipboard = {
+                fileTreeNode: file,
+                op: "copy",
+                path: this.getPath
+            };
+            this.closeMenu();
+        },
+
+        cut() {
+            if (this.selectedFiles.length != 1)
+                return;
+            var file = this.selectedFiles[0];
+
+            this.clipboard = {
+                parent: this.currentDir,
+                fileTreeNode: file,
+                op: "cut",
+                path: this.getPath
+            };
+            this.closeMenu();
+        },
+
+        reduceMove(index, path, parent, fileTreeNodes, future) {
+            let that = this;
+            if (index == fileTreeNodes.length) {
+                future.complete(true);
+            } else {
+                let fileTreeNode = fileTreeNodes[index];
+                let name = fileTreeNode.getFileProperties().name;
+                let filePath = peergos.client.PathUtils.toPath(path, name);
+                let target = this.currentDir;
+                parent.getLatest(this.context.network).thenApply(updatedParent => {
+                    fileTreeNode.moveTo(target, updatedParent, filePath, that.context).thenApply(() => {
+                        that.updateCurrentDirectory(null , () =>
+                            that.reduceMove(index + 1, path, parent, fileTreeNodes, future)
+                        );
+                    }).exceptionally(function (throwable) {
+                        that.errorTitle = 'Error moving file: ' + name;
+                        that.errorBody = throwable.getMessage();
+                        that.showError = true;
+                        future.complete(false);
+                    });
+                });
+            }
+        },
+        reduceCopy(index, fileTreeNodes, future) {
+            let that = this;
+            if (index == fileTreeNodes.length) {
+                future.complete(true);
+            } else {
+                let fileTreeNode = fileTreeNodes[index];
+                let target = this.currentDir;
+                fileTreeNode.copyTo(target, that.context).thenApply(function () {
+                    that.updateUsage(usageBytes => {
+                        that.updateCurrentDirectory(null , () =>
+                            that.reduceCopy(index + 1, fileTreeNodes, future)
+                        );
+                    });
+                }).exceptionally(function (throwable) {
+                    that.errorTitle = 'Error copying file: ' + fileTreeNode.getFileProperties().name;
+                    that.errorBody = throwable.getMessage();
+                    that.showError = true;
+                    future.complete(false);
+                });
+            }
+        },
+        reduceSizeCalculation(index, path, fileTreeNodes, accumApparentSize, sizeFuture) {
+            let that = this;
+            if (index == fileTreeNodes.length) {
+                sizeFuture.complete(true);
+            } else {
+                let fileTreeNode = fileTreeNodes[index];
+                this.calculateTotalSize(fileTreeNode, path).thenApply(statistics => {
+                    let updatedAccumApparentSize = accumApparentSize + statistics.apparentSize;
+                    if (Number(that.quotaBytes.toString()) < updatedAccumApparentSize) {
+                        let errMsg = "File copy operation exceeds total space\n" + "Please upgrade to get more space";
+                        that.$toast.error(errMsg, {timeout:false});
+                        future.complete(false);
+                    } else {
+                        let spaceAfterOperation = that.checkAvailableSpace(updatedAccumApparentSize);
+                        if (spaceAfterOperation < 0) {
+                            let errMsg = "File copy operation exceeds available space\n" + "Please free up " + helpers.convertBytesToHumanReadable('' + -spaceAfterOperation) + " and try again";
+                            that.$toast.error(errMsg, {timeout:false})
+                            that.showSpinner = false;
+                            future.complete(false);
+                        } else {
+                            that.reduceSizeCalculation(index + 1, path, fileTreeNodes, updatedAccumApparentSize, sizeFuture);
+                        }
+                    }
+                });
+            }
+        },
+		pasteMultiSelect(e, retrying) {
+			var target = this.currentDir;
+			var that = this;
+			if (!target.isDirectory()) {
+			    return;
+            }
+            let clipboard = this.clipboardMultiSelect;
+            if (typeof (clipboard) == undefined || typeof (clipboard.op) == "undefined")
+                return;
+            for(var i=0; i < clipboard.fileTreeNodes.length; i++) {
+                let fileTreeNode = clipboard.fileTreeNodes[i];
+                if (fileTreeNode.samePointer(target)) {
+                    that.$toast.error('Destination folder is same as Source folder', {timeout:false})
+                    return;
+                }
+            }
+            that.showSpinner = true;
+            if (clipboard.op == "cut") {
+                let future = peergos.shared.util.Futures.incomplete();
+                this.reduceMove(0, that.path, clipboard.parent, clipboard.fileTreeNodes, future);
+                future.thenApply(res => {
+                    that.showSpinner = false;
+                    clipboard.op = null;
+                    that.selectedFiles = [];
+                });
+            } else if (clipboard.op == "copy") {
+                if (this.quotaBytes.toString() == '0') {
+                    if (retrying == null) {
+                        this.updateQuota(quotaBytes => {
+                            if (quotaBytes != null) {
+                                that.updateUsage(usageBytes => {
+                                    that.pasteMultiSelect(e, true);
+                                });
+                            } else {
+                                that.pasteMultiSelect(e, true);
+                            }
+                        });
+                    } else {
+                        this.$toast.error("Client Offline!", {timeout:false});
+                        this.showSpinner = false;
+                    }
+                } else {
+                    let sizeFuture = peergos.shared.util.Futures.incomplete();
+                    this.reduceSizeCalculation(0, clipboard.path, clipboard.fileTreeNodes, 0, sizeFuture);
+                    sizeFuture.thenApply(res => {
+                        let copyFuture = peergos.shared.util.Futures.incomplete();
+                        that.reduceCopy(0, clipboard.fileTreeNodes, copyFuture);
+                        copyFuture.thenApply(res => {
+                            that.showSpinner = false;
+                            clipboard.op = null;
+                            that.selectedFiles = [];
+                        });
+                    });
+                }
+            }
+		},
 		paste(e, retrying) {
 			if (this.selectedFiles.length > 1)
 				return;
@@ -2103,7 +2387,7 @@ module.exports = {
                                 }
                             });
                         } else {
-                            this.$toast.error("Client Offline!", {timeout:false, id: 'upload'});
+                            this.$toast.error("Client Offline!", {timeout:false});
                             this.showSpinner = false;
                         }
                     } else {
@@ -2240,6 +2524,45 @@ module.exports = {
 			this.showSpinner = true;
 			this.updateHistory("Drive", path, {filename:""});
 		},
+        reduceDownload(index, files, future) {
+            let that = this;
+            if (index == files.length) {
+                future.complete(true);
+            } else {
+                let file = files[index];
+                that.downloadFile(file).thenApply(res => {
+                    that.reduceDownload(index + 1, files, future);
+                });
+            }
+        },
+        downloadAllMultiSelect() {
+            if (this.currentDir == null)
+                return false;
+            if (this.selectedFiles.length == 0)
+                return;
+            if (!this.isStreamingAvailable) {
+                this.showToastError("Downloading multiple files only available where Streaming supported (like Chrome)");
+                return;
+            }
+            let foundFolder = false;
+            for (var i = 0; i < this.selectedFiles.length; i++) {
+                let file = this.selectedFiles[i];
+                if (file.isDirectory()) {
+                    foundFolder = true;
+                }
+            }
+            let that = this;
+            if (foundFolder) {
+                that.zipAndDownloadMultiSelect();
+            } else {
+                let files = this.selectedFiles.slice();
+                let future = peergos.shared.util.Futures.incomplete();
+                this.reduceDownload(0,files, future);
+                future.thenApply(res => {
+                    that.selectedFiles = [];
+                });
+            }
+        },
 		downloadAll() {
 			if (this.selectedFiles.length == 0)
 				return;
@@ -2616,27 +2939,76 @@ module.exports = {
 			this.showPrompt = true;
 		},
 
+        reduceDelete(index, path, parent, selectedFilesForDeletion, future) {
+            let that = this;
+            if (index == selectedFilesForDeletion.length) {
+                future.complete(true);
+            } else {
+                let file = selectedFilesForDeletion[index];
+                let name = file.getFileProperties().name;
+                let filePath = peergos.client.PathUtils.toPath(path, name);
+                parent.getLatest(this.context.network).thenApply(updatedParent => {
+                    file.remove(updatedParent, filePath, that.context).thenApply(function (b) {
+                            that.updateUsage(usageBytes => {
+                                that.updateCurrentDirectory(null , () =>
+                                    that.reduceDelete(index + 1, path, parent, selectedFilesForDeletion, future)
+                                );
+                            });
+                    }).exceptionally(function (throwable) {
+                        that.errorTitle = 'Error deleting file: ' + file.getFileProperties().name;
+                        that.errorBody = throwable.getMessage();
+                        that.showError = true;
+                        future.complete(false);
+                    });
+                });
+            }
+        },
 
-		deleteFiles() {
-			// console.log('deleteFiles:',this.selectedFiles.length )
+		deleteFilesMultiSelect() {
+			var selectedCount = this.selectedFiles.length;
+			if (selectedCount == 0)
+				return;
+            var that = this;
+            this.confirmDeleteMultiSelect(selectedCount, (prompt_result) => {
+                that.showPrompt = false;
+                if (prompt_result != null) {
+                    that.showSpinner = true;
+                    let parent = that.currentDir;
+                    let filesToDelete = that.selectedFiles.slice();
+                    let future = peergos.shared.util.Futures.incomplete();
+                    that.reduceDelete(0, that.path, parent, filesToDelete, future);
+                    future.thenApply(res => {
+                        that.showSpinner = false;
+                        that.selectedFiles = [];
+                    });
+                }
+            });
+		},
+
+		confirmDeleteMultiSelect(fileCount, deleteFn) {
+			this.prompt_placeholder = null;
+			this.prompt_message = `Are you sure you want to delete ${fileCount} items?`;
+			this.prompt_value = '';
+			this.prompt_consumer_func = deleteFn;
+			// this.prompt_action = 'Delete'
+			this.showPrompt = true;
+		},
+
+		deleteFile() {
 			var selectedCount = this.selectedFiles.length;
 			if (selectedCount == 0)
 				return;
 
 			this.closeMenu();
+            var file = this.selectedFiles[0];
+            var that = this;
+            var parent = this.currentDir;
 
-			for (var i = 0; i < selectedCount; i++) {
-				var file = this.selectedFiles[i];
-				var that = this;
-				var parent = this.currentDir;
-
-				// console.log('deleteFiles:',file, parent, this.context )
-				this.confirmDelete(file, (prompt_result) => {
-				    if (prompt_result != null) {
-					    that.deleteOne(file, parent, this.context);
-					}
-				});
-			}
+            this.confirmDelete(file, (prompt_result) => {
+                if (prompt_result != null) {
+                    that.deleteOne(file, parent, this.context);
+                }
+            });
 		},
 
 		deleteOne(file, parent, context) {
