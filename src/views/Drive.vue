@@ -25,7 +25,7 @@
     <DriveHeader
       :gridView="isGrid"
       :isWritable="isWritable"
-      :canPaste="isPasteAvailable"
+      :canPaste="isPasteOptionAvailable"
       :path="path"
       @switchView="switchView()"
       @goBackToLevel="goBackToLevel($event)"
@@ -34,7 +34,7 @@
       @createImageFile="createBlankImageFile()"
       @newApp="createNewApp()"
       @search="openSearch(false)"
-      @paste="paste()"
+      @paste="pasteToFolder($event)"
     />
 
     <AppPrompt
@@ -837,26 +837,16 @@ module.exports = {
 			}
 			return true;
 		},
+		isPasteOptionAvailable() {
+		    let singlePasteOption = this.isPasteToFolderAvailable();
+		    let multiPasteOption = this.isPasteToFolderMultiSelectAvailable(this.currentDir);
+		    if (multiPasteOption) {
+    		    this.multiSelectTargetFolder = this.currentDir;
+		    }
+		    return singlePasteOption || multiPasteOption;
+		},
 		isPasteAvailable() {
-			if (this.currentDir == null)
-				return false;
-
-			if (typeof (this.clipboard) == undefined || this.clipboard == null || this.clipboard.op == null || typeof (this.clipboard.op) == "undefined")
-				return false;
-
-			if (this.selectedFiles.length > 1)
-				return false;
-			var target = this.selectedFiles.length == 1 ? this.selectedFiles[0] : this.currentDir;
-
-			if (target == null) {
-				return false;
-			}
-
-			if (this.clipboard.fileTreeNode != null && this.clipboard.fileTreeNode.samePointer(target)) {
-				return false;
-			}
-
-			return target.isWritable() && target.isDirectory();
+			return this.isPasteToFolderAvailable();
 		},
 	},
 
@@ -1313,7 +1303,6 @@ module.exports = {
                         that.openFile();
                     } else {
                         that.selectedFiles = [];
-                        that.multiSelectTargetFolder = null;
                     }
                     if (callback != null) {
                         callback();
@@ -2284,6 +2273,35 @@ module.exports = {
                         }
                     }
                 });
+            }
+        },
+        isPasteToFolderAvailable() {
+            if (this.currentDir == null)
+                return false;
+
+            if (typeof (this.clipboard) == undefined || this.clipboard == null || this.clipboard.op == null || typeof (this.clipboard.op) == "undefined")
+                return false;
+
+            if (this.selectedFiles.length > 1)
+                return false;
+            var target = this.selectedFiles.length == 1 ? this.selectedFiles[0] : this.currentDir;
+
+            if (target == null) {
+                return false;
+            }
+
+            if (this.clipboard.fileTreeNode != null && this.clipboard.fileTreeNode.samePointer(target)) {
+                return false;
+            }
+
+            return target.isWritable() && target.isDirectory();
+        },
+        pasteToFolder(e) {
+            var target = this.multiSelectTargetFolder;
+            if (target == null) {
+                this.paste(e);
+            } else {
+                this.pasteMultiSelect(e);
             }
         },
 		pasteMultiSelect(e, retrying) {
