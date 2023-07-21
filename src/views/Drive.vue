@@ -2741,7 +2741,7 @@ module.exports = {
 
 		openMenu(file) {
 			// console.log(file)
-			if (this.selectedFiles.length > 1 && this.isPasteToFolderMultiSelectAvailable(file)) {
+			if (this.isPasteToFolderMultiSelectAvailable(file)) {
                 this.multiSelectTargetFolder = file;
                 this.viewPasteMenu = true
 			} else {
