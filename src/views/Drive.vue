@@ -2766,6 +2766,9 @@ module.exports = {
 			if (this.isPasteToFolderMultiSelectAvailable(file)) {
                 this.multiSelectTargetFolder = file;
                 this.viewPasteMenu = true
+                Vue.nextTick(() => {
+                    this.$refs.drivePasteMenu.$el.focus()
+                });
 			} else {
 			    this.multiSelectTargetFolder = null;
                 if (file) {
@@ -2775,10 +2778,10 @@ module.exports = {
                 }
 
                 this.viewMenu = true
+                Vue.nextTick(() => {
+                    this.$refs.driveMenu.$el.focus()
+                });
             }
-			Vue.nextTick(() => {
-				this.$refs.driveMenu.$el.focus()
-			});
 		},
 
 		createNewApp() {
