@@ -1551,7 +1551,7 @@ module.exports = {
                 future.thenApply(res => {
                     that.showSpinner = false;
                     if (res) {
-                        that.zipFiles(zipFilename, allFilesList, progress).thenApply(res => {
+                        that.zipFiles(zipFilename, allFilesList, progress).thenApply(res2 => {
                             console.log('folders download complete');
                             that.selectedFiles = [];
                         }).exceptionally(function (throwable) {
@@ -2218,10 +2218,12 @@ module.exports = {
                                 that.reduceMove(index + 1, path, updatedParent, updatedTarget, fileTreeNodes, future)
                             );
                         }).exceptionally(function (throwable) {
-                            that.errorTitle = 'Error moving file: ' + name;
-                            that.errorBody = throwable.getMessage();
-                            that.showError = true;
-                            future.complete(false);
+                            that.updateCurrentDirectory(null , () => {
+                                that.errorTitle = 'Error moving file: ' + name;
+                                that.errorBody = throwable.getMessage();
+                                that.showError = true;
+                                future.complete(false);
+                            });
                         });
                     });
                 });
@@ -2241,10 +2243,12 @@ module.exports = {
                             );
                         });
                     }).exceptionally(function (throwable) {
-                        that.errorTitle = 'Error copying file: ' + fileTreeNode.getFileProperties().name;
-                        that.errorBody = throwable.getMessage();
-                        that.showError = true;
-                        future.complete(false);
+                        that.updateCurrentDirectory(null , () => {
+                            that.errorTitle = 'Error copying file: ' + fileTreeNode.getFileProperties().name;
+                            that.errorBody = throwable.getMessage();
+                            that.showError = true;
+                            future.complete(false);
+                        });
                     });
                 });
             }
@@ -2260,14 +2264,14 @@ module.exports = {
                     if (Number(that.quotaBytes.toString()) < updatedAccumApparentSize) {
                         let errMsg = "File copy operation exceeds total space\n" + "Please upgrade to get more space";
                         that.$toast.error(errMsg, {timeout:false});
-                        future.complete(false);
+                        sizeFuture.complete(false);
                     } else {
                         let spaceAfterOperation = that.checkAvailableSpace(updatedAccumApparentSize);
                         if (spaceAfterOperation < 0) {
                             let errMsg = "File copy operation exceeds available space\n" + "Please free up " + helpers.convertBytesToHumanReadable('' + -spaceAfterOperation) + " and try again";
                             that.$toast.error(errMsg, {timeout:false})
                             that.showSpinner = false;
-                            future.complete(false);
+                            sizeFuture.complete(false);
                         } else {
                             that.reduceSizeCalculation(index + 1, path, fileTreeNodes, updatedAccumApparentSize, sizeFuture);
                         }
@@ -2329,9 +2333,11 @@ module.exports = {
                 let future = peergos.shared.util.Futures.incomplete();
                 this.reduceMove(0, that.path, clipboard.parent, target, clipboard.fileTreeNodes, future);
                 future.thenApply(res => {
-                    that.showSpinner = false;
-                    clipboard.op = null;
-                    that.selectedFiles = [];
+                    if (res) {
+                        that.showSpinner = false;
+                        clipboard.op = null;
+                        that.selectedFiles = [];
+                    }
                 });
             } else if (clipboard.op == "copy") {
                 if (this.quotaBytes.toString() == '0') {
@@ -2353,13 +2359,17 @@ module.exports = {
                     let sizeFuture = peergos.shared.util.Futures.incomplete();
                     this.reduceSizeCalculation(0, clipboard.path, clipboard.fileTreeNodes, 0, sizeFuture);
                     sizeFuture.thenApply(res => {
-                        let copyFuture = peergos.shared.util.Futures.incomplete();
-                        that.reduceCopy(0, clipboard.fileTreeNodes, target, copyFuture);
-                        copyFuture.thenApply(res => {
-                            that.showSpinner = false;
-                            clipboard.op = null;
-                            that.selectedFiles = [];
-                        });
+                        if (res) {
+                            let copyFuture = peergos.shared.util.Futures.incomplete();
+                            that.reduceCopy(0, clipboard.fileTreeNodes, target, copyFuture);
+                            copyFuture.thenApply(res2 => {
+                                if (res2) {
+                                    that.showSpinner = false;
+                                    clipboard.op = null;
+                                    that.selectedFiles = [];
+                                }
+                            });
+                        }
                     });
                 }
             }
