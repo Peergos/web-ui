@@ -14,7 +14,17 @@
 		<tbody role="presentation">
 			<tr v-for="file in files" tabindex="1" role="row" class="table__item">
                 <td class="select">
-                    <input type="checkbox" :value="file" v-model="selected" tabindex="0"/></td>
+                    <label class="checkbox__group">
+                        <input
+                        type="checkbox"
+                        :name="file.getFileProperties().name"
+                        v-model="selected"
+                        :value="file"
+                        tabindex="0"
+                        />
+                        <span class="checkmark"></span>
+                    </label>            
+                </td>
 				<td class="file"
 					:id="file.getFileProperties().name"
 					@click="$emit('navigationteDrive', file)"

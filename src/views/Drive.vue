@@ -66,6 +66,7 @@
     >
     </FolderProperties>
 
+    <transition name="fade" mode="out-in" appear>
     <DriveSelected v-if="selectedFiles.length > 1" :selectedFiles="selectedFiles">
       <li id="copy" v-if="allowCopy" @keyup.enter="copyMultiSelect()" @click="copyMultiSelect()">Copy</li>
       <li id="cut" v-if="isWritable" @keyup.enter="cutMultiSelect()" @click="cutMultiSelect()">Cut</li>
@@ -76,7 +77,7 @@
         Deselect
       </li>
     </DriveSelected>
-
+    </transition>
     <transition name="drop">
       <DriveMenu ref="drivePasteMenu" v-if="viewPasteMenu" @closeMenu="closePasteMenu()">
         <li id="paste-files" @keyup.enter="pasteMultiSelect" @click="pasteMultiSelect">
