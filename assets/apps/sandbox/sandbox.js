@@ -3,7 +3,6 @@ var origin;
 var streamWriter;
 var currentPath = '';
 var currentTitle = '';
-var failed = false;
 let msgHandler = function (e) {
       // You must verify that the origin of the message's sender matches your
       // expectations. In this case, we're only planning on accepting messages
@@ -78,6 +77,7 @@ function load(appName, appPath, allowBrowsing, theme, chatId, username, props) {
             let src = allowBrowsing ? appPath.substring(1) : "index.html" + path;
             iframe.src= src;
             iframe.contentWindow.focus();
+            that.startPing(url + "/ping");
         }, function(seekHi, seekLo, seekLength, streamFilePath){
             that.streamFile(seekHi, seekLo, seekLength, streamFilePath);
         }, 0
@@ -89,4 +89,8 @@ function load(appName, appPath, allowBrowsing, theme, chatId, username, props) {
 }
 function respondToLoadedChunk(bytes) {
     streamWriter.write(bytes);
+}
+function startPing(pingUrl) {
+    fetch(pingUrl);
+    setTimeout(() => this.startPing(pingUrl), 5000);
 }
