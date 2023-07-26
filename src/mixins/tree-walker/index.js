@@ -1,13 +1,19 @@
 module.exports = {
     methods: {
+        loadFoldersAndFiles: function(path, fileExtension, callback) {
+            this.loadAllFolders(path, callback, true, fileExtension);
+        },
         loadFolders: function(path, callback) {
+            this.loadAllFolders(path, callback, false, '');
+        },
+        loadAllFolders: function(path, callback, includeFiles, fileExtension) {
             var that = this;
             let folderTree = {};
             this.context.getByPath(path).thenApply(function(dirOpt){
                 let dir = dirOpt.get();
                 let folderProperties = dir.getFileProperties();
                 if (folderProperties.isDirectory && !folderProperties.isHidden) {
-                    that.walk(dir, path, folderTree).thenApply( () => {
+                    that.walk(dir, path, folderTree, includeFiles, fileExtension).thenApply( () => {
                         callback(folderTree);
                     });
                 } else {
@@ -19,7 +25,7 @@ module.exports = {
             });
         },
 
-        walk: function(file, path, currentTreeData) {
+        walk: function(file, path, currentTreeData, includeFiles, fileExtension) {
             currentTreeData.path = path.substring(0, path.length -1);
             currentTreeData.children = [];
             let that = this;
@@ -34,8 +40,19 @@ module.exports = {
                         let node = {};
                         currentTreeData.children.push(node);
                         funcArray.push(() => {
-                            return that.walk(child, newPath, node);
+                            return that.walk(child, newPath, node, includeFiles, fileExtension);
                         });
+                    }
+                    if (includeFiles === true && !childProps.isDirectory && !childProps.isHidden) {
+                        let test = fileExtension == null || fileExtension.length == 0 ||
+                            child.getFileProperties().name.endsWith(fileExtension);
+                        if (test) {
+                            let node = {};
+                            currentTreeData.children.push(node);
+                            funcArray.push(() => {
+                                return that.addFile(child, newPath, node);
+                            });
+                        }
                     }
                 });
                 if (funcArray.length > 0) {
@@ -54,5 +71,13 @@ module.exports = {
             });
             return future;
         },
+        addFile(file, path, currentTreeData, includeFiles) {
+            let future = peergos.shared.util.Futures.incomplete();
+            currentTreeData.path = path + file.getName();
+            currentTreeData.children = [];
+            currentTreeData.isLeaf = true;
+            future.complete(true);
+            return future;
+        }
 	}
 }

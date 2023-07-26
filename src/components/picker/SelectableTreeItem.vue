@@ -1,14 +1,21 @@
 <template>
   <ul style="list-style-type: none">
-        <div>
-          <span @click="test" v-bind:id="model.path">{{ displayFolderName(model.path) }}</span>
+        <div v-if="selectLeafOnly && isLeaf">
+          <span @click="selectItem" v-bind:id="model.path">{{ displayName(model.path) }}</span>
+        </div>
+        <div v-if="selectLeafOnly && !isLeaf">
+          <span v-bind:id="model.path">{{ displayName(model.path) }}</span>
+          <span v-if="isFolder" @click="toggle">[{{ isOpen ? '-' : '+' }}]</span>
+        </div>
+        <div v-if="!selectLeafOnly">
+          <span @click="selectItem" v-bind:id="model.path">{{ displayName(model.path) }}</span>
           <span v-if="isFolder" @click="toggle">[{{ isOpen ? '-' : '+' }}]</span>
         </div>
     <li v-show="isOpen" v-if="isFolder" style="list-style-type: none">
       <SelectableTreeItem
         class="item"
         v-for="model in model.children"
-        :model="model" :selectFolder_func="selectFolder_func" >
+        :model="model" :select_func="select_func" :selectLeafOnly="selectLeafOnly">
       </SelectableTreeItem>
     </li>
   </ul>
@@ -19,7 +26,11 @@ module.exports = {
   name: 'SelectableTreeItem', // necessary for self-reference
   props: {
     model: Object,
-    selectFolder_func: Function
+    select_func: Function,
+    selectLeafOnly: {
+        type: Boolean,
+        default: false,
+    }
   },
   data() {
     return {
@@ -29,15 +40,18 @@ module.exports = {
   computed: {
     isFolder() {
       return this.model.children && this.model.children.length
+    },
+    isLeaf() {
+      return this.model.isLeaf === true
     }
   },
   methods: {
-    displayFolderName(folderName) {
-        if (folderName == null) {
+    displayName(name) {
+        if (name == null) {
             return "";
         } else {
-            let index = folderName.lastIndexOf('/');
-            return folderName.substring(index + 1);
+            let index = name.lastIndexOf('/');
+            return name.substring(index + 1);
         }
     },
     toggle(e) {
@@ -46,8 +60,8 @@ module.exports = {
             this.isOpen = !this.isOpen
         }
     },
-    test(selectedFolder) {
-        this.selectFolder_func(selectedFolder.currentTarget.id);
+    selectItem(selectedItem) {
+        this.select_func(selectedItem.currentTarget.id);
     }
   }
 }

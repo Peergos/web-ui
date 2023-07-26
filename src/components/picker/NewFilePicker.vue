@@ -11,7 +11,7 @@
                 <div class="prompt__body">
                     <div class="folder-picker-view" class="scroll-style">
                       <ul>
-                        <SelectableTreeItem class="item" :model="treeData" :selectFolder_func="selectFolder"></SelectableTreeItem>
+                        <SelectableTreeItem class="item" :model="treeData" :select_func="selectFolder" :selectLeafOnly="selectLeafOnly"></SelectableTreeItem>
                       </ul>
                     </div>
                     <input style="background-color: lightgrey;"
@@ -74,7 +74,8 @@ module.exports = {
 			folder_result: '',
             showSpinner: false,
             spinnerMessage: 'Loading...',
-            treeData: {}
+            treeData: {},
+            selectLeafOnly: false
 		}
 	},
 	props: {
