@@ -518,7 +518,7 @@ var batStoreCache;
 var accountStoreCache;
 var pkiStoreCache;
 var rootKeyCache;
-let SAFARI_CACHE_SIZE = 1024 * 1024 * 200;
+let SAFARI_CACHE_SIZE = 1024 * 1024 * 700;
 
 function bindCacheStore(storeCache) {
     blockStoreCache = storeCache;
@@ -534,17 +534,15 @@ function getCurrentDesiredCacheSize() {
 }
 function getDesiredCacheSize() {
     let future = peergos.shared.util.Futures.incomplete();
-    if (isSafariTest()) {
-        future.complete(SAFARI_CACHE_SIZE);
-    } else {
-        getIDBKV("desiredSize", blockStoreCache.cacheDesiredSizeStore).then((val) => {
-            if (val == null) {
-                future.complete(-1);
-            } else {
-                future.complete(val);
-            }
-        });
-    }
+    getIDBKV("desiredSize", blockStoreCache.cacheDesiredSizeStore).then((val) => {
+        if (val == null || val == -1) {
+            future.complete(-1);
+        } else if(val == 0 && isSafariTest()) {
+            future.complete(SAFARI_CACHE_SIZE);
+        } else {
+            future.complete(val);
+        }
+    });
     return future;
 }
 function setDesiredCacheSize(desiredSize) {
