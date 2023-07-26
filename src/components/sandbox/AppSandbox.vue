@@ -11,6 +11,12 @@
                 :friendNames="friendnames"
                 :updateChat="updateChat">
         </AddToChat>
+        <FilePicker
+            v-if="showFilePicker"
+            :baseFolder="filePickerBaseFolder"
+            :pickerFileExtension="pickerFileExtension"
+            :selectedFile_func="selectedFileFromPicker"
+        />
         <FolderPicker
             v-if="showFolderPicker"
             :baseFolder="folderPickerBaseFolder" :selectedFolder_func="selectedFoldersFromPicker">
@@ -54,6 +60,7 @@
 const AddToChat = require("AddToChat.vue");
 const AppInstall = require("AppInstall.vue");
 const AppPrompt = require("../prompt/AppPrompt.vue");
+const FilePicker = require('../picker/FilePicker.vue');
 const FolderPicker = require('../picker/FolderPicker.vue');
 const Spinner = require("../spinner/Spinner.vue");
 
@@ -69,6 +76,7 @@ module.exports = {
         AddToChat,
         AppInstall,
         AppPrompt,
+        FilePicker,
         FolderPicker,
         Spinner
     },
@@ -128,8 +136,12 @@ module.exports = {
             currentAppName: null,
             showFolderPicker: false,
             folderPickerBaseFolder: "",
+            filePickerBaseFolder: "",
             selectedFolders: [],
-            selectedFolderStems: []
+            selectedFolderStems: [],
+            showFilePicker: false,
+            selectedFileFromPicker: null,
+            pickerFileExtension: ""
         }
     },
     computed: {
@@ -560,6 +572,8 @@ module.exports = {
                     } else {
                         that.buildResponse(headerFunc(), null, that.ACTION_FAILED);
                     }
+                } else if (api =='/peergos-api/v0/file-picker/') {
+                    that.handleFilePickerRequest(headerFunc, path, apiMethod, data, hasFormData, params);
                 } else if (api =='/peergos-api/v0/folders/') {
                     that.handleFolderPickerRequest(headerFunc, path, apiMethod, data, hasFormData, params);
                 } else {
@@ -701,6 +715,25 @@ module.exports = {
         },
         closePrompt() {
             this.showPrompt = false;
+        },
+        handleFilePickerRequest: function(headerFunc, path, apiMethod, data, hasFormData, params) {
+            let that = this;
+            if (apiMethod == 'GET') {
+                this.filePickerBaseFolder = "/" + this.context.username;
+                let fileExtensionFilter = params.get('extension');
+                this.pickerFileExtension = fileExtensionFilter == null ? "" : fileExtensionFilter;
+                this.selectedFileFromPicker = function (chosenFile) {
+                    that.selectedFileFromPicker = chosenFile == null ? "" : chosenFile;
+                    that.showFilePicker = false;
+                    let encoder = new TextEncoder();
+                    let data = encoder.encode(JSON.stringify([chosenFile]));
+                    that.buildResponse(headerFunc(), data, that.UPDATE_SUCCESS);
+                }.bind(this);
+                this.showFilePicker = true;
+            } else {
+                that.showError("App attempted unexpected action: " + apiMethod);
+                that.buildResponse(headerFunc(), null, that.ACTION_FAILED);
+            }
         },
         handleFolderPickerRequest: function(headerFunc, path, apiMethod, data, hasFormData, params) {
             let that = this;

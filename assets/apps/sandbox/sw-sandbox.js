@@ -13,6 +13,7 @@ let dataRequest = apiRequest + "/data/";
 let formRequest = apiRequest + "/form/";
 let chatRequest = apiRequest + "/chat/";
 let saveRequest = apiRequest + "/save/";
+let filePickerRequest = apiRequest + "/file-picker/";
 let foldersRequest = apiRequest + "/folders/";
 let printRequest = apiRequest + "/print/";
 let installAppRequest = apiRequest + "/install-app/";
@@ -377,6 +378,12 @@ function appFetch(event) {
                 }
                 restFilePath = restFilePath.substring(saveRequest.length);
                 api = saveRequest;
+            } else if (filePath.startsWith(filePickerRequest)) {
+                if (method != 'GET') {
+                    return new Response('Unknown file-picker action!', {status: 400})
+                }
+                restFilePath = restFilePath.substring(filePickerRequest.length);
+                api = filePickerRequest;
             } else if (filePath.startsWith(foldersRequest)) {
                 if (method != 'GET') {
                     return new Response('Unknown folders action!', {status: 400})
