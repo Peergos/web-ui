@@ -463,22 +463,15 @@ async function* getFileStatsRecursively(entry) { //https://developer.mozilla.org
   }
 }
 /*
-as of March 2023 OPFS works in Chrome and Firefox desktop
-Safari doesn't implement FileSystemFileHandle.createWritable() - https://developer.mozilla.org/en-US/docs/Web/API/FileSystemFileHandle
 mobile browsers - not confirmed to work and difficult to debug.
 */
 function isOPFSAvailable() {
     let future = peergos.shared.util.Futures.incomplete();
     try {
-        let isSafari =
-    	    /constructor/i.test(window.HTMLElement) ||
-    	    (function (p) {
-    		return p.toString() === "[object SafariRemoteNotification]";
-    	    })(!window["safari"] || safari.pushNotification);
         let isMobile = /Mobi|Android/i.test(navigator.userAgent); // https://stackoverflow.com/a/24600597
         let isLinuxOnFirefox = navigator.userAgent.search('Linux')!==-1 && navigator.userAgent.search('X11')!==-1
             && navigator.userAgent.toLowerCase().indexOf("firefox") > -1;
-        if (!isSafari && !isMobile && !isLinuxOnFirefox) {
+        if (!isMobile && !isLinuxOnFirefox) {
             navigator.storage.getDirectory().then(root => {
                 if (rootDirectory == null) {
                     rootDirectory = root;
@@ -498,7 +491,6 @@ function isOPFSAvailable() {
     return future;
 }
 //Firefox private mode does not support IndexedDB.  https://bugzilla.mozilla.org/show_bug.cgi?id=781982
-//Safari does not support StorageManager.estimate().  https://developer.mozilla.org/en-US/docs/Web/API/StorageManager/estimate
 function isIndexedDBAvailable() {
     let future = peergos.shared.util.Futures.incomplete();
     if (navigator.userAgent.toLowerCase().indexOf("firefox") > -1){
@@ -526,6 +518,7 @@ var batStoreCache;
 var accountStoreCache;
 var pkiStoreCache;
 var rootKeyCache;
+let SAFARI_CACHE_SIZE = 1024 * 1024 * 700;
 
 function bindCacheStore(storeCache) {
     blockStoreCache = storeCache;
@@ -542,8 +535,10 @@ function getCurrentDesiredCacheSize() {
 function getDesiredCacheSize() {
     let future = peergos.shared.util.Futures.incomplete();
     getIDBKV("desiredSize", blockStoreCache.cacheDesiredSizeStore).then((val) => {
-        if (val == null) {
+        if (val == null || val == -1) {
             future.complete(-1);
+        } else if(val == 0 && isSafariTest()) {
+            future.complete(SAFARI_CACHE_SIZE);
         } else {
             future.complete(val);
         }
@@ -610,12 +605,20 @@ function getBrowserStorageUsage() {
         return prom;
     }
 }
-
+function isSafariTest() {
+    let test =
+        /constructor/i.test(window.HTMLElement) ||
+        (function (p) {
+        return p.toString() === "[object SafariRemoteNotification]";
+        })(!window["safari"] || safari.pushNotification);
+    return test;
+}
 function getBrowserStorageQuota() {
     if (navigator.storage && navigator.storage.estimate) {
         return navigator.storage.estimate().then(quota => quota.quota);
     } else {
-        let prom = new Promise(function(resolve, reject) { resolve(0)});
+
+        let prom = new Promise(function(resolve, reject) { resolve(isSafariTest() ? SAFARI_CACHE_SIZE : 0)});
         return prom;
     }
 }
