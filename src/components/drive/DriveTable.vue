@@ -27,7 +27,7 @@
                 </td>
 				<td class="file"
 					:id="file.getFileProperties().name"
-					@click="$emit('navigationteDrive', file)"
+					@click="$emit('navigateDrive', file)"
 				>
                 <!-- :class="{ shared: isShared(file) }"-->
 					{{ file.getFileProperties().name }}
