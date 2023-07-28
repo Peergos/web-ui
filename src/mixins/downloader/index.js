@@ -118,11 +118,12 @@ module.exports = {
 	} , { icon: false , timeout:false, id: filename})
     //   var context = this.getContext()
       file
-        .getInputStream(
+        .getBufferedInputStream(
           this.context.network,
           this.context.crypto,
           props.sizeHigh(),
-          props.sizeLow(),
+            props.sizeLow(),
+            20,
           function (read) {
             progress.done += read.value_0
               if (progress.done >= progress.max) {
