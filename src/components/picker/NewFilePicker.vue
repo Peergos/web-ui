@@ -11,7 +11,7 @@
                 <div class="prompt__body">
                     <div class="folder-picker-view" class="scroll-style">
                       <ul>
-                        <SelectableTreeItem class="item" :model="treeData" :select_func="selectFolder" :selectLeafOnly="selectLeafOnly"></SelectableTreeItem>
+                        <SelectableTreeItem class="item" :model="treeData" :load_func="loadFolderLazily" :select_func="selectFolder" :spinnerEnable_func="spinnerEnable" :spinnerDisable_func="spinnerDisable" :selectLeafOnly="selectLeafOnly"></SelectableTreeItem>
                       </ul>
                     </div>
                     <input style="background-color: lightgrey;"
@@ -113,7 +113,7 @@ module.exports = {
             that.showSpinner = false;
             that.spinnerMessage = '';
         };
-        this.loadFolders(this.context.username + "/", callback);
+        this.loadSubFolders(this.context.username + "/", callback);
     },
 	methods: {
 		closePrompt() {
@@ -131,7 +131,15 @@ module.exports = {
                 this.$emit("hide-prompt");
             }
 		},
-
+        spinnerEnable: function () {
+            this.showSpinner = true;
+        },
+        spinnerDisable: function () {
+            this.showSpinner = false;
+        },
+        loadFolderLazily: function(path, callback) {
+            this.loadSubFolders(path, callback);
+        },
         selectFolder: function (folderName) {
             this.folder_result = folderName;
         },
