@@ -5,14 +5,18 @@
           <span class="checkmark"></span>
             <div :class="{ bold: isFolder }" @click="toggle">
               {{ displayFolderName(model.path) }}
-              <span v-if="isFolder">[{{ isOpen ? '-' : '+' }}]</span>
+              <span v-if="isFolder">[{{ model.isOpen ? '-' : '+' }}]</span>
             </div>
     </label>
-    <li v-show="isOpen" v-if="isFolder" style="list-style-type: none">
+    <li v-show="model.isOpen" v-if="isFolder" style="list-style-type: none">
       <TreeItem
         class="item"
         v-for="model in model.children"
-        :model="model" :selectFolder_func="selectFolder_func" >
+        :model="model"
+        :selectFolder_func="selectFolder_func"
+        :load_func="load_func"
+        :spinnerEnable_func="spinnerEnable_func"
+        :spinnerDisable_func="spinnerDisable_func">
       </TreeItem>
     </li>
   </ul>
@@ -23,11 +27,13 @@ module.exports = {
   name: 'TreeItem', // necessary for self-reference
   props: {
     model: Object,
-    selectFolder_func: Function
+    selectFolder_func: Function,
+    load_func: Function,
+    spinnerEnable_func: Function,
+    spinnerDisable_func: Function,
   },
   data() {
     return {
-      isOpen: false,
     }
   },
   computed: {
@@ -47,8 +53,25 @@ module.exports = {
     toggle(e) {
         e.preventDefault()
         if (this.isFolder) {
-            this.isOpen = !this.isOpen
+            if (this.model.isOpen) {
+                this.model.isOpen = !this.model.isOpen
+            } else {
+                this.lazyLoadSubFolders();
+            }
         }
+    },
+    lazyLoadSubFolders() {
+        let that = this;
+        this.spinnerEnable_func();
+        let callback = (baseOfSubFolderTree) => {
+            that.model.children = [];
+            for(var i=0; i < baseOfSubFolderTree.children.length; i++) {
+                that.model.children.push(baseOfSubFolderTree.children[i]);
+            }
+            that.spinnerDisable_func();
+            that.model.isOpen = !that.model.isOpen;
+        };
+        this.load_func(this.model.path + "/", callback);
     },
     addChild(selectedFolder) {
         this.selectFolder_func(selectedFolder.currentTarget.value, selectedFolder.currentTarget.checked);

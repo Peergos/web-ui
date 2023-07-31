@@ -11,7 +11,12 @@
             <Spinner v-if="showSpinner"></Spinner>
             <div class="folder-picker-view" class="scroll-style">
               <ul>
-                <TreeItem class="item" :model="treeData" :selectFolder_func="selectFolder"></TreeItem>
+                <TreeItem class="item"
+                :model="treeData"
+                :selectFolder_func="selectFolder"
+                :load_func="loadFolderLazily"
+                :spinnerEnable_func="spinnerEnable"
+                :spinnerDisable_func="spinnerDisable"></TreeItem>
               </ul>
             </div>
             <h4>Selected:</h4>
@@ -70,11 +75,20 @@ module.exports = {
             that.showSpinner = false;
             that.spinnerMessage = '';
         };
-        this.loadFolders(this.baseFolder + "/", callback);
+        this.loadSubFolders(this.baseFolder + "/", callback);
     },
     methods: {
         close: function () {
             this.selectedFolder_func([]);
+        },
+        spinnerEnable: function () {
+            this.showSpinner = true;
+        },
+        spinnerDisable: function () {
+            this.showSpinner = false;
+        },
+        loadFolderLazily: function(path, callback) {
+            this.loadSubFolders(path, callback);
         },
         selectFolder: function (folderName, add) {
             if (add) {

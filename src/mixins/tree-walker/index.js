@@ -3,8 +3,14 @@ module.exports = {
         loadFoldersAndFiles: function(path, fileExtension, callback) {
             this.loadAllFolders(path, callback, true, fileExtension);
         },
+        loadSubFoldersAndFiles: function(path, fileExtension, callback) {
+            this.loadSubFoldersNotRecursive(path, callback, true, fileExtension);
+        },
         loadFolders: function(path, callback) {
             this.loadAllFolders(path, callback, false, '');
+        },
+        loadSubFolders: function(path, callback) {
+            this.loadSubFoldersNotRecursive(path, callback, false, '');
         },
         loadAllFolders: function(path, callback, includeFiles, fileExtension) {
             var that = this;
@@ -28,6 +34,7 @@ module.exports = {
         walk: function(file, path, currentTreeData, includeFiles, fileExtension) {
             currentTreeData.path = path.substring(0, path.length -1);
             currentTreeData.children = [];
+            currentTreeData.isOpen = false;
             let that = this;
             let future = peergos.shared.util.Futures.incomplete();
             file.getChildren(that.context.crypto.hasher, that.context.network).thenApply(function(children) {
@@ -71,13 +78,68 @@ module.exports = {
             });
             return future;
         },
-        addFile(file, path, currentTreeData, includeFiles) {
+        addFile(file, path, currentTreeData) {
             let future = peergos.shared.util.Futures.incomplete();
             currentTreeData.path = path + file.getName();
             currentTreeData.children = [];
             currentTreeData.isLeaf = true;
+            currentTreeData.isOpen = false;
             future.complete(true);
             return future;
-        }
+        },
+        loadSubFoldersNotRecursive: function(path, callback, includeFiles, fileExtension) {
+            var that = this;
+            let folderTree = {};
+            this.context.getByPath(path).thenApply(function(dirOpt){
+                let dir = dirOpt.get();
+                let folderProperties = dir.getFileProperties();
+                if (folderProperties.isDirectory && !folderProperties.isHidden) {
+                    that.walkNotRecursive(dir, path, folderTree, includeFiles, fileExtension).thenApply( () => {
+                        callback(folderTree);
+                    });
+                } else {
+                    callback(folderTree);
+                }
+            }).exceptionally(function(throwable) {
+                this.spinnerMessage = 'Unable to load sub folders...';
+                throwable.printStackTrace();
+            });
+        },
+
+        walkNotRecursive: function(file, path, currentTreeData, includeFiles, fileExtension) {
+            currentTreeData.path = path.substring(0, path.length -1);
+            currentTreeData.children = [];
+            currentTreeData.isOpen = false;
+            let that = this;
+            let future = peergos.shared.util.Futures.incomplete();
+            file.getChildren(that.context.crypto.hasher, that.context.network).thenApply(function(children) {
+                let arr = children.toArray();
+                arr.forEach(function(child, index){
+                    let childProps = child.getFileProperties();
+                    let newPath = childProps.isDirectory ? path + child.getFileProperties().name + '/' : path;
+                    if (childProps.isDirectory && !childProps.isHidden) {
+                        let node = {};
+                        node.path = newPath.substring(0, newPath.length -1);
+                        node.children = ['lazy'];
+                        node.isOpen = false;
+                        currentTreeData.children.push(node);
+                    }
+                    if (includeFiles === true && !childProps.isDirectory && !childProps.isHidden) {
+                        let test = fileExtension == null || fileExtension.length == 0 ||
+                            child.getFileProperties().name.endsWith(fileExtension);
+                        if (test) {
+                            let node = {};
+                            node.path = newPath + child.getName();
+                            node.children = [];
+                            node.isLeaf = true;
+                            node.isOpen = false;
+                            currentTreeData.children.push(node);
+                        }
+                    }
+                });
+                future.complete(true);
+            });
+            return future;
+        },
 	}
 }

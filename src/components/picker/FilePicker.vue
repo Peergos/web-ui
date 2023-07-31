@@ -11,7 +11,7 @@
             <Spinner v-if="showSpinner"></Spinner>
             <div class="file-picker-view" class="scroll-style">
               <ul>
-                <SelectableTreeItem class="item" :model="treeData" :select_func="selectFile" :selectLeafOnly="selectLeafOnly"></TreeItem>
+                <SelectableTreeItem class="item" :model="treeData" :select_func="selectFile" :load_func="loadFolderLazily" :spinnerEnable_func="spinnerEnable" :spinnerDisable_func="spinnerDisable" :selectLeafOnly="selectLeafOnly"></TreeItem>
               </ul>
             </div>
             <input style="background-color: lightgrey;"
@@ -64,7 +64,7 @@ module.exports = {
             that.showSpinner = false;
             that.spinnerMessage = '';
         };
-        this.loadFoldersAndFiles(this.baseFolder + "/", this.pickerFileExtension, callback);
+        this.loadSubFoldersAndFiles(this.baseFolder + "/", this.pickerFileExtension, callback);
     },
     methods: {
         close: function () {
@@ -72,6 +72,15 @@ module.exports = {
         },
         selectFile: function (file) {
             this.selectedFile = file;
+        },
+        spinnerEnable: function () {
+            this.showSpinner = true;
+        },
+        spinnerDisable: function () {
+            this.showSpinner = false;
+        },
+        loadFolderLazily: function(path, callback) {
+            this.loadSubFoldersAndFiles(path, this.pickerFileExtension, callback);
         },
         fileSelected: function() {
             this.selectedFile_func(this.selectedFile);
