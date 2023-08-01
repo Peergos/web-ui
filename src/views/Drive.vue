@@ -1553,7 +1553,7 @@ module.exports = {
                     that.showSpinner = false;
                     if (res) {
                         that.zipFiles(zipFilename, allFilesList, progress).thenApply(res2 => {
-                            console.log('folders download complete');
+                            console.log('zip complete');
                             that.selectedFiles = [];
                         }).exceptionally(function (throwable) {
                             that.$toast.error(throwable.getMessage())
