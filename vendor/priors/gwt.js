@@ -1656,7 +1656,7 @@ function generateThumbnailProm(asyncReader, fileSize, fileName) {
 
 function renderThumbnail(bytes, future, size) {
     var canvas = document.createElement('canvas');
-    var ctx = canvas.getContext('2d');
+    var ctx = canvas.getContext('2d', { willReadFrequently: true });
     var img = new Image();
     img.onload = function(){
         getThumbnailFromCanvas(canvas, img, img.width, img.height, size, future);
@@ -1677,7 +1677,7 @@ function getThumbnailFromCanvas(canvas, img, width, height, size, future) {
         let canvasHeight = tall ? size : height*size/width;
         canvas.width = canvasWidth;
         canvas.height = canvasHeight;
-        let context = canvas.getContext('2d');
+        let context = canvas.getContext('2d', { willReadFrequently: true });
         //canvas.getContext('2d').drawImage(img, 0, 0, width, height, 0, 0, canvasWidth, canvasHeight);
         try {
             context.drawImage(img, 0, 0, width, height, 0, 0, canvasWidth, canvasHeight);
@@ -1776,7 +1776,7 @@ function captureThumbnail(width, height, currentIncrement, video){
     canvas.height = height;
     let blackWhiteThreshold = width * height / 10 * 8; //80%
     setTimeout(() => {
-            let context = canvas.getContext('2d');
+            let context = canvas.getContext('2d', { willReadFrequently: true });
             try {
                 context.drawImage(video, 0, 0, width, height);
             } catch (ex) {
@@ -1904,7 +1904,7 @@ function createVideoThumbnailStreamingProm(future, asyncReader, size, filename, 
                                 future.complete("");
                                 return;
                             }
-                            let context = canvas.getContext('2d');
+                            let context = canvas.getContext('2d', { willReadFrequently: true });
                             try {
                                 context.drawImage(video, 0, 0, width, height);
                             } catch (ex) {
