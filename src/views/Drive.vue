@@ -2567,7 +2567,7 @@ module.exports = {
             } else {
                 let file = files[index];
                 that.downloadFile(file).thenApply(res => {
-                    that.reduceDownload(index + 1, files, future);
+                    setTimeout(() => that.reduceDownload(index + 1, files, future), 10);//browser download may fail on tiny files if timeout not used
                 });
             }
         },
