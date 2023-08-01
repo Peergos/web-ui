@@ -116,11 +116,13 @@ function postProm(url, data, timeout) {
     return future;
 }
 
-function postMultipartProm(url, dataArrays) {
+function postMultipartProm(url, dataArrays, timeout) {
     var future = peergos.shared.util.Futures.incomplete();
     new Promise(function(resolve, reject) {
 	var req = new XMLHttpRequest();
 	req.open('POST', url);
+        if (timeout >= 0)
+            req.timeout = timeout;
 	req.responseType = 'arraybuffer';
 	
 	req.onload = function() {
