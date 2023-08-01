@@ -1451,7 +1451,13 @@ module.exports = {
     reduceTotalSize(index, path, files, accumTotalSize, stats, future) {
         let that = this;
         if (files.length == index) {
-            this.confirmZipAndDownloadOfFolders(files.length, stats,
+            var folderCount = 0;
+            for(var i = 0; i < files.length; i++) {
+                if (files[i].isDirectory()) {
+                    folderCount = folderCount + 1;
+                }
+            }
+            this.confirmZipAndDownloadOfFolders(folderCount, stats,
                 () => {
                     that.showConfirm = false;
                     future.complete(true);
@@ -1512,7 +1518,7 @@ module.exports = {
             fileCount = fileCount + statisticsList[i].fileCount;
             actualSize = actualSize + statisticsList[i].actualSize;
         }
-        this.confirm_message='Are you sure you want to download selected folders?';
+        this.confirm_message='Are you sure you want to download selected items?';
         this.confirm_body='Folder(s): ' + folderCount
                 + ', File(s): ' + fileCount
                 + ', Total size: ' + helpers.convertBytesToHumanReadable(actualSize);
