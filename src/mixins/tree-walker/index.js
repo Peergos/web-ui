@@ -120,7 +120,7 @@ module.exports = {
                     if (childProps.isDirectory && !childProps.isHidden) {
                         let node = {};
                         node.path = newPath.substring(0, newPath.length -1);
-                        node.children = ['lazy'];
+                        node.children = [{lazy:true}];
                         node.isOpen = false;
                         currentTreeData.children.push(node);
                     }
