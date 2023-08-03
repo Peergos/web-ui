@@ -2,22 +2,34 @@
 	<table class="drive-table">
 		<thead>
 			<tr>
+                <th class="select"></th>
 				<th class="file" @click="$emit('sortBy', 'name')">Name</th>  <!-- <span v-if="sortBy=='size'" :class="['fas', normalSortOrder ? 'fa-angle-down' : 'fa-angle-up']"/> -->
 				<th class="size" @click="$emit('sortBy', 'size')">Size</th>
 				<th class="type" @click="$emit('sortBy', 'type')">Type</th>
 				<th class="date" @click="$emit('sortBy', 'modified')">Modified</th>
 				<th class="date" @click="$emit('sortBy', 'created')">Created</th>
 				<th/>
-			</tr>
+            </tr>
 		</thead>
 		<tbody role="presentation">
 			<tr v-for="file in files" tabindex="1" role="row" class="table__item">
+                <td class="select">
+                    <label class="checkbox__group">
+                        <input
+                        type="checkbox"
+                        :name="file.getFileProperties().name"
+                        v-model="selected"
+                        :value="file"
+                        tabindex="0"
+                        />
+                        <span class="checkmark"></span>
+                    </label>            
+                </td>
 				<td class="file"
 					:id="file.getFileProperties().name"
 					@click="$emit('navigateDrive', file)"
 				>
-				<!-- :class="{ shared: isShared(file) }"-->
-
+                <!-- :class="{ shared: isShared(file) }"-->
 					{{ file.getFileProperties().name }}
 				</td>
 				<td class="size">{{ convertBytesToHumanReadable(getFileSize(file.getFileProperties())) }}</td>
@@ -50,11 +62,28 @@ module.exports = {
 			type: Array,
 			default: ()=>[]
 		},
+        selectedFiles: {
+            type: Array,
+            default: ()=>[]
+        },
 	},
-
-	mixins:[mixins],
-
-	methods: {
+    mixins:[mixins],
+    data: function () {
+        return {
+            selected: this.selectedFiles,
+        }
+    },
+    watch: {
+        selected(newSelected, oldSelected) {
+            if(newSelected != this.selectedFiles){
+            this.$emit('update:selectedFiles', newSelected)
+            }
+        },
+        selectedFiles(newSelected, oldSelected){
+            this.selected = newSelected
+        }
+    },
+    methods: {
 		showMenu(e, file){
 			// https://stackoverflow.com/questions/53738919/emit-event-with-parameters-in-vue/53739018
 			this.$store.commit('SET_DRIVE_MENU_TARGET', e.currentTarget)
@@ -119,7 +148,8 @@ module.exports = {
 
 .drive-table .size,
 .drive-table .type,
-.drive-table .date{
+.drive-table .date,
+.drive-table .select {
 	padding: 0 16px;
 }
 

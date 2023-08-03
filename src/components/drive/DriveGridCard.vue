@@ -1,13 +1,24 @@
 <template>
-	<article class="grid-card">
-		<AppButton
+	<article 
+        class="grid-card" >
+
+        <AppButton 
+            class="card__select" 
+            :class="{selected: selected}" 
+            :accent="selected" 
+            round 
+            outline 
+            @click.stop.native="toggleSelection" 
+        />
+        <AppButton
 			class="card__menu"
 			icon="dot-menu"
 			aria-label="menu"
 			@click.stop.native="showMenu($event)"
 		/>
 
-		<figure :id="itemIndex" draggable="true" @dragover.prevent @dragstart="dragstartFunc($event, file)" @drop="dropFunc($event, file)">
+		<figure :id="itemIndex" 
+            draggable="true" @dragover.prevent @dragstart="dragstartFunc($event, file)" @drop="dropFunc($event, file)">
 			<img
 				class="cover"
 				v-if="src"
@@ -39,7 +50,8 @@ module.exports = {
 		'dragstartFunc',
 		'dropFunc',
 		'file',
-		'itemIndex'
+		'itemIndex',
+        'selected'
 	],
 	computed:{
 		cardIcon(){
@@ -63,8 +75,66 @@ module.exports = {
 		showMenu(e){
 			this.$store.commit('SET_DRIVE_MENU_TARGET', e.currentTarget)
 			this.$emit('openMenu')
-		}
-	}
+		},
+        toggleSelection(){
+            this.$emit('toggleSelection')
+        }
+	},
+    directives: {
+        // https://blog.logrocket.com/building-a-long-press-directive-in-vue-3408d60fb511/
+        // this directive could eventually be registered as global! 
+        longpress: {
+            bind: function (el, binding, vNode) {
+                // Make sure expression provided is a function
+                if (typeof binding.value !== 'function') {
+                    // Fetch name of component
+                    const compName = vNode.context.name
+                    // pass warning to console
+                    let warn = `[longpress:] provided expression '${binding.expression}' is not a function, but has to be`
+                    if (compName) {warn += `Found in component '${compName}'`}
+                    console.warn(warn)
+                }
+
+                let pressTimer = null
+
+                // Define function handlers
+                // Create timeout (run function after 1s)
+                let start = (e) => {
+                    if (e.type === 'click' && e.button !== 0) {
+                        return
+                    }
+
+                    if (pressTimer === null) {
+                        pressTimer = setTimeout(()=>{
+                        handler()
+                        }, 1000)
+                    }
+                }
+
+                // Cancel timeout
+                let cancel = (e) => {
+                    // Check if timer has value or not
+                    if (pressTimer !== null) {
+                        clearTimeout(pressTimer)
+                        pressTimer = null
+                    }
+                }
+
+                // Run function
+                const handler = (e) => {
+                    binding.value(e)
+                }
+
+                el.addEventListener("mousedown", start);
+                el.addEventListener("touchstart", start);
+                // Cancel timeouts if this events happen
+                el.addEventListener("click", cancel);
+                el.addEventListener("mouseout", cancel);
+                el.addEventListener("touchend", cancel);
+                el.addEventListener("touchcancel", cancel);                
+            } 
+        }
+    }
 
 };
 </script>
@@ -86,6 +156,28 @@ module.exports = {
  	content: "";
 	position: relative;
     padding-top: 75%;
+}
+
+.grid-card .card__select {
+    position: absolute;
+    top: 16px;
+    left: 16px;
+    z-index: 10;
+    opacity: 0;
+    width: 24px;
+    height: 24px;
+    padding: 0;
+    background-color: var(--bg-50);
+    color: var(--color);
+}
+
+.card__select.app-button.accent:focus{
+	background-color: var(--green-500);
+}
+
+.grid-card:hover .card__select,
+.grid-card .card__select.selected {
+    opacity: 1;
 }
 
 .grid-card figure{

@@ -104,6 +104,7 @@ module.exports = {
       var that = this
       var resultingSize = this.getFileSize(props)
       let filename = fileLabel != null ? fileLabel : props.name;
+      let result = peergos.shared.util.Futures.incomplete();
 
       var progress = {
         show: true,
@@ -133,14 +134,13 @@ module.exports = {
               }
           }
         )
-        .thenCompose(function (reader) {
+        .thenApply(function (reader) {
           if (that.supportsStreaming()) {
             var size = that.getFileSize(props)
             var maxBlockSize = 1024 * 1024 * 5
             var blockSize = size > maxBlockSize ? maxBlockSize : size
 
             console.log('saving data of length ' + size + ' to ' + filename)
-            let result = peergos.shared.util.Futures.incomplete()
             let fileStream = streamSaver.createWriteStream(
               filename,
               props.mimeType,
@@ -159,7 +159,6 @@ module.exports = {
             let pump = () => {
               if (blockSize == 0) {
                 writer.close()
-                result.complete(true)
               } else {
                 var data = convertToByteArray(new Uint8Array(blockSize))
                 reader
@@ -170,18 +169,21 @@ module.exports = {
                     writer.write(data).then(() => {
                       setTimeout(pump)
                     })
+                    if (size == 0) {
+                        result.complete(true);
+                    }
                   })
               }
             }
             pump()
-            return result
           } else {
             var size = that.getFileSize(props)
             var data = convertToByteArray(new Int8Array(size))
-            return reader
+            reader
               .readIntoArray(data, 0, data.length)
               .thenApply(function (read) {
-                that.openItem(filename, data, props.mimeType)
+                that.openItem(filename, data, props.mimeType);
+                result.complete(true);
               })
           }
         })
@@ -190,7 +192,9 @@ module.exports = {
           that.errorTitle = 'Error downloading file: ' + filename
           that.errorBody = throwable.getMessage()
           that.showError = true
+          result.complete(false);
         })
+      return result;
     }
   }
 }

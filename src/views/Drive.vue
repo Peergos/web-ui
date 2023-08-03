@@ -1,232 +1,388 @@
 <template>
-	<article class="drive-view">
-		<input type="file" id="uploadFileInput" @change="uploadFiles" style="display:none;" multiple />
-		<input type="file" id="uploadDirectoriesInput" @change="uploadFiles" style="display:none;" multiple directory mozDirectory webkitDirectory/>
+  <article class="drive-view">
+    <input
+      type="file"
+      id="uploadFileInput"
+      @change="uploadFiles"
+      style="display: none"
+      multiple
+    />
+    <input
+      type="file"
+      id="uploadDirectoriesInput"
+      @change="uploadFiles"
+      style="display: none"
+      multiple
+      directory
+      mozDirectory
+      webkitDirectory
+    />
 
-		<Spinner v-if="showSpinner" :message="spinnerMessage"></Spinner>
+    <Spinner v-if="showSpinner" :message="spinnerMessage"></Spinner>
 
-		<a id="downloadAnchor" style="display:none"></a>
+    <a id="downloadAnchor" style="display: none"></a>
 
-		<DriveHeader
-			:gridView="isGrid"
-			:isWritable="isWritable"
-			:canPaste="isPasteAvailable"
-			:path="path"
-			@switchView="switchView()"
-			@goBackToLevel="goBackToLevel($event)"
-			@askMkdir="askMkdir()"
-			@createFile="createBlankFile()"
-			@createImageFile="createBlankImageFile()"
-			@newApp="createNewApp()"
-		        @search="openSearch(false)"
-                        @paste="paste()"
-		/>
+    <DriveHeader
+      :gridView="isGrid"
+      :isWritable="isWritable"
+      :canPaste="isPasteOptionAvailable"
+      :path="path"
+      @switchView="switchView()"
+      @goBackToLevel="goBackToLevel($event)"
+      @askMkdir="askMkdir()"
+      @createFile="createBlankFile()"
+      @createImageFile="createBlankImageFile()"
+      @newApp="createNewApp()"
+      @search="openSearch(false)"
+      @paste="pasteToFolder($event)"
+    />
 
-		<AppPrompt
-			v-if="showPrompt"
-			@hide-prompt="closePrompt()"
-			:message='prompt_message'
-			:placeholder="prompt_placeholder"
-			:max_input_size="prompt_max_input_size"
-			:value="prompt_value"
-			:consumer_func="prompt_consumer_func"
-			:action="prompt_action"
-		/>
+    <AppPrompt
+      v-if="showPrompt"
+      @hide-prompt="closePrompt()"
+      :message="prompt_message"
+      :placeholder="prompt_placeholder"
+      :max_input_size="prompt_max_input_size"
+      :value="prompt_value"
+      :consumer_func="prompt_consumer_func"
+      :action="prompt_action"
+    />
 
-		<NewImageFilePrompt
-			v-if="showNewImageFilePrompt"
-			@hide-prompt="closeNewImageFilePrompt()"
-			:consumer_func="prompt_consumer_func"
-		/>
+    <NewImageFilePrompt
+      v-if="showNewImageFilePrompt"
+      @hide-prompt="closeNewImageFilePrompt()"
+      :consumer_func="prompt_consumer_func"
+    />
 
-		<NewAppPrompt
-			v-if="showNewAppPrompt"
-			@hide-prompt="closeNewAppPrompt()"
-			:consumer_func="prompt_new_app_func"
-		/>
-		<FolderProperties
-            v-if="showFolderProperties"
-            v-on:hide-folder-properties-view="showFolderProperties = false"
-            :folder_properties="folder_properties">
-        </FolderProperties>
+    <NewAppPrompt
+      v-if="showNewAppPrompt"
+      @hide-prompt="closeNewAppPrompt()"
+      :consumer_func="prompt_new_app_func"
+    />
+    <FolderProperties
+      v-if="showFolderProperties"
+      v-on:hide-folder-properties-view="showFolderProperties = false"
+      :folder_properties="folder_properties"
+    >
+    </FolderProperties>
 
-		<div id="dnd"
-			@drop="dndDrop($event)"
-			@dragover.prevent
-			:class="{ not_owner: isNotMe, dnd: 'dnd' }"
-		>
+    <transition name="fade" mode="out-in" appear>
+    <DriveSelected v-if="selectedFiles.length > 1" :selectedFiles="selectedFiles">
+      <li id="copy" v-if="allowCopy" @keyup.enter="copyMultiSelect()" @click="copyMultiSelect()">Copy</li>
+      <li id="cut" v-if="isWritable" @keyup.enter="cutMultiSelect()" @click="cutMultiSelect()">Cut</li>
+      <li id="delete" v-if="isWritable" @keyup.enter="deleteFilesMultiSelect()" @click="deleteFilesMultiSelect()">Delete</li>
+      <li id="download" @keyup.enter="downloadAllMultiSelect()" @click="downloadAllMultiSelect()">Download</li>
+      <li id="zip" @keyup.enter="zipAndDownloadMultiSelect()" @click="zipAndDownloadMultiSelect()">Zip</li>
+      <li id="deselect" @keyup.enter="selectedFiles = []" @click="selectedFiles = []">
+        Deselect
+      </li>
+    </DriveSelected>
+    </transition>
+    <transition name="drop">
+      <DriveMenu ref="drivePasteMenu" v-if="viewPasteMenu" @closeMenu="closePasteMenu()">
+        <li id="paste-files" @keyup.enter="pasteMultiSelect" @click="pasteMultiSelect">
+          Paste
+        </li>
+      </DriveMenu>
+    </transition>
 
-			<transition name="fade" mode="out-in" appear>
+    <div
+      id="dnd"
+      @drop="dndDrop($event)"
+      @dragover.prevent
+      :class="{ not_owner: isNotMe, dnd: 'dnd' }"
+    >
+      <transition name="fade" mode="out-in" appear>
+        <DriveGrid v-if="isGrid" appear>
+          <DriveGridCard
+            v-for="(file, index) in sortedFiles"
+            :class="{ shared: isShared(file) }"
+            :key="file.getFileProperties().name"
+            :filename="file.getFileProperties().name"
+            :src="getThumbnailURL(file)"
+            :type="file.getFileProperties().getType()"
+            @click.native="navigateDrive(file)"
+            @openMenu="openMenu(file)"
+            :dragstartFunc="dragStart"
+            :dropFunc="drop"
+            :file="file"
+            :itemIndex="index"
+            :selected="isSelected(file)"
+            @toggleSelection="toggleSelection(file)"
+          />
+          <DriveGridDrop
+            v-if="
+              getPath.length > 1 &&
+              sortedFiles.length == 0 &&
+              currentDir != null &&
+              currentDir.isWritable()
+            "
+          >
+          </DriveGridDrop>
+        </DriveGrid>
 
-				<DriveGrid v-if="isGrid" appear>
-					<DriveGridCard v-for="(file, index) in sortedFiles"
-						:class="{ shared: isShared(file) }"
-						:key="file.getFileProperties().name"
-						:filename="file.getFileProperties().name"
-						:src="getThumbnailURL(file)"
-						:type="file.getFileProperties().getType()"
-						@click.native="navigateDrive(file)"
-						@openMenu="openMenu(file)"
-						:dragstartFunc="dragStart"
-						:dropFunc="drop"
-						:file="file"
-						:itemIndex="index"
-					/>
-					<DriveGridDrop v-if="getPath.length > 1 && sortedFiles.length==0 && currentDir != null && currentDir.isWritable()">
-					</DriveGridDrop>
-				</DriveGrid>
+        <DriveTable
+          v-else
+          :files="sortedFiles"
+          :selectedFiles.sync="selectedFiles"
+          @sortBy="setSortBy"
+          @openMenu="openMenu"
+          @navigateDrive="navigateDrive"
+        />
+      </transition>
+    </div>
 
-				<DriveTable v-else
-					:files="sortedFiles"
-					@sortBy="setSortBy"
-					@openMenu="openMenu"
-					@navigateDrive="navigateDrive"
-				/>
-			</transition>
-		</div>
+    <transition name="drop">
+      <DriveMenu ref="driveMenu" v-if="viewMenu" @closeMenu="closeMenu()">
+        <li
+          id="gallery"
+          v-if="canOpen && !isMarkdown && !isHTML && !hexViewerAlternativeAvailable"
+          @keyup.enter="viewFile()"
+          @click="viewFile()"
+        >
+          View
+        </li>
+        <li
+          id="view-markdown"
+          v-if="isMarkdown"
+          @keyup.enter="viewFile()"
+          @click="viewFile()"
+        >
+          View
+        </li>
+        <li
+          id="edit-markdown"
+          v-if="isMarkdown"
+          @keyup.enter="editFile()"
+          @click="editFile()"
+        >
+          Edit
+        </li>
+        <li
+          id="view-html"
+          v-if="isHTML && isHTMLViewable"
+          @keyup.enter="viewFile()"
+          @click="viewFile()"
+        >
+          View
+        </li>
+        <li id="edit-html" v-if="isHTML" @keyup.enter="editFile()" @click="editFile()">
+          Edit
+        </li>
+        <li
+          id="open-in-app"
+          v-for="app in availableApps"
+          v-on:keyup.enter="appOpen(app.name)"
+          v-on:click="appOpen(app.name)"
+        >
+          {{ app.contextMenuText }}
+        </li>
+        <li
+          id="download-folder"
+          v-if="canOpen"
+          @keyup.enter="downloadAll"
+          @click="downloadAll"
+        >
+          Download
+        </li>
+        <li id="rename-file" v-if="isWritable" @keyup.enter="rename" @click="rename">
+          Rename
+        </li>
+        <li
+          id="delete-file"
+          v-if="isWritable"
+          @keyup.enter="deleteFile"
+          @click="deleteFile"
+        >
+          Delete
+        </li>
+        <li id="copy-file" v-if="allowCopy" @keyup.enter="copy" @click="copy">Copy</li>
+        <li id="cut-file" v-if="isWritable" @keyup.enter="cut" @click="cut">Cut</li>
+        <li id="paste-file" v-if="isPasteAvailable" @keyup.enter="paste" @click="paste">
+          Paste
+        </li>
+        <li
+          id="share-file"
+          v-if="allowShare"
+          @keyup.enter="showShareWith"
+          @click="showShareWith"
+        >
+          Share
+        </li>
+        <li
+          id="zip-folder"
+          v-if="allowDownloadFolder"
+          @keyup.enter="zipAndDownload"
+          @click="zipAndDownload"
+        >
+          Download as Zip
+        </li>
+        <li
+          id="create-thumbnail"
+          v-if="isWritable && canCreateThumbnail"
+          @keyup.enter="createThumbnail"
+          @click="createThumbnail"
+        >
+          Create Thumbnail
+        </li>
+        <li
+          id="folder-props"
+          v-if="allowViewFolderProperties"
+          @keyup.enter="viewFolderProperties"
+          @click="viewFolderProperties"
+        >
+          Properties
+        </li>
+        <li
+          id="add-to-launcher"
+          v-if="allowAddingToLauncher"
+          @keyup.enter="addToLauncher"
+          @click="addToLauncher"
+        >
+          Add to Launcher
+        </li>
+        <li id="app-run" v-if="isInstallable" @keyup.enter="runApp()" @click="runApp()">
+          Run App
+        </li>
+        <li
+          id="app-install"
+          v-if="isInstallable"
+          @keyup.enter="installApp()"
+          @click="installApp()"
+        >
+          Install App
+        </li>
+      </DriveMenu>
+    </transition>
 
-		<transition name="drop">
-			<DriveMenu
-				ref="driveMenu"
-				v-if="viewMenu"
-				@closeMenu="closeMenu()"
-			>
-				<li id='gallery' v-if="canOpen && !isMarkdown && !isHTML && !hexViewerAlternativeAvailable" @keyup.enter="viewFile()" @click="viewFile()">View</li>
-				<li id='view-markdown' v-if="isMarkdown" @keyup.enter="viewFile()" @click="viewFile()">View</li>
-				<li id='edit-markdown' v-if="isMarkdown" @keyup.enter="editFile()" @click="editFile()">Edit</li>
-				<li id='view-html' v-if="isHTML && isHTMLViewable" @keyup.enter="viewFile()" @click="viewFile()">View</li>
-				<li id='edit-html' v-if="isHTML" @keyup.enter="editFile()" @click="editFile()">Edit</li>
-				<li id='open-in-app' v-for="app in availableApps" v-on:keyup.enter="appOpen(app.name)" v-on:click="appOpen(app.name)">{{app.contextMenuText}}</li>
-				<li id='download-folder' v-if="canOpen" @keyup.enter="downloadAll"  @click="downloadAll">Download</li>
-				<li id='rename-file' v-if="isWritable" @keyup.enter="rename"  @click="rename">Rename</li>
-				<li id='delete-file' v-if="isWritable" @keyup.enter="deleteFiles"  @click="deleteFiles">Delete</li>
-				<li id='copy-file' v-if="allowCopy" @keyup.enter="copy"  @click="copy">Copy</li>
-				<li id='cut-file' v-if="isWritable" @keyup.enter="cut"  @click="cut">Cut</li>
-				<li id='paste-file' v-if="isPasteAvailable" @keyup.enter="paste"  @click="paste">Paste</li>
-				<li id='share-file' v-if="allowShare" @keyup.enter="showShareWith"  @click="showShareWith">Share</li>
-				<li id='zip-folder' v-if="allowDownloadFolder" @keyup.enter="zipAndDownload"  @click="zipAndDownload">Download as Zip</li>
-				<li id='create-thumbnail' v-if="isWritable && canCreateThumbnail" @keyup.enter="createThumbnail"  @click="createThumbnail">Create Thumbnail</li>
-				<li id='folder-props' v-if="allowViewFolderProperties" @keyup.enter="viewFolderProperties"  @click="viewFolderProperties">Properties</li>
-				<li id='add-to-launcher' v-if="allowAddingToLauncher" @keyup.enter="addToLauncher"  @click="addToLauncher">Add to Launcher</li>
-                <li id='app-run' v-if="isInstallable" @keyup.enter="runApp()" @click="runApp()">Run App</li>
-                <li id='app-install' v-if="isInstallable" @keyup.enter="installApp()" @click="installApp()">Install App</li>
+    <Gallery
+      v-if="showGallery"
+      @hide-gallery="back()"
+      :files="sortedFiles"
+      :initial-file-name="appArgs.filename"
+    >
+    </Gallery>
 
-			</DriveMenu>
-		</transition>
+    <Hex
+      v-if="showHexViewer"
+      v-on:hide-hex-viewer="back()"
+      :file="selectedFiles[0]"
+      :context="context"
+    >
+    </Hex>
+    <Pdf
+      v-if="showPdfViewer"
+      v-on:hide-pdf-viewer="back()"
+      :file="selectedFiles[0]"
+      :context="context"
+    >
+    </Pdf>
+    <CodeEditor
+      v-if="showCodeEditor"
+      v-on:hide-code-editor="back()"
+      v-on:update-refresh="forceUpdate++"
+      :file="selectedFiles[0]"
+      :context="context"
+    >
+    </CodeEditor>
+    <Markdown
+      v-if="showMarkdownViewer"
+      v-on:hide-markdown-viewer="showDrive()"
+      :propAppArgs="appArgs"
+    >
+    </Markdown>
+    <Identity
+      v-if="showIdentityProof"
+      v-on:hide-identity-proof="back()"
+      :file="selectedFiles[0]"
+      :context="context"
+    >
+    </Identity>
 
-		<Gallery
-			v-if="showGallery"
-			@hide-gallery="back()"
-			:files="sortedFiles"
-			:initial-file-name="appArgs.filename">
-		</Gallery>
-
-		<Hex
-			v-if="showHexViewer"
-			v-on:hide-hex-viewer="back()"
-			:file="selectedFiles[0]"
-			:context="context">
-		</Hex>
-		<Pdf
-			v-if="showPdfViewer"
-			v-on:hide-pdf-viewer="back()"
-			:file="selectedFiles[0]"
-			:context="context">
-		</Pdf>
-		<CodeEditor
-			v-if="showCodeEditor"
-			v-on:hide-code-editor="back()"
-			v-on:update-refresh="forceUpdate++"
-			:file="selectedFiles[0]"
-			:context="context">
-		</CodeEditor>
-        <Markdown
-            v-if="showMarkdownViewer"
-            v-on:hide-markdown-viewer="showDrive()"
-            :propAppArgs = "appArgs">
-        </Markdown>
-                <Identity
-                    v-if="showIdentityProof"
-                    v-on:hide-identity-proof="back()"
-                    :file="selectedFiles[0]"
-                    :context="context">
-                </Identity>
-
-		<Share
-			v-if="showShare"
-			v-on:hide-share-with="closeShare"
-			v-on:update-shared-refresh="forceSharedRefreshWithUpdate++"
-			:data="sharedWithData"
-			:fromApp="fromApp"
-			:displayName="displayName"
-			:allowReadWriteSharing="allowReadWriteSharing"
-			:allowCreateSecretLink="allowCreateSecretLink"
-			:files="filesToShare"
-			:path="pathToFile"
-			:currentDir="currentDir"
-			:messages="messages">
-		</Share>
-		<Search
-			v-if="showSearch"
-			v-on:hide-search="closeSearch"
-			:path="searchPath"
-			:navigateToAction="navigateToAction"
-			:viewAction="viewAction"
-			:context="context">
-		</Search>
-        <AppRunner
-            v-if="showAppRunner"
-            v-on:hide-app-run="closeAppRunner"
-            :appPropsFile="selectedFiles[0]">
-        </AppRunner>
-        <AppInstall
-            v-if="showAppInstallation"
-            v-on:hide-app-installation="closeAppInstallation"
-            :appInstallSuccessFunc="appInstallSuccess"
-            :appPropsFile="selectedFiles[0]"
-            :installFolder="getPath">
-        </AppInstall>
-        <AppSandbox
-            v-if="showAppSandbox"
-            v-on:hide-app-sandbox="closeAppSandbox(true)"
-            v-on:close-app-sandbox="closeAppSandbox(false)"
-            v-on:refresh="forceSharedRefreshWithUpdate++"
-            :sandboxAppName="sandboxAppName"
-            :currentFile="selectedFiles[0]"
-            :currentPath="getPath">
-        </AppSandbox>
-        <Replace
-            v-if="showReplace"
-            v-on:hide-replace="showReplace = false"
-            :replace_message='replace_message'
-            :replace_body="replace_body"
-            :consumer_cancel_func="replace_consumer_cancel_func"
-            :consumer_func="replace_consumer_func"
-            :showApplyAll=replace_showApplyAll>
-        </Replace>
-        <Warning
-            v-if="showWarning"
-            v-on:hide-warning="closeWarning"
-            :warning_message='warning_message'
-            :warning_body="warning_body"
-            :consumer_func="warning_consumer_func">
-        </Warning>
-		<Error
-			v-if="showError"
-			@hide-error="showError = false"
-			:title="errorTitle"
-			:body="errorBody"
-			:messageId="messageId">
-		</Error>
-        <Confirm
-                v-if="showConfirm"
-                v-on:hide-confirm="showConfirm = false"
-                :confirm_message='confirm_message'
-                :confirm_body="confirm_body"
-                :consumer_cancel_func="confirm_consumer_cancel_func"
-                :consumer_func="confirm_consumer_func">
-        </Confirm>
-	</article>
+    <Share
+      v-if="showShare"
+      v-on:hide-share-with="closeShare"
+      v-on:update-shared-refresh="forceSharedRefreshWithUpdate++"
+      :data="sharedWithData"
+      :fromApp="fromApp"
+      :displayName="displayName"
+      :allowReadWriteSharing="allowReadWriteSharing"
+      :allowCreateSecretLink="allowCreateSecretLink"
+      :files="filesToShare"
+      :path="pathToFile"
+      :currentDir="currentDir"
+      :messages="messages"
+    >
+    </Share>
+    <Search
+      v-if="showSearch"
+      v-on:hide-search="closeSearch"
+      :path="searchPath"
+      :navigateToAction="navigateToAction"
+      :viewAction="viewAction"
+      :context="context"
+    >
+    </Search>
+    <AppRunner
+      v-if="showAppRunner"
+      v-on:hide-app-run="closeAppRunner"
+      :appPropsFile="selectedFiles[0]"
+    >
+    </AppRunner>
+    <AppInstall
+      v-if="showAppInstallation"
+      v-on:hide-app-installation="closeAppInstallation"
+      :appInstallSuccessFunc="appInstallSuccess"
+      :appPropsFile="selectedFiles[0]"
+      :installFolder="getPath"
+    >
+    </AppInstall>
+    <AppSandbox
+      v-if="showAppSandbox"
+      v-on:hide-app-sandbox="closeAppSandbox(true)"
+      v-on:close-app-sandbox="closeAppSandbox(false)"
+      v-on:refresh="forceSharedRefreshWithUpdate++"
+      :sandboxAppName="sandboxAppName"
+      :currentFile="selectedFiles[0]"
+      :currentPath="getPath"
+    >
+    </AppSandbox>
+    <Replace
+      v-if="showReplace"
+      v-on:hide-replace="showReplace = false"
+      :replace_message="replace_message"
+      :replace_body="replace_body"
+      :consumer_cancel_func="replace_consumer_cancel_func"
+      :consumer_func="replace_consumer_func"
+      :showApplyAll="replace_showApplyAll"
+    >
+    </Replace>
+    <Warning
+      v-if="showWarning"
+      v-on:hide-warning="closeWarning"
+      :warning_message="warning_message"
+      :warning_body="warning_body"
+      :consumer_func="warning_consumer_func"
+    >
+    </Warning>
+    <Error
+      v-if="showError"
+      @hide-error="showError = false"
+      :title="errorTitle"
+      :body="errorBody"
+      :messageId="messageId"
+    >
+    </Error>
+    <Confirm
+      v-if="showConfirm"
+      v-on:hide-confirm="showConfirm = false"
+      :confirm_message="confirm_message"
+      :confirm_body="confirm_body"
+      :consumer_cancel_func="confirm_consumer_cancel_func"
+      :consumer_func="confirm_consumer_func"
+    >
+    </Confirm>
+  </article>
 </template>
 
 <script>
@@ -250,6 +406,7 @@ const Markdown = require("../components/viewers/Markdown.vue");
 const Hex = require("../components/viewers/Hex.vue");
 const ProgressBar = require("../components/drive/ProgressBar.vue");
 const DriveMenu = require("../components/drive/DriveMenu.vue");
+const DriveSelected = require("../components/drive/DriveSelected.vue");
 
 const AppPrompt = require("../components/prompt/AppPrompt.vue");
 const NewImageFilePrompt = require("../components/NewImageFilePrompt.vue");
@@ -280,6 +437,7 @@ module.exports = {
 		DriveGridDrop,
 		DriveTable,
 		DriveMenu,
+        DriveSelected,
 		Error,
 		AppPrompt,
 		NewImageFilePrompt,
@@ -310,6 +468,7 @@ module.exports = {
 			selectedFiles: [],
 			url: null,
 			viewMenu: false,
+			viewPasteMenu: false,
 			showShare: false,
 			sharedWithState: null,
 			sharedWithData: {
@@ -319,7 +478,7 @@ module.exports = {
 			forceSharedRefreshWithUpdate: 0,
 
                         appArgs: {},
-                    
+
 			showAdmin: false,
 			showGallery: false,
 			showIdentityProof: false,
@@ -392,7 +551,8 @@ module.exports = {
             launcherApp: null,
             uploadProgressQueue: { entries:[]},
             executingUploadProgressCommands: false,
-            progressBarUpdateFrequency: 50
+            progressBarUpdateFrequency: 50,
+            zipAndDownloadFoldersCount: 0
 		};
 	},
 	mixins:[downloaderMixins, router, zipMixin, launcherMixin],
@@ -418,7 +578,7 @@ module.exports = {
 			'getPath'
 		]),
 
-		sortedFiles() {
+        sortedFiles() {
 			if (this.files == null) {
 				return [];
 			}
@@ -528,17 +688,6 @@ module.exports = {
             } else {
                 return false;
             }
-		},
-		canOpen() {
-			try {
-				if (this.currentDir == null)
-					return false;
-				if (this.selectedFiles.length != 1)
-					return false;
-				return !this.selectedFiles[0].isDirectory()
-			} catch (err) {
-				return false;
-			}
 		},
         canOpen() {
             try {
@@ -678,26 +827,16 @@ module.exports = {
 			}
 			return true;
 		},
+		isPasteOptionAvailable() {
+		    let singlePasteOption = this.isPasteToFolderAvailable();
+		    let multiPasteOption = this.isPasteToFolderMultiSelectAvailable(this.currentDir);
+		    if (multiPasteOption) {
+    		    this.multiSelectTargetFolder = this.currentDir;
+		    }
+		    return singlePasteOption || multiPasteOption;
+		},
 		isPasteAvailable() {
-			if (this.currentDir == null)
-				return false;
-
-			if (typeof (this.clipboard) == undefined || this.clipboard == null || this.clipboard.op == null || typeof (this.clipboard.op) == "undefined")
-				return false;
-
-			if (this.selectedFiles.length > 1)
-				return false;
-			var target = this.selectedFiles.length == 1 ? this.selectedFiles[0] : this.currentDir;
-			
-			if (target == null) {
-				return false;
-			}
-
-			if (this.clipboard.fileTreeNode != null && this.clipboard.fileTreeNode.samePointer(target)) {
-				return false;
-			}
-
-			return target.isWritable() && target.isDirectory();
+			return this.isPasteToFolderAvailable();
 		},
 	},
 
@@ -898,7 +1037,7 @@ module.exports = {
 				this.updateUsage()
                 this.updateQuota()
                 this.updateMirrorBatId()
-                            
+
 				this.context.getPaymentProperties(false).thenApply(function (paymentProps) {
 					if (paymentProps.isPaid()) {
 						that.paymentProperties = paymentProps;
@@ -1152,6 +1291,8 @@ module.exports = {
                     if (selectedFilename != null) {
                         that.selectedFiles = that.files.filter(f => f.getName() == selectedFilename);
                         that.openFile();
+                    } else {
+                        that.selectedFiles = [];
                     }
                     if (callback != null) {
                         callback();
@@ -1253,9 +1394,9 @@ module.exports = {
 		},
 
 		getMirrorBatId(file) {
-			return file.getOwnerName() == this.context.username ? this.mirrorBatId : java.util.Optional.empty()				
+			return file.getOwnerName() == this.context.username ? this.mirrorBatId : java.util.Optional.empty()
 		},
-				
+
 		mkdir(name) {
 			this.showSpinner = true;
 			var that = this;
@@ -1287,13 +1428,143 @@ module.exports = {
 	showToastError: function(message) {
             this.$toast.error(message, {timeout:false});
         },
-	zipAndDownload() {
-            if (this.isStreamingAvailable) {
-                this.zipAndDownloadFolder();
-            } else {
-                this.showToastError("Download as Zip only available where Streaming supported (like Chrome)");
+    zipAndDownloadMultiSelect() {
+        if (this.currentDir == null)
+            return false;
+        if (this.isStreamingAvailable) {
+            this.zipAndDownloadFolders();
+        } else {
+            this.showToastError("Download as Zip only available where Streaming supported (like Chrome)");
+        }
+    },
+    reduceTotalSize(index, path, files, accumTotalSize, stats, future) {
+        let that = this;
+        if (files.length == index) {
+            var folderCount = 0;
+            for(var i = 0; i < files.length; i++) {
+                if (files[i].isDirectory()) {
+                    folderCount = folderCount + 1;
+                }
             }
-        },
+            this.confirmZipAndDownloadOfFolders(folderCount, stats,
+                () => {
+                    that.showConfirm = false;
+                    future.complete(true);
+                },
+                () => {
+                    that.showConfirm = false;
+                    future.complete(false);
+                }
+            );
+        } else {
+            let file = files[index];
+            this.calculateTotalSize(file, path).thenApply(statistics => {
+                let updatedAccumTotalSize = statistics.actualSize + accumTotalSize;
+                stats.push(statistics);
+                if (file.isDirectory() && statistics.fileCount == 0) {
+                    that.$toast('Folder:' + file.getName() + ' contains no files. Nothing to download');
+                    future.complete(false);
+                }else if (updatedAccumTotalSize > 1024 * 1024 * 1024 * 4) { //4GiB
+                    that.$toast('Download of a Folder greater than 4GiB in size is not supported');
+                    future.complete(false);
+                } else {
+                    that.reduceTotalSize(index + 1, path, files, updatedAccumTotalSize, stats, future);
+                }
+            });
+        }
+    },
+    reduceCollectFilesToZip(index, path, files, accumulatorList, futureCollectFiles) {
+        let that = this;
+        if (files.length == index) {
+            futureCollectFiles.complete(true);
+        } else {
+            let file = files[index];
+            let accumulator = {directoryMap: new Map(), files: []};
+            if (file.isDirectory()) {
+                let future = peergos.shared.util.Futures.incomplete();
+                that.collectFilesToZip(path, file, path + file.getFileProperties().name, accumulator, future);
+                future.thenApply(allFiles => {
+                    for(var i = 0; i < allFiles.files.length; i++) {
+                        accumulatorList.push(allFiles.files[i]);
+                    }
+                    that.reduceCollectFilesToZip(index +1, path, files, accumulatorList, futureCollectFiles);
+                }).exceptionally(function (throwable) {
+                    that.$toast.error(throwable.getMessage())
+                    futureCollectFiles.complete(false);
+                })
+            } else {
+                accumulatorList.push({path: '', file: file});
+                that.reduceCollectFilesToZip(index +1, path, files, accumulatorList, futureCollectFiles);
+            }
+        }
+    },
+    confirmZipAndDownloadOfFolders(numberOfFoldersSelected, statisticsList, continueFunction, cancelFunction) {
+        var folderCount = numberOfFoldersSelected;
+        var fileCount = 0;
+        var actualSize = 0;
+        for(var i = 0; i < statisticsList.length; i++) {
+            folderCount = folderCount + statisticsList[i].folderCount;
+            fileCount = fileCount + statisticsList[i].fileCount;
+            actualSize = actualSize + statisticsList[i].actualSize;
+        }
+        this.confirm_message='Are you sure you want to download selected items?';
+        this.confirm_body='Folder(s): ' + folderCount
+                + ', File(s): ' + fileCount
+                + ', Total size: ' + helpers.convertBytesToHumanReadable(actualSize);
+        this.confirm_consumer_cancel_func = cancelFunction;
+        this.confirm_consumer_func = continueFunction;
+        this.showConfirm = true;
+    },
+    zipAndDownloadFolders() {
+        this.showSpinner = true;
+        let that = this;
+        let futureTotalSize = peergos.shared.util.Futures.incomplete();
+        let files = this.selectedFiles.slice();
+        let path = this.getPath;
+        let statisticsList = [];
+        that.reduceTotalSize(0, path, files, 0, statisticsList, futureTotalSize);
+        futureTotalSize.thenApply(res => {
+            that.showSpinner = false;
+            if (res) {
+                that.showSpinner = true;
+                var actualSize = 0;
+                for(var i = 0; i < statisticsList.length; i++) {
+                    actualSize = actualSize + statisticsList[i].actualSize;
+                }
+                let progress = {
+                    show: true,
+                    title: 'Downloading selected folders',
+                    done: 0,
+                    max: actualSize
+                }
+                let zipFilename = 'archive-' + that.zipAndDownloadFoldersCount + '.zip';
+                that.zipAndDownloadFoldersCount = that.zipAndDownloadFoldersCount + 1;
+                let accumulator = {directoryMap: new Map(), files: []};
+                let future = peergos.shared.util.Futures.incomplete();
+                let allFilesList = [];
+                that.$toast({component: ProgressBar,props: progress}, { icon: false , timeout:false, id: zipFilename});
+                that.reduceCollectFilesToZip(0, path, files, allFilesList, future);
+                future.thenApply(res => {
+                    that.showSpinner = false;
+                    if (res) {
+                        that.zipFiles(zipFilename, allFilesList, progress).thenApply(res2 => {
+                            console.log('zip complete');
+                            that.selectedFiles = [];
+                        }).exceptionally(function (throwable) {
+                            that.$toast.error(throwable.getMessage())
+                        });
+                    }
+                });
+            }
+        });
+    },
+	zipAndDownload() {
+        if (this.isStreamingAvailable) {
+            this.zipAndDownloadFolder();
+        } else {
+            this.showToastError("Download as Zip only available where Streaming supported (like Chrome)");
+        }
+    },
 	zipAndDownloadFolder() {
             if (this.selectedFiles.length != 1)
                 return;
@@ -1309,7 +1580,7 @@ module.exports = {
                     that.$toast('Download of a Folder greater than 4GiB in size is not supported');
                 } else {
                     let filename = file.getName();
-                    this.confirmZipAndDownloadOfFolder(filename, statistics,
+                    that.confirmZipAndDownloadOfFolder(filename, statistics,
                         () => {
                             that.showConfirm = false;
                             var progress = {
@@ -1879,33 +2150,226 @@ module.exports = {
 			return null;
 		},
 
-		copy() {
-			if (this.selectedFiles.length != 1)
+		copyMultiSelect() {
+			if (this.selectedFiles.length < 1)
 				return;
-			var file = this.selectedFiles[0];
-
-			this.clipboard = {
-				fileTreeNode: file,
+			let files = this.selectedFiles.slice();
+			this.clipboardMultiSelect = {
+				fileTreeNodes: files,
 				op: "copy",
 				path: this.getPath
 			};
-			this.closeMenu();
 		},
 
-		cut() {
-			if (this.selectedFiles.length != 1)
+		cutMultiSelect() {
+			if (this.selectedFiles.length < 1)
 				return;
-			var file = this.selectedFiles[0];
-
-			this.clipboard = {
+			let files = this.selectedFiles.slice();
+			this.clipboardMultiSelect = {
 				parent: this.currentDir,
-				fileTreeNode: file,
+				fileTreeNodes: files,
 				op: "cut",
 				path: this.getPath
 			};
-			this.closeMenu();
 		},
 
+        copy() {
+            if (this.selectedFiles.length != 1)
+                return;
+            var file = this.selectedFiles[0];
+            this.clipboard = {
+                fileTreeNode: file,
+                op: "copy",
+                path: this.getPath
+            };
+            this.closeMenu();
+        },
+
+        cut() {
+            if (this.selectedFiles.length != 1)
+                return;
+            var file = this.selectedFiles[0];
+
+            this.clipboard = {
+                parent: this.currentDir,
+                fileTreeNode: file,
+                op: "cut",
+                path: this.getPath
+            };
+            this.closeMenu();
+        },
+
+        reduceMove(index, path, parent, target, fileTreeNodes, future) {
+            let that = this;
+            if (index == fileTreeNodes.length) {
+                future.complete(true);
+            } else {
+                let fileTreeNode = fileTreeNodes[index];
+                let name = fileTreeNode.getFileProperties().name;
+                let filePath = peergos.client.PathUtils.toPath(path, name);
+                target.getLatest(this.context.network).thenApply(updatedTarget => {
+                    parent.getLatest(that.context.network).thenApply(updatedParent => {
+                        fileTreeNode.moveTo(updatedTarget, updatedParent, filePath, that.context).thenApply(() => {
+                            that.updateCurrentDirectory(null , () =>
+                                that.reduceMove(index + 1, path, updatedParent, updatedTarget, fileTreeNodes, future)
+                            );
+                        }).exceptionally(function (throwable) {
+                            that.updateCurrentDirectory(null , () => {
+                                that.errorTitle = 'Error moving file: ' + name;
+                                that.errorBody = throwable.getMessage();
+                                that.showError = true;
+                                future.complete(false);
+                            });
+                        });
+                    });
+                });
+            }
+        },
+        reduceCopy(index, fileTreeNodes, target, future) {
+            let that = this;
+            if (index == fileTreeNodes.length) {
+                future.complete(true);
+            } else {
+                let fileTreeNode = fileTreeNodes[index];
+                target.getLatest(this.context.network).thenApply(updatedTarget => {
+                    fileTreeNode.copyTo(updatedTarget, that.context).thenApply(function () {
+                        that.updateUsage(usageBytes => {
+                            that.updateCurrentDirectory(null , () =>
+                                that.reduceCopy(index + 1, fileTreeNodes, updatedTarget, future)
+                            );
+                        });
+                    }).exceptionally(function (throwable) {
+                        that.updateCurrentDirectory(null , () => {
+                            that.errorTitle = 'Error copying file: ' + fileTreeNode.getFileProperties().name;
+                            that.errorBody = throwable.getMessage();
+                            that.showError = true;
+                            future.complete(false);
+                        });
+                    });
+                });
+            }
+        },
+        reduceSizeCalculation(index, path, fileTreeNodes, accumApparentSize, sizeFuture) {
+            let that = this;
+            if (index == fileTreeNodes.length) {
+                sizeFuture.complete(true);
+            } else {
+                let fileTreeNode = fileTreeNodes[index];
+                this.calculateTotalSize(fileTreeNode, path).thenApply(statistics => {
+                    let updatedAccumApparentSize = accumApparentSize + statistics.apparentSize;
+                    if (Number(that.quotaBytes.toString()) < updatedAccumApparentSize) {
+                        let errMsg = "File copy operation exceeds total space\n" + "Please upgrade to get more space";
+                        that.$toast.error(errMsg, {timeout:false});
+                        sizeFuture.complete(false);
+                    } else {
+                        let spaceAfterOperation = that.checkAvailableSpace(updatedAccumApparentSize);
+                        if (spaceAfterOperation < 0) {
+                            let errMsg = "File copy operation exceeds available space\n" + "Please free up " + helpers.convertBytesToHumanReadable('' + -spaceAfterOperation) + " and try again";
+                            that.$toast.error(errMsg, {timeout:false})
+                            that.showSpinner = false;
+                            sizeFuture.complete(false);
+                        } else {
+                            that.reduceSizeCalculation(index + 1, path, fileTreeNodes, updatedAccumApparentSize, sizeFuture);
+                        }
+                    }
+                });
+            }
+        },
+        isPasteToFolderAvailable() {
+            if (this.currentDir == null)
+                return false;
+
+            if (typeof (this.clipboard) == undefined || this.clipboard == null || this.clipboard.op == null || typeof (this.clipboard.op) == "undefined")
+                return false;
+
+            if (this.selectedFiles.length > 1)
+                return false;
+            var target = this.selectedFiles.length == 1 ? this.selectedFiles[0] : this.currentDir;
+
+            if (target == null) {
+                return false;
+            }
+
+            if (this.clipboard.fileTreeNode != null && this.clipboard.fileTreeNode.samePointer(target)) {
+                return false;
+            }
+
+            return target.isWritable() && target.isDirectory();
+        },
+        pasteToFolder(e) {
+            var target = this.multiSelectTargetFolder;
+            if (target == null) {
+                this.paste(e);
+            } else {
+                this.pasteMultiSelect(e);
+            }
+        },
+		pasteMultiSelect(e, retrying) {
+			var target = this.multiSelectTargetFolder;
+            if (target == null) {
+                return;
+            }
+			var that = this;
+			if (!target.isDirectory()) {
+			    return;
+            }
+            let clipboard = this.clipboardMultiSelect;
+            if (typeof (clipboard) == undefined || typeof (clipboard.op) == "undefined")
+                return;
+            for(var i=0; i < clipboard.fileTreeNodes.length; i++) {
+                let fileTreeNode = clipboard.fileTreeNodes[i];
+                if (fileTreeNode.samePointer(target)) {
+                    that.$toast.error('Destination folder is same as Source folder', {timeout:false})
+                    return;
+                }
+            }
+            this.closePasteMenu();
+            that.showSpinner = true;
+            if (clipboard.op == "cut") {
+                let future = peergos.shared.util.Futures.incomplete();
+                this.reduceMove(0, that.path, clipboard.parent, target, clipboard.fileTreeNodes, future);
+                future.thenApply(res => {
+                    if (res) {
+                        that.showSpinner = false;
+                        clipboard.op = null;
+                        that.selectedFiles = [];
+                    }
+                });
+            } else if (clipboard.op == "copy") {
+                if (this.quotaBytes.toString() == '0') {
+                    if (retrying == null) {
+                        this.updateQuota(quotaBytes => {
+                            if (quotaBytes != null) {
+                                that.updateUsage(usageBytes => {
+                                    that.pasteMultiSelect(e, true);
+                                });
+                            } else {
+                                that.pasteMultiSelect(e, true);
+                            }
+                        });
+                    } else {
+                        this.$toast.error("Client Offline!", {timeout:false});
+                        this.showSpinner = false;
+                    }
+                } else {
+                    let sizeFuture = peergos.shared.util.Futures.incomplete();
+                    this.reduceSizeCalculation(0, clipboard.path, clipboard.fileTreeNodes, 0, sizeFuture);
+                    sizeFuture.thenApply(res => {
+                        if (res) {
+                            let copyFuture = peergos.shared.util.Futures.incomplete();
+                            that.reduceCopy(0, clipboard.fileTreeNodes, target, copyFuture);
+                            copyFuture.thenApply(res2 => {
+                                if (res2) {
+                                    that.showSpinner = false;
+                                    clipboard.op = null;
+                                    that.selectedFiles = [];
+                                }
+                            });
+                        }
+                    });
+                }
+            }
+		},
 		paste(e, retrying) {
 			if (this.selectedFiles.length > 1)
 				return;
@@ -1954,7 +2418,7 @@ module.exports = {
                                 }
                             });
                         } else {
-                            this.$toast.error("Client Offline!", {timeout:false, id: 'upload'});
+                            this.$toast.error("Client Offline!", {timeout:false});
                             this.showSpinner = false;
                         }
                     } else {
@@ -2091,6 +2555,45 @@ module.exports = {
 			this.showSpinner = true;
 			this.updateHistory("Drive", path, {filename:""});
 		},
+        reduceDownload(index, files, future) {
+            let that = this;
+            if (index == files.length) {
+                future.complete(true);
+            } else {
+                let file = files[index];
+                that.downloadFile(file).thenApply(res => {
+                    setTimeout(() => that.reduceDownload(index + 1, files, future), 10);//browser download may fail on tiny files if timeout not used
+                });
+            }
+        },
+        downloadAllMultiSelect() {
+            if (this.currentDir == null)
+                return false;
+            if (this.selectedFiles.length == 0)
+                return;
+            if (!this.isStreamingAvailable) {
+                this.showToastError("Downloading multiple files only available where Streaming supported (like Chrome)");
+                return;
+            }
+            let foundFolder = false;
+            for (var i = 0; i < this.selectedFiles.length; i++) {
+                let file = this.selectedFiles[i];
+                if (file.isDirectory()) {
+                    foundFolder = true;
+                }
+            }
+            let that = this;
+            if (foundFolder) {
+                that.zipAndDownloadMultiSelect();
+            } else {
+                let files = this.selectedFiles.slice();
+                let future = peergos.shared.util.Futures.incomplete();
+                this.reduceDownload(0,files, future);
+                future.thenApply(res => {
+                    that.selectedFiles = [];
+                });
+            }
+        },
 		downloadAll() {
 			if (this.selectedFiles.length == 0)
 				return;
@@ -2116,7 +2619,7 @@ module.exports = {
 		    this.closeMenu();
 		    if (this.selectedFiles.length == 0)
 			return;
-                    
+
 		    var file = this.selectedFiles[0];
 		    var filename = file.getName();
 
@@ -2125,7 +2628,7 @@ module.exports = {
                     this.appArgs = args;
                     this.openFileOrDir(app, this.getPath, args, writable)
 		},
-            
+
 		navigateOrDownload(file) {
 			if (this.showSpinner) // disable user input whilst refreshing
 				return;
@@ -2252,19 +2755,39 @@ module.exports = {
            }
         },
 
+        isPasteToFolderMultiSelectAvailable(target) {
+            if (this.currentDir == null)
+                return false;
+
+            if (typeof (this.clipboardMultiSelect) == undefined || this.clipboardMultiSelect == null ||
+                this.clipboardMultiSelect.op == null || typeof (this.clipboardMultiSelect.op) == "undefined")
+                return false;
+            if (target == null)
+                return false;
+            return target.isWritable() && target.isDirectory();
+        },
+
 		openMenu(file) {
 			// console.log(file)
-			if (file) {
-				this.selectedFiles = [file];
+			if (this.isPasteToFolderMultiSelectAvailable(file)) {
+                this.multiSelectTargetFolder = file;
+                this.viewPasteMenu = true
+                Vue.nextTick(() => {
+                    this.$refs.drivePasteMenu.$el.focus()
+                });
 			} else {
-				this.selectedFiles = [this.currentDir];
-			}
+			    this.multiSelectTargetFolder = null;
+                if (file) {
+                    this.selectedFiles = [file];
+                } else {
+                    this.selectedFiles = [this.currentDir];
+                }
 
-			this.viewMenu = true
-
-			Vue.nextTick(() => {
-				this.$refs.driveMenu.$el.focus()
-			});
+                this.viewMenu = true
+                Vue.nextTick(() => {
+                    this.$refs.driveMenu.$el.focus()
+                });
+            }
 		},
 
 		createNewApp() {
@@ -2467,27 +2990,60 @@ module.exports = {
 			this.showPrompt = true;
 		},
 
+		deleteFilesMultiSelect() {
+			var selectedCount = this.selectedFiles.length;
+			if (selectedCount == 0)
+				return;
+            var that = this;
+            this.confirmDeleteMultiSelect(selectedCount, (prompt_result) => {
+                that.showPrompt = false;
+                if (prompt_result != null) {
+                    that.showSpinner = true;
+                    let parent = that.currentDir;
+                    let filesToDelete = peergos.client.JsUtil.asList(that.selectedFiles.slice());
+                    let path = that.getPath;
+                    let parentPath = peergos.client.PathUtils.directoryToPath(path.split('/').filter(n => n.length > 0));
+                    peergos.shared.user.fs.FileWrapper.deleteChildren(parent, filesToDelete, parentPath, that.context).thenApply(updatedParent => {
+                        that.updateUsage(usageBytes => {
+                            that.updateCurrentDirectory(null , () => {
+                                that.showSpinner = false;
+                                that.selectedFiles = [];
+                            });
+                        });
+                    }).exceptionally(function (throwable) {
+                        that.errorTitle = 'Error deleting files';
+                        that.errorBody = throwable.getMessage();
+                        that.showError = true;
+                        future.complete(false);
+                    });
+                }
+            });
+		},
 
-		deleteFiles() {
-			// console.log('deleteFiles:',this.selectedFiles.length )
+		confirmDeleteMultiSelect(fileCount, deleteFn) {
+			this.prompt_placeholder = null;
+			this.prompt_message = `Are you sure you want to delete ${fileCount} items?`;
+			this.prompt_value = '';
+			this.prompt_consumer_func = deleteFn;
+			// this.prompt_action = 'Delete'
+			this.showPrompt = true;
+		},
+
+		deleteFile() {
 			var selectedCount = this.selectedFiles.length;
 			if (selectedCount == 0)
 				return;
 
 			this.closeMenu();
+            var file = this.selectedFiles[0];
+            var that = this;
+            var parent = this.currentDir;
 
-			for (var i = 0; i < selectedCount; i++) {
-				var file = this.selectedFiles[i];
-				var that = this;
-				var parent = this.currentDir;
-
-				// console.log('deleteFiles:',file, parent, this.context )
-				this.confirmDelete(file, (prompt_result) => {
-				    if (prompt_result != null) {
-					    that.deleteOne(file, parent, this.context);
-					}
-				});
-			}
+            this.confirmDelete(file, (prompt_result) => {
+                if (prompt_result != null) {
+                    that.deleteOne(file, parent, this.context);
+                }
+            });
 		},
 
 		deleteOne(file, parent, context) {
@@ -2528,8 +3084,23 @@ module.exports = {
             this.showNewAppPrompt = false;
         },
 		closeMenu() {
-			this.viewMenu = false
+		    this.viewMenu = false
 		},
+		closePasteMenu() {
+			this.viewPasteMenu = false
+		},
+        isSelected(file) {
+            return this.selectedFiles.findIndex(selected => selected == file) > -1
+        },
+        toggleSelection(file) {
+            let index = this.selectedFiles.findIndex(selected=> selected == file)
+            if (index > -1) {
+                this.selectedFiles.splice(index, 1)
+            } else {
+                this.selectedFiles.push(file)
+            }
+        }
+
 	},
 
 };
@@ -2537,19 +3108,19 @@ module.exports = {
 
 <style>
 .drive-view {
-    min-height: 100vh;
-    display: flex;
-    flex-direction: column;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
 }
 
 .dnd {
-    flex-grow: 1;
+  flex-grow: 1;
 }
 
 @media (max-width: 1024px) {
-	#dnd{
-		/* enable table scroll */
-		overflow-x:auto;
-	}
+  #dnd {
+    /* enable table scroll */
+    overflow-x: auto;
+  }
 }
 </style>
