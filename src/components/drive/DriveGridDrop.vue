@@ -1,5 +1,5 @@
 <template>
-	<figure class="grid-card drop">
+	<figure class="grid-card drop" @click="askForFiles()">
 		<AppIcon class="card__icon" icon="upload--72" />
 		<figcaption>Drop files here</figcaption>
 	</figure>
@@ -14,6 +14,11 @@ module.exports = {
     },
 	props: {
 	},
+    methods: {
+        askForFiles() {
+            document.getElementById('uploadFileInput').click();
+        },
+    },
 };
 </script>
 
