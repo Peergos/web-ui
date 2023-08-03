@@ -1,6 +1,5 @@
 <template>
 	<article 
-        v-longpress.prevent.stop="toggleSelection"
         class="grid-card" >
 
         <AppButton 
