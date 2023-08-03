@@ -2990,31 +2990,6 @@ module.exports = {
 			this.showPrompt = true;
 		},
 
-        reduceDelete(index, path, parent, selectedFilesForDeletion, future) {
-            let that = this;
-            if (index == selectedFilesForDeletion.length) {
-                future.complete(true);
-            } else {
-                let file = selectedFilesForDeletion[index];
-                let name = file.getFileProperties().name;
-                let filePath = peergos.client.PathUtils.toPath(path, name);
-                parent.getLatest(this.context.network).thenApply(updatedParent => {
-                    file.remove(updatedParent, filePath, that.context).thenApply(function (b) {
-                            that.updateUsage(usageBytes => {
-                                that.updateCurrentDirectory(null , () =>
-                                    that.reduceDelete(index + 1, path, parent, selectedFilesForDeletion, future)
-                                );
-                            });
-                    }).exceptionally(function (throwable) {
-                        that.errorTitle = 'Error deleting file: ' + file.getFileProperties().name;
-                        that.errorBody = throwable.getMessage();
-                        that.showError = true;
-                        future.complete(false);
-                    });
-                });
-            }
-        },
-
 		deleteFilesMultiSelect() {
 			var selectedCount = this.selectedFiles.length;
 			if (selectedCount == 0)
@@ -3025,12 +3000,21 @@ module.exports = {
                 if (prompt_result != null) {
                     that.showSpinner = true;
                     let parent = that.currentDir;
-                    let filesToDelete = that.selectedFiles.slice();
-                    let future = peergos.shared.util.Futures.incomplete();
-                    that.reduceDelete(0, that.path, parent, filesToDelete, future);
-                    future.thenApply(res => {
-                        that.showSpinner = false;
-                        that.selectedFiles = [];
+                    let filesToDelete = peergos.client.JsUtil.asList(that.selectedFiles.slice());
+                    let path = that.getPath;
+                    let parentPath = peergos.client.PathUtils.directoryToPath(path.split('/').filter(n => n.length > 0));
+                    peergos.shared.user.fs.FileWrapper.deleteChildren(parent, filesToDelete, parentPath, that.context).thenApply(updatedParent => {
+                        that.updateUsage(usageBytes => {
+                            that.updateCurrentDirectory(null , () => {
+                                that.showSpinner = false;
+                                that.selectedFiles = [];
+                            });
+                        });
+                    }).exceptionally(function (throwable) {
+                        that.errorTitle = 'Error deleting files';
+                        that.errorBody = throwable.getMessage();
+                        that.showError = true;
+                        future.complete(false);
                     });
                 }
             });
