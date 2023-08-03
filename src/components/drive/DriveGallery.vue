@@ -32,7 +32,8 @@ module.exports = {
 	    Warning,
 	},
 	data() {
-		return {
+	    return {
+                cache:{},
 		    showSpinner: false,
 		    fileIndex: 0,
 		    pinging: false,
@@ -234,6 +235,11 @@ module.exports = {
         },
         update() {
             let index = this.fileIndex;
+            if (this.cache[index] != null) {
+                this.updateMediaElement(index, this.cache[index]);
+                this.prefetch(index + 1);
+                return;
+            }
 			let file = this.showableFiles[this.fileIndex];
 			if (file.isDirectory()) return;
 			let props = file.getFileProperties();
@@ -326,7 +332,8 @@ module.exports = {
                             let url = window.URL.createObjectURL(blob);
     						that.updateMediaElement(index, url);
 							that.showSpinner = false;
-							console.log("Finished retrieving media of size " + data.length);
+						    console.log("Finished retrieving media of size " + data.length);
+                                                    that.prefetch(index + 1);
 						});
 				});
 			}
@@ -342,7 +349,35 @@ module.exports = {
             offset = offset + 1;
             data.set(uuidBytes, offset);
             return data;
-        },
+                },
+            prefetch(index) {
+                if (this.cache[index] != null)
+                    return;
+                if (index > this.showableFiles.length)
+                    return;
+                if (index - 10 > 0) // keep cache small
+                    this.cache[index-10] = null;
+                let file = this.showableFiles[index];
+		if (file.isDirectory()) return;
+		let props = file.getFileProperties();
+                // only prefetch small files
+                if (this.getFileSize(props) > 10 * 1024 * 1024)
+                    return
+                let that = this;
+                file.getInputStream(this.context.network, this.context.crypto, props.sizeHigh(), props.sizeLow(),
+				    function (read) {}
+				   ).thenCompose(function (reader) {
+				       let size = that.getFileSize(props);
+				       let data = convertToByteArray(new Int8Array(size));
+				       return reader.readIntoArray(data, 0, data.length)
+					   .thenApply(function (read) {
+                                               let type = file.getFileProperties().mimeType;
+                                               let blob = new Blob([data], { type: type });
+                                               let url = window.URL.createObjectURL(blob);
+    					       that.cache[index] = url;
+					   });
+				   });
+            },
 		isImage(file) {
 			if (file == null) return false;
 			let mimeType = file.getFileProperties().mimeType;
