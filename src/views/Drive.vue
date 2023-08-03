@@ -689,17 +689,6 @@ module.exports = {
                 return false;
             }
 		},
-		canOpen() {
-			try {
-				if (this.currentDir == null)
-					return false;
-				if (this.selectedFiles.length != 1)
-					return false;
-				return !this.selectedFiles[0].isDirectory()
-			} catch (err) {
-				return false;
-			}
-		},
         canOpen() {
             try {
                 if (this.currentDir == null)
@@ -3111,7 +3100,7 @@ module.exports = {
             this.showNewAppPrompt = false;
         },
 		closeMenu() {
-			this.viewMenu = false
+		    this.viewMenu = false
 		},
 		closePasteMenu() {
 			this.viewPasteMenu = false
