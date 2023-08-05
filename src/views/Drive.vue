@@ -1760,7 +1760,7 @@ module.exports = {
             if (this.isSecretLink && !this.currentDir.isWritable()) {
                 return;
             }
-            if (this.quotaBytes.toString() == '0') {
+            if (this.quotaBytes.toString() == '0' && !this.isSecretLink) {
                 if (retrying == null) {
                     this.updateQuota(quotaBytes => {
                         if (quotaBytes != null) {
