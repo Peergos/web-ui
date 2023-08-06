@@ -49,9 +49,9 @@ Package Peergos into a container image with:
 docker build --file Containerfile --tag peergos:dev .
 ```
 
-Then start Peergos inside the container with: 
+Then start Peergos inside the container with the following if you are proxying localhost:8000 to the docker container: 
 ```bash
-docker run --volume $(PEERGOS_PATH):/opt/peergos/data peergos:dev daemon -log-to-console true
+docker run --volume $(PEERGOS_PATH):/opt/peergos/data peergos:dev daemon -domain 0.0.0.0 -public-domain localhost:8000 -log-to-console true
 ```
 
 
