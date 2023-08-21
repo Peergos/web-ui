@@ -154,7 +154,9 @@ function postMultipartProm(url, dataArrays, timeout) {
 	req.onerror = function(e) {
             future.completeExceptionally(new java.net.ConnectException("Unable to connect"));
 	};
-
+	req.ontimeout = function(e) {
+            future.completeExceptionally(new peergos.shared.storage.RateLimitException());
+	};
 	var form = new FormData();
 
 	for (var i=0; i < dataArrays.array.length; i++)
