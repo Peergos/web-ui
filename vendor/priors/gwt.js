@@ -408,7 +408,7 @@ opfsWorker.onmessage = function(event) { // reads
 
 function setOPFSKV(filename, value, directory) {
     if (!pendingWrites.has(filename)) {
-        pendingWrites.set(filename, value);
+        pendingWrites.set(filename, peergos.client.JsUtil.optionalOf(convertToByteArray(value)));
         opfsWorker.postMessage({action: 'set', filename: filename, value: value, directory: directory});
         setTimeout(() => {
             pendingWrites.delete(filename);
