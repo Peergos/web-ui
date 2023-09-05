@@ -5,7 +5,7 @@ import java.util.zip.*;
 public class InstallNativeImage {
 
     public static void main(String[] a) throws Exception {
-        String VERSION = "22.0.0.2";
+        String VERSION = "22.3.3";
         
         String OS = canonicaliseOS(System.getProperty("os.name").toLowerCase());
         String OS_ARCH = getOsArch();       
