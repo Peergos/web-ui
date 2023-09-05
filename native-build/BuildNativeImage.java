@@ -6,7 +6,7 @@ import java.util.zip.*;
 public class BuildNativeImage {
 
     public static void main(String[] a) throws Exception {
-        String VERSION = "22.0.0.2";
+        String VERSION = "22.3.3";
         String JAVA_VERSION = "java17";
 
         Files.copy(Paths.get("../server/Peergos.jar"), Paths.get("Peergos.jar"), StandardCopyOption.REPLACE_EXISTING);
