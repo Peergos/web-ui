@@ -12,20 +12,38 @@
 			    <div class="card__meta options">
 				<h3>Pro Account</h3>
 				<ul>
-				    <li>50 GB of hyper secure storage</li>
+				    <li>100 GB of hyper secure storage</li>
 				    <li>All our bundled private applications</li>
 				    <li>&#x00A3;5 / month</li>
 				</ul>
-                                <AppButton @click.native="updateCard(53687091200)" :disabled="isPro" type="primary" block accent>{{proButtonText}}</AppButton>
+                                <AppButton @click.native="updateCard(100000000000)" :disabled="isPro" type="primary" block accent>{{proButtonText}}</AppButton>
 			    </div>
                             <div class="card__meta options">
 				<h3>Visionary Account</h3>
 				<ul>
 				    <li>500 GB of hyper secure storage</li>
 				    <li>All our bundled private applications</li>
-				    <li>&#x00A3;25 / month  {{ prorataText }}</li>
+				    <li>&#x00A3;10 / month  {{ prorataTextVisionary }}</li>
 				</ul>
-                                <AppButton @click.native="updateCard(536870912000)" :disabled="isVisionary" type="primary" block accent>{{visionaryButtonText}}</AppButton>
+                                <AppButton @click.native="updateCard(500000000000)" :disabled="isVisionary" type="primary" block accent>{{visionaryButtonText}}</AppButton>
+			    </div>
+                            <div class="card__meta options">
+				<h3>Pioneer Account</h3>
+				<ul>
+				    <li>2000 GB of hyper secure storage</li>
+				    <li>All our bundled private applications</li>
+				    <li>&#x00A3;25 / month  {{ prorataTextPioneer }}</li>
+				</ul>
+                                <AppButton @click.native="updateCard(2000000000000)" :disabled="isPioneer" type="primary" block accent>{{pioneerButtonText}}</AppButton>
+			    </div>
+                            <div class="card__meta options">
+				<h3>Trailblazer Account</h3>
+				<ul>
+				    <li>4000 GB of hyper secure storage</li>
+				    <li>All our bundled private applications</li>
+				    <li>&#x00A3;40 / month  {{ prorataTextTrailblazer }}</li>
+				</ul>
+                                <AppButton @click.native="updateCard(4000000000000)" :disabled="isTrailblazer" type="primary" block accent>{{trailblazerButtonText}}</AppButton>
 			    </div>
                         </div>
 
@@ -54,8 +72,10 @@ module.exports = {
 		return {
 			unit:"GiB",
 			space:"",
-			proMb: 50*1024,
-                        visionaryMb: 500*1024,
+			proMb: 100*1000,
+                        visionaryMb: 500*1000,
+                        pioneerMb: 2000*1000,
+                        trailblazerMb: 4000*1000,
                         gettingCard: false,
                         paymentUrl:null,
 			showCard:false,
@@ -85,10 +105,31 @@ module.exports = {
                 return this.quotaBytes/(1024*1024) > this.paymentProperties.freeMb() && this.paymentProperties.desiredMb() == this.visionaryMb;
             },
 
-            prorataText() {
-                if (!this.isPro)
-                    return "";
-                return " (pro rata for this month)";
+            isPioneer() {
+                return this.quotaBytes/(1024*1024) > this.paymentProperties.freeMb() && this.paymentProperties.desiredMb() == this.pioneerMb;
+            },
+
+            isTrailBlazer() {
+                return this.quotaBytes/(1024*1024) > this.paymentProperties.freeMb() && this.paymentProperties.desiredMb() == this.trailblazerMb;
+            },
+
+            prorataTextVisionary() {
+                if (this.isPro())
+                    return " (pro rata for this month)";
+                else
+                    return ""
+            },
+            prorataTextPioneer() {
+                if (this.isPro() || this.isVisionary())
+                    return " (pro rata for this month)";
+                else
+                    return ""
+            },
+            prorataTextTrailBlazer() {
+                if (this.isPro() || this.isVisionary() || this.isPioneer())
+                    return " (pro rata for this month)";
+                else
+                    return ""
             },
             upgradeTitle(){
 			return (this.isPaid)
@@ -104,6 +145,16 @@ module.exports = {
                 return (this.isVisionary)
 				? 'Your Current Plan'
 				: 'Select Visionary (opens new tab)'
+            },
+            pioneerButtonText(){
+                return (this.isPioneer)
+				? 'Your Current Plan'
+				: 'Select Pioneer (opens new tab)'
+            },
+            trailblazerButtonText(){
+                return (this.isTrailBlazer)
+				? 'Your Current Plan'
+				: 'Select Trailblazer (opens new tab)'
             }
     },
 
