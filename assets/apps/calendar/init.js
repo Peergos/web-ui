@@ -2,7 +2,6 @@ var mainWindow;
 var origin;
 var theme;
 var hasEmail;
-var canRefreshDay = false;
 let handler = function (e) {
       // You must verify that the origin of the message's sender matches your
       // expectations. In this case, we're only planning on accepting messages
@@ -100,19 +99,14 @@ calendarSettingsButton.onclick=function(e) {
     toggleCalendarsView(e);
 };
 function startCurrentDayCheck() {
-    let repeatMS = 1000*60*10;
-    if (canRefreshDay) {
-        let today = moment();
-        let sameDay = today.day() == currentMoment.day();
-        if (sameDay) {
-            setTimeout(() => startCurrentDayCheck(), repeatMS);
-        } else {
-            currentMoment = today;
-            if(!reload(today)) {
-                setTimeout(() => startCurrentDayCheck(), repeatMS);
-            }
-        }
+    let repeatMS = 1000*60*10; //10 mins
+    let today = moment();
+    let calDate = moment(cal.getDate().getTime());
+    let sameDay = today.day() == calDate.day();
+    if (!sameDay) {
+        updateCalendar('move-today');
     }
+    setTimeout(() => startCurrentDayCheck(), repeatMS);
 }
 
 
@@ -491,10 +485,6 @@ function removeRecurringScheduleInstances(parentId) {
     });
 }
 function disableToolbarButtons(newValue){
-    canRefreshDay = !newValue;
-    if (canRefreshDay) {
-        startCurrentDayCheck();
-    }
     let calendarSettings = document.getElementById("calendar-settings");
     calendarSettings.disabled = newValue;
     let calendarType = document.getElementById("dropdownMenu-calendarType");
@@ -601,6 +591,7 @@ function initialiseCalendar(loadCalendarAsGuest, calendars) {
     setDropdownCalendarType();
     setEventListener();
     disableToolbarButtons(true);
+    startCurrentDayCheck();
 }
 function ScheduleInfo() {
     this.id = null;
@@ -1802,7 +1793,9 @@ function onClickMenu(e) {
 }
 
 function onClickNavi(e) {
-    var action = getDataAction(e.target);
+    updateCalendar(getDataAction(e.target));
+}
+function updateCalendar(action) {
     let viewName = cal.getViewName();
     let wasMoment = currentMoment.clone();
     if (action == 'move-today') {
