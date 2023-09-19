@@ -1133,24 +1133,33 @@ module.exports = {
                 that.showError('Unable to overwrite folder: ' + filePath);
                 that.buildResponse(header, null, that.ACTION_FAILED);
             } else {
-                let java_reader = peergos.shared.user.fs.AsyncReader.build(bytes);
-                let sizeHi = (bytes.length - (bytes.length % Math.pow(2, 32)))/Math.pow(2, 32);
-                fileToOverwrite.overwriteFileJS(java_reader, sizeHi, bytes.length, that.context.network, that.context.crypto, len => {})
-                .thenApply(function(updatedFile) {
-                    if (refreshTargetFile) {
-                        that.targetFile = updatedFile;
-                    }
-                    that.$emit("refresh");
-                    that.buildResponse(header, null, that.UPDATE_SUCCESS);
-                }).exceptionally(function(throwable) {
-                        let msg = that.uriDecode(throwable.detailMessage);
-                        if (msg.includes("CAS exception updating cryptree node.")) {
-                            that.showError("The file has been updated by another user. Your changes have not been saved.");
-                        } else {
-                            that.showError("Unexpected error: " + throwable.detailMessage);
-                            console.log(throwable.getMessage());
-                        }
+                this.context.getByPath(filePath).thenApply(function(fileOpt){
+                    if (fileOpt.ref == null) {
+                        that.showError("Unexpected error: " + throwable.detailMessage);
+                        console.log(throwable.getMessage());
                         that.buildResponse(header, null, that.ACTION_FAILED);
+                    } else {
+                        let file = fileOpt.get();
+                        let java_reader = peergos.shared.user.fs.AsyncReader.build(bytes);
+                        let sizeHi = (bytes.length - (bytes.length % Math.pow(2, 32)))/Math.pow(2, 32);
+                        file.overwriteFileJS(java_reader, sizeHi, bytes.length, that.context.network, that.context.crypto, len => {})
+                        .thenApply(function(updatedFile) {
+                            if (refreshTargetFile) {
+                                that.targetFile = updatedFile;
+                            }
+                            that.$emit("refresh");
+                            that.buildResponse(header, null, that.UPDATE_SUCCESS);
+                        }).exceptionally(function(throwable) {
+                                let msg = that.uriDecode(throwable.detailMessage);
+                                if (msg.includes("CAS exception updating cryptree node.")) {
+                                    that.showError("The file has been updated by another user. Your changes have not been saved.");
+                                } else {
+                                    that.showError("Unexpected error: " + throwable.detailMessage);
+                                    console.log(throwable.getMessage());
+                                }
+                                that.buildResponse(header, null, that.ACTION_FAILED);
+                        });
+                    }
                 });
             }
         },
