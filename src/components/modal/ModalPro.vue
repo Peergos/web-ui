@@ -95,22 +95,22 @@ module.exports = {
 		]),
 
 		isPaid() {
-            return this.quotaBytes/(1024*1024) > this.paymentProperties.freeMb() && this.paymentProperties.desiredMb() > 0;
+            return this.quotaBytes/(1000*1000) > this.paymentProperties.freeMb() && this.paymentProperties.desiredMb() > 0;
 		},
 		isPro() {
-                    return this.quotaBytes/(1024*1024) > this.paymentProperties.freeMb() && this.paymentProperties.desiredMb() == this.proMb;
+                    return this.quotaBytes/(1000*1000) > this.paymentProperties.freeMb() && this.paymentProperties.desiredMb() == this.proMb;
                 },
 
             isVisionary() {
-                return this.quotaBytes/(1024*1024) > this.paymentProperties.freeMb() && this.paymentProperties.desiredMb() == this.visionaryMb;
+                return this.quotaBytes/(1000*1000) > this.paymentProperties.freeMb() && this.paymentProperties.desiredMb() == this.visionaryMb;
             },
 
             isPioneer() {
-                return this.quotaBytes/(1024*1024) > this.paymentProperties.freeMb() && this.paymentProperties.desiredMb() == this.pioneerMb;
+                return this.quotaBytes/(1000*1000) > this.paymentProperties.freeMb() && this.paymentProperties.desiredMb() == this.pioneerMb;
             },
 
             isTrailBlazer() {
-                return this.quotaBytes/(1024*1024) > this.paymentProperties.freeMb() && this.paymentProperties.desiredMb() == this.trailblazerMb;
+                return this.quotaBytes/(1000*1000) > this.paymentProperties.freeMb() && this.paymentProperties.desiredMb() == this.trailblazerMb;
             },
 
             prorataTextVisionary() {
@@ -210,7 +210,7 @@ module.exports = {
 	    },
 
             updateCardDetails() {
-                this.updateCard(this.paymentProperties.desiredMb()*1024*1024)
+                this.updateCard(this.paymentProperties.desiredMb()*1000*1000)
             },
             
     	    updateCard(desired) {
