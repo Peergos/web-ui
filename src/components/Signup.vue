@@ -50,20 +50,38 @@
 			    <div class="card__meta options">
 				<h3>Pro Account</h3>
 				<ul>
-				    <li>50 GB of hyper secure storage</li>
+				    <li>100 GB of hyper secure storage</li>
 				    <li>All our bundled private applications</li>
 				    <li>&#x00A3;5 / month</li>
 				</ul>
-                                <AppButton @click.native="setPlan(53687091200)" type="primary" block accent>Select Pro</AppButton>
+                                <AppButton @click.native="setPlan(100000000000)" type="primary" block accent>Select Pro</AppButton>
 			    </div>
                             <div class="card__meta options">
 				<h3>Visionary Account</h3>
 				<ul>
 				    <li>500 GB of hyper secure storage</li>
 				    <li>All our bundled private applications</li>
+				    <li>&#x00A3;10 / month</li>
+				</ul>
+                                <AppButton @click.native="setPlan(500000000000)" type="primary" block accent>Select Visionary</AppButton>
+			    </div>
+                            <div class="card__meta options">
+				<h3>Pioneer Account</h3>
+				<ul>
+				    <li>2000 GB of hyper secure storage</li>
+				    <li>All our bundled private applications</li>
 				    <li>&#x00A3;25 / month</li>
 				</ul>
-                                <AppButton @click.native="setPlan(536870912000)" type="primary" block accent>Select Visionary</AppButton>
+                                <AppButton @click.native="setPlan(2000000000000)" type="primary" block accent>Select Visionary</AppButton>
+			    </div>
+                            <div class="card__meta options">
+				<h3>Trailblazer Account</h3>
+				<ul>
+				    <li>4000 GB of hyper secure storage</li>
+				    <li>All our bundled private applications</li>
+				    <li>&#x00A3;40 / month</li>
+				</ul>
+                                <AppButton @click.native="setPlan(4000000000000)" type="primary" block accent>Select Visionary</AppButton>
 			    </div>
                             <div class="card__meta options">
 				<h3>Want to try it first?</h3>
