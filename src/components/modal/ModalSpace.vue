@@ -16,8 +16,8 @@
 					placeholder="New total space amount"
 				>
 				<select v-model="unit">
-					<option value = "MiB">MiB</option>
-					<option value = "GiB">GiB</option>
+					<option value = "MB">MB</option>
+					<option value = "GB">GB</option>
 				</select>
 			</fieldset>
 
@@ -40,7 +40,7 @@ module.exports = {
     },
 	data() {
 		return {
-			unit:"GiB",
+			unit:"GB",
 			space:"",
 		};
 	},
@@ -56,9 +56,9 @@ module.exports = {
 
 	methods: {
 		getRequestedBytes() {
-			if (this.unit == "GiB")
-				return this.space*1024*1024*1024;
-			return this.space*1024*1024;
+			if (this.unit == "GB")
+				return this.space*1000*1000*1000;
+			return this.space*1000*1000;
 		},
 
         validateSpace() {
