@@ -43,7 +43,7 @@
 				    <li>All our bundled private applications</li>
 				    <li>&#x00A3;40 / month  {{ prorataTextTrailblazer }}</li>
 				</ul>
-                                <AppButton @click.native="updateCard(4000000000000)" :disabled="isTrailblazer" type="primary" block accent>{{trailblazerButtonText}}</AppButton>
+                                <AppButton @click.native="updateCard(4000000000000)" :disabled="isTrailBlazer" type="primary" block accent>{{trailblazerButtonText}}</AppButton>
 			    </div>
                         </div>
 
@@ -114,19 +114,19 @@ module.exports = {
             },
 
             prorataTextVisionary() {
-                if (this.isPro())
+                if (this.isPro)
                     return " (pro rata for this month)";
                 else
                     return ""
             },
             prorataTextPioneer() {
-                if (this.isPro() || this.isVisionary())
+                if (this.isPro || this.isVisionary)
                     return " (pro rata for this month)";
                 else
                     return ""
             },
             prorataTextTrailBlazer() {
-                if (this.isPro() || this.isVisionary() || this.isPioneer())
+                if (this.isPro || this.isVisionary || this.isPioneer)
                     return " (pro rata for this month)";
                 else
                     return ""
