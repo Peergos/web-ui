@@ -41,7 +41,7 @@
 				<ul>
 				    <li>4000 GB of hyper secure storage</li>
 				    <li>All our bundled private applications</li>
-				    <li>&#x00A3;40 / month  {{ prorataTextTrailblazer }}</li>
+				    <li>&#x00A3;40 / month  {{ prorataTextTrailBlazer }}</li>
 				</ul>
                                 <AppButton @click.native="updateCard(4000000000000)" :disabled="isTrailBlazer" type="primary" block accent>{{trailblazerButtonText}}</AppButton>
 			    </div>
