@@ -82,6 +82,7 @@ module.exports = {
 
 .app-modal__container.modal--right{
 	position: absolute;
+	top:0;
 	right:0;
 	width:50%;
 	min-height:100vh;
