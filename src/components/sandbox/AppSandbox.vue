@@ -719,14 +719,21 @@ module.exports = {
         handleFilePickerRequest: function(headerFunc, path, apiMethod, data, hasFormData, params) {
             let that = this;
             if (apiMethod == 'GET') {
-                this.filePickerBaseFolder = "/" + this.context.username;
+                let fromCurrentFolder = params.get('currentFolder');
+                let baseCurrentFolder = fromCurrentFolder != null && fromCurrentFolder.toLowerCase() == "true";
+                let currentPathExtract = this.getPath;
+                let currentPathExtractWithoutSlash = currentPathExtract.substring(0, currentPathExtract.length -1);
+                this.filePickerBaseFolder =  baseCurrentFolder ? currentPathExtractWithoutSlash : "/" + this.context.username;
                 let fileExtensionFilter = params.get('extension');
                 this.pickerFileExtension = fileExtensionFilter == null ? "" : fileExtensionFilter;
                 this.selectedFileFromPicker = function (chosenFile) {
-                    that.selectedFileFromPicker = chosenFile == null ? "" : chosenFile;
+                    var selectedFile = chosenFile == null ? "" : chosenFile;
+                    if (baseCurrentFolder) {
+                        selectedFile = selectedFile.substring(currentPathExtract.length);
+                    }
                     that.showFilePicker = false;
                     let encoder = new TextEncoder();
-                    let data = encoder.encode(JSON.stringify([chosenFile]));
+                    let data = encoder.encode(JSON.stringify([selectedFile]));
                     that.buildResponse(headerFunc(), data, that.UPDATE_SUCCESS);
                 }.bind(this);
                 this.showFilePicker = true;

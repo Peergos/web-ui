@@ -136,23 +136,23 @@
       <DriveMenu ref="driveMenu" v-if="viewMenu" @closeMenu="closeMenu()">
         <li
           id="gallery"
-          v-if="canOpen && !isMarkdown && !isHTML && !hexViewerAlternativeAvailable"
+          v-if="canOpen && !isMarkup && !isHTML && !hexViewerAlternativeAvailable"
           @keyup.enter="viewFile()"
           @click="viewFile()"
         >
           View
         </li>
         <li
-          id="view-markdown"
-          v-if="isMarkdown"
+          id="view-markup"
+          v-if="isMarkup"
           @keyup.enter="viewFile()"
           @click="viewFile()"
         >
           View
         </li>
         <li
-          id="edit-markdown"
-          v-if="isMarkdown"
+          id="edit-markup"
+          v-if="isMarkup"
           @keyup.enter="editFile()"
           @click="editFile()"
         >
@@ -285,12 +285,12 @@
       :context="context"
     >
     </CodeEditor>
-    <Markdown
-      v-if="showMarkdownViewer"
-      v-on:hide-markdown-viewer="showDrive()"
+    <Markup
+      v-if="showMarkupViewer"
+      v-on:hide-markup-viewer="showDrive()"
       :propAppArgs="appArgs"
     >
-    </Markdown>
+    </Markup>
     <Identity
       v-if="showIdentityProof"
       v-on:hide-identity-proof="back()"
@@ -402,7 +402,7 @@ const Gallery = require("../components/drive/DriveGallery.vue");
 const Identity = require("../components/identity-proof-viewer.vue");
 const Share = require("../components/drive/DriveShare.vue");
 const Search = require("../components/Search.vue");
-const Markdown = require("../components/viewers/Markdown.vue");
+const Markup = require("../components/viewers/Markup.vue");
 const Hex = require("../components/viewers/Hex.vue");
 const ProgressBar = require("../components/drive/ProgressBar.vue");
 const DriveMenu = require("../components/drive/DriveMenu.vue");
@@ -448,7 +448,7 @@ module.exports = {
 		Identity,
 		Share,
 		Search,
-		Markdown,
+		Markup,
 		Hex,
 		Pdf,
 		Replace,
@@ -486,7 +486,7 @@ module.exports = {
 			showSearch: false,
 			showHexViewer: false,
 			showCodeEditor: false,
-			showMarkdownViewer: false,
+			showMarkupViewer: false,
 			showPdfViewer: false,
 			showTextViewer: false,
 			showPassword: false,
@@ -708,7 +708,7 @@ module.exports = {
             let app = this.getApp(file, this.getPath, false);
             return this.availableApps.length > 0 && app === "hex";
         },
-        isMarkdown() {
+        isMarkup() {
             try {
                 if (this.currentDir == null)
                     return false;
@@ -719,7 +719,8 @@ module.exports = {
                 let file =  this.selectedFiles[0];
                 let mimeType = file.getFileProperties().mimeType;
                 return mimeType.startsWith("text/x-markdown") ||
-                    (mimeType.startsWith("text/") && file.getName().endsWith('.md'));
+                    (mimeType.startsWith("text/") &&
+                    (file.getName().endsWith('.md') || file.getName().endsWith('.note')) );
             } catch (err) {
                 return false;
             }
@@ -1150,7 +1151,7 @@ module.exports = {
             this.showIdentityProof = false;
 		    this.showPdfViewer = false;
 		    this.showCodeEditor = false;
-		    this.showMarkdownViewer = false;
+		    this.showMarkupViewer = false;
 		    this.showAppSandbox = false;
 		    this.showTextViewer = false;
 		    this.showHexViewer = false;
@@ -1216,8 +1217,8 @@ module.exports = {
                         that.showIdentityProof = true;
                     else if (app == "hex")
                         that.showHexViewer = true;
-                    else if (app == "markdown")
-                        that.showMarkdownViewer = true;
+                    else if (app == "markdown" || app == "markup")
+                        that.showMarkupViewer = true;
                     else if (app == "htmlviewer") {
                         that.sandboxAppName = "htmlviewer";
                         that.showAppSandbox = true;
