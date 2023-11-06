@@ -10,13 +10,13 @@ module.exports = {
 
 		convertBytesToHumanReadable(bytesAsString) {
 			let bytes = Number(bytesAsString);
-			if (bytes < 1024)
+			if (bytes < 1000)
 				return bytes + " Bytes";
-			if (bytes < 1024 * 1024)
-				return this.roundToDisplay(bytes / 1024) + " KiB";
-			if (bytes < 1024 * 1024 * 1024)
-				return this.roundToDisplay(bytes / 1024 / 1024) + " MiB";
-			return this.roundToDisplay(bytes / 1024 / 1024 / 1024) + " GiB";
+			if (bytes < 1000 * 1000)
+				return this.roundToDisplay(bytes / 1000) + " KB";
+			if (bytes < 1000 * 1000 * 1000)
+				return this.roundToDisplay(bytes / 1000 / 1000) + " MB";
+			return this.roundToDisplay(bytes / 1000 / 1000 / 1000) + " GB";
 		},
 	 }
 
