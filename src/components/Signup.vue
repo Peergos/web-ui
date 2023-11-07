@@ -72,7 +72,7 @@
 				    <li>All our bundled private applications</li>
 				    <li>&#x00A3;25 / month</li>
 				</ul>
-                                <AppButton @click.native="setPlan(2000000000000)" type="primary" block accent>Select Visionary</AppButton>
+                                <AppButton @click.native="setPlan(2000000000000)" type="primary" block accent>Select Pioneer</AppButton>
 			    </div>
                             <div class="card__meta options">
 				<h3>Trailblazer Account</h3>
@@ -81,7 +81,7 @@
 				    <li>All our bundled private applications</li>
 				    <li>&#x00A3;40 / month</li>
 				</ul>
-                                <AppButton @click.native="setPlan(4000000000000)" type="primary" block accent>Select Visionary</AppButton>
+                                <AppButton @click.native="setPlan(4000000000000)" type="primary" block accent>Select Trailblazer</AppButton>
 			    </div>
                             <div class="card__meta options">
 				<h3>Want to try it first?</h3>
