@@ -615,7 +615,7 @@ module.exports = {
                                         that.showError("App attempted to write to file without permission :" + path);
                                         that.buildResponse(headerFunc(), null, that.ACTION_FAILED);
                                     } else {
-                                        that.overwriteFile(headerFunc(), path, bytes, that.targetFile, true);
+                                        that.overwriteFile(headerFunc(), path, bytes, that.targetFile);
                                     }
                                 } else {
                                     that.showError("App attempted unexpected action: " + apiMethod);
@@ -695,7 +695,7 @@ module.exports = {
                         let fullPathToNewFile = folderPath + filename;
                         that.findFile(fullPathToNewFile, false).thenApply(file => {
                             if (file != null) {
-                                that.overwriteFile(headerFunc(), fullPathToNewFile, bytes, file, false);
+                                that.overwriteFile(headerFunc(), fullPathToNewFile, bytes, file);
                             } else {
                                 let filePath = peergos.client.PathUtils.directoryToPath(fullPathToNewFile.split('/').filter(n => n.length > 0));
                                 that.writeNewFile(filePath, bytes).thenApply(res => {
@@ -1123,7 +1123,7 @@ module.exports = {
             }
             return false;
         },
-        overwriteFile: function(header, filePath, bytes, fileToOverwrite, refreshTargetFile) {
+        overwriteFile: function(header, filePath, bytes, fileToOverwrite) {
             let that = this;
             let props = fileToOverwrite.getFileProperties();
             if (props.isHidden) {
@@ -1137,11 +1137,11 @@ module.exports = {
                 let sizeHi = (bytes.length - (bytes.length % Math.pow(2, 32)))/Math.pow(2, 32);
                 fileToOverwrite.overwriteFileJS(java_reader, sizeHi, bytes.length, that.context.network, that.context.crypto, len => {})
                 .thenApply(function(updatedFile) {
-                    if (refreshTargetFile) {
-                        that.targetFile = updatedFile;
-                    }
-                    that.$emit("refresh");
-                    that.buildResponse(header, null, that.UPDATE_SUCCESS);
+                    that.context.getByPath(that.appPath).thenApply(function(fileOpt){
+                        that.targetFile = fileOpt.get();
+                        that.$emit("refresh");
+                        that.buildResponse(header, null, that.UPDATE_SUCCESS);
+                    });
                 }).exceptionally(function(throwable) {
                         let msg = that.uriDecode(throwable.detailMessage);
                         if (msg.includes("CAS exception updating cryptree node.")) {
@@ -1260,7 +1260,12 @@ module.exports = {
                 dirOpt.get().uploadOrReplaceFile(peergos.client.PathUtils.getFileName(path).toString(),
                         new peergos.shared.user.fs.AsyncReader.build(data),
                         0, data.length, that.context.network, that.context.crypto, x => {})
-                            .thenApply(fw => future.complete(true))
+                            .thenApply(fw => {
+                                that.context.getByPath(that.appPath).thenApply(function(fileOpt){
+                                    that.targetFile = fileOpt.get();
+                                    return future.complete(true);
+                                });
+                            })
             );
             return future;
         },
