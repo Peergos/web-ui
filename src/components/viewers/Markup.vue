@@ -5,7 +5,7 @@
         <div class="modal-header" style="padding:0">
             <center><h2>{{ getFullPathForDisplay() }}</h2></center>
           <span style="position:absolute;top:0;right:0.2em;">
-            <span v-if="isWritable()" @click="launchEditor" tabindex="0" v-on:keyup.enter="launchEditor"  style="color:black;font-size:2.5em;font-weight:bold;cursor:pointer;margin:.3em;" class='fas fa-edit' title="Edit file"></span>
+            <span v-if="isWritable() && isMarkdown()" @click="launchEditor" tabindex="0" v-on:keyup.enter="launchEditor"  style="color:black;font-size:2.5em;font-weight:bold;cursor:pointer;margin:.3em;" class='fas fa-edit' title="Edit file"></span>
             <span @click="close" tabindex="0" v-on:keyup.enter="close" style="color:black;font-size:3em;font-weight:bold;cursor:pointer;">&times;</span>
           </span>
         </div>
@@ -24,7 +24,7 @@
                     v-if="showEmbeddedGallery"
                     v-on:hide-gallery="showEmbeddedGallery = false"
                     :files="filesToViewInGallery"
-                    :hideGalleryTitle="true"
+                    :hideGalleryTitle="false"
                     :context="context">
             </Gallery>
 	  <iframe id="md-editor" :src="frameUrl()" style="width:100%;height:100%;" frameBorder="0"></iframe>
@@ -55,13 +55,13 @@ module.exports = {
 	        currPath: null,
 	        currFilename: null,
 	        isIframeInitialised: false,
-            APP_NAME: 'markdown-viewer',
-            PATH_PREFIX: '/apps/markdown-viewer/',
+            APP_NAME: 'markup-viewer',
+            PATH_PREFIX: '/apps/markup-viewer/',
             showEmbeddedGallery: false,
             filesToViewInGallery: [],
             validImageSuffixes: ['jpg','jpeg','png','gif','webp'],
             validMediaSuffixes: ['mpg','mp3','mp4','avi','webm'],
-            validResourceSuffixes: ['md'],//,'pdf','zip'];
+            validResourceSuffixes: ['md', 'note'],//,'pdf','zip'];
             validResourceMimeTypes: ['text/x-markdown', 'text/'],
             scopedPath: null,
             updatedPath: '',
@@ -107,7 +107,7 @@ module.exports = {
         this.currPath = path;
         this.scopedPath = path + '/';
         let that = this;
-        this.findFile(completePath).thenApply(file => {
+        this.findFile(completePath, false).thenApply(file => {
             if (file != null) {
                 that.isFileWritable = file.isWritable();
                 that.readInFile(file).thenApply(data => {
@@ -121,6 +121,9 @@ module.exports = {
         launchEditor: function() {
             this.openFileOrDir("editor", this.currPath, {filename:this.currFilename});
         },
+        isMarkdown: function() {
+            return this.currFilename != null && this.currFilename.endsWith(".md");
+        },
         isWritable: function() {
             return this.isFileWritable;
         },
@@ -131,16 +134,17 @@ module.exports = {
             let completePath = subPath + '/' + filename;
             this.currPath = subPath;
             this.currFilename = filename;
+            let extension = filename.substring(filename.lastIndexOf('.') + 1);
             let that = this;
             this.showSpinner = true;
-            this.findFile(completePath).thenApply(file => {
+            this.findFile(completePath, false).thenApply(file => {
                 if (file != null) {
                     that.readInFile(file).thenApply(data => {
                         that.setFullPathForDisplay();
                         let iframe = document.getElementById("md-editor");
                         let func = function() {
                             iframe.contentWindow.postMessage({action: "respondToNavigateTo", text:new TextDecoder().decode(data)
-                                , subPath: subPath}, '*');
+                                , extension: extension, subPath: subPath}, '*');
                             that.showSpinner = false;
                         };
                         that.setupIFrameMessaging(iframe, func);
@@ -192,15 +196,16 @@ module.exports = {
         let theme = this.$store.getters.currentTheme;
         let subPath = this.propAppArgs.subPath != null ? this.propAppArgs.subPath
                         : this.scopedPath.substring(0, this.scopedPath.length -1);
+        let extension = that.currFilename.substring(that.currFilename.lastIndexOf('.') + 1);
         let func = function() {
             iframe.contentWindow.postMessage({action: "respondToNavigateTo", theme: theme
-                , text:new TextDecoder().decode(data), subPath: subPath}, '*');
+                , text:new TextDecoder().decode(data), extension: extension, subPath: subPath}, '*');
             that.showSpinner = false;
         };
             that.setupIFrameMessaging(iframe, func);
             setTimeout(() => {
                 if (!that.isIframeInitialised)
-                    that.$toast.error("Unable to register service worker. Markdown viewer will not work offline. \nTo enable offline usage, allow 3rd party cookies for " + window.location.protocol + "//[*]." + window.location.host + "\n Note: this is not tracking", {timeout:false});
+                    that.$toast.error("Unable to register service worker. Viewer will not work offline. \nTo enable offline usage, allow 3rd party cookies for " + window.location.protocol + "//[*]." + window.location.host + "\n Note: this is not tracking", {timeout:false});
             }, 2500)
 	},
 
@@ -233,7 +238,7 @@ module.exports = {
         this.showSpinner = false;
     },
     close: function () {
-        this.$emit("hide-markdown-viewer");
+        this.$emit("hide-markup-viewer");
     },
     hasValidFileExtension: function(path, validExtensions, showErrorMessage) {
         let extensionIndex = path.lastIndexOf('.');
@@ -299,7 +304,7 @@ module.exports = {
         if (fullPath == null) {
             future.complete(null);
         } else {
-            that.findFile(fullPath).thenApply(file => {
+            that.findFile(fullPath, false).thenApply(file => {
                 if (file != null) {
                     let mimeType = file.props.mimeType;
                     let type = file.props.getType();
@@ -332,7 +337,7 @@ module.exports = {
         }
         return future;
     },
-    findFile: function(filePath) {
+    findFile: function(filePath, allowFolder) {
         let that = this;
         var future = peergos.shared.util.Futures.incomplete();
         this.context.getByPath(filePath).thenApply(function(fileOpt){
@@ -342,8 +347,12 @@ module.exports = {
             } else {
                 let file = fileOpt.get();
                 const props = file.getFileProperties();
-                if (props.isHidden || props.isDirectory) {
+                if (props.isHidden) {
                     that.showErrorMessage("file not accessible: " + filePath);
+                    future.complete(null);
+                }
+                if (allowFolder != true && props.isDirectory) {
+                    that.showErrorMessage("folder not accessible: " + filePath);
                     future.complete(null);
                 } else {
                     future.complete(file);
@@ -381,20 +390,20 @@ module.exports = {
             return;
         }
         let allMediaSuffixes = this.validMediaSuffixes.concat(this.validImageSuffixes);
-        if (this.hasValidFileExtension(fullPath, allMediaSuffixes, true)) {
-            that.findFile(fullPath).thenApply(file => {
-                if (file != null) {
-                    let type = file.props.getType();
-                    if(type == "image" || type == "audio" || type == "video") {
-                        that.openInGallery(file);
-                    } else {
-                        that.showErrorMessage("unable to display resource in gallery. Not an allowed filetype");
-                    }
+        that.findFile(fullPath, false).thenApply(file => {
+            if (file != null) {
+                let type = file.props.getType();
+                if(this.hasValidFileExtension(fullPath, allMediaSuffixes, false) && (type == "image" || type == "audio" || type == "video")) {
+                    that.openInGallery(file);
                 } else {
-                    that.showErrorMessage("unable to find resource: " + fullPath);
+                    let slashIndex = fullPath.lastIndexOf('/');
+                    let filename = slashIndex >=0 ? fullPath.substring(slashIndex +1) : fullPath;
+                    that.openFileOrDir("Drive", fullPath, {filename:filename});
                 }
-            });
-        }
+            } else {
+                that.showErrorMessage("unable to find resource: " + fullPath);
+            }
+        });
     },
     openInGallery: function (file) {
         this.filesToViewInGallery = [file];
@@ -451,18 +460,23 @@ module.exports = {
             this.loadResource(filePath, true, this.validResourceMimeTypes, ["text"]).thenApply(isLoaded => {
                 if (isLoaded) {
                     that.currPath = previousPath;
-                    that.updateHistory("markdown", that.scopedPath, {subPath: that.updatedPath, filename:that.updatedFilename});
+                    that.updateHistory("markup", that.scopedPath, {subPath: that.updatedPath, filename:that.updatedFilename});
                 }
             });
         } else {
-            let fullPath = this.calculatePath(filePath, true);
-            that.findFile(fullPath).thenApply(file => {
+            var fullPath = this.calculatePath(filePath, false);
+            that.findFile(fullPath, true).thenApply(file => {
                 if (file != null) {
-                    let app = that.getApp(file, that.updatedPath);
-                    if (app == 'hex') {
-                        that.openFileOrDir("Drive", that.updatedPath, {filename:""});
+                    if (file.getFileProperties().isDirectory) {
+                        that.openFileOrDir("Drive", fullPath, {filename:""});
                     } else {
-                        that.openFileOrDir(app, that.updatedPath, {filename:that.updatedFilename});
+                        fullPath = this.calculatePath(filePath, true);
+                        let app = that.getApp(file, that.updatedPath);
+                        if (app == 'hex') {
+                            that.openFileOrDir("Drive", that.updatedPath, {filename:""});
+                        } else {
+                            that.openFileOrDir(app, that.updatedPath, {filename:that.updatedFilename});
+                        }
                     }
                 }
             });

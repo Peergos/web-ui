@@ -6,8 +6,12 @@ const precachedAssets = [
     'purify.min.js',
     'toastui-editor-viewer.js',
     'purify.min.js.map',
+    'attaches.js',
+    'editorjs.js',
+    'mermaid.js',
     'css/toastui-editor-viewer.min.css',
-    'css/markdown.css'
+    'css/markdown.css',
+    'css/notes-style.css',
 ];
 
 self.addEventListener('install', event =>  {

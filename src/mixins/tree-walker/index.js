@@ -51,9 +51,14 @@ module.exports = {
                         });
                     }
                     if (includeFiles === true && !childProps.isDirectory && !childProps.isHidden) {
-                        let test = fileExtension == null || fileExtension.length == 0 ||
-                            child.getFileProperties().name.endsWith(fileExtension);
-                        if (test) {
+                        let testAcceptAll = fileExtension == null || fileExtension.length == 0;
+                        var matchExtension = false;
+                        if (!testAcceptAll ) {
+                            let extensions = fileExtension.split(',').filter(e => e.length > 0).map(i => i.toLowerCase().trim());
+                            let matches = extensions.filter(ext => child.getFileProperties().name.toLowerCase().endsWith(ext));
+                            matchExtension = matches.length > 0;
+                        }
+                        if (testAcceptAll || matchExtension) {
                             let node = {};
                             currentTreeData.children.push(node);
                             funcArray.push(() => {
@@ -125,9 +130,14 @@ module.exports = {
                         currentTreeData.children.push(node);
                     }
                     if (includeFiles === true && !childProps.isDirectory && !childProps.isHidden) {
-                        let test = fileExtension == null || fileExtension.length == 0 ||
-                            child.getFileProperties().name.endsWith(fileExtension);
-                        if (test) {
+                        let testAcceptAll = fileExtension == null || fileExtension.length == 0;
+                        var matchExtension = false;
+                        if (!testAcceptAll ) {
+                            let extensions = fileExtension.split(',').filter(e => e.length > 0).map(i => i.toLowerCase().trim());
+                            let matches = extensions.filter(ext => child.getFileProperties().name.toLowerCase().endsWith(ext));
+                            matchExtension = matches.length > 0;
+                        }
+                        if (testAcceptAll || matchExtension) {
                             let node = {};
                             node.path = newPath + child.getName();
                             node.children = [];

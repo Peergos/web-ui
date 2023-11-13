@@ -130,9 +130,13 @@ module.exports = {
             matchingInbuiltApps.push(identity);
         }
         if (mimeType.startsWith("text/x-markdown") ||
-            ( mimeType.startsWith("text/") && filename.endsWith('.md'))) {
-            let markdown = {name:"markdown", contextMenuText:'Open in Markdown Viewer'};
-            matchingInbuiltApps.push(markdown);
+           ( mimeType.startsWith("text/") && filename.endsWith('.md'))) {
+            let markup = {name:"markup", contextMenuText:'Open in Markdown Viewer'};
+            matchingInbuiltApps.push(markup);
+        }
+        if (mimeType.startsWith("text/") && filename.endsWith('.note')) {
+            let markup = {name:"markup", contextMenuText:'Open in Notes Viewer'};
+            matchingInbuiltApps.push(markup);
         }
         if (mimeType.startsWith("text/html") ||
             ( mimeType.startsWith("text/") && filename.endsWith('.html'))) {
@@ -177,8 +181,9 @@ module.exports = {
 	    } else if (mimeType === "application/vnd.peergos-identity-proof") {
 		return "identity-proof";
         } else if (mimeType.startsWith("text/x-markdown") ||
-            ( mimeType.startsWith("text/") && filename.endsWith('.md'))) {
-            return writable ? "editor" : "markdown";
+            ( mimeType.startsWith("text/") &&
+            ( filename.endsWith('.md') || filename.endsWith('.note') ) )  ) {
+            return writable ? "editor" : "markup";
         } else if (mimeType.startsWith("text/html") ||
             ( mimeType.startsWith("text/") && filename.endsWith('.html'))) {
             return writable ? "editor" : "htmlviewer";
