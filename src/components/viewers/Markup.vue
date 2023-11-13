@@ -350,11 +350,9 @@ module.exports = {
                 if (props.isHidden) {
                     that.showErrorMessage("file not accessible: " + filePath);
                     future.complete(null);
-                } else {
-                    future.complete(file);
                 }
                 if (allowFolder != true && props.isDirectory) {
-                    that.showErrorMessage("file not accessible: " + filePath);
+                    that.showErrorMessage("folder not accessible: " + filePath);
                     future.complete(null);
                 } else {
                     future.complete(file);
@@ -466,14 +464,19 @@ module.exports = {
                 }
             });
         } else {
-            let fullPath = this.calculatePath(filePath, true);
+            var fullPath = this.calculatePath(filePath, false);
             that.findFile(fullPath, true).thenApply(file => {
                 if (file != null) {
-                    let app = that.getApp(file, that.updatedPath);
-                    if (app == 'hex') {
-                        that.openFileOrDir("Drive", that.updatedPath, {filename:""});
+                    if (file.getFileProperties().isDirectory) {
+                        that.openFileOrDir("Drive", fullPath, {filename:""});
                     } else {
-                        that.openFileOrDir(app, that.updatedPath, {filename:that.updatedFilename});
+                        fullPath = this.calculatePath(filePath, true);
+                        let app = that.getApp(file, that.updatedPath);
+                        if (app == 'hex') {
+                            that.openFileOrDir("Drive", that.updatedPath, {filename:""});
+                        } else {
+                            that.openFileOrDir(app, that.updatedPath, {filename:that.updatedFilename});
+                        }
                     }
                 }
             });
