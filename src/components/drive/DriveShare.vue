@@ -237,7 +237,7 @@ module.exports = {
 
 			let name = this.displayName.toLowerCase();
 		    let that = this;
-			if (this.currentDir != null && (name.endsWith('.html') || name.endsWith('.md') || name == 'peergos-app.json')) {
+			if (this.currentDir != null && (name.endsWith('.html') || name.endsWith('.md') || name.endsWith('.note') || name == 'peergos-app.json')) {
                 this.choice_message = 'Confirm Action';
                 this.choice_body = '';
                 this.choice_consumer_func = (index) => {
