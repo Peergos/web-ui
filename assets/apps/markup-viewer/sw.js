@@ -7,6 +7,7 @@ const precachedAssets = [
     'toastui-editor-viewer.js',
     'purify.min.js.map',
     'attaches.js',
+    'image.js',
     'editorjs.js',
     'mermaid.js',
     'css/toastui-editor-viewer.min.css',
