@@ -193,6 +193,10 @@ function initialiseEditorJS(theme, jsonData) {
                     inlineToolbar: true,
                     shortcut: 'CMD+ALT+T'
                 },
+                Math: {
+        			class: EJLaTeX,
+        			shortcut: 'CMD+SHIFT+L'
+		    	},
                 attaches: {
                     class: AttachesTool,
                     config: {
