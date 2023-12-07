@@ -480,6 +480,7 @@ function isOPFSAvailable() {
                 if (rootDirectory == null) {
                     rootDirectory = root;
                 }
+                console.log('OPFS available');
                 future.complete(true);
             }).catch(e => {
                 console.log('OPFS not available:' + e);
@@ -497,7 +498,8 @@ function isOPFSAvailable() {
 //Firefox private mode does not support IndexedDB.  https://bugzilla.mozilla.org/show_bug.cgi?id=781982
 function isIndexedDBAvailable() {
     let future = peergos.shared.util.Futures.incomplete();
-    if (navigator.userAgent.toLowerCase().indexOf("firefox") > -1){
+    if (navigator.userAgent.toLowerCase().indexOf("firefox") > -1
+        || navigator.userAgent.toLowerCase().indexOf("iphone") > -1){
         //console.log("Firefox")
         try {
           var db = indexedDB.open("IsPBMode");
@@ -505,6 +507,7 @@ function isIndexedDBAvailable() {
                 future.complete(false);
           };
           db.onsuccess = function() {
+                console.log('IndexedDB available');
                 future.complete(true);
           };
         }
@@ -512,6 +515,7 @@ function isIndexedDBAvailable() {
             future.complete(false);
         }
     } else {
+        console.log('IndexedDB available');
         future.complete(true);
     }
     return future;
