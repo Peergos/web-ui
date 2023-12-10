@@ -269,9 +269,9 @@ var cache = {
         let that = this;
         bindCacheStore(that);
         isOPFSAvailable().thenApply(function(isOpfsCachingEnabled) {
-            that.isOpfsCachingEnabled = isOpfsCachingEnabled;
             isIndexedDBAvailable().thenApply(function(isIndexedDBCachingEnabled) {
                 that.isIndexedDBCachingEnabled = isIndexedDBCachingEnabled;
+                that.isOpfsCachingEnabled = isIndexedDBCachingEnabled && isOpfsCachingEnabled;
                 that.isCachingEnabled = isOpfsCachingEnabled || isIndexedDBCachingEnabled;
                 if (that.isCachingEnabled) {
                     that.cacheStore = isOpfsCachingEnabled ? 'data' : createStoreIDBKV('data', 'keyval');
