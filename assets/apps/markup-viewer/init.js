@@ -52,7 +52,19 @@ function initialiseMarkdownEditor(theme, subPathInput, text) {
         usageStatistics: false,
         headless: true,
         theme: theme,
-        subPath: subPath
+        subPath: subPath,
+        customHTMLRenderer: {
+            latex(node) {
+                const generator = new latexjs.HtmlGenerator({ hyphenate: false });
+                const { body } = latexjs.parse(node.literal, { generator }).htmlDocument();
+
+                return [
+                    { type: 'openTag', tagName: 'div', outerNewLine: true },
+                    { type: 'html', content: body.innerHTML },
+                    { type: 'closeTag', tagName: 'div', outerNewLine: true }
+                ];
+            },
+        },
     });
     let output = viewer.getHTML();
     let xss = DOMPurify.sanitize(output);
