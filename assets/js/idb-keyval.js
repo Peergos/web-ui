@@ -25,18 +25,23 @@ function promisifyRequest(request) {
 }
 
 function createStoreIDBKV(dbName, storeName) {
-  var request = indexedDB.open(dbName);
+    try {
+      var request = indexedDB.open(dbName);
 
-  request.onupgradeneeded = function () {
-    return request.result.createObjectStore(storeName);
-  };
+      request.onupgradeneeded = function () {
+        return request.result.createObjectStore(storeName);
+      };
 
-  var dbp = promisifyRequest(request);
-  return function (txMode, callback) {
-    return dbp.then(function (db) {
-      return callback(db.transaction(storeName, txMode).objectStore(storeName));
-    });
-  };
+      var dbp = promisifyRequest(request);
+      return function (txMode, callback) {
+        return dbp.then(function (db) {
+          return callback(db.transaction(storeName, txMode).objectStore(storeName));
+        });
+      };
+    } catch (ex) {
+        console.log('createStoreIDBKV error: ' + ex);
+        return null;
+    }
 }
 
 var defaultGetStoreFunc;
