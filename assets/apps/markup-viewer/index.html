@@ -5,14 +5,23 @@
   <title>Notes</title>
   <link href="css/notes-style.css" rel="stylesheet">
   <link rel="stylesheet" href="css/toastui-editor-viewer.min.css">
-  <link rel="stylesheet" href="css/markdown.css">
+  <style>
+    .max-area {
+      height: 100%;
+      width: 100%;
+    }
+    .dark-body {
+      background-color: #000;
+    }
+    </style>
+  <link rel="stylesheet" href="css/toastui-editor-viewer-dark-mode.css">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
 </head>
-<body>
+<body id="body-element">
   <script src="purify.min.js"></script>
   <script src="toastui-editor-viewer.js"></script>
-  <div class="max-area">
-    <div id="sanitized" class="toastui-editor-contents"></div>
+  <div id="md-element" class="max-area">
+      <div id="sanitized" class="toastui-editor-contents"></div>
   </div>
   <div class="ce-example">
     <div class="ce-example__content _ce-example__content--small">
