@@ -16,10 +16,10 @@ window.addEventListener('message', function (e) {
         let blob = new Blob([e.data.data]);
         image.src = URL.createObjectURL(blob);
     } else if(e.data.action == "respondToNavigateTo"){
-        let markdownThemeToUse = 'light'; //e.data.theme != null && e.data.theme == 'dark-mode' ? 'dark' : 'light';
-        var jsonNoteData = {blocks: [], version: "", time: ""}
+        let markdownThemeToUse = e.data.theme != null && e.data.theme == 'dark-mode' ? 'dark' : 'light';
         if (e.data.extension == 'note') {
             initialiseMarkdownEditor(markdownThemeToUse, e.data.subPath, '');
+            var jsonNoteData = {blocks: [], version: "", time: ""}
             if (e.data.text.length > 0) {
                 try {
                     jsonNoteData = JSON.parse(e.data.text);
@@ -56,7 +56,17 @@ function initialiseMarkdownEditor(theme, subPathInput, text) {
     });
     let output = viewer.getHTML();
     let xss = DOMPurify.sanitize(output);
-    document.getElementById('sanitized').innerHTML = xss;
+    let element = document.getElementById('sanitized');
+    let body = document.getElementById('body-element');
+    let mdElement = document.getElementById('md-element');
+    element.innerHTML = xss;
+    if (theme == 'dark') {
+        mdElement.classList.add("toastui-editor-dark");
+        body.classList.add("dark-body");
+    } else {
+        mdElement.classList.remove("toastui-editor-dark");
+        body.classList.remove("dark-body");
+    }
 }
 function updateResources(format) {
         let anchors = document.getElementsByTagName("a");
