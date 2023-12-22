@@ -11,7 +11,7 @@ const precachedAssets = [
     'editorjs.js',
     'mermaid.js',
     'css/toastui-editor-viewer.min.css',
-    'css/markdown.css',
+    'css/toastui-editor-viewer-dark-mode.css',
     'css/notes-style.css',
 ];
 
