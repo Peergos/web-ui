@@ -81,7 +81,7 @@ module.exports = {
             setTimeout(() => {
                 if (!that.isIframeInitialised)
                     that.$toast.error("Unable to register service worker. PDF viewer will not work offline. \nTo enable offline usage, allow 3rd party cookies for " + window.location.protocol + "//[*]." + window.location.host + "\n Note: this is not tracking", {timeout:false});
-            }, 5000)
+            }, 1000 * 10)
 	},
 		getFileSize: function(props) {
                 var low = props.sizeLow();
