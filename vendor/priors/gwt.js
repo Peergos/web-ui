@@ -193,7 +193,7 @@ function putProm(url, data, headers) {
             // so check the status
             if (req.status == 200) {
 		resolve(new Int8Array(req.response));
-            } else if (req.status == 429 || req.status == 503) {
+            } else if (req.status == 429 || req.status == 500 || req.status == 503) {
 	        future.completeExceptionally(new peergos.shared.storage.RateLimitException());
             } else {
 		reject("HTTP " + req.status);
