@@ -7,21 +7,20 @@
 				name="username"
 				v-model="username"
 				ref="username"
-				placeholder="Public username"
+				:placeholder="translate('SIGNUP.USERNAME')"
 				@input="(val) => (username = username.toLowerCase())"
 			/>
 
 			<AppButton class="generate-password" type="primary" block accent @click.native="generatePassword()">
-				Generate password
+				{{ translate("SIGNUP.GENERATE") }}
 			</AppButton>
 
-			<FormPassword v-model="password" :passwordIsVisible="showPasswords" placeholder="Click generate password" firstOfTwo />
+			<FormPassword v-model="password" :passwordIsVisible="showPasswords" :placeholder="translate('SIGNUP.CLICKGEN')" firstOfTwo />
 
-			<FormPassword v-model="password2" :passwordIsVisible="showPasswords" placeholder="Re-enter password" @keyup.native.enter="signup()"/>
+			<FormPassword v-model="password2" :passwordIsVisible="showPasswords" :placeholder="translate('SIGNUP.REENTER')" @keyup.native.enter="signup()"/>
 
 			<label class="checkbox__group">
-				I understand that passwords cannot be reset or recovered - if I forget my password, then I will lose access to my
-				account and data. If I enter my password into a malicious website then I will lose control of my account.
+				{{ translate("SIGNUP.AGREE") }}
 				<input
 					type="checkbox"
 					name="safePassword"
@@ -31,7 +30,7 @@
 			</label>
 
 			<label class="checkbox__group">
-				I accept the <a href="/terms.html" target="_blank" rel="noopener noreferrer">Terms of Service</a> and <a href="/privacy.html" target="_blank" rel="noopener noreferrer">Privacy Policy</a>
+				{{ translate("SIGNUP.ACCEPT") }} <a href="/terms.html" target="_blank" rel="noopener noreferrer">{{ translate("SIGNUP.TERMS") }}</a> {{ translate("SIGNUP.AND") }} <a href="/privacy.html" target="_blank" rel="noopener noreferrer">{{ translate("SIGNUP.POLICY") }}</a>
 				<input
 					type="checkbox"
 					name="tosAccepted"
@@ -127,6 +126,7 @@ const BannedUsernames = require('../mixins/password/bannedUsernames.json');
 const FormPassword = require("./form/FormPassword.vue");
 const UriDecoder = require('../mixins/uridecoder/index.js');
 const sandboxMixin = require("../mixins/sandbox/index.js");
+const i18n = require("../i18n/index.js");
 const Continue = require("Continue.vue");
 module.exports = {
     components: {
@@ -135,7 +135,7 @@ module.exports = {
         Continue,
     },
 
-    mixins:[UriDecoder, sandboxMixin],
+    mixins:[UriDecoder, sandboxMixin, i18n],
 
     props: {
 	token: {
@@ -170,7 +170,7 @@ module.exports = {
 	    'network'
 	]),
         signupButtonText() {
-            return this.desiredQuota > 0 ? "Add payment card and sign up" : "Sign up";
+            return this.desiredQuota > 0 ? this.translate("SIGNUP.SIGNUPPAID") : this.translate("SIGNUP.SIGNUPFREE");
         },
     },
     mounted() {
