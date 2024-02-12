@@ -5,7 +5,7 @@
 			autofocus
 			name="username"
 			v-model="username"
-			placeholder="Username"
+			:placeholder="translate('LOGIN.USERNAME')"
 			ref="username"
 			@input="(val) => (username = username.toLowerCase())"
 		/>
@@ -17,10 +17,10 @@
                 :consumer_cancel_func="consumer_cancel_func"
                 :consumer_func="consumer_func">
         </MultiFactorAuth>
-		<FormPassword v-model="password" placeholder="password" @keyup.native.enter="login()"/>
+		<FormPassword v-model="password" :placeholder="translate('LOGIN.PASSWORD')" @keyup.native.enter="login()"/>
 
         <label class="checkbox__group">
-            Stay logged in
+            {{ translate('LOGIN.STAY') }}
             <input
                 type="checkbox"
                 name="stayLoggedIn"
