@@ -49,42 +49,42 @@
 			    <div class="card__meta options">
 				<h3>Pro Account</h3>
 				<ul>
-				    <li>100 GB of hyper secure storage</li>
-				    <li>All our bundled private applications</li>
-				    <li>&#x00A3;5 / month</li>
+				    <li>100 GB {{ translate("SIGNUP.HYPER") }}</li>
+				    <li>{{ translate("SIGNUP.BUNDLED") }}</li>
+				    <li>&#x00A3;5 / {{ translate("SIGNUP.MONTH") }}</li>
 				</ul>
                                 <AppButton @click.native="setPlan(100000000000)" type="primary" block accent>Select Pro</AppButton>
 			    </div>
                             <div class="card__meta options">
 				<h3>Visionary Account</h3>
 				<ul>
-				    <li>500 GB of hyper secure storage</li>
-				    <li>All our bundled private applications</li>
-				    <li>&#x00A3;10 / month</li>
+				    <li>500 GB {{ translate("SIGNUP.HYPER") }}</li>
+				    <li>{{ translate("SIGNUP.BUNDLED") }}</li>
+				    <li>&#x00A3;10 / {{ translate("SIGNUP.MONTH") }}</li>
 				</ul>
                                 <AppButton @click.native="setPlan(500000000000)" type="primary" block accent>Select Visionary</AppButton>
 			    </div>
                             <div class="card__meta options">
 				<h3>Pioneer Account</h3>
 				<ul>
-				    <li>2000 GB of hyper secure storage</li>
-				    <li>All our bundled private applications</li>
-				    <li>&#x00A3;25 / month</li>
+				    <li>2000 GB {{ translate("SIGNUP.HYPER") }}</li>
+				    <li>{{ translate("SIGNUP.BUNDLED") }}</li>
+				    <li>&#x00A3;25 / {{ translate("SIGNUP.MONTH") }}</li>
 				</ul>
                                 <AppButton @click.native="setPlan(2000000000000)" type="primary" block accent>Select Pioneer</AppButton>
 			    </div>
                             <div class="card__meta options">
 				<h3>Trailblazer Account</h3>
 				<ul>
-				    <li>4000 GB of hyper secure storage</li>
-				    <li>All our bundled private applications</li>
-				    <li>&#x00A3;40 / month</li>
+				    <li>4000 GB {{ translate("SIGNUP.HYPER") }}</li>
+				    <li>{{ translate("SIGNUP.BUNDLED") }}</li>
+				    <li>&#x00A3;40 / {{ translate("SIGNUP.MONTH") }}</li>
 				</ul>
                                 <AppButton @click.native="setPlan(4000000000000)" type="primary" block accent>Select Trailblazer</AppButton>
 			    </div>
                             <div class="card__meta options">
-				<h3>Want to try it first?</h3>
-				<label>Try it for free on our <u><a href="https://peergos-demo.net/?signup=true" target="_blank">demo server</a></u>.
+				<h3>{{ translate("SIGNUP.TRYTITLE") }}</h3>
+				<label>{{ translate("SIGNUP.TRY") }} <u><a href="https://peergos-demo.net/?signup=true" target="_blank">demo server</a></u>.
                                 </label>
 			    </div>
                         </div>

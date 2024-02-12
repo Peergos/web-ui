@@ -16,4 +16,9 @@ module.exports = {
     "SIGNUP.TERMS":"Terms of Service",
     "SIGNUP.AND":"and",
     "SIGNUP.POLICY":"Privacy Policy",
+    "SIGNUP.HYPER":"of hyper secure storage",
+    "SIGNUP.BUNDLED":"All our bundled private applications",
+    "SIGNUP.MONTH":"month",
+    "SIGNUP.TRYTITLE":"Want to try it first?",
+    "SIGNUP.TRY":"Try it for free on our",
 }
