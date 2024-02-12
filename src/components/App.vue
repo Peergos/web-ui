@@ -24,10 +24,10 @@
 				    <i>permanent</i> account, please go 
 				    <a class="line" href="https://peergos.net?signup=true">here</a>.
 			        </p>
-                                <AppTab title="Login">
+                                <AppTab :title="translate('APP.LOGIN')">
 					<Login @initApp="init()" />
 				</AppTab>
-				<AppTab title="Signup">
+				<AppTab :title="translate('APP.SIGNUP')">
 					<Signup :token="token" />
 				</AppTab>
 			</AppTabs>
@@ -86,6 +86,7 @@ const ServerMessages = require("./ServerMessages.vue");
 const routerMixins = require("../mixins/router/index.js");
 const launcherMixin = require("../mixins/launcher/index.js");
 const sandboxAppMixins = require("../mixins/sandbox/index.js");
+const i18n = require("../i18n/index.js");
 
 module.exports = {
 	components: {
@@ -150,7 +151,7 @@ module.exports = {
             }
 	},
 
-	mixins: [routerMixins, sandboxAppMixins, launcherMixin],
+	mixins: [routerMixins, sandboxAppMixins, launcherMixin, i18n],
 
 	watch: {
 	    network(newNetwork) {
