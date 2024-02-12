@@ -30,7 +30,7 @@
         </label>
 
 		<AppButton :disabled="isLoggingIn" class="login" @click.native="login()" type="primary" block accent  icon="arrow-right">
-			Sign in
+			{{ translate('LOGIN.BUTTON') }}
 		</AppButton>
 	</div>
 </template>
@@ -41,6 +41,7 @@ const FormPassword = require("./form/FormPassword.vue");
 const MultiFactorAuth = require("./auth/MultiFactorAuth.vue");
 const routerMixins = require("../mixins/router/index.js");
 const UriDecoder = require('../mixins/uridecoder/index.js');
+const i18n = require("../i18n/index.js");
 
 module.exports = {
 	components: {
@@ -69,7 +70,7 @@ module.exports = {
 			'isSecretLink',
 		]),
 	},
-	mixins:[routerMixins, UriDecoder],
+	mixins:[routerMixins, UriDecoder, i18n],
 
 	mounted() {
 		this.$refs.username.focus()
