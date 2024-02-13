@@ -21,4 +21,9 @@ module.exports = {
     "SIGNUP.MONTH":"month",
     "SIGNUP.TRYTITLE":"Want to try it first?",
     "SIGNUP.TRY":"Try it for free on our",
+    "PASSWORD.COMMON1":"your password is the",
+    "PASSWORD.COMMON2":"most common password!",
+    "PASSWORD.SHORT1":"passwords less than",
+    "PASSWORD.SHORT2":"characters are considered unsafe",
+    "PASSWORD.GOOD":"That's a better password",
 }

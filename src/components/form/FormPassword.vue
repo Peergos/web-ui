@@ -21,6 +21,7 @@
 <script>
 const AppButton = require("../AppButton.vue");
 const CommonPasswords = require('../../mixins/password/passwords.json');
+const i18n = require("../../i18n/index.js");
 
 module.exports = {
 	components: {
@@ -49,7 +50,8 @@ module.exports = {
 	    passwordUpdate: false
 	}
     },
-    
+
+    mixins:[i18n],
     methods: {
 	togglePassword() {
 	    this.passwordIsVisible = !this.passwordIsVisible
@@ -64,14 +66,15 @@ module.exports = {
 	    let suffix = ["th", "st", "nd", "rd", "th", "th", "th", "th", "th", "th"][(index+1) % 10];
             
 	    if (index != -1) {
-		this.$toast.error(`your password is the ${index+1} ${suffix} most common password!`,{ id: 'password', timeout:false });
+		this.$toast.error(this.translate("PASSWORD.COMMON1") + ` ${index+1}${suffix} ` + this.translate("PASSWORD.COMMON2"),{ id: 'password', timeout:false });
 		this.passwordUpdate = true
 	    } else if (passwd.length < this.passwordThreshold) {
-		this.$toast.error(`passwords less than ${this.passwordThreshold} characters are considered unsafe.`,{ id: 'password', timeout:false });
+                this.translate("PASSWORD.SHORT1")
+		this.$toast.error(this.translate("PASSWORD.SHORT1") + ` ${this.passwordThreshold} ` + this.translate("PASSWORD.SHORT2"),{ id: 'password', timeout:false });
 		this.passwordUpdate = true
 	    }else{
 		if (this.passwordUpdate)
-		    this.$toast.error(`That's a better password.`,{ id: 'password', timeout:4000 });
+		    this.$toast.error(this.translate("PASSWORD.GOOD"),{ id: 'password', timeout:4000 });
 	    }
 	}
     },
