@@ -43,13 +43,12 @@
 					aria-label="Upload"
 				>
 					<ul>
-						<li @click="askForFiles()">Upload files</li>
-						<li @click="askForDirectories()">Upload folder</li>
-						<li @click="$emit('askMkdir')">New folder</li>
-						<li @click="$emit('createFile')">New file</li>
-						<!-- li @click="$emit('createImageFile')">New Image file</li -->
-						<li @click="$emit('newApp')">New App</li>
-                        <li v-if="canPaste" @click="$emit('paste')">Paste</li>
+						<li @click="askForFiles()">{{ translate("DRIVE.UPLOAD.FILES") }}</li>
+						<li @click="askForDirectories()">{{ translate("DRIVE.UPLOAD.FOLDER") }}</li>
+						<li @click="$emit('askMkdir')">{{ translate("DRIVE.NEW.FOLDER") }}</li>
+						<li @click="$emit('createFile')">{{ translate("DRIVE.NEW.FILE") }}</li>
+						<li @click="$emit('newApp')">{{ translate("DRIVE.NEW.APP") }}</li>
+                        <li v-if="canPaste" @click="$emit('paste')">{{ translate("DRIVE.PASTE") }}</li>
 					</ul>
 				</AppDropdown>
 			</div>
@@ -70,6 +69,7 @@ const AppDropdown = require("../AppDropdown.vue");
 const AppIcon = require("../AppIcon.vue");
 const AppSandbox = require("../sandbox/AppSandbox.vue");
 const UserSettings = require("../UserSettings.vue");
+const i18n = require("../../i18n/index.js");
 
 module.exports = {
 	components: {
@@ -79,6 +79,7 @@ module.exports = {
         AppSandbox,
 		UserSettings
 	},
+    mixins:[i18n],
     data() {
         return {
             showAppSandbox: false,

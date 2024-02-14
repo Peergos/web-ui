@@ -7,7 +7,7 @@
       aria-label="Multi selection menu"
     >
       <template #trigger>
-        <span> With {{ selectedFiles.length }} selected </span>
+        <span> {{ translate("DRIVE.WITH") }} {{ selectedFiles.length }} {{ translate("DRIVE.SELECTED") }} </span>
       </template>
 
       <ul>
@@ -19,12 +19,14 @@
 <script>
 const AppButton = require("../AppButton.vue");
 const AppDropdown = require("../AppDropdown.vue");
+const i18n = require("../../i18n/index.js");
 
 module.exports = {
   components: {
     AppButton,
     AppDropdown,
   },
+  mixins:[i18n],
   props: {
     selectedFiles: {
       type: Array,

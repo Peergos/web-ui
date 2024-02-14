@@ -1,19 +1,21 @@
 <template>
 	<figure class="grid-card drop" @click="askForFiles()">
 		<AppIcon class="card__icon" icon="upload--72" />
-		<figcaption>Drop files here</figcaption>
+		<figcaption>{{ translate("DRIVE.DROP") }}</figcaption>
 	</figure>
 </template>
 
 <script>
 const AppIcon = require("../AppIcon.vue");
+const i18n = require("../../i18n/index.js");
 
 module.exports = {
     components: {
 	    AppIcon,
     },
-	props: {
-	},
+    mixins:[i18n],
+    props: {
+    },
     methods: {
         askForFiles() {
             document.getElementById('uploadFileInput').click();
