@@ -1,7 +1,7 @@
 <template>
 	<AppModal position="center">
 		<template #header>
-			<h2>Welcome to Peergos!</h2>
+			<h2>{{ translate("TOUR.TITLE") }}</h2>
 		</template>
 		<template #body>
 			<Slider :slides="slides"/>
@@ -14,6 +14,7 @@
 <script>
 const AppModal = require("AppModal.vue");
 const Slider = require("../slider/Slider.vue");
+const i18n = require("../../i18n/index.js");
 
 module.exports = {
 components: {
@@ -24,58 +25,59 @@ data() {
 	return {
 	    slides: [
 			{
-				title: "Encrypted storage",
-				description: "Store your files and arrange them in folders.",
+				title: this.translate("TOUR.STORAGE"),
+				description: this.translate("TOUR.STORAGE.DESC"),
 				image: "images/tour/drive.png"
 			},
 			{
-				title: "Secure sharing",
-				description: "Securely share with friends on Peergos, or with anyone via a secret link.",
+				title: this.translate("TOUR.SHARE"),
+				description: this.translate("TOUR.SHARE.DESC"),
 				image: "images/tour/share.jpg"
 			},
 			{
-				title: "Photo gallery",
-				description: "View slideshows of your photos.",
+				title: this.translate("TOUR.PHOTOS"),
+				description: this.translate("TOUR.PHOTOS.DESC"),
 				image: "images/tour/images.jpg"
 			},
 			{
-				title: "Document editing",
-				description: "View and edit your text documents.",
+				title: this.translate("TOUR.DOCS"),
+				description: this.translate("TOUR.DOCS.DESC"),
 				image: "images/tour/markdown.png"
 			},
 			{
-				title: "Music collection",
-				description: "Play your music collection.",
+				title: this.translate("TOUR.MUSIC"),
+				description: this.translate("TOUR.MUSIC.DESC"),
 				image: "images/tour/music.jpg"
 			},
 			{
-				title: "Videos and movies",
-				description: "Watch your videos and movies from any device.",
+				title: this.translate("TOUR.VIDEOS"),
+				description: this.translate("TOUR.VIDEOS.DESC"),
 				image: "images/tour/video.jpg"
 			},
 			{
-				title: "PDF viewer",
-				description: "Safely view PDF documents.",
+				title: this.translate("TOUR.PDF"),
+				description: this.translate("TOUR.PDF.DESC"),
 				image: "images/tour/pdf.jpg"
 			},
 			{
-				title: "Tasks board",
-				description: "Organise and plan things with our task boards.",
+				title: this.translate("TOUR.TASKS"),
+				description: this.translate("TOUR.TASKS.DESC"),
 				image: "images/tour/tasks.jpg"
 			},
 			{
-				title: "Calendar",
-				description: "Manage your schedule - share events or entire calendars.",
+				title: this.translate("TOUR.CAL"),
+				description: this.translate("TOUR.CAL.DESC"),
 				image: "images/tour/calendar.png"
 			},
 			{
-				title: "Social Feed",
-				description: "Share posts and comments with your friends and followers.",
+				title: this.translate("TOUR.SOCIAL"),
+				description: this.translate("TOUR.SOCIAL.DESC"),
 				image: "images/tour/social-feed.jpg"
 			},
 		]
 	}
 },
+    mixins:[i18n],  
 }
 </script>
 
