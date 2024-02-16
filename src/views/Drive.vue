@@ -68,20 +68,20 @@
 
     <transition name="fade" mode="out-in" appear>
     <DriveSelected v-if="selectedFiles.length > 1" :selectedFiles="selectedFiles">
-      <li id="copy" v-if="allowCopy" @keyup.enter="copyMultiSelect()" @click="copyMultiSelect()">Copy</li>
-      <li id="cut" v-if="isWritable" @keyup.enter="cutMultiSelect()" @click="cutMultiSelect()">Cut</li>
-      <li id="delete" v-if="isWritable" @keyup.enter="deleteFilesMultiSelect()" @click="deleteFilesMultiSelect()">Delete</li>
-      <li id="download" @keyup.enter="downloadAllMultiSelect()" @click="downloadAllMultiSelect()">Download</li>
-      <li id="zip" @keyup.enter="zipAndDownloadMultiSelect()" @click="zipAndDownloadMultiSelect()">Zip</li>
+      <li id="copy" v-if="allowCopy" @keyup.enter="copyMultiSelect()" @click="copyMultiSelect()">{{ translate("DRIVE.COPY") }}</li>
+      <li id="cut" v-if="isWritable" @keyup.enter="cutMultiSelect()" @click="cutMultiSelect()">{{ translate("DRIVE.CUT") }}</li>
+      <li id="delete" v-if="isWritable" @keyup.enter="deleteFilesMultiSelect()" @click="deleteFilesMultiSelect()">{{ translate("DRIVE.DELETE") }}</li>
+      <li id="download" @keyup.enter="downloadAllMultiSelect()" @click="downloadAllMultiSelect()">{{ translate("DRIVE.DOWNLOAD") }}</li>
+      <li id="zip" @keyup.enter="zipAndDownloadMultiSelect()" @click="zipAndDownloadMultiSelect()">{{ translate("DRIVE.ZIP") }}</li>
       <li id="deselect" @keyup.enter="selectedFiles = []" @click="selectedFiles = []">
-        Deselect
+        {{ translate("DRIVE.DESELECT") }}
       </li>
     </DriveSelected>
     </transition>
     <transition name="drop">
       <DriveMenu ref="drivePasteMenu" v-if="viewPasteMenu" @closeMenu="closePasteMenu()">
         <li id="paste-files" @keyup.enter="pasteMultiSelect" @click="pasteMultiSelect">
-          Paste
+          {{ translate("DRIVE.PASTE") }}
         </li>
       </DriveMenu>
     </transition>
@@ -140,7 +140,7 @@
           @keyup.enter="viewFile()"
           @click="viewFile()"
         >
-          View
+          {{ translate("DRIVE.VIEW") }}
         </li>
         <li
           id="view-markup"
@@ -148,7 +148,7 @@
           @keyup.enter="viewFile()"
           @click="viewFile()"
         >
-          View
+          {{ translate("DRIVE.VIEW") }}
         </li>
         <li
           id="edit-markup"
@@ -156,7 +156,7 @@
           @keyup.enter="editFile()"
           @click="editFile()"
         >
-          Edit
+          {{ translate("DRIVE.EDIT") }}
         </li>
         <li
           id="view-html"
@@ -164,10 +164,10 @@
           @keyup.enter="viewFile()"
           @click="viewFile()"
         >
-          View
+          {{ translate("DRIVE.VIEW") }}
         </li>
         <li id="edit-html" v-if="isHTML" @keyup.enter="editFile()" @click="editFile()">
-          Edit
+          {{ translate("DRIVE.EDIT") }}
         </li>
         <li
           id="open-in-app"
@@ -183,10 +183,10 @@
           @keyup.enter="downloadAll"
           @click="downloadAll"
         >
-          Download
+          {{ translate("DRIVE.DOWNLOAD") }}
         </li>
         <li id="rename-file" v-if="isWritable" @keyup.enter="rename" @click="rename">
-          Rename
+          {{ translate("DRIVE.RENAME") }}
         </li>
         <li
           id="delete-file"
@@ -194,12 +194,12 @@
           @keyup.enter="deleteFile"
           @click="deleteFile"
         >
-          Delete
+          {{ translate("DRIVE.DELETE") }}
         </li>
         <li id="copy-file" v-if="allowCopy" @keyup.enter="copy" @click="copy">Copy</li>
         <li id="cut-file" v-if="isWritable" @keyup.enter="cut" @click="cut">Cut</li>
         <li id="paste-file" v-if="isPasteAvailable" @keyup.enter="paste" @click="paste">
-          Paste
+          {{ translate("DRIVE.PASTE") }}
         </li>
         <li
           id="share-file"
@@ -207,7 +207,7 @@
           @keyup.enter="showShareWith"
           @click="showShareWith"
         >
-          Share
+          {{ translate("DRIVE.SHARE") }}
         </li>
         <li
           id="zip-folder"
@@ -215,7 +215,7 @@
           @keyup.enter="zipAndDownload"
           @click="zipAndDownload"
         >
-          Download as Zip
+          {{ translate("DRIVE.DOWNLOAD.ZIP") }}
         </li>
         <li
           id="create-thumbnail"
@@ -223,7 +223,7 @@
           @keyup.enter="createThumbnail"
           @click="createThumbnail"
         >
-          Create Thumbnail
+          {{ translate("DRIVE.THUMB") }}
         </li>
         <li
           id="folder-props"
@@ -231,7 +231,7 @@
           @keyup.enter="viewFolderProperties"
           @click="viewFolderProperties"
         >
-          Properties
+          {{ translate("DRIVE.PROPS") }}
         </li>
         <li
           id="add-to-launcher"
@@ -239,10 +239,10 @@
           @keyup.enter="addToLauncher"
           @click="addToLauncher"
         >
-          Add to Launcher
+          {{ translate("DRIVE.ADD.LAUNCH") }}
         </li>
         <li id="app-run" v-if="isInstallable" @keyup.enter="runApp()" @click="runApp()">
-          Run App
+          {{ translate("DRIVE.RUN") }}
         </li>
         <li
           id="app-install"
@@ -250,7 +250,7 @@
           @keyup.enter="installApp()"
           @click="installApp()"
         >
-          Install App
+          {{ translate("DRIVE.INSTALL") }}
         </li>
       </DriveMenu>
     </transition>
@@ -420,6 +420,7 @@ const Warning = require('../components/Warning.vue');
 const helpers = require("../mixins/storage/index.js");
 const downloaderMixins = require("../mixins/downloader/index.js");
 const zipMixin = require("../mixins/zip/index.js");
+const i18n = require("../i18n/index.js");
 
 const router = require("../mixins/router/index.js");
 const launcherMixin = require("../mixins/launcher/index.js");
@@ -555,7 +556,7 @@ module.exports = {
             zipAndDownloadFoldersCount: 0
 		};
 	},
-	mixins:[downloaderMixins, router, zipMixin, launcherMixin],
+	mixins:[downloaderMixins, router, zipMixin, launcherMixin, i18n],
         mounted: function() {
 
         },
@@ -1347,13 +1348,13 @@ module.exports = {
 		},
 
 		confirmDelete(file, deleteFn) {
-			const extra = file.isDirectory() ? " and all its contents" : "";
-			this.prompt_placeholder = null;
-			this.prompt_message = `Are you sure you want to delete ${file.getName()} ${extra}?`;
-			this.prompt_value = '';
-			this.prompt_consumer_func = deleteFn;
-			// this.prompt_action = 'Delete'
-			this.showPrompt = true;
+		    const extra = file.isDirectory() ? this.translate("DRIVE.DELETE.FILE2") : "";
+		    this.prompt_placeholder = null;
+                    this.prompt_message = this.translate("DRIVE.DELETE.FILE") + ` ${file.getName()} ${extra}?`;
+		    this.prompt_value = '';
+		    this.prompt_consumer_func = deleteFn;
+		    // this.prompt_action = 'Delete'
+		    this.showPrompt = true;
 		},
 
 		closeWarning() {
