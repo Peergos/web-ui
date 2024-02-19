@@ -114,4 +114,13 @@ module.exports = {
     "DRIVE.DELETE.ERROR":"Error deleting files",
     "DRIVE.DELETE.CONFIRM":"Are you sure you want to delete $COUNT items?",
     "DRIVE.DELETE.FILE.ERROR":"Error deleting file: $NAME: $MESSAGE",
+    "APPNAV.LAUNCHER":"Launcher",
+    "APPNAV.DRIVE":"Drive",
+    "APPNAV.NEWSFEED":"Newsfeed",
+    "APPNAV.TASKS":"Tasks",
+    "APPNAV.SOCIAL":"Social",
+    "APPNAV.CAL":"Calendar",
+    "APPNAV.CHAT":"Chat",
+    "APPNAV.EMAIL":"Email",
+    "APPNAV.UPGRADE":"Upgrade",
 }

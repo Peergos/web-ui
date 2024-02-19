@@ -1464,10 +1464,10 @@ module.exports = {
                 let updatedAccumTotalSize = statistics.actualSize + accumTotalSize;
                 stats.push(statistics);
                 if (file.isDirectory() && statistics.fileCount == 0) {
-                    that.$toast(this.translate("DRIVE.EMPTY.FOLDER").replace("$NAME", file.getName());
+                    that.$toast(this.translate("DRIVE.EMPTY.FOLDER").replace("$NAME", file.getName()));
                     future.complete(false);
                 }else if (updatedAccumTotalSize > 1024 * 1024 * 1024 * 4) { //4GiB
-                    that.$toast((this.translate("DRIVE.LARGE.FOLDER"));
+                    that.$toast((this.translate("DRIVE.LARGE.FOLDER")));
                     future.complete(false);
                 } else {
                     that.reduceTotalSize(index + 1, path, files, updatedAccumTotalSize, stats, future);
@@ -1578,7 +1578,7 @@ module.exports = {
             this.calculateTotalSize(file, this.getPath).thenApply(statistics => {
                 that.showSpinner = false;
                 if (statistics.fileCount == 0) {
-                    that.$toast(this.translate("DRIVE.EMPTY.FOLDER").replace("$NAME", file.getName());
+                    that.$toast(this.translate("DRIVE.EMPTY.FOLDER").replace("$NAME", file.getName()));
                 }else if (statistics.actualSize > 1024 * 1024 * 1024 * 4) { //4GiB
                     that.$toast(this.translate("DRIVE.LARGE.FOLDER"));
                 } else {
