@@ -1364,8 +1364,8 @@ module.exports = {
 			var size = this.getFileSize(file.getFileProperties());
 			if (this.isStreamingAvailable || size < 50 * 1024 * 1024)
 				return downloadFn();
-			var sizeMb = (size / 1024 / 1024) | 0;
-			this.warning_message = 'Are you sure you want to download ' + file.getName() + " of size " + sizeMb + 'MiB?';
+			var sizeMb = (size / 1000 / 1000) | 0;
+		    this.warning_message = this.translate("DRIVE.DOWNLOAD.WARN").replace("$NAME", file.getName()).replace("$SIZE", sizeMb);
 			if (this.detectFirefoxWritableSteams()) {
 				this.warning_body = "Firefox has added support for streaming behind a feature flag. To enable streaming; open about:config, enable 'javascript.options.writable_streams' and then open a new tab";
 			} else {
@@ -1436,7 +1436,7 @@ module.exports = {
         if (this.isStreamingAvailable) {
             this.zipAndDownloadFolders();
         } else {
-            this.showToastError("Download as Zip only available where Streaming supported (like Chrome)");
+            this.showToastError(this.translate("DRIVE.ZIP.ERROR"));
         }
     },
     reduceTotalSize(index, path, files, accumTotalSize, stats, future) {
@@ -1464,10 +1464,10 @@ module.exports = {
                 let updatedAccumTotalSize = statistics.actualSize + accumTotalSize;
                 stats.push(statistics);
                 if (file.isDirectory() && statistics.fileCount == 0) {
-                    that.$toast('Folder:' + file.getName() + ' contains no files. Nothing to download');
+                    that.$toast(this.translate("DRIVE.EMPTY.FOLDER").replace("$NAME", file.getName());
                     future.complete(false);
                 }else if (updatedAccumTotalSize > 1024 * 1024 * 1024 * 4) { //4GiB
-                    that.$toast('Download of a Folder greater than 4GiB in size is not supported');
+                    that.$toast((this.translate("DRIVE.LARGE.FOLDER"));
                     future.complete(false);
                 } else {
                     that.reduceTotalSize(index + 1, path, files, updatedAccumTotalSize, stats, future);
@@ -1509,10 +1509,11 @@ module.exports = {
             fileCount = fileCount + statisticsList[i].fileCount;
             actualSize = actualSize + statisticsList[i].actualSize;
         }
-        this.confirm_message='Are you sure you want to download selected items?';
-        this.confirm_body='Folder(s): ' + folderCount
-                + ', File(s): ' + fileCount
-                + ', Total size: ' + helpers.convertBytesToHumanReadable(actualSize);
+        this.confirm_message=this.translate("DRIVE.CONFIRM.DOWNLOAD.TITLE");
+        this.confirm_body=this.translate("DRIVE.CONFIRM.DOWNLOAD.BODY")
+            .replace("$FOLDERS", folderCount)
+            .replace("$FILES", fileCount)
+            .replace("$SIZE", helpers.convertBytesToHumanReadable(actualSize));
         this.confirm_consumer_cancel_func = cancelFunction;
         this.confirm_consumer_func = continueFunction;
         this.showConfirm = true;
@@ -1535,7 +1536,7 @@ module.exports = {
                 }
                 let progress = {
                     show: true,
-                    title: 'Downloading selected folders',
+                    title: this.translate("DRIVE.DOWNLOAD.FOLDERS"),
                     done: 0,
                     max: actualSize
                 }
@@ -1564,7 +1565,7 @@ module.exports = {
         if (this.isStreamingAvailable) {
             this.zipAndDownloadFolder();
         } else {
-            this.showToastError("Download as Zip only available where Streaming supported (like Chrome)");
+            this.showToastError(this.translate("DRIVE.ZIP.ERROR"));
         }
     },
 	zipAndDownloadFolder() {
@@ -1577,9 +1578,9 @@ module.exports = {
             this.calculateTotalSize(file, this.getPath).thenApply(statistics => {
                 that.showSpinner = false;
                 if (statistics.fileCount == 0) {
-                    that.$toast('Folder:' + file.getName() + ' contains no files. Nothing to download');
+                    that.$toast(this.translate("DRIVE.EMPTY.FOLDER").replace("$NAME", file.getName());
                 }else if (statistics.actualSize > 1024 * 1024 * 1024 * 4) { //4GiB
-                    that.$toast('Download of a Folder greater than 4GiB in size is not supported');
+                    that.$toast(this.translate("DRIVE.LARGE.FOLDER"));
                 } else {
                     let filename = file.getName();
                     that.confirmZipAndDownloadOfFolder(filename, statistics,
@@ -1587,7 +1588,7 @@ module.exports = {
                             that.showConfirm = false;
                             var progress = {
                                 show: true,
-                                title: 'Downloading folder: ' + filename,
+                                title: this.translate("DRIVE.LARGE.FOLDER").replace("$NAME", filename),
                                 done: 0,
                                 max: statistics.actualSize
                             }
@@ -1619,10 +1620,11 @@ module.exports = {
             });
 		},
         confirmZipAndDownloadOfFolder(folderName, statistics, continueFunction, cancelFunction) {
-            this.confirm_message='Are you sure you want to download folder: ' + folderName + " ?";
-            this.confirm_body='Folder(s): ' + statistics.folderCount
-                    + ', File(s): ' + statistics.fileCount
-                    + ', Total size: ' + helpers.convertBytesToHumanReadable(statistics.actualSize);
+            this.confirm_message=this.translate("DRIVE.CONFIRM.DOWNLOAD.FOLDER.TITLE").replace("$NAME", folderName);
+            this.confirm_body=this.translate("DRIVE.CONFIRM.DOWNLOAD.BODY")
+                .replace("$FOLDERS", statistics.folderCount)
+                .replace("$FILES", statistics.fileCount)
+                .replace("$SIZE", helpers.convertBytesToHumanReadable(statistics.actualSize));
             this.confirm_consumer_cancel_func = cancelFunction;
             this.confirm_consumer_func = continueFunction;
             this.showConfirm = true;
@@ -1774,7 +1776,7 @@ module.exports = {
                         }
                     });
                 } else {
-                    this.$toast.error("Client Offline!", {timeout:false, id: 'upload'})
+                    this.$toast.error(this.translate("DRIVE.OFFLINE"), {timeout:false, id: 'upload'})
                 }
             } else {
                 let isWritableSecretLink = this.isSecretLink && this.currentDir.isWritable();
@@ -1788,14 +1790,14 @@ module.exports = {
                 } else {
                     let spaceAfterOperation = that.checkAvailableSpace(totalSize);
                     if (!isWritableSecretLink && spaceAfterOperation < 0) {
-                        let errMsg = "File upload operation exceeds available space\n" + "Please free up " + helpers.convertBytesToHumanReadable('' + -spaceAfterOperation) + " and try again";
+                        let errMsg = this.translate("DRIVE.UPLOAD.SPACE").replace("$SPACE",  helpers.convertBytesToHumanReadable('' + -spaceAfterOperation));
                         that.$toast.error(errMsg, {timeout:false, id: 'upload'})
                     } else {
                         //resetting .value tricks browser into allowing subsequent upload of same file(s)
                         document.getElementById('uploadFileInput').value = "";
                         document.getElementById('uploadDirectoriesInput').value = "";
                         let name = 'bulkUpload-' + this.uuid();
-                        let title = "Encrypting and uploading file(s)";
+                        let title = this.translate("DRIVE.UPLOAD.TITLE");
                         let sortedFiles = this.sortFilesByDirectory(files, this.getPath);
                         let progress = {
                             title: title,
@@ -1865,7 +1867,7 @@ module.exports = {
                         }
                         if (!commitContext.completed && uploadParams.progress.current >= uploadParams.progress.total) {
                             commitContext.completed = true;
-                            let title = 'Completing upload and refreshing folder...';
+                            let title = this.translate("DRIVE.UPLOAD.COMPLETE");
                             that.addUploadProgressMessage(uploadParams, title, '', '', true);
                         }
                         return true;
@@ -1898,7 +1900,7 @@ module.exports = {
                         commitWatcher).thenApply(res => {
                             uploadFuture.complete(true);
                     }).exceptionally(function (throwable) {
-                        that.errorTitle = 'Error Uploading files';
+                        that.errorTitle = this.translate("DRIVE.UPLOAD.ERROR");
                         that.errorBody = throwable.getMessage();
                         that.showError = true;
                         that.$toast.clear();
@@ -1908,8 +1910,10 @@ module.exports = {
             return uploadFuture;
         },
         confirmResumeFileUpload(filename, folderPath, confirmFunction, cancelFunction) {
-            this.confirm_message='Do you wish to resume failed file upload?';
-            this.confirm_body='File: ' + filename + " Folder: " + folderPath;
+            this.confirm_message=this.translate("DRIVE.UPLOAD.RESUME.TITLE");
+            this.confirm_body=this.translate("DRIVE.UPLOAD.RESUME.BODY")
+                .replace("NAME", filename)
+                .replace("$PATH", folderPath);
             this.confirm_consumer_cancel_func = cancelFunction;
             this.confirm_consumer_func = confirmFunction;
             this.showConfirm = true;
@@ -1918,7 +1922,7 @@ module.exports = {
             let that = this;
             if (index == files.length) {
                 if (uploadParams.progress.total == 0) {
-                    that.addUploadProgressMessage(uploadParams, 'Nothing to upload', '', '', true);
+                    that.addUploadProgressMessage(uploadParams, this.translate("DRIVE.UPLOAD.EMPTY"), '', '', true);
                 }
                 future.complete(true);
             } else {
@@ -1985,7 +1989,8 @@ module.exports = {
         },
 		confirmReplaceFile(file, cancelFn, replaceFn) {
 			this.showSpinner = false;
-			this.replace_message = 'File: "' + file.name + '" already exists in this location. Do you wish to replace it?';
+		    this.replace_message = this.translate("DRIVE.UPLOAD.EXISTS")
+                        .replace("$NAME", file.name);
 			this.replace_body = '';
 			this.replace_consumer_cancel_func = cancelFn;
 			this.replace_consumer_func = replaceFn;
@@ -2217,7 +2222,7 @@ module.exports = {
                             );
                         }).exceptionally(function (throwable) {
                             that.updateCurrentDirectory(null , () => {
-                                that.errorTitle = 'Error moving file: ' + name;
+                                that.errorTitle = this.translate("DRIVE.MOVE.ERROR").replace("$NAME", name);
                                 that.errorBody = throwable.getMessage();
                                 that.showError = true;
                                 future.complete(false);
@@ -2242,7 +2247,7 @@ module.exports = {
                         });
                     }).exceptionally(function (throwable) {
                         that.updateCurrentDirectory(null , () => {
-                            that.errorTitle = 'Error copying file: ' + fileTreeNode.getFileProperties().name;
+                            that.errorTitle = this.translate("DRIVE.COPY.ERROR").replace("$NAME", fileTreeNode.getFileProperties().name);
                             that.errorBody = throwable.getMessage();
                             that.showError = true;
                             future.complete(false);
@@ -2260,13 +2265,14 @@ module.exports = {
                 this.calculateTotalSize(fileTreeNode, path).thenApply(statistics => {
                     let updatedAccumApparentSize = accumApparentSize + statistics.apparentSize;
                     if (Number(that.quotaBytes.toString()) < updatedAccumApparentSize) {
-                        let errMsg = "File copy operation exceeds total space\n" + "Please upgrade to get more space";
+                        let errMsg = this.translate("DRIVE.COPY.TOTAL.SPACE.ERROR");
                         that.$toast.error(errMsg, {timeout:false});
                         sizeFuture.complete(false);
                     } else {
                         let spaceAfterOperation = that.checkAvailableSpace(updatedAccumApparentSize);
                         if (spaceAfterOperation < 0) {
-                            let errMsg = "File copy operation exceeds available space\n" + "Please free up " + helpers.convertBytesToHumanReadable('' + -spaceAfterOperation) + " and try again";
+                            let errMsg = this.translate("DRIVE.COPY.SPACE.ERROR")
+                                .replace("$SPACE", helpers.convertBytesToHumanReadable('' + -spaceAfterOperation));
                             that.$toast.error(errMsg, {timeout:false})
                             that.showSpinner = false;
                             sizeFuture.complete(false);
@@ -2321,7 +2327,7 @@ module.exports = {
             for(var i=0; i < clipboard.fileTreeNodes.length; i++) {
                 let fileTreeNode = clipboard.fileTreeNodes[i];
                 if (fileTreeNode.samePointer(target)) {
-                    that.$toast.error('Destination folder is same as Source folder', {timeout:false})
+                    that.$toast.error(this.translate("DRIVE.PASTE.LOCATION.SAME"), {timeout:false})
                     return;
                 }
             }
@@ -2350,7 +2356,7 @@ module.exports = {
                             }
                         });
                     } else {
-                        this.$toast.error("Client Offline!", {timeout:false});
+                        this.$toast.error(this.translate("DRIVE.OFFLINE"), {timeout:false});
                         this.showSpinner = false;
                     }
                 } else {
@@ -2400,7 +2406,7 @@ module.exports = {
 								that.showSpinner = false;
 							});
 						}).exceptionally(function (throwable) {
-							that.errorTitle = 'Error moving file';
+							that.errorTitle = this.translate("DRIVE.MOVE.ERROR").replace("$NAME", name);
 							that.errorBody = throwable.getMessage();
 							that.showError = true;
 							that.showSpinner = false;
@@ -2420,18 +2426,19 @@ module.exports = {
                                 }
                             });
                         } else {
-                            this.$toast.error("Client Offline!", {timeout:false});
+                            this.$toast.error(this.translate("DRIVE.OFFLINE"), {timeout:false});
                             this.showSpinner = false;
                         }
                     } else {
                         this.calculateTotalSize(clipboard.fileTreeNode, clipboard.path).thenApply(statistics => {
                             if (Number(that.quotaBytes.toString()) < statistics.apparentSize) {
-                                let errMsg = "File copy operation exceeds total space\n" + "Please upgrade to get more space";
+                                let errMsg = this.translate("DRIVE.COPY.TOTAL.SPACE.ERROR");
                                 that.$toast.error(errMsg, {timeout:false, id: 'upload'})
                             } else {
                                 let spaceAfterOperation = that.checkAvailableSpace(statistics.apparentSize);
                                 if (spaceAfterOperation < 0) {
-                                    let errMsg = "File copy operation exceeds available space\n" + "Please free up " + helpers.convertBytesToHumanReadable('' + -spaceAfterOperation) + " and try again";
+                                    let errMsg = this.translate("DRIVE.COPY.SPACE.ERROR")
+                                        .replace("$SPACE", helpers.convertBytesToHumanReadable('' + -spaceAfterOperation));
                                     that.$toast.error(errMsg, {timeout:false, id: 'upload'})
                                     that.showSpinner = false;
                                     return;
@@ -2444,7 +2451,7 @@ module.exports = {
                                             that.showSpinner = false;
                                         });
                                     }).exceptionally(function (throwable) {
-                                        that.errorTitle = 'Error copying file';
+                                        that.errorTitle = this.translate("DRIVE.COPY.ERROR").replace("$NAME", clipboard.fileTreeNode.getName());
                                         that.errorBody = throwable.getMessage();
                                         that.showError = true;
                                         that.showSpinner = false;
@@ -2574,7 +2581,7 @@ module.exports = {
             if (this.selectedFiles.length == 0)
                 return;
             if (!this.isStreamingAvailable) {
-                this.showToastError("Downloading multiple files only available where Streaming supported (like Chrome)");
+                this.showToastError(this.translate("DRIVE.DOWNLOAD.MULTIPLE.STREAM.ERROR"));
                 return;
             }
             let foundFolder = false;
@@ -2720,7 +2727,8 @@ module.exports = {
                             that.clipboard = null;
 			            });
                     }).exceptionally(function(throwable) {
-                        that.errorTitle = 'Error moving file';
+                        that.errorTitle = this.translate("DRIVE.MOVE.ERROR")
+                            .replace("$NAME", clipboard.fileTreeNode.getName());
                         that.errorBody = throwable.getMessage();
                         that.showError = true;
                         that.showSpinner = false;
@@ -2737,7 +2745,8 @@ module.exports = {
                             that.clipboard = null;
                         });
                     }).exceptionally(function(throwable) {
-                        that.errorTitle = 'Error copying file';
+                        that.errorTitle = this.translate("DRIVE.COPY.ERROR")
+                            .replace("$NAME", clipboard.fileTreeNode.getName());
                         that.errorBody = throwable.getMessage();
                         that.showError = true;
                         that.showSpinner = false;
@@ -2804,7 +2813,7 @@ module.exports = {
             let appNameLowercase = appDisplayName.toLowerCase();
             let dupApp = this.sandboxedApps.appsInstalled.slice().filter(app => app.displayName.toLowerCase() == appNameLowercase);
             if (dupApp.length != 0) {
-                this.$toast.error(`App with name ${appDisplayName} already exists!`);
+                this.$toast.error(this.translate("DRIVE.APP.EXISTS").replace("$NAME", appDisplayName));
                 return;
             }
             let launchable = permissions.filter(p => p == 'EDIT_CHOSEN_FILE' || p == 'READ_CHOSEN_FOLDER').length == 0 ? true : false;
@@ -2867,7 +2876,7 @@ module.exports = {
                     that.updateFiles();
                     that.updateUsage();
             }).exceptionally(function (throwable) {
-                that.errorTitle = 'Error creating App';
+                that.errorTitle = this.translate("DRIVE.APP.ERROR");
                 that.errorBody = throwable.getMessage();
                 that.showError = true;
                 that.showSpinner = false;
@@ -2875,8 +2884,8 @@ module.exports = {
         },
 
 		createBlankFile() {
-			this.prompt_placeholder = 'File name';
-			this.prompt_message = 'Enter a file name';
+			this.prompt_placeholder = this.translate("DRIVE.FILENAME.PLACEHOLDER");
+			this.prompt_message = this.translate("DRIVE.FILENAME");
 			this.prompt_value = '';
 			this.prompt_consumer_func = function (prompt_result) {
 				if (prompt_result === null)
@@ -2920,7 +2929,7 @@ module.exports = {
 				});
 			}).exceptionally(function (throwable) {
 				that.showSpinner = false;
-				that.errorTitle = 'Error creating file';
+				that.errorTitle = this.translate("DRIVE.CREATE.ERROR");
 				that.errorBody = throwable.getMessage();
 				that.showError = true;
 			})
@@ -2957,9 +2966,9 @@ module.exports = {
 			this.closeMenu();
 			let fileType = fileProps.isDirectory ? "directory" : "file";
 
-			this.prompt_placeholder = 'New name';
+			this.prompt_placeholder = this.translate("DRIVE.RENAME.PLACEHOLDER");
 			this.prompt_value = old_name;
-			this.prompt_message = 'Enter a new name';
+			this.prompt_message = this.translate("DRIVE.RENAME");
 			var that = this;
 			this.prompt_consumer_func = function (prompt_result) {
 				if (prompt_result === null)
@@ -2982,7 +2991,9 @@ module.exports = {
 							that.showSpinner = false;
 						}).exceptionally(function (throwable) {
 							that.updateFiles();
-							that.errorTitle = "Error renaming " + fileType + ": " + old_name;
+						    that.errorTitle = this.translate("DRIVE.RENAME.ERROR")
+                                                        .replace("$TYPE", fileType)
+                                                        .replace("$NAME", old_name);
 							that.errorBody = throwable.getMessage();
 							that.showError = true;
 							that.showSpinner = false;
@@ -3013,7 +3024,7 @@ module.exports = {
                             });
                         });
                     }).exceptionally(function (throwable) {
-                        that.errorTitle = 'Error deleting files';
+                        that.errorTitle = this.translate("DRIVE.DELETE.ERROR");
                         that.errorBody = throwable.getMessage();
                         that.showError = true;
                         future.complete(false);
@@ -3024,7 +3035,8 @@ module.exports = {
 
 		confirmDeleteMultiSelect(fileCount, deleteFn) {
 			this.prompt_placeholder = null;
-			this.prompt_message = `Are you sure you want to delete ${fileCount} items?`;
+		    this.prompt_message = this.translate("DRIVE.DELETE.CONFIRM")
+                        .replace("$COUNT", fileCount);
 			this.prompt_value = '';
 			this.prompt_consumer_func = deleteFn;
 			// this.prompt_action = 'Delete'
@@ -3060,7 +3072,7 @@ module.exports = {
 					that.showSpinner = false;
 					that.updateUsage();
 				}).exceptionally(function (throwable) {
-					that.$toast.error(`Error deleting file: ${file.getFileProperties().name}: ${ throwable.getMessage() }`, {timeout:false, id: 'deleteFile'})
+					that.$toast.error(this.translate("DRIVE.DELETE.FILE.ERROR").replace("$NAME", file.getFileProperties().name).replace("$MESSAGE", throwable.getMessage()), {timeout:false, id: 'deleteFile'})
 					that.updateUsage();
 				});
 		},
