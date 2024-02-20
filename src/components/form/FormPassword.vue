@@ -66,11 +66,10 @@ module.exports = {
 	    let suffix = ["th", "st", "nd", "rd", "th", "th", "th", "th", "th", "th"][(index+1) % 10];
             
 	    if (index != -1) {
-		this.$toast.error(this.translate("PASSWORD.COMMON1") + ` ${index+1}${suffix} ` + this.translate("PASSWORD.COMMON2"),{ id: 'password', timeout:false });
+		this.$toast.error(this.translate("PASSWORD.COMMON").replace("$PLACE", (index+1) + suffix),{ id: 'password', timeout:false });
 		this.passwordUpdate = true
 	    } else if (passwd.length < this.passwordThreshold) {
-                this.translate("PASSWORD.SHORT1")
-		this.$toast.error(this.translate("PASSWORD.SHORT1") + ` ${this.passwordThreshold} ` + this.translate("PASSWORD.SHORT2"),{ id: 'password', timeout:false });
+		this.$toast.error(this.translate("PASSWORD.SHORT").replace("$SIZE", this.passwordThreshold),{ id: 'password', timeout:false });
 		this.passwordUpdate = true
 	    }else{
 		if (this.passwordUpdate)
