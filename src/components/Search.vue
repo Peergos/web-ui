@@ -4,7 +4,7 @@
     <div class="modal-container search full-height" @click.stop style="overflow-y:auto">
       <span @click="close" tabindex="0" v-on:keyup.enter="close" aria-label="close" class="close">&times;</span>
         <div class="modal-header">
-            <h2>Search: {{ path }}</h2>
+            <h2>{{ translate("SEARCH.SEARCH") }}: {{ path }}</h2>
         </div>
         <div class="modal-body">
             <div v-bind:class="errorClass">
@@ -14,15 +14,15 @@
                 <div class="flex-container">
                     <div class="flex-item search" style="margin: 10px; border-width: 1px; border-style: solid;">
                         <select v-model="selectedSearchType">
-                            <option value="contains">Filename contains</option>
-                            <option value="textContents">Text file contains</option>
-                            <option value="modifiedAfter">File modified after</option>
-                            <option value="modifiedBefore">File modified before</option>
-                            <option value="createdAfter">File created after</option>
-                            <option value="createdBefore">File created before</option>
-                            <option value="fileSizeGreaterThan">File size greater than</option>
-                            <option value="fileSizeLessThan">File size less than</option>
-                            <option value="mimeType">File type</option>
+                            <option value="contains">{{ translate("SEARCH.NAME.CONTAINS") }}</option>
+                            <option value="textContents">{{ translate("SEARCH.TEXT.CONTAINS") }}</option>
+                            <option value="modifiedAfter">{{ translate("SEARCH.MODIFIED.AFTER") }}</option>
+                            <option value="modifiedBefore">{{ translate("SEARCH.MODIFIED.BEFORE") }}</option>
+                            <option value="createdAfter">{{ translate("SEARCH.CREATED.AFTER") }}</option>
+                            <option value="createdBefore">{{ translate("SEARCH.CREATED.BEFORE") }}</option>
+                            <option value="fileSizeGreaterThan">{{ translate("SEARCH.SIZE.GREATER") }}</option>
+                            <option value="fileSizeLessThan">{{ translate("SEARCH.SIZE.LESS") }}</option>
+                            <option value="mimeType">{{ translate("SEARCH.TYPE") }}</option>
                         </select>
                     </div>
                     <div class="flex-item" v-if="selectedSearchType=='modifiedAfter' || selectedSearchType=='modifiedBefore' || selectedSearchType=='createdAfter' || selectedSearchType=='createdBefore'" style="margin: 10px;">
@@ -43,21 +43,21 @@
                     </div>
                     <div class="flex-item" v-if="selectedSearchType=='mimeType'" style="margin: 10px;">
                         <select v-model="selectedMimeType">
-                            <option value="audio">Audio</option>
-                            <option value="image">Image</option>
+                            <option value="audio">{{ translate("SEARCH.AUDIO") }}</option>
+                            <option value="image">{{ translate("SEARCH.IMAGE") }}</option>
                             <option value="application/pdf">PDF</option>
-                            <option value="text/plain">Text</option>
-                            <option value="video">Video</option>
+                            <option value="text/plain">{{ translate("SEARCH.TEXT") }}</option>
+                            <option value="video">{{ translate("SEARCH.VIDEO") }}</option>
                         </select>
                     </div>
                     <div class="flex-item" style="margin: 10px;">
-                        <button id='submit-search' class="btn btn-success" @click="search()">Search</button>
+                        <button id='submit-search' class="btn btn-success" @click="search()">{{ translate("SEARCH.SEARCH") }}</button>
                     </div>
                 </div>
             </div>
 
             <div>
-                <h3>Results: {{ matches.length }}</h3>
+                <h3>{{ translate("SEARCH.RESULTS") }}: {{ matches.length }}</h3>
                 <div v-if="showCancel" style="margin: 10px;">
                     <button class="btn btn-danger" @click="stopSearch()">Cancel Search</button>
                 </div>
@@ -65,11 +65,11 @@
                     <table class="table">
                         <thead>
                         <tr  v-if="matches!=0" style="cursor:pointer;">
-                            <th @click="setSortBy('name')">Name <span v-if="sortBy=='name'" v-bind:class="['fas', normalSortOrder ? 'fa-angle-down' : 'fa-angle-up']"/></th>
-                            <th @click="setSortBy('path')">Directory <span v-if="sortBy=='path'" v-bind:class="['fas', normalSortOrder ? 'fa-angle-down' : 'fa-angle-up']"/></th>
-                            <th @click="setSortBy('size')">Size <span v-if="sortBy=='size'" v-bind:class="['fas', normalSortOrder ? 'fa-angle-down' : 'fa-angle-up']"/></th>
-                            <th @click="setSortBy('modified')">Modified <span v-if="sortBy=='modified'" v-bind:class="['fas', normalSortOrder ? 'fa-angle-down' : 'fa-angle-up']"/></th>
-                            <th @click="setSortBy('created')">Created <span v-if="sortBy=='created'" v-bind:class="['fas', normalSortOrder ? 'fa-angle-down' : 'fa-angle-up']"/></th>
+                            <th @click="setSortBy('name')">{{ translate("DRIVE.NAME") }}<span v-if="sortBy=='name'" v-bind:class="['fas', normalSortOrder ? 'fa-angle-down' : 'fa-angle-up']"/></th>
+                            <th @click="setSortBy('path')">{{ translate("SEARCH.DIR") }}<span v-if="sortBy=='path'" v-bind:class="['fas', normalSortOrder ? 'fa-angle-down' : 'fa-angle-up']"/></th>
+                            <th @click="setSortBy('size')">{{ translate("DRIVE.SIZE") }}<span v-if="sortBy=='size'" v-bind:class="['fas', normalSortOrder ? 'fa-angle-down' : 'fa-angle-up']"/></th>
+                            <th @click="setSortBy('modified')">{{ translate("DRIVE.MODIFIED") }} <span v-if="sortBy=='modified'" v-bind:class="['fas', normalSortOrder ? 'fa-angle-down' : 'fa-angle-up']"/></th>
+                            <th @click="setSortBy('created')">{{ translate("DRIVE.CREATED") }}<span v-if="sortBy=='created'" v-bind:class="['fas', normalSortOrder ? 'fa-angle-down' : 'fa-angle-up']"/></th>
 
                         </tr>
                         </thead>
@@ -103,11 +103,13 @@
 
 <script>
 const Spinner = require("./spinner/Spinner.vue");
+const i18n = require("../i18n/index.js");
 
 module.exports = {
 	components: {
 	    Spinner
 	},
+    mixins:[i18n],
     data: function() {
         return {
             searchContains: "",
