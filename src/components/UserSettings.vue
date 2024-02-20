@@ -34,59 +34,59 @@
 					v-on:keyup.enter="showAdminPanel()"
 					@click="showAdminPanel()"
 				>
-					Admin Panel
+					{{ translate("SETTINGS.ADMIN") }}
 				</li>
 				<li
                                         v-on:keyup.enter="showRequestStorage()"
 					@click="showRequestStorage()"
 				>
-					Account
+					{{ translate("SETTINGS.ACCOUNT") }}
 				</li>
 				<li class="divider"></li>
 				<li v-on:keyup.enter="showProfile()" @click="showProfile()">
-					Profile
+					{{ translate("SETTINGS.PROFILE") }}
 				</li>
 				<li v-on:keyup.enter="showFeedback()" @click="showFeedback()">
-					Feedback
+					{{ translate("SETTINGS.FEEDBACK") }}
 				</li>
 				<li v-on:keyup.enter="showTour()" @click="showTour()">
-					Tour
+					{{ translate("SETTINGS.TOUR") }}
 				</li>
 				<li v-on:keyup.enter="launchHelp()" @click="launchHelp()">
-					Help/FAQ
+					{{ translate("SETTINGS.HELP") }}
 				</li>
 				<li
 					v-on:keyup.enter="showAuthenticationScreen()"
 					@click="showAuthenticationScreen()"
 				>
-					Authentication
+					{{ translate("SETTINGS.AUTH") }}
 				</li>
 				<li
 					v-on:keyup.enter="showChangePassword()"
 					@click="showChangePassword()"
 				>
-					Change Password
+					{{ translate("SETTINGS.PASS") }}
 				</li>
                 <li
                     v-on:keyup.enter="cleanupFailedUploads()"
                     @click="cleanupFailedUploads()"
                 >
-                    Cleanup Failed Uploads
+                    {{ translate("SETTINGS.CLEANUP") }}
                 </li>
                 <li
                     v-on:keyup.enter="modifyCacheSize()"
                     @click="modifyCacheSize()"
                 >
-                    Set Cache size
+                    {{ translate("SETTINGS.CACHE") }}
                 </li>
 				<li
 					v-on:keyup.enter="showViewAccount()"
 					@click="showViewAccount()"
 				>
-					Delete Account
+					{{ translate("SETTINGS.DELETE") }}
 				</li>
 				<li class="divider"></li>
-				<li v-on:keyup.enter="logout()" @click="logout()">Log out</li>
+				<li v-on:keyup.enter="logout()" @click="logout()">{{ translate("SETTINGS.LOGOUT") }}</li>
 			</ul>
 		</AppDropdown>
 
@@ -125,6 +125,7 @@ const AppDropdown = require("./AppDropdown.vue");
 const AppIcon = require("AppIcon.vue");
 const AppPrompt = require("./prompt/AppPrompt.vue");
 const Spinner = require("./spinner/Spinner.vue");
+const i18n = require("../i18n/index.js");
 
 module.exports = {
     components: {
@@ -135,6 +136,7 @@ module.exports = {
         Spinner,
 	    AppIcon,
     },
+    mixins:[i18n],
 	data() {
 		return {
 		    profileImage: "",
@@ -179,7 +181,7 @@ module.exports = {
             }
             getBrowserStorageQuota().then(maxStorage => {
                 let maxStorageMiB = Math.floor(maxStorage /1024 /1024);
-                this.prompt_message = 'Set Cache Size (MiB)';
+                this.prompt_message = this.translate("SETTINGS.CACHE") + ' (MiB)';
                 let roundedCurrentCacheSize = Math.floor(getCurrentDesiredCacheSize());
                 this.prompt_value = '' + roundedCurrentCacheSize;
                 this.prompt_placeholder = " ";
@@ -190,18 +192,19 @@ module.exports = {
                     }
                     let newCacheSizeMiB = prompt_result.trim();
                     if (!that.validateCacheSize(newCacheSizeMiB)) {
-                        that.$toast.error('Cache size value not valid', {timeout:false});
+                        that.$toast.error(that.translate("SETTINGS.CACHE.INVALID"), {timeout:false});
                         return;
                     }
                     let validNewCacheSize = Number(newCacheSizeMiB);
                     if (validNewCacheSize > maxStorageMiB) {
-                        that.$toast.error('Invalid Cache size. Maximum Cache Size: ' + maxStorageMiB + ' MiB', {timeout:false});
+                        that.$toast.error(that.translate("SETTINGS.CACHE.LARGE")
+                                          .replace("$SIZE", maxStorageMiB), {timeout:false});
                     } else {
                         if (roundedCurrentCacheSize != validNewCacheSize) {
                             that.showSettingsSpinner = true;
                             modifyCacheSize(validNewCacheSize).thenApply(() => {
                                 that.showSettingsSpinner = false;
-                                that.$toast('Cache Size Updated');
+                                that.$toast(that.translate("SETTINGS.CACHE.UPDATED"));
                             });
                         }
                     }
@@ -246,7 +249,6 @@ module.exports = {
 		},
 		showAdminPanel() {
 		    if (this.context == null) return;
-		    console.log("admin panel...");
 		    const that = this;
 		    this.context.getAndDecodePendingSpaceRequests().thenApply(reqs => {
 			that.admindata.pending = reqs.toArray([]);
