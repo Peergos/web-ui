@@ -152,4 +152,13 @@ module.exports = {
     "SETTINGS.CACHE.INVALID":"Cache size value not valid",
     "SETTINGS.CACHE.LARGE":"Invalid Cache size. Maximum Cache Size: $SIZE MiB",
     "SETTINGS.CACHE.UPDATED":"Cache Size Updated",
+    "PASSWORD.CHANGE":"Change password",
+    "PASSWORD.EXISTING":"Existing password",
+    "PASSWORD.GENERATE":"Generate password",
+    "PASSWORD.NEW":"New password",
+    "PASSWORD.REENTER":"Re-enter new password",
+    "PASSWORD.MATCH":"Passwords do not match",
+    "PASSWORD.MFA":"Invalid Multi Factor Authenticator code",
+    "PASSWORD.CHANGED":"Password changed",
+    "PASSWORD.FIELDS":"All fields must be populated!",
 }

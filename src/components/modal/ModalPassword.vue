@@ -1,7 +1,7 @@
 <template>
 	<AppModal>
 		<template #header>
-			<h2>Change password</h2>
+			<h2>{{ translate("PASSWORD.CHANGE") }}</h2>
 		</template>
 		<template #body>
             <Spinner v-if="showSpinner"></Spinner>
@@ -13,20 +13,20 @@
                     :consumer_cancel_func="consumer_cancel_func"
                     :consumer_func="consumer_func">
             </MultiFactorAuth>
-			<FormPassword v-model="existing" :placeholder="'Existing password'"/>
+			<FormPassword v-model="existing" :placeholder="translate('PASSWORD.EXISTING')"/>
 
 			<AppButton class="generate-password" type="primary" block accent @click.native="generatePassword()">
-				Generate password
+				{{ translate("PASSWORD.GENERATE") }}
 			</AppButton>
 
-			<FormPassword v-model="password"  placeholder="New password" :passwordIsVisible="showPasswords" firstOfTwo />
+			<FormPassword v-model="password" :placeholder="translate('PASSWORD.NEW')" :passwordIsVisible="showPasswords" firstOfTwo />
 
-			<FormPassword v-model="password2" placeholder="Re-enter new password" :passwordIsVisible="showPasswords"/>
+			<FormPassword v-model="password2" :placeholder="translate('PASSWORD.REENTER')" :passwordIsVisible="showPasswords"/>
 
 		</template>
 		<template #footer>
 
-			 <AppButton  @click.native="updatePassword()" type="primary" block accent>Change password</AppButton>
+			 <AppButton  @click.native="updatePassword()" type="primary" block accent>{{ translate("PASSWORD.CHANGE") }}</AppButton>
 
 		</template>
 	</AppModal>
@@ -40,6 +40,7 @@ const Bip39 = require('../../mixins/password/bip-0039-english.json');
 const FormPassword = require("../form/FormPassword.vue");
 const MultiFactorAuth = require("../auth/MultiFactorAuth.vue");
 const Spinner = require("../spinner/Spinner.vue");
+const i18n = require("../../i18n/index.js");
 
 module.exports = {
     components: {
@@ -66,7 +67,7 @@ module.exports = {
 	    'context'
 	]),
     },
-    mixins:[UriDecoder],
+    mixins:[UriDecoder, i18n],
     methods: {
 	generatePassword() {
 	    let bytes = nacl.randomBytes(16);
@@ -80,7 +81,7 @@ module.exports = {
         
 	updatePassword() {
         if(this.existing.length == 0 || this.password.length == 0 || this.password2.length == 0) {
-            this.$toast.error('All fields must be populated!',{timeout:false, position: 'bottom-left' })
+            this.$toast.error(this.translate("PASSWORD.FIELDS"),{timeout:false, position: 'bottom-left' })
         } else {
             if (this.password == this.password2) {
                 let that = this;
@@ -105,11 +106,11 @@ module.exports = {
                 this.context.changePassword(this.existing, this.password, mfaReq => handleMfa(mfaReq)).thenApply(function(newContext){
                     that.$store.commit("SET_CONTEXT", newContext);
                     that.$store.commit("SET_MODAL", false);
-                    that.$toast.info('Password changed')
+                    that.$toast.info(that.translate("PASSWORD.CHANGED"))
                     that.showSpinner = false;
                 }).exceptionally(function(throwable) {
                     if (throwable.getMessage().startsWith('Invalid+TOTP+code')) {
-                        that.$toast.error('Invalid Multi Factor Authenticator code', {timeout:false})
+                        that.$toast.error(that.translate("PASSWORDS.MFA"), {timeout:false})
                     } else {
                         that.$toast.error(that.uriDecode(throwable.getMessage()), {timeout:false})
                     }
@@ -117,7 +118,7 @@ module.exports = {
                     console.log(throwable.getMessage())
                 });
             } else {
-                this.$toast.error('Passwords do not match',{timeout:false})
+                this.$toast.error(this.translate("PASSWORDS.MATCH"),{timeout:false})
             }
         }
     },
