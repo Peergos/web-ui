@@ -9,6 +9,7 @@ window.addEventListener('message', function (e) {
     mainWindow = e.source;
     origin = e.origin;
 
+    var jsonNoteData = {blocks: [], version: "", time: ""}
     if (e.data.action == "ping") {
         mainWindow.postMessage({action:'pong'}, e.origin);
     } else if(e.data.action == "respondToLoadImage"){
@@ -19,7 +20,6 @@ window.addEventListener('message', function (e) {
         let markdownThemeToUse = e.data.theme != null && e.data.theme == 'dark-mode' ? 'dark' : 'light';
         if (e.data.extension == 'note') {
             initialiseMarkdownEditor(markdownThemeToUse, e.data.subPath, '');
-            var jsonNoteData = {blocks: [], version: "", time: ""}
             if (e.data.text.length > 0) {
                 try {
                     jsonNoteData = JSON.parse(e.data.text);

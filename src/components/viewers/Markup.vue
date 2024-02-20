@@ -137,13 +137,14 @@ module.exports = {
             let extension = filename.substring(filename.lastIndexOf('.') + 1);
             let that = this;
             this.showSpinner = true;
+            let theme = this.$store.getters.currentTheme;
             this.findFile(completePath, false).thenApply(file => {
                 if (file != null) {
                     that.readInFile(file).thenApply(data => {
                         that.setFullPathForDisplay();
                         let iframe = document.getElementById("md-editor");
                         let func = function() {
-                            iframe.contentWindow.postMessage({action: "respondToNavigateTo", text:new TextDecoder().decode(data)
+                            iframe.contentWindow.postMessage({action: "respondToNavigateTo", theme: theme, text:new TextDecoder().decode(data)
                                 , extension: extension, subPath: subPath}, '*');
                             that.showSpinner = false;
                         };
