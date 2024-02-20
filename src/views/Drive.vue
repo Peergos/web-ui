@@ -1536,7 +1536,7 @@ module.exports = {
                 }
                 let progress = {
                     show: true,
-                    title: this.translate("DRIVE.DOWNLOAD.FOLDERS"),
+                    title: that.translate("DRIVE.DOWNLOAD.FOLDERS"),
                     done: 0,
                     max: actualSize
                 }
@@ -1578,9 +1578,9 @@ module.exports = {
             this.calculateTotalSize(file, this.getPath).thenApply(statistics => {
                 that.showSpinner = false;
                 if (statistics.fileCount == 0) {
-                    that.$toast(this.translate("DRIVE.EMPTY.FOLDER").replace("$NAME", file.getName()));
+                    that.$toast(that.translate("DRIVE.EMPTY.FOLDER").replace("$NAME", file.getName()));
                 }else if (statistics.actualSize > 1024 * 1024 * 1024 * 4) { //4GiB
-                    that.$toast(this.translate("DRIVE.LARGE.FOLDER"));
+                    that.$toast(that.translate("DRIVE.LARGE.FOLDER"));
                 } else {
                     let filename = file.getName();
                     that.confirmZipAndDownloadOfFolder(filename, statistics,
@@ -1588,7 +1588,7 @@ module.exports = {
                             that.showConfirm = false;
                             var progress = {
                                 show: true,
-                                title: this.translate("DRIVE.LARGE.FOLDER").replace("$NAME", filename),
+                                title: that.translate("DRIVE.LARGE.FOLDER").replace("$NAME", filename),
                                 done: 0,
                                 max: statistics.actualSize
                             }
@@ -1867,7 +1867,7 @@ module.exports = {
                         }
                         if (!commitContext.completed && uploadParams.progress.current >= uploadParams.progress.total) {
                             commitContext.completed = true;
-                            let title = this.translate("DRIVE.UPLOAD.COMPLETE");
+                            let title = that.translate("DRIVE.UPLOAD.COMPLETE");
                             that.addUploadProgressMessage(uploadParams, title, '', '', true);
                         }
                         return true;
@@ -1900,7 +1900,7 @@ module.exports = {
                         commitWatcher).thenApply(res => {
                             uploadFuture.complete(true);
                     }).exceptionally(function (throwable) {
-                        that.errorTitle = this.translate("DRIVE.UPLOAD.ERROR");
+                        that.errorTitle = that.translate("DRIVE.UPLOAD.ERROR");
                         that.errorBody = throwable.getMessage();
                         that.showError = true;
                         that.$toast.clear();
@@ -1922,7 +1922,7 @@ module.exports = {
             let that = this;
             if (index == files.length) {
                 if (uploadParams.progress.total == 0) {
-                    that.addUploadProgressMessage(uploadParams, this.translate("DRIVE.UPLOAD.EMPTY"), '', '', true);
+                    that.addUploadProgressMessage(uploadParams, that.translate("DRIVE.UPLOAD.EMPTY"), '', '', true);
                 }
                 future.complete(true);
             } else {
@@ -2222,7 +2222,7 @@ module.exports = {
                             );
                         }).exceptionally(function (throwable) {
                             that.updateCurrentDirectory(null , () => {
-                                that.errorTitle = this.translate("DRIVE.MOVE.ERROR").replace("$NAME", name);
+                                that.errorTitle = that.translate("DRIVE.MOVE.ERROR").replace("$NAME", name);
                                 that.errorBody = throwable.getMessage();
                                 that.showError = true;
                                 future.complete(false);
@@ -2247,7 +2247,7 @@ module.exports = {
                         });
                     }).exceptionally(function (throwable) {
                         that.updateCurrentDirectory(null , () => {
-                            that.errorTitle = this.translate("DRIVE.COPY.ERROR").replace("$NAME", fileTreeNode.getFileProperties().name);
+                            that.errorTitle = that.translate("DRIVE.COPY.ERROR").replace("$NAME", fileTreeNode.getFileProperties().name);
                             that.errorBody = throwable.getMessage();
                             that.showError = true;
                             future.complete(false);
@@ -2265,13 +2265,13 @@ module.exports = {
                 this.calculateTotalSize(fileTreeNode, path).thenApply(statistics => {
                     let updatedAccumApparentSize = accumApparentSize + statistics.apparentSize;
                     if (Number(that.quotaBytes.toString()) < updatedAccumApparentSize) {
-                        let errMsg = this.translate("DRIVE.COPY.TOTAL.SPACE.ERROR");
+                        let errMsg = that.translate("DRIVE.COPY.TOTAL.SPACE.ERROR");
                         that.$toast.error(errMsg, {timeout:false});
                         sizeFuture.complete(false);
                     } else {
                         let spaceAfterOperation = that.checkAvailableSpace(updatedAccumApparentSize);
                         if (spaceAfterOperation < 0) {
-                            let errMsg = this.translate("DRIVE.COPY.SPACE.ERROR")
+                            let errMsg = that.translate("DRIVE.COPY.SPACE.ERROR")
                                 .replace("$SPACE", helpers.convertBytesToHumanReadable('' + -spaceAfterOperation));
                             that.$toast.error(errMsg, {timeout:false})
                             that.showSpinner = false;
@@ -2327,7 +2327,7 @@ module.exports = {
             for(var i=0; i < clipboard.fileTreeNodes.length; i++) {
                 let fileTreeNode = clipboard.fileTreeNodes[i];
                 if (fileTreeNode.samePointer(target)) {
-                    that.$toast.error(this.translate("DRIVE.PASTE.LOCATION.SAME"), {timeout:false})
+                    that.$toast.error(that.translate("DRIVE.PASTE.LOCATION.SAME"), {timeout:false})
                     return;
                 }
             }
@@ -2406,7 +2406,7 @@ module.exports = {
 								that.showSpinner = false;
 							});
 						}).exceptionally(function (throwable) {
-							that.errorTitle = this.translate("DRIVE.MOVE.ERROR").replace("$NAME", name);
+							that.errorTitle = that.translate("DRIVE.MOVE.ERROR").replace("$NAME", name);
 							that.errorBody = throwable.getMessage();
 							that.showError = true;
 							that.showSpinner = false;
@@ -2432,12 +2432,12 @@ module.exports = {
                     } else {
                         this.calculateTotalSize(clipboard.fileTreeNode, clipboard.path).thenApply(statistics => {
                             if (Number(that.quotaBytes.toString()) < statistics.apparentSize) {
-                                let errMsg = this.translate("DRIVE.COPY.TOTAL.SPACE.ERROR");
+                                let errMsg = that.translate("DRIVE.COPY.TOTAL.SPACE.ERROR");
                                 that.$toast.error(errMsg, {timeout:false, id: 'upload'})
                             } else {
                                 let spaceAfterOperation = that.checkAvailableSpace(statistics.apparentSize);
                                 if (spaceAfterOperation < 0) {
-                                    let errMsg = this.translate("DRIVE.COPY.SPACE.ERROR")
+                                    let errMsg = that.translate("DRIVE.COPY.SPACE.ERROR")
                                         .replace("$SPACE", helpers.convertBytesToHumanReadable('' + -spaceAfterOperation));
                                     that.$toast.error(errMsg, {timeout:false, id: 'upload'})
                                     that.showSpinner = false;
@@ -2451,7 +2451,7 @@ module.exports = {
                                             that.showSpinner = false;
                                         });
                                     }).exceptionally(function (throwable) {
-                                        that.errorTitle = this.translate("DRIVE.COPY.ERROR").replace("$NAME", clipboard.fileTreeNode.getName());
+                                        that.errorTitle = that.translate("DRIVE.COPY.ERROR").replace("$NAME", clipboard.fileTreeNode.getName());
                                         that.errorBody = throwable.getMessage();
                                         that.showError = true;
                                         that.showSpinner = false;
@@ -2727,7 +2727,7 @@ module.exports = {
                             that.clipboard = null;
 			            });
                     }).exceptionally(function(throwable) {
-                        that.errorTitle = this.translate("DRIVE.MOVE.ERROR")
+                        that.errorTitle = that.translate("DRIVE.MOVE.ERROR")
                             .replace("$NAME", clipboard.fileTreeNode.getName());
                         that.errorBody = throwable.getMessage();
                         that.showError = true;
@@ -2745,7 +2745,7 @@ module.exports = {
                             that.clipboard = null;
                         });
                     }).exceptionally(function(throwable) {
-                        that.errorTitle = this.translate("DRIVE.COPY.ERROR")
+                        that.errorTitle = that.translate("DRIVE.COPY.ERROR")
                             .replace("$NAME", clipboard.fileTreeNode.getName());
                         that.errorBody = throwable.getMessage();
                         that.showError = true;
@@ -2876,7 +2876,7 @@ module.exports = {
                     that.updateFiles();
                     that.updateUsage();
             }).exceptionally(function (throwable) {
-                that.errorTitle = this.translate("DRIVE.APP.ERROR");
+                that.errorTitle = that.translate("DRIVE.APP.ERROR");
                 that.errorBody = throwable.getMessage();
                 that.showError = true;
                 that.showSpinner = false;
@@ -2929,7 +2929,7 @@ module.exports = {
 				});
 			}).exceptionally(function (throwable) {
 				that.showSpinner = false;
-				that.errorTitle = this.translate("DRIVE.CREATE.ERROR");
+				that.errorTitle = that.translate("DRIVE.CREATE.ERROR");
 				that.errorBody = throwable.getMessage();
 				that.showError = true;
 			})
@@ -2991,7 +2991,7 @@ module.exports = {
 							that.showSpinner = false;
 						}).exceptionally(function (throwable) {
 							that.updateFiles();
-						    that.errorTitle = this.translate("DRIVE.RENAME.ERROR")
+						    that.errorTitle = that.translate("DRIVE.RENAME.ERROR")
                                                         .replace("$TYPE", fileType)
                                                         .replace("$NAME", old_name);
 							that.errorBody = throwable.getMessage();
@@ -3024,7 +3024,7 @@ module.exports = {
                             });
                         });
                     }).exceptionally(function (throwable) {
-                        that.errorTitle = this.translate("DRIVE.DELETE.ERROR");
+                        that.errorTitle = that.translate("DRIVE.DELETE.ERROR");
                         that.errorBody = throwable.getMessage();
                         that.showError = true;
                         future.complete(false);
@@ -3072,7 +3072,7 @@ module.exports = {
 					that.showSpinner = false;
 					that.updateUsage();
 				}).exceptionally(function (throwable) {
-					that.$toast.error(this.translate("DRIVE.DELETE.FILE.ERROR").replace("$NAME", file.getFileProperties().name).replace("$MESSAGE", throwable.getMessage()), {timeout:false, id: 'deleteFile'})
+					that.$toast.error(that.translate("DRIVE.DELETE.FILE.ERROR").replace("$NAME", file.getFileProperties().name).replace("$MESSAGE", throwable.getMessage()), {timeout:false, id: 'deleteFile'})
 					that.updateUsage();
 				});
 		},
