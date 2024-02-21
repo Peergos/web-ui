@@ -334,4 +334,12 @@ module.exports = {
     "DRIVE.LINK.COPY":"Copy to clipboard",
     "DRIVE.LINK.EMAIL":"Share via email",
     "DRIVE.LINK.OK":"OK",
+    "VERIFY.TITLE":"Verifying friend",
+    "VERIFY.SCAN":"Scan your friend's QR code",
+    "VERIFY.NUMBERS":"Or you can read these numbers out to each other (they should match)",
+    "VERIFY.ERROR.CAMERA":"Couldn't connect to camera. Make sure it is connected and click allow access when prompted.",
+    "VERIFY.SUCCESS":"Friend successfully verified!",
+    "VERIFY.ERROR.MISMATCH":"QR code did not match this person's identity on Peergos. Are you sure this person is who they say they are?",
+    "VERIFY.VERIFIED":"Verified",
+    "VERIFY.UNVERIFIED":"Unverified",
 }

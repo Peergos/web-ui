@@ -4,7 +4,7 @@
     <div class="modal-container full-height" @click.stop style="overflow-y:auto">
         <span @click="close" tabindex="0" v-on:keyup.enter="close" aria-label="close" class="close">&times;</span>
         <center>
-            <h2>Verifying friend: {{ friendname }}</h2>
+            <h2>{{ translate("VERIFY.TITLE") }}: {{ friendname }}</h2>
         </center>
         <center style="font-size:1.6em">
 	  <div class="qrcode-container">
@@ -12,10 +12,10 @@
 	    <video v-if="stream != null" id="video" class="qrcode"></video>
 	  </div>
 	  <div>
-	    <button class="btn btn-success" @click="scanQRCode()">Scan your friend's QR code</button>
+	    <button class="btn btn-success" @click="scanQRCode()">{{ translate("VERIFY.SCAN") }}</button>
 	    <span style="display:block;width:6em;text-align:left;"><input type="checkbox" v-model="isVerified" autocomplete="off"> {{ verified }}</span>
 	    <br/>
-	    <h4>Or you can read these numbers out to each other (they should match)</h4>
+	    <h4>{{ translate("VERIFY.NUMBERS") }}</h4>
             {{ safetyNumber[0] }}
 	    <br/>
 	    {{ safetyNumber[1] }}
@@ -29,6 +29,7 @@
 </template>
 
 <script>
+const i18n = require("../../i18n/index.js");
 module.exports = {
     data: function() {
         return {
@@ -38,9 +39,9 @@ module.exports = {
 	    isVerified: false
         };
     },
+    mixins:[i18n],
     props: ['fingerprint', 'friendname', 'context', "initialIsVerified"],
     created: function() {
-        console.debug('Fingerprint module created!');
 	this.isVerified = this.initialIsVerified;
     },
 
@@ -71,7 +72,6 @@ module.exports = {
 	},
 
 	scanQRCode: function() {
-	    console.log("Scan QR code");
 	    if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
 		var that = this;
 		navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" }}).then(function(stream) {
@@ -83,7 +83,7 @@ module.exports = {
 			that.takeSnapshot(60)
 		    }, 100);
 		}).catch(function(error) {
-		    alert("Couldn't connect to webcam. Make sure it is connected and you click allow access when prompted.");
+		    alert(that.translate("VERIFY.ERROR.CAMERA"));
 		    console.error(error);
 		    that.closeCamera();
 		});
@@ -111,9 +111,9 @@ module.exports = {
 		this.closeCamera();
 		if (this.fingerprint.right.matches(scanned)) {
 		    this.isVerified = true;
-		    alert("Friend successfully verified!");
+		    alert(this.translate("VERIFY.SUCCESS"));
 		} else {
-		    alert("QR code did not match this person's identity on Peergos. Are you sure this person is who they say they are?");
+		    alert(this.translate("VERIFY.ERROR.MISMATCH"));
 		    this.isVerified = false;
 		}
 	    } catch (err) {
@@ -153,7 +153,7 @@ module.exports = {
         },
 
 	verified: function() {
-	    return this.isVerified ? "Verified" : "Unverified";
+	    return this.isVerified ? this.translate("VERIFY.VERIFIED") : this.translate("VERIFY.UNVERIFIED");
 	}
     }
 };
