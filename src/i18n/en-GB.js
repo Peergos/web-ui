@@ -280,4 +280,10 @@ module.exports = {
     "DELETE.ACCOUNT.PASS":"Password must be populated!",
     "DELETE.ACCOUNT.ERROR":"Error Deleting Account",
     "DELETE.ACCOUNT.MFA":"Invalid Multi Factor Authenticator code",
+    "SPACE.TITLE":"Request space",
+    "SPACE.CURRENT":"Current space",
+    "SPACE.PLACEHOLDER":"New total space amount",
+    "SPACE.POSITIVE":"Space must be a positive integer",
+    "SPACE.SMALL":"You can't request space smaller than your current usage, please delete some files and try again.",
+    "SPACE.SENT":"Space request sent!",
 }
