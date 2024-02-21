@@ -330,4 +330,8 @@ module.exports = {
     "DRIVE.SHARE.ERROR.WRITE":"Only the owner of a file can grant write access",
     "DRIVE.SHARE.ERROR.REPEAT":"Already shared",
     "DRIVE.SHARE.COMPLETE":"Secure sharing complete",
+    "DRIVE.LINK.OPEN":"Auto Open",
+    "DRIVE.LINK.COPY":"Copy to clipboard",
+    "DRIVE.LINK.EMAIL":"Share via email",
+    "DRIVE.LINK.OK":"OK",
 }
