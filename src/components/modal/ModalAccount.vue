@@ -1,7 +1,7 @@
 <template>
 	<AppModal>
 		<template #header>
-			<h2>Delete Account</h2>
+			<h2>{{ translate("DELETE.ACCOUNT") }}</h2>
 		</template>
 		<template #body>
             <MultiFactorAuth
@@ -12,22 +12,22 @@
                     :consumer_cancel_func="consumer_cancel_func"
                     :consumer_func="consumer_func">
             </MultiFactorAuth>
-			<p>If you choose to proceed you will lose access to your account and data!</p>
-            <p>This action is not reversible</p>
-            <p>You must enter your password to confirm you want to delete your account and all your data</p>
+			<p>{{ translate("DELETE.ACCOUNT.TEXT1") }}</p>
+            <p>{{ translate("DELETE.ACCOUNT.TEXT2") }}</p>
+            <p>{{ translate("DELETE.ACCOUNT.TEXT3") }}</p>
 
 			<FormPassword v-model="password" />
 
 			<div class="modal__warning account" v-if="warning">
-				<p><AppIcon icon="warning"/> Are you absolutely sure you want to delete your account?</p>
-				<AppButton @click.native="deleteAccount()" accent >Yes, delete everything</AppButton>
-				<AppButton @click.native="warning=false">Nevermind</AppButton>
+				<p><AppIcon icon="warning"/>{{ translate("DELETE.ACCOUNT.CONFIRM") }}</p>
+				<AppButton @click.native="deleteAccount()" accent >{{ translate("DELETE.ACCOUNT.YES") }}</AppButton>
+				<AppButton @click.native="warning=false">{{ translate("DELETE.ACCOUNT.CANCEL") }}</AppButton>
 			</div>
 
 		</template>
 		<template #footer>
 
-			 <AppButton @click.native="showWarning()" type="primary" block accent>Delete account</AppButton>
+			 <AppButton @click.native="showWarning()" type="primary" block accent>{{ translate("DELETE.ACCOUNT") }}</AppButton>
 
 		</template>
 	</AppModal>
@@ -39,6 +39,7 @@ const AppModal = require("AppModal.vue");
 const AppIcon = require("../AppIcon.vue");
 const FormPassword = require("../form/FormPassword.vue");
 const MultiFactorAuth = require("../auth/MultiFactorAuth.vue");
+const i18n = require("../../i18n/index.js");
 
 module.exports = {
 	components: {
@@ -48,6 +49,7 @@ module.exports = {
 		FormPassword,
 		MultiFactorAuth,
 	},
+        mixins:[i18n],
 	data() {
 		return {
 			password: "",
@@ -64,14 +66,13 @@ module.exports = {
 	methods: {
 		showWarning() {
 			if(this.password.length == 0) {
-				this.$toast.error('Password must be populated!',{timeout:false, position: 'bottom-left' })
+				this.$toast.error(that.translate("DELETE.ACCOUNT.PASS"),{timeout:false, position: 'bottom-left' })
 			} else {
 				this.warning = true
 			}
 		},
 
 		deleteAccount() {
-            console.log("Deleting Account");
             var that = this;
             let handleMfa = function(mfaReq) {
                     let future = peergos.shared.util.Futures.incomplete();
@@ -92,15 +93,15 @@ module.exports = {
             };
             this.context.deleteAccount(this.password, mfaReq => handleMfa(mfaReq)).thenApply(function(result){
                 if (result) {
-					that.$toast('Account Deleted!',{position: 'bottom-left' })
+					that.$toast(that.translate("DELETE.ACCOUNT.DONE"),{position: 'bottom-left' })
 					that.$store.commit("SET_MODAL", false);
                 	that.exit()
                 } else {
-					that.$toast(`Error Deleting Account: ${throwable.getMessage()}`,{position: 'bottom-left' })
+					that.$toast(that.translate("DELETE.ACCOUNT.ERROR")+`: ${throwable.getMessage()}`,{position: 'bottom-left' })
                 }
             }).exceptionally(function(throwable) {
                 if (throwable.getMessage().startsWith('Invalid+TOTP+code')) {
-                    that.$toast.error('Invalid Multi Factor Authenticator code', {timeout:false})
+                    that.$toast.error(that.translate("DELETE.ACCOUNT.MFA"), {timeout:false})
                 } else {
                     that.$toast.error(that.uriDecode(throwable.getMessage()), {timeout:false})
                 }
