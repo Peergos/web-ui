@@ -235,5 +235,11 @@ module.exports = {
     "HELP.JAVA":"I heard Peergos is written in Java, are you crazy?",
     "HELP.JAVA.TEXT1":"In fact Java is an ideal language for Peergos. The JVM is rock solid and provides good performance and resource utilization. The client is written mostly in java and trans-compiled to Javascript via the battle-hardened GWT.",
     "HELP.JAVA.TEXT2":"Having a single language codebase for server and most of the client has multiple benefits. We are not language zealots, other choices would be appropriate in different circumstances.",
-    "HELP.":"",
+    "FEEDBACK.TITLE":"Feedback",
+    "FEEDBACK.TEXT1":"You can tell us here how we can improve, or you can chat with us on",
+    "FEEDBACK.TEXT2":"or send us an email",
+    "FEEDBACK.SUBMIT":"Submit",
+    "FEEDBACK.PLACEHOLDER":"Type your feedback here.",
+    "FEEDBACK.SENT":"Feedback sent. Thank you!",
+    "FEEDBACK.ERROR":"Error sending feedback",
 }
