@@ -5,7 +5,7 @@
 				<span @click="close" tabindex="0" v-on:keyup.enter="close" aria-label="close" class="close">&times;</span>
 				<Spinner v-if="showSpinner"></Spinner>
 				<div class="modal-header">
-					<h4>Share {{ displayName }}</h4>
+					<h4>{{ translate("DRIVE.SHARE") }} {{ displayName }}</h4>
 				</div>
 
 				<div class="modal-body">
@@ -17,11 +17,11 @@
 						    v-model="targetUsernames"
                                                     :minchars="0"
 						    :options="allNames"
-						    placeholder="please select user"
+						    :placeholder="translate('DRIVE.SHARE.USER')"
 						/>
 
 						<label class="checkbox__group" v-if="this.allowReadWriteSharing">
-							Read Only
+							{{ translate("DRIVE.SHARE.R") }}
 							<input
 								type="radio"
 								value="Read"
@@ -31,7 +31,7 @@
 							<span class="checkmark"></span>
 						</label>
 						<label class="checkbox__group" v-if="this.allowReadWriteSharing && this.files[0].getOwnerName() == this.context.username">
-							Read & Write
+							{{ translate("DRIVE.SHARE.RW") }}
 							<input
 								type="radio"
 								value="Edit"
@@ -41,10 +41,10 @@
 							<span class="checkmark"></span>
 						</label>
 
-						<label>Or Group(s):</label>
+						<label>{{ translate("DRIVE.SHARE.GROUP") }}:</label>
 
 						<label class="checkbox__group">
-							Friends
+							{{ translate("DRIVE.SHARE.FRIENDS") }}
 							<input
 								type="checkbox"
 								name=""
@@ -55,7 +55,7 @@
 						</label>
 
 						<label class="checkbox__group">
-							Followers (Includes Friends)
+							{{ translate("DRIVE.SHARE.FOLLOWERS") }}
 							<input
 								type="checkbox"
 								name=""
@@ -73,13 +73,13 @@
 							aria-label="Share"
 							@click.native="shareWith()"
 						>
-							Share
+							{{ translate("DRIVE.SHARE") }}
 						</AppButton>
 					</fieldset>
 
 					<div v-if="this.allowReadWriteSharing" class="modal-section">
 						<div v-if="data.edit_shared_with_users.length > 0">
-							<p>Read and Write Access:</p>
+							<p>{{ translate("DRIVE.SHARE.RWACCESS") }}:</p>
 							<div v-if="this.files[0].getOwnerName() == this.context.username">
 								<div v-for="user in filterEditSharedWithUsers()">
 									<label class="checkbox__group">
@@ -93,7 +93,7 @@
 										<span class="checkmark"></span>
 									</label>
 								</div>
-								<button :disabled="this.unsharedEditAccessNames.length == 0" class="btn btn-success" v-on:click="unshare('Edit')">Revoke</button>
+								<button :disabled="this.unsharedEditAccessNames.length == 0" class="btn btn-success" v-on:click="unshare('Edit')">{{ translate("DRIVE.SHARE.REVOKE") }}</button>
 							</div>
 							<div v-if="this.files[0].getOwnerName() != this.context.username">
 								<div v-for="user in filterEditSharedWithUsers()">
@@ -101,12 +101,12 @@
 								</div>
 							</div>
 						</div>
-						<p v-else>Read and Write Access: None</p>
+						<p v-else>{{ translate("DRIVE.SHARE.RWACCESS") }}: {{ translate("DRIVE.SHARE.NONE") }}</p>
 					</div>
 
 					<div class="modal-section">
 						<div v-if="data.read_shared_with_users.length > 0">
-							<p>Read only Access:</p>
+							<p>{{ translate("DRIVE.SHARE.RACCESS") }}:</p>
 							<div v-if="this.files[0].getOwnerName() == this.context.username">
 								<div v-for="user in filterReadSharedWithUsers()">
 									<!-- <input type="checkbox" v-bind:id="user" v-bind:value="user" v-model="unsharedReadAccessNames">&nbsp;<span>{{ getUserOrGroupName(user) }}</span> -->
@@ -129,7 +129,7 @@
 								</div>
 							</div>
 						</div>
-						<p v-else>Read only Access: None</p>
+						<p v-else>{{ translate("DRIVE.SHARE.RACCESS") }}: {{ translate("DRIVE.SHARE.NONE") }}</p>
 					</div>
 
 					<div v-if="this.allowCreateSecretLink" class="modal-section">
@@ -138,7 +138,7 @@
 							aria-label="Create Secret Link"
 							@click.native="createSecretLink()"
 						>
-							Create Secret Link
+							{{ translate("DRIVE.SHARE.LINK") }}
 						</AppButton>
 					</div>
                     <Choice
@@ -168,15 +168,17 @@ const Choice = require('../choice/Choice.vue');
 const Spinner = require("../spinner/Spinner.vue");
 const FormAutocomplete = require("../form/FormAutocomplete.vue");
 const SecretLink = require("SecretLink.vue");
+const i18n = require("../../i18n/index.js");
 
 module.exports = {
 	components: {
 	    AppButton,
 	    Choice,
 	    FormAutocomplete,
-        SecretLink,
-        Spinner,
+            SecretLink,
+            Spinner,
 	},
+        mixins:[i18n],
 	data() {
 		return {
 			showSpinner: false,
@@ -238,12 +240,12 @@ module.exports = {
 			let name = this.displayName.toLowerCase();
 		    let that = this;
 			if (this.currentDir != null && (name.endsWith('.html') || name.endsWith('.md') || name.endsWith('.note') || name == 'peergos-app.json')) {
-                this.choice_message = 'Confirm Action';
+                this.choice_message = this.translate("DRIVE.SHARE.CONFIRM");
                 this.choice_body = '';
                 this.choice_consumer_func = (index) => {
                     that.buildSecretLink(index == 1 ? true: false);
                 };
-                this.choice_options = ['Create secret link to file' ,'Create secret link to current folder and open file'];
+                this.choice_options = [this.translate("DRIVE.SHARE.CREATE.FILE"), this.translate("DRIVE.SHARE.CREATE.FOLDER")];
                 this.showChoice = true;
             } else {
                 this.buildSecretLink(false);
@@ -267,11 +269,11 @@ module.exports = {
 			});
 			var title = "";
 			if (shareFolderWithFile) {
-                title = "Secret link to current folder and open file: ";
+                title = this.translate("DRIVE.SHARE.FOLDER.OPEN") + ": ";
 			} else if (isFile) {
-                title = "Secret link to file: ";
+                title = this.translate("DRIVE.SHARE.FILE")+": ";
             } else {
-                title = "Secret link to folder: ";
+                title = this.translate("DRIVE.SHARE.FOLDER")+": ";
             }
 			this.showLinkModal(title, link);
 		},
@@ -318,7 +320,7 @@ module.exports = {
 				})
 				.exceptionally(function (throwable) {
 					that.showSpinner = false;
-					that.$toast.error(`Error sharing file ${that.files[0].getFileProperties().name}: ${throwable.getMessage()}`, {timeout:false, id: 'share'})
+					that.$toast.error(that.translate("DRIVE.SHARE.ERROR") + ` ${that.files[0].getFileProperties().name}: ${throwable.getMessage()}`, {timeout:false, id: 'share'})
 				});
 		},
 		unshareFileWith(read_usernames, edit_usernames, sharedWithAccess) {
@@ -335,19 +337,13 @@ module.exports = {
 					)
 					.thenApply(function (b) {
 						that.showSpinner = false;
-						that.$toast('Read access revoked')
+						that.$toast(that.translate("DRIVE.SHARE.REVOKE.R"))
 						that.close();
-						console.log(
-							"unshared read access to " +
-								that.files[0].getFileProperties().name +
-								" with " +
-								that.unsharedReadAccessNames
-						);
 						that.refresh();
 					})
 					.exceptionally(function (throwable) {
 						that.showSpinner = false;
-						that.$toast.error(`Error unsharing file ${filename}: ${throwable.getMessage()}`, {timeout:false, id: 'share'})
+						that.$toast.error(that.translate("DRIVE.SHARE.ERROR.UNSHARING")+` ${filename}: ${throwable.getMessage()}`, {timeout:false, id: 'share'})
 
 					});
 			} else {
@@ -360,32 +356,26 @@ module.exports = {
 					)
 					.thenApply(function (b) {
 						that.showSpinner = false;
-						that.$toast('Read & Write access revoked')
+						that.$toast(that.translate("DRIVE.SHARE.REVOKE.RW"))
 						that.close();
-						console.log(
-							"unshared write access to " +
-								that.files[0].getFileProperties().name +
-								" with " +
-								that.unsharedEditAccessNames
-						);
 						that.refresh();
 					})
 					.exceptionally(function (throwable) {
 						that.showSpinner = false;
-						that.$toast.error(`Error unsharing file ${filename}: ${throwable.getMessage()}`, {timeout:false, id: 'share'})
+						that.$toast.error(that.translate("DRIVE.SHARE.ERROR.UNSHARING")+` ${filename}: ${throwable.getMessage()}`, {timeout:false, id: 'share'})
 					});
 			}
 		},
 		allowedToShare(file) {
 			if (file.isUserRoot()) {
-				this.$toast.error('You cannot share your home directory', {timeout:false, id: 'share'})
+				this.$toast.error(this.translate("DRIVE.SHARE.ERROR.HOME"), {timeout:false, id: 'share'})
 				return false;
 			}
 			if (
 				this.sharedWithAccess == "Edit" &&
 				file.getOwnerName() != this.context.username
 			) {
-				this.$toast.error('Only the owner of a file can grant write access', {timeout:false, id: 'share'})
+				this.$toast.error(this.translate("DRIVE.SHARE.ERROR.WRITE"), {timeout:false, id: 'share'})
 				return false;
 			}
 			return true;
@@ -420,7 +410,7 @@ module.exports = {
 				})
 				.exceptionally(function (throwable) {
 					that.showSpinner = false;
-					that.$toast.error(`Error sharing file ${that.files[0].getFileProperties().name}: ${throwable.getMessage()} `, {timeout:false, id: 'share'})
+					that.$toast.error(that.translate("DRIVE.SHARE.ERROR") + ` ${that.files[0].getFileProperties().name}: ${throwable.getMessage()} `, {timeout:false, id: 'share'})
 				});
 		},
 		isFriend(name) {
@@ -574,7 +564,7 @@ module.exports = {
 				}
 			}
 			if (usersToShareWith.length == 0) {
-				that.$toast.error('Already shared', {timeout:false, id: 'share'})
+				that.$toast.error(that.translate("DRIVE.SHARE.ERROR.REPEAT"), {timeout:false, id: 'share'})
 				return;
 			}
 			var filename = that.files[0].getFileProperties().name;
@@ -588,15 +578,14 @@ module.exports = {
 					)
 					.thenApply(function (b) {
 						that.showSpinner = false;
-						that.$toast('Secure sharing complete')
+						that.$toast(that.translate("DRIVE.SHARE.COMPLETE"))
 						that.close();
 						// that.resetTypeahead();
-						console.log("shared read access to " + filename);
 						that.refresh();
 					})
 					.exceptionally(function (throwable) {
 						that.showSpinner = false;
-						that.$toast.error(`Error sharing file ${filename}: ${throwable.getMessage()}`, {timeout:false, id: 'share'})
+						that.$toast.error(that.translate("DRIVE.SHARE.ERROR") + ` ${filename}: ${throwable.getMessage()}`, {timeout:false, id: 'share'})
 
 					});
 			} else {
@@ -607,15 +596,14 @@ module.exports = {
 					)
 					.thenApply(function (b) {
 						that.showSpinner = false;
-						that.$toast('Secure sharing complete')
+						that.$toast(that.translate("DRIVE.SHARE.COMPLETE"))
 						// that.resetTypeahead();
 						that.close();
-						console.log("shared write access to " + filename);
 						that.refresh();
 					})
 					.exceptionally(function (throwable) {
 						that.showSpinner = false;
-						that.$toast.error(`Error sharing file ${filename}: ${throwable.getMessage()}`, {timeout:false, id: 'share'})
+						that.$toast.error(that.translate("DRIVE.SHARE.ERROR") + ` ${filename}: ${throwable.getMessage()}`, {timeout:false, id: 'share'})
 					});
 			}
 		},
