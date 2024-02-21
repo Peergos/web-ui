@@ -43,12 +43,44 @@ window.addEventListener('message', function (e) {
 	function getCurrentFolder() {
 		return "";
 	}
+    function processMarkdownWithLatex(text) {
+        text = "\n" + text +"\n"; //add \n to catch token at very start and end
+        var startIdx = 0;
+        var endIdx = -1;
+        let token = "\n$$\n";
+        let replacementToken = "\n$$latex\n";
+        let indexesToReplace = [];
+        var done = false;
+        while(!done) {
+            startIdx = text.indexOf(token, endIdx + 1);
+            if (startIdx > -1) {
+                endIdx = text.indexOf(token, startIdx + 1);
+                if (endIdx > -1 && text[endIdx] == '\n') {
+                    indexesToReplace.push(startIdx);
+                } else { //unbalanced
+                    done = true;
+                }
+            } else {
+                done = true;
+            }
+        }
+        let indexesToReplaceReversed = indexesToReplace.reverse();
+
+        for(var i = 0; i < indexesToReplaceReversed.length; i++) {
+            let idx = indexesToReplaceReversed[i];
+            let before = text.substring(0, idx);
+            let after = text.substring(idx + token.length);
+            text = before + replacementToken + after;
+        }
+        return text.substring(1, text.length -1); //see top of function for explanation
+    }
 function initialiseMarkdownEditor(theme, subPathInput, text) {
     let div = document.createElement('div');
     let subPath = subPathInput ? subPathInput : '';
+    let mdText = processMarkdownWithLatex(text);
     const viewer = new toastui.Editor({
         el: div,
-        initialValue: text,
+        initialValue: mdText,
         usageStatistics: false,
         headless: true,
         theme: theme,
