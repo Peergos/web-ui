@@ -51,7 +51,7 @@ const Prompt = require("../components/prompt/Prompt.vue");
 const SelectCreate = require('../components/select-create/SelectCreate.vue');
 const Spinner = require("../components/spinner/Spinner.vue");
 const Warning = require('../components/Warning.vue');
-const i18n = require("../../i18n/index.js");
+const i18n = require("../i18n/index.js");
 
 module.exports = {
     components: {
