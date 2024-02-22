@@ -2,7 +2,7 @@
 	<article class="app-view calendar-view">
 		<AppHeader>
 			<template #primary>
-				<h1>Calendar view</h1>
+				<h1>{{ translate("CALENDAR.TITLE") }}</h1>
 			</template>
 		</AppHeader>
 		<main>
@@ -62,6 +62,7 @@ const Share = require("../components/drive/DriveShare.vue");
 const ProgressBar = require("../components/drive/ProgressBar.vue");
 const Prompt = require("../components/prompt/Prompt.vue");
 const Spinner = require("../components/spinner/Spinner.vue");
+const i18n = require("../i18n/index.js");
 
 const routerMixins = require("../mixins/router/index.js");
 
@@ -133,7 +134,7 @@ module.exports = {
 		    return {groupsNameToUid: this.socialData.groupsNameToUid, groupsUidToName: this.socialData.groupsUidToName};
 	    },
 	},
-	mixins:[routerMixins],
+	mixins:[routerMixins, i18n],
     created() {
         let that = this;
         this.displaySpinner();

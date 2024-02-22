@@ -432,4 +432,5 @@ module.exports = {
     "TASKS.ERROR.UNEXPECTED":"Unexpected error",
     "TASKS.ERROR.UPLOAD":"Error uploading file",
     "TASKS.CLOSE.CONFIRM":"Are you sure you want to close $NAME without saving?",
+    "CALENDAR.TITLE":"Calendar",
 }
