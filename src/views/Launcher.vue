@@ -62,13 +62,13 @@
                 <li id='open-in-app' style="padding-bottom: 5px;" v-for="app in availableApps" v-on:keyup.enter="appOpen($event, app.name, app.path, app.file)" v-on:click="appOpen($event, app.name, app.path, app.file)">{{app.contextMenuText}}</li>
             </ul>
             <div>
-                <h3>Custom Apps
-                    <button class="btn btn-success" @click="navigateToRecommendedApps()" style="margin-left: 10px;">Recommended Apps</button>
-                    <button class="btn btn-info" @click="checkForAppUpdates()" style="margin-left: 10px;">Check for Updates</button>
+                <h3>{{ translate("LAUNCHER.CUSTOM") }}
+                    <button class="btn btn-success" @click="navigateToRecommendedApps()" style="margin-left: 10px;">{{ translate("LAUNCHER.RECOMMENDED") }}</button>
+                    <button class="btn btn-info" @click="checkForAppUpdates()" style="margin-left: 10px;">{{ translate("LAUNCHER.UPDATE") }}</button>
                     <span style="margin-left: 40px;">{{updateMessage}}</span>
                 </h3>
                 <div v-if="appsList.length ==0" class="table-responsive">
-                    No Custom Apps currently installed.  Create an App from the "create app" menu item of the green plus.
+                    {{ translate("LAUNCHER.NONE") }}
                 </div>
                 <div v-if="appsList!=0">
                     <AppGrid
@@ -82,19 +82,19 @@
                 </div>
             </div>
             <div>
-                <h3>Shortcuts</h3>
+                <h3>{{ translate("LAUNCHER.SHORTCUTS") }}</h3>
                 <div v-if="shortcutList.length ==0" class="table-responsive">
-                    Entries can be added via context menu item 'Add to Launcher'
+                    {{ translate("LAUNCHER.ADD.SHORTCUT") }}
                 </div>
                 <div v-if="shortcutList!=0" class="table-responsive">
                     <table class="table">
                         <thead>
                         <tr  v-if="shortcutList.length!=0" style="cursor:pointer;">
-                            <th @click="setShortcutsSortBy('added')">Added <span v-if="shortcutsSortBy=='added'" v-bind:class="['fas', shortcutsNormalSortOrder ? 'fa-angle-down' : 'fa-angle-up']"/></th>
-                            <th @click="setShortcutsSortBy('name')">Name <span v-if="shortcutsSortBy=='name'" v-bind:class="['fas', shortcutsNormalSortOrder ? 'fa-angle-down' : 'fa-angle-up']"/></th>
-                            <th @click="setShortcutsSortBy('path')">Folder <span v-if="shortcutsSortBy=='path'" v-bind:class="['fas', shortcutsNormalSortOrder ? 'fa-angle-down' : 'fa-angle-up']"/></th>
-                            <th @click="setShortcutsSortBy('modified')">Modified <span v-if="shortcutsSortBy=='modified'" v-bind:class="['fas', shortcutsNormalSortOrder ? 'fa-angle-down' : 'fa-angle-up']"/></th>
-                            <th @click="setShortcutsSortBy('created')">Created <span v-if="shortcutsSortBy=='created'" v-bind:class="['fas', shortcutsNormalSortOrder ? 'fa-angle-down' : 'fa-angle-up']"/></th>
+                            <th @click="setShortcutsSortBy('added')">{{ translate("LAUNCHER.ADDED") }} <span v-if="shortcutsSortBy=='added'" v-bind:class="['fas', shortcutsNormalSortOrder ? 'fa-angle-down' : 'fa-angle-up']"/></th>
+                            <th @click="setShortcutsSortBy('name')">{{ translate("LAUNCHER.NAME") }} <span v-if="shortcutsSortBy=='name'" v-bind:class="['fas', shortcutsNormalSortOrder ? 'fa-angle-down' : 'fa-angle-up']"/></th>
+                            <th @click="setShortcutsSortBy('path')">{{ translate("LAUNCHER.FOLDER") }} <span v-if="shortcutsSortBy=='path'" v-bind:class="['fas', shortcutsNormalSortOrder ? 'fa-angle-down' : 'fa-angle-up']"/></th>
+                            <th @click="setShortcutsSortBy('modified')">{{ translate("DRIVE.MODIFIED") }} <span v-if="shortcutsSortBy=='modified'" v-bind:class="['fas', shortcutsNormalSortOrder ? 'fa-angle-down' : 'fa-angle-up']"/></th>
+                            <th @click="setShortcutsSortBy('created')">{{ translate("DRIVE.CREATED") }} <span v-if="shortcutsSortBy=='created'" v-bind:class="['fas', shortcutsNormalSortOrder ? 'fa-angle-down' : 'fa-angle-up']"/></th>
                             <th></th>
                         </tr>
                         </thead>
@@ -113,7 +113,7 @@
                             <td v-bind:class="[shortcut.missing ? 'deleted-entry' : '']">
                                 {{ formatJSDate(shortcut.created) }}
                             </td>
-                            <td> <button class="btn btn-danger" @click="removeShortcut(shortcut)">Remove</button>
+                            <td> <button class="btn btn-danger" @click="removeShortcut(shortcut)">{{ translate("LAUNCHER.REMOVE") }}</button>
                             </td>
                         </tr>
                         </tbody>
@@ -181,6 +181,7 @@ const routerMixins = require("../mixins/router/index.js");
 const mixins = require("../mixins/mixins.js");
 const launcherMixin = require("../mixins/launcher/index.js");
 const sandboxMixin = require("../mixins/sandbox/index.js");
+const i18n = require("../i18n/index.js");
 module.exports = {
     components: {
         AppInstall,
@@ -245,7 +246,7 @@ module.exports = {
         }
     },
     props: [],
-    mixins:[routerMixins, mixins, launcherMixin, sandboxMixin],
+    mixins:[routerMixins, mixins, launcherMixin, sandboxMixin, i18n],
 	watch: {
 		forceAppDisplayUpdate(newUpdateCounter, oldUpdateCounter) {
 		    let that = this;
@@ -372,7 +373,7 @@ module.exports = {
     methods: {
         confirmReplaceFile(filename, cancelFn, replaceFn) {
             this.showSpinner = false;
-            this.replace_message = 'File: "' + filename + '" already exists in this location. Do you wish to replace it?';
+            this.replace_message = this.translate("LAUNCHER.EXISTS").replace("$NAME", filename);
             this.replace_body = '';
             this.replace_consumer_cancel_func = cancelFn;
             this.replace_consumer_func = replaceFn;
@@ -463,12 +464,12 @@ module.exports = {
                     that.context.getTransactionService(),
                     f => peergos.shared.util.Futures.of(false)
                 ).thenApply(function (res) {
-                    that.showMessage(false, "File created");
+                    that.showMessage(false, that.translate("LAUNCHER.CREATED.SUCCESS"));
                     that.showSpinner = false;
                     future.complete(true);
                 }).exceptionally(function (throwable) {
                     that.showSpinner = false;
-                    that.showMessage(true, "File creation failed");
+                    that.showMessage(true, that.translate("LAUNCHER.CREATED.ERROR"));
                     future.complete(false);
                 });
             });
@@ -529,11 +530,11 @@ module.exports = {
             this.gatherAppsWithUpdates(appsInstalledWithSource, 0, [], future);
             future.thenApply(appsWithUpdates => {
                 if (appsWithUpdates.length == 0) {
-                    that.updateMessage = 'All up-to-date';
+                    that.updateMessage = that.translate("LAUNCHER.UPDATES.NONE");
                 } else if (appsWithUpdates.length == 1) {
-                    that.updateMessage = '1 has an update';
+                    that.updateMessage = that.translate("LAUNCHER.UPDATES.ONE");
                 } else {
-                    that.updateMessage = appsWithUpdates.length + ' have updates';
+                    that.updateMessage = that.translate("LAUNCHER.UPDATES.MANY").replace("$COUNT", appsWithUpdates.length);
                 }
                 for(var i=0; i < appsWithUpdates.length; i++) {
                     let appName = appsWithUpdates[i].name;
@@ -658,8 +659,8 @@ module.exports = {
             this.showAppDetails = false;
         },
         confirmRemoveApp(appName, replaceFunction, cancelFunction) {
-            this.confirm_message = 'Remove App: ' + appName;
-            this.confirm_body = "Are you sure you want to remove this App (Including all associated data)?";
+            this.confirm_message = this.translate("LAUNCHER.APP.REMOVE") + ': ' + appName;
+            this.confirm_body = this.translate("LAUNCHER.APP.REMOVE.CONFIRM");
             this.confirm_consumer_cancel_func = cancelFunction;
             this.confirm_consumer_func = replaceFunction;
             this.showConfirm = true;
@@ -714,8 +715,8 @@ module.exports = {
             });
         },
         confirmRemoveShortcut(replaceFunction, cancelFunction) {
-            this.confirm_message = 'Remove shortcut';
-            this.confirm_body = "Are you sure you want to remove this shortcut?";
+            this.confirm_message = this.translate("LAUNCHER.SHORTCUT.REMOVE");
+            this.confirm_body = this.translate("LAUNCHER.SHORTCUT.REMOVE.CONFIRM");
             this.confirm_consumer_cancel_func = cancelFunction;
             this.confirm_consumer_func = replaceFunction;
             this.showConfirm = true;
