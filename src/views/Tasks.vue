@@ -388,7 +388,7 @@ module.exports = {
                         that.showSpinner = false;
                         let msg = that.uriDecode(throwable.detailMessage);
                         if (msg.includes("CAS exception updating cryptree node.")) {
-                            that.showMessage(that.translate("TASKS.ERROR.CAS"));
+                            that.showMessage(that.translate("TASKS.ERROR.CAS.TITLE"), that.translate("TASKS.ERROR.CAS.TEXT"));
                         } else {
                             that.handleException(throwable, that.translate("TASKS.ERROR.UNEXPECTED"), that.translate("TASKS.ERROR.UPLOAD") + ': ' + that.currentFile.getName());
                         }
