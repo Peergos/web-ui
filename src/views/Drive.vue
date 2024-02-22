@@ -2968,7 +2968,7 @@ module.exports = {
 
 			this.prompt_placeholder = this.translate("DRIVE.RENAME.PLACEHOLDER");
 			this.prompt_value = old_name;
-			this.prompt_message = this.translate("DRIVE.RENAME");
+			this.prompt_message = this.translate("DRIVE.RENAME.TITLE");
 			var that = this;
 			this.prompt_consumer_func = function (prompt_result) {
 				if (prompt_result === null)
