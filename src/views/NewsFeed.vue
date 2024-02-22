@@ -2,7 +2,7 @@
 <Article class="app-view newsfeed-view">
 	<AppHeader>
 		<template #primary>
-			<h1>Newsfeed</h1>
+			<h1>{{ translate("NEWSFEED.TITLE") }}</h1>
 		</template>
 		<template #tools>
 			<AppButton
@@ -11,7 +11,7 @@
 				size="small"
 				accent
 			>
-			New Post
+			{{ translate("NEWSFEED.NEW") }}
 			</AppButton>
 			<AppButton
 				aria-label="Refresh"
@@ -25,10 +25,10 @@
 
         <center v-if="buildingFeed">
             <h3>
-                Building your news feed.
+                {{ translate("NEWSFEED.BUILDING") }}
                 </h3>
             <h3>
-                This could take a minute..
+                {{ translate("NEWSFEED.MINUTE") }}
             </h3>
         </center>
     <main v-else class="newsfeed__container">
@@ -85,24 +85,24 @@
                 <div id="scroll-area">
                     <center v-if="data.length==0">
                         <h3>
-                            This is your news feed.
+                            {{ translate("NEWSFEED.BUILT") }}
                         </h3>
                         <h3>
-                            You can see here all the things that have been shared with you by friends or people you follow.
+                            {{ translate("NEWSFEED.DESC") }}
                         </h3>
                     </center>
                     <ul id="editMenu" v-if="showEditMenu" class="dropdown-menu" v-bind:style="{top:menutop, left:menuleft}" style="cursor:pointer;display:block;min-width:100px;">
-                        <li><a @click="editPost(currentRow)">Edit</a></li>
-                        <li><a @click="deletePost(currentRow)">Delete</a></li>
+                        <li><a @click="editPost(currentRow)">{{ translate("DRIVE.EDIT") }}</a></li>
+                        <li><a @click="deletePost(currentRow)">{{ translate("DRIVE.DELETE") }}</a></li>
                     </ul>
                     <ul id="friendMenu" v-if="showFriendMenu" class="dropdown-menu" v-bind:style="{top:menutop, left:menuleft}" style="cursor:pointer;display:block;min-width:100px;">
-                        <li><a @click="sendFriendRequest(currentRow)">Send friend request</a></li>
+                        <li><a @click="sendFriendRequest(currentRow)">{{ translate("NEWSFEED.FRIEND") }}</a></li>
                     </ul>
 
                     <div id="feed" class="table table-responsive table-striped table-hover" style="border:none;">
                         <div v-for="entry in blocks">
                             <div v-if="entry[0].isLastEntry">
-                                <center><span>No more entries</span></center>
+                                <center><span>{{ translate("NEWSFEED.END") }}</span></center>
                             </div>
                             <div v-if="!entry[0].isLastEntry && !entry[0].isPost && !entry[0].isMedia" style="border: 1px solid black;border-radius: 11px; margin-top:5px; padding: 2em;">
                                 <a v-if="entry[0].sharer != context.username && canLoadProfile(entry[0].sharer)" v-on:click="displayProfile(entry[0].sharer)" style="cursor: pointer">
@@ -121,13 +121,13 @@
                                                     <AppIcon style="height:100px" @click.stop.native="view($event, entry[0])" class="card__icon" :icon="getFileIconFromFileAndType(entry[0].file, entry[0].fileType)"></AppIcon>
                                                 </a>
                                                 <img v-if="entry[0].hasThumbnail && !entry[0].isChat" v-on:click="view($event, entry[0])" v-bind:src="entry[0].thumbnail" style="cursor: pointer"/>
-                                                <button v-if="entry[0].isChat && entry[0].isNewChat" class="btn btn-success" @click="joinConversation(entry[0])" style="font-weight: bold;">Join</button>
-                                                <button v-if="entry[0].isChat && !entry[0].isNewChat" class="btn btn-success" @click="openConversation(entry[0])" style="font-weight: bold;">View</button>
+                                                <button v-if="entry[0].isChat && entry[0].isNewChat" class="btn btn-success" @click="joinConversation(entry[0])" style="font-weight: bold;">{{ translate("NEWSFEED.JOIN") }}</button>
+                                                <button v-if="entry[0].isChat && !entry[0].isNewChat" class="btn btn-success" @click="openConversation(entry[0])" style="font-weight: bold;">{{ translate("DRIVE.VIEW") }}</button>
                                             </span>
                                         </div>
                                     </div>
                                     <span v-if="!entry[0].isDirectory && entry[0].sharer != context.username && !entry[0].isMedia && canComment(entry[0])">
-                                        <button class="btn btn-success" @click="addComment(entry[0])">Add comment</button>
+                                        <button class="btn btn-success" @click="addComment(entry[0])">{{ translate("NEWSFEED.ADD.COMMENT") }}</button>
                                     </span>
                                 </div>
 
@@ -145,7 +145,7 @@
                                             <div v-bind:style="{ marginLeft: indent(entry[rowIndex-1]) }">
                                                 <div style="margin-top: 10px; margin-bottom: 10px;">
                                                     <span v-if="entry[rowIndex-1].sharer != context.username && canComment(entry[rowIndex-1])">
-                                                        <button class="btn btn-success" @click="addComment(entry[rowIndex-1])">comment</button>
+                                                        <button class="btn btn-success" @click="addComment(entry[rowIndex-1])">{{ translate("NEWSFEED.COMMENT") }}</button>
                                                     </span>
                                                 </div>
                                             </div>
@@ -166,7 +166,7 @@
                                             <div v-if="!(rowIndex + 1 < entry.length && entry[rowIndex+1].isMedia)" v-bind:style="{ marginLeft: indent(row) }">
                                                 <div style="margin-top: 10px; margin-bottom: 10px;">
                                                     <span v-if="row.sharer != context.username && canComment(row)">
-                                                        <button class="btn btn-success" @click="addComment(row)">comment</button>
+                                                        <button class="btn btn-success" @click="addComment(row)">{{ translate("NEWSFEED.COMMENT") }}</button>
                                                     </span>
                                                 </div>
                                             </div>
@@ -190,7 +190,7 @@
                                             <div v-bind:style="{ marginLeft: indent(entry[rowIndex-1]) }">
                                                 <div style="margin-top: 10px; margin-bottom: 10px;">
                                                     <span v-if="canComment(entry[rowIndex-1])">
-                                                        <button class="btn btn-success" @click="addComment(entry[rowIndex-1])">comment</button>
+                                                        <button class="btn btn-success" @click="addComment(entry[rowIndex-1])">{{ translate("NEWSFEED.COMMENT") }}</button>
                                                     </span>
                                                 </div>
                                             </div>
@@ -216,7 +216,7 @@
                                             <div v-if="!(rowIndex + 1 < entry.length && entry[rowIndex+1].isMedia)" v-bind:style="{ marginLeft: indent(row) }">
                                                 <div style="margin-top: 10px; margin-bottom: 10px;">
                                                     <span v-if="canComment(row)">
-                                                        <button class="btn btn-success" @click="addComment(row)">comment</button>
+                                                        <button class="btn btn-success" @click="addComment(row)">{{ translate("NEWSFEED.COMMENT") }}</button>
                                                     </span>
                                                 </div>
                                             </div>
@@ -227,7 +227,7 @@
                         </div>
                     </div>
                     <center>
-                        <button :disabled="requestingMoreResults" v-if="hasLoadedInitialResults && !noMoreResults" class="btn btn-success" v-on:click="requestMoreResults()">Show more</button>
+                        <button :disabled="requestingMoreResults" v-if="hasLoadedInitialResults && !noMoreResults" class="btn btn-success" v-on:click="requestMoreResults()">{{ translate("NEWSFEED.MORE") }}</button>
                     </center>
                 </div>
             </div>
@@ -246,6 +246,7 @@ const Gallery = require("../components/drive/DriveGallery.vue");
 const ViewProfile = require("../components/profile/ViewProfile.vue");
 const AppSandbox = require("../components/sandbox/AppSandbox.vue");
 const Spinner = require("../components/spinner/Spinner.vue");
+const i18n = require("../i18n/index.js");
 
 const routerMixins = require("../mixins/router/index.js");
 const mixins = require("../mixins/mixins.js");
@@ -317,7 +318,7 @@ module.exports = {
         }
     },
     props: [],
-	mixins:[routerMixins, mixins],
+	mixins:[routerMixins, mixins, i18n],
   	created: function() {
         let that = this;
         this.entryTree = new this.Tree(this);
@@ -410,7 +411,7 @@ module.exports = {
 		            // assume only 1 text item in body for now
                     this.data[index].name = newSocialPost.body.toArray([])[0].inlineText();
                     this.data[index].socialPost = newSocialPost;
-                    this.data[index].status = newSocialPost.previousVersions.toArray([]).length > 0 ? "[edited]" : "";
+                    this.data[index].status = newSocialPost.previousVersions.toArray([]).length > 0 ? "[" + this.translate("NEWSFEED.EDITED") + "]" : "";
                 }
             } else {
                 if (newSocialPost != null) {
@@ -473,9 +474,7 @@ module.exports = {
             ctx.getSocialState().thenCompose(function(social) {
                 var pendingOutgoingUsernames = [];
 		social.pendingOutgoing.toArray([]).map(u => pendingOutgoingUsernames.push(u));
-                if (pendingOutgoingUsernames.indexOf(entry.owner) >= 0)
-                    console.log("Friend request already sent");
-                else
+                if (pendingOutgoingUsernames.indexOf(entry.owner) < 0)
                     ctx.sendInitialFollowRequest(entry.owner);
             });
 	    this.showFriendMenu = false;
@@ -527,11 +526,11 @@ module.exports = {
         },
         deletePost: function(entry) {
             let that = this;
-            var msg = 'Are you sure you want to delete the ';
+            var msg = that.translate("NEWSFEED.DELETE.CONFIRM");
             if (entry.indent == 1) {
-                msg = msg + "post?";
+                msg = msg + that.translate("NEWSFEED.POST") + "?";
             } else {
-                msg = msg + "comment?";
+                msg = msg + that.translate("NEWSFEED.COMMENT") + "?";
             }
             this.confirmDeletePost(msg,
                 () => { that.showConfirm = false;
@@ -554,7 +553,7 @@ module.exports = {
                         that.deleteFile(parentPath + "/media/" + mediaFile.props.name, mediaFile).thenApply(function(res){
                             that.reduceDeletingAllMediaReferences(entry, references, index + 1, future);
                         }).exceptionally(function(throwable) {
-                            that.showMessage("error deleting media file!");
+                            that.showMessage(that.translate("NEWSFEED.ERROR.MEDIA.DELETE"));
                             that.reduceDeletingAllMediaReferences(entry, references, index + 1, future);
                         });
                     } else {
@@ -603,7 +602,7 @@ module.exports = {
                         updatedFileOpt.ref.remove(optParent.get(), filePath, that.context).thenApply(function(b){
                             future.complete(true);
                         }).exceptionally(function(throwable) {
-                            that.showMessage("error deleting post");
+                            that.showMessage(that.translate("NEWSFEED.ERROR.POST.DELETE"));
                             that.showSpinner = false;
                             future.complete(false);
                         });
@@ -612,7 +611,7 @@ module.exports = {
                     }
                 });
             }).exceptionally(function(throwable) {
-                that.showMessage("error deleting social post");
+                that.showMessage(that.translate("NEWSFEED.ERROR.POST.DELETE"));
                 that.showSpinner = false;
                 future.complete(false);
             });
@@ -647,7 +646,7 @@ module.exports = {
                         future.complete({socialPost: socialPost, file: file});
                     });
             }).exceptionally(function(throwable) {
-                that.showMessage("error loading post");
+                that.showMessage(that.translate("NEWSFEED.ERROR.POST.LOAD"));
                 future.complete(null);
             });
         },
@@ -961,7 +960,7 @@ module.exports = {
                     that.openConversation(entry);
                 } else {
                     console.log("Unable to join Chat. Error:" + throwable.getMessage());
-                    that.showMessage("Unable to join Chat");
+                    that.showMessage(that.translate("NEWSFEED.ERROR.CHAT.JOIN"));
                 }
             });
         },
@@ -978,7 +977,7 @@ module.exports = {
                             that.showAppInstallation = true;
                             that.appInstalledEntry = entry;
                         } else {
-                            that.showMessage("App with name: " + entry.appName + " not installed!");
+                            that.showMessage(that.translate("NEWSFEED.APP.ABSENT").replace("$NAME", entry.appName));
                         }
                     });
                 } else {
@@ -1142,14 +1141,14 @@ module.exports = {
 
             let sharer = entry != null ? entry.sharer : this.extractOwnerFromPath(filePath);
             if (sharer == this.context.username) {
-                info = "you" + info;
+                info = this.translate("NEWSFEED.YOU") + info;
             }
             let owner = entry != null ? entry.owner : this.extractOwnerFromPath(filePath);
             if (socialPost == null && filePath.includes("/.posts/")) {
                 displayFilename = false;
             }
             if(entry != null && entry.cap.isWritable() ) {
-                info = info + " write access to";
+                info = info + " " + this.translate("NEWSFEED.WRITEACCESS");
             }
             let props = file.props;
             var isSharedCalendar = false;
@@ -1159,32 +1158,32 @@ module.exports = {
             var appName = "";
             if (props.isDirectory) {
                 if (isSharedCalendar) {
-                    info = info + " a calendar"; // - " + props.name;
+                    info = info + " " + this.translate("NEWSFEED.ACAL"); // - " + props.name;
                     displayFilename = false;
                 } else if(isChat) {
                     appName = this.extractChatApp(filePath);
                     if (appName.length > 0) {
                         let app = this.sandboxedApps.appsInstalled.slice().filter(app => app.name == appName);
                         if (app.length > 0) {
-                            info = "invited you to the App " + app[0].displayName;
+                            info = this.translate("NEWSFEED.INVITED.APP") + " " + app[0].displayName;
                         } else {
-                            info = "invited you to the App " + appName;
+                            info = this.translate("NEWSFEED.INVITED.APP") + " " + appName;
                         }
                     } else {
-                        info = "invited you to a chat";
+                        info = this.translate("NEWSFEED.INVITED.CHAT");
                     }
                     displayFilename = false;
                 } else {
-                    info = info + " the folder";
+                    info = info + " " + this.translate("NEWSFEED.FOLDER");
                 }
             } else if (props.getType() == 'calendar') {
-                info = info + " a calendar event";
+                info = info + " " + this.translate("NEWSFEED.ANEVENT");
                 displayFilename = false;
             } else {
-                info = info + " the file";
+                info = info + " " + this.translate("NEWSFEED.FILE");
             }
             if (entry !=null && entry.sharer != entry.owner) {
-                info = info + " owned by " + entry.owner;
+                info = info + " " + this.translate("NEWSFEED.OWNED") + " " + entry.owner;
             }
             info = info + ": ";
             let path = props.isDirectory ? filePath : filePath.substring(0, filePath.lastIndexOf(props.name) -1);
@@ -1194,14 +1193,14 @@ module.exports = {
             var status = "";
             if (isPost) {
                 let isReply = socialPost.parent.ref != null;
-                var identity = socialPost.author == this.context.username ? "you " : "";
+                var identity = socialPost.author == this.context.username ? this.translate("NEWSFEED.YOU")+" " : "";
 
                 info = isReply ? "commented at " : "posted at ";
                 info = identity + info;
                 info = info + this.fromUTCtoLocal(socialPost.postTime);
                 name = socialPost.body.toArray([])[0].inlineText();
                 if (socialPost.previousVersions.toArray([]).length > 0) {
-                    status = "[edited]";
+                    status = "["+this.translate("NEWSFEED.EDITED")+"]";
                 }
             }
             let isNewChat = this.isNewChat(filePath, isChat);
