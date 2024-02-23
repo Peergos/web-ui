@@ -1,6 +1,31 @@
 var mainWindow;
 var origin;
 var editorJS = null;
+
+window.MathJax = {
+  tex: {
+    inlineMath: [ ['$','$'], ["\\(","\\)"] ],
+    displayMath: [ ['$$','$$'], ["\\[","\\]"] ],
+    processEscapes: false,
+    tagSide: "right",
+    tagIndent: ".8em",
+    multlineWidth: "85%",
+    tags: "ams",
+    autoload: {
+      color: [],
+      colorv2: ['color']
+    },
+    packages: {'[+]': ['noerrors']}
+  },
+  options: {
+    ignoreHtmlClass: 'tex2jax_ignore',
+    processHtmlClass: 'tex2jax_process'
+  },
+  loader: {
+    load: ['[tex]/noerrors']
+  }
+};
+
 window.addEventListener('message', function (e) {
     let parentDomain = window.location.host.substring(window.location.host.indexOf(".")+1)
     if (e.origin !== (window.location.protocol + "//" + parentDomain))
