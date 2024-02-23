@@ -16,6 +16,31 @@
     </style>
   <link rel="stylesheet" href="css/toastui-editor-viewer-dark-mode.css">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <script>
+    window.MathJax = {
+      tex: {
+        inlineMath: [ ['$','$'], ["\\(","\\)"] ],
+        displayMath: [ ['$$','$$'], ["\\[","\\]"] ],
+        processEscapes: false,
+        tagSide: "right",
+        tagIndent: ".8em",
+        multlineWidth: "85%",
+        tags: "ams",
+        autoload: {
+          color: [],
+          colorv2: ['color']
+        },
+        packages: {'[+]': ['noerrors']}
+      },
+      options: {
+        ignoreHtmlClass: 'tex2jax_ignore',
+        processHtmlClass: 'tex2jax_process'
+      },
+      loader: {
+        load: ['[tex]/noerrors']
+      }
+    };
+  </script>
 </head>
 <body id="body-element">
   <script src="purify.min.js"></script>

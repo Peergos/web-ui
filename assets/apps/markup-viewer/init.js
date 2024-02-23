@@ -59,7 +59,11 @@ function initialiseMarkdownEditor(theme, subPathInput, text) {
     let element = document.getElementById('sanitized');
     let body = document.getElementById('body-element');
     let mdElement = document.getElementById('md-element');
-    element.innerHTML = xss;
+    if (text.length == 0) {
+        element.innerHTML = xss;
+    } else {
+        addMathJax(xss);
+    }
     if (theme == 'dark') {
         mdElement.classList.add("toastui-editor-dark");
         body.classList.add("dark-body");
@@ -67,6 +71,29 @@ function initialiseMarkdownEditor(theme, subPathInput, text) {
         mdElement.classList.remove("toastui-editor-dark");
         body.classList.remove("dark-body");
     }
+}
+function typeset(code) {
+  MathJax.startup.promise = MathJax.startup.promise
+    .then(() => MathJax.typesetPromise(code()))
+    .catch((err) => console.log('Typeset failed: ' + err.message));
+  return MathJax.startup.promise;
+}
+
+function addMathJax(text) {
+    let callback = () => {
+        typeset(() => {
+            const node = document.getElementById('sanitized');
+            node.innerHTML = text;
+            return [node];
+        }).then(() => {
+            console.log('math typeset complete');
+        });
+	};
+    var script = document.createElement('script');
+    script.onload = callback;
+    script.setAttribute("type","text/javascript");
+    script.setAttribute("src", './es5/tex-chtml.js');
+    document.getElementsByTagName("head")[0].appendChild(script);
 }
 function updateResources(format) {
         let anchors = document.getElementsByTagName("a");
