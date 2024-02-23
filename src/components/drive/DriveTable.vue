@@ -135,6 +135,10 @@ module.exports = {
 .drive-table thead tr{
 	border: none;
 	line-height: var(--app-margin);
+        position: sticky;
+        top: 0;
+        background-color: var(--bg);
+        z-index: 10;
 }
 
 
