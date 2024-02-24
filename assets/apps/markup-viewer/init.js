@@ -1,6 +1,31 @@
 var mainWindow;
 var origin;
 var editorJS = null;
+
+window.MathJax = {
+  tex: {
+    inlineMath: [ ['$','$'], ["\\(","\\)"] ],
+    displayMath: [ ['$$','$$'], ["\\[","\\]"] ],
+    processEscapes: false,
+    tagSide: "right",
+    tagIndent: ".8em",
+    multlineWidth: "85%",
+    tags: "ams",
+    autoload: {
+      color: [],
+      colorv2: ['color']
+    },
+    packages: {'[+]': ['noerrors']}
+  },
+  options: {
+    ignoreHtmlClass: 'tex2jax_ignore',
+    processHtmlClass: 'tex2jax_process'
+  },
+  loader: {
+    load: ['[tex]/noerrors']
+  }
+};
+
 window.addEventListener('message', function (e) {
     let parentDomain = window.location.host.substring(window.location.host.indexOf(".")+1)
     if (e.origin !== (window.location.protocol + "//" + parentDomain))
@@ -59,7 +84,11 @@ function initialiseMarkdownEditor(theme, subPathInput, text) {
     let element = document.getElementById('sanitized');
     let body = document.getElementById('body-element');
     let mdElement = document.getElementById('md-element');
-    element.innerHTML = xss;
+    if (text.length == 0) {
+        element.innerHTML = xss;
+    } else {
+        addMathJax(xss);
+    }
     if (theme == 'dark') {
         mdElement.classList.add("toastui-editor-dark");
         body.classList.add("dark-body");
@@ -67,6 +96,56 @@ function initialiseMarkdownEditor(theme, subPathInput, text) {
         mdElement.classList.remove("toastui-editor-dark");
         body.classList.remove("dark-body");
     }
+}
+function typeset(code) {
+  MathJax.startup.promise = MathJax.startup.promise
+    .then(() => MathJax.typesetPromise(code()))
+    .catch((err) => console.log('Typeset failed: ' + err.message));
+  return MathJax.startup.promise;
+}
+function isDigit(char) {
+    return !isNaN(parseInt(char));
+}
+function encodeMath(text) {
+    var startIdx = -1;
+    let token = "$";
+    let replacementToken = "<span>$</span>";
+    let indexesToReplace = [];
+    var done = false;
+    while(!done) {
+        startIdx = text.indexOf(token, startIdx + 1);
+        if (startIdx > -1) {
+            if (startIdx < text.length -1 && (isDigit(text[startIdx + 1]) )){ // || text[startIdx + 1] == ' ')) {
+                indexesToReplace.push(startIdx);
+            }
+        } else {
+            done = true;
+        }
+    }
+    let indexesToReplaceReversed = indexesToReplace.reverse();
+    for(var i = 0; i < indexesToReplaceReversed.length; i++) {
+        let idx = indexesToReplaceReversed[i];
+        let before = text.substring(0, idx);
+        let after = text.substring(idx + token.length);
+        text = before + replacementToken + after;
+    }
+    return text;
+}
+function addMathJax(text) {
+    let callback = () => {
+        typeset(() => {
+            const node = document.getElementById('sanitized');
+            node.innerHTML = encodeMath(text);
+            return [node];
+        }).then(() => {
+            console.log('math typeset complete');
+        });
+	};
+    var script = document.createElement('script');
+    script.onload = callback;
+    script.setAttribute("type","text/javascript");
+    script.setAttribute("src", './es5/tex-chtml.js');
+    document.getElementsByTagName("head")[0].appendChild(script);
 }
 function updateResources(format) {
         let anchors = document.getElementsByTagName("a");
