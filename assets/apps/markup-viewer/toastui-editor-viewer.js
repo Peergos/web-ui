@@ -10226,6 +10226,12 @@ var baseConvertors = {
     },
     customInline: function (node, context, convertors) {
         var info = node.info.trim().toLowerCase();
+        if (convertors == null) {
+            return {
+                type: 'text',
+                content: '$$',
+            };
+        }
         var customConvertor = convertors[info];
         if (customConvertor) {
             return customConvertor(node, context);

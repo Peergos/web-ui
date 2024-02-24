@@ -103,12 +103,39 @@ function typeset(code) {
     .catch((err) => console.log('Typeset failed: ' + err.message));
   return MathJax.startup.promise;
 }
-
+function isDigit(char) {
+    return !isNaN(parseInt(char));
+}
+function encodeMath(text) {
+    var startIdx = -1;
+    let token = "$";
+    let replacementToken = "<span>$</span>";
+    let indexesToReplace = [];
+    var done = false;
+    while(!done) {
+        startIdx = text.indexOf(token, startIdx + 1);
+        if (startIdx > -1) {
+            if (startIdx < text.length -1 && (isDigit(text[startIdx + 1]) )){ // || text[startIdx + 1] == ' ')) {
+                indexesToReplace.push(startIdx);
+            }
+        } else {
+            done = true;
+        }
+    }
+    let indexesToReplaceReversed = indexesToReplace.reverse();
+    for(var i = 0; i < indexesToReplaceReversed.length; i++) {
+        let idx = indexesToReplaceReversed[i];
+        let before = text.substring(0, idx);
+        let after = text.substring(idx + token.length);
+        text = before + replacementToken + after;
+    }
+    return text;
+}
 function addMathJax(text) {
     let callback = () => {
         typeset(() => {
             const node = document.getElementById('sanitized');
-            node.innerHTML = text;
+            node.innerHTML = encodeMath(text);
             return [node];
         }).then(() => {
             console.log('math typeset complete');
