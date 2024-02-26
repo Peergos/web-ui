@@ -1,10 +1,13 @@
 const ProgressBar = require("../../components/drive/ProgressBar.vue");
+const i18n = require("../../i18n/index.js");
+
 module.exports = {
     data() {
         return {
             currentAppSchema: "1"
         };
     },
+    mixins:[i18n],
     computed: {
         ...Vuex.mapState([
         "context",
@@ -30,18 +33,17 @@ module.exports = {
       },
       convertPermissionToHumanReadable: function(permission) {
           if (permission === 'STORE_APP_DATA') {
-              return "Can store and read files in a folder private to the app";
+              return this.translate("SANDBOX.APP.DATA");
           } else if (permission === 'EDIT_CHOSEN_FILE') {
-              return "Can modify file chosen by user";
+              return this.translate("SANDBOX.EDIT.FILE");
           } else if (permission === 'READ_CHOSEN_FOLDER') {
-              return "Can read selected files of the associated types from folder chosen by user";
+              return this.translate("SANDBOX.READ.FOLDER");
           } else if (permission === 'EXCHANGE_MESSAGES_WITH_FRIENDS') {
-              return "Can exchange messages with friends";
+              return this.translate("SANDBOX.MESSAGES");
           } else if (permission === 'CSP_UNSAFE_EVAL') {
-              return "Allow app to modify its own code";
+              return this.translate("SANDBOX.UNSAFE");
           } else {
-              console.log('Unknown permission: ' + permission);
-              this.$toast.error('Unknown permission: ' + permission, {timeout:false});
+              this.$toast.error(this.translate("SANDBOX.UNSAFE") + ': ' + permission, {timeout:false});
           }
       },
       verifyJSONFile: function(file, appPath) {

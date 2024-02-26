@@ -433,4 +433,11 @@ module.exports = {
     "TASKS.ERROR.UPLOAD":"Error uploading file",
     "TASKS.CLOSE.CONFIRM":"Are you sure you want to close $NAME without saving?",
     "CALENDAR.TITLE":"Calendar",
+    "SANDBOX.APP.DATA":"Can store and read files in a folder private to the app",
+    "SANDBOX.EDIT.FILE":"Can modify file chosen by user",
+    "SANDBOX.READ.FOLDER":"Can read selected files of the associated types from folder chosen by user",
+    "SANDBOX.MESSAGES":"Can exchange messages with friends",
+    "SANDBOX.UNSAFE":"Allow app to modify its own code",
+    
+    "SANDBOX.UNKNOWN":"Unknown permission",
 }
