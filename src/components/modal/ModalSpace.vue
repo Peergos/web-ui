@@ -1,11 +1,11 @@
 <template>
 	<AppModal class="space">
 		<template #header>
-			<h2>Request space</h2>
+			<h2>{{ translate("SPACE.TITLE") }}</h2>
 		</template>
 		<template #body>
 
-			<h2 class="card__meta"> Current space: {{ quota }}</h2>
+			<h2 class="card__meta"> {{ translate("SPACE.CURRENT") }}: {{ quota }}</h2>
 
 			<fieldset class="modal-space-form">
 				<input
@@ -13,7 +13,7 @@
 					name="space"
 					@keyup="validateSpace()"
 					v-model="space"
-					placeholder="New total space amount"
+					:placeholder="translate('SPACE.PLACEHOLDER')"
 				>
 				<select v-model="unit">
 					<option value = "MB">MB</option>
@@ -24,7 +24,7 @@
 		</template>
 		<template #footer>
 
-			<AppButton @click.native="requestStorage()" type="primary" block accent>Request space</AppButton>
+			<AppButton @click.native="requestStorage()" type="primary" block accent>{{ translate("SPACE.TITLE") }}</AppButton>
 		</template>
 	</AppModal>
 </template>
@@ -32,12 +32,14 @@
 <script>
 const AppButton = require("../AppButton.vue");
 const AppModal = require("AppModal.vue");
+const i18n = require("../../i18n/index.js");
 
 module.exports = {
     components: {
         AppButton,
         AppModal,
     },
+        mixins:[i18n],
 	data() {
 		return {
 			unit:"GB",
@@ -65,11 +67,11 @@ module.exports = {
 
             var bytes = parseInt(this.getRequestedBytes())
             if (bytes != this.getRequestedBytes()) {
-				this.$toast.error('Space must be a positive integer', { position: 'bottom-left' })
+				this.$toast.error(this.translate("SPACE.POSITIVE"), { position: 'bottom-left' })
                 return false;
             }
             if (bytes < this.usage) {
-                this.$toast.error(`You can't request space smaller than your current usage, please delete some files and try again.`, { position: 'bottom-left' })
+                this.$toast.error(this.translate("SPACE.SMALL"), { position: 'bottom-left' })
                 return false;
             }
             return true;
@@ -81,7 +83,7 @@ module.exports = {
 
             const that = this;
             this.context.requestSpace(this.getRequestedBytes()).thenApply(x => {
-                that.$toast("Space request sent!");
+                that.$toast(that.translate("SPACE.SENT"));
                 that.close();
             })
         },

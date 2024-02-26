@@ -1,11 +1,11 @@
 <template>
 	<AppModal class="feedback">
 		<template #header>
-			<h2>Feedback</h2>
+			<h2>{{ translate("FEEDBACK.TITLE") }}</h2>
 		</template>
 		<template #body>
 		    <h3>
-                        You can tell us here how we can improve, or you can chat with us on <a href="https://reddit.com/r/peergos" target="_blank" rel="noopener noreferrer">reddit</a>, <a href="https://app.element.io/#/room/#peergos-chat:matrix.org" target="_blank" rel="noopener noreferrer">Matrix</a> or send us an email: <a href="mailto:feedback@peergos.org">feedback@peergos.org</a>
+                        {{ translate("FEEDBACK.TEXT1") }} <a href="https://matrix.to/#/#peergos-chat:matrix.org" target="_blank" rel="noopener noreferrer"><u>Matrix</u></a> {{ translate("FEEDBACK.TEXT2") }}: <a href="mailto:feedback@peergos.org">feedback@peergos.org</a>
                     </h3>
                     <p>
                         <textarea id="feedback-text" v-model="currentFeedback" spellcheck="true" style="width:100%" rows=5 :placeholder="textAreaPlaceholder" maxlength="1000"></textarea>
@@ -13,7 +13,7 @@
 		</template>
 		<template #footer>
 
-			 <AppButton @click.native="sendFeedback()" type="primary" block accent>Submit</AppButton>
+			 <AppButton @click.native="sendFeedback()" type="primary" block accent>{{ translate("FEEDBACK.SUBMIT") }}</AppButton>
 
 		</template>
 	</AppModal>
@@ -22,15 +22,18 @@
 <script>
 const AppButton = require("../AppButton.vue");
 const AppModal = require("AppModal.vue");
+const i18n = require("../../i18n/index.js");
+
 
 module.exports = {
 	components: {
 	    AppButton,
-    	AppModal
+    	    AppModal
 	},
+        mixins:[i18n],
 	data() {
 		return {
-			textAreaPlaceholder: "Type your feedback here.",
+			textAreaPlaceholder: this.translate("FEEDBACK.PLACEHOLDER"),
 			warning: false
 		};
 	},
@@ -58,15 +61,14 @@ module.exports = {
                     this.context.sendFeedback(trimmedContents)
                         .thenApply(function(res) {
                             if (res) {
-                                console.log("Feedback submitted!");
-                                that.$toast.info('Feedback sent. Thank you!',{timeout:false, position: 'bottom-left' })
+                                that.$toast.info(that.translate("FEEDBACK.SENT"),{timeout:false, position: 'bottom-left' })
                                 that.$store.commit("SET_MODAL", false);
                                 that.$store.commit("SET_CURRENT_FEEDBACK", "");
                             } else {
-                                that.$toast.error('Error sending feedback',{timeout:false, position: 'bottom-left' })
+                                that.$toast.error(that.translate("FEEDBACK.ERROR"),{timeout:false, position: 'bottom-left' })
                             }
                         }).exceptionally(function(throwable) {
-                            that.$toast.error('Error sending feedback: ' + throwable.getMessage(),{timeout:false, position: 'bottom-left' })
+                            that.$toast.error(that.translate("FEEDBACK.ERROR")+': ' + throwable.getMessage(),{timeout:false, position: 'bottom-left' })
                         });
                 },
 	},

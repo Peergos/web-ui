@@ -2,7 +2,7 @@
    	<article class="app-view social-view">
 	   	<AppHeader>
 			<template #primary>
-				<h1>Social view</h1>
+				<h1>{{ translate("SOCIAL.TITLE") }}</h1>
 			</template>
 		</AppHeader>
 		<main>
@@ -22,37 +22,37 @@
                     :profile="profile">
                 </ViewProfile>
                 <section>
-			<h3>Send follow request:</h3>
+			<h3>{{ translate("SOCIAL.SEND.TITLE") }}:</h3>
 			<FormAutocomplete
 			    is-multiple
 			    v-model="targetUsernames"
 			    :options="usernames"
                 :maxitems="5"
-			    placeholder="please select user"
+			    :placeholder="translate('SOCIAL.SELECT')"
 			/>
 			<AppButton
 				accent
 				aria-label="Send"
 				@click.native="sendInitialFollowRequest()"
 			>
-				Send
+				{{ translate("SOCIAL.SEND") }}
 			</AppButton>
 		</section>
 
             <div>
-                <h3>Incoming follow requests</h3>
+                <h3>{{ translate("SOCIAL.INCOMING") }}</h3>
                 <div id='follow-request-table-id' class="flex-container table" style="flex-flow:column;">
                   <div v-for="req in socialData.pending" class="flex-container vspace-5" style="justify-content:space-between; max-width:700px;">
                     <div id='follow-request-id' style="font-size:1.5em;">{{ req.getEntry().ownerName }}</div>
 		    <div class="flex-container" style="justify-content:space-evenly;">
                       <div class="hspace-5">
-			<button class="btn btn-success" @click="acceptAndReciprocate(req)">Allow and follow back</button>
+			<button class="btn btn-success" @click="acceptAndReciprocate(req)">{{ translate("SOCIAL.ALLOWANDFOLLOW") }}</button>
                       </div>
                       <div class="hspace-5">
-			<button class="btn btn-info" @click="accept(req)">Allow</button>
+			<button class="btn btn-info" @click="accept(req)">{{ translate("SOCIAL.ALLOW") }}</button>
                       </div>
                       <div class="hspace-5">
-			<button class="btn btn-danger" @click="reject(req)">Deny</button>
+			<button class="btn btn-danger" @click="reject(req)">{{ translate("SOCIAL.DENY") }}</button>
                       </div>
 		    </div>
 		  </div>
@@ -60,22 +60,22 @@
             </div>
 
             <div>
-                <h3>Friends</h3>
+                <h3>{{ translate("SOCIAL.FRIENDS") }}</h3>
                 <div id='friend-table-id' class="table flex-container" style="flex-flow:column;">
                   <div v-for="username in socialData.friends" class="flex-container vspace-5" style="justify-content:space-between; max-width:700px;">
                     <div id='friend-id' style="font-size:1.5em;">
                         <a v-on:click="displayProfile(username)" style="cursor: pointer">{{ username }}</a>
-                        <span v-if="isVerified(username)" class="fas fa-check-circle"><span class="not-mobile">Verified</span></span>
+                        <span v-if="isVerified(username)" class="fas fa-check-circle"><span class="not-mobile">{{ translate("VERIFY.VERIFIED") }}</span></span>
 		    </div>
 		    <div class="flex-container" style="justify-content:space-evenly;">
                       <div class="hspace-5">
-			<button class="btn btn-danger" @click="unfollow(username)">Unfollow</button>
+			<button class="btn btn-danger" @click="unfollow(username)">{{ translate("SOCIAL.UNFOLLOW") }}</button>
 		      </div>
 		      <div class="hspace-5">
-			<button class="btn btn-danger" @click="removeFollower(username)">Remove</button>
+			<button class="btn btn-danger" @click="removeFollower(username)">{{ translate("SOCIAL.REMOVE") }}</button>
 		      </div>
 		      <div class="hspace-5">
-			<button class="btn btn-success" @click="showFingerPrint(username)">Verification</button>
+			<button class="btn btn-success" @click="showFingerPrint(username)">{{ translate("SOCIAL.VERIFICATION") }}</button>
 		      </div>
 		    </div>
                   </div>
@@ -83,41 +83,41 @@
             </div>
 
             <div>
-                <h3>Followers</h3>
+                <h3>{{ translate("SOCIAL.FOLLOWERS") }}</h3>
                 <div id='follower-table-id' class="table flex-container" style="flex-flow:column;">
 		  <div v-for="username in socialData.followers" class="flex-container vspace-5" style="justify-content:space-between; max-width:700px;">
                     <div id='follower-id' style="font-size:1.5em;">
 		      {{ username }}
 		    </div>
                     <div>
-		      <button class="btn btn-danger" @click="removeFollower(username)">Remove</button>
+		      <button class="btn btn-danger" @click="removeFollower(username)">{{ translate("SOCIAL.REMOVE") }}</button>
 		    </div>
                   </div>
                 </div>
             </div>
 
             <div>
-                <h3>Following</h3>
+                <h3>{{ translate("SOCIAL.FOLLOWING") }}</h3>
                 <div class="table flex-container" style="flex-flow:column;">
                   <tr v-for="user in socialData.following" class="flex-container vspace-5" style="justify-content:space-between; max-width:700px;">
                     <div style="font-size:1.5em;">
                         <a v-on:click="displayProfile(user)" style="cursor: pointer">{{ user }}</a>
 		    </div>
                     <div>
-		      <button class="btn btn-danger" @click="unfollow(user)">Unfollow</button>
+		      <button class="btn btn-danger" @click="unfollow(user)">{{ translate("SOCIAL.UNFOLLOW") }}</button>
 		    </div>
                   </tr>
 		</div>
             </div>
             <div>
-                <h3>Blocked</h3>
+                <h3>{{ translate("SOCIAL.BLOCKED") }}</h3>
                 <div class="table flex-container" style="flex-flow:column;">
                   <tr v-for="user in socialData.blocked" class="flex-container vspace-5" style="justify-content:space-between; max-width:700px;">
                         <div style="font-size:1.5em;">
                             {{ user }}
             		    </div>
                         <div>
-            		      <button class="btn btn-danger" @click="unblock(user)">Unblock</button>
+            		      <button class="btn btn-danger" @click="unblock(user)">{{ translate("SOCIAL.UNBLOCK") }}</button>
             		    </div>
                   </tr>
                 </div>
@@ -133,6 +133,7 @@ const ViewProfile = require("../components/profile/ViewProfile.vue");
 const Fingerprint = require("../components/fingerprint/Fingerprint.vue");
 const FormAutocomplete = require("../components/form/FormAutocomplete.vue");
 const Spinner = require("../components/spinner/Spinner.vue");
+const i18n = require("../i18n/index.js");
 
 const routerMixins = require("../mixins/router/index.js");
 
@@ -168,7 +169,7 @@ module.exports = {
         }
     },
     props: [],
-	mixins:[routerMixins],
+	mixins:[routerMixins, i18n],
 
 	computed: {
 		...Vuex.mapState([
@@ -277,7 +278,7 @@ module.exports = {
                 }
             });
 	        if (this.targetUsernames.length == 0) {
-		        that.$toast('Follow request already sent')
+		        that.$toast(that.translate("SOCIAL.ALREADY.SENT"))
                 return;
 	        }
 	        let alreadyBlockedUsers = [];
@@ -289,26 +290,25 @@ module.exports = {
             });
             if (alreadyBlockedUsers.length > 0) {
                 if (alreadyBlockedUsers.length > 1) {
-                    that.$toast('The following users are blocked: ' +
+                    that.$toast(that.translate("SOCIAL.BLOCKED.USERS") + ': ' +
                         alreadyBlockedUsers.join(", ") +
                         '');
                     return;
                 } else {
-                    that.$toast('User: ' + alreadyBlockedUsers[0] + ' is blocked');
+                    that.$toast(that.translate("SOCIAL.USER.BLOCKED").replace("$USER", alreadyBlockedUsers[0]));
                     return;
                 }
             }
-            console.log("sending follow request");
             that.showSpinner = true;
             that.context.sendInitialFollowRequests(this.targetUsernames)
             .thenApply(function(success) {
                 if(success) {
                     // that.resetTypeahead();
-                    that.$toast('Follow request(s) sent')
+                    that.$toast(that.translate("SOCIAL.SENT"))
                     that.updateSocial();
                     that.targetUsernames = [];
                 } else {
-                    that.$toast('Follow request(s) failed')
+                    that.$toast(that.translate("SOCIAL.ERROR"))
                                 // that.resetTypeahead();
                 }
                 that.showSpinner = false;
@@ -327,7 +327,7 @@ module.exports = {
             this.context.sendReplyFollowRequest(req, true, true)
                 .thenApply(function(success) {
 		    that.showSpinner = false;
-		    that.$toast('Follow request reciprocated')
+		    that.$toast(that.translate("SOCIAL.RECIPROCATED"))
 		    that.updateSocial();
                 });
         },
@@ -338,7 +338,7 @@ module.exports = {
             this.context.sendReplyFollowRequest(req, true, false)
                 .thenApply(function(success) {
 		    that.showSpinner = false;
-		    that.$toast('Follow request accepted')
+		    that.$toast(that.translate("SOCIAL.ACCEPTED"))
 		    that.updateSocial();
                 });
         },
@@ -349,7 +349,7 @@ module.exports = {
             this.context.sendReplyFollowRequest(req, false, false)
                 .thenApply(function(success) {
                     that.showSpinner = false;
-		    that.$toast('Follow request rejected')
+		    that.$toast(that.translate("SOCIAL.REJECTED"))
 		    that.updateSocial();
                 });
         },
@@ -360,7 +360,7 @@ module.exports = {
             this.context.removeFollower(username)
                 .thenApply(function(success) {
                     that.showSpinner = false;
-		    that.$toast(`Removed follower ${username}`)
+		    that.$toast(that.translate("SOCIAL.REMOVED")+` ${username}`)
 		    that.updateSocial();
                 });
         },
@@ -371,7 +371,7 @@ module.exports = {
             this.context.unfollow(username)
                 .thenApply(function(success) {
 		    that.showSpinner = false;
-		    that.$toast(`Stopped following ${username}`)
+		    that.$toast(that.translate("SOCIAL.STOPPED")+` ${username}`)
 		    that.updateSocial();
                 });
         },
@@ -381,7 +381,7 @@ module.exports = {
             this.showSpinner = true;
             this.context.unblock(username).thenApply(function(success) {
 		        that.showSpinner = false;
-		        that.$toast(`${username} unblocked`);
+		        that.$toast(`${username} ` + that.translate("SOCIAL.UNBLOCKED"));
 		        that.updateSocial();
             });
         },

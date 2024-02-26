@@ -13,12 +13,12 @@
                             <div v-for="link in urlLinks" style="font-size: 1.2em;">
                                 <div v-if="link.isFile">
                                     <input type="checkbox" @change="onAutoOpen(link.id)" v-model="link.autoOpen">
-                                    <label style="font-weight: normal;">Auto Open</label>
+                                    <label style="font-weight: normal;">{{ translate("DRIVE.LINK.OPEN") }}</label>
                                 </div>
                                 <strong><a v-bind:href="link.href">{{ link.name }}</a></strong>
                                 <input v-bind:id="link.id" type="text" v-bind:value="link.href" style="display: none">
-                                <button class="fa fa-clipboard" style="padding: 6px 12px; background-color:var(--bg);" @click="copyUrlToClipboard($event)">&nbsp;Copy to clipboard</button>
-                                <button class="fa fa-envelope" style="padding: 6px 12px; background-color:var(--bg);" @click="email($event)">&nbsp;Share via email</button>
+                                <button class="fa fa-clipboard" style="padding: 6px 12px; background-color:var(--bg);" @click="copyUrlToClipboard($event)">&nbsp;{{ translate("DRIVE.LINK.COPY") }}</button>
+                                <button class="fa fa-envelope" style="padding: 6px 12px; background-color:var(--bg);" @click="email($event)">&nbsp;{{ translate("DRIVE.LINK.EMAIL") }}</button>
                         </p>
                         </div>
                     </div>
@@ -30,7 +30,7 @@
                             id='modal-button-id'
                             class="btn btn-success"
                             @click="$emit('hide-modal')">
-                            OK
+                            {{ translate("DRIVE.LINK.OK") }}
                         </button>
                     </slot>
                 </div>
@@ -40,12 +40,14 @@
 </template>
 
 <script>
+const i18n = require("../../i18n/index.js");
     module.exports = {
 	data() {
 	    return {
                 urlLinks:[],
             };
 	},
+        mixins:[i18n],
 	props: [
 	    "title",
 	    "links",

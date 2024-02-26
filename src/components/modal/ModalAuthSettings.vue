@@ -1,7 +1,7 @@
 <template>
 	<AppModal>
 		<template #header>
-			<h2>Two-factor Authentication</h2>
+			<h2>{{ translate("MFA.TITLE") }}</h2>
 		</template>
 		<template #body>
             <Spinner v-if="showSpinner"></Spinner>
@@ -34,7 +34,7 @@
                     </thead>
                     <tbody>
                     <tr>
-                        <td>Authenticator App</td>
+                        <td>{{ translate("MFA.APP") }}</td>
                         <td></td>
                         <td v-if="totpKey.length == 0"></td>
                         <td v-if="totpKey.length == 1">
@@ -48,14 +48,14 @@
                         </td>
                     </tr>
                     <tr v-for="(webAuthKey, index) in webAuthKeys">
-                        <td>SecurityKey:&nbsp;{{ webAuthKey.name }}</td>
+                        <td>{{ translate("MFA.KEY") }}:&nbsp;{{ webAuthKey.name }}</td>
                         <td></td>
-                        <td> <button class="btn btn-danger" @click="removeWebAuthKey(webAuthKey)">Remove</button>
+                        <td> <button class="btn btn-danger" @click="removeWebAuthKey(webAuthKey)">{{ translate("MFA.REMOVE") }}</button>
                         </td>
                     </tr>
                     </tbody>
                 </table>
-                <button class="btn btn-success" @click="addWebAuthKey()">Add Security Key</button>
+                <button class="btn btn-success" @click="addWebAuthKey()">{{ translate("MFA.ADD.KEY") }}</button>
             </div>
 		</template>
 	</AppModal>
@@ -68,6 +68,7 @@ const Confirm = require("../confirm/Confirm.vue");
 const Spinner = require("../spinner/Spinner.vue");
 const Totp = require("../auth/Totp.vue");
 const WebAuth = require("../auth/WebAuth.vue");
+const i18n = require("../../i18n/index.js");
 
 module.exports = {
     components: {
@@ -98,7 +99,7 @@ module.exports = {
 	    'context'
 	]),
     },
-    mixins:[],
+    mixins:[i18n],
     created: function() {
         let that = this;
         this.showSpinner = true;
@@ -114,7 +115,7 @@ module.exports = {
             }
             that.showSpinner = false;
         }).exceptionally(function(throwable) {
-            that.$toast.error('Unable to retrieve authentication methods', {timeout:false});
+            that.$toast.error(that.translate("MFA.ERROR.RETRIEVAL"), {timeout:false});
             console.log('Unable to retrieve authentication methods: ' + throwable);
             that.showSpinner = false;
         });
@@ -149,14 +150,14 @@ module.exports = {
                 }
                 that.showSpinner = false;
             }).exceptionally(function(throwable) {
-                that.$toast.error('Unable to delete authentication method', {timeout:false});
+                that.$toast.error(that.translate("MFA.ERROR.DELETE"), {timeout:false});
                 console.log('Unable to delete authentication method: ' + throwable);
                 that.showSpinner = false;
             });
         },
 	    addWebAuthKey() {
 	        if (this.webAuthKeys.length + this.totpKey.length >= 10) {
-                that.$toast.error('Reached maximum number of Security Keys', {timeout:false});
+                that.$toast.error(that.translate("MFA.MAX.KEYS"), {timeout:false});
 	        } else {
                 this.showWebAuthSetup = true;
             }
@@ -185,21 +186,21 @@ module.exports = {
                 }
                 that.showSpinner = false;
             }).exceptionally(function(throwable) {
-                that.$toast.error('Unable to delete web authentication method', {timeout:false});
+                that.$toast.error(that.translate("MFA.ERROR.DELETE"), {timeout:false});
                 console.log('Unable to delete web authentication method: ' + throwable);
                 that.showSpinner = false;
             });
         },
         confirmRemoveWebAuthKey(name, replaceFunction, cancelFunction) {
-            this.confirm_message = 'Remove Security Key: ' + name;
-            this.confirm_body = "Are you sure you want to remove this key?";
+            this.confirm_message = this.translate("MFA.REMOVE") + " " +this.translate("MFA.KEY") + ': ' + name;
+            this.confirm_body = this.translate("MFA.CONFIRM.REMOVE.KEY");
             this.confirm_consumer_cancel_func = cancelFunction;
             this.confirm_consumer_func = replaceFunction;
             this.showConfirm = true;
         },
         confirmRemoveAuthenticatorApp(replaceFunction, cancelFunction) {
-            this.confirm_message = 'Remove Authenticator App';
-            this.confirm_body = "Are you sure you want to remove Authenticator App?";
+            this.confirm_message = this.translate("MFA.REMOVE") + " " +this.translate("MFA.APP");
+            this.confirm_body = this.translate("MFA.CONFIRM.REMOVE.APP");
             this.confirm_consumer_cancel_func = cancelFunction;
             this.confirm_consumer_func = replaceFunction;
             this.showConfirm = true;

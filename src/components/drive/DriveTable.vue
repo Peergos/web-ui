@@ -3,11 +3,11 @@
 		<thead>
 			<tr>
                 <th class="select"></th>
-				<th class="file" @click="$emit('sortBy', 'name')">Name</th>  <!-- <span v-if="sortBy=='size'" :class="['fas', normalSortOrder ? 'fa-angle-down' : 'fa-angle-up']"/> -->
-				<th class="size" @click="$emit('sortBy', 'size')">Size</th>
-				<th class="type" @click="$emit('sortBy', 'type')">Type</th>
-				<th class="date" @click="$emit('sortBy', 'modified')">Modified</th>
-				<th class="date" @click="$emit('sortBy', 'created')">Created</th>
+				<th class="file" @click="$emit('sortBy', 'name')">{{ translate("DRIVE.NAME") }}</th>  <!-- <span v-if="sortBy=='size'" :class="['fas', normalSortOrder ? 'fa-angle-down' : 'fa-angle-up']"/> -->
+				<th class="size" @click="$emit('sortBy', 'size')">{{ translate("DRIVE.SIZE") }}</th>
+				<th class="type" @click="$emit('sortBy', 'type')">{{ translate("DRIVE.TYPE") }}</th>
+				<th class="date" @click="$emit('sortBy', 'modified')">{{ translate("DRIVE.MODIFIED") }}</th>
+				<th class="date" @click="$emit('sortBy', 'created')">{{ translate("DRIVE.CREATED") }}</th>
 				<th/>
             </tr>
 		</thead>
@@ -52,6 +52,7 @@
 <script>
 const AppButton = require("../AppButton.vue");
 const mixins = require("../../mixins/downloader/index.js");
+const i18n = require("../../i18n/index.js");
 
 module.exports = {
 	components: {
@@ -67,7 +68,7 @@ module.exports = {
             default: ()=>[]
         },
 	},
-    mixins:[mixins],
+    mixins:[mixins, i18n],
     data: function () {
         return {
             selected: this.selectedFiles,
@@ -134,6 +135,10 @@ module.exports = {
 .drive-table thead tr{
 	border: none;
 	line-height: var(--app-margin);
+        position: sticky;
+        top: 0;
+        background-color: var(--bg);
+        z-index: 10;
 }
 
 

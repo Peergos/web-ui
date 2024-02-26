@@ -2,17 +2,19 @@
 	<div class="navigation-storage">
 		<p class="storage">{{ usage }} / {{ quota }}</p>
 		<AppButton class="upgrade" size="small" v-if="!isPro" @click.native="showRequestStorage()">
-			Upgrade
+			{{ translate("APPNAV.UPGRADE") }}
 		</AppButton>
 	</div>
 </template>
 
 <script>
 const AppButton = require("../AppButton.vue");
+const i18n = require("../../i18n/index.js");
 module.exports = {
 	components: {
 	    AppButton,
 	},
+        mixins:[i18n],
 	props: {
 		isPro: {
 			type: Boolean,

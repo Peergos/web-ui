@@ -20,14 +20,14 @@
 		/>
 
 		<ul class="nav-list">
-            <MenuItem label="Launcher" icon="launcher" view="Launcher" />
-			<MenuItem label="Drive" icon="folder" view="Drive" />
-			<MenuItem label="Newsfeed" icon="news" view="NewsFeed" />
-			<MenuItem label="Tasks" icon="tasks" view="Tasks" />
-			<MenuItem label="Social" icon="social" view="Social" />
-			<MenuItem label="Calendar" icon="calendar" view="Calendar" />
-            <MenuItem v-if="showChat" label="Chat" icon="chat" view="Chat" />
-            <MenuItem v-if="showEmail" label="Email" icon="email" view="Email" />
+            <MenuItem :label="translate('APPNAV.LAUNCHER')" icon="launcher" view="Launcher" />
+			<MenuItem :label="translate('APPNAV.DRIVE')" icon="folder" view="Drive" />
+			<MenuItem :label="translate('APPNAV.NEWSFEED')" icon="news" view="NewsFeed" />
+			<MenuItem :label="translate('APPNAV.TASKS')" icon="tasks" view="Tasks" />
+			<MenuItem :label="translate('APPNAV.SOCIAL')" icon="social" view="Social" />
+			<MenuItem :label="translate('APPNAV.CAL')" icon="calendar" view="Calendar" />
+            <MenuItem v-if="showChat" :label="translate('APPNAV.CHAT')" icon="chat" view="Chat" />
+            <MenuItem v-if="showEmail" :label="translate('APPNAV.EMAIL')" icon="email" view="Email" />
 		</ul>
 
 
@@ -42,6 +42,7 @@ const AppButton = require("../AppButton.vue");
 const AppIcon = require("../AppIcon.vue");
 const MenuItem = require('./NavigationMenuItem.vue');
 const NavigationStorage = require('./NavigationStorage.vue');
+const i18n = require("../../i18n/index.js");
 
 module.exports = {
 	components: {
@@ -50,6 +51,7 @@ module.exports = {
 		MenuItem,
 		NavigationStorage,
 	},
+        mixins:[i18n],
 	computed: {
 		isOpen() {
 			return this.$store.state.isSidebarOpen;

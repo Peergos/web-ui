@@ -1,7 +1,7 @@
 <template>
 	<AppModal>
 		<template #header>
-			<h2>Profile</h2>
+			<h2>{{ translate("PROFILE.TITLE") }}</h2>
 		</template>
 		<template #body>
             <Spinner v-if="showSpinner"></Spinner>
@@ -37,72 +37,72 @@
 	                    </div>
                             <div class="flex-image-button-container">
                                 <div class="flex-container">
-		                    <button class="btn btn-success flex-grow" @click="triggerUpload">Upload Image</button>
+		                    <button class="btn btn-success flex-grow" @click="triggerUpload">{{ translate("PROFILE.UPLOAD") }}</button>
 		                    <input type="file" id="uploadImageInput" @change="uploadImageFile" style="display:none;" accept="image/*" />
 		                </div>
                                 <div class="flex-container">
-		                    <button class="btn btn-danger flex-grow vertical-margin" v-if="hasProfileImage()" v-on:click="removeImage()" >Remove Image</button>
+		                    <button class="btn btn-danger flex-grow vertical-margin" v-if="hasProfileImage()" v-on:click="removeImage()" >{{ translate("PROFILE.REMOVE") }}</button>
 		                </div>
                                 <div class="flex-container">
-		                    <button class="btn btn-success flex-grow" v-if="hasProfileImage()" @click="share('photo', 'Profile image')" >Share</button>
+		                    <button class="btn btn-success flex-grow" v-if="hasProfileImage()" @click="share('photo', 'Profile image')" >{{ translate("DRIVE.SHARE") }}</button>
 		                </div>
                             </div>
                         </div>
                         <div class="flex-profile-container">
                             <div class="flex-item-left">
-		                <label style="margin-right:10px;">First name</label>
+		                <label style="margin-right:10px;">{{ translate("PROFILE.FIRSTNAME") }}</label>
 		                <div style="flex-grow:1; display:flex; flex-wrap: wrap;">
                                     <input id="profile-first-name" class="form-control-profile" v-model="firstName" placeholder="First Name" :maxlength="FIRSTNAME_MAX_LENGTH">
-                                    <button v-if="firstNameReadyToBeShared" class="btn btn-success" @click="share('firstname', 'First name')">Share</button>
+                                    <button v-if="firstNameReadyToBeShared" class="btn btn-success" @click="share('firstname', 'First name')">{{ translate("DRIVE.SHARE") }}</button>
 		                </div>
                             </div>
                             <div class="flex-item-right">
-		                <label style="margin-right:10px;">Last name</label>
+		                <label style="margin-right:10px;">{{ translate("PROFILE.LASTNAME") }}</label>
 		                <div class="flex-container flex-grow">
                                     <input id="profile-last-name" class="form-control-profile" v-model="lastName" placeholder="Last Name" :maxlength="LASTNAME_MAX_LENGTH">
-                                    <button v-if="lastNameReadyToBeShared" class="btn btn-success" @click="share('lastname', 'Last name')">Share</button>
+                                    <button v-if="lastNameReadyToBeShared" class="btn btn-success" @click="share('lastname', 'Last name')">{{ translate("DRIVE.SHARE") }}</button>
 		                </div>
                             </div>
                             <div class="flex-item-left">
-		                <label style="margin-right:10px;">Phone</label>
+		                <label style="margin-right:10px;">{{ translate("PROFILE.PHONE") }}</label>
 		                <div class="flex-container flex-grow">
                                     <input id="profile-primary-phone" class="form-control-profile" v-model="primaryPhone" placeholder="Primary Phone Number" :maxlength="PHONE_MAX_LENGTH">
-                                    <button v-if="primaryPhoneReadyToBeShared" class="btn btn-success" @click="share('phone', 'Phone number')">Share</button>
+                                    <button v-if="primaryPhoneReadyToBeShared" class="btn btn-success" @click="share('phone', 'Phone number')">{{ translate("DRIVE.SHARE") }}</button>
 		                </div>
                             </div>
                             <div class="flex-item-right">
-		                <label style="margin-right:10px;">Email</label>
+		                <label style="margin-right:10px;">{{ translate("PROFILE.EMAIL") }}</label>
 		                <div class="flex-container flex-grow">
                                     <input id="profile-primary-email" class="form-control-profile" v-model="primaryEmail" placeholder="Primary Email Address" :maxlength="EMAIL_MAX_LENGTH">
-                                    <button v-if="primaryEmailReadyToBeShared" class="btn btn-success" @click="share('email', 'Email address')">Share</button>
+                                    <button v-if="primaryEmailReadyToBeShared" class="btn btn-success" @click="share('email', 'Email address')">{{ translate("DRIVE.SHARE") }}</button>
 		                </div>
                             </div>
                         </div>
                         <div class="flex-item">
-                            <div><label>Status</label></div>
+                            <div><label>{{ translate("PROFILE.STATUS") }}</label></div>
                         </div>
                         <div class="flex-item">
                             <div style="flex-grow: 2">
                                 <input id="profile-status" style="width: 100%;" class="form-control-profile" v-model="status" placeholder="Status" :maxlength="STATUS_MAX_LENGTH">
                             </div>
                             <div>
-                                <button v-if="statusReadyToBeShared" class="btn btn-success" @click="share('status', 'Status message')">Share</button>
+                                <button v-if="statusReadyToBeShared" class="btn btn-success" @click="share('status', 'Status message')">{{ translate("DRIVE.SHARE") }}</button>
                             </div>
                         </div>
                         <div class="flex-item">
-                            <div><label>Biography</label></div>
+                            <div><label>{{ translate("PROFILE.BIO") }}</label></div>
                         </div>
                         <div class="flex-item">
                             <div style="flex-grow: 2">
                                 <textarea id="profile-biography" spellcheck="true" class="form-control-profile" style="width: 100%;resize: none;" v-model="biography" placeholder="Biography" rows=3 :maxlength="BIO_MAX_LENGTH"></textarea>
                             </div>
                             <div>
-                                <button v-if="biographyReadyToBeShared" class="btn btn-success" @click="share('bio', 'Biography')">Share</button>
+                                <button v-if="biographyReadyToBeShared" class="btn btn-success" @click="share('bio', 'Biography')">{{ translate("DRIVE.SHARE") }}</button>
                             </div>
                         </div>
                         <div class="flex-item">
                             <div>
-                                <label>Website Directory</label>&nbsp;<i class="fa fa-question-circle" aria-hidden="true"  @click="showPublishHelp()" style="cursor: pointer"></i>
+                                <label>{{ translate("PROFILE.WWW") }}</label>&nbsp;<i class="fa fa-question-circle" aria-hidden="true"  @click="showPublishHelp()" style="cursor: pointer"></i>
                             </div>
                         </div>
                         <div class="flex-item">
@@ -110,11 +110,11 @@
                                 <input id="profile-web-root" style="width:100%" class="form-control-profile" v-model="webRoot" placeholder="Website Directory" :maxlength="WEBROOT_MAX_LENGTH">
                             </div>
                             <div>
-                                <button v-if="webRootReadyToBePublished" class="btn btn-success" @click="publishWebroot()">Publish</button>
+                                <button v-if="webRootReadyToBePublished" class="btn btn-success" @click="publishWebroot()">{{ translate("PROFILE.PUBLISH") }}</button>
                             </div>
                         </div>
                         <div class="flex-item" v-if="webRootUrl.length > 0">
-                            <div><span>Publically visible at:</span>
+                            <div><span>{{ translate("PROFILE.PUBLIC") }}:</span>
                             </div>
                             <div>
                                 <a v-bind:href="webRootUrl" target="_blank" rel="noopener noreferrer">{{webRootUrl}}</a>
@@ -122,7 +122,7 @@
                         </div>
                         <div class="flex-line-item">
                             <div>
-                                <button class="btn btn-success" style = "width:100%" @click="update()">Save Profile</button>
+                                <button class="btn btn-success" style = "width:100%" @click="update()">{{ translate("PROFILE.SAVE") }}</button>
                             </div>
                         </div>
                     </div>
@@ -140,6 +140,7 @@ const AppModal = require("AppModal.vue");
 const Confirm = require("../confirm/Confirm.vue");
 const Share = require("../drive/DriveShare.vue");
 const Spinner = require("../spinner/Spinner.vue");
+const i18n = require("../../i18n/index.js");
 
 module.exports = {
     components: {
@@ -148,6 +149,7 @@ module.exports = {
 	    Share,
 	    Spinner
     },
+    mixins:[i18n],
     data: function() {
         return {
             profile:{
@@ -371,7 +373,7 @@ module.exports = {
                     binFilereader.readAsArrayBuffer(file);
                 };
                 image.onerror = function() {
-                    that.showMessage(true, "Unable to read image");
+                    that.showMessage(true, that.translate("PROFILE.ERROR.IMAGE"));
                 };
                 image.src = this.result;
             };
@@ -389,7 +391,6 @@ module.exports = {
         },
         update: function() {
             var that = this;
-            console.log("updating profile");
             let changes = [];
             let context = this.context;
             if (this.firstName != this.previousFirstName) {
@@ -534,7 +535,7 @@ module.exports = {
                     changes.push({func: changeWebRootFunc});
                     this.saveChanges(changes);
                 } else if (updatedPath == '/') {
-                    that.showMessage(true, "Validation Error", "Web Directory not set. Changes not saved!");
+                    that.showMessage(true, that.translate("PROFILE.INVALID"), that.translate("PROFILE.ERROR.WWW"));
                 } else {
                     if (updatedPath.endsWith('/')) {
                         updatedPath = updatedPath.substring(0, updatedPath.length -1);
@@ -543,26 +544,26 @@ module.exports = {
                         updatedPath = updatedPath.substring(1);
                     }
                     if (updatedPath == '') {
-                        this.showMessage(true, "Validation Error", "Web Directory not set. Changes not saved!");
+                        this.showMessage(true, that.translate("PROFILE.INVALID"), that.translate("PROFILE.ERROR.WWW"));
                     } else {
                         if (!updatedPath.startsWith(this.context.username+ '/')) {
                             updatedPath = this.context.username + '/' + updatedPath;
                         }
                         if (updatedPath == '' || updatedPath == this.context.username + '/' + this.context.username) {
-                            this.showMessage(true, "Validation Error", "Web Directory not set. Changes not saved!");
+                            this.showMessage(true, that.translate("PROFILE.INVALID"), that.translate("PROFILE.ERROR.WWW"));
                         } else {
                             try {
                                 let dirPath = peergos.client.PathUtils.directoryToPath(updatedPath.split('/'));
                                 this.context.getByPath(dirPath.toString()).thenApply(function(dirOpt){
                                         if (dirOpt.isEmpty()) {
-                                            that.showMessage(true, "Validation Error", "Web Directory not found. Changes not saved!");
+                                            that.showMessage(true, that.translate("PROFILE.INVALID"), that.translate("PROFILE.ERROR.NOT.FOUND"));
                                         } else {
                                             changes.push({func: changeWebRootFunc});
                                             that.saveChanges(changes);
                                         }
                                 });
                             } catch (pathException) {
-                                that.showMessage(true, "Validation Error", "Web Directory not valid. Changes not saved!");
+                                that.showMessage(true, that.translate("PROFILE.INVALID"), that.translate("PROFILE.ERROR.PATH"));
                             }
                         }
                     }
@@ -577,18 +578,16 @@ module.exports = {
             });
         },
         showPublishHelp: function(future) {
-            var text = "This allows you to publish a directory as a website."
-            + " This will make everything in that directory public, and it will be available from https://" + this.context.username + ".peergos.me"
-            + " or if you run a local Peergos gateway from http://" + this.context.username + ".peergos.localhost:9000"
-            + " Viewing websites via a local Peergos gateway doesn't rely on DNS or TLS certificate authorities for security or authenticity."
-            + " You can get started by adding a index.html file to your web directory.";
+            var text = this.translate("PROFILE.PUBLISH.HELP")
+                .replace("$NAME", this.context.username)
+                .replace("$NAME", this.context.username);
             this.showMessage(false, "Website Directory", text);
         },
         publishWebroot: function() {
             let that = this;
             if (this.webRoot.length > 0) {
-                this.confirm_message='Are you sure you want to publish folder: ' + this.webRoot + " ?";
-                this.confirm_body='This action will make the folder and all its contents public';
+                this.confirm_message=this.translate("PROFILE.CONFIRM.PUBLISH").replace("$PATH", this.webRoot);
+                this.confirm_body=this.translate("PROFILE.CONFIRM.PUBLISH.TEXT");
                 this.confirm_consumer_cancel_func = () => { that.showConfirm = false;};
                 this.confirm_consumer_func = function() {
                     that.showConfirm = false;
@@ -597,27 +596,29 @@ module.exports = {
                         let dirPath = peergos.client.PathUtils.directoryToPath(that.webRoot.split('/'));
                         that.context.getByPath(dirPath.toString()).thenApply(function(dirOpt){
                             if (dirOpt.isEmpty()) {
-                                that.showMessage(true, "Unable to publish Web Directory", "Web Directory not found");
+                                that.showMessage(true, that.translate("PROFILE.ERROR.PUBLISH"), that.translate("PROFILE.ERROR.NOT.FOUND"));
                             } else {
                                 peergos.shared.user.ProfilePaths.publishWebroot(that.context).thenApply(function(success){
                                     that.showSpinner = false;
                                     that.$emit("update-refresh");
                                     if (success) {
-                                        that.showMessage(false, "Web Directory published", "Available at: https://" + that.context.username+".peergos.me");
+                                        that.showMessage(false, that.translate("PROFILE.PUBLISH.SUCCESS"),
+                                                         that.translate("PROFILE.PUBLISH.AVAILABLE")
+                                                         .replace("$NAME", that.context.username));
                                         that.webRootUrl = "https://" + that.context.username + ".peergos.me";
                                         that.webRootReadyToBePublished = false;
                                     } else {
-                                        that.showMessage(true, "Unable to publish Web Directory", "");
+                                        that.showMessage(true, that.translate("PROFILE.ERROR.PUBLISH"), "");
                                     }
                                 }).exceptionally(function(throwable) {
-                                  that.showMessage(true, "Unable to publish Web Directory", throwable.getMessage());
+                                  that.showMessage(true, that.translate("PROFILE.ERROR.PUBLISH"), throwable.getMessage());
                                   console.log(throwable.getMessage());
                                   that.showSpinner = false;
                                 });
                             }
                         });
                     } catch (pathException) {
-                        that.showMessage(true, "Unable to publish Web Directory", "Web Directory not valid");
+                        that.showMessage(true, that.translate("PROFILE.ERROR.PUBLISH"), that.translate("PROFILE.ERROR.PATH"));
                         that.showSpinner = false;
                     }
                 };
@@ -626,7 +627,6 @@ module.exports = {
         },
         updateThumbnail: function(hires, thumbnail) {
             let that = this;
-            console.log("updating profile image");
             that.showSpinner = true;
 
             peergos.shared.user.ProfilePaths.setHighResProfilePhoto(that.context, hires).thenApply(function(success){
@@ -634,13 +634,13 @@ module.exports = {
                     that.showSpinner = false;
                     that.$emit("update-refresh");
                 }).exceptionally(function(throwable) {
-                  that.showMessage(true, "Unexpected error", throwable.getMessage());
+                  that.showMessage(true, that.translate("PROFILE.ERROR.UNEXPECTED"), throwable.getMessage());
                   console.log(throwable.getMessage());
                   that.showSpinner = false;
                   that.$emit("update-refresh");
                 });
             }).exceptionally(function(throwable) {
-              that.showMessage(true, "Unexpected error", throwable.getMessage());
+              that.showMessage(true, that.translate("PROFILE.ERROR.UNEXPECTED"), throwable.getMessage());
               console.log(throwable.getMessage());
               that.showSpinner = false;
             });
@@ -657,9 +657,8 @@ module.exports = {
             let that = this;
             let func = changes.pop();
             if(func == null) {
-                that.showMessage(false, "Profile updated");
+                that.showMessage(false, that.translate("PROFILE.UPDATED"));
                 that.showSpinner = false;
-                console.log("profile updated");
                 that.$emit("update-refresh");
                 return;
             } else {
@@ -667,14 +666,11 @@ module.exports = {
                     if(success) {
                         that.reduceAll(changes);
                     } else {
-                        that.showMessage(true, "Unable to update profile");
-                        console.log("Unable to update profile");
+                        that.showMessage(true, that.translate("PROFILE.ERROR.UPDATE"));
                         that.showSpinner = false;
                     }
                 }).exceptionally(function(throwable) {
-                    that.showMessage(true, "Unexpected error", throwable.getMessage());
-                    console.log('Error updating profile');
-                    console.log(throwable.getMessage());
+                    that.showMessage(true, that.translate("PROFILE.ERROR.UNEXPECTED"), throwable.getMessage());
                     that.showSpinner = false;
                 });
             }

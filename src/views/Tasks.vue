@@ -51,6 +51,7 @@ const Prompt = require("../components/prompt/Prompt.vue");
 const SelectCreate = require('../components/select-create/SelectCreate.vue');
 const Spinner = require("../components/spinner/Spinner.vue");
 const Warning = require('../components/Warning.vue');
+const i18n = require("../i18n/index.js");
 
 module.exports = {
     components: {
@@ -60,7 +61,7 @@ module.exports = {
 	    Spinner,
 	    Warning
     },
-    mixins:[routerMixins, UriDecoder],
+    mixins:[routerMixins, UriDecoder, i18n],
 
     data: function() {
         return {
@@ -133,7 +134,7 @@ module.exports = {
             let that = this;
             that.context.getByPath(path).thenApply(fileOpt => {
                 if (! fileOpt.isPresent()) {
-                    that.$toast.error("Couldn't load file: " + path, {timeout:false})
+                    that.$toast.error(that.translate("TASKS.ERROR.LOAD") + ": " + path, {timeout:false})
                     return;
                 }
                 let file = fileOpt.get();
@@ -150,8 +151,8 @@ module.exports = {
         
         selectOrCreateModal: function() {
             let that = this;
-            this.select_placeholder='Todo Board';
-            this.select_message='Create or open Todo Board';
+            this.select_placeholder=this.translate("TASKS.TITLE");
+            this.select_message=this.translate("TASKS.CREATE");
             that.showSpinner = true;
             that.context.getByPath(that.context.username).thenApply(homeDir => {
                 homeDir.get().getChildren(that.context.crypto.hasher, that.context.network).thenApply(function(children){
@@ -261,9 +262,7 @@ module.exports = {
                         });
                     }).exceptionally(function(throwable) {
                         that.showSpinner = false;
-                        that.$toast.error("Unexpected error: " + throwable.detailMessage, {timeout:false})
-                        console.log('Error loading file: ' + that.currentFile.getName());
-                        console.log(throwable.getMessage());
+                        that.$toast.error(that.translate("TASKS.ERROR") + ": " + throwable.detailMessage, {timeout:false})
                     });
             }
             setTimeout(() => {
@@ -351,7 +350,7 @@ module.exports = {
                         if(alreadyExists) {
                             that.showSpinner = false;
                             that.saving = false;
-                            that.$toast.error("TodoBoard with same filename already exists! File has not been saved", {timeout:false})
+                            that.$toast.error(that.translate("TASKS.ERROR.EXISTS"), {timeout:false})
                         } else {
                             dir.uploadFileJS(filename, java_reader, sizeHi, bytes.length,
                                              false, that.mirrorBatId, context.network, context.crypto, function(len){},
@@ -364,17 +363,17 @@ module.exports = {
                                                     that.currentFile = fileOpt.get();
                                                     that.$emit("update-refresh");
                                                 }).exceptionally(function(throwable) {
-                                                    that.handleException(throwable, 'Error retrieving file', 'Error retrieving file: ' + pathToFile + "/" + filename);
+                                                    that.handleException(throwable, that.translate("TASKS.ERROR.RETRIEVING"), that.translate("TASKS.ERROR.RETRIEVING") + ': ' + pathToFile + "/" + filename);
                                                 });
                                             }).exceptionally(function(throwable) {
-                                                that.handleException(throwable, 'Error creating file', 'Error creating file: ' + pathToFile + "/" + filename);
+                                                that.handleException(throwable, that.translate("TASKS.ERROR.CREATING"), that.translate("TASKS.ERROR.CREATING") + ': ' + pathToFile + "/" + filename);
                                             });
                         }
                     }).exceptionally(function(throwable) {
-                        that.handleException(throwable, 'Error listing Directory', 'Error listing Directory: ' + pathToFile);
+                        that.handleException(throwable, that.translate("TASKS.ERROR.LISTING"), that.translate("TASKS.ERROR.LISTING") + ': ' + pathToFile);
                     });
                 }).exceptionally(function(throwable) {
-                    that.handleException(throwable, 'Error navigating to directory', 'Error navigating to directory: ' + pathToFile);
+                    that.handleException(throwable, that.translate("TASKS.ERROR.NAV"), that.translate("TASKS.ERROR.NAV") + ': ' + pathToFile);
                 })
             } else {
                 this.currentFile.overwriteFileJS(java_reader, sizeHi, bytes.length,
@@ -389,9 +388,9 @@ module.exports = {
                         that.showSpinner = false;
                         let msg = that.uriDecode(throwable.detailMessage);
                         if (msg.includes("CAS exception updating cryptree node.")) {
-                            that.showMessage("Concurrent modification detected", "The file has been updated by another user. Your changes have not been saved.");
+                            that.showMessage(that.translate("TASKS.ERROR.CAS.TITLE"), that.translate("TASKS.ERROR.CAS.TEXT"));
                         } else {
-                            that.handleException(throwable, "Unexpected error", 'Error uploading file: ' + that.currentFile.getName());
+                            that.handleException(throwable, that.translate("TASKS.ERROR.UNEXPECTED"), that.translate("TASKS.ERROR.UPLOAD") + ': ' + that.currentFile.getName());
                         }
                         that.saving = false;
                     });
@@ -410,7 +409,7 @@ module.exports = {
         closeTodoBoard: function () {
             let that = this;
             if (this.unsavedChanges) {
-                this.confirmationWarning('Are you sure you want to close ' + this.todoBoardName +' without saving?', '',
+                this.confirmationWarning(this.translate("TASKS.CLOSE.CONFIRM").replace("$NAME", this.todoBoardName), '',
                                          () => that.close());
             } else {
                 this.close();

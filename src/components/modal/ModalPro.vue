@@ -5,43 +5,43 @@
 		</template>
 		<template #body>
 
-			<h2 class="card__meta"> Current space: {{ quota }}</h2>
+			<h2 class="card__meta"> {{ translate("SPACE.CURRENT") }}: {{ quota }}</h2>
 
-                        <p v-if="!isPaid">By continuing you agree to our <a href="/terms.html" target="_blank" rel="noopener noreferrer">Terms of Service</a>.</p>
+                        <p v-if="!isPaid">{{ translate("PAID.AGREE") }} <a href="/terms.html" target="_blank" rel="noopener noreferrer">Terms of Service</a>.</p>
                         <div v-if="!showCard" class="options_container">
 			    <div class="card__meta options">
-				<h3>Pro Account</h3>
+				<h3>Pro {{ translate("PAID.ACCOUNT") }}</h3>
 				<ul>
-				    <li>100 GB of hyper secure storage</li>
-				    <li>All our bundled private applications</li>
-				    <li>&#x00A3;5 / month</li>
+				    <li>100 GB {{ translate("PAID.STORAGE") }}</li>
+				    <li>{{ translate("PAID.APPS") }}</li>
+				    <li>&#x00A3;5 / {{ translate("PAID.MONTH") }}</li>
 				</ul>
                                 <AppButton @click.native="updateCard(100000000000)" :disabled="isPro" type="primary" block accent>{{proButtonText}}</AppButton>
 			    </div>
                             <div class="card__meta options">
-				<h3>Visionary Account</h3>
+				<h3>Visionary {{ translate("PAID.ACCOUNT") }}</h3>
 				<ul>
-				    <li>500 GB of hyper secure storage</li>
-				    <li>All our bundled private applications</li>
-				    <li>&#x00A3;10 / month  {{ prorataTextVisionary }}</li>
+				    <li>500 GB {{ translate("PAID.STORAGE") }}</li>
+				    <li>{{ translate("PAID.APPS") }}</li>
+				    <li>&#x00A3;10 / {{ translate("PAID.MONTH") }}  {{ prorataTextVisionary }}</li>
 				</ul>
                                 <AppButton @click.native="updateCard(500000000000)" :disabled="isVisionary" type="primary" block accent>{{visionaryButtonText}}</AppButton>
 			    </div>
                             <div class="card__meta options">
-				<h3>Pioneer Account</h3>
+				<h3>Pioneer {{ translate("PAID.ACCOUNT") }}</h3>
 				<ul>
-				    <li>2000 GB of hyper secure storage</li>
-				    <li>All our bundled private applications</li>
-				    <li>&#x00A3;25 / month  {{ prorataTextPioneer }}</li>
+				    <li>2000 GB {{ translate("PAID.STORAGE") }}</li>
+				    <li>{{ translate("PAID.APPS") }}</li>
+				    <li>&#x00A3;25 / {{ translate("PAID.MONTH") }}  {{ prorataTextPioneer }}</li>
 				</ul>
                                 <AppButton @click.native="updateCard(2000000000000)" :disabled="isPioneer" type="primary" block accent>{{pioneerButtonText}}</AppButton>
 			    </div>
                             <div class="card__meta options">
-				<h3>Trailblazer Account</h3>
+				<h3>Trailblazer {{ translate("PAID.ACCOUNT") }}</h3>
 				<ul>
-				    <li>4000 GB of hyper secure storage</li>
-				    <li>All our bundled private applications</li>
-				    <li>&#x00A3;40 / month  {{ prorataTextTrailBlazer }}</li>
+				    <li>4000 GB {{ translate("PAID.STORAGE") }}</li>
+				    <li>{{ translate("PAID.APPS") }}</li>
+				    <li>&#x00A3;40 / {{ translate("PAID.MONTH") }}  {{ prorataTextTrailBlazer }}</li>
 				</ul>
                                 <AppButton @click.native="updateCard(4000000000000)" :disabled="isTrailBlazer" type="primary" block accent>{{trailblazerButtonText}}</AppButton>
 			    </div>
@@ -53,8 +53,8 @@
 
 		</template>
 		<template #footer>
-			<AppButton v-if="isPaid" @click.native="updateCardDetails()" type="primary" block accent>Update payment details (opens in new tab)</AppButton>
-			<AppButton v-if="isPaid" @click.native="cancelPaid()" type="primary" block class="alert" >Cancel Peergos subscription</AppButton>
+			<AppButton v-if="isPaid" @click.native="updateCardDetails()" type="primary" block accent>{{ translate("PAID.CARD") }}</AppButton>
+			<AppButton v-if="isPaid" @click.native="cancelPaid()" type="primary" block class="alert" >{{ translate("PAID.CANCEL") }}</AppButton>
 		</template>
 	</AppModal>
 </template>
@@ -62,12 +62,14 @@
 <script>
 const AppButton = require("../AppButton.vue");
 const AppModal = require("AppModal.vue");
+const i18n = require("../../i18n/index.js");
 
 module.exports = {
 	components: {
 	    AppButton,
 	    AppModal,
 	},
+        mixins:[i18n],
 	data() {
 		return {
 			unit:"GiB",
@@ -115,46 +117,46 @@ module.exports = {
 
             prorataTextVisionary() {
                 if (this.isPro)
-                    return " (pro rata for this month)";
+                    return " ("+this.translate("PAID.PRORATA")+")";
                 else
                     return ""
             },
             prorataTextPioneer() {
                 if (this.isPro || this.isVisionary)
-                    return " (pro rata for this month)";
+                    return " ("+this.translate("PAID.PRORATA")+")";
                 else
                     return ""
             },
             prorataTextTrailBlazer() {
                 if (this.isPro || this.isVisionary || this.isPioneer)
-                    return " (pro rata for this month)";
+                    return " ("+this.translate("PAID.PRORATA")+")";
                 else
                     return ""
             },
             upgradeTitle(){
 			return (this.isPaid)
-				? 'Subscription settings'
-				: 'Upgrade your account to get more space'
+				? this.translate("PAID.SETTINGS")
+				: this.translate("PAID.UPGRADE")
 	    },
             proButtonText(){
                 return (this.isPro)
-				? 'Your Current Plan'
-				: 'Select Pro (opens new tab)'
+				? this.translate("PAID.CURRENT")
+				: this.translate("PAID.PRO")
             },
             visionaryButtonText(){
                 return (this.isVisionary)
-				? 'Your Current Plan'
-				: 'Select Visionary (opens new tab)'
+				? this.translate("PAID.CURRENT")
+				: this.translate("PAID.VISIONARY")
             },
             pioneerButtonText(){
                 return (this.isPioneer)
-				? 'Your Current Plan'
-				: 'Select Pioneer (opens new tab)'
+				? this.translate("PAID.CURRENT")
+				: this.translate("PAID.PIONEER")
             },
             trailblazerButtonText(){
                 return (this.isTrailBlazer)
-				? 'Your Current Plan'
-				: 'Select Trailblazer (opens new tab)'
+				? this.translate("PAID.CURRENT")
+				: this.translate("PAID.TRAILBLAZER")
             }
     },
 
@@ -175,7 +177,6 @@ module.exports = {
 	        window.addEventListener("focus", this.currentFocusFunction, false);
 	    },
 	    requestStorage(bytes) {
-		console.log('requestStorage:', bytes)
 		var that = this;
                 window.removeEventListener("focus", this.currentFocusFunction);
 		this.context.requestSpace(bytes)
@@ -185,21 +186,21 @@ module.exports = {
 			if (quotaBytes >= bytes && bytes > 0) {
 			    that.updatePayment()
 			    that.$store.commit("SET_MODAL", false)
-			    that.$toast.info('Thank you for signing up to a paid Peergos account!',{timeout:false, id: 'pro'})                            
+			    that.$toast.info(that.translate("PAID.THANKYOU"),{timeout:false, id: 'pro'})                            
 			} else if (bytes == 0) {
 			    that.updatePayment()
 			    that.$store.commit("SET_MODAL", false)
-			    that.$toast.error("Sorry to see you go. We'd love to know what we can do better. Make sure to delete enough data to return within your Basic quota. You will revert to the Basic quota at the end of the billing month.", {timeout:false, id: 'pro'})
+			    that.$toast.error(that.translate("PAID.SORRY"), {timeout:false, id: 'pro'})
 			} else if (quotaBytes < bytes && bytes > 0 ) {
                             that.updatePayment(() => {
                                 that.updateError()
                                 if (! that.paymentProperties.hasError())
-			            that.$toast.error(`Card details required. Add a payment card to complete your upgrade. `,{timeout:false, id: 'pro', position: 'bottom-left'})
+			            that.$toast.error(that.translate("PAID.CARD.NEEDED"),{timeout:false, id: 'pro', position: 'bottom-left'})
                             });
 			} else
                             that.updatePayment(() => that.updateError());
 		    })).exceptionally(t => {
-                        that.$toast.error("Error requesting more storage: " + t.getMessage())
+                        that.$toast.error(that.translate("PAID.ERROR.STORAGE")+": " + t.getMessage())
                     })
 	    },
             
