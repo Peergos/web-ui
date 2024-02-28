@@ -60,6 +60,66 @@ navigator.serviceWorker.getRegistration('./').then(swReg => {
     window.parent.postMessage("sw-registration-failure", parentHost)
 })
 
+let supported = ["en-GB"];
+let enGB = {
+    "CALENDAR_ADD":"Add Calendar",
+    "CALENDAR_SETTINGS":"Calendar Settings",
+    "CALENDAR_TODAY":"Today",
+    "CALENDAR_DAILY":"Daily",
+    "CALENDAR_WEEKLY":"Weekly",
+    "CALENDAR_MONTH":"Month",
+    "CALENDAR_VIEW_ALL":"View all",
+    "CALENDAR_SHARE":"Share",
+    "CALENDAR_IMPORT":"Import",
+    "CALENDAR_DOWNLOAD":"Download",
+    "CALENDAR_EMAIL":"Email",
+    "CALENDAR_SHARED_BY":"Shared by",
+    "CALENDAR_DELETE":"Delete",
+    "CALENDAR_EVENT_REPEAT_NONE":"Does not repeat",
+    "CALENDAR_EVENT_REPEAT_DAILY":"Daily",
+    "CALENDAR_EVENT_REPEAT_WEEKDAY":"Every weekday (Monday to Friday)",
+    "CALENDAR_EVENT_REPEAT_WEEKLY":"Weekly on",
+    "CALENDAR_EVENT_REPEAT_ANNUALLY":"Annually on",
+    "CALENDAR_EVENT_REPEAT_CUSTOM":"Custom...",
+    "CALENDAR_OF":"of",
+    "CALENDAR_ERROR_PARSE_ICAL":"Unable to parse ical file",
+    "CALENDAR_RECURRING":"Recurring",
+    "CALENDAR_CANCELLED_EVENT":"CANCELLED",
+    "CALENDAR_ERROR_EVENT_MISSING_FIELDS":"Event missing all required fields",
+    "CALENDAR_ERROR_SINGLE_DAY_EVENT":"Only single day events supported",
+    "CALENDAR_ERROR_FREQUENCY":"Frequency specified not supported",
+    "CALENDAR_ERROR_EVENT_INVALID":"Calendar does not support event containing both a recurrenceId and either a rdate, exdate or rrule",
+    "CALENDAR_CONFIRM":"Confirm",
+    "CALENDAR_CANCEL":"Cancel",
+    "CALENDAR_OK":"OK",
+    "CALENDAR_NO_TITLE":"No Title",
+    "CALENDAR_ERROR_IMPORT":"Unable to import Event due to error",
+    "CALENDAR_ERROR_EVENT_RECURRENCE":"Event recurrence error",
+};
+function setupTranslations() {
+    document.getElementById("add-calendar-button").innerText = translate("CALENDAR_ADD");
+    document.getElementById("calendar-settings-label").innerText = translate("CALENDAR_SETTINGS");
+    document.getElementById("calendar-label-today").innerText = translate("CALENDAR_TODAY");
+    document.getElementById("calendar-view-all-label").innerText = translate("CALENDAR_VIEW_ALL");
+
+    document.getElementById("calendar-label-daily").appendChild(document.createTextNode(translate("CALENDAR_DAILY")));
+    document.getElementById("calendar-label-weekly").appendChild(document.createTextNode(translate("CALENDAR_WEEKLY")));
+    document.getElementById("calendar-label-month").appendChild(document.createTextNode(translate("CALENDAR_MONTH")));
+}
+function translate(label, locale) {
+    if (locale == null)
+        locale = navigator.language;
+    if (!supported.includes(locale))
+        locale = "en-GB";
+    if (locale == "en-GB") {
+        const res = enGB[label];
+        if (res != null)
+            return res;
+    }
+    // default to enGB if language doesn't have an entry for this
+    return enGB[label];
+}
+
 let calendarVersions = ['-//iCal.js','-//peergos.v1'];
 let currentVersion = 1;
 var currentUsername;
@@ -822,7 +882,7 @@ function buildScheduleFromEvent(event) {
         schedule.id = event.Id;
     }
     schedule.calendarId = event.calendarId;
-    schedule.title = event.title == null ? "No Title" : event.title;
+    schedule.title = event.title == null ? translate("CALENDAR_NO_TITLE") : event.title;
     schedule.body = '';
     schedule.isReadOnly = currentUsername != event.owner ? true : false;
     schedule.isAllDay = event.isAllDay;
@@ -932,7 +992,7 @@ function importICSFile(contents, username, isSharedWithUs, loadCalendarAsGuest, 
         icalComponent = new ICAL.Component(ICAL.parse(contents));
     } catch (ex) {
         console.log('Unable to parse ical file: ' + ex);
-        showImportError('Unable to parse ical file');
+        showImportError(translate("CALENDAR_ERROR_PARSE_ICAL"));
         return;
     }
     let vevents = icalComponent.getAllSubcomponents('vevent');
@@ -980,8 +1040,8 @@ function importICSFile(contents, username, isSharedWithUs, loadCalendarAsGuest, 
         if (!loadCalendarAsGuest) {
             let year = dt.year();
             let month = dt.month() + 1;
-            let recurringText = schedule.raw.hasRecurrenceRule ? ' (Recurring: ' + schedule.recurrenceRule + ')' : '';
-            let stateText = schedule.state == CALENDAR_EVENT_CANCELLED ? 'CANCELLED ' : '';
+            let recurringText = schedule.raw.hasRecurrenceRule ? ' (' + translate("CALENDAR_RECURRING") + ': ' + schedule.recurrenceRule + ')' : '';
+            let stateText = schedule.state == CALENDAR_EVENT_CANCELLED ? translate("CALENDAR_CANCELLED_EVENT") + ' ' : '';
             let eventSummary = {datetime: moment(schedule.start.toUTCString()).toLocaleString(), title: stateText + schedule.title + recurringText };
             allEvents.push({calendarName: calendarName, year: year, month: month, Id: schedule.id, item:output,
                     summary: eventSummary, isRecurring: schedule.raw.hasRecurrenceRule});
@@ -1007,7 +1067,7 @@ function confirmImportICSFile(contents, username, isSharedWithUs, loadCalendarAs
         icalComponent = new ICAL.Component(ICAL.parse(contents));
     } catch (ex) {
         console.log('Unable to parse ical file: ' + ex);
-        showImportError('Unable to parse ical file');
+        showImportError(translate("CALENDAR_ERROR_PARSE_ICAL"));
         return;
     }
     let vevents = icalComponent.getAllSubcomponents('vevent');
@@ -1040,8 +1100,8 @@ function confirmImportICSFile(contents, username, isSharedWithUs, loadCalendarAs
         let dt = moment.utc(schedule.start.toUTCString());
         let year = dt.year();
         let month = dt.month() + 1;
-        let recurringText = schedule.raw.hasRecurrenceRule ? ' (Recurring: ' + schedule.recurrenceRule + ')' : '';
-        let stateText = schedule.state == CALENDAR_EVENT_CANCELLED ? 'CANCELLED ' : '';
+        let recurringText = schedule.raw.hasRecurrenceRule ? ' (' + translate("CALENDAR_RECURRING") + ': ' + schedule.recurrenceRule + ')' : '';
+        let stateText = schedule.state == CALENDAR_EVENT_CANCELLED ? translate("CALENDAR_CANCELLED_EVENT") + ' ' : '';
         let eventSummary = {datetime: moment(schedule.start.toUTCString()).toLocaleString(), title: stateText + schedule.title + recurringText };
         allEvents.push({calendarName: calendarName, year: year, month: month, Id: schedule.id, item:output,
                 summary: eventSummary, isRecurring: schedule.raw.hasRecurrenceRule});
@@ -1118,24 +1178,24 @@ function scheduleSameMonth(oldScheduleStart, newScheduleStart) {
 }
 function validateEvent(event) {
     if (isEmptyValue(event.Id) || event.title == null || event.start == null || event.end == null) {
-        showImportError("Event missing all required fields: UID, SUMMARY, DTSTART, DTEND. UID:" + event.Id);
+        showImportError(translate("CALENDAR_ERROR_EVENT_MISSING_FIELDS") + ": UID, SUMMARY, DTSTART, DTEND. UID:" + event.Id);
         return false;
     }
     if (!eventSameDay(event)) {
-        showImportError("Only single day events supported. Event id: " + event.Id);
+        showImportError(translate("CALENDAR_ERROR_SINGLE_DAY_EVENT") + ". Event id: " + event.Id);
         return false;
     }
     if (event.recurrenceRule != null) {
         let frequency = extractPartFromRecurrenceRule(event.recurrenceRule.toString(),
                 "FREQ",function(val){return frequencyValidator(val) ? val : null;});
         if (frequency == null) {
-            showImportError("Frequency specified not supported. Supported Frequencies are: DAILY, WEEKLY, MONTHLY, YEARLY. UID:" + event.Id);
+            showImportError(translate("CALENDAR_ERROR_FREQUENCY") + ". Supported Frequencies are: DAILY, WEEKLY, MONTHLY, YEARLY. UID:" + event.Id);
             return false;
         }
     }
     if (event.recurrenceId != null) {
         if (event.hasRdate || event.hasExdate || event.recurrenceRule != null) {
-            showImportError("Calendar does not support event containing both a recurrenceId and either a rdate, exdate or rrule. UID:" + event.Id);
+            showImportError(translate("CALENDAR_ERROR_EVENT_INVALID") + ". UID:" + event.Id);
         }
     }
     return true;
@@ -1601,6 +1661,7 @@ function setCalendars(headless, calendars) {
         }
     }
     if (!headless) {
+        setupTranslations();
         replaceCalendarsInUI();
     }
 }
@@ -1760,7 +1821,7 @@ function setDropdownCalendarType() {
     iconClassName = 'calendar-icon ic_view_month';
   }
 
-  calendarTypeName.innerHTML = type;
+  calendarTypeName.innerText = type;
   //calendarTypeIcon.className = iconClassName;
 }
 
@@ -1916,8 +1977,8 @@ function sendEventToNativeEmailClient(schedule) {
     var instance = schedule.raw.parentId != null
         ? RecurringSchedules[RecurringSchedules.findIndex(v => v.id === schedule.raw.parentId)]
         : schedule;
-    let recurringText = schedule.raw.hasRecurrenceRule ? ' (Recurring: ' + schedule.recurrenceRule + ')' : '';
-    let stateText = schedule.state == CALENDAR_EVENT_CANCELLED ? 'CANCELLED ' : '';
+    let recurringText = schedule.raw.hasRecurrenceRule ? ' (' + translate("CALENDAR_RECURRING") + ': ' + schedule.recurrenceRule + ')' : '';
+    let stateText = schedule.state == CALENDAR_EVENT_CANCELLED ? translate("CALENDAR_CANCELLED_EVENT") + ' ' : '';
     let title = stateText + schedule.title + ' - ' + moment(schedule.start.toUTCString()).toLocaleString() + recurringText;
 
     let dt = moment.utc(schedule.start.toUTCString());
@@ -1933,8 +1994,8 @@ function emailEvent(schedule) {
     var instance = schedule.raw.parentId != null
         ? RecurringSchedules[RecurringSchedules.findIndex(v => v.id === schedule.raw.parentId)]
         : schedule;
-    let recurringText = schedule.raw.hasRecurrenceRule ? ' (Recurring: ' + schedule.recurrenceRule + ')' : '';
-    let stateText = schedule.state == CALENDAR_EVENT_CANCELLED ? 'CANCELLED ' : '';
+    let recurringText = schedule.raw.hasRecurrenceRule ? ' (' + translate("CALENDAR_RECURRING") + ': ' + schedule.recurrenceRule + ')' : '';
+    let stateText = schedule.state == CALENDAR_EVENT_CANCELLED ? translate("CALENDAR_CANCELLED_EVENT") + ' ' : '';
     let title = stateText + schedule.title + ' - ' + moment(schedule.start.toUTCString()).toLocaleString() + recurringText;
 
     let dt = moment.utc(schedule.start.toUTCString());
@@ -2019,7 +2080,7 @@ function buildExtraFieldsToSummary(eventData, that) {
     let calendarSpan = document.getElementById("calendar-name");
     var showDeleteBtn = false;
     if(eventData.schedule.raw.creator.name != currentUsername) {
-        calendarSpan.innerText = calendarSpan.innerText + " (Shared by " + eventData.schedule.raw.creator.name + ")";
+        calendarSpan.innerText = calendarSpan.innerText + " (" + translate("CALENDAR_SHARED_BY") + " " + eventData.schedule.raw.creator.name + ")";
         let owner = getCalendarListItem(eventData.schedule.calendarId).owner;
         if (!loadCalendarAsGuest && owner == null) {
             showDeleteBtn = true;
@@ -2028,7 +2089,7 @@ function buildExtraFieldsToSummary(eventData, that) {
     if (showDeleteBtn) {
         var deleteButton = document.createElement("button");
         calendarSpan.appendChild(deleteButton);
-        deleteButton.appendChild(document.createTextNode("Delete"));
+        deleteButton.appendChild(document.createTextNode(translate("CALENDAR_DELETE")));
         deleteButton.style.marginLeft="20px";
         deleteButton.onclick=function() {
             that.hide();
@@ -2068,7 +2129,7 @@ function buildExtraFieldsToSummary(eventData, that) {
         var shareLink = document.createElement("a");
         shareLink.style.cursor="pointer";
         shareLink.style.marginLeft="3px";
-        shareLink.innerText = "Share";
+        shareLink.innerText = translate("CALENDAR_SHARE");
         span1.appendChild(shareLink);
         shareLink.onclick=function() {
             shareCalendarEvent(eventData.schedule);
@@ -2083,7 +2144,7 @@ function buildExtraFieldsToSummary(eventData, that) {
     var downloadLink = document.createElement("a");
     downloadLink.style.cursor="pointer";
     downloadLink.style.marginLeft="3px";
-    downloadLink.innerText = "Download";
+    downloadLink.innerText = translate("CALENDAR_DOWNLOAD");
     span1.appendChild(downloadLink);
     downloadLink.onclick=function() {
         downloadEvent(eventData.schedule);
@@ -2096,7 +2157,7 @@ function buildExtraFieldsToSummary(eventData, that) {
         var emailLink = document.createElement("a");
         emailLink.style.cursor="pointer";
         emailLink.style.marginLeft="3px";
-        emailLink.innerText = "Email";
+        emailLink.innerText = translate("CALENDAR_EMAIL");
         span1.appendChild(emailLink);
         emailLink.onclick=function() {
             emailEvent(eventData.schedule);
@@ -2105,7 +2166,7 @@ function buildExtraFieldsToSummary(eventData, that) {
         var emailLink = document.createElement("a");
         emailLink.style.cursor="pointer";
         emailLink.style.marginLeft="3px";
-        emailLink.innerText = "Email";
+        emailLink.innerText = translate("CALENDAR_EMAIL");
         span1.appendChild(emailLink);
         emailLink.onclick=function() {
             sendEventToNativeEmailClient(eventData.schedule);
@@ -2290,14 +2351,14 @@ function appendCalendar(item) {
 
     if (item.id != CALENDAR_ID_MY_CALENDAR && item.owner == null && item.shareable) {
            var shareButton = document.createElement("button");
-           shareButton.innerText = 'Share';
+           shareButton.innerText = translate("CALENDAR_SHARE");
            shareButton.style = "margin-right: 5px;";
            shareButton.addEventListener('click', function(){shareCalendar(item);});
            span.appendChild(shareButton);
     }
     if (item.owner == null) {
         var importICalButton = document.createElement("button");
-        importICalButton.innerText = 'Import';
+        importICalButton.innerText = translate("CALENDAR_IMPORT");
         importICalButton.addEventListener('click', function(){
             document.getElementById('uploadICalInput-cal-' + item.id).click();
         });
@@ -2347,14 +2408,14 @@ function calendarColorChooser(id, changeCallback){
     destroyColorPicker();
     let currentColorRGB = toHexString(currentColor);
     colorPalette[0] = currentColorRGB;
-
+    let that = this;
     colorPickerElement.classList.remove("calendar-hidden");
     colorpicker = tui.colorPicker.create({
         container: colorPickerElement,
         usageStatistics: false,
         preset: colorPalette,
         color: colorPalette[0],
-        detailTxt: 'Confirm'
+        detailTxt: that.translate("CALENDAR_CONFIRM")
     });
     colorpicker._onToggleSlider();
     colorpicker.on('selectColor', function(ev) {
@@ -2374,14 +2435,14 @@ function calendarColorChooser(id, changeCallback){
     cancelItem.id="color-picker-cancel-btn";
     cancelItem.type = "button";
     cancelItem.classList.add("button-cancel");
-    cancelItem.value = "Cancel";
+    cancelItem.value = translate("CALENDAR_CANCEL");
     
     var confirmItem = document.createElement("INPUT");
     buttonDiv.appendChild(confirmItem);
     confirmItem.id="color-picker-confirm-btn";
     confirmItem.type = "button";
     confirmItem.classList.add("button-confirm");
-    confirmItem.value = "OK";
+    confirmItem.value = translate("CALENDAR_OK");
 }
 function destroyColorPicker() {
     if(colorpicker != null) {
@@ -2775,37 +2836,37 @@ function createRepeatDropdown(startDate, isReadOnly) {
     var noRepeat = document.createElement("option");
     noRepeat.id='no-repeat';
     noRepeat.value='no-repeat';
-    noRepeat.innerText = "Does not repeat";
+    noRepeat.innerText = translate("CALENDAR_EVENT_REPEAT_NONE");
     dropdown.appendChild(noRepeat);
 
     var daily = document.createElement("option");
     daily.id='repeat-daily';
     daily.value='DAILY';
-    daily.innerText = "Daily";
+    daily.innerText = translate("CALENDAR_EVENT_REPEAT_DAILY");
     dropdown.appendChild(daily);
 
     var weekday = document.createElement("option");
     weekday.id='repeat-weekday';
     weekday.value='WEEKDAY';
-    weekday.innerText = "Every weekday (Monday to Friday)";
+    weekday.innerText = translate("CALENDAR_EVENT_REPEAT_WEEKDAY");
     dropdown.appendChild(weekday);
 
     var weekly = document.createElement("option");
     weekly.id='repeat-weekly';
     weekly.value='WEEKLY';
-    weekly.innerText = "Weekly on " + byDayLongLabelParts[dayOfWeek]
+    weekly.innerText = translate("CALENDAR_EVENT_REPEAT_WEEKLY") + " " + byDayLongLabelParts[dayOfWeek]
     dropdown.appendChild(weekly);
 
     var yearly = document.createElement("option");
     yearly.id='repeat-yearly';
     yearly.value='YEARLY';
-    yearly.innerText = "Annually on " + asStr + " of " + monthLongLabelParts[month];
+    yearly.innerText = translate("CALENDAR_EVENT_REPEAT_ANNUALLY") + " " + asStr + " " + translate("CALENDAR_OF") + " " + monthLongLabelParts[month];
     dropdown.appendChild(yearly);
 
     var custom = document.createElement("option");
     custom.id='repeat-custom';
     custom.value='CUSTOM';
-    custom.innerText = "Custom...";
+    custom.innerText = translate("CALENDAR_EVENT_REPEAT_CUSTOM");
     dropdown.appendChild(custom);
     if (isReadOnly) {
         dropdown.disabled = true;
@@ -2906,11 +2967,11 @@ function applyRRULE() {
     rrule = result;
 }
 function showImportError(err) {
-    displayMessage("Unable to import Event due to error: " + err);
+    displayMessage(translate("CALENDAR_ERROR_IMPORT") + ": " + err);
     console.log("import error=" + err);
 }
 function showRecurrenceError(err) {
-    displayMessage("Event recurrence error: " + err);
+    displayMessage(translate("CALENDAR_ERROR_EVENT_RECURRENCE") + ": " + err);
     console.log("recurrence error=" + err);
 }
 function extractPart(paramName, validator) {

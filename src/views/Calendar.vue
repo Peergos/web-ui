@@ -197,7 +197,7 @@ module.exports = {
             } else {
                 that.context.getByPath(path).thenApply(dirOpt => {
                     if (! dirOpt.isPresent()) {
-                        that.$toast.error("Couldn't load calendar", {timeout:false});
+                        that.$toast.error(that.translate('CALENDAR.ERROR.LOAD'), {timeout:false});
                         future.complete(null);
                     } else {
                         let dir = dirOpt.get();
@@ -210,7 +210,7 @@ module.exports = {
       } else {
             that.context.getByPath(path + (path.endsWith("/") ? "" : '/') + filename).thenApply(fileOpt => {
                 if (! fileOpt.isPresent()) {
-                    that.$toast.error("Couldn't load calendar file", {timeout:false});
+                    that.$toast.error(that.translate('CALENDAR.ERROR.LOAD.FILE'), {timeout:false});
                     future.complete(null);
                     return;
                 }
@@ -389,7 +389,7 @@ module.exports = {
         },
         requestChoiceSelection: function(method, includeChangeAll) {
 	    let that = this;
-        this.choice_message = method + ' Event';
+        this.choice_message = method + ' ' + this.translate('CALENDAR.EVENT');
         this.choice_body = '';
         this.choice_consumer_func = (index) => {
             //console.log("response=" + response);
@@ -398,18 +398,18 @@ module.exports = {
         };
         let options = [];
         if (includeChangeAll) {
-            options.push('All events');
+            options.push(this.translate('CALENDAR.ALL.EVENTS'));
         }
-        options.push('This event');
-        options.push('This and future events');
+        options.push(this.translate('CALENDAR.THIS.EVENT'));
+        options.push(this.translate('CALENDAR.FUTURE.EVENTS'));
         this.choice_options = options;
         this.showChoice = true;
 	},
     renameCalendarRequest: function(calendar, calendarItem) {
         let that = this;
-        this.prompt_placeholder = 'New Calendar name';
+        this.prompt_placeholder = this.translate('CALENDAR.NEW.NAME');
         this.prompt_value = calendarItem.name;
-        this.prompt_message = 'Enter a new name';
+        this.prompt_message = this.translate('CALENDAR.ENTER.NAME');
         this.prompt_max_input_size = 20;
         this.prompt_consumer_func = function(prompt_result) {
             if (prompt_result === null)
@@ -422,7 +422,7 @@ module.exports = {
             if (newName === '.' || newName === '..')
                 return;
             if (!newName.match(/^[a-z\d\-_\s]+$/i)) {
-                that.showMessage(true, "Invalid calendar name. Use only alphanumeric characters plus space, dash and underscore");
+                that.showMessage(true, that.translate('CALENDAR.INVALID.NAME'));
                 return;
             }
             setTimeout(function(){
@@ -454,9 +454,9 @@ module.exports = {
     },
     addCalendarRequest: function(calendar, newColor) {
         let that = this;
-        this.prompt_placeholder = 'New Calendar name';
+        this.prompt_placeholder = this.translate('CALENDAR.NEW.NAME');
         this.prompt_value = "";
-        this.prompt_message = 'Enter a new name';
+        this.prompt_message = this.translate('CALENDAR.ENTER.NAME');
         this.prompt_max_input_size = 20;
         this.prompt_consumer_func = function(prompt_result) {
             if (prompt_result === null)
@@ -467,7 +467,7 @@ module.exports = {
             if (newName === '.' || newName === '..')
                 return;
             if (!newName.match(/^[a-z\d\-_\s]+$/i)) {
-                that.showMessage(true, "Invalid calendar name. Use only alphanumeric characters plus space, dash and underscore");
+                that.showMessage(true, that.translate('CALENDAR.INVALID.NAME'));
                 return;
             }
             setTimeout(function(){
@@ -545,7 +545,7 @@ module.exports = {
         let calendarDirectory = this.importCalendarPath.substring(this.importCalendarPath.lastIndexOf('/') +1);
         let existingCalendar = this.getCalendarForDirectory(calendarDirectory);
         if (existingCalendar != null) {
-            that.showMessage(true, "Calendar: " + existingCalendar.name + " already imported");
+            that.showMessage(true, that.translate("CALENDAR.ALREADY.IMPORTED").replace("$NAME", existingCalendar.name));
             that.removeSpinner();
             that.close();
         } else {
@@ -654,7 +654,7 @@ module.exports = {
                             that.postDeleteCalendar(calendar, data);
                         } else {
                             that.removeSpinner();
-                            that.showMessage(true, "Unable to delete Calendar");
+                            that.showMessage(true, that.translate('CALENDAR.ERROR.DELETE'));
                             console.log(throwable.getMessage());
                         }
                     });
@@ -664,7 +664,8 @@ module.exports = {
         );
     },
     confirmDeleteCalendar: function(calendarName, deleteCalendarFunction, cancelFunction) {
-        this.confirm_message='Are you sure you want to delete calendar: ' + calendarName + " ?";
+
+        this.confirm_message= this.translate("CALENDAR.DELETE.CONFIRM").replace("$NAME", calendarName);
         this.confirm_body='';
         this.confirm_consumer_cancel_func = cancelFunction;
         this.confirm_consumer_func = deleteCalendarFunction;
@@ -683,7 +684,7 @@ module.exports = {
         this.removeCalendarEvent(calendar, item.calendarName, item.year, item.month, item.Id, item.isRecurring).thenApply(function(res) {
 	        that.removeSpinner();
         }).exceptionally(function(throwable) {
-            that.showMessage(true, "Unable to delete event","Please close calendar and try again");
+            that.showMessage(true, that.translate("CALENDAR.ERROR.DELETE.EVENT"));
             console.log(throwable.getMessage());
 	        that.removeSpinner();
         });
@@ -709,7 +710,7 @@ module.exports = {
                 props.calendars.push({name: 'My Calendar', directory: 'default', color: '#00a9ff'});
                 return props;
             } else {
-                that.showMessage(true, "Unable to load file","Please close calendar and try again");
+                that.showMessage(true, that.translate('CALENDAR.ERROR.LOAD.FILE'));
             }
         });
     },
@@ -788,7 +789,7 @@ module.exports = {
                 this.updateCalendarEvent(calendar, item).thenApply(function(res) {
                     that.removeSpinner();
                 }).exceptionally(function(throwable) {
-                    that.showMessage(true, "Unable to save event","Please close calendar and try again");
+                    that.showMessage(true, that.translate('CALENDAR.ERROR.SAVE.EVENT'));
                     console.log(throwable.getMessage());
                     that.removeSpinner();
                 });
@@ -803,12 +804,12 @@ module.exports = {
             that.updateCalendarEvent(calendar, item).thenApply(function(res2) {
                 that.removeSpinner();
             }).exceptionally(function(throwable) {
-                that.showMessage(true, "Unable to save moved event","Please re-create event");
+                that.showMessage(true, that.translate('CALENDAR.ERROR.SAVE.MOVED.EVENT') + ". " + that.translate('CALENDAR.RECREATE.EVENT'));
                 console.log(throwable.getMessage());
                 that.removeSpinner();
             });
         }).exceptionally(function(throwable) {
-            that.showMessage(true, "Unable to move event","Please close calendar and try again");
+            that.showMessage(true, that.translate('CALENDAR.ERROR.MOVE.EVENT'));
             console.log(throwable.getMessage());
             that.removeSpinner();
         });
@@ -853,7 +854,7 @@ module.exports = {
                        uploadFuture.complete(true);
                }).exceptionally(function (throwable) {
                     that.removeSpinner();
-                    that.showMessage(true, "Unable to upload event(s). Please close calendar.");
+                    that.showMessage(true, that.translate('CALENDAR.ERROR.UPLOAD'));
                     console.log(throwable.getMessage());
                     uploadFuture.complete(false);
                });
@@ -919,7 +920,7 @@ module.exports = {
     saveAllEvents: function(calendar, data) {
         this.removeSpinner();
         let name = 'bulkImport';
-        let title = "Importing " + data.items.length + " calendar events";
+        let title = this.translate("CALENDAR.IMPORT.MSG").replace("$ITEMS", data.items.length);
         var progress = {
             title:title,
             done:0,
@@ -951,7 +952,7 @@ module.exports = {
                 this.bulkUpload(uploads).thenApply(done => {
                     that.removeSpinner();
                     if (done) {
-                        that.showMessage(false, "Completed importing event(s)");
+                        that.showMessage(false, that.translate('CALENDAR.IMPORT.COMPLETE'));
                     }
                 });
             }
@@ -978,7 +979,7 @@ module.exports = {
             }).exceptionally(function(throwable) {
                 that.removeSpinner();
                 that.close();
-                that.showMessage(true, "Unable to import event(s)");
+                that.showMessage(true, that.translate('CALENDAR.ERROR.IMPORT.EVENT'));
                 console.log(throwable.getMessage());
             });
         } else {
@@ -987,7 +988,7 @@ module.exports = {
         }
     },
     confirmImportEventFile: function(summary, importFunction, cancelFunction) {
-        this.confirm_message='Do you wish to import Event: ' + summary.datetime
+        this.confirm_message= this.translate('CALENDAR.IMPORT.EVENT') + ' ' + summary.datetime
                 + ' - ' + summary.title + ' ?';
         this.confirm_body='';
         this.confirm_consumer_cancel_func = cancelFunction;
@@ -995,7 +996,7 @@ module.exports = {
         this.showConfirm = true;
     },
     confirmImportCalendar: function(calendarName, importFunction, cancelFunction) {
-        this.confirm_message='Do you wish to import Calendar: ' + calendarName + ' ?';
+        this.confirm_message= this.translate('CALENDAR.IMPORT.CALENDAR') + ' ' + calendarName + ' ?';
         this.confirm_body='';
         this.confirm_consumer_cancel_func = cancelFunction;
         this.confirm_consumer_func = importFunction;
@@ -1112,7 +1113,6 @@ module.exports = {
         return future;
     },
     downloadEvent: function(calendar, title, event) {
-        let that = this;
         this.displaySpinner();
         let encoder = new TextEncoder();
         let uint8Array = encoder.encode(event);
@@ -1122,7 +1122,7 @@ module.exports = {
         let link = document.getElementById("downloadEventAnchor");
         link.href = url;
         link.type = "text/calendar";
-        link.download = 'event - ' + title + '.ics';
+        link.download = this.translate('CALENDAR.EVENT') + ' - ' + title + '.ics';
         link.click();
         this.removeSpinner();
     },
@@ -1131,11 +1131,12 @@ module.exports = {
         let dirPath =  isRecurring ? calendarDirectory + "/recurring" : calendarDirectory + "/" + year + "/" + month;
         let path = this.context.username + "/.apps/" + this.CALENDAR_DIR_NAME + '/' + this.DATA_DIR_NAME + "/" + dirPath;
         let filename = id + '.ics';
+        let that = this;
         this.context.getByPath(path + '/' + filename).thenApply(fileOpt => {
             if (fileOpt.isPresent()) {
                 let file = fileOpt.get();
                 let json = {open:true, secretLink:true,link:file.toLink()};
-                let body = 'Link to event: ' + window.location.origin + window.location.pathname + "#" + propsToFragment(json);
+                let body = that.translate('CALENDAR.EVENT.LINK') + ': ' + window.location.origin + window.location.pathname + "#" + propsToFragment(json);
                 var link = document.createElement("a");
                 link.href = "mailto:?subject=" + escape(title) + "&body=" + body;
                 link.click();
@@ -1158,7 +1159,7 @@ module.exports = {
     shareCalendar: function(calendar) {
         let calendarDirectory = this.findCalendarDirectory(calendar.name);
         this.shareWith(this.CALENDAR_DIR_NAME + '/' + this.DATA_DIR_NAME, calendarDirectory, false, true,
-            'Calendar - ' + calendar.name);
+            this.translate('CALENDAR.LABEL') + ' - ' + calendar.name);
     },
     showMessage: function(isError, message) {
         if (isError) {
