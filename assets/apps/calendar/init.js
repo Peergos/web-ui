@@ -60,42 +60,7 @@ navigator.serviceWorker.getRegistration('./').then(swReg => {
     window.parent.postMessage("sw-registration-failure", parentHost)
 })
 
-let supported = ["en-GB"];
-let enGB = {
-    "CALENDAR_ADD":"Add Calendar",
-    "CALENDAR_SETTINGS":"Calendar Settings",
-    "CALENDAR_TODAY":"Today",
-    "CALENDAR_DAILY":"Daily",
-    "CALENDAR_WEEKLY":"Weekly",
-    "CALENDAR_MONTH":"Month",
-    "CALENDAR_VIEW_ALL":"View all",
-    "CALENDAR_SHARE":"Share",
-    "CALENDAR_IMPORT":"Import",
-    "CALENDAR_DOWNLOAD":"Download",
-    "CALENDAR_EMAIL":"Email",
-    "CALENDAR_SHARED_BY":"Shared by",
-    "CALENDAR_DELETE":"Delete",
-    "CALENDAR_EVENT_REPEAT_NONE":"Does not repeat",
-    "CALENDAR_EVENT_REPEAT_DAILY":"Daily",
-    "CALENDAR_EVENT_REPEAT_WEEKDAY":"Every weekday (Monday to Friday)",
-    "CALENDAR_EVENT_REPEAT_WEEKLY":"Weekly on",
-    "CALENDAR_EVENT_REPEAT_ANNUALLY":"Annually on",
-    "CALENDAR_EVENT_REPEAT_CUSTOM":"Custom...",
-    "CALENDAR_OF":"of",
-    "CALENDAR_ERROR_PARSE_ICAL":"Unable to parse ical file",
-    "CALENDAR_RECURRING":"Recurring",
-    "CALENDAR_CANCELLED_EVENT":"CANCELLED",
-    "CALENDAR_ERROR_EVENT_MISSING_FIELDS":"Event missing all required fields",
-    "CALENDAR_ERROR_SINGLE_DAY_EVENT":"Only single day events supported",
-    "CALENDAR_ERROR_FREQUENCY":"Frequency specified not supported",
-    "CALENDAR_ERROR_EVENT_INVALID":"Calendar does not support event containing both a recurrenceId and either a rdate, exdate or rrule",
-    "CALENDAR_CONFIRM":"Confirm",
-    "CALENDAR_CANCEL":"Cancel",
-    "CALENDAR_OK":"OK",
-    "CALENDAR_NO_TITLE":"No Title",
-    "CALENDAR_ERROR_IMPORT":"Unable to import Event due to error",
-    "CALENDAR_ERROR_EVENT_RECURRENCE":"Event recurrence error",
-};
+let supported = {"en-GB" : enGB};
 function setupTranslations() {
     document.getElementById("add-calendar-button").innerText = translate("CALENDAR_ADD");
     document.getElementById("calendar-settings-label").innerText = translate("CALENDAR_SETTINGS");
@@ -109,15 +74,18 @@ function setupTranslations() {
 function translate(label, locale) {
     if (locale == null)
         locale = navigator.language;
-    if (!supported.includes(locale))
-        locale = "en-GB";
-    if (locale == "en-GB") {
-        const res = enGB[label];
-        if (res != null)
-            return res;
+    var translations = supported[locale];
+    if (translations == null) {
+        translations = supported["en-GB"];
     }
-    // default to enGB if language doesn't have an entry for this
-    return enGB[label];
+    const res = translations[label];
+    if (res != null) {
+        return res;
+    } else {
+        // default to enGB if language doesn't have an entry for this
+        translations = supported["en-GB"];
+        return translations[label];
+    }
 }
 
 let calendarVersions = ['-//iCal.js','-//peergos.v1'];
