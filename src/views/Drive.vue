@@ -1790,7 +1790,7 @@ module.exports = {
                 } else {
                     let spaceAfterOperation = that.checkAvailableSpace(totalSize);
                     if (!isWritableSecretLink && spaceAfterOperation < 0) {
-                        let errMsg = this.translate("DRIVE.UPLOAD.SPACE").replace("$SPACE",  helpers.convertBytesToHumanReadable('' + -spaceAfterOperation));
+                        let errMsg = this.translate("DRIVE.UPLOAD.SPACE.ERROR").replace("$SPACE",  helpers.convertBytesToHumanReadable('' + -spaceAfterOperation));
                         that.$toast.error(errMsg, {timeout:false, id: 'upload'})
                     } else {
                         //resetting .value tricks browser into allowing subsequent upload of same file(s)
