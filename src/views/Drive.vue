@@ -1912,7 +1912,7 @@ module.exports = {
         confirmResumeFileUpload(filename, folderPath, confirmFunction, cancelFunction) {
             this.confirm_message=this.translate("DRIVE.UPLOAD.RESUME.TITLE");
             this.confirm_body=this.translate("DRIVE.UPLOAD.RESUME.BODY")
-                .replace("NAME", filename)
+                .replace("$NAME", filename)
                 .replace("$PATH", folderPath);
             this.confirm_consumer_cancel_func = cancelFunction;
             this.confirm_consumer_func = confirmFunction;
