@@ -732,20 +732,25 @@ function putIntoCacheProm(hash, data) {
         let that = this;
         let key = hash.toString();
         if (this.isOpfsCachingEnabled) {
-            that.currentCacheSize = that.currentCacheSize + data.byteLength;
-            let now = new Date();
-            let metaData = {key: key, l: data.byteLength, t: now.getTime()};
-            let length = that.cacheMetadataArray.length;
-            that.cacheMetadataArray.push(metaData);
-            that.cacheMetadataRefs['k'+metaData.key] = that.cacheMetadataArray[length];
-            that.currentCacheBlockCount = that.currentCacheBlockCount + 1;
-            setOPFSKV(key, data, this.cacheStore);
-            setTimeout(() => {
-                if (triggerEviction(this)) {
-                    evictLRU(this, function() {future.complete(true)});
-                }
-            });
-            future.complete(true);
+            if (data.byteLength == 0) {
+                console.log("OPFS: attempt to write 0 byte data. hash:" + key);
+                future.complete(true); //We don't want to force .exceptionally() handling and OPFS is just a cache, so .get() can return empty.
+            } else {
+                that.currentCacheSize = that.currentCacheSize + data.byteLength;
+                let now = new Date();
+                let metaData = {key: key, l: data.byteLength, t: now.getTime()};
+                let length = that.cacheMetadataArray.length;
+                that.cacheMetadataArray.push(metaData);
+                that.cacheMetadataRefs['k'+metaData.key] = that.cacheMetadataArray[length];
+                that.currentCacheBlockCount = that.currentCacheBlockCount + 1;
+                setOPFSKV(key, data, this.cacheStore);
+                setTimeout(() => {
+                    if (triggerEviction(this)) {
+                        evictLRU(this, function() {future.complete(true)});
+                    }
+                });
+                future.complete(true);
+            }
         } else {
             setIDBKV(key, data, this.cacheStore).then(() => {
                 let metaData = createBlockCacheMetadataRecord(key, data.byteLength);
