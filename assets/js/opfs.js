@@ -18,10 +18,15 @@ function getOPFSKV(filename, directory, retryCount) {
         if (fileHandle != null) {
             fileHandle.createSyncAccessHandle().then(accessHandle => {
                 const size = accessHandle.getSize();
-                const dataView = new Int8Array(size);
-                accessHandle.read(dataView);
-                accessHandle.close();
-                postMessage({filename: filename, contents: dataView});
+                if (size == 0) {
+                    console.log("OPFS: attempt to read 0 byte data. hash:" + filename);
+                    postMessage({filename: filename, contents: null});
+                } else {
+                    const dataView = new Int8Array(size);
+                    accessHandle.read(dataView);
+                    accessHandle.close();
+                    postMessage({filename: filename, contents: dataView});
+                }
             }).catch(e => {
                 if (retryCount < 3) {
                     setTimeout(() => getOPFSKV(filename, directory, retryCount + 1));
