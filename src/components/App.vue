@@ -37,7 +37,7 @@
     	<ServerMessages v-if="context != null"/>
 
 		<!-- Main view container -->
-		<section class="content" :class="{ 'sidebar-margin': isSidebarOpen }">
+		<section class="content" :class="{ 'sidebar-margin': isSidebarOpen }" v-if="isLoggedIn || isSecretLink">
 			<!-- App views (pages) ex-filesystem-->
 			<transition name="fade" mode="out-in">
 				<component
