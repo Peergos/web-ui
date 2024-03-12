@@ -1588,7 +1588,7 @@ module.exports = {
                             that.showConfirm = false;
                             var progress = {
                                 show: true,
-                                title: that.translate("DRIVE.LARGE.FOLDER").replace("$NAME", filename),
+                                title: that.translate("DRIVE.DOWNLOAD.FOLDER").replace("$NAME", filename),
                                 done: 0,
                                 max: statistics.actualSize
                             }
