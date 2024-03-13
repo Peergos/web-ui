@@ -1522,7 +1522,7 @@ module.exports = {
                 }
             } else if(apiMethod == 'DELETE') {
                 let chatId = path;
-                if(path.startsWith(that.currentAppName + "$")) {
+                if(path.startsWith(that.currentAppName + "$") || path.startsWith("chat-" + that.currentAppName + "$")) {
                     this.messenger.getChat(chatId).thenApply(function(controller) {
                         that.messenger.deleteChat(controller).thenApply(res => {
                             that.buildResponse(headerFunc, null, that.DELETE_SUCCESS);
@@ -1533,7 +1533,9 @@ module.exports = {
                     });
                 } else {
                     let filePath = decodeURIComponent(path);
-                    if (!filePath.startsWith(this.context.username + "/.messaging/" + this.currentAppName + "$")) {
+                    if (!(filePath.startsWith(this.context.username + "/.messaging/" + this.currentAppName + "$")
+                        || filePath.startsWith(this.context.username + "/.messaging/chat-" + this.currentAppName + "$")
+                        )) {
                         that.buildResponse(headerFunc, null, that.ACTION_FAILED);
                     } else {
                         let parentPath = filePath.substring(0, filePath.lastIndexOf('/'));
@@ -1576,7 +1578,7 @@ module.exports = {
                     if (params.get("view")!= null) {
                         let bytes = convertToByteArray(new Uint8Array(data));
                         let fileRef = peergos.shared.util.Serialize.parse(bytes, c => peergos.shared.display.FileRef.fromCbor(c));
-                        if (path.startsWith(this.currentAppName) && fileRef.path.includes(path + '/shared/media/')) {
+                        if ((path.startsWith(this.currentAppName) || path.startsWith("chat-" + this.currentAppName)) && fileRef.path.includes(path + '/shared/media/')) {
                             this.retrieveFileFromFileRef(fileRef).thenApply(filePair => {
                                 if (filePair.file != null) {
                                     let props = filePair.file.getFileProperties();
@@ -1604,7 +1606,7 @@ module.exports = {
                     }else if (params.get('download') == 'true') {
                         let bytes = convertToByteArray(new Uint8Array(data));
                         let fileRef = peergos.shared.util.Serialize.parse(bytes, c => peergos.shared.display.FileRef.fromCbor(c));
-                        if (path.startsWith(this.currentAppName) && fileRef.path.includes(path + '/shared/media/')) {
+                        if ((path.startsWith(this.currentAppName) || path.startsWith("chat-" + this.currentAppName)) && fileRef.path.includes(path + '/shared/media/')) {
                             this.retrieveFileFromFileRef(fileRef).thenApply(filePair => {
                                 if (filePair != null) {
                                     let props = filePair.file.getFileProperties();
