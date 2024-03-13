@@ -2,9 +2,25 @@
 <transition name="modal">
     <div class="modal-mask" @click="closeAppFromToolbar">
         <div class="modal-container full-height" @click.stop style="width:100%;overflow-y:auto;padding:0;display:flex;flex-flow:column;">
+        <Group
+                v-if="showGroupMembership"
+                v-on:hide-group="closeGroupMembership"
+                :groupId="groupId"
+                :groupTitle="groupTitle"
+                :existingGroupMembers="existingGroupMembers"
+                :existingAdmins="existingAdmins"
+                :friendNames="friendnames"
+                :updatedGroupMembership="updatedGroupMembership"
+                :existingGroups="existingGroups">
+        </Group>
+        <ViewProfile
+            v-if="showProfileViewForm"
+            v-on:hide-profile-view="showProfileViewForm = false"
+            :profile="profile">
+        </ViewProfile>
         <AddToChat
                 v-if="showInviteFriends"
-                v-on:hide-group="showInviteFriends = false"
+                v-on:hide-add-to-chat="showInviteFriends = false"
                 :appDisplayName="appDisplayName"
                 :maxFriendsToAdd="maxFriendsToAdd"
                 :chatTitle="chatTitle"
@@ -41,6 +57,13 @@
                 :appPropsFile="appInstallPropsFile"
                 :installFolder="appInstallFolder">
             </AppInstall>
+            <Gallery
+                v-if="showEmbeddedGallery"
+                v-on:hide-gallery="showEmbeddedGallery = false"
+                :files="filesToViewInGallery"
+                :hideGalleryTitle="true"
+                :context="context">
+            </Gallery>
             <div class="modal-header" style="padding:0;min-height: 52px;">
                 <center><h2>{{ getFullPathForDisplay() }}</h2></center>
               <span style="position:absolute;top:0;right:0.2em;">
@@ -59,14 +82,18 @@
 </template>
 
 <script>
-
 const AddToChat = require("AddToChat.vue");
 const AppInstall = require("AppInstall.vue");
 const AppPrompt = require("../prompt/AppPrompt.vue");
 const FilePicker = require('../picker/FilePicker.vue');
 const FolderPicker = require('../picker/FolderPicker.vue');
+const Gallery = require("../drive/DriveGallery.vue");
+const Group = require("../Group.vue");
+const ProgressBar = require("../drive/ProgressBar.vue");
 const Spinner = require("../spinner/Spinner.vue");
+const ViewProfile = require("../profile/ViewProfile.vue");
 
+const mixins = require("../../mixins/mixins.js");
 const downloaderMixins = require("../../mixins/downloader/index.js");
 const router = require("../../mixins/router/index.js");
 const sandboxMixin = require("../../mixins/sandbox/index.js");
@@ -74,14 +101,18 @@ const launcherMixin = require("../../mixins/launcher/index.js");
 const UriDecoder = require('../../mixins/uridecoder/index.js');
 
 module.exports = {
-	mixins:[downloaderMixins, router, sandboxMixin, launcherMixin, UriDecoder],
+	mixins:[mixins, downloaderMixins, router, sandboxMixin, launcherMixin, UriDecoder],
     components: {
         AddToChat,
         AppInstall,
         AppPrompt,
         FilePicker,
         FolderPicker,
-        Spinner
+        Group,
+        Gallery,
+        ProgressBar,
+        Spinner,
+        ViewProfile,
     },
     data: function() {
         return {
@@ -150,6 +181,26 @@ module.exports = {
             commandQueue: [],
             executingCommands: false,
             commandFileRefs: new Map(),
+            messenger: null,
+            groupId: "",
+            groupTitle: "",
+            showGroupMembership: false,
+            existingGroupMembers: [],
+            existingAdmins: [],
+            progressMonitors: [],
+            showProfileViewForm:false,
+            profile: {
+                firstName: "",
+                lastName: "",
+                biography: "",
+                primaryPhone: "",
+                primaryEmail: "",
+                profileImage: "",
+                status: "",
+                webRoot: "",
+            },
+            showEmbeddedGallery: false,
+            filesToViewInGallery: [],
         }
     },
     computed: {
@@ -172,6 +223,7 @@ module.exports = {
     props: ['sandboxAppName', 'currentFile', 'currentPath', 'currentProps', 'sandboxAppChatId'],
     created: function() {
         let that = this;
+        this.messenger = new peergos.shared.messaging.Messenger(this.context);
         this.currentAppName = this.sandboxAppName;
         let currentFilename = this.currentFile == null ? '' : this.currentFile.getName();
         var path = '';
@@ -237,6 +289,15 @@ module.exports = {
         }
     },
     methods: {
+        closeGroupMembership() {
+            let that = this;
+            Vue.nextTick(function() {
+                that.showGroupMembership = false;
+                Vue.nextTick(function() {
+                    that.buildResponse(that.chatResponseHeader, null, that.ACTION_FAILED);
+                });
+            });
+        },
         appInstallSuccess(appName) {
         },
         closeAppInstallation() {
@@ -570,7 +631,14 @@ module.exports = {
                         that.showError("App attempted to access chat without permission :" + path);
                         that.buildResponse(headerFunc(), null, that.ACTION_FAILED);
                     } else {
-                        that.handleChatRequest(headerFunc(), path, apiMethod, data, hasFormData, params);
+                        that.handleChatRequestV0(headerFunc(), path, apiMethod, data, hasFormData, params);
+                    }
+                }else if (api =='/peergos-api/v1/chat/') {
+                    if (!that.permissionsMap.get(that.PERMISSION_EXCHANGE_MESSAGES_WITH_FRIENDS)) {
+                        that.showError("App attempted to access chat without permission :" + path);
+                        that.buildResponse(headerFunc(), null, that.ACTION_FAILED);
+                    } else {
+                        that.handleChatRequestV1(headerFunc(), path, apiMethod, data, hasFormData, params);
                     }
                 } else if (api =='/peergos-api/v0/print/') {
                     that.handlePrintPreviewRequest(headerFunc, path, apiMethod, data, hasFormData, params);
@@ -584,6 +652,10 @@ module.exports = {
                     that.handleFilePickerRequest(headerFunc, path, apiMethod, data, hasFormData, params);
                 } else if (api =='/peergos-api/v0/folders/') {
                     that.handleFolderPickerRequest(headerFunc, path, apiMethod, data, hasFormData, params);
+                } else if (api =='/peergos-api/v0/profile/') {
+                    that.handleProfileRequest(headerFunc(), path, apiMethod, data, hasFormData, params);
+                } else if (api =='/peergos-api/v0/account/') {
+                    that.handleAccountRequest(headerFunc(), path, apiMethod, data, hasFormData, params);
                 } else {
                     var bytes = convertToByteArray(new Int8Array(data));
                     if (apiMethod == 'GET') {
@@ -768,6 +840,16 @@ module.exports = {
                 that.buildResponse(headerFunc(), null, that.ACTION_FAILED);
             }
         },
+        parsePositiveInt: function(num) {
+            let number = parseInt(num, 10);
+            if (isNaN(number)) {
+                return 0;
+            }
+            if (number < 0) {
+                return 0;
+            }
+            return number;
+        },
         validateRange: function(from, to) {
             if (from == null || to == null) {
                 return false;
@@ -786,7 +868,7 @@ module.exports = {
             let that = this;
             if (!this.isAppGalleryMode || !hasFormData || apiMethod != 'POST') {
                 console.log('Install App API call is invalid');
-                that.buildResponse(headerFunc(), null, that.ACTION_FAILED);
+                that.buildResponse(header, null, that.ACTION_FAILED);
                 return;
             }
             let requestBody = JSON.parse(new TextDecoder().decode(data));
@@ -806,7 +888,912 @@ module.exports = {
                 }
             });
         },
-        handleChatRequest: function(header, path, apiMethod, data, hasFormData, params) {
+        extractBase64Image: function(data) {
+            var str = "";
+            for (let i = 0; i < data.length; i++) {
+                str = str + String.fromCharCode(data[i] & 0xff);
+            }
+            if (data.byteLength > 0) {
+                return "data:image/png;base64," + window.btoa(str);
+            }
+            return "";
+        },
+        spinner: function(val) {
+            this.showSpinner = val;
+            if (!val) {
+                this.spinnerMessage = "";
+            }
+        },
+        handleProfileRequest: function(headerFunc, path, apiMethod, data, hasFormData, params) {
+            if(apiMethod == 'GET') {
+                let username = path;
+                index = this.friendnames.indexOf(username);
+                if (index > -1) {
+                    let that = this;
+                    if (params.get('thumbnail') == 'true') {
+                        peergos.shared.user.ProfilePaths.getProfilePhoto(username, this.context).thenApply(result => {
+                            let encoder = new TextEncoder();
+                            if (result.ref != null) {
+                                let data = encoder.encode(JSON.stringify({profileThumbnail: that.extractBase64Image(result.ref)}));
+                                that.buildResponse(headerFunc, data, that.UPDATE_SUCCESS);
+                            } else {
+                                let data = encoder.encode(JSON.stringify({profileThumbnail: ''}));
+                                that.buildResponse(headerFunc, data, that.UPDATE_SUCCESS);
+                            }
+                        }).exceptionally(function(throwable) {
+                            console.log(throwable);
+                            that.buildResponse(headerFunc, null, that.ACTION_FAILED);
+                        });
+                    } else {
+
+                        peergos.shared.user.ProfilePaths.getProfile(username, this.context).thenApply(profileInfo => {
+                            let base64Image = profileInfo.profilePhoto.isPresent() ? that.extractBase64Image(profileInfo.profilePhoto.get()) : "";
+                            let json = {
+                                firstName: profileInfo.firstName.isPresent() ? profileInfo.firstName.get() : "",
+                                lastName: profileInfo.lastName.isPresent() ? profileInfo.lastName.get() : "",
+                                biography: profileInfo.bio.isPresent() ? profileInfo.bio.get() : "",
+                                primaryPhone: profileInfo.phone.isPresent() ? profileInfo.phone.get() : "",
+                                primaryEmail: profileInfo.email.isPresent() ? profileInfo.email.get() : "",
+                                profileImage: base64Image,
+                                status: profileInfo.status.isPresent() ? profileInfo.status.get() : "",
+                                webRoot: profileInfo.webRoot.isPresent() ? profileInfo.webRoot.get() : ""
+                            };
+                            that.profile = json;
+                            that.showProfileViewForm = true;
+                            that.buildResponse(headerFunc, null, that.UPDATE_SUCCESS);
+                        }).exceptionally(function(throwable) {
+                            console.log(throwable);
+                            that.buildResponse(headerFunc, null, that.ACTION_FAILED);
+                        });
+                    }
+                } else {
+                    that.buildResponse(headerFunc, null, that.ACTION_FAILED);
+                }
+            } else {
+                that.buildResponse(headerFunc, null, that.ACTION_FAILED);
+            }
+        },
+        handleAccountRequest: function(headerFunc, path, apiMethod, data, hasFormData, params) {
+            if(apiMethod == 'GET' && path == "available-space") {
+                let totalSize = Number(this.quotaBytes.toString()) - Number(this.usageBytes.toString());
+                let encoder = new TextEncoder();
+                let data = encoder.encode(JSON.stringify({availableSpace: totalSize}));
+                this.buildResponse(headerFunc, data, this.GET_SUCCESS);
+            } else {
+                this.buildResponse(headerFunc, null, this.ACTION_FAILED);
+            }
+        },
+        copyArray: function(jArray) {
+            let arr = [];
+            for(var i=0; i < jArray.length; i++) {
+                arr.push(jArray[i]);
+            }
+            return arr;
+        },
+        filterChats: function(allChats) {
+            let that = this;
+            let filteredChats = [];
+            let recentMessages = [];
+            for(var i = 0; i < allChats.length; i++) {
+                let chat = allChats[i];
+                if (this.currentAppName == "chat") {
+                    if(!chat.chatUuid.startsWith("chat-")) { //chat-<appname>
+                        filteredChats.push({chatId: chat.chatUuid, title: chat.getTitle()
+                        , members: that.copyArray(chat.getMemberNames().toArray())
+                        , admins: that.copyArray(chat.getAdmins().toArray()) });
+                        recentMessages.push(chat.getRecent().toArray());
+                    }
+                } else {
+                    if(chat.chatUuid.startsWith("chat-" + this.currentAppName)) {
+                        filteredChats.push({chatId: chat.chatUuid, title: chat.getTitle()
+                        , members: that.copyArray(chat.getMemberNames().toArray())
+                        , admins: that.copyArray(chat.getAdmins().toArray()) });
+                        recentMessages.push(chat.getRecent().toArray());
+                    }
+                }
+            }
+            return {chats: filteredChats, recentMessages: recentMessages};
+        },
+        addPendingAttachments: function(messagePairs) {
+            let refs = [];
+            for(var j = 0; j < messagePairs.length; j++) {
+                let chatEnvelope = messagePairs[j].message;
+                let payload = chatEnvelope.payload;
+                let type = payload.type().toString();
+                if (type == 'Application' || type == 'ReplyTo') {
+                    let body = type == 'Application' ? payload.body.toArray() : payload.content.body.toArray();
+                    if (body.length > 1) {
+                        for(var i = 1; i < body.length; i++) {
+                            let mediaRef = body[i].reference().ref;
+                            if (refs.findIndex(v => v.path == mediaRef.path) == -1) {
+                                refs.push(mediaRef);
+                            }
+                        }
+                    }
+                }
+            }
+            return refs;
+        },
+        decodeLatestMessage: function (controller, message) {
+            let chatEnvelope = message;
+            let payload = chatEnvelope.payload;
+            let type = payload.type().toString();
+            let author = controller.getUsername(chatEnvelope.author);
+            if (type == 'GroupState') {//type
+                if(payload.key == "title") {
+                    return "Chat name changed to " + payload.value;
+                } else if(payload.key == "admins") {
+                    return "Chat admins changed to " + payload.value;
+                }
+            } else if(type == 'Invite') {
+                let username = chatEnvelope.payload.username;
+                return author + " invited " + username;
+            } else if(type == 'RemoveMember') {
+                let username = controller.getUsername(chatEnvelope.payload.memberToRemove);
+                return author + " removed " + username;
+            } else if(type == 'Join') {
+                let username = chatEnvelope.payload.username;
+                return username + " joined the chat";
+            } else if(type == 'Application') {
+                return payload.body.toArray()[0].inlineText();
+            } else if(type == 'Edit') {
+                return payload.content.body.toArray()[0].inlineText();
+            } else if(type == 'Delete') {
+                return "[Message Deleted]";
+            } else if(type == 'ReplyTo') {
+                return payload.content.body.toArray()[0].inlineText();
+            }
+        },
+        fromUTCtoLocal: function(dateTime) {
+            let date = new Date(dateTime.toString() + "+00:00");//adding UTC TZ in ISO_OFFSET_DATE_TIME ie 2021-12-03T10:25:30+00:00
+            let formatted = date.getFullYear() + '-' + (date.getMonth() + 1) + '-' + date.getDate()
+                + ' ' + (date.getHours() < 10 ? '0' : '') + date.getHours()
+                + ':' + (date.getMinutes() < 10 ? '0' : '') + date.getMinutes()
+                + ':' + (date.getSeconds() < 10 ? '0' : '') + date.getSeconds();
+            return formatted;
+        },
+        buildLatestMessageMap: function(index, chats, chatRecentMessages, latestMessageMap, future) {
+            let that = this;
+            if (index == chats.length) {
+                future.complete(true);
+            } else {
+                let chatInfo = chats[index];
+                this.messenger.getChat(chatInfo.chatId).thenApply(function(controller) {
+                    let recentMessages = chatRecentMessages[index];
+                    let latestMessage = recentMessages.length == 0 ? null : recentMessages[recentMessages.length-1];
+                    if (latestMessage != null) {
+                        latestMessageMap.set(chatInfo.chatId, {message: that.decodeLatestMessage(controller, latestMessage),
+                            creationTime: that.fromUTCtoLocal(latestMessage.creationTime)
+                        });
+                    }
+                    that.buildLatestMessageMap(index + 1, chats, chatRecentMessages, latestMessageMap, future);
+                });
+            }
+        },
+        reduceGetAllMessages: function(chatController, messages, startIndex, future) {
+            let that = this;
+            chatController.getMessages(startIndex, startIndex + 1000).thenApply(result => {
+                let newMessages = result.toArray();
+                if (newMessages.length < 1000) {
+                    future.complete({messages: messages.concat(newMessages), startIndex: startIndex + newMessages.length});
+                } else {
+                    that.reduceGetAllMessages(chatController, messages.concat(newMessages),
+                        startIndex + newMessages.length, future);
+                }
+            }).exceptionally(err => {
+                console.log(err);
+                future.complete({messages: messages, startIndex: startIndex});
+            });
+        },
+        getAllMessages: function(chatController, startIndex) {
+            let future = peergos.shared.util.Futures.incomplete();
+            this.reduceGetAllMessages(chatController, [], startIndex, future);
+            return future;
+        },
+        generateMessageHashes: function(chatController, messages) {
+            let that = this;
+            let future = peergos.shared.util.Futures.incomplete();
+            let messagePairs = [];
+            if (messages.length == 0) {
+                future.complete(messagePairs);
+            } else {
+                messages.forEach(message => {
+                    chatController.generateHash(message).thenApply(messageRef => {
+                        messagePairs.push({message: message, messageRef: messageRef});
+                        if(messagePairs.length == messages.length) {
+                            future.complete(messagePairs);
+                        }
+                    });
+                });
+            }
+            return future;
+        },
+        replaceOwnerInPath: function(owner, path) {
+            let pathWithoutLeadingSlash = path.startsWith("/") ? path.substring(1) : path;
+            let pathWithoutOwner = pathWithoutLeadingSlash.substring(pathWithoutLeadingSlash.indexOf("/"));
+            return owner + pathWithoutOwner;
+        },
+        extractOwnerFromPath: function(path) {
+            let pathWithoutLeadingSlash = path.startsWith("/") ? path.substring(1) : path;
+            return pathWithoutLeadingSlash.substring(0, pathWithoutLeadingSlash.indexOf("/"));
+        },
+        loadAttachments: function(refs) {
+            let future = peergos.shared.util.Futures.incomplete();
+            let that = this;
+            let attachmentMap = new Map();
+            if (refs.length == 0) {
+                future.complete(attachmentMap);
+            } else {
+                var loadedCount = 0;
+                refs.forEach(ref => {
+                    //Load media from local mirror
+                    let mirrorPath = that.replaceOwnerInPath(that.context.username, ref.path);
+                    that.context.getByPath(mirrorPath).thenApply(function(optFile) {
+                        let mediaFile = optFile.ref;
+                        if (mediaFile != null) {
+                            let fullPath = ref.path.startsWith("/") ? ref.path : "/" + ref.path;
+                            attachmentMap.set(fullPath, {mimeType: mediaFile.getFileProperties().mimeType, fileType: mediaFile.getFileProperties().getType(),
+                                thumbnail: mediaFile.getFileProperties().thumbnail.ref != null ? mediaFile.getBase64Thumbnail() : ""});
+                            loadedCount++;
+                            if (loadedCount == refs.length) {
+                                future.complete(attachmentMap);
+                            }
+                        } else {
+                            //fallback to attachment sender
+                            let owner = that.extractOwnerFromPath(ref.path);
+                            that.context.network.getFile(ref.cap, owner).thenApply(optFile => {
+                               let mediaFile = optFile.ref;
+                               if (mediaFile != null) {
+                                   let fullPath = ref.path.startsWith("/") ? ref.path : "/" + ref.path;
+                                   attachmentMap.set(fullPath, {mimeType: mediaFile.getFileProperties().mimeType, fileType: mediaFile.getFileProperties().getType(),
+                                        thumbnail: mediaFile.getFileProperties().thumbnail.ref != null ? mediaFile.getBase64Thumbnail() : ""});
+                               }
+                               loadedCount++;
+                               if (loadedCount == refs.length) {
+                                   future.complete(attachmentMap);
+                               }
+                            }).exceptionally(err => {
+                                console.log(err);
+                                loadedCount++;
+                                if (loadedCount == refs.length) {
+                                    future.complete(attachmentMap);
+                                }
+                            });
+                        }
+                    }).exceptionally(err => {
+                        console.log(err);
+                        loadedCount++;
+                        if (loadedCount == refs.length) {
+                            future.complete(attachmentMap);
+                        }
+                    });
+                });
+            }
+            return future;
+        },
+        showToastError: function(msg) {
+            console.log(msg);
+            this.$toast.error(msg, {timeout:false});
+            this.showSpinner = false;
+        },
+        updatedGroupMembership: function(chatId, updatedGroupTitle, updatedMembers, updatedAdmins) {
+            let that = this;
+            if (chatId.length == 0) {
+                if (updatedMembers.length == 0 || updatedAdmins.length == 0) {
+                    that.buildResponse(this.chatResponseHeader, null, that.ACTION_FAILED);
+                    return;
+                }
+                this.spinner(true);
+                this.spinnerMessage = "Creating new chat";
+                this.messenger.createAppChat(this.currentAppName == "chat" ? null : this.currentAppName).thenApply(function(controller){
+                    let chatId = controller.chatUuid;
+                    let addedAdmins = that.extractAddedParticipants(controller.getAdmins().toArray(), updatedAdmins);
+                    let addedMembers = that.extractAddedParticipants(controller.getMemberNames().toArray(), updatedMembers);
+                    that.changeTitle(chatId, updatedGroupTitle).thenApply(function(res1) {
+                        that.inviteNewMembers(chatId, addedMembers).thenApply(function(res2) {
+                            that.inviteNewAdmins(chatId, addedAdmins).thenApply(function(res3) {
+                                let chatItem = {chatId: chatId, title: updatedGroupTitle, members: updatedMembers.slice(), admins: updatedAdmins.slice()};
+                                let encoder = new TextEncoder();
+                                let data = encoder.encode(JSON.stringify(chatItem));
+                                Vue.nextTick(function() {
+                                    that.showGroupMembership = false;
+                                    Vue.nextTick(function() {
+                                        that.spinner(false);
+                                        Vue.nextTick(function() {
+                                            that.buildResponse(that.chatResponseHeader, data, that.CREATE_SUCCESS);
+                                        });
+                                    });
+                                });
+                            });
+                        });
+                    });
+                }).exceptionally(err => {
+                    that.showToastError("Unable to create chat");
+                    console.log(err);
+                    Vue.nextTick(function() {
+                        that.showGroupMembership = false;
+                        Vue.nextTick(function() {
+                            that.spinner(false);
+                            Vue.nextTick(function() {
+                                that.buildResponse(that.chatResponseHeader, null, that.ACTION_FAILED);
+                            });
+                        });
+                    });
+                });
+            } else {
+                this.spinner(true);
+                let existingChatItem = {chatId: chatId};
+                that.messenger.getChat(chatId).thenApply(function(controller) {
+                    let existingMembers = controller.getMemberNames().toArray();
+                    let added = that.extractAddedParticipants(existingMembers, updatedMembers);
+                    let removed = that.extractRemovedParticipants(existingMembers, updatedMembers);
+                    let existingAdmins = controller.getAdmins().toArray();
+                    let addedAdmins = that.extractAddedParticipants(existingAdmins, updatedAdmins);
+                    let removedAdmins = that.extractRemovedParticipants(existingAdmins, updatedAdmins);
+                    var proposedAdminsLength = existingAdmins.length - removedAdmins.length + addedAdmins.length;
+                    if (proposedAdminsLength < 1) {
+                        that.buildResponse(that.chatResponseHeader, null, that.ACTION_FAILED);
+                    }
+                    if (existingAdmins.filter(v => v == that.context.username).length == -1) {
+                        if (removedAdmins.length > 0 || addedAdmins.length > 0) {
+                            that.buildResponse(that.chatResponseHeader, null, that.ACTION_FAILED);
+                        }
+                    }
+                    that.changeChatTitleIfNecessary(controller, existingChatItem, updatedGroupTitle).thenApply(function(res) {
+                        that.inviteNewAdmins(chatId, addedAdmins).thenApply(function(res3) {
+                           that.removeAdmins(chatId, removedAdmins).thenApply(function(res4) {
+                                that.inviteNewMembers(chatId, added).thenApply(function(res1) {
+                                    that.removeMembers(chatId, removed).thenApply(function(res2) {
+                                        Vue.nextTick(function() {
+                                            that.showGroupMembership = false;
+                                            Vue.nextTick(function() {
+                                                that.spinner(false);
+                                                Vue.nextTick(function() {
+                                                    that.buildResponse(that.chatResponseHeader, null, that.UPDATE_SUCCESS);
+                                                });
+                                            });
+                                        });
+                                   });
+                                });
+                            });
+                        });
+                    });
+                });
+            }
+        },
+        changeChatTitleIfNecessary: function(controller, existingChatItem, updatedGroupTitle) {
+            let future = peergos.shared.util.Futures.incomplete();
+            if (controller.getTitle() != updatedGroupTitle) {
+                existingChatItem.title = updatedGroupTitle;
+                this.changeTitle(existingChatItem.chatId, updatedGroupTitle).thenApply(function(res) {
+                    future.complete(true);
+                });
+            } else {
+                    future.complete(true);
+            }
+            return future;
+        },
+        diff: function(origList, updatedList) {
+            let notFoundList = [];
+            updatedList.forEach(member => {
+                let index = origList.findIndex(v => v === member);
+                if (index == -1) {
+                    notFoundList.push(member);
+                }
+            });
+            return notFoundList;
+        },
+        extractAddedParticipants: function(origParticipants, updatedParticipants) {
+            return this.diff(origParticipants, updatedParticipants);
+        },
+        extractRemovedParticipants: function(origParticipants, updatedParticipants) {
+            return this.diff(updatedParticipants, origParticipants);
+        },
+        changeTitle: function(chatId, text) {
+            let future = peergos.shared.util.Futures.incomplete();
+            let that = this;
+            this.messenger.getChat(chatId).thenApply(function(controller) {
+                that.messenger.setGroupProperty(controller, "title", text).thenApply(function(updatedController) {
+                    future.complete(true);
+                }).exceptionally(function(throwable) {
+                    console.log(throwable);
+                    that.showToastError("Unable to change Title");
+                    future.complete(false);
+                });
+            });
+            return future;
+        },
+        inviteNewMembers: function(chatId, updatedMembers) {
+            let that = this;
+            let future = peergos.shared.util.Futures.incomplete();
+            if (updatedMembers.length == 0) {
+                future.complete(true);
+            } else {
+                let usernames = peergos.client.JsUtil.asList(updatedMembers);
+                this.spinnerMessage = "adding participant(s) to chat";
+                this.messenger.getChat(chatId).thenApply(function(controller) {
+                    that.getPublicKeyHashes(updatedMembers).thenApply(pkhList => {
+                        that.messenger.invite(controller, usernames, pkhList).thenApply(updatedController => {
+                            that.spinnerMessage = "";
+                            future.complete(true);
+                        }).exceptionally(err => {
+                            that.spinnerMessage = "";
+                            that.showToastError("Unable to add members to chat");
+                            console.log(err);
+                            future.complete(false);
+                        });
+                    });
+                });
+            }
+            return future;
+        },
+        getPublicKeyHashes: function(usernames) {
+            let that = this;
+            const usernameToPKH = new Map();
+            let future = peergos.shared.util.Futures.incomplete();
+            usernames.forEach(username => {
+                that.context.getPublicKeys(username).thenApply(pkOpt => {
+                    usernameToPKH.set(username, pkOpt.get().left);
+                    if(usernameToPKH.size == usernames.length) {
+                        let pkhs = [];
+                        usernames.forEach(user => {
+                            pkhs.push(usernameToPKH.get(user));
+                        });
+                        future.complete(peergos.client.JsUtil.asList(pkhs));
+                    }
+                });
+            });
+            return future;
+        },
+        reduceAddingAdmins: function(chatId, adminsToAdd, index, future) {
+            let that = this;
+            if (index == adminsToAdd.length) {
+                future.complete(true);
+            } else {
+                let username = adminsToAdd[index];
+                this.spinnerMessage = "adding " + username + " as chat admin";
+                this.messenger.getChat(chatId).thenApply(function(controller) {
+                    controller.addAdmin(username).thenApply(updatedController => {
+                        that.spinnerMessage = "";
+                        that.reduceAddingAdmins(chatId, adminsToAdd, ++index, future);
+                    }).exceptionally(function(throwable) {
+                        that.spinnerMessage = "";
+                        console.log(throwable);
+                        that.showToastError("Unable to add " + username + " as chat admin");
+                        that.reduceAddingAdmins(chatId, adminsToAdd, ++index, future);
+                    });
+                });
+            }
+            return future;
+        },
+        inviteNewAdmins: function(chatId, adminsToAdd) {
+            let future = peergos.shared.util.Futures.incomplete();
+            this.reduceAddingAdmins(chatId, adminsToAdd, 0, future);
+            return future;
+        },
+        reduceRemovingInvitations: function(chatId, membersToRemove, index, future) {
+            let that = this;
+            if (index == membersToRemove.length) {
+                future.complete(true);
+            } else {
+                let username = membersToRemove[index];
+                this.spinnerMessage = "removing " + username + " from chat";
+                this.messenger.getChat(chatId).thenApply(function(controller) {
+                    that.messenger.removeMember(controller, username).thenApply(updatedController => {
+                        that.spinnerMessage = "";
+                        that.reduceRemovingInvitations(chatId, membersToRemove, ++index, future);
+                    }).exceptionally(function(throwable) {
+                        that.spinnerMessage = "";
+                        console.log(throwable);
+                        that.showToastError("Unable to remove " + username + " from chat");
+                        that.reduceRemovingInvitations(chatId, membersToRemove, ++index, future);
+                    });
+                });
+            }
+            return future;
+        },
+        removeMembers: function(chatId, membersToRemove) {
+            let future = peergos.shared.util.Futures.incomplete();
+            this.reduceRemovingInvitations(chatId, membersToRemove, 0, future);
+            return future;
+        },
+        reduceRemovingAdmins: function(chatId, adminsToRemove, index, future) {
+            let that = this;
+            if (index == adminsToRemove.length) {
+                future.complete(true);
+            } else {
+                let username = adminsToRemove[index];
+                this.spinnerMessage = "removing " + username + " as chat admin";
+                this.messenger.getChat(chatId).thenApply(function(controller) {
+                    controller.removeAdmin(username).thenApply(updatedController => {
+                        that.spinnerMessage = "";
+                        chatController.controller = updatedController;
+                        that.reduceRemovingAdmins(chatId, adminsToRemove, ++index, future);
+                    }).exceptionally(function(throwable) {
+                        that.spinnerMessage = "";
+                        console.log(throwable);
+                        that.showToastError("Unable to remove " + username + " as chat admin");
+                        that.reduceRemovingAdmins(chatId, adminsToRemove, ++index, future);
+                    });
+                });
+            }
+            return future;
+        },
+        removeAdmins: function(chatId, adminsToRemove) {
+            let future = peergos.shared.util.Futures.incomplete();
+            this.reduceRemovingAdmins(chatId, adminsToRemove, 0, future);
+            return future;
+        },
+        convertToPath: function(dir) {
+            let dirWithoutLeadingSlash = dir.startsWith("/") ? dir.substring(1) : dir;
+            return peergos.client.PathUtils.directoryToPath(dirWithoutLeadingSlash.split('/'));
+        },
+        handleChatRequestV1: function(headerFunc, path, apiMethod, data, hasFormData, params) {
+            let that = this;
+            if(apiMethod == 'GET') {
+                let startIndex = params.get("startIndex");
+                let chatId = path;
+                if (path.length == 0) {
+                    this.messenger.listChats().thenApply(function(chats) {
+                        let allChats = chats.toArray();
+                        let filteredChats = that.filterChats(allChats);
+                        let future = peergos.shared.util.Futures.incomplete();
+                        let latestMessageMap = new Map();
+                        that.buildLatestMessageMap(0, filteredChats.chats, filteredChats.recentMessages, latestMessageMap, future);
+                        future.thenApply(res => {
+                            let encoder = new TextEncoder();
+                            //sort chats
+                            let sortedChatRefs = [];
+                            latestMessageMap.forEach(function(value, key) {
+                                sortedChatRefs.push({chatId: key, lastModified: value.creationTime});
+                            });
+                            sortedChatRefs.sort(function(aVal, bVal){
+                                return bVal.lastModified.localeCompare(aVal.lastModified)
+                            });
+                            let chatsKV = new Map();
+                            filteredChats.chats.forEach(function(value) {
+                                chatsKV.set(value.chatId, value);
+                            });
+                            let sortedChats = [];
+                            let latestMessages = [];
+                            for(var i = 0; i < sortedChatRefs.length; i++) {
+                                let chat = sortedChatRefs[i];
+                                sortedChats.push(chatsKV.get(chat.chatId));
+                                latestMessages.push(latestMessageMap.get(chat.chatId));
+                            }
+                            let data = encoder.encode(JSON.stringify({chats: sortedChats, latestMessages: latestMessages}));
+                            that.buildResponse(headerFunc, data, that.GET_SUCCESS);
+                        });
+                    });
+                } else if (startIndex != null){
+                    let index = this.parsePositiveInt(startIndex);
+                    this.messenger.getChat(chatId).thenApply(function(controller) {
+                        that.messenger.mergeAllUpdates(controller, that.socialData).thenApply(updatedController => {
+                            that.getAllMessages(updatedController, index).thenApply(messageResults => {
+                                that.generateMessageHashes(updatedController, messageResults.messages).thenApply(messagePairs => {
+                                    let authorMapKeys = [];
+                                    let authorMapValues = [];
+                                    let messagePairList = [];
+                                    for(var j = 0; j < messagePairs.length; j++) {
+                                        let chatEnvelope = messagePairs[j].message;
+                                        let payload = chatEnvelope.payload;
+                                        let type = payload.type().toString();
+                                        let author = updatedController.getUsername(chatEnvelope.author);
+                                        let memberToRemove = type == 'RemoveMember' ?
+                                            updatedController.getUsername(chatEnvelope.payload.memberToRemove) : "";
+                                        let messagePair = messagePairs[j];
+                                        authorMapKeys.push(messagePair.messageRef.toString());
+                                        authorMapValues.push(JSON.stringify({author: author, memberToRemove: memberToRemove}));
+                                        messagePairList.push(new peergos.shared.messaging.MessagePair(messagePair.message, messagePair.messageRef));
+                                    }
+                                    let mediaRefs = that.addPendingAttachments(messagePairs);
+                                    that.loadAttachments(mediaRefs).thenApply(attachmentMap => {
+                                        let authorMapJava = peergos.client.JsUtil.asMap(authorMapKeys, authorMapValues);
+                                        let attachmentMapKeys = [];
+                                        let attachmentMapValues = [];
+                                        attachmentMap.forEach((val, key) => {
+                                            attachmentMapKeys.push(key);
+                                            attachmentMapValues.push(JSON.stringify(val));
+                                        });
+                                        let attachmentMapJava = peergos.client.JsUtil.asMap(attachmentMapKeys, attachmentMapValues);
+                                        let resp = new peergos.shared.messaging.ReadMessagesResponse(true, chatId, messageResults.startIndex,
+                                        authorMapJava, attachmentMapJava, peergos.client.JsUtil.asList(messagePairList));
+                                        that.buildResponse(headerFunc, resp.serialize(), that.GET_SUCCESS);
+                                    });
+                                });
+                            });
+                        }).exceptionally(function(throwable) {
+                            console.log(throwable);
+                            that.buildResponse(headerFunc, null, that.ACTION_FAILED);
+                        });
+                    });
+                } else {
+                    if (params.get('isVisible') == 'true') {
+                        this.messenger.getChat(chatId).thenApply(function(controller) {
+                            let chatMembers = controller.getMemberNames().toArray();
+                            let friendsInChat = that.friendnames.filter(friend => chatMembers.findIndex(v => v === friend) > -1);
+                            let encoder = new TextEncoder();
+                            let data = encoder.encode(JSON.stringify({result: friendsInChat.length > 0, members: chatMembers}));
+                            that.buildResponse(headerFunc, data, that.GET_SUCCESS);
+                        });
+                    } else {
+                        that.buildResponse(headerFunc, null, that.ACTION_FAILED);
+                    }
+                }
+            } else if(apiMethod == 'DELETE') {
+                let chatId = path;
+                if(path.startsWith(that.currentAppName + "$")) {
+                    this.messenger.getChat(chatId).thenApply(function(controller) {
+                        that.messenger.deleteChat(controller).thenApply(res => {
+                            that.buildResponse(headerFunc, null, that.DELETE_SUCCESS);
+                        }).exceptionally(function(throwable) {
+                            console.log(throwable);
+                            that.buildResponse(headerFunc, null, that.ACTION_FAILED);
+                        });
+                    });
+                } else {
+                    let filePath = decodeURIComponent(path);
+                    if (!filePath.startsWith(this.context.username + "/.messaging/" + this.currentAppName + "$")) {
+                        that.buildResponse(headerFunc, null, that.ACTION_FAILED);
+                    } else {
+                        let parentPath = filePath.substring(0, filePath.lastIndexOf('/'));
+                        this.context.getByPath(parentPath).thenApply(function(optParent){
+                            that.context.getByPath(filePath).thenApply(function(optMediaFile){
+                                optMediaFile.get().remove(optParent.get(), that.convertToPath(filePath), that.context).thenApply(function(b){
+                                    that.buildResponse(headerFunc, null, that.DELETE_SUCCESS);
+                                }).exceptionally(function(throwable) {
+                                    console.log(throwable);
+                                    that.buildResponse(headerFunc, null, that.ACTION_FAILED);
+                                });
+                            }).exceptionally(function(throwable) {
+                                console.log(throwable);
+                                that.buildResponse(headerFunc, null, that.ACTION_FAILED);
+                            });
+                        }).exceptionally(function(throwable) {
+                            console.log(throwable);
+                            that.buildResponse(headerFunc, null, that.ACTION_FAILED);
+                        });
+                    }
+                }
+            } else if(apiMethod == 'POST') {
+                if (path.length == 0) {
+                    this.messenger.listChats().thenApply(function(chats) {
+                        let allChats = chats.toArray();
+                        let filteredChats = that.filterChats(allChats).chats;
+                        let existingGroupTitles = [];
+                        filteredChats.forEach(chat => {
+                            existingGroupTitles.push(chat.title);
+                        });
+                        that.groupId = "";
+                        that.groupTitle = "New Chat";
+                        that.existingGroups = existingGroupTitles;
+                        that.existingGroupMembers = [that.context.username];
+                        that.existingAdmins = [that.context.username];
+                        that.showGroupMembership = true;
+                        that.chatResponseHeader = headerFunc;
+                    });
+                } else {
+                    if (params.get("view")!= null) {
+                        let bytes = convertToByteArray(new Uint8Array(data));
+                        let fileRef = peergos.shared.util.Serialize.parse(bytes, c => peergos.shared.display.FileRef.fromCbor(c));
+                        if (path.startsWith(this.currentAppName) && fileRef.path.includes(path + '/shared/media/')) {
+                            this.retrieveFileFromFileRef(fileRef).thenApply(filePair => {
+                                if (filePair.file != null) {
+                                    let props = filePair.file.getFileProperties();
+                                    if (props.isHidden || props.isDirectory) {
+                                        console.log("Unable to view file. path:" + fileRef.path);
+                                        that.buildResponse(headerFunc, null, that.ACTION_FAILED);
+                                    } else {
+                                        let app = that.getApp(filePair.file, filePair.path);
+                                        //that.openFileOrDir(app, fileRef.path, {filename: filePair.file.getName()});
+                                        if (app == "Gallery") {
+                                            that.filesToViewInGallery = [filePair.file];
+                                            that.showEmbeddedGallery = true;
+                                            that.buildResponse(headerFunc, null, that.GET_SUCCESS);
+                                        } else {
+                                            that.buildResponse(headerFunc, null, that.ACTION_FAILED);
+                                        }
+                                    }
+                                } else {
+                                    that.buildResponse(headerFunc, null, that.ACTION_FAILED);
+                                }
+                            });
+                        } else {
+                            that.buildResponse(headerFunc, null, that.ACTION_FAILED);
+                        }
+                    }else if (params.get('download') == 'true') {
+                        let bytes = convertToByteArray(new Uint8Array(data));
+                        let fileRef = peergos.shared.util.Serialize.parse(bytes, c => peergos.shared.display.FileRef.fromCbor(c));
+                        if (path.startsWith(this.currentAppName) && fileRef.path.includes(path + '/shared/media/')) {
+                            this.retrieveFileFromFileRef(fileRef).thenApply(filePair => {
+                                if (filePair != null) {
+                                    let props = filePair.file.getFileProperties();
+                                    if (props.isHidden || props.isDirectory) {
+                                        console.log("Unable to download file. path:" + fileRef.path);
+                                        that.buildResponse(headerFunc, null, that.ACTION_FAILED);
+                                    } else {
+                                        let extension = filePair.file.getName().substring(filePair.file.getName().lastIndexOf('.') + 1);
+                                        that.downloadFile(filePair.file, "attachment." + extension);
+                                        that.buildResponse(headerFunc, null, that.GET_SUCCESS);
+                                    }
+                                } else {
+                                    that.buildResponse(headerFunc, null, that.ACTION_FAILED);
+                                }
+                            });
+                        } else {
+                            that.buildResponse(headerFunc, null, that.ACTION_FAILED);
+                        }
+                    } else if (path.endsWith("/attachment") || path.endsWith("/attachment/")) {
+                        let bytes = convertToByteArray(new Uint8Array(data));
+                        let attachmentRequest = peergos.shared.util.Serialize.parse(bytes, c => peergos.shared.messaging.AttachmentRequest.fromCbor(c));
+                        let attachment = attachmentRequest.attachment;
+                        let chatId = path.substring(0, path.indexOf("/attachment"))
+                        that.uploadFileAction(headerFunc, attachment.filename, attachment.data, chatId);
+                    }else {
+                        let chatId = path;
+                        this.messenger.listChats().thenApply(function(chats) {
+                            let allChats = chats.toArray();
+                            let filteredChats = that.filterChats(allChats).chats;
+                            let existingGroupTitles = [];
+                            let existingChat = null;
+                            filteredChats.forEach(chat => {
+                                existingGroupTitles.push(chat.title);
+                                if (chat.chatId == chatId) {
+                                    that.groupTitle = chat.title;
+                                    existingChat = chat;
+                                }
+                            });
+                            that.groupId = chatId;
+                            that.existingGroups = existingGroupTitles;
+                            that.existingGroupMembers = existingChat.members.slice();
+                            that.existingAdmins = existingChat.admins.slice();
+                            that.showGroupMembership = true;
+                            that.chatResponseHeader = headerFunc;
+                        });
+                    }
+                }
+            } else if(apiMethod == 'PUT') {
+                let chatId = path;
+                let bytes = convertToByteArray(new Uint8Array(data));
+                let sendMessageRequest = peergos.shared.util.Serialize.parse(bytes, c => peergos.shared.messaging.SendMessageRequest.fromCbor(c));
+                if (sendMessageRequest.messageToReplyTo.ref != null) {
+                    let replyToEnvelope = sendMessageRequest.messageToReplyTo.ref;
+                    peergos.shared.messaging.messages.ReplyTo.build(replyToEnvelope, sendMessageRequest.message, this.context.crypto.hasher).thenApply(function(replyTo) {
+                        that.sendMessageAction(headerFunc, chatId, replyTo);
+                    });
+                } else {
+                    that.sendMessageAction(headerFunc, chatId, sendMessageRequest.message);
+                }
+            } else if(apiMethod == 'PATCH') {
+                // not implemented
+            }
+        },
+        retrieveFileFromFileRef: function(ref) {
+            let that = this;
+            let future = peergos.shared.util.Futures.incomplete();
+            let mirrorPath = this.replaceOwnerInPath(this.context.username, ref.path);
+            this.context.getByPath(mirrorPath).thenApply(function(optFile) {
+                let mediaFile = optFile.ref;
+                if (mediaFile != null) {
+                    future.complete({path: mirrorPath, file: mediaFile});
+                } else {
+                    //fallback to attachment sender
+                    let owner = that.extractOwnerFromPath(ref.path);
+                    that.context.network.getFile(ref.cap, owner).thenApply(optFile => {
+                       let mediaFile = optFile.ref;
+                       if (mediaFile != null) {
+                           future.complete({path: ref.path, file: mediaFile});
+                       } else {
+                           future.complete(null);
+                       }
+                    }).exceptionally(err => {
+                        future.complete(null);
+                    });
+                }
+            }).exceptionally(err => {
+                future.complete(null);
+            });
+            return future;
+        },
+        sendMessageAction: function(headerFunc, chatId, msg) {
+            let that = this;
+            this.messenger.getChat(chatId).thenApply(function(controller) {
+                that.messenger.sendMessage(controller, msg).thenApply(function(updatedController) {
+                    that.buildResponse(headerFunc, null, that.CREATE_SUCCESS);
+                }).exceptionally(function(throwable) {
+                    console.log(throwable);
+                    that.showToastError("Unable to send message");
+                    that.buildResponse(headerFunc, null, that.ACTION_FAILED);
+                });
+            });
+        },
+        uploadFileAction: function(headerFunc, filename, fileData, chatId) {
+            let that = this;
+            let progress = {};
+            let thumbnailAllocation = Math.min(100000, fileData.length / 10);
+            let resultingSize = fileData.length + thumbnailAllocation;
+            progress = {
+                title:"Encrypting and uploading " + filename,
+                done:0,
+                max:resultingSize,
+                name: filename
+            };
+            this.$toast({component: ProgressBar,props:  progress,}
+                , { icon: false , timeout:false, id: filename})
+            this.progressMonitors.push(progress);
+            let updateProgressBar = function(len){
+                progress.done += len.value_0;
+                that.$toast.update(progress.name, {content:
+                    {
+                        component: ProgressBar,
+                        props:  {
+                        title: progress.title,
+                        done: progress.done,
+                        max: progress.max
+                        },
+                    }
+                });
+                if (progress.done >= progress.max) {
+                    that.$toast.dismiss(progress.name);
+                }
+            };
+            this.uploadMedia(filename, fileData, updateProgressBar, chatId).thenApply(function(mediaResponse) {
+                if (mediaResponse == null) {
+                    that.buildResponse(headerFunc, null, that.ACTION_FAILED);
+                } else {
+                    //convert FileRef to base64 string
+                    var bytes = mediaResponse.mediaItem.serialize();
+                    let mediaItemBase64 = peergos.client.JsUtil.encodeBase64(bytes);
+                    let json = {
+                        mediaItemBase64: mediaItemBase64,
+                        hasMediaFile: mediaResponse.mediaFile != null,
+                        hasThumbnail: mediaResponse.mediaFile != null && mediaResponse.mediaFile.getFileProperties().thumbnail.ref != null,
+                        thumbnail: mediaResponse.mediaFile.getBase64Thumbnail(),
+                        fileType: mediaResponse.mediaFile.getFileProperties().getType(),
+                        mimeType: mediaResponse.mediaFile.getFileProperties().mimeType,
+                        size: mediaResponse.mediaFile.getFileProperties().sizeLow()
+                    };
+                    let idx = that.progressMonitors.indexOf(progress);
+                    if(idx >= 0) {
+                        that.progressMonitors.splice(idx, 1);
+                    }
+                    let encoder = new TextEncoder();
+                    let data = encoder.encode(JSON.stringify(json));
+                    that.buildResponse(headerFunc, data, that.CREATE_SUCCESS);
+                }
+            });
+        },
+        uploadMedia: function(filename, fileData, updateProgressBar, chatId) {
+            let that = this;
+            let future = peergos.shared.util.Futures.incomplete();
+            let reader = new peergos.shared.user.fs.AsyncReader.ArrayBacked(fileData);
+            var fileExtension = "";
+            let dotIndex = filename.lastIndexOf('.');
+            if (dotIndex > -1 && dotIndex <= filename.length -1) {
+                fileExtension = filename.substring(dotIndex + 1);
+            }
+            let postTime = peergos.client.JsUtil.now();
+            that.messenger.getChat(chatId).thenApply(function(controller) {
+                that.messenger.uploadMedia(controller, reader, fileExtension, fileData.length, postTime, updateProgressBar).thenApply(function(pair) {
+                    var thumbnailAllocation = Math.min(100000, fileData.length / 10);
+                    updateProgressBar({ value_0: thumbnailAllocation});
+                    that.context.getByPath(pair.right.path).thenApply(function(fileOpt){
+                        let file = fileOpt.ref;
+                        future.complete({mediaItem: pair.right, mediaFile: file});
+                    }).exceptionally(err => {
+                        that.showToastError("unable to get uploaded media");
+                        console.log(err);
+                        future.complete(null);
+                    });
+                }).exceptionally(err => {
+                    that.showToastError("unable to upload media");
+                    console.log(err);
+                    future.complete(null);
+                });
+            });
+            return future;
+        },
+        handleChatRequestV0: function(header, path, apiMethod, data, hasFormData, params) {
             let that = this;
             if(apiMethod == 'GET') {
                 let chatId = path;
