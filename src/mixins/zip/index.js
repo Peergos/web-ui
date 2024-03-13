@@ -43,12 +43,14 @@ module.exports = {
             let zipFuture = peergos.shared.util.Futures.incomplete();
             let fileStream = streamSaver.createWriteStream(zipFilename, mimeType,
                 function (url) {
-                    let link = document.createElement('a')
-                    let click = new MouseEvent('click')
-                    link.type = mimeType
-                    link.href = url
-                    link.dispatchEvent(click)
-                    that.startZipDownload(zipFilename, allFiles, progress, zipFuture, writerContainer);
+                    setTimeout(()=>{
+                        let link = document.createElement('a')
+                        let click = new MouseEvent('click')
+                        link.type = mimeType
+                        link.href = url
+                        link.dispatchEvent(click)
+                        that.startZipDownload(zipFilename, allFiles, progress, zipFuture, writerContainer);
+                    }, 500);
                 },function (seekHi, seekLo, seekLength, uuid) {},undefined, progress.max);
             writerContainer.writer = fileStream.getWriter();
             return zipFuture;
