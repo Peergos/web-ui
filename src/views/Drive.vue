@@ -85,7 +85,7 @@
         </li>
       </DriveMenu>
     </transition>
-
+    <a id="downloadFolderAsZip">
     <div
       id="dnd"
       @drop="dndDrop($event)"

@@ -44,11 +44,12 @@ module.exports = {
             let fileStream = streamSaver.createWriteStream(zipFilename, mimeType,
                 function (url) {
                     setTimeout(()=>{
-                        let link = document.createElement('a')
+                        let link = document.getElementById("downloadFolderAsZip"); //document.createElement('a')
                         let click = new MouseEvent('click')
                         link.type = mimeType
                         link.href = url
                         link.dispatchEvent(click)
+                        //          link.click()
                         that.startZipDownload(zipFilename, allFiles, progress, zipFuture, writerContainer);
                     }, 1000);
                 },function (seekHi, seekLo, seekLength, uuid) {},undefined, progress.max);
