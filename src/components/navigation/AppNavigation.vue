@@ -26,7 +26,6 @@
 			<MenuItem :label="translate('APPNAV.TASKS')" icon="tasks" view="Tasks" />
 			<MenuItem :label="translate('APPNAV.SOCIAL')" icon="social" view="Social" />
 			<MenuItem :label="translate('APPNAV.CAL')" icon="calendar" view="Calendar" />
-            <MenuItem v-if="showChat" :label="translate('APPNAV.CHAT')" icon="chat" view="Chat" />
             <MenuItem v-if="showEmail" :label="translate('APPNAV.EMAIL')" icon="email" view="Email" />
 		</ul>
 
@@ -62,10 +61,6 @@ module.exports = {
 		isDark() {
 			return this.$store.state.isDark;
 		},
-        showChat() {
-            var query = new URLSearchParams(window.location.search)
-            return query.get("chat") == "true";
-        },
         showEmail() {
             var query = new URLSearchParams(window.location.search)
             return query.get("email") == "true";

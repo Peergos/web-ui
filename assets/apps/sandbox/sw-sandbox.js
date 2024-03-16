@@ -12,10 +12,13 @@ let apiRequest = "/peergos-api/v0";
 let dataRequest = apiRequest + "/data/";
 let formRequest = apiRequest + "/form/";
 let chatRequest = apiRequest + "/chat/";
+let chatRequestV1 = "/peergos-api/v1" + "/chat/";
 let saveRequest = apiRequest + "/save/";
 let filePickerRequest = apiRequest + "/file-picker/";
 let foldersRequest = apiRequest + "/folders/";
 let printRequest = apiRequest + "/print/";
+let accountRequest = apiRequest + "/account/";
+let profileRequest = apiRequest + "/profile/";
 let installAppRequest = apiRequest + "/install-app/";
 
 var host = null;
@@ -355,6 +358,7 @@ function appFetch(event) {
                 ignoreBody = true;
             }
             var restFilePath = filePath;
+            restFilePath = restFilePath.endsWith('/') ? restFilePath.substring(0, restFilePath.length - 1) : restFilePath;
             var isFromRedirect = false;
             var api = "";
             if (filePath.startsWith(dataRequest)) {
@@ -369,6 +373,9 @@ function appFetch(event) {
             } else if (filePath.startsWith(chatRequest)) {
                 restFilePath = restFilePath.substring(chatRequest.length);
                 api = chatRequest;
+            } else if (filePath.startsWith(chatRequestV1)) {
+                restFilePath = restFilePath.substring(chatRequestV1.length);
+                api = chatRequestV1;
             } else if (filePath.startsWith(installAppRequest)) {
                 restFilePath = restFilePath.substring(installAppRequest.length);
                 api = installAppRequest;
@@ -390,6 +397,18 @@ function appFetch(event) {
                 }
                 restFilePath = restFilePath.substring(foldersRequest.length);
                 api = foldersRequest;
+            } else if (filePath.startsWith(profileRequest)) {
+                if (method != 'GET') {
+                    return new Response('Unknown profile action!', {status: 400})
+                }
+                restFilePath = restFilePath.substring(profileRequest.length);
+                api = profileRequest;
+            } else if (filePath.startsWith(accountRequest)) {
+                if (method != 'GET') {
+                    return new Response('Unknown account action!', {status: 400})
+                }
+                restFilePath = restFilePath.substring(accountRequest.length);
+                api = accountRequest;
             } else if (filePath.startsWith(printRequest)) {
                 if (!(method == 'POST')) {
                     return new Response('Unknown print action!', {status: 400})

@@ -15,7 +15,6 @@
         <div class="modal-header">
             <span>
                 <h4 style="text-align: center;" @click="changeGroupTitle()">{{ displayedTitle }}&nbsp;&nbsp;<i v-if="isAdmin" @click="changeGroupTitle()" class="fa fa-edit" aria-hidden="true"></i></h4>
-
             </span>
         </div>
 
@@ -37,7 +36,7 @@
                         </label>
                   </div>
                   <div class="hspace-5" v-if="isAdmin"  style="margin-top: 20px;">
-                        <label for="admin-access" data-toggle="tooltip" data-placement="bottom" title="Admins can change chat title and membership" class="checkbox__group">
+                        <label for="admin-access" data-toggle="tooltip" data-placement="bottom" title="Admins can change title and membership" class="checkbox__group">
                             <input type="radio" id="admin-access" value="Admin" v-model="memberAccess">
                             <span class="checkmark"></span>
                             Admin
@@ -62,35 +61,17 @@
                 </div>
             </div>
             <div class="modal-prominent">
-                <div class="container" v-if="existingGroupMembers.length > 0"><p style="word-wrap;break-all;">
+                <div class="container"><p style="word-wrap;break-all;">
                     Members:</p>
-                    <div v-if="!haveRemovedSelf">
-                        <label class="checkbox__group">
-                            <input :disabled="isAdmin" type="checkbox" v-bind:value="context.username" v-model="selectSelf">
-                            <span class="checkmark"></span>
-                            <span style="margin-left:10px">{{ context.username }}</span>
-                        </label>
-                    </div>
                     <div v-for="user in existingGroupMembers">
                         <label class="checkbox__group">
-                            <input :disabled="!isAdmin" type="checkbox" v-bind:id="user" v-bind:value="user" v-model="membersSelected">
+                            <input :disabled="!( (isAdmin && user != context.username) || (!isAdmin && user == context.username))" type="checkbox" v-bind:id="user" v-bind:value="user" v-model="membersSelected">
                             <span class="checkmark"></span>
                             <span style="margin-left:10px">{{ user }}</span>
                         </label>
                     </div>
-                    <button :disabled="this.membersSelected.length == 0 && this.selectSelf.length == 0" class="btn btn-success" v-on:click="removeUserFromGroup()">Remove</button>
-                    <button v-if="isAdmin" :disabled="this.membersSelected.length == 0 && this.selectSelf.length == 0" class="btn btn-info" v-on:click="promoteToGroupAdmin()">Promote to Admin</button>
-                </div>
-                <div class="container" v-if="existingGroupMembers.length == 0"><p style="word-wrap;break-all;">
-                    Members:</p>
-                    <div v-if="!haveRemovedSelf">
-                        <label class="checkbox__group">
-                            <input :disabled="isAdmin" type="checkbox" v-bind:value="context.username" v-model="selectSelf">
-                            <span class="checkmark"></span>
-                            <span style="margin-left:10px">{{ context.username }}</span>
-                        </label>
-                    </div>
-                    <button v-if="!haveRemovedSelf" :disabled="this.selectSelf.length == 0" class="btn btn-success" v-on:click="removeUserFromGroup()">Remove</button>
+                    <button :disabled="this.membersSelected.length == 0" class="btn btn-success" v-on:click="removeUserFromGroup()">Remove</button>
+                    <button v-if="isAdmin" :disabled="this.membersSelected.length == 0" class="btn btn-info" v-on:click="promoteToGroupAdmin()">Promote to Admin</button>
                 </div>
             </div>
             <Error
@@ -117,7 +98,6 @@ const FormAutocomplete = require("../components/form/FormAutocomplete.vue");
 const Prompt = require("../components/prompt/Prompt.vue");
 const Spinner = require("../components/spinner/Spinner.vue");
 
-const routerMixins = require("../mixins/router/index.js");
 
 module.exports = {
 	components: {
@@ -136,7 +116,6 @@ module.exports = {
             showError:false,
             membersSelected: [],
             adminsToRemove: [],
-            selectSelf: [],
             showPrompt: false,
             prompt_message: '',
             prompt_placeholder: '',
@@ -148,7 +127,6 @@ module.exports = {
             addLabel: "Invite to Chat",
             genericLabel: "chat",
             isAdmin: false,
-            haveRemovedSelf: false,
             memberAccess: "Member"
         }
     },
@@ -168,12 +146,21 @@ module.exports = {
     },
     methods: {
         updateGroupMembership: function () {
-            if (this.groupId == "" && this.displayedTitle == this.groupTitle) {
-                this.showMessage(true, "Click on title to set " + this.genericLabel + " name");
+            if (this.groupId == "") {
+                if (this.displayedTitle == this.groupTitle) {
+                    if (this.existingGroupMembers.length == 1 || this.existingGroupMembers.length > 2) {
+                        this.showMessage(true, "Click on title to set " + this.genericLabel + " name");
+                    } else {
+                        this.updatedGroupMembership(this.groupId, this.existingGroupMembers[1], this.existingGroupMembers.slice()
+                            , this.existingAdmins.slice());
+                    }
+                } else {
+                    this.updatedGroupMembership(this.groupId, this.displayedTitle, this.existingGroupMembers.slice()
+                        , this.existingAdmins.slice());
+                }
             } else {
                 this.updatedGroupMembership(this.groupId, this.displayedTitle, this.existingGroupMembers.slice()
-                    , this.existingAdmins.slice(), this.haveRemovedSelf);
-                this.close();
+                    , this.existingAdmins.slice());
             }
         },
         changeGroupTitle: function () {
@@ -225,36 +212,61 @@ module.exports = {
             }
         },
         removeUserFromGroup : function () {
-            if(this.selectSelf.length > 0) {
-                this.haveRemovedSelf = true;
-            }
-            for (var i = 0; i < this.membersSelected.length; i++) {
-                let targetUsername = this.membersSelected[i];
-                let index = this.existingGroupMembers.indexOf(targetUsername);
-                if (index > -1) {
-                    this.existingGroupMembers.splice(index, 1);
+            let selectedSelf = this.membersSelected.indexOf(this.context.username) > -1;
+            let otherMembersToRemove = this.membersSelected.slice().filter(v => v !== this.context.username);
+            for (var i = 0; i < otherMembersToRemove.length; i++) {
+                let targetUsername = otherMembersToRemove[i];
+                if (targetUsername != this.context.username) {
+                    var index = this.existingAdmins.indexOf(targetUsername);
+                    if (this.isAdmin) {
+                        if (index > -1) {
+                            this.existingAdmins.splice(index, 1);
+                        }
+                        index = this.existingGroupMembers.indexOf(targetUsername);
+                        if (index > -1) {
+                            this.existingGroupMembers.splice(index, 1);
+                        }
+                    } else {
+                        if (index > -1) {
+                            this.errorTitle = "Only an Admin can remove an Admin";
+                            this.errorBody = "";
+                            this.showError = true;
+                            return;
+                        } else {
+                            index = this.existingGroupMembers.indexOf(targetUsername);
+                            if (index > -1) {
+                                this.existingGroupMembers.splice(index, 1);
+                            }
+                        }
+                    }
                 }
-                index = this.existingAdmins.indexOf(targetUsername);
-                if (index > -1) {
-                    this.existingAdmins.splice(index, 1);
+            }
+            if (selectedSelf) {
+                if (!this.isAdmin) {
+                    index = this.existingGroupMembers.indexOf(this.context.username);
+                    if (index > -1) {
+                        this.existingGroupMembers.splice(index, 1);
+                    }
                 }
             }
             this.membersSelected = [];
         },
         promoteToGroupAdmin : function () {
             let usersToAdd = [];
-            if(this.selectSelf.length > 0) {
-                usersToAdd.push(this.context.username);
-            }
             for (var i = 0; i < this.membersSelected.length; i++) {
-                let targetUsername = this.membersSelected[i];
-                usersToAdd.push(targetUsername);
+                usersToAdd.push(this.membersSelected[i]);
             }
             this.addAdminsToGroup(usersToAdd);
             this.membersSelected = [];
         },
         removeAdminFromGroup : function () {
             if (!this.isAdmin) {
+                return;
+            }
+            if (this.existingAdmins.length == this.adminsToRemove.length) {
+                this.errorTitle = "A group must have at least 1 admin";
+                this.errorBody = "";
+                this.showError = true;
                 return;
             }
             for (var i = 0; i < this.adminsToRemove.length; i++) {
@@ -281,7 +293,6 @@ module.exports = {
             if (usersToAdd.length == 0) {
                 return;
             }
-            var that = this;
             for (var i = usersToAdd.length - 1; i >= 0; i--) {
                 let targetUsername = usersToAdd[i];
                 if(this.existingGroupMembers.indexOf(targetUsername) > -1) {
@@ -291,9 +302,9 @@ module.exports = {
                 }
             }
             if (usersToAdd.length == 0) {
-                that.errorTitle = "Already a member!";
-                that.errorBody = "";
-                that.showError = true;
+                this.errorTitle = "Already a member!";
+                this.errorBody = "";
+                this.showError = true;
             } else {
                 this.targetUsernames = [];
             }
@@ -302,7 +313,6 @@ module.exports = {
             if (!this.isAdmin) {
                 return;
             }
-            var that = this;
             let membersToAdd = [];
             for (var i = 0; i < usersToAdd.length; i++) {
                 let targetUsername = usersToAdd[i];
@@ -320,9 +330,9 @@ module.exports = {
                 }
             }
             if (usersToAdd.length == 0) {
-                that.errorTitle = "Already an Admin!";
-                that.errorBody = "";
-                that.showError = true;
+                this.errorTitle = "Already an Admin!";
+                this.errorBody = "";
+                this.showError = true;
             } else {
                 this.addMembersToGroup(membersToAdd);
             }

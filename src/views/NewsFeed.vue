@@ -965,26 +965,22 @@ module.exports = {
             });
         },
         openConversation: function (entry) {
-            if (entry.appName.length > 0) {
-                let that = this;
-                let app = this.sandboxedApps.appsInstalled.slice().filter(app => app.name == entry.appName);
-                if (app.length == 0) {
-                    var pathStr = '/peergos/recommended-apps/' + entry.appName + '/';
-                    this.context.getByPath(pathStr + 'peergos-app.json').thenApply(propsFileOpt => {
-                        if (propsFileOpt.ref != null) {
-                            that.appInstallPropsFile = propsFileOpt.ref;
-                            that.appInstallFolder = pathStr;
-                            that.showAppInstallation = true;
-                            that.appInstalledEntry = entry;
-                        } else {
-                            that.showMessage(that.translate("NEWSFEED.APP.ABSENT").replace("$NAME", entry.appName));
-                        }
-                    });
-                } else {
-                    this.launchApp(entry.appName, entry.path);
-                }
+            let that = this;
+            let app = this.sandboxedApps.appsInstalled.slice().filter(app => app.name == entry.appName);
+            if (app.length == 0) {
+                var pathStr = '/peergos/recommended-apps/' + entry.appName + '/';
+                this.context.getByPath(pathStr + 'peergos-app.json').thenApply(propsFileOpt => {
+                    if (propsFileOpt.ref != null) {
+                        that.appInstallPropsFile = propsFileOpt.ref;
+                        that.appInstallFolder = pathStr;
+                        that.showAppInstallation = true;
+                        that.appInstalledEntry = entry;
+                    } else {
+                        that.showMessage(that.translate("NEWSFEED.APP.ABSENT").replace("$NAME", entry.appName));
+                    }
+                });
             } else {
-                this.viewAction(null, entry.path, entry.file);
+                this.launchApp(entry.appName, entry.path);
             }
         },
         appInstallSuccess(appName) {
@@ -1022,8 +1018,6 @@ module.exports = {
                     pathParts[3] == 'calendar' &&
                     pathParts[4] == 'data') {
                     this.openFileOrDir("Calendar", path, {filename:""});
-                } else if (pathParts.length >= 3 && pathParts[0] == '' && pathParts[2] == '.messaging') {
-                    this.openFileOrDir("Chat", path, {filename:""});
                 } else {
                     this.openFileOrDir("Drive", path, {filename:""});
                 }
@@ -1162,15 +1156,11 @@ module.exports = {
                     displayFilename = false;
                 } else if(isChat) {
                     appName = this.extractChatApp(filePath);
-                    if (appName.length > 0) {
-                        let app = this.sandboxedApps.appsInstalled.slice().filter(app => app.name == appName);
-                        if (app.length > 0) {
-                            info = this.translate("NEWSFEED.INVITED.APP") + " " + app[0].displayName;
-                        } else {
-                            info = this.translate("NEWSFEED.INVITED.APP") + " " + appName;
-                        }
+                    let app = this.sandboxedApps.appsInstalled.slice().filter(app => app.name == appName);
+                    if (app.length > 0) {
+                        info = this.translate("NEWSFEED.INVITED.APP") + " " + app[0].displayName;
                     } else {
-                        info = this.translate("NEWSFEED.INVITED.CHAT");
+                        info = this.translate("NEWSFEED.INVITED.APP") + " " + appName;
                     }
                     displayFilename = false;
                 } else {
@@ -1185,7 +1175,9 @@ module.exports = {
             if (entry !=null && entry.sharer != entry.owner) {
                 info = info + " " + this.translate("NEWSFEED.OWNED") + " " + entry.owner;
             }
-            info = info + ": ";
+            if (!isChat) {
+                info = info + ": ";
+            }
             let path = props.isDirectory ? filePath : filePath.substring(0, filePath.lastIndexOf(props.name) -1);
             let name = props.name.length > 30 ? props.name.substring(0,27) + '...' : props.name;
             let fileType = isSharedCalendar ? 'calendar' : props.getType();
@@ -1448,16 +1440,13 @@ module.exports = {
             return withoutPrefix.substring(0,withoutPrefix.indexOf("$"));
         },
         extractChatApp: function(filePath) {
-            if (filePath.includes("/.messaging/")) {
-                let chatUuid = this.extractChatUUIDFromPath(filePath);
-                if (chatUuid.startsWith("chat-")) {
-                    let prefix = chatUuid.substring(chatUuid.indexOf("-") + 1, chatUuid.indexOf("$"));
-                    return prefix;
-                } else {
-                    return "";
-                }
+            let chatUuid = this.extractChatUUIDFromPath(filePath);
+            if (chatUuid.startsWith("chat-")) {
+                let prefix = chatUuid.substring(chatUuid.indexOf("-") + 1, chatUuid.indexOf("$"));
+                return prefix;
+            } else {
+                return "chat";
             }
-            return "";
         },
         filterOutOwnChats: function(allPairs) {
             let remainingSharedItems = [];
