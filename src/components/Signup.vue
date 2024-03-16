@@ -84,7 +84,7 @@
 			    </div>
                             <div class="card__meta options">
 				<h3>{{ translate("SIGNUP.TRYTITLE") }}</h3>
-				<label>{{ translate("SIGNUP.TRY") }} <u><a href="https://peergos-demo.net/?signup=true" target="_blank">demo server</a></u>.
+				<label><u><a href="https://peergos-demo.net/?signup=true" target="_blank">{{ translate("SIGNUP.TRY") }}</a></u>.
                                 </label>
 			    </div>
                         </div>

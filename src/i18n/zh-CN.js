@@ -20,7 +20,7 @@ module.exports = {
     "SIGNUP.BUNDLED":"我们所有捆绑的私人应用程序",
     "SIGNUP.MONTH":"每月",
     "SIGNUP.TRYTITLE":"想先尝试一下吗？",
-    "SIGNUP.TRY":"在我们的 demo server 上免费试用",                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                               
+    "SIGNUP.TRY":"免费试用",
     "PASSWORD.COMMON":"您的密码是 $PLACE 最常用的密码",
     "PASSWORD.SHORT":"少于 $SIZE 个字符的密码被视为不安全",
     "PASSWORD.GOOD":"这是一个更好的密码",

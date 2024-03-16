@@ -20,7 +20,7 @@ module.exports = {
     "SIGNUP.BUNDLED":"All our bundled private applications",
     "SIGNUP.MONTH":"month",
     "SIGNUP.TRYTITLE":"Want to try it first?",
-    "SIGNUP.TRY":"Try it for free on our",
+    "SIGNUP.TRY":"Try it for free",
     "PASSWORD.COMMON":"your password is the $PLACE most common password!",
     "PASSWORD.SHORT":"passwords less than $SIZE characters are considered unsafe",
     "PASSWORD.GOOD":"That's a better password",
