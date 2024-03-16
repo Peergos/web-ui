@@ -192,7 +192,11 @@ module.exports = {
         }
     },
 	created() {
-		this.updateSocial();
+	    let that = this;
+        this.showSpinner = true;
+        this.updateSocial(() => {
+            that.showSpinner = false;
+        });
     },
     methods: {
 		...Vuex.mapActions([
@@ -304,14 +308,16 @@ module.exports = {
             .thenApply(function(success) {
                 if(success) {
                     // that.resetTypeahead();
-                    that.$toast(that.translate("SOCIAL.SENT"))
-                    that.updateSocial();
-                    that.targetUsernames = [];
+                    that.updateSocial(() => {
+                        that.$toast(that.translate("SOCIAL.SENT"))
+                        that.showSpinner = false;
+                        that.targetUsernames = [];
+                    });
                 } else {
+                    that.showSpinner = false;
                     that.$toast(that.translate("SOCIAL.ERROR"))
                                 // that.resetTypeahead();
                 }
-                that.showSpinner = false;
             }).exceptionally(function(throwable) {
                     // if (that.targetUsernames.length == 1) {
                     //     // that.resetTypeahead();
@@ -324,65 +330,66 @@ module.exports = {
         acceptAndReciprocate(req) {
             var that = this;
             this.showSpinner = true;
-            this.context.sendReplyFollowRequest(req, true, true)
-                .thenApply(function(success) {
-		    that.showSpinner = false;
-		    that.$toast(that.translate("SOCIAL.RECIPROCATED"))
-		    that.updateSocial();
+            this.context.sendReplyFollowRequest(req, true, true).thenApply(function(success) {
+                that.updateSocial(() => {
+                    that.showSpinner = false;
+                    that.$toast(that.translate("SOCIAL.RECIPROCATED"))
                 });
+            });
         },
 
         accept(req) {
             var that = this;
             this.showSpinner = true;
-            this.context.sendReplyFollowRequest(req, true, false)
-                .thenApply(function(success) {
-		    that.showSpinner = false;
-		    that.$toast(that.translate("SOCIAL.ACCEPTED"))
-		    that.updateSocial();
+            this.context.sendReplyFollowRequest(req, true, false).thenApply(function(success) {
+                that.updateSocial(() => {
+                    that.showSpinner = false;
+                    that.$toast(that.translate("SOCIAL.ACCEPTED"))
                 });
+            });
         },
 
         reject(req) {
             var that = this;
             this.showSpinner = true;
-            this.context.sendReplyFollowRequest(req, false, false)
-                .thenApply(function(success) {
+            this.context.sendReplyFollowRequest(req, false, false).thenApply(function(success) {
+                that.updateSocial(() => {
                     that.showSpinner = false;
-		    that.$toast(that.translate("SOCIAL.REJECTED"))
-		    that.updateSocial();
+                    that.$toast(that.translate("SOCIAL.REJECTED"))
                 });
+            });
         },
 
         removeFollower(username) {
             var that = this;
             this.showSpinner = true;
-            this.context.removeFollower(username)
-                .thenApply(function(success) {
+            this.context.removeFollower(username).thenApply(function(success) {
+                that.updateSocial(() => {
                     that.showSpinner = false;
-		    that.$toast(that.translate("SOCIAL.REMOVED")+` ${username}`)
-		    that.updateSocial();
+                    that.$toast(that.translate("SOCIAL.REMOVED")+` ${username}`)
                 });
+            });
         },
 
         unfollow(username) {
             var that = this;
             this.showSpinner = true;
-            this.context.unfollow(username)
-                .thenApply(function(success) {
-		    that.showSpinner = false;
-		    that.$toast(that.translate("SOCIAL.STOPPED")+` ${username}`)
-		    that.updateSocial();
+            this.context.unfollow(username).thenApply(function(success) {
+                that.updateSocial(() => {
+                    that.showSpinner = false;
+                    that.$toast(that.translate("SOCIAL.STOPPED")+` ${username}`)
                 });
+            });
         },
 
         unblock(username) {
-            var that = this;
+            let that = this;
             this.showSpinner = true;
             this.context.unblock(username).thenApply(function(success) {
-		        that.showSpinner = false;
-		        that.$toast(`${username} ` + that.translate("SOCIAL.UNBLOCKED"));
-		        that.updateSocial();
+                that.updateSocial(() => {
+                    that.showSpinner = false;
+                    that.$toast(`${username} ` + that.translate("SOCIAL.UNBLOCKED"));
+                });
             });
         },
 

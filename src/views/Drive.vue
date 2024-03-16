@@ -884,7 +884,9 @@ module.exports = {
 
 		externalChange(newExternalChange, oldExternalChange) {
 			let that = this;
-			this.updateSocial(function (res) { that.updateCurrentDir(); });
+			this.updateSocial(() => {
+			    that.updateCurrentDir();
+			});
 		},
 
 		files(newFiles, oldFiles) {
@@ -1035,20 +1037,21 @@ module.exports = {
 					this.updateHistory('Drive', this.getPath, {filename:""})
 				}
 
-				this.updateSocial()
-				this.updateUsage()
-                this.updateQuota()
-                this.updateMirrorBatId()
+				this.updateSocial(() => {
+                    that.updateUsage()
+                    that.updateQuota()
+                    that.updateMirrorBatId()
 
-				this.context.getPaymentProperties(false).thenApply(function (paymentProps) {
-					if (paymentProps.isPaid()) {
-						that.paymentProperties = paymentProps;
-					} else
-						that.context.getPendingSpaceRequests().thenApply(reqs => {
-							if (reqs.toArray([]).length > 0)
-								that.$store.commit('USER_ADMIN', true);
-						});
-				});
+                    that.context.getPaymentProperties(false).thenApply(function (paymentProps) {
+                        if (paymentProps.isPaid()) {
+                            that.paymentProperties = paymentProps;
+                        } else
+                            that.context.getPendingSpaceRequests().thenApply(reqs => {
+                                if (reqs.toArray([]).length > 0)
+                                    that.$store.commit('USER_ADMIN', true);
+                            });
+                    });
+                });
 			}
 			this.showPendingServerMessages();
 		},

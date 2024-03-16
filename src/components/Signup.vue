@@ -303,7 +303,6 @@ module.exports = {
                                 that.$store.commit('CURRENT_VIEW', 'Drive');
                                 that.$store.commit('CURRENT_MODAL', 'ModalTour');
                                 that.updatePayment()
-                                that.updateSocial()
                                 that.updateUsage()
                                 console.log("Signing in/up took " + (Date.now()-creationStart)+" mS from function call");
                                 that.$toast.dismiss('signup');
