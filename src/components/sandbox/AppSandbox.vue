@@ -1548,14 +1548,16 @@ module.exports = {
             let that = this;
             let props = file.getFileProperties();
             let size = props.sizeLow();
-            file.getInputStream(that.context.network, that.context.crypto, props.sizeHigh(), props.sizeLow(), read => {}).thenApply(reader => {
-                var bytes = new Uint8Array(size + header.byteLength);
-                for(var i=0;i < header.byteLength;i++){
-                    bytes[i] = header[i];
-                }
-                let data = convertToByteArray(bytes);
-                reader.readIntoArray(data, header.byteLength, size).thenApply(function(read){
-                    that.postData(data);
+            file.getLatest(this.context.network).thenApply(updatedFile => {
+                updatedFile.getInputStream(that.context.network, that.context.crypto, props.sizeHigh(), props.sizeLow(), read => {}).thenApply(reader => {
+                    var bytes = new Uint8Array(size + header.byteLength);
+                    for(var i=0;i < header.byteLength;i++){
+                        bytes[i] = header[i];
+                    }
+                    let data = convertToByteArray(bytes);
+                    reader.readIntoArray(data, header.byteLength, size).thenApply(function(read){
+                        that.postData(data);
+                    });
                 });
             });
         },
