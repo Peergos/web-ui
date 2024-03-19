@@ -409,7 +409,7 @@ function appFetch(event) {
                 if (ignoreBody){
                     uniqueId = "HEAD-" + uniqueId;
                 } else {
-                    uniqueId = '';
+                    uniqueId = "GET-" + uniqueId;
                 }
             }
 

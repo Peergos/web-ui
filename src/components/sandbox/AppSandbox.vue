@@ -583,7 +583,7 @@ module.exports = {
                     var bytes = convertToByteArray(new Int8Array(data));
                     if (apiMethod == 'GET') {
                         //requestId is set if it is a GET request to /peergos-api/v0/form or /peergos-api/v0/data
-                        if (requestId.length > 0 && !requestId.startsWith("HEAD-")) {
+                        if (requestId.length > 0 && !requestId.startsWith("HEAD-") && !requestId.startsWith("GET-")) {
                             if (!that.permissionsMap.get(that.PERMISSION_STORE_APP_DATA)) {
                                 that.showError("App attempted to access file without permission :" + path);
                                 that.buildResponse(headerFunc(), null, that.ACTION_FAILED);
