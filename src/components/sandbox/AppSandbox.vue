@@ -141,7 +141,10 @@ module.exports = {
             selectedFolderStems: [],
             showFilePicker: false,
             selectedFileFromPicker: null,
-            pickerFileExtension: ""
+            pickerFileExtension: "",
+            commandQueue: [],
+            executingCommands: false,
+            commandFileRefs: new Map(),
         }
     },
     computed: {
@@ -1140,24 +1143,79 @@ module.exports = {
                 that.showError('Unable to overwrite folder: ' + filePath);
                 that.buildResponse(header, null, that.ACTION_FAILED);
             } else {
-                let java_reader = peergos.shared.user.fs.AsyncReader.build(bytes);
-                let sizeHi = (bytes.length - (bytes.length % Math.pow(2, 32)))/Math.pow(2, 32);
-                fileToOverwrite.overwriteFileJS(java_reader, sizeHi, bytes.length, that.context.network, that.context.crypto, len => {})
-                .thenApply(function(updatedFile) {
-                    if (refreshTargetFile) {
-                        that.targetFile = updatedFile;
-                    }
-                    that.$emit("refresh");
-                    that.buildResponse(header, null, that.UPDATE_SUCCESS);
-                }).exceptionally(function(throwable) {
-                        let msg = that.uriDecode(throwable.detailMessage);
-                        if (msg.includes("CAS exception updating cryptree node.")) {
-                            that.showError("The file has been updated by another user. Your changes have not been saved.");
-                        } else {
-                            that.showError("Unexpected error: " + throwable.detailMessage);
-                            console.log(throwable.getMessage());
-                        }
+                this.invokeOverwriteFile((isOK) => {
+                    let future = peergos.shared.util.Futures.incomplete();
+                    if (!isOK) {
                         that.buildResponse(header, null, that.ACTION_FAILED);
+                        future.complete(true);
+                    } else {
+                        let java_reader = peergos.shared.user.fs.AsyncReader.build(bytes);
+                        let sizeHi = (bytes.length - (bytes.length % Math.pow(2, 32)))/Math.pow(2, 32);
+                        let moreRecentFile = that.commandFileRefs.get(filePath);
+                        let currentFile = moreRecentFile != null ? moreRecentFile : fileToOverwrite;
+                        currentFile.overwriteFileJS(java_reader, sizeHi, bytes.length, that.context.network, that.context.crypto, len => {})
+                        .thenApply(function(updatedFile) {
+                            if (refreshTargetFile) {
+                                that.targetFile = updatedFile;
+                            }
+                            that.commandFileRefs.set(filePath, updatedFile);
+                            that.$emit("refresh");
+                            that.buildResponse(header, null, that.UPDATE_SUCCESS);
+                            future.complete(true);
+                        }).exceptionally(function(throwable) {
+                            let msg = that.uriDecode(throwable.detailMessage);
+                            if (msg.includes("CAS exception updating cryptree node.")) {
+                                that.showError("The file has been updated by another user. Your changes have not been saved.");
+                            } else {
+                                that.showError("Unexpected error: " + throwable.detailMessage);
+                                console.log(throwable.getMessage());
+                            }
+                            that.buildResponse(header, null, that.ACTION_FAILED);
+                            future.complete(false);
+                        });
+                    }
+                    return future;
+                });
+            }
+        },
+        reduceCommands: function(future) {
+            let that = this;
+            let command = this.commandQueue.shift();
+            if (command == null) {
+                future.complete(true);
+            } else {
+                command(true).thenApply(function(res){
+                    if (res) {
+                        that.reduceCommands(future);
+                    } else {
+                        future.complete(false);
+                    }
+                });
+            }
+            return future;
+        },
+        emptyCommandQueue: function() {
+            let that = this;
+            let command = this.commandQueue.shift();
+            if (command != null) {
+                command(false).thenApply(function(res){
+                    that.emptyCommandQueue();
+                });
+            }
+        },
+        invokeOverwriteFile: function(overwriteCommand) {
+            this.commandQueue.push(overwriteCommand);
+            let that = this;
+            if (!that.executingCommands) {
+                that.executingCommands = true;
+                let future = peergos.shared.util.Futures.incomplete();
+                that.reduceCommands(future);
+                future.thenApply(res => {
+                    if (!res) {
+                        that.emptyCommandQueue();
+                    }
+                    that.commandFileRefs.clear();
+                    that.executingCommands = false;
                 });
             }
         },
