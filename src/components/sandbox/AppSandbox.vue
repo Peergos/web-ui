@@ -583,7 +583,7 @@ module.exports = {
                     var bytes = convertToByteArray(new Int8Array(data));
                     if (apiMethod == 'GET') {
                         //requestId is set if it is a GET request to /peergos-api/v0/form or /peergos-api/v0/data
-                        if (requestId.length > 0) {
+                        if (requestId.length > 0 && !requestId.startsWith("HEAD-") && !requestId.startsWith("GET-")) {
                             if (!that.permissionsMap.get(that.PERMISSION_STORE_APP_DATA)) {
                                 that.showError("App attempted to access file without permission :" + path);
                                 that.buildResponse(headerFunc(), null, that.ACTION_FAILED);
@@ -1548,14 +1548,16 @@ module.exports = {
             let that = this;
             let props = file.getFileProperties();
             let size = props.sizeLow();
-            file.getInputStream(that.context.network, that.context.crypto, props.sizeHigh(), props.sizeLow(), read => {}).thenApply(reader => {
-                var bytes = new Uint8Array(size + header.byteLength);
-                for(var i=0;i < header.byteLength;i++){
-                    bytes[i] = header[i];
-                }
-                let data = convertToByteArray(bytes);
-                reader.readIntoArray(data, header.byteLength, size).thenApply(function(read){
-                    that.postData(data);
+            file.getLatest(this.context.network).thenApply(updatedFile => {
+                updatedFile.getInputStream(that.context.network, that.context.crypto, props.sizeHigh(), props.sizeLow(), read => {}).thenApply(reader => {
+                    var bytes = new Uint8Array(size + header.byteLength);
+                    for(var i=0;i < header.byteLength;i++){
+                        bytes[i] = header[i];
+                    }
+                    let data = convertToByteArray(bytes);
+                    reader.readIntoArray(data, header.byteLength, size).thenApply(function(read){
+                        that.postData(data);
+                    });
                 });
             });
         },

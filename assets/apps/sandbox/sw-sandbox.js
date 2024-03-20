@@ -404,7 +404,15 @@ function appFetch(event) {
                     }
                 }
             }
-            let uniqueId = method == 'GET' && restFilePath ==  filePath ? '' : uuid();
+            var uniqueId = uuid();
+            if (method == 'GET' && restFilePath ==  filePath) {
+                if (ignoreBody){
+                    uniqueId = "HEAD-" + uniqueId;
+                } else {
+                    uniqueId = "GET-" + uniqueId;
+                }
+            }
+
             if (uniqueId == '' && method != 'GET') {
                 return new Response('Unexpected url', {status: 400})
             }
