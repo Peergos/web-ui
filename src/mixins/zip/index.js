@@ -73,7 +73,7 @@ module.exports = {
             this.precalcCrc32();
             let writer = writerContainer.writer;
             let future = peergos.shared.util.Futures.incomplete();
-            let state = {centralRecord: [], offset: 0, fileCount: 0, archiveNeedsZip64: false};
+            let state = {centralRecord: [], offset: BigInt(0), fileCount: 0, archiveNeedsZip64: false};
             this.reduceZippingFiles(allFiles, 0, future, progress, writer, zipFilename, state);
             future.thenApply(done => {
                 if (done) {
@@ -90,15 +90,15 @@ module.exports = {
                         endZip64.setBigUint64(4, BigInt(that.ZipConstants.zip64endRecordLength - 12), true)
                         endZip64.setUint32(12, 0x2d03_2d_00) // UNIX app version 4.5 | ZIP version 4.5
                         // leave 8 bytes at zero
-                        endZip64.setBigUint64(24, state.fileCount, true)
-                        endZip64.setBigUint64(32, state.fileCount, true)
-                        endZip64.setBigUint64(40, centralSize, true)
-                        endZip64.setBigUint64(48, state.offset, true)
+                        endZip64.setBigUint64(24, BigInt(state.fileCount), true)
+                        endZip64.setBigUint64(32, BigInt(state.fileCount), true)
+                        endZip64.setBigUint64(40, BigInt(centralSize), true)
+                        endZip64.setBigUint64(48, BigInt(state.offset), true)
 
                         // 4.3.15 Zip64 end of central directory locator
                         endZip64.setUint32(56, that.ZipConstants.zip64endLocatorSignature)
                         // leave 4 bytes at zero
-                        endZip64.setBigUint64(64, state.offset + centralSize, true)
+                        endZip64.setBigUint64(64, state.offset + BigInt(centralSize), true)
                         endZip64.setUint32(72, 1, true)
                         let zip64end = that.makeUint8Array(endZip64)
                         combinedCentralRecord = new Uint8Array(centralSize + zip64end.length);
@@ -170,11 +170,15 @@ module.exports = {
                                 let centralHeader = that.createCentralHeader(fileEncodedName, props, crc, fileSize, state.offset, zip64HeaderLength);
                                 state.centralRecord.push(centralHeader);
                                 state.centralRecord.push(fileEncodedName);
-                                if (zip64HeaderLength) state.centralRecord.push(that.createZip64ExtraField(fileSize, state.offset, zip64HeaderLength))
-                                if (bigFile) state.offset += 8n // because the data descriptor will have 64-bit sizes
+                                if (zip64HeaderLength) {
+                                    state.centralRecord.push(that.createZip64ExtraField(fileSize, state.offset, zip64HeaderLength))
+                                }
+                                if (bigFile) {
+                                    state.offset += 8n // because the data descriptor will have 64-bit sizes
+                                }
                                 state.fileCount++
-                                state.offset += that.ZipConstants.fileHeaderLength
-                                    + that.ZipConstants.descriptorLength + fileEncodedName.length + fileSize
+                                state.offset += BigInt(that.ZipConstants.fileHeaderLength)
+                                    + BigInt(that.ZipConstants.descriptorLength) + BigInt(fileEncodedName.length) + BigInt(fileSize)
                                 state.archiveNeedsZip64 ||= bigFile
 
                                 future.complete(true);

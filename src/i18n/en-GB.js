@@ -80,7 +80,6 @@ module.exports = {
     "DRIVE.DOWNLOAD.WARN":"Are you sure you want to download $NAME of size $SIZE MB?",
     "DRIVE.ZIP.ERROR":"Download as Zip only available where Streaming supported (like Chrome)",
     "DRIVE.EMPTY.FOLDER":"Folder: $NAME contains no files. Nothing to download",
-    "DRIVE.LARGE.FOLDER":"Download of a Folder greater than 4GiB in size is not supported",
     "DRIVE.CONFIRM.DOWNLOAD.TITLE":"Are you sure you want to download selected items?",
     "DRIVE.CONFIRM.DOWNLOAD.BODY":"Folder(s): $FOLDERS, File(s): $FILES, Total size: $SIZE",
     "DRIVE.DOWNLOAD.FOLDERS":"Downloading selected folders",
