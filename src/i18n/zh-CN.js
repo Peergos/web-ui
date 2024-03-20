@@ -80,7 +80,6 @@ module.exports = {
     "DRIVE.DOWNLOAD.WARN":"您确定要下载大小为 $SIZE MB 的 $NAME 吗?",
     "DRIVE.ZIP.ERROR":"打包成Zip格式下载仅在浏览器支持流媒体的情况下可用（例如 Chrome）",
     "DRIVE.EMPTY.FOLDER":"文件夹：$NAME 内暂无文件。没有什么可下载的",
-    "DRIVE.LARGE.FOLDER":"不支持下载大小超过 4GiB 的文件夹",
     "DRIVE.CONFIRM.DOWNLOAD.TITLE":"您确定要下载所选项目吗？",
     "DRIVE.CONFIRM.DOWNLOAD.BODY":"文件夹: $FOLDERS, 文件: $FILES, 总大小: $SIZE",
     "DRIVE.DOWNLOAD.FOLDERS":"正在下载选定的文件夹",
