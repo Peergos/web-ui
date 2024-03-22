@@ -130,15 +130,15 @@ module.exports = {
 }
 
 .app-button:hover {
-	color: var(--color-hover);
+	color: var(--color-hover) !important;
 }
 .app-button.accent{
-	color: var(--bg);
-	background-color: var(--green-500);
+	color: var(--bg) !important;
+	background-color: var(--green-500) !important;
 }
 .app-button.accent:hover {
-	color: var(--bg);
-	background-color: var(--green-200);
+	color: var(--bg) !important;
+	background-color: var(--green-200) !important;
 }
 .app-button.accent:focus{
 	outline:none;
