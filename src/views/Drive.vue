@@ -67,7 +67,7 @@
     </FolderProperties>
 
     <transition name="fade" mode="out-in" appear>
-    <DriveSelected v-if="selectedFiles.length > 1" :selectedFiles="selectedFiles">
+    <DriveSelected v-if="selectedFiles.length > 1" :totalFiles="files.length" :selectedFiles="selectedFiles" @selectAllOrNone="selectAllOrNone()">
       <li id="copy" v-if="allowCopy" @keyup.enter="copyMultiSelect()" @click="copyMultiSelect()">{{ translate("DRIVE.COPY") }}</li>
       <li id="cut" v-if="isWritable" @keyup.enter="cutMultiSelect()" @click="cutMultiSelect()">{{ translate("DRIVE.CUT") }}</li>
       <li id="delete" v-if="isWritable" @keyup.enter="deleteFilesMultiSelect()" @click="deleteFilesMultiSelect()">{{ translate("DRIVE.DELETE") }}</li>
@@ -1055,6 +1055,13 @@ module.exports = {
 			}
 			this.showPendingServerMessages();
 		},
+        selectAllOrNone() {
+            if (this.selectedFiles.length == this.files.length) {
+                this.selectedFiles = [];
+            } else {
+                this.selectedFiles = this.files.slice();
+            }
+        },
 
         appInstallSuccess(appName) {
         },
