@@ -12,8 +12,8 @@
             </Warning>
             <div id="slideshow-container">
             	<div id="slideshow-info-id" :class="{ 'hidden-info': isInfoHidden, 'slideshow-info': true }"></div>
-            	<button id="slideshow-next" style="cursor:auto"><span @click="next" style="cursor:pointer">▶</span></button>
-            	<button id="slideshow-prev" style="cursor:auto"><span @click="previous" style="cursor:pointer">◀</span></button>
+            	<button id="slideshow-next" @click="next" style="cursor:pointer"><span >&gt;</span></button>
+            	<button id="slideshow-prev" @click="previous" style="cursor:pointer"><span >&lt;</span></button>
             	<div id="slideshow-wrapper-id" class="slideshow-wrapper">
             	</div>
             </div>
@@ -457,13 +457,29 @@ module.exports = {
   height:100%;
   z-index: 20;
 }
-#slideshow-next, #slideshow-prev {
+#slideshow-next {
   position: absolute;
-  font-size: 2em;
-  height: calc(100vh - 50px);
-  background: rgba(0,0,0,0);
+  background: rgba(0, 0, 0, 0);
   border: none;
   z-index: 10;
+  border-radius: 50%;
+  border-style: solid;
+  top: calc(50vh);
+  height: 40px;
+  width: 40px;
+  margin-right: 5px;
+}
+#slideshow-prev {
+  position: absolute;
+  background: rgba(0, 0, 0, 0);
+  border: none;
+  z-index: 10;
+  border-radius: 50%;
+  border-style: solid;
+  top: calc(50vh);
+  height: 40px;
+  width: 40px;
+  margin-left: 5px;
 }
 #slideshow-next.hidden, #slideshow-prev.hidden {
   display: none;
