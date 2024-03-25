@@ -23,15 +23,14 @@ public class BuildNativeImage {
             throw new IllegalStateException("Couldn't find native image executable");
         
         // run native-image
-        runCommand(nativeImage.get().toString() +
-                   " --allow-incomplete-classpath " +
+        runCommand(nativeImage.get().toString() + " " + 
+                   "-H:+UnlockExperimentalVMOptions " +
                    "-H:EnableURLProtocols=http " +
                    "-H:EnableURLProtocols=https " +
                    "-H:IncludeResources='./webroot/.*' " +
                    "-H:+ReportUnsupportedElementsAtRuntime " +
-                   "-H:ConfigurationFileDirectories=META-INF/native-image " +
+                   "--initialize-at-build-time=org.sqlite.util.ProcessRunner " +
                    "--no-fallback " +
-                   "--initialize-at-build-time=org.sqlite.DB,org.sqlite.NativeDB,org.sqlite.Function,org.sqlite.Function\\$Aggregate,org.sqlite.DB\\$ProgressObserver " +
                    "-jar Peergos.jar peergos");
         if (! new File("peergos"+ext).exists())
             throw new IllegalStateException("Native build failed!");
