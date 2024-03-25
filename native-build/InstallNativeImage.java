@@ -28,7 +28,7 @@ public class InstallNativeImage {
         String binExt = OS.equals("windows") ? ".cmd" : "";
 
         Optional<Path> nativeImage = Files.walk(Paths.get("."), 5)
-            .filter(p ->  p.getFileName().contains("native-image") && !p.toFile().isDirectory())
+            .filter(p ->  p.getFileName().toString().contains("native-image") && !p.toFile().isDirectory())
             .findFirst();
         
         if (nativeImage.isPresent())
