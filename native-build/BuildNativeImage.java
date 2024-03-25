@@ -2,13 +2,11 @@ import java.io.*;
 import java.net.*;
 import java.nio.file.*;
 import java.util.zip.*;
+import java.util.*;
 
 public class BuildNativeImage {
 
     public static void main(String[] a) throws Exception {
-        String VERSION = "22.3.3";
-        String JAVA_VERSION = "java17";
-
         Files.copy(Paths.get("../server/Peergos.jar"), Paths.get("Peergos.jar"), StandardCopyOption.REPLACE_EXISTING);
 
         String OS = canonicaliseOS(System.getProperty("os.name").toLowerCase());
@@ -17,12 +15,15 @@ public class BuildNativeImage {
         String binExt = OS.equals("windows") ? ".cmd" : "";
         String extraDirs = OS.equals("darwin") ? "/Contents/Home" : "";
 
-        if (! new File("graalvm-ce-" + JAVA_VERSION + "-"+VERSION + extraDirs + "/bin/native-image" + binExt).exists())
-            throw new IllegalStateException("native-image not installed...");
         String ext = OS.equals("windows") ? ".exe" : "";
-
+        Optional<Path> nativeImage = Files.walk(Paths.get(""), 5)
+            .filter(p ->  p.getFileName().startsWith("native-image") && p.toFile().isFile())
+            .findFirst();
+        if (nativeImage.isEmpty())
+            throw new IllegalStateException("Couldn't find native image executable");
+        
         // run native-image
-        runCommand("graalvm-ce-" + JAVA_VERSION + "-"+VERSION + extraDirs + "/bin/native-image" + binExt +
+        runCommand(nativeImage.get().toString() +
                    " --allow-incomplete-classpath " +
                    "-H:EnableURLProtocols=http " +
                    "-H:EnableURLProtocols=https " +
@@ -53,11 +54,11 @@ public class BuildNativeImage {
 
     private static String canonicaliseArchitecture(String arch) {
         if (arch.startsWith("arm64"))
-            return "arm64";
+            return "aarch64";
         if (arch.startsWith("arm"))
             return "arm";
-        if (arch.startsWith("x86_64"))
-            return "amd64";
+        if (arch.startsWith("amd64") || arch.startsWith("x86_64"))
+            return "x64";
         if (arch.startsWith("x86"))
             return "386";
         return arch;
@@ -65,7 +66,7 @@ public class BuildNativeImage {
 
     private static String canonicaliseOS(String os) {
         if (os.startsWith("mac"))
-            return "darwin";
+            return "macos";
         if (os.startsWith("windows"))
             return "windows";
         return os;
