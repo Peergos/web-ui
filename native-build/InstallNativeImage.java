@@ -1,19 +1,20 @@
 import java.io.*;
 import java.net.*;
+import java.nio.file.*;
 import java.util.zip.*;
+import java.util.*;
 
 public class InstallNativeImage {
 
     public static void main(String[] a) throws Exception {
-        String VERSION = "22.3.3";
+        String VERSION = "22.0.0";
         
         String OS = canonicaliseOS(System.getProperty("os.name").toLowerCase());
         String OS_ARCH = getOsArch();       
         System.out.println("OS-ARCH: " + OS_ARCH);
-        String ext = OS.equals("windows") ? ".zip" : ".tar.gz";
-        String JAVA_VERSION = "java17";
-        String filename = "graalvm-ce-" + JAVA_VERSION + "-" + OS_ARCH + "-"+VERSION+ext;
-        String url = "https://github.com/graalvm/graalvm-ce-builds/releases/download/vm-" +VERSION +"/" + filename;
+        String ext = OS.equals("windows") ? "bin.zip" : "bin.tar.gz";
+        String filename = "graalvm-community-jdk-" + VERSION + "_" + OS_ARCH + "_"+ext;
+        String url = "https://github.com/graalvm/graalvm-ce-builds/releases/download/jdk-" +VERSION +"/" + filename;
 
         // Download graalVM
         if (! new File(filename).exists())
@@ -25,10 +26,12 @@ public class InstallNativeImage {
 
         // install native-image
         String binExt = OS.equals("windows") ? ".cmd" : "";
-        String extraDirs = OS.equals("darwin") ? "/Contents/Home" : "";
-        runCommand("./graalvm-ce-" + JAVA_VERSION + "-" + VERSION + extraDirs + "/bin/gu" + binExt + " install native-image");
 
-        if (new File("graalvm-ce-" + JAVA_VERSION + "-"+VERSION + extraDirs + "/bin/native-image" + binExt).exists())
+        Optional<Path> nativeImage = Files.walk(Paths.get("."), 5)
+            .filter(p ->  p.getFileName().toString().contains("native-image") && !p.toFile().isDirectory())
+            .findFirst();
+        
+        if (nativeImage.isPresent())
             System.out.println("native-image installed");
         else
             throw new IllegalStateException("native-image not installed...");
@@ -62,17 +65,16 @@ public class InstallNativeImage {
     private static String getOsArch() {
         String os = canonicaliseOS(System.getProperty("os.name").toLowerCase());
         String arch = canonicaliseArchitecture(System.getProperty("os.arch"));
-
         return os + "-" + arch;
     }
 
     private static String canonicaliseArchitecture(String arch) {
         if (arch.startsWith("arm64"))
-            return "arm64";
+            return "aarch64";
         if (arch.startsWith("arm"))
             return "arm";
-        if (arch.startsWith("x86_64"))
-            return "amd64";
+        if (arch.startsWith("amd64") || arch.startsWith("x86_64"))
+            return "x64";
         if (arch.startsWith("x86"))
             return "386";
         return arch;
@@ -80,7 +82,7 @@ public class InstallNativeImage {
 
     private static String canonicaliseOS(String os) {
         if (os.startsWith("mac"))
-            return "darwin";
+            return "macos";
         if (os.startsWith("windows"))
             return "windows";
         return os;
