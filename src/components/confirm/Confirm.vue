@@ -2,7 +2,7 @@
 <transition name="modal">
 <div class="modal-mask" @click="close">
   <div style="height:30%"></div>
-  <div class="modal-container" @click.stop>
+  <div class="confirm-modal-container" @click.stop>
 
     <div class="modal-header">
       <h3 id="confirm-header-id">{{confirm_message}}</h3>
@@ -48,4 +48,15 @@ module.exports = {
 }
 </script>
 <style>
+.confirm-modal-container {
+    width: 40%;
+    margin: 0px auto;
+    padding: 20px 30px;
+	color: var(--color);
+    background-color: var(--bg);
+    border-radius: 2px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, .33);
+    transition: all .3s ease;
+    min-width: 300px;
+}
 </style>
