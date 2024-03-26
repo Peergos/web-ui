@@ -17,7 +17,8 @@ public class BuildNativeImage {
 
         String ext = OS.equals("windows") ? ".exe" : "";
         Optional<Path> nativeImage = Files.walk(Paths.get("."), 5)
-            .filter(p ->  p.getFileName().toString().contains("native-image") && !p.toFile().isDirectory())
+            .filter(p -> !p.toFile().isDirectory())
+            .filter(p -> p.getFileName().toString().endsWith("native-image" + binExt))
             .findFirst();
         if (nativeImage.isEmpty())
             throw new IllegalStateException("Couldn't find native image executable");
