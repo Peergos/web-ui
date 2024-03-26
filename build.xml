@@ -207,6 +207,7 @@
     <echo file="META-INF/MANIFEST.MF">Main-Class: peergos.server.Main
 Class-Path: .
 Implementation-Version: web-ui/${repository.version}
+Multi-Release: true
 Javac-Version: ${javac.version}</echo>
     <zip destfile="${server}/Peergos.jar" basedir="." includes="META-INF/MANIFEST.MF" update="true"></zip>
     <!-- Canonicalise jar -->

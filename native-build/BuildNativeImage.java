@@ -16,22 +16,22 @@ public class BuildNativeImage {
         String extraDirs = OS.equals("darwin") ? "/Contents/Home" : "";
 
         String ext = OS.equals("windows") ? ".exe" : "";
-        Optional<Path> nativeImage = Files.walk(Paths.get(""), 5)
-            .filter(p ->  p.getFileName().startsWith("native-image") && p.toFile().isFile())
+        Optional<Path> nativeImage = Files.walk(Paths.get("."), 5)
+            .filter(p -> !p.toFile().isDirectory())
+            .filter(p -> p.getFileName().toString().endsWith("native-image" + binExt))
             .findFirst();
         if (nativeImage.isEmpty())
             throw new IllegalStateException("Couldn't find native image executable");
         
         // run native-image
-        runCommand(nativeImage.get().toString() +
-                   " --allow-incomplete-classpath " +
+        runCommand(nativeImage.get().toString() + " " + 
+                   "-H:+UnlockExperimentalVMOptions " +
                    "-H:EnableURLProtocols=http " +
                    "-H:EnableURLProtocols=https " +
                    "-H:IncludeResources='./webroot/.*' " +
                    "-H:+ReportUnsupportedElementsAtRuntime " +
-                   "-H:ConfigurationFileDirectories=META-INF/native-image " +
+                   "--initialize-at-build-time=org.sqlite.util.ProcessRunner " +
                    "--no-fallback " +
-                   "--initialize-at-build-time=org.sqlite.DB,org.sqlite.NativeDB,org.sqlite.Function,org.sqlite.Function\\$Aggregate,org.sqlite.DB\\$ProgressObserver " +
                    "-jar Peergos.jar peergos");
         if (! new File("peergos"+ext).exists())
             throw new IllegalStateException("Native build failed!");
