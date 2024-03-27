@@ -147,7 +147,13 @@ function addMathJax(text) {
     script.setAttribute("src", './es5/tex-chtml.js');
     document.getElementsByTagName("head")[0].appendChild(script);
 }
-function updateResources(format) {
+function updateResources() {
+    let that = this;
+    setTimeout(() => {
+        that.updateResourcesInDoc();
+    }, 100);
+}
+function updateResourcesInDoc() {
         let anchors = document.getElementsByTagName("a");
         for(var i=0; i < anchors.length;i++) {
             let anchor = anchors[i];
@@ -322,7 +328,7 @@ function initialiseEditorJS(theme, jsonData) {
             data: jsonData,
             onReady: function(){
                 new DragDrop(editorJS);
-                updateResources("note");
+                updateResources();
             },
             onChange: function(api, event) {
                 //console.log('change event: ', event);
