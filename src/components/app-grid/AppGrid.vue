@@ -3,9 +3,9 @@
     <div class="app-grid-flex-container">
         <transition name="app-grid-context-menu">
             <ul id="appMenu" v-if="showAppMenu" class="dropdown-menu" @mouseleave="menuLeave($event)" v-bind:style="{top:menutop, left:menuleft}" style="cursor:pointer;display:block;min-width:100px;padding: 10px;">
-                <li style="padding-bottom: 5px;" @mouseover="contextMenuHoverOver($event)" @mouseout="contextMenuHoverOut($event)" @keyup.enter="showDetails($event)" @click="showDetails($event)">Details</li>
-                <li v-if="selectedApp.updateAvailable" style="padding-bottom: 5px;" @mouseover="contextMenuHoverOver($event)" @mouseout="contextMenuHoverOut($event)" @keyup.enter="updateApp($event)" @click="updateApp($event)">Update</li>
-                <li style="padding-bottom: 5px;" @mouseover="contextMenuHoverOver($event)" @mouseout="contextMenuHoverOut($event)" @keyup.enter="removeApp($event)" @click="removeApp($event)">Remove</li>
+                <li class="app-menu-item" @mouseover="contextMenuHoverOver($event)" @mouseout="contextMenuHoverOut($event)" @keyup.enter="showDetails($event)" @click="showDetails($event)">Details</li>
+                <li v-if="selectedApp.updateAvailable" class="app-menu-item" @mouseover="contextMenuHoverOver($event)" @mouseout="contextMenuHoverOut($event)" @keyup.enter="updateApp($event)" @click="updateApp($event)">Update</li>
+                <li class="app-menu-item" @mouseover="contextMenuHoverOver($event)" @mouseout="contextMenuHoverOut($event)" @keyup.enter="removeApp($event)" @click="removeApp($event)">Remove</li>
             </ul>
         </transition>
         <div v-for="app in apps">
@@ -121,6 +121,11 @@ module.exports = {
 };
 </script>
 <style>
+.app-menu-item {
+    padding-bottom: 5px;
+    color: black;
+}
+
 .app-grid-flex-container {
   display: flex;
   flex-wrap: wrap;

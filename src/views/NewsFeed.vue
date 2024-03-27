@@ -80,7 +80,7 @@
                     :sandboxAppChatId="sandboxAppChatId">
                 </AppSandbox>
                 <ul id="appMenu" v-if="showAppMenu" class="dropdown-menu" v-bind:style="{top:menutop, left:menuleft}" style="cursor:pointer;display:block;min-width:100px;padding: 10px;">
-                    <li id='open-in-app' style="padding-bottom: 5px;" v-for="app in availableApps" v-on:keyup.enter="appOpen($event, app.name, app.path, app.file)" v-on:click="appOpen($event, app.name, app.path, app.file)">{{app.contextMenuText}}</li>
+                    <li id='open-in-app' style="padding-bottom: 5px;color: black;" v-for="app in availableApps" v-on:keyup.enter="appOpen($event, app.name, app.path, app.file)" v-on:click="appOpen($event, app.name, app.path, app.file)">{{app.contextMenuText}}</li>
                 </ul>
                 <div id="scroll-area">
                     <center v-if="data.length==0">
@@ -92,11 +92,11 @@
                         </h3>
                     </center>
                     <ul id="editMenu" v-if="showEditMenu" class="dropdown-menu" v-bind:style="{top:menutop, left:menuleft}" style="cursor:pointer;display:block;min-width:100px;">
-                        <li><a @click="editPost(currentRow)">{{ translate("DRIVE.EDIT") }}</a></li>
-                        <li><a @click="deletePost(currentRow)">{{ translate("DRIVE.DELETE") }}</a></li>
+                        <li style="padding-bottom: 5px;color: black;"><a @click="editPost(currentRow)">{{ translate("DRIVE.EDIT") }}</a></li>
+                        <li style="padding-bottom: 5px;color: black;"><a @click="deletePost(currentRow)">{{ translate("DRIVE.DELETE") }}</a></li>
                     </ul>
                     <ul id="friendMenu" v-if="showFriendMenu" class="dropdown-menu" v-bind:style="{top:menutop, left:menuleft}" style="cursor:pointer;display:block;min-width:100px;">
-                        <li><a @click="sendFriendRequest(currentRow)">{{ translate("NEWSFEED.FRIEND") }}</a></li>
+                        <li style="padding-bottom: 5px;color: black;"><a @click="sendFriendRequest(currentRow)">{{ translate("NEWSFEED.FRIEND") }}</a></li>
                     </ul>
 
                     <div id="feed" class="table table-responsive table-striped table-hover" style="border:none;">
