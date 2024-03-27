@@ -2,7 +2,7 @@
 <transition name="modal">
     <div class="modal-mask" @click="close">
         <div style="height:30%"></div>
-        <div class="modal-container" @click.stop>
+        <div class="create-modal-container" @click.stop>
 
             <div class="modal-header">
                 <h3>{{select_message}}</h3>
@@ -102,4 +102,14 @@ module.exports = {
 }
 </script>
 <style>
+.create-modal-container {
+    width: 70%;
+    margin: 0px auto;
+    padding: 20px 30px;
+	color: var(--color);
+    background-color: var(--bg);
+    border-radius: 2px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, .33);
+    transition: all .3s ease;
+}
 </style>

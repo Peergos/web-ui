@@ -16,12 +16,16 @@
                 :selectFolder_func="selectFolder"
                 :load_func="loadFolderLazily"
                 :spinnerEnable_func="spinnerEnable"
-                :spinnerDisable_func="spinnerDisable"></TreeItem>
+                :spinnerDisable_func="spinnerDisable"
+                :initiallySelectedPaths="selectedPaths"></TreeItem>
               </ul>
             </div>
             <h4>Selected:</h4>
-            <div v-if="selectedFoldersList.length == 0">
-            No folders selected...
+            <div v-if="selectedFoldersList.length == 0 && multipleFolderSelection">
+            {{ translate("FOLDER.PICKER.NO.FOLDERS") }}
+            </div>
+            <div v-if="selectedFoldersList.length == 0 && !multipleFolderSelection">
+            {{ translate("FOLDER.PICKER.NO.FOLDER") }}
             </div>
             <div v-if="selectedFoldersList.length != 0">
                 <div class="selected-folders-view" class="scroll-style">
@@ -47,7 +51,7 @@
 const Spinner = require("../spinner/Spinner.vue");
 const TreeItem = require("TreeItem.vue");
 const folderTreeMixin = require("../../mixins/tree-walker/index.js");
-
+const i18n = require("../../i18n/index.js");
 module.exports = {
     components: {
         Spinner,
@@ -58,11 +62,12 @@ module.exports = {
             showSpinner: true,
             spinnerMessage: 'Loading folders...',
             treeData: {},
-            selectedFoldersList: []
+            selectedFoldersList: [],
+            selectedPaths: [],
         }
     },
-    props: ['baseFolder', 'selectedFolder_func'],
-    mixins:[folderTreeMixin],
+    props: ['baseFolder', 'selectedFolder_func', 'multipleFolderSelection', 'initiallySelectedPaths'],
+    mixins:[folderTreeMixin, i18n],
     computed: {
         ...Vuex.mapState([
             'context',
@@ -70,6 +75,8 @@ module.exports = {
     },
     created: function() {
         let that = this;
+        this.selectedPaths = this.initiallySelectedPaths.slice();
+        this.selectedFoldersList = this.selectedPaths.slice();
         let callback = (baseOfFolderTree) => {
             that.treeData = baseOfFolderTree;
             that.showSpinner = false;
@@ -79,7 +86,7 @@ module.exports = {
     },
     methods: {
         close: function () {
-            this.selectedFolder_func([]);
+            this.selectedFolder_func(this.selectedFoldersList);
         },
         spinnerEnable: function () {
             this.showSpinner = true;
@@ -90,15 +97,29 @@ module.exports = {
         loadFolderLazily: function(path, callback) {
             this.loadSubFolders(path, callback);
         },
+        showError: function(msg) {
+            console.log(msg);
+            this.$toast.error(msg, {timeout:false});
+        },
         selectFolder: function (folderName, add) {
             if (add) {
-                this.selectedFoldersList.push(folderName);
+                if (this.multipleFolderSelection) {
+                    this.selectedFoldersList.push(folderName);
+                } else {
+                    if (this.selectedFoldersList.length > 0) {
+                        this.showError(this.translate("FOLDER.PICKER.MULTIPLE.SELECTION.NOT.SUPPORTED"));
+                        return false;
+                    } else {
+                        this.selectedFoldersList.push(folderName);
+                    }
+                }
             } else {
                 let index = this.selectedFoldersList.findIndex(v => v === folderName);
                 if (index > -1) {
                     this.selectedFoldersList.splice(index, 1);
                 }
             }
+            return true;
         },
         foldersSelected: function() {
             let selectedFolders = this.selectedFoldersList;

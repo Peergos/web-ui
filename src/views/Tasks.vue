@@ -189,7 +189,7 @@ module.exports = {
         closeSelect: function() {
             this.showSelect = false;
             if (!this.taskSelected) {
-                this.openFileOrDir("Drive", "/", {filename:""})
+                this.openFileOrDir("Drive", "/" + this.context.username, {filename:""})
             }
         },
         extractTodoBoardName: function(filename) {

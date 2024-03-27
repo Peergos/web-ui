@@ -115,6 +115,7 @@ module.exports = {
             currentTreeData.path = path.substring(0, path.length -1);
             currentTreeData.children = [];
             currentTreeData.isOpen = false;
+            currentTreeData.isRoot = true;
             let that = this;
             let future = peergos.shared.util.Futures.incomplete();
             file.getChildren(that.context.crypto.hasher, that.context.network).thenApply(function(children) {

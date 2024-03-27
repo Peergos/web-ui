@@ -1341,9 +1341,10 @@ module.exports = {
 		},
 
 		askMkdir() {
-			this.prompt_placeholder = 'Folder name';
-			this.prompt_message = 'Create folder';
+			this.prompt_placeholder = this.translate("NEW.FOLDER.NAME.LABEL");
+			this.prompt_message = this.translate("NEW.FOLDER.NAME.MESSAGE");
 			this.prompt_value = '';
+			this.prompt_action = this.translate("PROMPT.OK");
 			this.prompt_consumer_func = function (prompt_result) {
 				if (prompt_result === null)
 					return;
@@ -1363,7 +1364,7 @@ module.exports = {
                     this.prompt_message = this.translate("DRIVE.DELETE.FILE") + ` ${file.getName()} ${extra}?`;
 		    this.prompt_value = '';
 		    this.prompt_consumer_func = deleteFn;
-		    // this.prompt_action = 'Delete'
+		    this.prompt_action = this.translate("PROMPT.OK");
 		    this.showPrompt = true;
 		},
 
@@ -1996,7 +1997,7 @@ module.exports = {
 			this.showSpinner = false;
 		    this.replace_message = this.translate("DRIVE.UPLOAD.EXISTS")
                         .replace("$NAME", file.name);
-			this.replace_body = '';
+			this.replace_body = this.translate("DRIVE.UPLOAD.REPLACE");
 			this.replace_consumer_cancel_func = cancelFn;
 			this.replace_consumer_func = replaceFn;
 			this.replace_showApplyAll = true;
@@ -2892,6 +2893,7 @@ module.exports = {
 			this.prompt_placeholder = this.translate("DRIVE.FILENAME.PLACEHOLDER");
 			this.prompt_message = this.translate("DRIVE.FILENAME");
 			this.prompt_value = '';
+			this.prompt_action = this.translate("PROMPT.OK");
 			this.prompt_consumer_func = function (prompt_result) {
 				if (prompt_result === null)
 					return;
@@ -3005,6 +3007,7 @@ module.exports = {
 						});
 				});
 			};
+			this.prompt_action = this.translate("PROMPT.OK");
 			this.showPrompt = true;
 		},
 
@@ -3044,7 +3047,7 @@ module.exports = {
                         .replace("$COUNT", fileCount);
 			this.prompt_value = '';
 			this.prompt_consumer_func = deleteFn;
-			// this.prompt_action = 'Delete'
+			this.prompt_action = this.translate("PROMPT.OK");
 			this.showPrompt = true;
 		},
 

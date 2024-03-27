@@ -19,7 +19,10 @@
         />
         <FolderPicker
             v-if="showFolderPicker"
-            :baseFolder="folderPickerBaseFolder" :selectedFolder_func="selectedFoldersFromPicker">
+            :baseFolder="folderPickerBaseFolder"
+            :selectedFolder_func="selectedFoldersFromPicker"
+            :multipleFolderSelection="multipleFolderSelection"
+            :initiallySelectedPaths="initiallySelectedPaths">
         </FolderPicker>
         <AppPrompt
             v-if="showPrompt"
@@ -136,6 +139,8 @@ module.exports = {
             currentAppName: null,
             showFolderPicker: false,
             folderPickerBaseFolder: "",
+            multipleFolderSelection: true,
+            initiallySelectedPaths: [],
             filePickerBaseFolder: "",
             selectedFolders: [],
             selectedFolderStems: [],

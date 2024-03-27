@@ -150,13 +150,16 @@ module.exports = {
                     prompt_max_input_size: null,
                     prompt_value: '',
                     prompt_consumer_func: () => {},
-                    prompt_action: 'set'
+                    prompt_action: 'Set'
 		};
 	},
 	computed: {
 		...Vuex.mapState(['isLoggedIn', 'isAdmin', 'context', 'isDark']),
 		...Vuex.mapGetters(['currentTheme', 'isPaid'])
 	},
+    created() {
+        this.prompt_action = this.translate("PROMPT.SET");
+    },
 	methods: {
         cleanupFailedUploads() {
             this.showSettingsSpinner = true;

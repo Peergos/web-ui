@@ -373,8 +373,8 @@ module.exports = {
     methods: {
         confirmReplaceFile(filename, cancelFn, replaceFn) {
             this.showSpinner = false;
-            this.replace_message = this.translate("LAUNCHER.EXISTS").replace("$NAME", filename);
-            this.replace_body = '';
+            this.replace_message = this.translate("LAUNCHER.FILE.EXISTS").replace("$NAME", filename);
+            this.replace_body = this.translate("LAUNCHER.FILE.REPLACE");
             this.replace_consumer_cancel_func = cancelFn;
             this.replace_consumer_func = replaceFn;
             this.showReplace = true;
