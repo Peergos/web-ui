@@ -95,6 +95,7 @@ module.exports = {
     "DRIVE.UPLOAD.EMPTY":"Nothing to upload",
     "DRIVE.UPLOAD.EXISTS":"File: $NAME already exists in this location",
     "DRIVE.UPLOAD.REPLACE":"Do you wish to replace it?",
+    "DRIVE.MOVE.ERROR":"Error moving file: $NAME",
     "DRIVE.COPY.ERROR":"Error copying file: $NAME",
     "DRIVE.COPY.SPACE.ERROR":"File copy operation exceeds available space\nPlease free up $SPACE and try again",
     "DRIVE.COPY.TOTAL.SPACE.ERROR":"File copy operation exceeds total space\n" + "Please upgrade to get more space",
