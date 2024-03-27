@@ -1,8 +1,8 @@
 <template>
   <ul style="list-style-type: none">
       <label class="checkbox__group">
-          <input type="checkbox" v-bind:value="model.path" @click="addChild">
-          <span class="checkmark"></span>
+          <input v-if="!model.isRoot" v-bind:id="model.path" type="checkbox" v-bind:value="model.path" @click="addChild">
+          <span v-if="!model.isRoot" class="checkmark"></span>
             <div :class="{ bold: isFolder }" @click="toggle">
               {{ displayFolderName(model.path) }}
               <span v-if="isFolder">[{{ model.isOpen ? '-' : '+' }}]</span>
@@ -16,7 +16,8 @@
         :selectFolder_func="selectFolder_func"
         :load_func="load_func"
         :spinnerEnable_func="spinnerEnable_func"
-        :spinnerDisable_func="spinnerDisable_func">
+        :spinnerDisable_func="spinnerDisable_func"
+        :initiallySelectedPaths="initiallySelectedPaths">
       </TreeItem>
     </li>
   </ul>
@@ -31,6 +32,7 @@ module.exports = {
     load_func: Function,
     spinnerEnable_func: Function,
     spinnerDisable_func: Function,
+    initiallySelectedPaths: Array,
   },
   data() {
     return {
@@ -40,6 +42,21 @@ module.exports = {
     isFolder() {
       return this.model.children && this.model.children.length
     }
+  },
+  created: function() {
+        let that = this;
+        Vue.nextTick(function() {
+            let path = that.model.path;
+            if (path != null) {
+                let index = that.initiallySelectedPaths.findIndex(v => v === path);
+                if (index > -1) {
+                    let inputEl = document.getElementById(path);
+                    if (inputEl != null) {
+                        inputEl.checked = true;
+                    }
+                }
+            }
+        });
   },
   methods: {
     displayFolderName(folderName) {
@@ -74,7 +91,10 @@ module.exports = {
         this.load_func(this.model.path + "/", callback);
     },
     addChild(selectedFolder) {
-        this.selectFolder_func(selectedFolder.currentTarget.value, selectedFolder.currentTarget.checked);
+        let ok = this.selectFolder_func(selectedFolder.currentTarget.value, selectedFolder.currentTarget.checked);
+        if (!ok) {
+            selectedFolder.currentTarget.checked = false;
+        }
     }
   }
 }

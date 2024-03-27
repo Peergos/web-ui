@@ -13,6 +13,12 @@
                 :consumer_cancel_func="confirm_consumer_cancel_func"
                 :consumer_func="confirm_consumer_func">
             </Confirm>
+            <FolderPicker
+                v-if="showFolderPicker"
+                :baseFolder="folderPickerBaseFolder" :selectedFolder_func="selectedFoldersFromPicker"
+                :multipleFolderSelection="multipleFolderSelection"
+                :initiallySelectedPaths="initiallySelectedPaths">
+            </FolderPicker>
             <Share
 			v-if="showShare"
 			v-on:hide-share-with="showShare = false"
@@ -107,7 +113,10 @@
                         </div>
                         <div class="flex-item">
                             <div>
-                                <input id="profile-web-root" style="width:100%" class="form-control-profile" v-model="webRoot" placeholder="Website Directory" :maxlength="WEBROOT_MAX_LENGTH">
+                                <input readonly id="profile-web-root" style="width:100%" class="form-control-profile" v-model="webRoot" placeholder="Website Directory" :maxlength="WEBROOT_MAX_LENGTH">
+                            </div>
+                            <div>
+                                <button class="btn btn-info" @click="openFolderPicker()">{{ translate("PROFILE.CHANGE.WWW") }}</button>
                             </div>
                             <div>
                                 <button v-if="webRootReadyToBePublished" class="btn btn-success" @click="publishWebroot()">{{ translate("PROFILE.PUBLISH") }}</button>
@@ -138,6 +147,7 @@
 <script>
 const AppModal = require("AppModal.vue");
 const Confirm = require("../confirm/Confirm.vue");
+const FolderPicker = require('../picker/FolderPicker.vue');
 const Share = require("../drive/DriveShare.vue");
 const Spinner = require("../spinner/Spinner.vue");
 const i18n = require("../../i18n/index.js");
@@ -146,6 +156,7 @@ module.exports = {
     components: {
         AppModal,
         Confirm,
+        FolderPicker,
 	    Share,
 	    Spinner
     },
@@ -199,7 +210,11 @@ module.exports = {
             confirm_message: "",
             confirm_body: "",
             confirm_consumer_cancel_func: () => {},
-            confirm_consumer_func: () => {}
+            confirm_consumer_func: () => {},
+            showFolderPicker: false,
+            folderPickerBaseFolder: "",
+            multipleFolderSelection: false,
+            initiallySelectedPaths: [],
         }
     },
     props: ['messages'],
@@ -508,7 +523,7 @@ module.exports = {
                 let changeWebRootFunc = function(){
                     var publishFuture = peergos.shared.util.Futures.incomplete();
                     var unPublishFuture = peergos.shared.util.Futures.incomplete();
-                    if (that.previousWebRoot.length > 0) {
+                    if (that.webRootUrl.length > 0) {
                         that.unpublishWebroot(unPublishFuture);
                     } else {
                         unPublishFuture.complete(true);
@@ -519,61 +534,24 @@ module.exports = {
                             if(res) {
                                 that.webRoot = updatedPath;
                                 that.previousWebRoot = updatedPath;
-                                if (updatedPath.length == 0) {
-                                    that.webRootReadyToBePublished = false;
-                                } else {
+                                if (updatedPath.length != 0) {
                                     that.webRootReadyToBePublished = true;
                                 }
-                                that.webRootUrl = "";
                             }
                             publishFuture.complete(res);
                         });
                     });
                     return publishFuture;
                 }
-                if(updatedPath == '') {
-                    changes.push({func: changeWebRootFunc});
-                    this.saveChanges(changes);
-                } else if (updatedPath == '/') {
-                    that.showMessage(true, that.translate("PROFILE.INVALID"), that.translate("PROFILE.ERROR.WWW"));
-                } else {
-                    if (updatedPath.endsWith('/')) {
-                        updatedPath = updatedPath.substring(0, updatedPath.length -1);
-                    }
-                    if (updatedPath.startsWith('/')) {
-                        updatedPath = updatedPath.substring(1);
-                    }
-                    if (updatedPath == '') {
-                        this.showMessage(true, that.translate("PROFILE.INVALID"), that.translate("PROFILE.ERROR.WWW"));
-                    } else {
-                        if (!updatedPath.startsWith(this.context.username+ '/')) {
-                            updatedPath = this.context.username + '/' + updatedPath;
-                        }
-                        if (updatedPath == '' || updatedPath == this.context.username + '/' + this.context.username) {
-                            this.showMessage(true, that.translate("PROFILE.INVALID"), that.translate("PROFILE.ERROR.WWW"));
-                        } else {
-                            try {
-                                let dirPath = peergos.client.PathUtils.directoryToPath(updatedPath.split('/'));
-                                this.context.getByPath(dirPath.toString()).thenApply(function(dirOpt){
-                                        if (dirOpt.isEmpty()) {
-                                            that.showMessage(true, that.translate("PROFILE.INVALID"), that.translate("PROFILE.ERROR.NOT.FOUND"));
-                                        } else {
-                                            changes.push({func: changeWebRootFunc});
-                                            that.saveChanges(changes);
-                                        }
-                                });
-                            } catch (pathException) {
-                                that.showMessage(true, that.translate("PROFILE.INVALID"), that.translate("PROFILE.ERROR.PATH"));
-                            }
-                        }
-                    }
-                }
+                changes.push({func: changeWebRootFunc});
+                this.saveChanges(changes);
             }
         },
         unpublishWebroot: function(future) {
             let that = this;
             peergos.shared.user.ProfilePaths.unpublishWebRoot(this.context).thenApply(function(success){
                 that.$emit("update-refresh");
+                that.webRootUrl = "";
                 future.complete(true);
             });
         },
@@ -644,6 +622,28 @@ module.exports = {
               console.log(throwable.getMessage());
               that.showSpinner = false;
             });
+        },
+        openFolderPicker: function() {
+            let that = this;
+            this.folderPickerBaseFolder = "/" + this.context.username;
+            let updatedPath = this.webRoot.trim();
+            this.initiallySelectedPaths = [];
+            if (updatedPath.length > 0) {
+                this.initiallySelectedPaths.push("/" + updatedPath);
+            }
+            this.selectedFoldersFromPicker = function (chosenFolders) {
+                if (chosenFolders.length == 0) {
+                    that.webRoot = "";
+                    that.webRootReadyToBePublished = false;
+                } else {
+                    that.webRoot = chosenFolders[0].substring(1);
+                    if (updatedPath != that.webRoot) {
+                        that.webRootReadyToBePublished = false;
+                    }
+                }
+                that.showFolderPicker = false;
+            };
+            this.showFolderPicker = true;
         },
         saveChanges: function(changes) {
             if (changes.length == 0) {

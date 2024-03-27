@@ -23,7 +23,7 @@
 				</div>
 				<footer class="prompt__footer">
 					<AppButton outline @click.native="closePrompt()">
-						Cancel
+						{{ translate("PROMPT.CANCEL") }}
 					</AppButton>
 
 					<AppButton
@@ -42,10 +42,13 @@
 
 <script>
 const AppButton = require("../AppButton.vue");
+const i18n = require("../../i18n/index.js");
+
 module.exports = {
     components: {
         AppButton,
     },
+    mixins:[i18n],
 	data() {
 		return {
 			prompt_result: '',
@@ -73,7 +76,6 @@ module.exports = {
 		},
 		action:{
 			type: String,
-			default: 'ok'
 		}
 
 
