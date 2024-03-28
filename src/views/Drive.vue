@@ -2212,9 +2212,11 @@ module.exports = {
             this.closeMenu();
         },
 
-        reduceMove(index, path, parent, target, fileTreeNodes, future) {
+        reduceMove(index, path, parent, target, fileTreeNodes, multiSelectParams, future) {
             let that = this;
             if (index == fileTreeNodes.length) {
+                let title = that.translate("DRIVE.MOVING.COMPLETE");
+                that.addUploadProgressMessage(multiSelectParams, title, '', '', true);
                 future.complete(true);
             } else {
                 let fileTreeNode = fileTreeNodes[index];
@@ -2223,8 +2225,12 @@ module.exports = {
                 target.getLatest(this.context.network).thenApply(updatedTarget => {
                     parent.getLatest(that.context.network).thenApply(updatedParent => {
                         fileTreeNode.moveTo(updatedTarget, updatedParent, filePath, that.context).thenApply(() => {
+                            multiSelectParams.progress.done += 1;
+                            let title = '[' + multiSelectParams.progress.done + '/' + multiSelectParams.progress.max + '] '
+                                + multiSelectParams.title;
+                            that.addUploadProgressMessage(multiSelectParams, title, '', '', false);
                             that.updateCurrentDirectory(null , () =>
-                                that.reduceMove(index + 1, path, updatedParent, updatedTarget, fileTreeNodes, future)
+                                that.reduceMove(index + 1, path, updatedParent, updatedTarget, fileTreeNodes, multiSelectParams, future)
                             );
                         }).exceptionally(function (throwable) {
                             that.updateCurrentDirectory(null , () => {
@@ -2238,17 +2244,23 @@ module.exports = {
                 });
             }
         },
-        reduceCopy(index, fileTreeNodes, target, future) {
+        reduceCopy(index, fileTreeNodes, target, multiSelectParams, future) {
             let that = this;
             if (index == fileTreeNodes.length) {
+                let title = that.translate("DRIVE.COPYING.COMPLETE");
+                that.addUploadProgressMessage(multiSelectParams, title, '', '', true);
                 future.complete(true);
             } else {
                 let fileTreeNode = fileTreeNodes[index];
                 target.getLatest(this.context.network).thenApply(updatedTarget => {
                     fileTreeNode.copyTo(updatedTarget, that.context).thenApply(function () {
+                        multiSelectParams.progress.done += 1;
+                        let title = '[' + multiSelectParams.progress.done + '/' + multiSelectParams.progress.max + '] '
+                            + multiSelectParams.title;
+                        that.addUploadProgressMessage(multiSelectParams, title, '', '', false);
                         that.updateUsage(usageBytes => {
                             that.updateCurrentDirectory(null , () =>
-                                that.reduceCopy(index + 1, fileTreeNodes, updatedTarget, future)
+                                that.reduceCopy(index + 1, fileTreeNodes, updatedTarget, multiSelectParams, future)
                             );
                         });
                     }).exceptionally(function (throwable) {
@@ -2339,9 +2351,29 @@ module.exports = {
             }
             this.closePasteMenu();
             that.showSpinner = true;
+
+            let name = 'multiselect-' + this.uuid();
+            let title = clipboard.op == "cut" ?
+                this.translate("DRIVE.MOVING.TITLE") : this.translate("DRIVE.COPYING.TITLE");
+            let progress = {
+                title: title,
+                done:0,
+                max:clipboard.fileTreeNodes.length,
+                name:name,
+            };
+            that.$toast(
+                {component: ProgressBar,props:  progress} ,
+                { icon: false , timeout:false, id: name})
+
+            const multiSelectParams = {
+                progress: progress,
+                name: name,
+                title: title
+            }
+
             if (clipboard.op == "cut") {
                 let future = peergos.shared.util.Futures.incomplete();
-                this.reduceMove(0, that.path, clipboard.parent, target, clipboard.fileTreeNodes, future);
+                this.reduceMove(0, that.path, clipboard.parent, target, clipboard.fileTreeNodes, multiSelectParams, future);
                 future.thenApply(res => {
                     if (res) {
                         that.showSpinner = false;
@@ -2371,7 +2403,7 @@ module.exports = {
                     sizeFuture.thenApply(res => {
                         if (res) {
                             let copyFuture = peergos.shared.util.Futures.incomplete();
-                            that.reduceCopy(0, clipboard.fileTreeNodes, target, copyFuture);
+                            that.reduceCopy(0, clipboard.fileTreeNodes, target, multiSelectParams, copyFuture);
                             copyFuture.thenApply(res2 => {
                                 if (res2) {
                                     that.showSpinner = false;
