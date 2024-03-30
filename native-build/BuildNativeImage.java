@@ -28,6 +28,7 @@ public class BuildNativeImage {
                    "-H:+UnlockExperimentalVMOptions " +
                    "--enable-http " +
                    "--enable-https " +
+                   "-march=compatibility " +
                    "-H:ConfigurationFileDirectories=META-INF/native-image " +
                    "--report-unsupported-elements-at-runtime " +
                    "--initialize-at-build-time=org.sqlite.util.ProcessRunner " +
