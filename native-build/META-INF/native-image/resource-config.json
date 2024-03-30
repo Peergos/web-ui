@@ -1,7 +1,54 @@
 {
-  "resources":[
-    {"pattern":"META-INF/maven/org.xerial/sqlite-jdbc/pom.properties"}, 
-    {"pattern":"webroot/.*"}, 
-    {"pattern":"org/sqlite/native/Linux/x86_64/libsqlitejdbc.so"}
-  ]
+  "resources":{
+  "includes":[{
+    "pattern":"\\QMETA-INF/maven/org.xerial/sqlite-jdbc/pom.properties\\E"
+  }, {
+    "pattern":"\\QMETA-INF/services/com.sun.net.httpserver.spi.HttpServerProvider\\E"
+  }, {
+    "pattern":"\\QMETA-INF/services/java.lang.System$LoggerFinder\\E"
+  }, {
+    "pattern":"\\QMETA-INF/services/java.net.spi.InetAddressResolverProvider\\E"
+  }, {
+    "pattern":"\\QMETA-INF/services/java.net.spi.URLStreamHandlerProvider\\E"
+  }, {
+    "pattern":"\\QMETA-INF/services/java.nio.channels.spi.SelectorProvider\\E"
+  }, {
+    "pattern":"\\QMETA-INF/services/java.sql.Driver\\E"
+  }, {
+    "pattern":"\\QMETA-INF/services/java.time.zone.ZoneRulesProvider\\E"
+  }, {
+    "pattern":"\\Qjndi.properties\\E"
+  }, {
+    "pattern":"\\Qnative-lib/libtweetnacl.so\\E"
+  }, {
+    "pattern":"\\Qorg/h2/util/data.zip\\E"
+  }, {
+    "pattern":"\\Qorg/slf4j/impl/StaticLoggerBinder.class\\E"
+  }, {
+    "pattern":"\\Qorg/sqlite/native/Linux/x86_64/libsqlitejdbc.so\\E"
+  }, {
+    "pattern":"\\Qpki/pki-state.cbor\\E"
+  }, {
+      "pattern":"webroot/.*"
+  }, {
+    "pattern":"java.logging:\\Qsun/util/logging/resources/logging_en.properties\\E"
+  }, {
+    "pattern":"java.logging:\\Qsun/util/logging/resources/logging_en_GB.properties\\E"
+  }]},
+  "bundles":[{
+    "name":"sun.text.resources.FormatData",
+    "locales":["en", "en-US", "und"]
+  }, {
+    "name":"sun.text.resources.JavaTimeSupplementary",
+    "locales":["en", "en-US", "und"]
+  }, {
+    "name":"sun.text.resources.cldr.FormatData",
+    "locales":["en", "en-001", "en-GB", "en-US", "und"]
+  }, {
+    "name":"sun.util.resources.cldr.CalendarData",
+    "locales":["und"]
+  }, {
+    "name":"sun.util.resources.cldr.TimeZoneNames",
+    "locales":["en", "en-US", "und"]
+  }]
 }

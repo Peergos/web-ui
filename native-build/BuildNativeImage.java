@@ -26,10 +26,10 @@ public class BuildNativeImage {
         // run native-image
         runCommand(nativeImage.get().toString() + " " + 
                    "-H:+UnlockExperimentalVMOptions " +
-                   "-H:EnableURLProtocols=http " +
-                   "-H:EnableURLProtocols=https " +
-                   "-H:IncludeResources='./webroot/.*' " +
-                   "-H:+ReportUnsupportedElementsAtRuntime " +
+                   "--enable-http " +
+                   "--enable-https " +
+                   "-H:ConfigurationFileDirectories=META-INF/native-image " +
+                   "--report-unsupported-elements-at-runtime " +
                    "--initialize-at-build-time=org.sqlite.util.ProcessRunner " +
                    "--no-fallback " +
                    "-jar Peergos.jar peergos");
