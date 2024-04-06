@@ -1132,7 +1132,7 @@ module.exports = {
                         let mediaFile = optFile.ref;
                         if (mediaFile != null) {
                             let fullPath = ref.path.startsWith("/") ? ref.path : "/" + ref.path;
-                            attachmentMap.set(fullPath, {mimeType: mediaFile.getFileProperties().mimeType, fileType: mediaFile.getFileProperties().getType(),
+                            attachmentMap.set(fullPath, {fileRef: JSON.parse(ref.toJson()), mimeType: mediaFile.getFileProperties().mimeType, fileType: mediaFile.getFileProperties().getType(),
                                 thumbnail: mediaFile.getFileProperties().thumbnail.ref != null ? mediaFile.getBase64Thumbnail() : ""});
                             loadedCount++;
                             if (loadedCount == refs.length) {
@@ -1145,7 +1145,7 @@ module.exports = {
                                let mediaFile = optFile.ref;
                                if (mediaFile != null) {
                                    let fullPath = ref.path.startsWith("/") ? ref.path : "/" + ref.path;
-                                   attachmentMap.set(fullPath, {mimeType: mediaFile.getFileProperties().mimeType, fileType: mediaFile.getFileProperties().getType(),
+                                   attachmentMap.set(fullPath, {fileRef: JSON.parse(ref.toJson()), mimeType: mediaFile.getFileProperties().mimeType, fileType: mediaFile.getFileProperties().getType(),
                                         thumbnail: mediaFile.getFileProperties().thumbnail.ref != null ? mediaFile.getBase64Thumbnail() : ""});
                                }
                                loadedCount++;
@@ -1471,34 +1471,77 @@ module.exports = {
                         that.messenger.mergeAllUpdates(controller, that.socialData).thenApply(updatedController => {
                             that.getAllMessages(updatedController, index).thenApply(messageResults => {
                                 that.generateMessageHashes(updatedController, messageResults.messages).thenApply(messagePairs => {
-                                    let authorMapKeys = [];
-                                    let authorMapValues = [];
-                                    let messagePairList = [];
-                                    for(var j = 0; j < messagePairs.length; j++) {
-                                        let chatEnvelope = messagePairs[j].message;
-                                        let payload = chatEnvelope.payload;
-                                        let type = payload.type().toString();
-                                        let author = updatedController.getUsername(chatEnvelope.author);
-                                        let memberToRemove = type == 'RemoveMember' ?
-                                            updatedController.getUsername(chatEnvelope.payload.memberToRemove) : "";
-                                        let messagePair = messagePairs[j];
-                                        authorMapKeys.push(messagePair.messageRef.toString());
-                                        authorMapValues.push(JSON.stringify({author: author, memberToRemove: memberToRemove}));
-                                        messagePairList.push(new peergos.shared.messaging.MessagePair(messagePair.message, messagePair.messageRef));
-                                    }
                                     let mediaRefs = that.addPendingAttachments(messagePairs);
                                     that.loadAttachments(mediaRefs).thenApply(attachmentMap => {
-                                        let authorMapJava = peergos.client.JsUtil.asMap(authorMapKeys, authorMapValues);
-                                        let attachmentMapKeys = [];
-                                        let attachmentMapValues = [];
-                                        attachmentMap.forEach((val, key) => {
-                                            attachmentMapKeys.push(key);
-                                            attachmentMapValues.push(JSON.stringify(val));
-                                        });
-                                        let attachmentMapJava = peergos.client.JsUtil.asMap(attachmentMapKeys, attachmentMapValues);
-                                        let resp = new peergos.shared.messaging.ReadMessagesResponse(true, chatId, messageResults.startIndex,
-                                        authorMapJava, attachmentMapJava, peergos.client.JsUtil.asList(messagePairList));
-                                        that.buildResponse(headerFunc, resp.serialize(), that.GET_SUCCESS);
+                                        let messages = [];
+                                        for(var j = 0; j < messagePairs.length; j++) {
+                                            let messageEnvelope = messagePairs[j].message;
+                                            let payload = messageEnvelope.payload;
+                                            let type = payload.type().toString();
+                                            let author = updatedController.getUsername(messageEnvelope.author);
+                                            let removeUsername = type == 'RemoveMember' ?
+                                                updatedController.getUsername(messageEnvelope.payload.memberToRemove) : null;
+                                            let inviteUsername = type == 'Invite' ? messageEnvelope.payload.username : null;
+                                            let joinUsername = type == 'Join' ? messageEnvelope.payload.username : null;
+                                            var text = null;
+                                            if(type == 'Application') {
+                                                let body = payload.body.toArray();
+                                                text = body[0].inlineText();
+                                            }
+                                            if (type == 'Edit' || type == 'ReplyTo') {
+                                                let body = payload.content.body.toArray();
+                                                text = body[0].inlineText();
+                                            }
+                                            let attachments = [];
+                                            if(type == 'Application' || type == 'ReplyTo') {
+                                                let body = type == 'Application' ? payload.body.toArray() : payload.content.body.toArray();
+                                                for(var i = 1; i < body.length; i++) {
+                                                    let refPath = body[i].reference().ref.path;
+                                                    let path = refPath.startsWith("/") ? refPath : "/" + refPath;
+                                                    let mediaFile = attachmentMap.get(path);
+                                                    if (mediaFile != null) {
+                                                        attachments.push(mediaFile);
+                                                    }
+                                                }
+                                            }
+                                            var editPriorVersion = null;
+                                            if(type == 'Edit') {
+                                                editPriorVersion = payload.priorVersion.toString();
+                                            }
+                                            var deleteTarget = null;
+                                            if(type == 'Delete') {
+                                                deleteTarget = payload.target.toString();
+                                            }
+                                            var replyToParent = null;
+                                            if(type == 'ReplyTo') {
+                                                replyToParent = payload.parent.toString();
+                                            }
+                                            let messageEnvelopeBytes = messageEnvelope.serialize();
+                                            let serialisedEnvelope = peergos.client.JsUtil.encodeBase64(messageEnvelopeBytes);
+                                            let groupState = null;
+                                            if (type == 'GroupState') {
+                                                groupState = { key: payload.key, value: payload.value};
+                                            }
+                                            let timestamp = that.fromUTCtoLocal(messageEnvelope.creationTime);
+                                            let message = { messageRef: messagePairs[j].messageRef.toString(), author: author, timestamp: timestamp, type: type,
+                                                  removeUsername: removeUsername, inviteUsername: inviteUsername, joinUsername: joinUsername,
+                                                  editPriorVersion: editPriorVersion, deleteTarget: deleteTarget, replyToParent: replyToParent,
+                                                  text: text, envelope: serialisedEnvelope,
+                                                  groupState: groupState, attachments : attachments
+                                            };
+                                            messages.push(message);
+                                        }
+                                        let chatMembers = updatedController.getMemberNames().toArray();
+                                        let friendsInChat = that.friendnames.filter(friend => chatMembers.findIndex(v => v === friend) > -1);
+                                        let response = {
+                                            chatId: chatId,
+                                            startIndex: messageResults.startIndex,
+                                            messages: messages,
+                                            hasFriendsInChat: friendsInChat.length > 0
+                                        };
+                                        let encoder = new TextEncoder();
+                                        let data = encoder.encode(JSON.stringify(response));
+                                        that.buildResponse(headerFunc, data, that.GET_SUCCESS);
                                     });
                                 });
                             });
@@ -1507,18 +1550,6 @@ module.exports = {
                             that.buildResponse(headerFunc, null, that.ACTION_FAILED);
                         });
                     });
-                } else {
-                    if (params.get('isVisible') == 'true') {
-                        this.messenger.getChat(chatId).thenApply(function(controller) {
-                            let chatMembers = controller.getMemberNames().toArray();
-                            let friendsInChat = that.friendnames.filter(friend => chatMembers.findIndex(v => v === friend) > -1);
-                            let encoder = new TextEncoder();
-                            let data = encoder.encode(JSON.stringify({result: friendsInChat.length > 0, members: chatMembers}));
-                            that.buildResponse(headerFunc, data, that.GET_SUCCESS);
-                        });
-                    } else {
-                        that.buildResponse(headerFunc, null, that.ACTION_FAILED);
-                    }
                 }
             } else if(apiMethod == 'DELETE') {
                 let chatId = path;
@@ -1576,8 +1607,9 @@ module.exports = {
                     });
                 } else {
                     if (params.get("view")!= null) {
-                        let bytes = convertToByteArray(new Uint8Array(data));
-                        let fileRef = peergos.shared.util.Serialize.parse(bytes, c => peergos.shared.display.FileRef.fromCbor(c));
+                        let decoder = new TextDecoder();
+                        let fileRefJson = decoder.decode(data);
+                        let fileRef = peergos.shared.display.FileRef.fromJson(fileRefJson);
                         if ((path.startsWith(this.currentAppName) || path.startsWith("chat-" + this.currentAppName)) && fileRef.path.includes(path + '/shared/media/')) {
                             this.retrieveFileFromFileRef(fileRef).thenApply(filePair => {
                                 if (filePair.file != null) {
@@ -1604,8 +1636,9 @@ module.exports = {
                             that.buildResponse(headerFunc, null, that.ACTION_FAILED);
                         }
                     }else if (params.get('download') == 'true') {
-                        let bytes = convertToByteArray(new Uint8Array(data));
-                        let fileRef = peergos.shared.util.Serialize.parse(bytes, c => peergos.shared.display.FileRef.fromCbor(c));
+                        let decoder = new TextDecoder();
+                        let fileRefJson = decoder.decode(data);
+                        let fileRef = peergos.shared.display.FileRef.fromJson(fileRefJson);
                         if ((path.startsWith(this.currentAppName) || path.startsWith("chat-" + this.currentAppName)) && fileRef.path.includes(path + '/shared/media/')) {
                             this.retrieveFileFromFileRef(fileRef).thenApply(filePair => {
                                 if (filePair != null) {
@@ -1626,11 +1659,14 @@ module.exports = {
                             that.buildResponse(headerFunc, null, that.ACTION_FAILED);
                         }
                     } else if (path.endsWith("/attachment") || path.endsWith("/attachment/")) {
-                        let bytes = convertToByteArray(new Uint8Array(data));
-                        let attachmentRequest = peergos.shared.util.Serialize.parse(bytes, c => peergos.shared.messaging.AttachmentRequest.fromCbor(c));
-                        let attachment = attachmentRequest.attachment;
-                        let chatId = path.substring(0, path.indexOf("/attachment"))
-                        that.uploadFileAction(headerFunc, attachment.filename, attachment.data, chatId);
+                        let filename = decodeURIComponent(params.get('filename')).trim();
+                        if (filename == null || filename.length == 0) {
+                            that.buildResponse(headerFunc, null, that.ACTION_FAILED);
+                        } else {
+                            let bytes = convertToByteArray(new Uint8Array(data));
+                            let chatId = path.substring(0, path.indexOf("/attachment"))
+                            that.uploadFileAction(headerFunc, filename, bytes, chatId);
+                        }
                     }else {
                         let chatId = path;
                         this.messenger.listChats().thenApply(function(chats) {
@@ -1656,19 +1692,62 @@ module.exports = {
                 }
             } else if(apiMethod == 'PUT') {
                 let chatId = path;
-                let bytes = convertToByteArray(new Uint8Array(data));
-                let sendMessageRequest = peergos.shared.util.Serialize.parse(bytes, c => peergos.shared.messaging.SendMessageRequest.fromCbor(c));
-                if (sendMessageRequest.messageToReplyTo.ref != null) {
-                    let replyToEnvelope = sendMessageRequest.messageToReplyTo.ref;
-                    peergos.shared.messaging.messages.ReplyTo.build(replyToEnvelope, sendMessageRequest.message, this.context.crypto.hasher).thenApply(function(replyTo) {
-                        that.sendMessageAction(headerFunc, chatId, replyTo);
-                    });
+                let json = JSON.parse(new TextDecoder().decode(data));
+                if (json.createMessage != null) {
+                    if (json.createMessage.attachments.length == 0) {
+                        let message = peergos.shared.messaging.messages.ApplicationMessage.text(json.createMessage.text);
+                        that.sendMessageAction(headerFunc, chatId, message);
+                    } else {
+                        let fileRefs = json.createMessage.attachments.map(i => peergos.shared.display.FileRef.fromJson(JSON.stringify(i)));
+                        let fileRefList = peergos.client.JsUtil.asList(fileRefs);
+                        let message = peergos.shared.messaging.messages.ApplicationMessage.attachment(json.createMessage.text, fileRefList);
+                        that.sendMessageAction(headerFunc, chatId, message);
+                    }
+                } else if (json.editMessage != null) {
+                    let message = peergos.shared.messaging.messages.ApplicationMessage.text(json.editMessage.text);
+                    let contentHash = new peergos.shared.io.ipfs.Multihash.fromBase58(json.editMessage.messageRef);
+                    let messageRef = new peergos.shared.messaging.MessageRef(contentHash);
+                    let edit = new peergos.shared.messaging.messages.EditMessage(messageRef, message);
+                    that.sendMessageAction(headerFunc, chatId, edit);
+                } else if (json.replyMessage != null) {
+                    let replyToCbor = peergos.client.JsUtil.fromByteArray(peergos.client.JsUtil.decodeBase64(json.replyMessage.replyTo));
+                    let replyToEnvelope = peergos.shared.messaging.MessageEnvelope.fromCbor(replyToCbor);
+                    if (json.replyMessage.attachments.length == 0) {
+                        let message = peergos.shared.messaging.messages.ApplicationMessage.text(json.replyMessage.text);
+                        peergos.shared.messaging.messages.ReplyTo.build(replyToEnvelope, message, this.context.crypto.hasher).thenApply(function(replyTo) {
+                            that.sendMessageAction(headerFunc, chatId, replyTo);
+                        });
+                    } else {
+                        let fileRefs = json.replyMessage.attachments.map(i => peergos.shared.display.FileRef.fromJson(JSON.stringify(i)));
+                        let fileRefList = peergos.client.JsUtil.asList(fileRefs);
+                        let message = peergos.shared.messaging.messages.ApplicationMessage.attachment(json.replyMessage.text, fileRefList);
+                        peergos.shared.messaging.messages.ReplyTo.build(replyToEnvelope, message, this.context.crypto.hasher).thenApply(function(replyTo) {
+                            that.sendMessageAction(headerFunc, chatId, replyTo);
+                        });
+                    }
+                } else if (json.deleteMessage != null) {
+                    let contentHash = new peergos.shared.io.ipfs.Multihash.fromBase58(json.deleteMessage.messageRef);
+                    let messageRef = new peergos.shared.messaging.MessageRef(contentHash);
+                    let deleteMessage = new peergos.shared.messaging.messages.DeleteMessage(messageRef);
+                    that.sendMessageAction(headerFunc, chatId, deleteMessage);
                 } else {
-                    that.sendMessageAction(headerFunc, chatId, sendMessageRequest.message);
+                    that.buildResponse(headerFunc, null, that.ACTION_FAILED);
                 }
             } else if(apiMethod == 'PATCH') {
                 // not implemented
             }
+        },
+        sendMessageAction: function(headerFunc, chatId, msg) {
+            let that = this;
+            this.messenger.getChat(chatId).thenApply(function(controller) {
+                that.messenger.sendMessage(controller, msg).thenApply(function(updatedController) {
+                    that.buildResponse(headerFunc, null, that.CREATE_SUCCESS);
+                }).exceptionally(function(throwable) {
+                    console.log(throwable);
+                    that.showToastError("Unable to send message");
+                    that.buildResponse(headerFunc, null, that.ACTION_FAILED);
+                });
+            });
         },
         retrieveFileFromFileRef: function(ref) {
             let that = this;
@@ -1696,18 +1775,6 @@ module.exports = {
                 future.complete(null);
             });
             return future;
-        },
-        sendMessageAction: function(headerFunc, chatId, msg) {
-            let that = this;
-            this.messenger.getChat(chatId).thenApply(function(controller) {
-                that.messenger.sendMessage(controller, msg).thenApply(function(updatedController) {
-                    that.buildResponse(headerFunc, null, that.CREATE_SUCCESS);
-                }).exceptionally(function(throwable) {
-                    console.log(throwable);
-                    that.showToastError("Unable to send message");
-                    that.buildResponse(headerFunc, null, that.ACTION_FAILED);
-                });
-            });
         },
         uploadFileAction: function(headerFunc, filename, fileData, chatId) {
             let that = this;
@@ -1743,11 +1810,10 @@ module.exports = {
                 if (mediaResponse == null) {
                     that.buildResponse(headerFunc, null, that.ACTION_FAILED);
                 } else {
-                    //convert FileRef to base64 string
-                    var bytes = mediaResponse.mediaItem.serialize();
-                    let mediaItemBase64 = peergos.client.JsUtil.encodeBase64(bytes);
+                    let fileRefJson = mediaResponse.mediaItem.toJson();
+                    let fileRefObj = JSON.parse(fileRefJson);
                     let json = {
-                        mediaItemBase64: mediaItemBase64,
+                        fileRef: fileRefObj,
                         hasMediaFile: mediaResponse.mediaFile != null,
                         hasThumbnail: mediaResponse.mediaFile != null && mediaResponse.mediaFile.getFileProperties().thumbnail.ref != null,
                         thumbnail: mediaResponse.mediaFile.getBase64Thumbnail(),
