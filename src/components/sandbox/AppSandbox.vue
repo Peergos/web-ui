@@ -1517,7 +1517,11 @@ module.exports = {
                                                 replyToParent = payload.parent.toString();
                                             }
                                             let messageEnvelopeBytes = messageEnvelope.serialize();
-                                            let serialisedEnvelope = peergos.client.JsUtil.encodeBase64(messageEnvelopeBytes);
+                                            var str = "";
+                                            for (var i = 0; i < messageEnvelopeBytes.byteLength; i++) {
+                                                str = str + String.fromCharCode(messageEnvelopeBytes[i] & 0xff);
+                                            }
+                                            let serialisedEnvelope = window.btoa(str);
                                             let groupState = null;
                                             if (type == 'GroupState') {
                                                 groupState = { key: payload.key, value: payload.value};
@@ -1710,7 +1714,8 @@ module.exports = {
                     let edit = new peergos.shared.messaging.messages.EditMessage(messageRef, message);
                     that.sendMessageAction(headerFunc, chatId, edit);
                 } else if (json.replyMessage != null) {
-                    let replyToCbor = peergos.client.JsUtil.fromByteArray(peergos.client.JsUtil.decodeBase64(json.replyMessage.replyTo));
+                    let arr = Uint8Array.from(window.atob(json.replyMessage.replyTo), c => c.charCodeAt(0));
+                    let replyToCbor = peergos.client.JsUtil.fromByteArray(convertToByteArray(arr));
                     let replyToEnvelope = peergos.shared.messaging.MessageEnvelope.fromCbor(replyToCbor);
                     if (json.replyMessage.attachments.length == 0) {
                         let message = peergos.shared.messaging.messages.ApplicationMessage.text(json.replyMessage.text);
