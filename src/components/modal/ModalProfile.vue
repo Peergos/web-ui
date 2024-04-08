@@ -627,10 +627,7 @@ module.exports = {
             let that = this;
             this.folderPickerBaseFolder = "/" + this.context.username;
             let updatedPath = this.webRoot.trim();
-            this.initiallySelectedPaths = [];
-            if (updatedPath.length > 0) {
-                this.initiallySelectedPaths.push("/" + updatedPath);
-            }
+
             this.selectedFoldersFromPicker = function (chosenFolders) {
                 if (chosenFolders.length == 0) {
                     that.webRoot = "";
@@ -643,7 +640,21 @@ module.exports = {
                 }
                 that.showFolderPicker = false;
             };
-            this.showFolderPicker = true;
+            this.initiallySelectedPaths = [];
+            if (updatedPath.length > 0) {
+                this.context.getByPath(updatedPath).thenApply(function(dir) {
+                        if (dir.ref != null) {
+                            let file = dir.get();
+                            let props = file.getFileProperties();
+                            if (!props.isHidden && props.isDirectory) {
+                                that.initiallySelectedPaths.push("/" + updatedPath);
+                            }
+                        }
+                        that.showFolderPicker = true;
+                });
+            } else {
+                this.showFolderPicker = true;
+            }
         },
         saveChanges: function(changes) {
             if (changes.length == 0) {
