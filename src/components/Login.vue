@@ -186,21 +186,19 @@ module.exports = {
 
             that.$emit("initApp")
 
-            that.updateSocial(() => {
-                // that.$store.commit('CURRENT_MODAL', 'ModalTour');
+            // that.$store.commit('CURRENT_MODAL', 'ModalTour');
 
-                console.log("Signing in/up took " + (Date.now()-creationStart)+" mS from function call");
-                if (that.stayLoggedIn) {
-                    let rootKey = context.rootKey.toByteArray();
-                    setRootKeyIntoCacheProm(context.username, rootKey).thenApply(function (isSupported) {
-                        if (isSupported) {
-                            console.log("Offline support enabled");
-                        } else {
-                            console.log("Offline support not available");
-                        }
-                    });
-                }
-            });
+            console.log("Signing in/up took " + (Date.now()-creationStart)+" mS from function call");
+            if (that.stayLoggedIn) {
+                let rootKey = context.rootKey.toByteArray();
+                setRootKeyIntoCacheProm(context.username, rootKey).thenApply(function (isSupported) {
+                    if (isSupported) {
+                        console.log("Offline support enabled");
+                    } else {
+                        console.log("Offline support not available");
+                    }
+                });
+            }
 		},
 		appFromUrl(){
 			const props = this.getPropsFromUrl();
