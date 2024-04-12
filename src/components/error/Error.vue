@@ -2,7 +2,7 @@
 <transition name="modal">
 <div class="modal-mask" @click="close">
     <div style="height:30%"></div>
-    <div class="modal-container" @click.stop>
+    <div class="error-modal-container" @click.stop>
 
         <div class="modal-header">
             <h3 id="error-header-id">{{ title }}</h3>
@@ -52,4 +52,16 @@ module.exports = {
 }
 </script>
 <style>
+.error-modal-container {
+    width: 25%;
+    margin: 0px auto;
+    padding: 20px 30px;
+	color: var(--color);
+    background-color: var(--bg);
+    border-radius: 2px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, .33);
+    transition: all .3s ease;
+    min-width: 400px;
+}
+
 </style>

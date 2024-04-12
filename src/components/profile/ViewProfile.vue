@@ -56,7 +56,6 @@ module.exports = {
         profileImage: "",
         status: "",
         showSpinner: false,
-        spinnerMessage: ''
         }
     },
     props: ['profile'],

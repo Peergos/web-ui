@@ -8,7 +8,7 @@
             <h2>App Installation</h2>
         </div>
         <div class="modal-body">
-            <Spinner v-if="showSpinner"></Spinner>
+            <Spinner v-if="showSpinner" :message="spinnerMessage"></Spinner>
             <Confirm
                     v-if="showConfirm"
                     v-on:hide-confirm="showConfirm = false"

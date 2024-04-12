@@ -204,7 +204,6 @@ module.exports = {
             EMAIL_MAX_LENGTH: 50,
             WEBROOT_MAX_LENGTH: 40,
             showSpinner: false,
-            spinnerMessage: '',
             showConfirm: false,
             showShare: false,
             confirm_message: "",

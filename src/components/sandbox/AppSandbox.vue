@@ -75,7 +75,7 @@
             </div>
             <div id='sandbox-container' class="modal-body" style="margin:0;padding:0;display:flex;flex-grow:1;">
             </div>
-            <Spinner v-if="showSpinner"></Spinner>
+            <Spinner v-if="showSpinner" :message="spinnerMessage"></Spinner>
         </div>
     </div>
 </transition>
@@ -1409,7 +1409,6 @@ module.exports = {
                 this.messenger.getChat(chatId).thenApply(function(controller) {
                     controller.removeAdmin(username).thenApply(updatedController => {
                         that.spinnerMessage = "";
-                        chatController.controller = updatedController;
                         that.reduceRemovingAdmins(chatId, adminsToRemove, ++index, future);
                     }).exceptionally(function(throwable) {
                         that.spinnerMessage = "";
@@ -1466,6 +1465,9 @@ module.exports = {
                             let data = encoder.encode(JSON.stringify({chats: sortedChats, latestMessages: latestMessages}));
                             that.buildResponse(headerFunc, data, that.GET_SUCCESS);
                         });
+                    }).exceptionally(function(throwable) {
+                        console.log(throwable);
+                        that.buildResponse(headerFunc, null, that.ACTION_FAILED);
                     });
                 } else if (startIndex != null){
                     let index = this.parsePositiveInt(startIndex);

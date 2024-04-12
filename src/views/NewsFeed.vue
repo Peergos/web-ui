@@ -332,7 +332,6 @@ module.exports = {
                 });
             }).exceptionally(function(throwable) {
                 that.showMessage(throwable.getMessage());
-                that.spinnerMessage = "";
                 that.showSpinner = false;
             });
     },

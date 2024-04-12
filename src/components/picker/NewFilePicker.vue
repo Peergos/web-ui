@@ -7,7 +7,7 @@
 					<AppButton class="close" icon="close" @click.native="closePrompt()"/>
 					<h3>Create new &quot{{pickerFileExtension}}&quot file</h3>
 				</header>
-                <Spinner v-if="showSpinner"></Spinner>
+                <Spinner v-if="showSpinner" :message="spinnerMessage"></Spinner>
                 <div class="prompt__body">
                     <div class="folder-picker-view" class="scroll-style">
                       <ul>

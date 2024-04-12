@@ -68,7 +68,6 @@ module.exports = {
     data: function() {
         return {
             showSpinner: false,
-            spinnerMessage: '',
             appProperties: null,
             appHasFileAssociation: false
         }

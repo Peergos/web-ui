@@ -29,7 +29,6 @@ module.exports = {
     data: function() {
         return {
             showSpinner: false,
-            spinnerMessage: '',
             showAppSandbox: false,
             sandboxAppName: '',
             currentProps: null

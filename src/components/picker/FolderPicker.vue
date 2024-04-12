@@ -8,7 +8,7 @@
             <h2>Folder Picker</h2>
         </div>
         <div class="modal-body">
-            <Spinner v-if="showSpinner"></Spinner>
+            <Spinner v-if="showSpinner" :message="spinnerMessage"></Spinner>
             <div class="folder-picker-view" class="scroll-style">
               <ul>
                 <TreeItem class="item"
