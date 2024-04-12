@@ -911,21 +911,21 @@ module.exports = {
                 if (index > -1) {
                     let that = this;
                     if (params.get('thumbnail') == 'true') {
+                        let encoder = new TextEncoder();
                         peergos.shared.user.ProfilePaths.getProfilePhoto(username, this.context).thenApply(result => {
-                            let encoder = new TextEncoder();
                             if (result.ref != null) {
                                 let data = encoder.encode(JSON.stringify({profileThumbnail: that.extractBase64Image(result.ref)}));
-                                that.buildResponse(headerFunc, data, that.UPDATE_SUCCESS);
+                                that.buildResponse(headerFunc, data, that.GET_SUCCESS);
                             } else {
                                 let data = encoder.encode(JSON.stringify({profileThumbnail: ''}));
-                                that.buildResponse(headerFunc, data, that.UPDATE_SUCCESS);
+                                that.buildResponse(headerFunc, data, that.GET_SUCCESS);
                             }
                         }).exceptionally(function(throwable) {
                             console.log(throwable);
-                            that.buildResponse(headerFunc, null, that.ACTION_FAILED);
+                            let data = encoder.encode(JSON.stringify({profileThumbnail: ''}));
+                            that.buildResponse(headerFunc, data, that.GET_SUCCESS);
                         });
                     } else {
-
                         peergos.shared.user.ProfilePaths.getProfile(username, this.context).thenApply(profileInfo => {
                             let base64Image = profileInfo.profilePhoto.isPresent() ? that.extractBase64Image(profileInfo.profilePhoto.get()) : "";
                             let json = {
@@ -940,7 +940,7 @@ module.exports = {
                             };
                             that.profile = json;
                             that.showProfileViewForm = true;
-                            that.buildResponse(headerFunc, null, that.UPDATE_SUCCESS);
+                            that.buildResponse(headerFunc, null, that.GET_SUCCESS);
                         }).exceptionally(function(throwable) {
                             console.log(throwable);
                             that.buildResponse(headerFunc, null, that.ACTION_FAILED);
