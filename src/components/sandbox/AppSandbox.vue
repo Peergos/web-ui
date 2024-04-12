@@ -1177,96 +1177,98 @@ module.exports = {
             this.showSpinner = false;
         },
         updatedGroupMembership: function(chatId, updatedGroupTitle, updatedMembers, updatedAdmins) {
+            this.showGroupMembership = false;
             let that = this;
-            if (chatId.length == 0) {
-                if (updatedMembers.length == 0 || updatedAdmins.length == 0) {
-                    that.buildResponse(this.chatResponseHeader, null, that.ACTION_FAILED);
-                    return;
+            Vue.nextTick(function() {
+                if (chatId.length == 0) {
+                    that.createNewChatGroup(chatId, updatedGroupTitle, updatedMembers, updatedAdmins);
+                }else {
+                    that.updateExistingChatGroup(chatId, updatedGroupTitle, updatedMembers, updatedAdmins);
                 }
-                this.spinner(true);
-                this.spinnerMessage = "Creating new chat";
-                this.messenger.createAppChat(this.currentAppName == "chat" ? null : this.currentAppName).thenApply(function(controller){
-                    let chatId = controller.chatUuid;
-                    let addedAdmins = that.extractAddedParticipants(controller.getAdmins().toArray(), updatedAdmins);
-                    let addedMembers = that.extractAddedParticipants(controller.getMemberNames().toArray(), updatedMembers);
-                    that.changeTitle(chatId, updatedGroupTitle).thenApply(function(res1) {
-                        that.inviteNewMembers(chatId, addedMembers).thenApply(function(res2) {
-                            that.inviteNewAdmins(chatId, addedAdmins).thenApply(function(res3) {
-                                let chatItem = {chatId: chatId, title: updatedGroupTitle, members: updatedMembers.slice(), admins: updatedAdmins.slice()};
-                                let encoder = new TextEncoder();
-                                let data = encoder.encode(JSON.stringify(chatItem));
+            });
+        },
+        createNewChatGroup: function(chatId, updatedGroupTitle, updatedMembers, updatedAdmins) {
+            let that = this;
+            if (updatedMembers.length == 0 || updatedAdmins.length == 0) {
+                that.buildResponse(this.chatResponseHeader, null, that.ACTION_FAILED);
+                return;
+            }
+            this.spinner(true);
+            this.spinnerMessage = "Creating new chat";
+            this.messenger.createAppChat(this.currentAppName == "chat" ? null : this.currentAppName).thenApply(function(controller){
+                let chatId = controller.chatUuid;
+                let addedAdmins = that.extractAddedParticipants(controller.getAdmins().toArray(), updatedAdmins);
+                let addedMembers = that.extractAddedParticipants(controller.getMemberNames().toArray(), updatedMembers);
+                that.changeTitle(chatId, updatedGroupTitle).thenApply(function(res1) {
+                    that.inviteNewMembers(chatId, addedMembers).thenApply(function(res2) {
+                        that.inviteNewAdmins(chatId, addedAdmins).thenApply(function(res3) {
+                            let chatItem = {chatId: chatId, title: updatedGroupTitle, members: updatedMembers.slice(), admins: updatedAdmins.slice()};
+                            let encoder = new TextEncoder();
+                            let data = encoder.encode(JSON.stringify(chatItem));
+                            Vue.nextTick(function() {
+                                that.spinner(false);
                                 Vue.nextTick(function() {
-                                    that.showGroupMembership = false;
+                                    that.buildResponse(that.chatResponseHeader, data, that.CREATE_SUCCESS);
+                                });
+                            });
+                        });
+                    });
+                });
+            }).exceptionally(err => {
+                that.showToastError("Unable to create chat");
+                console.log(err);
+                Vue.nextTick(function() {
+                    that.spinner(false);
+                    Vue.nextTick(function() {
+                        that.buildResponse(that.chatResponseHeader, null, that.ACTION_FAILED);
+                    });
+                });
+            });
+        },
+        updateExistingChatGroup: function(chatId, updatedGroupTitle, updatedMembers, updatedAdmins) {
+            let that = this;
+            this.spinner(true);
+            let existingChatItem = {chatId: chatId};
+            that.messenger.getChat(chatId).thenApply(function(controller) {
+                let existingMembers = controller.getMemberNames().toArray();
+                let added = that.extractAddedParticipants(existingMembers, updatedMembers);
+                let removed = that.extractRemovedParticipants(existingMembers, updatedMembers);
+                let existingAdmins = controller.getAdmins().toArray();
+                let addedAdmins = that.extractAddedParticipants(existingAdmins, updatedAdmins);
+                let removedAdmins = that.extractRemovedParticipants(existingAdmins, updatedAdmins);
+                var proposedAdminsLength = existingAdmins.length - removedAdmins.length + addedAdmins.length;
+                if (proposedAdminsLength < 1) {
+                    that.buildResponse(that.chatResponseHeader, null, that.ACTION_FAILED);
+                }
+                if (existingAdmins.filter(v => v == that.context.username).length == -1) {
+                    if (removedAdmins.length > 0 || addedAdmins.length > 0) {
+                        that.buildResponse(that.chatResponseHeader, null, that.ACTION_FAILED);
+                    }
+                }
+                that.changeChatTitleIfNecessary(controller, existingChatItem, updatedGroupTitle).thenApply(function(res) {
+                    that.inviteNewAdmins(chatId, addedAdmins).thenApply(function(res3) {
+                       that.removeAdmins(chatId, removedAdmins).thenApply(function(res4) {
+                            that.inviteNewMembers(chatId, added).thenApply(function(res1) {
+                                that.removeMembers(chatId, removed).thenApply(function(res2) {
                                     Vue.nextTick(function() {
                                         that.spinner(false);
                                         Vue.nextTick(function() {
-                                            that.buildResponse(that.chatResponseHeader, data, that.CREATE_SUCCESS);
+                                            that.buildResponse(that.chatResponseHeader, null, that.UPDATE_SUCCESS);
                                         });
                                     });
-                                });
-                            });
-                        });
-                    });
-                }).exceptionally(err => {
-                    that.showToastError("Unable to create chat");
-                    console.log(err);
-                    Vue.nextTick(function() {
-                        that.showGroupMembership = false;
-                        Vue.nextTick(function() {
-                            that.spinner(false);
-                            Vue.nextTick(function() {
-                                that.buildResponse(that.chatResponseHeader, null, that.ACTION_FAILED);
+                               });
                             });
                         });
                     });
                 });
-            } else {
-                this.spinner(true);
-                let existingChatItem = {chatId: chatId};
-                that.messenger.getChat(chatId).thenApply(function(controller) {
-                    let existingMembers = controller.getMemberNames().toArray();
-                    let added = that.extractAddedParticipants(existingMembers, updatedMembers);
-                    let removed = that.extractRemovedParticipants(existingMembers, updatedMembers);
-                    let existingAdmins = controller.getAdmins().toArray();
-                    let addedAdmins = that.extractAddedParticipants(existingAdmins, updatedAdmins);
-                    let removedAdmins = that.extractRemovedParticipants(existingAdmins, updatedAdmins);
-                    var proposedAdminsLength = existingAdmins.length - removedAdmins.length + addedAdmins.length;
-                    if (proposedAdminsLength < 1) {
-                        that.buildResponse(that.chatResponseHeader, null, that.ACTION_FAILED);
-                    }
-                    if (existingAdmins.filter(v => v == that.context.username).length == -1) {
-                        if (removedAdmins.length > 0 || addedAdmins.length > 0) {
-                            that.buildResponse(that.chatResponseHeader, null, that.ACTION_FAILED);
-                        }
-                    }
-                    that.changeChatTitleIfNecessary(controller, existingChatItem, updatedGroupTitle).thenApply(function(res) {
-                        that.inviteNewAdmins(chatId, addedAdmins).thenApply(function(res3) {
-                           that.removeAdmins(chatId, removedAdmins).thenApply(function(res4) {
-                                that.inviteNewMembers(chatId, added).thenApply(function(res1) {
-                                    that.removeMembers(chatId, removed).thenApply(function(res2) {
-                                        Vue.nextTick(function() {
-                                            that.showGroupMembership = false;
-                                            Vue.nextTick(function() {
-                                                that.spinner(false);
-                                                Vue.nextTick(function() {
-                                                    that.buildResponse(that.chatResponseHeader, null, that.UPDATE_SUCCESS);
-                                                });
-                                            });
-                                        });
-                                   });
-                                });
-                            });
-                        });
-                    });
-                });
-            }
+            });
         },
         changeChatTitleIfNecessary: function(controller, existingChatItem, updatedGroupTitle) {
             let future = peergos.shared.util.Futures.incomplete();
             if (controller.getTitle() != updatedGroupTitle) {
                 existingChatItem.title = updatedGroupTitle;
                 this.changeTitle(existingChatItem.chatId, updatedGroupTitle).thenApply(function(res) {
-                    future.complete(true);
+                    future.complete(res);
                 });
             } else {
                     future.complete(true);
