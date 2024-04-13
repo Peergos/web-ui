@@ -14,12 +14,21 @@
                 <SelectableTreeItem class="item" :model="treeData" :select_func="selectFile" :load_func="loadFolderLazily" :spinnerEnable_func="spinnerEnable" :spinnerDisable_func="spinnerDisable" :selectLeafOnly="selectLeafOnly"></TreeItem>
               </ul>
             </div>
-            <input style="background-color: lightgrey;"
-                v-model="selectedFile"
-                type="text"
-                disabled="true"
-            >
-            </input>
+            <div v-if="!pickerShowThumbnail">
+                <input style="background-color: lightgrey;"
+                    v-model="selectedFile"
+                    type="text"
+                    disabled="true"
+                >
+                </input>
+            </div>
+            <div v-if="pickerShowThumbnail" class="file-thumbnail">
+                <img
+                    class="cover"
+                    v-if="fileThumbnail.length > 0"
+                    :src="fileThumbnail"
+                />
+            </div>
             <div class="flex-line-item">
                 <div>
                     <button class="btn btn-success" style = "width:80%" @click="fileSelected()">Done</button>
@@ -47,10 +56,11 @@ module.exports = {
             spinnerMessage: 'Loading folders...',
             treeData: {},
             selectedFile: null,
-            selectLeafOnly: true
+            selectLeafOnly: true,
+            fileThumbnail : ''
         }
     },
-    props: ['baseFolder', 'selectedFile_func', 'pickerFileExtension'],
+    props: ['baseFolder', 'selectedFile_func', 'pickerFileExtension', 'pickerFilterMedia', 'pickerShowThumbnail'],
     mixins:[folderTreeMixin],
     computed: {
         ...Vuex.mapState([
@@ -64,7 +74,7 @@ module.exports = {
             that.showSpinner = false;
             that.spinnerMessage = '';
         };
-        this.loadSubFoldersAndFiles(this.baseFolder + "/", this.pickerFileExtension, callback);
+        this.loadSubFoldersAndFiles(this.baseFolder + "/", this.pickerFileExtension, this.pickerFilterMedia, callback);
     },
     methods: {
         close: function () {
@@ -72,6 +82,15 @@ module.exports = {
         },
         selectFile: function (file) {
             this.selectedFile = file;
+            let that = this;
+            if (this.pickerShowThumbnail) {
+                this.context.getByPath(file).thenApply(function(optFile){
+                    let mediaFile = optFile.ref;
+                    if (mediaFile != null) {
+                        that.fileThumbnail = mediaFile.getBase64Thumbnail();
+                    }
+                });
+            }
         },
         spinnerEnable: function () {
             this.showSpinner = true;
@@ -80,7 +99,7 @@ module.exports = {
             this.showSpinner = false;
         },
         loadFolderLazily: function(path, callback) {
-            this.loadSubFoldersAndFiles(path, this.pickerFileExtension, callback);
+            this.loadSubFoldersAndFiles(path, this.pickerFileExtension, this.pickerFilterMedia, callback);
         },
         fileSelected: function() {
             this.selectedFile_func(this.selectedFile);
@@ -118,5 +137,23 @@ module.exports = {
     overflow-y: scroll;
     border: 2px solid var(--green-500);
     margin: 8px 0;
+}
+
+.file-thumbnail {
+    padding: 4px;
+    border: 1px solid #ddd;
+    min-height: 213px;
+    max-height: 213px;
+}
+
+.file-thumbnail .cover {
+display: inline-block; */
+    background-color: var(--bg-2);
+    color: var(--color);
+    min-height: 200px;
+    max-height: 200px;
+    display: block;
+    margin-left: auto;
+    margin-right: auto;
 }
 </style>

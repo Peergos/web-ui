@@ -1,25 +1,25 @@
 module.exports = {
     methods: {
-        loadFoldersAndFiles: function(path, fileExtension, callback) {
-            this.loadAllFolders(path, callback, true, fileExtension);
+        loadFoldersAndFiles: function(path, fileExtension, filterMedia, callback) {
+            this.loadAllFolders(path, callback, true, fileExtension, filterMedia);
         },
-        loadSubFoldersAndFiles: function(path, fileExtension, callback) {
-            this.loadSubFoldersNotRecursive(path, callback, true, fileExtension);
+        loadSubFoldersAndFiles: function(path, fileExtension, filterMedia, callback) {
+            this.loadSubFoldersNotRecursive(path, callback, true, fileExtension, filterMedia);
         },
         loadFolders: function(path, callback) {
-            this.loadAllFolders(path, callback, false, '');
+            this.loadAllFolders(path, callback, false, '', false);
         },
         loadSubFolders: function(path, callback) {
-            this.loadSubFoldersNotRecursive(path, callback, false, '');
+            this.loadSubFoldersNotRecursive(path, callback, false, '', false);
         },
-        loadAllFolders: function(path, callback, includeFiles, fileExtension) {
+        loadAllFolders: function(path, callback, includeFiles, fileExtension, filterMedia) {
             var that = this;
             let folderTree = {};
             this.context.getByPath(path).thenApply(function(dirOpt){
                 let dir = dirOpt.get();
                 let folderProperties = dir.getFileProperties();
                 if (folderProperties.isDirectory && !folderProperties.isHidden) {
-                    that.walk(dir, path, folderTree, includeFiles, fileExtension).thenApply( () => {
+                    that.walk(dir, path, folderTree, includeFiles, fileExtension, filterMedia).thenApply( () => {
                         callback(folderTree);
                     });
                 } else {
@@ -31,7 +31,7 @@ module.exports = {
             });
         },
 
-        walk: function(file, path, currentTreeData, includeFiles, fileExtension) {
+        walk: function(file, path, currentTreeData, includeFiles, fileExtension, filterMedia) {
             currentTreeData.path = path.substring(0, path.length -1);
             currentTreeData.children = [];
             currentTreeData.isOpen = false;
@@ -47,16 +47,22 @@ module.exports = {
                         let node = {};
                         currentTreeData.children.push(node);
                         funcArray.push(() => {
-                            return that.walk(child, newPath, node, includeFiles, fileExtension);
+                            return that.walk(child, newPath, node, includeFiles, fileExtension, filterMedia);
                         });
                     }
                     if (includeFiles === true && !childProps.isDirectory && !childProps.isHidden) {
-                        let testAcceptAll = fileExtension == null || fileExtension.length == 0;
+                        let testAcceptAll = (fileExtension == null || fileExtension.length == 0 ) && !filterMedia;
                         var matchExtension = false;
                         if (!testAcceptAll ) {
-                            let extensions = fileExtension.split(',').filter(e => e.length > 0).map(i => i.toLowerCase().trim());
-                            let matches = extensions.filter(ext => child.getFileProperties().name.toLowerCase().endsWith(ext));
-                            matchExtension = matches.length > 0;
+                            if (filterMedia) {
+                                let mimeType = childProps.mimeType;
+                                matchExtension = mimeType.startsWith("image") || mimeType.startsWith("video");
+                            }
+                            if (!matchExtension) {
+                                let extensions = fileExtension.split(',').filter(e => e.length > 0).map(i => i.toLowerCase().trim());
+                                let matches = extensions.filter(ext => child.getFileProperties().name.toLowerCase().endsWith(ext));
+                                matchExtension = matches.length > 0;
+                            }
                         }
                         if (testAcceptAll || matchExtension) {
                             let node = {};
@@ -92,14 +98,14 @@ module.exports = {
             future.complete(true);
             return future;
         },
-        loadSubFoldersNotRecursive: function(path, callback, includeFiles, fileExtension) {
+        loadSubFoldersNotRecursive: function(path, callback, includeFiles, fileExtension, filterMedia) {
             var that = this;
             let folderTree = {};
             this.context.getByPath(path).thenApply(function(dirOpt){
                 let dir = dirOpt.get();
                 let folderProperties = dir.getFileProperties();
                 if (folderProperties.isDirectory && !folderProperties.isHidden) {
-                    that.walkNotRecursive(dir, path, folderTree, includeFiles, fileExtension).thenApply( () => {
+                    that.walkNotRecursive(dir, path, folderTree, includeFiles, fileExtension, filterMedia).thenApply( () => {
                         callback(folderTree);
                     });
                 } else {
@@ -111,7 +117,7 @@ module.exports = {
             });
         },
 
-        walkNotRecursive: function(file, path, currentTreeData, includeFiles, fileExtension) {
+        walkNotRecursive: function(file, path, currentTreeData, includeFiles, fileExtension, filterMedia) {
             currentTreeData.path = path.substring(0, path.length -1);
             currentTreeData.children = [];
             currentTreeData.isOpen = false;
@@ -131,12 +137,18 @@ module.exports = {
                         currentTreeData.children.push(node);
                     }
                     if (includeFiles === true && !childProps.isDirectory && !childProps.isHidden) {
-                        let testAcceptAll = fileExtension == null || fileExtension.length == 0;
+                        let testAcceptAll = (fileExtension == null || fileExtension.length == 0 ) && !filterMedia;
                         var matchExtension = false;
                         if (!testAcceptAll ) {
-                            let extensions = fileExtension.split(',').filter(e => e.length > 0).map(i => i.toLowerCase().trim());
-                            let matches = extensions.filter(ext => child.getFileProperties().name.toLowerCase().endsWith(ext));
-                            matchExtension = matches.length > 0;
+                            if (filterMedia) {
+                                let mimeType = childProps.mimeType;
+                                matchExtension = mimeType.startsWith("image") || mimeType.startsWith("video");
+                            }
+                            if (!matchExtension) {
+                                let extensions = fileExtension.split(',').filter(e => e.length > 0).map(i => i.toLowerCase().trim());
+                                let matches = extensions.filter(ext => child.getFileProperties().name.toLowerCase().endsWith(ext));
+                                matchExtension = matches.length > 0;
+                            }
                         }
                         if (testAcceptAll || matchExtension) {
                             let node = {};
