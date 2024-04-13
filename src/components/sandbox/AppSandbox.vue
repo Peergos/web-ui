@@ -15,6 +15,8 @@
             v-if="showFilePicker"
             :baseFolder="filePickerBaseFolder"
             :pickerFileExtension="pickerFileExtension"
+            :pickerFilterMedia="pickerFilterMedia"
+            :pickerShowThumbnail="pickerShowThumbnail"
             :selectedFile_func="selectedFileFromPicker"
         />
         <FolderPicker
@@ -147,6 +149,8 @@ module.exports = {
             showFilePicker: false,
             selectedFileFromPicker: null,
             pickerFileExtension: "",
+            pickerFilterMedia: false,
+            pickerShowThumbnail: false,
             commandQueue: [],
             executingCommands: false,
             commandFileRefs: new Map(),
@@ -734,6 +738,10 @@ module.exports = {
                 this.filePickerBaseFolder =  baseCurrentFolder ? currentPathExtractWithoutSlash : "/" + this.context.username;
                 let fileExtensionFilter = params.get('extension');
                 this.pickerFileExtension = fileExtensionFilter == null ? "" : fileExtensionFilter;
+                let fileMediaFilter = params.get('media');
+                this.pickerFilterMedia = fileMediaFilter == null ? false : fileMediaFilter.toLowerCase() == 'true';
+                let thumbnail = params.get('thumbnail');
+                this.pickerShowThumbnail = thumbnail == null ? false : thumbnail.toLowerCase() == 'true';
                 this.selectedFileFromPicker = function (chosenFile) {
                     var selectedFile = chosenFile == null ? "" : chosenFile;
                     if (baseCurrentFolder) {
