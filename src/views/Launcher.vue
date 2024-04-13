@@ -953,8 +953,8 @@ module.exports = {
 
             if (!e) var e = window.event;
             if (e.clientX || e.clientY) {
-                posx = e.clientX - 100; //todo remove arbitrary offset
-                posy = e.clientY - 100;
+                posx = Math.max(0, e.clientX - 100); //todo remove arbitrary offset
+                posy = Math.max(0, e.clientY - 100);
             }
             return {
                 x: posx,

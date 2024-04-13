@@ -319,7 +319,6 @@
       v-on:hide-search="closeSearch"
       :path="searchPath"
       :navigateToAction="navigateToAction"
-      :viewAction="viewAction"
       :context="context"
     >
     </Search>
@@ -1182,18 +1181,6 @@ module.exports = {
 					}
 				}
 			}
-		},
-		viewAction(path, filename) {
-			this.showSpinner = true;
-			if (path.startsWith("/"))
-				path = path.substring(1);
-
-			// this.path = path ? path.split('/') : [];
-			path == this.path ? path.split('/') : []
-
-                        this.closeApps();
-			this.updateHistory("Drive", path, {filename:""});
-			this.updateCurrentDirectory(filename);
 		},
         appOpen(appName) {
             this.closeMenu();
