@@ -11,6 +11,9 @@
                 <label v-if="isError">{{ error }}</label>
             </div>
             <Spinner v-if="showSpinner"></Spinner>
+            <ul id="appMenu" v-if="showAppMenu" class="dropdown-menu" v-bind:style="{top:menutop, left:menuleft}" style="cursor:pointer;display:block;min-width:100px;padding: 10px;">
+                <li id='open-in-app' style="padding-bottom: 5px;color: black;" v-for="app in availableApps" v-on:keyup.enter="appOpen($event, app.name, app.path, app.file)" v-on:click="appOpen($event, app.name, app.path, app.file)">{{app.contextMenuText}}</li>
+            </ul>
                 <div class="flex-container">
                     <div class="flex-item search" style="margin: 10px; border-width: 1px; border-style: solid;">
                         <select v-model="selectedSearchType">
@@ -75,7 +78,7 @@
                         </thead>
                         <tbody>
                         <tr v-for="match in sortedItems">
-                            <td v-on:click="view(match, true)" style="cursor:pointer;">{{ match.name }}</td>
+                            <td v-on:click="view($event, match)" style="cursor:pointer;">{{ match.name }}</td>
                             <td v-on:click="navigateTo(match)" style="cursor:pointer;">
                                 {{ match.path }}
                             </td>
@@ -102,6 +105,7 @@
 </template>
 
 <script>
+const routerMixins = require("../mixins/router/index.js");
 const Spinner = require("./spinner/Spinner.vue");
 const i18n = require("../i18n/index.js");
 
@@ -109,7 +113,7 @@ module.exports = {
 	components: {
 	    Spinner
 	},
-    mixins:[i18n],
+    mixins:[i18n, routerMixins],
     data: function() {
         return {
             searchContains: "",
@@ -127,10 +131,14 @@ module.exports = {
             sortBy: "name",
             normalSortOrder: true,
             cancelSearch: false,
-	    showCancel: false
+	        showCancel: false,
+            availableApps: [],
+            showAppMenu: false,
+            menutop:"",
+            menuleft:"",
         }
     },
-    props: ['path', 'context', 'navigateToAction', 'viewAction'],
+    props: ['path', 'context', 'navigateToAction'],
     created: function() {
         this.selectedDate = new Date().toISOString().split('T')[0];
     },
@@ -394,12 +402,99 @@ module.exports = {
             this.cancelSearch = true;
 	    this.showCancel = false;
         },
-        view: function (entry) {
+        view: function (event, entry) {
             if (entry.isDirectory) {
                 this.close();
                 this.navigateToAction(entry.path + "/" + entry.name);
             } else {
-                this.viewAction(entry.path, entry.name);
+                this.viewAction(event, entry);
+            }
+        },
+        viewAction: function (event, entry) {
+            let that = this;
+            let fullPath = entry.path + (entry.isDirectory ? "" : '/' + entry.name);
+            this.findFile(fullPath).thenApply(file => {
+                if (file != null) {
+                    let userApps = this.availableAppsForFile(file);
+                    let inbuiltApps = this.getInbuiltApps(file);
+                    if (userApps.length == 0) {
+                        if (inbuiltApps.length == 1) {
+                            if (inbuiltApps[0].name == 'hex') {
+                                that.openFileOrDir("Drive", entry.path, {filename:""});
+                            } else {
+                                this.openFileOrDir(inbuiltApps[0].name, entry.path, {filename:file.isDirectory() ? "" : file.getName()})
+                            }
+                        } else {
+                            this.showAppContextMenu(event, inbuiltApps, userApps, entry.path, file);
+                        }
+                    } else {
+                        this.showAppContextMenu(event, inbuiltApps, userApps, entry.path, file);
+                    }
+                }
+            });
+        },
+        findFile: function(filePath) {
+            let that = this;
+            var future = peergos.shared.util.Futures.incomplete();
+            this.context.getByPath(filePath).thenApply(function(fileOpt){
+                if (fileOpt.ref == null) {
+                    future.complete(null);
+                } else {
+                    let file = fileOpt.get();
+                    const props = file.getFileProperties();
+                    if (props.isHidden) {
+                        future.complete(null);
+                    } else {
+                        future.complete(file);
+                    }
+                }
+            }).exceptionally(function(throwable) {
+                console.log(throwable.getMessage());
+                future.complete(null);
+            });
+            return future;
+        },
+        appOpen(event, appName, path, file) {
+            this.showAppMenu = false;
+            event.stopPropagation();
+            this.availableApps = [];
+            this.openFileOrDir(appName, path, {filename:file.isDirectory() ? "" : file.getName()})
+        },
+        showAppContextMenu(event, inbuiltApps, userApps, path, file) {
+            let appOptions = [];
+            for(var i = 0; i < userApps.length; i++) {
+                let app = userApps[i];
+                let option = {'name': app.name, 'path': path, 'file': file, 'contextMenuText': app.contextMenuText};
+                appOptions.push(option);
+            }
+            for(var i = 0; i < inbuiltApps.length; i++) {
+                let app = inbuiltApps[i];
+                let option = {'name': app.name, 'path': path, 'file': file, 'contextMenuText': app.contextMenuText};
+                appOptions.push(option);
+            }
+            this.availableApps = appOptions;
+            var pos = this.getPosition(event);
+            Vue.nextTick(function() {
+                var top = pos.y;
+                var left = pos.x;
+                this.menutop = top + 'px';
+                this.menuleft = left + 'px';
+            }.bind(this));
+            this.showAppMenu = true;
+            event.stopPropagation();
+        },
+        getPosition: function(e) {
+            var posx = 0;
+            var posy = 0;
+
+            if (!e) var e = window.event;
+            if (e.clientX || e.clientY) {
+                posx = Math.max(0, e.clientX - 100); //todo remove arbitrary offset
+                posy = Math.max(0, e.clientY - 150);
+            }
+            return {
+                x: posx,
+                y: posy
             }
         },
         navigateTo: function (entry) {
