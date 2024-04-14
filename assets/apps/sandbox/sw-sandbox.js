@@ -17,7 +17,6 @@ let saveRequest = apiRequest + "/save/";
 let filePickerRequest = apiRequest + "/file-picker/";
 let foldersRequest = apiRequest + "/folders/";
 let printRequest = apiRequest + "/print/";
-let accountRequest = apiRequest + "/account/";
 let profileRequest = apiRequest + "/profile/";
 let installAppRequest = apiRequest + "/install-app/";
 
@@ -403,12 +402,6 @@ function appFetch(event) {
                 }
                 restFilePath = restFilePath.substring(profileRequest.length);
                 api = profileRequest;
-            } else if (filePath.startsWith(accountRequest)) {
-                if (method != 'GET') {
-                    return new Response('Unknown account action!', {status: 400})
-                }
-                restFilePath = restFilePath.substring(accountRequest.length);
-                api = accountRequest;
             } else if (filePath.startsWith(printRequest)) {
                 if (!(method == 'POST')) {
                     return new Response('Unknown print action!', {status: 400})

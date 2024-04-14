@@ -138,6 +138,7 @@ module.exports = {
             PERMISSION_EDIT_CHOSEN_FILE: 'EDIT_CHOSEN_FILE',
             PERMISSION_READ_CHOSEN_FOLDER: 'READ_CHOSEN_FOLDER',
             PERMISSION_EXCHANGE_MESSAGES_WITH_FRIENDS: 'EXCHANGE_MESSAGES_WITH_FRIENDS',
+            PERMISSION_ACCESS_PROFILE_PHOTO: 'ACCESS_PROFILE_PHOTO',
             PERMISSION_CSP_UNSAFE_EVAL: 'CSP_UNSAFE_EVAL',
             browserMode: false,
             fullPathForDisplay: '',
@@ -654,8 +655,6 @@ module.exports = {
                     that.handleFolderPickerRequest(headerFunc, path, apiMethod, data, hasFormData, params);
                 } else if (api =='/peergos-api/v0/profile/') {
                     that.handleProfileRequest(headerFunc(), path, apiMethod, data, hasFormData, params);
-                } else if (api =='/peergos-api/v0/account/') {
-                    that.handleAccountRequest(headerFunc(), path, apiMethod, data, hasFormData, params);
                 } else {
                     var bytes = convertToByteArray(new Int8Array(data));
                     if (apiMethod == 'GET') {
@@ -911,20 +910,25 @@ module.exports = {
                 if (index > -1) {
                     let that = this;
                     if (params.get('thumbnail') == 'true') {
-                        let encoder = new TextEncoder();
-                        peergos.shared.user.ProfilePaths.getProfilePhoto(username, this.context).thenApply(result => {
-                            if (result.ref != null) {
-                                let data = encoder.encode(JSON.stringify({profileThumbnail: that.extractBase64Image(result.ref)}));
-                                that.buildResponse(headerFunc, data, that.GET_SUCCESS);
-                            } else {
+                        if (!this.permissionsMap.get(this.PERMISSION_ACCESS_PROFILE_PHOTO)) {
+                            this.showError("App attempted to access profile photo without permission");
+                            this.buildResponse(headerFunc, null, this.ACTION_FAILED);
+                        } else {
+                            let encoder = new TextEncoder();
+                            peergos.shared.user.ProfilePaths.getProfilePhoto(username, this.context).thenApply(result => {
+                                if (result.ref != null) {
+                                    let data = encoder.encode(JSON.stringify({profileThumbnail: that.extractBase64Image(result.ref)}));
+                                    that.buildResponse(headerFunc, data, that.GET_SUCCESS);
+                                } else {
+                                    let data = encoder.encode(JSON.stringify({profileThumbnail: ''}));
+                                    that.buildResponse(headerFunc, data, that.GET_SUCCESS);
+                                }
+                            }).exceptionally(function(throwable) {
+                                console.log(throwable);
                                 let data = encoder.encode(JSON.stringify({profileThumbnail: ''}));
                                 that.buildResponse(headerFunc, data, that.GET_SUCCESS);
-                            }
-                        }).exceptionally(function(throwable) {
-                            console.log(throwable);
-                            let data = encoder.encode(JSON.stringify({profileThumbnail: ''}));
-                            that.buildResponse(headerFunc, data, that.GET_SUCCESS);
-                        });
+                            });
+                        }
                     } else {
                         peergos.shared.user.ProfilePaths.getProfile(username, this.context).thenApply(profileInfo => {
                             let base64Image = profileInfo.profilePhoto.isPresent() ? that.extractBase64Image(profileInfo.profilePhoto.get()) : "";
@@ -953,16 +957,7 @@ module.exports = {
                 that.buildResponse(headerFunc, null, that.ACTION_FAILED);
             }
         },
-        handleAccountRequest: function(headerFunc, path, apiMethod, data, hasFormData, params) {
-            if(apiMethod == 'GET' && path == "available-space") {
-                let totalSize = Number(this.quotaBytes.toString()) - Number(this.usageBytes.toString());
-                let encoder = new TextEncoder();
-                let data = encoder.encode(JSON.stringify({availableSpace: totalSize}));
-                this.buildResponse(headerFunc, data, this.GET_SUCCESS);
-            } else {
-                this.buildResponse(headerFunc, null, this.ACTION_FAILED);
-            }
-        },
+
         copyArray: function(jArray) {
             let arr = [];
             for(var i=0; i < jArray.length; i++) {
@@ -1673,7 +1668,14 @@ module.exports = {
                         } else {
                             let bytes = convertToByteArray(new Uint8Array(data));
                             let chatId = path.substring(0, path.indexOf("/attachment"))
-                            that.uploadFileAction(headerFunc, filename, bytes, chatId);
+                            let availableSpace = Number(this.quotaBytes.toString()) - Number(this.usageBytes.toString());
+                            let spaceAfterOperation = availableSpace - data.length;
+                            if (spaceAfterOperation < 0) {
+                                this.showToastError("Attachment size exceeds available Space: " + filename);
+                                this.buildResponse(headerFunc, null, that.ACTION_FAILED);
+                            } else {
+                                this.uploadFileAction(headerFunc, filename, bytes, chatId);
+                            }
                         }
                     }else {
                         let chatId = path;

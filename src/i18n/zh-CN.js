@@ -118,7 +118,6 @@ module.exports = {
     "APPNAV.TASKS":"任务",
     "APPNAV.SOCIAL":"社交",
     "APPNAV.CAL":"日历",
-    "APPNAV.CHAT":"聊天",
     "APPNAV.EMAIL":"邮箱",
     "APPNAV.UPGRADE":"升级",
     "SEARCH.SEARCH":"搜索",
