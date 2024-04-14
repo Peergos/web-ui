@@ -8,7 +8,7 @@
             <h2>File Picker</h2>
         </div>
         <div class="modal-body">
-            <Spinner v-if="showSpinner"></Spinner>
+            <Spinner v-if="showSpinner" :message="spinnerMessage"></Spinner>
             <div class="file-picker-view" class="scroll-style">
               <ul>
                 <SelectableTreeItem class="item" :model="treeData" :select_func="selectFile" :load_func="loadFolderLazily" :spinnerEnable_func="spinnerEnable" :spinnerDisable_func="spinnerDisable" :selectLeafOnly="selectLeafOnly"></TreeItem>

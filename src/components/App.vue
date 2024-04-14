@@ -77,7 +77,6 @@ const NewsFeed = require("../views/NewsFeed.vue");
 const Tasks = require("../views/Tasks.vue");
 const Social = require("../views/Social.vue");
 const Calendar = require("../views/Calendar.vue");
-const Chat = require("../views/Chat.vue");
 const Email = require("../views/Email.vue");
 const Launcher = require("../views/Launcher.vue");
 
@@ -109,7 +108,6 @@ module.exports = {
 		Tasks,
 		Social,
 		Calendar,
-		Chat,
 		Email,
 		Launcher,
 		AppTab,
@@ -263,7 +261,7 @@ module.exports = {
 	    }
 
             const that = this;
-            const sidebarApps = ["Drive", "NewsFeed", "Tasks", "Social", "Calendar", "Chat", "Email", "Launcher"]
+            const sidebarApps = ["Drive", "NewsFeed", "Tasks", "Social", "Calendar", "Email", "Launcher"]
             const inDrive = this.currentView == "Drive";
 	    if (app === "Drive") {
                 if (inDrive) {
