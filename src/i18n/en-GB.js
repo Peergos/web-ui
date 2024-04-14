@@ -461,7 +461,7 @@ module.exports = {
     "SANDBOX.EDIT.FILE":"Can modify file chosen by user",
     "SANDBOX.READ.FOLDER":"Can read selected files of the associated types from folder chosen by user",
     "SANDBOX.MESSAGES":"Can exchange messages with friends",
-    "SANDBOX.PROFILE.PHOTO":"Can retrieve profile photos shared with you",
+    "SANDBOX.PROFILE.PHOTO":"Can retrieve profile photos of your friends",
     "SANDBOX.UNSAFE":"Allow app to modify its own code",
     "SANDBOX.UNKNOWN":"Unknown permission",
     "FOLDER.PICKER.NO.FOLDERS":"No folders selected...",
