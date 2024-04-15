@@ -147,7 +147,6 @@ module.exports = {
 }
 
 .file-thumbnail .cover {
-display: inline-block; */
     background-color: var(--bg-2);
     color: var(--color);
     min-height: 200px;

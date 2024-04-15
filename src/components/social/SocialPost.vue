@@ -1,29 +1,29 @@
 <template>
-<transition name="modal">
-    <div class="modal-mask" @click="close">
-    	<meta http-equiv="content-type" content="text/html; charset=utf-8" />
-    	<div class="social-post-container" @click.stop style="overflow-y:auto;">
-	    <span @click="close()" tabindex="0" v-on:keyup.enter="close()" aria-label="close" class="close">&times;</span>
-	    <div class="modal-header">
-		<h2>{{title}}</h2>
-	    </div>
-	    <Spinner v-if="showSpinner"></Spinner>
-            <div class="modal-body">
-                <div id="social-post-main">
+	<transition name="modal" appear>
+		<div class="social-post post-modal__overlay" @click="close()" v-bind:style="{top:modelTop}" style="position: absolute;">
+
+	        <Spinner v-if="showSpinner"></Spinner>
+			<div class="social-post__container" @click.stop>
+				<header class="social-post__header">
+					<AppButton class="close" icon="close" @click.native="close()"/>
+					<h3>{{title}}</h3>
+				</header>
+				<div class="social-post__body">
                     <p>
-                        <span class="full-width">
-                            <button v-if="socialPostAction=='add' || socialPostAction=='reply'" class="btn btn-success full-width" @click="triggerUpload">Upload Media</button>
+                        <span>
+                            <button v-if="socialPostAction=='add' || socialPostAction=='reply'" class="btn btn-success" @click="triggerUpload">Upload Media</button>
                             <div v-for="filename in mediaFilenames">{{filename}}</div>
                         </span>
                         <input type="file" id="uploadInput" @change="uploadFiles" style="display:none;" multiple accept="audio/*,video/*,image/*" />
                     </p>
-                    <p>
-                        <textarea id="social-post-text" style="width:100%;resize: none;" rows=7 :placeholder="textAreaPlaceholder" maxlength="1000" v-model="post"></textarea>
-                    </p>
-                    <div v-if="isReady" class="flex-container">
-                        <div class="hspace-15 full-width">
-                            <label style="font-weight: normal;">Share post with:</label>
-                        </div>
+
+                    <textarea id="social-post-text" style="resize: none;" rows="7" :placeholder="textAreaPlaceholder" maxlength="1000" v-model="post"></textarea>
+                    <div>
+                        <span>
+                            <label style="font-weight: normal;">{{ translate("NEWSFEED.POST.SHARE.WITH") }}</label>
+                        </span>
+                    </div>
+					 <div v-if="isReady" class="flex-container">
                         <div v-if="shareWithSharerOnly" class="hspace-15">
                             <label class="checkbox__group">
                                 <input :disabled="socialPostAction=='edit'" type="radio" id="sharer-option" value="Sharer" v-model="shareWith">
@@ -35,45 +35,57 @@
                             <label class="checkbox__group">
                                 <input :disabled="socialPostAction=='edit'" type="radio" id="friends-option" value="Friends" v-model="shareWith">
                                 <span class="checkmark"></span>
-                                Friends
+                                {{ translate("NEWSFEED.POST.SHARE.WITH.FRIENDS") }}
                             </label>
                         </div>
                         <div v-if="!shareWithSharerOnly" class="hspace-15">
                             <label class="checkbox__group">
                                 <input :disabled="!allowFollowerSharingOption || socialPostAction=='edit'" type="radio" id="followers-option" value="Followers" v-model="shareWith">
                                 <span class="checkmark"></span>
-                                Followers (Includes Friends)
+                                {{ translate("NEWSFEED.POST.SHARE.WITH.FOLLOWERS") }}
                             </label>
                         </div>
-                        <div class="full-width">
-                            <button :disabled="!isPostingAvailable()" class="btn btn-success full-width" @click="submitPost()">
-                                Post
-                            </button>
-                        </div>
                     </div>
-                </p>
-            </div>
-        </div>
-    </div>
-</div>
-</transition>
-
+				</div>
+				<footer class="social-post__footer">
+					<AppButton outline @click.native="close()">
+						{{ translate("PROMPT.CANCEL") }}
+					</AppButton>
+					<AppButton
+    					:disabled="!isPostingAvailable()"
+						id='prompt-button-id'
+						type="primary"
+						accent
+						@click.native="submitPost()"
+					>
+                    {{ translate("NEWSFEED.POST.BUTTON") }}
+					</AppButton>
+				</footer>
+			</div>
+		</div>
+	</transition>
 </template>
 
 <script>
+const i18n = require("../../i18n/index.js");
+const AppButton = require("../AppButton.vue");
+const helpers = require("../../mixins/storage/index.js");
 const ProgressBar = require("../drive/ProgressBar.vue");
 const Spinner = require("../spinner/Spinner.vue");
 
 module.exports = {
     components: {
-		ProgressBar,
-		Spinner
-	},
-	data: function() {
-        return {
-            showSpinner: false,
+        AppButton,
+        ProgressBar,
+        Spinner
+    },
+    mixins:[i18n],
+	data() {
+		return {
             title: "Post a Message",
             textAreaPlaceholder: "Type in here...",
+			prompt_result: '',
+            showSpinner: false,
             shareWith: "Friends",
             post: "",
             isPosting: false,
@@ -83,16 +95,28 @@ module.exports = {
             mediaFiles: [],
             mediaFilenames: "",
             progressMonitors: [],
-            isReady: false
-        }
+            isReady: false,
+            modelTop: "100px",
+		}
+	},
+    props: ['closeSocialPostForm', 'socialFeed', 'socialPostAction', 'currentSocialPostEntry', 'top'],
+    computed: {
+        ...Vuex.mapState([
+            'quotaBytes',
+            'usageBytes',
+            'context',
+            'socialData',
+        ]),
+        groups: function() {
+            return {groupsNameToUid: this.socialData.groupsNameToUid, groupsUidToName: this.socialData.groupsUidToName};
+        },
     },
-    props: ['closeSocialPostForm', 'socialFeed', 'context', 'showMessage', 'groups', 'socialPostAction'
-        , 'currentSocialPostEntry', 'checkAvailableSpace', 'convertBytesToHumanReadable'],
     created: function() {
+        this.modelTop = this.top;
         let that = this;
         if (this.socialPostAction == 'reply') {
             if (this.currentSocialPostEntry != null) {
-                this.title = "Post a Comment";
+                this.title = this.translate("NEWSFEED.POST.REPLY");
                 if (this.currentSocialPostEntry.socialPost != null) {
                     if (this.currentSocialPostEntry.socialPost.shareTo == peergos.shared.social.SocialPost.Resharing.Author) {
                         that.shareWith = "Sharer";
@@ -107,7 +131,7 @@ module.exports = {
             }
             this.isReady = true;
         } else if (this.socialPostAction == 'edit') {
-            this.title = "Edit a Post";
+            this.title = this.translate("NEWSFEED.POST.EDIT");
             this.post = this.currentSocialPostEntry.socialPost.body.toArray([])[0].inlineText();
             let pathStr = this.currentSocialPostEntry.path;
             let dirWithoutLeadingSlash = pathStr.startsWith("/") ? pathStr.substring(1) : pathStr;
@@ -131,7 +155,13 @@ module.exports = {
             document.getElementById("social-post-text").focus();
         });
     },
-    methods: {
+	methods: {
+        checkAvailableSpace: function(fileSize) {
+            return Number(this.quotaBytes.toString()) - (Number(this.usageBytes.toString()) + fileSize);
+        },
+	    showMessage: function(msg) {
+	        this.$toast.error(msg, {timeout:false});
+	    },
         uploadFiles: function(evt) {
             let files = evt.target.files || evt.dataTransfer.files;
             let totalSize = 0;
@@ -141,8 +171,9 @@ module.exports = {
             let spaceAfterOperation = this.checkAvailableSpace(totalSize);
             if (spaceAfterOperation < 0) {
                 document.getElementById('uploadInput').value = "";
-                this.showMessage("Media File(s) exceed available Space",
-                    "Please free up " + this.convertBytesToHumanReadable('' + -spaceAfterOperation) + " and try again");
+                let amountToFree = helpers.convertBytesToHumanReadable('' + -spaceAfterOperation);
+                let errMsg = this.translate("NEWSFEED.POST.UPLOAD.SPACE.ERROR").replace("$SPACE", amountToFree);
+                this.showMessage(errMsg);
             } else {
                 this.mediaFiles = files;
                 let mediaFilenames = [];
@@ -207,27 +238,23 @@ module.exports = {
             let future = peergos.shared.util.Futures.incomplete();
             let reader = new browserio.JSFileReader(mediaFile);
             let java_reader = new peergos.shared.user.fs.BrowserFileReader(reader);
-            if (mediaFile.size > 2147483647) {
-                that.showMessage("Media file greater than 2GiB not currently supported!");
-                future.complete(null);
-            } else {
-                this.context.getSpaceUsage().thenApply(usageBytes => {
-                    that.context.getQuota().thenApply(quotaBytes => {
-                        let spaceAfterOperation = Number(quotaBytes.toString()) - (Number(usageBytes.toString()) + mediaFile.size);
-                        if (spaceAfterOperation <= 0) {
-                            that.showMessage("Unable to proceed. " + mediaFile.name + " file size exceeds available space");
-                            future.complete(null);
-                        } else {
-                            let postTime = peergos.client.JsUtil.now();
-                            that.socialFeed.uploadMediaForPost(java_reader, mediaFile.size, postTime, updateProgressBar).thenApply(function(pair) {
-                                var thumbnailAllocation = Math.min(100000, mediaFile.size / 10);
-                                updateProgressBar({ value_0: thumbnailAllocation});
-                                future.complete({mediaItem: pair.right});
-                            });
-                        }
-                    });
+            this.context.getSpaceUsage().thenApply(usageBytes => {
+                that.context.getQuota().thenApply(quotaBytes => {
+                    let spaceAfterOperation = Number(quotaBytes.toString()) - (Number(usageBytes.toString()) + mediaFile.size);
+                    if (spaceAfterOperation <= 0) {
+                        let errMsg = that.translate("NEWSFEED.POST.UPLOAD.SPACE.ERROR2").replace("$NAME", mediaFile.name);
+                        that.showMessage(errMsg);
+                        future.complete(null);
+                    } else {
+                        let postTime = peergos.client.JsUtil.now();
+                        that.socialFeed.uploadMediaForPost(java_reader, mediaFile.size, postTime, updateProgressBar).thenApply(function(pair) {
+                            var thumbnailAllocation = Math.min(100000, mediaFile.size / 10);
+                            updateProgressBar({ value_0: thumbnailAllocation});
+                            future.complete({mediaItem: pair.right});
+                        });
+                    }
                 });
-            }
+            });
             return future;
         },
         clearProgressStore: function(progressStore) {
@@ -251,21 +278,19 @@ module.exports = {
                 let updateProgressBar = function(len){
                     progress.done += len.value_0;
 
-                    that.$toast.update(progress.name,
-                                       {content:
-					{
-					    component: ProgressBar,
-					    props:  {
-						title: progress.title,
-						done: progress.done,
-						max: progress.max
-					    },
-					}
-				       });
-
-		    if (progress.done >= progress.max) {
-			that.$toast.dismiss(progress.name);
-		    }
+                    that.$toast.update(progress.name, {content:
+                            {
+                                component: ProgressBar,
+                                props:  {
+                                title: progress.title,
+                                done: progress.done,
+                                max: progress.max
+                                },
+                            }
+                    });
+                    if (progress.done >= progress.max) {
+                        that.$toast.dismiss(progress.name);
+                    }
                 };
                 this.uploadMedia(this.mediaFiles[index], updateProgressBar).thenApply(result => {
                     if (result != null) {
@@ -286,16 +311,14 @@ module.exports = {
                 let file = this.mediaFiles[i];
                 var thumbnailAllocation = Math.min(100000, file.size / 10);
                 var resultingSize = file.size + thumbnailAllocation;
+                let title = this.translate("NEWSFEED.POST.UPLOAD") + " " + file.name;
                 var progress = {
-                    title:"Encrypting and uploading " + file.name,
+                    title:title,
                     done:0,
                     max:resultingSize,
                     name: file.name
                 };
-                that.$toast({
-		    component: ProgressBar,
-		    props:  progress,
-		} , { icon: false , timeout:false, id: file.name})
+                that.$toast({ component: ProgressBar, props:  progress} , { icon: false , timeout:false, id: file.name});
                 that.progressMonitors.push(progress);
                 progressStore.push(progress);
             }
@@ -387,59 +410,109 @@ module.exports = {
             });
         },
         savePost: function(socialPost) {
-           let that = this;
-           let readerToAdd = this.readerToAdd();
-           this.socialFeed.createNewPost(socialPost).thenApply(function(result) {
-               that.context.shareReadAccessWith(result.left, peergos.client.JsUtil.asSet([readerToAdd])).thenApply(function(b) {
-                       that.showSpinner = false;
-                       that.closeSocialPostForm("save", result.left.toString(), socialPost, result.right
-                            , that.currentSocialPostEntry == null ? null : that.currentSocialPostEntry.path);
-                       that.isPosting = false;
-                   }).exceptionally(function(err) {
-                       that.showSpinner = false;
-                       that.showMessage(err.getMessage());
-                       that.isPosting = false;
-               });
+            let that = this;
+            let readerToAdd = this.readerToAdd();
+            this.socialFeed.createNewPost(socialPost).thenApply(function(result) {
+                that.context.shareReadAccessWith(result.left, peergos.client.JsUtil.asSet([readerToAdd])).thenApply(function(b) {
+                    that.showSpinner = false;
+                    that.closeSocialPostForm("save", result.left.toString(), socialPost, result.right
+                        , that.currentSocialPostEntry == null ? null : that.currentSocialPostEntry.path);
+                    that.isPosting = false;
+                }).exceptionally(function(err) {
+                    that.showSpinner = false;
+                    that.showMessage(err.getMessage());
+                    that.isPosting = false;
+                });
             }).exceptionally(function(throwable) {
                 that.showMessage(throwable.getMessage());
                 that.showSpinner = false;
                 that.isPosting = false;
             });
         },
-    }
+	}
 }
-
 </script>
-
 <style>
-#social-post-text{
+.social-post.post-modal__overlay{
+	display:flex;
+	align-items: center;
+	justify-content: center;
+    margin-left: -250px;
+    left: 50%;
+}
+
+.modal-mask {
+  position: fixed;
+  z-index: 2500;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0, 0, 0, .5);
+  transition: opacity .3s ease;
+}
+
+.social-post__container{
+	width: 500px;
+	padding: 16px;
+	border-radius: 4px;
 	color: var(--color);
-	background-color: var(--bg);
+	background-color:var(--bg);
+	box-shadow: 0 6px 16px rgba(0,0,0,0.15);
+}
+.social-post__header h3{
+	border-top:0;
+	font-weight: var(--regular);
+}
+.social-post__body{
+	margin: var(--app-margin) 0;
+}
+.social-post__footer{
+	display: flex;
+	justify-content: flex-end;
+}
+.social-post__footer button{
+	margin-left: 16px;
 }
 
-.social-post-container {
-    width: 90%;
-    height: 80%;
-    margin: 10% auto;
-    padding: 20px 30px;
-    color: var(--color);
+
+textarea {
+	width:100%;
+
+	font-size: var(--text);
+	border-radius: 4px;
+
+	-webkit-appearance:none;
+    -moz-appearance:none;
+    appearance: none;
+
+	outline: none;
+	box-shadow: none;
+
+	border: 2px solid var(--green-500);
+	color: var(--color);
     background-color: var(--bg);
-    border-radius: 2px;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, .33);
-    transition: all .3s ease;
-    width: 60%;
+}
+textarea:focus,
+textarea:active,
+textarea:focus-visible{
+	outline:none;
+	border: 2px solid var(--green-500)!important;
+}
+/* TODO: quick reset, we shopuld properly remove other styles */
+textarea:-webkit-autofill,
+textarea:-webkit-autofill:hover,
+textarea:-webkit-autofill:focus,
+textarea:-webkit-autofill:active,
+textarea:focus,
+textarea:active,
+textarea:focus-visible{
+	color:var(--color);
+	font-size: var(--text);
+	box-shadow:none;
+	-webkit-text-fill-color: var(--color);
+	-webkit-box-shadow:0 0 0 30px var(--bg-2) inset;
+	border-color: var(--bg-2);
 }
 
-@media (max-width: 600px) {
-    .social-post-container {
-        width: 100%;
-        height: 100%;
-        padding: 10px 10px;
-        margin: 0;
-    }
-}
-
-.full-width {
-    width: 100%;
-}
 </style>

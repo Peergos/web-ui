@@ -13,12 +13,14 @@
 			>
 			{{ translate("NEWSFEED.NEW") }}
 			</AppButton>
-			<AppButton
-				aria-label="Refresh"
-				@click.native="refresh()"
-				size="small"
-				icon="refresh"
-			></AppButton>
+            <button :disabled="showSpinner" class="refresh-btn btn-success" @click="refresh()" aria-label="Refresh">
+                <i v-if="showSpinner" aria-hidden="true">
+                    <svg class="refresh-icon imageRotate" viewBox="0 0 1792 1792" xmlns="http://www.w3.org/2000/svg"><path d="M1639 1056q0 5-1 7-64 268-268 434.5t-478 166.5q-146 0-282.5-55t-243.5-157l-129 129q-19 19-45 19t-45-19-19-45v-448q0-26 19-45t45-19h448q26 0 45 19t19 45-19 45l-137 137q71 66 161 102t187 36q134 0 250-65t186-179q11-17 53-117 8-23 30-23h192q13 0 22.5 9.5t9.5 22.5zm25-800v448q0 26-19 45t-45 19h-448q-26 0-45-19t-19-45 19-45l138-138q-148-137-349-137-134 0-250 65t-186 179q-11 17-53 117-8 23-30 23h-199q-13 0-22.5-9.5t-9.5-22.5v-7q65-268 270-434.5t480-166.5q146 0 284 55.5t245 156.5l130-129q19-19 45-19t45 19 19 45z" fill="#fff"/></svg>
+                </i>
+                <i v-if="!showSpinner" aria-hidden="true" >
+                    <svg class="refresh-icon" viewBox="0 0 1792 1792" xmlns="http://www.w3.org/2000/svg"><path d="M1639 1056q0 5-1 7-64 268-268 434.5t-478 166.5q-146 0-282.5-55t-243.5-157l-129 129q-19 19-45 19t-45-19-19-45v-448q0-26 19-45t45-19h448q26 0 45 19t19 45-19 45l-137 137q71 66 161 102t187 36q134 0 250-65t186-179q11-17 53-117 8-23 30-23h192q13 0 22.5 9.5t9.5 22.5zm25-800v448q0 26-19 45t-45 19h-448q-26 0-45-19t-19-45 19-45l138-138q-148-137-349-137-134 0-250 65t-186 179q-11 17-53 117-8 23-30 23h-199q-13 0-22.5-9.5t-9.5-22.5v-7q65-268 270-434.5t480-166.5q146 0 284 55.5t245 156.5l130-129q19-19 45-19t45 19 19 45z" fill="#fff"/></svg>
+                </i>
+            </button>
 		</template>
 
 	</AppHeader>
@@ -45,13 +47,10 @@
                     v-if="showSocialPostForm"
                     :closeSocialPostForm="closeSocialPostForm"
                     :socialFeed="socialFeed"
-                    :context="context"
                     :showMessage="showMessage"
-                    :groups="groups"
                     :socialPostAction="socialPostAction"
                     :currentSocialPostEntry="currentSocialPostEntry"
-                    :checkAvailableSpace="checkAvailableSpace"
-                    :convertBytesToHumanReadable="convertBytesToHumanReadable">
+                    :top="socialPostTop">
                 </SocialPost>
                 <Gallery
                     v-if="showEmbeddedGallery"
@@ -92,7 +91,7 @@
                         </h3>
                     </center>
                     <ul id="editMenu" v-if="showEditMenu" class="dropdown-menu" v-bind:style="{top:menutop, left:menuleft}" style="cursor:pointer;display:block;min-width:100px;">
-                        <li style="padding-bottom: 5px;color: black;"><a @click="editPost(currentRow)">{{ translate("DRIVE.EDIT") }}</a></li>
+                        <li style="padding-bottom: 5px;color: black;"><a @click="editPost($event, currentRow)">{{ translate("DRIVE.EDIT") }}</a></li>
                         <li style="padding-bottom: 5px;color: black;"><a @click="deletePost(currentRow)">{{ translate("DRIVE.DELETE") }}</a></li>
                     </ul>
                     <ul id="friendMenu" v-if="showFriendMenu" class="dropdown-menu" v-bind:style="{top:menutop, left:menuleft}" style="cursor:pointer;display:block;min-width:100px;">
@@ -104,9 +103,25 @@
                             <div v-if="entry[0].isLastEntry">
                                 <center><span>{{ translate("NEWSFEED.END") }}</span></center>
                             </div>
-                            <div v-if="!entry[0].isLastEntry && !entry[0].isPost && !entry[0].isMedia" style="border: 1px solid black;border-radius: 11px; margin-top:5px; padding: 2em;">
-                                <a v-if="entry[0].sharer != context.username && canLoadProfile(entry[0].sharer)" v-on:click="displayProfile(entry[0].sharer)" style="cursor: pointer">
-                                    <span>{{ entry[0].sharer }}</span>
+                            <div v-if="!entry[0].isLastEntry && displaySharingItem(entry)" style="padding: 2em;">
+                                <a v-if="entry[0].sharer != context.username && canLoadProfile(entry[0].sharer)" v-on:click="displayProfile(entry[0].sharer)" style="cursor: pointer;">
+                                    <span v-if="entry[0].sharerThumbnail.length > 0">
+                                        <img v-bind:src="entry[0].sharerThumbnail" class="profile-thumbnail">
+                                    </span>
+                                    <span v-if="entry[0].sharerThumbnail.length == 0" class="drive-user" style="margin-right: 10px; margin-top: -10px; padding: 4px;">
+                                        <AppIcon class="cover" icon="user--48" />
+                                    </span>
+                                    <span>
+                                        {{ entry[0].sharer }}
+                                    </span>
+                                </a>
+                                <a v-if="entry[0].sharer == context.username" v-on:click="displayProfile(entry[0].sharer)" style="cursor: pointer; margin-right: 10px;">
+                                    <span v-if="entry[0].sharerThumbnail.length > 0">
+                                        <img v-bind:src="entry[0].sharerThumbnail" class="profile-thumbnail">
+                                    </span>
+                                    <span v-if="entry[0].sharerThumbnail.length == 0" class="drive-user" style="margin-top: -10px; padding: 4px;">
+                                        <AppIcon class="cover" icon="user--48" />
+                                    </span>
                                 </a>
                                 <span v-if="entry[0].sharer != context.username && !canLoadProfile(entry[0].sharer)">{{ entry[0].sharer }}</span>
                                 <span>{{ entry[0].info }}</span>
@@ -127,60 +142,19 @@
                                         </div>
                                     </div>
                                     <span v-if="!entry[0].isDirectory && entry[0].sharer != context.username && !entry[0].isMedia && canComment(entry[0])">
-                                        <button class="btn btn-success" @click="addComment(entry[0])">{{ translate("NEWSFEED.ADD.COMMENT") }}</button>
+                                        <i @click="addComment($event, entry[0])" style="cursor: pointer">
+                                            <svg class="inline-svg" viewBox="0 0 1792 1792" xmlns="http://www.w3.org/2000/svg"><path d="M896 384q-204 0-381.5 69.5t-282 187.5-104.5 255q0 112 71.5 213.5t201.5 175.5l87 50-27 96q-24 91-70 172 152-63 275-171l43-38 57 6q69 8 130 8 204 0 381.5-69.5t282-187.5 104.5-255-104.5-255-282-187.5-381.5-69.5zm896 512q0 174-120 321.5t-326 233-450 85.5q-70 0-145-8-198 175-460 242-49 14-114 22h-5q-15 0-27-10.5t-16-27.5v-1q-3-4-.5-12t2-10 4.5-9.5l6-9 7-8.5 8-9q7-8 31-34.5t34.5-38 31-39.5 32.5-51 27-59 26-76q-157-89-247.5-220t-90.5-281q0-174 120-321.5t326-233 450-85.5 450 85.5 326 233 120 321.5z"/></svg>
+                                            Comment
+                                        </i>
                                     </span>
                                 </div>
-
-                                <div class="table-responsive table-striped table-hover" style="font-size: 1.0em;padding-left:0;margin-bottom:0;border:none;">
-                                    <div v-for="(row, rowIndex) in entry">
-                                        <div v-if="rowIndex >= 2 && row.isMedia">
-                                            <div v-bind:style="{ marginLeft: indent(row) }">
-                                                <div  v-for="(media, mediaIndex) in row.mediaList" class="grid_icon_wrapper fa" style="margin:0;margin-top:0.2em;">
-                                                    <a v-if="!media.hasThumbnail">
-                                                        <AppIcon style="height:100px" v-on:click="viewMediaList(row.mediaList, mediaIndex)" class="card__icon" :icon="getFileIconFromFileAndType(media.file, media.fileType)"> </AppIcon>
-                                                    </a>
-                                                    <img v-if="media.hasThumbnail" v-on:click="viewMediaList(row.mediaList, mediaIndex)" v-bind:src="media.thumbnail" style="cursor: pointer"/>
-                                                </div>
-                                            </div>
-                                            <div v-bind:style="{ marginLeft: indent(entry[rowIndex-1]) }">
-                                                <div style="margin-top: 10px; margin-bottom: 10px;">
-                                                    <span v-if="entry[rowIndex-1].sharer != context.username && canComment(entry[rowIndex-1])">
-                                                        <button class="btn btn-success" @click="addComment(entry[rowIndex-1])">{{ translate("NEWSFEED.COMMENT") }}</button>
-                                                    </span>
-                                                </div>
-                                            </div>
-                                        </div>
-                                        <div v-if="rowIndex >= 1 && row.isPost">
-                                            <div v-bind:style="{ marginLeft: indent(row) }">
-                                                <div style="display:flex;font-size: 1em;color: #7d7d7d;margin-right: 10px;">
-                                                    <a v-if="row.sharer != context.username && canLoadProfile(row.sharer)" v-on:click="displayProfile(row.sharer)" style="cursor: pointer">
-                                                        <span>{{ row.sharer }}&nbsp;</span>
-                                                    </a>
-                                                    <span v-if="row.sharer!= context.username && !canLoadProfile(row.sharer)">{{ row.sharer }}&nbsp;</span>
-                                                    {{ row.info }}
-                                                    <span style="flex-grow:1;">&nbsp&nbsp;{{ row.status}}</span>
-                                                    <span v-if="row.sharer == context.username" class="fa fa-ellipsis-h" @click="displayEditMenu($event, row)"></span>
-                                                </div>
-                                                <div class="post-content" v-if="row.name.length > 0">{{ row.name }}</div>
-                                            </div>
-                                            <div v-if="!(rowIndex + 1 < entry.length && entry[rowIndex+1].isMedia)" v-bind:style="{ marginLeft: indent(row) }">
-                                                <div style="margin-top: 10px; margin-bottom: 10px;">
-                                                    <span v-if="row.sharer != context.username && canComment(row)">
-                                                        <button class="btn btn-success" @click="addComment(row)">{{ translate("NEWSFEED.COMMENT") }}</button>
-                                                    </span>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-
                             </div>
-                            <div v-if="!entry[0].isLastEntry && (entry[0].isPost || entry[0].isMedia)" class="entry">
+                            <div v-if="!entry[0].isLastEntry" v-bind:class="[displaySharingItem(entry) ? 'entry-no-bg' : 'entry']">
                                 <div class="table-responsive table-striped table-hover" style="font-size: 1.0em;padding-left:0;margin-bottom:0;border:none;">
                                     <div v-for="(row, rowIndex) in entry">
-                                        <div v-if="row.isMedia">
+                                        <div v-if="displayMedia(entry, rowIndex, row)">
                                             <div v-bind:style="{ marginLeft: indent(row) }">
-                                                <div  v-for="(media, mediaIndex) in row.mediaList" class="grid_icon_wrapper fa" style="margin:0;margin-top:0.2em;">
+                                                <div  v-for="(media, mediaIndex) in row.mediaList" class="grid_icon_wrapper fa">
                                                     <a v-if="!media.hasThumbnail">
                                                         <AppIcon style="height:100px" v-on:click="viewMediaList(row.mediaList, mediaIndex)" class="card__icon" :icon="getFileIconFromFileAndType(media.file, media.fileType)"> </AppIcon>
                                                     </a>
@@ -189,18 +163,41 @@
                                             </div>
                                             <div v-bind:style="{ marginLeft: indent(entry[rowIndex-1]) }">
                                                 <div style="margin-top: 10px; margin-bottom: 10px;">
-                                                    <span v-if="canComment(entry[rowIndex-1])">
-                                                        <button class="btn btn-success" @click="addComment(entry[rowIndex-1])">{{ translate("NEWSFEED.COMMENT") }}</button>
+                                                    <span v-if="displayCommentButtonForPrevious(entry, rowIndex)">
+                                                        <i @click="addComment($event, entry[rowIndex-1]) && rowIndex == 1" style="cursor: pointer">
+                                                            <svg class="inline-svg" viewBox="0 0 1792 1792" xmlns="http://www.w3.org/2000/svg"><path d="M1792 1120q0 166-127 451-3 7-10.5 24t-13.5 30-13 22q-12 17-28 17-15 0-23.5-10t-8.5-25q0-9 2.5-26.5t2.5-23.5q5-68 5-123 0-101-17.5-181t-48.5-138.5-80-101-105.5-69.5-133-42.5-154-21.5-175.5-6h-224v256q0 26-19 45t-45 19-45-19l-512-512q-19-19-19-45t19-45l512-512q19-19 45-19t45 19 19 45v256h224q713 0 875 403 53 134 53 333z"/></svg>
+                                                            Reply
+                                                        </i>
                                                     </span>
                                                 </div>
                                             </div>
                                         </div>
-                                        <div v-if="row.isPost">
+                                        <div v-if="displayPost(entry, rowIndex, row)">
                                             <div v-bind:style="{ marginLeft: indent(row) }">
                                                 <div style="display:flex;font-size: 1em;color: #7d7d7d;margin-right: 10px;">
                                                     <a v-if="row.sharer != context.username && canLoadProfile(row.sharer)" v-on:click="displayProfile(row.sharer)" style="cursor: pointer">
-                                                        <span>{{ row.sharer }}&nbsp;</span>
+                                                        <span v-if="row.sharerThumbnail.length > 0">
+                                                            <img v-bind:src="row.sharerThumbnail" class="profile-thumbnail">
+                                                        </span>
+                                                        <span v-if="row.sharerThumbnail.length == 0" class="picon-profile profile-thumbnail">
+                                                            <div class="drive-user" style="margin-top: -10px; padding: 4px;">
+                                                                <AppIcon class="cover" icon="user--48" />
+                                                            </div>
+                                                        </span>
                                                     </a>
+                                                    <a v-if="row.sharer == context.username" v-on:click="displayProfile(row.sharer)" style="cursor: pointer; margin-right: 10px;">
+                                                        <span v-if="row.sharerThumbnail.length > 0">
+                                                            <img v-bind:src="row.sharerThumbnail" class="profile-thumbnail">
+                                                        </span>
+                                                        <span v-if="row.sharerThumbnail.length == 0" class="picon-profile profile-thumbnail">
+                                                            <div class="drive-user" style="margin-top: -10px; padding: 4px;">
+                                                                <AppIcon class="cover" icon="user--48" />
+                                                            </div>
+                                                        </span>
+                                                    </a>
+                                                    <span v-if="row.sharer != context.username && canLoadProfile(row.sharer)" class="sharer-name">
+                                                        {{ row.sharer }}
+                                                    </span>
                                                     <a
                                                         v-if="row.sharer!= context.username && !canLoadProfile(row.sharer)"
                                                         v-on:click="displayFriendMenu($event, row)"
@@ -215,8 +212,11 @@
                                             </div>
                                             <div v-if="!(rowIndex + 1 < entry.length && entry[rowIndex+1].isMedia)" v-bind:style="{ marginLeft: indent(row) }">
                                                 <div style="margin-top: 10px; margin-bottom: 10px;">
-                                                    <span v-if="canComment(row)">
-                                                        <button class="btn btn-success" @click="addComment(row)">{{ translate("NEWSFEED.COMMENT") }}</button>
+                                                    <span v-if="displayCommentButton(entry, row)">
+                                                        <i @click="addComment($event, row)" style="cursor: pointer">
+                                                            <svg class="inline-svg" viewBox="0 0 1792 1792" xmlns="http://www.w3.org/2000/svg"><path d="M1792 1120q0 166-127 451-3 7-10.5 24t-13.5 30-13 22q-12 17-28 17-15 0-23.5-10t-8.5-25q0-9 2.5-26.5t2.5-23.5q5-68 5-123 0-101-17.5-181t-48.5-138.5-80-101-105.5-69.5-133-42.5-154-21.5-175.5-6h-224v256q0 26-19 45t-45 19-45-19l-512-512q-19-19-19-45t19-45l512-512q19-19 45-19t45 19 19 45v256h224q713 0 875 403 53 134 53 333z"/></svg>
+                                                            Reply
+                                                        </i>
                                                     </span>
                                                 </div>
                                             </div>
@@ -236,6 +236,7 @@
 </template>
 
 <script>
+
 const AppButton = require("../components/AppButton.vue");
 const AppHeader = require("../components/AppHeader.vue");
 const AppIcon = require("../components/AppIcon.vue");
@@ -285,6 +286,7 @@ module.exports = {
                 webRoot: ""
             },
             showSocialPostForm: false,
+            socialPostTop: "100px",
             socialPostAction: '',
             currentSocialPostEntry: null,
             showEmbeddedGallery: false,
@@ -338,6 +340,37 @@ module.exports = {
 	mounted(){
 	},
     methods: {
+        displayCommentButton: function(entry, row) {
+            if (this.displaySharingItem(entry)) {
+                return row.sharer != this.context.username && this.canComment(row);
+            } else {
+                return this.canComment(row);
+            }
+        },
+        displayPost: function(entry, rowIndex, row) {
+            if (this.displaySharingItem(entry)) {
+                return rowIndex >= 1 && row.isPost;
+            } else {
+                return row.isPost;
+            }
+        },
+        displayCommentButtonForPrevious: function(entry, rowIndex) {
+            if (this.displaySharingItem(entry)) {
+                return entry[rowIndex-1].sharer != this.context.username && this.canComment(entry[rowIndex-1]);
+            } else {
+                return this.canComment(entry[rowIndex-1]);
+            }
+        },
+        displayMedia: function(entry, rowIndex, row) {
+            if (this.displaySharingItem(entry)) {
+                return rowIndex >= 2 && row.isMedia;
+            } else {
+                return row.isMedia;
+            }
+        },
+        displaySharingItem: function(entry) {
+            return !entry[0].isPost && !entry[0].isMedia;
+        },
         updateSocialFeedInstance: function(updated) {
             // TODO put this in vuex store
             this.socialFeed = updated;
@@ -389,13 +422,15 @@ module.exports = {
                 that.showProfileViewForm = true;
             });
         },
-        checkAvailableSpace: function(fileSize) {
-            return Number(this.quotaBytes.toString()) - (Number(this.usageBytes.toString()) + fileSize);
-        },
         addNewPost: function() {
-            this.currentSocialPostEntry = null;
-            this.socialPostAction = 'add';
-            this.showSocialPostForm = true;
+            this.showSocialPostForm = false;
+            let that = this;
+            Vue.nextTick(function() {
+                that.currentSocialPostEntry = null;
+                that.socialPostAction = 'add';
+                that.socialPostTop = '100px';
+                that.showSocialPostForm = true;
+            });
         },
         closeSocialPostForm: function(action, newPath, newSocialPost, newFile, originalPath) {
             if (newPath != null && !newPath.startsWith("/")) {
@@ -458,14 +493,21 @@ module.exports = {
             this.showEditMenu = true;
 	    event.stopPropagation();
         },
-        editPost: function(entry) {
+        editPost: function(event, entry) {
+            this.showSocialPostForm = false;
             this.socialPostAction = 'edit';
             let parentPostAuthor = "";
             if (entry.socialPost.parent.ref != null) {
                 parentPostAuthor = this.extractOwnerFromPath(entry.socialPost.parent.ref.path);
             }
             this.currentSocialPostEntry = {path: entry.link, socialPost: entry.socialPost, sharer: parentPostAuthor};
-            this.showSocialPostForm = true;
+            let that = this;
+            let pos = this.getPosition(event);
+            Vue.nextTick(function() {
+                that.socialPostTop = Math.max(100, (pos.y - 250)) + 'px';
+                that.showSocialPostForm = true;
+            });
+            event.stopPropagation();
             this.showEditMenu = false;
         },
         sendFriendRequest: function(entry) {
@@ -525,18 +567,21 @@ module.exports = {
         },
         deletePost: function(entry) {
             let that = this;
-            var msg = that.translate("NEWSFEED.DELETE.CONFIRM");
-            if (entry.indent == 1) {
-                msg = msg + that.translate("NEWSFEED.POST") + "?";
-            } else {
-                msg = msg + that.translate("NEWSFEED.COMMENT") + "?";
-            }
-            this.confirmDeletePost(msg,
-                () => { that.showConfirm = false;
-                    that.deleteSocialPost(entry);
-                },
-                () => { that.showConfirm = false;}
-            );
+            this.showSocialPostForm = false;
+            Vue.nextTick(function() {
+                var msg = that.translate("NEWSFEED.DELETE.CONFIRM");
+                if (entry.indent == 1) {
+                    msg = msg + that.translate("NEWSFEED.POST") + "?";
+                } else {
+                    msg = msg + that.translate("NEWSFEED.COMMENT") + "?";
+                }
+                that.confirmDeletePost(msg,
+                    () => { that.showConfirm = false;
+                        that.deleteSocialPost(entry);
+                    },
+                    () => { that.showConfirm = false;}
+                );
+            });
         },
         reduceDeletingAllMediaReferences: function(entry, references, index, future) {
             let that = this;
@@ -619,14 +664,21 @@ module.exports = {
         getGroupUid: function(groupName) {
             return this.groups.groupsNameToUid[groupName];
         },
-        addComment: function(entry) {
+        addComment: function(event, entry) {
+            this.showSocialPostForm = false;
             this.socialPostAction = 'reply';
             var cap = entry.cap;
             if (cap == null) {
                 cap = entry.file.readOnlyPointer();
             }
             this.currentSocialPostEntry = {path: entry.link, socialPost: entry.socialPost, file: entry.file, cap: cap, sharer: entry.sharer};
-            this.showSocialPostForm = true;
+            let that = this;
+            let pos = this.getPosition(event);
+            Vue.nextTick(function() {
+                that.socialPostTop = Math.max(100, (pos.y - 250)) + 'px';
+                that.showSocialPostForm = true;
+            });
+            event.stopPropagation();
         },
         getFileSize: function(props) {
                 var low = props.sizeLow();
@@ -1197,6 +1249,7 @@ module.exports = {
             let isNewChat = this.isNewChat(filePath, isChat);
             let item = {
                 sharer: sharer,
+                sharerThumbnail: "",
                 owner: owner,
                 info: info,
                 link: filePath,
@@ -1269,10 +1322,18 @@ module.exports = {
 	    },
         populateTimeline: function(entries) {
             let allTimelineEntries = [];
+            let usernameMap = new Map();
+            let that = this;
             for(var j = 0; j < entries.length; j++) {
                 let indentedRow = entries[j];
                 let item = indentedRow.item;
                 let timelineEntry = this.createTimelineEntry(item.path, item.entry, item.socialPost, item.file, item.isChat);
+                let sharer = usernameMap.get(timelineEntry.sharer);
+                if (sharer == null) {
+                    usernameMap.set(timelineEntry.sharer, [timelineEntry]);
+                } else {
+                    sharer.push(timelineEntry);
+                }
                 timelineEntry.indent = indentedRow.indent;
                 allTimelineEntries.push(timelineEntry);
                 let mediaList = indentedRow.mediaList;
@@ -1284,6 +1345,23 @@ module.exports = {
                     }
                 }
             }
+            usernameMap.forEach(function(timelineEntries, username) {
+                peergos.shared.user.ProfilePaths.getProfile(username, that.context).thenApply(profile => {
+                    var base64Image = "";
+                    if (profile.profilePhoto.isPresent()) {
+                        var str = "";
+                        let data = profile.profilePhoto.get();
+                        for (let i = 0; i < data.length; i++) {
+                            str = str + String.fromCharCode(data[i] & 0xff);
+                        }
+                        if (data.byteLength > 0) {
+                            timelineEntries.forEach( entry => {
+                                entry.sharerThumbnail = "data:image/png;base64," + window.btoa(str);
+                            });
+                        }
+                    }
+                });
+            });
             return allTimelineEntries;
         },
         Tree: function(thisRef) {
@@ -1488,12 +1566,12 @@ module.exports = {
             return future;
         },
         refresh: function() {
+            this.showSpinner = true;
             this.seenPosts = new Map();
-            var that = this;
-            that.showSpinner = true;
             let lastSeenIndex = this.socialFeed.getLastSeenIndex();
             this.entryTree = new this.Tree(this);
             this.sharedItemsProcessedMap = new Map();
+            let that = this;
             this.socialFeed.update().thenApply(function(updated) {
                 that.socialFeed = updated;
                 that.updateSocialFeedInstance(updated);
@@ -1664,6 +1742,11 @@ module.exports = {
         max-width: 5em;
         cursor: pointer;
 }
+.newsfeed-view .entry-no-bg{
+	border-radius: 12px;
+	margin-top:5px;
+	padding: 16px;
+}
 
 .newsfeed-view .entry{
 	color:var(--color);
@@ -1690,4 +1773,112 @@ module.exports = {
 		padding: 0 16px;
 	}
 }
+
+/* https://stackoverflow.com/a/20217870 */
+.imageRotate{
+    -moz-animation: spinVertical 1.5s infinite linear;
+    -o-animation: spinVertical 1.5s infinite linear;
+    -webkit-animation: spinVertical 1.5s infinite linear;
+    animation: spinVertical 1.5s infinite linear;
+}
+
+@-moz-keyframes spinVertical {
+    0% {
+        -moz-transform: rotateZ(0deg);
+    }
+
+    100% {
+        -moz-transform: rotateZ(360deg);
+    }
+}
+
+@keyframes spinVertical {
+	0% {
+        transform: rotateZ(0deg);
+	}
+    100% {
+        transform: rotateZ(360deg);
+    }
+}
+
+
+@-ms-keyframes spinVertical {
+	0% {
+        -ms-transform: rotateZ(0deg);
+	}
+    100% {
+        -ms-transform: rotateZ(360deg);
+    }
+}
+
+@-o-keyframes spinVertical {
+	0% {
+        -o-transform: rotateZ(0deg);
+	}
+	100% {
+        -o-transform: rotateZ(360deg);
+	}
+}
+
+@-webkit-keyframes spinVertical {
+	0% {
+        -webkit-transform: rotateZ(0deg);
+	}
+	100% {
+        -webkit-transform: rotateZ(360deg);
+	}
+}
+
+.refresh-icon {
+    height: 20px;
+    width: 20px;
+}
+
+.refresh-btn {
+    display: inline-block;
+    padding: 3px 6px;
+    font-size: 14px;
+    text-align: center;
+    white-space: nowrap;
+    vertical-align: middle;
+    -ms-touch-action: manipulation;
+    touch-action: manipulation;
+    cursor: pointer;
+    -webkit-user-select: none;
+    -moz-user-select: none;
+    -ms-user-select: none;
+    user-select: none;
+    background-image: none;
+    border: 1px solid transparent;
+    border-radius: 2px;
+}
+
+.inline-svg {
+    margin-bottom: -6px;
+    height: 24px;
+    width: 24px;
+}
+
+.sharer-name {
+    margin-left: 10px;
+    margin-right: 5px;
+}
+
+.profile-thumbnail {
+    height: 32px;
+    width: 32px;
+    border-radius: 50%;
+    color: darkgray;
+    max-width: 100%;
+    line-height: 1.42857143;
+    background-color: #fff;
+    -webkit-transition: all .2s ease-in-out;
+    -o-transition: all .2s ease-in-out;
+    transition: all .2s ease-in-out;
+}
+
+.picon-profile {
+    font-size: 3em;
+}
+
 </style>
