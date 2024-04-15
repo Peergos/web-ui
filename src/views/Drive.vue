@@ -319,7 +319,6 @@
       v-on:hide-search="closeSearch"
       :path="searchPath"
       :navigateToAction="navigateToAction"
-      :context="context"
     >
     </Search>
     <AppRunner

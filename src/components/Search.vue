@@ -138,7 +138,7 @@ module.exports = {
             menuleft:"",
         }
     },
-    props: ['path', 'context', 'navigateToAction'],
+    props: ['path', 'navigateToAction'],
     created: function() {
         this.selectedDate = new Date().toISOString().split('T')[0];
     },
@@ -519,6 +519,10 @@ module.exports = {
         }
     },
     computed:{
+		...Vuex.mapState([
+			'context',
+            "sandboxedApps",
+		]),
         sortedItems(){
             var sortBy = this.sortBy;
             var reverseOrder = ! this.normalSortOrder;
