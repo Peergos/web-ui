@@ -1031,19 +1031,23 @@ module.exports = {
                     }
                 });
             } else {
-                this.launchApp(entry.appName, entry.path);
+                this.launchApp(entry);
             }
         },
         appInstallSuccess(appName) {
-            this.launchApp(this.appInstalledEntry.appName, this.appInstalledEntry.path);
+            this.launchApp(this.appInstalledEntry);
+        },
+        launchApp(entry) {
+            if (entry.isChat) {
+                this.showAppSandbox = true;
+                this.sandboxAppName = entry.appName;
+                this.sandboxAppChatId = this.extractChatUUIDFromPath(entry.path);
+            } else {
+                this.openFileOrDir(entry.appName, entry.path, {filename: entry.file.getName()})
+            }
         },
         closeAppInstallation() {
             this.showAppInstallation = false;
-        },
-        launchApp: function(appName, path) {
-            this.showAppSandbox = true;
-            this.sandboxAppName = appName;
-            this.sandboxAppChatId = this.extractChatUUIDFromPath(path);
         },
         closeAppSandbox() {
             this.showAppSandbox = false;
@@ -1647,10 +1651,10 @@ module.exports = {
 		...Vuex.mapState([
 		    'quotaBytes',
 		    'usageBytes',
-                    'context',
-                    'socialData',
-                    'path',
-                    "sandboxedApps",
+            'context',
+            'socialData',
+            'path',
+            "sandboxedApps",
 		]),
 		...Vuex.mapGetters([
 			'isSecretLink',
