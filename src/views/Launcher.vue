@@ -392,10 +392,7 @@ module.exports = {
                         if (fileCreated != null && fileCreated === true) {
                             let pathString = '/' + folder;
                             that.findFile(pathString + "/" + fileName).thenApply(file => {
-                                that.showAppSandbox = true;
-                                that.sandboxAppName = app.name;
-                                that.currentFile = file;
-                                that.currentPath = pathString;
+                                that.openFileOrDir(app.name, pathString, {filename: fileName})
                             });
                         }
                     });
