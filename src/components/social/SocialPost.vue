@@ -437,7 +437,7 @@ module.exports = {
 	display:flex;
 	align-items: center;
 	justify-content: center;
-    margin-left: -250px;
+    margin-left: -200px;
     left: 50%;
 }
 
@@ -453,7 +453,7 @@ module.exports = {
 }
 
 .social-post__container{
-	width: 500px;
+	width: 400px;
 	padding: 16px;
 	border-radius: 4px;
 	color: var(--color);
