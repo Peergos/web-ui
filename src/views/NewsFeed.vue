@@ -1334,7 +1334,9 @@ module.exports = {
                 let timelineEntry = this.createTimelineEntry(item.path, item.entry, item.socialPost, item.file, item.isChat);
                 let sharer = usernameMap.get(timelineEntry.sharer);
                 if (sharer == null) {
-                    usernameMap.set(timelineEntry.sharer, [timelineEntry]);
+                    if (timelineEntry.sharer == this.context.username || this.friendnames.indexOf(timelineEntry.sharer) > -1) {
+                        usernameMap.set(timelineEntry.sharer, [timelineEntry]);
+                    }
                 } else {
                     sharer.push(timelineEntry);
                 }
@@ -1364,6 +1366,8 @@ module.exports = {
                             });
                         }
                     }
+                }).exceptionally(function(throwable) {
+                    console.log('unable to get profile for user:' + username);
                 });
             });
             return allTimelineEntries;
