@@ -159,6 +159,7 @@ module.exports = {
 	},
     created() {
         this.prompt_action = this.translate("PROMPT.SET");
+        this.displayProfile();
     },
 	methods: {
         cleanupFailedUploads() {
