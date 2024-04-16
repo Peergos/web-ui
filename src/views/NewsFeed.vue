@@ -420,6 +420,8 @@ module.exports = {
                 };
                 that.showSpinner = false;
                 that.showProfileViewForm = true;
+            }).exceptionally(function(throwable) {
+                console.log('unable to get profile for user:' + username);
             });
         },
         addNewPost: function() {
