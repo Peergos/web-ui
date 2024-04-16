@@ -406,7 +406,7 @@ module.exports = {
     "NEWSFEED.POST.BUTTON":"发帖",
     "NEWSFEED.POST.REPLY":"发帖回复",
     "NEWSFEED.POST.EDIT":"编辑帖子",
-    "NEWSFEED.POST.UPLOAD.SPACE.ERROR":"媒体文件超出可用空间 - 请释放p $SPACE 并重试",
+    "NEWSFEED.POST.UPLOAD.SPACE.ERROR":"媒体文件超出可用空间 - 请释放 $SPACE 并重试",
     "NEWSFEED.POST.UPLOAD.SPACE.ERROR2":"无法继续。 $NAME 文件大小超出可用空间",
     "NEWSFEED.POST.UPLOAD":"正在加密并上传",
     "NEWSFEED.POST.SHARE.WITH":"与以下人员分享帖子：",
