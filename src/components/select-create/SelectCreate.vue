@@ -1,46 +1,55 @@
 <template>
-<transition name="modal">
-    <div class="modal-mask" @click="close">
-        <div style="height:30%"></div>
-        <div class="create-modal-container" @click.stop>
+	<transition name="modal" appear>
+		<div class="task-prompt task-modal__overlay" @click="close()">
 
-            <div class="modal-header">
-                <h3>{{select_message}}</h3>
-            </div>
-
-            <div class="modal-body">
-                <div class="container app-tabs">
-                    <div style="display: flex;align-items: center; flex-wrap: wrap; flex-direction: column;">
-                        <div style="margin: 10px; width: 100%;">
-                            <select v-model="selected" @change="onChange($event)" class="form-control" style="min-width: 125px; margin: 0;">
-                                <option v-for="option in options" v-bind:value="option.value" v-bind:disabled="option.disabled">
-                                    {{ option.text }}
-                                </option>
-                            </select>
-                        </div>
-                        <div id="name-input" style="display: none; margin: 10px; width: 100%;">
-                            <input id="create-input" v-model="select_result" type="text"
-                                   v-bind:placeholder="select_placeholder" class="form-control" maxlength="25" v-on:keyup.enter="setResult" autofocus></input>
-                        </div>
-                        <div id="name-input-button" style="display: none; margin: 10px; width: 100%;">
-                            <button id='create-new-button-id' class="btn btn-success" @click="setResult()" style="width: 100%;">OK</button>
-                        </div>
+			<div class="task__container" @click.stop>
+				<header class="task__header">
+					<AppButton class="close" icon="close" @click.native="close()"/>
+					<h3>{{select_message}}</h3>
+				</header>
+				<div class="task__body">
+				    <div>
+                        <select v-model="selected" @change="onChange($event)" class="form-select" style="min-width: 125px; margin: 0;">
+                            <option v-for="option in options" v-bind:value="option.value" v-bind:disabled="option.disabled">
+                                {{ option.text }}
+                            </option>
+                        </select>
                     </div>
-                </div>
-            </div>
-        </div>
-    </div>
-</transition>
+                    <div>
+                        <input v-if="showNameInput" id="create-input" v-model="select_result" type="text"
+                               v-bind:placeholder="select_placeholder" maxlength="25" v-on:keyup.enter="setResult" autofocus></input>
+                    </div>
+				</div>
+				<footer v-if="showOKButton" class="task__footer">
+					<AppButton
+						id='prompt-button-id'
+						type="primary"
+						accent
+						@click.native="setResult()"
+					>
+					OK
+					</AppButton>
+				</footer>
+			</div>
+		</div>
+	</transition>
 </template>
 
 <script>
+const AppButton = require("../AppButton.vue");
+
 module.exports = {
+    components: {
+        AppButton,
+    },
     data: function() {
         return {
             selected: '',
             select_result: '',
             options: [],
-            newEntryToken: "@@@new@@@"
+            newEntryToken: "@@@new@@@",
+            showNameInput: true,
+            showOKButton: true,
         }
     },
     props: ['select_message', 'select_placeholder', 'select_items', 'messages', 'select_consumer_func'],
@@ -69,12 +78,12 @@ module.exports = {
         },
         handleSelection: function (newVal) {
             if(newVal == this.newEntryToken) {
-                document.getElementById("name-input").style.display = '';
-                document.getElementById("name-input-button").style.display = '';
+                this.showNameInput = true;
+                this.showOKButton = true;
                 document.getElementById("create-input").focus();
             } else {
-                document.getElementById("name-input").style.display = 'none';
-                document.getElementById("name-input-button").style.display = 'none';
+                this.showNameInput = false;
+                this.showOKButton = false;
                 this.select_consumer_func(newVal);
                 this.close();
             }
@@ -102,14 +111,62 @@ module.exports = {
 }
 </script>
 <style>
-.create-modal-container {
-    width: 70%;
-    margin: 0px auto;
-    padding: 20px 30px;
+.task-prompt.task-modal__overlay{
+    position: fixed;
+    margin-top: 100px;
+    left: 50%;
+    margin-left: -180px;
+}
+.task__container{
+	width: 400px;
+	padding: 16px;
+	border-radius: 4px;
+	color: var(--color);
+	background-color:var(--bg);
+	box-shadow: 0 6px 16px rgba(0,0,0,0.15);
+}
+@media (max-width: 400px) {
+    .task-prompt.task-modal__overlay{
+        margin-left: -175px;
+    }
+    .task__container{
+        width: 350px;
+    }
+}
+
+.task__header h3{
+	border-top:0;
+	font-weight: var(--regular);
+}
+.task__body{
+	margin: var(--app-margin) 0;
+}
+.task__footer{
+	display: flex;
+	justify-content: flex-end;
+}
+.task__footer button{
+	margin-left: 16px;
+}
+
+.form-select{
+	width:100%;
+	margin: 8px 0;
+	padding: 0 16px;
+
+	font-size: var(--text);
+	line-height: 48px;
+	border-radius: 4px;
+
+	-webkit-appearance:none;
+    -moz-appearance:none;
+    appearance: none;
+
+	outline: none;
+	box-shadow: none;
+
+	border: 2px solid var(--green-500);
 	color: var(--color);
     background-color: var(--bg);
-    border-radius: 2px;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, .33);
-    transition: all .3s ease;
 }
 </style>
