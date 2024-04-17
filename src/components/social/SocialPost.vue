@@ -460,6 +460,16 @@ module.exports = {
 	background-color:var(--bg);
 	box-shadow: 0 6px 16px rgba(0,0,0,0.15);
 }
+
+@media (max-width: 400px) {
+    .social-post.post-modal__overlay{
+        margin-left: -175px;
+    }
+    .social-post__container{
+        width: 350px;
+    }
+}
+
 .social-post__header h3{
 	border-top:0;
 	font-weight: var(--regular);
