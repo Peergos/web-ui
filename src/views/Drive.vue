@@ -921,18 +921,17 @@ module.exports = {
 		init() {
 		    this.isStreamingAvailable = this.supportsStreaming();
 		    let that = this;
-                    if (!window.navigator.onLine)
-                        this.setup();
-                    else {
-                        streamSaver.createWriteStream("init-sw", null,
-                                                      function (url) {
-        		                                  that.setup();
-                                                      },
-                                                      function (seekHi, seekLo, seekLength, uuid) {},
-                                                      undefined,
-                                                      0
-                                                     );
-                    }
+            streamSaver.createWriteStream("init-sw", null,
+                function (url) {
+                    console.log('init-sw complete');
+                },
+                function (seekHi, seekLo, seekLength, uuid) {},
+                undefined,
+                0
+            );
+            Vue.nextTick(() => {
+                that.setup();
+            });
         },
 		setup() {
 			const that = this;
