@@ -921,15 +921,18 @@ module.exports = {
 		init() {
 		    this.isStreamingAvailable = this.supportsStreaming();
 		    let that = this;
-            streamSaver.createWriteStream("init-sw", null,
-                function (url) {
-        		    that.setup();
-                },
-                function (seekHi, seekLo, seekLength, uuid) {
-                },
-                undefined,
-                0
-            );
+                    if (!window.navigator.onLine)
+                        this.setup();
+                    else {
+                        streamSaver.createWriteStream("init-sw", null,
+                                                      function (url) {
+        		                                  that.setup();
+                                                      },
+                                                      function (seekHi, seekLo, seekLength, uuid) {},
+                                                      undefined,
+                                                      0
+                                                     );
+                    }
         },
 		setup() {
 			const that = this;
