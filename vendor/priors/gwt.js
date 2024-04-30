@@ -1161,6 +1161,7 @@ var accountCache = {
         });
     };
 	this.setLoginData = setLoginDataIntoCacheProm;
+	this.remove = removeLoginDataFromCacheProm;
 	this.getEntryData = getEntryDataFromCacheProm;
     }
 };
@@ -1176,6 +1177,21 @@ function setLoginDataIntoCacheProm(key, entryPoints) {
     } else {
         let that = this;
         setIDBKV(key, entryPoints, this.cacheAccountStore).then(() => {
+            future.complete(true);
+        }).catch(err => {
+            future.complete(true);
+        });
+    }
+    return future;
+}
+
+function removeLoginDataFromCacheProm(key) {
+    let future = peergos.shared.util.Futures.incomplete();
+    if (!this.isCachingEnabled) {
+        future.complete(true);
+    } else {
+        let that = this;
+        delIDBKV(key, this.cacheAccountStore).then(() => {
             future.complete(true);
         }).catch(err => {
             future.complete(true);
