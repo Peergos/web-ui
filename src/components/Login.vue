@@ -155,7 +155,8 @@ module.exports = {
 			peergos.shared.user.UserContext.signIn(
 				that.username,
 				that.password,
-				mfaReq => handleMfa(mfaReq),
+			        mfaReq => handleMfa(mfaReq),
+                                that.stayLoggedIn,
 				that.network,
 				that.crypto,
 				// { accept: (x) => (that.spinnerMessage = x) }
