@@ -1191,7 +1191,7 @@ function removeLoginDataFromCacheProm(key) {
         future.complete(true);
     } else {
         let that = this;
-        setIDBKV(key, [], this.cacheAccountStore).then(() => {
+        delIDBKV(key, this.cacheAccountStore).then(() => {
             future.complete(true);
         }).catch(err => {
             future.complete(true);
