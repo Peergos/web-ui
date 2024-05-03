@@ -5,18 +5,26 @@ on: [push]
 jobs:
   build:
     runs-on: ubuntu-latest
+    permissions:
+      id-token: write
+      contents: read
+      attestations: write
     steps:
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@v4
     - name: Set up JDK
-      uses: actions/setup-java@v3
+      uses: actions/setup-java@v4
       with:
         distribution: temurin
         java-version: 17
     - name: Build with Ant
       run: ant -noinput -buildfile build.xml peergos_submodule_sync dist 
-    - name: Upload jar artifact
-      uses: actions/upload-artifact@v2
+    - name: Create jar attestation
+      uses: actions/attest-build-provenance@v1.0.0
+      with:
+        subject-path: '${{ github.workspace }}/server/Peergos.jar'
+
+    - name: Upload artifact
+      uses: actions/upload-artifact@v4
       with:
         name: Peergos.jar
         path: "./server/Peergos.jar"
-    
