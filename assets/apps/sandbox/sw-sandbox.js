@@ -273,9 +273,9 @@ function appFetch(event) {
     let respHeaders = [
         //['Content-type', 'text/html'],
         //['content-security-policy', csp],
-        ['Cross-Origin-Embedder-Policy', 'require-corp'],
+        ['Cross-Origin-Embedder-Policy', 'credentialless'],
         ['Cross-Origin-Opener-Policy', 'same-origin'],
-        ['Cross-Origin-Resource-Policy', 'same-origin'],
+        //['Cross-Origin-Resource-Policy', 'same-origin'],
         ['Origin-Agent-Cluster', '?1'],
         ['x-xss-protection', '1; mode=block'],
         ['x-dns-prefetch-control', 'off'],
@@ -500,9 +500,9 @@ function returnAppData(method, filePath, uniqueId, ignoreBody) {
         let csp = appName.includes('@CSP_UNSAFE_EVAL') ? cspWithUnsafeEval : defaultCSP;
         let respHeaders = [
             ['content-security-policy', csp],
-            ['Cross-Origin-Embedder-Policy', 'require-corp'],
+            ['Cross-Origin-Embedder-Policy', 'credentialless'],
             ['Cross-Origin-Opener-Policy', 'same-origin'],
-            ['Cross-Origin-Resource-Policy', 'same-origin'],
+            //['Cross-Origin-Resource-Policy', 'same-origin'],
             ['Origin-Agent-Cluster', '?1'],
             ['x-xss-protection', '1; mode=block'],
             ['x-dns-prefetch-control', 'off'],
@@ -592,9 +592,9 @@ function returnRangeRequest(start, end, streamingEntry) {
 
         let respHeaders = [
             ['content-security-policy', csp],
-            ['Cross-Origin-Embedder-Policy', 'require-corp'],
+            ['Cross-Origin-Embedder-Policy', 'credentialless'],
             ['Cross-Origin-Opener-Policy', 'same-origin'],
-            ['Cross-Origin-Resource-Policy', 'same-origin'],
+            //['Cross-Origin-Resource-Policy', 'same-origin'],
             ['Origin-Agent-Cluster', '?1'],
             ['x-xss-protection', '1; mode=block'],
             ['x-dns-prefetch-control', 'off'],
