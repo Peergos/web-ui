@@ -230,10 +230,11 @@ module.exports = {
           }
           return future;
       },
-        readAppProperties: function(appName) {
+        readAppProperties: function(appName, appFolderLocation) {
             let that = this;
             let future = peergos.shared.util.Futures.incomplete();
-            this.context.getByPath(this.context.username + "/.apps/" + appName).thenApply(appDirOpt => {
+            let folderLocation = appFolderLocation != null && appFolderLocation.length > 0 ? appFolderLocation : this.context.username + "/.apps/";
+            this.context.getByPath(folderLocation + appName).thenApply(appDirOpt => {
                 if (appDirOpt.ref != null) {
                     appDirOpt.get().getChild("peergos-app.json", that.context.crypto.hasher, that.context.network).thenApply(function(propFileOpt) {
                         if (propFileOpt.ref == null) {

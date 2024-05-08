@@ -233,6 +233,9 @@ module.exports = {
             this.showPrompt = false;
         },
 		displayProfile() {
+		    if (this.context.username == null) {
+		        return;
+		    }
 			let that = this;
 			peergos.shared.user.ProfilePaths.getProfile(
 				this.context.username,
