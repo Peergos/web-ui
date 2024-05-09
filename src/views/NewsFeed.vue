@@ -324,12 +324,31 @@ module.exports = {
   	created: function() {
         let that = this;
         this.entryTree = new this.Tree(this);
-        this.context.getSocialFeed().thenCompose(function(socialFeed) {
-                return socialFeed.update().thenApply(function(updated) {
-                    that.socialFeed = updated;
-                    that.messenger = new peergos.shared.messaging.Messenger(that.context);
-                    that.init();
+        this.context.getSocialFeed().thenApply(function(socialFeed) {
+                that.socialFeed = socialFeed;
+                that.messenger = new peergos.shared.messaging.Messenger(that.context);
+                that.showSpinner = true;
+                that.pageEndIndex = that.socialFeed.getLastSeenIndex();
+                let startIndex = Math.max(0, that.pageEndIndex - that.pageSize);
+                that.retrieveResults(startIndex, that.pageEndIndex, []).thenApply(function(additionalItems) {
                     that.buildingFeed = false;
+                        that.pageEndIndex = startIndex;
+                        let items = that.filterSharedItems(additionalItems.reverse());
+                        let numberOfEntries = items.length;
+                        if (numberOfEntries == 0 && startIndex > 0) {
+                            that.requestMoreResults();
+                        } else {
+                            that.buildTimeline(items).thenApply(function(timelineEntries) {
+                                that.data = timelineEntries;
+                                that.showSpinner = false;
+                                that.hasLoadedInitialResults = true;
+                                Vue.nextTick(function() {
+                                    that.refresh();
+                                });
+                            });
+                        }
+                }).exceptionally(function(throwable) {
+                    that.showMessage(throwable.getMessage());
                     that.showSpinner = false;
                 });
             }).exceptionally(function(throwable) {
@@ -1608,50 +1627,6 @@ module.exports = {
                 });
             });
         },
-        buildInitialTimeline: function(items) {
-            var that = this;
-            var future = peergos.shared.util.Futures.incomplete();
-            that.buildTimeline(items).thenApply(function(timelineEntries) {
-                that.data = timelineEntries;
-                that.showSpinner = false;
-                that.hasLoadedInitialResults = true;
-                future.complete(timelineEntries.length);
-            });
-            return future;
-        },
-	    init: function() {
-            var that = this;
-            that.showSpinner = true;
-            this.pageEndIndex = this.socialFeed.getLastSeenIndex();
-            this.retrieveUnSeen(this.pageEndIndex, 100, []).thenApply(function(unseenItems) {
-                let items = that.filterSharedItems(unseenItems.reverse());
-                if (items.length > 0) {
-                    that.buildInitialTimeline(items).thenApply(function(addedItems) {
-                        if (addedItems == 0) {
-                            that.requestMoreResults();
-                        }
-                    });
-                } else {
-                    let startIndex = Math.max(0, that.pageEndIndex - that.pageSize);
-                    that.retrieveResults(startIndex, that.pageEndIndex, []).thenApply(function(additionalItems) {
-                        that.pageEndIndex = startIndex;
-                        items = items.concat(that.filterSharedItems(additionalItems.reverse()));
-                        var numberOfEntries = items.length;
-                        if (numberOfEntries == 0 && startIndex > 0) {
-                            that.requestMoreResults();
-                        } else {
-                            that.buildInitialTimeline(items);
-                        }
-                    }).exceptionally(function(throwable) {
-                        that.showMessage(throwable.getMessage());
-                        that.showSpinner = false;
-                    });
-                }
-            }).exceptionally(function(throwable) {
-                that.showMessage(throwable.getMessage());
-                that.showSpinner = false;
-            });
-        }
     },
     computed: {
 		...Vuex.mapState([
