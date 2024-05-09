@@ -997,7 +997,7 @@ module.exports = {
                                                 const filename = that.files[0].getName();
                                                 that.selectedFiles = that.files;
 					                            let inbuiltApps = that.getInbuiltApps(that.files[0]);
-					                            if (inbuiltApps.length > 0 && inbuiltApps[0].name != "hex") {
+					                            if (inbuiltApps.length > 0 && inbuiltApps[0].name != "hex" && inbuiltApps[0].name != "editor") {
                                                     that.openInApp({filename:filename}, inbuiltApps[0].name);
                                                     that.openFileOrDir(inbuiltApps[0].name, that.getPath, {filename:filename}, false);
                                                 } else { //get from recommended apps if possible
@@ -2675,7 +2675,7 @@ module.exports = {
 		    var filename = file.getName();
 
             var app = this.getApp(file, this.getPath, writable);
-            if (app != "hex") {
+            if (app != "hex" && app != "editor") {
                 var args = {filename:filename}
                 this.appArgs = args;
                 this.openFileOrDir(app, this.getPath, args, writable);
@@ -2685,8 +2685,8 @@ module.exports = {
                     this.readAppProperties(recommendedApp, "/peergos/recommended-apps/").thenApply(props => {
                         if (props == null) {
                             var args = {filename:filename}
-                            this.appArgs = args;
-                            this.openFileOrDir(app, this.getPath, args, writable);
+                            that.appArgs = args;
+                            that.openFileOrDir(app, that.getPath, args, writable);
                         } else {
                             that.showAppSandbox = true;
                             that.sandboxAppName = recommendedApp;
