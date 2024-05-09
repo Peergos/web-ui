@@ -343,6 +343,7 @@
       :sandboxAppName="sandboxAppName"
       :currentFile="selectedFiles[0]"
       :currentPath="getPath"
+      :currentProps="appSandboxProps"
     >
     </AppSandbox>
     <Replace
@@ -422,6 +423,7 @@ const i18n = require("../i18n/index.js");
 
 const router = require("../mixins/router/index.js");
 const launcherMixin = require("../mixins/launcher/index.js");
+const sandboxMixin = require("../mixins/sandbox/index.js");
 
 module.exports = {
 	components: {
@@ -520,6 +522,7 @@ module.exports = {
             showAppRunner: false,
             showAppSandbox: false,
             sandboxAppName: '',
+            appSandboxProps: null,
 			showSelect: false,
 			showWarning: false,
 			showReplace: false,
@@ -554,7 +557,7 @@ module.exports = {
             zipAndDownloadFoldersCount: 0
 		};
 	},
-	mixins:[downloaderMixins, router, zipMixin, launcherMixin, i18n],
+	mixins:[downloaderMixins, router, zipMixin, launcherMixin, i18n, sandboxMixin],
         mounted: function() {
 
         },
@@ -993,9 +996,31 @@ module.exports = {
                                             } else if (oneFile) { // if there is exactly 1 file, open it
                                                 const filename = that.files[0].getName();
                                                 that.selectedFiles = that.files;
-					        var app = that.getApp(that.files[0], that.getPath, false);
-                                                that.openInApp({filename:filename}, app);
-                                                that.openFileOrDir(app, that.getPath, {filename:filename}, false);
+					                            let inbuiltApps = that.getInbuiltApps(that.files[0]);
+					                            if (inbuiltApps.length > 0 && inbuiltApps[0].name != "hex" && inbuiltApps[0].name != "editor") {
+                                                    that.openInApp({filename:filename}, inbuiltApps[0].name);
+                                                    that.openFileOrDir(inbuiltApps[0].name, that.getPath, {filename:filename}, false);
+                                                } else { //get from recommended apps if possible
+                                                    let recommendedApp = that.getRecommendedViewer(that.files[0]);
+                                                    if (recommendedApp != null) {
+                                                        that.readAppProperties(recommendedApp, "/peergos/recommended-apps/").thenApply(props => {
+                                                            if (props == null) {
+                                                                var app = that.getApp(that.files[0], that.getPath, false);
+                                                                that.openInApp({filename:filename}, app);
+                                                                that.openFileOrDir(app, that.getPath, {filename:filename}, false);
+                                                            } else {
+                                                                that.showAppSandbox = true;
+                                                                that.sandboxAppName = recommendedApp;
+                                                                that.currentFile= that.files[0];
+                                                                that.appSandboxProps = props;
+                                                            }
+                                                        });
+                                                    } else {
+                                                        var app = that.getApp(that.files[0], that.getPath, false);
+                                                        that.openInApp({filename:filename}, app);
+                                                        that.openFileOrDir(app, that.getPath, {filename:filename}, false);
+                                                    }
+                                                }
                                             } else {
                                                 // open a directory
                                                 let app = that.getApp(that.currentDir, linkPath);
@@ -1055,6 +1080,29 @@ module.exports = {
 			}
 			this.showPendingServerMessages();
 		},
+
+		getRecommendedViewer(file) {
+		    let filename = file.getName();
+		    if (file.isDirectory()) {
+		        return null;
+            }
+		    try {
+                let extension = filename.substring(filename.lastIndexOf(".") + 1).toLowerCase();
+                if (extension == "docx" || extension == "odt") {
+                    return "doc-viewer";
+                } else if (extension == "sheet" || extension == "xlsx" || extension == "ods") {
+                    return "luckysheet";
+                } else if (extension == "tldr") {
+                    return "tldraw";
+                } else if (extension == "drawio") {
+                    return "drawio";
+                }
+            } catch (ex) {
+                return null;
+            }
+            return null;
+        },
+
         selectAllOrNone() {
             if (this.selectedFiles.length == this.files.length) {
                 this.selectedFiles = [];
@@ -2621,15 +2669,37 @@ module.exports = {
 		    //    return;
 		    this.closeMenu();
 		    if (this.selectedFiles.length == 0)
-			return;
-
+			    return;
+            let that = this;
 		    var file = this.selectedFiles[0];
 		    var filename = file.getName();
 
-                    var app = this.getApp(file, this.getPath, writable);
+            var app = this.getApp(file, this.getPath, writable);
+            if (app != "hex" && app != "editor") {
+                var args = {filename:filename}
+                this.appArgs = args;
+                this.openFileOrDir(app, this.getPath, args, writable);
+            } else { //get from recommended apps if possible
+                let recommendedApp = this.getRecommendedViewer(file);
+                if (this.context.username == null && recommendedApp != null) {
+                    this.readAppProperties(recommendedApp, "/peergos/recommended-apps/").thenApply(props => {
+                        if (props == null) {
+                            var args = {filename:filename}
+                            that.appArgs = args;
+                            that.openFileOrDir(app, that.getPath, args, writable);
+                        } else {
+                            that.showAppSandbox = true;
+                            that.sandboxAppName = recommendedApp;
+                            that.currentFile= file;
+                            that.appSandboxProps = props;
+                        }
+                    });
+                } else {
                     var args = {filename:filename}
                     this.appArgs = args;
-                    this.openFileOrDir(app, this.getPath, args, writable)
+                    this.openFileOrDir(app, this.getPath, args, writable);
+                }
+            }
 		},
 
 		navigateOrDownload(file) {

@@ -206,6 +206,7 @@ module.exports = {
             },
             showEmbeddedGallery: false,
             filesToViewInGallery: [],
+            isFileViewerMode: false //run app from app store
         }
     },
     computed: {
@@ -245,8 +246,14 @@ module.exports = {
             this.isAppGalleryMode = true;
             this.workspaceName = this.extractWorkspace(this.appPath);
         } else {
-            this.workspaceName = this.currentProps != null ?  this.getPath
-                : this.context.username + "/.apps/" + this.currentAppName;
+            if (this.currentProps != null && this.currentFile == null) {
+                this.workspaceName = this.getPath;
+            } else if (this.currentProps != null && this.currentFile != null) {
+                this.isFileViewerMode = true;
+                this.workspaceName = "/peergos/recommended-apps/" + this.currentAppName;
+            } else {
+                this.workspaceName = this.context.username + "/.apps/" + this.currentAppName;
+            }
         }
         if (this.currentFile != null) {
             this.targetFile = this.currentFile;
@@ -268,10 +275,15 @@ module.exports = {
             if (this.isSecretLink) {
                 that.getAppSubdomain().thenApply(appSubdomain => {
                     that.appSubdomain = appSubdomain;
+                    if (that.isFileViewerMode) {
+                        that.appProperties = that.currentProps;
+                        that.appRegisteredWithFileAssociation = that.appHasFileAssociation(that.currentProps);
+                        that.appRegisteredWithWildcardFileAssociation = that.appHasWildcardFileRegistration(that.currentProps);
+                    }
                     that.startListener();
                 });
             } else {
-                this.loadAppProperties(that.currentAppName).thenApply(props => {
+                this.loadAppProperties().thenApply(props => {
                     if (props == null) {
                         that.fatalError('Application properties not found');
                     } else if (!that.validatePermissions(props)) {
@@ -362,13 +374,13 @@ module.exports = {
             this.postMessage({type: 'currentTitleRequest'});
             setTimeout(() => this.startTitleDetection(), 300);
         },
-        loadAppProperties: function(fullPath, title) {
+        loadAppProperties: function(appFolderLocation) {
            let that = this;
            var future = peergos.shared.util.Futures.incomplete();
            if (this.currentProps != null) {
                 future.complete(this.currentProps);
            } else {
-                this.readAppProperties(that.currentAppName).thenApply(props => {
+                this.readAppProperties(that.currentAppName, appFolderLocation).thenApply(props => {
                     future.complete(props);
                 });
             }
@@ -545,6 +557,8 @@ module.exports = {
                     mimeType = "text/css";
                 } else if (filePath.toLowerCase().endsWith('.js')) {
                     mimeType = "text/javascript";
+                } else if (filePath.toLowerCase().endsWith('.wasm')) {
+                    mimeType = "application/wasm";
                 } else {
                     let lastSlashIdx = filePath.lastIndexOf('/');
                     let dotIndex =  filePath.indexOf('.', lastSlashIdx);
@@ -2592,6 +2606,8 @@ module.exports = {
                 } else {
                     return this.currentPath.substring(0, this.currentPath.length -1) + filePath;
                 }
+            } else if (this.isFileViewerMode && filePath.startsWith("/assets/")) {
+                return this.workspaceName + filePath;
             } else if ( (this.appPath.length > 0 && filePath.startsWith(this.getPath)) || this.isSelectedFolder(filePath)) {
                 return filePath;
             } else if (this.currentProps != null) { //running in-place
