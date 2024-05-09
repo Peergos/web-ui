@@ -233,6 +233,7 @@ module.exports = {
         readAppProperties: function(appName, appFolderLocation) {
             let that = this;
             let future = peergos.shared.util.Futures.incomplete();
+            let fromRecommendedApps = appFolderLocation != null && appFolderLocation == "/peergos/recommended-apps/";
             let folderLocation = appFolderLocation != null && appFolderLocation.length > 0 ? appFolderLocation : this.context.username + "/.apps/";
             this.context.getByPath(folderLocation + appName).thenApply(appDirOpt => {
                 if (appDirOpt.ref != null) {
@@ -242,7 +243,7 @@ module.exports = {
                             future.complete(null);
                         } else {
                             let props = propFileOpt.ref.getFileProperties();
-                            if (!props.created.equals(props.modified)) {
+                            if (!fromRecommendedApps && !props.created.equals(props.modified)) {
                                 console.log('peergos-app.json file has changed! App: ' + appName);
                                 future.complete(null);
                             } else {
