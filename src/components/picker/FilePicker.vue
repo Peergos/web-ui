@@ -60,7 +60,7 @@ module.exports = {
             fileThumbnail : ''
         }
     },
-    props: ['baseFolder', 'selectedFile_func', 'pickerFileExtension', 'pickerFilterMedia', 'pickerShowThumbnail'],
+    props: ['baseFolder', 'selectedFile_func', 'pickerFileExtension', 'pickerFilterMedia', 'pickerShowThumbnail', 'pickerFilters'],
     mixins:[folderTreeMixin],
     computed: {
         ...Vuex.mapState([
@@ -74,7 +74,7 @@ module.exports = {
             that.showSpinner = false;
             that.spinnerMessage = '';
         };
-        this.loadSubFoldersAndFiles(this.baseFolder + "/", this.pickerFileExtension, this.pickerFilterMedia, callback);
+        this.loadSubFoldersAndFiles(this.baseFolder + "/", this.pickerFileExtension, this.pickerFilterMedia, this.pickerFilters, callback);
     },
     methods: {
         close: function () {
@@ -99,7 +99,7 @@ module.exports = {
             this.showSpinner = false;
         },
         loadFolderLazily: function(path, callback) {
-            this.loadSubFoldersAndFiles(path, this.pickerFileExtension, this.pickerFilterMedia, callback);
+            this.loadSubFoldersAndFiles(path, this.pickerFileExtension, this.pickerFilterMedia, this.pickerFilters, callback);
         },
         fileSelected: function() {
             this.selectedFile_func(this.selectedFile);
