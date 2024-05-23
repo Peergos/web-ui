@@ -943,29 +943,44 @@ module.exports = {
 			    this.context.getEntryPath().thenApply(function (linkPath) {
 				var path = that.initPath == null ? null : decodeURIComponent(that.initPath);
 				if (path != null && (path.startsWith(linkPath) || linkPath.startsWith(path))) {
-                                    that.$store.commit('SET_PATH', path.split('/').filter(n => n.length > 0))
-                                    if (that.download || that.open) {
-				        that.context.getByPath(path)
-				            .thenApply(function (file) {
-				 	        if (! file.get().isDirectory()) {
-				 	            if (that.download) {
-				 		        that.downloadFile(file.get());
-				 	            } else if (that.open) {
-				 		        var open = () => {
-                                                            const filename = file.get().getName();
-                                                            that.selectedFiles = that.files.filter(f => f.getName() == filename);
-                                                            var app = that.getApp(file.get(), path, false);
-						            that.openInApp({filename:filename}, app);
-                                                            that.openFileOrDir(app, that.getPath, {filename:filename}, false);
-				 		        };
-				 		        that.onUpdateCompletion.push(open);
-				 	            }
-				 	        } else {
-                                                    let app = that.getApp(file.get(), linkPath);
-                                                    that.openFileOrDir(app, linkPath, {path:path});
-                                                }
-				            });
-                                    }
+                    that.$store.commit('SET_PATH', path.split('/').filter(n => n.length > 0))
+                    if (that.download || that.open) {
+                        that.context.getByPath(path)
+                            .thenApply(function (file) {
+                            if (! file.get().isDirectory()) {
+                                if (that.download) {
+                                that.downloadFile(file.get());
+                                } else if (that.open) {
+                                var open = () => {
+                                    const filename = file.get().getName();
+                                    that.selectedFiles = that.files.filter(f => f.getName() == filename);
+                                    var app = that.getApp(file.get(), path, false);
+                                    that.openInApp({filename:filename}, app);
+                                    that.openFileOrDir(app, that.getPath, {filename:filename}, false);
+                                };
+                                that.onUpdateCompletion.push(open);
+                                }
+                            } else {
+                                let app = that.getApp(file.get(), linkPath);
+                                that.openFileOrDir(app, linkPath, {path:path});
+                            }
+                        });
+                    } else if(path.startsWith("/peergos/recommended-apps")) {
+                        let appPath = "/peergos/recommended-apps/";
+                        that.context.getByPath(appPath + "index.html").thenApply(file => {
+                            if (file.ref != null) {
+                                var openRecApps = () => {
+                                    const filename = "index.html";
+                                    that.selectedFiles = that.files.filter(f => f.getName() == filename);
+                                    that.showAppSandbox = true;
+                                    that.sandboxAppName = '$$app-gallery$$';
+                                    that.currentFile = file.ref;
+                                    that.currentPath = appPath;
+                                };
+                                that.onUpdateCompletion.push(openRecApps);
+                            }
+                        });
+                    }
 				} else {
                                     that.$store.commit('SET_PATH', linkPath.split('/').filter(n => n.length > 0))
                                     if (that.download) {

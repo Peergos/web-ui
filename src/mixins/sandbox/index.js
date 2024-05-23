@@ -416,9 +416,13 @@ module.exports = {
                 && props.fileExtensions[0].trim().length > 0
                 && props.fileExtensions[0] != '*';
             let createFile = editPermission && hasFileExtensions;
+            let openFile = props.launchable && !props.folderAction && !createFile
+                && (props.fileExtensions.length > 0 || props.mimeTypes.length > 0 || props.fileTypes.length > 0);
+            let openFileFilters = {fileExtensions: props.fileExtensions, mimeTypes: props.mimeTypes, fileTypes: props.fileTypes};
             let primaryFileExtension = hasFileExtensions ? props.fileExtensions[0] : '';
+
             let item = {name: props.name, displayName: props.displayName,
-                createFile: createFile, launchable: props.launchable,
+                createFile: createFile, openFile: openFile, openFileFilters: openFileFilters, launchable: props.launchable,
                 folderAction: props.folderAction, appIcon: props.appIcon, contextMenuText: contextMenuText,
                 source: props.source, version: props.version, createFile: createFile, primaryFileExtension: primaryFileExtension};
 

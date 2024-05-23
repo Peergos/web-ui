@@ -32,6 +32,7 @@
             :baseFolder="filePickerBaseFolder"
             :pickerFileExtension="pickerFileExtension"
             :pickerFilterMedia="pickerFilterMedia"
+            :pickerFilters="pickerFilters"
             :pickerShowThumbnail="pickerShowThumbnail"
             :selectedFile_func="selectedFileFromPicker"
         />
@@ -182,6 +183,7 @@ module.exports = {
             selectedFileFromPicker: null,
             pickerFileExtension: "",
             pickerFilterMedia: false,
+            pickerFilters: null,
             pickerShowThumbnail: false,
             commandQueue: [],
             executingCommands: false,
@@ -534,7 +536,7 @@ module.exports = {
                 that.showError('Path not accessible: ' + streamFilePath);
             } else {
                 var prefix = '';
-                if (!this.browserMode && streamFilePath != this.appPath) {
+                if (!this.browserMode && !streamFilePath.startsWith(this.appPath)) {
                     if(streamFilePath.startsWith(that.apiRequest + '/data')) {
                         streamFilePath = streamFilePath.substring(that.apiRequest.length);
                     } else {

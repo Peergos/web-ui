@@ -19,6 +19,21 @@
                 :pickerFileExtension="pickerFileExtension"
                 :consumer_func="prompt_consumer_func"
             />
+            <FilePicker
+                v-if="showFilePicker"
+                :baseFolder="filePickerBaseFolder"
+                :pickerFileExtension="pickerFileExtension"
+                :pickerFilterMedia="pickerFilterMedia"
+                :pickerFilters="pickerFilters"
+                :pickerShowThumbnail="pickerShowThumbnail"
+                :selectedFile_func="selectedFileFromPicker"
+            />
+            <FolderPicker
+                v-if="showFolderPicker"
+                :baseFolder="folderPickerBaseFolder" :selectedFolder_func="selectedFoldersFromPicker"
+                :multipleFolderSelection="multipleFolderSelection"
+                :initiallySelectedPaths="initiallySelectedPaths">
+            </FolderPicker>
             <AppInstall
                 v-if="showAppInstallation"
                 v-on:hide-app-installation="closeAppInstallation"
@@ -172,6 +187,8 @@ const AppDetails = require("../components/sandbox/AppDetails.vue");
 const AppGrid = require("../components/app-grid/AppGrid.vue");
 const AppSandbox = require("../components/sandbox/AppSandbox.vue");
 const Confirm = require("../components/confirm/Confirm.vue");
+const FilePicker = require('../components/picker/FilePicker.vue');
+const FolderPicker = require('../components/picker/FolderPicker.vue');
 const NewFilePicker = require("../components/picker/NewFilePicker.vue");
 const Replace = require("../components/replace/Replace.vue");
 const Share = require("../components/drive/DriveShare.vue");
@@ -190,6 +207,8 @@ module.exports = {
 		AppGrid,
 		AppSandbox,
 		Confirm,
+		FilePicker,
+		FolderPicker,
 		NewFilePicker,
 		Replace,
 		Share,
@@ -242,7 +261,18 @@ module.exports = {
             replace_consumer_func: (applyToAll) => { },
             showAppGrid: false,
             forceAppDisplayUpdate: 0,
-            appGridItems: []
+            appGridItems: [],
+            showFolderPicker: false,
+            folderPickerBaseFolder: "",
+            multipleFolderSelection: false,
+            initiallySelectedPaths: [],
+            showFilePicker: false,
+            selectedFileFromPicker: null,
+            pickerFileExtension: "",
+            pickerFilterMedia: false,
+            pickerFilters: null,
+            pickerShowThumbnail: false,
+            filePickerBaseFolder: "",
         }
     },
     props: [],
@@ -380,8 +410,8 @@ module.exports = {
             this.showReplace = true;
         },
         launchAppFromUI: function(app) {
+            let that = this;
             if (app.createFile) {
-                let that = this;
                 this.prompt_consumer_func = function (prompt_result, folder) {
                     if (prompt_result === null)
                         return;
@@ -399,6 +429,31 @@ module.exports = {
                 };
                 this.pickerFileExtension = app.primaryFileExtension;
                 this.showNewFilePicker = true;
+            } else if (app.openFile) {
+                this.filePickerBaseFolder = "/" + this.context.username;
+                this.pickerFilters = app.openFileFilters;
+                this.selectedFileFromPicker = function (pathString) {
+                    if(pathString != null) {
+                        let folder = pathString.substring(0, pathString.lastIndexOf('/'));
+                        let filename = pathString.substring(pathString.lastIndexOf('/') + 1);
+                        that.openFileOrDir(app.name, folder, {filename: filename})
+                    }
+                    that.showFilePicker = false;
+                }.bind(this);
+                this.showFilePicker = true;
+            } else if (app.folderAction) {
+                this.folderPickerBaseFolder = "/" + this.context.username;
+                this.selectedFoldersFromPicker = function (chosenFolders) {
+                    if (chosenFolders.length == 1) {
+                        let pathString = chosenFolders[0];
+                        let folder = pathString.substring(0, pathString.lastIndexOf('/'));
+                        let filename = pathString.substring(pathString.lastIndexOf('/') + 1);
+                        that.openFileOrDir(app.name, folder, {filename: filename})
+                    }
+                    that.showFolderPicker = false;
+                };
+                this.initiallySelectedPaths = [];
+                that.showFolderPicker = true;
             } else {
                 this.launchApp(app.name);
             }
