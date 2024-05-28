@@ -112,6 +112,7 @@ const precachedAssets = [
   'privacy.html',
   'pro.html',
   'terms.html',
+  'images/arrows-alt.svg',
   'js/sha256.min.js',
   'js/sha256stream.min.js',
   'js/nacl-fast.min.js',

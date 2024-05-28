@@ -67,8 +67,13 @@
                 :hideGalleryTitle="true"
                 :context="context">
             </Gallery>
-            <div class="modal-header" style="padding:0;min-height: 52px;">
-                <center><h2>{{ getFullPathForDisplay() }}</h2></center>
+            <div v-if="!fullscreenMode" class="modal-header" style="padding:0;min-height: 52px;">
+                <center><h2>{{ getFullPathForDisplay() }}
+                <span v-if="displayFullScreenIcon" @click="requestFullscreenFromToolbar" tabindex="0" v-on:keyup.enter="requestFullscreenFromToolbar" style="cursor:pointer;">
+                    <img src="./images/arrows-alt.svg" style="height:24px;width:24px">
+                </span>
+                </h2>
+                </center>
               <span style="position:absolute;top:0;right:0.2em;">
                 <span @click="closeAppFromToolbar" tabindex="0" v-on:keyup.enter="closeAppFromToolbar" style="color:black;font-size:3em;font-weight:bold;cursor:pointer;">&times;</span>
               </span>
@@ -208,7 +213,9 @@ module.exports = {
             },
             showEmbeddedGallery: false,
             filesToViewInGallery: [],
-            isFileViewerMode: false //run app from app store
+            isFileViewerMode: false, //run app from app store
+            displayFullScreenIcon: false,
+            fullscreenMode: false,
         }
     },
     computed: {
@@ -222,7 +229,8 @@ module.exports = {
         ]),
         ...Vuex.mapGetters([
             'isSecretLink',
-            'getPath'
+            'getPath',
+            'isMobile'
         ]),
         friendnames: function() {
             return this.socialData.friends;
@@ -394,7 +402,11 @@ module.exports = {
             }
         },
         getFullPathForDisplay: function() {
-            return this.fullPathForDisplay;
+            let pathToDisplay = this.fullPathForDisplay;
+            if (pathToDisplay.length > 0 && this.browserMode && !this.isMobile) {
+                this.displayFullScreenIcon = true;
+            }
+            return pathToDisplay;
         },
         setFullPathForDisplay: function(path) {
             this.fullPathForDisplay = path;
@@ -457,6 +469,11 @@ module.exports = {
             }
         },
         resizeHandler: function() {
+            // https://stackoverflow.com/a/35175835
+            let fullscreenElement = document.fullscreenElement || document.mozFullScreenElement
+                || document.webkitFullscreenElement || document.msFullscreenElement;
+            this.fullscreenMode = fullscreenElement != null;
+
             let iframe = document.getElementById("sandboxId");
             if (iframe == null) {
                 return;
@@ -2694,6 +2711,19 @@ module.exports = {
             } else {
                 this.closeSandbox();
             }
+        },
+        requestFullscreenFromToolbar: function () {
+            let that = this;
+            let elem = document.documentElement;
+            elem.requestFullscreen({ navigationUI: "auto" })
+                .then(() => {
+                    that.fullscreenMode = true;
+                })
+                .catch((err) => {
+                    alert(
+                        `An error occurred while trying to switch into fullscreen mode: ${err.message} (${err.name})`,
+                    );
+                });
         },
         closeSandbox: function () {
             let iframe = document.getElementById("sandboxId");
