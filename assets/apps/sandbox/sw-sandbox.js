@@ -139,6 +139,8 @@ function AppData() {
     this.convertStatusCode = function(code) {
         if (code == '0') {        //              APP_FILE_MODE = 0
             return 200;
+        } else if (code == '11') {     //              APP_STREAMING_MODE = 11
+            return 200;
         } else if (code == '2') { //            FILE_NOT_FOUND: 2,
             return 404;
         } else if (code == '3') { //            ACTION_FAILED: 3,
@@ -175,6 +177,16 @@ function AppData() {
         let mimeTypeBytes = moreData.subarray(offset, mimeTypeSize + offset);
         let mimeType = new TextDecoder().decode(mimeTypeBytes);
         offset =  offset + mimeTypeSize;
+        var fileSize = -1;
+        if (mode == 11) {
+            let sizeHigh = readUnsignedLeb128(moreData.subarray(offset, offset + 4));
+            offset += unsignedLeb128Size(sizeHigh);
+            let sizeLow = readUnsignedLeb128(moreData.subarray(offset, offset + 4));
+            offset += unsignedLeb128Size(sizeLow);
+            var low = sizeLow;
+            if (low < 0) low = low + Math.pow(2, 32);
+            fileSize = low + (sizeHigh * Math.pow(2, 32));
+        }
 
         this.mimeTypeMap.set(filePath, mimeType);
         this.resultMap.set(filePath, this.convertStatusCode(mode));
@@ -188,7 +200,14 @@ function AppData() {
         newFile.set(file);
         newFile.set(moreData.subarray(offset), file.byteLength);
         this.fileMap.set(filePath, newFile);
-        this.fileStatusMap.set(filePath, true);
+
+        if (mode == 11) {
+            if (combinedSize == fileSize) {
+                this.fileStatusMap.set(filePath, true);
+            }
+        } else {
+            this.fileStatusMap.set(filePath, true);
+        }
     }
 }
 function setupNewApp(port) {

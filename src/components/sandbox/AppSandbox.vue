@@ -613,7 +613,15 @@ module.exports = {
             }
             var data = new Uint8Array(headerSize);
             var offset = 0;
-            data.set([streamingInfo != null ? 1 : 0], offset); //status code (or mode)
+            var mode = 0;
+            if (streamingInfo != null) {
+                if (streamingInfo.appFileStreaming) {
+                    mode = 11;
+                } else {
+                    mode = 1;
+                }
+            }
+            data.set([mode], offset); //status code (or mode)
             offset = offset + 1;
             data.set([pathSize], offset);
             offset = offset + 1;
@@ -647,7 +655,7 @@ module.exports = {
         },
         actionRequest: function(path, requestId, api, apiMethod, data, hasFormData, params, isFromRedirect, isNavigate) {
             let that = this;
-            let headerFunc = (mimeType) => that.buildHeader(path, mimeType, requestId);
+            let headerFunc = (mimeType, streamingInfo) => that.buildHeader(path, mimeType, requestId, streamingInfo);
             if (this.browserMode) {
                 if (this.isAppGalleryMode) {
                     if (!(apiMethod == 'GET' || apiMethod == 'POST' )) {
@@ -2181,7 +2189,7 @@ module.exports = {
                                         that.buildResponse(headerFunc(), null, that.ACTION_FAILED);
                                     }
                                 } else {
-                                    that.readInFile(headerFunc(props.mimeType), resp);
+                                    that.readInFile(headerFunc, resp);
                                 }
                             }
                         }
@@ -2586,7 +2594,7 @@ module.exports = {
                                     readerFuture.complete(seekReader);
                                     thatRef.readerFuture = readerFuture;
 
-                                    let streamingInfo = {sizeHigh: sizeHigh, sizeLow: sizeLow};
+                                    let streamingInfo = {sizeHigh: sizeHigh, sizeLow: sizeLow, appFileStreaming: false};
                                     let header = that.buildHeader(filePath, mimeType, '', streamingInfo);
                                     return pump(seekReader, header);
                                 })
@@ -2658,22 +2666,56 @@ module.exports = {
             });
             return future;
         },
-        readInFile: function(header, file) {
+        readInFile: function(headerFunc, file) {
             let that = this;
             let props = file.getFileProperties();
             let size = props.sizeLow();
-            file.getLatest(this.context.network).thenApply(updatedFile => {
-                updatedFile.getInputStream(that.context.network, that.context.crypto, props.sizeHigh(), props.sizeLow(), read => {}).thenApply(reader => {
-                    var bytes = new Uint8Array(size + header.byteLength);
-                    for(var i=0;i < header.byteLength;i++){
-                        bytes[i] = header[i];
-                    }
-                    let data = convertToByteArray(bytes);
-                    reader.readIntoArray(data, header.byteLength, size).thenApply(function(read){
-                        that.postData(data);
+            let maxChunkSize = 1024 * 1024 * 10;
+            if (size < maxChunkSize) {
+                let header = headerFunc(props.mimeType);
+                file.getLatest(this.context.network).thenApply(updatedFile => {
+                    updatedFile.getInputStream(that.context.network, that.context.crypto, props.sizeHigh(), props.sizeLow(), read => {}).thenApply(reader => {
+                        var bytes = new Uint8Array(size + header.byteLength);
+                        for(var i=0;i < header.byteLength;i++){
+                            bytes[i] = header[i];
+                        }
+                        let data = convertToByteArray(bytes);
+                        reader.readIntoArray(data, header.byteLength, size).thenApply(function(read){
+                            that.postData(data);
+                        });
                     });
                 });
-            });
+            } else if(props.sizeHigh() > 0) {
+                let header = headerFunc(props.mimeType);
+                that.buildResponse(header, null, that.ACTION_FAILED);
+            } else {
+                let streamingInfo = {sizeHigh: props.sizeHigh(), sizeLow: props.sizeLow(), appFileStreaming: true};
+                let header = headerFunc(props.mimeType, streamingInfo);
+                file.getLatest(this.context.network).thenApply(updatedFile => {
+                    updatedFile.getBufferedInputStream(that.context.network, that.context.crypto, props.sizeHigh(), props.sizeLow(), 10, read => {}).thenApply(reader => {
+                        var currentSize = props.sizeLow();
+                        var blockSize = currentSize > maxChunkSize ? maxChunkSize : currentSize;
+                        var pump = function() {
+                            if(blockSize > 0) {
+                                var bytes = new Uint8Array(blockSize + header.byteLength);
+                                for(var i=0;i < header.byteLength;i++){
+                                    bytes[i] = header[i];
+                                }
+                                var data = convertToByteArray(bytes);
+                                reader.readIntoArray(data, header.byteLength, blockSize).thenApply(function(read){
+                                    currentSize = currentSize - read.value_0;
+                                    blockSize = currentSize > maxChunkSize ? maxChunkSize : currentSize;
+                                    that.postData(data);
+                                    Vue.nextTick(function() {
+                                        pump();
+                                    });
+                                });
+                            }
+                        }
+                        pump();
+                    });
+                });
+            }
         },
         writeUnsignedLeb128: function(value) {
             let out = [];
