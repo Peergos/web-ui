@@ -316,7 +316,8 @@ module.exports = {
             appInstallPropsFile: null,
             appInstallFolder: '',
             appInstalledEntry: null,
-            availableApps: []
+            availableApps: [],
+            sharerThumbnailCache: new Map(),
         }
     },
     props: [],
@@ -1373,6 +1374,12 @@ module.exports = {
                 }
             }
             usernameMap.forEach(function(timelineEntries, username) {
+                let existingThumbnail = that.sharerThumbnailCache.get(username);
+                if (existingThumbnail != null) {
+                    timelineEntries.forEach( entry => {
+                        entry.sharerThumbnail = existingThumbnail;
+                    });
+                }
                 peergos.shared.user.ProfilePaths.getProfile(username, that.context).thenApply(profile => {
                     var base64Image = "";
                     if (profile.profilePhoto.isPresent()) {
@@ -1384,6 +1391,7 @@ module.exports = {
                         if (data.byteLength > 0) {
                             timelineEntries.forEach( entry => {
                                 entry.sharerThumbnail = "data:image/png;base64," + window.btoa(str);
+                                that.sharerThumbnailCache.set(username, entry.sharerThumbnail);
                             });
                         }
                     }
