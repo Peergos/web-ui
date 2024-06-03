@@ -2710,9 +2710,14 @@ module.exports = {
                         }
                     });
                 } else {
+                    let userApps = this.availableAppsForFile(file);
                     var args = {filename:filename}
                     this.appArgs = args;
-                    this.openFileOrDir(app, this.getPath, args, writable);
+                    if (userApps.length == 1) {
+                        this.openFileOrDir(userApps[0].name, this.getPath, args, writable);
+                    } else {
+                        this.openFileOrDir(app, this.getPath, args, writable);
+                    }
                 }
             }
 		},
