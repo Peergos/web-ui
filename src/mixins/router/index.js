@@ -187,7 +187,7 @@ module.exports = {
         } else if (mimeType.startsWith("text/html") ||
             ( mimeType.startsWith("text/") && filename.endsWith('.html'))) {
             return writable ? "editor" : "htmlviewer";
-	    } else if (mimeType.startsWith("text/")) {
+	    } else if (mimeType.startsWith("text/") || mimeType == "application/json") {
 		return "editor";
 	    } else {
 		return "hex";
