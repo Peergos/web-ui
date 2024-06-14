@@ -1111,6 +1111,8 @@ module.exports = {
                     return "tldraw";
                 } else if (extension == "drawio") {
                     return "drawio";
+                } else if (extension == "epub") {
+                    return "ebookreader";
                 }
             } catch (ex) {
                 return null;
