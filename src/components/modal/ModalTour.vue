@@ -60,11 +60,6 @@ data() {
 				image: "images/tour/pdf.jpg"
 			},
 			{
-				title: this.translate("TOUR.TASKS"),
-				description: this.translate("TOUR.TASKS.DESC"),
-				image: "images/tour/tasks.jpg"
-			},
-			{
 				title: this.translate("TOUR.CAL"),
 				description: this.translate("TOUR.CAL.DESC"),
 				image: "images/tour/calendar.png"

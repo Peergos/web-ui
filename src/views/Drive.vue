@@ -1059,7 +1059,7 @@ module.exports = {
 				const appFromUrl = props == null ? null : props.app;
 				const argsFromUrl = props == null ? null : props.args;
 
-				const apps = ['Calendar', 'NewsFeed', 'Social', 'Tasks', 'Launcher']
+				const apps = ['Calendar', 'NewsFeed', 'Social', 'Launcher']
 
 				if (pathFromUrl !== null && !apps.includes(appFromUrl) ) {
 
@@ -1111,6 +1111,8 @@ module.exports = {
                     return "tldraw";
                 } else if (extension == "drawio") {
                     return "drawio";
+                } else if (extension == "todo") {
+                    return "tasks";
                 } else if (extension == "epub") {
                     return "ebookreader";
                 }
