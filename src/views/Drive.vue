@@ -748,13 +748,13 @@ module.exports = {
         },
 		allowDownloadFolder() {
 			try {
-                if (!(this.path.length > 0)) {
-                    return false;
-                }
 				if (this.currentDir == null)
 					return false;
 				if (this.selectedFiles.length != 1)
 					return false;
+                if (this.path.length == 0 && this.selectedFiles[0].getName() != this.context.username) {
+                    return false;
+                }
 				return this.selectedFiles[0].isDirectory();
 			} catch (err) {
 				return false;
@@ -1636,6 +1636,7 @@ module.exports = {
             let file = this.selectedFiles[0];
 			this.showSpinner = true;
 			let that = this;
+			let includeAllFiles = this.path.length == 0;
             this.calculateTotalSize(file, this.getPath).thenApply(statistics => {
                 that.showSpinner = false;
                 if (statistics.fileCount == 0) {
