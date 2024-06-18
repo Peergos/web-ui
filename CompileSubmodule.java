@@ -17,6 +17,13 @@ public class CompileSubmodule {
             runCommand(dir, "ant", "dist");
             runCommand(dir, "ant", "gwtc");
         }
+        replaceUserAgentCheck(dir);
+    }
+
+    public static void replaceUserAgentCheck(String dir) throws Exception {
+        Path peergosLib = Paths.get(dir + "/war/peergoslib/peergoslib.nocache.js");
+        String updated = Files.readString(peergosLib).replaceAll("var ua = navigator.userAgent.toLowerCase\\(\\);", "var ua = \"webkit\";");
+        Files.writeString(peergosLib, updated, StandardOpenOption.TRUNCATE_EXISTING);
     }
 
     public static int runCommand(String dir, String... command) throws Exception {
