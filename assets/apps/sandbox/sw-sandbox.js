@@ -18,7 +18,6 @@ let filePickerRequest = apiRequest + "/file-picker/";
 let foldersRequest = apiRequest + "/folders/";
 let printRequest = apiRequest + "/print/";
 let profileRequest = apiRequest + "/profile/";
-let tasksRequest = apiRequest + "/tasks/";
 let installAppRequest = apiRequest + "/install-app/";
 
 var host = null;
@@ -422,12 +421,6 @@ function appFetch(event) {
                 }
                 restFilePath = restFilePath.substring(profileRequest.length);
                 api = profileRequest;
-            } else if (filePath.startsWith(tasksRequest)) {
-                if (!(method == 'GET' || method == 'POST' || method == 'PUT')) {
-                    return new Response('Unknown tasks action!', {status: 400})
-                }
-                restFilePath = restFilePath.substring(tasksRequest.length);
-                api = tasksRequest;
             } else if (filePath.startsWith(printRequest)) {
                 if (!(method == 'POST')) {
                     return new Response('Unknown print action!', {status: 400})

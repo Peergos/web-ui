@@ -700,8 +700,6 @@ module.exports = {
                     that.handleFolderPickerRequest(headerFunc, path, apiMethod, data, hasFormData, params);
                 } else if (api =='/peergos-api/v0/profile/') {
                     that.handleProfileRequest(headerFunc(), path, apiMethod, data, hasFormData, params);
-                } else if (api =='/peergos-api/v0/tasks/') {
-                    that.handleTasksRequest(headerFunc(), path, apiMethod, data, hasFormData, params);
                 } else {
                     var bytes = convertToByteArray(new Int8Array(data));
                     if (apiMethod == 'GET') {
@@ -1007,105 +1005,6 @@ module.exports = {
             } else {
                 that.buildResponse(headerFunc, null, that.ACTION_FAILED);
             }
-        },
-        handleTasksRequest: function(headerFunc, path, apiMethod, data, hasFormData, params) {
-            let that = this;
-            if (this.targetFile == null) {
-                this.buildResponse(headerFunc, null, this.ACTION_FAILED);
-            }
-            let props = this.targetFile.getFileProperties();
-            let filePath = this.appPath;
-            if (filePath.includes('/.')) {
-                this.showError('Path not accessible: ' + path);
-                this.buildResponse(headerFunc, null, this.ACTION_FAILED);
-            }
-            if (this.isAppPathAFolder) {
-                this.showError("App attempted to write folder without permission :" + path);
-                this.buildResponse(headerFunc, null, this.ACTION_FAILED);
-            } else {
-                if(apiMethod == 'GET') {
-                    this.context.getByPath(filePath).thenApply(function(respOpt){
-                        if (respOpt.ref == null) {
-                            console.log('Path not found: ' + filePath);
-                            that.buildResponse(headerFunc, null, that.FILE_NOT_FOUND);
-                        } else {
-                            let resp = respOpt.get();
-                            let props = resp.getFileProperties();
-                            if (props.isDirectory || props.isHidden || props.getType() != 'todo') {
-                                that.showError('File not accessible: ' + filePath);
-                                that.buildResponse(headerFunc, null, that.ACTION_FAILED);
-                            } else {
-                                let size = props.sizeLow();
-                                that.targetFile.getLatest(that.context.network).thenApply(updatedFile => {
-                                    updatedFile.getInputStream(that.context.network, that.context.crypto, props.sizeHigh(), props.sizeLow(), read => {}).thenApply(reader => {
-                                        var bytes = new Uint8Array(size);
-                                        let data = convertToByteArray(bytes);
-                                        reader.readIntoArray(data, 0, size).thenApply(function(read){
-                                            let allLists = that.loadTodoBoard(peergos.shared.user.TodoBoard.fromByteArray(data));
-                                            let encoder = new TextEncoder();
-                                            let todoBoard = encoder.encode(JSON.stringify(allLists));
-                                            that.buildResponse(headerFunc, todoBoard, that.GET_SUCCESS);
-                                        });
-                                    });
-                                });
-                            }
-                        }
-                    }).exceptionally(function(throwable) {
-                        console.log(throwable);
-                        that.buildResponse(headerFunc, null, that.ACTION_FAILED);
-                    });
-                } else if(apiMethod == 'POST' || apiMethod == 'PUT') {
-                    if (!this.permissionsMap.get(this.PERMISSION_EDIT_CHOSEN_FILE)) {
-                        this.showError("App attempted to write to file without permission :" + path);
-                        this.buildResponse(headerFunc, null, this.ACTION_FAILED);
-                    } else {
-                        let bytes = this.saveTodoBoard(filePath, data);
-                        this.overwriteFile(headerFunc, filePath, bytes, this.targetFile, true);
-                    }
-                } else {
-                    this.buildResponse(headerFunc, null, this.ACTION_FAILED);
-                }
-            }
-        },
-        extractTodoBoardName: function(filename) {
-            return filename.endsWith(".todo") ? filename.substring(0, filename.length - 5) : filename;
-        },
-        saveTodoBoard: function(filePath, data) {
-            let todoBoardName = this.extractTodoBoardName(filePath.substring(filePath.lastIndexOf('/') + 1));
-            let decoder = new TextDecoder();
-            let tasksStr = decoder.decode(data);
-            let lists = JSON.parse(tasksStr);
-            let todoLists = [];
-            for(var i = 0; i < lists.length; i++) {
-                let list = lists[i];
-                let listItems = [];
-                for(var j = 0; j < list.items.length; j++) {
-                    let item = list.items[j];
-                    let entry = peergos.shared.user.TodoListItem.build(item.id, item.created, item.text, item.checked);
-                    listItems.push(entry);
-                }
-                let todoList = peergos.shared.user.TodoList.buildFromJs(list.name, list.id, listItems);
-                todoLists.push(todoList);
-            }
-            let todoBoard = peergos.shared.user.TodoBoard.buildFromJs(todoBoardName, todoLists);
-            return todoBoard.toByteArray();
-        },
-        loadTodoBoard: function(todoBoard) {
-            let lists = todoBoard.getTodoLists().toArray([]);
-            let allLists = [];
-            for(var i = 0; i < lists.length; i++) {
-                let list = lists[i];
-                let items = list.getTodoItems().toArray([]);
-                let allItems = [];
-                for(var j = 0; j < items.length; j++) {
-                    let item = items[j];
-                    let milliseconds = item.getCreatedAsMillisecondsString();
-                    let entry = {id: item.Id, created: milliseconds, text: item.text, checked: item.checked};
-                    allItems.push(entry);
-                }
-                allLists.push({id: list.getId(), name: list.getName(), items: allItems});
-            }
-            return allLists;
         },
         copyArray: function(jArray) {
             let arr = [];
