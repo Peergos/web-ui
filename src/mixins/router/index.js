@@ -116,9 +116,6 @@ module.exports = {
         if (mimeType.startsWith("audio") || mimeType.startsWith("video") || mimeType.startsWith("image")) {
             let gallery = {name:'Gallery', contextMenuText: 'View in Gallery'};
             matchingInbuiltApps.push(gallery);
-        } else if (mimeType === "application/vnd.peergos-todo") {
-            let tasks = {name:"Tasks", contextMenuText: 'View in Tasks'};
-            matchingInbuiltApps.push(tasks);
         } else if (mimeType === "application/pdf") {
             let pdf = {name:"pdf", contextMenuText: 'Open PDF Viewer'};
             matchingInbuiltApps.push(pdf);
@@ -172,8 +169,6 @@ module.exports = {
 		mimeType.startsWith("video") ||
 		mimeType.startsWith("image")) {
 		return 'Gallery';
-	    } else if (mimeType === "application/vnd.peergos-todo") {
-		return "Tasks";
 	    } else if (mimeType === "application/pdf") {
 		return "pdf";
 	    } else if (mimeType === "text/calendar") {

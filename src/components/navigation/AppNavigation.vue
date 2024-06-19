@@ -23,7 +23,6 @@
             <MenuItem :label="translate('APPNAV.LAUNCHER')" icon="launcher" view="Launcher" />
 			<MenuItem :label="translate('APPNAV.DRIVE')" icon="folder" view="Drive" />
 			<MenuItem :label="translate('APPNAV.NEWSFEED')" icon="news" view="NewsFeed" />
-			<MenuItem :label="translate('APPNAV.TASKS')" icon="tasks" view="Tasks" />
 			<MenuItem :label="translate('APPNAV.SOCIAL')" icon="social" view="Social" />
 			<MenuItem :label="translate('APPNAV.CAL')" icon="calendar" view="Calendar" />
             <MenuItem v-if="showEmail" :label="translate('APPNAV.EMAIL')" icon="email" view="Email" />

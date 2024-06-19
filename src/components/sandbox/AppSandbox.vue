@@ -1006,7 +1006,6 @@ module.exports = {
                 that.buildResponse(headerFunc, null, that.ACTION_FAILED);
             }
         },
-
         copyArray: function(jArray) {
             let arr = [];
             for(var i=0; i < jArray.length; i++) {
