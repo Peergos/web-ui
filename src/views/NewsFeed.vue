@@ -1153,6 +1153,7 @@ module.exports = {
             let path = "/peergos/recommended-apps/";
             this.context.getByPath(path + "index.html").thenApply(function(fileOpt){
                 if (fileOpt.ref != null && fileOpt.get().getFileProperties().sizeLow() > 20) {
+                    that.$toast(that.translate("DRIVE.INSTALL_DEDICATED_APP"), {timeout:false});
                     that.sandboxAppName = '$$app-gallery$$';
                     that.currentFile = fileOpt.get();
                     that.currentPath = path;
