@@ -124,7 +124,7 @@ module.exports = {
 		getPrompt() {
 		    var filename = this.prompt_result;
 		    if (filename.length > 0 && this.folder_result.length > 0) {
-                if (!filename.endsWith(this.pickerFileExtension)) {
+                if (!filename.endsWith("." + this.pickerFileExtension)) {
                     filename = filename + '.' + this.pickerFileExtension;
                 }
                 this.consumer_func(filename, this.folder_result);

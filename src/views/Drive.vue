@@ -341,9 +341,10 @@
       v-on:close-app-sandbox="closeAppSandbox(false)"
       v-on:refresh="forceSharedRefreshWithUpdate++"
       :sandboxAppName="sandboxAppName"
-      :currentFile="selectedFiles[0]"
-      :currentPath="getPath"
+      :currentFile="currentFile"
+      :currentPath="currentPath"
       :currentProps="appSandboxProps"
+      :htmlAnchor="htmlAnchor"
     >
     </AppSandbox>
     <Replace
@@ -554,7 +555,8 @@ module.exports = {
             uploadProgressQueue: { entries:[]},
             executingUploadProgressCommands: false,
             progressBarUpdateFrequency: 50,
-            zipAndDownloadFoldersCount: 0
+            zipAndDownloadFoldersCount: 0,
+            htmlAnchor: "",
 		};
 	},
 	mixins:[downloaderMixins, router, zipMixin, launcherMixin, i18n, sandboxMixin],
@@ -972,10 +974,10 @@ module.exports = {
                                 var openRecApps = () => {
                                     const filename = "index.html";
                                     that.selectedFiles = that.files.filter(f => f.getName() == filename);
-                                    that.showAppSandbox = true;
                                     that.sandboxAppName = '$$app-gallery$$';
                                     that.currentFile = file.ref;
                                     that.currentPath = appPath;
+                                    that.showAppSandbox = true;
                                 };
                                 that.onUpdateCompletion.push(openRecApps);
                             }
@@ -1024,10 +1026,11 @@ module.exports = {
                                                                 that.openInApp({filename:filename}, app);
                                                                 that.openFileOrDir(app, that.getPath, {filename:filename}, false);
                                                             } else {
-                                                                that.showAppSandbox = true;
                                                                 that.sandboxAppName = recommendedApp;
                                                                 that.currentFile= that.files[0];
+                                                                that.currentPath= that.getPath
                                                                 that.appSandboxProps = props;
+                                                                that.showAppSandbox = true;
                                                             }
                                                         });
                                                     } else {
@@ -1095,32 +1098,6 @@ module.exports = {
 			}
 			this.showPendingServerMessages();
 		},
-
-		getRecommendedViewer(file) {
-		    let filename = file.getName();
-		    if (file.isDirectory()) {
-		        return null;
-            }
-		    try {
-                let extension = filename.substring(filename.lastIndexOf(".") + 1).toLowerCase();
-                if (extension == "docx" || extension == "odt") {
-                    return "doc-viewer";
-                } else if (extension == "sheet" || extension == "xlsx" || extension == "ods") {
-                    return "luckysheet";
-                } else if (extension == "tldr") {
-                    return "tldraw";
-                } else if (extension == "drawio") {
-                    return "drawio";
-                } else if (extension == "todo") {
-                    return "tasks";
-                } else if (extension == "epub") {
-                    return "ebookreader";
-                }
-            } catch (ex) {
-                return null;
-            }
-            return null;
-        },
 
         selectAllOrNone() {
             if (this.selectedFiles.length == this.files.length) {
@@ -1238,12 +1215,12 @@ module.exports = {
 
 		navigateToAction(directory) {
 			let newPath = directory.startsWith("/") ? directory.substring(1).split('/') : directory.split('/');
-			let currentPath = this.path;
-			if (newPath.length != currentPath.length) {
+			let currPath = this.path;
+			if (newPath.length != currPath.length) {
 				this.changePath(directory);
 			} else {
 				for (var i = 0; i < newPath.length; i++) {
-					if (newPath[i] != currentPath[i]) {
+					if (newPath[i] != currPath[i]) {
 						this.changePath(directory);
 						return;
 					}
@@ -1252,14 +1229,32 @@ module.exports = {
 		},
         appOpen(appName) {
             this.closeMenu();
-            this.showAppSandbox = true;
             this.sandboxAppName = appName;
+            this.currentFile= this.selectedFiles[0];
+            this.currentPath= this.getPath;
+            this.showAppSandbox = true;
         },
         closeAppSandbox(reloadDrive) {
             this.showAppSandbox = false;
+            this.appSandboxProps = null;
             if (reloadDrive) {
                 this.showDrive();
             }
+            if(this.htmlAnchor.length > 0) {
+                let file = this.selectedFiles[0];
+                let filename = file.getName();
+                let writable = file.isWritable();
+                let userApps = this.availableAppsForFile(file);
+                var args = {filename:filename}
+                this.appArgs = args;
+                if (userApps.length == 1) {
+                    this.openFileOrDir(userApps[0].name, this.getPath, args, writable);
+                } else {
+                    var app = this.getApp(file, this.getPath, writable);
+                    this.openFileOrDir(app, this.getPath, args, writable);
+                }
+            }
+            this.htmlAnchor = "";
         },
 	    openInApp(args, app) {
                 if (app == null || app == "" || app == "Drive") {
@@ -1287,6 +1282,8 @@ module.exports = {
                         that.showMarkupViewer = true;
                     else if (app == "htmlviewer") {
                         that.sandboxAppName = "htmlviewer";
+                        that.currentFile= that.selectedFiles[0];
+                        that.currentPath= that.getPath;
                         that.showAppSandbox = true;
                     } else if (app == "search") {
                         that.showSearch = true;
@@ -2707,10 +2704,11 @@ module.exports = {
                             that.appArgs = args;
                             that.openFileOrDir(app, that.getPath, args, writable);
                         } else {
-                            that.showAppSandbox = true;
                             that.sandboxAppName = recommendedApp;
                             that.currentFile= file;
+                            that.currentPath= that.getPath;
                             that.appSandboxProps = props;
+                            that.showAppSandbox = true;
                         }
                     });
                 } else {
@@ -2720,12 +2718,36 @@ module.exports = {
                     if (userApps.length == 1) {
                         this.openFileOrDir(userApps[0].name, this.getPath, args, writable);
                     } else {
-                        this.openFileOrDir(app, this.getPath, args, writable);
+                        if (recommendedApp != null) {
+                            this.navigateToRecommendedApps(recommendedApp);
+                        } else {
+                            this.openFileOrDir(app, this.getPath, args, writable);
+                        }
                     }
                 }
             }
 		},
-
+        navigateToRecommendedApps: function(appName) {
+            let that = this;
+            let path = "/peergos/recommended-apps/";
+            this.context.getByPath(path + "index.html").thenApply(function(fileOpt){
+                if (fileOpt.ref != null && fileOpt.get().getFileProperties().sizeLow() > 20) {
+                    that.showAppSandbox = true;
+                    that.sandboxAppName = '$$app-gallery$$';
+                    that.currentFile = fileOpt.get();
+                    that.currentPath = path;
+                    that.htmlAnchor = appName;
+                } else {
+                    let file = that.selectedFiles[0];
+                    let filename = file.getName();
+                    let writable = file.isWritable();
+                    let args = {filename:filename}
+                    that.appArgs = args;
+                    let app = that.getApp(file, that.getPath, writable);
+                    that.openFileOrDir(app, that.getPath, args, writable);
+                }
+            });
+        },
 		navigateOrDownload(file) {
 			if (this.showSpinner) // disable user input whilst refreshing
 				return;

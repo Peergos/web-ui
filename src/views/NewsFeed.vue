@@ -76,7 +76,12 @@
                     v-if="showAppSandbox"
                     v-on:hide-app-sandbox="closeAppSandbox"
                     :sandboxAppName="sandboxAppName"
-                    :sandboxAppChatId="sandboxAppChatId">
+                    :sandboxAppChatId="sandboxAppChatId"
+                    :currentFile="currentFile"
+                    :currentPath="currentPath"
+                    :currentProps="appSandboxProps"
+                    :htmlAnchor="htmlAnchor"
+                >
                 </AppSandbox>
                 <ul id="appMenu" v-if="showAppMenu" class="dropdown-menu" v-bind:style="{top:menutop, left:menuleft}" style="cursor:pointer;display:block;min-width:100px;padding: 10px;">
                     <li id='open-in-app' style="padding-bottom: 5px;color: black;" v-for="app in availableApps" v-on:keyup.enter="appOpen($event, app.name, app.path, app.file)" v-on:click="appOpen($event, app.name, app.path, app.file)">{{app.contextMenuText}}</li>
@@ -318,6 +323,10 @@ module.exports = {
             appInstalledEntry: null,
             availableApps: [],
             sharerThumbnailCache: new Map(),
+            currentFile: null,
+            currentPath: null,
+            currentProps: null,
+            htmlAnchor: "",
         }
     },
     props: [],
@@ -1075,6 +1084,24 @@ module.exports = {
             this.showAppSandbox = false;
             this.sandboxAppName = '';
             this.sandboxAppChatId = '';
+            this.currentFile = null;
+            this.currentPath = null;
+            this.currentProps = null;
+            if(this.htmlAnchor.length > 0) {
+                let file = this.appInstalledEntry.file;
+                let filename = file.getName();
+                let writable = file.isWritable();
+                let userApps = this.availableAppsForFile(file);
+                var args = {filename:filename}
+                if (userApps.length == 1) {
+                    this.openFileOrDir(userApps[0].name, this.appInstalledEntry.path, args, writable);
+                } else {
+                    let inbuiltApps = this.getInbuiltApps(file)
+                    this.openFileOrDir(inbuiltApps[0].name, this.appInstalledEntry.path, args, writable);
+                }
+                this.appInstalledEntry = null;
+            }
+            this.htmlAnchor = "";
         },
         viewFolder: function (entry) {
             this.openFileOrDir("Drive", entry.path, {filename:""})
@@ -1103,8 +1130,13 @@ module.exports = {
                 let inbuiltApps = this.getInbuiltApps(file);
                 if (userApps.length == 0) {
                     if (inbuiltApps.length == 1) {
-                        if (inbuiltApps[0].name == 'hex') {
-                            this.openFileOrDir("Drive", path, {filename:""});
+                        if (inbuiltApps[0].name == 'hex' || inbuiltApps[0].name == 'editor') {
+                            let recommendedApp = this.getRecommendedViewer(file);
+                            if (recommendedApp != null) {
+                                this.navigateToRecommendedApps(recommendedApp, inbuiltApps[0].name, file, path);
+                            }else {
+                                this.openFileOrDir(inbuiltApps[0].name, path, {filename:file.isDirectory() ? "" : file.getName()})
+                            }
                         } else {
                             this.openFileOrDir(inbuiltApps[0].name, path, {filename:file.isDirectory() ? "" : file.getName()})
                         }
@@ -1115,6 +1147,22 @@ module.exports = {
                     this.showAppContextMenu(event, inbuiltApps, userApps, path, file);
                 }
             }
+        },
+        navigateToRecommendedApps: function(appName, fallbackAppName, file, filePath) {
+            let that = this;
+            let path = "/peergos/recommended-apps/";
+            this.context.getByPath(path + "index.html").thenApply(function(fileOpt){
+                if (fileOpt.ref != null && fileOpt.get().getFileProperties().sizeLow() > 20) {
+                    that.sandboxAppName = '$$app-gallery$$';
+                    that.currentFile = fileOpt.get();
+                    that.currentPath = path;
+                    that.htmlAnchor = appName;
+                    that.appInstalledEntry = {file: file, path: filePath};
+                    that.showAppSandbox = true;
+                } else {
+                    that.openFileOrDir(fallbackAppName, filePath, {filename:file.isDirectory() ? "" : file.getName()})
+                }
+            });
         },
         showAppContextMenu(event, inbuiltApps, userApps, path, file) {
             let appOptions = [];
