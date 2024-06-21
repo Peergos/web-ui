@@ -236,7 +236,7 @@ module.exports = {
             return this.socialData.friends;
         }
     },
-    props: ['sandboxAppName', 'currentFile', 'currentPath', 'currentProps', 'sandboxAppChatId'],
+    props: ['sandboxAppName', 'currentFile', 'currentPath', 'currentProps', 'sandboxAppChatId', 'htmlAnchor'],
     created: function() {
         let that = this;
         this.messenger = new peergos.shared.messaging.Messenger(this.context);
@@ -523,7 +523,8 @@ module.exports = {
                 let href = window.location.href;
                 let appDevMode = href.includes("?local-app-dev=true");
                 let allowUnsafeEvalInCSP = that.permissionsMap.get(that.PERMISSION_CSP_UNSAFE_EVAL) != null;
-                let props = { appDevMode: appDevMode, allowUnsafeEvalInCSP: allowUnsafeEvalInCSP, isPathWritable: that.isPathWritable()};
+                let props = { appDevMode: appDevMode, allowUnsafeEvalInCSP: allowUnsafeEvalInCSP, isPathWritable: that.isPathWritable(),
+                    htmlAnchor: that.htmlAnchor == null ? "" : that.htmlAnchor};
                 let func = function() {
                     that.postMessage({type: 'init', appName: that.currentAppName, appPath: that.appPath,
                     allowBrowsing: that.browserMode, theme: theme, chatId: that.currentChatId,

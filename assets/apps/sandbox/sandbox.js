@@ -74,7 +74,8 @@ function load(appName, appPath, allowBrowsing, theme, chatId, username, props) {
             if (props.isPathWritable == true) {
                 path = path + '&isPathWritable=' + props.isPathWritable;
             }
-            let src = allowBrowsing ? appPath.substring(1) : "index.html" + path;
+            let anchor = props.htmlAnchor.length > 0 ? '#' + props.htmlAnchor : "";
+            let src = allowBrowsing ? appPath.substring(1) + anchor : "index.html" + path;
             iframe.src= src;
             iframe.contentWindow.focus();
             that.startPing(url + "/ping");

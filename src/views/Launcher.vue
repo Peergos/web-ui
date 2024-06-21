@@ -46,7 +46,8 @@
                 v-on:hide-app-sandbox="closeAppSandbox"
                 :sandboxAppName="sandboxAppName"
                 :currentFile="currentFile"
-                :currentPath="currentPath">
+                :currentPath="currentPath"
+                :htmlAnchor="htmlAnchor">
             </AppSandbox>
             <Confirm
                     v-if="showConfirm"
@@ -273,6 +274,7 @@ module.exports = {
             pickerFilters: null,
             pickerShowThumbnail: false,
             filePickerBaseFolder: "",
+            htmlAnchor: "",
         }
     },
     props: [],

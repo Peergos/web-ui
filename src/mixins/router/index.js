@@ -109,6 +109,31 @@ module.exports = {
            return [];
        }
     },
+    getRecommendedViewer(file) {
+        let filename = file.getName();
+        if (file.isDirectory()) {
+            return null;
+        }
+        try {
+            let extension = filename.substring(filename.lastIndexOf(".") + 1).toLowerCase();
+            if (extension == "docx" || extension == "odt") {
+                return "doc-viewer";
+            } else if (extension == "sheet" || extension == "xlsx" || extension == "ods") {
+                return "luckysheet";
+            } else if (extension == "tldr") {
+                return "tldraw";
+            } else if (extension == "drawio") {
+                return "drawio";
+            } else if (extension == "todo") {
+                return "tasks";
+            } else if (extension == "epub") {
+                return "ebookreader";
+            }
+        } catch (ex) {
+            return null;
+        }
+        return null;
+    },
     getInbuiltApps(file) {
         let filename = file.getName();
         let mimeType = file.getFileProperties().mimeType;
