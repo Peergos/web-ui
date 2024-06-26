@@ -221,10 +221,10 @@ module.exports = {
 	    if (fragment.length == 0) {
 	        return props;
 	    }
-            if (window.location.path.startsWith("/secret/")) {
+            if (window.location.pathname.startsWith("/secret/")) {
                 props.secretLink = true;
                 props.linkV2 = true;
-                props.path = window.location.path;
+                props.path = window.location.pathname;
                 props.password = window.location.hash.substring(1);
                 return props;
             }
