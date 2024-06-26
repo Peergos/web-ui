@@ -1407,42 +1407,38 @@ function generateSecretbox_open(cipher, nonce, key) {
 }
 
 function generateCrypto_sign_open(signed, publicSigningKey) {    
-    try {
-        let signature = signed.slice(0, 64);
-        let encoded = signed.slice(64, signed.length);
-        return window.crypto.subtle.importKey("raw", publicSigningKey, "Ed25519", false, ["verify"]).then(publicKey => {
-            return window.crypto.subtle.verify(
-                "Ed25519",
-                publicKey,
-                signature,
-                encoded
-            ).then(valid => {
-                if (valid)
-                    return convertToByteArray(new Int8Array(encoded));
-                throw "Invalid signature";
-            });
+    let signature = signed.slice(0, 64);
+    let encoded = signed.slice(64, signed.length);
+    return window.crypto.subtle.importKey("raw", publicSigningKey, "Ed25519", false, ["verify"]).then(publicKey => {
+        return window.crypto.subtle.verify(
+            "Ed25519",
+            publicKey,
+            signature,
+            encoded
+        ).then(valid => {
+            if (valid)
+                return convertToByteArray(new Int8Array(encoded));
+            throw "Invalid signature";
         });
-    }  catch (e) {
+    }).catch(t => {
         var bytes = nacl.sign.open(new Uint8Array(signed), new Uint8Array(publicSigningKey));
         return convertToByteArray(new Int8Array(bytes));
-    }
+    });
 }
 
 function generateCrypto_sign(message, secretSigningKey) {
-    try {
-        return window.crypto.subtle.importKey("raw", secretSigningKey, "Ed25519", false, ["sign"]).then(secretKey => {
-            return window.crypto.subtle.sign(
-                "Ed25519",
-                secretKey,
-                message
-            ).then(signature => {
-                return convertToByteArray(new Int8Array(signature.concat(message)));
-            });
+    return window.crypto.subtle.importKey("raw", secretSigningKey, "Ed25519", false, ["sign"]).then(secretKey => {
+        return window.crypto.subtle.sign(
+            "Ed25519",
+            secretKey,
+            message
+        ).then(signature => {
+            return convertToByteArray(new Int8Array(signature.concat(message)));
         });
-    }  catch (e) {
+    }).catch (e => {
         var bytes = nacl.sign(new Uint8Array(message), new Uint8Array(secretSigningKey));
         return convertToByteArray(new Int8Array(bytes));
-    }
+    });
 }
 
 function generateCrypto_sign_keypair(publicKey, secretKey) {    
