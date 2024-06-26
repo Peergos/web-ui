@@ -1406,10 +1406,11 @@ function generateSecretbox_open(cipher, nonce, key) {
     return convertToByteArray(new Int8Array(bytes.buffer, bytes.byteOffset, bytes.byteLength));
 }
 
-function generateCrypto_sign_open(signed, publicSigningKey) {    
+function generateCrypto_sign_open(signed, publicSigningKey) {
+    var future = peergos.shared.util.Futures.incomplete();
     let signature = signed.slice(0, 64);
     let encoded = signed.slice(64, signed.length);
-    return window.crypto.subtle.importKey("raw", publicSigningKey, "Ed25519", false, ["verify"]).then(publicKey => {
+    window.crypto.subtle.importKey("raw", publicSigningKey, "Ed25519", false, ["verify"]).then(publicKey => {
         return window.crypto.subtle.verify(
             "Ed25519",
             publicKey,
@@ -1417,28 +1418,34 @@ function generateCrypto_sign_open(signed, publicSigningKey) {
             encoded
         ).then(valid => {
             if (valid)
-                return convertToByteArray(new Int8Array(encoded));
-            throw "Invalid signature";
+                future.complete(convertToByteArray(new Int8Array(encoded)));
+            future.completeExceptionally(java.lang.Throwable.of(Error("Invalid signature")));
         });
     }).catch(t => {
         var bytes = nacl.sign.open(new Uint8Array(signed), new Uint8Array(publicSigningKey));
-        return convertToByteArray(new Int8Array(bytes));
+        if (bytes != null)
+            future.complete(convertToByteArray(new Int8Array(bytes)));
+        else
+            future.completeExceptionally(java.lang.Throwable.of(Error("Invalid signature")));
     });
+    return future;
 }
 
 function generateCrypto_sign(message, secretSigningKey) {
-    return window.crypto.subtle.importKey("raw", secretSigningKey, "Ed25519", false, ["sign"]).then(secretKey => {
+    var future = peergos.shared.util.Futures.incomplete();
+    window.crypto.subtle.importKey("raw", secretSigningKey, "Ed25519", false, ["sign"]).then(secretKey => {
         return window.crypto.subtle.sign(
             "Ed25519",
             secretKey,
             message
         ).then(signature => {
-            return convertToByteArray(new Int8Array(signature.concat(message)));
+            future.complete(convertToByteArray(new Int8Array(signature.concat(message))));
         });
     }).catch (e => {
         var bytes = nacl.sign(new Uint8Array(message), new Uint8Array(secretSigningKey));
-        return convertToByteArray(new Int8Array(bytes));
+        future.complete(convertToByteArray(new Int8Array(bytes)));
     });
+    return future;
 }
 
 function generateCrypto_sign_keypair(publicKey, secretKey) {    
