@@ -156,6 +156,28 @@
 					    :links="modalLinks"
                                             :username="this.context.username"
 					/>
+                    <div v-if="secretReadLinksList!=0" class="table-responsive">
+                        <table class="table">
+                            <thead>
+                            <tr  v-if="secretReadLinksList!=0">
+                                <th>Password</th>
+                                <th>Max Count</th>
+                                <th>Expiry</th>
+                                <th>Delete</th>
+                            </tr>
+                            </thead>
+                            <tbody>
+                            <tr v-for="item in secretReadLinksList">
+                                <td>{{ item.password }}</td>
+                                <td>{{ item.maxCount.ref != null ? item.maxCount.ref.toString() : "-" }}</td>
+                                <td>{{ item.expiry.ref != null ? item.expiry.ref.toString() : "-" }}</td>
+                                <td> <button class="btn btn-success" @click="deleteReadLink(item)">Delete</button>
+                                </td>
+                            </tr>
+                            </tbody>
+                        </table>
+                    </div>
+
 				</div>
 			</div>
 		</div>
@@ -197,6 +219,7 @@ module.exports = {
             choice_body: '',
             choice_consumer_func: () => {},
             choice_options: [],
+            secretReadLinksList: [],
 		};
 	},
 	props: [
@@ -222,7 +245,31 @@ module.exports = {
 			return this.socialData.followers.concat(this.socialData.friends);
 		}
 	},
+    created: function() {
+        let that = this;
+        this.showSpinner = true;
+        let file = this.files[0];
+        let props = file.getFileProperties();
+        let directoryPath = peergos.client.PathUtils.directoryToPath(this.path);
+        this.context.getDirectorySharingState(directoryPath).thenApply(function (sharedWithState) {
+            let fileSharingState = sharedWithState.get(props.name);
+            that.secretReadLinksList = fileSharingState.readLinks.toArray([]);
+            that.showSpinner = false;
+        });
+    },
 	methods: {
+        deleteReadLink(readLink) {
+            let that = this;
+            let filePath = peergos.client.PathUtils.toPath(this.path, this.files[0].getFileProperties().name);
+            this.showSpinner = true;
+            this.context.deleteSecretLink(readLink.getLinkLabel(), filePath, false).thenApply(function (sharedWithState) {
+                console.log('done');
+                that.showSpinner = false;
+            }).exceptionally(function (throwable) {
+                that.showSpinner = false;
+                //todo that.$toast.error(that.translate("DRIVE.SHARE.ERROR") + ` ${that.files[0].getFileProperties().name}: ${throwable.getMessage()}`, {timeout:false, id: 'share'})
+            });
+        },
 		close() {
 			this.showSpinner = false;
 			this.$emit("hide-share-with");
