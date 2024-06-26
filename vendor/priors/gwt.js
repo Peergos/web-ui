@@ -1428,9 +1428,21 @@ function generateCrypto_sign_open(signed, publicSigningKey) {
     }
 }
 
-function generateCrypto_sign(message, secretSigningKey) {    
-    var bytes = nacl.sign(new Uint8Array(message), new Uint8Array(secretSigningKey));
-    return convertToByteArray(new Int8Array(bytes));
+function generateCrypto_sign(message, secretSigningKey) {
+    try {
+        return window.crypto.subtle.importKey("raw", secretSigningKey, "Ed25519", false, ["sign"]).then(secretKey => {
+            return window.crypto.subtle.sign(
+                "Ed25519",
+                secretKey,
+                message
+            ).then(signature => {
+                return convertToByteArray(new Int8Array(signature.concat(message)));
+            });
+        });
+    }  catch (e) {
+        var bytes = nacl.sign(new Uint8Array(message), new Uint8Array(secretSigningKey));
+        return convertToByteArray(new Int8Array(bytes));
+    }
 }
 
 function generateCrypto_sign_keypair(publicKey, secretKey) {    
