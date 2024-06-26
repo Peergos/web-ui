@@ -221,6 +221,13 @@ module.exports = {
 	    if (fragment.length == 0) {
 	        return props;
 	    }
+            if (window.location.path.startsWith("/secret/")) {
+                props.secretLink = true;
+                props.linkV2 = true;
+                props.path = window.location.path;
+                props.password = window.location.hash.substring(1);
+                return props;
+            }
 	    try {
 		props = fragmentToProps(fragment);
 	    } catch (e) {
@@ -331,11 +338,18 @@ module.exports = {
 	gotoSecretLink(props) {
 	    var that = this;
             this.$store.commit("SET_IS_SECRET_LINK", true);
-	    peergos.shared.user.UserContext.fromSecretLink(
+	    (props.linkV2 ?
+             peergos.shared.user.UserContext.fromSecretLinkV2(
+		 props.path,
+                 props.password,
+		that.network,
+		that.crypto
+	    ):
+             peergos.shared.user.UserContext.fromSecretLink(
 		props.link,
 		that.network,
 		that.crypto
-	    )
+	    ))
 		.thenApply(function (context) {
 		    that.$store.commit("SET_CONTEXT", context);
 		    that.$store.commit("SET_DOWNLOAD", props.download);
