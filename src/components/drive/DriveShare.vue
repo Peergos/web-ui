@@ -264,6 +264,7 @@ module.exports = {
             this.showSpinner = true;
             this.context.deleteSecretLink(readLink.getLinkLabel(), filePath, false).thenApply(function (sharedWithState) {
                 console.log('done');
+                //todo remove line item from table
                 that.showSpinner = false;
             }).exceptionally(function (throwable) {
                 that.showSpinner = false;
