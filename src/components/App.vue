@@ -224,8 +224,7 @@ module.exports = {
             if (window.location.pathname.startsWith("/secret/")) {
                 props.secretLink = true;
                 props.linkV2 = true;
-                props.path = window.location.pathname;
-                props.password = window.location.hash.substring(1);
+                props.url = window.location.pathname + window.location.hash;
                 return props;
             }
 	    try {
@@ -338,10 +337,12 @@ module.exports = {
 	gotoSecretLink(props) {
 	    var that = this;
             this.$store.commit("SET_IS_SECRET_LINK", true);
+            var future = peergos.shared.util.Futures.incomplete();
+            future.complete("");
 	    (props.linkV2 ?
              peergos.shared.user.UserContext.fromSecretLinkV2(
-		 props.path,
-                 props.password,
+		 props.url,
+                 () => future,
 		that.network,
 		that.crypto
 	    ):
