@@ -222,9 +222,17 @@ module.exports = {
 	        return props;
 	    }
             if (window.location.pathname.startsWith("/secret/")) {
+                try {
+		    props = fragmentToProps(fragment);
+	        } catch (e) {}
                 props.secretLink = true;
-                props.linkV2 = true;
-                props.url = window.location.pathname + window.location.hash;
+                var pw = props.linkpassword;
+                if (pw == null) {
+                    pw = window.location.hash.substring(1);
+                    if (pw.includes("?"))
+                        pw = pw.substring(0, pw.indexOf("?"));
+                }
+                props.linkpassword = pw;
                 if (fragment.indexOf("download=true") > 0)
 		    props.download = true;
 		if (fragment.indexOf("open=true") > 0)
@@ -345,9 +353,9 @@ module.exports = {
             var future = peergos.shared.util.Futures.incomplete();
             future.complete("");
             
-	    (props.linkV2 ?
+	    (props.linkpassword != null ?
              peergos.shared.user.UserContext.fromSecretLinkV2(
-		 props.url,
+		 window.location.pathname + "#" + props.linkpassword,
                  () => future,
 		that.network,
 		that.crypto

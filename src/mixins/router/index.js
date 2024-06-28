@@ -26,6 +26,8 @@ module.exports = {
 	    if (currentProps != null && currentProps.secretLink) {
                 rawProps.secretLink = true;
                 rawProps.link = currentProps.link;
+                if (currentProps.linkpassword != null)
+                    rawProps.linkpassword = currentProps.linkpassword
                 if (currentProps.open)
                     rawProps.open = true;
             }
