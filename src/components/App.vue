@@ -225,6 +225,10 @@ module.exports = {
                 props.secretLink = true;
                 props.linkV2 = true;
                 props.url = window.location.pathname + window.location.hash;
+                if (fragment.indexOf("download=true") > 0)
+		    props.download = true;
+		if (fragment.indexOf("open=true") > 0)
+		    props.open = true;
                 return props;
             }
 	    try {
@@ -339,6 +343,7 @@ module.exports = {
             this.$store.commit("SET_IS_SECRET_LINK", true);
             var future = peergos.shared.util.Futures.incomplete();
             future.complete("");
+            
 	    (props.linkV2 ?
              peergos.shared.user.UserContext.fromSecretLinkV2(
 		 props.url,
@@ -357,6 +362,7 @@ module.exports = {
 		    that.$store.commit("SET_OPEN", props.open);
 		    that.$store.commit("SET_INIT_PATH", props.path);
                     that.$store.commit("CURRENT_VIEW", "Drive");
+                    window.location.hash = propsToFragment(props)
 		})
 		.exceptionally(function (throwable) {
 		    that.$toast.error(
