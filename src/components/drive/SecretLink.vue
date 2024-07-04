@@ -11,14 +11,27 @@
                 <div class="modal-body">
                     <div class="container"><p style="word-wrap;break-all;">
                             <div v-for="link in urlLinks" style="font-size: 1.2em;">
-                                <div v-if="link.isFile">
-                                    <input type="checkbox" @change="onAutoOpen(link.id)" v-model="link.autoOpen">
+                                <div v-if="link.isFile" style="padding: 10px;">
+                                    <input type="checkbox" @change="onChange(link.id)" v-model="link.autoOpen">
                                     <label style="font-weight: normal;">{{ translate("DRIVE.LINK.OPEN") }}</label>
                                 </div>
-                                <strong><a v-bind:href="link.href">{{ link.name }}</a></strong>
-                                <input v-bind:id="link.id" type="text" v-bind:value="link.href" style="display: none">
-                                <button class="fa fa-clipboard" style="padding: 6px 12px; background-color:var(--bg);" @click="copyUrlToClipboard($event)">&nbsp;{{ translate("DRIVE.LINK.COPY") }}</button>
-                                <button class="fa fa-envelope" style="padding: 6px 12px; background-color:var(--bg);" @click="email($event)">&nbsp;{{ translate("DRIVE.LINK.EMAIL") }}</button>
+                                <div style="padding: 10px;">
+                                    <input type="checkbox" @change="onChange(link.id)" v-model="makeLinkWritable">
+                                    <label style="font-weight: normal;">{{ translate("DRIVE.LINK.WRITABLE") }}</label>
+                                </div>
+                                <div style="padding: 10px;">
+                                    <input type="checkbox" @change="onChange(link.id)" v-model="expireOn">
+                                    <label style="font-weight: normal;">{{ translate("DRIVE.LINK.EXPIRE.ON") }}</label>
+                                    <input id="expiry-date-picker" type="date" @change="onChange(link.id)">
+                                    <label style="font-weight: normal;">{{ translate("DRIVE.LINK.AT.TIME") }}</label>
+                                    <input id="expiry-time-picker" type="time" @change="onChange(link.id)">
+                                </div>
+                                <div style="padding: 10px;">
+                                    <strong><a v-bind:href="link.href">{{ link.name }}</a></strong>
+                                    <input v-bind:id="link.id" type="text" v-bind:value="link.href" style="display: none">
+                                    <button class="fa fa-clipboard" style="padding: 6px 12px; background-color:var(--bg);" @click="copyUrlToClipboard($event)">&nbsp;{{ translate("DRIVE.LINK.COPY") }}</button>
+                                    <button class="fa fa-envelope" style="padding: 6px 12px; background-color:var(--bg);" @click="email($event)">&nbsp;{{ translate("DRIVE.LINK.EMAIL") }}</button>
+                                </div>
                         </p>
                         </div>
                     </div>
@@ -45,6 +58,10 @@ const i18n = require("../../i18n/index.js");
 	data() {
 	    return {
                 urlLinks:[],
+                makeLinkWritable: false,
+                expireOn: false,
+                expireDateString: "",
+                expireTimeString: "",
             };
 	},
         mixins:[i18n],
@@ -63,6 +80,15 @@ const i18n = require("../../i18n/index.js");
         },
         methods: {
             buildHref: function (link, autoOpenOverride) {
+                let dateExpiry = document.getElementById("expiry-date-picker");
+                if (dateExpiry != null) {
+                    this.expireDateString = dateExpiry.value;
+                }
+                let timeExpiry = document.getElementById("expiry-time-picker");
+                if (timeExpiry != null) {
+                    this.expireTimeString = dateExpiry.value;
+                }
+                //TODO handle writable link
                 let json = link.shareFolderWithFile ? {secretLink:true,link:link.folderLink} : {secretLink:true,link:link.fileLink};
                 if (autoOpenOverride || link.autoOpen) {
                     json.open = true;
@@ -78,7 +104,7 @@ const i18n = require("../../i18n/index.js");
                 }
                 return window.location.origin + window.location.pathname + "#" + propsToFragment(json);
             },
-            onAutoOpen: function (id) {
+            onChange: function (id) {
                 let index = this.urlLinks.findIndex(v => v.id === id);
                 let link = this.urlLinks[index];
                 link.href = this.buildHref(link);
