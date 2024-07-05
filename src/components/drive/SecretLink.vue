@@ -39,9 +39,9 @@
                                         {{ existingProps == null ? translate("DRIVE.LINK.CREATE") : translate("DRIVE.LINK.UPDATE") }}
                                     </button>
                                 </div>
-                                <div v-if="urlLink != null" style="padding: 10px;">
-                                    <strong><a v-bind:href="urlLink.href">{{ urlLink.name }}</a></strong>
-                                    <input type="text" v-bind:value="urlLink.href" style="display: none">
+                                <div v-if="showLink()" style="padding: 10px;">
+                                    <strong><a v-bind:href="this.urlLink.href">{{ urlLink.name }}</a></strong>
+                                    <input type="text" v-bind:value="this.urlLink.href" style="display: none">
                                     <button class="fa fa-clipboard" style="padding: 6px 12px; background-color:var(--bg);" @click="copyUrlToClipboard($event)">&nbsp;{{ translate("DRIVE.LINK.COPY") }}</button>
                                     <button class="fa fa-envelope" style="padding: 6px 12px; background-color:var(--bg);" @click="email($event)">&nbsp;{{ translate("DRIVE.LINK.EMAIL") }}</button>
                                 </div>
@@ -91,9 +91,8 @@ const i18n = require("../../i18n/index.js");
         created: function() {
             let that = this;
             if (this.existingProps != null) {
-                let href = that.buildHref(that.link, true);
-                that.urlLink = {id: link.id, fileLink: link.fileLink, href : href,
-                                name: link.name, isFile: link.isFile, autoOpen: true};
+                // TODO load fields from existingProps
+                this.updateHref();
             };
         },
         methods: {
@@ -112,6 +111,9 @@ const i18n = require("../../i18n/index.js");
                     }
                 }
                 return window.location.origin + "/" + link.baseUrl + args;
+            },
+            showLink: function() {
+                return this.urlLink != null;
             },
             createOrUpdateLink: function() {
                 let create = this.existingProps == null;
@@ -155,10 +157,10 @@ const i18n = require("../../i18n/index.js");
             updateHref: function() {
                 let that = this;
                 let linkString = that.context.getLinkString(that.existingProps);
-                that.link.baseUrl = linkString;
-                let href = that.buildHref(that.link, true);
-                that.urlLink = {id: link.id, fileLink: link.fileLink, href : href,
-                                name: link.name, isFile: link.isFile, autoOpen: true};
+                this.link.baseUrl = linkString;
+                let href = that.buildHref(this.link, true);
+                that.urlLink = {href : href,
+                                name: this.link.name, isFile: this.link.isFile, autoOpen: true};
             },
             getLinkPath: function() {
                 var path = this.link.path;
