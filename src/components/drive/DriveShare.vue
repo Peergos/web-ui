@@ -162,6 +162,7 @@
                         <table class="table">
                             <thead>
                             <tr  v-if="secretLinksList!=0">
+                                <th>Access</th>
                                 <th>Password</th>
                                 <th>Max Count</th>
                                 <th>Expiry</th>
@@ -169,6 +170,7 @@
                             </thead>
                             <tbody>
                             <tr v-for="item in secretLinksList">
+                                <td>{{ item.isWritable ? "Writable" : "Read-only" }}</td>
                                 <td>{{ item.userPassword }}</td>
                                 <td>{{ item.maxRetrievals.ref != null ? item.maxRetrievals.ref.toString() : "-" }}</td>
                                 <td>{{ item.expiry.ref != null ? item.expiry.ref.toString() : "-" }}</td>
