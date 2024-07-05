@@ -16,7 +16,7 @@
                                     <label style="font-weight: normal;">{{ translate("DRIVE.LINK.OPEN") }}</label>
                                 </div>
                                 <div style="padding: 10px;">
-                                    <input type="checkbox" @change="onChange(link.id)" v-model="makeLinkWritable">
+                                    <input type="checkbox" @change="onChange(link.id)" v-model="isWritable">
                                     <label style="font-weight: normal;">{{ translate("DRIVE.LINK.WRITABLE") }}</label>
                                 </div>
                                 <div style="padding: 10px;">
@@ -71,7 +71,7 @@ const i18n = require("../../i18n/index.js");
 	data() {
 	    return {
                 urlLink:null,
-                makeLinkWritable: false,
+                isWritable: false,
                 hasExpiry: false,
                 expireDateString: "",
                 expireTimeString: "",
@@ -91,7 +91,8 @@ const i18n = require("../../i18n/index.js");
         created: function() {
             let that = this;
             if (this.existingProps != null) {
-                // TODO load fields from existingProps
+                this.isWritable = this.existingProps.isWritable;
+                // TODO load remaining fields from existingProps
                 this.updateHref();
             };
         },
@@ -119,7 +120,7 @@ const i18n = require("../../i18n/index.js");
                 let create = this.existingProps == null;
                 let that = this;
                 if (create) {
-                    this.context.createSecretLink(this.getLinkPath(), this.makeLinkWritable, this.getExpiry(),
+                    this.context.createSecretLink(this.getLinkPath(), this.isWritable, this.getExpiry(),
                                                   this.getMaxRetrievals(), this.userPassword).thenApply(props => {
                                                       that.existingProps = props;
                                                       that.updateHref();
