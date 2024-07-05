@@ -40,8 +40,8 @@
                                     </button>
                                 </div>
                                 <div v-if="urlLink != null" style="padding: 10px;">
-                                    <strong><a v-bind:href="link.href">{{ urlLink.name }}</a></strong>
-                                    <input type="text" v-bind:value="link.href" style="display: none">
+                                    <strong><a v-bind:href="urlLink.href">{{ urlLink.name }}</a></strong>
+                                    <input type="text" v-bind:value="urlLink.href" style="display: none">
                                     <button class="fa fa-clipboard" style="padding: 6px 12px; background-color:var(--bg);" @click="copyUrlToClipboard($event)">&nbsp;{{ translate("DRIVE.LINK.COPY") }}</button>
                                     <button class="fa fa-envelope" style="padding: 6px 12px; background-color:var(--bg);" @click="email($event)">&nbsp;{{ translate("DRIVE.LINK.EMAIL") }}</button>
                                 </div>

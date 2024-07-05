@@ -165,7 +165,6 @@
                                 <th>Password</th>
                                 <th>Max Count</th>
                                 <th>Expiry</th>
-                                <th>Delete</th>
                             </tr>
                             </thead>
                             <tbody>
@@ -173,6 +172,8 @@
                                 <td>{{ item.userPassword }}</td>
                                 <td>{{ item.maxRetrievals.ref != null ? item.maxRetrievals.ref.toString() : "-" }}</td>
                                 <td>{{ item.expiry.ref != null ? item.expiry.ref.toString() : "-" }}</td>
+                                <td> <button class="btn btn-success" @click="editLink(item)">Edit</button>
+                                </td>
                                 <td> <button class="btn btn-success" @click="deleteReadLink(item)">Delete</button>
                                 </td>
                             </tr>
@@ -274,6 +275,10 @@ module.exports = {
                 //todo that.$toast.error(that.translate("DRIVE.SHARE.ERROR") + ` ${that.files[0].getFileProperties().name}: ${throwable.getMessage()}`, {timeout:false, id: 'share'})
             });
         },
+            editLink(props) {
+                this.existingProps = props;
+                this.buildSecretLink(false);
+            },
 		close() {
 			this.showSpinner = false;
 			this.$emit("hide-share-with");
