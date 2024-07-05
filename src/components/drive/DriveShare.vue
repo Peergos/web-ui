@@ -158,17 +158,17 @@
                                             :context="context"
                                             :username="this.context.username"
 					/>
-                    <div v-if="secretReadLinksList!=0" class="table-responsive">
+                    <div v-if="secretLinksList!=0" class="table-responsive">
                         <table class="table">
                             <thead>
-                            <tr  v-if="secretReadLinksList!=0">
+                            <tr  v-if="secretLinksList!=0">
                                 <th>Password</th>
                                 <th>Max Count</th>
                                 <th>Expiry</th>
                             </tr>
                             </thead>
                             <tbody>
-                            <tr v-for="item in secretReadLinksList">
+                            <tr v-for="item in secretLinksList">
                                 <td>{{ item.userPassword }}</td>
                                 <td>{{ item.maxRetrievals.ref != null ? item.maxRetrievals.ref.toString() : "-" }}</td>
                                 <td>{{ item.expiry.ref != null ? item.expiry.ref.toString() : "-" }}</td>
@@ -223,7 +223,7 @@ module.exports = {
                     choice_consumer_func: () => {},
                     choice_options: [],
                     existingProps:null,
-                    secretReadLinksList: [],
+                    secretLinksList: [],
 		};
 	},
 	props: [
@@ -257,7 +257,7 @@ module.exports = {
         let directoryPath = peergos.client.PathUtils.directoryToPath(this.path);
         this.context.getDirectorySharingState(directoryPath).thenApply(function (sharedWithState) {
             let fileSharingState = sharedWithState.get(props.name);
-            that.secretReadLinksList = fileSharingState.readLinks.toArray([]);
+            that.secretLinksList = fileSharingState.links.toArray([]);
             that.showSpinner = false;
         });
     },

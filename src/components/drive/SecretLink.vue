@@ -123,10 +123,12 @@ const i18n = require("../../i18n/index.js");
                                                   this.getMaxRetrievals(), this.userPassword).thenApply(props => {
                                                       that.existingProps = props;
                                                       that.updateHref();
+                                                  }).exceptionally(t => {
+                                                      console.log(t);
                                                   });
                 } else {
                     let newLinkProps = this.existingProps.with(this.userPassword, this.getMaxRetrievals(), this.getExpiry());
-                    this.context.updateSecretLink(this.getLinkPath(), this.makeLinkWritable, newLinkProps).thenApply(props => {
+                    this.context.updateSecretLink(this.getLinkPath(), newLinkProps).thenApply(props => {
                         that.existingProps = props;
                         that.updateHref();
                     }).exceptionally(t => {
