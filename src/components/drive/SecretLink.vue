@@ -27,7 +27,7 @@
                                     <input id="expiry-time-picker" type="time" @change="onChange(link.id)">
                                 </div>
                                 <div style="padding: 10px;">
-                                    <input type="checkbox" @change="onChange(link.id)" v-model="expireOn">
+                                    <input type="checkbox" @change="onChange(link.id)" v-model="hasMaxRetreivals">
                                     <label style="font-weight: normal;">{{ translate("DRIVE.LINK.LIMIT.RETRIEVALS") }}</label>
                                     <input id="max-retrievals" @change="onChange(link.id)" v-model="maxRetrievals">
                                 </div>
@@ -67,6 +67,7 @@ const i18n = require("../../i18n/index.js");
                 expireOn: false,
                 expireDateString: "",
                 expireTimeString: "",
+                hasMaxRetreivals: false,
                 maxRetrievals: "",
             };
 	},
