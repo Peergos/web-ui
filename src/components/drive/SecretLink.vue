@@ -10,7 +10,7 @@
                 
                 <div class="modal-body">
                     <div class="container"><p style="word-wrap;break-all;">
-                            <div v-for="link in urlLinks" style="font-size: 1.2em;">
+                            <div style="font-size: 1.2em;">
                                 <div v-if="link.isFile" style="padding: 10px;">
                                     <input type="checkbox" @change="onChange(link.id)" v-model="link.autoOpen">
                                     <label style="font-weight: normal;">{{ translate("DRIVE.LINK.OPEN") }}</label>
@@ -20,7 +20,7 @@
                                     <label style="font-weight: normal;">{{ translate("DRIVE.LINK.WRITABLE") }}</label>
                                 </div>
                                 <div style="padding: 10px;">
-                                    <input type="checkbox" @change="onChange(link.id)" v-model="expireOn">
+                                    <input type="checkbox" @change="onChange(link.id)" v-model="hasExpiry">
                                     <label style="font-weight: normal;">{{ translate("DRIVE.LINK.EXPIRE.ON") }}</label>
                                     <input id="expiry-date-picker" type="date" @change="onChange(link.id)">
                                     <label style="font-weight: normal;">{{ translate("DRIVE.LINK.AT.TIME") }}</label>
@@ -32,8 +32,16 @@
                                     <input id="max-retrievals" @change="onChange(link.id)" v-model="maxRetrievals">
                                 </div>
                                 <div style="padding: 10px;">
-                                    <strong><a v-bind:href="link.href">{{ link.name }}</a></strong>
-                                    <input v-bind:id="link.id" type="text" v-bind:value="link.href" style="display: none">
+                                    <button
+                                        id='modal-button-id'
+                                        class="btn btn-success"
+                                        @click="createOrUpdateLink">
+                                        {{ existingProps == null ? translate("DRIVE.LINK.CREATE") : translate("DRIVE.LINK.UPDATE") }}
+                                    </button>
+                                </div>
+                                <div v-if="urlLink != null" style="padding: 10px;">
+                                    <strong><a v-bind:href="link.href">{{ urlLink.name }}</a></strong>
+                                    <input type="text" v-bind:value="link.href" style="display: none">
                                     <button class="fa fa-clipboard" style="padding: 6px 12px; background-color:var(--bg);" @click="copyUrlToClipboard($event)">&nbsp;{{ translate("DRIVE.LINK.COPY") }}</button>
                                     <button class="fa fa-envelope" style="padding: 6px 12px; background-color:var(--bg);" @click="email($event)">&nbsp;{{ translate("DRIVE.LINK.EMAIL") }}</button>
                                 </div>
@@ -62,32 +70,71 @@ const i18n = require("../../i18n/index.js");
     module.exports = {
 	data() {
 	    return {
-                urlLinks:[],
+                urlLink:null,
                 makeLinkWritable: false,
-                expireOn: false,
+                hasExpiry: false,
                 expireDateString: "",
                 expireTimeString: "",
                 hasMaxRetreivals: false,
                 maxRetrievals: "",
+                userPassword: ""
             };
 	},
         mixins:[i18n],
 	props: [
 	    "title",
-	    "links",
+	    "link",
             "username",
+            "existingProps",
             "context"
         ],
         created: function() {
             let that = this;
-            this.links.forEach(link => {
-                let href = that.buildHref(link, true);
-                that.urlLinks.push({id: link.id, fileLink: link.fileLink, href : href, name: link.name
-                                    , isFile: link.isFile, autoOpen: true});
-            });
+            if (this.existingProps != null) {
+                let href = that.buildHref(that.link, true);
+                that.urlLink = {id: link.id, fileLink: link.fileLink, href : href,
+                                name: link.name, isFile: link.isFile, autoOpen: true};
+            };
         },
         methods: {
             buildHref: function (link, autoOpenOverride) {
+                let args = "";
+                if (autoOpenOverride || link.autoOpen) {
+                    args = "?open=true";
+                    if (link.shareFolderWithFile) {
+                        json.path = link.path.substring(1);// do not pass starting '/'
+                        json.args = {};
+                        json.args.filename = link.filename;
+                    } else if (link.isFile) {
+                        args += "&filename=" + link.filename;
+                    } else {
+                        args += "&path=" + link.path;
+                    }
+                }
+                return window.location.origin + "/" + link.baseUrl + args;
+            },
+            createOrUpdateLink: function() {
+                let create = this.existingProps == null;
+                let that = this;
+                if (create) {
+                    this.context.createSecretLink(this.getLinkPath(), this.makeLinkWritable, this.getExpiry(),
+                                                  this.getMaxRetrievals(), this.userPassword).thenApply(props => {
+                                                      that.existingProps = props;
+                                                      that.updateHref();
+                                                  });
+                } else {
+                    let newLinkProps = this.existingProps.with(this.userPassword, this.getMaxRetrievals(), this.getExpiry());
+                    this.context.updateSecretLink(this.getLinkPath(), this.makeLinkWritable, newLinkProps).thenApply(props => {
+                        that.existingProps = props;
+                        that.updateHref();
+                    }).exceptionally(t => {
+                        console.log(t);
+                    });
+                }
+            },
+            getExpiry: function() {
+                if (! this.hasExpiry)
+                    return java.util.Optional.empty();
                 let dateExpiry = document.getElementById("expiry-date-picker");
                 if (dateExpiry != null) {
                     this.expireDateString = dateExpiry.value;
@@ -96,26 +143,31 @@ const i18n = require("../../i18n/index.js");
                 if (timeExpiry != null) {
                     this.expireTimeString = dateExpiry.value;
                 }
-                //TODO handle writable link
-                let json = link.shareFolderWithFile ? {secretLink:true,link:link.folderLink} : {secretLink:true,link:link.fileLink};
-                if (autoOpenOverride || link.autoOpen) {
-                    json.open = true;
-                    if (link.shareFolderWithFile) {
-                        json.path = link.path.substring(1);// do not pass starting '/'
-                        json.args = {};
-                        json.args.filename = link.filename;
-                    } else if (link.isFile) {
-                        json.filename = link.filename;
-                    } else {
-                        json.path = link.path;
-                    }
-                }
-                return window.location.origin + window.location.pathname + "#" + propsToFragment(json);
+                // TODO parse datetime
+                return java.util.Optional.of();
             },
-            onChange: function (id) {
-                let index = this.urlLinks.findIndex(v => v.id === id);
-                let link = this.urlLinks[index];
-                link.href = this.buildHref(link);
+            getMaxRetrievals: function() {
+                if (this.maxRetrievals.length == 0)
+                    return java.util.Optional.empty();
+                // TODO parse max retrievals
+                return java.util.Optional.of();
+            },
+            updateHref: function() {
+                let that = this;
+                let linkString = that.context.getLinkString(that.existingProps);
+                that.link.baseUrl = linkString;
+                let href = that.buildHref(that.link, true);
+                that.urlLink = {id: link.id, fileLink: link.fileLink, href : href,
+                                name: link.name, isFile: link.isFile, autoOpen: true};
+            },
+            getLinkPath: function() {
+                var path = this.link.path;
+                if (! path.endsWith("/"))
+                    path = path+"/";
+                return path + this.link.filename;
+            },
+            onChange: function () {
+                link.href = this.buildHref(this.urlLink);
             },
             copyUrlToClipboard: function (clickEvent) {
                 var text = clickEvent.srcElement.previousElementSibling.value.toString();

@@ -330,6 +330,8 @@ module.exports = {
     "DRIVE.LINK.COPY":"Copy to clipboard",
     "DRIVE.LINK.EMAIL":"Share via email",
     "DRIVE.LINK.OK":"OK",
+    "DRIVE.LINK.UPDATE":"Update",
+    "DRIVE.LINK.CREATE":"Create",
     "DRIVE.LINK.WRITABLE":"Make link writable",
     "DRIVE.LINK.EXPIRE.ON":"Expire on",
     "DRIVE.LINK.AT.TIME":"at time",

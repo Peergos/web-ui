@@ -153,7 +153,8 @@
 					    v-if="showModal"
 					    v-on:hide-modal="showModal = false"
 					    :title="modalTitle"
-					    :links="modalLinks"
+					    :link="modalLink"
+                                            :existingProps="existingProps"
                                             :context="context"
                                             :username="this.context.username"
 					/>
@@ -169,8 +170,8 @@
                             </thead>
                             <tbody>
                             <tr v-for="item in secretReadLinksList">
-                                <td>{{ item.password }}</td>
-                                <td>{{ item.maxCount.ref != null ? item.maxCount.ref.toString() : "-" }}</td>
+                                <td>{{ item.userPassword }}</td>
+                                <td>{{ item.maxRetrievals.ref != null ? item.maxRetrievals.ref.toString() : "-" }}</td>
                                 <td>{{ item.expiry.ref != null ? item.expiry.ref.toString() : "-" }}</td>
                                 <td> <button class="btn btn-success" @click="deleteReadLink(item)">Delete</button>
                                 </td>
@@ -204,23 +205,24 @@ module.exports = {
         mixins:[i18n],
 	data() {
 		return {
-			showSpinner: false,
-			targetUsername: "",
-			targetUsernames: [],
-			sharedWithAccess: "Read",
-			shareWithFriendsGroup: false,
-			shareWithFollowersGroup: false,
-			unsharedReadAccessNames: [],
-			unsharedEditAccessNames: [],
-			showModal: false,
-			modalTitle: "",
-			modalLinks: [],
-            showChoice: false,
-            choice_message: '',
-            choice_body: '',
-            choice_consumer_func: () => {},
-            choice_options: [],
-            secretReadLinksList: [],
+		    showSpinner: false,
+		    targetUsername: "",
+		    targetUsernames: [],
+		    sharedWithAccess: "Read",
+		    shareWithFriendsGroup: false,
+		    shareWithFollowersGroup: false,
+		    unsharedReadAccessNames: [],
+		    unsharedEditAccessNames: [],
+		    showModal: false,
+		    modalTitle: "",
+		    modalLink: null,
+                    showChoice: false,
+                    choice_message: '',
+                    choice_body: '',
+                    choice_consumer_func: () => {},
+                    choice_options: [],
+                    existingProps:null,
+                    secretReadLinksList: [],
 		};
 	},
 	props: [
@@ -302,12 +304,12 @@ module.exports = {
         },
 		buildSecretLink(shareFolderWithFile) {
             let file = this.files[0];
-            var link = [];
+            var link = null;
             let props = file.getFileProperties();
             var name = this.displayName;
 			let isFile = !props.isDirectory;
-			link.push({
-			        fileLink: file.toLink(),
+			link = {
+			        file: file,
 			        folderLink: this.currentDir != null ? this.currentDir.toLink(): null,
                                 filename:props.name,
                                 path:this.getPath,
@@ -315,7 +317,7 @@ module.exports = {
 				id: "secret_link_" + name,
 				isFile: isFile,
 				shareFolderWithFile: shareFolderWithFile
-			});
+			};
 			var title = "";
 			if (shareFolderWithFile) {
                 title = this.translate("DRIVE.SHARE.FOLDER.OPEN") + ": ";
@@ -327,10 +329,10 @@ module.exports = {
 			this.showLinkModal(title, link);
 		},
 
-		showLinkModal(title, links) {
+		showLinkModal(title, link) {
 			this.showModal = true;
 			this.modalTitle = title;
-			this.modalLinks = links;
+			this.modalLink = link;
 		},
 		onFriendChange() {
 			if (this.shareWithFollowersGroup && this.shareWithFriendsGroup) {
