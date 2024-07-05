@@ -333,6 +333,7 @@ module.exports = {
     "DRIVE.LINK.WRITABLE":"Make link writable",
     "DRIVE.LINK.EXPIRE.ON":"Expire on",
     "DRIVE.LINK.AT.TIME":"at time",
+    "DRIVE.LINK.LIMIT.RETRIEVALS":"Limit number of link usages",
     "VERIFY.TITLE":"Verifying friend",
     "VERIFY.SCAN":"Scan your friend's QR code",
     "VERIFY.NUMBERS":"Or you can read these numbers out to each other (they should match)",

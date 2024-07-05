@@ -27,6 +27,11 @@
                                     <input id="expiry-time-picker" type="time" @change="onChange(link.id)">
                                 </div>
                                 <div style="padding: 10px;">
+                                    <input type="checkbox" @change="onChange(link.id)" v-model="expireOn">
+                                    <label style="font-weight: normal;">{{ translate("DRIVE.LINK.LIMIT.RETRIEVALS") }}</label>
+                                    <input id="max-retrievals" @change="onChange(link.id)" v-model="maxRetrievals">
+                                </div>
+                                <div style="padding: 10px;">
                                     <strong><a v-bind:href="link.href">{{ link.name }}</a></strong>
                                     <input v-bind:id="link.id" type="text" v-bind:value="link.href" style="display: none">
                                     <button class="fa fa-clipboard" style="padding: 6px 12px; background-color:var(--bg);" @click="copyUrlToClipboard($event)">&nbsp;{{ translate("DRIVE.LINK.COPY") }}</button>
@@ -62,6 +67,7 @@ const i18n = require("../../i18n/index.js");
                 expireOn: false,
                 expireDateString: "",
                 expireTimeString: "",
+                maxRetrievals: "",
             };
 	},
         mixins:[i18n],
@@ -69,6 +75,7 @@ const i18n = require("../../i18n/index.js");
 	    "title",
 	    "links",
             "username",
+            "context"
         ],
         created: function() {
             let that = this;

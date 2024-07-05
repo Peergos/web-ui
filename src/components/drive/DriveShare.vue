@@ -154,6 +154,7 @@
 					    v-on:hide-modal="showModal = false"
 					    :title="modalTitle"
 					    :links="modalLinks"
+                                            :context="context"
                                             :username="this.context.username"
 					/>
                     <div v-if="secretReadLinksList!=0" class="table-responsive">
