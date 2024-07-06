@@ -12,6 +12,12 @@
                     <center>
 			<h2>Loading file...</h2>
                     </center>
+                    <LinkPassword
+                        v-if="showLinkPassword"
+                        v-on:hide-modal="showLinkPassword = false"
+                        :title="'Enter link password'"
+                        :future="future"
+                        />
 		</section>
 
 		<section class="login-register" v-if="!isLoggedIn && !isSecretLink">
@@ -31,7 +37,6 @@
 					<Signup :token="token" />
 				</AppTab>
 			</AppTabs>
-			
 		</section>
 
     	<ServerMessages v-if="context != null"/>
@@ -65,6 +70,7 @@ const ModalPassword = require("./modal/ModalPassword.vue");
 const ModalAccount = require("./modal/ModalAccount.vue");
 const ModalProfile = require("./modal/ModalProfile.vue");
 const ModalFeedback = require("./modal/ModalFeedback.vue");
+const LinkPassword = require("./LinkPassword.vue");
 
 const AppTab = require("./tabs/AppTab.vue");
 const AppTabs = require("./tabs/AppTabs.vue");
@@ -102,7 +108,8 @@ module.exports = {
 		ModalProfile,
 		ModalFeedback,
 		ServerMessages,
-		Drive,
+	        Drive,
+                LinkPassword,
 		NewsFeed,
 		Social,
 		Calendar,
@@ -116,7 +123,9 @@ module.exports = {
 
 	data() {
 		return {
-			token: "",
+		    token: "",
+                    showLinkPassword: false,
+                    future:null
 		};
 	},
 
@@ -345,20 +354,24 @@ module.exports = {
 		}
 	    });
 	},
+        getLinkPassword() {
+            var future = peergos.shared.util.Futures.incomplete();
+            this.future = future;
+            this.showLinkPassword = true;
+            return future;
+        },
 
 	// still need to check this
 	gotoSecretLink(props) {
 	    var that = this;
             this.$store.commit("SET_IS_SECRET_LINK", true);
-            var future = peergos.shared.util.Futures.incomplete();
-            future.complete("");
             
 	    (props.linkpassword != null ?
              peergos.shared.user.UserContext.fromSecretLinkV2(
 		 window.location.pathname + "#" + props.linkpassword,
-                 () => future,
-		that.network,
-		that.crypto
+                 {get_0:() => this.getLinkPassword()},
+		 that.network,
+		 that.crypto
 	    ):
              peergos.shared.user.UserContext.fromSecretLink(
 		props.link,

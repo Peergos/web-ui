@@ -32,6 +32,11 @@
                                     <input @change="onChange()" v-model="maxRetrievals">
                                 </div>
                                 <div style="padding: 10px;">
+                                    <input type="checkbox" @change="onChange()" v-model="hasPassword">
+                                    <label style="font-weight: normal;">{{ translate("DRIVE.LINK.PASSWORD") }}</label>
+                                    <input @change="onChange()" v-model="userPassword">
+                                </div>
+                                <div style="padding: 10px;">
                                     <button
                                         id='modal-button-id'
                                         class="btn btn-success"
@@ -77,6 +82,7 @@ const i18n = require("../../i18n/index.js");
                 expireTimeString: "",
                 hasMaxRetreivals: false,
                 maxRetrievals: "",
+                hasPassword: false,
                 userPassword: ""
             };
 	},
@@ -121,14 +127,14 @@ const i18n = require("../../i18n/index.js");
                 let that = this;
                 if (create) {
                     this.context.createSecretLink(this.getLinkPath(), this.isWritable, this.getExpiry(),
-                                                  this.maxRetrievals, this.userPassword).thenApply(props => {
+                                                  this.maxRetrievals, this.hasPassword ? this.userPassword : "").thenApply(props => {
                                                       that.existingProps = props;
                                                       that.updateHref();
                                                   }).exceptionally(t => {
                                                       console.log(t);
                                                   });
                 } else {
-                    let newLinkProps = this.existingProps.with(this.userPassword, this.maxRetrievals, this.getExpiry());
+                    let newLinkProps = this.existingProps.with(this.hasPassword ? this.userPassword : "", this.maxRetrievals, this.getExpiry());
                     this.context.updateSecretLink(this.getLinkPath(), newLinkProps).thenApply(props => {
                         that.existingProps = props;
                         that.updateHref();
