@@ -102,15 +102,30 @@ module.exports = {
         created: function() {
             let that = this;
             if (this.existingProps != null) {
-                this.isWritable = this.existingProps.isWritable;
-                this.userPassword = this.existingProps.userPassword
-                this.hasPassword = this.existingProps.userPassword.length > 0;
-                this.maxRetrievals = this.existingProps.maxRetrievalsString();
-                this.hasMaxRetrievals = this.maxRetrievals.length > 0;
-                // TODO load expiry from existingProps
-                
-                this.updateHref();
-            };
+                Vue.nextTick(function() {
+                    that.isWritable = that.existingProps.isWritable;
+                    that.userPassword = that.existingProps.userPassword
+                    that.hasPassword = that.existingProps.userPassword.length > 0;
+                    that.maxRetrievals = that.existingProps.maxRetrievals.ref == null ?
+                            "0": that.existingProps.maxRetrievals.ref.toString();
+                    that.hasMaxRetrievals = that.maxRetrievals.length > 0;
+                    if (that.existingProps.expiry.ref != null) {
+                        let date = that.existingProps.expiry.ref.date;
+                        let time = that.existingProps.expiry.ref.time;
+                        let jsDate = new Date(that.existingProps.expiry.ref.toString() + "+00:00"); //adding UTC TZ in ISO_OFFSET_DATE_TIME ie 2021-12-03T10:25:30+00:00
+                        let datePart = jsDate.getFullYear()
+                        + '-' + ( (jsDate.getMonth() + 1) < 10 ? '0' : '') + (jsDate.getMonth() + 1)
+                        + '-' + (jsDate.getDate() < 10 ? '0' : '') + jsDate.getDate();
+                        let timePart =  (jsDate.getHours() < 10 ? '0' : '') + jsDate.getHours()
+                                        + ':' + (jsDate.getMinutes() < 10 ? '0' : '') + jsDate.getMinutes();
+                        let dateExpiry = document.getElementById("expiry-date-picker");
+                        dateExpiry.value = datePart;
+                        let timeExpiry = document.getElementById("expiry-time-picker");
+                        timeExpiry.value = timePart;
+                    }
+                    that.updateHref();
+                });
+            }
         },
         methods: {
             buildHref: function (link, autoOpenOverride) {

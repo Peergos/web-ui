@@ -151,7 +151,7 @@
                     </Choice>
 					<SecretLink
 					    v-if="showModal"
-					    v-on:hide-modal="showModal = false"
+					    v-on:hide-modal="closeSecretLinkModal"
 					    :title="modalTitle"
 					    :link="modalLink"
                                             :existingProps="existingProps"
@@ -173,7 +173,7 @@
                                 <td>{{ item.isWritable ? "Writable" : "Read-only" }}</td>
                                 <td>{{ item.userPassword }}</td>
                                 <td>{{ item.maxRetrievals.ref != null ? item.maxRetrievals.ref.toString() : "-" }}</td>
-                                <td>{{ item.expiry.ref != null ? item.expiry.ref.toString() : "-" }}</td>
+                                <td>{{ item.expiry.ref != null ? formatDateTime(item.expiry.ref) : "-" }}</td>
                                 <td> <button class="btn btn-success" @click="editLink(item)">Edit</button>
                                 </td>
                                 <td> <button class="btn btn-success" @click="deleteLink(item)">Delete</button>
@@ -252,18 +252,33 @@ module.exports = {
 		}
 	},
     created: function() {
-        let that = this;
-        this.showSpinner = true;
-        let file = this.files[0];
-        let props = file.getFileProperties();
-        let directoryPath = peergos.client.PathUtils.directoryToPath(this.path);
-        this.context.getDirectorySharingState(directoryPath).thenApply(function (sharedWithState) {
-            let fileSharingState = sharedWithState.get(props.name);
-            that.secretLinksList = fileSharingState.links.toArray([]);
-            that.showSpinner = false;
-        });
+        this.loadSecretLinks();
     },
 	methods: {
+        loadSecretLinks() {
+            let that = this;
+            this.showSpinner = true;
+            let file = this.files[0];
+            let props = file.getFileProperties();
+            let directoryPath = peergos.client.PathUtils.directoryToPath(this.path);
+            this.context.getDirectorySharingState(directoryPath).thenApply(function (sharedWithState) {
+                let fileSharingState = sharedWithState.get(props.name);
+                that.secretLinksList = fileSharingState.links.toArray([]);
+                that.showSpinner = false;
+            });
+        },
+        closeSecretLinkModal() {
+            this.showModal = false;
+            this.loadSecretLinks();
+        },
+        formatDateTime(dateTime) {
+            let date = new Date(dateTime.toString() + "+00:00"); //adding UTC TZ in ISO_OFFSET_DATE_TIME ie 2021-12-03T10:25:30+00:00
+            let formatted = date.getFullYear() + '-' + (date.getMonth() + 1) + '-' + date.getDate()
+                + ' ' + (date.getHours() < 10 ? '0' : '') + date.getHours()
+                + ':' + (date.getMinutes() < 10 ? '0' : '') + date.getMinutes()
+                + ':' + (date.getSeconds() < 10 ? '0' : '') + date.getSeconds();
+            return formatted;
+        },
         deleteLink(link) {
             let that = this;
             let filePath = peergos.client.PathUtils.toPath(this.path, this.files[0].getFileProperties().name);
@@ -275,6 +290,7 @@ module.exports = {
                 })
                 that.secretLinksList.splice(index, 1);
             }).exceptionally(function (throwable) {
+                console.log(throwable);
                 that.showSpinner = false;
                 //todo that.$toast.error(that.translate("DRIVE.SHARE.ERROR") + ` ${that.files[0].getFileProperties().name}: ${throwable.getMessage()}`, {timeout:false, id: 'share'})
             });
