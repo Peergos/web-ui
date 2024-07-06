@@ -176,7 +176,7 @@
                                 <td>{{ item.expiry.ref != null ? item.expiry.ref.toString() : "-" }}</td>
                                 <td> <button class="btn btn-success" @click="editLink(item)">Edit</button>
                                 </td>
-                                <td> <button class="btn btn-success" @click="deleteReadLink(item)">Delete</button>
+                                <td> <button class="btn btn-success" @click="deleteLink(item)">Delete</button>
                                 </td>
                             </tr>
                             </tbody>
@@ -264,14 +264,16 @@ module.exports = {
         });
     },
 	methods: {
-        deleteReadLink(readLink) {
+        deleteLink(link) {
             let that = this;
             let filePath = peergos.client.PathUtils.toPath(this.path, this.files[0].getFileProperties().name);
             this.showSpinner = true;
-            this.context.deleteSecretLink(readLink.getLinkLabel(), filePath, false).thenApply(function (sharedWithState) {
-                console.log('done');
-                //todo remove line item from table
+            this.context.deleteSecretLink(link.getLinkLabel(), filePath, false).thenApply(function (sharedWithState) {
                 that.showSpinner = false;
+                let index = that.secretLinksList.findIndex(e => {
+                    return e.getLinkLabel() == link.getLinkLabel();
+                })
+                that.secretLinksList.splice(index, 1);
             }).exceptionally(function (throwable) {
                 that.showSpinner = false;
                 //todo that.$toast.error(that.translate("DRIVE.SHARE.ERROR") + ` ${that.files[0].getFileProperties().name}: ${throwable.getMessage()}`, {timeout:false, id: 'share'})
