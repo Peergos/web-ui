@@ -98,7 +98,12 @@ const i18n = require("../../i18n/index.js");
             let that = this;
             if (this.existingProps != null) {
                 this.isWritable = this.existingProps.isWritable;
-                // TODO load remaining fields from existingProps
+                this.userPassword = this.existingProps.userPassword
+                this.hasPassword = this.existingProps.userPassword.length > 0;
+                this.maxRetrievals = this.existingProps.maxRetrievalsString();
+                this.hasMaxRetrievals = this.maxRetrievals.length > 0;
+                // TODO load expiry from existingProps
+                
                 this.updateHref();
             };
         },
@@ -147,15 +152,18 @@ const i18n = require("../../i18n/index.js");
                 if (! this.hasExpiry)
                     return java.util.Optional.empty();
                 let dateExpiry = document.getElementById("expiry-date-picker");
-                if (dateExpiry != null) {
-                    this.expireDateString = dateExpiry.value;
-                }
+                let dateS = dateExpiry.value;
                 let timeExpiry = document.getElementById("expiry-time-picker");
+                let expireTimeString = "00:00";
                 if (timeExpiry != null) {
-                    this.expireTimeString = dateExpiry.value;
+                    expireTimeString = timeExpiry.value;
                 }
-                // TODO fix datetime format
-                return java.util.Optional.of();
+                let year = parseInt(dateS.split("-")[0]);
+                let month = parseInt(dateS.split("-")[1]);
+                let day = parseInt(dateS.split("-")[2]);
+                let hour = parseInt(expireTimeString.split(":")[0]);
+                let minute = parseInt(expireTimeString.split(":")[1]);
+                return java.util.Optional.of(java.time.LocalDateTime.of(year, month, day, hour, minute, 0));
             },
             updateHref: function() {
                 let that = this;
