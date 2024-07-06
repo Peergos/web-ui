@@ -3,7 +3,7 @@
         <div class="modal-mask" @click="$emit('hide-modal')">
             <div style="height:30%"></div>
             <div class="modal-container" @click.stop>
-                
+                <Spinner v-if="showSpinner"></Spinner>
                 <div class="modal-header">
                     <h3 id="modal-header-id">{{ title }}</h3>
                 </div>
@@ -71,8 +71,12 @@
 </template>
 
 <script>
+const Spinner = require("../spinner/Spinner.vue");
 const i18n = require("../../i18n/index.js");
-    module.exports = {
+module.exports = {
+    components:{
+        Spinner
+    },
 	data() {
 	    return {
                 urlLink:null,
@@ -83,7 +87,8 @@ const i18n = require("../../i18n/index.js");
                 hasMaxRetreivals: false,
                 maxRetrievals: "",
                 hasPassword: false,
-                userPassword: ""
+                userPassword: "",
+                showSpinner: false
             };
 	},
         mixins:[i18n],
@@ -130,21 +135,26 @@ const i18n = require("../../i18n/index.js");
             createOrUpdateLink: function() {
                 let create = this.existingProps == null;
                 let that = this;
+                this.showSpinner = true;
                 if (create) {
                     this.context.createSecretLink(this.getLinkPath(), this.isWritable, this.getExpiry(),
                                                   this.maxRetrievals, this.hasPassword ? this.userPassword : "").thenApply(props => {
                                                       that.existingProps = props;
                                                       that.updateHref();
+                                                      that.showSpinner = false;
                                                   }).exceptionally(t => {
                                                       console.log(t);
+                                                      that.showSpinner = false;
                                                   });
                 } else {
                     let newLinkProps = this.existingProps.with(this.hasPassword ? this.userPassword : "", this.maxRetrievals, this.getExpiry());
                     this.context.updateSecretLink(this.getLinkPath(), newLinkProps).thenApply(props => {
                         that.existingProps = props;
                         that.updateHref();
+                        that.showSpinner = false;
                     }).exceptionally(t => {
                         console.log(t);
+                        that.showSpinner = false;
                     });
                 }
             },
