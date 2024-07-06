@@ -12,24 +12,24 @@
                     <div class="container"><p style="word-wrap;break-all;">
                             <div style="font-size: 1.2em;">
                                 <div v-if="link.isFile" style="padding: 10px;">
-                                    <input type="checkbox" @change="onChange(link.id)" v-model="link.autoOpen">
+                                    <input type="checkbox" @change="onChange()" v-model="link.autoOpen">
                                     <label style="font-weight: normal;">{{ translate("DRIVE.LINK.OPEN") }}</label>
                                 </div>
                                 <div style="padding: 10px;">
-                                    <input type="checkbox" @change="onChange(link.id)" v-model="isWritable">
+                                    <input type="checkbox" @change="onChange()" v-model="isWritable">
                                     <label style="font-weight: normal;">{{ translate("DRIVE.LINK.WRITABLE") }}</label>
                                 </div>
                                 <div style="padding: 10px;">
-                                    <input type="checkbox" @change="onChange(link.id)" v-model="hasExpiry">
+                                    <input type="checkbox" @change="onChange()" v-model="hasExpiry">
                                     <label style="font-weight: normal;">{{ translate("DRIVE.LINK.EXPIRE.ON") }}</label>
                                     <input id="expiry-date-picker" type="date" @change="onChange(link.id)">
                                     <label style="font-weight: normal;">{{ translate("DRIVE.LINK.AT.TIME") }}</label>
                                     <input id="expiry-time-picker" type="time" @change="onChange(link.id)">
                                 </div>
                                 <div style="padding: 10px;">
-                                    <input type="checkbox" @change="onChange(link.id)" v-model="hasMaxRetreivals">
+                                    <input type="checkbox" @change="onChange()" v-model="hasMaxRetreivals">
                                     <label style="font-weight: normal;">{{ translate("DRIVE.LINK.LIMIT.RETRIEVALS") }}</label>
-                                    <input id="max-retrievals" @change="onChange(link.id)" v-model="maxRetrievals">
+                                    <input @change="onChange()" v-model="maxRetrievals">
                                 </div>
                                 <div style="padding: 10px;">
                                     <button
@@ -121,14 +121,14 @@ const i18n = require("../../i18n/index.js");
                 let that = this;
                 if (create) {
                     this.context.createSecretLink(this.getLinkPath(), this.isWritable, this.getExpiry(),
-                                                  this.getMaxRetrievals(), this.userPassword).thenApply(props => {
+                                                  this.maxRetrievals, this.userPassword).thenApply(props => {
                                                       that.existingProps = props;
                                                       that.updateHref();
                                                   }).exceptionally(t => {
                                                       console.log(t);
                                                   });
                 } else {
-                    let newLinkProps = this.existingProps.with(this.userPassword, this.getMaxRetrievals(), this.getExpiry());
+                    let newLinkProps = this.existingProps.with(this.userPassword, this.maxRetrievals, this.getExpiry());
                     this.context.updateSecretLink(this.getLinkPath(), newLinkProps).thenApply(props => {
                         that.existingProps = props;
                         that.updateHref();
@@ -148,13 +148,7 @@ const i18n = require("../../i18n/index.js");
                 if (timeExpiry != null) {
                     this.expireTimeString = dateExpiry.value;
                 }
-                // TODO parse datetime
-                return java.util.Optional.of();
-            },
-            getMaxRetrievals: function() {
-                if (this.maxRetrievals.length == 0)
-                    return java.util.Optional.empty();
-                // TODO parse max retrievals
+                // TODO fix datetime format
                 return java.util.Optional.of();
             },
             updateHref: function() {
@@ -172,7 +166,8 @@ const i18n = require("../../i18n/index.js");
                 return path + this.link.filename;
             },
             onChange: function () {
-                link.href = this.buildHref(this.urlLink);
+                if (this.urlLink != null)
+                    this.urlLink.href = this.buildHref(this.urlLink);
             },
             copyUrlToClipboard: function (clickEvent) {
                 var text = clickEvent.srcElement.previousElementSibling.value.toString();
