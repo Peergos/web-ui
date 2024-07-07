@@ -253,6 +253,8 @@ module.exports = {
                         pw = pw.substring(0, pw.indexOf("?"));
                     }
                 }
+                if (props.args != null && props.args.filename != null)
+                    props.path = props.path + props.args.filename;
                 props.linkpassword = pw;
                 if (props.app == null)
                     props.app = "Drive";
