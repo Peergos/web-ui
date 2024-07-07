@@ -16,7 +16,7 @@
                                     <label style="font-weight: normal;">{{ translate("DRIVE.LINK.OPEN") }}</label>
                                 </div>
                                 <div style="padding: 10px;">
-                                    <input type="checkbox" @change="onChange()" v-model="isWritable">
+                                    <input type="checkbox" @change="onChange()" v-model="isWritable" :disabled="existingProps != null">
                                     <label style="font-weight: normal;">{{ translate("DRIVE.LINK.WRITABLE") }}</label>
                                 </div>
                                 <div style="padding: 10px;">
