@@ -180,10 +180,10 @@ module.exports = {
                 }
             },
             getExpiry: function() {
-                if (! this.hasExpiry)
-                    return java.util.Optional.empty();
                 let dateExpiry = document.getElementById("expiry-date-picker");
                 let dateS = dateExpiry.value;
+                if (! this.hasExpiry || dateS == "")
+                    return java.util.Optional.empty();
                 let timeExpiry = document.getElementById("expiry-time-picker");
                 let expireTimeString = "00:00";
                 if (timeExpiry != null) {
