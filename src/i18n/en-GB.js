@@ -337,6 +337,8 @@ module.exports = {
     "DRIVE.LINK.AT.TIME":"at time",
     "DRIVE.LINK.LIMIT.RETRIEVALS":"Limit number of link usages",
     "DRIVE.LINK.PASSWORD":"Require a password to access",
+    "DRIVE.LINK.ERROR.CREATE":"Error occurred creating secret link",
+    "DRIVE.LINK.ERROR.UPDATE":"Error occurred updating secret link",
     "VERIFY.TITLE":"Verifying friend",
     "VERIFY.SCAN":"Scan your friend's QR code",
     "VERIFY.NUMBERS":"Or you can read these numbers out to each other (they should match)",

@@ -157,14 +157,15 @@ module.exports = {
                 this.showSpinner = true;
                 if (create) {
                     this.context.createSecretLink(this.getLinkPath(), this.isWritable, this.getExpiry(),
-                                                  this.maxRetrievals, this.hasPassword ? this.userPassword : "").thenApply(props => {
-                                                      that.existingProps = props;
-                                                      that.updateHref();
-                                                      that.showSpinner = false;
-                                                  }).exceptionally(t => {
-                                                      console.log(t);
-                                                      that.showSpinner = false;
-                                                  });
+                        this.maxRetrievals, this.hasPassword ? this.userPassword : "").thenApply(props => {
+                          that.existingProps = props;
+                          that.updateHref();
+                          that.showSpinner = false;
+                    }).exceptionally(t => {
+                        console.log(t);
+                        that.$toast.error(that.translate("DRIVE.LINK.ERROR.CREATE"), {timeout:false});
+                        that.showSpinner = false;
+                    });
                 } else {
                     let newLinkProps = this.existingProps.with(this.hasPassword ? this.userPassword : "", this.maxRetrievals, this.getExpiry());
                     this.context.updateSecretLink(this.getLinkPath(), newLinkProps).thenApply(props => {
@@ -173,6 +174,7 @@ module.exports = {
                         that.showSpinner = false;
                     }).exceptionally(t => {
                         console.log(t);
+                        that.$toast.error(that.translate("DRIVE.LINK.ERROR.UPDATE"), {timeout:false});
                         that.showSpinner = false;
                     });
                 }
