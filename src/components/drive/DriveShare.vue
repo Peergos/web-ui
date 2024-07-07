@@ -154,9 +154,8 @@
 					    v-on:hide-modal="closeSecretLinkModal"
 					    :title="modalTitle"
 					    :link="modalLink"
-                                            :existingProps="existingProps"
-                                            :context="context"
-                                            :username="this.context.username"
+                        :existingProps="existingProps"
+                        :username="this.context.username"
 					/>
                     <div v-if="secretLinksList!=0" class="table-responsive">
                         <table class="table">

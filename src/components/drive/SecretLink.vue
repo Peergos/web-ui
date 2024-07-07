@@ -91,13 +91,17 @@ module.exports = {
                 showSpinner: false
             };
 	},
-        mixins:[i18n],
+    computed: {
+        ...Vuex.mapState([
+            'context',
+        ]),
+    },
+    mixins:[i18n],
 	props: [
 	    "title",
 	    "link",
             "username",
             "existingProps",
-            "context"
         ],
         created: function() {
             let that = this;
@@ -107,7 +111,7 @@ module.exports = {
                     that.userPassword = that.existingProps.userPassword
                     that.hasPassword = that.existingProps.userPassword.length > 0;
                     that.maxRetrievals = that.existingProps.maxRetrievals.ref == null ?
-                            "0": that.existingProps.maxRetrievals.ref.toString();
+                            "": that.existingProps.maxRetrievals.ref.toString();
                     that.hasMaxRetrievals = that.maxRetrievals.length > 0;
                     if (that.existingProps.expiry.ref != null) {
                         let date = that.existingProps.expiry.ref.date;
