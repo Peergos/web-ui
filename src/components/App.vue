@@ -238,14 +238,22 @@ module.exports = {
                 var pw = props.linkpassword;
                 if (pw == null) {
                     pw = window.location.hash.substring(1);
-                    if (pw.includes("?"))
+                    if (pw.includes("?")) {
+                        const queryParams = new URLSearchParams(pw.substring(pw.indexOf("?") + 1));
+                        for (const [key, value] of queryParams) {
+                            if (value == "true")
+                                props[key] = true;
+                            else if (value == "false")
+                                props[key] = false;
+                            else if (key == "args")
+                                props[key] = JSON.parse(value);
+                            else 
+                                props[key] = value;
+                        }
                         pw = pw.substring(0, pw.indexOf("?"));
+                    }
                 }
                 props.linkpassword = pw;
-                if (fragment.indexOf("download=true") > 0)
-		    props.download = true;
-		if (fragment.indexOf("open=true") > 0)
-		    props.open = true;
                 if (props.app == null)
                     props.app = "Drive";
                 return props;
