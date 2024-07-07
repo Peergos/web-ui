@@ -246,7 +246,8 @@ module.exports = {
 		    props.download = true;
 		if (fragment.indexOf("open=true") > 0)
 		    props.open = true;
-                props.app = "Drive";
+                if (props.app == null)
+                    props.app = "Drive";
                 return props;
             }
 	    try {

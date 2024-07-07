@@ -137,9 +137,8 @@ module.exports = {
                 if (autoOpenOverride || link.autoOpen) {
                     args = "?open=true";
                     if (link.shareFolderWithFile) {
-                        json.path = link.path.substring(1);// do not pass starting '/'
-                        json.args = {};
-                        json.args.filename = link.filename;
+                        args += "&path=" + link.path.substring(1);// do not pass starting '/'
+                        args += "&args=%7B%22filename%22:%22" + link.filename + "%22%7D";
                     } else if (link.isFile) {
                         args += "&filename=" + link.filename;
                     } else {
