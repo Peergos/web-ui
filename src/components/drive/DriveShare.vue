@@ -173,7 +173,7 @@
                                 <td>{{ item.userPassword }}</td>
                                 <td>{{ item.maxRetrievals.ref != null ? item.maxRetrievals.ref.toString() : "-" }}</td>
                                 <td>{{ item.expiry.ref != null ? formatDateTime(item.expiry.ref) : "-" }}</td>
-                                <td> <button class="btn btn-success" @click="editLink(item)">Edit</button>
+                                <td> <button class="btn btn-success" @click="editLink(item)">{{ translate("DRIVE.LINK.VIEWEDIT") }}</button>
                                 </td>
                                 <td> <button class="btn btn-success" @click="deleteLink(item)">Delete</button>
                                 </td>
