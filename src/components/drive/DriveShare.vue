@@ -341,7 +341,8 @@ module.exports = {
 				name: name,
 				id: "secret_link_" + name,
 				isFile: isFile,
-				shareFolderWithFile: shareFolderWithFile
+				shareFolderWithFile: shareFolderWithFile,
+                autoOpen: false,
 			};
 			var title = "";
 			if (shareFolderWithFile) {

@@ -17,7 +17,7 @@
                                         <input
                                             type="checkbox"
                                             name=""
-                                            v-model="link.autoOpen"
+                                            v-model="autoOpen"
                                             @change="onChange()"
                                         />
                                         <span class="checkmark"></span>
@@ -136,7 +136,8 @@ module.exports = {
                 maxRetrievals: "0",
                 hasPassword: false,
                 userPassword: "",
-                showSpinner: false
+                showSpinner: false,
+                autoOpen: false
             };
 	},
     computed: {
@@ -183,7 +184,7 @@ module.exports = {
         methods: {
             buildHref: function (link, autoOpenOverride) {
                 let args = "";
-                if (autoOpenOverride || link.autoOpen) {
+                if (autoOpenOverride || this.autoOpen) {
                     args = "?open=true";
                     if (link.shareFolderWithFile) {
                         args += "&path=" + link.path;
@@ -251,9 +252,9 @@ module.exports = {
                 let that = this;
                 let linkString = that.context.getLinkString(that.existingProps);
                 this.link.baseUrl = linkString;
-                let href = that.buildHref(this.link, true);
+                let href = that.buildHref(this.link);
                 that.urlLink = {href : href,
-                                name: this.link.name, isFile: this.link.isFile, autoOpen: true};
+                                name: this.link.name, isFile: this.link.isFile, autoOpen: this.autoOpen};
             },
             getLinkPath: function() {
                 var path = this.link.path;
