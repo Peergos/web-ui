@@ -308,6 +308,9 @@ module.exports = {
 				this.$emit("update-shared-refresh");
 			}
 		},
+            isUserRoot() {
+                return this.getPath.split("/").length <= 3;
+            },
 		createSecretLink() {
 			if (this.files.length == 0) return this.close();
 			if (this.files.length != 1)
@@ -315,7 +318,7 @@ module.exports = {
 
 			let name = this.displayName.toLowerCase();
 		    let that = this;
-			if (this.currentDir != null && (name.endsWith('.html') || name.endsWith('.md') || name.endsWith('.note') || name == 'peergos-app.json')) {
+			if (this.currentDir != null && (name.endsWith('.html') || name.endsWith('.md') || name.endsWith('.note') || name == 'peergos-app.json') && !this.isUserRoot()) {
                 this.choice_message = this.translate("DRIVE.SHARE.CONFIRM");
                 this.choice_body = '';
                 this.choice_consumer_func = (index) => {
