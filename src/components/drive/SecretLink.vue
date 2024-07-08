@@ -22,19 +22,19 @@
                                 <div style="padding: 10px;">
                                     <input type="checkbox" @change="onChange()" v-model="hasExpiry">
                                     <label style="font-weight: normal;">{{ translate("DRIVE.LINK.EXPIRE.ON") }}</label>
-                                    <input id="expiry-date-picker" type="date" @change="onChange(link.id)">
+                                    <input id="expiry-date-picker" :disabled="!hasExpiry" type="date" @change="onChange(link.id)">
                                     <label style="font-weight: normal;">{{ translate("DRIVE.LINK.AT.TIME") }}</label>
-                                    <input id="expiry-time-picker" type="time" @change="onChange(link.id)">
+                                    <input id="expiry-time-picker" :disabled="!hasExpiry" type="time" @change="onChange(link.id)">
                                 </div>
                                 <div style="padding: 10px;">
-                                    <input type="checkbox" @change="onChange()" v-model="hasMaxRetreivals">
+                                    <input type="checkbox" @change="onChange()" v-model="hasMaxRetrievals">
                                     <label style="font-weight: normal;">{{ translate("DRIVE.LINK.LIMIT.RETRIEVALS") }}</label>
-                                    <input @change="onChange()" v-model="maxRetrievals">
+                                    <input @change="onChange()" :disabled="!hasMaxRetrievals" v-model="maxRetrievals" type="number" min="1" max="999">
                                 </div>
                                 <div style="padding: 10px;">
                                     <input type="checkbox" @change="onChange()" v-model="hasPassword">
                                     <label style="font-weight: normal;">{{ translate("DRIVE.LINK.PASSWORD") }}</label>
-                                    <input @change="onChange()" v-model="userPassword">
+                                    <input style="all: revert; font-family: inherit; font-size: inherit; line-height: inherit;" @change="onChange()" :disabled="!hasPassword" type="password" size="15" v-model="userPassword">
                                 </div>
                                 <div style="padding: 10px;">
                                     <button
@@ -84,7 +84,7 @@ module.exports = {
                 hasExpiry: false,
                 expireDateString: "",
                 expireTimeString: "",
-                hasMaxRetreivals: false,
+                hasMaxRetrievals: false,
                 maxRetrievals: "",
                 hasPassword: false,
                 userPassword: "",
