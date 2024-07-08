@@ -77,11 +77,10 @@
                                                 type="checkbox"
                                                 name=""
                                                 v-model="hasPassword"
-                                                @change="onChange()"
                                             />
                                             <span class="checkmark"></span>
                                         </label>
-                                        <input style="all: revert; font-family: inherit; font-size: inherit; line-height: inherit;" @change="onChange()" :disabled="!hasPassword" type="text" size="15" v-model="userPassword">
+                                        <input style="all: revert; font-family: inherit; font-size: inherit; line-height: inherit;" :disabled="!hasPassword" type="text" size="15" v-model="userPassword">
                                     </span>
                                 </div>
                                 <div style="padding: 10px;">
