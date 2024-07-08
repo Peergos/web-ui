@@ -49,9 +49,9 @@
                                             />
                                             <span class="checkmark"></span>
                                         </label>
-                                        <input id="expiry-date-picker" :disabled="!hasExpiry" type="date" @change="onChange(link.id)">
+                                        <input style="border: 2px solid var(--green-500);color: var(--color); background-color: var(--bg);" id="expiry-date-picker" :disabled="!hasExpiry" type="date" @change="onChange(link.id)">
                                         <label style="font-weight: normal;">{{ translate("DRIVE.LINK.AT.TIME") }}</label>
-                                        <input id="expiry-time-picker" :disabled="!hasExpiry" type="time" @change="onChange(link.id)">
+                                        <input style="border: 2px solid var(--green-500);color: var(--color); background-color: var(--bg);" id="expiry-time-picker" :disabled="!hasExpiry" type="time" @change="onChange(link.id)">
                                     </span>
                                 </div>
                                 <div>
@@ -66,7 +66,7 @@
                                             />
                                             <span class="checkmark"></span>
                                         </label>
-                                        <input @change="onChange()" :disabled="!hasMaxRetrievals" v-model="maxRetrievals" type="number" min="1" max="999">
+                                        <input style="border: 2px solid var(--green-500);color: var(--color); background-color: var(--bg);" @change="onChange()" :disabled="!hasMaxRetrievals" v-model="maxRetrievals" type="number" min="1" max="999">
                                     </span>
                                 </div>
                                 <div>
@@ -80,7 +80,7 @@
                                             />
                                             <span class="checkmark"></span>
                                         </label>
-                                        <input style="all: revert; font-family: inherit; font-size: inherit; line-height: inherit;" :disabled="!hasPassword" type="text" size="15" v-model="userPassword">
+                                        <input style="all: revert; border: 2px solid var(--green-500);color: var(--color); background-color: var(--bg); font-family: inherit; font-size: inherit; line-height: inherit;" :disabled="!hasPassword" type="text" size="15" v-model="userPassword">
                                     </span>
                                 </div>
                                 <div style="padding: 10px;">
