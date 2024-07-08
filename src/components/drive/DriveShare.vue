@@ -288,6 +288,7 @@ module.exports = {
                     return e.getLinkLabel() == link.getLinkLabel();
                 })
                 that.secretLinksList.splice(index, 1);
+                that.existingProps = null;
             }).exceptionally(function (throwable) {
                 console.log(throwable);
                 that.showSpinner = false;
