@@ -386,7 +386,7 @@ function getParentDirectoryHandle(filename, directory) {
 let pendingWrites = new Map(); //  filename => value
 let pendingReads = new Map(); //   filename => [future] Note: possibility of multiple futures
 
-opfsWorker = new Worker("js/opfs.js");
+opfsWorker = new Worker("/js/opfs.js");
 opfsWorker.postMessage({action: 'init'});
 
 opfsWorker.onmessage = function(event) { // reads

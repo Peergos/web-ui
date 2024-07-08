@@ -151,11 +151,37 @@
                     </Choice>
 					<SecretLink
 					    v-if="showModal"
-					    v-on:hide-modal="showModal = false"
+					    v-on:hide-modal="closeSecretLinkModal"
 					    :title="modalTitle"
-					    :links="modalLinks"
-                                            :username="this.context.username"
+					    :link="modalLink"
+                        :existingProps="existingProps"
+                        :username="this.context.username"
 					/>
+                    <div v-if="secretLinksList!=0" class="table-responsive">
+                        <table class="table">
+                            <thead>
+                            <tr  v-if="secretLinksList!=0">
+                                <th>Access</th>
+                                <th>Password</th>
+                                <th>Max Count</th>
+                                <th>Expiry</th>
+                            </tr>
+                            </thead>
+                            <tbody>
+                            <tr v-for="item in secretLinksList">
+                                <td>{{ item.isLinkWritable ? "Writable" : "Read-only" }}</td>
+                                <td>{{ item.userPassword }}</td>
+                                <td>{{ item.maxRetrievals.ref != null ? item.maxRetrievals.ref.toString() : "-" }}</td>
+                                <td>{{ item.expiry.ref != null ? formatDateTime(item.expiry.ref) : "-" }}</td>
+                                <td> <button class="btn btn-success" @click="editLink(item)">{{ translate("DRIVE.LINK.VIEWEDIT") }}</button>
+                                </td>
+                                <td> <button class="btn btn-success" @click="deleteLink(item)">Delete</button>
+                                </td>
+                            </tr>
+                            </tbody>
+                        </table>
+                    </div>
+
 				</div>
 			</div>
 		</div>
@@ -181,22 +207,24 @@ module.exports = {
         mixins:[i18n],
 	data() {
 		return {
-			showSpinner: false,
-			targetUsername: "",
-			targetUsernames: [],
-			sharedWithAccess: "Read",
-			shareWithFriendsGroup: false,
-			shareWithFollowersGroup: false,
-			unsharedReadAccessNames: [],
-			unsharedEditAccessNames: [],
-			showModal: false,
-			modalTitle: "",
-			modalLinks: [],
-            showChoice: false,
-            choice_message: '',
-            choice_body: '',
-            choice_consumer_func: () => {},
-            choice_options: [],
+		    showSpinner: false,
+		    targetUsername: "",
+		    targetUsernames: [],
+		    sharedWithAccess: "Read",
+		    shareWithFriendsGroup: false,
+		    shareWithFollowersGroup: false,
+		    unsharedReadAccessNames: [],
+		    unsharedEditAccessNames: [],
+		    showModal: false,
+		    modalTitle: "",
+		    modalLink: null,
+                    showChoice: false,
+                    choice_message: '',
+                    choice_body: '',
+                    choice_consumer_func: () => {},
+                    choice_options: [],
+                    existingProps:null,
+                    secretLinksList: [],
 		};
 	},
 	props: [
@@ -222,7 +250,55 @@ module.exports = {
 			return this.socialData.followers.concat(this.socialData.friends);
 		}
 	},
+    created: function() {
+        this.loadSecretLinks();
+    },
 	methods: {
+        loadSecretLinks() {
+            let that = this;
+            this.showSpinner = true;
+            let file = this.files[0];
+            let props = file.getFileProperties();
+            let directoryPath = peergos.client.PathUtils.directoryToPath(this.path);
+            this.context.getDirectorySharingState(directoryPath).thenApply(function (sharedWithState) {
+                let fileSharingState = sharedWithState.get(props.name);
+                that.secretLinksList = fileSharingState.links.toArray([]);
+                that.showSpinner = false;
+            });
+        },
+        closeSecretLinkModal() {
+            this.showModal = false;
+            this.loadSecretLinks();
+        },
+        formatDateTime(dateTime) {
+            let date = new Date(dateTime.toString() + "+00:00"); //adding UTC TZ in ISO_OFFSET_DATE_TIME ie 2021-12-03T10:25:30+00:00
+            let formatted = date.getFullYear() + '-' + (date.getMonth() + 1) + '-' + date.getDate()
+                + ' ' + (date.getHours() < 10 ? '0' : '') + date.getHours()
+                + ':' + (date.getMinutes() < 10 ? '0' : '') + date.getMinutes()
+                + ':' + (date.getSeconds() < 10 ? '0' : '') + date.getSeconds();
+            return formatted;
+        },
+        deleteLink(link) {
+            let that = this;
+            let filePath = peergos.client.PathUtils.toPath(this.path, this.files[0].getFileProperties().name);
+            this.showSpinner = true;
+            this.context.deleteSecretLink(link.getLinkLabel(), filePath, false).thenApply(function (sharedWithState) {
+                that.showSpinner = false;
+                let index = that.secretLinksList.findIndex(e => {
+                    return e.getLinkLabel() == link.getLinkLabel();
+                })
+                that.secretLinksList.splice(index, 1);
+                that.existingProps = null;
+            }).exceptionally(function (throwable) {
+                console.log(throwable);
+                that.showSpinner = false;
+                //todo that.$toast.error(that.translate("DRIVE.SHARE.ERROR") + ` ${that.files[0].getFileProperties().name}: ${throwable.getMessage()}`, {timeout:false, id: 'share'})
+            });
+        },
+            editLink(props) {
+                this.existingProps = props;
+                this.buildSecretLink(false);
+            },
 		close() {
 			this.showSpinner = false;
 			this.$emit("hide-share-with");
@@ -232,6 +308,9 @@ module.exports = {
 				this.$emit("update-shared-refresh");
 			}
 		},
+            isUserRoot() {
+                return this.getPath.split("/").length <= 3;
+            },
 		createSecretLink() {
 			if (this.files.length == 0) return this.close();
 			if (this.files.length != 1)
@@ -239,7 +318,7 @@ module.exports = {
 
 			let name = this.displayName.toLowerCase();
 		    let that = this;
-			if (this.currentDir != null && (name.endsWith('.html') || name.endsWith('.md') || name.endsWith('.note') || name == 'peergos-app.json')) {
+			if (this.currentDir != null && (name.endsWith('.html') || name.endsWith('.md') || name.endsWith('.note') || name == 'peergos-app.json') && !this.isUserRoot()) {
                 this.choice_message = this.translate("DRIVE.SHARE.CONFIRM");
                 this.choice_body = '';
                 this.choice_consumer_func = (index) => {
@@ -253,20 +332,21 @@ module.exports = {
         },
 		buildSecretLink(shareFolderWithFile) {
             let file = this.files[0];
-            var link = [];
+            var link = null;
             let props = file.getFileProperties();
             var name = this.displayName;
 			let isFile = !props.isDirectory;
-			link.push({
-			        fileLink: file.toLink(),
+			link = {
+			        file: file,
 			        folderLink: this.currentDir != null ? this.currentDir.toLink(): null,
                                 filename:props.name,
                                 path:this.getPath,
 				name: name,
 				id: "secret_link_" + name,
 				isFile: isFile,
-				shareFolderWithFile: shareFolderWithFile
-			});
+				shareFolderWithFile: shareFolderWithFile,
+                autoOpen: shareFolderWithFile === true ? true: false,
+			};
 			var title = "";
 			if (shareFolderWithFile) {
                 title = this.translate("DRIVE.SHARE.FOLDER.OPEN") + ": ";
@@ -278,10 +358,10 @@ module.exports = {
 			this.showLinkModal(title, link);
 		},
 
-		showLinkModal(title, links) {
+		showLinkModal(title, link) {
 			this.showModal = true;
 			this.modalTitle = title;
-			this.modalLinks = links;
+			this.modalLink = link;
 		},
 		onFriendChange() {
 			if (this.shareWithFollowersGroup && this.shareWithFriendsGroup) {

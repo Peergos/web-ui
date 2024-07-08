@@ -12,6 +12,12 @@
                     <center>
 			<h2>Loading file...</h2>
                     </center>
+                    <LinkPassword
+                        v-if="showLinkPassword"
+                        v-on:hide-modal="showLinkPassword = false"
+                        :title="'Enter link password'"
+                        :future="future"
+                        />
 		</section>
 
 		<section class="login-register" v-if="!isLoggedIn && !isSecretLink">
@@ -31,7 +37,6 @@
 					<Signup :token="token" />
 				</AppTab>
 			</AppTabs>
-			
 		</section>
 
     	<ServerMessages v-if="context != null"/>
@@ -65,6 +70,7 @@ const ModalPassword = require("./modal/ModalPassword.vue");
 const ModalAccount = require("./modal/ModalAccount.vue");
 const ModalProfile = require("./modal/ModalProfile.vue");
 const ModalFeedback = require("./modal/ModalFeedback.vue");
+const LinkPassword = require("./LinkPassword.vue");
 
 const AppTab = require("./tabs/AppTab.vue");
 const AppTabs = require("./tabs/AppTabs.vue");
@@ -102,7 +108,8 @@ module.exports = {
 		ModalProfile,
 		ModalFeedback,
 		ServerMessages,
-		Drive,
+	        Drive,
+                LinkPassword,
 		NewsFeed,
 		Social,
 		Calendar,
@@ -116,7 +123,9 @@ module.exports = {
 
 	data() {
 		return {
-			token: "",
+		    token: "",
+                    showLinkPassword: false,
+                    future:null
 		};
 	},
 
@@ -221,6 +230,36 @@ module.exports = {
 	    if (fragment.length == 0) {
 	        return props;
 	    }
+            if (window.location.pathname.startsWith("/secret/")) {
+                try {
+		    props = fragmentToProps(fragment);
+	        } catch (e) {}
+                props.secretLink = true;
+                var pw = props.linkpassword;
+                if (pw == null) {
+                    pw = window.location.hash.substring(1);
+                    if (pw.includes("?")) {
+                        const queryParams = new URLSearchParams(pw.substring(pw.indexOf("?") + 1));
+                        for (const [key, value] of queryParams) {
+                            if (value == "true")
+                                props[key] = true;
+                            else if (value == "false")
+                                props[key] = false;
+                            else if (key == "args")
+                                props[key] = JSON.parse(value);
+                            else 
+                                props[key] = value;
+                        }
+                        pw = pw.substring(0, pw.indexOf("?"));
+                    }
+                }
+                if (props.args != null && props.args.filename != null)
+                    props.path = props.path + props.args.filename;
+                props.linkpassword = pw;
+                if (props.app == null)
+                    props.app = "Drive";
+                return props;
+            }
 	    try {
 		props = fragmentToProps(fragment);
 	    } catch (e) {
@@ -326,26 +365,41 @@ module.exports = {
 		}
 	    });
 	},
+        getLinkPassword() {
+            var future = peergos.shared.util.Futures.incomplete();
+            this.future = future;
+            this.showLinkPassword = true;
+            return future;
+        },
 
 	// still need to check this
 	gotoSecretLink(props) {
 	    var that = this;
             this.$store.commit("SET_IS_SECRET_LINK", true);
-	    peergos.shared.user.UserContext.fromSecretLink(
+            
+	    (props.linkpassword != null ?
+             peergos.shared.user.UserContext.fromSecretLinkV2(
+		 window.location.pathname + "#" + props.linkpassword,
+                 {get_0:() => this.getLinkPassword()},
+		 that.network,
+		 that.crypto
+	    ):
+             peergos.shared.user.UserContext.fromSecretLink(
 		props.link,
 		that.network,
 		that.crypto
-	    )
+	    ))
 		.thenApply(function (context) {
 		    that.$store.commit("SET_CONTEXT", context);
 		    that.$store.commit("SET_DOWNLOAD", props.download);
 		    that.$store.commit("SET_OPEN", props.open);
 		    that.$store.commit("SET_INIT_PATH", props.path);
                     that.$store.commit("CURRENT_VIEW", "Drive");
+                    window.location.hash = propsToFragment(props)
 		})
 		.exceptionally(function (throwable) {
 		    that.$toast.error(
-			"Secret link not found! Url copy/paste error?"
+			"Secret link not found! Link expired or deleted?"
 		    );
 		});
 	},
