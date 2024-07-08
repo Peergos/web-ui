@@ -10,31 +10,79 @@
                 
                 <div class="modal-body">
                     <div class="container"><p style="word-wrap;break-all;">
-                            <div style="font-size: 1.2em;">
-                                <div v-if="link.isFile" style="padding: 10px;">
-                                    <input type="checkbox" @change="onChange()" v-model="link.autoOpen">
-                                    <label style="font-weight: normal;">{{ translate("DRIVE.LINK.OPEN") }}</label>
+                            <div>
+                                <div v-if="link.isFile">
+                                    <label class="checkbox__group">
+                                        {{ translate("DRIVE.LINK.OPEN") }}
+                                        <input
+                                            type="checkbox"
+                                            name=""
+                                            v-model="link.autoOpen"
+                                            @change="onChange()"
+                                        />
+                                        <span class="checkmark"></span>
+                                    </label>
                                 </div>
-                                <div style="padding: 10px;">
-                                    <input type="checkbox" @change="onChange()" v-model="isWritable" :disabled="existingProps != null">
-                                    <label style="font-weight: normal;">{{ translate("DRIVE.LINK.WRITABLE") }}</label>
+                                <div>
+                                    <label class="checkbox__group">
+                                        {{ translate("DRIVE.LINK.WRITABLE") }}
+                                        <input
+                                            :disabled="existingProps != null"
+                                            type="checkbox"
+                                            name=""
+                                            v-model="isLinkWritable"
+                                            @change="onChange()"
+                                        />
+                                        <span class="checkmark"></span>
+                                    </label>
                                 </div>
-                                <div style="padding: 10px;">
-                                    <input type="checkbox" @change="onChange()" v-model="hasExpiry">
-                                    <label style="font-weight: normal;">{{ translate("DRIVE.LINK.EXPIRE.ON") }}</label>
-                                    <input id="expiry-date-picker" :disabled="!hasExpiry" type="date" @change="onChange(link.id)">
-                                    <label style="font-weight: normal;">{{ translate("DRIVE.LINK.AT.TIME") }}</label>
-                                    <input id="expiry-time-picker" :disabled="!hasExpiry" type="time" @change="onChange(link.id)">
+                                <div>
+                                    <span>
+                                        <label class="checkbox__group" style="display:inline-block">
+                                            {{ translate("DRIVE.LINK.EXPIRE.ON") }}
+                                            <input
+                                                :disabled="existingProps != null"
+                                                type="checkbox"
+                                                name=""
+                                                v-model="hasExpiry"
+                                                @change="onChange()"
+                                            />
+                                            <span class="checkmark"></span>
+                                        </label>
+                                        <input id="expiry-date-picker" :disabled="!hasExpiry" type="date" @change="onChange(link.id)">
+                                        <label style="font-weight: normal;">{{ translate("DRIVE.LINK.AT.TIME") }}</label>
+                                        <input id="expiry-time-picker" :disabled="!hasExpiry" type="time" @change="onChange(link.id)">
+                                    </span>
                                 </div>
-                                <div style="padding: 10px;">
-                                    <input type="checkbox" @change="onChange()" v-model="hasMaxRetrievals">
-                                    <label style="font-weight: normal;">{{ translate("DRIVE.LINK.LIMIT.RETRIEVALS") }}</label>
-                                    <input @change="onChange()" :disabled="!hasMaxRetrievals" v-model="maxRetrievals" type="number" min="1" max="999">
+                                <div>
+                                    <span>
+                                        <label class="checkbox__group" style="display:inline-block">
+                                            {{ translate("DRIVE.LINK.LIMIT.RETRIEVALS") }}
+                                            <input
+                                                type="checkbox"
+                                                name=""
+                                                v-model="hasMaxRetrievals"
+                                                @change="onChange()"
+                                            />
+                                            <span class="checkmark"></span>
+                                        </label>
+                                        <input @change="onChange()" :disabled="!hasMaxRetrievals" v-model="maxRetrievals" type="number" min="1" max="999">
+                                    </span>
                                 </div>
-                                <div style="padding: 10px;">
-                                    <input type="checkbox" @change="onChange()" v-model="hasPassword">
-                                    <label style="font-weight: normal;">{{ translate("DRIVE.LINK.PASSWORD") }}</label>
-                                    <input style="all: revert; font-family: inherit; font-size: inherit; line-height: inherit;" @change="onChange()" :disabled="!hasPassword" type="password" size="15" v-model="userPassword">
+                                <div>
+                                    <span>
+                                        <label class="checkbox__group" style="display:inline-block">
+                                            {{ translate("DRIVE.LINK.PASSWORD") }}
+                                            <input
+                                                type="checkbox"
+                                                name=""
+                                                v-model="hasPassword"
+                                                @change="onChange()"
+                                            />
+                                            <span class="checkmark"></span>
+                                        </label>
+                                        <input style="all: revert; font-family: inherit; font-size: inherit; line-height: inherit;" @change="onChange()" :disabled="!hasPassword" type="text" size="15" v-model="userPassword">
+                                    </span>
                                 </div>
                                 <div style="padding: 10px;">
                                     <button
@@ -80,12 +128,12 @@ module.exports = {
 	data() {
 	    return {
                 urlLink:null,
-                isWritable: false,
+                isLinkWritable: false,
                 hasExpiry: false,
                 expireDateString: "",
                 expireTimeString: "",
                 hasMaxRetrievals: false,
-                maxRetrievals: "",
+                maxRetrievals: "0",
                 hasPassword: false,
                 userPassword: "",
                 showSpinner: false
@@ -107,13 +155,14 @@ module.exports = {
             let that = this;
             if (this.existingProps != null) {
                 Vue.nextTick(function() {
-                    that.isWritable = that.existingProps.isWritable;
+                    that.isLinkWritable = that.existingProps.isLinkWritable;
                     that.userPassword = that.existingProps.userPassword
                     that.hasPassword = that.existingProps.userPassword.length > 0;
                     that.maxRetrievals = that.existingProps.maxRetrievals.ref == null ?
-                            "": that.existingProps.maxRetrievals.ref.toString();
-                    that.hasMaxRetrievals = that.maxRetrievals.length > 0;
+                            "0": that.existingProps.maxRetrievals.ref.toString();
+                    that.hasMaxRetrievals = that.maxRetrievals != "0";
                     if (that.existingProps.expiry.ref != null) {
+                        that.hasExpiry = true;
                         let date = that.existingProps.expiry.ref.date;
                         let time = that.existingProps.expiry.ref.time;
                         let jsDate = new Date(that.existingProps.expiry.ref.toString() + "+00:00"); //adding UTC TZ in ISO_OFFSET_DATE_TIME ie 2021-12-03T10:25:30+00:00
@@ -154,9 +203,10 @@ module.exports = {
                 let create = this.existingProps == null;
                 let that = this;
                 this.showSpinner = true;
+                let maxRetrievalsStr = this.maxRetrievals == "0" ? "" : "" + this.maxRetrievals;
                 if (create) {
-                    this.context.createSecretLink(this.getLinkPath(), this.isWritable, this.getExpiry(),
-                        this.maxRetrievals, this.hasPassword ? this.userPassword : "").thenApply(props => {
+                    this.context.createSecretLink(this.getLinkPath(), this.isLinkWritable, this.getExpiry(),
+                        maxRetrievalsStr, this.hasPassword ? this.userPassword : "").thenApply(props => {
                           that.existingProps = props;
                           that.updateHref();
                           that.showSpinner = false;
@@ -166,7 +216,7 @@ module.exports = {
                         that.showSpinner = false;
                     });
                 } else {
-                    let newLinkProps = this.existingProps.with(this.hasPassword ? this.userPassword : "", this.maxRetrievals, this.getExpiry());
+                    let newLinkProps = this.existingProps.with(this.hasPassword ? this.userPassword : "", maxRetrievalsStr, this.getExpiry());
                     this.context.updateSecretLink(this.getLinkPath(), newLinkProps).thenApply(props => {
                         that.existingProps = props;
                         that.updateHref();

@@ -169,7 +169,7 @@
                             </thead>
                             <tbody>
                             <tr v-for="item in secretLinksList">
-                                <td>{{ item.isWritable ? "Writable" : "Read-only" }}</td>
+                                <td>{{ item.isLinkWritable ? "Writable" : "Read-only" }}</td>
                                 <td>{{ item.userPassword }}</td>
                                 <td>{{ item.maxRetrievals.ref != null ? item.maxRetrievals.ref.toString() : "-" }}</td>
                                 <td>{{ item.expiry.ref != null ? formatDateTime(item.expiry.ref) : "-" }}</td>
