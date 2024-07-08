@@ -399,7 +399,7 @@ module.exports = {
 		})
 		.exceptionally(function (throwable) {
 		    that.$toast.error(
-			"Secret link not found! Url copy/paste error?"
+			"Secret link not found! Link expired or deleted?"
 		    );
 		});
 	},
