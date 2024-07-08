@@ -243,7 +243,9 @@ module.exports = {
                 let day = parseInt(dateS.split("-")[2]);
                 let hour = parseInt(expireTimeString.split(":")[0]);
                 let minute = parseInt(expireTimeString.split(":")[1]);
-                return java.util.Optional.of(java.time.LocalDateTime.of(year, month, day, hour, minute, 0));
+                let jsDate = new Date(year, month-1, day, hour, minute);
+                let ldt = peergos.client.JsUtil.fromUtcMillis(jsDate.getTime());
+                return java.util.Optional.of(ldt);
             },
             updateHref: function() {
                 let that = this;
