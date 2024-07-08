@@ -278,14 +278,12 @@ module.exports = {
                 var that = this;
                 var body = "";
                 var type;
-                this.links.forEach(link => {
-                    let href = that.buildHref(link, true);
-                    body += link.name + ": " + href + "\n";
-                    if (link.isFile)
-                        type = "file";
-                    else
-                        type = "folder";
-                });
+                let href = that.buildHref(this.link, true);
+                body += this.link.name + ": " + href + "\n";
+                if (this.link.isFile)
+                    type = "file";
+                else
+                    type = "folder";
                 body = "Click on the following link to view the " + type + "\n\n" + body;
                 var subject = this.username + " shared a "+type+" with you!";
                 var link = document.getElementById('downloadAnchor')
