@@ -153,6 +153,7 @@ module.exports = {
         ],
         created: function() {
             let that = this;
+            this.autoOpen = this.link.autoOpen;
             if (this.existingProps != null) {
                 Vue.nextTick(function() {
                     that.isLinkWritable = that.existingProps.isLinkWritable;
