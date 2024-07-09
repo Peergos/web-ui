@@ -1431,15 +1431,25 @@ function generateCrypto_sign_open(signed, publicSigningKey) {
     return future;
 }
 
+var derHeader = [48, 46, 2, 1, 0, 48, 5, 6, 3, 43, 101, 112, 4, 34, 4, 32];
+
 function generateCrypto_sign(message, secretSigningKey) {
     var future = peergos.shared.util.Futures.incomplete();
-    window.crypto.subtle.importKey("raw", secretSigningKey, "Ed25519", false, ["sign"]).then(secretKey => {
+    var pkcs8der = new Int8Array(48);
+    for (var i=0; i < 16; i++)
+        pkcs8der[i] = derHeader[i];
+    for (var i=0; i < 32; i++)
+        pkcs8der[16+i] = secretSigningKey[31-i]; // first 32 bytes are the private key, convert endianness
+    window.crypto.subtle.importKey("pkcs8", pkcs8der, "Ed25519", false, ["sign"]).then(secretKey => {
         return window.crypto.subtle.sign(
             "Ed25519",
             secretKey,
             message
         ).then(signature => {
-            future.complete(convertToByteArray(new Int8Array(signature.concat(message))));
+            var res = new Int8Array(signature.byteLength + message.length);
+            res.set(signature);
+            res.set(message, signature.byteLength);
+            future.complete(convertToByteArray(res));
         });
     }).catch (e => {
         var bytes = nacl.sign(new Uint8Array(message), new Uint8Array(secretSigningKey));
