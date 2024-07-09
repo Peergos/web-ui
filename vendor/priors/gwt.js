@@ -1439,7 +1439,7 @@ function generateCrypto_sign(message, secretSigningKey) {
     for (var i=0; i < 16; i++)
         pkcs8der[i] = derHeader[i];
     for (var i=0; i < 32; i++)
-        pkcs8der[16+i] = secretSigningKey[31-i]; // first 32 bytes are the private key, convert endianness
+        pkcs8der[16+i] = secretSigningKey[i]; // first 32 bytes are the private key
     window.crypto.subtle.importKey("pkcs8", pkcs8der, "Ed25519", false, ["sign"]).then(secretKey => {
         return window.crypto.subtle.sign(
             "Ed25519",
@@ -1447,7 +1447,7 @@ function generateCrypto_sign(message, secretSigningKey) {
             message
         ).then(signature => {
             var res = new Int8Array(signature.byteLength + message.length);
-            res.set(signature);
+            res.set(new Int8Array(signature));
             res.set(message, signature.byteLength);
             future.complete(convertToByteArray(res));
         });
