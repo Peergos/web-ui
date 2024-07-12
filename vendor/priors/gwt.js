@@ -1406,14 +1406,74 @@ function generateSecretbox_open(cipher, nonce, key) {
     return convertToByteArray(new Int8Array(bytes.buffer, bytes.byteOffset, bytes.byteLength));
 }
 
-function generateCrypto_sign_open(signed, publicSigningKey) {    
+function generateCrypto_sign_open(signed, publicSigningKey) {
+    var future = peergos.shared.util.Futures.incomplete();
     var bytes = nacl.sign.open(new Uint8Array(signed), new Uint8Array(publicSigningKey));
-    return convertToByteArray(new Int8Array(bytes));
+    if (bytes != null)
+        future.complete(convertToByteArray(new Int8Array(bytes)));
+    else
+        future.completeExceptionally(java.lang.Throwable.of(Error("Invalid signature")));
+    return future;
 }
 
-function generateCrypto_sign(message, secretSigningKey) {    
+function generateCrypto_sign_open_webcrypto(signed, publicSigningKey) {
+    var future = peergos.shared.util.Futures.incomplete();
+    let signature = signed.slice(0, 64);
+    let encoded = signed.slice(64, signed.length);
+    window.crypto.subtle.importKey("raw", publicSigningKey, "Ed25519", false, ["verify"]).then(publicKey => {
+        return window.crypto.subtle.verify(
+            "Ed25519",
+            publicKey,
+            signature,
+            encoded
+        ).then(valid => {
+            if (valid)
+                future.complete(convertToByteArray(new Int8Array(encoded)));
+            future.completeExceptionally(java.lang.Throwable.of(Error("Invalid signature")));
+        });
+    }).catch(t => {
+        var bytes = nacl.sign.open(new Uint8Array(signed), new Uint8Array(publicSigningKey));
+        if (bytes != null)
+            future.complete(convertToByteArray(new Int8Array(bytes)));
+        else
+            future.completeExceptionally(java.lang.Throwable.of(Error("Invalid signature")));
+    });
+    return future;
+}
+
+
+var derHeader = [48, 46, 2, 1, 0, 48, 5, 6, 3, 43, 101, 112, 4, 34, 4, 32];
+
+function generateCrypto_sign(message, secretSigningKey) {
+    var future = peergos.shared.util.Futures.incomplete();
     var bytes = nacl.sign(new Uint8Array(message), new Uint8Array(secretSigningKey));
-    return convertToByteArray(new Int8Array(bytes));
+    future.complete(convertToByteArray(new Int8Array(bytes)));
+    return future;
+}
+
+function generateCrypto_sign_webcrypto(message, secretSigningKey) {
+    var future = peergos.shared.util.Futures.incomplete();
+    var pkcs8der = new Int8Array(48);
+    for (var i=0; i < 16; i++)
+        pkcs8der[i] = derHeader[i];
+    for (var i=0; i < 32; i++)
+        pkcs8der[16+i] = secretSigningKey[i]; // first 32 bytes are the private key
+    window.crypto.subtle.importKey("pkcs8", pkcs8der, "Ed25519", false, ["sign"]).then(secretKey => {
+        return window.crypto.subtle.sign(
+            "Ed25519",
+            secretKey,
+            message
+        ).then(signature => {
+            var res = new Int8Array(signature.byteLength + message.length);
+            res.set(new Int8Array(signature));
+            res.set(message, signature.byteLength);
+            future.complete(convertToByteArray(res));
+        });
+    }).catch (e => {
+        var bytes = nacl.sign(new Uint8Array(message), new Uint8Array(secretSigningKey));
+        future.complete(convertToByteArray(new Int8Array(bytes)));
+    });
+    return future;
 }
 
 function generateCrypto_sign_keypair(publicKey, secretKey) {    
@@ -1616,19 +1676,34 @@ var thumbnail = {
 };
 
 var tweetNaCl = {
+    useWebcypto : false,
     JSNaCl: function() {
         this.randombytes = generateRandomBytes;
         this.secretbox = generateSecretbox;
         this.secretbox_open = generateSecretbox_open;
 
-        this.crypto_sign_open = generateCrypto_sign_open;
-        this.crypto_sign = generateCrypto_sign;
+        if (tweetNaCl.useWebcrypto) {
+            this.crypto_sign_open = generateCrypto_sign_open_webcrypto;
+            this.crypto_sign = generateCrypto_sign_webcrypto;
+        } else {
+            this.crypto_sign_open = generateCrypto_sign_open;
+            this.crypto_sign = generateCrypto_sign;
+        }
+            
         this.crypto_sign_keypair = generateCrypto_sign_keypair;
         this.crypto_box_open = generateCrypto_box_open;
         this.crypto_box = generateCrypto_box;
         this.crypto_box_keypair = generateCrypto_box_keypair;
+
     }   
 };
+
+// use webcrypto signing if present
+window.crypto.subtle.importKey("raw", new Int8Array(32), "Ed25519", false, ["verify"]).then(publicKey => {
+    console.log("Using optimised  webcrypto Ed25519 implementation.");
+    tweetNaCl.useWebcrypto = true;
+});
+
 
 var browserio = {
     JSFileReader: function(file) {
