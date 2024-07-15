@@ -27,7 +27,7 @@
                                     <label class="checkbox__group">
                                         {{ translate("DRIVE.LINK.WRITABLE") }}
                                         <input
-                                            :disabled="existingProps != null"
+                                            :disabled="currentProps != null"
                                             type="checkbox"
                                             name=""
                                             v-model="isLinkWritable"
@@ -41,7 +41,6 @@
                                         <label class="checkbox__group" style="display:inline-block">
                                             {{ translate("DRIVE.LINK.EXPIRE.ON") }}
                                             <input
-                                                :disabled="existingProps != null"
                                                 type="checkbox"
                                                 name=""
                                                 v-model="hasExpiry"
@@ -88,7 +87,7 @@
                                         id='modal-button-id'
                                         class="btn btn-success"
                                         @click="createOrUpdateLink">
-                                        {{ existingProps == null ? translate("DRIVE.LINK.CREATE") : translate("DRIVE.LINK.UPDATE") }}
+                                        {{ currentProps == null ? translate("DRIVE.LINK.CREATE") : translate("DRIVE.LINK.UPDATE") }}
                                     </button>
                                 </div>
                                 <div v-if="showLink()" style="padding: 10px;">
@@ -136,7 +135,8 @@ module.exports = {
                 hasPassword: false,
                 userPassword: "",
                 showSpinner: false,
-                autoOpen: false
+                autoOpen: false,
+                currentProps: null,
             };
 	},
     computed: {
@@ -153,20 +153,21 @@ module.exports = {
         ],
         created: function() {
             let that = this;
+            this.currentProps = this.existingProps;
             this.autoOpen = this.link.autoOpen;
-            if (this.existingProps != null) {
+            if (this.currentProps != null) {
                 Vue.nextTick(function() {
-                    that.isLinkWritable = that.existingProps.isLinkWritable;
-                    that.userPassword = that.existingProps.userPassword
-                    that.hasPassword = that.existingProps.userPassword.length > 0;
-                    that.maxRetrievals = that.existingProps.maxRetrievals.ref == null ?
-                            "0": that.existingProps.maxRetrievals.ref.toString();
+                    that.isLinkWritable = that.currentProps.isLinkWritable;
+                    that.userPassword = that.currentProps.userPassword
+                    that.hasPassword = that.currentProps.userPassword.length > 0;
+                    that.maxRetrievals = that.currentProps.maxRetrievals.ref == null ?
+                            "0": that.currentProps.maxRetrievals.ref.toString();
                     that.hasMaxRetrievals = that.maxRetrievals != "0";
-                    if (that.existingProps.expiry.ref != null) {
+                    if (that.currentProps.expiry.ref != null) {
                         that.hasExpiry = true;
-                        let date = that.existingProps.expiry.ref.date;
-                        let time = that.existingProps.expiry.ref.time;
-                        let jsDate = new Date(that.existingProps.expiry.ref.toString() + "+00:00"); //adding UTC TZ in ISO_OFFSET_DATE_TIME ie 2021-12-03T10:25:30+00:00
+                        let date = that.currentProps.expiry.ref.date;
+                        let time = that.currentProps.expiry.ref.time;
+                        let jsDate = new Date(that.currentProps.expiry.ref.toString() + "+00:00"); //adding UTC TZ in ISO_OFFSET_DATE_TIME ie 2021-12-03T10:25:30+00:00
                         let datePart = jsDate.getFullYear()
                         + '-' + ( (jsDate.getMonth() + 1) < 10 ? '0' : '') + (jsDate.getMonth() + 1)
                         + '-' + (jsDate.getDate() < 10 ? '0' : '') + jsDate.getDate();
@@ -201,14 +202,14 @@ module.exports = {
                 return this.urlLink != null;
             },
             createOrUpdateLink: function() {
-                let create = this.existingProps == null;
+                let create = this.currentProps == null;
                 let that = this;
                 this.showSpinner = true;
                 let maxRetrievalsStr = this.maxRetrievals == "0" ? "" : "" + this.maxRetrievals;
                 if (create) {
                     this.context.createSecretLink(this.getLinkPath(), this.isLinkWritable, this.getExpiry(),
                         maxRetrievalsStr, this.hasPassword ? this.userPassword : "").thenApply(props => {
-                          that.existingProps = props;
+                          that.currentProps = props;
                           that.updateHref();
                           that.showSpinner = false;
                     }).exceptionally(t => {
@@ -217,9 +218,9 @@ module.exports = {
                         that.showSpinner = false;
                     });
                 } else {
-                    let newLinkProps = this.existingProps.with(this.hasPassword ? this.userPassword : "", maxRetrievalsStr, this.getExpiry());
+                    let newLinkProps = this.currentProps.with(this.hasPassword ? this.userPassword : "", maxRetrievalsStr, this.getExpiry());
                     this.context.updateSecretLink(this.getLinkPath(), newLinkProps).thenApply(props => {
-                        that.existingProps = props;
+                        that.currentProps = props;
                         that.updateHref();
                         that.showSpinner = false;
                     }).exceptionally(t => {
@@ -236,7 +237,7 @@ module.exports = {
                     return java.util.Optional.empty();
                 let timeExpiry = document.getElementById("expiry-time-picker");
                 let expireTimeString = "00:00";
-                if (timeExpiry != null) {
+                if (timeExpiry != null && timeExpiry.value.length > 0) {
                     expireTimeString = timeExpiry.value;
                 }
                 let year = parseInt(dateS.split("-")[0]);
@@ -250,7 +251,7 @@ module.exports = {
             },
             updateHref: function() {
                 let that = this;
-                let linkString = that.context.getLinkString(that.existingProps);
+                let linkString = that.context.getLinkString(that.currentProps);
                 this.link.baseUrl = linkString;
                 let href = that.buildHref(this.link);
                 that.urlLink = {href : href,
