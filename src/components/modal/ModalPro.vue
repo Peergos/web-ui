@@ -231,8 +231,7 @@ module.exports = {
 	    },
             
 	    cancelPaid() {
-                this.requestStorage(0);
-		this.$store.commit("SET_MODAL", false);
+                this.$store.commit("CURRENT_MODAL", "ModalCancel");
             },
 	},
 };
