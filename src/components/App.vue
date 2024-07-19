@@ -66,6 +66,7 @@ const ModalTour = require("./modal/ModalTour.vue");
 const ModalHelp = require("./modal/ModalHelp.vue");
 const ModalSpace = require("./modal/ModalSpace.vue");
 const ModalPro = require("./modal/ModalPro.vue");
+const ModalCancel = require("./modal/ModalCancel.vue");
 const ModalPassword = require("./modal/ModalPassword.vue");
 const ModalAccount = require("./modal/ModalAccount.vue");
 const ModalProfile = require("./modal/ModalProfile.vue");
@@ -102,7 +103,8 @@ module.exports = {
 		// TODO: lazy load dynamic components
 		// ModalTour: () => import("~/components/modal/ModalTour"),
 		ModalSpace,
-		ModalPro,
+	        ModalPro,
+                ModalCancel,
 		ModalPassword,
 		ModalAccount,
 		ModalProfile,
