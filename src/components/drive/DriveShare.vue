@@ -336,11 +336,12 @@ module.exports = {
             let props = file.getFileProperties();
             var name = this.displayName;
 			let isFile = !props.isDirectory;
+            let filePath = peergos.client.PathUtils.directoryToPath(this.path).toString();
 			link = {
 			        file: file,
 			        folderLink: this.currentDir != null ? this.currentDir.toLink(): null,
                                 filename:props.name,
-                                path:this.getPath,
+                                path:filePath,
 				name: name,
 				id: "secret_link_" + name,
 				isFile: isFile,
