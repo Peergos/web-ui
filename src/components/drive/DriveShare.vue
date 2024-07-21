@@ -242,9 +242,6 @@ module.exports = {
 			'context',
 			'socialData'
 		]),
-                ...Vuex.mapGetters([
-	            'getPath',
-	        ]),
 		allNames() {
 			// return this.followernames.concat(this.friendnames);
 			return this.socialData.followers.concat(this.socialData.friends);
@@ -309,7 +306,8 @@ module.exports = {
 			}
 		},
             isUserRoot() {
-                return this.getPath.split("/").length <= 3;
+                let file = this.files[0];
+                return file.isUserRoot();
             },
 		createSecretLink() {
 			if (this.files.length == 0) return this.close();
