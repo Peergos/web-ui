@@ -193,7 +193,7 @@ module.exports = {
                     } else if (link.isFile) {
                         args += "&filename=" + link.filename;
                     } else {
-                        args += "&path=" + link.path;
+                        args += "&path=/" + link.path + '/' + link.filename;
                     }
                 }
                 return window.location.origin + "/" + link.baseUrl + args;
