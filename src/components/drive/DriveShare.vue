@@ -242,9 +242,6 @@ module.exports = {
 			'context',
 			'socialData'
 		]),
-                ...Vuex.mapGetters([
-	            'getPath',
-	        ]),
 		allNames() {
 			// return this.followernames.concat(this.friendnames);
 			return this.socialData.followers.concat(this.socialData.friends);
@@ -309,7 +306,8 @@ module.exports = {
 			}
 		},
             isUserRoot() {
-                return this.getPath.split("/").length <= 3;
+                let file = this.files[0];
+                return file.isUserRoot();
             },
 		createSecretLink() {
 			if (this.files.length == 0) return this.close();
@@ -336,11 +334,12 @@ module.exports = {
             let props = file.getFileProperties();
             var name = this.displayName;
 			let isFile = !props.isDirectory;
+            let filePath = peergos.client.PathUtils.directoryToPath(this.path).toString();
 			link = {
 			        file: file,
 			        folderLink: this.currentDir != null ? this.currentDir.toLink(): null,
                                 filename:props.name,
-                                path:this.getPath,
+                                path:filePath,
 				name: name,
 				id: "secret_link_" + name,
 				isFile: isFile,
