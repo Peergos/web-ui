@@ -208,7 +208,7 @@ module.exports = {
                 let maxRetrievalsStr = this.maxRetrievals == "0" ? "" : "" + this.maxRetrievals;
                 if (create) {
                     this.context.createSecretLink(this.getLinkPath(), this.isLinkWritable, this.getExpiry(),
-                        maxRetrievalsStr, this.hasPassword ? this.userPassword : "").thenApply(props => {
+                        maxRetrievalsStr, this.hasPassword ? this.userPassword : "", this.autoOpen).thenApply(props => {
                           that.currentProps = props;
                           that.updateHref();
                           that.showSpinner = false;
@@ -218,7 +218,7 @@ module.exports = {
                         that.showSpinner = false;
                     });
                 } else {
-                    let newLinkProps = this.currentProps.with(this.hasPassword ? this.userPassword : "", maxRetrievalsStr, this.getExpiry());
+                    let newLinkProps = this.currentProps.with(this.hasPassword ? this.userPassword : "", maxRetrievalsStr, this.getExpiry(), this.autoOpen);
                     this.context.updateSecretLink(this.getLinkPath(), newLinkProps).thenApply(props => {
                         that.currentProps = props;
                         that.updateHref();
