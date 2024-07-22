@@ -208,7 +208,7 @@ module.exports = {
                 let maxRetrievalsStr = this.maxRetrievals == "0" ? "" : "" + this.maxRetrievals;
                 if (create) {
                     this.context.createSecretLink(this.getLinkPath(), this.isLinkWritable, this.getExpiry(),
-                        maxRetrievalsStr, this.hasPassword ? this.userPassword : "").thenApply(props => {
+                        maxRetrievalsStr, this.hasPassword ? this.userPassword : "", this.autoOpen).thenApply(props => {
                           that.currentProps = props;
                           that.updateHref();
                           that.showSpinner = false;
