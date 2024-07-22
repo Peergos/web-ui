@@ -218,7 +218,7 @@ module.exports = {
                         that.showSpinner = false;
                     });
                 } else {
-                    let newLinkProps = this.currentProps.with(this.hasPassword ? this.userPassword : "", maxRetrievalsStr, this.getExpiry());
+                    let newLinkProps = this.currentProps.with(this.hasPassword ? this.userPassword : "", maxRetrievalsStr, this.getExpiry(), this.autoOpen);
                     this.context.updateSecretLink(this.getLinkPath(), newLinkProps).thenApply(props => {
                         that.currentProps = props;
                         that.updateHref();
