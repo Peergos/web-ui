@@ -25,7 +25,6 @@
 			<MenuItem :label="translate('APPNAV.NEWSFEED')" icon="news" view="NewsFeed" />
 			<MenuItem :label="translate('APPNAV.SOCIAL')" icon="social" view="Social" />
 			<MenuItem :label="translate('APPNAV.CAL')" icon="calendar" view="Calendar" />
-            <MenuItem v-if="showEmail" :label="translate('APPNAV.EMAIL')" icon="email" view="Email" />
 		</ul>
 
 
@@ -60,10 +59,6 @@ module.exports = {
 		isDark() {
 			return this.$store.state.isDark;
 		},
-        showEmail() {
-            var query = new URLSearchParams(window.location.search)
-            return query.get("email") == "true";
-        }
 	},
 	methods: {
 		toggleSidebar() {
