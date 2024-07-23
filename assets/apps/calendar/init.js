@@ -16,7 +16,7 @@ let handler = function (e) {
       origin = e.origin;
       if (e.data.type == "ping") {
           theme = e.data.currentTheme;
-          hasEmail = e.data.hasEmail;
+          hasEmail = false; //e.data.hasEmail;
           mainWindow.postMessage({type:'pong'}, e.origin);
       } else if (e.data.type == "load") {
           initialiseCalendar(e.data.username == null ? true : false, e.data.calendars);

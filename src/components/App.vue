@@ -83,7 +83,6 @@ const Drive = require("../views/Drive.vue");
 const NewsFeed = require("../views/NewsFeed.vue");
 const Social = require("../views/Social.vue");
 const Calendar = require("../views/Calendar.vue");
-const Email = require("../views/Email.vue");
 const Launcher = require("../views/Launcher.vue");
 
 const ServerMessages = require("./ServerMessages.vue");
@@ -115,7 +114,6 @@ module.exports = {
 		NewsFeed,
 		Social,
 		Calendar,
-		Email,
 		Launcher,
 		AppTab,
 		AppTabs,
