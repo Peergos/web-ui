@@ -303,6 +303,7 @@
       v-if="showShare"
       v-on:hide-share-with="closeShare"
       v-on:update-shared-refresh="forceSharedRefreshWithUpdate++"
+      v-on:update-files="forceUpdate++"
       :data="sharedWithData"
       :fromApp="fromApp"
       :displayName="displayName"

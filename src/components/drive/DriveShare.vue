@@ -228,15 +228,15 @@ module.exports = {
 		};
 	},
 	props: [
-		"data",
-		"files",
-		"path",
-		"fromApp",
-		"displayName",
-		"allowReadWriteSharing",
-		"allowCreateSecretLink",
-		"autoOpenSecretLink",
-		"currentDir"
+	    "data",
+	    "files",
+	    "path",
+	    "fromApp",
+	    "displayName",
+	    "allowReadWriteSharing",
+	    "allowCreateSecretLink",
+	    "autoOpenSecretLink",
+	    "currentDir"
 	],
 	computed: {
 		...Vuex.mapState([
@@ -267,6 +267,7 @@ module.exports = {
         closeSecretLinkModal() {
             this.showModal = false;
             this.loadSecretLinks();
+            this.refreshFiles();
         },
         formatDateTime(dateTime) {
             let date = new Date(dateTime.toString() + "+00:00"); //adding UTC TZ in ISO_OFFSET_DATE_TIME ie 2021-12-03T10:25:30+00:00
@@ -287,6 +288,7 @@ module.exports = {
                 })
                 that.secretLinksList.splice(index, 1);
                 that.existingProps = null;
+                that.refreshFiles();
             }).exceptionally(function (throwable) {
                 console.log(throwable);
                 that.showSpinner = false;
@@ -300,6 +302,9 @@ module.exports = {
 		close() {
 			this.showSpinner = false;
 			this.$emit("hide-share-with");
+		},
+		refreshFiles() {
+		    this.$emit("update-files");
 		},
 		refresh() {
 			if (!this.fromApp) {

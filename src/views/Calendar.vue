@@ -38,6 +38,7 @@
 		v-if="showShare"
 		v-on:hide-share-with="closeShare"
 		v-on:update-shared-refresh="forceSharedRefreshWithUpdate++"
+		v-on:update-files="forceFilesUpdate++"
 		:data="sharedWithData"
 		:fromApp="fromApp"
 		:displayName="displayName"
