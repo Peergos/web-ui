@@ -43,6 +43,7 @@
 		:displayName="displayName"
 		:allowReadWriteSharing="allowReadWriteSharing"
 		:allowCreateSecretLink="allowCreateSecretLink"
+                :autoOpenSecretLink="true"
 		:files="filesToShare"
 		:path="pathToFile"
 		:followernames="followernames"

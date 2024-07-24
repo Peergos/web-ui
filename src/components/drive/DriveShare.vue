@@ -235,6 +235,7 @@ module.exports = {
 		"displayName",
 		"allowReadWriteSharing",
 		"allowCreateSecretLink",
+		"autoOpenSecretLink",
 		"currentDir"
 	],
 	computed: {
@@ -343,7 +344,7 @@ module.exports = {
 				id: "secret_link_" + name,
 				isFile: isFile,
 				shareFolderWithFile: shareFolderWithFile,
-                autoOpen: (shareFolderWithFile === true) ? true: false,
+                autoOpen: (shareFolderWithFile === true || this.autoOpenSecretLink),
 			};
 			var title = "";
 			if (shareFolderWithFile) {
