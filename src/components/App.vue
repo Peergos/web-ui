@@ -253,11 +253,13 @@ module.exports = {
                         pw = pw.substring(0, pw.indexOf("?"));
                     }
                 }
-                if (props.args != null && props.args.filename != null)
-                    props.path = props.path + props.args.filename;
+                if (props.path != null && ! props.path.startsWith("/"))
+                    props.path = "/" + props.path;
                 props.linkpassword = pw;
                 if (props.app == null)
                     props.app = "Drive";
+                else if (props.app != "Drive")
+                    props.open = true;
                 return props;
             }
 	    try {
@@ -393,7 +395,10 @@ module.exports = {
 		    that.$store.commit("SET_CONTEXT", context);
 		    that.$store.commit("SET_DOWNLOAD", props.download);
 		    that.$store.commit("SET_OPEN", props.open);
-		    that.$store.commit("SET_INIT_PATH", props.path);
+                    var initPath = props.path;
+                    if (props.args != null && props.args.filename != null)
+                        initPath += (props.path.endsWith("/") ? "" : "/" ) + props.args.filename;
+		    that.$store.commit("SET_INIT_PATH", initPath);
                     that.$store.commit("CURRENT_VIEW", "Drive");
                     window.location.hash = propsToFragment(props)
 		})
