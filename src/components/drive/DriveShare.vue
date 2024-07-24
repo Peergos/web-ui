@@ -337,14 +337,13 @@ module.exports = {
             let filePath = peergos.client.PathUtils.directoryToPath(this.path).toString();
 			link = {
 			        file: file,
-			        folderLink: this.currentDir != null ? this.currentDir.toLink(): null,
-                                filename:props.name,
+			        filename:props.name,
                                 path:filePath,
 				name: name,
 				id: "secret_link_" + name,
 				isFile: isFile,
 				shareFolderWithFile: shareFolderWithFile,
-                autoOpen: (shareFolderWithFile === true || !isFile) ? true: false,
+                autoOpen: (shareFolderWithFile === true) ? true: false,
 			};
 			var title = "";
 			if (shareFolderWithFile) {
