@@ -266,7 +266,7 @@ module.exports = {
         },
         closeSecretLinkModal() {
             this.showModal = false;
-            this.existingProps = null;`
+            this.existingProps = null;
             this.loadSecretLinks();
             this.refreshFiles();
         },
