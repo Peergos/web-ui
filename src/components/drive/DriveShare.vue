@@ -228,14 +228,15 @@ module.exports = {
 		};
 	},
 	props: [
-		"data",
-		"files",
-		"path",
-		"fromApp",
-		"displayName",
-		"allowReadWriteSharing",
-		"allowCreateSecretLink",
-		"currentDir"
+	    "data",
+	    "files",
+	    "path",
+	    "fromApp",
+	    "displayName",
+	    "allowReadWriteSharing",
+	    "allowCreateSecretLink",
+	    "autoOpenSecretLink",
+	    "currentDir"
 	],
 	computed: {
 		...Vuex.mapState([
@@ -265,7 +266,9 @@ module.exports = {
         },
         closeSecretLinkModal() {
             this.showModal = false;
+            this.existingProps = null;
             this.loadSecretLinks();
+            this.refreshFiles();
         },
         formatDateTime(dateTime) {
             let date = new Date(dateTime.toString() + "+00:00"); //adding UTC TZ in ISO_OFFSET_DATE_TIME ie 2021-12-03T10:25:30+00:00
@@ -286,6 +289,7 @@ module.exports = {
                 })
                 that.secretLinksList.splice(index, 1);
                 that.existingProps = null;
+                that.refreshFiles();
             }).exceptionally(function (throwable) {
                 console.log(throwable);
                 that.showSpinner = false;
@@ -299,6 +303,9 @@ module.exports = {
 		close() {
 			this.showSpinner = false;
 			this.$emit("hide-share-with");
+		},
+		refreshFiles() {
+		    this.$emit("update-files");
 		},
 		refresh() {
 			if (!this.fromApp) {
@@ -337,14 +344,13 @@ module.exports = {
             let filePath = peergos.client.PathUtils.directoryToPath(this.path).toString();
 			link = {
 			        file: file,
-			        folderLink: this.currentDir != null ? this.currentDir.toLink(): null,
-                                filename:props.name,
+			        filename:props.name,
                                 path:filePath,
 				name: name,
 				id: "secret_link_" + name,
 				isFile: isFile,
 				shareFolderWithFile: shareFolderWithFile,
-                autoOpen: (shareFolderWithFile === true || !isFile) ? true: false,
+                autoOpen: (shareFolderWithFile === true || this.autoOpenSecretLink),
 			};
 			var title = "";
 			if (shareFolderWithFile) {

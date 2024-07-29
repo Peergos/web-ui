@@ -91,8 +91,8 @@
                                     </button>
                                 </div>
                                 <div v-if="showLink()" style="padding: 10px;">
-                                    <strong><a v-bind:href="this.urlLink.href">{{ urlLink.name }}</a></strong>
-                                    <input type="text" v-bind:value="this.urlLink.href" style="display: none">
+                                    <strong><a v-bind:href="this.href">{{ link.name }}</a></strong>
+                                    <input type="text" v-bind:value="this.href" style="display: none">
                                     <button class="fa fa-clipboard" style="padding: 6px 12px; background-color:var(--bg);" @click="copyUrlToClipboard($event)">&nbsp;{{ translate("DRIVE.LINK.COPY") }}</button>
                                     <button class="fa fa-envelope" style="padding: 6px 12px; background-color:var(--bg);" @click="email($event)">&nbsp;{{ translate("DRIVE.LINK.EMAIL") }}</button>
                                 </div>
@@ -125,7 +125,6 @@ module.exports = {
     },
 	data() {
 	    return {
-                urlLink:null,
                 isLinkWritable: false,
                 hasExpiry: false,
                 expireDateString: "",
@@ -137,6 +136,8 @@ module.exports = {
                 showSpinner: false,
                 autoOpen: false,
                 currentProps: null,
+                baseUrl:null,
+                href:null
             };
 	},
     computed: {
@@ -190,16 +191,12 @@ module.exports = {
                     if (link.shareFolderWithFile) {
                         args += "&path=" + link.path;
                         args += "&args=%7B%22filename%22:%22" + link.filename + "%22%7D";
-                    } else if (link.isFile) {
-                        args += "&filename=" + link.filename;
-                    } else {
-                        args += "&path=/" + link.path + '/' + link.filename;
-                    }
+                    } 
                 }
-                return window.location.origin + "/" + link.baseUrl + args;
+                return window.location.origin + "/" + this.baseUrl + args;
             },
             showLink: function() {
-                return this.urlLink != null;
+                return this.currentProps != null;
             },
             createOrUpdateLink: function() {
                 let create = this.currentProps == null;
@@ -252,22 +249,20 @@ module.exports = {
             updateHref: function() {
                 let that = this;
                 let linkString = that.context.getLinkString(that.currentProps);
-                this.link.baseUrl = linkString;
+                this.baseUrl = linkString;
                 let href = that.buildHref(this.link);
-                that.urlLink = {href : href,
-                                name: this.link.name, isFile: this.link.isFile, autoOpen: this.autoOpen};
+                this.href = href;
             },
             getLinkPath: function() {
                 var path = this.link.path;
-                if (! path.endsWith("/"))
-                    path = path+"/";
                 if (this.link.shareFolderWithFile)
                     return path;
+                if (! path.endsWith("/"))
+                    path = path+"/";
                 return path + this.link.filename;
             },
             onChange: function () {
-                if (this.urlLink != null)
-                    this.urlLink.href = this.buildHref(this.urlLink);
+                this.href = this.buildHref(this.link);
             },
             copyUrlToClipboard: function (clickEvent) {
                 var text = clickEvent.srcElement.previousElementSibling.value.toString();

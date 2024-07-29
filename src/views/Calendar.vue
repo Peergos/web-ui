@@ -38,11 +38,13 @@
 		v-if="showShare"
 		v-on:hide-share-with="closeShare"
 		v-on:update-shared-refresh="forceSharedRefreshWithUpdate++"
+		v-on:update-files="updateSharedFile()"
 		:data="sharedWithData"
 		:fromApp="fromApp"
 		:displayName="displayName"
 		:allowReadWriteSharing="allowReadWriteSharing"
 		:allowCreateSecretLink="allowCreateSecretLink"
+                :autoOpenSecretLink="true"
 		:files="filesToShare"
 		:path="pathToFile"
 		:followernames="followernames"
@@ -1149,6 +1151,15 @@ module.exports = {
         let path = this.context.username + "/.apps/" + this.CALENDAR_DIR_NAME + '/' + this.DATA_DIR_NAME + "/" + dirPath;
         let filename = id + '.ics';
         this.openFileOrDir("Email", path, {filename:filename});
+    },
+    updateSharedFile: function() {
+        var file = this.filesToShare[0];
+        if (file == null)
+            return;
+        var that = this;
+        file.getLatest(this.context.network).thenApply(updated => {
+            that.filesToShare[0] = updated;
+        })
     },
     shareCalendarEvent: function(calendarName, id, year, month, isRecurring) {
         let calendarDirectory = this.findCalendarDirectory(calendarName);
