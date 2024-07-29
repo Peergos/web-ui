@@ -255,10 +255,10 @@ module.exports = {
             },
             getLinkPath: function() {
                 var path = this.link.path;
-                if (! path.endsWith("/"))
-                    path = path+"/";
                 if (this.link.shareFolderWithFile)
                     return path;
+                if (! path.endsWith("/"))
+                    path = path+"/";
                 return path + this.link.filename;
             },
             onChange: function () {

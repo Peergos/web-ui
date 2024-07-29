@@ -178,16 +178,17 @@ module.exports = {
         return matchingInbuiltApps;
     },
         getApp(file, path, writable) {
-            if (file.isDirectory()) {
-                let pathParts = path.split("/");
-                if (pathParts.length == 6 && pathParts[0] == '' &&
+            let pathParts = path.split("/");
+            if (pathParts.length >= 4) {
+                if (pathParts[0] == '' &&
                     pathParts[2] == '.apps' &&
-                    pathParts[3] == 'calendar' &&
-                    pathParts[4] == 'data')
+                    pathParts[3] == 'calendar')
                     return "Calendar";
-                if (pathParts.length >= 3 && pathParts[0] == '' &&
+                if (pathParts[0] == '' &&
                     pathParts[2] == '.messaging')
                     return "Chat";
+            }
+            if (file.isDirectory()) {
                 return "Drive";
             }
             var filename = file.getName();
