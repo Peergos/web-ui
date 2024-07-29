@@ -182,7 +182,8 @@ module.exports = {
             if (pathParts.length >= 4) {
                 if (pathParts[0] == '' &&
                     pathParts[2] == '.apps' &&
-                    pathParts[3] == 'calendar')
+                    pathParts[3] == 'calendar' &&
+                    pathParts.length <= 6)
                     return "Calendar";
                 if (pathParts[0] == '' &&
                     pathParts[2] == '.messaging')

@@ -997,6 +997,7 @@ module.exports = {
                                         var open = () => {
                                             const oneFile = that.files.length == 1;
                                             const openSubdir = props.args != null && props.args.path != null;
+                                            const appDir = "Drive" != that.getApp(that.currentDir, linkPath);
                                             if (props.args != null && props.args.filename != null && props.args.filename != "") {
                                                 // if props name a file, open it
                                                 that.appArgs = props.args;
@@ -1011,7 +1012,7 @@ module.exports = {
 					        var app = props.app || that.getApp(that.currentDir, that.getPath, false);
                                                 that.openInApp(props.args, app);
                                                 that.openFileOrDir(app, that.getPath, props.args, false);
-                                            } else if (oneFile) { // if there is exactly 1 file, open it
+                                            } else if (oneFile && !appDir) { // if there is exactly 1 file, open it
                                                 const filename = that.files[0].getName();
                                                 that.selectedFiles = that.files;
 					                            let inbuiltApps = that.getInbuiltApps(that.files[0]);
