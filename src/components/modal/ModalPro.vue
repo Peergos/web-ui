@@ -9,6 +9,12 @@
 
                         <p v-if="!isPaid">{{ translate("PAID.AGREE") }} <a href="/terms.html" target="_blank" rel="noopener noreferrer">Terms of Service</a>.</p>
                         <div v-if="!showCard" class="options_container">
+                            <div class="button-group-container">
+                                 <div class="priceslider" data-select="billing"> 
+                                      <label class="entry">Monthly<input type="radio" name="billing" value="monthly"></label>
+                                      <label class="entry">Yearly<input type="radio" name="billing" value="yearly" checked="true"></label>
+                                 </div>
+                            </div>
 			    <div class="card__meta options">
 				<h3>Pro {{ translate("PAID.ACCOUNT") }}</h3>
 				<ul>
@@ -237,6 +243,46 @@ module.exports = {
 };
 </script>
 <style>
+
+.button-group-container {
+	margin-block: 24px;
+	display: flex;
+	justify-content: center;
+	gap: 8px;
+}
+
+.priceslider {
+	display: flex;
+	align-items: center;
+	height: 36px;
+
+	border-radius: 36px;
+	background-color: #efefef;
+}
+
+.priceslider .entry {
+	display: flex;
+	align-items: center;
+	padding: 0 16px;
+	border-radius: 36px;
+	height: 36px;
+	font-weight: var(--bold);
+	color: var(--gray-3);
+	cursor: pointer;
+}
+
+.entry:has(input:checked),
+.entry.active {
+	background-color: var(--green-500);
+	color: white;
+}
+
+input[type="radio"] {
+	height: 0;
+	width: 0;
+	visibility: hidden;
+	display: none;
+}
 
 .app-modal__container h2{
 	font-size: var(--title);
