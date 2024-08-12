@@ -8,19 +8,21 @@
 			<h2 class="card__meta"> {{ translate("SPACE.CURRENT") }}: {{ quota }}</h2>
 
                         <p v-if="!isPaid">{{ translate("PAID.AGREE") }} <a href="/terms.html" target="_blank" rel="noopener noreferrer">Terms of Service</a>.</p>
-                        <div v-if="!showCard" class="options_container">
-                            <div class="button-group-container">
-                                 <div class="priceslider" data-select="billing"> 
-                                      <label class="entry">Monthly<input type="radio" name="billing" value="monthly"></label>
-                                      <label class="entry">Yearly<input type="radio" name="billing" value="yearly" checked="true"></label>
-                                 </div>
+                        <center><div v-if="!showCard" class="button-group-container">
+                            <div class="priceslider" data-select="billing"> 
+                                <label class="entry" @click="setMonthly()">Monthly<input type="radio" name="billing" value="monthly" v-bind:checked="!annual"></label>
+                                <label class="entry" @click="setAnnual()">Yearly<input type="radio" name="billing" value="yearly" v-bind:checked="annual"></label>
                             </div>
+                        </div>
+                        </center>
+                        <div v-if="!showCard" class="options_container">
+                            
 			    <div class="card__meta options">
 				<h3>Pro {{ translate("PAID.ACCOUNT") }}</h3>
 				<ul>
 				    <li>100 GB {{ translate("PAID.STORAGE") }}</li>
 				    <li>{{ translate("PAID.APPS") }}</li>
-				    <li>&#x00A3;5 / {{ translate("PAID.MONTH") }}</li>
+				    <li>&#x00A3;{{ price1() }}</li>
 				</ul>
                                 <AppButton @click.native="updateCard(100000000000)" :disabled="isPro" type="primary" block accent>{{proButtonText}}</AppButton>
 			    </div>
@@ -29,7 +31,7 @@
 				<ul>
 				    <li>500 GB {{ translate("PAID.STORAGE") }}</li>
 				    <li>{{ translate("PAID.APPS") }}</li>
-				    <li>&#x00A3;10 / {{ translate("PAID.MONTH") }}  {{ prorataTextVisionary }}</li>
+				    <li>&#x00A3;{{ price2() }}  {{ prorataTextVisionary }}</li>
 				</ul>
                                 <AppButton @click.native="updateCard(500000000000)" :disabled="isVisionary" type="primary" block accent>{{visionaryButtonText}}</AppButton>
 			    </div>
@@ -38,7 +40,7 @@
 				<ul>
 				    <li>2000 GB {{ translate("PAID.STORAGE") }}</li>
 				    <li>{{ translate("PAID.APPS") }}</li>
-				    <li>&#x00A3;25 / {{ translate("PAID.MONTH") }}  {{ prorataTextPioneer }}</li>
+				    <li>&#x00A3;{{ price3() }}  {{ prorataTextPioneer }}</li>
 				</ul>
                                 <AppButton @click.native="updateCard(2000000000000)" :disabled="isPioneer" type="primary" block accent>{{pioneerButtonText}}</AppButton>
 			    </div>
@@ -47,7 +49,7 @@
 				<ul>
 				    <li>4000 GB {{ translate("PAID.STORAGE") }}</li>
 				    <li>{{ translate("PAID.APPS") }}</li>
-				    <li>&#x00A3;40 / {{ translate("PAID.MONTH") }}  {{ prorataTextTrailBlazer }}</li>
+				    <li>&#x00A3;{{ price4() }}  {{ prorataTextTrailBlazer }}</li>
 				</ul>
                                 <AppButton @click.native="updateCard(4000000000000)" :disabled="isTrailBlazer" type="primary" block accent>{{trailblazerButtonText}}</AppButton>
 			    </div>
@@ -87,6 +89,8 @@ module.exports = {
                         gettingCard: false,
                         paymentUrl:null,
 			showCard:false,
+                        currentAnnual: false,
+                        annual: true,
                         currentFocusFunction:null,
 		};
 	},
@@ -106,19 +110,19 @@ module.exports = {
             return this.quotaBytes/(1000*1000) > this.paymentProperties.freeMb() && this.paymentProperties.desiredMb() > 0;
 		},
 		isPro() {
-                    return this.quotaBytes/(1000*1000) > this.paymentProperties.freeMb() && this.paymentProperties.desiredMb() == this.proMb;
+                    return this.quotaBytes/(1000*1000) > this.paymentProperties.freeMb() && this.paymentProperties.desiredMb() == this.proMb && this.annual == this.currentAnnual;
                 },
 
             isVisionary() {
-                return this.quotaBytes/(1000*1000) > this.paymentProperties.freeMb() && this.paymentProperties.desiredMb() == this.visionaryMb;
+                return this.quotaBytes/(1000*1000) > this.paymentProperties.freeMb() && this.paymentProperties.desiredMb() == this.visionaryMb && this.annual == this.currentAnnual;
             },
 
             isPioneer() {
-                return this.quotaBytes/(1000*1000) > this.paymentProperties.freeMb() && this.paymentProperties.desiredMb() == this.pioneerMb;
+                return this.quotaBytes/(1000*1000) > this.paymentProperties.freeMb() && this.paymentProperties.desiredMb() == this.pioneerMb && this.annual == this.currentAnnual;
             },
 
             isTrailBlazer() {
-                return this.quotaBytes/(1000*1000) > this.paymentProperties.freeMb() && this.paymentProperties.desiredMb() == this.trailblazerMb;
+                return this.quotaBytes/(1000*1000) > this.paymentProperties.freeMb() && this.paymentProperties.desiredMb() == this.trailblazerMb && this.annual == this.currentAnnual;
             },
 
             prorataTextVisionary() {
@@ -168,6 +172,8 @@ module.exports = {
 
     mounted() {
         this.updateError()
+        this.currentAnnual = this.paymentProperties.isAnnual();
+        console.log("annual :" + this.annual)
     },
     
 	methods: {
@@ -175,7 +181,25 @@ module.exports = {
 			'updateQuota',
 			'updatePayment'
 		]),
-            startAddCardListener: function(desired) {
+            setMonthly() {
+            this.annual = false;
+        },
+        setAnnual() {
+            this.annual = true;
+        },
+        price1() {
+            return this.annual ? 4 + " / " + this.translate("SIGNUP.YEAR") : 5 + " / " + this.translate("SIGNUP.MONTH");
+        },
+        price2() {
+            return this.annual ? 8 + " / " + this.translate("SIGNUP.YEAR") : 10 + " / " + this.translate("SIGNUP.MONTH");
+        },
+        price3() {
+            return this.annual ? 20 + " / " + this.translate("SIGNUP.YEAR") : 25 + " / " + this.translate("SIGNUP.MONTH");
+        },
+        price4() {
+            return this.annual ? 35 + " / " + this.translate("SIGNUP.YEAR") : 40 + " / " + this.translate("SIGNUP.MONTH");
+        },
+        startAddCardListener: function(desired) {
                 var that = this;
                 this.currentFocusFunction = function(event) {
                     that.requestStorage(desired);
@@ -185,7 +209,8 @@ module.exports = {
 	    requestStorage(bytes) {
 		var that = this;
                 window.removeEventListener("focus", this.currentFocusFunction);
-		this.context.requestSpace(bytes)
+                console.log("requesting annual " + this.annual);
+		this.context.requestSpace(bytes, this.annual)
 		    .thenApply(x => that.updateQuota(quotaBytes => {
 			console.log(quotaBytes,'quotaBytes')
                         

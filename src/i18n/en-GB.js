@@ -292,7 +292,7 @@ module.exports = {
     "PAID.CANCEL":"Cancel Peergos subscription",
     "PAID.CANCEL.CONFIRM":"Cancel subscription",
     "PAID.CANCEL.OK":"Keep Peergos subscription",
-    "PAID.PRORATA":"pro rata for this month",
+    "PAID.PRORATA":"pro rata for current term",
     "PAID.SETTINGS":"Subscription settings",
     "PAID.UPGRADE":"Upgrade your account to get more space",
     "PAID.CURRENT":"Your Current Plan",
