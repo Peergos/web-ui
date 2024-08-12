@@ -204,16 +204,16 @@ module.exports = {
             this.annual = true;
         },
         price1() {
-            return this.annual ? 4 + " / " + this.translate("SIGNUP.YEAR") : 5 + " / " + this.translate("SIGNUP.MONTH");
+            return (this.annual ? 4 : 5) + " / " + this.translate("SIGNUP.MONTH");
         },
         price2() {
-            return this.annual ? 8 + " / " + this.translate("SIGNUP.YEAR") : 10 + " / " + this.translate("SIGNUP.MONTH");
+            return (this.annual ? 8 : 10) + " / " + this.translate("SIGNUP.MONTH");
         },
         price3() {
-            return this.annual ? 20 + " / " + this.translate("SIGNUP.YEAR") : 25 + " / " + this.translate("SIGNUP.MONTH");
+            return (this.annual ? 20 : 25 + " / " + this.translate("SIGNUP.MONTH");
         },
         price4() {
-            return this.annual ? 35 + " / " + this.translate("SIGNUP.YEAR") : 40 + " / " + this.translate("SIGNUP.MONTH");
+            return (this.annual ? 35 : 40) + " / " + this.translate("SIGNUP.MONTH");
         },
         showPaidPlans() {
             return this.token.length == 0 && this.acceptingPaidSignups && this.desiredQuota == 0;
