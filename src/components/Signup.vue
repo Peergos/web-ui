@@ -210,7 +210,7 @@ module.exports = {
             return (this.annual ? 8 : 10) + " / " + this.translate("SIGNUP.MONTH");
         },
         price3() {
-            return (this.annual ? 20 : 25 + " / " + this.translate("SIGNUP.MONTH");
+            return (this.annual ? 20 : 25) + " / " + this.translate("SIGNUP.MONTH");
         },
         price4() {
             return (this.annual ? 35 : 40) + " / " + this.translate("SIGNUP.MONTH");
