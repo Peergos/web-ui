@@ -24,7 +24,7 @@
 				    <li>{{ translate("PAID.APPS") }}</li>
 				    <li>&#x00A3;{{ price1() }}</li>
 				</ul>
-                                <AppButton @click.native="updateCard(100000000000)" :disabled="isPro" type="primary" block accent>{{proButtonText}}</AppButton>
+                                <AppButton @click.native="updateCard(100000000000)" :disabled="disablePro" type="primary" block accent>{{proButtonText}}</AppButton>
 			    </div>
                             <div class="card__meta options">
 				<h3>Visionary {{ translate("PAID.ACCOUNT") }}</h3>
@@ -33,7 +33,7 @@
 				    <li>{{ translate("PAID.APPS") }}</li>
 				    <li>&#x00A3;{{ price2() }}  {{ prorataTextVisionary }}</li>
 				</ul>
-                                <AppButton @click.native="updateCard(500000000000)" :disabled="isVisionary" type="primary" block accent>{{visionaryButtonText}}</AppButton>
+                                <AppButton @click.native="updateCard(500000000000)" :disabled="disableVisionary" type="primary" block accent>{{visionaryButtonText}}</AppButton>
 			    </div>
                             <div class="card__meta options">
 				<h3>Pioneer {{ translate("PAID.ACCOUNT") }}</h3>
@@ -42,7 +42,7 @@
 				    <li>{{ translate("PAID.APPS") }}</li>
 				    <li>&#x00A3;{{ price3() }}  {{ prorataTextPioneer }}</li>
 				</ul>
-                                <AppButton @click.native="updateCard(2000000000000)" :disabled="isPioneer" type="primary" block accent>{{pioneerButtonText}}</AppButton>
+                                <AppButton @click.native="updateCard(2000000000000)" :disabled="disablePioneer" type="primary" block accent>{{pioneerButtonText}}</AppButton>
 			    </div>
                             <div class="card__meta options">
 				<h3>Trailblazer {{ translate("PAID.ACCOUNT") }}</h3>
@@ -109,6 +109,15 @@ module.exports = {
 		isPaid() {
             return this.quotaBytes/(1000*1000) > this.paymentProperties.freeMb() && this.paymentProperties.desiredMb() > 0;
 		},
+                disablePro() {
+                    return this.isPro || this.usageBytes/(1000*1000) > this.proMb;
+                },
+		disableVisionary() {
+                    return this.isVisionary || this.usageBytes/(1000*1000) > this.visionaryMb;
+                },
+		disablePioneer() {
+                    return this.isPioneer || this.usageBytes/(1000*1000) > this.pioneerMb;
+                },
 		isPro() {
                     return this.quotaBytes/(1000*1000) > this.paymentProperties.freeMb() && this.paymentProperties.desiredMb() == this.proMb && this.annual == this.currentAnnual;
                 },
