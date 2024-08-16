@@ -8,40 +8,48 @@
 			<h2 class="card__meta"> {{ translate("SPACE.CURRENT") }}: {{ quota }}</h2>
 
                         <p v-if="!isPaid">{{ translate("PAID.AGREE") }} <a href="/terms.html" target="_blank" rel="noopener noreferrer">Terms of Service</a>.</p>
+                        <center><div v-if="!showCard" class="button-group-container">
+                            <div class="priceslider" data-select="billing"> 
+                                <label class="entry" @click="setMonthly()">Monthly<input type="radio" name="billing" value="monthly" v-bind:checked="!annual"></label>
+                                <label class="entry" @click="setAnnual()">Yearly<input type="radio" name="billing" value="yearly" v-bind:checked="annual"></label>
+                            </div>
+                        </div>
+                        </center>
                         <div v-if="!showCard" class="options_container">
+                            
 			    <div class="card__meta options">
 				<h3>Pro {{ translate("PAID.ACCOUNT") }}</h3>
 				<ul>
 				    <li>100 GB {{ translate("PAID.STORAGE") }}</li>
 				    <li>{{ translate("PAID.APPS") }}</li>
-				    <li>&#x00A3;5 / {{ translate("PAID.MONTH") }}</li>
+				    <li>&#x00A3;{{ price1() }}</li>
 				</ul>
-                                <AppButton @click.native="updateCard(100000000000)" :disabled="isPro" type="primary" block accent>{{proButtonText}}</AppButton>
+                                <AppButton @click.native="updateCard(100000000000)" :disabled="disablePro" type="primary" block accent>{{proButtonText}}</AppButton>
 			    </div>
                             <div class="card__meta options">
 				<h3>Visionary {{ translate("PAID.ACCOUNT") }}</h3>
 				<ul>
 				    <li>500 GB {{ translate("PAID.STORAGE") }}</li>
 				    <li>{{ translate("PAID.APPS") }}</li>
-				    <li>&#x00A3;10 / {{ translate("PAID.MONTH") }}  {{ prorataTextVisionary }}</li>
+				    <li>&#x00A3;{{ price2() }}  {{ prorataTextVisionary }}</li>
 				</ul>
-                                <AppButton @click.native="updateCard(500000000000)" :disabled="isVisionary" type="primary" block accent>{{visionaryButtonText}}</AppButton>
+                                <AppButton @click.native="updateCard(500000000000)" :disabled="disableVisionary" type="primary" block accent>{{visionaryButtonText}}</AppButton>
 			    </div>
                             <div class="card__meta options">
 				<h3>Pioneer {{ translate("PAID.ACCOUNT") }}</h3>
 				<ul>
 				    <li>2000 GB {{ translate("PAID.STORAGE") }}</li>
 				    <li>{{ translate("PAID.APPS") }}</li>
-				    <li>&#x00A3;25 / {{ translate("PAID.MONTH") }}  {{ prorataTextPioneer }}</li>
+				    <li>&#x00A3;{{ price3() }}  {{ prorataTextPioneer }}</li>
 				</ul>
-                                <AppButton @click.native="updateCard(2000000000000)" :disabled="isPioneer" type="primary" block accent>{{pioneerButtonText}}</AppButton>
+                                <AppButton @click.native="updateCard(2000000000000)" :disabled="disablePioneer" type="primary" block accent>{{pioneerButtonText}}</AppButton>
 			    </div>
                             <div class="card__meta options">
 				<h3>Trailblazer {{ translate("PAID.ACCOUNT") }}</h3>
 				<ul>
 				    <li>4000 GB {{ translate("PAID.STORAGE") }}</li>
 				    <li>{{ translate("PAID.APPS") }}</li>
-				    <li>&#x00A3;40 / {{ translate("PAID.MONTH") }}  {{ prorataTextTrailBlazer }}</li>
+				    <li>&#x00A3;{{ price4() }}  {{ prorataTextTrailBlazer }}</li>
 				</ul>
                                 <AppButton @click.native="updateCard(4000000000000)" :disabled="isTrailBlazer" type="primary" block accent>{{trailblazerButtonText}}</AppButton>
 			    </div>
@@ -81,6 +89,8 @@ module.exports = {
                         gettingCard: false,
                         paymentUrl:null,
 			showCard:false,
+                        currentAnnual: false,
+                        annual: true,
                         currentFocusFunction:null,
 		};
 	},
@@ -99,20 +109,29 @@ module.exports = {
 		isPaid() {
             return this.quotaBytes/(1000*1000) > this.paymentProperties.freeMb() && this.paymentProperties.desiredMb() > 0;
 		},
+                disablePro() {
+                    return this.isPro || this.usageBytes/(1000*1000) > this.proMb;
+                },
+		disableVisionary() {
+                    return this.isVisionary || this.usageBytes/(1000*1000) > this.visionaryMb;
+                },
+		disablePioneer() {
+                    return this.isPioneer || this.usageBytes/(1000*1000) > this.pioneerMb;
+                },
 		isPro() {
-                    return this.quotaBytes/(1000*1000) > this.paymentProperties.freeMb() && this.paymentProperties.desiredMb() == this.proMb;
+                    return this.quotaBytes/(1000*1000) > this.paymentProperties.freeMb() && this.paymentProperties.desiredMb() == this.proMb && this.annual == this.currentAnnual;
                 },
 
             isVisionary() {
-                return this.quotaBytes/(1000*1000) > this.paymentProperties.freeMb() && this.paymentProperties.desiredMb() == this.visionaryMb;
+                return this.quotaBytes/(1000*1000) > this.paymentProperties.freeMb() && this.paymentProperties.desiredMb() == this.visionaryMb && this.annual == this.currentAnnual;
             },
 
             isPioneer() {
-                return this.quotaBytes/(1000*1000) > this.paymentProperties.freeMb() && this.paymentProperties.desiredMb() == this.pioneerMb;
+                return this.quotaBytes/(1000*1000) > this.paymentProperties.freeMb() && this.paymentProperties.desiredMb() == this.pioneerMb && this.annual == this.currentAnnual;
             },
 
             isTrailBlazer() {
-                return this.quotaBytes/(1000*1000) > this.paymentProperties.freeMb() && this.paymentProperties.desiredMb() == this.trailblazerMb;
+                return this.quotaBytes/(1000*1000) > this.paymentProperties.freeMb() && this.paymentProperties.desiredMb() == this.trailblazerMb && this.annual == this.currentAnnual;
             },
 
             prorataTextVisionary() {
@@ -162,6 +181,8 @@ module.exports = {
 
     mounted() {
         this.updateError()
+        this.currentAnnual = this.paymentProperties.isAnnual();
+        console.log("annual :" + this.annual)
     },
     
 	methods: {
@@ -169,7 +190,25 @@ module.exports = {
 			'updateQuota',
 			'updatePayment'
 		]),
-            startAddCardListener: function(desired) {
+            setMonthly() {
+            this.annual = false;
+        },
+        setAnnual() {
+            this.annual = true;
+        },
+        price1() {
+            return (this.annual ? 4 : 5) + " / " + this.translate("SIGNUP.MONTH");
+        },
+        price2() {
+            return (this.annual ? 8 : 10) + " / " + this.translate("SIGNUP.MONTH");
+        },
+        price3() {
+            return (this.annual ? 20 : 25) + " / " + this.translate("SIGNUP.MONTH");
+        },
+        price4() {
+            return (this.annual ? 35 : 40) + " / " + this.translate("SIGNUP.MONTH");
+        },
+        startAddCardListener: function(desired) {
                 var that = this;
                 this.currentFocusFunction = function(event) {
                     that.requestStorage(desired);
@@ -179,7 +218,8 @@ module.exports = {
 	    requestStorage(bytes) {
 		var that = this;
                 window.removeEventListener("focus", this.currentFocusFunction);
-		this.context.requestSpace(bytes)
+                console.log("requesting annual " + this.annual);
+		this.context.requestSpace(bytes, this.annual)
 		    .thenApply(x => that.updateQuota(quotaBytes => {
 			console.log(quotaBytes,'quotaBytes')
                         
@@ -237,6 +277,46 @@ module.exports = {
 };
 </script>
 <style>
+
+.button-group-container {
+	margin-block: 24px;
+	display: flex;
+	justify-content: center;
+	gap: 8px;
+}
+
+.priceslider {
+	display: flex;
+	align-items: center;
+	height: 36px;
+
+	border-radius: 36px;
+	background-color: #efefef;
+}
+
+.priceslider .entry {
+	display: flex;
+	align-items: center;
+	padding: 0 16px;
+	border-radius: 36px;
+	height: 36px;
+	font-weight: var(--bold);
+	color: var(--gray-3);
+	cursor: pointer;
+}
+
+.entry:has(input:checked),
+.entry.active {
+	background-color: var(--green-500);
+	color: white;
+}
+
+input[type="radio"] {
+	height: 0;
+	width: 0;
+	visibility: hidden;
+	display: none;
+}
 
 .app-modal__container h2{
 	font-size: var(--title);

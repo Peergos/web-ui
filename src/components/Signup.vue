@@ -46,12 +46,18 @@
 
                 <template v-else-if="showPaidPlans()">
                         <div class="options_container">
+                            <div class="button-group-container">
+                                <div class="priceslider" data-select="billing"> 
+                                     <label class="entry" @click="setMonthly()">Monthly<input type="radio" name="billing" value="monthly"></label>
+                                     <label class="entry" @click="setAnnual()">Yearly<input type="radio" name="billing" value="yearly" v-bind:checked="annual"></label>
+                                </div>
+                            </div>
 			    <div class="card__meta options">
 				<h3>Pro Account</h3>
 				<ul>
 				    <li>100 GB {{ translate("SIGNUP.HYPER") }}</li>
 				    <li>{{ translate("SIGNUP.BUNDLED") }}</li>
-				    <li>&#x00A3;5 / {{ translate("SIGNUP.MONTH") }}</li>
+				    <li>&#x00A3;{{ price1() }}</li>
 				</ul>
                                 <AppButton @click.native="setPlan(100000000000)" type="primary" block accent>Select Pro</AppButton>
 			    </div>
@@ -60,7 +66,7 @@
 				<ul>
 				    <li>500 GB {{ translate("SIGNUP.HYPER") }}</li>
 				    <li>{{ translate("SIGNUP.BUNDLED") }}</li>
-				    <li>&#x00A3;10 / {{ translate("SIGNUP.MONTH") }}</li>
+				    <li>&#x00A3;{{ price2() }}</li>
 				</ul>
                                 <AppButton @click.native="setPlan(500000000000)" type="primary" block accent>Select Visionary</AppButton>
 			    </div>
@@ -69,7 +75,7 @@
 				<ul>
 				    <li>2000 GB {{ translate("SIGNUP.HYPER") }}</li>
 				    <li>{{ translate("SIGNUP.BUNDLED") }}</li>
-				    <li>&#x00A3;25 / {{ translate("SIGNUP.MONTH") }}</li>
+				    <li>&#x00A3;{{ price3() }}</li>
 				</ul>
                                 <AppButton @click.native="setPlan(2000000000000)" type="primary" block accent>Select Pioneer</AppButton>
 			    </div>
@@ -78,7 +84,7 @@
 				<ul>
 				    <li>4000 GB {{ translate("SIGNUP.HYPER") }}</li>
 				    <li>{{ translate("SIGNUP.BUNDLED") }}</li>
-				    <li>&#x00A3;40 / {{ translate("SIGNUP.MONTH") }}</li>
+				    <li>&#x00A3;{{ price4() }}</li>
 				</ul>
                                 <AppButton @click.native="setPlan(4000000000000)" type="primary" block accent>Select Trailblazer</AppButton>
 			    </div>
@@ -150,6 +156,7 @@ module.exports = {
 	    password: '',
 	    password2: '',
 	    email: '',
+            annual: true,
             desiredQuota: 0,
             showPasswords: false,
 	    acceptingFreeSignups: true,
@@ -190,6 +197,24 @@ module.exports = {
 	    'updateUsage',
 	    'updatePayment'
 	]),
+        setMonthly() {
+            this.annual = false;
+        },
+        setAnnual() {
+            this.annual = true;
+        },
+        price1() {
+            return (this.annual ? 4 : 5) + " / " + this.translate("SIGNUP.MONTH");
+        },
+        price2() {
+            return (this.annual ? 8 : 10) + " / " + this.translate("SIGNUP.MONTH");
+        },
+        price3() {
+            return (this.annual ? 20 : 25) + " / " + this.translate("SIGNUP.MONTH");
+        },
+        price4() {
+            return (this.annual ? 35 : 40) + " / " + this.translate("SIGNUP.MONTH");
+        },
         showPaidPlans() {
             return this.token.length == 0 && this.acceptingPaidSignups && this.desiredQuota == 0;
         },
@@ -229,7 +254,7 @@ module.exports = {
             this.currentFocusFunction = function(event) {
                 that.$toast.info('Completing signup', {id:'signup', timeout:false})
                 window.removeEventListener("focus", that.currentFocusFunction);
-                future.complete(peergos.shared.util.LongUtil.box(that.desiredQuota))
+                future.complete(new peergos.shared.util.Plan(that.desiredQuota,  that.annual))
             };
 	    window.addEventListener("focus", this.currentFocusFunction, false);
 	},
@@ -319,6 +344,47 @@ module.exports = {
 </script>
 
 <style>
+.button-group-container {
+	margin-block: 24px;
+	display: flex;
+	justify-content: center;
+	gap: 8px;
+}
+
+.priceslider {
+	display: flex;
+	align-items: center;
+	height: 36px;
+
+	border-radius: 36px;
+	background-color: #efefef;
+}
+
+.priceslider .entry {
+	display: flex;
+	align-items: center;
+	padding: 0 16px;
+	border-radius: 36px;
+	height: 36px;
+	font-weight: var(--bold);
+	color: var(--gray-3);
+	cursor: pointer;
+}
+
+.entry:has(input:checked),
+.entry.active {
+	background-color: var(--green-500);
+	color: white;
+}
+
+input[type="radio"] {
+	height: 0;
+	width: 0;
+	visibility: hidden;
+	display: none;
+}
+
+
 .app-signup .generate-password,
 .app-signup .signup,
 .app-signup .waiting-list{
