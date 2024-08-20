@@ -2471,7 +2471,7 @@ module.exports = {
 				if (clipboard.op == "cut") {
 					let name = clipboard.fileTreeNode.getFileProperties().name;
 					console.log("paste-cut " + name + " -> " + target.getFileProperties().name);
-					let filePath = peergos.client.PathUtils.toPath(that.path, name);
+					let filePath = peergos.client.PathUtils.toPath(clipboard.path.split("/").filter(x => x.length > 0), name);
 					clipboard.fileTreeNode.moveTo(target, clipboard.parent, filePath, that.context, {get_0:() => that.confirmMove()})
 						.thenApply(function () {
 							that.currentDirChanged();
