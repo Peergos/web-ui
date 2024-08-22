@@ -81,6 +81,8 @@ module.exports = {
     "DRIVE.EMPTY.FOLDER":"Folder: $NAME contains no files. Nothing to download",
     "DRIVE.CONFIRM.DOWNLOAD.TITLE":"Are you sure you want to download selected items?",
     "DRIVE.CONFIRM.DOWNLOAD.BODY":"Folder(s): $FOLDERS, File(s): $FILES, Total size: $SIZE",
+    "DRIVE.MOVE.ACCESS.TITLE":"Maintain access whilst moving file(s)",
+    "DRIVE.MOVE.ACCESS.BODY":"Do you want to maintain existing access and links to the moved file(s)?",
     "DRIVE.DOWNLOAD.FOLDERS":"Downloading selected folders",
     "DRIVE.DOWNLOAD.FOLDER":"Downloading folder: $NAME",
     "DRIVE.CONFIRM.DOWNLOAD.FOLDER.TITLE":"Are you sure you want to download folder: $NAME?",

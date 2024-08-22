@@ -1969,6 +1969,19 @@ module.exports = {
             }
             return uploadFuture;
         },
+        confirmMove() {
+            var future = peergos.shared.util.Futures.incomplete();;
+            this.confirm_message=this.translate("DRIVE.MOVE.ACCESS.TITLE");
+            this.confirm_body=this.translate("DRIVE.MOVE.ACCESS.BODY");
+            this.confirm_consumer_cancel_func = () => {
+               future.complete(false);
+            };
+            this.confirm_consumer_func = () => {
+                future.complete(true);
+            };
+            this.showConfirm = true;
+            return future;
+        },
         confirmResumeFileUpload(filename, folderPath, confirmFunction, cancelFunction) {
             this.confirm_message=this.translate("DRIVE.UPLOAD.RESUME.TITLE");
             this.confirm_body=this.translate("DRIVE.UPLOAD.RESUME.BODY")
@@ -2276,7 +2289,7 @@ module.exports = {
                 let filePath = peergos.client.PathUtils.toPath(path, name);
                 target.getLatest(this.context.network).thenApply(updatedTarget => {
                     parent.getLatest(that.context.network).thenApply(updatedParent => {
-                        fileTreeNode.moveTo(updatedTarget, updatedParent, filePath, that.context).thenApply(() => {
+                        fileTreeNode.moveTo(updatedTarget, updatedParent, filePath, that.context, {get_0:() => that.confirmMove()}).thenApply(() => {
                             that.updateCurrentDirectory(null , () =>
                                 that.reduceMove(index + 1, path, updatedParent, updatedTarget, fileTreeNodes, future)
                             );
@@ -2458,8 +2471,8 @@ module.exports = {
 				if (clipboard.op == "cut") {
 					let name = clipboard.fileTreeNode.getFileProperties().name;
 					console.log("paste-cut " + name + " -> " + target.getFileProperties().name);
-					let filePath = peergos.client.PathUtils.toPath(that.path, name);
-					clipboard.fileTreeNode.moveTo(target, clipboard.parent, filePath, that.context)
+					let filePath = peergos.client.PathUtils.toPath(clipboard.path.split("/").filter(x => x.length > 0), name);
+					clipboard.fileTreeNode.moveTo(target, clipboard.parent, filePath, that.context, {get_0:() => that.confirmMove()})
 						.thenApply(function () {
 							that.currentDirChanged();
 							that.onUpdateCompletion.push(function () {
@@ -2832,7 +2845,7 @@ module.exports = {
         		    var name = clipboard.fileTreeNode.getFileProperties().name;
                     console.log("drop-cut " + name + " -> "+target.getFileProperties().name);
                     let filePath = peergos.client.PathUtils.toPath(that.path, name);
-                    clipboard.fileTreeNode.moveTo(target, clipboard.parent, filePath, this.context)
+                    clipboard.fileTreeNode.moveTo(target, clipboard.parent, filePath, this.context, {get_0:() => that.confirmMove()})
                     .thenApply(function() {
                         that.currentDirChanged();
 			            that.onUpdateCompletion.push(function() {
