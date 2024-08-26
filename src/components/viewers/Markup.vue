@@ -169,19 +169,6 @@ module.exports = {
         frameDomain: function() {
             return window.location.protocol + "//" + this.APP_NAME + '.' + window.location.host;
         },
-        resizeHandler: function() {
-            // https://stackoverflow.com/a/35175835
-            let fullscreenElement = document.fullscreenElement || document.mozFullScreenElement
-                || document.webkitFullscreenElement || document.msFullscreenElement;
-            this.fullscreenMode = fullscreenElement != null;
-
-            let iframe = document.getElementById("md-editor");
-            if (iframe == null) {
-                return;
-            }
-            iframe.style.width = '100%';
-            iframe.style.height = '100%';
-        },
         messageHandler: function(e) {
             let that = this;
             let iframe = document.getElementById("md-editor");
@@ -209,7 +196,6 @@ module.exports = {
             if (iframe != null) {
                 iframe.parentNode.removeChild(iframe);
                 window.removeEventListener('message', this.messageHandler);
-                window.removeEventListener("resize", this.resizeHandler);
             }
             this.isIframeInitialised = false;
             let that = this;
@@ -225,14 +211,11 @@ module.exports = {
             iframe.style.width = '100%';
             iframe.style.height = '100%';
             iframe.frameBorder="0";
-            iframe.scrolling="no";
             iframeContainer.appendChild(iframe);
 
             Vue.nextTick(function() {
                 iframe.src = that.frameUrl();
                 window.addEventListener('message', that.messageHandler);
-                window.addEventListener("resize", that.resizeHandler);
-
                 that.showSpinner = true;
                 that.setupIFrameMessaging(iframe, func);
                 setTimeout(() => {
