@@ -358,7 +358,7 @@ module.exports = {
         var future = peergos.shared.util.Futures.incomplete();
         this.context.getByPath(filePath).thenApply(function(fileOpt){
             if (fileOpt.ref == null) {
-                that.showErrorMessage("path not found!: " + filePath);
+                //that.showErrorMessage("path not found!: " + filePath);
                 future.complete(null);
             } else {
                 let file = fileOpt.get();
