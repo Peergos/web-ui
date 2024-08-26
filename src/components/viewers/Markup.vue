@@ -27,7 +27,7 @@
                     :hideGalleryTitle="false"
                     :context="context">
             </Gallery>
-	  <iframe id="md-editor" :src="frameUrl()" style="width:100%;height:100%;" frameBorder="0"></iframe>
+            <div id='md-container' class="modal-body" style="margin:0;padding:0;display:flex;flex-grow:1;">
         </div>
     </div>
 </div>
@@ -112,7 +112,18 @@ module.exports = {
                 that.isFileWritable = file.isWritable();
                 that.readInFile(file).thenApply(data => {
                     that.setFullPathForDisplay();
-                    that.startListener(data);
+
+                    let theme = that.$store.getters.currentTheme;
+                    let subPath = that.propAppArgs.subPath != null ? that.propAppArgs.subPath
+                                    : that.scopedPath.substring(0, that.scopedPath.length -1);
+                    let extension = that.currFilename.substring(that.currFilename.lastIndexOf('.') + 1);
+                    let func = function(iframe) {
+                        iframe.contentWindow.postMessage({action: "respondToNavigateTo", theme: theme
+                            , text:new TextDecoder().decode(data), extension: extension, subPath: subPath}, '*');
+                        that.showSpinner = false;
+                    };
+
+                    that.startListener(func);
                 });
             }
         });
@@ -142,13 +153,12 @@ module.exports = {
                 if (file != null) {
                     that.readInFile(file).thenApply(data => {
                         that.setFullPathForDisplay();
-                        let iframe = document.getElementById("md-editor");
-                        let func = function() {
+                        let func = function(iframe) {
                             iframe.contentWindow.postMessage({action: "respondToNavigateTo", theme: theme, text:new TextDecoder().decode(data)
                                 , extension: extension, subPath: subPath}, '*');
                             that.showSpinner = false;
                         };
-                        that.setupIFrameMessaging(iframe, func);
+                        that.startListener(func);
                     });
                 }
             });
@@ -159,60 +169,69 @@ module.exports = {
         frameDomain: function() {
             return window.location.protocol + "//" + this.APP_NAME + '.' + window.location.host;
         },
-        startListener: function(data) {
-	    var that = this;
-	    var iframe = document.getElementById("md-editor");
-	    if (iframe == null) {
-    		setTimeout(that.startListener, 1000);
-	    	return;
-	    }
-        // Listen for response messages from the frames.
-        window.addEventListener('message', function (e) {
-            // Normally, you should verify that the origin of the message's sender
-            // was the origin and source you expected. This is easily done for the
-            // unsandboxed frame. The sandboxed frame, on the other hand is more
-            // difficult. Sandboxed iframes which lack the 'allow-same-origin'
-            // header have "null" rather than a valid origin. This means you still
-            // have to be careful about accepting data via the messaging API you
-            // create. Check that source, and validate those inputs!
-            if ((e.origin === "null" || e.origin === that.frameDomain()) && e.source === iframe.contentWindow) {
-                if (e.data.action == 'pong') {
-                    that.isIframeInitialised = true;
-                } else if(e.data.action == 'navigateTo') {
-                    that.navigateToRequest(iframe, e.data.path);
-                } else if(e.data.action == 'externalLink') {
-                    that.navigateToExternalLink(e.data.url);
-                } else if(e.data.action == 'loadImage') {
-                    that.loadImageRequest(iframe, e.data.src, e.data.id);
-                } else if(e.data.action == 'showMedia') {
-                    that.showMediaRequest(e.data.path);
+        resizeHandler: function() {
+            // https://stackoverflow.com/a/35175835
+            let fullscreenElement = document.fullscreenElement || document.mozFullScreenElement
+                || document.webkitFullscreenElement || document.msFullscreenElement;
+            this.fullscreenMode = fullscreenElement != null;
+
+            let iframe = document.getElementById("md-editor");
+            if (iframe == null) {
+                return;
+            }
+            iframe.style.width = '100%';
+            iframe.style.height = '100%';
+        },
+        messageHandler: function(e) {
+            let that = this;
+            let iframe = document.getElementById("md-editor");
+            let win = iframe.contentWindow;
+            if (win == null ) {
+                that.close();
+            } else {
+                if ((e.origin === "null" || e.origin === that.frameDomain()) && e.source === iframe.contentWindow) {
+                    if (e.data.action == 'pong') {
+                        that.isIframeInitialised = true;
+                    } else if(e.data.action == 'navigateTo') {
+                        that.navigateToRequest(iframe, e.data.path);
+                    } else if(e.data.action == 'externalLink') {
+                        that.navigateToExternalLink(e.data.url);
+                    } else if(e.data.action == 'loadImage') {
+                        that.loadImageRequest(iframe, e.data.src, e.data.id);
+                    } else if(e.data.action == 'showMedia') {
+                        that.showMediaRequest(e.data.path);
+                    }
                 }
             }
-        });
-	    // Note that we're sending the message to "*", rather than some specific
-        // origin. Sandboxed iframes which lack the 'allow-same-origin' header
-        // don't have an origin which you can target: you'll have to send to any
-        // origin, which might alow some esoteric attacks. Validate your output!
-        this.showSpinner = true;
-        let theme = this.$store.getters.currentTheme;
-        let subPath = this.propAppArgs.subPath != null ? this.propAppArgs.subPath
-                        : this.scopedPath.substring(0, this.scopedPath.length -1);
-        let extension = that.currFilename.substring(that.currFilename.lastIndexOf('.') + 1);
-        let func = function() {
-            iframe.contentWindow.postMessage({action: "respondToNavigateTo", theme: theme
-                , text:new TextDecoder().decode(data), extension: extension, subPath: subPath}, '*');
-            that.showSpinner = false;
-        };
-            that.setupIFrameMessaging(iframe, func);
-            setTimeout(() => {
-                if (!that.isIframeInitialised)
-                    that.$toast.error("Unable to register service worker. Viewer will not work offline. \nTo enable offline usage, allow 3rd party cookies for " + window.location.protocol + "//[*]." + window.location.host + "\n Note: this is not tracking", {timeout:false});
-            }, 1000 * 10)
-	},
+        },
+        startListener: function(func) {
+            var that = this;
+            var iframeContainer = document.getElementById("md-container");
+            var iframe = document.createElement('iframe');
+            iframe.id = 'md-editor';
+            iframe.style.width = '100%';
+            iframe.style.height = '100%';
+            iframe.frameBorder="0";
+            iframe.scrolling="no";
+            iframeContainer.appendChild(iframe);
+
+            Vue.nextTick(function() {
+                iframe.src = that.frameUrl();
+                window.addEventListener('message', that.messageHandler);
+                window.addEventListener("resize", that.resizeHandler);
+
+                that.showSpinner = true;
+                that.setupIFrameMessaging(iframe, func);
+                setTimeout(() => {
+                    if (!that.isIframeInitialised)
+                        that.$toast.error("Unable to register service worker. Viewer will not work offline. \nTo enable offline usage, allow 3rd party cookies for " + window.location.protocol + "//[*]." + window.location.host + "\n Note: this is not tracking", {timeout:false});
+                }, 1000 * 10);
+            });
+        },
 
 	setupIFrameMessaging: function(iframe, func) {
         if (this.isIframeInitialised) {
-            func();
+            func(iframe);
         } else {
             iframe.contentWindow.postMessage({action: 'ping'}, '*');
             let that = this;
@@ -454,12 +473,19 @@ module.exports = {
             );
         }
     },
+    resetEditor: function(iframe) {
+        iframe.parentNode.removeChild(iframe);
+        window.removeEventListener('message', this.messageHandler);
+        window.removeEventListener("resize", this.resizeHandler);
+        this.isIframeInitialised = false;
+    },
     navigateToRequest: function(iframe, filePath) {
         let that = this;
         if (this.hasValidFileExtension(filePath, this.validResourceSuffixes, false)) {
             let previousPath = this.currPath;
             this.loadResource(filePath, true, this.validResourceMimeTypes, ["text"]).thenApply(isLoaded => {
                 if (isLoaded) {
+                    that.resetEditor(iframe);
                     that.currPath = previousPath;
                     that.updateHistory("markup", that.scopedPath, {subPath: that.updatedPath, filename:that.updatedFilename});
                 }
@@ -468,6 +494,7 @@ module.exports = {
             var fullPath = this.calculatePath(filePath, false);
             that.findFile(fullPath, true).thenApply(file => {
                 if (file != null) {
+                    that.resetEditor(iframe);
                     if (file.getFileProperties().isDirectory) {
                         that.openFileOrDir("Drive", fullPath, {filename:""});
                     } else {
