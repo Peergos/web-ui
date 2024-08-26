@@ -123,7 +123,7 @@ module.exports = {
                         that.showSpinner = false;
                     };
 
-                    that.startListener(func);
+                    that.resetEditor(func);
                 });
             }
         });
@@ -158,7 +158,7 @@ module.exports = {
                                 , extension: extension, subPath: subPath}, '*');
                             that.showSpinner = false;
                         };
-                        that.startListener(func);
+                        that.resetEditor(func);
                     });
                 }
             });
@@ -204,10 +204,23 @@ module.exports = {
                 }
             }
         },
+        resetEditor: function(func) {
+            let iframe = document.getElementById("md-editor");
+            if (iframe != null) {
+                iframe.parentNode.removeChild(iframe);
+                window.removeEventListener('message', this.messageHandler);
+                window.removeEventListener("resize", this.resizeHandler);
+            }
+            this.isIframeInitialised = false;
+            let that = this;
+            Vue.nextTick(function() {
+                that.startListener(func);
+            });
+        },
         startListener: function(func) {
-            var that = this;
-            var iframeContainer = document.getElementById("md-container");
-            var iframe = document.createElement('iframe');
+            let that = this;
+            let iframeContainer = document.getElementById("md-container");
+            let iframe = document.createElement('iframe');
             iframe.id = 'md-editor';
             iframe.style.width = '100%';
             iframe.style.height = '100%';
@@ -473,19 +486,12 @@ module.exports = {
             );
         }
     },
-    resetEditor: function(iframe) {
-        iframe.parentNode.removeChild(iframe);
-        window.removeEventListener('message', this.messageHandler);
-        window.removeEventListener("resize", this.resizeHandler);
-        this.isIframeInitialised = false;
-    },
     navigateToRequest: function(iframe, filePath) {
         let that = this;
         if (this.hasValidFileExtension(filePath, this.validResourceSuffixes, false)) {
             let previousPath = this.currPath;
             this.loadResource(filePath, true, this.validResourceMimeTypes, ["text"]).thenApply(isLoaded => {
                 if (isLoaded) {
-                    that.resetEditor(iframe);
                     that.currPath = previousPath;
                     that.updateHistory("markup", that.scopedPath, {subPath: that.updatedPath, filename:that.updatedFilename});
                 }
@@ -494,7 +500,6 @@ module.exports = {
             var fullPath = this.calculatePath(filePath, false);
             that.findFile(fullPath, true).thenApply(file => {
                 if (file != null) {
-                    that.resetEditor(iframe);
                     if (file.getFileProperties().isDirectory) {
                         that.openFileOrDir("Drive", fullPath, {filename:""});
                     } else {
