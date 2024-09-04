@@ -55,38 +55,29 @@
 			    <div class="card__meta options">
 				<h3>Pro Account</h3>
 				<ul>
-				    <li>100 GB {{ translate("SIGNUP.HYPER") }}</li>
+				    <li>200 GB {{ translate("SIGNUP.HYPER") }}</li>
 				    <li>{{ translate("SIGNUP.BUNDLED") }}</li>
 				    <li>&#x00A3;{{ price1() }}</li>
 				</ul>
-                                <AppButton @click.native="setPlan(100000000000)" type="primary" block accent>Select Pro</AppButton>
+                                <AppButton @click.native="setPlan(200000000000)" type="primary" block accent>Select Pro</AppButton>
 			    </div>
                             <div class="card__meta options">
 				<h3>Visionary Account</h3>
 				<ul>
-				    <li>500 GB {{ translate("SIGNUP.HYPER") }}</li>
+				    <li>1000 GB {{ translate("SIGNUP.HYPER") }}</li>
 				    <li>{{ translate("SIGNUP.BUNDLED") }}</li>
 				    <li>&#x00A3;{{ price2() }}</li>
 				</ul>
-                                <AppButton @click.native="setPlan(500000000000)" type="primary" block accent>Select Visionary</AppButton>
+                                <AppButton @click.native="setPlan(1000000000000)" type="primary" block accent>Select Visionary</AppButton>
 			    </div>
                             <div class="card__meta options">
 				<h3>Pioneer Account</h3>
 				<ul>
-				    <li>2000 GB {{ translate("SIGNUP.HYPER") }}</li>
+				    <li>3000 GB {{ translate("SIGNUP.HYPER") }}</li>
 				    <li>{{ translate("SIGNUP.BUNDLED") }}</li>
 				    <li>&#x00A3;{{ price3() }}</li>
 				</ul>
-                                <AppButton @click.native="setPlan(2000000000000)" type="primary" block accent>Select Pioneer</AppButton>
-			    </div>
-                            <div class="card__meta options">
-				<h3>Trailblazer Account</h3>
-				<ul>
-				    <li>4000 GB {{ translate("SIGNUP.HYPER") }}</li>
-				    <li>{{ translate("SIGNUP.BUNDLED") }}</li>
-				    <li>&#x00A3;{{ price4() }}</li>
-				</ul>
-                                <AppButton @click.native="setPlan(4000000000000)" type="primary" block accent>Select Trailblazer</AppButton>
+                                <AppButton @click.native="setPlan(3000000000000)" type="primary" block accent>Select Pioneer</AppButton>
 			    </div>
                             <div class="card__meta options">
 				<h3>{{ translate("SIGNUP.TRYTITLE") }}</h3>
@@ -204,16 +195,13 @@ module.exports = {
             this.annual = true;
         },
         price1() {
-            return (this.annual ? 4 : 5) + " / " + this.translate("SIGNUP.MONTH");
+            return (this.annual ? 3 : 4) + " / " + this.translate("SIGNUP.MONTH");
         },
         price2() {
             return (this.annual ? 8 : 10) + " / " + this.translate("SIGNUP.MONTH");
         },
         price3() {
             return (this.annual ? 20 : 25) + " / " + this.translate("SIGNUP.MONTH");
-        },
-        price4() {
-            return (this.annual ? 35 : 40) + " / " + this.translate("SIGNUP.MONTH");
         },
         showPaidPlans() {
             return this.token.length == 0 && this.acceptingPaidSignups && this.desiredQuota == 0;
