@@ -227,9 +227,8 @@ module.exports = {
                     wrapper.innerText = '';
                     let img = new Image();
                     img.src = url;
-                    img.onload = function() {
-                        wrapper.style.backgroundImage = `url(${url})`;
-                    }
+                    img.classList.add("image-display");
+                    wrapper.appendChild(img);
                 }
             });
         },
@@ -333,7 +332,7 @@ module.exports = {
     						that.updateMediaElement(index, url);
 							that.showSpinner = false;
 						    console.log("Finished retrieving media of size " + data.length);
-                                                    that.prefetch(index + 1);
+                            that.prefetch(index + 1);
 						});
 				});
 			}
@@ -452,6 +451,12 @@ module.exports = {
   background-repeat: no-repeat;
 }
 .slideshow-wrapper video, audio {
+  object-fit: contain;
+  width:100%;
+  height:100%;
+  z-index: 20;
+}
+.image-display {
   object-fit: contain;
   width:100%;
   height:100%;
