@@ -82,7 +82,7 @@
                                         <input style="all: revert; border: 2px solid var(--green-500);color: var(--color); background-color: var(--bg); font-family: inherit; font-size: inherit; line-height: inherit;" :disabled="!hasPassword" type="text" size="15" v-model="userPassword">
                                     </span>
                                 </div>
-                                <div>
+                                <div style="padding: 10px;">
                                     <button
                                         id='modal-button-id'
                                         class="btn btn-success"
@@ -90,12 +90,12 @@
                                         {{ currentProps == null ? translate("DRIVE.LINK.CREATE") : translate("DRIVE.LINK.UPDATE") }}
                                     </button>
                                 </div>
-                                <div v-if="showLink()">
+                                <div v-if="showLink()" style="padding: 10px;">
                                     <input type="text" v-bind:value="this.href" style="display: none">
                                     <button class="fa fa-clipboard" style="padding: 6px 12px; background-color:var(--bg);" @click="copyUrlToClipboard($event)">&nbsp;{{ translate("DRIVE.LINK.COPY") }}</button>
                                     <button class="fa fa-envelope" style="padding: 6px 12px; background-color:var(--bg);" @click="email($event)">&nbsp;{{ translate("DRIVE.LINK.EMAIL") }}</button>
                                     <img
-                                        style="width: 120px;"
+                                        style="width: 150px;"
                                         v-if="base64QrCode"
                                         :src="base64QrCode"
                                         alt="qr-code"

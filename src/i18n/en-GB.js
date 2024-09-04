@@ -334,7 +334,7 @@ module.exports = {
     "DRIVE.SHARE.COMPLETE":"Secure sharing complete",
     "DRIVE.LINK.OPEN":"Auto Open",
     "DRIVE.LINK.COPY":"Copy to clipboard",
-    "DRIVE.LINK.EMAIL":"Share via email",
+    "DRIVE.LINK.EMAIL":"via email",
     "DRIVE.LINK.OK":"OK",
     "DRIVE.LINK.UPDATE":"Update",
     "DRIVE.LINK.VIEWEDIT":"View/Edit",
