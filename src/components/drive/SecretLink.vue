@@ -91,12 +91,16 @@
                                     </button>
                                 </div>
                                 <div v-if="showLink()" style="padding: 10px;">
-                                    <strong><a v-bind:href="this.href">{{ link.name }}</a></strong>
                                     <input type="text" v-bind:value="this.href" style="display: none">
                                     <button class="fa fa-clipboard" style="padding: 6px 12px; background-color:var(--bg);" @click="copyUrlToClipboard($event)">&nbsp;{{ translate("DRIVE.LINK.COPY") }}</button>
                                     <button class="fa fa-envelope" style="padding: 6px 12px; background-color:var(--bg);" @click="email($event)">&nbsp;{{ translate("DRIVE.LINK.EMAIL") }}</button>
+                                    <img
+                                        style="width: 150px;"
+                                        v-if="base64QrCode"
+                                        :src="base64QrCode"
+                                        alt="qr-code"
+                                    />
                                 </div>
-                        </p>
                         </div>
                     </div>
                 </div>
@@ -137,7 +141,8 @@ module.exports = {
                 autoOpen: false,
                 currentProps: null,
                 baseUrl:null,
-                href:null
+                href:null,
+                base64QrCode: "",
             };
 	},
     computed: {
@@ -193,7 +198,10 @@ module.exports = {
                         args += "&args=%7B%22filename%22:%22" + link.filename + "%22%7D";
                     } 
                 }
-                return window.location.origin + "/" + this.baseUrl + args;
+                let href = window.location.origin + "/" + this.baseUrl + args;
+                let secretLinkQrCode = peergos.shared.SecretLinkQRCode.generate(href);
+                this.base64QrCode = secretLinkQrCode.getBase64Thumbnail();
+                return href;
             },
             showLink: function() {
                 return this.currentProps != null;
@@ -289,3 +297,8 @@ module.exports = {
         }
     }
 </script>
+<style>
+.modal-body {
+    margin: 0px 0;
+}
+</style>
