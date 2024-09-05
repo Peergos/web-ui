@@ -4,7 +4,7 @@
     <div class="modal-container full-height" @click.stop style="width:100%;overflow-y:auto;padding:0;">
         <div class="modal-header" style="padding:0">
             <center><h2>{{ translate("HELP.TITLE") }}</h2></center>
-            <span @click="close" tabindex="0" v-on:keyup.enter="close" style="position:absolute;top:-10px;right:40px;z-index:999;color:black;font-size:3em;font-weight:bold;cursor:pointer;">&times;</span>
+            <span @click="close" tabindex="0" v-on:keyup.enter="close" style="position:absolute;top:-10px;right:40px;z-index:999;color:black;font-size:3em;font-weight:bold;cursor:pointer;font-family:'Cambria Math'">&times;</span>
         </div>
         <div class="modal-body">
             <h2>{{ translate("HELP.HOW") }}</h2>

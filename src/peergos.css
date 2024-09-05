@@ -91,6 +91,7 @@ body {
     font-size: 28px;
     font-weight: bold;
     opacity: 1;
+    font-family: 'Cambria Math';
 }
 
 .close:hover,

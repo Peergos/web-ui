@@ -75,7 +75,7 @@
                 </h2>
                 </center>
               <span style="position:absolute;top:0;right:0.2em;">
-                <span @click="closeAppFromToolbar" tabindex="0" v-on:keyup.enter="closeAppFromToolbar" style="color:black;font-size:3em;font-weight:bold;cursor:pointer;">&times;</span>
+                <span @click="closeAppFromToolbar" tabindex="0" v-on:keyup.enter="closeAppFromToolbar" style="color:black;font-size:3em;font-weight:bold;cursor:pointer;font-family:'Cambria Math'">&times;</span>
               </span>
             </div>
             <div>
