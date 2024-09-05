@@ -20,38 +20,29 @@
 			    <div class="card__meta options">
 				<h3>Pro {{ translate("PAID.ACCOUNT") }}</h3>
 				<ul>
-				    <li>100 GB {{ translate("PAID.STORAGE") }}</li>
+				    <li>200 GB {{ translate("PAID.STORAGE") }}</li>
 				    <li>{{ translate("PAID.APPS") }}</li>
 				    <li>&#x00A3;{{ price1() }}</li>
 				</ul>
-                                <AppButton @click.native="updateCard(100000000000)" :disabled="disablePro" type="primary" block accent>{{proButtonText}}</AppButton>
+                                <AppButton @click.native="updateCard(200000000000)" :disabled="disablePro" type="primary" block accent>{{proButtonText}}</AppButton>
 			    </div>
                             <div class="card__meta options">
 				<h3>Visionary {{ translate("PAID.ACCOUNT") }}</h3>
 				<ul>
-				    <li>500 GB {{ translate("PAID.STORAGE") }}</li>
+				    <li>1000 GB {{ translate("PAID.STORAGE") }}</li>
 				    <li>{{ translate("PAID.APPS") }}</li>
 				    <li>&#x00A3;{{ price2() }}  {{ prorataTextVisionary }}</li>
 				</ul>
-                                <AppButton @click.native="updateCard(500000000000)" :disabled="disableVisionary" type="primary" block accent>{{visionaryButtonText}}</AppButton>
+                                <AppButton @click.native="updateCard(1000000000000)" :disabled="disableVisionary" type="primary" block accent>{{visionaryButtonText}}</AppButton>
 			    </div>
                             <div class="card__meta options">
 				<h3>Pioneer {{ translate("PAID.ACCOUNT") }}</h3>
 				<ul>
-				    <li>2000 GB {{ translate("PAID.STORAGE") }}</li>
+				    <li>3000 GB {{ translate("PAID.STORAGE") }}</li>
 				    <li>{{ translate("PAID.APPS") }}</li>
 				    <li>&#x00A3;{{ price3() }}  {{ prorataTextPioneer }}</li>
 				</ul>
-                                <AppButton @click.native="updateCard(2000000000000)" :disabled="disablePioneer" type="primary" block accent>{{pioneerButtonText}}</AppButton>
-			    </div>
-                            <div class="card__meta options">
-				<h3>Trailblazer {{ translate("PAID.ACCOUNT") }}</h3>
-				<ul>
-				    <li>4000 GB {{ translate("PAID.STORAGE") }}</li>
-				    <li>{{ translate("PAID.APPS") }}</li>
-				    <li>&#x00A3;{{ price4() }}  {{ prorataTextTrailBlazer }}</li>
-				</ul>
-                                <AppButton @click.native="updateCard(4000000000000)" :disabled="isTrailBlazer" type="primary" block accent>{{trailblazerButtonText}}</AppButton>
+                                <AppButton @click.native="updateCard(3000000000000)" :disabled="disablePioneer" type="primary" block accent>{{pioneerButtonText}}</AppButton>
 			    </div>
                         </div>
 
@@ -82,10 +73,9 @@ module.exports = {
 		return {
 			unit:"GiB",
 			space:"",
-			proMb: 100*1000,
-                        visionaryMb: 500*1000,
-                        pioneerMb: 2000*1000,
-                        trailblazerMb: 4000*1000,
+			proMb: 200*1000,
+                        visionaryMb: 1000*1000,
+                        pioneerMb: 3000*1000,
                         gettingCard: false,
                         paymentUrl:null,
 			showCard:false,
@@ -130,10 +120,6 @@ module.exports = {
                 return this.quotaBytes/(1000*1000) > this.paymentProperties.freeMb() && this.paymentProperties.desiredMb() == this.pioneerMb && this.annual == this.currentAnnual;
             },
 
-            isTrailBlazer() {
-                return this.quotaBytes/(1000*1000) > this.paymentProperties.freeMb() && this.paymentProperties.desiredMb() == this.trailblazerMb && this.annual == this.currentAnnual;
-            },
-
             prorataTextVisionary() {
                 if (this.isPro)
                     return " ("+this.translate("PAID.PRORATA")+")";
@@ -142,12 +128,6 @@ module.exports = {
             },
             prorataTextPioneer() {
                 if (this.isPro || this.isVisionary)
-                    return " ("+this.translate("PAID.PRORATA")+")";
-                else
-                    return ""
-            },
-            prorataTextTrailBlazer() {
-                if (this.isPro || this.isVisionary || this.isPioneer)
                     return " ("+this.translate("PAID.PRORATA")+")";
                 else
                     return ""
@@ -171,11 +151,6 @@ module.exports = {
                 return (this.isPioneer)
 				? this.translate("PAID.CURRENT")
 				: this.translate("PAID.PIONEER")
-            },
-            trailblazerButtonText(){
-                return (this.isTrailBlazer)
-				? this.translate("PAID.CURRENT")
-				: this.translate("PAID.TRAILBLAZER")
             }
     },
 
@@ -197,16 +172,13 @@ module.exports = {
             this.annual = true;
         },
         price1() {
-            return (this.annual ? 4 : 5) + " / " + this.translate("SIGNUP.MONTH");
+            return (this.annual ? 3 : 4) + " / " + this.translate("SIGNUP.MONTH");
         },
         price2() {
             return (this.annual ? 8 : 10) + " / " + this.translate("SIGNUP.MONTH");
         },
         price3() {
             return (this.annual ? 20 : 25) + " / " + this.translate("SIGNUP.MONTH");
-        },
-        price4() {
-            return (this.annual ? 35 : 40) + " / " + this.translate("SIGNUP.MONTH");
         },
         startAddCardListener: function(desired) {
                 var that = this;

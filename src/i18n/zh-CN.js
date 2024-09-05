@@ -295,7 +295,6 @@ module.exports = {
     "PAID.PRO":"选择 Pro 计划（将打开新选项卡）",
     "PAID.VISIONARY":"选择 Visionary 计划（将打开新选项卡）",
     "PAID.PIONEER":"选择 Pioneer 计划（将打开新选项卡）",
-    "PAID.TRAILBLAZER":"选择 Trailblazer 计划（将打开新选项卡）",
     "PAID.SORRY":"很遗憾看到你离开。我们很想知道有什么可以做得更好。请确保删除足够的数据，使其不超出基本配额。您将在计费月结束时恢复基本配额。",
     "PAID.THANKYOU":"感谢您注册付费 Peergos 账户！",
     "PAID.CARD.NEEDED":"需要卡的详细信息。添加支付卡以完成升级。",
