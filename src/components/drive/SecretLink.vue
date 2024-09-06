@@ -9,7 +9,7 @@
                 </div>
                 
                 <div class="modal-body">
-                    <div class="container"><p style="word-wrap;break-all;">
+                    <div class="secret-link-container scrollable"><p style="word-wrap;break-all;">
                             <div>
                                 <div v-if="link.isFile">
                                     <label class="checkbox__group">
@@ -301,4 +301,14 @@ module.exports = {
 .modal-body {
     margin: 0px 0;
 }
+.scrollable
+{
+    max-height: 400px;
+    overflow-y: scroll;
+}
+.secret-link-container{
+    padding-right:15px;
+    padding-left:15px;
+    margin-right:auto;
+    margin-left:auto}
 </style>
