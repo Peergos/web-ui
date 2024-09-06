@@ -303,7 +303,7 @@ module.exports = {
 }
 .scrollable
 {
-    max-height: 400px;
+    max-height: 450px;
     overflow-y: scroll;
 }
 .secret-link-container{
