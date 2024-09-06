@@ -1,7 +1,7 @@
 <template>
 	<div class="gallery-mask" @click="close">
 		<div class="gallery-container gallery" @click.stop @keyup.right="next" @keyup.left="previous">
-			<div tabindex="0" @click="close" v-on:keyup.enter="close" aria-label="close" class="slideshow-close"><span>&times;</span></div>
+			<div tabindex="0" @click="close" v-on:keyup.enter="close" aria-label="close" class="slideshow-close"><span style="font-family:'Cambria Math'">&times;</span></div>
 			<Spinner v-if="showSpinner"></Spinner>
             <Warning
                 v-if="showWarning"

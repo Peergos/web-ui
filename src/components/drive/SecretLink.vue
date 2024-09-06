@@ -2,14 +2,14 @@
     <transition name="modal">
         <div class="modal-mask" @click="$emit('hide-modal')">
             <div style="height:30%"></div>
-            <div class="modal-container" @click.stop>
+            <div class="modal-container" style="transform: translateY(-30%);" @click.stop>
                 <Spinner v-if="showSpinner"></Spinner>
                 <div class="modal-header">
                     <h3 id="modal-header-id">{{ title }}</h3>
                 </div>
                 
                 <div class="modal-body">
-                    <div class="container"><p style="word-wrap;break-all;">
+                    <div class="secret-link-container scrollable"><p style="word-wrap;break-all;">
                             <div>
                                 <div v-if="link.isFile">
                                     <label class="checkbox__group">
@@ -301,4 +301,14 @@ module.exports = {
 .modal-body {
     margin: 0px 0;
 }
+.scrollable
+{
+    max-height: 450px;
+    overflow-y: scroll;
+}
+.secret-link-container{
+    padding-right:15px;
+    padding-left:15px;
+    margin-right:auto;
+    margin-left:auto}
 </style>

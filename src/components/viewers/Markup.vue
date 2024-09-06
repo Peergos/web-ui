@@ -6,7 +6,7 @@
             <center><h2>{{ getFullPathForDisplay() }}</h2></center>
           <span style="position:absolute;top:0;right:0.2em;">
             <span v-if="isWritable() && isMarkdown()" @click="launchEditor" tabindex="0" v-on:keyup.enter="launchEditor"  style="color:black;font-size:2.5em;font-weight:bold;cursor:pointer;margin:.3em;" class='fas fa-edit' title="Edit file"></span>
-            <span @click="close" tabindex="0" v-on:keyup.enter="close" style="color:black;font-size:3em;font-weight:bold;cursor:pointer;">&times;</span>
+            <span @click="close" tabindex="0" v-on:keyup.enter="close" style="color:black;font-size:3em;font-weight:bold;cursor:pointer;font-family:'Cambria Math'">&times;</span>
           </span>
         </div>
 
