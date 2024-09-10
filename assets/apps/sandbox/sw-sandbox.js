@@ -13,6 +13,7 @@ let dataRequest = apiRequest + "/data/";
 let formRequest = apiRequest + "/form/";
 let chatRequest = apiRequest + "/chat/";
 let chatRequestV1 = "/peergos-api/v1" + "/chat/";
+let mailboxRequest = apiRequest + "/mailbox/";
 let saveRequest = apiRequest + "/save/";
 let filePickerRequest = apiRequest + "/file-picker/";
 let foldersRequest = apiRequest + "/folders/";
@@ -394,6 +395,9 @@ function appFetch(event) {
             } else if (filePath.startsWith(chatRequestV1)) {
                 restFilePath = restFilePath.substring(chatRequestV1.length);
                 api = chatRequestV1;
+            } else if (filePath.startsWith(mailboxRequest)) {
+                restFilePath = restFilePath.substring(mailboxRequest.length);
+                api = mailboxRequest;
             } else if (filePath.startsWith(installAppRequest)) {
                 restFilePath = restFilePath.substring(installAppRequest.length);
                 api = installAppRequest;
