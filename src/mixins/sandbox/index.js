@@ -40,6 +40,8 @@ module.exports = {
               return this.translate("SANDBOX.READ.FOLDER");
           } else if (permission === 'EXCHANGE_MESSAGES_WITH_FRIENDS') {
               return this.translate("SANDBOX.MESSAGES");
+          } else if (permission === 'USE_MAILBOX') {
+              return this.translate("SANDBOX.MAILBOX");
           } else if (permission === 'ACCESS_PROFILE_PHOTO') {
               return this.translate("SANDBOX.PROFILE.PHOTO");
           } else if (permission === 'CSP_UNSAFE_EVAL') {
@@ -60,7 +62,7 @@ module.exports = {
                   let mandatoryFields = ["displayName", "description", "launchable"];
                   let existingCreateMenuItems = ["upload files","upload folder","new folder","new file", "new app"];
                   let validPermissions = ["STORE_APP_DATA", "EDIT_CHOSEN_FILE", "READ_CHOSEN_FOLDER",
-                    "EXCHANGE_MESSAGES_WITH_FRIENDS", "ACCESS_PROFILE_PHOTO", "CSP_UNSAFE_EVAL"];
+                    "EXCHANGE_MESSAGES_WITH_FRIENDS", "USE_MAILBOX", "ACCESS_PROFILE_PHOTO", "CSP_UNSAFE_EVAL"];
                   mandatoryFields.forEach(field => {
                       if (props[field] == null) {
                           errors.push("Missing property " + field);

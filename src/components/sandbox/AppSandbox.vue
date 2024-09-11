@@ -67,6 +67,14 @@
                 :hideGalleryTitle="true"
                 :context="context">
             </Gallery>
+            <Confirm
+                    v-if="showConfirm"
+                    v-on:hide-confirm="showConfirm = false"
+                    :confirm_message='confirm_message'
+                    :confirm_body="confirm_body"
+                    :consumer_cancel_func="confirm_consumer_cancel_func"
+                    :consumer_func="confirm_consumer_func">
+            </Confirm>
             <div v-if="!fullscreenMode" class="modal-header" style="padding:0;min-height: 52px;">
                 <center><h2>{{ getFullPathForDisplay() }}
                 <span v-if="displayFullScreenIcon" @click="requestFullscreenFromToolbar" tabindex="0" v-on:keyup.enter="requestFullscreenFromToolbar" style="cursor:pointer;">
@@ -93,6 +101,7 @@
 const AddToChat = require("AddToChat.vue");
 const AppInstall = require("AppInstall.vue");
 const AppPrompt = require("../prompt/AppPrompt.vue");
+const Confirm = require("../confirm/Confirm.vue");
 const FilePicker = require('../picker/FilePicker.vue');
 const FolderPicker = require('../picker/FolderPicker.vue');
 const Gallery = require("../drive/DriveGallery.vue");
@@ -114,6 +123,7 @@ module.exports = {
         AddToChat,
         AppInstall,
         AppPrompt,
+        Confirm,
         FilePicker,
         FolderPicker,
         Group,
@@ -146,6 +156,7 @@ module.exports = {
             PERMISSION_EDIT_CHOSEN_FILE: 'EDIT_CHOSEN_FILE',
             PERMISSION_READ_CHOSEN_FOLDER: 'READ_CHOSEN_FOLDER',
             PERMISSION_EXCHANGE_MESSAGES_WITH_FRIENDS: 'EXCHANGE_MESSAGES_WITH_FRIENDS',
+            PERMISSION_USE_MAILBOX: 'USE_MAILBOX',
             PERMISSION_ACCESS_PROFILE_PHOTO: 'ACCESS_PROFILE_PHOTO',
             PERMISSION_CSP_UNSAFE_EVAL: 'CSP_UNSAFE_EVAL',
             browserMode: false,
@@ -216,6 +227,18 @@ module.exports = {
             isFileViewerMode: false, //run app from app store
             displayFullScreenIcon: false,
             fullscreenMode: false,
+            mailboxFolderPrefix: 'default',
+            mailboxClientProperties: null,
+            clientMailboxAddress: "",
+            mailboxClient: null,
+            MAILBOX_CONFIG_FILENAME: 'App.config',
+            EMAIL_FILE_EXTENSION: '.cbor',
+            messageToTimestamp: new Map(),
+            showConfirm: false,
+            confirm_message: "",
+            confirm_body: "",
+            confirm_consumer_cancel_func: () => {},
+            confirm_consumer_func: () => {},
         }
     },
     computed: {
@@ -307,7 +330,31 @@ module.exports = {
                             that.sandboxedApp = sandboxedApp;
                             that.getAppSubdomain().thenApply(appSubdomain => {
                                 that.appSubdomain = appSubdomain;
-                                that.startListener();
+                                if (that.permissionsMap.get(that.PERMISSION_USE_MAILBOX)) {
+                                    that.isMailboxPendingDirectoryCreated().thenApply(isInit => {
+                                        if (! isInit) {
+                                            that.askForMailboxBridgeUser();
+                                        } else {
+                                            peergos.shared.email.EmailClient.load(sandboxedApp, that.context.crypto, that.context).thenApply(client => {
+                                                that.mailboxClient = client;
+                                                client.getEmailAddress().thenApply(clientAddress => {
+                                                    if (clientAddress.ref == null) {
+                                                        that.showToastError("Awaiting approval from " + that.currentAppName + " Mailbox Administrator");
+                                                        that.closeSandbox();
+                                                    } else {
+                                                        that.clientMailboxAddress = clientAddress.ref.toLowerCase();
+                                                        that.getMailboxPropertiesFile().thenApply(props => {
+                                                            that.mailboxClientProperties = props;
+                                                            that.startListener();
+                                                        });
+                                                    }
+                                                });
+                                            });
+                                        }
+                                    });
+                                } else {
+                                    that.startListener();
+                                }
                             });
                         });
                     }
@@ -316,6 +363,67 @@ module.exports = {
         }
     },
     methods: {
+        getMailboxPropertiesFile: function() {
+            let that = this;
+            let filePath = peergos.client.PathUtils.directoryToPath([this.mailboxFolderPrefix, this.MAILBOX_CONFIG_FILENAME]);
+            return that.sandboxedApp.readInternal(filePath).thenApply(data => {
+                return JSON.parse(new TextDecoder().decode(data));
+            }).exceptionally(function(throwable) {//File not found
+                if (throwable.detailMessage.startsWith("File not found")) {
+                    let props = new Object();
+                    props.userFolders = [];
+                    return props;
+                } else {
+                    that.showError("Unable to load mailbox config file","Please close app and try again");
+                }
+            });
+        },
+        askForMailboxBridgeUser: function() {
+            let that = this;
+            this.prompt_placeholder= that.currentAppName + ' Mailbox username';
+            this.prompt_message='Set ' + that.currentAppName+ ' Mailbox user';
+            this.prompt_value='';
+            this.prompt_consumer_func = function(prompt_result) {
+                var valid = true;
+                let bridgeUsername = null;
+                if (prompt_result === null) {
+                    valid = false;
+                } else {
+                    bridgeUsername = prompt_result.trim().toLowerCase();
+                    let knownUsers = that.context.network.usernames.toArray([]);
+                    let index = knownUsers.findIndex(v => v === bridgeUsername);
+                    if (index == -1 || bridgeUsername == that.context.username) {
+                        valid = false;
+                    }
+                }
+                if (! valid) {
+                    let usernameForDisplay = bridgeUsername == null ? "" : bridgeUsername;
+                    that.showError("Username does not exist: " + usernameForDisplay);
+                    that.closeSandbox();
+                } else {
+                    that.showSpinner = true;
+                    that.spinnerMessage = "Creating mailbox folders";
+                    peergos.shared.email.EmailClient.load(that.sandboxedApp, that.context.crypto).thenApply(client => {
+                        client.connectToBridge(that.context, bridgeUsername).thenApply(res => {
+                            that.showSpinner = false;
+                            that.spinnerMessage = "";
+                            that.showToastError("Awaiting approval from " + that.currentAppName + " Mailbox Administrator");
+                            that.closeSandbox();
+                        });
+                    });
+                }
+            };
+            this.showPrompt = true;
+        },
+        isMailboxPendingDirectoryCreated: function() {
+            let path = peergos.client.PathUtils.directoryToPath([this.mailboxFolderPrefix, 'pending']);
+            let future = peergos.shared.util.Futures.incomplete();
+            this.sandboxedApp.dirInternal(path).thenApply(files => {
+                let filesArray = files.toArray([]);
+                future.complete(filesArray.length != 0);
+            });
+            return future;
+        },
         closeGroupMembership() {
             let that = this;
             Vue.nextTick(function() {
@@ -686,6 +794,13 @@ module.exports = {
                         that.buildResponse(headerFunc(), null, that.ACTION_FAILED);
                     } else {
                         that.handleChatRequestV1(headerFunc(), path, apiMethod, data, hasFormData, params);
+                    }
+                }else if (api =='/peergos-api/v0/mailbox/') {
+                    if (!that.permissionsMap.get(that.PERMISSION_USE_MAILBOX)) {
+                        that.showError("App attempted to access mailbox without permission :" + path);
+                        that.buildResponse(headerFunc(), null, that.ACTION_FAILED);
+                    } else {
+                        that.handleMailboxRequest(headerFunc(), path, apiMethod, data, hasFormData, params);
                     }
                 } else if (api =='/peergos-api/v0/print/') {
                     that.handlePrintPreviewRequest(headerFunc, path, apiMethod, data, hasFormData, params);
@@ -1472,6 +1587,691 @@ module.exports = {
         convertToPath: function(dir) {
             let dirWithoutLeadingSlash = dir.startsWith("/") ? dir.substring(1) : dir;
             return peergos.client.PathUtils.directoryToPath(dirWithoutLeadingSlash.split('/'));
+        },
+        reduceMovingEmailsToInboxFolder: function(emailsToRead, index, future) {
+            let that = this;
+            if (index >= emailsToRead.length) {
+                future.complete(true);
+            } else {
+                that.mailboxClient.moveToPrivateInbox(emailsToRead[index]).thenApply(res => {
+                    that.reduceMovingEmailsToInboxFolder(emailsToRead, ++index, future);
+                });
+            }
+        },
+        requestLoadFolder: function(folderName, filterStarredEmails, callback) {
+            let that = this;
+            this.spinner(true);
+            let fullFolderPath = this.mailboxFolderPrefix + '/' + folderName;
+            let directoryPath = peergos.client.PathUtils.directoryToPath(fullFolderPath.split('/'));
+            that.sandboxedApp.dirInternal(directoryPath, this.context.username).thenApply(filenames => {
+                that.loadEmails(fullFolderPath, filenames.toArray()).thenApply(results => {
+                    that.spinner(false);
+                    callback({data: results, folderName: folderName, filterStarredEmails: filterStarredEmails});
+                });
+            });
+        },
+        loadEmails: function(directory, filenames) {
+            let that = this;
+            let future = peergos.shared.util.Futures.incomplete();
+            that.reduceLoadingEmails(directory, filenames, [], future);
+            return future;
+        },
+        reduceLoadingEmails: function(directory, filenames, accumulator, future) {
+            let that = this;
+            let filename = filenames.pop();
+            if (filename == null) {
+                let sorted = accumulator.sort(function (a, b) {
+                        let aDate = new Date(a.timestamp);
+                        let bDate = new Date(b.timestamp);
+                        return bDate - aDate;
+                    });
+                future.complete(sorted);
+            } else {
+                let filePath = peergos.client.PathUtils.toPath(directory.split('/'), filename);
+                that.sandboxedApp.readInternal(filePath, this.context.username).thenApply(data => {
+                    let emailJava = peergos.shared.util.Serialize.parse(data, c => peergos.shared.email.EmailMessage.fromCbor(c));
+                    that.messageToTimestamp.set(emailJava.id, emailJava.created);
+                    let emailJS =
+                    {   id: emailJava.id, msgId: emailJava.msgId, from: emailJava.from, subject: emailJava.subject
+                        , timestamp: emailJava.created.toString()
+                        , to: that.toJsList(emailJava.to)
+                        , cc: that.toJsList(emailJava.cc)
+                        , bcc: that.toJsList(emailJava.bcc)
+                        , content: emailJava.content
+                        , unread: emailJava.unread, star: emailJava.star, selected: false
+                        , attachments: that.toJsAttachmentList(emailJava.attachments)
+                        , icalEvent: emailJava.icalEvent
+                    };
+
+                    accumulator.push(emailJS);
+                    that.reduceLoadingEmails(directory, filenames, accumulator, future);
+                });
+            }
+        },
+        toJsAttachmentList: function(javaList) {
+            let javaArray = javaList.toArray([]);
+            let jsAttachmentList = [];
+            for(var i = 0; i < javaArray.length; i++) {
+                let item = javaArray[i];
+                let attachment = {filename: item.filename, size: item.size, type: item.type, uuid: item.uuid};
+                jsAttachmentList.push(attachment);
+            }
+            return jsAttachmentList;
+        },
+        toJsList: function(javaList) {
+            let javaArray = javaList.toArray([]);
+            let jsList = [];
+            for(var i = 0; i < javaArray.length; i++) {
+                jsList.push(javaArray[i]);
+            }
+            return jsList;
+        },
+        reduceMovingEmailsToSentFolder: function(emailsToRead, index, future) {
+            let that = this;
+            if (index >= emailsToRead.length) {
+                future.complete(true);
+            } else {
+                that.mailboxClient.moveToPrivateSent(emailsToRead[index]).thenApply(res => {
+                    that.reduceMovingEmailsToSentFolder(emailsToRead, ++index, future);
+                });
+            }
+        },
+        requestUpdateEmail: function(data, folder, callback) {
+            const that = this;
+            that.spinner(true);
+            let bytes = that.buildEmailBytes(data);
+            that.saveEmail(folder, bytes, data.id).thenApply(function(res) {
+                that.spinner(false);
+                callback();
+            }).exceptionally(function(throwable) {
+                that.showError("Unable to save email");
+                console.log(throwable.getMessage());
+            });
+        },
+        saveEmail: function(folder, bytes, id) {
+            let fullFolderPath = this.mailboxFolderPrefix + "/" + folder;
+            let folderDirs = fullFolderPath.split('/');
+            let filePath = peergos.client.PathUtils.directoryToPath(folderDirs.concat(
+                    [id + this.EMAIL_FILE_EXTENSION]));
+            return this.sandboxedApp.writeInternal(filePath, bytes);
+        },
+        buildEmailBytes: function(data) {
+            let email = this.buildEmail(data, true);
+            return email.toBytes();
+        },
+
+        buildEmail: function(data, recurse) {
+            let that = this;
+            let allAttachments = [];
+            data.attachments.forEach(item => {
+                let attachment = new peergos.shared.email.Attachment(item.filename, item.size,
+                    item.type, item.uuid);
+                allAttachments.push(attachment);
+            });
+            let attachments = peergos.client.JsUtil.asList(allAttachments);
+            let to = peergos.client.JsUtil.asList(data.to);
+            let cc = peergos.client.JsUtil.asList(data.cc);
+            let bcc = peergos.client.JsUtil.asList(data.bcc);
+
+            let createdTimestamp = this.messageToTimestamp.get(data.id);
+
+            let replyingToEmail = data.replyingToEmail == null || !recurse ? peergos.client.JsUtil.emptyOptional()
+                : peergos.client.JsUtil.optionalOf(this.buildEmail(data.replyingToEmail, false));
+
+            let forwardingToEmail = data.forwardingToEmail == null || !recurse ? peergos.client.JsUtil.emptyOptional()
+                : peergos.client.JsUtil.optionalOf(this.buildEmail(data.forwardingToEmail, false));
+
+            let sendError = peergos.client.JsUtil.emptyOptional();
+            let emailJava = new peergos.shared.email.EmailMessage(data.id, data.msgId, data.from, data.subject,
+                 createdTimestamp, to, cc, bcc,
+                 data.content, data.unread, data.star, attachments, data.icalEvent,
+                 replyingToEmail, forwardingToEmail, sendError);
+            return emailJava;
+        },
+        createUUID: function() {
+            let uuid = ([1e7]+-1e3+-4e3+-8e3+-1e11).replace(/[018]/g, c =>
+                (c ^ crypto.getRandomValues(new Uint8Array(1))[0] & 15 >> c / 4).toString(16)
+            ).split("-").join("");
+            return uuid;
+        },
+        requestImportCalendarEvent: function(bytes, callback) {
+            //fixme. creating a temp file is not ideal
+            let path = 'default/attachments';
+            let filename =  this.createUUID() + '.ics';
+            let fullPath = path + '/' + filename;
+            let icalFilePath = peergos.client.PathUtils.directoryToPath(fullPath.split('/'));
+            let that = this;
+            this.spinner(true);
+            this.sandboxedApp.writeInternal(icalFilePath, bytes).thenApply(done => {
+                that.spinner(false);
+                callback();
+                setTimeout(() => {
+                    that.openFileOrDir("Calendar", this.context.username + '/.apps/' + that.currentAppName + '/data/' + path, {filename:filename});
+                });
+            });
+        },
+        requestMoveEmail: function(data, fromFolder, toFolder, callback) {
+            const that = this;
+            this.spinner(true);
+            that.moveEmail(data, fromFolder, toFolder).thenApply(function(done) {
+                that.spinner(false);
+                callback(done);
+            });
+        },
+        moveEmail: function(data, fromFolder, toFolder) {
+            const that = this;
+            let future = peergos.shared.util.Futures.incomplete();
+            let bytes = that.buildEmailBytes(data);
+            that.saveEmail(toFolder, bytes, data.id).thenApply(function(res2) {
+                that.removeEmail(fromFolder, data, false).thenApply(function(res) {
+                    future.complete(true);
+                }).exceptionally(function(throwable) {
+                    that.showError("Unable to delete moved email from source folder");
+                    console.log(throwable.getMessage());
+                    future.complete(false);
+                });
+            }).exceptionally(function(throwable) {
+                that.showError("Unable to move email");
+                console.log(throwable.getMessage());
+                future.complete(false);
+            });
+            return future;
+        },
+        reduceDeletingAttachments: function(attachments, index, future) {
+            let that = this;
+            if (index >= attachments.length) {
+                future.complete(true);
+            } else {
+                let attachment = attachments[index];
+                let fullFolderPath = this.mailboxFolderPrefix + '/attachments';
+                let filePath = peergos.client.PathUtils.toPath(fullFolderPath.split('/'), attachment.uuid);
+                this.sandboxedApp.deleteInternal(filePath).thenApply( res => {
+                    that.reduceDeletingAttachments(attachments, ++index, future);
+                }).exceptionally(function(throwable) {
+                    if (throwable.toString() == "java.util.NoSuchElementException") {
+                        that.reduceDeletingAttachments(attachments, ++index, future);
+                    } else {
+                        that.showError("Unable to delete attachment:" + attachment.filename);
+                        console.log(throwable.getMessage());
+                        future.complete(false);
+                    }
+                });
+            }
+        },
+        removeEmail: function(folder, data, deleteAttachment) {
+            let that = this;
+            let filename = data.id + this.EMAIL_FILE_EXTENSION;
+            let fullFolderPath = this.mailboxFolderPrefix + '/' + folder;
+            let filePath = peergos.client.PathUtils.toPath(fullFolderPath.split('/'), filename);
+            let future = peergos.shared.util.Futures.incomplete();
+            this.sandboxedApp.deleteInternal(filePath).thenApply( res => {
+                if (deleteAttachment) {
+                    let future2 = peergos.shared.util.Futures.incomplete();
+                    that.reduceDeletingAttachments(data.attachments, 0, future2);
+                    future2.thenApply(done => {
+                        future.complete(true);
+                    }).exceptionally(function(throwable) {
+                        future.complete(false);
+                    });
+                } else {
+                    future.complete(true);
+                }
+            }).exceptionally(function(throwable) {
+                that.showError("Unable to delete email");
+                console.log(throwable.getMessage());
+                future.complete(false);
+            });
+            return future;
+        },
+        requestMoveEmails: function(data, fromFolder, toFolder, callback) {
+            let that = this;
+            this.spinner(true);
+            let future = peergos.shared.util.Futures.incomplete();
+            that.reduceMovingEmails(data, fromFolder, toFolder, 0, future);
+            future.thenApply(done => {
+                that.spinner(false);
+                callback(done);
+            });
+        },
+        reduceMovingEmails: function(data, fromFolder, toFolder, index, future) {
+            let that = this;
+            if (index >= data.length) {
+                future.complete(true);
+            } else {
+                let item = data[index];
+                this.moveEmail(item, fromFolder, toFolder).thenApply(res => {
+                    that.reduceMovingEmails(data, fromFolder, toFolder, ++index, future);
+                });
+            }
+        },
+        reduceDeletingEmails: function(data, folder, index, future) {
+            let that = this;
+            if (index >= data.length) {
+                future.complete(true);
+            } else {
+                let item = data[index];
+                this.removeEmail(folder, item, true).thenApply(function(res) {
+                    that.reduceDeletingEmails(data, folder, ++index, future);
+                });
+            }
+        },
+        requestDeleteEmails: function(data, folder, callback) {
+            let that = this;
+            this.spinner(true);
+            let future = peergos.shared.util.Futures.incomplete();
+            that.reduceDeletingEmails(data, folder, 0, future);
+            future.thenApply(done => {
+                that.spinner(false);
+                callback(done);
+            });
+        },
+        requestDeleteEmail: function(data, folder, callback) {
+            const that = this;
+            this.spinner(true);
+            this.removeEmail(folder, data, true).thenApply(function(done) {
+                that.spinner(false);
+                callback(done);
+            });
+        },
+        requestNewMailboxFolder: function(callback) {
+            let that = this;
+            this.prompt_placeholder = 'New Folder name';
+            this.prompt_value = "";
+            this.prompt_message = 'Enter a new folder name';
+            this.prompt_max_input_size = 10;
+            this.prompt_consumer_func = function(prompt_result) {
+                if (prompt_result === null) {
+                    callback(null);
+                    return;
+                }
+                let newName = prompt_result.trim();
+                if (newName === '') {
+                    callback(null);
+                    return;
+                }
+                if (newName === '.' || newName === '..') {
+                    callback(null);
+                    return;
+                }
+                if (!newName.match(/^[a-z\d\-_\s]+$/i)) {
+                    that.showError("Invalid folder name. Use only alphanumeric characters plus space, dash and underscore");
+                    callback(null);
+                    return;
+                }
+                setTimeout(function(){
+                    //make sure names are unique
+                    if (that.isInbuiltFolderName(newName)) {
+                        that.showError("Folder already exists!");
+                        callback(null);
+                        return;
+                    }
+                    for (var i=0;i < that.mailboxClientProperties.userFolders.length; i++) {
+                        let folder = that.mailboxClientProperties.userFolders[i];
+                        if (folder.name == newName) {
+                            that.showError("Folder already exists!");
+                            callback(null);
+                            return;
+                        }
+                    }
+                    that.spinner(true);
+                    let dirName = that.generateDirectoryName();
+                    let newFolder = {name: newName, path: dirName};
+                    that.mailboxClientProperties.userFolders.push(newFolder);
+                    that.updatePropertiesFile(that.mailboxClientProperties).thenApply(res => {
+                        that.spinner(false);
+                        callback(newFolder);
+                    });
+                });
+            };
+            this.showPrompt =  true;
+        },
+        isInbuiltFolderName: function(folderName) {
+            let specialFolders = ['inbox','sent','trash','spam','archive','pending'];
+            return specialFolders.findIndex(v => v === folderName.toLowerCase()) > -1;
+        },
+        generateDirectoryName: function() {
+          return ([1e7]+-1e3+-4e3+-8e3+-1e11).replace(/[018]/g, c =>
+            (c ^ crypto.getRandomValues(new Uint8Array(1))[0] & 15 >> c / 4).toString(16)
+          ).substring(0, 12);
+        },
+        updatePropertiesFile: function(json) {
+            let filePath = peergos.client.PathUtils.directoryToPath([this.mailboxFolderPrefix, this.MAILBOX_CONFIG_FILENAME]);
+            let encoder = new TextEncoder();
+            let uint8Array = encoder.encode(JSON.stringify(json));
+            let bytes = convertToByteArray(uint8Array);
+            return this.sandboxedApp.writeInternal(filePath, bytes);
+        },
+        findFolderDirectory: function(folderName) {
+            for (var i=0; i < this.mailboxClientProperties.userFolders.length; i++) {
+                let folder = this.mailboxClientProperties.userFolders[i];
+                if (folder.name == folderName) {
+                    return folder.path;
+                }
+            }
+            throw new Error("Folder not found!");
+        },
+        requestDeleteFolder: function(folderName, callback) {
+            let that = this;
+            if (this.isInbuiltFolderName(folderName)) {
+                callback(false);
+            }
+            this.confirmDeleteFolder(folderName,
+                () => {
+                    setTimeout(function(){
+                        that.showConfirm = false;
+                        that.spinner(true);
+                        let dirPath = peergos.client.PathUtils.directoryToPath(
+                            [that.mailboxFolderPrefix, that.findFolderDirectory(folderName)]);
+                        that.sandboxedApp.deleteInternal(dirPath).thenApply(function(res) {
+                            that.postDeleteFolder(folderName, callback);
+                        }).exceptionally(function(throwable) {
+                            if (throwable.toString() == "java.util.NoSuchElementException") { //Because folder is empty
+                                that.postDeleteFolder(folderName, callback);
+                            } else {
+                                that.spinner(false);
+                                that.showError("Unable to delete Folder");
+                                console.log(throwable.getMessage());
+                                callback(false);
+                            }
+                        });
+                    });
+                },
+                () => {
+                    that.showConfirm = false;
+                    callback(false);
+                }
+            );
+        },
+        postDeleteFolder: function(folderName, callback) {
+            let that = this;
+            this.mailboxClientProperties.userFolders.splice(this.mailboxClientProperties.userFolders.findIndex(v => v.name === folderName), 1);
+            this.updatePropertiesFile(this.mailboxClientProperties).thenApply(res => {
+                that.spinner(false);
+                callback(res);
+            });
+        },
+        confirmDeleteFolder: function(folderName, deleteFunction, cancelFunction) {
+            this.confirm_message='Are you sure you want to delete folder: ' + folderName + " ?";
+            this.confirm_body='';
+            this.confirm_consumer_cancel_func = cancelFunction;
+            this.confirm_consumer_func = deleteFunction;
+            this.showConfirm = true;
+        },
+        requestUploadAttachment: function(data, callback) {
+            let that = this;
+            this.spinner(true);
+            that.uploadAttachment(data).thenApply(resp => {
+                that.spinner(false);
+                callback(resp);
+            });
+        },
+        requestSendEmail: function(data, callback) {
+            let that = this;
+            this.spinner(true);
+            //Note: msgId, timestamp and from email address are replaced serverside for security
+            data.id = this.createUUID();
+            data.msgId = this.createUUID();
+            data.from = "";
+            let timestamp = peergos.client.JsUtil.now();
+            this.messageToTimestamp.set(data.id, timestamp);
+            data.timestamp = timestamp.toString();
+            this.uploadForwardedAttachments(data).thenApply(forwardedAttachments => {
+                if (!forwardedAttachments) {
+                    callback(false);
+                } else {
+                    let javaEmail = that.buildEmail(data, true);
+                    that.mailboxClient.send(javaEmail).thenApply(copiedToOutbox => {
+                        that.spinner(false);
+                        callback(copiedToOutbox);
+                    });
+                }
+            });
+        },
+        uploadForwardedAttachments: function(data) {
+            let future = peergos.shared.util.Futures.incomplete();
+            if (data.forwardingToEmail == null) {
+                future.complete(true);
+            } else {
+                this.reduceMovingForwardedAttachments(data.forwardingToEmail.attachments, 0, future);
+            }
+            return future;
+        },
+        reduceMovingForwardedAttachments: function(attachments, index, future) {
+            let that = this;
+            if (index >= attachments.length) {
+                future.complete(true);
+            } else {
+                let attachment = attachments[index];
+                let srcDirStr = this.mailboxFolderPrefix + '/attachments/' + attachment.uuid;
+                let srcFilePath = peergos.client.PathUtils.directoryToPath(srcDirStr.split('/'));
+                this.sandboxedApp.readInternal(srcFilePath).thenApply(bytes => {
+                    let destDirStr = this.mailboxFolderPrefix + '/pending/outbox/attachments/' + attachment.uuid;
+                    let destFilePath = peergos.client.PathUtils.directoryToPath(destDirStr.split('/'));
+                    that.sandboxedApp.writeInternal(destFilePath, bytes).thenApply(res => {
+                        that.reduceMovingForwardedAttachments(attachments, ++index, future);
+                    }).exceptionally(function(throwable) {
+                        that.showError("Unable to move attachment to pending outbox:" + destFilePath);
+                        console.log(throwable.getMessage());
+                        future.complete(false);
+                    });
+                }).exceptionally(function(throwable) {
+                    that.showError("Unable to read existing attachment:" + srcFilePath);
+                    console.log(throwable.getMessage());
+                    future.complete(false);
+                });
+            }
+        },
+        checkAvailableSpace: function(fileSize) {
+            return Number(this.quotaBytes.toString()) - (Number(this.usageBytes.toString()) + fileSize);
+        },
+        uploadAttachment: function(data) {
+            let that = this;
+            let future = peergos.shared.util.Futures.incomplete();
+            let totalSize = data.byteLength;
+            let spaceAfterOperation = this.checkAvailableSpace(totalSize);
+            if (spaceAfterOperation < 0) {
+                that.showError("Attachment exceeds available Space",
+                    "Please free up " + this.convertBytesToHumanReadable('' + -spaceAfterOperation) + " and try again");
+                future.complete(null);
+            } else {
+                this.mailboxClient.uploadAttachment(data).thenApply(function(uuid) {
+                    future.complete(uuid);
+                }).exceptionally(err => {
+                    that.showError("unable to upload attachment");
+                    console.log(err);
+                    future.complete(null);
+                });
+            }
+            return future;
+        },
+        requestImportCalendarAttachment: function(attachment, callback) {
+            let path = this.context.username + '/.apps/' + this.currentAppName + '/data/default/attachments';
+            callback();
+            let that = this;
+            setTimeout(() => {
+                that.openFileOrDir("Calendar", path, {filename:attachment.uuid});
+            });
+        },
+        retrieveAttachment: function(uuid) {
+            let path = this.context.username + '/.apps/' + this.currentAppName + '/data/default/attachments/' + uuid;
+            return this.context.getByPath(path);
+        },
+        requestDownloadAttachment: function(attachment, callback) {
+            let that = this;
+            this.retrieveAttachment(attachment.uuid).thenApply(function(optFile) {
+                callback(optFile.ref != null);
+                that.downloadFile(optFile.ref, attachment.filename);
+                //that.showError("Unable to find email attachment:" + attachment.filename);
+            });
+        },
+        getStringRequestParam: function(params, name) {
+            var val = params.get(name);
+            if (val.startsWith('"') && val.endsWith('"')) {
+                val = val.substring(1, val.length -1);
+            }
+            return val;
+        },
+        // need to add error handling, null params, invalid chars etc... look at chat api handling for checks
+        handleMailboxRequest: function(headerFunc, path, apiMethod, data, hasFormData, params) {
+            let that = this;
+            let encoder = new TextEncoder();
+            if(apiMethod == 'GET') {
+                let filterStarredEmailsParam = params.get('filterStarredEmails');
+                let filterStarredEmails = filterStarredEmailsParam != null && filterStarredEmailsParam.toLowerCase() == "true";
+                if (path.length == 0) {
+                    let userFolders = [];
+                    for(var i=0;i < that.mailboxClientProperties.userFolders.length;i++) {
+                        let folder = that.mailboxClientProperties.userFolders[i];
+                        userFolders.push({name: folder.name, path: folder.path});
+                    }
+                    let data = encoder.encode(JSON.stringify({userFolders: userFolders, mailboxAddress: that.clientMailboxAddress}));
+                    that.buildResponse(headerFunc, data, that.GET_SUCCESS);
+                } else if (path === "inbox") {
+                    that.spinner(true);
+                    that.mailboxClient.getNewIncoming().thenApply(emails => {
+                        let emailsToRead = emails.toArray([]);
+                        let future = peergos.shared.util.Futures.incomplete();
+                        that.reduceMovingEmailsToInboxFolder(emailsToRead, 0, future);
+                        future.thenApply(done => {
+                            that.requestLoadFolder('inbox', filterStarredEmails, (obj) => {
+                                that.spinner(false);
+                                let data = encoder.encode(JSON.stringify(obj));
+                                that.buildResponse(headerFunc, data, that.GET_SUCCESS);
+                            });
+                        });
+                    });
+                } else if (path === "sent") {
+                    that.spinner(true);
+                    that.mailboxClient.getNewSent().thenApply(emails => {
+                        let emailsToRead = emails.toArray([]);
+                        let future = peergos.shared.util.Futures.incomplete();
+                        that.reduceMovingEmailsToSentFolder(emailsToRead, 0, future);
+                        future.thenApply(done => {
+                            that.requestLoadFolder('sent', filterStarredEmails, (obj) => {
+                                that.spinner(false);
+                                let data = encoder.encode(JSON.stringify(obj));
+                                that.buildResponse(headerFunc, data, that.GET_SUCCESS);
+                            });
+                        });
+                    });
+                } else {
+                    that.spinner(true);
+                    that.requestLoadFolder(path, filterStarredEmails, (obj) => {
+                        that.spinner(false);
+                        let data = encoder.encode(JSON.stringify(obj));
+                        that.buildResponse(headerFunc, data, that.GET_SUCCESS);
+                    });
+                }
+            } else if(apiMethod == 'DELETE') {
+                let folderName = path;
+                that.requestDeleteFolder(folderName, (result) => {
+                    if (result) {
+                        that.buildResponse(headerFunc, null, that.DELETE_SUCCESS);
+                    } else {
+                        that.buildResponse(headerFunc, null, that.ACTION_FAILED);
+                    }
+                });
+            } else if(apiMethod == 'POST') { //REST be damned! RPC rules...
+                if (path === "move") {
+                    let from = that.getStringRequestParam(params, 'from');
+                    let to = that.getStringRequestParam(params, 'to');
+                    let emailObj = JSON.parse(new TextDecoder().decode(data));
+                    if (!(emailObj.constructor === Array)) {
+                        that.requestMoveEmail(emailObj, from, to, (result) => {
+                            if (result) {
+                                that.buildResponse(headerFunc, null, that.UPDATE_SUCCESS);
+                            } else {
+                                that.buildResponse(headerFunc, null, that.ACTION_FAILED);
+                            }
+                        });
+                    } else {
+                        that.requestMoveEmails(emailObj, from, to, (result) => {
+                            if (result) {
+                                that.buildResponse(headerFunc, null, that.UPDATE_SUCCESS);
+                            } else {
+                                that.buildResponse(headerFunc, null, that.ACTION_FAILED);
+                            }
+                        });
+                    }
+                } else if(path === "delete") {
+                    let folder = that.getStringRequestParam(params, 'folder');
+                    let emailObj = JSON.parse(new TextDecoder().decode(data));
+                    if (!(emailObj.constructor === Array)) {
+                        that.requestDeleteEmail(emailObj, folder, (result) => {
+                            if (result) {
+                                that.buildResponse(headerFunc, null, that.UPDATE_SUCCESS);
+                            } else {
+                                that.buildResponse(headerFunc, null, that.ACTION_FAILED);
+                            }
+                        });
+                    } else {
+                        that.requestDeleteEmails(emailObj, folder, (result) => {
+                            if (result) {
+                                that.buildResponse(headerFunc, null, that.UPDATE_SUCCESS);
+                            } else {
+                                that.buildResponse(headerFunc, null, that.ACTION_FAILED);
+                            }
+                        });
+                    }
+                } else if (path === "download") {
+                    let attachment = JSON.parse(new TextDecoder().decode(data));
+                    that.requestDownloadAttachment(attachment, (result) => {
+                        if(result) {
+                            that.buildResponse(headerFunc, null, that.GET_SUCCESS);
+                        } else {
+                            that.buildResponse(headerFunc, null, that.ACTION_FAILED);
+                        }
+                    });
+                }
+            } else if(apiMethod == 'PUT') {
+                if (path === "attachment") {
+                    let bytes = convertToByteArray(new Uint8Array(data));
+                    that.requestUploadAttachment(bytes, (resp) => {
+                        if (resp != null) {
+                            let encoder = new TextEncoder();
+                            let json = encoder.encode(JSON.stringify({uuid: resp}));
+                            that.buildResponse(headerFunc, json, that.CREATE_SUCCESS);
+                        } else {
+                            that.buildResponse(headerFunc, null, that.ACTION_FAILED);
+                        }
+                    });
+                } else if (path === "post") {
+                    let email = JSON.parse(new TextDecoder().decode(data));
+                    that.requestSendEmail(email, (result) => {
+                        if (result) {
+                            that.buildResponse(headerFunc, null, that.CREATE_SUCCESS);
+                        } else {
+                            that.buildResponse(headerFunc, null, that.ACTION_FAILED);
+                        }
+                    });
+                } else if (path === "event-inline") {
+                    let bytes = convertToByteArray(new Uint8Array(data));
+                    that.requestImportCalendarEvent(bytes, () => {
+                        that.buildResponse(headerFunc, null, that.CREATE_SUCCESS);
+                    });
+                } else if (path === "event") {
+                    let attachment = JSON.parse(new TextDecoder().decode(data));
+                    that.requestImportCalendarAttachment(attachment, () => {
+                        that.buildResponse(headerFunc, null, that.CREATE_SUCCESS);
+                    });
+                } else if (path === "folder") {
+                    that.requestNewMailboxFolder((result) => {
+                        if (result != null) {
+                            let data = encoder.encode(JSON.stringify(result));
+                            that.buildResponse(headerFunc, data, that.CREATE_SUCCESS);
+                        } else {
+                            that.buildResponse(headerFunc, null, that.ACTION_FAILED);
+                        }
+                    });
+                } else if (path === "inbox") {
+                    let email = JSON.parse(new TextDecoder().decode(data));
+                    that.requestUpdateEmail(email, path, () => {
+                        that.buildResponse(headerFunc, null, that.CREATE_SUCCESS);
+                    });
+                }
+            } else if(apiMethod == 'PATCH') {
+                // not implemented
+            }
         },
         handleChatRequestV1: function(headerFunc, path, apiMethod, data, hasFormData, params) {
             let that = this;

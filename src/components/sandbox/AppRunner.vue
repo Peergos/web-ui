@@ -57,7 +57,7 @@ module.exports = {
                     that.showError("Unable to run App: " + res.errors.join(', '));
                     that.close();
                 } else {
-                    let messagePermission = res.props.permissions.filter(p => p === "EXCHANGE_MESSAGES_WITH_FRIENDS").length > 0;
+                    let messagePermission = res.props.permissions.filter(p => (p === "EXCHANGE_MESSAGES_WITH_FRIENDS" || p === "USE_MAILBOX")).length > 0;
                     let editPermission = res.props.permissions.filter(p => p == 'EDIT_CHOSEN_FILE').length > 0;
                     let hasFileExtensions = res.props.fileExtensions.length > 0;
                     let createFile = editPermission && hasFileExtensions;
