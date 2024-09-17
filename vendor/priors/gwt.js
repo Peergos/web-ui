@@ -101,7 +101,7 @@ function postProm(url, data, timeout) {
 	};
 
         req.ontimeout = function() {
-            reject(Error("Network timeout"));
+            future.completeExceptionally(new java.net.ConnectException("Unable to connect"));
         };
 
 	req.send(data);
