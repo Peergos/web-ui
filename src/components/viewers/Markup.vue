@@ -254,6 +254,7 @@ module.exports = {
         this.showSpinner = false;
     },
     close: function () {
+        window.removeEventListener('message', this.messageHandler);
         this.$emit("hide-markup-viewer");
     },
     hasValidFileExtension: function(path, validExtensions, showErrorMessage) {
