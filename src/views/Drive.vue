@@ -558,6 +558,7 @@ module.exports = {
             progressBarUpdateFrequency: 50,
             zipAndDownloadFoldersCount: 0,
             htmlAnchor: "",
+            previouslyOpenedApp: {filename: '', app: ''},
 		};
 	},
 	mixins:[downloaderMixins, router, zipMixin, launcherMixin, i18n, sandboxMixin],
@@ -1196,10 +1197,12 @@ module.exports = {
 		},
 
                 back() {
+                    this.previouslyOpenedApp = {filename: '', app: ''};
                     history.back();
                 },
 
                 showDrive() {
+                    this.previouslyOpenedApp = {filename: '', app: ''};
                     this.updateHistory("Drive", this.getPath, {filename:""});
                 },
 
@@ -1260,38 +1263,40 @@ module.exports = {
         },
 	    openInApp(args, app) {
                 if (app == null || app == "" || app == "Drive") {
+                    this.previouslyOpenedApp = {filename: '', app: ''};
                     this.closeApps();
-                    return
+                    return;
+                }
+                if (this.previouslyOpenedApp.filename == args.filename && this.previouslyOpenedApp.app == app) {
+                    return;
                 }
                 this.appArgs = args;
-		this.selectedFiles = this.files.filter(f => f.getName() == args.filename);
-		this.openApp(app);
-	    },
-		openApp(app) {
-                    let that = this;
-                    this.closeApps();
-                    if (app == "Gallery")
-                        that.showGallery = true;
-                    else if (app == "pdf")
-                        that.showPdfViewer = true;
-                    else if (app == "editor")
-                        that.showCodeEditor = true;
-                    else if (app == "identity-proof")
-                        that.showIdentityProof = true;
-                    else if (app == "hex")
-                        that.showHexViewer = true;
-                    else if (app == "markdown" || app == "markup")
-                        that.showMarkupViewer = true;
-                    else if (app == "htmlviewer") {
-                        that.sandboxAppName = "htmlviewer";
-                        that.currentFile= that.selectedFiles[0];
-                        that.currentPath= that.getPath;
-                        that.showAppSandbox = true;
-                    } else if (app == "search") {
-                        that.showSearch = true;
-                    } else {
-                        that.appOpen(app);
-                    }
+		        this.selectedFiles = this.files.filter(f => f.getName() == args.filename);
+                let that = this;
+                this.closeApps();
+                if (app == "Gallery")
+                    that.showGallery = true;
+                else if (app == "pdf")
+                    that.showPdfViewer = true;
+                else if (app == "editor")
+                    that.showCodeEditor = true;
+                else if (app == "identity-proof")
+                    that.showIdentityProof = true;
+                else if (app == "hex")
+                    that.showHexViewer = true;
+                else if (app == "markdown" || app == "markup")
+                    that.showMarkupViewer = true;
+                else if (app == "htmlviewer") {
+                    that.sandboxAppName = "htmlviewer";
+                    that.currentFile= that.selectedFiles[0];
+                    that.currentPath= that.getPath;
+                    that.showAppSandbox = true;
+                } else if (app == "search") {
+                    that.showSearch = true;
+                } else {
+                    that.appOpen(app);
+                }
+                this.previouslyOpenedApp = {filename: args.filename, app: app};
 		},
 		openSearch(fromRoot) {
 			var path = fromRoot ? "/" + this.context.username : this.getPath;
