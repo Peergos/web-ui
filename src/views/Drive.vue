@@ -558,7 +558,7 @@ module.exports = {
             progressBarUpdateFrequency: 50,
             zipAndDownloadFoldersCount: 0,
             htmlAnchor: "",
-            previouslyOpenedApp: {filename: '', app: ''},
+            previouslyOpenedApp: {path: '', filename: '', app: ''},
 		};
 	},
 	mixins:[downloaderMixins, router, zipMixin, launcherMixin, i18n, sandboxMixin],
@@ -1197,12 +1197,12 @@ module.exports = {
 		},
 
                 back() {
-                    this.previouslyOpenedApp = {filename: '', app: ''};
+                    this.previouslyOpenedApp = {path: '', filename: '', app: ''};
                     history.back();
                 },
 
                 showDrive() {
-                    this.previouslyOpenedApp = {filename: '', app: ''};
+                    this.previouslyOpenedApp = {path: '', filename: '', app: ''};
                     this.updateHistory("Drive", this.getPath, {filename:""});
                 },
 
@@ -1263,11 +1263,11 @@ module.exports = {
         },
 	    openInApp(args, app) {
                 if (app == null || app == "" || app == "Drive") {
-                    this.previouslyOpenedApp = {filename: '', app: ''};
+                    this.previouslyOpenedApp = {path: '', filename: '', app: ''};
                     this.closeApps();
                     return;
                 }
-                if (this.previouslyOpenedApp.filename == args.filename && this.previouslyOpenedApp.app == app) {
+                if (this.previouslyOpenedApp.path == this.getPath && this.previouslyOpenedApp.filename == args.filename && this.previouslyOpenedApp.app == app) {
                     return;
                 }
                 this.appArgs = args;
@@ -1296,7 +1296,7 @@ module.exports = {
                 } else {
                     that.appOpen(app);
                 }
-                this.previouslyOpenedApp = {filename: args.filename, app: app};
+                this.previouslyOpenedApp = {path: this.getPath, filename: args.filename, app: app};
 		},
 		openSearch(fromRoot) {
 			var path = fromRoot ? "/" + this.context.username : this.getPath;
