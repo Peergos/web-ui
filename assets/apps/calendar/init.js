@@ -2359,7 +2359,7 @@ function appendCalendar(item) {
 function importICal(item, evt){
     let files = evt.target.files || evt.dataTransfer.files;
     let file = files[0];
-    let filereader = new FileReader();
+    let filereader = new window.FileReader();
     filereader.onload = function(){
         importICSFile(this.result, currentUsername, false, false, item.name);
     };

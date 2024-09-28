@@ -360,7 +360,7 @@ module.exports = {
             let files = evt.target.files || evt.dataTransfer.files;
             let file = files[0];
             let that = this;
-            let filereader = new FileReader();
+            let filereader = new window.FileReader();
             filereader.file_name = file.name;
             let thumbnailWidth = 400;
             let thumbnailHeight = 400;
@@ -372,7 +372,7 @@ module.exports = {
                 let image = new Image();
                 image.onload = function() {
                     context.drawImage(image, 0, 0, thumbnailWidth, thumbnailHeight);
-                    let binFilereader = new FileReader();
+                    let binFilereader = new window.FileReader();
                     binFilereader.file_name = file.name;
                     binFilereader.onload = function(){
                         const data = convertToByteArray(new Int8Array(this.result));

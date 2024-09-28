@@ -1722,7 +1722,7 @@ var browserio = {
 	this.readIntoArray = function(res, offset, length) {
 	    var future = peergos.shared.util.Futures.incomplete();
 
-	    var filereader = new FileReader();
+	    var filereader = new window.FileReader();
 	    filereader.file_name = file.name;
 	    filereader.onload = function(){
 		const data = new Uint8Array(this.result);
