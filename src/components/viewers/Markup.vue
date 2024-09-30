@@ -3,7 +3,14 @@
 <div class="modal-mask" @click="close"> 
     <div class="modal-container full-height" @click.stop style="width:100%;overflow-y:auto;padding:0;display:flex;flex-flow:column;">
         <div class="modal-header" style="padding:0">
-            <center><h2>{{ getFullPathForDisplay() }}</h2></center>
+            <center>
+                <h2>{{ getFullPathForDisplay() }}
+                    <span v-if="!isSecretLink && fullPathForDisplay.length > 0  && !this.isMobile" style="z-index:9999">
+                          <img v-if="displayToBookmark" src="/images/bookmark-o.svg" @click="toggleBookmark(false)" style="height:24px;width:24px;cursor:pointer;">
+                          <img v-if="!displayToBookmark" src="/images/bookmark.svg" @click="toggleBookmark(true)" style="height:24px;width:24px;cursor:pointer;">
+                    </span>
+                </h2>
+            </center>
           <span style="position:absolute;top:0;right:0.2em;">
             <span v-if="isWritable() && isMarkdown()" @click="launchEditor" tabindex="0" v-on:keyup.enter="launchEditor"  style="color:black;font-size:2.5em;font-weight:bold;cursor:pointer;margin:.3em;" class='fas fa-edit' title="Edit file"></span>
             <span @click="close" tabindex="0" v-on:keyup.enter="close" style="color:black;font-size:3em;font-weight:bold;cursor:pointer;font-family:'Cambria Math'">&times;</span>
@@ -72,14 +79,18 @@ module.exports = {
             confirm_message: "",
             confirm_body: "",
             confirm_consumer_cancel_func: () => {},
-            confirm_consumer_func: () => {}
+            confirm_consumer_func: () => {},
+            launcherApp: null,
+            displayToBookmark: true,
+            targetFile: null,
         }
     },
     props: ['propAppArgs'],
     mixins:[mixins, routerMixins, launcherMixin],
     computed: {
         ...Vuex.mapState([
-            'context'
+            'context',
+            "shortcuts",
         ]),
         ...Vuex.mapGetters([
             'isSecretLink'
@@ -112,7 +123,7 @@ module.exports = {
                 that.isFileWritable = file.isWritable();
                 that.readInFile(file).thenApply(data => {
                     that.setFullPathForDisplay();
-
+                    that.targetFile = file;
                     let theme = that.$store.getters.currentTheme;
                     let subPath = that.propAppArgs.subPath != null ? that.propAppArgs.subPath
                                     : that.scopedPath.substring(0, that.scopedPath.length -1);
@@ -153,6 +164,7 @@ module.exports = {
                 if (file != null) {
                     that.readInFile(file).thenApply(data => {
                         that.setFullPathForDisplay();
+                        that.targetFile = file;
                         let func = function(iframe) {
                             iframe.contentWindow.postMessage({action: "respondToNavigateTo", theme: theme, text:new TextDecoder().decode(data)
                                 , extension: extension, subPath: subPath}, '*');
@@ -199,7 +211,8 @@ module.exports = {
             }
             this.isIframeInitialised = false;
             let that = this;
-            Vue.nextTick(function() {
+            peergos.shared.user.App.init(this.context, "launcher").thenApply(launcher => {
+                that.launcherApp = launcher;
                 that.startListener(func);
             });
         },
@@ -224,7 +237,60 @@ module.exports = {
                 }, 1000 * 10);
             });
         },
-
+        toggleBookmark: function(remove) {
+            if(this.showSpinner || this.isSecretLink) {
+                return;
+            }
+            let that = this;
+            let address = this.fullPathForDisplay;
+            if (address.length <= 1) {
+                return;
+            }
+            let bookmark = this.shortcuts.shortcutsMap.get(address);
+            let fileCreatedDate = new Date(this.targetFile.getFileProperties().created.toString() + "+00:00")
+            if (remove) {
+                if (bookmark != null) {
+                    this.refreshAndDeleteBookmark(address);
+                }
+            } else {
+                if (bookmark == null) {
+                    this.refreshAndAddBookmark(address, fileCreatedDate);
+                }
+            }
+        },
+        refreshAndAddBookmark(link, created) {
+            let that = this;
+            this.showSpinner = true;
+            this.loadShortcutsFile(this.launcherApp).thenApply(shortcutsMap => {
+                if (shortcutsMap.get(link) == null) {
+                    let entry = {added: new Date(), created: created};
+                    shortcutsMap.set(link, entry)
+                    that.updateShortcutsFile(that.launcherApp, shortcutsMap).thenApply(res => {
+                        that.showSpinner = false;
+                        that.displayToBookmark = false;
+                        that.$store.commit("SET_SHORTCUTS", shortcutsMap);
+                    });
+                } else {
+                    that.showSpinner = false;
+                }
+            })
+        },
+        refreshAndDeleteBookmark(link) {
+            let that = this;
+            this.showSpinner = true;
+            this.loadShortcutsFile(this.launcherApp).thenApply(shortcutsMap => {
+                if (shortcutsMap.get(link) != null) {
+                    shortcutsMap.delete(link)
+                    that.updateShortcutsFile(that.launcherApp, shortcutsMap).thenApply(res => {
+                        that.showSpinner = false;
+                        that.displayToBookmark = true;
+                        that.$store.commit("SET_SHORTCUTS", shortcutsMap);
+                    });
+                } else {
+                    that.showSpinner = false;
+                }
+            })
+        },
 	setupIFrameMessaging: function(iframe, func) {
         if (this.isIframeInitialised) {
             func(iframe);
@@ -239,6 +305,11 @@ module.exports = {
     },
     setFullPathForDisplay: function() {
         this.fullPathForDisplay = this.currPath + '/' + this.currFilename;
+        if (this.shortcuts.shortcutsMap.get(this.fullPathForDisplay) == null) {
+            this.displayToBookmark = true;
+        } else {
+            this.displayToBookmark = false;
+        }
     },
     showMessage: function(isError, title, body) {
         let bodyContents = body == null ? '' : ' ' + body;
