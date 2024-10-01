@@ -4,11 +4,12 @@
     <div class="modal-container full-height" @click.stop style="width:100%;overflow-y:auto;padding:0;display:flex;flex-flow:column;">
         <div class="modal-header" style="padding:0">
             <center>
-                <h2>{{ getFullPathForDisplay() }}
-                    <span v-if="!isSecretLink && fullPathForDisplay.length > 0  && !this.isMobile" style="z-index:9999">
+                <h2>
+                    <span v-if="!isSecretLink && fullPathForDisplay.length > 0" style="z-index:9999">
                           <img v-if="displayToBookmark" src="/images/bookmark-o.svg" @click="toggleBookmark(false)" style="height:24px;width:24px;cursor:pointer;">
                           <img v-if="!displayToBookmark" src="/images/bookmark.svg" @click="toggleBookmark(true)" style="height:24px;width:24px;cursor:pointer;">
                     </span>
+                    {{ getFullPathForDisplay() }}
                 </h2>
             </center>
           <span style="position:absolute;top:0;right:0.2em;">

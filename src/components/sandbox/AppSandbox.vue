@@ -76,11 +76,12 @@
                     :consumer_func="confirm_consumer_func">
             </Confirm>
             <div v-if="!fullscreenMode" class="modal-header" style="padding:0;min-height: 52px;">
-                <center><h2>{{ getFullPathForDisplay() }}
-                <span v-if="browserMode && !isSecretLink && fullPathForDisplay.length > 0 && !this.isMobile" style="z-index:9999">
+                <center><h2>
+                <span v-if="browserMode && !isSecretLink && fullPathForDisplay.length > 0" style="z-index:9999">
                       <img v-if="displayToBookmark" src="./images/bookmark-o.svg" @click="toggleBookmark(false)" style="height:24px;width:24px;cursor:pointer;">
                       <img v-if="!displayToBookmark" src="./images/bookmark.svg" @click="toggleBookmark(true)" style="height:24px;width:24px;cursor:pointer;">
                 </span>
+                {{ getFullPathForDisplay() }}
                 <span v-if="displayFullScreenIcon" @click="requestFullscreenFromToolbar" v-on:keyup.enter="requestFullscreenFromToolbar" style="cursor:pointer;">
                     <img src="./images/arrows-alt.svg" style="height:24px;width:24px;cursor:pointer">
                 </span>
