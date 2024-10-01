@@ -76,9 +76,14 @@
                     :consumer_func="confirm_consumer_func">
             </Confirm>
             <div v-if="!fullscreenMode" class="modal-header" style="padding:0;min-height: 52px;">
-                <center><h2>{{ getFullPathForDisplay() }}
-                <span v-if="displayFullScreenIcon" @click="requestFullscreenFromToolbar" tabindex="0" v-on:keyup.enter="requestFullscreenFromToolbar" style="cursor:pointer;">
-                    <img src="./images/arrows-alt.svg" style="height:24px;width:24px">
+                <center><h2>
+                <span v-if="browserMode && !isSecretLink && fullPathForDisplay.length > 0" style="z-index:9999">
+                      <img v-if="displayToBookmark" src="./images/bookmark-o.svg" @click="toggleBookmark(false)" style="height:24px;width:24px;cursor:pointer;">
+                      <img v-if="!displayToBookmark" src="./images/bookmark.svg" @click="toggleBookmark(true)" style="height:24px;width:24px;cursor:pointer;">
+                </span>
+                {{ getFullPathForDisplay() }}
+                <span v-if="displayFullScreenIcon" @click="requestFullscreenFromToolbar" v-on:keyup.enter="requestFullscreenFromToolbar" style="cursor:pointer;">
+                    <img src="./images/arrows-alt.svg" style="height:24px;width:24px;cursor:pointer">
                 </span>
                 </h2>
                 </center>
@@ -239,6 +244,7 @@ module.exports = {
             confirm_body: "",
             confirm_consumer_cancel_func: () => {},
             confirm_consumer_func: () => {},
+            displayToBookmark: true,
         }
     },
     computed: {
@@ -248,7 +254,8 @@ module.exports = {
             'context',
             "sandboxedApps",
             'mirrorBatId',
-            "socialData"
+            "socialData",
+            "shortcuts"
         ]),
         ...Vuex.mapGetters([
             'isSecretLink',
@@ -313,7 +320,7 @@ module.exports = {
                         that.appRegisteredWithFileAssociation = that.appHasFileAssociation(that.currentProps);
                         that.appRegisteredWithWildcardFileAssociation = that.appHasWildcardFileRegistration(that.currentProps);
                     }
-                    that.startListener();
+                    that.start();
                 });
             } else {
                 this.loadAppProperties().thenApply(props => {
@@ -345,7 +352,7 @@ module.exports = {
                                                         that.clientMailboxAddress = clientAddress.ref.toLowerCase();
                                                         that.getMailboxPropertiesFile().thenApply(props => {
                                                             that.mailboxClientProperties = props;
-                                                            that.startListener();
+                                                            that.start();
                                                         });
                                                     }
                                                 });
@@ -353,7 +360,7 @@ module.exports = {
                                         }
                                     });
                                 } else {
-                                    that.startListener();
+                                    that.start();
                                 }
                             });
                         });
@@ -487,11 +494,6 @@ module.exports = {
         extractWorkspace: function(path) {
                 return path.substring(1, path.indexOf('/', 1));
         },
-        startTitleDetection: function() {
-            if (!this.running) return;
-            this.postMessage({type: 'currentTitleRequest'});
-            setTimeout(() => this.startTitleDetection(), 300);
-        },
         loadAppProperties: function(appFolderLocation) {
            let that = this;
            var future = peergos.shared.util.Futures.incomplete();
@@ -504,11 +506,6 @@ module.exports = {
             }
             return future;
         },
-        currentTitleResponse: function(fullPath, title) {
-            if (fullPath != "blank") {
-                this.setFullPathForDisplay(fullPath);
-            }
-        },
         getFullPathForDisplay: function() {
             let pathToDisplay = this.fullPathForDisplay;
             if (pathToDisplay.length > 0 && this.browserMode && !this.isMobile) {
@@ -516,8 +513,59 @@ module.exports = {
             }
             return pathToDisplay;
         },
-        setFullPathForDisplay: function(path) {
-            this.fullPathForDisplay = path;
+        toggleBookmark: function(remove) {
+            if(this.showSpinner || this.isSecretLink) {
+                return;
+            }
+            let that = this;
+            let address = this.fullPathForDisplay;
+            if (address.length <= 1) {
+                return;
+            }
+            let bookmark = this.shortcuts.shortcutsMap.get(address);
+            let fileCreatedDate = new Date(this.targetFile.getFileProperties().created.toString() + "+00:00")
+            if (remove) {
+                if (bookmark != null) {
+                    this.refreshAndDeleteBookmark(address);
+                }
+            } else {
+                if (bookmark == null) {
+                    this.refreshAndAddBookmark(address, fileCreatedDate);
+                }
+            }
+        },
+        refreshAndAddBookmark(link, created) {
+            let that = this;
+            this.showSpinner = true;
+            this.loadShortcutsFile(this.launcherApp).thenApply(shortcutsMap => {
+                if (shortcutsMap.get(link) == null) {
+                    let entry = {added: new Date(), created: created};
+                    shortcutsMap.set(link, entry)
+                    that.updateShortcutsFile(that.launcherApp, shortcutsMap).thenApply(res => {
+                        that.showSpinner = false;
+                        that.displayToBookmark = false;
+                        that.$store.commit("SET_SHORTCUTS", shortcutsMap);
+                    });
+                } else {
+                    that.showSpinner = false;
+                }
+            })
+        },
+        refreshAndDeleteBookmark(link) {
+            let that = this;
+            this.showSpinner = true;
+            this.loadShortcutsFile(this.launcherApp).thenApply(shortcutsMap => {
+                if (shortcutsMap.get(link) != null) {
+                    shortcutsMap.delete(link)
+                    that.updateShortcutsFile(that.launcherApp, shortcutsMap).thenApply(res => {
+                        that.showSpinner = false;
+                        that.displayToBookmark = true;
+                        that.$store.commit("SET_SHORTCUTS", shortcutsMap);
+                    });
+                } else {
+                    that.showSpinner = false;
+                }
+            })
         },
         validatePermissions: function(props) {
             let allPermissions = new Map();
@@ -606,11 +654,16 @@ module.exports = {
                     } else if(e.data.action == 'actionRequest') {
                         that.actionRequest(e.data.filePath, e.data.requestId, e.data.api, e.data.apiMethod, e.data.bytes,
                             e.data.hasFormData, e.data.params, e.data.isFromRedirect, e.data.isNavigate);
-                    } else if(e.data.action == 'currentTitleResponse') {
-                        that.currentTitleResponse(e.data.path, e.data.title);
                     }
                 }
             }
+        },
+        start: function() {
+            let that = this;
+            peergos.shared.user.App.init(this.context, "launcher").thenApply(launcher => {
+                that.launcherApp = launcher;
+                that.startListener();
+            });
         },
         startListener: function() {
             var that = this;
@@ -826,7 +879,7 @@ module.exports = {
                                 that.showError("App attempted to access file without permission :" + path);
                                 that.buildResponse(headerFunc(), null, that.ACTION_FAILED);
                             } else {
-                                that.readFileOrFolder(headerFunc, '/data/' + path, params, true);
+                                that.readFileOrFolder(headerFunc, '/data/' + path, params, true, false);
                             }
                         } else {
                             let prefix = !this.browserMode
@@ -838,7 +891,7 @@ module.exports = {
                             if (this.browserMode) {
                                 that.handleBrowserRequest(headerFunc, path, params, isFromRedirect, isNavigate);
                             } else {
-                                that.readFileOrFolder(headerFunc, prefix + path, params);
+                                that.readFileOrFolder(headerFunc, prefix + path, params, false, false);
                             }
                         }
                     } else {
@@ -2921,10 +2974,11 @@ module.exports = {
                         });
                     } else {
                         if (isNavigate) {
+                            that.fullPathForDisplay = path;
                             if (!that.running) {
                                 that.running = true;
-                                that.startTitleDetection();
-                                that.readFileOrFolder(headerFunc, path, params);
+                                that.setBookmarkIcon();
+                                that.readFileOrFolder(headerFunc, path, params, false, false);
                             } else {
                                 let fullPath = that.expandFilePath(path, isFromRedirect);
                                 var app = that.getApp(file, fullPath);
@@ -2936,24 +2990,32 @@ module.exports = {
                                 }
                                 // If we are navigating to an 'external' link, use a new context on a different subdomain
                                 if (app == 'htmlviewer' && that.extractWorkspace(fullPath) == that.workspaceName) {
-                                    that.readFileOrFolder(headerFunc, path, params);
+                                    that.setBookmarkIcon();
+                                    that.readFileOrFolder(headerFunc, path, params, false, true);
                                 } else {
                                     that.closeAndLaunchApp(headerFunc, app, navigationPath, navigationFilename);
                                 }
                             }
                         } else {
-                            that.readFileOrFolder(headerFunc, path, params);
+                            that.readFileOrFolder(headerFunc, path, params, false, false);
                         }
                     }
                 }
             });
+        },
+        setBookmarkIcon: function() {
+            if (this.shortcuts.shortcutsMap.get(this.fullPathForDisplay) == null) {
+                this.displayToBookmark = true;
+            } else {
+                this.displayToBookmark = false;
+            }
         },
         closeAndLaunchApp: function(headerFunc, app, path, filename) {
             this.buildResponse(headerFunc(), null, this.NAVIGATE_TO);
             this.navigateTo = { app: app, navigationPath: path, navigationFilename: filename};
             this.closeSandbox();
         },
-        readFileOrFolder: function(headerFunc, path, params, ignoreHiddenFolderCheck) {
+        readFileOrFolder: function(headerFunc, path, params, ignoreHiddenFolderCheck, updateTargetFile) {
             let that = this;
             let expandedFilePath = this.expandFilePath(path);
             if (this.browserMode && expandedFilePath.includes('/.')) {
@@ -2990,6 +3052,9 @@ module.exports = {
                                         that.buildResponse(headerFunc(), null, that.ACTION_FAILED);
                                     }
                                 } else {
+                                    if (updateTargetFile) {
+                                        that.targetFile = resp;
+                                    }
                                     that.readInFile(headerFunc, resp);
                                 }
                             }
