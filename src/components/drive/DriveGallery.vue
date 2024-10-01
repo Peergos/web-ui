@@ -95,6 +95,7 @@ module.exports = {
 			}
 		},
 		close() {
+            window.removeEventListener("keyup", this.keyup);
 		    this.pinging = false;
             this.showWarning = false;
 		    this.$emit("hide-gallery");
