@@ -1800,7 +1800,9 @@ module.exports = {
                 that.spinner(false);
                 callback();
                 setTimeout(() => {
-                    that.openFileOrDir("Calendar", this.context.username + '/.apps/' + that.currentAppName + '/data/' + path, {filename:filename});
+                    that.navigateTo = { app: "Calendar", navigationPath: that.context.username + '/.apps/' + that.currentAppName + '/data/' + path
+                        , navigationFilename: filename};
+                    that.closeSandbox();
                 });
             });
         },
@@ -2143,7 +2145,8 @@ module.exports = {
             callback();
             let that = this;
             setTimeout(() => {
-                that.openFileOrDir("Calendar", path, {filename:attachment.uuid});
+                that.navigateTo = { app: "Calendar", navigationPath: path, navigationFilename: attachment.uuid};
+                that.closeSandbox();
             });
         },
         retrieveAttachment: function(uuid) {
@@ -3636,11 +3639,13 @@ module.exports = {
         closeSandbox: function () {
             let iframe = document.getElementById("sandboxId");
             if (iframe != null) {
+                iframe.src="#";
                 iframe.parentNode.removeChild(iframe);
             }
             window.removeEventListener('message', this.messageHandler);
             window.removeEventListener("resize", this.resizeHandler);
             this.running = false;
+
             if (!this.browserMode) {
                 this.$emit("refresh");
             }
