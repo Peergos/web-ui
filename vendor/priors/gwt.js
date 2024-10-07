@@ -1676,17 +1676,21 @@ var thumbnail = {
 };
 
 var tweetNaCl = {
-    useWebcypto : false,
+    useWebcyptoVerify : false,
+    useWebcyptoSign : false,    
     JSNaCl: function() {
         this.randombytes = generateRandomBytes;
         this.secretbox = generateSecretbox;
         this.secretbox_open = generateSecretbox_open;
 
-        if (tweetNaCl.useWebcrypto) {
+        if (tweetNaCl.useWebcryptoVerify) {
             this.crypto_sign_open = generateCrypto_sign_open_webcrypto;
-            this.crypto_sign = generateCrypto_sign_webcrypto;
         } else {
             this.crypto_sign_open = generateCrypto_sign_open;
+        }
+        if (tweetNaCl.useWebcryptoSign) {
+            this.crypto_sign = generateCrypto_sign_webcrypto;
+        } else {
             this.crypto_sign = generateCrypto_sign;
         }
             
@@ -1698,10 +1702,18 @@ var tweetNaCl = {
     }   
 };
 
-// use webcrypto signing if present
+// use webcrypto verify if present
 window.crypto.subtle.importKey("raw", new Int8Array(32), "Ed25519", false, ["verify"]).then(publicKey => {
-    console.log("Using optimised  webcrypto Ed25519 implementation.");
-    tweetNaCl.useWebcrypto = true;
+    console.log("Using optimised webcrypto Ed25519 verify implementation.");
+    tweetNaCl.useWebcryptoVerify = true;
+});
+// use webcrypto sign if present
+var pkcs8der = new Int8Array(48);
+for (var i=0; i < 16; i++)
+    pkcs8der[i] = derHeader[i];
+window.crypto.subtle.importKey("pkcs8", pkcs8der, "Ed25519", false, ["sign"]).then(secretKey => {
+    console.log("Using optimised webcrypto Ed25519 sign implementation.");
+    tweetNaCl.useWebcryptoSign = true;
 });
 
 
