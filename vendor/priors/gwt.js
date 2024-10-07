@@ -1416,11 +1416,18 @@ function generateCrypto_sign_open(signed, publicSigningKey) {
     return future;
 }
 
+var derHeaderPublic = [48, 42, 48, 5, 6, 3, 43, 101, 112, 3, 33, 0];
+
 function generateCrypto_sign_open_webcrypto(signed, publicSigningKey) {
     var future = peergos.shared.util.Futures.incomplete();
     let signature = signed.slice(0, 64);
     let encoded = signed.slice(64, signed.length);
-    window.crypto.subtle.importKey("raw", publicSigningKey, "Ed25519", false, ["verify"]).then(publicKey => {
+    var spki = new Int8Array(44);
+    for (var i=0; i < 12; i++)
+        spki[i] = derHeaderPublic[i];
+    for (var i=0; i < 32; i++)
+        spki[12+i] = publicSigningKey[i];
+    window.crypto.subtle.importKey("spki", spki, "Ed25519", false, ["verify"]).then(publicKey => {
         return window.crypto.subtle.verify(
             "Ed25519",
             publicKey,
@@ -1440,7 +1447,6 @@ function generateCrypto_sign_open_webcrypto(signed, publicSigningKey) {
     });
     return future;
 }
-
 
 var derHeader = [48, 46, 2, 1, 0, 48, 5, 6, 3, 43, 101, 112, 4, 34, 4, 32];
 
@@ -1676,17 +1682,21 @@ var thumbnail = {
 };
 
 var tweetNaCl = {
-    useWebcypto : false,
+    useWebcyptoVerify : false,
+    useWebcyptoSign : false,    
     JSNaCl: function() {
         this.randombytes = generateRandomBytes;
         this.secretbox = generateSecretbox;
         this.secretbox_open = generateSecretbox_open;
 
-        if (tweetNaCl.useWebcrypto) {
+        if (tweetNaCl.useWebcryptoVerify) {
             this.crypto_sign_open = generateCrypto_sign_open_webcrypto;
-            this.crypto_sign = generateCrypto_sign_webcrypto;
         } else {
             this.crypto_sign_open = generateCrypto_sign_open;
+        }
+        if (tweetNaCl.useWebcryptoSign) {
+            this.crypto_sign = generateCrypto_sign_webcrypto;
+        } else {
             this.crypto_sign = generateCrypto_sign;
         }
             
@@ -1698,10 +1708,21 @@ var tweetNaCl = {
     }   
 };
 
-// use webcrypto signing if present
-window.crypto.subtle.importKey("raw", new Int8Array(32), "Ed25519", false, ["verify"]).then(publicKey => {
-    console.log("Using optimised  webcrypto Ed25519 implementation.");
-    tweetNaCl.useWebcrypto = true;
+// use webcrypto verify if present
+var spki = new Int8Array(44);
+for (var i=0; i < 12; i++)
+    spki[i] = derHeaderPublic[i];
+window.crypto.subtle.importKey("spki", spki, "Ed25519", false, ["verify"]).then(publicKey => {
+    console.log("Using optimised webcrypto Ed25519 verify implementation.");
+    tweetNaCl.useWebcryptoVerify = true;
+});
+// use webcrypto sign if present
+var pkcs8der = new Int8Array(48);
+for (var i=0; i < 16; i++)
+    pkcs8der[i] = derHeader[i];
+window.crypto.subtle.importKey("pkcs8", pkcs8der, "Ed25519", false, ["sign"]).then(secretKey => {
+    console.log("Using optimised webcrypto Ed25519 sign implementation.");
+    tweetNaCl.useWebcryptoSign = true;
 });
 
 
