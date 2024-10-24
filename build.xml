@@ -236,6 +236,8 @@ Javac-Version: ${javac.version}</echo>
       <arg value="pki-init"/>
       <arg value="-log-to-console"/>
       <arg value="true"/>
+      <arg value="-enable-gc"/>
+      <arg value="true"/>
       <arg value="-useIPFS"/>
       <arg value="false"/>
       <arg value="-webroot"/>
@@ -348,6 +350,8 @@ Javac-Version: ${javac.version}</echo>
       <arg value="webroot"/>
       <arg value="-webcache"/>
       <arg value="false"/>
+      <arg value="-enable-gc"/>
+      <arg value="true"/>
       <arg value="-max-users"/>
       <arg value="5"/>
       <arg value="peergos.identity.hash"/>
