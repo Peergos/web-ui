@@ -2735,7 +2735,7 @@ module.exports = {
                     let userApps = this.availableAppsForFile(file);
                     var args = {filename:filename}
                     this.appArgs = args;
-                    if (userApps.length == 1) {
+                    if (userApps.length == 1 && app != "editor") {
                         this.openFileOrDir(userApps[0].name, this.getPath, args, writable);
                     } else {
                         if (recommendedApp != null) {
