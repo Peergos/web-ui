@@ -10183,7 +10183,7 @@ var baseConvertors = {
     image: function (node, _a) {
         var getChildrenText = _a.getChildrenText, skipChildren = _a.skipChildren;
         var _b = node, title = _b.title, destination = _b.destination;
-        if (!destination.startsWith('/')) {
+        if (!destination.startsWith('/') && !destination.startsWith('data:image/')) {
             destination = _a.options.subPath + '/' + destination;
         }
         skipChildren();
