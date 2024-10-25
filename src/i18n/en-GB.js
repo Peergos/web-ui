@@ -354,7 +354,6 @@ module.exports = {
     "VERIFY.VERIFIED":"Verified",
     "VERIFY.UNVERIFIED":"Unverified",
     "LAUNCHER.CUSTOM":"Custom Apps",
-    "LAUNCHER.RECOMMENDED":"Recommended Apps",
     "LAUNCHER.UPDATE":"Check for Updates",
     "LAUNCHER.NONE":"No Custom Apps currently installed.  Create an App from the 'create app' menu item of the green plus.",
     "LAUNCHER.SHORTCUTS":"Shortcuts",

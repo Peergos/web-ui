@@ -337,7 +337,6 @@ module.exports = {
     "VERIFY.VERIFIED":"已验证",
     "VERIFY.UNVERIFIED":"未验证",
     "LAUNCHER.CUSTOM":"定制应用程序",
-    "LAUNCHER.RECOMMENDED":"推荐的应用程序",
     "LAUNCHER.UPDATE":"检查更新",
     "LAUNCHER.NONE":"当前没有安装自定义应用程序。从绿色加号的“创建应用程序”菜单项创建应用程序。",
     "LAUNCHER.SHORTCUTS":"快捷方式",
