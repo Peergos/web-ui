@@ -344,6 +344,7 @@ module.exports = {
 	},
 
 	checkIfDomainNeedsUnblocking() {
+            return; // B2 has started returning a cors error for notablock so ignore this for now
 	    if (this.network == null) return;
 	    var that = this;
 	    this.network.otherDomain().thenApply(function (domainOpt) {
@@ -358,7 +359,7 @@ module.exports = {
 
 		    req.onerror = function (e) {
 			that.$toast.error(
-			    "Please unblock the following domain for Peergos to function correctly: " +
+			    "Please unblock the following domain for Peergos to function faster: " +
 				domainOpt.get()
 			);
 		    };
