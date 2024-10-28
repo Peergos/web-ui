@@ -5,17 +5,20 @@ on: [push]
 jobs:
   build:
     runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        java: [ '17', '21' ]
     permissions:
       id-token: write
       contents: read
       attestations: write
     steps:
     - uses: actions/checkout@v4
-    - name: Set up JDK
+    - name: Set up JDK ${{ matrix.Java }}
       uses: actions/setup-java@v4
       with:
         distribution: temurin
-        java-version: 17
+        java-version: ${{ matrix.Java }}
     - name: Build with Ant
       run: ant -noinput -buildfile build.xml peergos_submodule_sync dist 
     - name: Create jar attestation
