@@ -85,6 +85,9 @@
   <!-- web ui building our stuff -->
   <target name="js" description="bundle all our vuejs components into js">
     <exec executable="java" dir="." failonerror="true" >
+      <arg value="-XX:+UnlockExperimentalVMOptions"/>
+      <arg value="-XX:+EnableJVMCI"/>
+      <arg value="-Dpolyglot.engine.WarnInterpreterOnly=false"/>
       <arg value="-jar"/>
       <arg value="JPack.jar"/>
       <arg value="-root"/>
