@@ -495,8 +495,14 @@ module.exports = {
         };
         this.showPrompt =  true;
     },
+    isString: function(x) {
+        return typeof x === 'string' || x instanceof String;
+    },
     calendarColorChangeRequest: function(calendar, calendarName, newColor) {
         let that = this;
+        if (!this.isString(newColor)) {
+            return;
+        }
         for (var i=0;i < that.calendarProperties.calendars.length; i++) {
             let calendar = that.calendarProperties.calendars[i];
             if (calendar.name == calendarName) {

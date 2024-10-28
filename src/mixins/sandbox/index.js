@@ -50,7 +50,7 @@ module.exports = {
               this.$toast.error(this.translate("SANDBOX.UNSAFE") + ': ' + permission, {timeout:false});
           }
       },
-      isString: function isString(x) { //https://stackoverflow.com/a/9436948
+      isString: function(x) { //https://stackoverflow.com/a/9436948
         return typeof x === 'string' || x instanceof String;
       },
       verifyJSONFile: function(file, appPath) {
