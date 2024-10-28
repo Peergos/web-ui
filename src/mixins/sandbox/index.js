@@ -50,22 +50,33 @@ module.exports = {
               this.$toast.error(this.translate("SANDBOX.UNSAFE") + ': ' + permission, {timeout:false});
           }
       },
+      isString: function isString(x) { //https://stackoverflow.com/a/9436948
+        return typeof x === 'string' || x instanceof String;
+      },
       verifyJSONFile: function(file, appPath) {
           let that = this;
           let appNames = this.sandboxedApps.appsInstalled.slice();
           let future = peergos.shared.util.Futures.incomplete();
           this.readJSONFile(file).thenApply(props => {
+              let that = this;
               if (props == null) {
                   future.complete({props: null, errors: ['Unable to parse peergos-app.json. See console for details']});
               } else {
                   let errors = [];
                   let mandatoryFields = ["displayName", "description", "launchable"];
+                  let stringFields = ["displayName", "description", "version", "author", "appIcon", "source"];
                   let existingCreateMenuItems = ["upload files","upload folder","new folder","new file", "new app"];
                   let validPermissions = ["STORE_APP_DATA", "EDIT_CHOSEN_FILE", "READ_CHOSEN_FOLDER",
                     "EXCHANGE_MESSAGES_WITH_FRIENDS", "USE_MAILBOX", "ACCESS_PROFILE_PHOTO", "CSP_UNSAFE_EVAL"];
                   mandatoryFields.forEach(field => {
                       if (props[field] == null) {
                           errors.push("Missing property " + field);
+                      }
+                  });
+                  stringFields.forEach(field => {
+                      let prop = props[field];
+                      if (!that.isString(prop)) {
+                          errors.push("Property not of type String: " + field);
                       }
                   });
                   if (errors.length == 0) {
@@ -106,24 +117,35 @@ module.exports = {
                       if (props.author.length > 32) {
                           errors.push("Invalid Author property. Length must not exceed 32 characters");
                       }
-                        if (props.createMenuText != null) {
-                          if (props.createMenuText.length > 25) {
-                              errors.push("Invalid createMenuText property. Length must not exceed 25 characters");
-                          }
-                          let lowercaseText = props.createMenuText.toLowerCase().trim();
-                          let itemIndex = existingCreateMenuItems.findIndex(v => v.name === lowercaseText);
-                          if (itemIndex > -1) {
-                              errors.push("Invalid createMenuText property. Menu text already exists!");
-                          }
-                        }
+                      if (props.source.length > 256) {
+                          errors.push("Invalid Source property. Length must not exceed 256 characters");
+                      }
                       if (!(props.fileExtensions.constructor === Array)) {
                           errors.push("Invalid fileExtensions property. Must be an array. Can be empty []");
+                      } else {
+                          props.fileExtensions.forEach(extension => {
+                              if (!that.isString(extension)) {
+                                  errors.push("Invalid fileExtensions property. Element value not of type String");
+                              }
+                          });
                       }
                       if (!(props.mimeTypes.constructor === Array)) {
                           errors.push("Invalid mimeTypes property. Must be an array. Can be empty []");
+                      } else {
+                          props.mimeTypes.forEach(mimeType => {
+                              if (!that.isString(mimeType)) {
+                                  errors.push("Invalid mimeTypes property. Element value not of type String");
+                              }
+                          });
                       }
                       if (!(props.fileTypes.constructor === Array)) {
                           errors.push("Invalid fileTypes property. Must be an array. Can be empty []");
+                      } else {
+                          props.fileTypes.forEach(fileType => {
+                              if (!that.isString(fileType)) {
+                                  errors.push("Invalid fileTypes property. Element value not of type String");
+                              }
+                          });
                       }
                   }
                     if (errors.length == 0 && appPath != null) {
