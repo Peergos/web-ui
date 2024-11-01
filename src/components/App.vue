@@ -407,6 +407,7 @@ module.exports = {
 		    that.$toast.error(
 			"Secret link not found! Link expired or deleted?"
 		    );
+                    throwable.printStackTrace();
 		});
 	},
     },
