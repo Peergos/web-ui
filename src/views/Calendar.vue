@@ -919,7 +919,7 @@ module.exports = {
             foundDirectoryIndex = uploadParams.uploadPaths.length -1;
         }
         let reader = new peergos.shared.user.fs.AsyncReader.ArrayBacked(bytes);
-        let fup = new peergos.shared.user.fs.FileWrapper.FileUploadProperties(filename, reader,
+        let fup = new peergos.shared.user.fs.FileWrapper.FileUploadProperties(filename, {get_0: () => reader},
             (fileSize - (fileSize % Math.pow(2, 32))) / Math.pow(2, 32), fileSize, false,
             true, updateProgressBar);
         let fileUploadList = uploadParams.fileUploadProperties[foundDirectoryIndex];

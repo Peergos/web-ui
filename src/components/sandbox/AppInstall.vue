@@ -266,7 +266,7 @@ module.exports = {
                                 file.getInputStream(that.context.network, that.context.crypto, fileProps.sizeHigh(), fileProps.sizeLow(), function(read){})
                                     .thenApply(function(reader) {
                                         filesProcessedCounter++;
-                                        let fup = new peergos.shared.user.fs.FileWrapper.FileUploadProperties(fileProps.name, reader,
+                                        let fup = new peergos.shared.user.fs.FileWrapper.FileUploadProperties(fileProps.name, {get_0: () => reader},
                                             (fileProps.size_0 - (fileProps.size_0 % Math.pow(2, 32))) / Math.pow(2, 32), fileProps.size_0, false,
                                             true, x => {});
                                         fileUploadList.push(fup);
