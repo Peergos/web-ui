@@ -1376,7 +1376,8 @@ module.exports = {
                         return !f.getFileProperties().isHidden;
                     });
                     let allowedFiles = notHiddenFiles.filter(function (f) {
-                        return that.disallowedFilenames.get(f.getName()) == null;
+                        return that.disallowedFilenames.get(f.getName()) == null
+                            && !f.getName().includes("/");
                     });
                     if (notHiddenFiles.length != allowedFiles.length) {
                         console.log('Folder contains files with disallowed filenames!');
@@ -1435,6 +1436,8 @@ module.exports = {
 				if (folderName === '')
 					return;
 				if (folderName === '.' || folderName === '..')
+					return;
+				if (folderName.includes("/"))
 					return;
                 if (that.disallowedFilenames.get(folderName) != null) {
                     that.showToastError(that.translate("DRIVE.FOLDERNAME.INVALID"));
@@ -3054,6 +3057,8 @@ module.exports = {
 				let fileName = prompt_result.trim();
 				if (fileName === '')
 					return;
+                if (fileName.includes("/"))
+                    return
 				if (that.disallowedFilenames.get(fileName) != null) {
 				    that.showToastError(that.translate("DRIVE.FILENAME.INVALID"));
 				    return;
