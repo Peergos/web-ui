@@ -559,6 +559,7 @@ module.exports = {
             zipAndDownloadFoldersCount: 0,
             htmlAnchor: "",
             previouslyOpenedApp: {path: '', filename: '', app: ''},
+            disallowedFilenames: new Map(),
 		};
 	},
 	mixins:[downloaderMixins, router, zipMixin, launcherMixin, i18n, sandboxMixin],
@@ -851,7 +852,22 @@ module.exports = {
 
 	created() {
 	    let that = this;
-		this.onResize()
+		this.onResize();
+		let illegalFilenames = [
+                                    'constructor',
+                                    '__defineGetter__',
+                                    '__defineSetter__',
+                                    'hasOwnProperty',
+                                    '__lookupGetter__',
+                                    '__lookupSetter__',
+                                    'isPrototypeOf',
+                                    'propertyIsEnumerable',
+                                    'toString',
+                                    'valueOf',
+                                    '__proto__',
+                                    'toLocaleString'
+                                  ];
+		illegalFilenames.forEach(item => that.disallowedFilenames.set(item, ""));
 		// TODO: throttle onResize and make it global?
 		window.addEventListener('resize', this.onResize, {passive: true} );
         peergos.shared.user.App.init(that.context, "launcher").thenApply(launcher => {
@@ -1356,9 +1372,17 @@ module.exports = {
 					that.sharedWithState = updatedSharedWithState;
 					var arr = children.toArray();
 					that.showSpinner = false;
-					that.files = arr.filter(function (f) {
-						return !f.getFileProperties().isHidden;
-					});
+					let notHiddenFiles = arr.filter(function (f) {
+                        return !f.getFileProperties().isHidden;
+                    });
+                    let allowedFiles = notHiddenFiles.filter(function (f) {
+                        return that.disallowedFilenames.get(f.getName()) == null
+                            && !f.getName().includes("/");
+                    });
+                    if (notHiddenFiles.length != allowedFiles.length) {
+                        console.log('Folder contains files with disallowed filenames!');
+                    }
+					that.files = allowedFiles;
                     if (selectedFilename != null) {
                         that.selectedFiles = that.files.filter(f => f.getName() == selectedFilename);
                         that.openFile();
@@ -1400,6 +1424,7 @@ module.exports = {
 		},
 
 		askMkdir() {
+		    let that = this;
 			this.prompt_placeholder = this.translate("NEW.FOLDER.NAME.LABEL");
 			this.prompt_message = this.translate("NEW.FOLDER.NAME.MESSAGE");
 			this.prompt_value = '';
@@ -1412,6 +1437,12 @@ module.exports = {
 					return;
 				if (folderName === '.' || folderName === '..')
 					return;
+				if (folderName.includes("/"))
+					return;
+                if (that.disallowedFilenames.get(folderName) != null) {
+                    that.showToastError(that.translate("DRIVE.FOLDERNAME.INVALID"));
+                    return;
+                }
 				this.mkdir(folderName);
 			}.bind(this);
 			this.showPrompt = true;
@@ -3015,6 +3046,7 @@ module.exports = {
         },
 
 		createBlankFile() {
+		    let that = this;
 			this.prompt_placeholder = this.translate("DRIVE.FILENAME.PLACEHOLDER");
 			this.prompt_message = this.translate("DRIVE.FILENAME");
 			this.prompt_value = '';
@@ -3025,6 +3057,12 @@ module.exports = {
 				let fileName = prompt_result.trim();
 				if (fileName === '')
 					return;
+                if (fileName.includes("/"))
+                    return
+				if (that.disallowedFilenames.get(fileName) != null) {
+				    that.showToastError(that.translate("DRIVE.FILENAME.INVALID"));
+				    return;
+                }
     			let fileData = peergos.shared.user.JavaScriptPoster.emptyArray();
 				this.uploadEmptyFile(fileName, fileData);
 			}.bind(this);
