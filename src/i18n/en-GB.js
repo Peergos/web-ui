@@ -106,6 +106,8 @@ module.exports = {
     "DRIVE.APP.ERROR":"Error creating App",
     "DRIVE.FILENAME":"Enter a file name",
     "DRIVE.FILENAME.PLACEHOLDER":"File name",
+    "DRIVE.FILENAME.INVALID":"Invalid File name",
+    "DRIVE.FOLDERNAME.INVALID":"Invalid Folder name",
     "DRIVE.CREATE.ERROR":"Error creating file",
     "DRIVE.RENAME.TITLE":"Enter a new name",
     "DRIVE.RENAME.PLACEHOLDER":"New name",
