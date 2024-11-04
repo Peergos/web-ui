@@ -7121,7 +7121,16 @@ Base.prototype._getContainDatesInSchedule = function(schedule) {
 
     return range;
 };
+var SCHEDULE_VULNERABLE_OPTIONS = ['title', 'body', 'location', 'state', 'category', 'dueDateClass'];
+function sanitizeOptions(options) {
+    util.forEachArray(SCHEDULE_VULNERABLE_OPTIONS, function(prop) {
+        if (options[prop]) {
+            options[prop] = DOMPurify.sanitize(options[prop]);
+        }
+    });
 
+    return options;
+}
 /****************
  * CRUD Schedule
  ****************/
@@ -7137,7 +7146,7 @@ Base.prototype._getContainDatesInSchedule = function(schedule) {
 Base.prototype.createSchedule = function(options, silent) {
     var schedule,
         scheduleData = {
-            data: options
+            data: sanitizeOptions(options)
         };
 
     /**
@@ -7188,7 +7197,7 @@ Base.prototype.updateSchedule = function(schedule, options) {
     var start = options.start || schedule.start;
     var end = options.end || schedule.end;
 
-    options = options || {};
+    options = options ? sanitizeOptions(options) : {};
 
     if (['milestone', 'task', 'allday', 'time'].indexOf(options.category) > -1) {
         schedule.set('category', options.category);
@@ -9066,10 +9075,16 @@ Calendar.prototype._initialize = function(options) {
  */
 Calendar.prototype._setAdditionalInternalOptions = function(options) {
     var timezones = options.timezones || [];
+    var templateWithSanitizer = function(templateFn) {
+        return function() {
+            var template = templateFn.apply(null, arguments);
 
+            return DOMPurify.sanitize(template);
+        };
+    };
     util.forEach(options.template, function(func, name) {
         if (func) {
-            Handlebars.registerHelper(name + '-tmpl', func);
+            Handlebars.registerHelper(name + '-tmpl', templateWithSanitizer(func));
         }
     });
 
