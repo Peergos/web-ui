@@ -152,7 +152,7 @@ const precachedAssets = [
         'images/findbarButton-next.svg',
         'images/findbarButton-previous.svg',
         'images/gv-toolbarButton-download.svg',
-        'images/loading-icon.gif
+        'images/loading-icon.gif',
         'images/loading.svg',
         'images/messageBar_closingButton.svg',
         'images/messageBar_warning.svg',
@@ -308,7 +308,6 @@ const precachedAssets = [
         'cmaps/KSCpc-EUC-H.bcmap',
         'cmaps/KSCpc-EUC-V.bcmap',
         'cmaps/Katakana.bcmap',
-        'cmaps/LICENSE
         'cmaps/NWP-H.bcmap',
         'cmaps/NWP-V.bcmap',
         'cmaps/RKSJ-H.bcmap',

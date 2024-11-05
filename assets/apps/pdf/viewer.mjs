@@ -832,10 +832,10 @@ const defaultOptions = {
   }
 };
 {
-  defaultOptions.defaultUrl = {
-    value: "compressed.tracemonkey-pldi-09.pdf",
-    kind: OptionKind.VIEWER
-  };
+  //defaultOptions.defaultUrl = {
+  //  value: "compressed.tracemonkey-pldi-09.pdf",
+  //  kind: OptionKind.VIEWER
+  //};
   defaultOptions.sandboxBundleSrc = {
     value: "pdf.sandbox.mjs",
     kind: OptionKind.VIEWER
