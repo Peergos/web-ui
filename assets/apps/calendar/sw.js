@@ -12,6 +12,8 @@ const precachedAssets = [
     'css/default.css',
     'tui-date-picker.js',
     'bootstrap.js',
+    'purify.min.js',
+    'purify.min.js.map',
     'images/ic-arrow-line-left@3x.png',
     'images/download.png',
     'images/user-plus.svg',
