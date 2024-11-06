@@ -1,20 +1,16 @@
 const cacheName = 'BrowserCache_v1';
 
 const precachedAssets = [
-        'pdf.sandbox.mjs.map',
-        'viewer.mjs.map',
         'viewer.css',
         'pdf.worker.mjs',
         'pdf.sandbox.mjs',
         'debugger.mjs',
         'viewer.mjs',
         'init.js',
-        'pdf.mjs.map',
         'pdf.worker.js',
         'pdf.mjs',
         'debugger.css',
         'pdf.js',
-        'pdf.worker.mjs.map',
         'index.html',
         'locale/sl/viewer.ftl',
         'locale/szl/viewer.ftl',

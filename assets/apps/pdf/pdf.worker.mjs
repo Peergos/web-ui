@@ -56848,4 +56848,3 @@ const pdfjsBuild = "3634dab10";
 var __webpack_exports__WorkerMessageHandler = __webpack_exports__.WorkerMessageHandler;
 export { __webpack_exports__WorkerMessageHandler as WorkerMessageHandler };
 
-//# sourceMappingURL=pdf.worker.mjs.map
