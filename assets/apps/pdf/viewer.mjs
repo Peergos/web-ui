@@ -15298,6 +15298,7 @@ function getViewerConfiguration() {
 }
 function webViewerLoad() {
   const config = getViewerConfiguration();
+  /* //removed due to error in console: : SecurityError: Failed to read a named property 'document' from 'Window': Blocked a frame with origin "http://pdf.somedomain:port" from accessing a cross-origin frame.
   const event = new CustomEvent("webviewerloaded", {
     bubbles: true,
     cancelable: true,
@@ -15310,7 +15311,7 @@ function webViewerLoad() {
   } catch (ex) {
     console.error(`webviewerloaded: ${ex}`);
     document.dispatchEvent(event);
-  }
+  }*/
   PDFViewerApplication.run(config);
 }
 document.blockUnblockOnload?.(true);
