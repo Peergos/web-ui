@@ -21,7 +21,7 @@
                         v-model="selected"
                         :value="file"
                         tabindex="0"
-                        @click="clickHandler"
+                        @click.shift="clickShiftHandler"
                         />
                         <span class="checkmark"></span>
                     </label>            
@@ -78,25 +78,25 @@ module.exports = {
     },
     watch: {
         selected(newSelected, oldSelected) {
-            if (this.isShiftModifierOn && newSelected.length == oldSelected.length +1) {
-                if(newSelected != this.selectedFiles){
-                    let difference = newSelected.filter(x => !oldSelected.includes(x))[0];
-                    let newIndex = this.files.indexOf(difference);
-                    var largestIndex = -1;
-                    for(var i=0; i < newSelected.length; i++) {
-                        let index = this.files.indexOf(newSelected[i]);
-                        if (index != newIndex && index > largestIndex) {
-                            largestIndex = index;
-                        }
-                    }
-                    let selectedWithShift = newSelected.concat(this.files.slice(largestIndex +1, newIndex));
-                    this.$emit('update:selectedFiles', selectedWithShift);
-                }
-            } else {
-                if(newSelected != this.selectedFiles){
-                    this.$emit('update:selectedFiles', newSelected)
-                }
-            }
+              if (this.isShiftModifierOn && newSelected.length == oldSelected.length +1) {
+                  if(newSelected != this.selectedFiles){
+                      let difference = newSelected.filter(x => !oldSelected.includes(x))[0];
+                      let newIndex = this.files.indexOf(difference);
+                      var largestIndex = -1;
+                      for(var i=0; i < newSelected.length; i++) {
+                          let index = this.files.indexOf(newSelected[i]);
+                          if (index < newIndex && index > largestIndex) {
+                              largestIndex = index;
+                          }
+                      }
+                      let selectedWithShift = newSelected.concat(this.files.slice(largestIndex +1, newIndex));
+                      this.$emit('update:selectedFiles', selectedWithShift);
+                  }
+              } else {
+                  if(newSelected != this.selectedFiles){
+                      this.$emit('update:selectedFiles', newSelected)
+                  }
+              }
         },
         selectedFiles(newSelected, oldSelected){
             this.selected = newSelected;
@@ -104,8 +104,8 @@ module.exports = {
         }
     },
     methods: {
-        clickHandler(event) {
-            this.isShiftModifierOn = event.shiftKey;
+        clickShiftHandler() {
+            this.isShiftModifierOn = true;
         },
 
 		showMenu(e, file){
