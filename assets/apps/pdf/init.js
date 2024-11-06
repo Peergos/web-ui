@@ -12,7 +12,7 @@ window.addEventListener('message', function (e) {
     var loadFile = (ev) => {
         try {
             PDFViewerApplication.setTitle(ev.data.name);
-            PDFViewerApplication.open(new Uint8Array(ev.data.bytes));
+            PDFViewerApplication.open({data:new Uint8Array(ev.data.bytes)});
         } catch(ex) { 
             setTimeout(() => loadFile(ev), 200)
         }

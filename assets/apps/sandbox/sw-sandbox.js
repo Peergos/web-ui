@@ -233,6 +233,7 @@ const precachedAssets = [
     'print-preview.html',
     'print-preview.js',
     'purify.min.js',
+    'purify.min.js.map',
     'StreamSaver-sandbox.js',
     'worker-sandbox.html',
     'init-sw-sandbox.js',

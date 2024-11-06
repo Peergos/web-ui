@@ -1,6 +1,8 @@
 const cacheName = 'BrowserCache_v1';
 
 const precachedAssets = [
+    'purify.min.js',
+    'purify.min.js.map',
     'tui-code-snippet.js',
     'tui-calendar.js',
     'moment.js',
