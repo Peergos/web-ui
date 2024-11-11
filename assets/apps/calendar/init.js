@@ -765,17 +765,25 @@ function toMoment(iCalComp, icalDateTime) {
     }
     return moment.tz(icalDateTime.toJSDate(), normaliseTimeZoneName(icalDateTime.zone.tzid));
 }
+function escapeHtml(unsafe) { //https://stackoverflow.com/a/6234804
+    return unsafe
+         .replace(/&/g, "&amp;")
+         .replace(/</g, "&lt;")
+         .replace(/>/g, "&gt;")
+         .replace(/"/g, "&quot;")
+         .replace(/'/g, "&#039;");
+ }
 function unpackEvent(iCalComp, iCalEvent, fromImport, isSharedWithUs, calendarId) {
     let event = new Object();
     event['isAllDay'] = true;
     let id = iCalEvent.getFirstPropertyValue('uid');
     event['Id'] = id == null ? "" : id;
     let title = iCalEvent.getFirstPropertyValue('summary');
-    event['title'] = title == null ? "" : title;
+    event['title'] = title == null ? "" : escapeHtml(title);
     let description = iCalEvent.getFirstPropertyValue('description');
-    event['description'] = description == null ? "" : description;
+    event['description'] = description == null ? "" : escapeHtml(description);
     let location = iCalEvent.getFirstPropertyValue('location');
-    event['location'] = location == null ? "" : location;
+    event['location'] = location == null ? "" : escapeHtml(location);
     event['start'] = toMoment(iCalComp, iCalEvent.getFirstPropertyValue('dtstart'));
     if (event['start'] != null) {
         if (iCalEvent.getFirstPropertyValue('dtstart').toICALString().indexOf('T')>-1){
