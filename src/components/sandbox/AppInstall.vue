@@ -267,7 +267,7 @@ module.exports = {
                                     .thenApply(function(reader) {
                                         filesProcessedCounter++;
                                         let fup = new peergos.shared.user.fs.FileWrapper.FileUploadProperties(fileProps.name, {get_0: () => reader},
-                                            (fileProps.size_0 - (fileProps.size_0 % Math.pow(2, 32))) / Math.pow(2, 32), fileProps.size_0, false,
+                                            (fileProps.size_0 - (fileProps.size_0 % Math.pow(2, 32))) / Math.pow(2, 32), fileProps.size_0, java.util.Optional.empty(), java.util.Optional.empty(), false,
                                             true, x => {});
                                         fileUploadList.push(fup);
                                         if (filesProcessedCounter == files.length) {

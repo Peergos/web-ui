@@ -920,7 +920,7 @@ module.exports = {
         }
         let reader = new peergos.shared.user.fs.AsyncReader.ArrayBacked(bytes);
         let fup = new peergos.shared.user.fs.FileWrapper.FileUploadProperties(filename, {get_0: () => reader},
-            (fileSize - (fileSize % Math.pow(2, 32))) / Math.pow(2, 32), fileSize, false,
+            (fileSize - (fileSize % Math.pow(2, 32))) / Math.pow(2, 32), fileSize, java.util.Optional.empty(), java.util.Optional.empty(), false,
             true, updateProgressBar);
         let fileUploadList = uploadParams.fileUploadProperties[foundDirectoryIndex];
         fileUploadList.push(fup);

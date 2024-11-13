@@ -2154,7 +2154,7 @@ module.exports = {
             let reader = new browserio.JSFileReader(file);
             let java_reader = new peergos.shared.user.fs.BrowserFileReader(reader);
             let fup = new peergos.shared.user.fs.FileWrapper.FileUploadProperties(file.name, {get_0: () => java_reader},
-                (file.size - (file.size % Math.pow(2, 32))) / Math.pow(2, 32), file.size, false,
+                (file.size - (file.size % Math.pow(2, 32))) / Math.pow(2, 32), file.size, java.util.Optional.empty(), java.util.Optional.empty(), false,
                 overwriteExisting ? true : false, updateProgressBar);
 
             let fileUploadList = uploadParams.fileUploadProperties[foundDirectoryIndex];
@@ -2993,7 +2993,7 @@ module.exports = {
             let manifestReader = new peergos.shared.user.fs.AsyncReader.ArrayBacked(appManifest);
             let manifestProps =
                     new peergos.shared.user.fs.FileWrapper.FileUploadProperties("peergos-app.json", {get_0: () => manifestReader}, 0,
-                        manifestUint8Array.byteLength, false, true, x => {});
+                        manifestUint8Array.byteLength, java.util.Optional.empty(), java.util.Optional.empty(), false, true, x => {});
             let html = '<!DOCTYPE html>\n' +
             '<html lang="en">\n' +
             '    <head>\n' +
@@ -3010,7 +3010,7 @@ module.exports = {
             let indexReader = new peergos.shared.user.fs.AsyncReader.ArrayBacked(appIndexPage);
             let indexPageProps =
                     new peergos.shared.user.fs.FileWrapper.FileUploadProperties("index.html", {get_0: () => indexReader}, 0,
-                        indexUint8Array.byteLength, false, true, x => {});
+                        indexUint8Array.byteLength, java.util.Optional.empty(), java.util.Optional.empty(), false, true, x => {});
             let folderUPList = [];
             let appFolderProps = new peergos.shared.user.fs.FileWrapper.FolderUploadProperties(
                 peergos.client.JsUtil.asList([appName]), peergos.client.JsUtil.asList([manifestProps]));
