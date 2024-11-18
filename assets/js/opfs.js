@@ -16,11 +16,11 @@ onmessage = async (e) => {
 function getOPFSKV(filename, directory, retryCount) {
     getFileHandle(filename, directory).then( fileHandle => {
         if (fileHandle != null) {
-            fileHandle.createSyncAccessHandle().then(accessHandle => {
+            fileHandle.createSyncAccessHandle({mode: "read-only"}).then(accessHandle => {
                 const size = accessHandle.getSize();
                 if (size == 0) {
                     console.log("OPFS: attempt to read 0 byte data. hash:" + filename);
-                    if (retryCount < 3) {
+                    if (retryCount < 5) {
                         setTimeout(() => getOPFSKV(filename, directory, retryCount + 1),2000);
                     } else {
                         postMessage({filename: filename, contents: null});
@@ -32,7 +32,7 @@ function getOPFSKV(filename, directory, retryCount) {
                     postMessage({filename: filename, contents: dataView});
                 }
             }).catch(e => {
-                if (retryCount < 3) {
+                if (retryCount < 5) {
                     setTimeout(() => getOPFSKV(filename, directory, retryCount + 1),2000);
                 } else {
                     console.log('getOPFSKV error: ' + e + " filename:" + filename);
@@ -52,7 +52,7 @@ function setOPFSKV(filename, value, directory, retryCount) {
         accessHandle.close();
         //console.log('setOPFSKV closing:' + filename);
     }).catch(e => {
-        if (retryCount < 3) {
+        if (retryCount < 5) {
             setTimeout(() => setOPFSKV(filename, value, directory, retryCount + 1),500);
         } else {
             console.log('setOPFSKV error: ' + e + " filename:" + filename);
