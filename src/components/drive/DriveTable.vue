@@ -21,6 +21,7 @@
                         v-model="selected"
                         :value="file"
                         tabindex="0"
+                        @click.shift="clickShiftHandler"
                         />
                         <span class="checkmark"></span>
                     </label>            
@@ -72,19 +73,41 @@ module.exports = {
     data: function () {
         return {
             selected: this.selectedFiles,
+            isShiftModifierOn: false,
         }
     },
     watch: {
         selected(newSelected, oldSelected) {
-            if(newSelected != this.selectedFiles){
-            this.$emit('update:selectedFiles', newSelected)
-            }
+              if (this.isShiftModifierOn && newSelected.length == oldSelected.length +1) {
+                  if(newSelected != this.selectedFiles){
+                      let difference = newSelected.filter(x => !oldSelected.includes(x))[0];
+                      let newIndex = this.files.indexOf(difference);
+                      var largestIndex = -1;
+                      for(var i=0; i < newSelected.length; i++) {
+                          let index = this.files.indexOf(newSelected[i]);
+                          if (index < newIndex && index > largestIndex) {
+                              largestIndex = index;
+                          }
+                      }
+                      let selectedWithShift = newSelected.concat(this.files.slice(largestIndex +1, newIndex));
+                      this.$emit('update:selectedFiles', selectedWithShift);
+                  }
+              } else {
+                  if(newSelected != this.selectedFiles){
+                      this.$emit('update:selectedFiles', newSelected)
+                  }
+              }
         },
         selectedFiles(newSelected, oldSelected){
-            this.selected = newSelected
+            this.selected = newSelected;
+            this.isShiftModifierOn = false;
         }
     },
     methods: {
+        clickShiftHandler() {
+            this.isShiftModifierOn = true;
+        },
+
 		showMenu(e, file){
 			// https://stackoverflow.com/questions/53738919/emit-event-with-parameters-in-vue/53739018
 			this.$store.commit('SET_DRIVE_MENU_TARGET', e.currentTarget)

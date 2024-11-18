@@ -108,7 +108,7 @@
             :file="file"
             :itemIndex="index"
             :selected="isSelected(file)"
-            @toggleSelection="toggleSelection(file)"
+            @toggleSelection="toggleSelection(file, $event)"
           />
           <DriveGridDrop
             v-if="
@@ -3277,12 +3277,24 @@ module.exports = {
         isSelected(file) {
             return this.selectedFiles.findIndex(selected => selected == file) > -1
         },
-        toggleSelection(file) {
+        toggleSelection(file, shiftModifier) {
             let index = this.selectedFiles.findIndex(selected=> selected == file)
             if (index > -1) {
                 this.selectedFiles.splice(index, 1)
             } else {
-                this.selectedFiles.push(file)
+                if (shiftModifier) {
+                    let newIndex = this.sortedFiles.indexOf(file);
+                    var largestIndex = -1;
+                    for(var i=0; i < this.selectedFiles.length; i++) {
+                        let index = this.sortedFiles.indexOf(this.selectedFiles[i]);
+                        if (index < newIndex && index > largestIndex) {
+                            largestIndex = index;
+                        }
+                    }
+                    this.selectedFiles = this.selectedFiles.concat(this.sortedFiles.slice(largestIndex +1, newIndex +1));
+                } else {
+                    this.selectedFiles.push(file);
+                }
             }
         }
 

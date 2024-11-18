@@ -8,7 +8,7 @@
             :accent="selected" 
             round 
             outline 
-            @click.stop.native="toggleSelection" 
+            @click.stop.native="toggleSelection($event)"
         />
         <AppButton
 			class="card__menu"
@@ -76,8 +76,9 @@ module.exports = {
 			this.$store.commit('SET_DRIVE_MENU_TARGET', e.currentTarget)
 			this.$emit('openMenu')
 		},
-        toggleSelection(){
-            this.$emit('toggleSelection')
+        toggleSelection(event){
+            let shift = event.shiftKey;
+            this.$emit('toggleSelection', shift);
         }
 	},
     directives: {
