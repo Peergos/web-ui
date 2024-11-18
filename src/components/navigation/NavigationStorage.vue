@@ -1,6 +1,10 @@
 <template>
 	<div class="navigation-storage">
 		<p class="storage">{{ usage }} / {{ quota }}</p>
+        <div style="width:100%">
+            <div><meter v-if="percentage > 0" min="0" low="0" high="90" max="100" style="width: 100%" v-bind:value="percentage"></meter></div>
+        </div>
+
 		<AppButton class="upgrade" size="small" v-if="!isPro" @click.native="showRequestStorage()">
 			{{ translate("APPNAV.UPGRADE") }}
 		</AppButton>
@@ -22,11 +26,26 @@ module.exports = {
 		},
 	},
 	computed: {
+        ...Vuex.mapState([
+            'quotaBytes',
+            'usageBytes',
+        ]),
 		...Vuex.mapGetters([
 			'quota',
 			'usage',
-			'isPaid'
+			'isPaid',
+            'isSecretLink',
 		]),
+        percentage() {
+            if (!this.isSecretLink && this.quotaBytes.toString() != '0' && this.usageBytes.toString() != '0') {
+                let accountQuota = Number(this.quotaBytes.toString());
+                let accountUsage = Number(this.usageBytes.toString());
+                var value = Math.floor(accountUsage/accountQuota * 100.0);
+                return value;
+            } else {
+                return 0;
+            }
+        },
 	},
 	methods: {
 		showRequestStorage() {
