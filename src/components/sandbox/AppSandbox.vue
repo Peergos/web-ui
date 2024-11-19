@@ -245,6 +245,7 @@ module.exports = {
             confirm_consumer_cancel_func: () => {},
             confirm_consumer_func: () => {},
             displayToBookmark: true,
+            pickerSelectedFile: "",
         }
     },
     computed: {
@@ -887,6 +888,7 @@ module.exports = {
                                 && !(this.appPath.length > 0 && !this.isAppPathAFolder && path.startsWith(that.getPath))
                                 && !path.startsWith(that.apiRequest + '/data')
                                 && !(this.isSelectedFolder(path))
+                                && !(path == this.pickerSelectedFile)
                                 ? '/assets' : '';
                             if (this.browserMode) {
                                 that.handleBrowserRequest(headerFunc, path, params, isFromRedirect, isNavigate);
@@ -1031,6 +1033,7 @@ module.exports = {
                     }
                     that.showFilePicker = false;
                     let encoder = new TextEncoder();
+                    that.pickerSelectedFile = selectedFile;
                     let data = encoder.encode(JSON.stringify([selectedFile]));
                     that.buildResponse(headerFunc(), data, that.UPDATE_SUCCESS);
                 }.bind(this);
@@ -3505,6 +3508,8 @@ module.exports = {
             } else if (this.isFileViewerMode && filePath.startsWith("/assets/")) {
                 return this.workspaceName + filePath;
             } else if ( (this.appPath.length > 0 && filePath.startsWith(this.getPath)) || this.isSelectedFolder(filePath)) {
+                return filePath;
+            } else if (this.appPath.length > 0 && filePath === this.pickerSelectedFile) {
                 return filePath;
             } else if (this.currentProps != null) { //running in-place
                 let filePathWithoutSlash = filePath.startsWith('/') ? filePath.substring(1) : filePath;
