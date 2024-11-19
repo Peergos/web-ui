@@ -2153,13 +2153,16 @@ module.exports = {
             }
             let reader = new browserio.JSFileReader(file);
             let java_reader = new peergos.shared.user.fs.BrowserFileReader(reader);
-            let fup = new peergos.shared.user.fs.FileWrapper.FileUploadProperties(file.name, {get_0: () => java_reader},
-                (file.size - (file.size % Math.pow(2, 32))) / Math.pow(2, 32), file.size, java.util.Optional.empty(), java.util.Optional.empty(), false,
-                overwriteExisting ? true : false, updateProgressBar);
+            peergos.shared.user.fs.HashTree.build(java_reader, (file.size - (file.size % Math.pow(2, 32))) / Math.pow(2, 32),
+            file.size, this.context.crypto.hasher).thenApply(function(hashtree) {
+                let fup = new peergos.shared.user.fs.FileWrapper.FileUploadProperties(file.name, {get_0: () => java_reader},
+                    (file.size - (file.size % Math.pow(2, 32))) / Math.pow(2, 32), file.size, java.util.Optional.empty(), java.util.Optional.of(hashtree), false,
+                    overwriteExisting ? true : false, updateProgressBar);
 
-            let fileUploadList = uploadParams.fileUploadProperties[foundDirectoryIndex];
-            fileUploadList.push(fup);
-            future.complete(true);
+                let fileUploadList = uploadParams.fileUploadProperties[foundDirectoryIndex];
+                fileUploadList.push(fup);
+                future.complete(true);
+            }).exceptionally(function(t){future.completeExceptionally(t)})
 		},
         addUploadProgressMessage: function(uploadParams, title, subtitle, directory, finalCall) {
             let that = this;
