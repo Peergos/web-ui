@@ -1341,21 +1341,43 @@ module.exports = {
 			return Promise.resolve(null);
 		    var path = this.getPath;
 		    var that = this;
-		    this.context.getByPath(path).thenApply(function (file) {
-                        if (! file.get().isDirectory()) {
+		    this.context.getByPath(path).thenApply(function (fileOpt) {
+		        if (fileOpt.isPresent()) {
+                    let file = fileOpt.get();
+                    file.getLatest(that.context.network).thenApply(updated => {
+                        if (! updated.isDirectory()) {
                             // go to parent if we tried to navigate to file
                             if (path.endsWith("/"))
                                 path = path.substring(0, path.length-1)
                             let index = path.lastIndexOf("/");
-                            filename = path.substring(index+1);
                             that.changePath(path.substring(0, index));
-                            that.updateCurrentDirectory(selectedFilename, callback)
+                            that.updateCurrentDirectory(selectedFilename, callback);
                             return;
                         }
-			that.currentDir = file.get();
-			that.updateFiles(selectedFilename, callback);
+                        that.currentDir = updated;
+                        that.updateFiles(selectedFilename, callback);
+                    }).exceptionally(function (throwable) {
+                        that.$toast.error(that.translate("DRIVE.MISSING.FOLDER"));
+                        if (!that.isSecretLink && path.startsWith("/" + that.context.username)) {
+                            if (path.endsWith("/"))
+                                path = path.substring(0, path.length-1)
+                            let index = path.lastIndexOf("/");
+                            that.changePath(path.substring(0, index));
+                            that.updateCurrentDirectory(selectedFilename, callback);
+                        }
+                    });
+                } else {
+                    that.$toast.error(that.translate("DRIVE.MISSING.FOLDER"));
+                    if (!that.isSecretLink && path.startsWith("/" + that.context.username)) {
+                        if (path.endsWith("/"))
+                            path = path.substring(0, path.length-1)
+                        let index = path.lastIndexOf("/");
+                        that.changePath(path.substring(0, index));
+                        that.updateCurrentDirectory(selectedFilename, callback);
+                    }
+                }
 		    }).exceptionally(function (throwable) {
-			console.log(throwable.getMessage());
+			    console.log(throwable.getMessage());
 		    });
 		},
 
