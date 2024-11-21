@@ -1342,7 +1342,7 @@ module.exports = {
 		    var path = this.getPath;
 		    var that = this;
 		    this.context.getByPath(path).thenApply(function (fileOpt) {
-		        let file = fileOpt.get();
+		        let file = fileOpt.ref;
 		        if (file != null) {
                     file.getLatest(that.context.network).thenApply(updated => {
                         if (! updated.isDirectory()) {
