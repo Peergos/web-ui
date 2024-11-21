@@ -1341,8 +1341,11 @@ module.exports = {
 			return Promise.resolve(null);
 		    var path = this.getPath;
 		    var that = this;
-		    this.context.getByPath(path).thenApply(function (file) {
-                        if (! file.get().isDirectory()) {
+		    this.context.getByPath(path).thenApply(function (fileOpt) {
+		        let file = fileOpt.get();
+		        if (file != null) {
+                    file.getLatest(that.context.network).thenApply(updated => {
+                        if (! updated.isDirectory()) {
                             // go to parent if we tried to navigate to file
                             if (path.endsWith("/"))
                                 path = path.substring(0, path.length-1)
@@ -1352,10 +1355,14 @@ module.exports = {
                             that.updateCurrentDirectory(selectedFilename, callback)
                             return;
                         }
-			that.currentDir = file.get();
-			that.updateFiles(selectedFilename, callback);
+                        that.currentDir = updated;
+                        that.updateFiles(selectedFilename, callback);
+                    }).exceptionally(function (throwable) {
+                        console.log("Unable to get updated folder. Error: " + throwable.getMessage());
+                    });
+                }
 		    }).exceptionally(function (throwable) {
-			console.log(throwable.getMessage());
+			    console.log(throwable.getMessage());
 		    });
 		},
 
