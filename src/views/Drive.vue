@@ -2353,9 +2353,10 @@ module.exports = {
                 target.getLatest(this.context.network).thenApply(updatedTarget => {
                     fileTreeNode.copyTo(updatedTarget, that.context).thenApply(function () {
                         that.updateUsage(usageBytes => {
-                            that.updateCurrentDirectory(null , () =>
+                            that.updateCurrentDirectory(null , () => {
+                                that.showSpinner = true;
                                 that.reduceCopy(index + 1, fileTreeNodes, updatedTarget, future)
-                            );
+                            });
                         });
                     }).exceptionally(function (throwable) {
                         that.updateCurrentDirectory(null , () => {
