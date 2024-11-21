@@ -116,6 +116,7 @@ module.exports = {
     "DRIVE.DELETE.CONFIRM":"Are you sure you want to delete $COUNT items?",
     "DRIVE.DELETE.FILE.ERROR":"Error deleting file: $NAME: $MESSAGE",
     "DRIVE.INSTALL_DEDICATED_APP":"There is no app installed for this kind of file, please install an app to open",
+    "DRIVE.MISSING.FOLDER":"Folder not found!",
     "APPNAV.LAUNCHER":"Launcher",
     "APPNAV.DRIVE":"Drive",
     "APPNAV.NEWSFEED":"Newsfeed",
