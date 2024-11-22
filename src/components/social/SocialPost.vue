@@ -1,6 +1,6 @@
 <template>
 	<transition name="modal" appear>
-		<div class="social-post post-modal__overlay" @click="close()" v-bind:style="{top:modelTop}" style="position: absolute;">
+		<div class="social-post post-modal__overlay" @click="close()" v-bind:style="{top:modelTop}" style="position: absolute;z-index: 2000000001;">
 
 	        <Spinner v-if="showSpinner"></Spinner>
 			<div class="social-post__container" @click.stop>
