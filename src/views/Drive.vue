@@ -2175,10 +2175,15 @@ module.exports = {
             }
             let reader = new browserio.JSFileReader(file);
             let java_reader = new peergos.shared.user.fs.BrowserFileReader(reader);
+            let jsModifiedDate = new Date(file.lastModified);
+            let utcJsModifiedDate = Date.UTC(jsModifiedDate.getUTCFullYear(), jsModifiedDate.getUTCMonth(),
+                            jsModifiedDate.getUTCDate(), jsModifiedDate.getUTCHours(),
+                            jsModifiedDate.getUTCMinutes(), jsModifiedDate.getUTCSeconds(), jsModifiedDate.getMilliseconds());
+            let fileModifiedDateTime = peergos.client.JsUtil.fromUtcMillis(utcJsModifiedDate);
             peergos.shared.user.fs.HashTree.build(java_reader, (file.size - (file.size % Math.pow(2, 32))) / Math.pow(2, 32),
             file.size, this.context.crypto.hasher).thenApply(function(hashtree) {
                 let fup = new peergos.shared.user.fs.FileWrapper.FileUploadProperties(file.name, {get_0: () => java_reader},
-                    (file.size - (file.size % Math.pow(2, 32))) / Math.pow(2, 32), file.size, java.util.Optional.empty(), java.util.Optional.of(hashtree), false,
+                    (file.size - (file.size % Math.pow(2, 32))) / Math.pow(2, 32), file.size, java.util.Optional.of(fileModifiedDateTime), java.util.Optional.of(hashtree), false,
                     overwriteExisting ? true : false, updateProgressBar);
 
                 let fileUploadList = uploadParams.fileUploadProperties[foundDirectoryIndex];
