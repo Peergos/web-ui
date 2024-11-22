@@ -2181,14 +2181,16 @@ module.exports = {
                             jsModifiedDate.getUTCMinutes(), jsModifiedDate.getUTCSeconds(), jsModifiedDate.getMilliseconds());
             let fileModifiedDateTime = peergos.client.JsUtil.fromUtcMillis(utcJsModifiedDate);
             peergos.shared.user.fs.HashTree.build(java_reader, (file.size - (file.size % Math.pow(2, 32))) / Math.pow(2, 32),
-            file.size, this.context.crypto.hasher).thenApply(function(hashtree) {
-                let fup = new peergos.shared.user.fs.FileWrapper.FileUploadProperties(file.name, {get_0: () => java_reader},
-                    (file.size - (file.size % Math.pow(2, 32))) / Math.pow(2, 32), file.size, java.util.Optional.of(fileModifiedDateTime), java.util.Optional.of(hashtree), false,
-                    overwriteExisting ? true : false, updateProgressBar);
+            file.size, this.context.crypto.hasher).thenCompose(function(hashtree) {
+                return java_reader.reset().thenApply(function(resetReader) {
+                    let fup = new peergos.shared.user.fs.FileWrapper.FileUploadProperties(file.name, {get_0: () => resetReader},
+                        (file.size - (file.size % Math.pow(2, 32))) / Math.pow(2, 32), file.size, java.util.Optional.of(fileModifiedDateTime), java.util.Optional.of(hashtree), false,
+                        overwriteExisting ? true : false, updateProgressBar);
 
-                let fileUploadList = uploadParams.fileUploadProperties[foundDirectoryIndex];
-                fileUploadList.push(fup);
-                future.complete(true);
+                    let fileUploadList = uploadParams.fileUploadProperties[foundDirectoryIndex];
+                    fileUploadList.push(fup);
+                    future.complete(true);
+                });
             }).exceptionally(function(t){future.completeExceptionally(t)})
 		},
         addUploadProgressMessage: function(uploadParams, title, subtitle, directory, finalCall) {
