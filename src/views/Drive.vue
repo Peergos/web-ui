@@ -2358,9 +2358,10 @@ module.exports = {
                 target.getLatest(this.context.network).thenApply(updatedTarget => {
                     parent.getLatest(that.context.network).thenApply(updatedParent => {
                         fileTreeNode.moveTo(updatedTarget, updatedParent, filePath, that.context, {get_0:() => that.confirmMove()}).thenApply(() => {
-                            that.updateCurrentDirectory(null , () =>
-                                that.reduceMove(index + 1, path, updatedParent, updatedTarget, fileTreeNodes, future)
-                            );
+                            that.updateCurrentDirectory(null , () => {
+                                that.showSpinner = true;
+                                that.reduceMove(index + 1, path, updatedParent, updatedTarget, fileTreeNodes, future);
+                            });
                         }).exceptionally(function (throwable) {
                             that.updateCurrentDirectory(null , () => {
                                 that.errorTitle = that.translate("DRIVE.MOVE.ERROR").replace("$NAME", name);
