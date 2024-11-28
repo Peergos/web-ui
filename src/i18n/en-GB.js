@@ -20,6 +20,8 @@ module.exports = {
     "SIGNUP.BUNDLED":"All our bundled private applications",
     "SIGNUP.MONTH":"month",
     "SIGNUP.YEAR":"year",
+    "SIGNUP.BILL.MONTHLY":"billed monthly",
+    "SIGNUP.BILL.YEARLY":"billed yearly",
     "SIGNUP.TRYTITLE":"Want to try it first?",
     "SIGNUP.TRY":"Try it for free",
     "PASSWORD.COMMON":"your password is the $PLACE most common password!",
