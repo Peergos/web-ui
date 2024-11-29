@@ -2359,7 +2359,8 @@ module.exports = {
                 let filePath = peergos.client.PathUtils.toPath(path, name);
                 target.getLatest(this.context.network).thenApply(updatedTarget => {
                     parent.getLatest(that.context.network).thenApply(updatedParent => {
-                        fileTreeNode.moveTo(updatedTarget, updatedParent, filePath, that.context, {get_0:() => that.confirmMove()}).thenApply(() => {
+                        fileTreeNode.getLatest(that.context.network)
+                        .thenCompose(updatedFile => updatedFile.moveTo(updatedTarget, updatedParent, filePath, that.context, {get_0:() => that.confirmMove()})).thenApply(() => {
                             multiSelectParams.progress.done += 1;
                             let title = '[' + multiSelectParams.progress.done + '/' + multiSelectParams.progress.max + '] '
                                 + multiSelectParams.title;
@@ -2571,7 +2572,10 @@ module.exports = {
 					let name = clipboard.fileTreeNode.getFileProperties().name;
 					console.log("paste-cut " + name + " -> " + target.getFileProperties().name);
 					let filePath = peergos.client.PathUtils.toPath(clipboard.path.split("/").filter(x => x.length > 0), name);
-					clipboard.fileTreeNode.moveTo(target, clipboard.parent, filePath, that.context, {get_0:() => that.confirmMove()})
+                                        target.getLatest(this.context.network).thenApply(updatedTarget => {
+                                            clipboard.parent.getLatest(that.context.network).thenApply(updatedParent => {
+                                            clipboard.fileTreeNode.getUpdated(that.context.network)
+                                            .thenCompose(updatedFile => updatedFile.moveTo(updatedTarget, updatedParent, filePath, that.context, {get_0:() => that.confirmMove()})
 						.thenApply(function () {
 							that.currentDirChanged();
 							that.onUpdateCompletion.push(function () {
@@ -2582,7 +2586,9 @@ module.exports = {
 							that.errorBody = throwable.getMessage();
 							that.showError = true;
 							that.showSpinner = false;
-						});
+						}));
+                                            });
+                                        });
                         this.clipboard.op = null;
 				} else if (clipboard.op == "copy") {
 					console.log("paste-copy");
