@@ -484,5 +484,9 @@ module.exports = {
     "NEW.FOLDER.NAME.MESSAGE":"Create folder",
     "PROMPT.OK":"OK",
     "PROMPT.CANCEL":"Cancel",
-    "PROMPT.SET":"Set"
+    "PROMPT.SET":"Set",
+    "DRIVE.MOVING.TITLE":"Moving file(s)",
+    "DRIVE.MOVING.COMPLETE":"Completing move and refreshing folder...",
+    "DRIVE.COPYING.TITLE":"Copying file(s)",
+    "DRIVE.COPYING.COMPLETE":"Completing copy and refreshing folder..."
 }
