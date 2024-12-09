@@ -61,7 +61,8 @@ module.exports = {
                     let editPermission = res.props.permissions.filter(p => p == 'EDIT_CHOSEN_FILE').length > 0;
                     let hasFileExtensions = res.props.fileExtensions.length > 0;
                     let createFile = editPermission && hasFileExtensions;
-                    if (!res.props.launchable || (res.props.launchable && createFile) || messagePermission) {
+                    let templateApp = res.props.template.length > 0;
+                    if (!res.props.launchable || (res.props.launchable && createFile) || messagePermission || templateApp) {
                         that.showError("App must be installed first!");
                         that.close();
                     } else {
