@@ -17,6 +17,16 @@
                     :consumer_cancel_func="confirm_consumer_cancel_func"
                     :consumer_func="confirm_consumer_func">
             </Confirm>
+            <AppPrompt
+              v-if="showPrompt"
+              @hide-prompt="closePrompt()"
+              :message="prompt_message"
+              :placeholder="prompt_placeholder"
+              :max_input_size="prompt_max_input_size"
+              :value="prompt_value"
+              :consumer_func="prompt_consumer_func"
+              :action="prompt_action"
+            />
             <div v-if="appProperties != null">
                 <div class="app-install-view">
                     <p>
@@ -41,6 +51,9 @@
                     </p>
                     <p>
                         <span v-if="appProperties.folderAction==true" class="app-install-span">Is a Folder Action</span>
+                    </p>
+                    <p>
+                        <span v-if="appProperties.template.length > 0" class="app-install-span">Multiple instances of App can be installed</span>
                     </p>
                     <p v-if="!appHasFileAssociation && appProperties.permissions.length == 0">
                         <span class="app-install-span">Permissions:</span><span class="app-install-text">None Required</span>
@@ -67,14 +80,17 @@
 </template>
 
 <script>
+const AppPrompt = require("../prompt/AppPrompt.vue");
 const Confirm = require("../confirm/Confirm.vue");
 const Spinner = require("../spinner/Spinner.vue");
 const mixins = require("../../mixins/mixins.js");
 const downloaderMixin = require("../../mixins/downloader/index.js");
 const sandboxMixin = require("../../mixins/sandbox/index.js");
+const i18n = require("../../i18n/index.js");
 
 module.exports = {
     components: {
+        AppPrompt,
         Confirm,
         Spinner
     },
@@ -90,10 +106,20 @@ module.exports = {
             confirm_consumer_cancel_func: () => {},
             confirm_consumer_func: () => {},
             installAppFromFolder: "",
+            isTemplateApp: false,
+            prompt_message: '',
+            prompt_placeholder: '',
+            prompt_max_input_size: 16,
+            prompt_value: '',
+            prompt_consumer_func: () => { },
+            prompt_action: 'ok',
+            showPrompt: false,
+            messenger: null,
+            templateAppSeparator: "!",
         }
     },
-    props: ['appPropsFile','installFolder', "appInstallSuccessFunc"],
-    mixins:[mixins, downloaderMixin, sandboxMixin],
+    props: ['appPropsFile','installFolder', "appInstallSuccessFunc", "templateInstanceAppName", "templateInstanceTitle", "templateInstanceChatId"],
+    mixins:[mixins, downloaderMixin, sandboxMixin, i18n],
     computed: {
         ...Vuex.mapState([
             'quotaBytes',
@@ -103,6 +129,7 @@ module.exports = {
         ]),
     },
     created: function() {
+        this.messenger = new peergos.shared.messaging.Messenger(this.context);
         this.installAppFromFolder = this.installFolder.endsWith('/')  ?
             this.installFolder.substring(0, this.installFolder.length -1) : this.installFolder;
         this.loadAppProperties();
@@ -129,6 +156,7 @@ module.exports = {
                     that.appHasFileAssociation = res.props.fileExtensions.length > 0
                         || res.props.mimeTypes.length > 0
                         || res.props.fileTypes.length > 0;
+                    that.isTemplateApp = res.props.template.length > 0;
                     that.appProperties = res.props;
                 }
             });
@@ -147,14 +175,17 @@ module.exports = {
             if (this.appProperties == null) {
                 return;
             }
-            let appName = this.appProperties.name;
             let displayName = this.appProperties.displayName;
             let newVersion = this.appProperties.version;
             let that = this;
             this.showSpinner = true;
-            this.context.getByPath("/" + this.context.username + "/.apps/" + appName).thenApply(appOpt => {
+            let appName = this.appProperties.name;
+            let actualAppName = this.isTemplateApp
+                && this.templateInstanceAppName != null
+                && this.templateInstanceAppName.length > 0 ? this.templateInstanceAppName : appName;
+            this.context.getByPath("/" + this.context.username + "/.apps/" + actualAppName).thenApply(appOpt => {
                 if (appOpt.ref != null) {
-                    that.readAppProperties(appName).thenApply(props => {
+                    that.readAppProperties(actualAppName).thenApply(props => {
                         if (props == null) {
                             that.installApp();
                         } else {
@@ -162,7 +193,11 @@ module.exports = {
                             that.confirmReplaceAppInstall(displayName, oldVersion, newVersion,
                                 () => {
                                     that.showConfirm = false;
-                                    that.installApp({app:props});
+                                    if (this.isTemplateApp) {
+                                        that.installTemplateApp(props);
+                                    } else {
+                                        that.installApp(props);
+                                    }
                                 },
                                 () => {
                                     that.showConfirm = false;
@@ -173,8 +208,111 @@ module.exports = {
                         }
                     });
                 } else {
-                    that.installApp();
+                    if (this.isTemplateApp) {
+                        that.installTemplateApp();
+                    } else {
+                        that.installApp();
+                    }
                 }
+            });
+        },
+        uuid() {
+          return ([1e7]+-1e3+-4e3+-8e3+-1e11).replace(/[018]/g, c =>
+            (c ^ crypto.getRandomValues(new Uint8Array(1))[0] & 15 >> c / 4).toString(16)
+          ).substring(0, 12);
+        },
+        getTemplateAppTitle(oldProperties, callback) {
+            if (oldProperties != null) {
+                callback(oldProperties.displayName);
+            } else if(this.templateInstanceTitle != null&& this.templateInstanceTitle.length > 0) {
+                callback(this.templateInstanceTitle);
+            }else {
+                let that = this;
+                this.prompt_placeholder = this.translate("NEW.TEMPLATE.APP.NAME.LABEL");
+                this.prompt_message = this.translate("NEW.TEMPLATE.APP.NAME.MESSAGE") + " " + this.appProperties.displayName;
+                this.prompt_value = '';
+                this.prompt_action = this.translate("PROMPT.OK");
+                this.prompt_consumer_func = function (prompt_result) {
+                    if (prompt_result === null)
+                        return;
+                    let title = prompt_result.trim();
+                    if (title === '')
+                        return;
+                    if (title === '.' || title === '..')
+                        return;
+                    if (title.includes("/"))
+                        return;
+                    if (!that.validateDisplayName(title)) {
+                        return;
+                    }
+                    callback(that.appProperties.displayName + " - " +title);
+                };
+                this.showPrompt = true;
+            }
+        },
+        closePrompt() {
+            this.showPrompt = false;
+        },
+        createNewTemplateApp: function(appName, displayName, chatId) {
+            let that = this;
+            let future = peergos.shared.util.Futures.incomplete();
+            if (chatId.length > 0) {
+                future.complete(chatId);
+            } else {
+                this.messenger.createAppChat(appName).thenApply(function(controller){
+                    let chatId = controller.chatUuid;
+                    that.messenger.setGroupProperty(controller, "title", displayName).thenApply(function(updatedController) {
+                        future.complete(chatId);
+                    }).exceptionally(err => {
+                        console.log('setTitle call failed: ' + err);
+                        future.complete(null);
+                    });
+                }).exceptionally(err => {
+                    console.log('Unable to create chat. error:' + err);
+                    future.complete(null);
+                });
+            }
+            return future;
+        },
+        installTemplateApp: function(oldProperties) {
+            let that = this;
+            this.getTemplateAppTitle(oldProperties, displayName => {
+                var appName = "";
+                if (oldProperties != null) {
+                    appName = oldProperties.name;
+                } else if(that.templateInstanceAppName != null&& that.templateInstanceAppName.length > 0) {
+                    appName = that.templateInstanceAppName;
+                }else {
+                    appName = that.appProperties.name + that.templateAppSeparator + that.uuid();
+                }
+                that.context.getByPath(that.installAppFromFolder).thenApply(srcDirectoryOpt => {
+                    that.calculateTotalSize(srcDirectoryOpt.ref, that.installAppFromFolder).thenApply(statistics => {
+                        let spaceAfterOperation = that.checkAvailableSpace(statistics.apparentSize);
+                        if (spaceAfterOperation < 0) {
+                            that.showError("App installation size exceeds available Space.  Please free up " + that.convertBytesToHumanReadable('' + -spaceAfterOperation) + " and try again");
+                            that.showSpinner = false;
+                        } else {
+                            that.spinnerMessage = "Installing App: " + displayName;
+                            var existingChatId = "";
+                            if (oldProperties != null) {
+                                existingChatId = oldProperties.chatId;
+                            } else if(that.templateInstanceChatId != null && that.templateInstanceChatId.length > 0) {
+                                existingChatId = that.templateInstanceChatId;
+                            }
+                            that.createNewTemplateApp(appName, displayName, existingChatId).thenApply(chatId => {
+                                if (chatId == null) {
+                                    that.showError("App installation failed");
+                                    that.showSpinner = false;
+                                } else {
+                                    peergos.shared.user.App.init(that.context, appName).thenApply(ready => {
+                                        that.gatherDataFiles(appName, srcDirectoryOpt.ref)
+                                            .thenApply(dataFiles => that.copyAppFiles(dataFiles, appName, displayName, chatId));
+                                    });
+                                }
+                            });
+                        }
+                    });
+                });
             });
         },
        installApp: function(oldProperties) {
@@ -190,34 +328,12 @@ module.exports = {
                    } else {
                        that.spinnerMessage = "Installing App: " + displayName;
                        peergos.shared.user.App.init(that.context, appName).thenApply(ready => {
-                             that.backupPropertiesFile(appName, oldProperties).thenApply(done => {
-                                 let future = that.gatherDataFiles(appName, srcDirectoryOpt.ref);
-                                 future.thenApply(dataFiles => that.copyAppFiles(dataFiles, appName, displayName));
-                             });
+                             that.gatherDataFiles(appName, srcDirectoryOpt.ref)
+                                .thenApply(dataFiles => that.copyAppFiles(dataFiles, appName, displayName));
                        });
                    }
                });
            });
-       },
-       backupPropertiesFile: function(appName, oldProperties) {
-           var future = peergos.shared.util.Futures.incomplete();
-           if (oldProperties == null) {
-                future.complete(true);
-           } else {
-               let that = this;
-               peergos.shared.user.App.init(that.context, appName).thenApply(app => {
-                    let filePath = peergos.client.PathUtils.directoryToPath(['peergos-app-previous.json']);
-                    let encoder = new TextEncoder();
-                    let uint8Array = encoder.encode(JSON.stringify(oldProperties, null, 2));
-                    let bytes = convertToByteArray(uint8Array);
-                    app.writeInternal(filePath, bytes).thenApply(done => {
-                        that.deletePropertiesFile(appName).thenApply(done => {
-                            future.complete(true);
-                        });
-                    });
-                });
-            }
-            return future;
        },
         gatherDataFiles: function(appName, appDirectory) {
             let future = peergos.shared.util.Futures.incomplete();
@@ -286,28 +402,6 @@ module.exports = {
                 }
             }
         },
-        deletePropertiesFile(appName) {
-            let that = this;
-            let future = peergos.shared.util.Futures.incomplete();
-            let folderPath = "/" + this.context.username + "/.apps/" + appName;
-            let filename = 'peergos-app.json';
-            this.context.getByPath(folderPath).thenApply(appDirOpt => {
-                if (appDirOpt.ref != null) {
-                    appDirOpt.ref.getChild(filename, that.context.crypto.hasher, that.context.network).thenApply(fileToDeleteOpt => {
-                        if (fileToDeleteOpt.ref != null) {
-                            that.removeFile(folderPath + '/' + filename, fileToDeleteOpt.ref, appDirOpt.ref).thenApply(res => {
-                                future.complete(true);
-                            });
-                        } else {
-                            future.complete(false);
-                        }
-                    });
-                }else {
-                    future.complete(false);
-                }
-            });
-            return future;
-        },
         copyAssetsFolder(appName) {
             let that = this;
             let future = peergos.shared.util.Futures.incomplete();
@@ -362,14 +456,14 @@ module.exports = {
             });
             return future;
         },
-        copyAppFiles: function(appDataFiles, app, displayName) {
+        copyAppFiles: function(appDataFiles, app, displayName, chatId) {
             let future = peergos.shared.util.Futures.incomplete();
             let that = this;
             this.deleteAssetsFolder(app).thenApply(res => {
                 that.copyAssetsFolder(app).thenApply(res2 => {
                     that.copyAllDataFiles(appDataFiles, app, displayName).thenApply(res3 => {
                         if (res3) {
-                            that.updateSourceInAppManifest(app).thenApply(function(props){
+                            that.updateAppManifest(app, displayName, chatId).thenApply(function(props){
                                 that.appProperties = props;
                                 that.showSpinner = false;
                                 that.spinnerMessage = "";
@@ -421,12 +515,21 @@ module.exports = {
             }
             return future;
         },
-        updateSourceInAppManifest: function(appName) {
+        updateAppManifest: function(appName, appDisplayName, chatId) {
             let that = this;
             let future = peergos.shared.util.Futures.incomplete();
             this.context.getByPath(this.installAppFromFolder + '/peergos-app.json').thenApply(propsFileOpt => {
                 that.readJSONFile(propsFileOpt.ref).thenApply(props => {
                     props.source = props.source.length > 0 ? props.source : that.installAppFromFolder;
+                    if (that.isTemplateApp) {
+                        props.name = appName;
+                        if (appDisplayName.length > 0) {
+                            props.displayName = appDisplayName;
+                        }
+                        if (chatId.length > 0) {
+                            props.chatId = chatId;
+                        }
+                    }
                     let encoder = new TextEncoder();
                     let uint8Array = encoder.encode(JSON.stringify(props, null, 2));
                     let bytes = convertToByteArray(uint8Array);
