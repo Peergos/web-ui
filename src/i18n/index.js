@@ -1,7 +1,8 @@
 const enGB = require("en-GB.js")
 const zhCN = require("zh-CN.js")
+const itIT = require("it-IT.js")
 
-const supported = ["en-GB", "zh-CN"]
+const supported = ["en-GB", "it-IT", "zh-CN"]
 module.exports = {
 
     methods: {
@@ -12,6 +13,11 @@ module.exports = {
                 locale = "en-GB";
             if (locale == "en-GB") {
                 const res = enGB[label];
+                if (res != null)
+                    return res;
+            }
+            if (locale == "it-IT") {
+                const res = itIT[label];
                 if (res != null)
                     return res;
             }
