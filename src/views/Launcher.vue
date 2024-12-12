@@ -561,9 +561,10 @@ module.exports = {
             let appRow = this.appsList[appIndex];
             this.appsList.splice(appIndex, 1);
             appRow.updateAvailable = false;
+            appRow.thumbnail = null;
             this.appsList.push(appRow);
             this.updateMessage = '';
-            this.forceAppDisplayUpdate++;
+            this.loadAppIcons();
         },
         closeAppInstallation() {
             this.showAppInstallation = false;
@@ -655,13 +656,13 @@ module.exports = {
             } else {
                 let that = this;
                 let app = apps[index];
-                if (app.appIcon.length == 0) {
+                let appIndex = this.appsList.findIndex(v => v.name === app.name);
+                if (app.appIcon.length == 0 ||  (appIndex > -1 && this.appsList[appIndex].thumbnail != null)) {
                     this.loadAppIconsRecursively(apps, index + 1, cb);
                 } else {
                     let fullPathToAppIcon = "/" + this.context.username + "/.apps/" + app.name + '/assets/' + app.appIcon;
                     that.findFile(fullPathToAppIcon).thenApply(file => {
                         if (file != null) {
-                           let appIndex = that.appsList.findIndex(v => v.name === app.name);
                            if (appIndex > -1) {
                                let appRow = that.appsList[appIndex];
                                appRow.thumbnail = file.getBase64Thumbnail();
@@ -699,6 +700,7 @@ module.exports = {
         },
         closeAppSandbox() {
             this.showAppSandbox = false;
+            this.setShortcutList(new Map(this.shortcuts.shortcutsMap));
             this.loadInstalledApps();
         },
         displayAppDetails: function(app) {
