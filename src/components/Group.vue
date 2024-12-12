@@ -14,7 +14,7 @@
         </Prompt>
         <div class="modal-header">
             <span>
-                <h4 style="text-align: center;" @click="changeGroupTitle()">{{ displayedTitle }}&nbsp;&nbsp;<i v-if="isAdmin" @click="changeGroupTitle()" class="fa fa-edit" aria-hidden="true"></i></h4>
+                <h4 style="text-align: center;" @click="changeGroupTitle()">{{ displayedTitle }}&nbsp;&nbsp;<i v-if="isAdmin && allowTitleChange" @click="changeGroupTitle()" class="fa fa-edit" aria-hidden="true"></i></h4>
             </span>
         </div>
 
@@ -124,14 +124,15 @@ module.exports = {
             prompt_consumer_func: () => {},
             displayedTitle: "",
             updateLabel: "Apply Changes",
-            addLabel: "Invite to Chat",
+            addLabel: "Invite",
             genericLabel: "chat",
             isAdmin: false,
-            memberAccess: "Member"
+            memberAccess: "Member",
+            allowTitleChange: true,
         }
     },
     props: ['existingGroups', 'groupId', 'groupTitle', 'existingGroupMembers', 'friendNames'
-        , 'updatedGroupMembership', 'existingAdmins'],
+        , 'updatedGroupMembership', 'existingAdmins', 'isTemplateApp'],
     computed: {
         ...Vuex.mapState([
             'context',
@@ -143,6 +144,9 @@ module.exports = {
             this.updateLabel = "Create";
         }
         this.isAdmin = this.existingAdmins.findIndex(v => v === this.context.username) > -1;
+        if (this.isTemplateApp) {
+            this.allowTitleChange = false;
+        }
     },
     methods: {
         updateGroupMembership: function () {
@@ -164,7 +168,7 @@ module.exports = {
             }
         },
         changeGroupTitle: function () {
-            if (!this.isAdmin) {
+            if (!this.isAdmin || !this.allowTitleChange) {
                 return;
             }
             let that = this;
