@@ -403,7 +403,9 @@ opfsWorker.onmessage = function(event) { // reads
                 );
             } else {
                 console.log('getOPFSKV NOT found in cache.  filename:' + message.filename);
-                pendingFuture.complete(peergos.client.JsUtil.emptyOptional())
+                pendingFutures.forEach(pendingFuture =>
+                    pendingFuture.complete(peergos.client.JsUtil.emptyOptional())
+                );
             }
         } else {
             if (message.contents == null) {
