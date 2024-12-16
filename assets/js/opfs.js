@@ -56,8 +56,8 @@ function getFileHandle(filename, directory) {
         .then(dirHandle => dirHandle.getDirectoryHandle(blockFolder)
             .then(blockDirHandle => blockDirHandle.getFileHandle(filename))
         ).catch(e => {
-            console.log('getFileHandle error: ' + e);
-            postMessage({filename: filename, contents: null, readFailure: true});
+            //console.log('getFileHandle error: ' + e);
+            postMessage({filename: filename, contents: null});
         });
 }
 function getParentDirectoryHandle(filename, directory) {
