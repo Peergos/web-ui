@@ -392,23 +392,38 @@ opfsWorker.postMessage({action: 'init'});
 opfsWorker.onmessage = function(event) { // reads
     let message = event.data;
     const pendingFutures = pendingReads.get(message.filename);
+    pendingReads.delete(message.filename);
     if (pendingFutures != null) {
-        pendingReads.delete(message.filename);
-        if (message.contents == null) {
-            pendingFutures.forEach(pendingFuture =>
-                pendingFuture.complete(peergos.client.JsUtil.emptyOptional())
-            );
+        if (message.readFailure) {
+            const pending = pendingWrites.get(message.filename);
+            if (pending != null) {
+                console.log('getOPFSKV found in cache.  filename:' + message.filename);
+                pendingFutures.forEach(pendingFuture =>
+                    pendingFuture.complete(peergos.client.JsUtil.optionalOf(convertToByteArray(pending)))
+                );
+            } else {
+                console.log('getOPFSKV NOT found in cache.  filename:' + message.filename);
+                pendingFutures.forEach(pendingFuture =>
+                    pendingFuture.complete(peergos.client.JsUtil.emptyOptional())
+                );
+            }
         } else {
-            pendingFutures.forEach(pendingFuture =>
-                pendingFuture.complete(peergos.client.JsUtil.optionalOf(convertToByteArray(message.contents)))
-            );
+            if (message.contents == null) {
+                pendingFutures.forEach(pendingFuture =>
+                    pendingFuture.complete(peergos.client.JsUtil.emptyOptional())
+                );
+            } else {
+                pendingFutures.forEach(pendingFuture =>
+                    pendingFuture.complete(peergos.client.JsUtil.optionalOf(convertToByteArray(message.contents)))
+                );
+            }
         }
     }
 };
 
 function setOPFSKV(filename, value, directory) {
     if (!pendingWrites.has(filename)) {
-        pendingWrites.set(filename, peergos.client.JsUtil.optionalOf(convertToByteArray(value)));
+        pendingWrites.set(filename, value);
         opfsWorker.postMessage({action: 'set', filename: filename, value: value, directory: directory});
         setTimeout(() => {
             pendingWrites.delete(filename);
@@ -419,7 +434,7 @@ function getOPFSKV(filename, context, future) {
     let directory = context.cacheStore;
     const pending = pendingWrites.get(filename);
     if (pending != null) {
-        future.complete(pending);
+        future.complete(peergos.client.JsUtil.optionalOf(convertToByteArray(pending)));
     } else {
         if (pendingReads.has(filename)) {
             pendingReads.get(filename).push(future);

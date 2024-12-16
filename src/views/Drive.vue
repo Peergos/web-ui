@@ -555,7 +555,7 @@ module.exports = {
             launcherApp: null,
             uploadProgressQueue: { entries:[]},
             executingUploadProgressCommands: false,
-            progressBarUpdateFrequency: 50,
+            progressBarUpdateFrequency: 30,
             zipAndDownloadFoldersCount: 0,
             htmlAnchor: "",
             previouslyOpenedApp: {path: '', filename: '', app: ''},

@@ -10,21 +10,17 @@ onmessage = async (e) => {
   } else if (message.action =="set") {
     setOPFSKV(message.filename, message.value, message.directory, 0);
   } else if(message.action =="get") {
-    getOPFSKV(message.filename, message.directory, 0);
+    getOPFSKV(message.filename, message.directory);
   }
 };
-function getOPFSKV(filename, directory, retryCount) {
+function getOPFSKV(filename, directory) {
     getFileHandle(filename, directory).then( fileHandle => {
         if (fileHandle != null) {
             fileHandle.createSyncAccessHandle({mode: "read-only"}).then(accessHandle => {
                 const size = accessHandle.getSize();
                 if (size == 0) {
-                    console.log("OPFS: attempt to read 0 byte data. hash:" + filename);
-                    if (retryCount < 5) {
-                        setTimeout(() => getOPFSKV(filename, directory, retryCount + 1),2000);
-                    } else {
-                        postMessage({filename: filename, contents: null});
-                    }
+                    console.log("OPFS attempt to read 0 byte data. filename:" + filename);
+                    postMessage({filename: filename, contents: null, readFailure: true});
                 } else {
                     const dataView = new Int8Array(size);
                     accessHandle.read(dataView);
@@ -32,16 +28,12 @@ function getOPFSKV(filename, directory, retryCount) {
                     postMessage({filename: filename, contents: dataView});
                 }
             }).catch(e => {
-                if (retryCount < 5) {
-                    setTimeout(() => getOPFSKV(filename, directory, retryCount + 1),2000);
-                } else {
-                    console.log('getOPFSKV error: ' + e + " filename:" + filename);
-                    postMessage({filename: filename, contents: null});
-                }
+                console.log('OPFS error: ' + e + " filename:" + filename);
+                postMessage({filename: filename, contents: null, readFailure: true});
             });
         }
     }).catch(e => {
-        postMessage({filename: filename, contents: null});
+        postMessage({filename: filename, contents: null, readFailure: true});
     });
 }
 function setOPFSKV(filename, value, directory, retryCount) {
@@ -52,10 +44,9 @@ function setOPFSKV(filename, value, directory, retryCount) {
         accessHandle.close();
         //console.log('setOPFSKV closing:' + filename);
     }).catch(e => {
+        console.log('setOPFSKV error: ' + e + " filename:" + filename);
         if (retryCount < 5) {
-            setTimeout(() => setOPFSKV(filename, value, directory, retryCount + 1),500);
-        } else {
-            console.log('setOPFSKV error: ' + e + " filename:" + filename);
+            setTimeout(() => setOPFSKV(filename, value, directory, retryCount + 1), 500);
         }
     });
 }
