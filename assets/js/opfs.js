@@ -33,7 +33,7 @@ function getOPFSKV(filename, directory) {
             });
         }
     }).catch(e => {
-        postMessage({filename: filename, contents: null});
+        postMessage({filename: filename, contents: null, readFailure: true});
     });
 }
 function setOPFSKV(filename, value, directory, retryCount) {
@@ -46,7 +46,7 @@ function setOPFSKV(filename, value, directory, retryCount) {
     }).catch(e => {
         console.log('setOPFSKV error: ' + e + " filename:" + filename);
         if (retryCount < 5) {
-            setTimeout(() => setOPFSKV(filename, value, directory, retryCount + 1), 300);
+            setTimeout(() => setOPFSKV(filename, value, directory, retryCount + 1), 500);
         }
     });
 }
@@ -56,8 +56,8 @@ function getFileHandle(filename, directory) {
         .then(dirHandle => dirHandle.getDirectoryHandle(blockFolder)
             .then(blockDirHandle => blockDirHandle.getFileHandle(filename))
         ).catch(e => {
-            //console.log('getFileHandle error: ' + e);
-            postMessage({filename: filename, contents: null});
+            console.log('getFileHandle error: ' + e);
+            postMessage({filename: filename, contents: null, readFailure: true});
         });
 }
 function getParentDirectoryHandle(filename, directory) {
