@@ -2,10 +2,11 @@ const enGB = require("en-GB.js")
 const es = require("es.js")
 const fr = require("fr.js")
 const it = require("it.js")
+const pl = require("pl.js")
 const zhCN = require("zh-CN.js")
 
 const supported = ["en-GB", "zh-CN"]
-const supported_prefixes = ["es", "fr", "it"]
+const supported_prefixes = ["es", "fr", "it", "pl"]
 module.exports = {
 
     methods: {
@@ -39,6 +40,11 @@ module.exports = {
             }
             if (locale== "it") {
                 const res = it[label];
+                if (res != null)
+                    return res;
+            }
+            if (locale== "pl") {
+                const res = pl[label];
                 if (res != null)
                     return res;
             }
