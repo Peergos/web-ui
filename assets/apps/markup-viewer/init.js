@@ -148,6 +148,11 @@ function addMathJax(text) {
     document.getElementsByTagName("head")[0].appendChild(script);
 }
 function updateResources() {
+    const collection = document.getElementsByClassName("math-input");
+    for(var i=0; i < collection.length; i++) {
+        let el = collection[i];
+        el.style.display = 'none';
+    }
     let that = this;
     setTimeout(() => {
         that.updateResourcesInDoc();
