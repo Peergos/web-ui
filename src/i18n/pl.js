@@ -256,7 +256,7 @@ module.exports = {
     "PROFILE.EMAIL":"E-mail",
     "PROFILE.STAUS":"Status",
     "PROFILE.BIO":"Biografia",
-    "PROFILE.WWW":"Folder strony internetowej”,
+    "PROFILE.WWW":"Folder strony internetowej",
     "PROFILE.CHANGE.WWW":"Zmień",
     "PROFILE.PUBLISH":"Publikuj",
     "PROFILE.PUBLIC":"Publicznie widoczny na",
