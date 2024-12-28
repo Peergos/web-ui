@@ -975,5 +975,9 @@
 {
   "name":"sun.security.x509.SubjectKeyIdentifierExtension",
   "methods":[{"name":"<init>","parameterTypes":["java.lang.Boolean","java.lang.Object"] }]
+},
+{
+  "name":"javax.imageio.ImageIO",
+  "methods":[{"name":"read","parameterTypes":["java.io.InputStream"] }]
 }
 ]
