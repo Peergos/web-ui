@@ -1,0 +1,38 @@
+name: Native packager
+
+on: [push]
+
+jobs:
+  build:
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
+        bin: [peergos, peergos.exe]
+        exclude:
+          - os: ubuntu-latest
+            bin: peergos.exe
+          - os: windows-latest
+            bin: peergos
+          - os: macos-latest
+            bin: peergos.exe
+      fail-fast: false
+    steps:
+    - uses: actions/checkout@v4
+    - uses: ilammy/msvc-dev-cmd@v1
+    - name: Set up JDK
+      uses: actions/setup-java@v4
+      with:
+        distribution: temurin
+        java-version: 17
+    - name: Build with Ant
+      run: ant -noinput -buildfile build.xml peergos_submodule_sync dist 
+    - name: Package for host OS
+      shell: bash
+      run: cp Peergos.jar packager/Peergos.jar && cd packager && java PackagePeergos.java
+    - name: Upload package artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: ${{ env.artifact }}
+        path: "./packager/${{ env.artifact }}"
+    

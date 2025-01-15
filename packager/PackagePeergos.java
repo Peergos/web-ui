@@ -8,6 +8,7 @@ import java.util.zip.*;
  *  Requires at least Java 14
  */
 public class PackagePeergos {
+    public static final String VERSION = "0.23.0-snapshot";
 
     public static void main(String[] a) throws Exception {
         String OS = canonicaliseOS(System.getProperty("os.name").toLowerCase());
@@ -23,7 +24,7 @@ public class PackagePeergos {
                    "--copyright", "AGPL",
                    "--icon", icon,
                    "--resource-dir", "deb-resources",
-                   "--app-version", "1.0.0");
+                   "--app-version", VERSION);
         String artifact = Files.list(Paths.get(""))
             .map(f -> f.toString())
             .filter(n -> n.endsWith(".exe") || n.endsWith("deb") || n.endsWith("dmg"))
