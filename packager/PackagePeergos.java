@@ -8,7 +8,7 @@ import java.util.zip.*;
  *  Requires at least Java 14
  */
 public class PackagePeergos {
-    public static final String VERSION = "0.23.0-snapshot";
+    public static final String VERSION = "0.23.0";
 
     public static void main(String[] a) throws Exception {
         String OS = canonicaliseOS(System.getProperty("os.name").toLowerCase());
