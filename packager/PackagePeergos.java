@@ -13,6 +13,7 @@ public class PackagePeergos {
     public static void main(String[] a) throws Exception {
         String OS = canonicaliseOS(System.getProperty("os.name").toLowerCase());
         String OS_ARCH = getOsArch();
+        String ARCH = canonicaliseArchitecture(System.getProperty("os.arch"));
 
         Files.copy(Paths.get("../server/Peergos.jar"), Paths.get("Peergos.jar"), StandardCopyOption.REPLACE_EXISTING);
 
@@ -29,6 +30,11 @@ public class PackagePeergos {
             .map(f -> f.toString())
             .filter(n -> n.endsWith(".exe") || n.endsWith("deb") || n.endsWith("dmg"))
             .findFirst().get();
+        if (OS.equals("darwin")) {
+            String withArch = artifact.substring(0, artifact.length() - 4) + "_" + ARCH + artifact.substring(artifact.length() - 4);
+            Files.move(Paths.get(artifact), Paths.get(withArch), StandardCopyOption.ATOMIC_MOVE);
+            artifact = withArch;
+        }
         System.out.println("artifact: " + artifact);
         if (OS.equals("windows"))
             runCommand("./setenv.bat", "artifact="+artifact);
