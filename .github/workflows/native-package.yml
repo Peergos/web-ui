@@ -16,6 +16,8 @@ jobs:
             bin: peergos
           - os: macos-latest
             bin: peergos.exe
+          - os: macos-13
+            bin: peergos.exe
       fail-fast: false
     steps:
     - uses: actions/checkout@v4
