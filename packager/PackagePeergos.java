@@ -18,14 +18,25 @@ public class PackagePeergos {
         Files.copy(Paths.get("../server/Peergos.jar"), Paths.get("Peergos.jar"), StandardCopyOption.REPLACE_EXISTING);
 
         String icon = OS.equals("windows") ? "../assets/favicon.ico" : "../assets/images/logo.png";
-        runCommand("jpackage", "-i", "../server", "-n", "peergos",
-                   "--main-class", "peergos.server.Main", "--main-jar",
-                   "Peergos.jar", "--vendor", "Peergos Ltd.",
-                   "--description", "The Peergos server and web interface.",
-                   "--copyright", "AGPL",
-                   "--icon", icon,
-                   "--resource-dir", "deb-resources",
-                   "--app-version", VERSION);
+        if (OS.equals("windows"))
+            runCommand("jpackage", "-i", "../server", "-n", "peergos",
+                       "--main-class", "peergos.server.Main", "--main-jar",
+                       "Peergos.jar", "--vendor", "Peergos Ltd.",
+                       "--description", "The Peergos server and web interface.",
+                       "--copyright", "AGPL",
+                       "--icon", icon,
+                       "--type", "msi",
+                       "--resource-dir", "deb-resources",
+                       "--app-version", VERSION);
+        else
+            runCommand("jpackage", "-i", "../server", "-n", "peergos",
+                       "--main-class", "peergos.server.Main", "--main-jar",
+                       "Peergos.jar", "--vendor", "Peergos Ltd.",
+                       "--description", "The Peergos server and web interface.",
+                       "--copyright", "AGPL",
+                       "--icon", icon,
+                       "--resource-dir", "deb-resources",
+                       "--app-version", VERSION);
         String artifact = Files.list(Paths.get(""))
             .map(f -> f.toString())
             .filter(n -> n.endsWith(".exe") || n.endsWith("deb") || n.endsWith("dmg"))
