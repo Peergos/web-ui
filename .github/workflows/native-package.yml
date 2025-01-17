@@ -10,13 +10,9 @@ jobs:
         os: [ubuntu-latest, ubuntu-24.04-arm, macos-13, macos-latest]
         bin: [peergos, peergos.exe]
         exclude:
-          - os: ubuntu-latest
-            bin: peergos.exe
           - os: windows-latest
             bin: peergos
-          - os: macos-latest
-            bin: peergos.exe
-          - os: macos-13
+          - os: [ubuntu-latest, macos-latest, macos-13, ubuntu-24.04-arm]
             bin: peergos.exe
       fail-fast: false
     steps:
