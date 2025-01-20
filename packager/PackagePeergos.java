@@ -36,10 +36,19 @@ public class PackagePeergos {
             artifact = withArch;
         }
         System.out.println("artifact: " + artifact);
-        if (OS.equals("windows"))
-            runCommand("echo", "\"artifact="+artifact+"\"", ">>", "$env:GITHUB_ENV");
-        else
+        if (OS.equals("windows")) {
+            Files.write(Paths.get("$env:GITHUB_ENV"), ("artifact=" + artifact).getBytes(), StandardOpenOption.APPEND);
+            //runCommand("echo", "\"artifact="+artifact+"\"", ">>", "$env:GITHUB_ENV");
+        } else
             runCommand("./setenv.sh", "artifact="+artifact);
+    }
+
+    public static int redirectOutput(String outputFile, String... command) throws Exception {
+        System.out.println(Arrays.asList(command) + " >> " + outputFile);
+        ProcessBuilder pb = new ProcessBuilder(command);
+        pb.redirectError(ProcessBuilder.Redirect.INHERIT);
+        pb.redirectOutput(ProcessBuilder.Redirect.INHERIT);
+        return pb.start().waitFor();
     }
 
     public static int runCommand(String... command) throws Exception {
