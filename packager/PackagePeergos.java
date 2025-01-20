@@ -37,11 +37,8 @@ public class PackagePeergos {
         }
         System.out.println("artifact: " + artifact);
         if (OS.equals("windows")) {
-            //Files.write(Paths.get("$env:GITHUB_ENV"), ("artifact=" + artifact).getBytes(), StandardOpenOption.APPEND);
-            //runCommand("echo", "artifact="+artifact, "|", "Out-File", "-FilePath", "$env:GITHUB_ENV", "-Append");
+            // write artifact name to a file which a separate ci step then puts in an env var
             Files.write(Paths.get("artifact"), ("artifact=" + artifact).getBytes(), StandardOpenOption.CREATE);
-            //runCommand(".\\setenv.bat", artifact);
-            //runCommand("echo", "\"artifact="+artifact+"\"", ">>", "$env:GITHUB_ENV");
         } else
             runCommand("./setenv.sh", "artifact="+artifact);
     }
