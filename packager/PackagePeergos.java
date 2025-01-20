@@ -37,7 +37,7 @@ public class PackagePeergos {
         }
         System.out.println("artifact: " + artifact);
         if (OS.equals("windows"))
-            runCommand("./setenv.bat", "artifact="+artifact);
+            runCommand("./setenv.bat", artifact);
         else
             runCommand("./setenv.sh", "artifact="+artifact);
     }
