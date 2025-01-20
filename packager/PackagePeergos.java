@@ -37,7 +37,7 @@ public class PackagePeergos {
         }
         System.out.println("artifact: " + artifact);
         if (OS.equals("windows"))
-            runCommand("./setenv.bat", artifact);
+            runCommand("echo", "artifact="+artifact, ">>", "$env:GITHUB_ENV");
         else
             runCommand("./setenv.sh", "artifact="+artifact);
     }
