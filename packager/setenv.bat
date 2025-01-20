@@ -1,1 +1,1 @@
-echo artifact=%1 >> $env:GITHUB_ENV
+echo artifact=%1 | Out-File -FilePath $env:GITHUB_ENV -Append
