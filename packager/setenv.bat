@@ -1,1 +1,1 @@
-echo %1 >> $GITHUB_ENV
+echo %1 >> $env:GITHUB_ENV
