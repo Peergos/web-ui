@@ -30,7 +30,7 @@ public class PackagePeergos {
                    "--app-version", VERSION);
         String artifact = Files.list(Paths.get(""))
             .map(f -> f.toString())
-            .filter(n -> n.endsWith(".exe") || n.endsWith("deb") || n.endsWith("dmg"))
+            .filter(n -> n.endsWith(".exe") || n.endsWith(".msi") || n.endsWith("deb") || n.endsWith("dmg"))
             .findFirst().get();
         if (OS.equals("darwin")) {
             String withArch = artifact.substring(0, artifact.length() - 4) + "_" + ARCH + artifact.substring(artifact.length() - 4);
