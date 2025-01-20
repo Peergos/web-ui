@@ -39,7 +39,8 @@ public class PackagePeergos {
         if (OS.equals("windows")) {
             //Files.write(Paths.get("$env:GITHUB_ENV"), ("artifact=" + artifact).getBytes(), StandardOpenOption.APPEND);
             //runCommand("echo", "artifact="+artifact, "|", "Out-File", "-FilePath", "$env:GITHUB_ENV", "-Append");
-            runCommand(".\\setenv.bat", artifact);
+            Files.write(Paths.get("artifact"), ("artifact=" + artifact).getBytes(), StandardOpenOption.CREATE);
+            //runCommand(".\\setenv.bat", artifact);
             //runCommand("echo", "\"artifact="+artifact+"\"", ">>", "$env:GITHUB_ENV");
         } else
             runCommand("./setenv.sh", "artifact="+artifact);
