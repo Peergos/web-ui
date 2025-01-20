@@ -17,7 +17,7 @@ public class PackagePeergos {
 
         Files.copy(Paths.get("../server/Peergos.jar"), Paths.get("Peergos.jar"), StandardCopyOption.REPLACE_EXISTING);
 
-        String icon = OS.equals("windows") ? "../assets/favicon.ico" : "../assets/images/logo.png";
+        String icon = OS.equals("windows") ? "winicon.ico" : "../assets/images/logo.png";
         runCommand("jpackage", "-i", "../server", "-n", "peergos",
                    "--main-class", "peergos.server.Main", "--main-jar",
                    "Peergos.jar", "--vendor", "Peergos Ltd.",
