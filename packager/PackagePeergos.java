@@ -25,6 +25,7 @@ public class PackagePeergos {
                    "--description", "The Peergos server and web interface.",
                    "--copyright", "AGPL",
                    "--type", type,
+                   "--win-console",
                    "--icon", icon,
                    "--resource-dir", "deb-resources",
                    "--app-version", VERSION);
