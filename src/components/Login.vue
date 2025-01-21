@@ -1,5 +1,5 @@
 <template>
-	<div class="app-login">
+	<div class="app-login" v-if="!autoLoggingIn">
 		<input
 			type="text"
 			autofocus
@@ -57,6 +57,7 @@ module.exports = {
 			demo: true,
             stayLoggedIn: false,
             isLoggingIn: false,
+            autoLoggingIn: true,
             showMultiFactorAuth: false,
 		};
 	},
@@ -73,9 +74,9 @@ module.exports = {
 	mixins:[routerMixins, UriDecoder, i18n],
 
 	mounted() {
-		this.$refs.username.focus()
-		// :)
-		setTimeout(() => this.autoLogin(), 0);
+                setTimeout(() => this.autoLogin(), 0);
+                if (this.$refs.username != null)
+                    this.$refs.username.focus()
 	},
 	methods: {
 		...Vuex.mapActions([
@@ -105,7 +106,8 @@ module.exports = {
                         let loginRoot = peergos.shared.crypto.symmetric.SymmetricKey.fromByteArray(rootKeyPair.rootKey);
                         directGetEntryDataFromCacheProm(rootKeyPair.username).thenApply(function (entryPoints) {
                             if (entryPoints == null) {
-                                that.$toast.error("Legacy accounts can't stay logged in. Please change your password to upgrade your account", {timeout:false, id: 'login'})
+                                that.$toast.error("Legacy accounts can't stay logged in. Please change your password to upgrade your account", {timeout:false, id: 'login'});
+                                that.autoLoggingIn = false;
                             } else {
                                 that.isLoggingIn = true;
                                 let entryData = peergos.shared.user.UserStaticData.fromByteArray(entryPoints);
@@ -116,10 +118,13 @@ module.exports = {
                                 })
                                 .exceptionally(function (throwable) {
                                     that.isLoggingIn = false;
+                                    that.autoLoggingIn = false;
                                     that.$toast.error(that.uriDecode(throwable.getMessage()), {timeout:false, id: 'login'})
                                 });
                             }
                         });
+                    } else {
+                        that.autoLoggingIn = false;
                     }
                 });
             }
