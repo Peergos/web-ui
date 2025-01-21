@@ -17,18 +17,30 @@ public class PackagePeergos {
 
         Files.copy(Paths.get("../server/Peergos.jar"), Paths.get("Peergos.jar"), StandardCopyOption.REPLACE_EXISTING);
 
-        String icon = OS.equals("windows") ? "winicon.ico" : "../assets/images/logo.png";
-        String type = OS.equals("windows") ? "msi" : OS.equals("darwin") ? "dmg": "deb";
-        runCommand("jpackage", "-i", "../server", "-n", "peergos",
-                   "--main-class", "peergos.server.Main", "--main-jar",
-                   "Peergos.jar", "--vendor", "Peergos Ltd.",
-                   "--description", "The Peergos server and web interface.",
-                   "--copyright", "AGPL",
-                   "--type", type,
-                   "--win-console",
-                   "--icon", icon,
-                   "--resource-dir", "deb-resources",
-                   "--app-version", VERSION);
+        boolean isWin = OS.equals("windows");
+        String icon = isWin ? "winicon.ico" : "../assets/images/logo.png";
+        String type = isWin ? "msi" : OS.equals("darwin") ? "dmg": "deb";
+        if (isWin)
+            runCommand("jpackage", "-i", "../server", "-n", "peergos",
+                       "--main-class", "peergos.server.Main", "--main-jar",
+                       "Peergos.jar", "--vendor", "Peergos Ltd.",
+                       "--description", "The Peergos server and web interface.",
+                       "--copyright", "AGPL",
+                       "--type", type,
+                       "--icon", icon,
+                       "--resource-dir", "deb-resources",
+                       "--app-version", VERSION,
+                       "--win-console");
+        else
+            runCommand("jpackage", "-i", "../server", "-n", "peergos",
+                       "--main-class", "peergos.server.Main", "--main-jar",
+                       "Peergos.jar", "--vendor", "Peergos Ltd.",
+                       "--description", "The Peergos server and web interface.",
+                       "--copyright", "AGPL",
+                       "--type", type,
+                       "--icon", icon,
+                       "--resource-dir", "deb-resources",
+                       "--app-version", VERSION);
         String artifact = Files.list(Paths.get(""))
             .map(f -> f.toString())
             .filter(n -> n.endsWith(".exe") || n.endsWith(".msi") || n.endsWith("deb") || n.endsWith("dmg"))
