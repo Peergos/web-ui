@@ -18,6 +18,7 @@ public class PackagePeergos {
         Files.copy(Paths.get("../server/Peergos.jar"), Paths.get("Peergos.jar"), StandardCopyOption.REPLACE_EXISTING);
 
         boolean isWin = OS.equals("windows");
+        boolean isMac = OS.equals("darwin");
         String icon = isWin ? "winicon.ico" : "../assets/images/logo.png";
         String type = isWin ? "msi" : OS.equals("darwin") ? "dmg": "deb";
         if (isWin)
@@ -31,6 +32,19 @@ public class PackagePeergos {
                        "--resource-dir", "deb-resources",
                        "--app-version", VERSION,
                        "--win-console");
+        else if (isMac)
+            runCommand("jpackage", "-i", "../server", "-n", "peergos",
+                       "--main-class", "peergos.server.Main", "--main-jar",
+                       "Peergos.jar", "--vendor", "Peergos Ltd.",
+                       "--description", "The Peergos server and web interface.",
+                       "--copyright", "AGPL",
+                       "--type", type,
+                       "--icon", icon,
+                       "--resource-dir", "deb-resources",
+                       "--name", "Peergos",
+                       "--mac-package-name", "Peergos",
+                       "--mac-package-identifier", "org.peergos",
+                       "--app-version", VERSION);
         else
             runCommand("jpackage", "-i", "../server", "-n", "peergos",
                        "--main-class", "peergos.server.Main", "--main-jar",
