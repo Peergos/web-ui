@@ -2574,7 +2574,7 @@ module.exports = {
 					let filePath = peergos.client.PathUtils.toPath(clipboard.path.split("/").filter(x => x.length > 0), name);
                                         target.getLatest(this.context.network).thenApply(updatedTarget => {
                                             clipboard.parent.getLatest(that.context.network).thenApply(updatedParent => {
-                                            clipboard.fileTreeNode.getUpdated(that.context.network)
+                                            clipboard.fileTreeNode.getLatest(that.context.network)
                                             .thenCompose(updatedFile => updatedFile.moveTo(updatedTarget, updatedParent, filePath, that.context, {get_0:() => that.confirmMove()})
 						.thenApply(function () {
 							that.currentDirChanged();
