@@ -1,5 +1,7 @@
 #!/usr/bin/env sh
 
+echo "Installing Peergos"
+
 TARGET_DIR="/usr/local/bin"
 
 if [ ! -d $TARGET_DIR ]
