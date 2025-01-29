@@ -12,6 +12,6 @@ then
     TARGET_DIR="/usr/bin"
 fi
 
-ln -Ffs "$2/peergos.app/Contents/MacOS/peergos" "$TARGET_DIR/peergos"
+ln -Ffs "$2/Peergos.app/Contents/MacOS/peergos" "$TARGET_DIR/peergos"
 
 exit 0
