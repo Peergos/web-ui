@@ -7,6 +7,11 @@ then
     mkdir -p $TARGET_DIR
 fi
 
+if [ ! -d $TARGET_DIR ]
+then
+    TARGET_DIR="/usr/bin"
+fi
+
 ln -Ffs "$2/peergos.app/Contents/MacOS/peergos" "$TARGET_DIR/peergos"
 
 exit 0
