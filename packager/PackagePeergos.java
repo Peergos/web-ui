@@ -20,7 +20,7 @@ public class PackagePeergos {
         boolean isWin = OS.equals("windows");
         boolean isMac = OS.equals("darwin");
         String icon = isWin ? "winicon.ico" : "../assets/images/logo.png";
-        String type = isWin ? "msi" : OS.equals("darwin") ? "dmg": "deb";
+        String type = isWin ? "msi" : OS.equals("darwin") ? "pkg": "deb";
         if (isWin)
             runCommand("jpackage", "-i", "../server", "-n", "peergos",
                        "--main-class", "peergos.server.Main", "--main-jar",
