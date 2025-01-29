@@ -41,7 +41,7 @@ public class PackagePeergos {
                        "--type", type,
                        "--icon", icon,
                        "--resource-dir", "deb-resources",
-                       "--name", "Peergos",
+                       "--name", "peergos",
                        "--mac-package-name", "Peergos",
                        "--mac-package-identifier", "org.peergos",
                        "--app-version", VERSION);
