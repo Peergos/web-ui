@@ -86,6 +86,12 @@
 			    </div>
                         </div>
                 </template>
+
+                <template v-else-if="showSignupWarning">
+                    <h2>This server is currently not accepting signups</h2>
+		    <strong>Please sign up here first: <br/>
+                    <a class="line" href="https://peergos.net?signup=true">https://peergos.net?signup=true</a>.</strong>
+	        </template>
                 
 		<template v-else>
 			<h2>This server is currently not accepting signups</h2>
@@ -159,6 +165,7 @@ module.exports = {
             continue_body: "Continue to our payment processor to enter your card details",
             continue_func: function(){},
             cardFuture: null,
+            showSignupWarning: false,
 	};
     },
 
@@ -178,6 +185,8 @@ module.exports = {
 	    if (that.token.length > 0) return;
 	    that.acceptingFreeSignups = res.free;
             that.acceptingPaidSignups = res.paid;
+            if (!res.free && window.location.hostname == "localhost")
+               that.showSignupWarning = true;
 	    console.log("accepting signups - free: " + res.free + ", paid: " + res.paid);
 	});
     },
