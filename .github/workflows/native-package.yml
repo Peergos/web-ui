@@ -30,6 +30,7 @@ jobs:
         distribution: temurin
         java-version: 23
     - name: Install the Apple certificate and provisioning profile
+      if: runner.os == 'macos'
       env:
         BUILD_CERTIFICATE_BASE64: ${{ secrets.BUILD_CERTIFICATE_BASE64 }}
         P12_PASSWORD: ${{ secrets.P12_PASSWORD }}
