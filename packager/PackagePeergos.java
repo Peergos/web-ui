@@ -47,7 +47,7 @@ public class PackagePeergos {
                        "--app-version", VERSION,
                        "--mac-sign",
                        "--mac-package-name", "Peergos",
-                       "--mac-signing-key-user-name", "Peergos"
+                       "--mac-signing-key-user-name", "Peergos LTD"
                        );
         else
             runCommand("jpackage", "-i", "../server", "-n", "peergos",
