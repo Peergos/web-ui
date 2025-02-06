@@ -48,7 +48,7 @@ public class PackagePeergos {
                        "--mac-sign",
                        "--mac-signing-keychain", System.getenv("RUNNER_TEMP") + "/app-signing.keychain-db",
                        "--mac-package-name", "Peergos",
-                       "--mac-signing-key-user-name", "Peergos LTD"
+                       "--mac-signing-key-user-name", "Peergos LTD (XUVT52ZN3F)"
                        );
         else
             runCommand("jpackage", "-i", "../server", "-n", "peergos",
