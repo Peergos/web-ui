@@ -32,7 +32,8 @@ public class PackagePeergos {
                        "--resource-dir", "deb-resources",
                        "--app-version", VERSION,
                        "--win-console");
-        else if (isMac)
+        else if (isMac) {
+            runCommand("security", "find-identity", "-v", "-p", "codesigning", System.getenv("RUNNER_TEMP") + "/app-signing.keychain-db");
             runCommand("jpackage", "-i", "../server", "-n", "peergos",
                        "--main-class", "peergos.server.Main", "--main-jar",
                        "Peergos.jar", "--vendor", "Peergos Ltd.",
@@ -44,8 +45,13 @@ public class PackagePeergos {
                        "--name", "peergos",
                        "--mac-package-name", "Peergos",
                        "--mac-package-identifier", "org.peergos",
-                       "--app-version", VERSION);
-        else
+                       "--app-version", VERSION,
+                       "--mac-sign",
+                       "--mac-signing-keychain", System.getenv("RUNNER_TEMP") + "/app-signing.keychain-db",
+                       "--mac-package-name", "Peergos",
+                       "--mac-signing-key-user-name", "Peergos LTD (XUVT52ZN3F)"
+                       );
+        } else
             runCommand("jpackage", "-i", "../server", "-n", "peergos",
                        "--main-class", "peergos.server.Main", "--main-jar",
                        "Peergos.jar", "--vendor", "Peergos Ltd.",
