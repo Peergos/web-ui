@@ -30,7 +30,9 @@ public class PackagePeergos {
                        "--type", type,
                        "--icon", icon,
                        "--resource-dir", "deb-resources",
-                       "--app-version", VERSION
+                       "--app-version", VERSION,
+                       "--win-menu",
+                       "--win-shortcut"
                        //"--win-console"
                        );
         else if (isMac) {
