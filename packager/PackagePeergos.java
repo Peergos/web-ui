@@ -30,8 +30,9 @@ public class PackagePeergos {
                        "--type", type,
                        "--icon", icon,
                        "--resource-dir", "deb-resources",
-                       "--app-version", VERSION,
-                       "--win-console");
+                       "--app-version", VERSION
+                       //"--win-console"
+                       );
         else if (isMac) {
             runCommand("security", "find-identity", "-v", "-p", "codesigning", System.getenv("RUNNER_TEMP") + "/app-signing.keychain-db");
             runCommand("jpackage", "-i", "../server", "-n", "peergos",
