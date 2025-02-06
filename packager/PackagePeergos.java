@@ -31,6 +31,7 @@ public class PackagePeergos {
                        "--icon", icon,
                        "--resource-dir", "deb-resources",
                        "--app-version", VERSION,
+                       "--vendor", "Peergos LTD",
                        "--win-menu",
                        "--win-shortcut"
                        //"--win-console"
