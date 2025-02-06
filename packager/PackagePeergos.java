@@ -33,7 +33,8 @@ public class PackagePeergos {
                        "--app-version", VERSION,
                        "--vendor", "Peergos LTD",
                        "--win-menu",
-                       "--win-shortcut"
+                       "--win-shortcut",
+                       "--win-dir-chooser"
                        //"--win-console"
                        );
         else if (isMac) {
