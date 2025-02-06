@@ -46,7 +46,7 @@ public class PackagePeergos {
                        "--mac-package-identifier", "org.peergos",
                        "--app-version", VERSION,
                        "--mac-sign",
-                       "--mac-signing-keychain", System.getEnv("RUNNER_TEMP") + "/app-signing.keychain-db",
+                       "--mac-signing-keychain", System.getenv("RUNNER_TEMP") + "/app-signing.keychain-db",
                        "--mac-package-name", "Peergos",
                        "--mac-signing-key-user-name", "Peergos LTD"
                        );
