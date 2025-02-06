@@ -265,8 +265,11 @@ var cache = {
     this.isOpfsCachingEnabled = false;
     this.isIndexedDBCachingEnabled = false;
     this.desiredCacheSize = 0;
+
     this.init = function init(maxSizeMiB) {
         let that = this;
+        if (window.location.hostname == "localhost")
+            return;
         bindCacheStore(that);
         isOPFSAvailable().thenApply(function(isOpfsCachingEnabled) {
             isIndexedDBAvailable().thenApply(function(isIndexedDBCachingEnabled) {
