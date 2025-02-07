@@ -34,6 +34,7 @@ public class PackagePeergos {
                        "--vendor", "Peergos LTD",
                        "--win-menu",
                        "--win-shortcut",
+                       "--win-shortcut-prompt",
                        "--win-dir-chooser"
                        //"--win-console"
                        );
