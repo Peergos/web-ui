@@ -36,7 +36,7 @@ public class PackagePeergos {
                        "--win-shortcut",
                        "--win-shortcut-prompt",
                        "--win-dir-chooser",
-                       "-add-launcher", "windows-cli.properties"
+                       "--add-launcher", "peergos-cli=windows-cli.properties"
                        //"--win-console"
                        );
         else if (isMac) {
