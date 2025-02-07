@@ -36,8 +36,7 @@ public class PackagePeergos {
                        "--win-shortcut",
                        "--win-shortcut-prompt",
                        "--win-dir-chooser",
-                       "--add-launcher", "peergos-cli=windows-cli.properties"
-                       //"--win-console"
+                       "--add-launcher", "peergos=windows-cli.properties"
                        );
         else if (isMac) {
             runCommand("security", "find-identity", "-v", "-p", "codesigning", System.getenv("RUNNER_TEMP") + "/app-signing.keychain-db");
