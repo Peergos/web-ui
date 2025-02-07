@@ -22,7 +22,7 @@ public class PackagePeergos {
         String icon = isWin ? "winicon.ico" : "../assets/images/logo.png";
         String type = isWin ? "msi" : OS.equals("darwin") ? "pkg": "deb";
         if (isWin)
-            runCommand("jpackage", "-i", "../server", "-n", "peergos",
+            runCommand("jpackage", "-i", "../server", "-n", "peergos-app",
                        "--main-class", "peergos.server.Main", "--main-jar",
                        "Peergos.jar", "--vendor", "Peergos Ltd.",
                        "--description", "The Peergos server and web interface.",
@@ -35,7 +35,8 @@ public class PackagePeergos {
                        "--win-menu",
                        "--win-shortcut",
                        "--win-shortcut-prompt",
-                       "--win-dir-chooser"
+                       "--win-dir-chooser",
+                       "-add-launcher", "windows-cli.properties"
                        //"--win-console"
                        );
         else if (isMac) {
