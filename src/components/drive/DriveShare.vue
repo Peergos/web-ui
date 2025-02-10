@@ -154,6 +154,7 @@
 					    v-on:hide-modal="closeSecretLinkModal"
 					    :title="modalTitle"
 					    :link="modalLink"
+                                            :host="this.linkHost"
                         :existingProps="existingProps"
                         :username="this.context.username"
 					/>
@@ -225,6 +226,7 @@ module.exports = {
                     choice_options: [],
                     existingProps:null,
                     secretLinksList: [],
+                    linkHost: "",
 		};
 	},
 	props: [
@@ -254,6 +256,9 @@ module.exports = {
 	methods: {
         loadSecretLinks() {
             let that = this;
+            this.context.getLinkHost().thenApply(host => {
+               that.linkHost = host;
+            });
             this.showSpinner = true;
             let file = this.files[0];
             let props = file.getFileProperties();
