@@ -168,10 +168,14 @@ module.exports = {
                     blockSize = size > maxBlockSize ? maxBlockSize : size
                     writer.write(data).then(() => {
                       setTimeout(pump)
-                    })
+                    }).catch((err) => {
+                        console.error(err);
+                    });
                     if (size == 0) {
                         result.complete(true);
                     }
+                  }).exceptionally(t => {
+                      console.log(t);
                   })
               }
             }
