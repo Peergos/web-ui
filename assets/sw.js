@@ -96,7 +96,10 @@ function createStream (port) {
           return
         }
         controller.enqueue(data)
-      }
+      };
+        port.onmessageerror = (error) => {
+            console.log(error);
+        };
     },
     cancel () {
       console.log('user aborted')
