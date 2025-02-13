@@ -20,7 +20,7 @@ public class PackagePeergos {
         boolean isWin = OS.equals("windows");
         boolean isMac = OS.equals("macos");
         String icon = isWin ? "winicon.ico" : "../assets/images/logo.png";
-        String linuxType = "rpm";//System.getenv("LINUX_TARGET");
+        String linuxType = System.getenv("LINUX_TARGET");
         if (linuxType == null || ! List.of("deb", "rpm").contains(linuxType))
             linuxType = "deb";
         String type = isWin ? "msi" : isMac ? "pkg": linuxType;
@@ -69,6 +69,7 @@ public class PackagePeergos {
                        "--type", type,
                        "--icon", icon,
                        "--linux-menu-group", "Peergos",
+                       "--linux-shortcut",
                        "--resource-dir", "deb-resources",
                        "--app-version", VERSION);
         String artifact = Files.list(Paths.get(""))
