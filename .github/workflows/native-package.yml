@@ -64,6 +64,12 @@ jobs:
     - name: Package for host OS
       shell: bash
       run: cd packager && java PackagePeergos.java
+    - name: Package RPM
+      if: runner.os == 'Linux'
+      env:
+        LINUX_TARGET: rpm
+      shell: bash
+      run: cd packager && java PackagePeergos.java
     - name: Extract env var
       if: runner.os == 'Windows'
       run: type packager\artifact | Out-File -FilePath $env:GITHUB_ENV -Append
@@ -72,4 +78,10 @@ jobs:
       with:
         name: ${{ env.artifact }}
         path: "./packager/${{ env.artifact }}"
+    - name: Upload RPM artifact
+      if: runner.os == 'Linux'
+      uses: actions/upload-artifact@v4
+      with:
+        name: ${{ env.artifact2 }}
+        path: "./packager/${{ env.artifact2 }}"
     
