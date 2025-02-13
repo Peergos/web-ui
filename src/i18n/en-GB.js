@@ -488,5 +488,7 @@ module.exports = {
     "DRIVE.MOVING.TITLE":"Moving file(s)",
     "DRIVE.MOVING.COMPLETE":"Completing move and refreshing folder...",
     "DRIVE.COPYING.TITLE":"Copying file(s)",
-    "DRIVE.COPYING.COMPLETE":"Completing copy and refreshing folder..."
+    "DRIVE.COPYING.COMPLETE":"Completing copy and refreshing folder...",
+    "NEW.TEMPLATE.APP.NAME.LABEL":"App Title",
+    "NEW.TEMPLATE.APP.NAME.MESSAGE":"Title for App:"
 }
