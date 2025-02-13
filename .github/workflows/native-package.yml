@@ -70,6 +70,9 @@ jobs:
         LINUX_TARGET: rpm
       shell: bash
       run: cd packager && java PackagePeergos.java
+    - name: Notarise with Apple
+      if: runner.os == 'macos'
+      run: xcrun notarytool submit ./packager/${{ env.artifact }} --wait
     - name: Extract env var
       if: runner.os == 'Windows'
       run: type packager\artifact | Out-File -FilePath $env:GITHUB_ENV -Append
