@@ -18,12 +18,12 @@ public class PackagePeergos {
         Files.copy(Paths.get("../server/Peergos.jar"), Paths.get("Peergos.jar"), StandardCopyOption.REPLACE_EXISTING);
 
         boolean isWin = OS.equals("windows");
-        boolean isMac = OS.equals("darwin");
+        boolean isMac = OS.equals("macos");
         String icon = isWin ? "winicon.ico" : "../assets/images/logo.png";
         String linuxType = System.getenv("LINUX_TARGET");
         if (linuxType == null || ! List.of("deb", "rpm").contains(linuxType))
             linuxType = "deb";
-        String type = isWin ? "msi" : OS.equals("darwin") ? "pkg": linuxType;
+        String type = isWin ? "msi" : isMac ? "pkg": linuxType;
         if (isWin)
             runCommand("jpackage", "-i", "../server", "-n", "peergos-app",
                        "--main-class", "peergos.server.Main", "--main-jar",
@@ -74,11 +74,12 @@ public class PackagePeergos {
             .map(f -> f.toString())
             .filter(n -> n.endsWith(type))
             .findFirst().get();
-        if (OS.equals("darwin")) {
-            String withArch = artifact.substring(0, artifact.length() - 4) + "_" + ARCH + artifact.substring(artifact.length() - 4);
-            Files.move(Paths.get(artifact), Paths.get(withArch), StandardCopyOption.ATOMIC_MOVE);
-            artifact = withArch;
-        }
+        
+        // Canonicalise artifact name
+        String releaseName = "peergos-" + VERSION + "-" + OS + "-" + ARCH + "." + type;
+        Files.move(Paths.get(artifact), Paths.get(releaseName), StandardCopyOption.ATOMIC_MOVE);
+        artifact = releaseName;
+        
         String envVarName = type.equals("rpm") ? "artifact2" : "artifact";
         System.out.println(envVarName + ": " + artifact);
         if (OS.equals("windows")) {
@@ -125,7 +126,7 @@ public class PackagePeergos {
 
     private static String canonicaliseOS(String os) {
         if (os.startsWith("mac"))
-            return "darwin";
+            return "macos";
         if (os.startsWith("windows"))
             return "windows";
         return os;
