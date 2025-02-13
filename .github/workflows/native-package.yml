@@ -72,7 +72,7 @@ jobs:
       run: cd packager && java PackagePeergos.java
     - name: Notarise with Apple
       if: runner.os == 'macos'
-      run: xcrun notarytool submit ./packager/${{ env.artifact }} --wait --apple-id ${{ secrets.APPLE_ID }} --password ${{ secrets.NOTARISE_PASSWORD }}
+      run: xcrun notarytool submit ./packager/${{ env.artifact }} --wait --apple-id ${{ secrets.APPLE_ID }} --team-id ${{ secrets.TEAM_ID }} --password ${{ secrets.NOTARISE_PASSWORD }}
     - name: Extract env var
       if: runner.os == 'Windows'
       run: type packager\artifact | Out-File -FilePath $env:GITHUB_ENV -Append
