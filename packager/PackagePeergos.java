@@ -20,7 +20,10 @@ public class PackagePeergos {
         boolean isWin = OS.equals("windows");
         boolean isMac = OS.equals("darwin");
         String icon = isWin ? "winicon.ico" : "../assets/images/logo.png";
-        String type = isWin ? "msi" : OS.equals("darwin") ? "pkg": "deb";
+        String linuxType = System.getenv("LINUX_TARGET");
+        if (linuxType == null || ! List.of("deb", "rpm").contains(linuxType))
+            linuxType = "deb";
+        String type = isWin ? "msi" : OS.equals("darwin") ? "pkg": linuxType;
         if (isWin)
             runCommand("jpackage", "-i", "../server", "-n", "peergos-app",
                        "--main-class", "peergos.server.Main", "--main-jar",
@@ -69,19 +72,20 @@ public class PackagePeergos {
                        "--app-version", VERSION);
         String artifact = Files.list(Paths.get(""))
             .map(f -> f.toString())
-            .filter(n -> n.endsWith(".exe") || n.endsWith(".msi") || n.endsWith("deb") || n.endsWith("dmg") || n.endsWith("pkg"))
+            .filter(n -> n.endsWith(type))
             .findFirst().get();
         if (OS.equals("darwin")) {
             String withArch = artifact.substring(0, artifact.length() - 4) + "_" + ARCH + artifact.substring(artifact.length() - 4);
             Files.move(Paths.get(artifact), Paths.get(withArch), StandardCopyOption.ATOMIC_MOVE);
             artifact = withArch;
         }
-        System.out.println("artifact: " + artifact);
+        String envVarName = type.equals("rpm") ? "artifact2" : "artifact";
+        System.out.println(envVarName + ": " + artifact);
         if (OS.equals("windows")) {
             // write artifact name to a file which a separate ci step then puts in an env var
             Files.write(Paths.get("artifact"), ("artifact=" + artifact).getBytes(), StandardOpenOption.CREATE);
         } else
-            runCommand("./setenv.sh", "artifact="+artifact);
+            runCommand("./setenv.sh", envVarName + "="+artifact);
     }
 
     public static int redirectOutput(String outputFile, String... command) throws Exception {
