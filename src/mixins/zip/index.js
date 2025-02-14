@@ -226,8 +226,8 @@ module.exports = {
             header.setUint16(0, 1, true)
             header.setUint16(2, zip64HeaderLength - 4, true)
             if (zip64HeaderLength & 16) {
-                header.setBigUint64(4, fileSize, true)
-                header.setBigUint64(12, fileSize, true)
+                header.setBigUint64(4, BigInt(fileSize), true)
+                header.setBigUint64(12, BigInt(fileSize), true)
             }
             header.setBigUint64(zip64HeaderLength - 8, offset, true)
             return this.makeUint8Array(header)
@@ -255,8 +255,8 @@ module.exports = {
           header.setUint32(0, this.ZipConstants.descriptorSignature)
           header.setUint32(4, crc, true)
           if (needsZip64) {
-            header.setBigUint64(8, fileSize, true)
-            header.setBigUint64(16, fileSize, true)
+              header.setBigUint64(8, BigInt(fileSize), true)
+              header.setBigUint64(16, BigInt(fileSize), true)
           } else {
             header.setUint32(8, this.clampInt32(fileSize), true)
             header.setUint32(12, this.clampInt32(fileSize), true)
