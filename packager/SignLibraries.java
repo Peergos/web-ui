@@ -23,8 +23,12 @@ public class SignLibraries {
                 String filename = path.getFileName().toString();
                 if (filename.endsWith("dylib") || filename.endsWith("jnilib")) {
                     System.out.println("Signing: " + path);
-                    runCommand("codesign", "--force", "--options", "runtime", "--timestamp", "--keychain", System.getenv("RUNNER_TEMP") + "/app-signing.keychain-db", "--sign", "Peergos LTD (XUVT52ZN3F)", path.toString());
-                    runCommand("jar", "uf", "Peergos.jar", path.toString());
+                    try {
+                        runCommand("codesign", "--force", "--options", "runtime", "--timestamp", "--keychain", System.getenv("RUNNER_TEMP") + "/app-signing.keychain-db", "--sign", "Peergos LTD (XUVT52ZN3F)", path.toString());
+                        runCommand("jar", "uf", "Peergos.jar", path.toString());
+                    } catch (Exception e) {
+                        throw new RuntimeException(e);
+                    }
                 }
                 return FileVisitResult.CONTINUE;
             }
