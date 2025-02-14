@@ -229,7 +229,7 @@ module.exports = {
                 header.setBigUint64(4, BigInt(fileSize), true)
                 header.setBigUint64(12, BigInt(fileSize), true)
             }
-            header.setBigUint64(zip64HeaderLength - 8, BigInt(offset), true)
+            header.setBigUint64(zip64HeaderLength - 8, offset, true)
             return this.makeUint8Array(header)
         },
         createCentralHeader: function(fileEncodedName, fileProps, crc, fileSize, offset, zip64HeaderLength) {
