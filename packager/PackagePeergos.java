@@ -47,7 +47,7 @@ public class PackagePeergos {
         else if (isMac) {
             runCommand("security", "find-identity", "-v", "-p", "codesigning", System.getenv("RUNNER_TEMP") + "/app-signing.keychain-db");
             runCommand("java", "SignLibraries.java");
-            runCommand("jpackage", "-i", "../server", "-n", "peergos",
+            runCommand("jpackage", "--app-image", "peergos", "-n", "peergos",
                        "--main-class", "peergos.server.Main", "--main-jar",
                        "Peergos.jar", "--vendor", "Peergos Ltd.",
                        "--description", "The Peergos server and web interface.",
@@ -60,17 +60,17 @@ public class PackagePeergos {
                        "--mac-package-name", "Peergos",
                        "--mac-package-identifier", "org.peergos",
                        "--app-version", VERSION,
-                       //"--mac-sign",
-                       //"--mac-signing-keychain", System.getenv("RUNNER_TEMP") + "/app-signing.keychain-db",
-                       "--mac-package-name", "Peergos"//,
-                       //"--mac-signing-key-user-name", "Peergos LTD (XUVT52ZN3F)"
+                       "--mac-sign",
+                       "--mac-signing-keychain", System.getenv("RUNNER_TEMP") + "/app-signing.keychain-db",
+                       "--mac-package-name", "Peergos",
+                       "--mac-signing-key-user-name", "Peergos LTD (XUVT52ZN3F)"
                        );
             // sign the package separately
-            String pkg = Files.list(Paths.get(""))
+            /*String pkg = Files.list(Paths.get(""))
                 .map(f -> f.toString())
                 .filter(n -> n.endsWith(type))
                 .findFirst().get();
-            runCommand("codesign", "--force", "--options", "runtime", "--timestamp", "--keychain", System.getenv("RUNNER_TEMP") + "/app-signing.keychain-db", "--sign", "Peergos LTD (XUVT52ZN3F)", pkg);
+                runCommand("codesign", "--force", "--options", "runtime", "--timestamp", "--keychain", System.getenv("RUNNER_TEMP") + "/app-signing.keychain-db", "--sign", "Peergos LTD (XUVT52ZN3F)", pkg);*/
         } else
             runCommand("jpackage", "-i", "../server", "-n", "peergos",
                        "--main-class", "peergos.server.Main", "--main-jar",
