@@ -5,7 +5,8 @@ import java.util.*;
 import java.util.zip.*;
 
 /** Package Peergos.jar into a self contained installer
- *  Requires at least Java 14
+ *  Requires at least Java 23
+ *  For building rpms on ubuntu install the rpm package
  */
 public class PackagePeergos {
     public static final String VERSION = "1.0.0";
@@ -24,12 +25,14 @@ public class PackagePeergos {
         if (linuxType == null || ! List.of("deb", "rpm").contains(linuxType))
             linuxType = "deb";
         String type = isWin ? "msi" : isMac ? "pkg": linuxType;
+        String resourceDir = type.equals("rpm") ? "includes/rpm" : "deb-resources";
         if (isWin)
             runCommand("jpackage", "-i", "../server", "-n", "peergos-app",
                        "--main-class", "peergos.server.Main", "--main-jar",
                        "Peergos.jar", "--vendor", "Peergos Ltd.",
                        "--description", "The Peergos server and web interface.",
                        "--copyright", "AGPL",
+                       "--about-url", "https://peergos.org",
                        "--type", type,
                        "--icon", icon,
                        "--resource-dir", "deb-resources",
@@ -48,6 +51,7 @@ public class PackagePeergos {
                        "Peergos.jar", "--vendor", "Peergos Ltd.",
                        "--description", "The Peergos server and web interface.",
                        "--copyright", "AGPL",
+                       "--about-url", "https://peergos.org",
                        "--type", type,
                        "--icon", icon,
                        "--resource-dir", "deb-resources",
@@ -66,11 +70,13 @@ public class PackagePeergos {
                        "Peergos.jar", "--vendor", "Peergos Ltd.",
                        "--description", "The Peergos server and web interface.",
                        "--copyright", "AGPL",
+                       "--linux-rpm-license-type", "AGPL",
+                       "--about-url", "https://peergos.org",
                        "--type", type,
                        "--icon", icon,
                        "--linux-menu-group", "Peergos",
                        "--linux-shortcut",
-                       "--resource-dir", "deb-resources",
+                       "--resource-dir", resourceDir,
                        "--app-version", VERSION);
         String artifact = Files.list(Paths.get(""))
             .map(f -> f.toString())
