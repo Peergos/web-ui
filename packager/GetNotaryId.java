@@ -8,7 +8,7 @@ import java.util.zip.*;
  */
 public class GetNotaryId {
 
-    public static void main(String[] a) throws Exception {
+    public static void main(String[] args) throws Exception {
         
         List<String> log = Files.readAllLines(Paths.get("notary.output"));
         String idLine = log.stream().filter(a -> a.trim().startsWith("id:")).findFirst().get();
