@@ -20,7 +20,7 @@ public class PackagePeergos {
 
         boolean isWin = OS.equals("windows");
         boolean isMac = OS.equals("macos");
-        String icon = isWin ? "winicon.ico" : "../assets/images/logo.png";
+        String icon = isWin ? "winicon.ico" : isMac ? "mac-logo-512.icns" : "../assets/images/logo.png";
         String linuxType = System.getenv("LINUX_TARGET");
         if (linuxType == null || ! List.of("deb", "rpm").contains(linuxType))
             linuxType = "deb";
