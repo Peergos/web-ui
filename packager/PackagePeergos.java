@@ -46,6 +46,7 @@ public class PackagePeergos {
                        );
         else if (isMac) {
             runCommand("security", "find-identity", "-v", "-p", "codesigning", System.getenv("RUNNER_TEMP") + "/app-signing.keychain-db");
+            runCommand("java", "SignLibraries.java");
             runCommand("jpackage", "-i", "../server", "-n", "peergos",
                        "--main-class", "peergos.server.Main", "--main-jar",
                        "Peergos.jar", "--vendor", "Peergos Ltd.",
