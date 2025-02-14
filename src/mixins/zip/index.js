@@ -226,10 +226,10 @@ module.exports = {
             header.setUint16(0, 1, true)
             header.setUint16(2, zip64HeaderLength - 4, true)
             if (zip64HeaderLength & 16) {
-                header.setBigUint64(4, fileSize, true)
-                header.setBigUint64(12, fileSize, true)
+                header.setBigUint64(4, BigInt(fileSize), true)
+                header.setBigUint64(12, BigInt(fileSize), true)
             }
-            header.setBigUint64(zip64HeaderLength - 8, offset, true)
+            header.setBigUint64(zip64HeaderLength - 8, BigInt(offset), true)
             return this.makeUint8Array(header)
         },
         createCentralHeader: function(fileEncodedName, fileProps, crc, fileSize, offset, zip64HeaderLength) {
