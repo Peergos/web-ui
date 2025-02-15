@@ -75,7 +75,7 @@ jobs:
       run: |
         xcrun notarytool submit ./packager/${{ env.artifact }} --wait --apple-id ${{ secrets.APPLE_ID }} --team-id ${{ secrets.TEAM_ID }} --password ${{ secrets.NOTARISE_PASSWORD }} >> packager/notary.output
         cd packager && java GetNotaryId.java
-        xcrun stapler staple ./packager/${{ env.artifact }}
+        xcrun stapler staple ${{ env.artifact }}
     - name: Download notary log from Apple
       if: runner.os == 'macos'
       run: |
