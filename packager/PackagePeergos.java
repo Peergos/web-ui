@@ -25,7 +25,7 @@ public class PackagePeergos {
         if (linuxType == null || ! List.of("deb", "rpm").contains(linuxType))
             linuxType = "deb";
         String type = isWin ? "msi" : isMac ? "pkg": linuxType;
-        String resourceDir = type.equals("rpm") ? "includes/rpm" : "deb-resources";
+        String resourceDir = "includes/" + type;
         if (isWin)
             runCommand("jpackage", "-i", "../server", "-n", "peergos-app",
                        "--main-class", "peergos.server.Main", "--main-jar",
@@ -35,7 +35,7 @@ public class PackagePeergos {
                        "--about-url", "https://peergos.org",
                        "--type", type,
                        "--icon", icon,
-                       "--resource-dir", "deb-resources",
+                       "--resource-dir", resourceDir,
                        "--app-version", VERSION,
                        "--vendor", "Peergos LTD",
                        "--win-menu",
@@ -56,7 +56,7 @@ public class PackagePeergos {
                        "--about-url", "https://peergos.org",
                        "--type", type,
                        "--icon", icon,
-                       "--resource-dir", "deb-resources",
+                       "--resource-dir", resourceDir,
                        "--name", "peergos",
                        "--mac-package-name", "Peergos",
                        "--mac-package-identifier", "org.peergos",
