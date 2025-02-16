@@ -199,7 +199,7 @@ module.exports = {
                         args += "&args=%7B%22filename%22:%22" + link.filename + "%22%7D";
                     } 
                 }
-                let href = this.host + "/" + this.baseUrl + args;
+                let href = (this.host.startsWith("localhost:") ? "http://" : "https://") + this.host + "/" + this.baseUrl + args;
                 let secretLinkQrCode = peergos.shared.SecretLinkQRCode.generate(href);
                 this.base64QrCode = secretLinkQrCode.getBase64Thumbnail();
                 return href;
