@@ -52,11 +52,11 @@ The Peergos server and web interface.
 rm -rf %{buildroot}
 install -d -m 755 %{buildroot}/opt/peergos
 cp -r %{_sourcedir}/opt/peergos/* %{buildroot}/opt/peergos
+ln -s /opt/peergos/bin/peergos /usr/bin
 if [ "$(echo %{_sourcedir}/lib/systemd/system/*.service)" != '%{_sourcedir}/lib/systemd/system/*.service' ]; then
   install -d -m 755 %{buildroot}/lib/systemd/system
   cp %{_sourcedir}/lib/systemd/system/*.service %{buildroot}/lib/systemd/system
 fi
-ln -s /opt/peergos/bin/peergos /usr/bin
 %if "x" != "x"
   %define license_install_file %{_defaultlicensedir}/%{name}-%{version}/%{basename:}
   install -d -m 755 "%{buildroot}%{dirname:%{license_install_file}}"
