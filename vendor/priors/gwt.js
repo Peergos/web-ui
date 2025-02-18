@@ -386,74 +386,62 @@ function getParentDirectoryHandle(filename, directory) {
             dirHandle.getDirectoryHandle(blockFolder, { create: true }));
 }
 
-let pendingWrites = new Map(); //  filename => value
-let pendingReads = new Map(); //   filename => [future] Note: possibility of multiple futures
-
-opfsWorker = new Worker("/js/opfs.js");
-opfsWorker.postMessage({action: 'init'});
-
-opfsWorker.onmessage = function(event) { // reads
-    let message = event.data;
-    const pendingFutures = pendingReads.get(message.filename);
-    pendingReads.delete(message.filename);
-    if (pendingFutures != null) {
-        if (message.readFailure) {
-            const pending = pendingWrites.get(message.filename);
-            if (pending != null) {
-                console.log('getOPFSKV found in cache.  filename:' + message.filename);
-                pendingFutures.forEach(pendingFuture =>
-                    pendingFuture.complete(peergos.client.JsUtil.optionalOf(convertToByteArray(pending)))
-                );
-            } else {
-                console.log('getOPFSKV NOT found in cache.  filename:' + message.filename);
-                pendingFutures.forEach(pendingFuture =>
-                    pendingFuture.complete(peergos.client.JsUtil.emptyOptional())
-                );
-            }
-        } else {
-            if (message.contents == null) {
-                pendingFutures.forEach(pendingFuture =>
-                    pendingFuture.complete(peergos.client.JsUtil.emptyOptional())
-                );
-            } else {
-                pendingFutures.forEach(pendingFuture =>
-                    pendingFuture.complete(peergos.client.JsUtil.optionalOf(convertToByteArray(message.contents)))
-                );
-            }
-        }
-    }
-};
+function getFileHandle(filename, directory) {
+    return getParentDirectoryHandle(filename, directory)
+        .then(blockDirHandle =>
+            blockDirHandle.getFileHandle(filename));
+}
+function getFileHandleCreateIfNecessary(filename, directory) {
+    return getParentDirectoryHandle(filename, directory)
+        .then(blockDirHandle =>
+            blockDirHandle.getFileHandle(filename, { create: true }));
+}
+let pendingWrites = new Map();
 
 function setOPFSKV(filename, value, directory) {
-    if (!pendingWrites.has(filename)) {
-        pendingWrites.set(filename, value);
-        opfsWorker.postMessage({action: 'set', filename: filename, value: value, directory: directory});
-        setTimeout(() => {
-            pendingWrites.delete(filename);
-        }, 5000);
-    }
+    pendingWrites.set(filename, value)
+    let future = peergos.shared.util.Futures.incomplete();
+    getFileHandleCreateIfNecessary(filename, directory).then(file => {
+      writeFileContents(file, value).thenApply(done => {
+            if (done) {
+                setTimeout(() => {
+                  pendingWrites.delete(filename);
+                }, 5000);
+            }
+            future.complete(done);
+      });
+    }).catch(e => {
+        console.log('setOPFSKV error: ' + e);
+        future.complete(false);
+    });
+    return future;
 }
-function getOPFSKV(filename, context, future) {
-    let directory = context.cacheStore;
+function getOPFSKV(filename, directory) {
+    let future = peergos.shared.util.Futures.incomplete();
     const pending = pendingWrites.get(filename);
     if (pending != null) {
-        future.complete(peergos.client.JsUtil.optionalOf(convertToByteArray(pending)));
+        future.complete(pending);
     } else {
-        if (pendingReads.has(filename)) {
-            pendingReads.get(filename).push(future);
-        } else {
-            pendingReads.set(filename, [future]);
-            opfsWorker.postMessage({action: 'get', filename: filename, directory: directory});
-        }
-        let that = this;
-        setTimeout(() => {
-            let entry = context.cacheMetadataRefs['k'+filename];
-            if (entry != null) {
-                let now = new Date();
-                entry.t = now.getTime();
-            }
+        getFileHandle(filename, directory).then(file => {
+            readFileContents(file).thenApply(contents => {
+                if (contents == null) {
+                    console.log('unable to read opfs file contents: ' + filename);
+                    future.complete(null);
+                } else {
+                    let data = new Int8Array(contents);
+                    if (data.byteLength == 0) { //file has been created, but contents not written yet
+                        console.log('cache miss in directory: ' + directory);
+                        future.complete(null);
+                    } else {
+                        future.complete(data);
+                    }
+                }
+            });
+        }).catch(e => {
+            future.complete(null);
         });
     }
+    return future;
 }
 function valuesOPFSKV(directory) {
     let future = peergos.shared.util.Futures.incomplete();
@@ -461,6 +449,41 @@ function valuesOPFSKV(directory) {
         getFilesMetadata(dirHandle).then(values => {
             future.complete(values);
         });
+    });
+    return future;
+}
+function readFileContents(fileHandle) {
+    let future = peergos.shared.util.Futures.incomplete();
+    fileHandle.getFile().then(file => {
+        file.arrayBuffer().then(contents => {
+            future.complete(contents);
+        }).catch(e2 => {
+            console.log("unexpected file read exception: " + e2);
+            future.complete(null);
+        });
+    }).catch(e => {
+        console.log('readFileContents error: ' + e);
+        future.complete(null);
+    });
+    return future;
+}
+function writeFileContents(file, value) {
+    let future = peergos.shared.util.Futures.incomplete();
+    file.createWritable().then(writableStream => {
+        writableStream.write(value).then( () => {
+            writableStream.close().then( () => {
+                future.complete(true);
+            }).catch(e1 => {
+                console.log('writableStream.close error: ' + e1);
+                future.complete(false);
+            });
+        }).catch(e2 => {
+            console.log('writableStream.write error: ' + e2);
+            future.complete(false);
+        });
+    }).catch(e3 => {
+        console.log('file.createWritable error: ' + e3);
+        future.complete(false);
     });
     return future;
 }
@@ -754,20 +777,20 @@ function putIntoCacheProm(hash, data) {
                 console.log("OPFS: attempt to write 0 byte data. hash:" + key);
                 future.complete(true); //We don't want to force .exceptionally() handling and OPFS is just a cache, so .get() can return empty.
             } else {
-                that.currentCacheSize = that.currentCacheSize + data.byteLength;
-                let now = new Date();
-                let metaData = {key: key, l: data.byteLength, t: now.getTime()};
-                let length = that.cacheMetadataArray.length;
-                that.cacheMetadataArray.push(metaData);
-                that.cacheMetadataRefs['k'+metaData.key] = that.cacheMetadataArray[length];
-                that.currentCacheBlockCount = that.currentCacheBlockCount + 1;
-                setOPFSKV(key, data, this.cacheStore);
-                setTimeout(() => {
+                setOPFSKV(key, data, this.cacheStore).thenApply(() => {
+                    that.currentCacheSize = that.currentCacheSize + data.byteLength;
+                    let now = new Date();
+                    let metaData = {key: key, l: data.byteLength, t: now.getTime()};
+                    let length = that.cacheMetadataArray.length;
+                    that.cacheMetadataArray.push(metaData);
+                    that.cacheMetadataRefs['k'+metaData.key] = that.cacheMetadataArray[length];
+                    that.currentCacheBlockCount = that.currentCacheBlockCount + 1;
                     if (triggerEviction(this)) {
                         evictLRU(this, function() {future.complete(true)});
+                    } else {
+                        future.complete(true);
                     }
                 });
-                future.complete(true);
             }
         } else {
             setIDBKV(key, data, this.cacheStore).then(() => {
@@ -809,7 +832,17 @@ function getFromCachePromWithRetry(context, future, hash) {
     } else {
         let key = hash.toString();
         if (that.isOpfsCachingEnabled) {
-            getOPFSKV(key, that, future);
+            getOPFSKV(key, that.cacheStore).thenApply((val) => {
+                if (val == null) {
+                    future.complete(peergos.client.JsUtil.emptyOptional());
+                } else {
+                    try {
+                        let now = new Date();
+                        that.cacheMetadataRefs['k'+key].t = now.getTime();
+                    } catch(e) {}
+                    future.complete(peergos.client.JsUtil.optionalOf(convertToByteArray(val)));
+                }
+            });
         } else {
             getIDBKV(key, that.cacheStore).then((val) => {
                 if (val == null) {
