@@ -18,14 +18,14 @@ Most of the complex logic around encryption etc. is implemented in Java in the p
 
 ## Setup
 
-Requires [ant](http://ant.apache.org/) and Java 17 and at least 2 GB of RAM.
+Requires [ant](http://ant.apache.org/) and Java 21 and at least 2 GB of RAM.
 
 NB: all other dependencies are checked into the repo, or into the submodule peergos repo.
 
 ### Debian/Ubuntu/Mint
 
 ```
-sudo apt install openjdk-17-jdk ant
+sudo apt install openjdk-21-jdk ant
 ```
 ### MacOS
 ```shell
