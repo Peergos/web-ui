@@ -44,9 +44,7 @@ module.exports = {
             // if android localhost use app to stream data rather than a serviceworker, which the download manager can't talk to
             if (this.isLocalhostAndroid()) {
                 let result = peergos.shared.util.Futures.incomplete();
-                console.log("Downloading zip " + files.map(file => file.getName()) + " through localhost reflector");
                 const caps = files.map(file => file.toLink().substring(1)).join("$"); // without #, separated by $
-                console.log("caps: " + caps);
                 let link = document.createElement('a')
                 let click = new MouseEvent('click')
                 link.type = mimeType;
