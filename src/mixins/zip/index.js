@@ -39,6 +39,42 @@ module.exports = {
         zipFiles(zipFilename, allFiles, progress) {
             let that = this;
             let mimeType = "application/zip";
+            // if android localhost use app to stream data rather than a serviceworker, which the download manager can't talk to
+            if (window.location.hostname == "localhost" && navigator.userAgent.toLowerCase().indexOf("android") > -1) {
+                let result = peergos.shared.util.Futures.incomplete();
+                // only need ot send roots to reflector, which traverses the subtree
+                var rootFiles = {}
+                for (let k in allFiles) {
+                    let path = allFiles[k].path;
+                    let file = allFiles[k].file;
+                    var newRoot = true;
+                    for (let p in rootFiles) {
+                        if (path.startsWith(p)) {
+                            newRoot = false;
+                        }
+                    }
+                    if (newRoot) {
+                        rootFiles[path] = file;
+                        console.log("updating root: " + path)
+                    }        
+                }
+                const roots = [];
+                for (let p in rootFiles) {
+                    roots.push(rootFiles[p]);
+                    console.log("zip adding " + rootFiles[p]);
+                }
+                console.log("Downloading zip " + roots.map(file => file.getName()) + " through localhost reflector");
+                const caps = roots.map(file => file.toLink().substring(1)).join("$"); // without #, separated by $
+                console.log("caps: " + caps);
+                let link = document.createElement('a')
+                let click = new MouseEvent('click')
+                link.type = mimeType;
+                link.href = "http://localhost:" + window.location.port + "/peergos/v0/reflector/zip/" + caps;
+                link.dispatchEvent(click);
+                result.complete(true);
+                return result;
+            }
+            
             let writerContainer = {};
             let zipFuture = peergos.shared.util.Futures.incomplete();
             let fileStream = streamSaver.createWriteStream(zipFilename, mimeType,
