@@ -352,16 +352,16 @@ async function deleteFiles(filesArray, directory) {
       const promises = [];
       for await (const name of filesArray) {
         let prom = new Promise(function(resolve, reject) {
-            let work = function(filename, retryCount) {
+            let work = function(filename) {
                 getParentDirectoryHandle(filename, directory).then(parentDirHandle => {
                     parentDirHandle.removeEntry(filename).then(() => {
                         resolve(true);
                     }).catch(e => {
-                        if (retryCount < 5) {
-                            setTimeout(() => work(filename, retryCount + 1), 10);
+                        if (e.toString().startsWith("NotFoundError") || e.toString().startsWith("NoModificationAllowedError")) {
+                            resolve(true);
                         } else {
                             console.log(e);
-                            resolve(false);
+                            resolve(true);
                         }
                     });
                 });
@@ -1821,16 +1821,16 @@ var browserio = {
     }
 };
 
-function generateThumbnailProm(asyncReader, fileSize, fileName) {
+function generateThumbnailProm(asyncReader, fileSize, filename) {
     var future = peergos.shared.util.Futures.incomplete();
     var bytes = peergos.shared.util.Serialize.newByteArray(fileSize);
     asyncReader.readIntoArray(bytes, 0, fileSize).thenApply(function(bytesRead) {
-        renderThumbnail(bytes, future, 400);
+        renderThumbnail(bytes, future, 400, filename);
     });
     return future;
 }
 
-function renderThumbnail(bytes, future, size) {
+function renderThumbnail(bytes, future, size, filename) {
     var canvas = document.createElement('canvas');
     var ctx = canvas.getContext('2d', { willReadFrequently: true });
     var img = new Image();
@@ -1838,7 +1838,7 @@ function renderThumbnail(bytes, future, size) {
         getThumbnailFromCanvas(canvas, img, img.width, img.height, size, future);
     }
     img.onerror = function(e) {
-	console.log(e);
+	    console.log("thumbnail generation failed for:" + filename);
 	future.complete("");
     }
     var blob = new Blob([new Uint8Array(bytes)], {type: "octet/stream"});
