@@ -108,7 +108,6 @@ module.exports = {
       if (window.location.hostname == "localhost" && navigator.userAgent.toLowerCase().indexOf("android") > -1) {
           console.log("Downloading " + file.getName() + " through localhost reflector");
           const cap = file.toLink().substring(1); // without #
-          console.log("cap: " + cap);
           let link = document.createElement('a')
           let click = new MouseEvent('click')
           link.type = props.mimeType;
