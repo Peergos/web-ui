@@ -17,14 +17,17 @@ public class CompileSubmodule {
             runCommand(dir, "ant", "dist");
             runCommand(dir, "ant", "gwtc");
         }
-        replaceUserAgentCheck(dir);
+        initGWT(dir);
     }
 
-    public static void replaceUserAgentCheck(String dir) throws Exception {
+    public static void initGWT(String dir) throws Exception {
         Path peergosLib = Paths.get(dir + "/war/peergoslib/peergoslib.nocache.js");
         String updated = Files.readString(peergosLib).replaceAll("var ua = navigator.userAgent.toLowerCase\\(\\);", "var ua = \"webkit\";");
-        Files.writeString(peergosLib, updated, StandardOpenOption.TRUNCATE_EXISTING);
+
+        String updated2 = updated.replace("bodyDone = true;\n      maybeStartModule();", "initBrowserStorage().then(() => {bodyDone = true;maybeStartModule();});");
+        Files.writeString(peergosLib, updated2, StandardOpenOption.TRUNCATE_EXISTING);
     }
+
 
     public static int runCommand(String dir, String... command) throws Exception {
         System.out.println(Arrays.asList(command));

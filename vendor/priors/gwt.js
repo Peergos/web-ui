@@ -248,6 +248,45 @@ var online = {
     }
 };
 
+function initBrowserStorage() {
+    console.log('KEV-INHERE');
+    let that = this;
+    let prom = new Promise(function(resolve, reject) {
+        isOPFSAvailable().thenApply(function(isOpfsCachingEnabled) {
+            isIndexedDBAvailable().thenApply(function(isIndexedDBCachingEnabled) {
+                let isIndexedDBEnabled = isIndexedDBCachingEnabled;
+                let isOpfsEnabled = isIndexedDBCachingEnabled && isOpfsCachingEnabled;
+                let isEnabled = isOpfsEnabled || isIndexedDBEnabled;
+                if (isEnabled) {
+                    that.origCacheStore = isOpfsEnabled ? 'data' : createStoreIDBKV('data', 'keyval');
+                    that.origCacheStoreMetadata = isOpfsEnabled ? null : createStoreIDBKV('metadata', 'keyval');
+                    that.origCacheDesiredSizeStore = createStoreIDBKV('size', 'keyval');
+                    that.origCachePointerStore = createStoreIDBKV('pointers', 'keyval');
+                    that.origCachePointerStoreMetadata = createStoreIDBKV('pmetadata', 'keyval');
+                    that.origCacheBatStore = createStoreIDBKV('bats', 'keyval');
+                    that.origRootKeyCache = createStoreIDBKV('rootKey', 'keyval');
+                    that.origCacheAccountStore = createStoreIDBKV('account', 'keyval');
+                    that.origCachePkiStore = createStoreIDBKV('pki', 'keyval');
+                    that.origCachePkiOwnerToUsernameStore = createStoreIDBKV('pkiOwnerToUsername', 'keyval');
+
+                    resolve(0);
+                }
+            })
+        })
+    });
+    return prom;
+}
+var origCacheStorage = 'data';
+var origCacheStoreMetadata = null;
+var origCacheDesiredSizeStore = null;
+var origCachePointerStore = null;
+var origCachePointerStoreMetadata = null;
+var origCacheBatStore = null;
+var origRootKeyCache = null;
+var origCacheAccountStore = null;
+var origCachePkiStore = null;
+var origCachePkiOwnerToUsernameStore = null;
+
 var cache = {
     NativeJSCache: function() {
     this.cacheStore = null;
@@ -268,8 +307,8 @@ var cache = {
 
     this.init = function init(maxSizeMiB) {
         let that = this;
-        if (window.location.hostname == "localhost")
-            return;
+        //if (window.location.hostname == "localhost")
+        //    return;
         bindCacheStore(that);
         isOPFSAvailable().thenApply(function(isOpfsCachingEnabled) {
             isIndexedDBAvailable().thenApply(function(isIndexedDBCachingEnabled) {
@@ -277,9 +316,9 @@ var cache = {
                 that.isOpfsCachingEnabled = isIndexedDBCachingEnabled && isOpfsCachingEnabled;
                 that.isCachingEnabled = isOpfsCachingEnabled || isIndexedDBCachingEnabled;
                 if (that.isCachingEnabled) {
-                    that.cacheStore = isOpfsCachingEnabled ? 'data' : createStoreIDBKV('data', 'keyval');
-                    that.cacheStoreMetadata = isOpfsCachingEnabled ? null : createStoreIDBKV('metadata', 'keyval');
-                    that.cacheDesiredSizeStore = createStoreIDBKV('size', 'keyval');
+                    that.cacheStore = origCacheStorage;
+                    that.cacheStoreMetadata = origCacheStoreMetadata;
+                    that.cacheDesiredSizeStore = origCacheDesiredSizeStore;
                     getDesiredCacheSize().thenApply(desiredCacheSize => {
                         getBrowserStorageQuota().then(browserStorageQuota => {
                             that.maxSizeBytes = calculateCacheSize(maxSizeMiB * 1024 * 1024, browserStorageQuota, desiredCacheSize);
@@ -884,8 +923,8 @@ function clearCache() {
 }
 function removeIndexedDBIfExists() {
     let future = peergos.shared.util.Futures.incomplete();
-    let cacheStore = createStoreIDBKV('data', 'keyval');
-    let cacheStoreMetadata = createStoreIDBKV('metadata', 'keyval');
+    let cacheStore = origCacheStore;
+    let cacheStoreMetadata = origCacheStoreMetadata;
     clearIDBKV(cacheStore).then((res1) => {
         clearIDBKV(cacheStoreMetadata).then((res2) => {
             future.complete(true);
@@ -912,8 +951,8 @@ function clearCacheFully(cache, func) {
 
 var pointerCache = {
     NativeJSPointerCache: function() {
-    this.cachePointerStore = createStoreIDBKV('pointers', 'keyval');
-    this.cachePointerStoreMetadata = createStoreIDBKV('pmetadata', 'keyval');
+    this.cachePointerStore = origCachePointerStore;
+    this.cachePointerStoreMetadata = origCachePointerStoreMetadata;
     this.cachePointerMetadataArray = [];
     this.cachePointerRefs = {};
     this.maxItems = 2000;
@@ -1074,7 +1113,7 @@ function clearPointerCacheFully(cache, func) {
 
 var batCache = {
     NativeJSBatCache: function() {
-    this.cacheBatStore = createStoreIDBKV('bats', 'keyval');
+    this.cacheBatStore = origCacheBatStore;
     this.isCachingEnabled = false;
     this.init = function init() {
         let that = this;
@@ -1143,7 +1182,7 @@ function getRootKeyEntryFromCacheProm() {
     let future = peergos.shared.util.Futures.incomplete();
     isIndexedDBAvailable().thenApply(function(isCachingEnabled) {
         if (isCachingEnabled) {
-            that.rootKeyCache = createStoreIDBKV('rootKey', 'keyval');
+            that.rootKeyCache = origRootKeyCache;
             getIDBKV('rootKey', that.rootKeyCache).then((val) => {
                 if (val == null) {
                     future.complete(null);
@@ -1170,7 +1209,7 @@ function setRootKeyIntoCacheProm(username, rootKeySerialised) {
     let future = peergos.shared.util.Futures.incomplete();
     isIndexedDBAvailable().thenApply(function(isCachingEnabled) {
         if (isCachingEnabled) {
-            that.rootKeyCache = createStoreIDBKV('rootKey', 'keyval');
+            that.rootKeyCache = origRootKeyCache;
             let json = {};
             json.username = username;
             var str = "";
@@ -1201,7 +1240,7 @@ function clearRootKeyCacheFully(func) {
 
 var accountCache = {
     NativeJSAccountCache: function() {
-    this.cacheAccountStore = createStoreIDBKV('account', 'keyval');
+    this.cacheAccountStore = origCacheAccountStore;
     this.isCachingEnabled = false;
     this.offlineAccess = true;
     this.init = function init() {
@@ -1276,7 +1315,7 @@ function directGetEntryDataFromCacheProm(key) {
         if (!isCachingEnabled) {
             future.complete(null);
         } else {
-            let accountStoreCache = createStoreIDBKV('account', 'keyval');
+            let accountStoreCache = origCacheAccountStore;
             getIDBKV(key, accountStoreCache).then((val) => {
                 if (val == null) {
                     future.complete(null);
@@ -1299,8 +1338,8 @@ function clearAccountCacheFully(func) {
 
 var pkiCache = {
     NativeJSPkiCache: function() {
-    this.cachePkiStore = createStoreIDBKV('pki', 'keyval');
-    this.cachePkiOwnerToUsernameStore = createStoreIDBKV('pkiOwnerToUsername', 'keyval');
+    this.cachePkiStore = origCachePkiStore;
+    this.cachePkiOwnerToUsernameStore = origCachePkiOwnerToUsernameStore;
     this.isCachingEnabled = false;
     this.init = function init() {
         let that = this;
