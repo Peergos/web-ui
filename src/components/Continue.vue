@@ -16,9 +16,9 @@
                             <p id='confirm-body-id' style="text-align:center;">{{body}}</p>
                         </div>
                         
-                        <button class="btn btn-success btn-lg" @click="yes()" style="width:50%">
+                        <a class="btn btn-success btn-lg" @click="yes()" v-bind:href="href" style="width:50%" target="_blank">
                             Ok
-                        </button>
+                        </a>
                     </center>
                 </div>
             </div>
@@ -32,7 +32,7 @@
         return {
         }
     },
-    props: ['message', 'body', 'ok_func'],
+    props: ['message', 'body', 'ok_func', 'href'],
     created: function() {
     },
     methods: {

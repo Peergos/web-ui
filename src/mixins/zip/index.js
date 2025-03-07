@@ -36,9 +36,28 @@ module.exports = {
               }
               return crc;
           },
+        isLocalhostAndroid() {
+            return window.location.hostname == "localhost" && navigator.userAgent.toLowerCase().indexOf("android") > -1;
+        },
+        reflectZipFiles(files) {
+            let mimeType = "application/zip";
+            // if android localhost use app to stream data rather than a serviceworker, which the download manager can't talk to
+            if (this.isLocalhostAndroid()) {
+                let result = peergos.shared.util.Futures.incomplete();
+                const caps = files.map(file => file.toLink().substring(1)).join("$"); // without #, separated by $
+                let link = document.createElement('a')
+                let click = new MouseEvent('click')
+                link.type = mimeType;
+                link.href = "http://localhost:" + window.location.port + "/peergos/v0/reflector/zip/" + caps;
+                link.dispatchEvent(click);
+                result.complete(true);
+                return result;
+            }
+        },
         zipFiles(zipFilename, allFiles, progress) {
             let that = this;
             let mimeType = "application/zip";
+            
             let writerContainer = {};
             let zipFuture = peergos.shared.util.Futures.incomplete();
             let fileStream = streamSaver.createWriteStream(zipFilename, mimeType,

@@ -117,7 +117,8 @@
                     v-on:hide-continue="showContinue = false"
                     :message='continue_message'
                     :body="continue_body"
-                    :ok_func="continue_func">
+                    :ok_func="continue_func"
+                    :href="paymentUrl">
                 </continue>
 	</div>
 </template>
@@ -164,6 +165,7 @@ module.exports = {
             continue_message: "Add a payment card",
             continue_body: "Continue to our payment processor to enter your card details",
             continue_func: function(){},
+            paymentUrl: "",
             cardFuture: null,
             showSignupWarning: false,
 	};
@@ -261,11 +263,11 @@ module.exports = {
         },
         addCard() {
             //  open payment card page in new tab
-            let link = document.createElement('a')
-            let click = new MouseEvent('click')
-            link.target = "_blank";
-            link.href = this.paymentUrl;
-            link.dispatchEvent(click);
+            //let link = document.createElement('a')
+            //let click = new MouseEvent('click')
+            //link.target = "_blank";
+            //link.href = this.paymentUrl;
+            //link.dispatchEvent(click);
             this.startAddCardListener(this.cardFuture);
             this.$toast.info('Opening payment provider', {id:'signup', timeout:false})
         },
