@@ -1649,6 +1649,11 @@ module.exports = {
         futureTotalSize.thenApply(res => {
             that.showSpinner = false;
             if (res) {
+                if (that.isLocalhostAndroid()) {
+                    console.log("reflecting zip files");
+                    that.reflectZipFiles(files);
+                    return;
+                }
                 that.showSpinner = true;
                 var actualSize = 0;
                 for(var i = 0; i < statisticsList.length; i++) {
@@ -1704,6 +1709,11 @@ module.exports = {
                     that.confirmZipAndDownloadOfFolder(filename, statistics,
                         () => {
                             that.showConfirm = false;
+                            if (that.isLocalhostAndroid()) {
+                                console.log("reflecting zip files");
+                                that.reflectZipFiles([file]);
+                                return;
+                            }
                             var progress = {
                                 show: true,
                                 title: that.translate("DRIVE.DOWNLOAD.FOLDER").replace("$NAME", filename),
