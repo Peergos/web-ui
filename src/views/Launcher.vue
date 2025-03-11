@@ -140,7 +140,7 @@
                 </div>
             </div>
             <div v-if="showSharedItems">
-                <h3>Files &amp; Folders I have Shared</h3>
+                <h3>Items I have Shared</h3>
                 <div class="flex-container">
                     <div class="flex-item" style="margin: 10px;">
                         <button id='submit-search' class="btn btn-success" @click="findShared()">Recalculate</button>
@@ -246,7 +246,7 @@ module.exports = {
             currentEntry: null,
             currentFile: null,
             currentPath: null,
-            showSharedItems: false,
+            showSharedItems: true,
             updateMessage:'',
             showAppInstallation: false,
             appInstallPropsFile: null,
@@ -388,9 +388,9 @@ module.exports = {
                     let aVal = a.access;
                     let bVal = b.access;
                     if (reverseOrder) {
-                        return bVal.compareTo(aVal);
+                        return bVal.localeCompare(aVal);
                     } else {
-                        return aVal.compareTo(bVal);
+                        return aVal.localeCompare(bVal);
                     }
                 });
             }
@@ -876,6 +876,8 @@ module.exports = {
             let fileSharingState = sharedWithState.get(props.name);
             let read_usernames = fileSharingState.readAccess.toArray([]);
             let edit_usernames = fileSharingState.writeAccess.toArray([]);
+            let secretLinks = fileSharingState.links.toArray([]);
+            let writableSecretLinks = secretLinks.filter(link => link.isLinkWritable);
             let entry = {
                 path: pathStr,
                 name: props.name,
@@ -886,7 +888,7 @@ module.exports = {
                 file: file,
                 read_shared_with_users: read_usernames,
                 edit_shared_with_users: edit_usernames,
-                access: edit_usernames.length > 0 ? "R & W" : "R"
+                access: edit_usernames.length > 0 || writableSecretLinks.length > 0 ? "R & W" : "R"
             };
             this.sharedItemsList.push(entry);
         },
@@ -895,7 +897,7 @@ module.exports = {
                 return;
             }
             let filename = file.getName();
-            let isShared = sharedWithState.isShared(filename);
+            let isShared = sharedWithState.isShared(filename) || sharedWithState.hasLink(filename);
             if (isShared){
                 this.addSharedItem(sharedWithState, file, path);
             }
@@ -1064,7 +1066,7 @@ module.exports = {
                          v.name === this.currentEntry.name);
             let directoryPath = peergos.client.PathUtils.directoryToPath(this.pathToFile);
             this.context.getDirectorySharingState(directoryPath).thenApply(function (sharedWithState) {
-                let isShared = sharedWithState.isShared(that.currentEntry.name);
+                let isShared = sharedWithState.isShared(that.currentEntry.name) || sharedWithState.hasLink(that.currentEntry.name);
                 if (isShared){
                     let fullPath = that.currentEntry.path + '/' + that.currentEntry.name;
                     that.context.getByPath(fullPath).thenApply(function(fileOpt){
