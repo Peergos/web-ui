@@ -144,8 +144,8 @@ module.exports = {
     },
     methods: {
     convertBytesToHumanReadable:function(bytes) {
-        if (bytes == 0)
-            return "";
+        if (bytes == "")
+            return "0 Bytes";
         if (bytes < 1000)
             return bytes + " Bytes";
         if (bytes < 1000 * 1000)
