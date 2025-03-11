@@ -83,7 +83,7 @@
                                 {{ match.path }}
                             </td>
                             <td>
-                                {{ match.size }}
+                                {{ convertBytesToHumanReadable(match.size) }}
                             </td>
                             <td>
                                 {{ formatDateTime(match.lastModified) }}
@@ -143,6 +143,20 @@ module.exports = {
         this.selectedDate = new Date().toISOString().split('T')[0];
     },
     methods: {
+    convertBytesToHumanReadable:function(bytes) {
+        if (bytes == 0)
+            return "";
+        if (bytes < 1000)
+            return bytes + " Bytes";
+        if (bytes < 1000 * 1000)
+            return this.roundToDisplay(bytes / 1000) + " KB";
+        if (bytes < 1000 * 1000 * 1000)
+            return this.roundToDisplay(bytes / 1000 / 1000) + " MB";
+        return this.roundToDisplay(bytes / 1000 / 1000 / 1000) + " GB";
+    },
+    roundToDisplay:function(x) {
+            return Math.round(x * 100) / 100;
+    },
 	walk: function(file, path, searchTerm, searchTest) {
         let searchButton = document.getElementById("submit-search");
         if (this.cancelSearch) {
