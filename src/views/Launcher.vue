@@ -39,7 +39,8 @@
                 v-on:hide-app-installation="closeAppInstallation"
                 :appInstallSuccessFunc="appInstallSuccess"
                 :appPropsFile="appInstallPropsFile"
-                :installFolder="appInstallFolder">
+                :installFolder="appInstallFolder"
+                :templateInstanceAppName="templateInstanceAppName">
             </AppInstall>
             <AppSandbox
                 v-if="showAppSandbox"
@@ -278,6 +279,7 @@ module.exports = {
             pickerShowThumbnail: false,
             filePickerBaseFolder: "",
             htmlAnchor: "",
+            templateInstanceAppName: "",
         }
     },
     props: [],
@@ -576,6 +578,7 @@ module.exports = {
                 if (propsFileOpt.ref != null) {
                     that.appInstallPropsFile = propsFileOpt.ref;
                     that.appInstallFolder = pathStr;
+                    that.templateInstanceAppName = app.name;
                     that.showAppInstallation = true;
                 }
             });
