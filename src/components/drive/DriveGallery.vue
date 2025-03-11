@@ -129,10 +129,22 @@ module.exports = {
 
 		startPing(pingUrl) {
 			if (!this.pinging) return;
-			fetch(pingUrl);
+			this.sendPingRequest(pingUrl);
 			setTimeout(() => this.startPing(pingUrl), 5000);
 		},
-
+		sendPingRequest(url) {
+            var req = new XMLHttpRequest();
+            req.open('GET', url);
+            req.onload = function() {
+                if (!req.status == 200) {
+                    console.log('sendPingRequest-status-!200')
+                }
+            };
+            req.onerror = function(e) {
+                console.log('sendPingRequest-onerror')
+            };
+            req.send();
+        },
 		next() {
             if (this.fileIndex < this.showableFiles.length - 1) {
 				this.fileIndex++;
