@@ -74,6 +74,19 @@ function respondToLoadedChunk(bytes) {
     streamWriter.write(bytes);
 }
 function startPing(pingUrl) {
-    fetch(pingUrl);
+    sendPingRequest(pingUrl);
     setTimeout(() => this.startPing(pingUrl), 5000);
+}
+function sendPingRequest(url) {
+    var req = new XMLHttpRequest();
+    req.open('GET', url);
+    req.onload = function() {
+        if (!req.status == 200) {
+            console.log('sendPingRequest-status-!200. status:' + req.status);
+        }
+    };
+    req.onerror = function(e) {
+        console.log('sendPingRequest-onerror. error:' + e.toString());
+    };
+    req.send();
 }
