@@ -137,11 +137,11 @@ module.exports = {
             req.open('GET', url);
             req.onload = function() {
                 if (!req.status == 200) {
-                    console.log('sendPingRequest-status-!200')
+                    console.log('sendPingRequest-status-!200. status:' + req.status);
                 }
             };
             req.onerror = function(e) {
-                console.log('sendPingRequest-onerror')
+                console.log('sendPingRequest-onerror. error:' + e.toString());
             };
             req.send();
         },
