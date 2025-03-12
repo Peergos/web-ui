@@ -165,7 +165,7 @@ module.exports = {
                             }
                         }
                         arr.forEach(function(child, index){
-                            let newPath = child.getFileProperties().isDirectory ? path + child.getFileProperties().name : path;
+                            let newPath = child.getFileProperties().isDirectory ? path + child.getFileProperties().name + "/": path;
                             that.walk(child, newPath, updatedSharedWithState);
                             if (index == size - 1) {
                                 that.walkCounter--;
