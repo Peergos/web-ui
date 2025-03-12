@@ -121,6 +121,7 @@ module.exports = {
     "DRIVE.MISSING.FOLDER":"Cartella non trovata!",
     "APPNAV.LAUNCHER":"Launcher",
     "APPNAV.DRIVE":"Drive",
+    "APPNAV.SHAREDWITH":"Condiviso",
     "APPNAV.NEWSFEED":"Newsfeed",
     "APPNAV.SOCIAL":"Social",
     "APPNAV.CAL":"Calendario",

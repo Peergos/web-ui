@@ -112,6 +112,7 @@ module.exports = {
     "DRIVE.DELETE.FILE.ERROR":"删除文件时出错: $NAME: $MESSAGE",
     "APPNAV.LAUNCHER":"启动器",
     "APPNAV.DRIVE":"云盘",
+    "APPNAV.SHAREDWITH":"共享",
     "APPNAV.NEWSFEED":"新闻源",
     "APPNAV.SOCIAL":"社交",
     "APPNAV.CAL":"日历",

@@ -22,6 +22,7 @@
 		<ul class="nav-list">
             <MenuItem :label="translate('APPNAV.LAUNCHER')" icon="launcher" view="Launcher" />
 			<MenuItem :label="translate('APPNAV.DRIVE')" icon="folder" view="Drive" />
+            <MenuItem :label="translate('APPNAV.SHAREDWITH')" icon="shared" view="SharedWith" />
 			<MenuItem :label="translate('APPNAV.NEWSFEED')" icon="news" view="NewsFeed" />
 			<MenuItem :label="translate('APPNAV.SOCIAL')" icon="social" view="Social" />
 			<MenuItem :label="translate('APPNAV.CAL')" icon="calendar" view="Calendar" />

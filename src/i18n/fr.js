@@ -121,6 +121,7 @@ module.exports = {
     "DRIVE.MISSING.FOLDER": "Dossier introuvable!",
     "APPNAV.LAUNCHER": "Lanceur",
     "APPNAV.DRIVE": "Drive",
+    "APPNAV.SHAREDWITH":"Partagé",
     "APPNAV.NEWSFEED": "Fil d'actualité",
     "APPNAV.SOCIAL": "Social",
     "APPNAV.CAL": "Calendrier",
