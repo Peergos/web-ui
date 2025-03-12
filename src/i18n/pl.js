@@ -121,6 +121,7 @@ module.exports = {
     "DRIVE.MISSING.FOLDER":"Folder nie został znaleziony!",
     "APPNAV.LAUNCHER":"Aplikacje",
     "APPNAV.DRIVE":"Dysk",
+    "APPNAV.SHAREDWITH":"Udostępnionych",
     "APPNAV.NEWSFEED":"Kanał informacyjny",
     "APPNAV.SOCIAL":"Społecznościowe",
     "APPNAV.CAL":"Kalendarz",
