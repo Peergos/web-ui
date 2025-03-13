@@ -139,52 +139,6 @@ module.exports = {
         this.findShared();
     },
     methods: {
-        walk: function(file, path, sharedWithState) {
-            let searchButton = document.getElementById("submit-search");
-            let fileProperties = file.getFileProperties();
-            if (fileProperties.isHidden)
-                return;
-            let that = this;
-            if (fileProperties.isDirectory) {
-                that.walkCounter++;
-                if (that.walkCounter == 1) {
-                    that.showSpinner = true;
-                    searchButton.disabled = true;
-                }
-                let pathWithoutEndingSlash = path.endsWith('/') ? path.substring(0, path.length -1) : path;
-                let directoryPath = peergos.client.PathUtils.directoryToPath(pathWithoutEndingSlash.substring(1).split("/"));
-                this.context.getDirectorySharingState(directoryPath).thenApply(function (updatedSharedWithState) {
-                    file.getChildren(that.context.crypto.hasher, that.context.network).thenApply(function(children) {
-                        let arr = children.toArray();
-                        let size = arr.length;
-                        if (size == 0) {
-                            that.walkCounter--;
-                            if (that.walkCounter == 0) {
-                                that.showSpinner = false;
-                                searchButton.disabled = false;
-                            }
-                        }
-                        arr.forEach(function(child, index){
-                            let newPath = child.getFileProperties().isDirectory ? path + child.getFileProperties().name + "/": path;
-                            that.walk(child, newPath, updatedSharedWithState);
-                            if (index == size - 1) {
-                                that.walkCounter--;
-                                if (that.walkCounter == 0) {
-                                    that.showSpinner = false;
-                                    searchButton.disabled = false;
-                                }
-                            }
-                        });
-                    });
-                });
-            }
-            this.isSharedTest(sharedWithState, file, path);
-        },
-        getFileSize: function(props) {
-                var low = props.sizeLow();
-                if (low < 0) low = low + Math.pow(2, 32);
-                return low + (props.sizeHigh() * Math.pow(2, 32));
-        },
         addSharedItem: function(sharedWithState, file, path) {
             let props = file.getFileProperties();
             let pathStr = props.isDirectory ? path.substring(0, path.lastIndexOf("/")): path;
@@ -207,23 +161,20 @@ module.exports = {
             };
             this.sharedItemsList.push(entry);
         },
-        isSharedTest: function(sharedWithState, file, path) {
-            if (sharedWithState == null) {
-                return;
-            }
-            let filename = file.getName();
-            let isShared = sharedWithState.isShared(filename) || sharedWithState.hasLink(filename);
-            if (isShared){
-                this.addSharedItem(sharedWithState, file, path);
-            }
-        },
         findShared: function() {
             var that = this;
-            let path = '/' + this.context.username + '/';
-            this.sharedItemsList = [];
-            this.walkCounter = 0;
-            this.context.getByPath(path).thenApply(function(dir){
-                that.walk(dir.get(), path, null);
+            this.context.processShared((path, sharedWithState) => {
+                //BiConsumer<String, SharedWithState> processor
+                let isShared = sharedWithState.isShared(path) || sharedWithState.hasLink(path);
+                if (isShared){
+                    that.context.getByPath(path).thenApply(fileOpt => {
+                        that.addSharedItem(sharedWithState, fileOpt.ref, path);
+                    });
+                }
+            }).thenApply(res => {
+                that.showSpinner = false;
+                let searchButton = document.getElementById("submit-search");
+                searchButton.disabled = false;
             }).exceptionally(function(throwable) {
                 that.showSpinner = false;
                 let searchButton = document.getElementById("submit-search");
