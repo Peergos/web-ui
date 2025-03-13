@@ -150,8 +150,8 @@ module.exports = {
     methods: {
         addSharedItem: function(fileSharingState, file, path) {
             let props = file.getFileProperties();
-            let name = props.isDirectory ? "" : props.name;
-            let pathStr = props.isDirectory ? path : path.substring(0, path.lastIndexOf("/"));
+            let name = props.name;
+            let pathStr = path.substring(0, path.lastIndexOf("/"));
             let read_usernames = fileSharingState.readAccess.toArray([]);
             let edit_usernames = fileSharingState.writeAccess.toArray([]);
             let secretLinks = fileSharingState.links.toArray([]);
