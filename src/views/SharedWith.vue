@@ -165,12 +165,19 @@ module.exports = {
             var that = this;
             this.context.processShared((path, sharedWithState) => {
                 //BiConsumer<String, SharedWithState> processor
+                console.log("in here");
+                let dir = path.length == 0 ? "/" : path;
+                let writeShares = sharedWithState.writeShares().keySet().toArray([]).length > 0;
+                let readShares = sharedWithState.writeShares().keySet().toArray([]).length > 0;
+                let secretLinks = sharedWithState.links().keySet().toArray([]).length > 0;
+                console.log("dir=" + dir + " writeShares=" + writeShares + " readShares=" + readShares + " secretLinks=" + secretLinks);
+                /*
                 let isShared = sharedWithState.isShared(path) || sharedWithState.hasLink(path);
                 if (isShared){
                     that.context.getByPath(path).thenApply(fileOpt => {
                         that.addSharedItem(sharedWithState, fileOpt.ref, path);
                     });
-                }
+                }*/
             }).thenApply(res => {
                 that.showSpinner = false;
                 let searchButton = document.getElementById("submit-search");
