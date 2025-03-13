@@ -180,20 +180,28 @@ module.exports = {
                 return c;
             }
             this.context.processShared({accept_2: (path, sharedWithState) => {
-                let writeShares = sharedWithState.writeShares.keySet().toArray([]);
-                let readShares = sharedWithState.readShares.keySet().toArray([]);
-                let secretLinks = sharedWithState.links_0.keySet().toArray([]);
-                var combined = merge(writeShares, readShares);
-                combined = merge(combined, secretLinks);
-                combined.forEach(name => {
-                    let completePath = that.context.username + path + "/" + name;
-                    let fileSharingState = sharedWithState.get(name);
-                    that.context.getByPath(completePath).thenApply(fileOpt => {
-                        if (fileOpt.ref != null) {
-                            that.addSharedItem(fileSharingState, fileOpt.ref, completePath);
-                        }
+                if (!( path.startsWith("/.messaging/")
+                    || path.startsWith("/.shared/")
+                    || path.startsWith("/.apps/")
+                    || path.startsWith("/.posts/" ))) {
+                    let writeShares = sharedWithState.writeShares.keySet().toArray([]);
+                    let readShares = sharedWithState.readShares.keySet().toArray([]);
+                    let secretLinks = sharedWithState.links_0.keySet().toArray([]);
+                    var combined = merge(writeShares, readShares);
+                    combined = merge(combined, secretLinks);
+                    combined.forEach(name => {
+                        let completePath = that.context.username + path + "/" + name;
+                        let fileSharingState = sharedWithState.get(name);
+                        that.context.getByPath(completePath).thenApply(fileOpt => {
+                            if (fileOpt.ref != null) {
+                                let fileProperties = fileOpt.ref.getFileProperties();
+                                if (!fileProperties.isHidden) {
+                                    that.addSharedItem(fileSharingState, fileOpt.ref, completePath);
+                                }
+                            }
+                        });
                     });
-                });
+                }
             }}).thenApply(res => {
                 that.showSpinner = false;
                 let searchButton = document.getElementById("submit-search");
