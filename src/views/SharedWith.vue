@@ -156,9 +156,14 @@ module.exports = {
             let edit_usernames = fileSharingState.writeAccess.toArray([]);
             let secretLinks = fileSharingState.links.toArray([]);
             let writableSecretLinks = secretLinks.filter(link => link.isLinkWritable);
+            let navName = props.isDirectory ? "" : props.name;
+            let navPathStr = props.isDirectory ? path : path.substring(0, path.lastIndexOf("/"));
+
             let entry = {
                 path: pathStr,
                 name: name,
+                navPath: navPathStr,
+                navName: navName,
                 lastModified: props.modified,
                 created: props.created,
                 isDirectory: props.isDirectory,
@@ -214,11 +219,11 @@ module.exports = {
             });
         },
         view: function (event, entry) {
-            if (entry.name.length == 0) {
+            if (entry.navName.length == 0) {
                 return;
             }
             let that = this;
-            let fullPath = entry.path + (entry.isDirectory ? "" : '/' + entry.name);
+            let fullPath = entry.navPath + (entry.isDirectory ? "" : '/' + entry.navName);
             this.findFile(fullPath).thenApply(file => {
                 if (file != null) {
                     let userApps = this.availableAppsForFile(file);
@@ -226,15 +231,15 @@ module.exports = {
                     if (userApps.length == 0) {
                         if (inbuiltApps.length == 1) {
                             if (inbuiltApps[0].name == 'hex') {
-                                that.openFileOrDir("Drive", entry.path, {filename:""});
+                                that.openFileOrDir("Drive", entry.navPath, {filename:""});
                             } else {
-                                this.openFileOrDir(inbuiltApps[0].name, entry.path, {filename:file.isDirectory() ? "" : file.getName()})
+                                this.openFileOrDir(inbuiltApps[0].name, entry.navPath, {filename:file.isDirectory() ? "" : file.getName()})
                             }
                         } else {
-                            this.showAppContextMenu(event, inbuiltApps, userApps, entry.path, file);
+                            this.showAppContextMenu(event, inbuiltApps, userApps, entry.navPath, file);
                         }
                     } else {
-                        this.showAppContextMenu(event, inbuiltApps, userApps, entry.path, file);
+                        this.showAppContextMenu(event, inbuiltApps, userApps, entry.navPath, file);
                     }
                 }
             });
@@ -307,7 +312,7 @@ module.exports = {
             if (entry.missing) {
                 return;
             }
-            this.openFileOrDir("Drive", entry.path, {filename:""});
+            this.openFileOrDir("Drive", entry.navPath, {filename:""});
         },
         setSharedSortBy: function(prop) {
             if (this.sortBy == prop)
