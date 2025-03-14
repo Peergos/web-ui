@@ -2146,22 +2146,24 @@ module.exports = {
             let that = this;
             let updater = {
                 done:0,
-                max:file.size,
+                max:file.size * 2,
                 finished:false,
                 lastUpdate: false
             };
             let thumbnailOffset = 20 * 1024;
             let updateProgressBar = function(len){
                 let firstUpdate = updater.done == 0;
-                updater.done += len.value_0;
-                uploadParams.progress.done += len.value_0;
+                updater.done += (len.value_0 * 2);
+                uploadParams.progress.done += (len.value_0 * 2);
                 if (!updater.finished && updater.done >= (updater.max + thumbnailOffset)) {
                     updater.finished = true;
-                    //console.log('uploadParams.progress.done=' + uploadParams.progress.done + " uploadParams.progress.max=" + uploadParams.progress.max);
                     uploadParams.progress.current  = uploadParams.progress.current + 1;
                     uploadParams.triggerRefresh = true;
                 }
-                let title = '[' + uploadParams.progress.current + '/' + uploadParams.progress.total + '] ' + uploadParams.title;
+                let encryptingMsg = that.translate("DRIVE.UPLOAD.TITLE.ENCRYPTING");
+                let uploadingMsg = that.translate("DRIVE.UPLOAD.TITLE.UPLOADING");
+                var process = updater.done > (updater.max /2) ? uploadingMsg : encryptingMsg;
+                let title = '[' + uploadParams.progress.current + '/' + uploadParams.progress.total + '] ' + process;
                 if (!firstUpdate && !updater.lastUpdate) {
                     if (updater.finished) {
                         updater.lastUpdate = true;

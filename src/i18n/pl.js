@@ -91,6 +91,8 @@ module.exports = {
     "DRIVE.OFFLINE": "Klient offline!",
     "DRIVE.UPLOAD.SPACE.ERROR": "Operacja przesyłania pliku przekracza dostępne miejsce \nZwolnij $SPACE i spróbuj ponownie",
     "DRIVE.UPLOAD.TITLE": "Szyfrowanie i przesyłanie pliku(ów)",
+    "DRIVE.UPLOAD.TITLE.ENCRYPTING":"Szyfrowania",
+    "DRIVE.UPLOAD.TITLE.UPLOADING":"Przesyłanie",
     "DRIVE.UPLOAD.COMPLETE": "Kończenie przesyłania i odświeżanie folderu...",
     "DRIVE.UPLOAD.ERROR": "Błąd przesyłania plików",
     "DRIVE.UPLOAD.RESUME.TITLE": "Czy chcesz wznowić nieudane przesyłanie pliku?",

@@ -91,6 +91,8 @@ module.exports = {
     "DRIVE.OFFLINE": "Client hors ligne!",
     "DRIVE.UPLOAD.SPACE.ERROR": "L'opération de téléchargement de fichier dépasse la capacité disponible espace\nVeuillez libérer $SPACE et réessayer",
     "DRIVE.UPLOAD.TITLE": "Cryptage et téléchargement du/des fichier(s)",
+    "DRIVE.UPLOAD.TITLE.ENCRYPTING":"Cryptage",
+    "DRIVE.UPLOAD.TITLE.UPLOADING":"Téléchargement",
     "DRIVE.UPLOAD.COMPLETE": "Fin du téléchargement et actualisation du dossier...",
     "DRIVE.UPLOAD.ERROR": "Erreur lors du téléchargement des fichiers",
     "DRIVE.UPLOAD.RESUME.TITLE": "Souhaitez-vous reprendre le téléchargement du fichier ayant échoué?",

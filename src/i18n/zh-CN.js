@@ -86,6 +86,8 @@ module.exports = {
     "DRIVE.OFFLINE":"客户端已离线！",
     "DRIVE.UPLOAD.SPACE.ERROR":"文件上传操作超出可用空间\n请释放 $SPACE 并重试",
     "DRIVE.UPLOAD.TITLE":"正在加密并上传文件",
+    "DRIVE.UPLOAD.TITLE.ENCRYPTING":"加密",
+    "DRIVE.UPLOAD.TITLE.UPLOADING":"上传",
     "DRIVE.UPLOAD.COMPLETE":"正在完成上传并刷新文件夹...",
     "DRIVE.UPLOAD.ERROR":"上传文件时出错",
     "DRIVE.UPLOAD.RESUME.TITLE":"您是否希望继续上传没传成功的文件?",

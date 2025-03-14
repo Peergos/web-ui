@@ -91,6 +91,8 @@ module.exports = {
     "DRIVE.OFFLINE": "Cliente sin conexión",
     "DRIVE.UPLOAD.SPACE.ERROR": "La operación de carga de archivos excede el espacio disponible. Libere $SPACE e intente nuevamente",
     "DRIVE.UPLOAD.TITLE": "Encriptando y cargando archivo(s)",
+    "DRIVE.UPLOAD.TITLE.ENCRYPTING":"Cifrado",
+    "DRIVE.UPLOAD.TITLE.UPLOADING":"Cargar",
     "DRIVE.UPLOAD.COMPLETE": "Completando la carga y actualizando la carpeta...",
     "DRIVE.UPLOAD.ERROR": "Error al cargar archivos",
     "DRIVE.UPLOAD.RESUME.TITLE": "¿Desea reanudar la carga de archivos fallida?",
