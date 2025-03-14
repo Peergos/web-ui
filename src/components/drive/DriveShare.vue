@@ -274,6 +274,7 @@ module.exports = {
             this.existingProps = null;
             this.loadSecretLinks();
             this.refreshFiles();
+            this.refresh();
         },
         formatDateTime(dateTime) {
             let date = new Date(dateTime.toString() + "+00:00"); //adding UTC TZ in ISO_OFFSET_DATE_TIME ie 2021-12-03T10:25:30+00:00
@@ -295,6 +296,7 @@ module.exports = {
                 that.secretLinksList.splice(index, 1);
                 that.existingProps = null;
                 that.refreshFiles();
+                that.refresh();
             }).exceptionally(function (throwable) {
                 console.log(throwable);
                 that.showSpinner = false;

@@ -491,5 +491,6 @@ module.exports = {
     "DRIVE.MOVING.TITLE": "Moviendo archivo(s)",
     "DRIVE.MOVING.COMPLETE": "Completando movimiento y actualizando carpeta...",
     "DRIVE.COPYING.TITLE": "Copiando archivo(s)",
-    "DRIVE.COPYING.COMPLETE": "Completando copia y actualizando carpeta..."
+    "DRIVE.COPYING.COMPLETE": "Completando copia y actualizando carpeta...",
+    "SHAREDWITH.TITLE": "Compartido con"
 }

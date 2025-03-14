@@ -20,12 +20,7 @@
                 <li id='open-in-app' style="padding-bottom: 5px;color: black;" v-for="app in availableApps" v-on:keyup.enter="appOpen($event, app.name, app.path, app.file)" v-on:click="appOpen($event, app.name, app.path, app.file)">{{app.contextMenuText}}</li>
             </ul>
             <div>
-                <h3>Shared Items</h3>
-                <div class="flex-container">
-                    <div class="flex-item" style="margin: 10px;">
-                        <button id='submit-search' class="btn btn-success" @click="findShared()">Recalculate</button>
-                    </div>
-                </div>
+                <h3>{{ translate("SHAREDWITH.TITLE") }}</h3>
                 <div v-if="sharedItemsList!=0" class="table-responsive">
                     <table class="table">
                         <thead>
@@ -346,9 +341,11 @@ module.exports = {
                 if (isShared){
                     let fullPath = that.currentEntry.path + '/' + that.currentEntry.name;
                     that.context.getByPath(fullPath).thenApply(function(fileOpt){
-                        that.sharedItemsList.splice(index, 1);
-                        that.addSharedItem(sharedWithState, fileOpt.ref, fullPath);
-                        that.currentEntry = null;
+                        if (fileOpt.ref != null) {
+                            that.sharedItemsList.splice(index, 1);
+                            let fileSharingState = sharedWithState.get(that.currentEntry.name);
+                            that.addSharedItem(fileSharingState, fileOpt.ref, fullPath);
+                        }
                     });
                 } else {
                     that.sharedItemsList.splice(index, 1);

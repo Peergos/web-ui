@@ -491,5 +491,6 @@ module.exports = {
     "DRIVE.MOVING.TITLE":"Przenoszenie pliku(ów)",
     "DRIVE.MOVING.COMPLETE":"Kończenie przenoszenia i odświeżanie folderu...",
     "DRIVE.COPYING.TITLE":"Kopiowanie pliku(ów)",
-    "DRIVE.COPYING.COMPLETE":"Kończenie kopiowania i odświeżanie folderu..."
+    "DRIVE.COPYING.COMPLETE":"Kończenie kopiowania i odświeżanie folderu...",
+    "SHAREDWITH.TITLE": "Udostępnione z"
 }
