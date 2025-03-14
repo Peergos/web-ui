@@ -465,5 +465,6 @@ module.exports = {
     "NEW.FOLDER.NAME.MESSAGE":"创建文件夹",
     "PROMPT.OK":"好的",
     "PROMPT.CANCEL":"取消",
-    "PROMPT.SET":"设定"
+    "PROMPT.SET":"设定",
+    "SHAREDWITH.TITLE": "共享对象"
 }
