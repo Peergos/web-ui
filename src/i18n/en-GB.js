@@ -429,8 +429,6 @@ module.exports = {
     "NEWSFEED.POST.UPLOAD.SPACE.ERROR":"Media File(s) exceed available Space - Please free up $SPACE and try again",
     "NEWSFEED.POST.UPLOAD.SPACE.ERROR2":"Unable to proceed. $NAME file size exceeds available space",
     "NEWSFEED.POST.UPLOAD":"Encrypting and uploading",
-    "NEWSFEED.POST.UPLOAD":"Encrypting and uploading",
-    "NEWSFEED.POST.UPLOAD":"Encrypting and uploading",
     "NEWSFEED.POST.SHARE.WITH":"Share post with:",
     "NEWSFEED.POST.SHARE.WITH.FRIENDS":"Friends",
     "NEWSFEED.POST.SHARE.WITH.FOLLOWERS":"Followers (Includes Friends)",
