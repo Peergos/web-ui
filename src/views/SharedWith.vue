@@ -16,6 +16,9 @@
                 :files="filesToShare"
                 :path="pathToFile">
             </Share>
+            <ul id="appMenu" v-if="showAppMenu" class="dropdown-menu" v-bind:style="{top:menutop, left:menuleft}" style="cursor:pointer;display:block;min-width:100px;padding: 10px;">
+                <li id='open-in-app' style="padding-bottom: 5px;color: black;" v-for="app in availableApps" v-on:keyup.enter="appOpen($event, app.name, app.path, app.file)" v-on:click="appOpen($event, app.name, app.path, app.file)">{{app.contextMenuText}}</li>
+            </ul>
             <div>
                 <h3>Shared Items</h3>
                 <div class="flex-container">
@@ -28,7 +31,7 @@
                         <thead>
                         <tr  v-if="sharedItemsList!=0" style="cursor:pointer;">
                             <th @click="setSharedSortBy('name')">Name <span v-if="sortBy=='name'" v-bind:class="['fas', normalSortOrder ? 'fa-angle-down' : 'fa-angle-up']"/></th>
-                            <th @click="setSharedSortBy('path')">Directory <span v-if="sortBy=='path'" v-bind:class="['fas', normalSortOrder ? 'fa-angle-down' : 'fa-angle-up']"/></th>
+                            <th @click="setSharedSortBy('path')">Folder <span v-if="sortBy=='path'" v-bind:class="['fas', normalSortOrder ? 'fa-angle-down' : 'fa-angle-up']"/></th>
                             <th @click="setSharedSortBy('modified')">Modified <span v-if="sortBy=='modified'" v-bind:class="['fas', normalSortOrder ? 'fa-angle-down' : 'fa-angle-up']"/></th>
                             <th @click="setSharedSortBy('created')">Created <span v-if="sortBy=='created'" v-bind:class="['fas', normalSortOrder ? 'fa-angle-down' : 'fa-angle-up']"/></th>
                             <th @click="setSharedSortBy('access')">Access <span v-if="sortBy=='access'" v-bind:class="['fas', normalSortOrder ? 'fa-angle-down' : 'fa-angle-up']"/></th>
@@ -66,6 +69,8 @@ const AppHeader = require("../components/AppHeader.vue");
 const Share = require("../components/drive/DriveShare.vue");
 const Spinner = require("../components/spinner/Spinner.vue");
 const i18n = require("../i18n/index.js");
+const routerMixins = require("../mixins/router/index.js");
+const sandboxMixin = require("../mixins/sandbox/index.js");
 module.exports = {
     components: {
         AppHeader,
@@ -77,14 +82,18 @@ module.exports = {
             showSpinner: false,
             walkCounter: 0,
             sharedItemsList: [],
-            sortBy: "name",
-            normalSortOrder: true,
+            sortBy: "modified",
+            normalSortOrder: false,
             showShare: false,
             currentEntry: null,
+            availableApps: [],
+            showAppMenu: false,
+            menutop:"",
+            menuleft:"",
         }
     },
     props: [],
-    mixins:[i18n],
+    mixins:[routerMixins, sandboxMixin, i18n],
 	watch: {
     },
     computed: {
@@ -139,63 +148,22 @@ module.exports = {
         this.findShared();
     },
     methods: {
-        walk: function(file, path, sharedWithState) {
-            let searchButton = document.getElementById("submit-search");
-            let fileProperties = file.getFileProperties();
-            if (fileProperties.isHidden)
-                return;
-            let that = this;
-            if (fileProperties.isDirectory) {
-                that.walkCounter++;
-                if (that.walkCounter == 1) {
-                    that.showSpinner = true;
-                    searchButton.disabled = true;
-                }
-                let pathWithoutEndingSlash = path.endsWith('/') ? path.substring(0, path.length -1) : path;
-                let directoryPath = peergos.client.PathUtils.directoryToPath(pathWithoutEndingSlash.substring(1).split("/"));
-                this.context.getDirectorySharingState(directoryPath).thenApply(function (updatedSharedWithState) {
-                    file.getChildren(that.context.crypto.hasher, that.context.network).thenApply(function(children) {
-                        let arr = children.toArray();
-                        let size = arr.length;
-                        if (size == 0) {
-                            that.walkCounter--;
-                            if (that.walkCounter == 0) {
-                                that.showSpinner = false;
-                                searchButton.disabled = false;
-                            }
-                        }
-                        arr.forEach(function(child, index){
-                            let newPath = child.getFileProperties().isDirectory ? path + child.getFileProperties().name + "/": path;
-                            that.walk(child, newPath, updatedSharedWithState);
-                            if (index == size - 1) {
-                                that.walkCounter--;
-                                if (that.walkCounter == 0) {
-                                    that.showSpinner = false;
-                                    searchButton.disabled = false;
-                                }
-                            }
-                        });
-                    });
-                });
-            }
-            this.isSharedTest(sharedWithState, file, path);
-        },
-        getFileSize: function(props) {
-                var low = props.sizeLow();
-                if (low < 0) low = low + Math.pow(2, 32);
-                return low + (props.sizeHigh() * Math.pow(2, 32));
-        },
-        addSharedItem: function(sharedWithState, file, path) {
+        addSharedItem: function(fileSharingState, file, path) {
             let props = file.getFileProperties();
-            let pathStr = props.isDirectory ? path.substring(0, path.lastIndexOf("/")): path;
-            let fileSharingState = sharedWithState.get(props.name);
+            let name = props.name;
+            let pathStr = path.substring(0, path.lastIndexOf("/"));
             let read_usernames = fileSharingState.readAccess.toArray([]);
             let edit_usernames = fileSharingState.writeAccess.toArray([]);
             let secretLinks = fileSharingState.links.toArray([]);
             let writableSecretLinks = secretLinks.filter(link => link.isLinkWritable);
+            let navName = props.isDirectory ? "" : props.name;
+            let navPathStr = props.isDirectory ? path : path.substring(0, path.lastIndexOf("/"));
+
             let entry = {
                 path: pathStr,
-                name: props.name,
+                name: name,
+                navPath: navPathStr,
+                navName: navName,
                 lastModified: props.modified,
                 created: props.created,
                 isDirectory: props.isDirectory,
@@ -207,30 +175,144 @@ module.exports = {
             };
             this.sharedItemsList.push(entry);
         },
-        isSharedTest: function(sharedWithState, file, path) {
-            if (sharedWithState == null) {
-                return;
-            }
-            let filename = file.getName();
-            let isShared = sharedWithState.isShared(filename) || sharedWithState.hasLink(filename);
-            if (isShared){
-                this.addSharedItem(sharedWithState, file, path);
-            }
-        },
         findShared: function() {
             var that = this;
-            let path = '/' + this.context.username + '/';
-            this.sharedItemsList = [];
-            this.walkCounter = 0;
-            this.context.getByPath(path).thenApply(function(dir){
-                that.walk(dir.get(), path, null);
+            // merge from https://stackoverflow.com/questions/1584370/how-to-merge-two-arrays-in-javascript-and-de-duplicate-items#1584377
+            const merge = (a, b, predicate = (a, b) => a === b) => {
+                const c = [...a]; // copy to avoid side effects
+                // add all items from B to copy C if they're not already present
+                b.forEach((bItem) => (c.some((cItem) => predicate(bItem, cItem)) ? null : c.push(bItem)))
+                return c;
+            }
+            this.context.processShared({accept_2: (path, sharedWithState) => {
+                if (!( path.startsWith("/.messaging/")
+                    || path.startsWith("/.shared/")
+                    || path.startsWith("/.apps/")
+                    || path.startsWith("/.posts/" ))) {
+                    let writeShares = sharedWithState.writeShares.keySet().toArray([]);
+                    let readShares = sharedWithState.readShares.keySet().toArray([]);
+                    let secretLinks = sharedWithState.links_0.keySet().toArray([]);
+                    var combined = merge(writeShares, readShares);
+                    combined = merge(combined, secretLinks);
+                    combined.forEach(name => {
+                        let completePath = that.context.username + path + "/" + name;
+                        let fileSharingState = sharedWithState.get(name);
+                        that.context.getByPath(completePath).thenApply(fileOpt => {
+                            if (fileOpt.ref != null) {
+                                let fileProperties = fileOpt.ref.getFileProperties();
+                                if (!fileProperties.isHidden) {
+                                    that.addSharedItem(fileSharingState, fileOpt.ref, completePath);
+                                }
+                            }
+                        });
+                    });
+                }
+            }}).thenApply(res => {
+                that.showSpinner = false;
+                let searchButton = document.getElementById("submit-search");
+                searchButton.disabled = false;
             }).exceptionally(function(throwable) {
                 that.showSpinner = false;
                 let searchButton = document.getElementById("submit-search");
                 searchButton.disabled = false;
                 throwable.printStackTrace();
             });
+        },
+        view: function (event, entry) {
+            if (entry.navName.length == 0) {
+                return;
+            }
+            let that = this;
+            let fullPath = entry.navPath + (entry.isDirectory ? "" : '/' + entry.navName);
+            this.findFile(fullPath).thenApply(file => {
+                if (file != null) {
+                    let userApps = this.availableAppsForFile(file);
+                    let inbuiltApps = this.getInbuiltApps(file);
+                    if (userApps.length == 0) {
+                        if (inbuiltApps.length == 1) {
+                            if (inbuiltApps[0].name == 'hex') {
+                                that.openFileOrDir("Drive", entry.navPath, {filename:""});
+                            } else {
+                                this.openFileOrDir(inbuiltApps[0].name, entry.navPath, {filename:file.isDirectory() ? "" : file.getName()})
+                            }
+                        } else {
+                            this.showAppContextMenu(event, inbuiltApps, userApps, entry.navPath, file);
+                        }
+                    } else {
+                        this.showAppContextMenu(event, inbuiltApps, userApps, entry.navPath, file);
+                    }
+                }
+            });
+        },
+        findFile: function(filePath) {
+            let that = this;
+            var future = peergos.shared.util.Futures.incomplete();
+            this.context.getByPath(filePath).thenApply(function(fileOpt){
+                if (fileOpt.ref == null) {
+                    future.complete(null);
+                } else {
+                    let file = fileOpt.get();
+                    const props = file.getFileProperties();
+                    if (props.isHidden) {
+                        future.complete(null);
+                    } else {
+                        future.complete(file);
+                    }
+                }
+            }).exceptionally(function(throwable) {
+                console.log(throwable.getMessage());
+                future.complete(null);
+            });
+            return future;
+        },
+        appOpen(event, appName, path, file) {
+            this.showAppMenu = false;
+            event.stopPropagation();
+            this.availableApps = [];
+            this.openFileOrDir(appName, path, {filename:file.isDirectory() ? "" : file.getName()})
+        },
+        showAppContextMenu(event, inbuiltApps, userApps, path, file) {
+            let appOptions = [];
+            for(var i = 0; i < userApps.length; i++) {
+                let app = userApps[i];
+                let option = {'name': app.name, 'path': path, 'file': file, 'contextMenuText': app.contextMenuText};
+                appOptions.push(option);
+            }
+            for(var i = 0; i < inbuiltApps.length; i++) {
+                let app = inbuiltApps[i];
+                let option = {'name': app.name, 'path': path, 'file': file, 'contextMenuText': app.contextMenuText};
+                appOptions.push(option);
+            }
+            this.availableApps = appOptions;
+            var pos = this.getPosition(event);
+            Vue.nextTick(function() {
+                var top = pos.y;
+                var left = pos.x;
+                this.menutop = top + 'px';
+                this.menuleft = left + 'px';
+            }.bind(this));
+            this.showAppMenu = true;
+            event.stopPropagation();
+        },
+        getPosition: function(e) {
+            var posx = 0;
+            var posy = 0;
 
+            if (!e) var e = window.event;
+            if (e.clientX || e.clientY) {
+                posx = Math.max(0, e.clientX - 100); //todo remove arbitrary offset
+                posy = Math.max(0, e.clientY - 100);
+            }
+            return {
+                x: posx,
+                y: posy
+            }
+        },
+        navigateTo: function (entry) {
+            if (entry.missing) {
+                return;
+            }
+            this.openFileOrDir("Drive", entry.navPath, {filename:""});
         },
         setSharedSortBy: function(prop) {
             if (this.sortBy == prop)
