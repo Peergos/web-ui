@@ -91,6 +91,8 @@ module.exports = {
     "DRIVE.OFFLINE":"Client offline!",
     "DRIVE.UPLOAD.SPACE.ERROR":"L'operazione di caricamento file supera lo spazio disponibile\nLibera $SPACE e prova di nuovo",
     "DRIVE.UPLOAD.TITLE":"Crittografia e caricamento dei file",
+    "DRIVE.UPLOAD.TITLE.ENCRYPTING":"Crittografia",
+    "DRIVE.UPLOAD.TITLE.UPLOADING":"Caricamento",
     "DRIVE.UPLOAD.COMPLETE":"Completamento del caricamento e aggiornamento della cartella...",
     "DRIVE.UPLOAD.ERROR":"Errore durante il caricamento dei file",
     "DRIVE.UPLOAD.RESUME.TITLE":"Vuoi riprendere il caricamento del file non riuscito?",

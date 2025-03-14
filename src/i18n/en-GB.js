@@ -91,6 +91,8 @@ module.exports = {
     "DRIVE.OFFLINE":"Client Offline!",
     "DRIVE.UPLOAD.SPACE.ERROR":"File upload operation exceeds available space\nPlease free up $SPACE and try again",
     "DRIVE.UPLOAD.TITLE":"Encrypting and uploading file(s)",
+    "DRIVE.UPLOAD.TITLE.ENCRYPTING":"Encrypting",
+    "DRIVE.UPLOAD.TITLE.UPLOADING":"Uploading",
     "DRIVE.UPLOAD.COMPLETE":"Completing upload and refreshing folder...",
     "DRIVE.UPLOAD.ERROR":"Error Uploading files",
     "DRIVE.UPLOAD.RESUME.TITLE":"Do you wish to resume failed file upload?",
