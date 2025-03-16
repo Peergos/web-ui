@@ -193,6 +193,10 @@ module.exports = {
             const props = this.getPropsFromUrl();
             if (props != null && props.path!= null)
                that.$store.commit('SET_PATH', props.path.split("/").filter(n => n.length > 0));
+            if (props != null && props.download != null)
+               that.$store.commit('SET_DOWNLOAD', props.download);
+            if (props != null && props.open != null)
+               that.$store.commit('SET_OPEN', props.open);
 
             that.$emit("initApp")
 
