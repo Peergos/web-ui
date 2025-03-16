@@ -190,6 +190,10 @@ module.exports = {
 
             that.$store.commit('USER_LOGIN', true);
 
+            const props = this.getPropsFromUrl();
+            if (props != null && props.path!= null)
+               that.$store.commit('SET_PATH', props.path.split("/").filter(n => n.length > 0));
+
             that.$emit("initApp")
 
             // that.$store.commit('CURRENT_MODAL', 'ModalTour');
@@ -208,7 +212,7 @@ module.exports = {
 		},
 		appFromUrl(){
 			const props = this.getPropsFromUrl();
-			const app = props == null ? null : props.app;
+			const app = props == null || props.app == null ? null : props.app;
 			console.log('login app:', app)
 			const driveApps = [null, 'Gallery', 'pdf', 'editor', 'hex', 'markdown', 'markup', 'timeline', 'htmlviewer']
 
