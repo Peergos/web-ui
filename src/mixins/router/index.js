@@ -41,8 +41,9 @@ module.exports = {
             let hash = window.location.hash;
             if (hash.length == 0)
                 return null;
+            var rawProps = null;
 	    try {
-                const rawProps = fragmentToProps(hash.substring(1))
+                rawProps = fragmentToProps(hash.substring(1))
 		return this.decryptProps(rawProps);
 	    } catch (e) {
                 try {
