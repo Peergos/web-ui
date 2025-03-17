@@ -1152,7 +1152,7 @@ function getRootKeyEntryFromCacheProm() {
                 }
             });
         } else {
-            let val = window.localStorage.getItem('rootKey');
+            let val = window.localStorage.getItem('logindata-rootKey');
             if (val == null) {
                 future.complete(null);
             } else {
@@ -1186,7 +1186,7 @@ function setRootKeyIntoCacheProm(username, rootKeySerialised) {
                 future.complete(false);
             });
         } else {
-            window.localStorage.setItem('rootKey', encodedRootKey);
+            window.localStorage.setItem('logindata-rootKey', encodedRootKey);
             future.complete(true);
         }
     });
@@ -1207,7 +1207,7 @@ function clearRootKeyCacheFully(func) {
     if (rootKeyCache != null) {
         clearIDBKV(rootKeyCache).then(res => func());
     } else {
-        window.localStorage.removeItem('rootKey');
+        window.localStorage.removeItem('logindata-rootKey');
         func();
     }
 }
@@ -1238,7 +1238,7 @@ function setLoginDataIntoCacheProm(key, entryPoints) {
     let future = peergos.shared.util.Futures.incomplete();
     if (!this.isCachingEnabled) {
         let encodedEntryPoints = encodeEntryPoints(entryPoints);
-        window.localStorage.setItem(key, encodedEntryPoints);
+        window.localStorage.setItem('logindata-' + key, encodedEntryPoints);
         future.complete(true);
     } else {
         let that = this;
@@ -1260,7 +1260,7 @@ function encodeEntryPoints(entryPoints) {
 function removeLoginDataFromCacheProm(key) {
     let future = peergos.shared.util.Futures.incomplete();
     if (!this.isCachingEnabled) {
-        window.localStorage.removeItem(key);
+        window.localStorage.removeItem('logindata-' + key);
         future.complete(true);
     } else {
         let that = this;
@@ -1278,7 +1278,7 @@ function getEntryDataFromCacheProm(key) {
     let that = this;
     let future = peergos.shared.util.Futures.incomplete();
     if (!this.isCachingEnabled) {
-        let val = window.localStorage.getItem(key);
+        let val = window.localStorage.getItem('logindata-' + key);
         if (val == null) {
             future.complete(null);
         } else {
@@ -1301,7 +1301,7 @@ function directGetEntryDataFromCacheProm(key) {
     let future = peergos.shared.util.Futures.incomplete();
     isIndexedDBAvailable().thenApply(function(isCachingEnabled) {
         if (!isCachingEnabled) {
-            let val = window.localStorage.getItem(key);
+            let val = window.localStorage.getItem('logindata-' + key);
             if (val == null) {
                 future.complete(null);
             } else {
@@ -1334,8 +1334,8 @@ function clearAccountCacheFully(func) {
     } else {
         for (var i = 0; i < window.localStorage.length; i++) {
             let key = window.localStorage.key(i);
-            if (key != 'rootKey') {
-                window.localStorage.removeItem(key);
+            if (key.startsWith('logindata-')) {
+                window.localStorage.removeItem('logindata-' + key);
             }
         }
         func();
