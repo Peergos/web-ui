@@ -1148,53 +1148,66 @@ function getRootKeyEntryFromCacheProm() {
                 if (val == null) {
                     future.complete(null);
                 } else {
-                    let json = JSON.parse(val);
-                    let storedUsername = json.username;
-                    let binary = window.atob(json.rootKey);
-                    var data = new Int8Array(binary.length);
-                    for (var i = 0; i < binary.length; i++) {
-                        data[i] = binary.charCodeAt(i);
-                    }
-                    let storedRootKey =  convertToByteArray(data);
-                    future.complete({username: storedUsername, rootKey: storedRootKey});
+                    decodeRootKey(val, future);
                 }
             });
         } else {
-            future.complete(null);
+            let val = window.localStorage.getItem('rootKey');
+            if (val == null) {
+                future.complete(null);
+            } else {
+                decodeRootKey(val, future);
+            }
         }
     });
     return future;
+}
+function decodeRootKey(val, future) {
+    let json = JSON.parse(val);
+    let storedUsername = json.username;
+    let binary = window.atob(json.rootKey);
+    var data = new Int8Array(binary.length);
+    for (var i = 0; i < binary.length; i++) {
+        data[i] = binary.charCodeAt(i);
+    }
+    let storedRootKey =  convertToByteArray(data);
+    future.complete({username: storedUsername, rootKey: storedRootKey});
 }
 function setRootKeyIntoCacheProm(username, rootKeySerialised) {
     let that = this;
     let future = peergos.shared.util.Futures.incomplete();
     isIndexedDBAvailable().thenApply(function(isCachingEnabled) {
+        let encodedRootKey = encodeRootKey(username, rootKeySerialised);
         if (isCachingEnabled) {
             that.rootKeyCache = createStoreIDBKV('rootKey', 'keyval');
-            let json = {};
-            json.username = username;
-            var str = "";
-            for (let i = 0; i < rootKeySerialised.byteLength; i++) {
-                str = str + String.fromCharCode(rootKeySerialised[i] & 0xff);
-            }
-            json.rootKey = window.btoa(str);
-            let asStr = JSON.stringify(json);
-            setIDBKV('rootKey', asStr, that.rootKeyCache).then(() => {
+            setIDBKV('rootKey', encodedRootKey, that.rootKeyCache).then(() => {
                 future.complete(true);
             }).catch(err => {
                 future.complete(false);
             });
         } else {
-            future.complete(false);
+            window.localStorage.setItem('rootKey', encodedRootKey);
+            future.complete(true);
         }
     });
     return future;
 }
-
+function encodeRootKey(username, rootKeySerialised) {
+    let json = {};
+    json.username = username;
+    var str = "";
+    for (let i = 0; i < rootKeySerialised.byteLength; i++) {
+        str = str + String.fromCharCode(rootKeySerialised[i] & 0xff);
+    }
+    json.rootKey = window.btoa(str);
+    let asStr = JSON.stringify(json);
+    return asStr;
+}
 function clearRootKeyCacheFully(func) {
     if (rootKeyCache != null) {
         clearIDBKV(rootKeyCache).then(res => func());
     } else {
+        window.localStorage.removeItem('rootKey');
         func();
     }
 }
@@ -1224,6 +1237,8 @@ function bindAccountCacheStore(storeCache) {
 function setLoginDataIntoCacheProm(key, entryPoints) {
     let future = peergos.shared.util.Futures.incomplete();
     if (!this.isCachingEnabled) {
+        let encodedEntryPoints = encodeEntryPoints(entryPoints);
+        window.localStorage.setItem(key, encodedEntryPoints);
         future.complete(true);
     } else {
         let that = this;
@@ -1235,10 +1250,17 @@ function setLoginDataIntoCacheProm(key, entryPoints) {
     }
     return future;
 }
-
+function encodeEntryPoints(entryPoints) {
+    var str = "";
+    for (let i = 0; i < entryPoints.byteLength; i++) {
+        str = str + String.fromCharCode(entryPoints[i] & 0xff);
+    }
+    return window.btoa(str);
+}
 function removeLoginDataFromCacheProm(key) {
     let future = peergos.shared.util.Futures.incomplete();
     if (!this.isCachingEnabled) {
+        window.localStorage.removeItem(key);
         future.complete(true);
     } else {
         let that = this;
@@ -1256,7 +1278,12 @@ function getEntryDataFromCacheProm(key) {
     let that = this;
     let future = peergos.shared.util.Futures.incomplete();
     if (!this.isCachingEnabled) {
-        future.complete(null);
+        let val = window.localStorage.getItem(key);
+        if (val == null) {
+            future.complete(null);
+        } else {
+            decodeEntryData(val, future);
+        }
     } else {
         getIDBKV(key, this.cacheAccountStore).then((val) => {
             if (val == null) {
@@ -1274,7 +1301,12 @@ function directGetEntryDataFromCacheProm(key) {
     let future = peergos.shared.util.Futures.incomplete();
     isIndexedDBAvailable().thenApply(function(isCachingEnabled) {
         if (!isCachingEnabled) {
-            future.complete(null);
+            let val = window.localStorage.getItem(key);
+            if (val == null) {
+                future.complete(null);
+            } else {
+                decodeEntryData(val, future);
+            }
         } else {
             let accountStoreCache = createStoreIDBKV('account', 'keyval');
             getIDBKV(key, accountStoreCache).then((val) => {
@@ -1288,11 +1320,24 @@ function directGetEntryDataFromCacheProm(key) {
     });
     return future;
 }
-
+function decodeEntryData(val, future) {
+    let binary = window.atob(val);
+    var data = new Int8Array(binary.length);
+    for (var i = 0; i < binary.length; i++) {
+        data[i] = binary.charCodeAt(i);
+    }
+    future.complete(convertToByteArray(data));
+}
 function clearAccountCacheFully(func) {
     if (accountStoreCache.isCachingEnabled) {
         clearIDBKV(accountStoreCache.cacheAccountStore).then(res => func());
     } else {
+        for (var i = 0; i < window.localStorage.length; i++) {
+            let key = window.localStorage.key(i);
+            if (key != 'rootKey') {
+                window.localStorage.removeItem(key);
+            }
+        }
         func();
     }
 }
