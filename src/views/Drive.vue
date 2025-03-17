@@ -1910,7 +1910,7 @@ module.exports = {
                 let isWritableSecretLink = this.isSecretLink && this.currentDir.isWritable();
                 let totalSize = 0;
                 for(var i=0; i < files.length; i++) {
-                    totalSize += (files[i].size + (4096 - (files[i].size % 4096)));
+                    totalSize += ((files[i].size * 2) + (4096 - (files[i].size % 4096)));
                 }
                 if (!isWritableSecretLink && Number(that.quotaBytes.toString()) < totalSize) {
                     let errMsg = "File upload operation exceeds total space\n" + "Please upgrade to get more space";
@@ -2101,7 +2101,7 @@ module.exports = {
                                     that.uploadFileJS(file, true, future, uploadParams)
                                 } else {
                                     uploadParams.progress.total = uploadParams.progress.total - 1;
-                                    uploadParams.progress.max = uploadParams.progress.max - file.size;
+                                    uploadParams.progress.max = uploadParams.progress.max - (file.size * 2);
                                     future.complete(true);
                                 }
                             } else {
@@ -2110,7 +2110,7 @@ module.exports = {
                                         uploadParams.applyReplaceToAll = applyToAll;
                                         uploadParams.replaceFile = false;
                                         uploadParams.progress.total = uploadParams.progress.total - 1;
-                                        uploadParams.progress.max = uploadParams.progress.max - file.size;
+                                        uploadParams.progress.max = uploadParams.progress.max - (file.size * 2);
                                         future.complete(true);
                                     },
                                     (applyToAll) => {
