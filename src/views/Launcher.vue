@@ -39,7 +39,8 @@
                 v-on:hide-app-installation="closeAppInstallation"
                 :appInstallSuccessFunc="appInstallSuccess"
                 :appPropsFile="appInstallPropsFile"
-                :installFolder="appInstallFolder">
+                :installFolder="appInstallFolder"
+                :templateInstanceAppName="templateInstanceAppName">
             </AppInstall>
             <AppSandbox
                 v-if="showAppSandbox"
@@ -216,6 +217,7 @@ module.exports = {
             pickerShowThumbnail: false,
             filePickerBaseFolder: "",
             htmlAnchor: "",
+            templateInstanceAppName: "",
         }
     },
     props: [],
@@ -471,6 +473,7 @@ module.exports = {
                 if (propsFileOpt.ref != null) {
                     that.appInstallPropsFile = propsFileOpt.ref;
                     that.appInstallFolder = pathStr;
+                    that.templateInstanceAppName = app.name;
                     that.showAppInstallation = true;
                 }
             });
@@ -555,16 +558,22 @@ module.exports = {
                 if (app.appIcon.length == 0 ||  (appIndex > -1 && this.appsList[appIndex].thumbnail != null)) {
                     this.loadAppIconsRecursively(apps, index + 1, cb);
                 } else {
-                    let fullPathToAppIcon = "/" + this.context.username + "/.apps/" + app.name + '/assets/' + app.appIcon;
-                    that.findFile(fullPathToAppIcon).thenApply(file => {
-                        if (file != null) {
-                           if (appIndex > -1) {
-                               let appRow = that.appsList[appIndex];
-                               appRow.thumbnail = file.getBase64Thumbnail();
-                           }
-                        }
+                    if (app.templateIconBase64 != null && app.templateIconBase64.length > 0) {
+                        let appRow = that.appsList[appIndex];
+                        appRow.thumbnail = app.templateIconBase64;
                         that.loadAppIconsRecursively(apps, index + 1, cb);
-                    });
+                    } else {
+                        let fullPathToAppIcon = "/" + this.context.username + "/.apps/" + app.name + '/assets/' + app.appIcon;
+                        that.findFile(fullPathToAppIcon).thenApply(file => {
+                            if (file != null) {
+                               if (appIndex > -1) {
+                                   let appRow = that.appsList[appIndex];
+                                   appRow.thumbnail = file.getBase64Thumbnail();
+                               }
+                            }
+                            that.loadAppIconsRecursively(apps, index + 1, cb);
+                        });
+                    }
                 }
             }
         },
@@ -638,8 +647,26 @@ module.exports = {
         },
         deleteApp(app) {
             let that = this;
-            let appDirName = app.name;
             this.showSpinner = true;
+            if (app.template.length > 0) {
+                let that = this;
+                let messenger = new peergos.shared.messaging.Messenger(this.context);
+                messenger.getChat(app.chatId).thenApply(function(controller) {
+                    messenger.deleteChat(controller).thenApply(res => {
+                        that.processAppDelete(app);
+                    }).exceptionally(function(throwable) {
+                        console.log(throwable);
+                        that.showErrorMessage('Error deleting template App: ' + app.name);
+                        that.showSpinner = false;
+                    });
+                });
+            } else {
+                this.processAppDelete(app);
+            }
+        },
+        processAppDelete(app) {
+            let that = this;
+            let appDirName = app.name;
             this.context.getByPath("/" + this.context.username + "/.apps").thenApply(appDirOpt => {
                 if (appDirOpt.ref != null) {
                     appDirOpt.ref.getChild(appDirName, that.context.crypto.hasher, that.context.network).thenApply(appToDeleteOpt => {
