@@ -63,7 +63,7 @@ module.exports = {
               } else {
                   let errors = [];
                   let mandatoryFields = ["displayName", "description", "launchable"];
-                  let stringFields = ["displayName", "description", "version", "author", "appIcon", "source", "template", "chatId"];
+                  let stringFields = ["displayName", "description", "version", "author", "appIcon", "source", "template", "chatId", "templateIconBase64"];
                   let existingCreateMenuItems = ["upload files","upload folder","new folder","new file", "new app"];
                   let validPermissions = ["STORE_APP_DATA", "EDIT_CHOSEN_FILE", "READ_CHOSEN_FOLDER",
                     "EXCHANGE_MESSAGES_WITH_FRIENDS", "USE_MAILBOX", "ACCESS_PROFILE_PHOTO", "CSP_UNSAFE_EVAL"];
@@ -156,6 +156,9 @@ module.exports = {
                               if (permissionIndex == -1) {
                                   errors.push("Template App must have permission: EXCHANGE_MESSAGES_WITH_FRIENDS");
                               }
+                              if (props.appIcon.length == 0) {
+                                  errors.push("Template App must have an AppIcon");
+                              }
                           }
                       }
                   }
@@ -247,6 +250,9 @@ module.exports = {
                           }
                           if (props.chatId == null) {
                               props.chatId = '';
+                          }
+                          if (props.templateIconBase64 == null) {
+                              props.templateIconBase64 = '';
                           }
                           if (props.fileExtensions == null) {
                               props.fileExtensions = [];
@@ -460,7 +466,8 @@ module.exports = {
             let item = {name: props.name, displayName: props.displayName,
                 createFile: createFile, openFile: openFile, openFileFilters: openFileFilters, launchable: props.launchable,
                 folderAction: props.folderAction, appIcon: props.appIcon, contextMenuText: contextMenuText,
-                source: props.source, version: props.version, createFile: createFile, primaryFileExtension: primaryFileExtension};
+                source: props.source, version: props.version, createFile: createFile, primaryFileExtension: primaryFileExtension,
+                templateIconBase64: props.templateIconBase64, chatId: props.chatId, template : props.template};
 
             appsInstalled.push(item);
             props.fileExtensions.forEach(extension => {

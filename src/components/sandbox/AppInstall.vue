@@ -17,7 +17,7 @@
                     :consumer_cancel_func="confirm_consumer_cancel_func"
                     :consumer_func="confirm_consumer_func">
             </Confirm>
-            <AppPrompt
+            <AppTemplatePrompt
               v-if="showPrompt"
               @hide-prompt="closePrompt()"
               :message="prompt_message"
@@ -26,6 +26,7 @@
               :value="prompt_value"
               :consumer_func="prompt_consumer_func"
               :action="prompt_action"
+              :appIconBase64Image="appIconBase64Image"
             />
             <div v-if="appProperties != null">
                 <div class="app-install-view">
@@ -80,7 +81,7 @@
 </template>
 
 <script>
-const AppPrompt = require("../prompt/AppPrompt.vue");
+const AppTemplatePrompt = require("../prompt/AppTemplatePrompt.vue");
 const Confirm = require("../confirm/Confirm.vue");
 const Spinner = require("../spinner/Spinner.vue");
 const mixins = require("../../mixins/mixins.js");
@@ -90,7 +91,7 @@ const i18n = require("../../i18n/index.js");
 
 module.exports = {
     components: {
-        AppPrompt,
+        AppTemplatePrompt,
         Confirm,
         Spinner
     },
@@ -116,9 +117,10 @@ module.exports = {
             showPrompt: false,
             messenger: null,
             templateAppSeparator: "!",
+            appIconBase64Image: "",
         }
     },
-    props: ['appPropsFile','installFolder', "appInstallSuccessFunc", "templateInstanceAppName", "templateInstanceTitle", "templateInstanceChatId"],
+    props: ['appPropsFile','installFolder', "appInstallSuccessFunc", "templateInstanceAppName", "templateInstanceTitle", "templateAppIconBase64", "templateInstanceChatId"],
     mixins:[mixins, downloaderMixin, sandboxMixin, i18n],
     computed: {
         ...Vuex.mapState([
@@ -232,7 +234,7 @@ module.exports = {
                 this.prompt_message = this.translate("NEW.TEMPLATE.APP.NAME.MESSAGE") + " " + this.appProperties.displayName;
                 this.prompt_value = '';
                 this.prompt_action = this.translate("PROMPT.OK");
-                this.prompt_consumer_func = function (prompt_result) {
+                this.prompt_consumer_func = function (prompt_result, appIconBase64) {
                     if (prompt_result === null)
                         return;
                     let title = prompt_result.trim();
@@ -245,15 +247,34 @@ module.exports = {
                     if (!that.validateDisplayName(title)) {
                         return;
                     }
-                    callback(that.appProperties.displayName + " - " +title);
+                    callback(that.appProperties.displayName + " - " + title, appIconBase64);
                 };
-                this.showPrompt = true;
+                this.context.getByPath(this.installAppFromFolder + '/assets/' + this.appProperties.appIcon).thenApply(iconFileOpt => {
+                    if (iconFileOpt.ref != null) {
+                        let file = iconFileOpt.ref;
+                        let fileProps = file.getFileProperties();
+                        var low = fileProps.sizeLow();
+                        if (low < 0) low = low + Math.pow(2, 32);
+                        let size = low + (fileProps.sizeHigh() * Math.pow(2, 32));
+                        file.getInputStream(that.context.network, that.context.crypto, fileProps.sizeHigh(), fileProps.sizeLow(), (progress) => {}).thenApply(reader => {
+                            let data = convertToByteArray(new Int8Array(size));
+                            reader.readIntoArray(data, 0, data.length).thenApply(read => {
+                                var str = "";
+                                for (let i = 0; i < data.length; i++) {
+                                    str = str + String.fromCharCode(data[i] & 0xff);
+                                }
+                                that.appIconBase64Image = "data:image/png;base64," + window.btoa(str);
+                                that.showPrompt = true;
+                            });
+                        });
+                    }
+                });
             }
         },
         closePrompt() {
             this.showPrompt = false;
         },
-        createNewTemplateApp: function(appName, displayName, chatId) {
+        createNewTemplateApp: function(appName, displayName, appIconBase64, chatId) {
             let that = this;
             let future = peergos.shared.util.Futures.incomplete();
             if (chatId.length > 0) {
@@ -262,7 +283,12 @@ module.exports = {
                 this.messenger.createAppChat(appName).thenApply(function(controller){
                     let chatId = controller.chatUuid;
                     that.messenger.setGroupProperty(controller, "title", displayName).thenApply(function(updatedController) {
-                        future.complete(chatId);
+                        that.messenger.setGroupProperty(updatedController, "iconBase64", appIconBase64).thenApply(function(updatedController2) {
+                            future.complete(chatId);
+                        }).exceptionally(err => {
+                            console.log('iconBase64 call failed: ' + err);
+                            future.complete(null);
+                        });
                     }).exceptionally(err => {
                         console.log('setTitle call failed: ' + err);
                         future.complete(null);
@@ -276,7 +302,7 @@ module.exports = {
         },
         installTemplateApp: function(oldProperties) {
             let that = this;
-            this.getTemplateAppTitle(oldProperties, displayName => {
+            this.getTemplateAppTitle(oldProperties, (displayName, selectedAppIconBase64) => {
                 var appName = "";
                 if (oldProperties != null) {
                     appName = oldProperties.name;
@@ -294,19 +320,22 @@ module.exports = {
                         } else {
                             that.spinnerMessage = "Installing App: " + displayName;
                             var existingChatId = "";
+                            var appIconBase64 = selectedAppIconBase64;
                             if (oldProperties != null) {
                                 existingChatId = oldProperties.chatId;
+                                appIconBase64 = oldProperties.templateIconBase64;
                             } else if(that.templateInstanceChatId != null && that.templateInstanceChatId.length > 0) {
                                 existingChatId = that.templateInstanceChatId;
+                                appIconBase64 = that.templateAppIconBase64;
                             }
-                            that.createNewTemplateApp(appName, displayName, existingChatId).thenApply(chatId => {
+                            that.createNewTemplateApp(appName, displayName, appIconBase64, existingChatId).thenApply(chatId => {
                                 if (chatId == null) {
                                     that.showError("App installation failed");
                                     that.showSpinner = false;
                                 } else {
                                     peergos.shared.user.App.init(that.context, appName).thenApply(ready => {
                                         that.gatherDataFiles(appName, srcDirectoryOpt.ref)
-                                            .thenApply(dataFiles => that.copyAppFiles(dataFiles, appName, displayName, chatId));
+                                            .thenApply(dataFiles => that.copyAppFiles(dataFiles, appName, displayName, chatId, appIconBase64));
                                     });
                                 }
                             });
@@ -456,14 +485,14 @@ module.exports = {
             });
             return future;
         },
-        copyAppFiles: function(appDataFiles, app, displayName, chatId) {
+        copyAppFiles: function(appDataFiles, app, displayName, chatId, appIconBase64) {
             let future = peergos.shared.util.Futures.incomplete();
             let that = this;
             this.deleteAssetsFolder(app).thenApply(res => {
                 that.copyAssetsFolder(app).thenApply(res2 => {
                     that.copyAllDataFiles(appDataFiles, app, displayName).thenApply(res3 => {
                         if (res3) {
-                            that.updateAppManifest(app, displayName, chatId).thenApply(function(props){
+                            that.updateAppManifest(app, displayName, chatId, appIconBase64).thenApply(function(props){
                                 that.appProperties = props;
                                 that.showSpinner = false;
                                 that.spinnerMessage = "";
@@ -515,7 +544,7 @@ module.exports = {
             }
             return future;
         },
-        updateAppManifest: function(appName, appDisplayName, chatId) {
+        updateAppManifest: function(appName, appDisplayName, chatId, appIconBase64) {
             let that = this;
             let future = peergos.shared.util.Futures.incomplete();
             this.context.getByPath(this.installAppFromFolder + '/peergos-app.json').thenApply(propsFileOpt => {
@@ -526,8 +555,11 @@ module.exports = {
                         if (appDisplayName.length > 0) {
                             props.displayName = appDisplayName;
                         }
-                        if (chatId.length > 0) {
+                        if (chatId != null && chatId.length > 0) {
                             props.chatId = chatId;
+                        }
+                        if (appIconBase64 != null && appIconBase64.length > 0) {
+                            props.templateIconBase64 = appIconBase64;
                         }
                     }
                     let encoder = new TextEncoder();

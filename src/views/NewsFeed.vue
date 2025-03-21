@@ -44,6 +44,7 @@
                     :installFolder="appInstallFolder"
                     :templateInstanceAppName="templateInstanceAppName"
                     :templateInstanceTitle="templateInstanceTitle"
+                    :templateAppIconBase64="templateAppIconBase64"
                     :templateInstanceChatId="templateInstanceChatId">
                 </AppInstall>
                 <SocialPost
@@ -82,7 +83,6 @@
                     :sandboxAppChatId="sandboxAppChatId"
                     :currentFile="currentFile"
                     :currentPath="currentPath"
-                    :currentProps="appSandboxProps"
                     :htmlAnchor="htmlAnchor"
                 >
                 </AppSandbox>
@@ -332,6 +332,7 @@ module.exports = {
             htmlAnchor: "",
             templateInstanceAppName: "",
             templateInstanceTitle: "",
+            templateAppIconBase64: "",
             templateInstanceChatId: "",
         }
     },
@@ -1066,14 +1067,16 @@ module.exports = {
                         if (entry.appName != appName) {
                             that.templateInstanceAppName = entry.appName;
                             that.templateInstanceChatId = that.extractChatUUIDFromPath(entry.path);
-                            that.getChatAppTitle(that.templateInstanceChatId).thenApply(title => {
-                                that.templateInstanceTitle = title == null ? entry.appName : title;
+                            that.getChatAppTitle(that.templateInstanceChatId).thenApply(metadata => {
+                                that.templateInstanceTitle = metadata.title;
+                                that.templateAppIconBase64 = metadata.iconBase64;
                                 that.showAppInstallation = true;
                             });
                         } else {
                             that.templateInstanceAppName = "";
                             that.templateInstanceChatId = "";
                             that.templateInstanceTitle = "";
+                            that.templateAppIconBase64 = "";
                             that.showAppInstallation = true;
                         }
                     } else {
@@ -1655,8 +1658,10 @@ module.exports = {
             let that = this;
             let future = peergos.shared.util.Futures.incomplete();
             this.messenger.getChat(chatId).thenApply(function(controller) {
-                let title = controller.getTitle();
-                future.complete(title);
+                let obj = {} ;
+                obj.title = controller.getTitle();
+                obj.iconBase64 = controller.getGroupProperty("iconBase64");
+                future.complete(obj);
             }).exceptionally(function(throwable) {
                 console.log('Unable to get title of Chat. Error:' + throwable);
                 future.complete(null);

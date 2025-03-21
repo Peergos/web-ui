@@ -54,6 +54,17 @@
             :consumer_func="prompt_consumer_func"
             :action="prompt_action"
         />
+            <AppTemplatePrompt
+              v-if="showAppTemplatePrompt"
+              @hide-prompt="closeAppTemplatePrompt_func"
+              :message="app_prompt_message"
+              :placeholder="app_prompt_placeholder"
+              :max_input_size="app_prompt_max_input_size"
+              :value="app_prompt_value"
+              :consumer_func="app_prompt_consumer_func"
+              :action="app_prompt_action"
+              :appIconBase64Image="appIconBase64Image"
+            />
             <AppInstall
                 v-if="showAppInstallation"
                 v-on:hide-app-installation="closeAppInstallation"
@@ -107,6 +118,7 @@
 const AddToChat = require("AddToChat.vue");
 const AppInstall = require("AppInstall.vue");
 const AppPrompt = require("../prompt/AppPrompt.vue");
+const AppTemplatePrompt = require("../prompt/AppTemplatePrompt.vue");
 const Confirm = require("../confirm/Confirm.vue");
 const FilePicker = require('../picker/FilePicker.vue');
 const FolderPicker = require('../picker/FolderPicker.vue');
@@ -129,6 +141,7 @@ module.exports = {
         AddToChat,
         AppInstall,
         AppPrompt,
+        AppTemplatePrompt,
         Confirm,
         FilePicker,
         FolderPicker,
@@ -247,7 +260,16 @@ module.exports = {
             confirm_consumer_func: () => {},
             displayToBookmark: true,
             pickerSelectedFile: "",
-            isTemplateApp: false
+            isTemplateApp: false,
+            showAppTemplatePrompt: false,
+            closeAppTemplatePrompt_func: () => {},
+            app_prompt_message: "",
+            app_prompt_placeholder: "",
+            app_prompt_max_input_size: -1,
+            app_prompt_value: "",
+            app_prompt_consumer_func: () => {},
+            app_prompt_action: 'ok',
+            appIconBase64Image: "",
         }
     },
     computed: {
@@ -2480,6 +2502,19 @@ module.exports = {
                             that.buildResponse(headerFunc, null, that.ACTION_FAILED);
                         });
                     });
+                } else if (path.endsWith("/icon") || path.endsWith("/icon/")) {
+                    let chatId = path.substring(0, path.indexOf("/icon"));
+                    that.messenger.getChat(chatId).thenApply(function(controller) {
+                        let encoder = new TextEncoder();
+                        if(controller.hasGroupProperty("iconBase64")) {
+                            let appIconBase64 = controller.getGroupProperty("iconBase64");
+                            let data = encoder.encode(appIconBase64);
+                            that.buildResponse(headerFunc, data, that.GET_SUCCESS);
+                        } else {
+                            let data = encoder.encode("");
+                            that.buildResponse(headerFunc, data, that.GET_SUCCESS);
+                        }
+                    });
                 }
             } else if(apiMethod == 'DELETE') {
                 let chatId = path;
@@ -2600,7 +2635,6 @@ module.exports = {
                                         console.log("Unable to find file. path:" + fileRef.path);
                                         that.buildResponse(headerFunc, null, that.ACTION_FAILED);
                                     } else {
-                                        let extension = filePair.file.getName().substring(filePair.file.getName().lastIndexOf('.') + 1);
                                         that.contents(filePair.file).thenApply(data => {
                                             that.buildResponse(headerFunc, data, that.GET_SUCCESS);
                                         });
@@ -2628,6 +2662,41 @@ module.exports = {
                                 this.uploadFileAction(headerFunc, filename, bytes, chatId);
                             }
                         }
+                    } else if (path.endsWith("/icon") || path.endsWith("/icon/")) {
+                        let chatId = path.substring(0, path.indexOf("/icon"));
+                        this.app_prompt_value = '';
+                        this.prompt_action = that.translate("PROMPT.OK");
+                        var existingAppIconBase64 = "";
+                        let encoder = new TextEncoder();
+                        let data = encoder.encode("");
+                        this.messenger.getChat(chatId).thenApply(function(controller) {
+                            that.app_prompt_message = controller.getTitle();
+                            if(controller.hasGroupProperty("iconBase64")) {
+                                existingAppIconBase64 = controller.getGroupProperty("iconBase64");
+                                that.appIconBase64Image = existingAppIconBase64.length == 0 ? "" : existingAppIconBase64;
+                            } else {
+                                that.appIconBase64Image = "";
+                            }
+                            that.closeAppTemplatePrompt_func = function () {
+                                that.showAppTemplatePrompt = false;
+                            };
+                            that.app_prompt_consumer_func = function (prompt_result, appIconBase64) {
+                                if (appIconBase64 != null && appIconBase64 != existingAppIconBase64) {
+                                    that.messenger.setGroupProperty(controller, "iconBase64", appIconBase64).thenApply(function(updatedController2) {
+                                        that.buildResponse(headerFunc, data, that.CREATE_SUCCESS);
+                                        that.showAppTemplatePrompt = false;
+                                    }).exceptionally(err => {
+                                        console.log('iconBase64 call failed: ' + err);
+                                        that.buildResponse(headerFunc, null, that.ACTION_FAILED);
+                                        that.showAppTemplatePrompt = false;
+                                    });
+                                } else {
+                                    that.buildResponse(headerFunc, data, that.CREATE_SUCCESS);
+                                    that.showAppTemplatePrompt = false;
+                                }
+                            };
+                            that.showAppTemplatePrompt = true;
+                        });
                     }else {
                         let chatId = path;
                         this.messenger.listChats().thenApply(function(chats) {
