@@ -41,7 +41,11 @@
                     v-on:hide-app-installation="closeAppInstallation"
                     :appInstallSuccessFunc="appInstallSuccess"
                     :appPropsFile="appInstallPropsFile"
-                    :installFolder="appInstallFolder">
+                    :installFolder="appInstallFolder"
+                    :templateInstanceAppName="templateInstanceAppName"
+                    :templateInstanceTitle="templateInstanceTitle"
+                    :templateAppIconBase64="templateAppIconBase64"
+                    :templateInstanceChatId="templateInstanceChatId">
                 </AppInstall>
                 <SocialPost
                     v-if="showSocialPostForm"
@@ -79,7 +83,6 @@
                     :sandboxAppChatId="sandboxAppChatId"
                     :currentFile="currentFile"
                     :currentPath="currentPath"
-                    :currentProps="appSandboxProps"
                     :htmlAnchor="htmlAnchor"
                 >
                 </AppSandbox>
@@ -327,6 +330,10 @@ module.exports = {
             currentPath: null,
             currentProps: null,
             htmlAnchor: "",
+            templateInstanceAppName: "",
+            templateInstanceTitle: "",
+            templateAppIconBase64: "",
+            templateInstanceChatId: "",
         }
     },
     props: [],
@@ -1049,16 +1056,31 @@ module.exports = {
         openConversation: function (entry) {
             let that = this;
             let app = this.sandboxedApps.appsInstalled.slice().filter(app => app.name == entry.appName);
+            let appName = this.extractChatAppName(entry.appName);
             if (app.length == 0) {
-                var pathStr = '/peergos/recommended-apps/' + entry.appName + '/';
+                var pathStr = '/peergos/recommended-apps/' + appName + '/';
                 this.context.getByPath(pathStr + 'peergos-app.json').thenApply(propsFileOpt => {
                     if (propsFileOpt.ref != null) {
                         that.appInstallPropsFile = propsFileOpt.ref;
                         that.appInstallFolder = pathStr;
-                        that.showAppInstallation = true;
                         that.appInstalledEntry = entry;
+                        if (entry.appName != appName) {
+                            that.templateInstanceAppName = entry.appName;
+                            that.templateInstanceChatId = that.extractChatUUIDFromPath(entry.path);
+                            that.getChatAppTitle(that.templateInstanceChatId).thenApply(metadata => {
+                                that.templateInstanceTitle = metadata.title;
+                                that.templateAppIconBase64 = metadata.iconBase64;
+                                that.showAppInstallation = true;
+                            });
+                        } else {
+                            that.templateInstanceAppName = "";
+                            that.templateInstanceChatId = "";
+                            that.templateInstanceTitle = "";
+                            that.templateAppIconBase64 = "";
+                            that.showAppInstallation = true;
+                        }
                     } else {
-                        that.showMessage(that.translate("NEWSFEED.APP.ABSENT").replace("$NAME", entry.appName));
+                        that.showMessage(that.translate("NEWSFEED.APP.ABSENT").replace("$NAME", appName));
                     }
                 });
             } else {
@@ -1286,7 +1308,8 @@ module.exports = {
                     if (app.length > 0) {
                         info = this.translate("NEWSFEED.INVITED.APP") + " " + app[0].displayName;
                     } else {
-                        info = this.translate("NEWSFEED.INVITED.APP") + " " + appName;
+                        let actualAppName = this.extractChatAppName(appName);
+                        info = this.translate("NEWSFEED.INVITED.APP") + " " + actualAppName;
                     }
                     displayFilename = false;
                 } else {
@@ -1602,6 +1625,10 @@ module.exports = {
             let withoutPrefix = chatUuid.substring(chatUuid.indexOf("$") +1);
             return withoutPrefix.substring(0,withoutPrefix.indexOf("$"));
         },
+        extractChatAppName: function(entryAppName) {
+            let isTemplateApp = entryAppName.indexOf("!") > 0;
+            return isTemplateApp ? entryAppName.substring(0, entryAppName.indexOf("!")) : entryAppName;
+        },
         extractChatApp: function(filePath) {
             let chatUuid = this.extractChatUUIDFromPath(filePath);
             if (chatUuid.startsWith("chat-")) {
@@ -1626,6 +1653,20 @@ module.exports = {
                 }
             }
             return remainingSharedItems;
+        },
+        getChatAppTitle: function(chatId) {
+            let that = this;
+            let future = peergos.shared.util.Futures.incomplete();
+            this.messenger.getChat(chatId).thenApply(function(controller) {
+                let obj = {} ;
+                obj.title = controller.getTitle();
+                obj.iconBase64 = controller.getGroupProperty("iconBase64");
+                future.complete(obj);
+            }).exceptionally(function(throwable) {
+                console.log('Unable to get title of Chat. Error:' + throwable);
+                future.complete(null);
+            });
+            return future;
         },
         buildTimeline: function(items) {
             let that = this;

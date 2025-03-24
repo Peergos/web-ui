@@ -11,7 +11,8 @@
                 :existingAdmins="existingAdmins"
                 :friendNames="friendnames"
                 :updatedGroupMembership="updatedGroupMembership"
-                :existingGroups="existingGroups">
+                :existingGroups="existingGroups"
+                :isTemplateApp="isTemplateApp">
         </Group>
         <ViewProfile
             v-if="showProfileViewForm"
@@ -53,6 +54,17 @@
             :consumer_func="prompt_consumer_func"
             :action="prompt_action"
         />
+            <AppTemplatePrompt
+              v-if="showAppTemplatePrompt"
+              @hide-prompt="closeAppTemplatePrompt_func"
+              :message="app_prompt_message"
+              :placeholder="app_prompt_placeholder"
+              :max_input_size="app_prompt_max_input_size"
+              :value="app_prompt_value"
+              :consumer_func="app_prompt_consumer_func"
+              :action="app_prompt_action"
+              :appIconBase64Image="appIconBase64Image"
+            />
             <AppInstall
                 v-if="showAppInstallation"
                 v-on:hide-app-installation="closeAppInstallation"
@@ -106,6 +118,7 @@
 const AddToChat = require("AddToChat.vue");
 const AppInstall = require("AppInstall.vue");
 const AppPrompt = require("../prompt/AppPrompt.vue");
+const AppTemplatePrompt = require("../prompt/AppTemplatePrompt.vue");
 const Confirm = require("../confirm/Confirm.vue");
 const FilePicker = require('../picker/FilePicker.vue');
 const FolderPicker = require('../picker/FolderPicker.vue');
@@ -128,6 +141,7 @@ module.exports = {
         AddToChat,
         AppInstall,
         AppPrompt,
+        AppTemplatePrompt,
         Confirm,
         FilePicker,
         FolderPicker,
@@ -246,6 +260,16 @@ module.exports = {
             confirm_consumer_func: () => {},
             displayToBookmark: true,
             pickerSelectedFile: "",
+            isTemplateApp: false,
+            showAppTemplatePrompt: false,
+            closeAppTemplatePrompt_func: () => {},
+            app_prompt_message: "",
+            app_prompt_placeholder: "",
+            app_prompt_max_input_size: -1,
+            app_prompt_value: "",
+            app_prompt_consumer_func: () => {},
+            app_prompt_action: 'ok',
+            appIconBase64Image: "",
         }
     },
     computed: {
@@ -333,7 +357,12 @@ module.exports = {
                         that.appProperties = props;
                         that.appRegisteredWithFileAssociation = that.appHasFileAssociation(props);
                         that.appRegisteredWithWildcardFileAssociation = that.appHasWildcardFileRegistration(props);
-                        that.currentChatId = that.sandboxAppChatId != null ? that.sandboxAppChatId : '';
+                        if (props.template.length > 0) {
+                            that.currentChatId = props.chatId;
+                            that.isTemplateApp = true;
+                        } else {
+                            that.currentChatId = that.sandboxAppChatId != null ? that.sandboxAppChatId : '';
+                        }
                         peergos.shared.user.App.init(that.context, that.currentAppName).thenApply(sandboxedApp => {
                             that.sandboxedApp = sandboxedApp;
                             that.getAppSubdomain().thenApply(appSubdomain => {
@@ -588,6 +617,10 @@ module.exports = {
                     return false;
                 }
                 this.isSaveActionEnabled = false;
+            }
+            if (props.template == 'messaging' && !this.permissionsMap.get(this.PERMISSION_EXCHANGE_MESSAGES_WITH_FRIENDS)) {
+                console.log('App configured as a Template, but permission EXCHANGE_MESSAGES_WITH_FRIENDS not set!');
+                return false;
             }
             return true;
         },
@@ -1046,6 +1079,10 @@ module.exports = {
         handleFolderPickerRequest: function(headerFunc, path, apiMethod, data, hasFormData, params) {
             let that = this;
             if (apiMethod == 'GET') {
+                let multipleFolders = params.get('multiple');
+                if (multipleFolders != null && multipleFolders.toLowerCase() == "false") {
+                    this.multipleFolderSelection = false;
+                }
                 this.folderPickerBaseFolder = "/" + this.context.username;
                 this.selectedFoldersFromPicker = function (chosenFolders) {
                     that.selectedFolders = chosenFolders;
@@ -1126,11 +1163,11 @@ module.exports = {
             }
         },
         handleProfileRequest: function(headerFunc, path, apiMethod, data, hasFormData, params) {
+            let that = this;
             if(apiMethod == 'GET') {
                 let username = path;
                 index = this.friendnames.indexOf(username);
-                if (index > -1) {
-                    let that = this;
+                if (index > -1 || username == this.context.username) {
                     if (params.get('thumbnail') == 'true') {
                         if (!this.permissionsMap.get(this.PERMISSION_ACCESS_PROFILE_PHOTO)) {
                             this.showError("App attempted to access profile photo without permission");
@@ -1469,7 +1506,10 @@ module.exports = {
                                     Vue.nextTick(function() {
                                         that.spinner(false);
                                         Vue.nextTick(function() {
-                                            that.buildResponse(that.chatResponseHeader, null, that.UPDATE_SUCCESS);
+                                            let chatItem = {chatId: chatId, title: updatedGroupTitle, members: updatedMembers.slice(), admins: updatedAdmins.slice()};
+                                            let encoder = new TextEncoder();
+                                            let data = encoder.encode(JSON.stringify(chatItem));
+                                            that.buildResponse(that.chatResponseHeader, data, that.UPDATE_SUCCESS);
                                         });
                                     });
                                });
@@ -2462,6 +2502,19 @@ module.exports = {
                             that.buildResponse(headerFunc, null, that.ACTION_FAILED);
                         });
                     });
+                } else if (path.endsWith("/icon") || path.endsWith("/icon/")) {
+                    let chatId = path.substring(0, path.indexOf("/icon"));
+                    that.messenger.getChat(chatId).thenApply(function(controller) {
+                        let encoder = new TextEncoder();
+                        if(controller.hasGroupProperty("iconBase64")) {
+                            let appIconBase64 = controller.getGroupProperty("iconBase64");
+                            let data = encoder.encode(appIconBase64);
+                            that.buildResponse(headerFunc, data, that.GET_SUCCESS);
+                        } else {
+                            let data = encoder.encode("");
+                            that.buildResponse(headerFunc, data, that.GET_SUCCESS);
+                        }
+                    });
                 }
             } else if(apiMethod == 'DELETE') {
                 let chatId = path;
@@ -2570,6 +2623,29 @@ module.exports = {
                         } else {
                             that.buildResponse(headerFunc, null, that.ACTION_FAILED);
                         }
+                    }else if (params.get('contents') == 'true') {
+                        let decoder = new TextDecoder();
+                        let fileRefJson = decoder.decode(data);
+                        let fileRef = peergos.shared.display.FileRef.fromJson(fileRefJson);
+                        if ((path.startsWith(this.currentAppName) || path.startsWith("chat-" + this.currentAppName)) && fileRef.path.includes(path + '/shared/media/')) {
+                            this.retrieveFileFromFileRef(fileRef).thenApply(filePair => {
+                                if (filePair != null) {
+                                    let props = filePair.file.getFileProperties();
+                                    if (props.isHidden || props.isDirectory) {
+                                        console.log("Unable to find file. path:" + fileRef.path);
+                                        that.buildResponse(headerFunc, null, that.ACTION_FAILED);
+                                    } else {
+                                        that.contents(filePair.file).thenApply(data => {
+                                            that.buildResponse(headerFunc, data, that.GET_SUCCESS);
+                                        });
+                                    }
+                                } else {
+                                    that.buildResponse(headerFunc, null, that.ACTION_FAILED);
+                                }
+                            });
+                        } else {
+                            that.buildResponse(headerFunc, null, that.ACTION_FAILED);
+                        }
                     } else if (path.endsWith("/attachment") || path.endsWith("/attachment/")) {
                         let filename = decodeURIComponent(params.get('filename')).trim();
                         if (filename == null || filename.length == 0) {
@@ -2586,6 +2662,41 @@ module.exports = {
                                 this.uploadFileAction(headerFunc, filename, bytes, chatId);
                             }
                         }
+                    } else if (path.endsWith("/icon") || path.endsWith("/icon/")) {
+                        let chatId = path.substring(0, path.indexOf("/icon"));
+                        this.app_prompt_value = '';
+                        this.prompt_action = that.translate("PROMPT.OK");
+                        var existingAppIconBase64 = "";
+                        let encoder = new TextEncoder();
+                        let data = encoder.encode("");
+                        this.messenger.getChat(chatId).thenApply(function(controller) {
+                            that.app_prompt_message = controller.getTitle();
+                            if(controller.hasGroupProperty("iconBase64")) {
+                                existingAppIconBase64 = controller.getGroupProperty("iconBase64");
+                                that.appIconBase64Image = existingAppIconBase64.length == 0 ? "" : existingAppIconBase64;
+                            } else {
+                                that.appIconBase64Image = "";
+                            }
+                            that.closeAppTemplatePrompt_func = function () {
+                                that.showAppTemplatePrompt = false;
+                            };
+                            that.app_prompt_consumer_func = function (prompt_result, appIconBase64) {
+                                if (appIconBase64 != null && appIconBase64 != existingAppIconBase64) {
+                                    that.messenger.setGroupProperty(controller, "iconBase64", appIconBase64).thenApply(function(updatedController2) {
+                                        that.buildResponse(headerFunc, data, that.CREATE_SUCCESS);
+                                        that.showAppTemplatePrompt = false;
+                                    }).exceptionally(err => {
+                                        console.log('iconBase64 call failed: ' + err);
+                                        that.buildResponse(headerFunc, null, that.ACTION_FAILED);
+                                        that.showAppTemplatePrompt = false;
+                                    });
+                                } else {
+                                    that.buildResponse(headerFunc, data, that.CREATE_SUCCESS);
+                                    that.showAppTemplatePrompt = false;
+                                }
+                            };
+                            that.showAppTemplatePrompt = true;
+                        });
                     }else {
                         let chatId = path;
                         this.messenger.listChats().thenApply(function(chats) {
@@ -2701,8 +2812,9 @@ module.exports = {
             let progress = {};
             let thumbnailAllocation = Math.min(100000, fileData.length / 10);
             let resultingSize = fileData.length + thumbnailAllocation;
+            let progressTitle = fileData.length < 1 * 1024 * 1024 ? "" : "Encrypting and uploading " + filename;
             progress = {
-                title:"Encrypting and uploading " + filename,
+                title: progressTitle,
                 done:0,
                 max:resultingSize,
                 name: filename
@@ -3492,7 +3604,7 @@ module.exports = {
                 if (this.selectedFolders.includes(folderPath)) {
                     return true;
                 } else {
-                    return this.selectedFolderStems.filter(e => e.startsWith(folderPath)).length > 0;
+                    return this.selectedFolderStems.filter(e => folderPath.startsWith(e)).length > 0;
                 }
             } else {
                 return false;

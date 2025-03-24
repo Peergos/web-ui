@@ -214,6 +214,29 @@ module.exports = {
           result.complete(false);
         })
       return result;
+    },
+    contents: function (file) {
+      var props = file.getFileProperties()
+      var that = this
+      var resultingSize = this.getFileSize(props)
+      let result = peergos.shared.util.Futures.incomplete();
+      file.getBufferedInputStream(
+          this.context.network,
+          this.context.crypto,
+          props.sizeHigh(),
+            props.sizeLow(),
+            20,
+          function (read) {}
+        ).thenApply(function (reader) {
+            var size = that.getFileSize(props)
+            var data = convertToByteArray(new Int8Array(size))
+            reader.readIntoArray(data, 0, data.length).thenApply(function (read) {
+                result.complete(data);
+            })
+        }).exceptionally(function (throwable) {
+          result.complete(null);
+        })
+      return result;
     }
   }
 }

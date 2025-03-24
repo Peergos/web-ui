@@ -55,7 +55,6 @@ module.exports = {
       },
       verifyJSONFile: function(file, appPath) {
           let that = this;
-          let appNames = this.sandboxedApps.appsInstalled.slice();
           let future = peergos.shared.util.Futures.incomplete();
           this.readJSONFile(file).thenApply(props => {
               let that = this;
@@ -64,10 +63,11 @@ module.exports = {
               } else {
                   let errors = [];
                   let mandatoryFields = ["displayName", "description", "launchable"];
-                  let stringFields = ["displayName", "description", "version", "author", "appIcon", "source"];
+                  let stringFields = ["displayName", "description", "version", "author", "appIcon", "source", "template", "chatId", "templateIconBase64"];
                   let existingCreateMenuItems = ["upload files","upload folder","new folder","new file", "new app"];
                   let validPermissions = ["STORE_APP_DATA", "EDIT_CHOSEN_FILE", "READ_CHOSEN_FOLDER",
                     "EXCHANGE_MESSAGES_WITH_FRIENDS", "USE_MAILBOX", "ACCESS_PROFILE_PHOTO", "CSP_UNSAFE_EVAL"];
+                  let validTemplateValues = ["messaging"];
                   mandatoryFields.forEach(field => {
                       if (props[field] == null) {
                           errors.push("Missing property " + field);
@@ -147,6 +147,20 @@ module.exports = {
                               }
                           });
                       }
+                      if (props.template.length > 0) {
+                          let templateIndex = validTemplateValues.findIndex(v => v === props.template);
+                          if (templateIndex == -1) {
+                              errors.push("Invalid template type: " + props.template);
+                          } else {
+                              let permissionIndex = props.permissions.findIndex(v => v === "EXCHANGE_MESSAGES_WITH_FRIENDS");
+                              if (permissionIndex == -1) {
+                                  errors.push("Template App must have permission: EXCHANGE_MESSAGES_WITH_FRIENDS");
+                              }
+                              if (props.appIcon.length == 0) {
+                                  errors.push("Template App must have an AppIcon");
+                              }
+                          }
+                      }
                   }
                     if (errors.length == 0 && appPath != null) {
                       that.validateAppIconImage(props.appIcon, appPath, errors).thenApply(isIconOK => {
@@ -204,11 +218,11 @@ module.exports = {
           if (file == null) {
                 future.complete(null);
           } else {
-              let props = file.getFileProperties();
-              var low = props.sizeLow();
+              let fileProps = file.getFileProperties();
+              var low = fileProps.sizeLow();
               if (low < 0) low = low + Math.pow(2, 32);
-              let size = low + (props.sizeHigh() * Math.pow(2, 32));
-              file.getInputStream(this.context.network, this.context.crypto, props.sizeHigh(), props.sizeLow(), (progress) => {}).thenApply(reader => {
+              let size = low + (fileProps.sizeHigh() * Math.pow(2, 32));
+              file.getInputStream(this.context.network, this.context.crypto, fileProps.sizeHigh(), fileProps.sizeLow(), (progress) => {}).thenApply(reader => {
                   let data = convertToByteArray(new Int8Array(size));
                   return reader.readIntoArray(data, 0, data.length).thenApply(read => {
                       try {
@@ -231,6 +245,15 @@ module.exports = {
                           if (props.appIcon == null) {
                               props.appIcon = '';
                           }
+                          if (props.template == null) {
+                              props.template = '';
+                          }
+                          if (props.chatId == null) {
+                              props.chatId = '';
+                          }
+                          if (props.templateIconBase64 == null) {
+                              props.templateIconBase64 = '';
+                          }
                           if (props.fileExtensions == null) {
                               props.fileExtensions = [];
                           }
@@ -243,7 +266,7 @@ module.exports = {
                           if (props.permissions == null) {
                               props.permissions = [];
                           }
-                          props.name = props.displayName.replaceAll(' ', '').toLowerCase().trim();
+                          props.name = props.name != null ? props.name : props.displayName.replaceAll(' ', '').toLowerCase().trim();
                           future.complete(props);
                       } catch (ex) {
                           console.log(ex);
@@ -267,19 +290,14 @@ module.exports = {
                             future.complete(null);
                         } else {
                             let props = propFileOpt.ref.getFileProperties();
-                            if (!fromRecommendedApps && !props.created.equals(props.modified)) {
-                                console.log('peergos-app.json file has changed! App: ' + appName);
-                                future.complete(null);
-                            } else {
-                                that.readJSONFile(propFileOpt.ref).thenApply(res => {
-                                    if (res == null) {
-                                        console.log('Properties not found! App: ' + appName);
-                                        future.complete(null);
-                                    } else {
-                                        future.complete(res);
-                                    }
-                                });
-                            }
+                            that.readJSONFile(propFileOpt.ref).thenApply(res => {
+                                if (res == null) {
+                                    console.log('Properties not found! App: ' + appName);
+                                    future.complete(null);
+                                } else {
+                                    future.complete(res);
+                                }
+                            });
                         }
                     });
                 } else {
@@ -448,7 +466,8 @@ module.exports = {
             let item = {name: props.name, displayName: props.displayName,
                 createFile: createFile, openFile: openFile, openFileFilters: openFileFilters, launchable: props.launchable,
                 folderAction: props.folderAction, appIcon: props.appIcon, contextMenuText: contextMenuText,
-                source: props.source, version: props.version, createFile: createFile, primaryFileExtension: primaryFileExtension};
+                source: props.source, version: props.version, createFile: createFile, primaryFileExtension: primaryFileExtension,
+                templateIconBase64: props.templateIconBase64, chatId: props.chatId, template : props.template};
 
             appsInstalled.push(item);
             props.fileExtensions.forEach(extension => {
