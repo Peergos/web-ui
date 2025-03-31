@@ -1,7 +1,7 @@
 var mainWindow;
 var origin;
 var editorJS = null;
-
+var markdownContent = "";
 window.MathJax = {
   tex: {
     inlineMath: [ ['$','$'], ["\\(","\\)"] ],
@@ -25,7 +25,19 @@ window.MathJax = {
     load: ['[tex]/noerrors']
   }
 };
-
+function updateImage(id, data, retryAttempt) {
+        let image = document.getElementById(id);
+        if (image == null) {
+            if (retryAttempt < 20) {
+                setTimeout(() => {updateImage(id, data, retryAttempt + 1)}, 50);
+            } else {
+                console.log('unable to set data for image with id:' + id);
+            }
+        } else {
+            let blob = new Blob([data]);
+            image.src = URL.createObjectURL(blob);
+        }
+}
 window.addEventListener('message', function (e) {
     let parentDomain = window.location.host.substring(window.location.host.indexOf(".")+1)
     if (e.origin !== (window.location.protocol + "//" + parentDomain))
@@ -38,9 +50,7 @@ window.addEventListener('message', function (e) {
     if (e.data.action == "ping") {
         mainWindow.postMessage({action:'pong'}, e.origin);
     } else if(e.data.action == "respondToLoadImage"){
-        let image = document.getElementById(e.data.id);
-        let blob = new Blob([e.data.data]);
-        image.src = URL.createObjectURL(blob);
+        updateImage(e.data.id, e.data.data, 0);
     } else if(e.data.action == "respondToNavigateTo"){
         let markdownThemeToUse = e.data.theme != null && e.data.theme == 'dark-mode' ? 'dark' : 'light';
         if (e.data.extension == 'note') {
@@ -79,8 +89,7 @@ function initialiseMarkdownEditor(theme, subPathInput, text) {
         theme: theme,
         subPath: subPath
     });
-    let output = viewer.getHTML();
-    let xss = DOMPurify.sanitize(output);
+    let xss = rewriteImages(DOMPurify.sanitize(markdownContent));
     let element = document.getElementById('sanitized');
     let body = document.getElementById('body-element');
     let mdElement = document.getElementById('md-element');
@@ -182,22 +191,46 @@ function updateResourcesInDoc() {
                 }
             });
         }
-        let images = document.getElementsByTagName("img");
-        for(var i=0; i < images.length;i++) {
-            let image = images[i];
-            let isDataImage = image.src.startsWith("data:");
-            if (!isDataImage) {
-                const requestedResource = new URL(image.src);
-                if (window.location.host == requestedResource.host) {
-                    image.src = '#';
-                    let generatedId = 'image-' + uuid();
-                    image.id = generatedId;
-                    mainWindow.postMessage({action:'loadImage', src: requestedResource.pathname, id: generatedId}, origin);
+
+}
+function setMarkdownContent(content) {
+    markdownContent = content;
+}
+function rewriteImages(html) {
+        var finished = false;
+        var startIndex = 0;
+        while(!finished) {
+            let imgStartIndex = html.indexOf('<img ', startIndex);
+            if (imgStartIndex == -1) {
+                finished = true;
+            } else {
+                let imgEndIndex = html.indexOf('">', imgStartIndex + 5);
+                if (imgEndIndex == -1) {
+                    finished = true;
                 } else {
-                    console.log('invalid link: ' + image.src);
+                    startIndex = imgStartIndex + 5;
+                    let imgTag = html.substring(imgStartIndex, imgEndIndex);
+                    startIndex = imgEndIndex;
+                    let sourceAttrIndex = imgTag.indexOf('src="');
+                    if (sourceAttrIndex > 0) {
+                        let src = imgTag.substring(sourceAttrIndex + 5);
+                        //console.log('image src=' + src);
+                        let generatedId = 'image-' + uuid();
+                        html = html.substring(0, imgStartIndex + sourceAttrIndex) + ' id="' + generatedId + '" src="#' + html.substring(imgEndIndex);
+                        let tmpImg = new Image();
+                        tmpImg.src = src;
+                        tmpImg.loading="lazy";
+                        const requestedResource = new URL(tmpImg.src);
+                        if (window.location.host == requestedResource.host) {
+                            mainWindow.postMessage({action:'loadImage', src: requestedResource.pathname, id: generatedId}, origin);
+                        } else {
+                            console.log('invalid link: ' + tmpImg.src);
+                        }
+                    }
                 }
             }
         }
+        return html;
 }
 function initialiseEditorJS(theme, jsonData) {
     let setToDarkMode = theme != null && theme == 'dark-mode';

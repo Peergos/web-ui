@@ -11345,14 +11345,17 @@ function htmlSanitizer_registerTagWhitelistIfPossible(tagName) {
     }
 }
 function sanitizeHTML(html) {
-    var root = document.createElement('div');
+    //we sanitize using DOMPurify
+    /*var root = document.createElement('div');
     if (isString_default()(html)) {
         html = html.replace(reComment, '').replace(reXSSOnload, '$1');
         root.innerHTML = html;
     }
     removeUnnecessaryTags(root);
     leaveOnlyWhitelistAttribute(root);
-    return finalizeHtml(root, true);
+    return finalizeHtml(root, true);*/
+    setMarkdownContent(html);
+    return html;
 }
 function removeUnnecessaryTags(html) {
     var removedTags = findNodes(html, tagBlacklist.join(','));
@@ -11915,7 +11918,7 @@ var MarkdownPreview = /** @class */ (function () {
         var contentEl = this.previewContent;
         var newHtml = this.eventEmitter.emitReduce('beforePreviewRender', this.sanitizer(nodes.map(function (node) { return _this.renderer.render(node); }).join('')));
         if (!removedNodeRange) {
-            contentEl.insertAdjacentHTML('afterbegin', newHtml);
+            //disabled so image urls are not resolved contentEl.insertAdjacentHTML('afterbegin', newHtml);
         }
         else {
             var _a = removedNodeRange.id, startNodeId = _a[0], endNodeId = _a[1];
