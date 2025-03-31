@@ -11352,6 +11352,7 @@ function sanitizeHTML(html) {
     }
     removeUnnecessaryTags(root);
     leaveOnlyWhitelistAttribute(root);
+    setMarkdownContent(html);
     return finalizeHtml(root, true);
 }
 function removeUnnecessaryTags(html) {
@@ -11915,7 +11916,7 @@ var MarkdownPreview = /** @class */ (function () {
         var contentEl = this.previewContent;
         var newHtml = this.eventEmitter.emitReduce('beforePreviewRender', this.sanitizer(nodes.map(function (node) { return _this.renderer.render(node); }).join('')));
         if (!removedNodeRange) {
-            contentEl.insertAdjacentHTML('afterbegin', newHtml);
+            //disabled so image urls are not resolved contentEl.insertAdjacentHTML('afterbegin', newHtml);
         }
         else {
             var _a = removedNodeRange.id, startNodeId = _a[0], endNodeId = _a[1];
