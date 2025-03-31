@@ -11345,17 +11345,15 @@ function htmlSanitizer_registerTagWhitelistIfPossible(tagName) {
     }
 }
 function sanitizeHTML(html) {
-    //we sanitize using DOMPurify
-    /*var root = document.createElement('div');
+    var root = document.createElement('div');
     if (isString_default()(html)) {
         html = html.replace(reComment, '').replace(reXSSOnload, '$1');
         root.innerHTML = html;
     }
     removeUnnecessaryTags(root);
     leaveOnlyWhitelistAttribute(root);
-    return finalizeHtml(root, true);*/
     setMarkdownContent(html);
-    return html;
+    return finalizeHtml(root, true);
 }
 function removeUnnecessaryTags(html) {
     var removedTags = findNodes(html, tagBlacklist.join(','));
