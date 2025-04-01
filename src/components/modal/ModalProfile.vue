@@ -17,7 +17,8 @@
                 v-if="showFolderPicker"
                 :baseFolder="folderPickerBaseFolder" :selectedFolder_func="selectedFoldersFromPicker"
                 :multipleFolderSelection="multipleFolderSelection"
-                :initiallySelectedPaths="initiallySelectedPaths">
+                :initiallySelectedPaths="initiallySelectedPaths"
+                :noDriveSelection="true">
             </FolderPicker>
             <Share
 			v-if="showShare"

@@ -9,6 +9,11 @@
         </div>
         <div class="modal-body">
             <Spinner v-if="showSpinner" :message="spinnerMessage"></Spinner>
+            <select v-if="displayDriveSelection" v-model="selectedDrive" @change="changeSelectedDrive" :disabled='disableDriveSelection'>
+                <option v-for="option in driveOptions" v-bind:value="option.value">
+                    {{ option.text }}
+                  </option>
+            </select>
             <div class="file-picker-view" class="scroll-style">
               <ul>
                 <SelectableTreeItem class="item" :model="treeData" :select_func="selectFile" :load_func="loadFolderLazily" :spinnerEnable_func="spinnerEnable" :spinnerDisable_func="spinnerDisable" :selectLeafOnly="selectLeafOnly"></TreeItem>
@@ -52,20 +57,28 @@ module.exports = {
     },
     data: function() {
         return {
-            showSpinner: true,
+            showSpinner: false,
             spinnerMessage: 'Loading folders...',
             treeData: {},
             selectedFile: null,
             selectLeafOnly: true,
-            fileThumbnail : ''
+            fileThumbnail : '',
+            selectedDrive: "",
+            driveOptions: [],
+            displayDriveSelection: false,
+            disableDriveSelection: false,
         }
     },
-    props: ['baseFolder', 'selectedFile_func', 'pickerFileExtension', 'pickerFilterMedia', 'pickerShowThumbnail', 'pickerFilters'],
+    props: ['baseFolder', 'selectedFile_func', 'pickerFileExtension', 'pickerFilterMedia', 'pickerShowThumbnail', 'pickerFilters', 'noDriveSelection'],
     mixins:[folderTreeMixin],
     computed: {
         ...Vuex.mapState([
             'context',
+            'socialData',
         ]),
+        friendnames: function() {
+            return this.socialData.friends;
+        },
     },
     created: function() {
         let that = this;
@@ -74,9 +87,39 @@ module.exports = {
             that.showSpinner = false;
             that.spinnerMessage = '';
         };
-        this.loadSubFoldersAndFiles(this.baseFolder + "/", this.pickerFileExtension, this.pickerFilterMedia, this.pickerFilters, callback);
+        let numberOfFriends = this.friendnames.length;
+        let doNotShowDriveSelection = this.noDriveSelection !=null && this.noDriveSelection === true;
+        let allowChangeOfDrive = !doNotShowDriveSelection && numberOfFriends > 0 && this.baseFolder === "/" + this.context.username;
+        that.showSpinner = true;
+        if(allowChangeOfDrive) {
+            let homeDrive = "/" + this.context.username + '/';
+            that.driveOptions.push({ text: 'Drive: ' + this.context.username, value: homeDrive});
+            this.friendnames.forEach(f => {
+                that.driveOptions.push({ text: 'Drive: ' + f, value: "/" + f + '/' });
+            });
+            this.selectedDrive = homeDrive;
+            this.displayDriveSelection = true;
+            this.loadSubFoldersAndFiles(homeDrive, this.pickerFileExtension, this.pickerFilterMedia, this.pickerFilters, callback);
+        } else {
+            this.loadSubFoldersAndFiles(this.baseFolder + "/", this.pickerFileExtension, this.pickerFilterMedia, this.pickerFilters, callback);
+        }
     },
     methods: {
+        changeSelectedDrive: function() {
+            let that = this;
+            //console.log("selected=" + this.selectedDrive);
+            this.treeData = {};
+            let callback = (baseOfFolderTree) => {
+                that.treeData = baseOfFolderTree;
+                that.showSpinner = false;
+                that.spinnerMessage = '';
+                that.disableDriveSelection = false;
+            };
+            this.disableDriveSelection = true;
+            this.showSpinner = true;
+            this.loadSubFoldersAndFiles(this.selectedDrive, this.pickerFileExtension, this.pickerFilterMedia, this.pickerFilters, callback);
+
+        },
         close: function () {
             this.selectedFile_func(null);
         },
@@ -109,6 +152,19 @@ module.exports = {
 </script>
 
 <style>
+select{
+    min-width: 300px;
+    border: 2px solid var(--green-500);
+    margin: 8px 0;
+	color:var(--color);
+	background-color: transparent;
+	border-radious: 4px;
+	padding: 0 16px;
+	font-family: inherit;
+	font-size: inherit;
+	cursor: inherit;
+	line-height: 48px;
+}
 .file-picker-container {
     height: 100%;
     width: 600px;
@@ -133,6 +189,7 @@ module.exports = {
   font-weight: bold;
 }
 .scroll-style {
+    min-height: 250px;
     max-height: 250px;
     overflow-y: scroll;
     border: 2px solid var(--green-500);

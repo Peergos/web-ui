@@ -86,6 +86,12 @@
                     :htmlAnchor="htmlAnchor"
                 >
                 </AppSandbox>
+                <FolderPicker
+                    v-if="showFolderPicker"
+                    :baseFolder="folderPickerBaseFolder" :selectedFolder_func="selectedFoldersFromPicker"
+                    :multipleFolderSelection="false"
+                    :initiallySelectedPaths="[]">
+                </FolderPicker>
                 <ul id="appMenu" v-if="showAppMenu" class="dropdown-menu" v-bind:style="{top:menutop, left:menuleft}" style="cursor:pointer;display:block;min-width:100px;padding: 10px;">
                     <li id='open-in-app' style="padding-bottom: 5px;color: black;" v-for="app in availableApps" v-on:keyup.enter="appOpen($event, app.name, app.path, app.file)" v-on:click="appOpen($event, app.name, app.path, app.file)">{{app.contextMenuText}}</li>
                 </ul>
@@ -251,6 +257,7 @@ const AppIcon = require("../components/AppIcon.vue");
 const AppInstall = require("../components/sandbox/AppInstall.vue");
 const Confirm = require("../components/confirm/Confirm.vue");
 const SocialPost = require("../components/social/SocialPost.vue");
+const FolderPicker = require('../components/picker/FolderPicker.vue');
 const Gallery = require("../components/drive/DriveGallery.vue");
 const ViewProfile = require("../components/profile/ViewProfile.vue");
 const AppSandbox = require("../components/sandbox/AppSandbox.vue");
@@ -263,6 +270,7 @@ const mixins = require("../mixins/mixins.js");
 module.exports = {
     components: {
 		SocialPost,
+		FolderPicker,
 		Gallery,
 		ViewProfile,
 		AppButton,
@@ -334,6 +342,10 @@ module.exports = {
             templateInstanceTitle: "",
             templateAppIconBase64: "",
             templateInstanceChatId: "",
+            showFolderPicker: false,
+            folderPickerBaseFolder: "",
+            multipleFolderSelection: false,
+            initiallySelectedPaths: [],
         }
     },
     props: [],
@@ -1061,30 +1073,50 @@ module.exports = {
                 var pathStr = '/peergos/recommended-apps/' + appName + '/';
                 this.context.getByPath(pathStr + 'peergos-app.json').thenApply(propsFileOpt => {
                     if (propsFileOpt.ref != null) {
-                        that.appInstallPropsFile = propsFileOpt.ref;
-                        that.appInstallFolder = pathStr;
-                        that.appInstalledEntry = entry;
-                        if (entry.appName != appName) {
-                            that.templateInstanceAppName = entry.appName;
-                            that.templateInstanceChatId = that.extractChatUUIDFromPath(entry.path);
-                            that.getChatAppTitle(that.templateInstanceChatId).thenApply(metadata => {
-                                that.templateInstanceTitle = metadata.title;
-                                that.templateAppIconBase64 = metadata.iconBase64;
-                                that.showAppInstallation = true;
-                            });
-                        } else {
-                            that.templateInstanceAppName = "";
-                            that.templateInstanceChatId = "";
-                            that.templateInstanceTitle = "";
-                            that.templateAppIconBase64 = "";
-                            that.showAppInstallation = true;
-                        }
+                        that.installApp(entry, propsFileOpt.ref, pathStr, appName);
                     } else {
-                        that.showMessage(that.translate("NEWSFEED.APP.ABSENT").replace("$NAME", appName));
+                        that.folderPickerBaseFolder = "/" + that.context.username;
+                        that.selectedFoldersFromPicker = function (chosenFolders) {
+                            if (chosenFolders.length == 1) {
+                                let installPathString = chosenFolders[0] + "/";
+                                that.context.getByPath(installPathString + 'peergos-app.json').thenApply(appPropsFileOpt => {
+                                    if (appPropsFileOpt.ref != null) {
+                                        that.installApp(entry, appPropsFileOpt.ref, installPathString, appName);
+                                    } else {
+                                        that.showMessage(that.translate("NEWSFEED.APP.ABSENT").replace("$NAME", appName));
+                                    }
+                                });
+                            } else {
+                                that.showMessage(that.translate("NEWSFEED.APP.ABSENT").replace("$NAME", appName));
+                            }
+                            that.showFolderPicker = false;
+                        };
+                        that.showFolderPicker = true;
                     }
                 });
             } else {
                 this.launchApp(entry);
+            }
+        },
+        installApp(entry, propsFile, pathStr, appName) {
+            let that = this;
+            that.appInstallPropsFile = propsFile;
+            that.appInstallFolder = pathStr;
+            that.appInstalledEntry = entry;
+            if (entry.appName != appName) {
+                that.templateInstanceAppName = entry.appName;
+                that.templateInstanceChatId = that.extractChatUUIDFromPath(entry.path);
+                that.getChatAppTitle(that.templateInstanceChatId).thenApply(metadata => {
+                    that.templateInstanceTitle = metadata.title;
+                    that.templateAppIconBase64 = metadata.iconBase64;
+                    that.showAppInstallation = true;
+                });
+            } else {
+                that.templateInstanceAppName = "";
+                that.templateInstanceChatId = "";
+                that.templateInstanceTitle = "";
+                that.templateAppIconBase64 = "";
+                that.showAppInstallation = true;
             }
         },
         appInstallSuccess(appName) {
