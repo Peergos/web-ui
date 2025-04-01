@@ -9,6 +9,13 @@
 				</header>
                 <Spinner v-if="showSpinner" :message="spinnerMessage"></Spinner>
                 <div class="prompt__body">
+                    <select v-if="displayDriveSelection" v-model="selectedDrive" @change="changeSelectedDrive" :disabled='disableDriveSelection'>
+                        <option v-for="option in driveOptions" v-bind:value="option.value">
+                            {{ option.text }}
+                          </option>
+                    </select>
+                </div>
+                <div class="prompt__body">
                     <div class="folder-picker-view" class="scroll-style">
                       <ul>
                         <SelectableTreeItem class="item" :model="treeData" :load_func="loadFolderLazily" :select_func="selectFolder" :spinnerEnable_func="spinnerEnable" :spinnerDisable_func="spinnerDisable" :selectLeafOnly="selectLeafOnly"></SelectableTreeItem>
@@ -75,7 +82,11 @@ module.exports = {
             showSpinner: false,
             spinnerMessage: 'Loading...',
             treeData: {},
-            selectLeafOnly: false
+            selectLeafOnly: false,
+            selectedDrive: "",
+            driveOptions: [],
+            displayDriveSelection: false,
+            disableDriveSelection: false,
 		}
 	},
 	props: {
@@ -91,7 +102,11 @@ module.exports = {
 	computed: {
         ...Vuex.mapState([
             'context',
+            'socialData',
         ]),
+        friendnames: function() {
+            return this.socialData.friends;
+        },
 		maxLength() {
 			return this.max_input_size;
 		}
@@ -113,9 +128,38 @@ module.exports = {
             that.showSpinner = false;
             that.spinnerMessage = '';
         };
-        this.loadSubFolders(this.context.username + "/", callback);
+        let numberOfFriends = this.friendnames.length;
+        let allowChangeOfDrive = numberOfFriends > 0;
+        that.showSpinner = true;
+        if(allowChangeOfDrive) {
+            let homeDrive = "/" + this.context.username + '/';
+            that.driveOptions.push({ text: 'Drive: ' + this.context.username, value: homeDrive});
+            this.friendnames.forEach(f => {
+                that.driveOptions.push({ text: 'Drive: ' + f, value: "/" + f + '/' });
+            });
+            this.selectedDrive = homeDrive;
+            this.displayDriveSelection = true;
+            this.loadSubFolders(homeDrive, callback);
+        } else {
+            this.loadSubFolders(this.context.username + "/", callback);
+        }
     },
 	methods: {
+        changeSelectedDrive: function() {
+            let that = this;
+            //console.log("selected=" + this.selectedDrive);
+            this.treeData = {};
+            let callback = (baseOfFolderTree) => {
+                that.treeData = baseOfFolderTree;
+                that.showSpinner = false;
+                that.spinnerMessage = '';
+                that.disableDriveSelection = false;
+            };
+            this.disableDriveSelection = true;
+            this.showSpinner = true;
+            this.loadSubFolders(this.selectedDrive, callback);
+        },
+
 		closePrompt() {
 			this.consumer_func(null);
 			this.$emit("hide-prompt");
@@ -149,6 +193,19 @@ module.exports = {
 </script>
 
 <style>
+select{
+    min-width: 300px;
+    border: 2px solid var(--green-500);
+    margin: 8px 0;
+	color:var(--color);
+	background-color: transparent;
+	border-radious: 4px;
+	padding: 0 16px;
+	font-family: inherit;
+	font-size: inherit;
+	cursor: inherit;
+	line-height: 48px;
+}
 .app-prompt.app-modal__overlay{
 	display:flex;
 	align-items: center;
@@ -167,7 +224,7 @@ module.exports = {
 	font-weight: var(--regular);
 }
 .prompt__body{
-	margin: var(--app-margin) 0;
+	margin: 10px;
 }
 .prompt__footer{
 	display: flex;
