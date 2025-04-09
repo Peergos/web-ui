@@ -36,6 +36,7 @@
             :pickerFilters="pickerFilters"
             :pickerShowThumbnail="pickerShowThumbnail"
             :selectedFile_func="selectedFileFromPicker"
+            :noDriveSelection="noDriveSelection"
         />
         <FolderPicker
             v-if="showFolderPicker"
@@ -270,6 +271,7 @@ module.exports = {
             app_prompt_consumer_func: () => {},
             app_prompt_action: 'ok',
             appIconBase64Image: "",
+            noDriveSelection: true,
         }
     },
     computed: {
@@ -1053,6 +1055,7 @@ module.exports = {
                 let currentPathExtract = this.getPath;
                 let currentPathExtractWithoutSlash = currentPathExtract.substring(0, currentPathExtract.length -1);
                 this.filePickerBaseFolder =  baseCurrentFolder ? currentPathExtractWithoutSlash : "/" + this.context.username;
+                this.noDriveSelection = baseCurrentFolder;
                 let fileExtensionFilter = params.get('extension');
                 this.pickerFileExtension = fileExtensionFilter == null ? "" : fileExtensionFilter;
                 let fileMediaFilter = params.get('media');
