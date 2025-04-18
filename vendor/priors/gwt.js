@@ -402,6 +402,7 @@ function getFileHandleCreateIfNecessary(filename, directory) {
             blockDirHandle.getFileHandle(filename, { create: true }));
 }
 let pendingWrites = new Map();
+let pendingReads = new Map();
 
 function setOPFSKV(filename, value, directory) {
     pendingWrites.set(filename, value)
@@ -421,30 +422,47 @@ function setOPFSKV(filename, value, directory) {
     });
     return future;
 }
+function waitFor(pendingReadFuture, future) {
+    if (pendingReadFuture.isDone) {
+        future.complete(pendingReadFuture.result);
+    } else {
+        setTimeout(() => {waitFor(pendingReadFuture, future);}, 20);
+    }
+}
 function getOPFSKV(filename, directory) {
     let future = peergos.shared.util.Futures.incomplete();
     const pending = pendingWrites.get(filename);
     if (pending != null) {
         future.complete(pending);
     } else {
-        getFileHandle(filename, directory).then(file => {
-            readFileContents(file).thenApply(contents => {
-                if (contents == null) {
-                    console.log('unable to read opfs file contents: ' + filename);
-                    future.complete(null);
-                } else {
-                    let data = new Int8Array(contents);
-                    if (data.byteLength == 0) { //file has been created, but contents not written yet
-                        console.log('cache miss in directory: ' + directory);
+        const pendingReadFuture = pendingReads.get(filename);
+        if (pendingReadFuture != null) {
+            waitFor(pendingReadFuture, future);
+        } else {
+            pendingReads.set(filename, future)
+            getFileHandle(filename, directory).then(file => {
+                readFileContents(file).thenApply(contents => {
+                    if (contents == null) {
+                        console.log('unable to read opfs file contents: ' + filename);
+                        pendingReads.delete(filename);
                         future.complete(null);
                     } else {
-                        future.complete(data);
+                        let data = new Int8Array(contents);
+                        if (data.byteLength == 0) { //file has been created, but contents not written yet
+                            console.log('cache miss in directory: ' + directory);
+                            pendingReads.delete(filename);
+                            future.complete(null);
+                        } else {
+                            pendingReads.delete(filename);
+                            future.complete(data);
+                        }
                     }
-                }
+                });
+            }).catch(e => {
+                pendingReads.delete(filename);
+                future.complete(null);
             });
-        }).catch(e => {
-            future.complete(null);
-        });
+        }
     }
     return future;
 }
