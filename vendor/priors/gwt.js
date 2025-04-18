@@ -385,9 +385,14 @@ function getParentDirectoryHandle(filename, directory) {
         .then(dirHandle =>
             dirHandle.getDirectoryHandle(blockFolder, { create: true }));
 }
-
+function getParentDirectoryHandleReadOnly(filename, directory) {
+    let blockFolder = filename.substring(filename.length - 3, filename.length - 1);
+    return rootDirectory.getDirectoryHandle(directory, { create: false })
+        .then(dirHandle =>
+            dirHandle.getDirectoryHandle(blockFolder, { create: false }));
+}
 function getFileHandle(filename, directory) {
-    return getParentDirectoryHandle(filename, directory)
+    return getParentDirectoryHandleReadOnly(filename, directory)
         .then(blockDirHandle =>
             blockDirHandle.getFileHandle(filename));
 }
