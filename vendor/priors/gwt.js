@@ -403,7 +403,8 @@ function getFileHandleCreateIfNecessary(filename, directory) {
 }
 let pendingWrites = new Map();
 let pendingReads = new Map();
-
+let waitingForPendingRead = new Map();
+let recentReadCache = new Map();
 function setOPFSKV(filename, value, directory) {
     pendingWrites.set(filename, value)
     let future = peergos.shared.util.Futures.incomplete();
@@ -422,11 +423,26 @@ function setOPFSKV(filename, value, directory) {
     });
     return future;
 }
-function waitFor(pendingReadFuture, future) {
-    if (pendingReadFuture.isDone) {
-        future.complete(pendingReadFuture.result);
+function resolveWaiting(filename) {
+    let waitList = waitingForPendingRead.get(filename);
+    if (waitList.length > 0) {
+        const pendingReadFuture = pendingReads.get(filename);
+        pendingReadFuture.thenApply(res => {
+            let waitLength = waitList.length;
+            for(var i = 0; i < waitLength; i++) {
+                let waitingFuture = waitList[i];
+                waitingFuture.complete(res);
+            }
+            if (waitLength > 1) {
+                recentReadCache.set(filename, res);
+                setTimeout(() => {recentReadCache.delete(filename);}, 10000);
+            }
+            pendingReads.delete(filename);
+            waitingForPendingRead.delete(filename);
+        });
     } else {
-        setTimeout(() => {waitFor(pendingReadFuture, future);}, 20);
+        pendingReads.delete(filename);
+        waitingForPendingRead.delete(filename);
     }
 }
 function getOPFSKV(filename, directory) {
@@ -435,33 +451,40 @@ function getOPFSKV(filename, directory) {
     if (pending != null) {
         future.complete(pending);
     } else {
-        const pendingReadFuture = pendingReads.get(filename);
-        if (pendingReadFuture != null) {
-            waitFor(pendingReadFuture, future);
+        const recentCachedResult = recentReadCache.get(filename);
+        if (recentCachedResult != null) {
+            future.complete(recentCachedResult);
         } else {
-            pendingReads.set(filename, future)
-            getFileHandle(filename, directory).then(file => {
-                readFileContents(file).thenApply(contents => {
-                    if (contents == null) {
-                        console.log('unable to read opfs file contents: ' + filename);
-                        pendingReads.delete(filename);
-                        future.complete(null);
-                    } else {
-                        let data = new Int8Array(contents);
-                        if (data.byteLength == 0) { //file has been created, but contents not written yet
-                            console.log('cache miss in directory: ' + directory);
-                            pendingReads.delete(filename);
+            const pendingReadFuture = pendingReads.get(filename);
+            if (pendingReadFuture != null) {
+                let waitList = waitingForPendingRead.get(filename);
+                waitList.push(future);
+            } else {
+                pendingReads.set(filename, future)
+                waitingForPendingRead.set(filename, []);
+                getFileHandle(filename, directory).then(file => {
+                    readFileContents(file).thenApply(contents => {
+                        if (contents == null) {
+                            console.log('unable to read opfs file contents: ' + filename);
                             future.complete(null);
+                            resolveWaiting(filename, 0);
                         } else {
-                            pendingReads.delete(filename);
-                            future.complete(data);
+                            let data = new Int8Array(contents);
+                            if (data.byteLength == 0) { //file has been created, but contents not written yet
+                                console.log('cache miss in directory: ' + directory);
+                                future.complete(null);
+                                resolveWaiting(filename, 0);
+                            } else {
+                                future.complete(data);
+                                resolveWaiting(filename, 0);
+                            }
                         }
-                    }
+                    });
+                }).catch(e => {
+                    future.complete(null);
+                    resolveWaiting(filename, 0);
                 });
-            }).catch(e => {
-                pendingReads.delete(filename);
-                future.complete(null);
-            });
+            }
         }
     }
     return future;
