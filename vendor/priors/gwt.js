@@ -406,21 +406,28 @@ let pendingReads = new Map(); //key: String, value: Future
 let waitingForPendingRead = new Map(); //key: String, value: Future[]
 let recentReadCache = new Map(); //key: String, value: byte[]
 function setOPFSKV(filename, value, directory) {
-    pendingWrites.set(filename, value)
     let future = peergos.shared.util.Futures.incomplete();
-    getFileHandleCreateIfNecessary(filename, directory).then(file => {
-      writeFileContents(file, value).thenApply(done => {
-            if (done) {
-                setTimeout(() => {
-                  pendingWrites.delete(filename);
-                }, 5000);
-            }
-            future.complete(done);
-      });
-    }).catch(e => {
-        console.log('setOPFSKV error: ' + e);
-        future.complete(false);
-    });
+    let alreadyWritten = pendingWrites.get(filename);
+    if (alreadyWritten != null) {
+        future.complete(true);
+    } else {
+        pendingWrites.set(filename, value)
+        getFileHandleCreateIfNecessary(filename, directory).then(file => {
+          writeFileContents(file, value).thenApply(done => {
+                if (done) {
+                    setTimeout(() => {
+                      pendingWrites.delete(filename);
+                    }, 5000);
+                } else {
+                    pendingWrites.delete(filename);
+                }
+                future.complete(done);
+          });
+        }).catch(e => {
+            console.log('setOPFSKV error: ' + e);
+            future.complete(false);
+        });
+    }
     return future;
 }
 function resolveWaiting(filename) {
@@ -428,17 +435,17 @@ function resolveWaiting(filename) {
     if (waitList.length > 0) {
         const pendingReadFuture = pendingReads.get(filename);
         pendingReadFuture.thenApply(res => {
+            pendingReads.delete(filename);
+            waitingForPendingRead.delete(filename);
             let waitLength = waitList.length;
             for(var i = 0; i < waitLength; i++) {
                 let waitingFuture = waitList[i];
                 waitingFuture.complete(res);
             }
-            if (waitLength > 1) {
+            if (waitLength > 1 && res != null) {
                 recentReadCache.set(filename, res);
                 setTimeout(() => {recentReadCache.delete(filename);}, 10000);
             }
-            pendingReads.delete(filename);
-            waitingForPendingRead.delete(filename);
         });
     } else {
         pendingReads.delete(filename);
