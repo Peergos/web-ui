@@ -125,7 +125,6 @@ const precachedAssets = [
   'js/peergoslib.nocache.js',
   'js/wrapper.js',
   'js/StreamSaver.js',
-  'js/emoji-button-3.1.1.min.js',
   'js/idb-keyval.js',
   'js/peergos.js',
   'css/vendor.css',
