@@ -401,10 +401,10 @@ function getFileHandleCreateIfNecessary(filename, directory) {
         .then(blockDirHandle =>
             blockDirHandle.getFileHandle(filename, { create: true }));
 }
-let pendingWrites = new Map();
-let pendingReads = new Map();
-let waitingForPendingRead = new Map();
-let recentReadCache = new Map();
+let pendingWrites = new Map(); //key: String, value: byte[]
+let pendingReads = new Map(); //key: String, value: Future
+let waitingForPendingRead = new Map(); //key: String, value: Future[]
+let recentReadCache = new Map(); //key: String, value: byte[]
 function setOPFSKV(filename, value, directory) {
     pendingWrites.set(filename, value)
     let future = peergos.shared.util.Futures.incomplete();
