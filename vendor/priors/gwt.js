@@ -385,9 +385,14 @@ function getParentDirectoryHandle(filename, directory) {
         .then(dirHandle =>
             dirHandle.getDirectoryHandle(blockFolder, { create: true }));
 }
-
+function getParentDirectoryHandleReadOnly(filename, directory) {
+    let blockFolder = filename.substring(filename.length - 3, filename.length - 1);
+    return rootDirectory.getDirectoryHandle(directory, { create: false })
+        .then(dirHandle =>
+            dirHandle.getDirectoryHandle(blockFolder, { create: false }));
+}
 function getFileHandle(filename, directory) {
-    return getParentDirectoryHandle(filename, directory)
+    return getParentDirectoryHandleReadOnly(filename, directory)
         .then(blockDirHandle =>
             blockDirHandle.getFileHandle(filename));
 }
@@ -396,25 +401,56 @@ function getFileHandleCreateIfNecessary(filename, directory) {
         .then(blockDirHandle =>
             blockDirHandle.getFileHandle(filename, { create: true }));
 }
-let pendingWrites = new Map();
-
+let pendingWrites = new Map(); //key: String, value: byte[]
+let pendingReads = new Map(); //key: String, value: Future
+let waitingForPendingRead = new Map(); //key: String, value: Future[]
+let recentReadCache = new Map(); //key: String, value: byte[]
 function setOPFSKV(filename, value, directory) {
-    pendingWrites.set(filename, value)
     let future = peergos.shared.util.Futures.incomplete();
-    getFileHandleCreateIfNecessary(filename, directory).then(file => {
-      writeFileContents(file, value).thenApply(done => {
-            if (done) {
-                setTimeout(() => {
-                  pendingWrites.delete(filename);
-                }, 5000);
-            }
-            future.complete(done);
-      });
-    }).catch(e => {
-        console.log('setOPFSKV error: ' + e);
-        future.complete(false);
-    });
+    let alreadyWritten = pendingWrites.get(filename);
+    if (alreadyWritten != null) {
+        future.complete(true);
+    } else {
+        pendingWrites.set(filename, value)
+        getFileHandleCreateIfNecessary(filename, directory).then(file => {
+          writeFileContents(file, value).thenApply(done => {
+                if (done) {
+                    setTimeout(() => {
+                      pendingWrites.delete(filename);
+                    }, 5000);
+                } else {
+                    pendingWrites.delete(filename);
+                }
+                future.complete(done);
+          });
+        }).catch(e => {
+            console.log('setOPFSKV error: ' + e);
+            future.complete(false);
+        });
+    }
     return future;
+}
+function resolveWaiting(filename) {
+    let waitList = waitingForPendingRead.get(filename);
+    if (waitList.length > 0) {
+        const pendingReadFuture = pendingReads.get(filename);
+        pendingReadFuture.thenApply(res => {
+            pendingReads.delete(filename);
+            waitingForPendingRead.delete(filename);
+            let waitLength = waitList.length;
+            for(var i = 0; i < waitLength; i++) {
+                let waitingFuture = waitList[i];
+                waitingFuture.complete(res);
+            }
+            if (waitLength > 1 && res != null) {
+                recentReadCache.set(filename, res);
+                setTimeout(() => {recentReadCache.delete(filename);}, 10000);
+            }
+        });
+    } else {
+        pendingReads.delete(filename);
+        waitingForPendingRead.delete(filename);
+    }
 }
 function getOPFSKV(filename, directory) {
     let future = peergos.shared.util.Futures.incomplete();
@@ -422,24 +458,41 @@ function getOPFSKV(filename, directory) {
     if (pending != null) {
         future.complete(pending);
     } else {
-        getFileHandle(filename, directory).then(file => {
-            readFileContents(file).thenApply(contents => {
-                if (contents == null) {
-                    console.log('unable to read opfs file contents: ' + filename);
+        const recentCachedResult = recentReadCache.get(filename);
+        if (recentCachedResult != null) {
+            future.complete(recentCachedResult);
+        } else {
+            const pendingReadFuture = pendingReads.get(filename);
+            if (pendingReadFuture != null) {
+                let waitList = waitingForPendingRead.get(filename);
+                waitList.push(future);
+            } else {
+                pendingReads.set(filename, future)
+                waitingForPendingRead.set(filename, []);
+                getFileHandle(filename, directory).then(file => {
+                    readFileContents(file).thenApply(contents => {
+                        if (contents == null) {
+                            console.log('unable to read opfs file contents: ' + filename);
+                            future.complete(null);
+                            resolveWaiting(filename, 0);
+                        } else {
+                            let data = new Int8Array(contents);
+                            if (data.byteLength == 0) { //file has been created, but contents not written yet
+                                console.log('cache miss in directory: ' + directory);
+                                future.complete(null);
+                                resolveWaiting(filename, 0);
+                            } else {
+                                future.complete(data);
+                                resolveWaiting(filename, 0);
+                            }
+                        }
+                    });
+                }).catch(e => {
                     future.complete(null);
-                } else {
-                    let data = new Int8Array(contents);
-                    if (data.byteLength == 0) { //file has been created, but contents not written yet
-                        console.log('cache miss in directory: ' + directory);
-                        future.complete(null);
-                    } else {
-                        future.complete(data);
-                    }
-                }
-            });
-        }).catch(e => {
-            future.complete(null);
-        });
+                    resolveWaiting(filename, 0);
+                });
+            }
+        }
     }
     return future;
 }
