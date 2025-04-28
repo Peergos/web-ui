@@ -179,14 +179,15 @@ module.exports = {
         },
         modifyCacheSize: function() {
             let that = this;
-            if (!isCachingAvailable()) {
+            const isLocalhost = window.location.hostname == "localhost";
+            if (!isLocalhost && !isCachingAvailable()) {
                 that.$toast('Cache not available');
                 return;
             }
             getBrowserStorageQuota().then(maxStorage => {
                 let maxStorageMiB = Math.floor(maxStorage /1024 /1024);
                 this.prompt_message = this.translate("SETTINGS.CACHE") + ' (MiB)';
-                let roundedCurrentCacheSize = Math.floor(getCurrentDesiredCacheSize());
+                let roundedCurrentCacheSize = Math.floor(isLocalhost ? maxStorageMiB : getCurrentDesiredCacheSize());
                 this.prompt_value = '' + roundedCurrentCacheSize;
                 this.prompt_placeholder = " ";
                 this.prompt_consumer_func = function (prompt_result) {
@@ -200,7 +201,7 @@ module.exports = {
                         return;
                     }
                     let validNewCacheSize = Number(newCacheSizeMiB);
-                    if (validNewCacheSize > maxStorageMiB) {
+                    if (validNewCacheSize > maxStorageMiB && ! isLocalhost) {
                         that.$toast.error(that.translate("SETTINGS.CACHE.LARGE")
                                           .replace("$SIZE", maxStorageMiB), {timeout:false});
                     } else {
