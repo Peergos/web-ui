@@ -669,8 +669,53 @@ function setDesiredCacheSize(desiredSize) {
     return future;
 }
 function modifyCacheSize(newCacheSizeMiB) {
-    let newSizeBytes = newCacheSizeMiB * 1024 * 1024;
     let future = peergos.shared.util.Futures.incomplete();
+    if (window.location.hostname == "localhost") {
+        new Promise(function(resolve, reject) {
+	    var req = new XMLHttpRequest();
+	    req.open('POST', "peergos/v0/config/cache/set-size-mb?size="+newCacheSizeMiB);
+            req.responseType = 'json';
+	    
+	    req.onload = function() {
+                // This is called even on 404 etc
+                // so check the status
+                if (req.status == 200) {
+		    resolve(true);
+                }
+                else {
+		    try {
+                        let trailer = req.getResponseHeader("Trailer");
+                        if (trailer == null) {
+                            reject('Unexpected error from server');
+                        } else {
+                            reject(trailer);
+                        }
+		    } catch (e) {
+		        reject(e);
+		    }
+                }
+	    };
+	    
+	    req.onerror = function(e) {
+                future.completeExceptionally(new java.net.ConnectException("Unable to connect"));
+	    };
+            
+            req.ontimeout = function() {
+                reject(Error("Network timeout"));
+            };
+            
+	    req.send(new Int8Array(0));
+        }).then(function(result, err) {
+            if (err != null)
+                future.completeExceptionally(java.lang.Throwable.of(err));
+            else
+                future.complete(result);
+        }, function(err) {
+	    future.completeExceptionally(java.lang.Throwable.of(err)); 
+        })
+        return future;
+    }
+    let newSizeBytes = newCacheSizeMiB * 1024 * 1024;
     if (!blockStoreCache.isCachingEnabled) {
         future.complete(true);
     } else {
@@ -716,6 +761,43 @@ function isSafariTest() {
     return test;
 }
 function getBrowserStorageQuota() {
+    if (window.location.hostname == "localhost") {
+        return new Promise(function(resolve, reject) {
+	    var req = new XMLHttpRequest();
+	    req.open('POST', "peergos/v0/config/cache/get-size");
+            req.responseType = 'json';
+	    
+	    req.onload = function() {
+                // This is called even on 404 etc
+                // so check the status
+                if (req.status == 200) {
+		    resolve(JSON.parse(req.response).size*1024*1024);
+                }
+                else {
+		    try {
+                        let trailer = req.getResponseHeader("Trailer");
+                        if (trailer == null) {
+                            reject('Unexpected error from server');
+                        } else {
+                            reject(trailer);
+                        }
+		    } catch (e) {
+		        reject(e);
+		    }
+                }
+	    };
+	    
+	    req.onerror = function(e) {
+                future.completeExceptionally(new java.net.ConnectException("Unable to connect"));
+	    };
+            
+            req.ontimeout = function() {
+                reject(Error("Network timeout"));
+            };
+            
+	    req.send(new Int8Array(0));
+        });
+    }
     if (navigator.storage && navigator.storage.estimate) {
         return navigator.storage.estimate().then(quota => quota.quota);
     } else {
