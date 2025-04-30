@@ -166,7 +166,7 @@ module.exports = {
                        that.localPost("/peergos/v0/sync/add-pair?label="+label, JSON.stringify({link:cap, dir:hostDir})).then(function(result, err) {
                            if (err != null)
                               return
-                          that.syncPairs.add({localpath:hostDir, remotepath:peergosDir.toString(), label:label});
+                          that.syncPairs.push({localpath:hostDir, remotepath:peergosDir.toString(), label:label});
                        })
                     }).exceptionally(t => console.log(t));
                 });
