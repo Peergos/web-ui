@@ -83,7 +83,7 @@ module.exports = {
     },
 	created() {
 	    let that = this;
-        //this.getSyncState();
+            this.getSyncState();
         //this.getHostDir().thenApply(hostDir => {
         //    console.log('hostDir=' + hostDir);
         //});
@@ -102,7 +102,7 @@ module.exports = {
                 // This is called even on 404 etc
                 // so check the status
                 if (req.status == 200) {
-		    resolve(JSON.parse(req.response));
+		    resolve(req.response);
                 }
                 else {
 		    try {
@@ -132,14 +132,14 @@ module.exports = {
 
         getSyncState() {
             let that = this;
-            this.localPost("/peergos/v0/config/sync/get-pairs").then(function(result, err) {
+            this.localPost("/peergos/v0/sync/get-pairs").then(function(result, err) {
                that.syncPairs = result.pairs;
             })
         },
 
         getHostDir() {
             let future = peergos.shared.util.Futures.incomplete();
-            future.complete("/home/user/folder");
+            future.complete("/home/ian/syncme");
             return future;
         },
 
@@ -163,7 +163,7 @@ module.exports = {
                     }).thenCompose(link => {
                        const cap = link.toLinkString(that.context.signer.publicKeyHash)
                        const label = cap.substring(cap.lastIndexOf("/", cap.indexOf("#")) + 1, cap.indexOf("#"))
-                       localPost("/peergos/v0/config/sync/remove-pair?label="+label).then(function(result, err) {
+                       localPost("/peergos/v0/sync/remove-pair?label="+label).then(function(result, err) {
                            if (err != null)
                               return
                           that.syncPairs.add({localpath:hostDir, remotepath:peergosDir.toString(), label:label});
@@ -176,7 +176,7 @@ module.exports = {
 
         removeSyncPair(label) {
             var that = this;
-            localPost("/peergos/v0/config/sync/remove-pair?label="+label).then(function(result, err) {
+            localPost("/peergos/v0/sync/remove-pair?label="+label).then(function(result, err) {
                if (err != null)
                    return
                var index = 0;
