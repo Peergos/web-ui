@@ -1,4 +1,12 @@
 <template>
+    <FolderPicker
+        v-if="showFolderPicker"
+        :baseFolder="folderPickerBaseFolder" :selectedFolder_func="selectedFoldersFromPicker"
+        :multipleFolderSelection="multipleFolderSelection"
+        :initiallySelectedPaths="initiallySelectedPaths"
+        :noDriveSelection="true">
+    </FolderPicker>
+
    	<article class="app-view sync-view">
 	   	<AppHeader>
 			<template #primary>
@@ -42,6 +50,8 @@
 
 <script>
 const AppHeader = require("../components/AppHeader.vue");
+const FolderPicker = require('../components/picker/FolderPicker.vue');
+
 const i18n = require("../i18n/index.js");
 
 const routerMixins = require("../mixins/router/index.js");
@@ -49,10 +59,15 @@ const routerMixins = require("../mixins/router/index.js");
 module.exports = {
 	components: {
 		AppHeader,
+		FolderPicker,
 	},
     data() {
         return {
-            syncPairs: []
+            syncPairs: [],
+            showFolderPicker: false,
+            folderPickerBaseFolder: "",
+            multipleFolderSelection: false,
+            initiallySelectedPaths: [],
         }
     },
     props: [],
@@ -68,7 +83,10 @@ module.exports = {
     },
 	created() {
 	    let that = this;
-            this.getSyncState();
+        //this.getSyncState();
+        //this.getHostDir().thenApply(hostDir => {
+        //    console.log('hostDir=' + hostDir);
+        //});
     },
     methods: {
 		...Vuex.mapActions([
@@ -113,37 +131,46 @@ module.exports = {
         },
 
         getSyncState() {
-            var that = this;
-            localPost("/peergos/v0/config/sync/get-pairs").then(function(result, err) {
+            let that = this;
+            this.localPost("/peergos/v0/config/sync/get-pairs").then(function(result, err) {
                that.syncPairs = result.pairs;
             })
         },
 
-        getHostDir() { // returns Promise<String>
-           
+        getHostDir() {
+            let future = peergos.shared.util.Futures.incomplete();
+            future.complete("/home/user/folder");
+            return future;
         },
 
-        getPeergosDir() { // returns Promise<Path>
-           
+        getPeergosDir() {
+           return this.openFolderPicker();
         },
 
         addSyncPair() {
             const that = this;
-            const hostDir = await getHostDir();
-            const peergosDir = await getPeergosDir();
-            if (peergosDir.substring(1).split("/").length < 2) {
-               throw "You cannot sync to your home dir, please make a sub folder";
-            }
-            that.context.sharWriteAccessWith(peergosDir, peergos.client.JsUtil.asSet([])).thenCompose(done => {
-               return that context.createSecretLink(peergosDir.toString(), true, java.util.Optional.empty(), java.util.Optional.empty(), "", false)
-            }).thenCompose(link => {
-               const cap = link.toLinkString(that.context.signer.publicKeyHash)
-               const label = cap.substring(cap.lastIndexOf("/", cap.indexOf("#")) + 1, cap.indexOf("#"))
-               localPost("/peergos/v0/config/sync/remove-pair?label="+label).then(function(result, err) {
-                   if (err != null)
-                      return
-                  that.syncPairs.add({localpath:hostDir, remotepath:peergosDir.toString(), label:label});
-               })
+            this.getHostDir().thenApply(hostDir => {
+                that.getPeergosDir().thenApply(peergosDir => {
+                    if (peergosDir == null) {
+                        return;
+                    }
+                    /*
+                    if (peergosDir.substring(1).split("/").length < 2) {
+                       throw "You cannot sync to your home dir, please make a sub folder";
+                    }
+                    that.context.sharWriteAccessWith(peergosDir, peergos.client.JsUtil.asSet([])).thenCompose(done => {
+                       return that context.createSecretLink(peergosDir.toString(), true, java.util.Optional.empty(), java.util.Optional.empty(), "", false)
+                    }).thenCompose(link => {
+                       const cap = link.toLinkString(that.context.signer.publicKeyHash)
+                       const label = cap.substring(cap.lastIndexOf("/", cap.indexOf("#")) + 1, cap.indexOf("#"))
+                       localPost("/peergos/v0/config/sync/remove-pair?label="+label).then(function(result, err) {
+                           if (err != null)
+                              return
+                          that.syncPairs.add({localpath:hostDir, remotepath:peergosDir.toString(), label:label});
+                       })
+                    });
+                    */
+                });
             });
         },
 
@@ -163,7 +190,23 @@ module.exports = {
 
         close () {
             this.$emit("hide-sync");
-        }
+        },
+        openFolderPicker() {
+            let future = peergos.shared.util.Futures.incomplete();
+            let that = this;
+            this.folderPickerBaseFolder = "/" + this.context.username;
+            this.selectedFoldersFromPicker = function (chosenFolders) {
+                if (chosenFolders.length == 0) {
+                    future.complete(null);
+                } else {
+                    let selectedFolder = chosenFolders[0];
+                    future.complete(selectedFolder);
+                }
+                that.showFolderPicker = false;
+            };
+            this.showFolderPicker = true;
+            return future;
+        },
     },
 
 }
