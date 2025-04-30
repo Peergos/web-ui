@@ -1,12 +1,4 @@
 <template>
-    <FolderPicker
-        v-if="showFolderPicker"
-        :baseFolder="folderPickerBaseFolder" :selectedFolder_func="selectedFoldersFromPicker"
-        :multipleFolderSelection="multipleFolderSelection"
-        :initiallySelectedPaths="initiallySelectedPaths"
-        :noDriveSelection="true">
-    </FolderPicker>
-
    	<article class="app-view sync-view">
 	   	<AppHeader>
 			<template #primary>
@@ -34,6 +26,13 @@
                 </tbody>
                 </table>
             </div>
+            <FolderPicker
+              v-if="showFolderPicker"
+              :baseFolder="folderPickerBaseFolder" :selectedFolder_func="selectedFoldersFromPicker"
+              :multipleFolderSelection="multipleFolderSelection"
+              :initiallySelectedPaths="initiallySelectedPaths"
+              :noDriveSelection="true">
+            </FolderPicker>
             <input
                type="file"
                 id="uploadDirectoriesInput"
