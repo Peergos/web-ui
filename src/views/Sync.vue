@@ -33,7 +33,7 @@
               :initiallySelectedPaths="initiallySelectedPaths"
               :noDriveSelection="true">
             </FolderPicker>
-            <input
+            <!--<input
                type="file"
                 id="uploadDirectoriesInput"
                 @change="uploadFiles"
@@ -42,7 +42,7 @@
                 directory
                 mozDirectory
                 webkitDirectory
-            />
+            />!-->
         </main>
    </article>
 </template>
@@ -148,27 +148,27 @@ module.exports = {
 
         addSyncPair() {
             const that = this;
-            this.getHostDir().thenApply(hostDir => {
-                that.getPeergosDir().thenApply(peergosDir => {
+            this.getHostDir().thenCompose(hostDir => {
+                return that.getPeergosDir().thenCompose(peergosDir => {
                     if (peergosDir == null) {
                         return;
                     }
-                    /*
+                    
                     if (peergosDir.substring(1).split("/").length < 2) {
                        throw "You cannot sync to your home dir, please make a sub folder";
                     }
-                    that.context.sharWriteAccessWith(peergosDir, peergos.client.JsUtil.asSet([])).thenCompose(done => {
-                       return that context.createSecretLink(peergosDir.toString(), true, java.util.Optional.empty(), java.util.Optional.empty(), "", false)
+                    const peergosPath = peergos.client.PathUtils.directoryToPath(peergosDir.substring(1).split("/"));
+                    return that.context.shareWriteAccessWith(peergosPath, peergos.client.JsUtil.asSet([])).thenCompose(done => {
+                       return that.context.createSecretLink(peergosDir, true, java.util.Optional.empty(), "", "", false);
                     }).thenCompose(link => {
                        const cap = link.toLinkString(that.context.signer.publicKeyHash)
                        const label = cap.substring(cap.lastIndexOf("/", cap.indexOf("#")) + 1, cap.indexOf("#"))
-                       localPost("/peergos/v0/sync/remove-pair?label="+label).then(function(result, err) {
+                       that.localPost("/peergos/v0/sync/add-pair?label="+label, JSON.stringify({link:cap, dir:hostDir})).then(function(result, err) {
                            if (err != null)
                               return
                           that.syncPairs.add({localpath:hostDir, remotepath:peergosDir.toString(), label:label});
                        })
-                    });
-                    */
+                    }).exceptionally(t => console.log(t));
                 });
             });
         },
