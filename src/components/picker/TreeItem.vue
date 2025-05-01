@@ -11,7 +11,7 @@
     <li v-show="model.isOpen" v-if="isFolder" style="list-style-type: none">
       <TreeItem
         class="item"
-        v-for="model in model.children"
+        v-for="model in children"
         :model="model"
         :selectFolder_func="selectFolder_func"
         :load_func="load_func"
@@ -41,6 +41,15 @@ module.exports = {
   computed: {
     isFolder() {
       return this.model.children && this.model.children.length
+    },
+    children(){
+        let child = [];
+        for(var i = 0; i < this.model.children.length; i++){
+            if (!this.model.children[i].lazy) {
+                child.push(this.model.children[i]);
+            }
+        }
+        return child
     }
   },
   created: function() {
