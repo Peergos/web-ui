@@ -136,9 +136,18 @@ module.exports = {
             })
         },
 
+        getHostDirTree() {
+           return this.localPost("/peergos/v0/sync/get-host-paths?prefix=%2F").then(function(result, err) {
+               console.log(result);
+               return ["/storage/emulated/0/DCIM", "/storage/emulated/0/Pictures", "/storage/emulated/0/Movies", "/storage/emulated/0/Documents", "/storage/emulated/0/Downloads"]
+            });
+        },
+
         getHostDir() {
             let future = peergos.shared.util.Futures.incomplete();
-            future.complete("/home/ian/syncme");
+            this.getHostDirTree().then(function(result, err) {
+               future.complete("/storage/emulated/0/DCIM/Camera");
+            });
             return future;
         },
 
