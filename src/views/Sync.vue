@@ -156,6 +156,9 @@ module.exports = {
         },
 
         getHostDir() {
+            //var future = peergos.shared.util.Futures.incomplete();
+            //future.complete("/storage/emulated/0/DCIM/Camera");
+            //return future;
             return this.openHostFolderPicker();
         },
 
@@ -227,28 +230,25 @@ module.exports = {
             let future = peergos.shared.util.Futures.incomplete();
             let that = this;
             this.getHostDirTree().thenApply(hostFolders => {
-                /*
-                let childList = [];
-                for(var i=0; i < hostFolders.length; i++) {
-                    let obj = {};
-                    obj.path = hostFolders[i];
-                    obj.children = [];
-                    childList.push(obj);
-                }*/
-                let result = [];
-                let level = {result};
-                hostFolders.forEach(path => {
-                  path.split('/').filter(n => n.length > 0).reduce((r, name, i, a) => {
-                    if(!r[name]) {
-                      r[name] = {result: []};
-                      r.result.push({path: name, children: r[name].result})
+                let final = {result:[]};
+                for (const path of hostFolders) {
+                    let context = final;
+                    let names = path.split('/').filter(n => n.length > 0);
+                    for (var i = 0; i < names.length; i++) {
+                        let fullPath = "";
+                        for(var j = 0; j <= i && j < names.length; j++) {
+                            fullPath = fullPath + "/" + names[j];
+                        }
+                        let name = names[i];
+                        if (!context[name]) {
+                            context[name] = {result:[]};
+                            context.result.push({path: fullPath, children: context[name].result});
+                        }
+                        context = context[name];
                     }
-
-                    return r[name];
-                  }, level)
-                })
-                let rootPath = "/storage";
-                that.hostFolderTree = {"path":rootPath,"children":result[0].children};
+                }
+                let rootPath = final.result[0].path;
+                that.hostFolderTree = {"path":rootPath,"children":final.result[0].children};
                 that.folderSimplePickerBaseFolder = rootPath;
                 that.selectedFoldersFromSimplePicker = function (chosenFolders) {
                     if (chosenFolders.length == 0) {
