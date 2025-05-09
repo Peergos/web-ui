@@ -226,17 +226,30 @@ module.exports = {
         openHostFolderPicker() {
             let future = peergos.shared.util.Futures.incomplete();
             let that = this;
-            this.getHostDirTree().thenApply(result => {
-                let hostFolders = result;
+            this.getHostDirTree().thenApply(hostFolders => {
+                /*
                 let childList = [];
                 for(var i=0; i < hostFolders.length; i++) {
                     let obj = {};
                     obj.path = hostFolders[i];
                     obj.children = [];
                     childList.push(obj);
-                }
-                that.hostFolderTree = {"path":"/device","children":childList};
-                that.folderSimplePickerBaseFolder = "/device";
+                }*/
+                let result = [];
+                let level = {result};
+                hostFolders.forEach(path => {
+                  path.split('/').filter(n => n.length > 0).reduce((r, name, i, a) => {
+                    if(!r[name]) {
+                      r[name] = {result: []};
+                      r.result.push({path: name, children: r[name].result})
+                    }
+
+                    return r[name];
+                  }, level)
+                })
+                let rootPath = "/storage";
+                that.hostFolderTree = {"path":rootPath,"children":result[0].children};
+                that.folderSimplePickerBaseFolder = rootPath;
                 that.selectedFoldersFromSimplePicker = function (chosenFolders) {
                     if (chosenFolders.length == 0) {
                         future.complete(null);
