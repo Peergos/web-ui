@@ -129,7 +129,7 @@ module.exports = {
 	            };
 	    
 	            req.onerror = function(e) {
-                    future.completeExceptionally(new java.net.ConnectException("Unable to connect"));
+                    reject(Error("Unable to connect"));
 	            };
             
                 req.ontimeout = function() {
@@ -160,7 +160,7 @@ module.exports = {
         },
 
         getPeergosDir() {
-           return this.openFolderPicker();
+           return this.openPeergosFolderPicker();
         },
 
         addSyncPair() {
