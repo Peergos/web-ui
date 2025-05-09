@@ -77,6 +77,7 @@ module.exports = {
             folderSimplePickerBaseFolder: "",
             multipleFolderSelectionSimplePicker: false,
             showFolderPicker: false,
+            showHostFolderPicker: false,
             folderPickerBaseFolder: "",
             multipleFolderSelection: false,
             initiallySelectedPaths: [],
@@ -148,12 +149,9 @@ module.exports = {
 
         getHostDirTree() {
             let future = peergos.shared.util.Futures.incomplete();
-            //this.localPost("/peergos/v0/sync/get-host-paths?prefix=%2F").then(function(result, err) {
-            //   console.log(result);
-            //   return ["/storage/emulated/0/DCIM", "/storage/emulated/0/Pictures", "/storage/emulated/0/Movies", "/storage/emulated/0/Documents", "/storage/emulated/0/Downloads"]
-            //});
-            let folders = ["/storage/emulated/0/DCIM", "/storage/emulated/0/Pictures", "/storage/emulated/0/Movies", "/storage/emulated/0/Documents", "/storage/emulated/0/Downloads"];
-            future.complete(folders);
+            this.localPost("/peergos/v0/sync/get-host-paths?prefix=%2F").then(function(result, err) {
+               future.complete(result);
+            });
             return future;
         },
 
