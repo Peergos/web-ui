@@ -26,12 +26,20 @@
                 </tbody>
                 </table>
             </div>
+            <FolderPicker
+                v-if="showFolderPicker"
+                :baseFolder="folderPickerBaseFolder" :selectedFolder_func="selectedFoldersFromPicker"
+                :multipleFolderSelection="multipleFolderSelection"
+                :initiallySelectedPaths="initiallySelectedPaths"
+                :noDriveSelection="true">
+            </FolderPicker>
+
             <SimpleFolderPicker
-              v-if="showFolderPicker"
-              :baseFolder="folderPickerBaseFolder"
-              :selectedFolder_func="selectedFoldersFromPicker"
-              :preloadFolders_func="preloadFolders"
-              :multipleFolderSelection="multipleFolderSelection">
+              v-if="showSimpleFolderPicker"
+              :baseFolder="folderSimplePickerBaseFolder"
+              :selectedFolder_func="selectedFoldersFromSimplePicker"
+              :preloadFolders_func="preloadHostFolders"
+              :multipleFolderSelection="multipleFolderSelectionSimplePicker">
             </SimpleFolderPicker>
             <!--<input
                type="file"
@@ -49,6 +57,7 @@
 
 <script>
 const AppHeader = require("../components/AppHeader.vue");
+const FolderPicker = require('../components/picker/FolderPicker.vue');
 const SimpleFolderPicker = require('../components/picker/SimpleFolderPicker.vue');
 
 const i18n = require("../i18n/index.js");
@@ -58,15 +67,20 @@ const routerMixins = require("../mixins/router/index.js");
 module.exports = {
 	components: {
 		AppHeader,
+		FolderPicker,
 		SimpleFolderPicker,
 	},
     data() {
         return {
             syncPairs: [],
+            showSimpleFolderPicker: false,
+            folderSimplePickerBaseFolder: "",
+            multipleFolderSelectionSimplePicker: false,
             showFolderPicker: false,
             folderPickerBaseFolder: "",
             multipleFolderSelection: false,
             initiallySelectedPaths: [],
+            hostFolderTree: null,
         }
     },
     props: [],
@@ -81,11 +95,7 @@ module.exports = {
 		]),
     },
 	created() {
-	    let that = this;
-            this.getSyncState();
-        //this.getHostDir().thenApply(hostDir => {
-        //    console.log('hostDir=' + hostDir);
-        //});
+        this.getSyncState();
     },
     methods: {
 		...Vuex.mapActions([
@@ -93,40 +103,40 @@ module.exports = {
 		]),
         localPost(url, body) {
             return new Promise(function(resolve, reject) {
-	    var req = new XMLHttpRequest();
-	    req.open('POST', url);
-            req.responseType = 'json';
-	    
-	    req.onload = function() {
-                // This is called even on 404 etc
-                // so check the status
-                if (req.status == 200) {
-		    resolve(req.response);
-                }
-                else {
-		    try {
-                        let trailer = req.getResponseHeader("Trailer");
-                        if (trailer == null) {
-                            reject('Unexpected error from server');
-                        } else {
-                            reject(trailer);
+                var req = new XMLHttpRequest();
+                req.open('POST', url);
+                req.responseType = 'json';
+
+                req.onload = function() {
+                    // This is called even on 404 etc
+                    // so check the status
+                    if (req.status == 200) {
+                        resolve(req.response);
+                    }
+                    else {
+                        try {
+                            let trailer = req.getResponseHeader("Trailer");
+                            if (trailer == null) {
+                                reject('Unexpected error from server');
+                            } else {
+                                reject(trailer);
+                            }
+                        } catch (e) {
+                            reject(e);
                         }
-		    } catch (e) {
-		        reject(e);
-		    }
-                }
-	    };
+                    }
+	            };
 	    
-	    req.onerror = function(e) {
-                future.completeExceptionally(new java.net.ConnectException("Unable to connect"));
-	    };
+	            req.onerror = function(e) {
+                    future.completeExceptionally(new java.net.ConnectException("Unable to connect"));
+	            };
             
-            req.ontimeout = function() {
-                reject(Error("Network timeout"));
-            };
+                req.ontimeout = function() {
+                    reject(Error("Network timeout"));
+                };
             
-	    req.send(body != null ? body : new Int8Array(0));
-        })
+	            req.send(body != null ? body : new Int8Array(0));
+            })
         },
 
         getSyncState() {
@@ -137,18 +147,18 @@ module.exports = {
         },
 
         getHostDirTree() {
-           return this.localPost("/peergos/v0/sync/get-host-paths?prefix=%2F").then(function(result, err) {
-               console.log(result);
-               return ["/storage/emulated/0/DCIM", "/storage/emulated/0/Pictures", "/storage/emulated/0/Movies", "/storage/emulated/0/Documents", "/storage/emulated/0/Downloads"]
-            });
+            let future = peergos.shared.util.Futures.incomplete();
+            //this.localPost("/peergos/v0/sync/get-host-paths?prefix=%2F").then(function(result, err) {
+            //   console.log(result);
+            //   return ["/storage/emulated/0/DCIM", "/storage/emulated/0/Pictures", "/storage/emulated/0/Movies", "/storage/emulated/0/Documents", "/storage/emulated/0/Downloads"]
+            //});
+            let folders = ["/storage/emulated/0/DCIM", "/storage/emulated/0/Pictures", "/storage/emulated/0/Movies", "/storage/emulated/0/Documents", "/storage/emulated/0/Downloads"];
+            future.complete(folders);
+            return future;
         },
 
         getHostDir() {
-            let future = peergos.shared.util.Futures.incomplete();
-            this.getHostDirTree().then(function(result, err) {
-               future.complete("/storage/emulated/0/DCIM/Camera");
-            });
-            return future;
+            return this.openHostFolderPicker();
         },
 
         getPeergosDir() {
@@ -199,7 +209,7 @@ module.exports = {
         close () {
             this.$emit("hide-sync");
         },
-        openFolderPicker() {
+        openPeergosFolderPicker() {
             let future = peergos.shared.util.Futures.incomplete();
             let that = this;
             this.folderPickerBaseFolder = "/" + this.context.username;
@@ -215,59 +225,39 @@ module.exports = {
             this.showFolderPicker = true;
             return future;
         },
-        preloadFolders: function(path, callback) {
-            var that = this;
-            let folderTree = {};
-            this.context.getByPath(path).thenApply(function(dirOpt){
-                let dir = dirOpt.get();
-                let folderProperties = dir.getFileProperties();
-                if (folderProperties.isDirectory && !folderProperties.isHidden) {
-                    that.walkFolder(dir, path, folderTree).thenApply( () => {
-                        callback(folderTree);
-                    });
-                } else {
-                    callback(folderTree);
-                }
-            }).exceptionally(function(throwable) {
-                this.spinnerMessage = 'Unable to preload folders...';
-                throwable.printStackTrace();
-            });
-        },
-
-        walkFolder: function(file, path, currentTreeData) {
-            currentTreeData.path = path.substring(0, path.length -1);
-            currentTreeData.children = [];
-            let that = this;
+        openHostFolderPicker() {
             let future = peergos.shared.util.Futures.incomplete();
-            file.getChildren(that.context.crypto.hasher, that.context.network).thenApply(function(children) {
-                let arr = children.toArray();
-                let funcArray = [];
-                arr.forEach(function(child, index){
-                    let childProps = child.getFileProperties();
-                    let newPath = childProps.isDirectory ? path + child.getFileProperties().name + '/' : path;
-                    if (childProps.isDirectory && !childProps.isHidden) {
-                        let node = {};
-                        currentTreeData.children.push(node);
-                        funcArray.push(() => {
-                            return that.walkFolder(child, newPath, node);
-                        });
-                    }
-                });
-                if (funcArray.length > 0) {
-                    let completed = {count: 0};
-                    funcArray.forEach((func, idx) => {
-                        func().thenApply(() => {
-                            completed.count ++;
-                            if (completed.count == funcArray.length) {
-                                future.complete(true);
-                            }
-                        });
-                    });
-                } else {
-                    future.complete(true);
+            let that = this;
+            this.getHostDirTree().thenApply(result => {
+                let hostFolders = result;
+                let childList = [];
+                for(var i=0; i < hostFolders.length; i++) {
+                    let obj = {};
+                    obj.path = hostFolders[i];
+                    obj.children = [];
+                    childList.push(obj);
                 }
+                that.hostFolderTree = {"path":"/device","children":childList};
+                that.folderSimplePickerBaseFolder = "/device";
+                that.selectedFoldersFromSimplePicker = function (chosenFolders) {
+                    if (chosenFolders.length == 0) {
+                        future.complete(null);
+                    } else {
+                        let selectedFolder = chosenFolders[0];
+                        if (selectedFolder == that.folderSimplePickerBaseFolder) {
+                            future.complete(null);
+                        } else {
+                            future.complete(selectedFolder);
+                        }
+                    }
+                    that.showSimpleFolderPicker = false;
+                };
+                that.showSimpleFolderPicker = true;
             });
             return future;
+        },
+        preloadHostFolders: function(path, callback) {
+            callback(this.hostFolderTree);
         },
     },
 
