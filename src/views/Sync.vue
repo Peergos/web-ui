@@ -195,7 +195,7 @@ module.exports = {
 
         removeSyncPair(label) {
             var that = this;
-            localPost("/peergos/v0/sync/remove-pair?label="+label).then(function(result, err) {
+            this.localPost("/peergos/v0/sync/remove-pair?label="+label).then(function(result, err) {
                if (err != null)
                    return
                var index = 0;
