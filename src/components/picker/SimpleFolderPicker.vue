@@ -9,7 +9,7 @@
         </div>
         <div class="modal-body">
             <Spinner v-if="showSpinner" :message="spinnerMessage"></Spinner>
-            <div class="folder-picker-view" class="scroll-style">
+            <div class="folder-picker-view" class="scroll-style-simple-folder">
               <ul>
                 <SimpleTreeItem class="item" :model="treeData" :selectFolder_func="selectFolder"></SimpleTreeItem>
               </ul>
@@ -22,7 +22,7 @@
             {{ translate("FOLDER.PICKER.NO.FOLDER") }}
             </div>
             <div v-if="selectedFoldersList.length != 0">
-                <div class="selected-folders-view" class="scroll-style">
+                <div class="selected-folders-view">
                     <ul>
                         <li v-for="selectedFolder in selectedFoldersList">
                             {{ selectedFolder }}
@@ -131,6 +131,19 @@ module.exports = {
 </script>
 
 <style>
+select{
+    min-width: 300px;
+    border: 2px solid var(--green-500);
+    margin: 8px 0;
+	color:var(--color);
+	background-color: transparent;
+	border-radious: 4px;
+	padding: 0 16px;
+	font-family: inherit;
+	font-size: inherit;
+	cursor: inherit;
+	line-height: 48px;
+}
 .folder-picker-container {
     height: 100%;
     width: 600px;
@@ -160,7 +173,7 @@ module.exports = {
 .bold {
   font-weight: bold;
 }
-.scroll-style {
+.scroll-style-simple-folder {
     max-height: 250px;
     overflow-y: scroll;
     border: 2px solid var(--green-500);

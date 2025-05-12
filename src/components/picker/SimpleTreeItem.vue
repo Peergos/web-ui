@@ -35,6 +35,9 @@ module.exports = {
       return this.model.children && this.model.children.length
     }
   },
+  created: function() {
+    this.isOpen = this.model.initiallyOpen && this.model.initiallyOpen == true;
+  },
   methods: {
     displayFolderName(folderName) {
         if (folderName == null) {
@@ -51,7 +54,10 @@ module.exports = {
         }
     },
     addChild(selectedFolder) {
-        this.selectFolder_func(selectedFolder.currentTarget.value, selectedFolder.currentTarget.checked);
+        let ok = this.selectFolder_func(selectedFolder.currentTarget.value, selectedFolder.currentTarget.checked);
+        if (!ok) {
+            selectedFolder.currentTarget.checked = false;
+        }
     }
   }
 }

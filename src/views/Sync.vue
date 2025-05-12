@@ -226,6 +226,14 @@ module.exports = {
             this.showFolderPicker = true;
             return future;
         },
+        setInitialState(state) {
+            state.initiallyOpen = state.children.length == 1;
+            if (state.initiallyOpen) {
+                this.setInitialState(state.children[0]);
+            } else {
+                state.initiallyOpen = true;
+            }
+        },
         openHostFolderPicker() {
             let future = peergos.shared.util.Futures.incomplete();
             let that = this;
@@ -247,8 +255,9 @@ module.exports = {
                         context = context[name];
                     }
                 }
+                that.setInitialState(final.result[0]);
                 let rootPath = final.result[0].path;
-                that.hostFolderTree = {"path":rootPath,"children":final.result[0].children};
+                that.hostFolderTree = {"path":rootPath, "initiallyOpen": final.result[0].children.length == 1, "children":final.result[0].children};
                 that.folderSimplePickerBaseFolder = rootPath;
                 that.selectedFoldersFromSimplePicker = function (chosenFolders) {
                     if (chosenFolders.length == 0) {
