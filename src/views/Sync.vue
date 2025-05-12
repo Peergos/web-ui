@@ -20,7 +20,7 @@
                 <tbody>
                    <tr v-for="pair in syncPairs" tabindex="1" role="row" class="table__item">
                       <td>{{ pair.localpath }}</td>
-                      <td>{{ pair.remotepath }}</td>
+                      <td v-on:click="navigateTo(pair.remotepath)" style="cursor:pointer;">{{ pair.remotepath }}</td>
                       <td><button class="btn btn-success" @click="removeSyncPair(pair.label)">{{ translate("SYNC.STOPPAIR") }}</button></td>
                    </tr>
                 </tbody>
@@ -31,7 +31,8 @@
                 :baseFolder="folderPickerBaseFolder" :selectedFolder_func="selectedFoldersFromPicker"
                 :multipleFolderSelection="multipleFolderSelection"
                 :initiallySelectedPaths="initiallySelectedPaths"
-                :noDriveSelection="true">
+                :noDriveSelection="true"
+                :pickerTitle="pickerTitle">
             </FolderPicker>
 
             <SimpleFolderPicker
@@ -39,8 +40,10 @@
               :baseFolder="folderSimplePickerBaseFolder"
               :selectedFolder_func="selectedFoldersFromSimplePicker"
               :preloadFolders_func="preloadHostFolders"
-              :multipleFolderSelection="multipleFolderSelectionSimplePicker">
+              :multipleFolderSelection="multipleFolderSelectionSimplePicker"
+              :pickerTitle="simplePickerTitle">
             </SimpleFolderPicker>
+            <Spinner v-if="showSpinner" :message="spinnerMessage"></Spinner>
             <!--<input
                type="file"
                 id="uploadDirectoriesInput"
@@ -59,6 +62,7 @@
 const AppHeader = require("../components/AppHeader.vue");
 const FolderPicker = require('../components/picker/FolderPicker.vue');
 const SimpleFolderPicker = require('../components/picker/SimpleFolderPicker.vue');
+const Spinner = require("../components/spinner/Spinner.vue");
 
 const i18n = require("../i18n/index.js");
 
@@ -69,6 +73,7 @@ module.exports = {
 		AppHeader,
 		FolderPicker,
 		SimpleFolderPicker,
+        Spinner,
 	},
     data() {
         return {
@@ -82,6 +87,10 @@ module.exports = {
             multipleFolderSelection: false,
             initiallySelectedPaths: [],
             hostFolderTree: null,
+            pickerTitle: "Local Folder",
+            simplePickerTitle: "Remote Folder",
+            showSpinner: false,
+            spinnerMessage: '',
         }
     },
     props: [],
@@ -170,10 +179,9 @@ module.exports = {
             const that = this;
             this.getHostDir().thenCompose(hostDir => {
                 return that.getPeergosDir().thenCompose(peergosDir => {
-                    if (peergosDir == null) {
+                    if (peergosDir == null || hostDir == null) {
                         return;
                     }
-                    
                     if (peergosDir.substring(1).split("/").length < 2) {
                        throw "You cannot sync to your home dir, please make a sub folder";
                     }
@@ -237,6 +245,7 @@ module.exports = {
         openHostFolderPicker() {
             let future = peergos.shared.util.Futures.incomplete();
             let that = this;
+            this.showSpinner = true;
             this.getHostDirTree().thenApply(hostFolders => {
                 let final = {result:[]};
                 for (const path of hostFolders) {
@@ -259,6 +268,7 @@ module.exports = {
                 let rootPath = final.result[0].path;
                 that.hostFolderTree = {"path":rootPath, "initiallyOpen": final.result[0].children.length == 1, "children":final.result[0].children};
                 that.folderSimplePickerBaseFolder = rootPath;
+                that.showSpinner = false;
                 that.selectedFoldersFromSimplePicker = function (chosenFolders) {
                     if (chosenFolders.length == 0) {
                         future.complete(null);
@@ -278,6 +288,9 @@ module.exports = {
         },
         preloadHostFolders: function(path, callback) {
             callback(this.hostFolderTree);
+        },
+        navigateTo: function (path) {
+            this.openFileOrDir("Drive", path, {filename:""});
         },
     },
 

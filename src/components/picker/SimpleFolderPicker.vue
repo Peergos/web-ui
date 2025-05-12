@@ -5,7 +5,7 @@
     <div @click.stop class="folder-picker-container">
         <span @click="close" tabindex="0" v-on:keyup.enter="close" aria-label="close" class="close">&times;</span>
         <div class="modal-header">
-            <h2>Folder Picker</h2>
+            <h2>{{ folderPickerTitle }}</h2>
         </div>
         <div class="modal-body">
             <Spinner v-if="showSpinner" :message="spinnerMessage"></Spinner>
@@ -57,10 +57,11 @@ module.exports = {
             showSpinner: true,
             spinnerMessage: 'Loading folders...',
             treeData: {},
-            selectedFoldersList: []
+            selectedFoldersList: [],
+            folderPickerTitle: 'Folder Picker',
         }
     },
-    props: ['baseFolder', 'selectedFolder_func','preloadFolders_func','multipleFolderSelection'],
+    props: ['baseFolder', 'selectedFolder_func','preloadFolders_func','multipleFolderSelection', 'pickerTitle'],
     mixins:[i18n],
     computed: {
         ...Vuex.mapState([
@@ -68,6 +69,9 @@ module.exports = {
         ]),
     },
     created: function() {
+        if (this.pickerTitle != null) {
+            this.folderPickerTitle = this.pickerTitle;
+        }
         let that = this;
         let callback = (baseOfFolderTree) => {
             that.treeData = baseOfFolderTree;
