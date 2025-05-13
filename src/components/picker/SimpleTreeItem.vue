@@ -1,5 +1,5 @@
 <template>
-  <ul style="list-style-type: none">
+  <ul style="list-style-type: none; padding-inline-start: 20px;">
       <label class="checkbox__group">
           <input type="checkbox" v-bind:value="model.path" @click="addChild">
           <span class="checkmark"></span>

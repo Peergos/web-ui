@@ -15,7 +15,7 @@
                   </option>
             </select>
             <div class="folder-picker-view" class="scroll-style-folder" style="min-height: 250px;">
-              <ul>
+              <ul style="padding-inline-start: 10px;">
                 <TreeItem class="item"
                 :model="treeData"
                 :selectFolder_func="selectFolder"

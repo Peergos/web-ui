@@ -10,7 +10,7 @@
         <div class="modal-body">
             <Spinner v-if="showSpinner" :message="spinnerMessage"></Spinner>
             <div class="folder-picker-view" class="scroll-style-simple-folder">
-              <ul>
+              <ul style="padding-inline-start: 10px;">
                 <SimpleTreeItem class="item" :model="treeData" :selectFolder_func="selectFolder"></SimpleTreeItem>
               </ul>
             </div>
@@ -135,6 +135,11 @@ module.exports = {
 </script>
 
 <style>
+@media (max-width: 400px) {
+    .folder-picker-container{
+        width: 400px;
+    }
+}
 select{
     min-width: 300px;
     border: 2px solid var(--green-500);
@@ -150,7 +155,7 @@ select{
 }
 .folder-picker-container {
     height: 100%;
-    width: 600px;
+    min-width: 400px;
     overflow-y: auto;
     position: fixed;
     left: 50%;
