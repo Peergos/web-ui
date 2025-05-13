@@ -13,9 +13,11 @@
                 </div>
                 <div style="display:flex; flex-direction:column">
                    <div v-for="pair in syncPairs" style="display:flex; flex-direction:row; flex-wrap:wrap; padding:1em; margin:.5em; border:solid #16a98a;">
-                      <label style="padding:1em;"> Syncing {{ pair.localpath }} to </label>
-                      <label v-on:click="navigateTo(pair.remotepath)" style="cursor:pointer; padding:1em;">{{ pair.remotepath }}</label>
-                      <button class="btn btn-success" @click="removeSyncPair(pair.label)">{{ translate("SYNC.STOPPAIR") }}</button>
+                      <label style="padding:1em; flex-grow:1; text-align:center;"> Syncing </label>
+                      <label style="padding:1em; flex-grow:1; text-align:center;">{{ pair.localpath }}</label>
+                      <label style=" flex-grow:1; text-align:center; padding:1em;"> to and from </label>
+                      <label v-on:click="navigateTo(pair.remotepath)" style="cursor:pointer; padding:1em; flex-grow:1; text-align:center;">{{ pair.remotepath }}</label>
+                      <button class="btn btn-success" @click="removeSyncPair(pair.label)" style="flex-grow:1;">{{ translate("SYNC.STOPPAIR") }}</button>
                    </div>
                 </div>
             </div>
