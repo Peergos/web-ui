@@ -7,10 +7,10 @@
 		</AppHeader>
 		<main>
 
-            <div>
-                <div class="hspace-5">
+            <div style="width:100%;">
+                <center><div class="hspace-5">
 		    <button class="btn btn-success" @click="addSyncPair()">{{ translate("SYNC.ADDPAIR") }}</button>
-                </div>
+                </div></center>
                 <div style="display:flex; flex-direction:column">
                    <div v-for="pair in syncPairs" style="display:flex; flex-direction:row; flex-wrap:wrap; padding:1em; margin:.5em; border:solid #16a98a;">
                       <label style="padding:1em; flex-grow:1; text-align:center;"> Syncing </label>
