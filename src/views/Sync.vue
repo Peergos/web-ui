@@ -11,20 +11,13 @@
                 <div class="hspace-5">
 		    <button class="btn btn-success" @click="addSyncPair()">{{ translate("SYNC.ADDPAIR") }}</button>
                 </div>
-                <table class="drive-table">
-                <thead><tr>
-                    <th>{{ translate("SYNC.LOCAL") }}</th>
-                    <th>{{ translate("SYNC.REMOTE") }}</th>
-                    <th></th>
-                </tr></thead>
-                <tbody>
-                   <tr v-for="pair in syncPairs" tabindex="1" role="row" class="table__item">
-                      <td>{{ pair.localpath }}</td>
-                      <td v-on:click="navigateTo(pair.remotepath)" style="cursor:pointer;">{{ pair.remotepath }}</td>
-                      <td><button class="btn btn-success" @click="removeSyncPair(pair.label)">{{ translate("SYNC.STOPPAIR") }}</button></td>
-                   </tr>
-                </tbody>
-                </table>
+                <div style="display:flex; flex-direction:column">
+                   <div v-for="pair in syncPairs" style="display:flex; flex-direction:row; flex-wrap:wrap; padding:1em; margin:.5em; border:solid #16a98a;">
+                      <label style="padding:1em;"> Syncing {{ pair.localpath }} to </label>
+                      <label v-on:click="navigateTo(pair.remotepath)" style="cursor:pointer; padding:1em;">{{ pair.remotepath }}</label>
+                      <button class="btn btn-success" @click="removeSyncPair(pair.label)">{{ translate("SYNC.STOPPAIR") }}</button>
+                   </div>
+                </div>
             </div>
             <FolderPicker
                 v-if="showFolderPicker"
