@@ -17,8 +17,8 @@
                       <label style="padding:1em; flex-grow:1; text-align:center;">{{ pair.localpath }}</label>
                       <label style=" flex-grow:1; text-align:center; padding:1em;"> to and from </label>
                       <a v-on:click="navigateTo(pair.remotepath)" style="cursor:pointer; padding:1em; flex-grow:1; text-align:center;">{{ pair.remotepath }}</a>
-                      <label style="padding:1em; flex-grow:1; text-align:center;"> Syncing local deletes: {{ !pair.ignoreLocalDeletes }}</label>
-                      <label style="padding:1em; flex-grow:1; text-align:center;"> Syncing remote deletes: {{ !pair.ignoreRemoteDeletes }}</label>
+                      <label style="padding:1em; flex-grow:1; text-align:center;"> Syncing local deletes: {{ pair.syncLocalDeletes }}</label>
+                      <label style="padding:1em; flex-grow:1; text-align:center;"> Syncing remote deletes: {{ pair.syncRemoteDeletes }}</label>
                       <button class="btn btn-success" @click="removeSyncPair(pair.label)" style="flex-grow:1;">{{ translate("SYNC.STOPPAIR") }}</button>
                    </div>
                 </div>
@@ -176,8 +176,8 @@ module.exports = {
             const that = this;
             this.getHostDir().thenCompose(hostDir => {
                 return that.getPeergosDir().thenCompose(peergosDir => {
-                    const ignoreLocalDeletes = true;
-                    const ignoreRemoteDeletes = true;
+                    const syncLocalDeletes = false;
+                    const syncRemoteDeletes = false;
                     if (peergosDir == null || hostDir == null) {
                         return;
                     }
@@ -190,10 +190,10 @@ module.exports = {
                     }).thenCompose(link => {
                        const cap = link.toLinkString(that.context.signer.publicKeyHash)
                        const label = cap.substring(cap.lastIndexOf("/", cap.indexOf("#")) + 1, cap.indexOf("#"))
-                       that.localPost("/peergos/v0/sync/add-pair?label="+label, JSON.stringify({link:cap, dir:hostDir, ignoreLocalDeletes:ignoreLocalDeletes,ignoreRemoteDeletes:ignoreRemoteDeletes})).then(function(result, err) {
+                       that.localPost("/peergos/v0/sync/add-pair?label="+label, JSON.stringify({link:cap, dir:hostDir, syncLocalDeletes:syncLocalDeletes,syncRemoteDeletes:syncRemoteDeletes})).then(function(result, err) {
                            if (err != null)
                               return
-                          that.syncPairs.push({localpath:hostDir, remotepath:peergosDir.toString(), label:label, ignoreLocalDeletes:ignoreLocalDeletes, ignoreRemoteDeletes:ignoreRemoteDeletes});
+                          that.syncPairs.push({localpath:hostDir, remotepath:peergosDir.toString(), label:label, syncLocalDeletes:syncLocalDeletes, syncRemoteDeletes:syncRemoteDeletes});
                        })
                     }).exceptionally(t => console.log(t));
                 });
