@@ -175,10 +175,13 @@ module.exports = {
         addSyncPair() {
             const that = this;
             this.getHostDir().thenCompose(hostDir => {
+                if (hostDir == null) {
+                    return;
+                }
                 return that.getPeergosDir().thenCompose(peergosDir => {
                     const syncLocalDeletes = false;
                     const syncRemoteDeletes = false;
-                    if (peergosDir == null || hostDir == null) {
+                    if (peergosDir == null) {
                         return;
                     }
                     if (peergosDir.substring(1).split("/").length < 2) {
@@ -246,8 +249,9 @@ module.exports = {
             let that = this;
             this.showSpinner = true;
             this.getHostDirTree().thenApply(hostFolders => {
+                let sortedHostFolders = hostFolders.sort((a, b) => a.localeCompare(b, 'en', {'sensitivity': 'base'}));
                 let final = {result:[]};
-                for (const path of hostFolders) {
+                for (const path of sortedHostFolders) {
                     let context = final;
                     let names = path.split('/').filter(n => n.length > 0);
                     for (var i = 0; i < names.length; i++) {
