@@ -161,10 +161,18 @@ module.exports = {
             return future;
         },
 
+        openNativeHostDirChooser() {
+            let future = peergos.shared.util.Futures.incomplete();
+            this.localPost("/peergos/v0/sync/get-host-dir").then(function(result, err) {
+               future.complete(result.root);
+            })
+            return future;
+        },
+
         getHostDir() {
-            //var future = peergos.shared.util.Futures.incomplete();
-            //future.complete("/storage/emulated/0/DCIM/Camera");
-            //return future;
+            let isAndroid = navigator.userAgent.indexOf("android") > -1;
+            if (isAndroid)
+               return this.openNativeHostDirChooser();
             return this.openHostFolderPicker();
         },
 
