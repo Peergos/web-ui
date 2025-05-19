@@ -14,7 +14,7 @@
                 <div style="display:flex; flex-direction:column">
                    <div v-for="pair in syncPairs" style="display:flex; flex-direction:row; flex-wrap:wrap; padding:1em; margin:.5em; border:solid #16a98a;">
                       <label style="padding:1em; flex-grow:1; text-align:center;"> Syncing </label>
-                      <label style="padding:1em; flex-grow:1; text-align:center;">{{ pair.localpath }}</label>
+                      <label style="padding:1em; flex-grow:1; text-align:center;">{{ prettifyHostFolder(pair.localpath) }}</label>
                       <label style=" flex-grow:1; text-align:center; padding:1em;"> to and from </label>
                       <a v-on:click="navigateTo(pair.remotepath)" style="cursor:pointer; padding:1em; flex-grow:1; text-align:center;">{{ pair.remotepath }}</a>
                       <label style="padding:1em; flex-grow:1; text-align:center;"> Syncing local deletes: {{ pair.syncLocalDeletes }}</label>
@@ -151,6 +151,18 @@ module.exports = {
             this.localPost("/peergos/v0/sync/get-pairs").then(function(result, err) {
                that.syncPairs = result.pairs;
             })
+        },
+
+        prettifyHostFolder(uri) {
+           if (! uri.startsWith("content://"))
+              return uri;
+           // e.g. content://com.android.externalstorage.documents/tree/primary%3ADocuments
+           var res = new URL(uri);
+           var path = res.pathname;
+           const prefix = "/tree/primary%3A"
+           if (path.startsWith(prefix))
+              return path.substring(prefix.length);
+           return path;
         },
 
         getHostDirTree() {
