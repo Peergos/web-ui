@@ -41,6 +41,14 @@
               :pickerTitle="simplePickerTitle">
             </SimpleFolderPicker>
             <Spinner v-if="showSpinner" :message="spinnerMessage"></Spinner>
+            <Select
+                v-if="showSelect"
+                v-on:hide-select="showSelect = false"
+                :select_message='select_message'
+                :select_body="select_body"
+                :select_consumer_func="select_consumer_func"
+                :select_options="select_options">
+            </Select>
             <!--<input
                type="file"
                 id="uploadDirectoriesInput"
@@ -58,6 +66,8 @@
 <script>
 const AppHeader = require("../components/AppHeader.vue");
 const FolderPicker = require('../components/picker/FolderPicker.vue');
+const Select = require('../components/choice/Select.vue');
+
 const SimpleFolderPicker = require('../components/picker/SimpleFolderPicker.vue');
 const Spinner = require("../components/spinner/Spinner.vue");
 
@@ -69,6 +79,7 @@ module.exports = {
 	components: {
 		AppHeader,
 		FolderPicker,
+		Select,
 		SimpleFolderPicker,
         Spinner,
 	},
@@ -88,6 +99,11 @@ module.exports = {
             simplePickerTitle: "Remote Folder",
             showSpinner: false,
             spinnerMessage: '',
+            showSelect: false,
+            select_message: '',
+            select_body: '',
+            select_consumer_func: () => {},
+            select_options: [],
         }
     },
     props: [],
@@ -191,7 +207,22 @@ module.exports = {
         getPeergosDir() {
            return this.openPeergosFolderPicker();
         },
-
+        getDeleteBehaviour() {
+            let future = peergos.shared.util.Futures.incomplete();
+            let that = this;
+            this.select_message = this.translate("SYNC.SELECT.DELETION.BEHAVIOUR");
+            this.select_body = '';
+            let syncLocalDeletesLabel = this.translate("SYNC.SELECT.DELETION.LOCAL");
+            let syncRemoteDeletesLabel = this.translate("SYNC.SELECT.DELETION.REMOTE");
+            this.select_consumer_func = (picked) => {
+                let syncLocalDeletes = picked.indexOf(syncLocalDeletesLabel) > -1;
+                let syncRemoteDeletes = picked.indexOf(syncRemoteDeletesLabel) > -1;
+                future.complete({syncLocalDeletes: syncLocalDeletes, syncRemoteDeletes: syncRemoteDeletes});
+            };
+            this.select_options = [syncLocalDeletesLabel, syncRemoteDeletesLabel];
+            this.showSelect = true;
+            return future;
+        },
         addSyncPair() {
             const that = this;
             this.getHostDir().thenCompose(hostDir => {
@@ -199,26 +230,28 @@ module.exports = {
                     return;
                 }
                 return that.getPeergosDir().thenCompose(peergosDir => {
-                    const syncLocalDeletes = false;
-                    const syncRemoteDeletes = false;
                     if (peergosDir == null) {
                         return;
                     }
                     if (peergosDir.substring(1).split("/").length < 2) {
                        throw "You cannot sync to your home dir, please make a sub folder";
                     }
-                    const peergosPath = peergos.client.PathUtils.directoryToPath(peergosDir.substring(1).split("/"));
-                    return that.context.shareWriteAccessWith(peergosPath, peergos.client.JsUtil.asSet([])).thenCompose(done => {
-                       return that.context.createSecretLink(peergosDir, true, java.util.Optional.empty(), "", "", false);
-                    }).thenCompose(link => {
-                       const cap = link.toLinkString(that.context.signer.publicKeyHash)
-                       const label = cap.substring(cap.lastIndexOf("/", cap.indexOf("#")) + 1, cap.indexOf("#"))
-                       that.localPost("/peergos/v0/sync/add-pair?label="+label, JSON.stringify({link:cap, dir:hostDir, syncLocalDeletes:syncLocalDeletes,syncRemoteDeletes:syncRemoteDeletes})).then(function(result, err) {
-                           if (err != null)
-                              return
-                          that.syncPairs.push({localpath:hostDir, remotepath:peergosDir.toString(), label:label, syncLocalDeletes:syncLocalDeletes, syncRemoteDeletes:syncRemoteDeletes});
-                       })
-                    }).exceptionally(t => console.log(t));
+                    return that.getDeleteBehaviour().thenCompose(deleteSelection => {
+                        const syncLocalDeletes = deleteSelection.syncLocalDeletes;
+                        const syncRemoteDeletes = deleteSelection.syncRemoteDeletes;
+                        const peergosPath = peergos.client.PathUtils.directoryToPath(peergosDir.substring(1).split("/"));
+                        return that.context.shareWriteAccessWith(peergosPath, peergos.client.JsUtil.asSet([])).thenCompose(done => {
+                           return that.context.createSecretLink(peergosDir, true, java.util.Optional.empty(), "", "", false);
+                        }).thenCompose(link => {
+                           const cap = link.toLinkString(that.context.signer.publicKeyHash)
+                           const label = cap.substring(cap.lastIndexOf("/", cap.indexOf("#")) + 1, cap.indexOf("#"))
+                           that.localPost("/peergos/v0/sync/add-pair?label="+label, JSON.stringify({link:cap, dir:hostDir, syncLocalDeletes:syncLocalDeletes,syncRemoteDeletes:syncRemoteDeletes})).then(function(result, err) {
+                               if (err != null)
+                                  return
+                              that.syncPairs.push({localpath:hostDir, remotepath:peergosDir.toString(), label:label, syncLocalDeletes:syncLocalDeletes, syncRemoteDeletes:syncRemoteDeletes});
+                           })
+                        }).exceptionally(t => console.log(t));
+                    });
                 });
             });
         },

@@ -500,5 +500,8 @@ module.exports = {
     "SYNC.ADDPAIR":"Add folder to sync",
     "SYNC.STOPPAIR":"Stop syncing folder",
     "SYNC.LOCAL":"Local path",
-    "SYNC.REMOTE":"Remote path"
+    "SYNC.REMOTE":"Remote path",
+    "SYNC.SELECT.DELETION.BEHAVIOUR":"Select Deletion Behaviour",
+    "SYNC.SELECT.DELETION.LOCAL":"Sync Local Deletes",
+    "SYNC.SELECT.DELETION.REMOTE":"Sync Remote Deletes"
 }
