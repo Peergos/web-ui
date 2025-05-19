@@ -207,9 +207,19 @@ select{
 	cursor: inherit;
 	line-height: 48px;
 }
+@media (min-width: 600px) {
+    .folder-picker-container {
+        width: 600px;
+    }
+}
+@media (max-width: 600px) {
+    .folder-picker-container {
+        width: 100%;
+    }
+}
+
 .folder-picker-container {
     height: 100%;
-    width: 600px;
     overflow-y: auto;
     position: fixed;
     left: 50%;

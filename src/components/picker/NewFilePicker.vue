@@ -234,19 +234,6 @@ select{
 	margin-left: 16px;
 }
 
-.folder-picker-container {
-    height: 100%;
-    width: 600px;
-    overflow-y: auto;
-    position: fixed;
-    left: 50%;
-    transform: translate(-50%, 0);
-    padding: 20px 30px;
-    background-color: var(--bg);
-    border-radius: 2px;
-    box-shadow: 0 2px 8px rgba(0,0,0,.33);
-    transition: all .3s ease;
-}
 .item {
   cursor: pointer;
   line-height: 1.5;
