@@ -2,7 +2,7 @@
 <transition name="modal">
 <div class="modal-mask" @click="close">
     <meta http-equiv="content-type" content="text/html; charset=utf-8" />
-    <div @click.stop class="folder-picker-container">
+    <div @click.stop class="simple-folder-picker-container">
         <span @click="close" tabindex="0" v-on:keyup.enter="close" aria-label="close" class="close">&times;</span>
         <div class="modal-header">
             <h2>{{ folderPickerTitle }}</h2>
@@ -136,7 +136,7 @@ module.exports = {
 
 <style>
 @media (max-width: 400px) {
-    .folder-picker-container{
+    .simple-folder-picker-container{
         width: 400px;
     }
 }
@@ -153,7 +153,7 @@ select{
 	cursor: inherit;
 	line-height: 48px;
 }
-.folder-picker-container {
+.simple-folder-picker-container {
     height: 100%;
     min-width: 400px;
     overflow-y: auto;
