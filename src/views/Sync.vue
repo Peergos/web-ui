@@ -170,9 +170,10 @@ module.exports = {
         },
 
         prettifyHostFolder(uri) {
-           if (! uri.startsWith("content://"))
+           if (! uri.startsWith("content://") && ! uri.startsWith("//"))
               return uri;
            // e.g. content://com.android.externalstorage.documents/tree/primary%3ADocuments
+           // e.g. //com.android.externalstorage.documents/tree/primary%3ADocuments
            var res = new URL(uri);
            var path = res.pathname;
            const prefix = "/tree/primary%3A"
