@@ -135,9 +135,9 @@ module.exports = {
 </script>
 
 <style>
-@media (max-width: 400px) {
+@media (max-width: 600px) {
     .simple-folder-picker-container{
-        width: 400px;
+        width: 100%;
     }
 }
 select{
@@ -155,7 +155,7 @@ select{
 }
 .simple-folder-picker-container {
     height: 100%;
-    min-width: 400px;
+    min-width: 600px;
     overflow-y: auto;
     position: fixed;
     left: 50%;
