@@ -2,27 +2,16 @@
 <transition name="modal">
 <div class="modal-mask" @click="close">
     <meta http-equiv="content-type" content="text/html; charset=utf-8" />
-    <div @click.stop class="folder-picker-container">
+    <div @click.stop class="simple-folder-picker-container">
         <span @click="close" tabindex="0" v-on:keyup.enter="close" aria-label="close" class="close">&times;</span>
         <div class="modal-header">
             <h2>{{ folderPickerTitle }}</h2>
         </div>
         <div class="modal-body">
             <Spinner v-if="showSpinner" :message="spinnerMessage"></Spinner>
-            <select v-if="displayDriveSelection" v-model="selectedDrive" @change="changeSelectedDrive" :disabled='disableDriveSelection'>
-                <option v-for="option in driveOptions" v-bind:value="option.value">
-                    {{ option.text }}
-                  </option>
-            </select>
-            <div class="folder-picker-view" class="scroll-style-folder" style="min-height: 250px;">
+            <div class="folder-picker-view" class="scroll-style-simple-folder">
               <ul style="padding-inline-start: 10px;">
-                <TreeItem class="item"
-                :model="treeData"
-                :selectFolder_func="selectFolder"
-                :load_func="loadFolderLazily"
-                :spinnerEnable_func="spinnerEnable"
-                :spinnerDisable_func="spinnerDisable"
-                :initiallySelectedPaths="selectedPaths">
+                <SimpleTreeItem class="item" :model="treeData" :selectFolder_func="selectFolder"></SimpleTreeItem>
               </ul>
             </div>
             <h4>Selected:</h4>
@@ -53,95 +42,47 @@
 </template>
 
 <script>
+
 const Spinner = require("../spinner/Spinner.vue");
-const TreeItem = require("TreeItem.vue");
-const folderTreeMixin = require("../../mixins/tree-walker/index.js");
+const SimpleTreeItem = require("SimpleTreeItem.vue");
 const i18n = require("../../i18n/index.js");
 module.exports = {
     components: {
         Spinner,
-        TreeItem
+        SimpleTreeItem,
+        i18n
     },
     data: function() {
         return {
-            showSpinner: false,
+            showSpinner: true,
             spinnerMessage: 'Loading folders...',
-            treeData: {isRoot : true, children: []},
+            treeData: {},
             selectedFoldersList: [],
-            selectedPaths: [],
-            selectedDrive: "",
-            driveOptions: [],
-            displayDriveSelection: false,
-            disableDriveSelection: false,
             folderPickerTitle: 'Folder Picker',
         }
     },
-    props: ['baseFolder', 'selectedFolder_func', 'multipleFolderSelection', 'initiallySelectedPaths', 'noDriveSelection', 'pickerTitle'],
-    mixins:[folderTreeMixin, i18n],
+    props: ['baseFolder', 'selectedFolder_func','preloadFolders_func','multipleFolderSelection', 'pickerTitle'],
+    mixins:[i18n],
     computed: {
         ...Vuex.mapState([
             'context',
-            'socialData',
         ]),
-        friendnames: function() {
-            return this.socialData.friends;
-        },
     },
     created: function() {
-        let that = this;
         if (this.pickerTitle != null) {
             this.folderPickerTitle = this.pickerTitle;
         }
-        this.selectedPaths = this.initiallySelectedPaths.slice();
-        this.selectedFoldersList = this.selectedPaths.slice();
-        let numberOfFriends = this.friendnames.length;
-        let doNotShowDriveSelection = this.noDriveSelection !=null && this.noDriveSelection === true;
-        let allowChangeOfDrive = !doNotShowDriveSelection && numberOfFriends > 0 && this.baseFolder === "/" + this.context.username;
+        let that = this;
         let callback = (baseOfFolderTree) => {
             that.treeData = baseOfFolderTree;
             that.showSpinner = false;
             that.spinnerMessage = '';
         };
-        that.showSpinner = true;
-        if(allowChangeOfDrive) {
-            let homeDrive = "/" + this.context.username + '/';
-            that.driveOptions.push({ text: 'Drive: ' + this.context.username, value: homeDrive});
-            this.friendnames.forEach(f => {
-                that.driveOptions.push({ text: 'Drive: ' + f, value: "/" + f + '/' });
-            });
-            this.selectedDrive = homeDrive;
-            this.displayDriveSelection = true;
-            this.loadSubFolders(homeDrive, callback);
-        } else {
-            this.loadSubFolders(this.baseFolder + "/", callback);
-        }
+        this.preloadFolders_func(this.baseFolder + "/", callback);
     },
     methods: {
-        changeSelectedDrive: function() {
-            let that = this;
-            //console.log("selected=" + this.selectedDrive);
-            this.treeData = {isRoot : true, children: []};
-            let callback = (baseOfFolderTree) => {
-                that.treeData = baseOfFolderTree;
-                that.showSpinner = false;
-                that.spinnerMessage = '';
-                that.disableDriveSelection = false;
-            };
-            this.disableDriveSelection = true;
-            this.showSpinner = true;
-            this.loadSubFolders(this.selectedDrive, callback);
-        },
         close: function () {
-            this.selectedFolder_func(this.selectedFoldersList);
-        },
-        spinnerEnable: function () {
-            this.showSpinner = true;
-        },
-        spinnerDisable: function () {
-            this.showSpinner = false;
-        },
-        loadFolderLazily: function(path, callback) {
-            this.loadSubFolders(path, callback);
+            this.selectedFolder_func([]);
         },
         showError: function(msg) {
             console.log(msg);
@@ -194,6 +135,11 @@ module.exports = {
 </script>
 
 <style>
+@media (max-width: 600px) {
+    .simple-folder-picker-container{
+        width: 100%;
+    }
+}
 select{
     min-width: 300px;
     border: 2px solid var(--green-500);
@@ -207,19 +153,9 @@ select{
 	cursor: inherit;
 	line-height: 48px;
 }
-@media (min-width: 600px) {
-    .folder-picker-container {
-        width: 600px;
-    }
-}
-@media (max-width: 600px) {
-    .folder-picker-container {
-        width: 100%;
-    }
-}
-
-.folder-picker-container {
+.simple-folder-picker-container {
     height: 100%;
+    min-width: 600px;
     overflow-y: auto;
     position: fixed;
     left: 50%;
@@ -246,7 +182,7 @@ select{
 .bold {
   font-weight: bold;
 }
-.scroll-style-folder {
+.scroll-style-simple-folder {
     max-height: 250px;
     overflow-y: scroll;
     border: 2px solid var(--green-500);

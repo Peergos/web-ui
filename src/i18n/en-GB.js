@@ -124,6 +124,7 @@ module.exports = {
     "APPNAV.LAUNCHER":"Launcher",
     "APPNAV.DRIVE":"Drive",
     "APPNAV.SHAREDWITH":"Shared",
+    "APPNAV.SYNC":"Sync",
     "APPNAV.NEWSFEED":"Newsfeed",
     "APPNAV.SOCIAL":"Social",
     "APPNAV.CAL":"Calendar",
@@ -494,5 +495,13 @@ module.exports = {
     "DRIVE.COPYING.COMPLETE":"Completing copy and refreshing folder...",
     "SHAREDWITH.TITLE": "Shared With",
     "NEW.TEMPLATE.APP.NAME.LABEL":"App Title",
-    "NEW.TEMPLATE.APP.NAME.MESSAGE":"Title for App:"
+    "NEW.TEMPLATE.APP.NAME.MESSAGE":"Title for App:",
+    "SYNC.TITLE":"Sync",
+    "SYNC.ADDPAIR":"Add folder to sync",
+    "SYNC.STOPPAIR":"Stop syncing folder",
+    "SYNC.LOCAL":"Local path",
+    "SYNC.REMOTE":"Remote path",
+    "SYNC.SELECT.DELETION.BEHAVIOUR":"Select Deletion Behaviour",
+    "SYNC.SELECT.DELETION.LOCAL":"Sync Local Deletes",
+    "SYNC.SELECT.DELETION.REMOTE":"Sync Remote Deletes"
 }

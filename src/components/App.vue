@@ -85,6 +85,7 @@ const Social = require("../views/Social.vue");
 const Calendar = require("../views/Calendar.vue");
 const Launcher = require("../views/Launcher.vue");
 const SharedWith = require("../views/SharedWith.vue");
+const Sync = require("../views/Sync.vue");
 
 const ServerMessages = require("./ServerMessages.vue");
 
@@ -117,6 +118,7 @@ module.exports = {
 		Calendar,
 		Launcher,
 		SharedWith,
+                Sync,
 		AppTab,
 		AppTabs,
 		Login,
@@ -302,7 +304,7 @@ module.exports = {
 	    }
 
             const that = this;
-            const sidebarApps = ["Drive", "NewsFeed", "Social", "Calendar", "Email", "Launcher", "SharedWith"]
+            const sidebarApps = ["Drive", "NewsFeed", "Social", "Calendar", "Email", "Launcher", "SharedWith", "Sync"]
             const inDrive = this.currentView == "Drive";
 	    if (app === "Drive") {
                 if (inDrive) {
