@@ -178,7 +178,7 @@ module.exports = {
            var path = res.pathname;
            const prefix = "/tree/primary%3A"
            if (path.startsWith(prefix))
-              return path.substring(prefix.length).replaceAll("%3A", "/");
+              return path.substring(prefix.length).replaceAll("%2F", "/");
            return path;
         },
 
