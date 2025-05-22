@@ -251,6 +251,9 @@ module.exports = {
                                   return
                               that.syncPairs.push({localpath:hostDir, remotepath:peergosDir.toString(), label:label, syncLocalDeletes:syncLocalDeletes, syncRemoteDeletes:syncRemoteDeletes});
                            })
+                           let future = peergos.shared.util.Futures.incomplete();
+                           future.complete(true);
+                           return future;
                         }).exceptionally(t => console.log(t));
                     });
                 });
