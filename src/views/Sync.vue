@@ -179,7 +179,7 @@ module.exports = {
            const prefix = "/tree/primary%3A"
            if (path.startsWith(prefix))
               return path.substring(prefix.length).replaceAll("%2F", "/");
-           return path;
+           return path.replaceAll("%2F", "/");
         },
 
         getHostDirTree() {
