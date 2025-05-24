@@ -499,6 +499,7 @@ module.exports = {
     "SYNC.TITLE":"Sync",
     "SYNC.ADDPAIR":"Add folder to sync",
     "SYNC.STOPPAIR":"Stop syncing folder",
+    "SYNC.NOW":"Sync now",
     "SYNC.LOCAL":"Local path",
     "SYNC.REMOTE":"Remote path",
     "SYNC.SELECT.DELETION.BEHAVIOUR":"Select Deletion Behaviour",

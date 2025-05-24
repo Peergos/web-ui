@@ -19,7 +19,8 @@
                       <a v-on:click="navigateTo(pair.remotepath)" style="cursor:pointer; padding:1em; flex-grow:1; text-align:center;">{{ pair.remotepath }}</a>
                       <label style="padding:1em; flex-grow:1; text-align:center;"> Syncing local deletes: {{ pair.syncLocalDeletes }}</label>
                       <label style="padding:1em; flex-grow:1; text-align:center;"> Syncing remote deletes: {{ pair.syncRemoteDeletes }}</label>
-                      <button class="btn btn-success" @click="removeSyncPair(pair.label)" style="flex-grow:1;">{{ translate("SYNC.STOPPAIR") }}</button>
+                      <button class="btn btn-success" @click="syncNow(pair.label)" style="flex-grow:1;margin:10px;">{{ translate("SYNC.NOW") }}</button>
+                      <button class="btn btn-warning" @click="removeSyncPair(pair.label)" style="flex-grow:1;margin:10px;">{{ translate("SYNC.STOPPAIR") }}</button>
                    </div>
                 </div>
             </div>
@@ -258,6 +259,12 @@ module.exports = {
                     });
                 });
             });
+        },
+
+        syncNow(label) {
+            var that = this;
+            this.localPost("/peergos/v0/sync/sync-now?label="+label).then(function(result, err) {
+            })
         },
 
         removeSyncPair(label) {
