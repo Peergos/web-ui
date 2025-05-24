@@ -1943,7 +1943,7 @@ var tweetNaCl = {
 var spki = new Int8Array(44);
 for (var i=0; i < 12; i++)
     spki[i] = derHeaderPublic[i];
-window.crypto.subtle.importKey("spki", spki, "Ed25519", false, ["verify"]).then(publicKey => {
+window.crypto.subtle.importKey != null && window.crypto.subtle.importKey("spki", spki, "Ed25519", false, ["verify"]).then(publicKey => {
     console.log("Using optimised webcrypto Ed25519 verify implementation.");
     tweetNaCl.useWebcryptoVerify = true;
 });
@@ -1951,7 +1951,7 @@ window.crypto.subtle.importKey("spki", spki, "Ed25519", false, ["verify"]).then(
 var pkcs8der = new Int8Array(48);
 for (var i=0; i < 16; i++)
     pkcs8der[i] = derHeader[i];
-window.crypto.subtle.importKey("pkcs8", pkcs8der, "Ed25519", false, ["sign"]).then(secretKey => {
+window.crypto.subtle.importKey != null && window.crypto.subtle.importKey("pkcs8", pkcs8der, "Ed25519", false, ["sign"]).then(secretKey => {
     console.log("Using optimised webcrypto Ed25519 sign implementation.");
     tweetNaCl.useWebcryptoSign = true;
 });
