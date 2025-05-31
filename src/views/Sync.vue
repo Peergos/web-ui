@@ -317,11 +317,12 @@ module.exports = {
                 let final = {result:[]};
                 for (const path of sortedHostFolders) {
                     let context = final;
-                    let names = path.split('/').filter(n => n.length > 0);
+                    let sep = path.indexOf("/") >= 0 ? '/' : '\\';
+                    let names = path.split(sep).filter(n => n.length > 0);
                     for (var i = 0; i < names.length; i++) {
                         let fullPath = "";
                         for(var j = 0; j <= i && j < names.length; j++) {
-                            fullPath = fullPath + "/" + names[j];
+                            fullPath = fullPath + (fullPath == "" && sep == '\\' ? "" : sep) + names[j];
                         }
                         let name = names[i];
                         if (!context[name]) {
