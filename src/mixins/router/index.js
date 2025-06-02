@@ -127,8 +127,6 @@ module.exports = {
                 return "tldraw";
             } else if (extension == "drawio") {
                 return "drawio";
-            } else if (extension == "todo") {
-                return "tasks";
             } else if (extension == "epub") {
                 return "ebookreader";
             }

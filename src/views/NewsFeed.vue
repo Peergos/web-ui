@@ -432,7 +432,6 @@ module.exports = {
 	    if (type == 'video') 	return 'file-video--72';
 	    if (type == 'pdf') 	return 'file-pdf--72';
 	    if (type == 'zip') 	return 'file-zip--72';
-	    if (type == 'todo') 	return 'tasks--72';
 	    if (type == 'calendar') 	return 'calendar--72';
 	    if (type == 'contact file') 	return 'file-card--72';
 	    if (type == 'powerpoint presentation' || type == 'presentation') 	return 'file-powerpoint--72';

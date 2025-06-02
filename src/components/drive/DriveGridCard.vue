@@ -62,7 +62,6 @@ module.exports = {
 			if (this.type == 'video') 	return 'file-video--72';
 			if (this.type == 'pdf') 	return 'file-pdf--72';
 			if (this.type == 'zip') 	return 'file-zip--72';
-			if (this.type == 'todo') 	return 'tasks--72';
 			if (this.type == 'calendar') 	return 'calendar--72';
 			if (this.type == 'contact file') 	return 'file-card--72';
 			if (this.type == 'powerpoint presentation' || this.type == 'presentation') 	return 'file-powerpoint--72';
