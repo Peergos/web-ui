@@ -68,10 +68,6 @@
               <p>{{ translate("HELP.IMPORT.EVENT.TEXT2") }}</p>
               <p>{{ translate("HELP.IMPORT.EVENT.TEXT3") }}</p>
             </div>
-            <button type="button" class="collapsible-help-item">{{ translate("HELP.SHARE.TASK") }}</button>
-            <div class="help-item-content">
-              <p>{{ translate("HELP.SHARE.TASK.TEXT") }}</p>
-            </div>
             <button type="button" class="collapsible-help-item">{{ translate("HELP.WWW") }}</button>
             <div class="help-item-content">
               <p>{{ translate("HELP.WWW.TEXT1") }}</p>

@@ -218,8 +218,6 @@ module.exports = {
     "HELP.IMPORT.EVENT.TEXT1":"To import an event shared with you via another Peergos user, first open the newsfeed and select the event",
     "HELP.IMPORT.EVENT.TEXT2":"To import an .ics file, open the calendar view and select the gears icon in the toolbar. Select the 'Calendar Settings' button to display the currently configured Calendars. From here click the 'import' button.",
     "HELP.IMPORT.EVENT.TEXT3":"An .ics file containing multiple entries is supported. Different calendar implementations (including ours!) have varying level of support/compliance.",
-    "HELP.SHARE.TASK":"Share a Task/Todo list?",
-    "HELP.SHARE.TASK.TEXT":"Task/Todo lists are saved by default to the root directory of your Drive space. Click the vertical 3 dot icon in the top right of the desired Task/Todo item and select Share",
     "HELP.WWW":"Host a directory as a static website?",
     "HELP.WWW.TEXT1":"Select 'Profile' menu item after clicking on the user settings menu (the person icon in the top right-hand corner). At the bottom of the modal you will see a field titled 'Website Directory'. After setting the field and selecting Save, a Publish button will appear alongside the same field.",
     "HELP.WWW.TEXT2":"Click the publish button to complete the action.",
