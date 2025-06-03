@@ -9,7 +9,7 @@ import java.util.zip.*;
  *  For building rpms on ubuntu install the rpm package
  */
 public class PackagePeergos {
-    public static final String VERSION = "1.4.0";
+    public static final String VERSION = "1.5.0";
 
     public static void main(String[] a) throws Exception {
         String OS = canonicaliseOS(System.getProperty("os.name").toLowerCase());
@@ -86,7 +86,7 @@ public class PackagePeergos {
             .findFirst().get();
         
         // Canonicalise artifact name
-        String releaseName = "peergos-" + VERSION + "-" + OS + "-" + ARCH + "." + type;
+        String releaseName = "peergos-" + VERSION + "-" + (type.equals("deb") ? "ubuntu" : OS) + "-" + ARCH + "." + type;
         Files.move(Paths.get(artifact), Paths.get(releaseName), StandardCopyOption.ATOMIC_MOVE);
         artifact = releaseName;
         
