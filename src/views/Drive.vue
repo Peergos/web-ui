@@ -1910,7 +1910,7 @@ module.exports = {
                 let isWritableSecretLink = this.isSecretLink && this.currentDir.isWritable();
                 let totalSize = 0;
                 for(var i=0; i < files.length; i++) {
-                    totalSize += (files[i].size + (4096 - (files[i].size % 4096))) * 2;
+                    totalSize += (files[i].size + (4096 - (files[i].size % 4096)));
                 }
                 if (!isWritableSecretLink && Number(that.quotaBytes.toString()) < totalSize) {
                     let errMsg = "File upload operation exceeds total space\n" + "Please upgrade to get more space";
@@ -1930,7 +1930,7 @@ module.exports = {
                         let progress = {
                             title: title,
                             done:0,
-                            max:totalSize,
+                            max:totalSize * 2,
                             name:name,
                             current: 0,
                             total: files.length,
