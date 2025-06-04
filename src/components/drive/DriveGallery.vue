@@ -234,7 +234,7 @@ module.exports = {
                     let audio = document.createElement('audio');
                     audio.setAttribute('autoplay','true');
                     audio.setAttribute('controls','true');
-                    vid.setAttribute('controlsList','nodownload');
+                    audio.setAttribute('controlsList','nodownload');
                     audio.setAttribute('src', url);
                     wrapper.appendChild(audio);
                     that.addMediaHandlers(audio, file);
