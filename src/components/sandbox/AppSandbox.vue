@@ -88,6 +88,11 @@
                     :consumer_cancel_func="confirm_consumer_cancel_func"
                     :consumer_func="confirm_consumer_func">
             </Confirm>
+            <Note v-if="showNote"
+                v-on:remove-note="closeNote()"
+                :title="noteTitle"
+                :note="noteContents">
+            </Note>
             <div v-if="!fullscreenMode" class="modal-header" style="padding:0;min-height: 52px;">
                 <center><h2>
                 <span v-if="browserMode && !isSecretLink && fullPathForDisplay.length > 0" style="z-index:9999">
@@ -125,6 +130,7 @@ const FilePicker = require('../picker/FilePicker.vue');
 const FolderPicker = require('../picker/FolderPicker.vue');
 const Gallery = require("../drive/DriveGallery.vue");
 const Group = require("../Group.vue");
+const Note = require("../message/Note.vue");
 const ProgressBar = require("../drive/ProgressBar.vue");
 const Spinner = require("../spinner/Spinner.vue");
 const ViewProfile = require("../profile/ViewProfile.vue");
@@ -148,6 +154,7 @@ module.exports = {
         FolderPicker,
         Group,
         Gallery,
+        Note,
         ProgressBar,
         Spinner,
         ViewProfile,
@@ -272,6 +279,9 @@ module.exports = {
             app_prompt_action: 'ok',
             appIconBase64Image: "",
             noDriveSelection: true,
+            showNote: false,
+            noteTitle: "",
+            noteContents: "",
         }
     },
     computed: {
@@ -372,7 +382,7 @@ module.exports = {
                                 if (that.permissionsMap.get(that.PERMISSION_USE_MAILBOX)) {
                                     that.isMailboxPendingDirectoryCreated().thenApply(isInit => {
                                         if (! isInit) {
-                                            that.askForMailboxBridgeUser();
+                                            that.initialiseMailBox();
                                         } else {
                                             peergos.shared.email.EmailClient.load(sandboxedApp, that.context.crypto, that.context).thenApply(client => {
                                                 that.mailboxClient = client;
@@ -417,42 +427,25 @@ module.exports = {
                 }
             });
         },
-        askForMailboxBridgeUser: function() {
+        closeNote: function() {
+            this.showNote = false;
+            this.closeSandbox();
+        },
+        initialiseMailBox: function() {
             let that = this;
-            this.prompt_placeholder= that.currentAppName + ' Mailbox username';
-            this.prompt_message='Set ' + that.currentAppName+ ' Mailbox user';
-            this.prompt_value='';
-            this.prompt_consumer_func = function(prompt_result) {
-                var valid = true;
-                let bridgeUsername = null;
-                if (prompt_result === null) {
-                    valid = false;
-                } else {
-                    bridgeUsername = prompt_result.trim().toLowerCase();
-                    let knownUsers = that.context.network.usernames.toArray([]);
-                    let index = knownUsers.findIndex(v => v === bridgeUsername);
-                    if (index == -1 || bridgeUsername == that.context.username) {
-                        valid = false;
-                    }
-                }
-                if (! valid) {
-                    let usernameForDisplay = bridgeUsername == null ? "" : bridgeUsername;
-                    that.showError("Username does not exist: " + usernameForDisplay);
-                    that.closeSandbox();
-                } else {
-                    that.showSpinner = true;
-                    that.spinnerMessage = "Creating mailbox folders";
-                    peergos.shared.email.EmailClient.load(that.sandboxedApp, that.context.crypto).thenApply(client => {
-                        client.connectToBridge(that.context, bridgeUsername).thenApply(res => {
-                            that.showSpinner = false;
-                            that.spinnerMessage = "";
-                            that.showToastError("Awaiting approval from " + that.currentAppName + " Mailbox Administrator");
-                            that.closeSandbox();
-                        });
-                    });
-                }
-            };
-            this.showPrompt = true;
+            that.showSpinner = true;
+            that.spinnerMessage = "Creating mailbox folders";
+            peergos.shared.email.EmailClient.load(that.sandboxedApp, that.context.crypto).thenApply(client => {
+                client.connectToBridge(that.context).thenApply(secretLink => {
+                    that.showSpinner = false;
+                    that.spinnerMessage = "";
+                    let secretLinkText = secretLink.toLink();
+                    let title = "Please provide the below text securely to the " + that.currentAppName + " Mailbox Administrator";
+                    that.noteTitle = title;
+                    that.noteContents = secretLinkText;
+                    that.showNote = true;
+                });
+            });
         },
         isMailboxPendingDirectoryCreated: function() {
             let path = peergos.client.PathUtils.directoryToPath([this.mailboxFolderPrefix, 'pending']);
