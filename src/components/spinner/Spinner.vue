@@ -1,5 +1,5 @@
 <template>
-<div style="width:100%; height:100vh; position:fixed; left:0; top:0; z-index:100;">
+<div style="width:100%; left:0; top:0; z-index:100;" >
     <div id="spinner" style="width:100%; height:100%; ">
         <div v-if="isMessageSet()" class="spinner-text">{{ message }}</div>
     </div>
@@ -10,13 +10,21 @@
 module.exports = {
     data: function() {
         return {
+            isPositionAbsolute: false,
         };
     },
-    props: ['message'],
+    props: ['message','absolutePosition'],
     created: function() {
         var that = this;
+        this.isPositionAbsolute = this.absolutePosition != null && this.absolutePosition === true;
         Vue.nextTick(function() {
-            that.spinner.spin(document.getElementById("spinner"));
+            let spinnerElement = document.getElementById("spinner");
+            if (that.isPositionAbsolute) {
+                spinnerElement.classList.add("spinner-absolute-position");
+            } else {
+                spinnerElement.classList.add("spinner-fixed-position");
+            }
+            that.spinner.spin(spinnerElement);
         });
     },
     methods: {
@@ -56,4 +64,12 @@ module.exports = {
 };
 </script>
 <style>
+.spinner-absolute-position {
+  height:100%;
+  position:absolute;
+}
+.spinner-fixed-position {
+    height:100vh;
+    position:fixed;
+}
 </style>
