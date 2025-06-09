@@ -35,7 +35,7 @@ module.exports = {
             let future = peergos.shared.util.Futures.incomplete();
             file.getChildren(that.context.crypto.hasher, that.context.network).thenApply(function(children) {
                 let arr = children.toArray();
-                arr.sort((a, b) => a.getName().localeCompare(b.getName());
+                arr.sort((a, b) => a.getName().localeCompare(b.getName()));
                 arr.forEach(function(child, index){
                     let childProps = child.getFileProperties();
                     let newPath = childProps.isDirectory ? path + child.getFileProperties().name + '/' : path;
