@@ -73,6 +73,7 @@
       <li id="delete" v-if="isWritable" @keyup.enter="deleteFilesMultiSelect()" @click="deleteFilesMultiSelect()">{{ translate("DRIVE.DELETE") }}</li>
       <li id="download" @keyup.enter="downloadAllMultiSelect()" @click="downloadAllMultiSelect()">{{ translate("DRIVE.DOWNLOAD") }}</li>
       <li id="zip" @keyup.enter="zipAndDownloadMultiSelect()" @click="zipAndDownloadMultiSelect()">{{ translate("DRIVE.ZIP") }}</li>
+      <li id="create-thumbnail" v-if="isWritable" @keyup.enter="createThumbnailMultiSelect()" @click="createThumbnailMultiSelect()">{{ translate("DRIVE.THUMB") }}</li>
       <li id="deselect" @keyup.enter="selectedFiles = []" @click="selectedFiles = []">
         {{ translate("DRIVE.DESELECT") }}
       </li>
@@ -2762,6 +2763,40 @@ module.exports = {
                 let file = files[index];
                 that.downloadFile(file).thenApply(res => {
                     setTimeout(() => that.reduceDownload(index + 1, files, future), 10);//browser download may fail on tiny files if timeout not used
+                });
+            }
+        },
+        createThumbnailMultiSelect() {
+            if (this.currentDir == null)
+                return false;
+            if (this.selectedFiles.length == 0)
+                return;
+            let mediaFiles = [];
+            for (var i = 0; i < this.selectedFiles.length; i++) {
+                let file = this.selectedFiles[i];
+                if (!file.isDirectory()) {
+                    if (file.props.thumbnail.ref == null) {
+                            var mimeType = file.props.mimeType;
+                            if (mimeType.startsWith("video") && this.isStreamingAvailable) {
+                                mediaFiles.push(file);
+                            } else if(mimeType.startsWith("image") || mimeType.startsWith("audio/mpeg")) {
+                                mediaFiles.push(file);
+                            }
+                    }
+                }
+            }
+            this.reduceCreateThumbnail(mediaFiles, 0);
+        },
+        reduceCreateThumbnail(files, index) {
+            let that = this;
+            if (index == files.length) {
+                this.currentDirChanged();
+            } else {
+                let file = files[index];
+                file.calculateAndUpdateThumbnail(this.context.network, this.context.crypto).thenApply(res => {
+                    that.reduceCreateThumbnail(files, index + 1);
+                }).exceptionally(function(throwable) {
+                    that.reduceCreateThumbnail(files, index + 1);
                 });
             }
         },
