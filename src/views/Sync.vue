@@ -10,7 +10,9 @@
             <div style="width:100%;">
                 <center><div class="hspace-5">
 		    <button class="btn btn-success" @click="addSyncPair()">{{ translate("SYNC.ADDPAIR") }}</button>
-                </div></center>
+                </div>
+                <div style="padding:1em">Status: {{ status }}</div>
+                </center>
                 <div style="display:flex; flex-direction:column">
                    <div v-for="pair in syncPairs" style="display:flex; flex-direction:row; flex-wrap:wrap; padding:1em; margin:.5em; border:solid #16a98a;">
                       <label style="padding:1em; flex-grow:1; text-align:center;"> Syncing </label>
@@ -105,6 +107,7 @@ module.exports = {
             select_body: '',
             select_consumer_func: () => {},
             select_options: [],
+            status: "",
         }
     },
     props: [],
@@ -120,6 +123,8 @@ module.exports = {
     },
 	created() {
         this.getSyncState();
+        var that = this;
+        setInterval(() => {that.updateStatus();}, 1000);
     },
     methods: {
 		...Vuex.mapActions([
@@ -167,6 +172,13 @@ module.exports = {
             let that = this;
             this.localPost("/peergos/v0/sync/get-pairs").then(function(result, err) {
                that.syncPairs = result.pairs;
+            })
+        },
+
+        updateStatus() {
+            let that = this;
+            this.localPost("/peergos/v0/sync/status").then(function(result, err) {
+               that.status = result.msg;
             })
         },
 
