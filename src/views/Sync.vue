@@ -108,7 +108,7 @@ module.exports = {
             select_consumer_func: () => {},
             select_options: [],
             status: "",
-            mounted: true,
+            updateStatusIntervalID: "",
         }
     },
     props: [],
@@ -125,13 +125,12 @@ module.exports = {
 	created() {
         this.getSyncState();
         var that = this;
-        setInterval(() => {
-        if (that.mounted)
+        this.updateStatusIntervalID = setInterval(() => {
             that.updateStatus();
         }, 1000);
     },
     destroyed() {
-        this.mounted = false;
+        clearInterval(this.updateStatusIntervalID);
     },
     methods: {
 		...Vuex.mapActions([
