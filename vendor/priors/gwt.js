@@ -86,6 +86,8 @@ function postProm(url, data, timeout) {
                     future.completeExceptionally(new peergos.shared.storage.StorageQuotaExceededException(trailer));
                 } else if (trailer.startsWith('CAS+exception') || trailer.startsWith('Mutable+pointer+update+failed')) {
                     future.completeExceptionally(new peergos.shared.storage.CasException(trailer));
+                } else if (trailer.startsWith('PointerCAS')) {
+                    future.completeExceptionally(peergos.shared.storage.PointerCasException.fromString(decodeURIComponent(trailer)));
                 } else {
                     reject(trailer);
                 }
