@@ -1749,6 +1749,43 @@ function generateCrypto_box_keypair(publicKey, secretKey) {
     return publicKey;
 }
 
+function generate_mlkem_keypair() {
+    var future = peergos.shared.util.Futures.incomplete();
+    const recipient = new MlKem1024();
+    recipient.generateKeyPair().then(function([pkR, skR]) {
+        var pki8Array = new Int8Array(pkR);
+        var pk = convertToByteArray(pki8Array);
+        var ski8Array = new Int8Array(skR);
+        var sk = convertToByteArray(ski8Array);
+        future.complete(convertToByteArray([pk, sk]));
+    });
+    return future;
+}
+
+function encapsulate(pk) {
+    var future = peergos.shared.util.Futures.incomplete();
+    const recipient = new MlKem1024();
+    recipient.encap(new Uint8Array(pk)).then(function([ct, ssS]) {
+        var cti8Array = new Int8Array(ct);
+        var c = convertToByteArray(cti8Array);
+        var ssi8Array = new Int8Array(ssS);
+        var ss = convertToByteArray(ssi8Array);
+        future.complete(convertToByteArray([ss, c]));
+    });
+    return future;
+}
+
+function decapsulate(ct, sk) {
+    var future = peergos.shared.util.Futures.incomplete();
+    const recipient = new MlKem1024();
+    recipient.decap(new Uint8Array(ct), new Uint8Array(sk)).then(function(ssS) {
+        var ssi8Array = new Int8Array(ssS);
+        var ss = convertToByteArray(ssi8Array);
+        future.complete(ss);
+    });
+    return future;
+}
+
 if (window.crypto.subtle == null) { // polyfill webcrypto if it is absent
     console.log("Using webcrypto polyfill.");
     window.crypto.subtle = {
@@ -1937,7 +1974,9 @@ var tweetNaCl = {
         this.crypto_box_open = generateCrypto_box_open;
         this.crypto_box = generateCrypto_box;
         this.crypto_box_keypair = generateCrypto_box_keypair;
-
+        this.generateMlkemKeyPair = generate_mlkem_keypair;
+        this.encapsulate = encapsulate;
+        this.decapsulate = decapsulate;
     }   
 };
 
