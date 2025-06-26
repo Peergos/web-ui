@@ -8,7 +8,7 @@
             <h2>App Details</h2>
         </div>
         <div class="modal-body">
-            <Spinner v-if="showSpinner"></Spinner>
+            <Spinner v-if="showSpinner" :absolutePosition="spinnerAbsolutePosition"></Spinner>
             <div v-if="appProperties != null">
                 <div class="app-details-view">
                     <p>
@@ -72,7 +72,8 @@ module.exports = {
         return {
             showSpinner: false,
             appProperties: null,
-            appHasFileAssociation: false
+            appHasFileAssociation: false,
+            spinnerAbsolutePosition: true,
         }
     },
     props: ['appPropsFile'],

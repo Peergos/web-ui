@@ -8,7 +8,7 @@
             <h2>App Installation</h2>
         </div>
         <div class="modal-body">
-            <Spinner v-if="showSpinner" :message="spinnerMessage"></Spinner>
+            <Spinner v-if="showSpinner" :message="spinnerMessage" :absolutePosition="spinnerAbsolutePosition"></Spinner>
             <Confirm
                     v-if="showConfirm"
                     v-on:hide-confirm="showConfirm = false"
@@ -118,6 +118,7 @@ module.exports = {
             messenger: null,
             templateAppSeparator: "!",
             appIconBase64Image: "",
+            spinnerAbsolutePosition: true,
         }
     },
     props: ['appPropsFile','installFolder', "appInstallSuccessFunc", "templateInstanceAppName", "templateInstanceTitle", "templateAppIconBase64", "templateInstanceChatId"],
