@@ -3,7 +3,7 @@
 	<AppHeader>
 	</AppHeader>
         <div class="modal-body">
-            <Spinner v-if="showSpinner"></Spinner>
+            <Spinner v-if="showSpinner" :message="spinnerMessage"></Spinner>
             <Replace
                 v-if="showReplace"
                 v-on:hide-replace="showReplace = false"
@@ -63,6 +63,18 @@
                 v-on:hide-app-details="closeAppDetails"
                 :appPropsFile=currentAppPropertiesFile>
             </AppDetails>
+            <Group
+                    v-if="showGroupMembership"
+                    v-on:hide-group="closeTemplateAppGroupMembership"
+                    :groupId="groupId"
+                    :groupTitle="groupTitle"
+                    :existingGroupMembers="existingGroupMembers"
+                    :existingAdmins="existingAdmins"
+                    :friendNames="friendnames"
+                    :updatedGroupMembership="updatedTemplateAppGroupMembership"
+                    :existingGroups="existingGroups"
+                    :isTemplateApp="isTemplateApp">
+            </Group>
             <ul id="appMenu" v-if="showAppMenu" class="dropdown-menu" v-bind:style="{top:menutop, left:menuleft}" style="cursor:pointer;display:block;min-width:100px;padding: 10px;">
                 <li id='open-in-app' style="padding-bottom: 5px;color: black;" v-for="app in availableApps" v-on:keyup.enter="appOpen($event, app.name, app.path, app.file)" v-on:click="appOpen($event, app.name, app.path, app.file)">{{app.contextMenuText}}</li>
             </ul>
@@ -85,6 +97,7 @@
                         :appDetailsFunc="displayAppDetails"
                         :removeAppFunc="removeApp"
                         :updateAppFunc="updateApp"
+                        :updateAccessToTemplateApp="updateAccessToTemplateApp"
                         :apps="appGridItems">
                     </AppGrid>
                 </div>
@@ -141,6 +154,7 @@ const AppSandbox = require("../components/sandbox/AppSandbox.vue");
 const Confirm = require("../components/confirm/Confirm.vue");
 const FilePicker = require('../components/picker/FilePicker.vue');
 const FolderPicker = require('../components/picker/FolderPicker.vue');
+const Group = require("../components/Group.vue");
 const NewFilePicker = require("../components/picker/NewFilePicker.vue");
 const Replace = require("../components/replace/Replace.vue");
 const Spinner = require("../components/spinner/Spinner.vue");
@@ -160,6 +174,7 @@ module.exports = {
 		Confirm,
 		FilePicker,
 		FolderPicker,
+		Group,
 		NewFilePicker,
 		Replace,
 		Spinner,
@@ -167,6 +182,7 @@ module.exports = {
     data: function() {
         return {
             showSpinner: false,
+            spinnerMessage: '',
             launcherApp: null,
             shortcutList: [],
             shortcutsSortBy: "added",
@@ -218,6 +234,14 @@ module.exports = {
             filePickerBaseFolder: "",
             htmlAnchor: "",
             templateInstanceAppName: "",
+            groupId: "",
+            groupTitle: "",
+            showGroupMembership: false,
+            existingGroupMembers: [],
+            existingGroups: [],
+            existingAdmins: [],
+            isTemplateApp: false,
+            currentApp: null,
         }
     },
     props: [],
@@ -240,7 +264,11 @@ module.exports = {
             "shortcuts",
             "sandboxedApps",
             'mirrorBatId',
+            "socialData",
         ]),
+        friendnames: function() {
+            return this.socialData.friends;
+        },
         sortedShortcuts(){
             var sortBy = this.shortcutsSortBy;
             var reverseOrder = ! this.shortcutsNormalSortOrder;
@@ -296,6 +324,7 @@ module.exports = {
     created: function() {
         let that = this;
         this.showSpinner = true;
+        this.messenger = new peergos.shared.messaging.Messenger(this.context);
         peergos.shared.user.App.init(that.context, "launcher").thenApply(launcher => {
             that.launcherApp = launcher;
             that.setShortcutList(new Map(that.shortcuts.shortcutsMap));
@@ -465,6 +494,187 @@ module.exports = {
         },
         closeAppInstallation() {
             this.showAppInstallation = false;
+        },
+        reduceRemovingTemplateAppInvitations: function(chatId, membersToRemove, index, future) {
+            let that = this;
+            if (index == membersToRemove.length) {
+                future.complete(true);
+            } else {
+                let username = membersToRemove[index];
+                this.spinnerMessage = "removing " + username;
+                this.messenger.getChat(chatId).thenApply(function(controller) {
+                    that.messenger.removeMember(controller, username).thenApply(updatedController => {
+                        that.spinnerMessage = "";
+                        that.reduceRemovingTemplateAppInvitations(chatId, membersToRemove, ++index, future);
+                    }).exceptionally(function(throwable) {
+                        that.spinnerMessage = "";
+                        console.log(throwable);
+                        that.showErrorMessage("Unable to remove " + username + " from chat");
+                        that.reduceRemovingTemplateAppInvitations(chatId, membersToRemove, ++index, future);
+                    });
+                });
+            }
+            return future;
+        },
+        removeMembersFromTemplateApp: function(chatId, membersToRemove) {
+            let future = peergos.shared.util.Futures.incomplete();
+            this.reduceRemovingTemplateAppInvitations(chatId, membersToRemove, 0, future);
+            return future;
+        },
+        inviteNewMembersToTemplateApp: function(chatId, updatedMembers) {
+            let that = this;
+            let future = peergos.shared.util.Futures.incomplete();
+            if (updatedMembers.length == 0) {
+                future.complete(true);
+            } else {
+                let usernames = peergos.client.JsUtil.asList(updatedMembers);
+                this.spinnerMessage = "adding participant(s) to App";
+                this.messenger.getChat(chatId).thenApply(function(controller) {
+                    that.getPublicKeyHashes(updatedMembers).thenApply(pkhList => {
+                        that.messenger.invite(controller, usernames, pkhList).thenApply(updatedController => {
+                            that.spinnerMessage = "";
+                            future.complete(true);
+                        }).exceptionally(err => {
+                            that.spinnerMessage = "";
+                            that.showErrorMessage("Unable to add members to chat");
+                            console.log(err);
+                            future.complete(false);
+                        });
+                    });
+                });
+            }
+            return future;
+        },
+        getPublicKeyHashes: function(usernames) {
+            let that = this;
+            const usernameToPKH = new Map();
+            let future = peergos.shared.util.Futures.incomplete();
+            usernames.forEach(username => {
+                that.context.getPublicKeys(username).thenApply(pkOpt => {
+                    usernameToPKH.set(username, pkOpt.get().left);
+                    if(usernameToPKH.size == usernames.length) {
+                        let pkhs = [];
+                        usernames.forEach(user => {
+                            pkhs.push(usernameToPKH.get(user));
+                        });
+                        future.complete(peergos.client.JsUtil.asList(pkhs));
+                    }
+                });
+            });
+            return future;
+        },
+        diff: function(origList, updatedList) {
+            let notFoundList = [];
+            updatedList.forEach(member => {
+                let index = origList.findIndex(v => v === member);
+                if (index == -1) {
+                    notFoundList.push(member);
+                }
+            });
+            return notFoundList;
+        },
+        extractAddedParticipants: function(origParticipants, updatedParticipants) {
+            return this.diff(origParticipants, updatedParticipants);
+        },
+        extractRemovedParticipants: function(origParticipants, updatedParticipants) {
+            return this.diff(updatedParticipants, origParticipants);
+        },
+        updatedTemplateAppGroupMembership: function(chatId, updatedGroupTitle, updatedMembers, updatedAdmins) {
+            this.showGroupMembership = false;
+            let that = this;
+            Vue.nextTick(function() {
+                that.updateExistingTemplateAppGroupMembership(chatId, updatedGroupTitle, updatedMembers, updatedAdmins);
+            });
+        },
+        updateExistingTemplateAppGroupMembership: function(chatId, updatedGroupTitle, updatedMembers, updatedAdmins) {
+            let that = this;
+            this.showSpinner = true;
+            let existingChatItem = {chatId: chatId};
+            that.messenger.getChat(chatId).thenApply(function(controller) {
+                let existingMembers = controller.getMemberNames().toArray();
+                let added = that.extractAddedParticipants(existingMembers, updatedMembers);
+                let removed = that.extractRemovedParticipants(existingMembers, updatedMembers);
+                let existingAdmins = controller.getAdmins().toArray();
+                let addedAdmins = that.extractAddedParticipants(existingAdmins, updatedAdmins);
+                let removedAdmins = that.extractRemovedParticipants(existingAdmins, updatedAdmins);
+                var proposedAdminsLength = existingAdmins.length - removedAdmins.length + addedAdmins.length;
+                let inError = false;
+                if (proposedAdminsLength < 1) {
+                    that.showErrorMessage('App must have an admin!');
+                    inError = true;
+                }
+                if (existingAdmins.filter(v => v == that.context.username).length == -1) {
+                    if (removedAdmins.length > 0 || addedAdmins.length > 0) {
+                        that.showErrorMessage('Invalid attempt to change App access control');
+                    }
+                    inError = true;
+                }
+                if (inError) {
+                    Vue.nextTick(function() {
+                        that.showSpinner = false;
+                    });
+                } else {
+                    that.inviteNewMembersToTemplateApp(chatId, added).thenApply(function(res1) {
+                        that.removeMembersFromTemplateApp(chatId, removed).thenApply(function(res2) {
+                            Vue.nextTick(function() {
+                                that.showSpinner = false;
+                            });
+                       });
+                    });
+                }
+            });
+        },
+        closeTemplateAppGroupMembership() {
+            let that = this;
+            Vue.nextTick(function() {
+                that.showGroupMembership = false;
+            });
+        },
+        copyArray: function(jArray) {
+            let arr = [];
+            for(var i=0; i < jArray.length; i++) {
+                arr.push(jArray[i]);
+            }
+            return arr;
+        },
+        filterChats: function(allChats) {
+            let that = this;
+            let filteredChats = [];
+            let recentMessages = [];
+            for(var i = 0; i < allChats.length; i++) {
+                let chat = allChats[i];
+                filteredChats.push({chatId: chat.chatUuid, title: chat.getTitle()
+                , members: that.copyArray(chat.getMemberNames().toArray())
+                , admins: that.copyArray(chat.getAdmins().toArray()) });
+                recentMessages.push(chat.getRecent().toArray());
+            }
+            return {chats: filteredChats, recentMessages: recentMessages};
+        },
+        updateAccessToTemplateApp: function(app) {
+            let that = this;
+            let chatId = app.chatId;
+            this.messenger.listChats().thenApply(function(chats) {
+                let allChats = chats.toArray();
+                let filteredChats = that.filterChats(allChats).chats;
+                let existingChat = null;
+                filteredChats.forEach(chat => {
+                    if (chat.chatId == chatId) {
+                        that.groupTitle = chat.title;
+                        existingChat = chat;
+                    }
+                });
+                that.groupId = chatId;
+                that.existingGroupMembers = existingChat.members.slice();
+                that.existingAdmins = existingChat.admins.slice();
+                let isAdmin = that.existingAdmins.filter(n => n === that.context.username).length == 1;
+                that.isTemplateApp = true;
+                if (isAdmin) {
+                    that.currentApp = app;
+                    that.showGroupMembership = true;
+                } else {
+                    that.showMessage(false, "You are not the App admin!");
+                }
+            });
         },
         updateApp: function(app) {
             let that = this;

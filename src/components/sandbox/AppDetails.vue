@@ -38,7 +38,7 @@
                         <span v-if="appProperties.folderAction==true" class="app-install-span">Is a Folder Action</span>
                     </p>
                     <p>
-                        <span v-if="appProperties.template.length > 0" class="app-install-span">Multiple instances of App can be installed</span>
+                        <span v-if="appProperties.template.length > 0 && !appProperties.template.includes('instance')" class="app-install-span">Multiple instances of App can be installed</span>
                     </p>
                     <p v-if="!appHasFileAssociation && appProperties.permissions.length == 0">
                         <span class="app-install-span">Permissions:</span><span class="app-install-text">None Required</span>

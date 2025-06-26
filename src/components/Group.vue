@@ -28,14 +28,14 @@
                             :maxitems="5"
                             placeholder="please select user"
                     />
-                  <div class="hspace-5" v-if="isAdmin" style="margin-top: 20px;">
+                  <div class="hspace-5" v-if="isAdmin && !isTemplateApp" style="margin-top: 20px;">
                         <label class="checkbox__group">
                             <input type="radio" id="member-access" value="Member" v-model="memberAccess">
                             <span class="checkmark"></span>
                             Member
                         </label>
                   </div>
-                  <div class="hspace-5" v-if="isAdmin"  style="margin-top: 20px;">
+                  <div class="hspace-5" v-if="isAdmin && !isTemplateApp"  style="margin-top: 20px;">
                         <label for="admin-access" data-toggle="tooltip" data-placement="bottom" title="Admins can change title and membership" class="checkbox__group">
                             <input type="radio" id="admin-access" value="Admin" v-model="memberAccess">
                             <span class="checkmark"></span>
@@ -47,7 +47,19 @@
                 </div>
               </div>
             </div>
-            <div v-if="isAdmin" class="modal-prominent">
+            <div v-if="isTemplateApp" class="modal-prominent">
+                <div class="container" ><p style="word-wrap;break-all;">
+                    Admins:</p>
+                    <div v-for="user in existingAdmins">
+                        <label class="checkbox__group">
+                            <input :disabled="true" type="checkbox" v-bind:id="user" v-bind:value="user" v-model="adminsToRemove">
+                            <span class="checkmark"></span>
+                            <span style="margin-left:10px">{{ user }}</span>
+                        </label>
+                    </div>
+                </div>
+            </div>
+            <div v-if="isAdmin  && !isTemplateApp" class="modal-prominent">
                 <div class="container" ><p style="word-wrap;break-all;">
                     Admins:</p>
                     <div v-for="user in existingAdmins">
@@ -71,7 +83,7 @@
                         </label>
                     </div>
                     <button :disabled="this.membersSelected.length == 0" class="btn btn-success" v-on:click="removeUserFromGroup()">Remove</button>
-                    <button v-if="isAdmin" :disabled="this.membersSelected.length == 0" class="btn btn-info" v-on:click="promoteToGroupAdmin()">Promote to Admin</button>
+                    <button v-if="isAdmin && !isTemplateApp" :disabled="this.membersSelected.length == 0" class="btn btn-info" v-on:click="promoteToGroupAdmin()">Promote to Admin</button>
                 </div>
             </div>
             <Error

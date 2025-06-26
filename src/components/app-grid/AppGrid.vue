@@ -4,6 +4,7 @@
         <transition name="app-grid-context-menu">
             <ul id="appMenu" v-if="showAppMenu" class="dropdown-menu" @mouseleave="menuLeave($event)" v-bind:style="{top:menutop, left:menuleft}" style="cursor:pointer;display:block;min-width:100px;padding: 10px;">
                 <li class="app-menu-item" @mouseover="contextMenuHoverOver($event)" @mouseout="contextMenuHoverOut($event)" @keyup.enter="showDetails($event)" @click="showDetails($event)">Details</li>
+                <li v-if="selectedApp.template.length > 0" class="app-menu-item" @mouseover="contextMenuHoverOver($event)" @mouseout="contextMenuHoverOut($event)" @keyup.enter="updateAccessToApp($event)" @click="updateAccessToApp($event)">Share</li>
                 <li v-if="selectedApp.updateAvailable" class="app-menu-item" @mouseover="contextMenuHoverOver($event)" @mouseout="contextMenuHoverOut($event)" @keyup.enter="updateApp($event)" @click="updateApp($event)">Update</li>
                 <li class="app-menu-item" @mouseover="contextMenuHoverOver($event)" @mouseout="contextMenuHoverOut($event)" @keyup.enter="removeApp($event)" @click="removeApp($event)">Remove</li>
             </ul>
@@ -43,7 +44,7 @@ module.exports = {
             menuleft:"",
         };
     },
-    props: ["apps", "launchAppFunc", "appDetailsFunc", "removeAppFunc", "updateAppFunc"],
+    props: ["apps", "launchAppFunc", "appDetailsFunc", "removeAppFunc", "updateAppFunc", "updateAccessToTemplateApp"],
     created: function() {
     },
     methods: {
@@ -94,7 +95,6 @@ module.exports = {
             return this.apps.length;
         },
         showDetails: function(e) {
-            console.log('showDetails app:' + this.selectedApp.displayName);
             this.appDetailsFunc(this.selectedApp);
             this.closeMenu(e);
         },
@@ -107,6 +107,14 @@ module.exports = {
         },
         removeApp: function(e) {
             this.removeAppFunc(this.selectedApp);
+            this.closeMenu(e);
+        },
+        updateAccessToApp: function(e) {
+            if (!(this.selectedApp.template.length > 0)) {
+                this.$toast("Not a template App: " + this.selectedApp.displayName);
+            } else {
+                this.updateAccessToTemplateApp(this.selectedApp);
+            }
             this.closeMenu(e);
         },
         updateApp: function(e) {

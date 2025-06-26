@@ -67,7 +67,7 @@ module.exports = {
                   let existingCreateMenuItems = ["upload files","upload folder","new folder","new file", "new app"];
                   let validPermissions = ["STORE_APP_DATA", "EDIT_CHOSEN_FILE", "READ_CHOSEN_FOLDER",
                     "EXCHANGE_MESSAGES_WITH_FRIENDS", "USE_MAILBOX", "ACCESS_PROFILE_PHOTO", "CSP_UNSAFE_EVAL"];
-                  let validTemplateValues = ["messaging"];
+                  let validTemplateValues = ["messaging", "messaging-instance"];
                   mandatoryFields.forEach(field => {
                       if (props[field] == null) {
                           errors.push("Missing property " + field);

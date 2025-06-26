@@ -54,7 +54,7 @@
                         <span v-if="appProperties.folderAction==true" class="app-install-span">Is a Folder Action</span>
                     </p>
                     <p>
-                        <span v-if="appProperties.template.length > 0" class="app-install-span">Multiple instances of App can be installed</span>
+                        <span v-if="appProperties.template.length > 0 && !appProperties.template.includes('instance')" class="app-install-span">Multiple instances of App can be installed</span>
                     </p>
                     <p v-if="!appHasFileAssociation && appProperties.permissions.length == 0">
                         <span class="app-install-span">Permissions:</span><span class="app-install-text">None Required</span>
@@ -229,6 +229,8 @@ module.exports = {
                 callback(oldProperties.displayName);
             } else if(this.templateInstanceTitle != null&& this.templateInstanceTitle.length > 0) {
                 callback(this.templateInstanceTitle);
+            } else if(this.appProperties.template.includes('instance')) {
+                callback(this.appProperties.displayName, "");
             }else {
                 let that = this;
                 this.prompt_placeholder = this.translate("NEW.TEMPLATE.APP.NAME.LABEL");
@@ -336,7 +338,7 @@ module.exports = {
                                 } else {
                                     peergos.shared.user.App.init(that.context, appName).thenApply(ready => {
                                         that.gatherDataFiles(appName, srcDirectoryOpt.ref)
-                                            .thenApply(dataFiles => that.copyAppFiles(dataFiles, appName, displayName, chatId, appIconBase64));
+                                            .thenApply(dataFiles => that.copyAppFiles(dataFiles, appName, displayName, chatId, appIconBase64, oldProperties != null));
                                     });
                                 }
                             });
@@ -486,7 +488,7 @@ module.exports = {
             });
             return future;
         },
-        copyAppFiles: function(appDataFiles, app, displayName, chatId, appIconBase64) {
+        copyAppFiles: function(appDataFiles, app, displayName, chatId, appIconBase64, isUpdateInstall) {
             let future = peergos.shared.util.Futures.incomplete();
             let that = this;
             this.deleteAssetsFolder(app).thenApply(res => {
