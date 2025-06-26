@@ -691,7 +691,40 @@ module.exports = {
             let that = this;
             peergos.shared.user.App.init(this.context, "launcher").thenApply(launcher => {
                 that.launcherApp = launcher;
-                that.startListener();
+                if (that.appProperties.template.length > 0) {
+                    that.readTemplateAppConfiguration(() => that.startListener());
+                } else {
+                    that.startListener();
+                }
+            });
+        },
+        isUserRemovedFromApp: function(members, admins, hasFriendsInChat) {
+            let isAdmin = admins.findIndex(v => v === this.context.username) > -1;
+            if (isAdmin) {
+                return false;
+            } else {
+                return (members.findIndex(v => v === this.context.username) == -1 || members.length == 0)
+                    || (members.findIndex(v => v === this.context.username) == 0 || members.length == 1)
+                    || !hasFriendsInChat;
+            }
+        },
+        readTemplateAppConfiguration: function(callback) {
+            let that = this;
+            let startIndex = 0;
+            let chatId = that.appProperties.chatId;
+            let withoutPrefix = chatId.substring(chatId.indexOf("$") +1);
+            let chatOwner = withoutPrefix.substring(0,withoutPrefix.indexOf("$"));
+            this.messenger.getChat(that.appProperties.chatId).thenApply(function(controller) {
+                that.messenger.mergeAllUpdates(controller, that.socialData).thenApply(updatedController => {
+                    let members = updatedController.getMemberNames().toArray();
+                    let admins = updatedController.getAdmins().toArray();
+                    let friendsInChat = that.friendnames.filter(friend => members.findIndex(v => v === friend) > -1);
+                    if (that.isUserRemovedFromApp(members, admins, friendsInChat.length > 0)) {
+                        that.fatalError('You are no longer a member of: ' + that.appProperties.displayName);
+                    } else {
+                        callback();
+                    }
+                });
             });
         },
         startListener: function() {
@@ -712,12 +745,14 @@ module.exports = {
                 that.resizeHandler();
                 let theme = that.$store.getters.currentTheme;
                 let href = window.location.href;
-                let appDevMode = href.includes("?local-app-dev=true");
+                let url = new URL(href);
+                let localAppDev = url.searchParams.get("local-app-dev");
+                let appName =  that.isTemplateApp ? that.currentAppName.substring(0, that.currentAppName.indexOf("!")) : that.currentAppName;
                 let allowUnsafeEvalInCSP = that.permissionsMap.get(that.PERMISSION_CSP_UNSAFE_EVAL) != null;
-                let props = { appDevMode: appDevMode, allowUnsafeEvalInCSP: allowUnsafeEvalInCSP, isPathWritable: that.isPathWritable(),
+                let props = { appDevMode: appName === localAppDev, allowUnsafeEvalInCSP: allowUnsafeEvalInCSP, isPathWritable: that.isPathWritable(),
                     htmlAnchor: that.htmlAnchor == null ? "" : that.htmlAnchor};
                 let func = function() {
-                    that.postMessage({type: 'init', appName: that.currentAppName, appPath: that.appPath,
+                    that.postMessage({type: 'init', appName: appName, appPath: that.appPath,
                     allowBrowsing: that.browserMode, theme: theme, chatId: that.currentChatId,
                     username: that.context.username, props: props});
                 };
@@ -2808,7 +2843,7 @@ module.exports = {
             let progress = {};
             let thumbnailAllocation = Math.min(100000, fileData.length / 10);
             let resultingSize = fileData.length + thumbnailAllocation;
-            let progressTitle = fileData.length < 1 * 1024 * 1024 ? "" : "Encrypting and uploading " + filename;
+            let progressTitle = fileData.length < 1 * 1024 * 1024 ? "Uploading file" : "Encrypting and uploading " + filename;
             progress = {
                 title: progressTitle,
                 done:0,

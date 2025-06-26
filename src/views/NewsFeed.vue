@@ -90,7 +90,8 @@
                     v-if="showFolderPicker"
                     :baseFolder="folderPickerBaseFolder" :selectedFolder_func="selectedFoldersFromPicker"
                     :multipleFolderSelection="false"
-                    :initiallySelectedPaths="[]">
+                    :initiallySelectedPaths="[]"
+                    :pickerTitle="folderPickerTitle">
                 </FolderPicker>
                 <ul id="appMenu" v-if="showAppMenu" class="dropdown-menu" v-bind:style="{top:menutop, left:menuleft}" style="cursor:pointer;display:block;min-width:100px;padding: 10px;">
                     <li id='open-in-app' style="padding-bottom: 5px;color: black;" v-for="app in availableApps" v-on:keyup.enter="appOpen($event, app.name, app.path, app.file)" v-on:click="appOpen($event, app.name, app.path, app.file)">{{app.contextMenuText}}</li>
@@ -346,6 +347,7 @@ module.exports = {
             folderPickerBaseFolder: "",
             multipleFolderSelection: false,
             initiallySelectedPaths: [],
+            folderPickerTitle: "Select App install folder",
         }
     },
     props: [],
