@@ -193,9 +193,11 @@ module.exports = {
                             that.installApp();
                         } else {
                             let oldVersion = props.version;
+                            that.showSpinner = false;
                             that.confirmReplaceAppInstall(displayName, oldVersion, newVersion,
                                 () => {
                                     that.showConfirm = false;
+                                    that.showSpinner = true;
                                     if (this.isTemplateApp) {
                                         that.installTemplateApp(props);
                                     } else {
@@ -204,7 +206,6 @@ module.exports = {
                                 },
                                 () => {
                                     that.showConfirm = false;
-                                    that.showSpinner = false;
                                     that.close();
                                 }
                             );
@@ -250,6 +251,7 @@ module.exports = {
                     if (!that.validateDisplayName(title)) {
                         return;
                     }
+                    that.showSpinner = true;
                     callback(that.appProperties.displayName + " - " + title, appIconBase64);
                 };
                 this.context.getByPath(this.installAppFromFolder + '/assets/' + this.appProperties.appIcon).thenApply(iconFileOpt => {
@@ -267,6 +269,7 @@ module.exports = {
                                     str = str + String.fromCharCode(data[i] & 0xff);
                                 }
                                 that.appIconBase64Image = "data:image/png;base64," + window.btoa(str);
+                                that.showSpinner = false;
                                 that.showPrompt = true;
                             });
                         });
