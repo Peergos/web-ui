@@ -119,6 +119,7 @@ module.exports = {
             templateAppSeparator: "!",
             appIconBase64Image: "",
             spinnerAbsolutePosition: true,
+            installedApps: [],
         }
     },
     props: ['appPropsFile','installFolder', "appInstallSuccessFunc", "templateInstanceAppName", "templateInstanceTitle", "templateAppIconBase64", "templateInstanceChatId"],
@@ -128,16 +129,26 @@ module.exports = {
             'quotaBytes',
             'usageBytes',
             'context',
-            'mirrorBatId'
+            'mirrorBatId',
+            "sandboxedApps",
         ]),
     },
     created: function() {
         this.messenger = new peergos.shared.messaging.Messenger(this.context);
         this.installAppFromFolder = this.installFolder.endsWith('/')  ?
             this.installFolder.substring(0, this.installFolder.length -1) : this.installFolder;
-        this.loadAppProperties();
+        this.initAppInstall();
     },
     methods: {
+        initAppInstall() {
+            let that = this;
+            if(!that.sandboxedApps.appsLoaded) {
+                setTimeout( () => { that.initAppInstall();}, 1000);
+            } else {
+                that.installedApps = that.sandboxedApps.appsInstalled.slice();
+                that.loadAppProperties();
+            }
+        },
         getMirrorBatId(file) {
             return file.getOwnerName() == this.context.username ? this.mirrorBatId : java.util.Optional.empty()
         },
@@ -181,8 +192,8 @@ module.exports = {
             let displayName = this.appProperties.displayName;
             let newVersion = this.appProperties.version;
             let that = this;
-            this.showSpinner = true;
             let appName = this.appProperties.name;
+            this.showSpinner = true;
             let actualAppName = this.isTemplateApp
                 && this.templateInstanceAppName != null
                 && this.templateInstanceAppName.length > 0 ? this.templateInstanceAppName : appName;
@@ -306,8 +317,21 @@ module.exports = {
             }
             return future;
         },
+        extractChatOwner: function(chatUuid) {
+            let withoutPrefix = chatUuid.substring(chatUuid.indexOf("$") +1);
+            return withoutPrefix.substring(0,withoutPrefix.indexOf("$"));
+        },
         installTemplateApp: function(oldProperties) {
             let that = this;
+            if (oldProperties == null && this.appProperties.template.includes('instance') && this.templateInstanceChatId == null) {
+                let existingInstanceApps = this.installedApps.filter(a => a.template.includes('instance'))
+                    .filter(a => this.extractChatOwner(a.chatId) == this.context.username);
+                if (existingInstanceApps.filter(a => a.displayName == this.appProperties.displayName).length > 0 ) {
+                    this.showError("App already installed!");
+                    this.showSpinner = false;
+                    return;
+                }
+            }
             this.getTemplateAppTitle(oldProperties, (displayName, selectedAppIconBase64) => {
                 var appName = "";
                 if (oldProperties != null) {
