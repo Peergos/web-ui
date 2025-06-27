@@ -253,6 +253,15 @@ module.exports = {
 			this.appGridItems = this.appsList.slice().sort(function (a, b) {
                  return ('' + a.name).localeCompare(b.name);
              });
+            for(var i=0; i < this.appGridItems.length; i++) {
+                let appRow = this.appGridItems[i];
+                if (appRow.template.length > 0) {
+                    let appOwner = that.extractChatOwner(appRow.chatId);
+                    appRow.gridDisplayName = that.context.username != appOwner ? "[" + appOwner + "] " + appRow.displayName : appRow.displayName;
+                } else {
+                    appRow.gridDisplayName = appRow.displayName;
+                }
+            }
             Vue.nextTick(function() {
                 that.showAppGrid = true;
             });
@@ -332,6 +341,10 @@ module.exports = {
         });
     },
     methods: {
+        extractChatOwner: function(chatUuid) {
+            let withoutPrefix = chatUuid.substring(chatUuid.indexOf("$") +1);
+            return withoutPrefix.substring(0,withoutPrefix.indexOf("$"));
+        },
         confirmReplaceFile(filename, cancelFn, replaceFn) {
             this.showSpinner = false;
             this.replace_message = this.translate("LAUNCHER.FILE.EXISTS").replace("$NAME", filename);

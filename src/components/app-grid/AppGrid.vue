@@ -24,7 +24,7 @@
                     <div v-if="app.thumbnail != null && !app.launchable" >
                         <img v-bind:src="app.thumbnail" style="width:50px;height:50px;"/>
                     </div>
-                    <label class="app-icon-title">{{app.displayName}}<span v-if="app.updateAvailable" id="pendingSpan" class="pending-badge" >{{0}}</span></label>
+                    <label class="app-icon-title">{{app.gridDisplayName}}<span v-if="app.updateAvailable" id="pendingSpan" class="pending-badge" >{{0}}</span></label>
                 </span>
             </a>
         </div>
