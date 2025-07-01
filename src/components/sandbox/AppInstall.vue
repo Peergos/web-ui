@@ -521,7 +521,7 @@ module.exports = {
             this.deleteAssetsFolder(app).thenApply(res => {
                 that.copyAssetsFolder(app).thenApply(res2 => {
                     that.copyAllDataFiles(appDataFiles, app, displayName).thenApply(res3 => {
-                        if (res3) {
+                        if (res && res2 && res3) {
                             that.updateAppManifest(app, displayName, chatId, appIconBase64).thenApply(function(props){
                                 that.appProperties = props;
                                 that.showSpinner = false;
@@ -535,7 +535,7 @@ module.exports = {
                         } else {
                             that.showSpinner = false;
                             that.spinnerMessage = "";
-                            that.showError("Unable to install App. See console for details");
+                            that.showError("Unable to install App. Please try again");
                             future.complete(false);
                         }
                     });
