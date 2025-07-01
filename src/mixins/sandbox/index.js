@@ -480,7 +480,7 @@ module.exports = {
                     } else {
                         currentMapping.push(item);
                     }
-                    appFileExtensionRegistrationMap.set(extension, currentMapping);
+                    appFileExtensionRegistrationMap.set(extension.toLowerCase(), currentMapping);
                 }
             });
             props.mimeTypes.forEach(mimeType => {

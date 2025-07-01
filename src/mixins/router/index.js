@@ -78,7 +78,7 @@ module.exports = {
                 });
             }
             let currentFilename = file.getFileProperties().name;
-            let extension = currentFilename.substring(currentFilename.lastIndexOf(".") +1);
+            let extension = currentFilename.substring(currentFilename.lastIndexOf(".") +1).toLowerCase();
 
             var currentFileExtensionMapping = this.sandboxedApps.appFileExtensionRegistrationMap.get(extension);
             currentFileExtensionMapping = currentFileExtensionMapping == null ? [] : currentFileExtensionMapping;
