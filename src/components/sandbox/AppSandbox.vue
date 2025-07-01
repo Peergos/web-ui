@@ -93,6 +93,20 @@
                 :title="noteTitle"
                 :note="noteContents">
             </Note>
+            <SaveConflict
+                v-if="showSaveConflictPrompt"
+                :currentContentsBytes="currentSaveConflictBytes"
+                :consumer_save_func="save_conflict_consumer_func"
+                :consumer_close_func="close_conflict_consumer_func"
+                :consumer_cancel_func="cancel_conflict_consumer_func"
+            />
+            <NewFilePicker
+                v-if="showNewFilePicker"
+                @hide-prompt="closeNewFilePicker()"
+                :pickerFileExtension="newFileExtension"
+                :initialFilename="initialNewFilename"
+                :consumer_func="file_picker_consumer_func"
+            />
             <div v-if="!fullscreenMode" class="modal-header" style="padding:0;min-height: 52px;">
                 <center><h2>
                 <span v-if="browserMode && !isSecretLink && fullPathForDisplay.length > 0" style="z-index:9999">
@@ -130,10 +144,13 @@ const FilePicker = require('../picker/FilePicker.vue');
 const FolderPicker = require('../picker/FolderPicker.vue');
 const Gallery = require("../drive/DriveGallery.vue");
 const Group = require("../Group.vue");
+const NewFilePicker = require("../picker/NewFilePicker.vue");
 const Note = require("../message/Note.vue");
 const ProgressBar = require("../drive/ProgressBar.vue");
+const SaveConflict = require("../prompt/SaveConflict.vue");
 const Spinner = require("../spinner/Spinner.vue");
 const ViewProfile = require("../profile/ViewProfile.vue");
+
 
 const mixins = require("../../mixins/mixins.js");
 const downloaderMixins = require("../../mixins/downloader/index.js");
@@ -154,8 +171,10 @@ module.exports = {
         FolderPicker,
         Group,
         Gallery,
+        NewFilePicker,
         Note,
         ProgressBar,
+        SaveConflict,
         Spinner,
         ViewProfile,
     },
@@ -282,6 +301,14 @@ module.exports = {
             showNote: false,
             noteTitle: "",
             noteContents: "",
+            showSaveConflictPrompt: false,
+            save_conflict_consumer_func: (bytes) => { },
+            currentSaveConflictBytes: null,
+            showNewFilePicker: false,
+            file_picker_consumer_func: () => { },
+            initialNewFilename: '',
+            newFileExtension: '',
+            closeNewFilePicker: () => { },
         }
     },
     computed: {
@@ -3299,19 +3326,123 @@ module.exports = {
                             future.complete(true);
                         }).exceptionally(function(throwable) {
                             let msg = that.uriDecode(throwable.detailMessage);
-                            if (msg.includes("CAS exception updating cryptree node.")) {
-                                that.showError("The file has been updated by another user. Your changes have not been saved.");
+                            if (msg.includes('Concurrent modification of a file or directory!')) {
+                                that.currentSaveConflictBytes = bytes;
+                                that.save_conflict_consumer_func = function (bytes) {
+                                    that.continueSaveConflictPrompt(bytes, refreshTargetFile, (res, path, filename) => {
+                                        if (res) {
+                                            setTimeout(() => {
+                                                that.navigateTo = { app: that.currentAppName, navigationPath: "/" + path, navigationFilename: filename};
+                                                that.closeSandbox();
+                                            }, 10);
+                                        }
+                                    });
+                                };
+                                that.close_conflict_consumer_func = function (bytes) {
+                                    that.showSaveConflictPrompt = false;
+                                    that.buildResponse(header, null, that.ACTION_FAILED);
+                                    future.complete(false);
+                                };
+                                that.cancel_conflict_consumer_func = function (bytes) {
+                                    that.showSaveConflictPrompt = false;
+                                    that.buildResponse(header, null, that.ACTION_FAILED);
+                                    future.complete(false);
+                                };
+                                that.showSaveConflictPrompt = true;
                             } else {
                                 that.showError("Unexpected error: " + throwable.detailMessage);
                                 console.log(throwable.getMessage());
+                                that.buildResponse(header, null, that.ACTION_FAILED);
+                                future.complete(false);
                             }
-                            that.buildResponse(header, null, that.ACTION_FAILED);
-                            future.complete(false);
                         });
                     }
                     return future;
                 });
             }
+        },
+        continueSaveConflictPrompt(data, refreshTargetFile, callback) {
+            let that = this;
+            that.showSaveConflictPrompt = false;
+            Vue.nextTick(function() {
+                let currentFilename = that.currentFile.getName();
+                let extension = currentFilename.substring(currentFilename.lastIndexOf('.'));
+                that.newFileExtension = extension.substring(1);
+                let filenameWithoutExtension = currentFilename.substring(0, currentFilename.lastIndexOf('.'));
+                that.initialNewFilename = filenameWithoutExtension + '(1)' + extension;
+                that.file_picker_consumer_func = function (prompt_result, folder) {
+                    if (prompt_result == null) {
+                        callback(false);
+                        return;
+                    }
+                    let filename = prompt_result.trim();
+                    if (!filename.endsWith(extension)) {
+                        that.showToastError("Incorrect file extension!");
+                        callback(false);
+                        return;
+                    }
+                    if (filename === '' || prompt_result == currentFilename || filename.includes('..') || filename.includes('/') || filename.includes('\\')) {
+                        callback(false);
+                        that.showToastError("Invalid filename!");
+                        return;
+                    }
+                    let folderPath = folder.endsWith("/") ? folder : folder + "/";
+                    let fullPathToNewFile = folderPath + filename;
+                    that.findFileByPath(fullPathToNewFile, false).thenApply(file => {
+                        if (file != null) {
+                            that.showToastError("File already exists. File not saved!");
+                            callback(false);
+                        } else {
+                            let filePath = peergos.client.PathUtils.directoryToPath(fullPathToNewFile.split('/').filter(n => n.length > 0));
+                            that.writeNewFileAfterSaveConflict(filePath, data, refreshTargetFile, callback);
+                        }
+                    });
+                };
+                that.showNewFilePicker = true;
+            });
+        },
+        writeNewFileAfterSaveConflict: function(path, data, refreshTargetFile, callback) {
+            let that = this;
+            let pathNameCount = peergos.client.PathUtils.getNameCount(path);
+            let pathWithoutFilename = peergos.client.PathUtils.subpath(path, 0, pathNameCount -1);
+            this.context.getByPath(pathWithoutFilename.toString()).thenApply(dirOpt => {
+                let dir = dirOpt.get();
+                if(!dir.isWritable()) {
+                    that.showError("You do not have write access to folder!");
+                    callback(false);
+                } else {
+                    let filename = peergos.client.PathUtils.getFileName(path).toString();
+                    dir.uploadOrReplaceFile(filename,
+                            new peergos.shared.user.fs.AsyncReader.build(data),
+                            0, data.length, that.context.network, that.context.crypto, x => {})
+                                .thenApply(function(updatedFolder) {
+                                    that.context.getByPath(path.toString()).thenApply(fileOpt => {
+                                        callback(true, pathWithoutFilename, filename);
+                                    });
+                                }).exceptionally(function(throwable) {
+                                    let msg = that.uriDecode(throwable.detailMessage);
+                                    that.showError("Unexpected error", throwable.detailMessage);
+                                    console.log(throwable.getMessage());
+                                    callback(false);
+                                })
+                }
+            });
+        },
+        findFileByPath: function(filePath) {
+            var future = peergos.shared.util.Futures.incomplete();
+            let that = this;
+            this.context.getByPath(filePath).thenApply(function(fileOpt){
+                if (fileOpt.ref == null) {
+                    future.complete(null);
+                } else {
+                    let file = fileOpt.get();
+                    future.complete(file);
+                }
+            }).exceptionally(function(throwable) {
+                console.log(throwable.getMessage());
+                future.complete(null);
+            });
+            return future;
         },
         reduceCommands: function(future) {
             let that = this;

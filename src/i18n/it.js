@@ -488,6 +488,8 @@ module.exports = {
     "PROMPT.OK":"OK",
     "PROMPT.CANCEL":"Annulla",
     "PROMPT.SET":"Imposta",
+    "SAVE.CONFLICT.TITLE":"Il file è stato aggiornato da un altro utente",
+    "SAVE.CONFLICT.DETAIL":"Si desidera salvare le modifiche in un altro file?",
     "DRIVE.MOVING.TITLE":"Spostamento file",
     "DRIVE.MOVING.COMPLETE":"Completamento spostamento e aggiornamento cartella...",
     "DRIVE.COPYING.TITLE":"Copia file",

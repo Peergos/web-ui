@@ -488,6 +488,8 @@ module.exports = {
     "PROMPT.OK":"OK",
     "PROMPT.CANCEL":"Anuluj",
     "PROMPT.SET":"Ustaw",
+    "SAVE.CONFLICT.TITLE":"Plik został zaktualizowany przez innego użytkownika",
+    "SAVE.CONFLICT.DETAIL":"Czy chcesz zapisać swoje zmiany w innym pliku?",
     "DRIVE.MOVING.TITLE":"Przenoszenie pliku(ów)",
     "DRIVE.MOVING.COMPLETE":"Kończenie przenoszenia i odświeżanie folderu...",
     "DRIVE.COPYING.TITLE":"Kopiowanie pliku(ów)",

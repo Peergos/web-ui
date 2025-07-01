@@ -487,6 +487,8 @@ module.exports = {
     "PROMPT.OK":"OK",
     "PROMPT.CANCEL":"Cancel",
     "PROMPT.SET":"Set",
+    "SAVE.CONFLICT.TITLE":"The file has been updated by another user",
+    "SAVE.CONFLICT.DETAIL":"Do you wish to save your changes to another file?",
     "DRIVE.MOVING.TITLE":"Moving file(s)",
     "DRIVE.MOVING.COMPLETE":"Completing move and refreshing folder...",
     "DRIVE.COPYING.TITLE":"Copying file(s)",
