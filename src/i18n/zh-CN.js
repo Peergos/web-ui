@@ -466,5 +466,7 @@ module.exports = {
     "PROMPT.OK":"好的",
     "PROMPT.CANCEL":"取消",
     "PROMPT.SET":"设定",
+    "SAVE.CONFLICT.TITLE":"该文件已被其他用户更新",
+    "SAVE.CONFLICT.DETAIL":"是否要将更改保存到另一个文件",
     "SHAREDWITH.TITLE": "共享对象"
 }

@@ -75,7 +75,6 @@ module.exports = {
 		return {
 			prompt_result: '',
 			placeholder: '',
-			value: '',
 			max_input_size: 30,
 			action: 'ok',
 			folder_result: '',
@@ -96,6 +95,10 @@ module.exports = {
         pickerFileExtension: {
             type: String,
             default: 'txt'
+        },
+        initialFilename: {
+            type: String,
+            default: ''
         }
 	},
     mixins:[folderTreeMixin],
@@ -113,7 +116,7 @@ module.exports = {
 	},
 
 	mounted() {
-		this.prompt_result = this.value;
+		this.prompt_result = this.initialFilename;
 
 		if(this.placeholder !== null){
 			this.$refs.prompt.focus()

@@ -3,13 +3,27 @@
 <div class="modal-mask" @click="close">
     <div class="modal-container full-height" @click.stop style="width:100%;overflow-y:auto;padding:0;display:flex;flex-flow:column;">
         <div class="modal-header" style="padding:0">
-            <center><h2>{{ getFilename() }}</h2></center>
+            <center><h2>{{ getFilename }}</h2></center>
 	  <span style="position:absolute;top:0;right:0.2em;">
 	    <span v-if="isWritable()" @click="getAndSave" tabindex="0" v-on:keyup.enter="getAndSave"  style="color:black;font-size:2.5em;font-weight:bold;cursor:pointer;margin:.3em;" v-bind:class="['fas', saving ? 'fa-hourglass' : 'fa-save']" title="Save file"></span>
 	    <span @click="close" tabindex="0" v-on:keyup.enter="close" style="color:black;font-size:3em;font-weight:bold;cursor:pointer;font-family:'Cambria Math'">&times;</span>
 	  </span>
         </div>
-
+        <SaveConflict
+            v-if="showSaveConflictPrompt"
+            :currentContentsBytes="currentSaveConflictBytes"
+            :consumer_save_func="save_conflict_consumer_func"
+            :consumer_close_func="close_conflict_consumer_func"
+            :consumer_cancel_func="cancel_conflict_consumer_func"
+        />
+        <NewFilePicker
+            v-if="showNewFilePicker"
+            @hide-prompt="closeNewFilePicker()"
+            :pickerFileExtension="newFileExtension"
+            :initialFilename="initialNewFilename"
+            :consumer_func="file_picker_consumer_func"
+        />
+        <Spinner v-if="showSpinner" :message="spinnerMessage"></Spinner>
         <div class="modal-body" style="margin:0;padding:0;display:flex;flex-grow:1;">
 	  <iframe id="editor" :src="frameUrl()" style="width:100%;height:100%;" frameBorder="0"></iframe>
         </div>
@@ -19,27 +33,50 @@
 </template>
 
 <script>
+const NewFilePicker = require("../picker/NewFilePicker.vue");
+const SaveConflict = require("../prompt/SaveConflict.vue");
+const Spinner = require("../spinner/Spinner.vue");
 const UriDecoder = require('../../mixins/uridecoder/index.js');
 module.exports = {
+    components: {
+        NewFilePicker,
+        SaveConflict,
+        Spinner,
+    },
     data: function() {
         return {
             showSpinner: false,
+            spinnerMessage: '',
 	        expectingSave: false,
 	        saving: false,
 	        currentFile: null,
 	        currentFilename: null,
+	        currentFolderPath: "",
 	        isFileWritable: false,
-	        isIframeInitialised: false
+	        isIframeInitialised: false,
+            showSaveConflictPrompt: false,
+            save_conflict_consumer_func: (bytes) => { },
+            currentSaveConflictBytes: null,
+            showNewFilePicker: false,
+            file_picker_consumer_func: () => { },
+            initialNewFilename: '',
+            newFileExtension: '',
         }
     },
-    props: ['context', 'file'],
+    props: ['context', 'file', 'folder'],
     created: function() {
         this.currentFile = this.file;
         this.currentFilename = this.file.getName();
         this.isFileWritable = this.file.isWritable();
+        this.currentFolderPath = this.folder;
         this.startListener();
     },
     mixins:[UriDecoder],
+    computed: {
+        getFilename: function() {
+            return this.currentFilename;
+        },
+    },
     methods: {
 	frameUrl: function() {
             return this.frameDomain() + "/apps/code-editor/index.html";
@@ -194,6 +231,7 @@ module.exports = {
 
     save: function(text) {
 	    this.saving = true;
+	    this.showSpinner = true;
 	    var bytes = convertToByteArray(new TextEncoder().encode(text));
 	    var java_reader = peergos.shared.user.fs.AsyncReader.build(bytes);
 	    const context = this.context;
@@ -205,20 +243,123 @@ module.exports = {
             that.saving = false;
             that.currentFile = updatedFile;
             that.$emit("update-refresh");
+            that.showSpinner = false;
         }).exceptionally(function(throwable) {
             let msg = that.uriDecode(throwable.detailMessage);
-            if (msg.includes("CAS exception updating cryptree node.")) {
-                that.showMessage(true, "Concurrent modification detected", "The file has been updated by another user. Your changes have not been saved.");
+            if (msg.includes('Concurrent modification of a file or directory!')) {
+                that.currentSaveConflictBytes = bytes;
+                that.save_conflict_consumer_func = function (bytes) {
+                    that.continueSaveConflictPrompt(bytes);
+                };
+                that.close_conflict_consumer_func = function (bytes) {
+                    that.showSaveConflictPrompt = false;
+                    that.showMessage(false, "Changes not saved!");
+                    that.saving = false;
+                };
+                that.cancel_conflict_consumer_func = function (bytes) {
+                    that.showSaveConflictPrompt = false;
+                    that.showMessage(false, "Changes not saved!");
+                    that.saving = false;
+                };
+                that.showSaveConflictPrompt = true;
             } else {
+                that.saving = false;
                 that.showMessage(true, "Unexpected error", throwable.detailMessage);
-                console.log('Error uploading file: ' + that.file.getName());
+                console.log('Error saving file');
                 console.log(throwable.getMessage());
             }
-            that.saving = false;
+            that.showSpinner = false;
         });
     },
-    getFilename: function() {
-        return this.currentFilename;
+    continueSaveConflictPrompt(data) {
+        let that = this;
+        that.showSaveConflictPrompt = false;
+        Vue.nextTick(function() {
+            let extension = that.currentFilename.substring(that.currentFilename.lastIndexOf('.'));
+            that.newFileExtension = extension.substring(1);
+            let filenameWithoutExtension = that.currentFilename.substring(0, that.currentFilename.lastIndexOf('.'));
+            that.initialNewFilename = filenameWithoutExtension + '(1)' + extension;
+            that.file_picker_consumer_func = function (prompt_result, folder) {
+                if (prompt_result == null) {
+                    return;
+                }
+                let filename = prompt_result.trim();
+                if (!filename.endsWith(extension)) {
+                    that.showMessage(true, "Incorrect file extension!");
+                    return;
+                }
+                if (filename === '' || prompt_result == that.currentFilename || filename.includes('..') || filename.includes('/') || filename.includes('\\')) {
+                    that.showMessage(true, "Invalid filename!");
+                    return;
+                }
+                let folderPath = folder.endsWith("/") ? folder : folder + "/";
+                let fullPathToNewFile = folderPath + filename;
+                that.findFileByPath(fullPathToNewFile, false).thenApply(file => {
+                    if (file != null) {
+                        that.showMessage(true, "File already exists. File not saved!");
+                    } else {
+                        let filePath = peergos.client.PathUtils.directoryToPath(fullPathToNewFile.split('/').filter(n => n.length > 0));
+                        that.writeNewFile(filePath, data);
+                    }
+                });
+            };
+            that.showNewFilePicker = true;
+        });
+    },
+    closeNewFilePicker() {
+        this.showNewFilePicker = false;
+        this.saving = false;
+    },
+    writeNewFile: function(path, data) {
+        this.saving = true;
+        this.showSpinner = true;
+        let that = this;
+        let pathNameCount = peergos.client.PathUtils.getNameCount(path);
+        let pathWithoutFilename = peergos.client.PathUtils.subpath(path, 0, pathNameCount -1);
+        this.context.getByPath(pathWithoutFilename.toString()).thenApply(dirOpt => {
+            let dir = dirOpt.get();
+            if(!dir.isWritable()) {
+                that.showMessage(true, "You do not have write access to folder!");
+                that.saving = false;
+                that.showSpinner = false;
+            } else {
+                dir.uploadOrReplaceFile(peergos.client.PathUtils.getFileName(path).toString(),
+                        new peergos.shared.user.fs.AsyncReader.build(data),
+                        0, data.length, that.context.network, that.context.crypto, x => {})
+                            .thenApply(function(updatedFolder) {
+                                that.context.getByPath(path.toString()).thenApply(fileOpt => {
+                                    that.saving = false;
+                                    that.currentFile = fileOpt.ref;
+                                    that.currentFilename = that.currentFile.getName();
+                                    that.isFileWritable = that.currentFile.isWritable();
+                                    that.$emit("update-refresh");
+                                    that.showSpinner = false;
+                                });
+                            }).exceptionally(function(throwable) {
+                                let msg = that.uriDecode(throwable.detailMessage);
+                                that.showMessage(true, "Unexpected error", throwable.detailMessage);
+                                console.log(throwable.getMessage());
+                                that.saving = false;
+                                that.showSpinner = false;
+                            })
+            }
+        });
+    },
+    findFileByPath: function(filePath) {
+        var future = peergos.shared.util.Futures.incomplete();
+        let that = this;
+        this.context.getByPath(filePath).thenApply(function(fileOpt){
+            if (fileOpt.ref == null) {
+                future.complete(null);
+            } else {
+                let file = fileOpt.get();
+                future.complete(file);
+            }
+        }).exceptionally(function(throwable) {
+            console.log(throwable.getMessage());
+            future.complete(null);
+        });
+        return future;
     },
     showMessage: function(isError, title, body) {
         let bodyContents = body == null ? '' : ' ' + body;
@@ -229,6 +370,7 @@ module.exports = {
         }
     },
     close: function () {
+        this.$emit("update-refresh");
         this.$emit("hide-code-editor");
     },
     isWritable: function() {

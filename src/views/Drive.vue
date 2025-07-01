@@ -283,6 +283,7 @@
       v-on:hide-code-editor="back()"
       v-on:update-refresh="forceUpdate++"
       :file="selectedFiles[0]"
+      :folder="getPath"
       :context="context"
     >
     </CodeEditor>
