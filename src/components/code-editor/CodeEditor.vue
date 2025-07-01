@@ -51,7 +51,6 @@ module.exports = {
 	        saving: false,
 	        currentFile: null,
 	        currentFilename: null,
-	        currentFolderPath: "",
 	        isFileWritable: false,
 	        isIframeInitialised: false,
             showSaveConflictPrompt: false,
@@ -68,7 +67,6 @@ module.exports = {
         this.currentFile = this.file;
         this.currentFilename = this.file.getName();
         this.isFileWritable = this.file.isWritable();
-        this.currentFolderPath = this.folder;
         this.startListener();
     },
     mixins:[UriDecoder],
