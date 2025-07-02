@@ -199,12 +199,16 @@ module.exports = {
               return uri;
            // e.g. content://com.android.externalstorage.documents/tree/primary%3ADocuments
            // e.g. //com.android.externalstorage.documents/tree/primary%3ADocuments
+           // or an sdcard e,g /tree/3DE6-6834%3Atestdir
            var res = new URL(uri);
            var path = res.pathname;
-           const prefix = "/tree/primary%3A"
+           path = path.replaceAll("%2F", "/").replaceAll("%3A", ":")
+           const prefix = "/tree/primary:"
            if (path.startsWith(prefix))
-              return path.substring(prefix.length).replaceAll("%2F", "/");
-           return path.replaceAll("%2F", "/");
+              return path.substring(prefix.length);
+           if (new RegExp("/tree/[A-Z0-9]{4}-[A-Z0-9]{4}:.*").test(path))
+              return "/sdcard/" + path.substring(16);
+           return path;
         },
 
         getHostDirTree() {
