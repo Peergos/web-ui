@@ -1342,7 +1342,8 @@ module.exports = {
                         info = this.translate("NEWSFEED.INVITED.APP") + " " + app[0].displayName;
                     } else {
                         let actualAppName = this.extractChatAppName(appName);
-                        info = this.translate("NEWSFEED.INVITED.APP") + " " + actualAppName;
+                        let formattedAppName = actualAppName.substring(0,1).toUpperCase() + actualAppName.substring(1);
+                        info = this.translate("NEWSFEED.INVITED.APP") + " " + formattedAppName;
                     }
                     displayFilename = false;
                 } else {

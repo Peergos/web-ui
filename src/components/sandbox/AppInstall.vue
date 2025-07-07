@@ -364,8 +364,7 @@ module.exports = {
                                     that.showSpinner = false;
                                 } else {
                                     peergos.shared.user.App.init(that.context, appName).thenApply(ready => {
-                                        that.gatherDataFiles(appName, srcDirectoryOpt.ref)
-                                            .thenApply(dataFiles => that.copyAppFiles(dataFiles, appName, displayName, chatId, appIconBase64, oldProperties != null));
+                                        that.attemptAppInstall(0, srcDirectoryOpt.ref, appName, displayName, chatId, appIconBase64, oldProperties != null);
                                     });
                                 }
                             });
@@ -374,7 +373,7 @@ module.exports = {
                 });
             });
         },
-       installApp: function(oldProperties) {
+        installApp: function(oldProperties) {
            let that = this;
            let displayName = this.appProperties.displayName;
            let appName = this.appProperties.name;
@@ -387,13 +386,34 @@ module.exports = {
                    } else {
                        that.spinnerMessage = "Installing App: " + displayName;
                        peergos.shared.user.App.init(that.context, appName).thenApply(ready => {
-                             that.gatherDataFiles(appName, srcDirectoryOpt.ref)
-                                .thenApply(dataFiles => that.copyAppFiles(dataFiles, appName, displayName));
+                             that.attemptAppInstall(0, srcDirectoryOpt.ref, appName, displayName);
                        });
                    }
                });
            });
-       },
+        },
+        attemptAppInstall: function(attemptCount, srcDirectory, appName, displayName, chatId, appIconBase64, isUpdateInstall) {
+           let that = this;
+           peergos.shared.user.App.init(this.context, appName).thenApply(ready => {
+                 that.gatherDataFiles(appName, srcDirectory)
+                    .thenApply(dataFiles =>
+                        that.copyAppFiles(dataFiles, appName, displayName, chatId, appIconBase64, isUpdateInstall)
+                            .thenApply(installed => {
+                                if (!installed) {
+                                    if (attemptCount < 3) {
+                                        that.attemptAppInstall(attemptCount + 1, srcDirectory, appName, displayName, chatId, appIconBase64, isUpdateInstall);
+                                    } else {
+                                        that.showSpinner = false;
+                                        that.spinnerMessage = "";
+                                        that.showError("Unable to install App. Please try again");
+                                    }
+                                }
+                            })
+
+
+                    );
+           });
+        },
         gatherDataFiles: function(appName, appDirectory) {
             let future = peergos.shared.util.Futures.incomplete();
             let dataFolderName = 'data';
@@ -533,9 +553,6 @@ module.exports = {
                                 future.complete(true);
                             });
                         } else {
-                            that.showSpinner = false;
-                            that.spinnerMessage = "";
-                            that.showError("Unable to install App. Please try again");
                             future.complete(false);
                         }
                     });
