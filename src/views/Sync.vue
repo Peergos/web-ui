@@ -269,6 +269,7 @@ module.exports = {
                     return that.getDeleteBehaviour().thenCompose(deleteSelection => {
                         const syncLocalDeletes = deleteSelection.syncLocalDeletes;
                         const syncRemoteDeletes = deleteSelection.syncRemoteDeletes;
+                        that.$toast("Creating sync pair..", {id:"syncadd"});
                         const peergosPath = peergos.client.PathUtils.directoryToPath(peergosDir.substring(1).split("/"));
                         return that.context.shareWriteAccessWith(peergosPath, peergos.client.JsUtil.asSet([])).thenCompose(done => {
                            return that.context.createSecretLink(peergosDir, true, java.util.Optional.empty(), "", "", false);
