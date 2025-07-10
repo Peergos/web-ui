@@ -120,6 +120,26 @@ module.exports = {
                       if (props.source.length > 256) {
                           errors.push("Invalid Source property. Length must not exceed 256 characters");
                       }
+                      if (!(props.newFileExtensions.constructor === Array)) {
+                          errors.push("Invalid newFileExtensions property. Must be an array. Can be empty []");
+                      } else {
+                          let newFileExtensions = [];
+                          props.newFileExtensions.forEach(newFileExtension => {
+                              var ok = true;
+                              if (newFileExtension.extension == null || !that.isString(newFileExtension.extension)) {
+                                  errors.push("Invalid newFileExtensions property. Expecting extension property");
+                                  ok = false;
+                              }
+                              if (newFileExtension.name == null || !that.isString(newFileExtension.name)) {
+                                  errors.push("Invalid newFileExtensions property. Expecting name property");
+                                  ok = false;
+                              }
+                              if (ok) {
+                                  newFileExtensions.push({extension: newFileExtension.extension.toLowerCase(), name: newFileExtension.name});
+                              }
+                          });
+                          props.newFileExtensions = newFileExtensions;
+                      }
                       if (!(props.fileExtensions.constructor === Array)) {
                           errors.push("Invalid fileExtensions property. Must be an array. Can be empty []");
                       } else {
@@ -253,6 +273,9 @@ module.exports = {
                           }
                           if (props.templateIconBase64 == null) {
                               props.templateIconBase64 = '';
+                          }
+                          if (props.newFileExtensions == null) {
+                              props.newFileExtensions = [];
                           }
                           if (props.fileExtensions == null) {
                               props.fileExtensions = [];
@@ -467,7 +490,7 @@ module.exports = {
                 createFile: createFile, openFile: openFile, openFileFilters: openFileFilters, launchable: props.launchable,
                 folderAction: props.folderAction, appIcon: props.appIcon, contextMenuText: contextMenuText,
                 source: props.source, version: props.version, createFile: createFile, primaryFileExtension: primaryFileExtension,
-                templateIconBase64: props.templateIconBase64, chatId: props.chatId, template : props.template};
+                templateIconBase64: props.templateIconBase64, chatId: props.chatId, template : props.template, newFileExtensions: props.newFileExtensions};
 
             appsInstalled.push(item);
             props.fileExtensions.forEach(extension => {

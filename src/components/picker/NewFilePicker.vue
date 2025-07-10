@@ -5,17 +5,17 @@
 			<div class="app-prompt__container" @click.stop>
 				<header class="prompt__header">
 					<AppButton class="close" icon="close" @click.native="closePrompt()"/>
-					<h3>Create new &quot{{pickerFileExtension}}&quot file</h3>
+					<h3>{{title}}</h3>
 				</header>
                 <Spinner v-if="showSpinner" :message="spinnerMessage"></Spinner>
-                <div class="prompt__body">
+                <div class="prompt__body_no_margin">
                     <select v-if="displayDriveSelection" v-model="selectedDrive" @change="changeSelectedDrive" :disabled='disableDriveSelection'>
                         <option v-for="option in driveOptions" v-bind:value="option.value">
                             {{ option.text }}
                           </option>
                     </select>
                 </div>
-                <div class="prompt__body">
+                <div class="prompt__body_no_margin">
                     <div class="folder-picker-view" class="scroll-style">
                       <ul>
                         <SelectableTreeItem class="item" :model="treeData" :load_func="loadFolderLazily" :select_func="selectFolder" :spinnerEnable_func="spinnerEnable" :spinnerDisable_func="spinnerDisable" :selectLeafOnly="selectLeafOnly"></SelectableTreeItem>
@@ -28,7 +28,14 @@
                     >
                     </input>
                 </div>
-				<div class="prompt__body">
+                <div class="prompt__body_no_margin">
+                    <select v-if="pickerMultipleFileExtensions.length > 0" v-model="selectedFileExtension" @change="changeSelectedFileExtension">
+                        <option v-for="option in fileExtensionOptions" v-bind:value="option.value">
+                            {{ option.text }}
+                          </option>
+                    </select>
+                </div>
+				<div class="prompt__body_no_margin">
 					<input
 						v-if="placeholder"
 						id="prompt-input"
@@ -86,6 +93,9 @@ module.exports = {
             driveOptions: [],
             displayDriveSelection: false,
             disableDriveSelection: false,
+            title: "",
+            selectedFileExtension: "",
+            fileExtensionOptions: [],
 		}
 	},
 	props: {
@@ -99,7 +109,11 @@ module.exports = {
         initialFilename: {
             type: String,
             default: ''
-        }
+        },
+        pickerMultipleFileExtensions: {
+            type: Array,
+            default: []
+        },
 	},
     mixins:[folderTreeMixin],
 	computed: {
@@ -124,7 +138,18 @@ module.exports = {
 	},
     created: function() {
         let that = this;
-        this.placeholder = 'filename.' + this.pickerFileExtension;
+        if (this.pickerMultipleFileExtensions.length == 0) {
+            this.title = "Create new '" + this.pickerFileExtension + "' file";
+            this.placeholder = 'filename.' + this.pickerFileExtension;
+        } else {
+            let defaultFileExtension = this.pickerMultipleFileExtensions[0].extension;
+            this.title = "Create new File";
+            this.placeholder = 'filename.' + defaultFileExtension;
+            this.selectedFileExtension = defaultFileExtension;
+            this.pickerMultipleFileExtensions.forEach(fileExtension => {
+                that.fileExtensionOptions.push({ text: fileExtension.name + ' - ' + fileExtension.extension, value: fileExtension.extension });
+            });
+        }
         this.showSpinner = true;
         let callback = (baseOfFolderTree) => {
             that.treeData = baseOfFolderTree;
@@ -150,7 +175,6 @@ module.exports = {
 	methods: {
         changeSelectedDrive: function() {
             let that = this;
-            //console.log("selected=" + this.selectedDrive);
             this.treeData = {};
             let callback = (baseOfFolderTree) => {
                 that.treeData = baseOfFolderTree;
@@ -162,7 +186,10 @@ module.exports = {
             this.showSpinner = true;
             this.loadSubFolders(this.selectedDrive, callback);
         },
-
+        changeSelectedFileExtension: function() {
+            let that = this;
+            this.placeholder = 'filename.' + this.selectedFileExtension;
+        },
 		closePrompt() {
 			this.consumer_func(null);
 			this.$emit("hide-prompt");
@@ -171,8 +198,14 @@ module.exports = {
 		getPrompt() {
 		    var filename = this.prompt_result;
 		    if (filename.length > 0 && this.folder_result.length > 0) {
-                if (!filename.endsWith("." + this.pickerFileExtension)) {
-                    filename = filename + '.' + this.pickerFileExtension;
+                if (this.pickerMultipleFileExtensions.length == 0) {
+                    if (!filename.endsWith("." + this.pickerFileExtension)) {
+                        filename = filename + '.' + this.pickerFileExtension;
+                    }
+                } else {
+                    if (!filename.endsWith("." + this.selectedFileExtension)) {
+                        filename = filename + '.' + this.selectedFileExtension;
+                    }
                 }
                 this.consumer_func(filename, this.folder_result);
                 this.$emit("hide-prompt");
@@ -226,8 +259,8 @@ select{
 	border-top:0;
 	font-weight: var(--regular);
 }
-.prompt__body{
-	margin: 10px;
+.prompt__body_no_margin{
+	margin: 0;
 }
 .prompt__footer{
 	display: flex;

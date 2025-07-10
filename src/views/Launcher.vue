@@ -17,6 +17,7 @@
                 v-if="showNewFilePicker"
                 @hide-prompt="closeNewFilePicker()"
                 :pickerFileExtension="pickerFileExtension"
+                :pickerMultipleFileExtensions="pickerMultipleFileExtensions"
                 :consumer_func="prompt_consumer_func"
             />
             <FilePicker
@@ -213,6 +214,7 @@ module.exports = {
             showNewFilePicker: false,
             prompt_consumer_func: () => { },
             pickerFileExtension: '',
+            pickerMultipleFileExtensions: [],
             showReplace: false,
             replace_message: "",
             replace_body: "",
@@ -227,7 +229,6 @@ module.exports = {
             initiallySelectedPaths: [],
             showFilePicker: false,
             selectedFileFromPicker: null,
-            pickerFileExtension: "",
             pickerFilterMedia: false,
             pickerFilters: null,
             pickerShowThumbnail: false,
@@ -242,6 +243,7 @@ module.exports = {
             existingAdmins: [],
             isTemplateApp: false,
             currentApp: null,
+            replace_showApplyAll: false,
         }
     },
     props: [],
@@ -372,6 +374,7 @@ module.exports = {
                     });
                 };
                 this.pickerFileExtension = app.primaryFileExtension;
+                this.pickerMultipleFileExtensions = app.newFileExtensions;
                 this.showNewFilePicker = true;
             } else if (app.openFile) {
                 this.filePickerBaseFolder = "/" + this.context.username;
