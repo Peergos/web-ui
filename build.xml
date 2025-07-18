@@ -234,6 +234,8 @@ Javac-Version: ${javac.version}</echo>
 ***********************************
     </echo>
     <exec executable="java" dir="${server}">
+      <!--<arg value="-Xdebug"/>
+      <arg value="-Xrunjdwp:transport=dt_socket,server=y,suspend=y,address=5005"/>!-->
       <arg value="-jar"/>
       <arg value="Peergos.jar"/>
       <arg value="pki-init"/>
