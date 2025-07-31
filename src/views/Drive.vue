@@ -1099,11 +1099,12 @@ module.exports = {
 					this.$store.commit('SET_PATH', [this.context.username])
 					this.updateHistory('Drive', this.getPath, {filename:""})
 				}
-
+                                that.updateUsage()
+                                that.updateQuota()
+                                that.updateMirrorBatId()
+                    
 				this.updateSocial(() => {
-                    that.updateUsage()
-                    that.updateQuota()
-                    that.updateMirrorBatId()
+                    
 
                     that.context.getPaymentProperties(false).thenApply(function (paymentProps) {
                         if (paymentProps.isPaid()) {
