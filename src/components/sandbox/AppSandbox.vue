@@ -718,7 +718,7 @@ module.exports = {
             let that = this;
             peergos.shared.user.App.init(this.context, "launcher").thenApply(launcher => {
                 that.launcherApp = launcher;
-                if (that.appProperties.template.length > 0) {
+                if (that.appProperties != null && that.appProperties.template.length > 0) {
                     that.readTemplateAppConfiguration(() => that.startListener());
                 } else {
                     that.startListener();
