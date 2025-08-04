@@ -9,6 +9,11 @@
         </div>
         <div class="modal-body">
             <Spinner v-if="showSpinner" :message="spinnerMessage"></Spinner>
+            <select v-model="selectedDrive" @change="changeSelectedDrive" :disabled='disableDriveSelection'>
+                <option v-for="option in driveOptions" v-bind:value="option.value">
+                    {{ option.text }}
+                  </option>
+            </select>
             <div class="folder-picker-view" class="scroll-style-simple-folder">
               <ul style="padding-inline-start: 10px;">
                 <SimpleTreeItem class="item" :model="treeData" :selectFolder_func="selectFolder"></SimpleTreeItem>
@@ -58,10 +63,13 @@ module.exports = {
             spinnerMessage: 'Loading folders...',
             treeData: {},
             selectedFoldersList: [],
+            selectedDrive: "",
+            disableDriveSelection: false,
+            driveOptions: [],
             folderPickerTitle: 'Folder Picker',
         }
     },
-    props: ['baseFolder', 'selectedFolder_func','preloadFolders_func','multipleFolderSelection', 'pickerTitle'],
+    props: ['selectedFolder_func','preloadFolders_func','multipleFolderSelection', 'drives', 'pickerTitle'],
     mixins:[i18n],
     computed: {
         ...Vuex.mapState([
@@ -73,12 +81,16 @@ module.exports = {
             this.folderPickerTitle = this.pickerTitle;
         }
         let that = this;
+        this.drives.forEach(f => {
+            that.driveOptions.push({ text: 'Drive: ' + f, value: f });
+        });
+        this.selectedDrive = this.drives[0];
         let callback = (baseOfFolderTree) => {
             that.treeData = baseOfFolderTree;
             that.showSpinner = false;
             that.spinnerMessage = '';
         };
-        this.preloadFolders_func(this.baseFolder + "/", callback);
+        this.preloadFolders_func(this.selectedDrive, callback);
     },
     methods: {
         close: function () {
@@ -87,6 +99,20 @@ module.exports = {
         showError: function(msg) {
             console.log(msg);
             this.$toast.error(msg, {timeout:false});
+        },
+        changeSelectedDrive: function() {
+            let that = this;
+            //console.log("selected=" + this.selectedDrive);
+            this.treeData = {isRoot : true, children: []};
+            let callback = (baseOfFolderTree) => {
+                that.treeData = baseOfFolderTree;
+                that.showSpinner = false;
+                that.spinnerMessage = '';
+                that.disableDriveSelection = false;
+            };
+            this.disableDriveSelection = true;
+            this.showSpinner = true;
+            this.preloadFolders_func(this.selectedDrive, callback);
         },
         selectFolder: function (folderName, add) {
             if (add) {

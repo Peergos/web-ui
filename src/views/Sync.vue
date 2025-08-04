@@ -38,7 +38,7 @@
 
             <SimpleFolderPicker
               v-if="showSimpleFolderPicker"
-              :baseFolder="folderSimplePickerBaseFolder"
+              :drives="drivesSimplePicker"
               :selectedFolder_func="selectedFoldersFromSimplePicker"
               :preloadFolders_func="preloadHostFolders"
               :multipleFolderSelection="multipleFolderSelectionSimplePicker"
@@ -91,14 +91,14 @@ module.exports = {
         return {
             syncPairs: [],
             showSimpleFolderPicker: false,
-            folderSimplePickerBaseFolder: "",
+            drivesSimplePicker: [],
             multipleFolderSelectionSimplePicker: false,
             showFolderPicker: false,
             showHostFolderPicker: false,
             folderPickerBaseFolder: "",
             multipleFolderSelection: false,
             initiallySelectedPaths: [],
-            hostFolderTree: null,
+            hostFolderTree: {},
             pickerTitle: "Remote Folder",
             simplePickerTitle: "Local Folder",
             showSpinner: false,
@@ -189,8 +189,10 @@ module.exports = {
         updateStatus() {
             let that = this;
             this.localPost("/peergos/v0/sync/status").then(function(result, err) {
-               that.status = result.msg;
-               that.error = result.error;
+                if (result != null) {
+                    that.status = result.msg;
+                    that.error = result.error;
+                }
             })
         },
 
@@ -361,17 +363,21 @@ module.exports = {
                         context = context[name];
                     }
                 }
-                that.setInitialState(final.result[0]);
-                let rootPath = final.result[0].path;
-                that.hostFolderTree = {"path":rootPath, "initiallyOpen": final.result[0].children.length == 1, "children":final.result[0].children};
-                that.folderSimplePickerBaseFolder = rootPath;
+                that.hostFolderTree = {};
+                that.drivesSimplePicker = [];
+                final.result.forEach(result => {
+                    that.setInitialState(result);
+                    let rootPath = result.path;
+                    that.hostFolderTree[rootPath] = {"path":rootPath, "initiallyOpen": result.children.length == 1, "children": result.children};
+                    that.drivesSimplePicker.push(result.path);
+                });
                 that.showSpinner = false;
                 that.selectedFoldersFromSimplePicker = function (chosenFolders) {
                     if (chosenFolders.length == 0) {
                         future.complete(null);
                     } else {
                         let selectedFolder = chosenFolders[0];
-                        if (selectedFolder == that.folderSimplePickerBaseFolder) {
+                        if (that.drivesSimplePicker.filter(i => i == selectedFolder).length == 1) {
                             future.complete(null);
                         } else {
                             future.complete(selectedFolder);
@@ -384,7 +390,7 @@ module.exports = {
             return future;
         },
         preloadHostFolders: function(path, callback) {
-            callback(this.hostFolderTree);
+            callback(this.hostFolderTree[path]);
         },
         navigateTo: function (path) {
             this.openFileOrDir("Drive", path, {filename:""});
