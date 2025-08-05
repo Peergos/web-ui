@@ -623,6 +623,7 @@ var accountStoreCache;
 var pkiStoreCache;
 var rootKeyCache;
 let SAFARI_CACHE_SIZE = 1024 * 1024 * 700;
+let MAX_CACHE_SIZE = 1024 * 1024 * 1024 * 5;
 
 function bindCacheStore(storeCache) {
     blockStoreCache = storeCache;
@@ -801,7 +802,7 @@ function getBrowserStorageQuota() {
         });
     }
     if (navigator.storage && navigator.storage.estimate) {
-        return navigator.storage.estimate().then(quota => quota.quota);
+        return navigator.storage.estimate().then(quota => Math.min(MAX_CACHE_SIZE, quota.quota));
     } else {
 
         let prom = new Promise(function(resolve, reject) { resolve(isSafariTest() ? SAFARI_CACHE_SIZE : 0)});
