@@ -99,7 +99,7 @@ module.exports = {
             multipleFolderSelection: false,
             initiallySelectedPaths: [],
             hostFolderTree: {},
-            pickerTitle: "Remote Folder",
+            pickerTitle: "Remote Folder (create in Drive first)",
             simplePickerTitle: "Local Folder",
             showSpinner: false,
             spinnerMessage: '',
