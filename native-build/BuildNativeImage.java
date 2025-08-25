@@ -32,6 +32,7 @@ public class BuildNativeImage {
                    "-H:ConfigurationFileDirectories=META-INF/native-image " +
                    "--report-unsupported-elements-at-runtime " +
                    "--initialize-at-build-time=org.sqlite.util.ProcessRunner " +
+                   "--initialize-at-build-time=io.netty.incubator.codec.quic.ConnectionIdChannelMap " +
                    "--no-fallback " +
                    "-jar Peergos.jar peergos");
         if (! new File("peergos"+ext).exists())
