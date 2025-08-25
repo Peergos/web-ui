@@ -33,6 +33,7 @@ public class BuildNativeImage {
                    "--report-unsupported-elements-at-runtime " +
                    "--initialize-at-build-time=org.sqlite.util.ProcessRunner " +
                    "--initialize-at-build-time=io.netty.incubator.codec.quic.ConnectionIdChannelMap " +
+                   "--initialize-at-build-time=io.netty.incubator.codec.quic.SecureRandomQuicConnectionIdGenerator " +
                    "--no-fallback " +
                    "-jar Peergos.jar peergos");
         if (! new File("peergos"+ext).exists())
