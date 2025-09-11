@@ -84,9 +84,12 @@ module.exports = {
                 let enc = new TextEncoder();
                 let userId = new Uint8Array(that.context.username.length);
                 enc.encodeInto(that.context.username, userId);
+                let chall = new Int8Array(32);
+                for (var i=0; i < 32; i++)
+                   chall[i] = challenge[i];
                 let data = {
                     publicKey: {
-                        challenge: challenge,
+                        challenge: chall,
                         rp: { name: "Peergos" },
                         user: {
                             id: userId,

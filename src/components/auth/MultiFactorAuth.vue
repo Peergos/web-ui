@@ -94,11 +94,11 @@ module.exports = {
                 this.hasTotp = true;
                 this.totpIndex = i;
             } else {
-                that.mfaOptions.push({type:'WebKey', credentialId: method.credentialId, name: method.name});
+                that.mfaOptions.push({type:'WebKey', credentialId: new Uint8Array(method.credentialId), name: method.name});
                 this.hasWebauthn = true;
                 that.webauthnMethods.push({
                     type: "public-key",
-                    id: method.credentialId
+                    id: new Uint8Array(method.credentialId)
                 });
             }
         }
@@ -124,10 +124,12 @@ module.exports = {
         },
         confirmWebauthn: function() {
            let that = this;
+           let allow = [];
+           this.webauthnMethods.forEach(value => allow.push({tyep:value.type, id:value.id}))
            let data = {
               publicKey: {
-                 challenge: that.challenge,
-                 allowCredentials: this.webauthnMethods,
+                 challenge: new Uint8Array(this.challenge),
+                 allowCredentials: allow,
                  timeout: 60000,
                  userVerification: "preferred",
               }
