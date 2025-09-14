@@ -125,7 +125,7 @@ module.exports = {
         confirmWebauthn: function() {
            let that = this;
            let allow = [];
-           this.webauthnMethods.forEach(value => allow.push({tyep:value.type, id:value.id}))
+           this.webauthnMethods.forEach(value => allow.push({type:value.type, id:value.id}))
            let data = {
               publicKey: {
                  challenge: new Uint8Array(this.challenge),
