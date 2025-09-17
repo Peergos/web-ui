@@ -39,6 +39,7 @@ const AppModal = require("AppModal.vue");
 const AppIcon = require("../AppIcon.vue");
 const FormPassword = require("../form/FormPassword.vue");
 const MultiFactorAuth = require("../auth/MultiFactorAuth.vue");
+const UriDecoder = require('../../mixins/uridecoder/index.js');
 const i18n = require("../../i18n/index.js");
 
 module.exports = {
@@ -49,7 +50,7 @@ module.exports = {
 		FormPassword,
 		MultiFactorAuth,
 	},
-        mixins:[i18n],
+        mixins:[UriDecoder, i18n],
 	data() {
 		return {
 			password: "",
