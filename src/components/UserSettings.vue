@@ -80,6 +80,12 @@
                     {{ translate("SETTINGS.CACHE") }}
                 </li>
 				<li
+					v-on:keyup.enter="showMigrate()"
+					@click="showMigrate()"
+				>
+					{{ translate("SETTINGS.MIGRATE") }}
+				</li>
+				<li
 					v-on:keyup.enter="showViewAccount()"
 					@click="showViewAccount()"
 				>
@@ -293,6 +299,9 @@ module.exports = {
         },
 		showChangePassword() {
 			this.$store.commit("CURRENT_MODAL", "ModalPassword");
+		},
+		showMigrate() {
+			this.$store.commit("CURRENT_MODAL", "ModalMigrate");
 		},
 		showViewAccount() {
 			this.$store.commit("CURRENT_MODAL", "ModalAccount");

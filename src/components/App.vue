@@ -71,6 +71,7 @@ const ModalPassword = require("./modal/ModalPassword.vue");
 const ModalAccount = require("./modal/ModalAccount.vue");
 const ModalProfile = require("./modal/ModalProfile.vue");
 const ModalFeedback = require("./modal/ModalFeedback.vue");
+const ModalMigrate = require("./modal/ModalMigrate.vue");
 const LinkPassword = require("./LinkPassword.vue");
 
 const AppTab = require("./tabs/AppTab.vue");
@@ -108,6 +109,7 @@ module.exports = {
                 ModalCancel,
 		ModalPassword,
 		ModalAccount,
+		ModalMigrate,
 		ModalProfile,
 		ModalFeedback,
 		ServerMessages,
