@@ -15,7 +15,7 @@
 			<p>{{ translate("MIGRATE.ACCOUNT.TEXT1") }}</p>
                         <p v-if="false">Migration ID: <button class="fa fa-clipboard" style="padding: 6px 12px; background-color:var(--bg);" @click="copyIdToClipboard($event)">&nbsp;{{ translate("MIGRATE.ID.COPY") }}</button> {{ migrationid }}</p>
 
-                        <p v-if="this.isHome">{{ translate("MIGRATE.HOME") }}</p>
+                        <p v-if="isHome">{{ translate("MIGRATE.HOME") }}</p>
 			<FormPassword v-if="!isHome" v-model="password" />
 
 			<div class="modal__warning account" v-if="warning">
