@@ -14,7 +14,7 @@
             </MultiFactorAuth>
 			<p>{{ translate("MIGRATE.ACCOUNT.TEXT1") }}</p>
                         <p v-if="false">Migration ID: <button class="fa fa-clipboard" style="padding: 6px 12px; background-color:var(--bg);" @click="copyIdToClipboard($event)">&nbsp;{{ translate("MIGRATE.ID.COPY") }}</button> {{ migrationid }}</p>
-                        Mirror status: {{ this.mirrorStatus }}
+                        Mirror status: {{ mirrorStatus }}
 
                         <p v-if="isHome">{{ translate("MIGRATE.HOME") }}</p>
 			<FormPassword v-if="!isHome" v-model="password" />
@@ -68,7 +68,7 @@ module.exports = {
 			'context'
 		]),
                 mirrorStatus() {
-                    if (homeUsage == 0)
+                    if (this.homeUsage == 0)
                         return "N/A";
                     return this.localUsage * 100 / this.homeUsage + "%";
                 }
@@ -77,8 +77,8 @@ module.exports = {
                 var that = this;
                 this.context.isHome().thenApply(res => that.isHome = res);
                 this.context.getMigrationId().thenApply(res => that.migrationid = res);
-                this.context.getUsage(false).thenApply(usage => that.homeUsage = usage);
-                this.context.getUsage(true).thenApply(usage => that.localUsage = usage);
+                this.context.getSpaceUsage(false).thenApply(usage => that.homeUsage = usage.value_0);
+                this.context.getSpaceUsage(true).thenApply(usage => that.localUsage = usage.value_0);
         },
 
 	methods: {

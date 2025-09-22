@@ -141,7 +141,7 @@ module.exports = {
             cardFuture: null,
             showSignupWarning: false,
             showMultiFactorAuth: false,
-            usage: 0;
+            usage: 0
 	};
     },
 
