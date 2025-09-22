@@ -297,7 +297,7 @@ module.exports = {
                                    that.$toast.info("This is your home server", {id:'signup', timeout:false})
                                    return;
                                }
-                               return context.getSpaceUsage().thenCompose(function(usage) {
+                               return context.getSpaceUsage(false).thenCompose(function(usage) {
                                    that.usage = usage;
                                    if (that.desiredQuota < usage) {
                                        that.$toast.info("Choose a larger plan to mirror all your data", {id:'signup', timeout:false})

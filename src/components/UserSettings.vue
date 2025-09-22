@@ -173,7 +173,7 @@ module.exports = {
             let that = this;
             this.context.cleanPartialUploads().thenApply(snapshot => {
                 that.showSettingsSpinner = false;
-                that.context.getSpaceUsage().thenApply(u => {
+                that.context.getSpaceUsage(false).thenApply(u => {
                     that.$store.commit('SET_USAGE', u);
                 });
             }).exceptionally(function(throwable) {

@@ -278,7 +278,7 @@ module.exports = new Vuex.Store({
 			if (state.isSecretLink)
 				return;
 
-			return state.context.getSpaceUsage().thenApply(u => {
+			return state.context.getSpaceUsage(false).thenApply(u => {
 				commit('SET_USAGE', u);
                 if (callback != null) {
                     callback(u)
