@@ -84,7 +84,7 @@ module.exports = {
 	methods: {
 		showWarning() {
 		    if(this.password.length == 0) {
-			this.$toast.error(that.translate("MIGRATE.ACCOUNT.PASS"),{timeout:false, position: 'bottom-left' })
+			this.$toast.error(this.translate("MIGRATE.ACCOUNT.PASS"),{timeout:false, position: 'bottom-left' })
 		    } else {
 			this.warning = true
 		    }
