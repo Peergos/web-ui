@@ -304,7 +304,7 @@ module.exports = {
                                        return;
                                    }
                                    // now add a card and then request mirror
-                                   return context.mirrorToThisServer(addCard,
+                                   return context.mirrorOnThisServer(addCard,
                                            {"accept" : x => that.$toast.info(x, {id:'signup', timeout:false})}).thenApply(function(res) {
                                        that.$store.commit('USER_LOGIN', true);
 			               that.installDefaultApp().thenApply(function(props) {

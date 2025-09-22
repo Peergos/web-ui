@@ -70,7 +70,7 @@ module.exports = {
                 mirrorStatus() {
                     if (this.homeUsage == 0)
                         return "N/A";
-                    return this.localUsage * 100 / this.homeUsage + "%";
+                    return (this.localUsage * 100 / this.homeUsage).toPrecision(3) + "%";
                 }
         },
         mounted() {
