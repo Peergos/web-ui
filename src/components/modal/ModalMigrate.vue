@@ -14,7 +14,7 @@
             </MultiFactorAuth>
 			<p>{{ translate("MIGRATE.ACCOUNT.TEXT1") }}</p>
                         <p v-if="false">Migration ID: <button class="fa fa-clipboard" style="padding: 6px 12px; background-color:var(--bg);" @click="copyIdToClipboard($event)">&nbsp;{{ translate("MIGRATE.ID.COPY") }}</button> {{ migrationid }}</p>
-                        Mirror status: {{ mirrorStatus }}
+                        <p v-if="!isHome">Mirror status: {{ mirrorStatus }}</p>
 
                         <p v-if="isHome">{{ translate("MIGRATE.HOME") }}</p>
 			<FormPassword v-if="!isHome" v-model="password" />

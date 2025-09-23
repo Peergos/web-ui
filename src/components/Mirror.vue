@@ -301,7 +301,7 @@ module.exports = {
                                    that.usage = usage;
                                    if (that.desiredQuota < usage) {
                                        that.$toast.info("Choose a larger plan to mirror all your data", {id:'signup', timeout:false})
-                                       return;
+                                       return peergos.shared.util.Futures.of(true);
                                    }
                                    // now add a card and then request mirror
                                    return context.mirrorOnThisServer(addCard,
