@@ -20,6 +20,15 @@
                         />
 		</section>
 
+                <section class="login-register" v-if="mirror">
+                    <AppIcon icon="logo-full" class="sprite-test" />
+                    <AppTabs>
+                        <AppTab :title="translate('MIRROR.TITLE')">
+                            <Mirror />
+                        </Apptab>
+                    </AppTabs>
+                </section>
+
 		<section class="login-register" v-if="!isLoggedIn && !isSecretLink">
 			<AppIcon icon="logo-full" class="sprite-test" />
 
@@ -79,6 +88,7 @@ const AppTabs = require("./tabs/AppTabs.vue");
 
 const Login = require("./Login.vue");
 const Signup = require("./Signup.vue");
+const Mirror = require("./Mirror.vue");
 
 const Drive = require("../views/Drive.vue");
 const NewsFeed = require("../views/NewsFeed.vue");
@@ -124,14 +134,16 @@ module.exports = {
 		AppTab,
 		AppTabs,
 		Login,
-		Signup
+		Signup,
+                Mirror
 	},
 
 	data() {
 		return {
 		    token: "",
                     showLinkPassword: false,
-                    future:null
+                    future:null,
+                    mirror: false
 		};
 	},
 
@@ -184,8 +196,9 @@ module.exports = {
 			var urlParams = new URLSearchParams(window.location.search);
 			this.token = urlParams.get("token");
 		    }
-		    // this.signup({ token: this.token, username: "" });
-		} else if (props.secretLink) {
+		} else if (href.includes("?mirror=true")) {
+                    this.mirror = true;
+                } else if (props.secretLink) {
 		    // this is a secret link
 		    console.log("Navigating to secret link...");
 		    this.gotoSecretLink(props);

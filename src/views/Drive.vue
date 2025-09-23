@@ -1989,7 +1989,7 @@ module.exports = {
                         if (uploadParams.triggerRefresh) {
                             uploadParams.triggerRefresh = false;
                             if (!that.isSecretLink) {
-                                that.context.getSpaceUsage().thenApply(u => {
+                                that.context.getSpaceUsage(false).thenApply(u => {
                                     that.$store.commit('SET_USAGE', u);
                                 });
                             }
