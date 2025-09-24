@@ -29,7 +29,7 @@
                     </AppTabs>
                 </section>
 
-		<section class="login-register" v-if="!isLoggedIn && !isSecretLink">
+		<section class="login-register" v-if="!isLoggedIn && !isSecretLink && !mirror">
 			<AppIcon icon="logo-full" class="sprite-test" />
 
 			<AppTabs ref="tabs">

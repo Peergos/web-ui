@@ -521,6 +521,4 @@ module.exports = {
     "MIRROR.TITLE":"Mirror an external user",
     "MIRROR.MIRRORPAID":"Add payment card and mirror your data",
     "MIRROR.MIRRORFREE":"Request mirroring your data",
-    "MIRROR.":"",
-    "MIRROR.":"",
 }
