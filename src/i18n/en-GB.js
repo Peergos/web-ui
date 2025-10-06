@@ -518,6 +518,8 @@ module.exports = {
     "MIGRATE.ACCOUNT.CONFIRM":"Are you sure you want to migrate to this server?",
     "MIGRATE.ACCOUNT.PASS":"Password must be populated!",
     "MIGRATE.ID.COPY":"Copy to clipboard",
+    "MIGRATE.MIRROR":"Mirror your data on this server",
+    "MIGRATE.MIRROR.DONE":"Mirroring started",
     "MIRROR.TITLE":"Mirror an external user",
     "MIRROR.MIRRORPAID":"Add payment card and mirror your data",
     "MIRROR.MIRRORFREE":"Request mirroring your data",

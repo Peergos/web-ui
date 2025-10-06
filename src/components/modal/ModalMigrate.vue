@@ -27,7 +27,8 @@
 
 		</template>
 		<template #footer>
-
+                         <AppButton v-if="!isHome" @click.native="mirrorHere()" type="primary" block accent>{{ translate("MIGRATE.MIRROR") }}</AppButton>
+                         <br/>
 			 <AppButton v-if="!isHome" @click.native="showWarning()" type="primary" block accent>{{ translate("MIGRATE.ACCOUNT") }}</AppButton>
 
 		</template>
@@ -92,6 +93,16 @@ module.exports = {
                 copyIdToClipboard: function (clickEvent) {
                     navigator.clipboard.writeText(this.migrationid).then(function() {}, function() {
                         console.error("Unable to write to clipboard.");
+                    });
+                },
+
+                mirrorHere() {
+                    var that = this;
+                    this.context.mirrorOnThisServer(java.util.Optional.empty(), progress => {}).thenApply(function(result){
+		        that.$toast(that.translate("MIGRATE.MIRROR.DONE"),{position: 'bottom-left' })
+                    }).exceptionally(function(throwable) {
+                        that.$toast.error(that.uriDecode(throwable.getMessage()), {timeout:false})
+                        console.log(throwable.getMessage())
                     });
                 },
 
