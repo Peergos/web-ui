@@ -20,15 +20,6 @@
                         />
 		</section>
 
-                <section class="login-register" v-if="mirror">
-                    <AppIcon icon="logo-full" class="sprite-test" />
-                    <AppTabs>
-                        <AppTab :title="translate('MIRROR.TITLE')">
-                            <Mirror />
-                        </Apptab>
-                    </AppTabs>
-                </section>
-
 		<section class="login-register" v-if="!isLoggedIn && !isSecretLink && !mirror">
 			<AppIcon icon="logo-full" class="sprite-test" />
 
@@ -42,6 +33,9 @@
                                 <AppTab :title="translate('APP.LOGIN')">
 					<Login @initApp="init()" />
 				</AppTab>
+                                <AppTab :title="translate('MIRROR.TITLE')">
+                                        <Mirror />
+                                </Apptab>
 				<AppTab :title="translate('APP.SIGNUP')">
 					<Signup :token="token" />
 				</AppTab>
@@ -142,8 +136,7 @@ module.exports = {
 		return {
 		    token: "",
                     showLinkPassword: false,
-                    future:null,
-                    mirror: false
+                    future:null
 		};
 	},
 
@@ -196,9 +189,7 @@ module.exports = {
 			var urlParams = new URLSearchParams(window.location.search);
 			this.token = urlParams.get("token");
 		    }
-		} else if (href.includes("?mirror=true")) {
-                    this.mirror = true;
-                } else if (props.secretLink) {
+		} else if (props.secretLink) {
 		    // this is a secret link
 		    console.log("Navigating to secret link...");
 		    this.gotoSecretLink(props);

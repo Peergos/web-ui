@@ -520,7 +520,7 @@ module.exports = {
     "MIGRATE.ID.COPY":"Copy to clipboard",
     "MIGRATE.MIRROR":"Mirror your data on this server",
     "MIGRATE.MIRROR.DONE":"Mirroring started",
-    "MIRROR.TITLE":"Mirror an external user",
+    "MIRROR.TITLE":"Mirror",
     "MIRROR.MIRRORPAID":"Add payment card and mirror your data",
     "MIRROR.MIRRORFREE":"Request mirroring your data",
 }
