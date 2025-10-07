@@ -29,6 +29,8 @@
 		<template #footer>
                          <AppButton v-if="!isHome" @click.native="mirrorHere()" type="primary" block accent>{{ translate("MIGRATE.MIRROR") }}</AppButton>
                          <br/>
+                         <AppButton v-if="!isHome" @click.native="mirrorLoginHere()" type="primary" block accent>{{ translate("MIGRATE.MIRROR.LOGIN") }}</AppButton>
+                         <br/>
 			 <AppButton v-if="!isHome" @click.native="showWarning()" type="primary" block accent>{{ translate("MIGRATE.ACCOUNT") }}</AppButton>
 
 		</template>
@@ -100,6 +102,33 @@ module.exports = {
                     var that = this;
                     this.context.mirrorOnThisServer(java.util.Optional.empty(), progress => {}).thenApply(function(result){
 		        that.$toast(that.translate("MIGRATE.MIRROR.DONE"),{position: 'bottom-left' })
+                    }).exceptionally(function(throwable) {
+                        that.$toast.error(that.uriDecode(throwable.getMessage()), {timeout:false})
+                        console.log(throwable.getMessage())
+                    });
+                },
+
+                mirrorLoginHere() {
+                    var that = this;
+                    let handleMfa = function(mfaReq) {
+                        let future = peergos.shared.util.Futures.incomplete();
+                        let mfaMethods = mfaReq.methods.toArray([]);
+                        that.challenge = mfaReq.challenge;
+                        that.mfaMethods = mfaMethods;
+                        that.consumer_func = (credentialId, resp) => {
+                            that.showMultiFactorAuth = false;
+                            future.complete(resp);
+                        };
+                        that.consumer_cancel_func = (credentialId) => {
+                            that.showMultiFactorAuth = false;
+                            let resp = peergos.client.JsUtil.generateAuthResponse(credentialId, '');
+                            future.complete(resp);
+                        }
+                        that.showMultiFactorAuth = true;
+                        return future;
+                    };
+                    this.context.mirrorLoginData(this.password, mfaReq => handleMfa(mfaReq), progress => {}).thenApply(function(result){
+		        that.$toast(that.translate("MIGRATE.MIRROR.LOGIN.DONE"),{position: 'bottom-left' })
                     }).exceptionally(function(throwable) {
                         that.$toast.error(that.uriDecode(throwable.getMessage()), {timeout:false})
                         console.log(throwable.getMessage())
