@@ -42,6 +42,8 @@ public class PackagePeergos {
                        "--win-shortcut",
                        "--win-shortcut-prompt",
                        "--win-dir-chooser",
+                       "--win-upgrade-uuid",
+                       "--bea010b4-07e7-46af-b870-2d3d3be4d4dd",
                        "--add-launcher", "peergos=windows-cli.properties"
                        );
         else if (isMac) {
