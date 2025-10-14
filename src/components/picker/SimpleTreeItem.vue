@@ -12,7 +12,7 @@
       <TreeItem
         class="item"
         v-for="model in model.children"
-        :model="model" :selectFolder_func="selectFolder_func" >
+        :model="model" :selectFolder_func="selectFolder_func" :loadFolder="loadFolder" >
       </TreeItem>
     </li>
   </ul>
@@ -23,7 +23,8 @@ module.exports = {
   name: 'TreeItem', // necessary for self-reference
   props: {
     model: Object,
-    selectFolder_func: Function
+    selectFolder_func: Function,
+    loadFolder: Function
   },
   data() {
     return {
@@ -32,7 +33,7 @@ module.exports = {
   },
   computed: {
     isFolder() {
-      return this.model.children && this.model.children.length
+      return this.model.loadChildren || this.model.children && this.model.children.length
     }
   },
   created: function() {
@@ -51,6 +52,8 @@ module.exports = {
         e.preventDefault()
         if (this.isFolder) {
             this.isOpen = !this.isOpen
+            if (this.model.loadChildren)
+                this.loadFolder(this.model.path);
         }
     },
     addChild(selectedFolder) {

@@ -16,7 +16,7 @@
             </select>
             <div class="folder-picker-view" class="scroll-style-simple-folder">
               <ul style="padding-inline-start: 10px;">
-                <SimpleTreeItem class="item" :model="treeData" :selectFolder_func="selectFolder"></SimpleTreeItem>
+                <SimpleTreeItem class="item" :model="treeData" :selectFolder_func="selectFolder" :loadFolder="this.preloadFolders_func"></SimpleTreeItem>
               </ul>
             </div>
             <h4>Selected:</h4>

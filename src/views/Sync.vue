@@ -213,9 +213,10 @@ module.exports = {
            return path;
         },
 
-        getHostDirTree() {
+        getHostDirTree(prefix) {
             let future = peergos.shared.util.Futures.incomplete();
-            this.localPost("/peergos/v0/sync/get-host-paths?prefix=%2F").then(function(result, err) {
+            prefix = prefix != null ? prefix : "%2F";
+            this.localPost("/peergos/v0/sync/get-host-paths?prefix=" + prefix).then(function(result, err) {
                future.complete(result);
             });
             return future;
@@ -390,7 +391,33 @@ module.exports = {
             return future;
         },
         preloadHostFolders: function(path, callback) {
-            callback(this.hostFolderTree[path]);
+        let that = this;
+            this.getHostDirTree(path).thenApply(hostFolders => {
+                let sortedHostFolders = hostFolders.sort((a, b) => a.localeCompare(b, 'en', {'sensitivity': 'base'}));
+                let final = {result:[]};
+                for (const path of sortedHostFolders) {
+                    let context = final;
+                    let sep = path.indexOf("/") >= 0 ? '/' : '\\';
+                    let names = path.split(sep).filter(n => n.length > 0);
+                    for (var i = 0; i < names.length; i++) {
+                        let fullPath = "";
+                        for(var j = 0; j <= i && j < names.length; j++) {
+                            fullPath = fullPath + (fullPath == "" && sep == '\\' ? "" : sep) + names[j];
+                        }
+                        let name = names[i];
+                        if (!context[name]) {
+                            context[name] = {result:[]};
+                            context.result.push({path: fullPath, children: context[name].result, loadChildren: i == names.length - 1});
+                        }
+                        context = context[name];
+                    }
+                }
+                final.result.forEach(result => {
+                    let rootPath = result.path;
+                    that.hostFolderTree[rootPath] = {"path":rootPath, "initiallyOpen": result.children.length == 1, "children": result.children, loadChildren: result.loadChildren};
+                });
+                callback(that.hostFolderTree[path]);
+            });
         },
         navigateTo: function (path) {
             this.openFileOrDir("Drive", path, {filename:""});
