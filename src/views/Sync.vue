@@ -390,11 +390,29 @@ module.exports = {
             });
             return future;
         },
+        mergeTree(existing, updated) {
+           if (existing.children.length == 0) {
+              for (var i=0; i < updated.children.length; i++) {
+                 existing.children.push(updated.children[i]);
+              }
+           }
+
+           for (var i=0; i < updated.children.length; i++) {
+              var updatedChild = updated.children[i];
+              for (var j=0; j < existing.children.length; j++) {
+                 var existingChild = existing.children[j];
+                 if (existingChild.path == updatedChild.path)
+                    this.mergeTree(existingChild, updatedChild);
+              }
+           }
+        },
+        
         preloadHostFolders: function(path, callback) {
         let that = this;
             this.getHostDirTree(path).thenApply(hostFolders => {
                 let sortedHostFolders = hostFolders.sort((a, b) => a.localeCompare(b, 'en', {'sensitivity': 'base'}));
                 let final = {result:[]};
+                let byPath = {};
                 for (const path of sortedHostFolders) {
                     let context = final;
                     let sep = path.indexOf("/") >= 0 ? '/' : '\\';
@@ -407,14 +425,24 @@ module.exports = {
                         let name = names[i];
                         if (!context[name]) {
                             context[name] = {result:[]};
-                            context.result.push({path: fullPath, children: context[name].result, loadChildren: i == names.length - 1});
+                            let dir = {path: fullPath, children: context[name].result, loadChildren: i == names.length - 1};
+                            byPath[fullPath] = dir;
+                            context.result.push(dir);
                         }
+                        if (i < names.length - 1)
+                            byPath[fullPath].loadChildren = false;
                         context = context[name];
                     }
                 }
                 final.result.forEach(result => {
+                    that.setInitialState(result);
                     let rootPath = result.path;
-                    that.hostFolderTree[rootPath] = {"path":rootPath, "initiallyOpen": result.children.length == 1, "children": result.children, loadChildren: result.loadChildren};
+                    let dir = {"path":rootPath, "initiallyOpen": result.children.length == 1, "children": result.children, loadChildren: result.loadChildren};
+                    if (that.hostFolderTree[rootPath] == null)
+                        that.hostFolderTree[rootPath] = dir;
+                    else {
+                        that.mergeTree(that.hostFolderTree[rootPath], dir);
+                    }
                 });
                 callback(that.hostFolderTree[path]);
             });
