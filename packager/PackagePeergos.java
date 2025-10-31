@@ -34,7 +34,7 @@ public class PackagePeergos {
                 .filter(p -> !p.toFile().isDirectory())
                 .filter(p -> p.getFileName().toString().endsWith(".so"))
                 .toList();
-            for (sharedLib : sharedLibraries) {
+            for (String sharedLib : sharedLibraries) {
                 Files.copy(sharedLib, Paths.get("peergos/bin/" + sharedLib.getFileName()), StandardCopyOption.REPLACE_EXISTING);
             }
         }
