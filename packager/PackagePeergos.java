@@ -29,6 +29,7 @@ public class PackagePeergos {
         boolean isDeb = type.equals("deb");
         // For debian we build using teh static image compiled from native-image
         if (isDeb) {
+            new File("peergos/bin").mkdirs();
             Files.copy(Paths.get("../native-build/peergos"), Paths.get("peergos/bin/peergos"), StandardCopyOption.REPLACE_EXISTING);
             List<Path> sharedLibraries = Files.walk(Paths.get("../native-build"), 5)
                 .filter(p -> !p.toFile().isDirectory())
