@@ -61,6 +61,12 @@ jobs:
         cp $PP_PATH ~/Library/MobileDevice/Provisioning\ Profiles
     - name: Build with Ant
       run: ant -noinput -buildfile build.xml peergos_submodule_sync dist
+    - name: Install GraalVM and native-image
+      shell: bash
+      run: cd native-build && java InstallNativeImage.java
+    - name: Build native image of Peergos
+      shell: bash
+      run: cd native-build && java BuildNativeImage.java
     - name: Package for host OS
       shell: bash
       run: cd packager && java PackagePeergos.java

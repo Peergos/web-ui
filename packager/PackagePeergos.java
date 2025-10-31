@@ -26,6 +26,19 @@ public class PackagePeergos {
             linuxType = "deb";
         String type = isWin ? "msi" : isMac ? "pkg": linuxType;
         String resourceDir = "includes/" + type;
+        boolean isDeb = type.equals("deb");
+        // For debian we build using teh static image compiled from native-image
+        if (isDeb) {
+            Files.copy(Paths.get("../native-build/peergos"), Paths.get("peergos/bin/peergos"), StandardCopyOption.REPLACE_EXISTING);
+            List<Path> sharedLibraries = Files.walk(Paths.get("../native-build"), 5)
+                .filter(p -> !p.toFile().isDirectory())
+                .filter(p -> p.getFileName().toString().endsWith(".so"))
+                .toList();
+            for (sharedLib : sharedLibraries) {
+                Files.copy(sharedLib, Paths.get("peergos/bin/" + sharedLib.getFileName()), StandardCopyOption.REPLACE_EXISTING);
+            }
+        }
+        
         if (isWin)
             runCommand("jpackage", "-i", "../server", "-n", "peergos-app",
                        "--main-class", "peergos.server.Main", "--main-jar",
@@ -67,6 +80,20 @@ public class PackagePeergos {
                        "--mac-package-name", "Peergos",
                        "--mac-signing-key-user-name", "Peergos LTD (XUVT52ZN3F)"
                        );
+        } else if (isDeb) {
+            runCommand("jpackage", "-n", "peergos",
+                       "--vendor", "Peergos Ltd.",
+                       "--description", "The Peergos server and web interface.",
+                       "--copyright", "AGPL",
+                       "--linux-rpm-license-type", "AGPL",
+                       "--about-url", "https://peergos.org",
+                       "--type", type,
+                       "--runtime-image", "peergos",
+                       "--icon", icon,
+                       "--linux-menu-group", "Peergos",
+                       "--linux-shortcut",
+                       "--resource-dir", resourceDir,
+                       "--app-version", VERSION);
         } else
             runCommand("jpackage", "-i", "../server", "-n", "peergos",
                        "--main-class", "peergos.server.Main", "--main-jar",

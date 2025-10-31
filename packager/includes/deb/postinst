@@ -2,7 +2,10 @@
 # postinst script for peergos
 #
 # see: dh_installdeb(1)
-ln -s /opt/peergos/bin/peergos /usr/bin
+if [ ! -f /usr/bin/peergos ]; then
+    ln -s /opt/peergos/bin/peergos /usr/bin
+fi
+
 set -e
 
 # summary of how this script can be called:
