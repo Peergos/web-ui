@@ -191,6 +191,11 @@ module.exports = {
                     }
                   }).exceptionally(t => {
                       console.log(t);
+                      progress.show = false
+                      that.errorTitle = 'Error downloading file: ' + filename
+                      that.errorBody = t.getMessage()
+                      that.showError = true
+                      result.completeExceptionally(t);
                   })
               }
             }

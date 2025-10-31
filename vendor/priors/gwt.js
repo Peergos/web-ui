@@ -83,13 +83,15 @@ function postProm(url, data, timeout) {
                 reject('Unexpected error from server');
             } else {
                 if (trailer.startsWith('Storage+quota+reached')) {
-                    future.completeExceptionally(new peergos.shared.storage.StorageQuotaExceededException(trailer));
+                    future.completeExceptionally(new peergos.shared.storage.StorageQuotaExceededException(decodeURIComponent(trailer)));
                 } else if (trailer.startsWith('CAS+exception') || trailer.startsWith('Mutable+pointer+update+failed')) {
-                    future.completeExceptionally(new peergos.shared.storage.CasException(trailer));
+                    future.completeExceptionally(new peergos.shared.storage.CasException(decodeURIComponent(trailer)));
                 } else if (trailer.startsWith('PointerCAS')) {
                     future.completeExceptionally(peergos.shared.storage.PointerCasException.fromString(decodeURIComponent(trailer)));
+                } else if (trailer.startsWith('Rate+Limit')) {
+                    future.completeExceptionally(new peergos.shared.storage.MajorRateLimitException(decodeURIComponent(trailer)));
                 } else {
-                    reject(trailer);
+                    reject(decodeURIComponent(trailer));
                 }
             }
 		} catch (e) {
