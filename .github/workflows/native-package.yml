@@ -14,6 +14,8 @@ jobs:
             bin: peergos
           - os: ubuntu-latest
             bin: peergos.exe
+          - os: ubuntu-22.04
+            bin: peergos.exe
           - os: ubuntu-24.04-arm
             bin: peergos.exe
           - os: macos-latest
