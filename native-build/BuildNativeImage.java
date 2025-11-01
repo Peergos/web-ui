@@ -24,7 +24,8 @@ public class BuildNativeImage {
             throw new IllegalStateException("Couldn't find native image executable");
         
         // run native-image
-        runCommand(nativeImage.get().toString() + " " + 
+        runCommand(nativeImage.get().toString() + " " +
+                   "--static-nolibc " +
                    "-H:+UnlockExperimentalVMOptions " +
                    "--enable-http " +
                    "--enable-https " +

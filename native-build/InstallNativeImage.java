@@ -7,7 +7,7 @@ import java.util.*;
 public class InstallNativeImage {
 
     public static void main(String[] a) throws Exception {
-        String VERSION = "22.0.0";
+        String VERSION = "25.0.1";
         
         String OS = canonicaliseOS(System.getProperty("os.name").toLowerCase());
         String OS_ARCH = getOsArch();       
