@@ -38,6 +38,35 @@ public class PackagePeergos {
             for (Path sharedLib : sharedLibraries) {
                 Files.copy(sharedLib, Paths.get("peergos/bin/" + sharedLib.getFileName()), StandardCopyOption.REPLACE_EXISTING);
             }
+            new File("peergos/DEBIAN").mkdirs();
+            long sizeKiB = Files.walk(Paths.get("peergos")
+                                   .filter(p -> p.toFile().isFile())
+                                   .mapToLong(p -> p.toFile().length())
+                                   .sum()/1024;
+            Files.writeString(Paths.get("peergos/DEBIAN/control"),
+                              Stream.of("Package: peergos",
+                                        "Version: " + VERSION,
+                                        "Maintainer: Peergos <peergos@peergos.org>",
+                                        "Description: The Peergos server and web interface.",
+                                        "Architecture: " + ARCH,
+                                        "Installed-Size: " + sizeKiB,
+                                        "Section: utils",
+                                        "Homepage: https://peergos.org",
+                                        "Priority: optional")
+                              .collect(Collectors.joining("\n")));
+            new File("peergos/lib").mkdirs();
+            Files.writeString(Paths.get("peergos/lib/peergos-peergos.desktop"),
+                              Stream.of("[Desktop Entry]",
+                                        "Name=peergos",
+                                        "Comment=The Peergos server and web interface.",
+                                        "Exec=/opt/peergos/bin/peergos",
+                                        "Icon=/opt/peergos/lib/peergos.png",
+                                        "Terminal=false",
+                                        "Type=Application",
+                                        "Categories=Peergos",
+                                        "MimeType=")
+                              .collect(Collectors.joining("\n")));
+            Files.copy(Paths.get("../assets/images/logo.png"), Paths.get("peergos/lib/peergos.png"), StandardCopyOption.REPLACE_EXISTING);
         }
         
         if (isWin)
@@ -82,7 +111,8 @@ public class PackagePeergos {
                        "--mac-signing-key-user-name", "Peergos LTD (XUVT52ZN3F)"
                        );
         } else if (isDeb) {
-            runCommand("jpackage", "-n", "peergos",
+            runCommand("dpkg-deb", "--root-owner-group", "--build", "peergos");
+            /*runCommand("jpackage", "-n", "peergos",
                        "--vendor", "Peergos Ltd.",
                        "--description", "The Peergos server and web interface.",
                        "--copyright", "AGPL",
@@ -94,7 +124,7 @@ public class PackagePeergos {
                        "--linux-menu-group", "Peergos",
                        "--linux-shortcut",
                        "--resource-dir", resourceDir,
-                       "--app-version", VERSION);
+                       "--app-version", VERSION);*/
         } else
             runCommand("jpackage", "-i", "../server", "-n", "peergos",
                        "--main-class", "peergos.server.Main", "--main-jar",
