@@ -39,7 +39,7 @@ public class PackagePeergos {
                 Files.copy(sharedLib, Paths.get("peergos/bin/" + sharedLib.getFileName()), StandardCopyOption.REPLACE_EXISTING);
             }
             new File("peergos/DEBIAN").mkdirs();
-            long sizeKiB = Files.walk(Paths.get("peergos")
+            long sizeKiB = Files.walk(Paths.get("peergos"))
                                    .filter(p -> p.toFile().isFile())
                                    .mapToLong(p -> p.toFile().length())
                                    .sum()/1024;
