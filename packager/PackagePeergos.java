@@ -32,7 +32,7 @@ public class PackagePeergos {
         if (isDeb) {
             new File("peergos/bin").mkdirs();
             Files.copy(Paths.get("../native-build/peergos"), Paths.get("peergos/bin/peergos"), StandardCopyOption.REPLACE_EXISTING);
-            List<Path> sharedLibraries = Files.walk(Paths.get("../native-build"), 5)
+            List<Path> sharedLibraries = Files.walk(Paths.get("../native-build"), 1)
                 .filter(p -> !p.toFile().isDirectory())
                 .filter(p -> p.getFileName().toString().endsWith(".so"))
                 .toList();
