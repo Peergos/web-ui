@@ -28,7 +28,7 @@ jobs:
       uses: actions/setup-java@v4
       with:
         distribution: temurin
-        java-version: 23
+        java-version: 25
     - name: Install the Apple certificate and provisioning profile
       if: runner.os == 'macos'
       env:
