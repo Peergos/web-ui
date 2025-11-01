@@ -7,7 +7,7 @@ jobs:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        os: [ubuntu-latest, ubuntu-24.04-arm, macos-13, macos-latest, windows-latest]
+        os: [ubuntu-22.04, ubuntu-24.04-arm, macos-13, macos-latest, windows-latest]
         bin: [peergos, peergos.exe]
         exclude:
           - os: windows-latest
