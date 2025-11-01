@@ -53,6 +53,7 @@ public class PackagePeergos {
                                         "Description: The Peergos server and web interface.",
                                         "Architecture: " + ARCH,
                                         "Installed-Size: " + sizeKiB,
+                                        "Provides: peergos",
                                         "Section: utils",
                                         "Homepage: https://peergos.org",
                                         "Priority: optional")
@@ -70,6 +71,11 @@ public class PackagePeergos {
                                         "MimeType=")
                               .collect(Collectors.joining("\n")));
             Files.copy(Paths.get("../assets/images/logo.png"), Paths.get("peergos/lib/peergos.png"), StandardCopyOption.REPLACE_EXISTING);
+            new File("peergos/usr/share/doc/peergos").mkdirs();
+            Files.writeString(Paths.get("peergos/usr/share/doc/peergos/copyright"), "Copyright: 2025 Peergos <peergos@peergos.org>\n" +
+                              "The entire code base may be distributed under the terms of the GNU General" +
+                              "Public License (GPL-3), which appears immediately below.\n\n"+
+                              "See /usr/share/common-licenses/GPL-3");
         }
         
         if (isWin)
