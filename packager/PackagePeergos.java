@@ -2,6 +2,7 @@ import java.io.*;
 import java.net.*;
 import java.nio.file.*;
 import java.util.*;
+import java.util.stream.*;
 import java.util.zip.*;
 
 /** Package Peergos.jar into a self contained installer
@@ -53,7 +54,7 @@ public class PackagePeergos {
                                         "Section: utils",
                                         "Homepage: https://peergos.org",
                                         "Priority: optional")
-                              .collect(Collectors.joining("\n")));
+                              .collect(Collectors.joining("\n")) + "\n");
             new File("peergos/lib").mkdirs();
             Files.writeString(Paths.get("peergos/lib/peergos-peergos.desktop"),
                               Stream.of("[Desktop Entry]",
