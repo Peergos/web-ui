@@ -33,14 +33,14 @@ public class PackagePeergos {
         if (isDeb) {
             if (ARCH.equals("aarch64"))
                 ARCH = "arm64";
-            new File("peergos/bin").mkdirs();
-            Files.copy(Paths.get("../native-build/peergos"), Paths.get("peergos/bin/peergos"), StandardCopyOption.REPLACE_EXISTING);
+            new File("peergos/opt/peergos/bin").mkdirs();
+            Files.copy(Paths.get("../native-build/peergos"), Paths.get("peergos/opt/peergos/bin/peergos"), StandardCopyOption.REPLACE_EXISTING);
             List<Path> sharedLibraries = Files.walk(Paths.get("../native-build"), 1)
                 .filter(p -> !p.toFile().isDirectory())
                 .filter(p -> p.getFileName().toString().endsWith(".so"))
                 .toList();
             for (Path sharedLib : sharedLibraries) {
-                Files.copy(sharedLib, Paths.get("peergos/bin/" + sharedLib.getFileName()), StandardCopyOption.REPLACE_EXISTING);
+                Files.copy(sharedLib, Paths.get("peergos/opt/peergos/bin/" + sharedLib.getFileName()), StandardCopyOption.REPLACE_EXISTING);
             }
             new File("peergos/DEBIAN").mkdirs();
             long sizeKiB = Files.walk(Paths.get("peergos"))
@@ -61,8 +61,8 @@ public class PackagePeergos {
                               .collect(Collectors.joining("\n")) + "\n");
             Files.copy(Paths.get("includes/deb/postinst"), Paths.get("peergos/DEBIAN/postinst"), StandardCopyOption.REPLACE_EXISTING);
             Files.setPosixFilePermissions(Paths.get("peergos/DEBIAN/postinst"), PosixFilePermissions.fromString("r-xr-xr-x"));
-            new File("peergos/lib").mkdirs();
-            Files.writeString(Paths.get("peergos/lib/peergos-peergos.desktop"),
+            new File("peergos/opt/peergos/lib").mkdirs();
+            Files.writeString(Paths.get("peergos/opt/peergos/lib/peergos-peergos.desktop"),
                               Stream.of("[Desktop Entry]",
                                         "Name=peergos",
                                         "Comment=The Peergos server and web interface.",
@@ -73,10 +73,11 @@ public class PackagePeergos {
                                         "Categories=Peergos",
                                         "MimeType=")
                               .collect(Collectors.joining("\n")));
-            Files.copy(Paths.get("../assets/images/logo.png"), Paths.get("peergos/lib/peergos.png"), StandardCopyOption.REPLACE_EXISTING);
+            Files.setPosixFilePermissions(Paths.get("peergos/opt/peergos/lib/peergos-peergos.desktop"), PosixFilePermissions.fromString("r-xr-xr-x"));
+            Files.copy(Paths.get("../assets/images/logo.png"), Paths.get("peergos/opt/peergos/lib/peergos.png"), StandardCopyOption.REPLACE_EXISTING);
             new File("peergos/usr/share/doc/peergos").mkdirs();
             Files.writeString(Paths.get("peergos/usr/share/doc/peergos/copyright"), "Copyright: 2025 Peergos <peergos@peergos.org>\n" +
-                              "The entire code base may be distributed under the terms of the GNU General" +
+                              "The entire code base may be distributed under the terms of the GNU General\n" +
                               "Public License (GPL-3), which appears immediately below.\n\n"+
                               "See /usr/share/common-licenses/GPL-3");
         }

@@ -6,6 +6,8 @@ if [ ! -f /usr/bin/peergos ]; then
     ln -s /opt/peergos/bin/peergos /usr/bin
 fi
 
+cp /opt/peergos/lib/peergos-peergos.desktop ~/Desktop/peergos.desktop
+
 set -e
 
 # summary of how this script can be called:

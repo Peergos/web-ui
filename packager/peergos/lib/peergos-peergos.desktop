@@ -1,9 +1,0 @@
-[Desktop Entry]
-Name=peergos
-Comment=The Peergos server and web interface.
-Exec=/opt/peergos/bin/peergos
-Icon=/opt/peergos/lib/peergos.png
-Terminal=false
-Type=Application
-Categories=Peergos
-MimeType=
