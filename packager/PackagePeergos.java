@@ -59,6 +59,7 @@ public class PackagePeergos {
                                         "Priority: optional")
                               .collect(Collectors.joining("\n")) + "\n");
             Files.copy(Paths.get("includes/deb/postinst"), Paths.get("peergos/DEBIAN/postinst"), StandardCopyOption.REPLACE_EXISTING);
+            Files.setPosixFilePermissions(Paths.get("peergos/DEBIAN/postinst"), PosixFilePermissions.fromString("rw-r-xr-x"))
             new File("peergos/lib").mkdirs();
             Files.writeString(Paths.get("peergos/lib/peergos-peergos.desktop"),
                               Stream.of("[Desktop Entry]",
