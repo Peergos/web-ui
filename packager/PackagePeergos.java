@@ -1,6 +1,7 @@
 import java.io.*;
 import java.net.*;
 import java.nio.file.*;
+import java.nio.file.attribute.*;
 import java.util.*;
 import java.util.stream.*;
 import java.util.zip.*;
@@ -59,7 +60,7 @@ public class PackagePeergos {
                                         "Priority: optional")
                               .collect(Collectors.joining("\n")) + "\n");
             Files.copy(Paths.get("includes/deb/postinst"), Paths.get("peergos/DEBIAN/postinst"), StandardCopyOption.REPLACE_EXISTING);
-            Files.setPosixFilePermissions(Paths.get("peergos/DEBIAN/postinst"), PosixFilePermissions.fromString("rw-r-xr-x"));
+            Files.setPosixFilePermissions(Paths.get("peergos/DEBIAN/postinst"), PosixFilePermissions.fromString("r-xr-xr-x"));
             new File("peergos/lib").mkdirs();
             Files.writeString(Paths.get("peergos/lib/peergos-peergos.desktop"),
                               Stream.of("[Desktop Entry]",
