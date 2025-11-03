@@ -11,6 +11,10 @@
   "methods":[{"name":"toString","parameterTypes":[] }]
 },
 {
+  "name":"java.lang.Thread",
+  "methods":[{"name":"yield","parameterTypes":[] }]
+},
+{
   "name":"org.sqlite.BusyHandler",
   "methods":[{"name":"callback","parameterTypes":["int"] }]
 },
@@ -51,5 +55,31 @@
 {
   "name":"peergos.server.Main",
   "methods":[{"name":"main","parameterTypes":["java.lang.String[]"] }]
+},
+{
+  "name":"com.sun.imageio.plugins.jpeg.JPEGImageWriter",
+    "methods":[
+        {"name":"writeOutputData","parameterTypes":["byte[]", "int", "int"] },
+        {"name":"warningOccurred","parameterTypes":["int"] },
+        {"name":"warningWithMessage","parameterTypes":["java.lang.String"] },
+        {"name":"writeMetadata","parameterTypes":[] },
+        {"name":"grabPixels","parameterTypes":["int"] }
+    ]
+},
+{
+  "name":"com.sun.imageio.plugins.jpeg.JPEGImageReader",
+    "methods":[{"name":"readInputData","parameterTypes":["byte[]", "int", "int"] }]
+},
+{
+  "name":"com.luciad.imageio.webp.WebPEncoderOptions",
+    "methods":[
+        {"name":"createConfig","parameterTypes":[] }
+    ]
+},
+{
+  "name":"com.luciad.imageio.webp.WebPDecoderOptions",
+    "methods":[
+        {"name":"createDecoderOptions","parameterTypes":[] }
+    ]
 }
 ]

@@ -31,7 +31,6 @@ public class BuildNativeImage {
                    "--enable-https " +
                    "-march=compatibility " +
                    "-H:ConfigurationFileDirectories=META-INF/native-image " +
-                   "--report-unsupported-elements-at-runtime " +
                    "--initialize-at-build-time=org.sqlite.util.ProcessRunner " +
                    "--initialize-at-run-time=io.netty.incubator.codec.quic.ConnectionIdChannelMap " +
                    "--initialize-at-run-time=io.netty.incubator.codec.quic.SecureRandomQuicConnectionIdGenerator " +
