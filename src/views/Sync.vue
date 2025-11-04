@@ -7,7 +7,7 @@
 		</AppHeader>
 		<main>
 
-            <div style="width:100%;">
+            <div v-if="enabled" style="width:100%;">
                 <center><div class="hspace-5">
 		    <button class="btn btn-success" @click="addSyncPair()">{{ translate("SYNC.ADDPAIR") }}</button>
                 </div>
@@ -26,6 +26,12 @@
                       <button class="btn btn-warning" @click="removeSyncPair(pair.label)" style="flex-grow:1;margin:10px;">{{ translate("SYNC.STOPPAIR") }}</button>
                    </div>
                 </div>
+            </div>
+            <div v-if="!enabled" style="width:100%;">
+                <center><div class="hspace-5">
+		    {{ translate("SYNC.DISABLED") }}
+                </div>
+                </center>
             </div>
             <FolderPicker
                 v-if="showFolderPicker"
@@ -125,6 +131,9 @@ module.exports = {
 		]),
                 hasError(){
                    return this.error != null;
+                },
+                enabled() {
+                   return window.location.hostname == "localhost";
                 },
     },
 	created() {

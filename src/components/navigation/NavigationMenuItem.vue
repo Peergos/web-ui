@@ -1,6 +1,6 @@
 <template>
 	<li class="menu-item" :class="{ 'active': isCurrentView }">
-		<AppButton @click.native="setView(view)">
+		<AppButton @click.native="setView(view)" :disabled="disabled">
 			<AppIcon class="menu__icon" :icon="icon"></AppIcon>
 			<span class="menu__name">{{ label }} </span>
 		</AppButton>
@@ -29,6 +29,10 @@ module.exports = {
 		view: {
 			type: String,
 			default: "",
+		},
+		disabled: {
+			type: Boolean,
+			default: false,
 		},
 	},
     	mixins:[router],

@@ -506,6 +506,7 @@ module.exports = {
     "SYNC.SELECT.DELETION.BEHAVIOUR":"Select Deletion Behaviour",
     "SYNC.SELECT.DELETION.LOCAL":"Sync Local Deletes",
     "SYNC.SELECT.DELETION.REMOTE":"Sync Remote Deletes",
+    "SYNC.DISABLED":"Sync is available in the Desktop and Mobile apps",
     "MIGRATE.TITLE":"Migrate to a different server",
     "MIGRATE.ACCOUNT.TEXT1":"To migrate to another server, first request or pay for mirroring your data there. Then login there and click 'migrate here' in the migration page.",
     "MIGRATE.HOME":"This is your home server.",
