@@ -68,9 +68,11 @@ jobs:
     - name: Build with Ant
       run: ant -noinput -buildfile build.xml peergos_submodule_sync dist
     - name: Install GraalVM and native-image
+      if: runner.os == 'Linux'
       shell: bash
       run: cd native-build && java InstallNativeImage.java
     - name: Build native image of Peergos
+      if: runner.os == 'Linux'
       shell: bash
       run: cd native-build && java BuildNativeImage.java
     - name: Package for host OS
