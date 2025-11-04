@@ -24,13 +24,13 @@ public class BuildNativeImage {
             throw new IllegalStateException("Couldn't find native image executable");
         
         // run native-image
-        runCommand(nativeImage.get().toString() + " " + 
+        runCommand(nativeImage.get().toString() + " " +
+                   "--static-nolibc " +
                    "-H:+UnlockExperimentalVMOptions " +
                    "--enable-http " +
                    "--enable-https " +
                    "-march=compatibility " +
                    "-H:ConfigurationFileDirectories=META-INF/native-image " +
-                   "--report-unsupported-elements-at-runtime " +
                    "--initialize-at-build-time=org.sqlite.util.ProcessRunner " +
                    "--initialize-at-run-time=io.netty.incubator.codec.quic.ConnectionIdChannelMap " +
                    "--initialize-at-run-time=io.netty.incubator.codec.quic.SecureRandomQuicConnectionIdGenerator " +

@@ -21,6 +21,12 @@
   }, {
     "pattern":"\\Qnative-lib/libtweetnacl.so\\E"
   }, {
+    "pattern":"\\QMETA-INF/linux_64/libwebp-imageio.so\\E"
+  }, {
+     "pattern":"\\QMETA-INF/services/javax.imageio.spi.ImageReaderSpi"
+  }, {
+     "pattern":"\\QMETA-INF/services/javax.imageio.spi.ImageWriterSpi"
+  }, {
     "pattern":"\\Qorg/h2/util/data.zip\\E"
   }, {
     "pattern":"\\Qorg/slf4j/impl/StaticLoggerBinder.class\\E"

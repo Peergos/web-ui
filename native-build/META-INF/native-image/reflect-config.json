@@ -979,5 +979,31 @@
 {
   "name":"javax.imageio.ImageIO",
   "methods":[{"name":"read","parameterTypes":["java.io.InputStream"] }]
+},
+{
+  "name":"com.sun.imageio.plugins.jpeg.JPEGImageReader",
+      "methods": [
+        {
+          "name": "<init>",
+          "parameterTypes": []
+        },
+        {
+          "name": "readInputData",
+          "parameterTypes": [
+            "[B",
+              "I",
+              "I"
+          ]
+        }
+      ]
+},
+{
+  "name":"com.sun.imageio.plugins.jpeg.JPEGImageReader"
+},
+{
+  "name":"javax.imageio.spi.ImageReaderSpi"
+},
+{
+  "name":"javax.imageio.spi.ImageWriterSpi"
 }
 ]

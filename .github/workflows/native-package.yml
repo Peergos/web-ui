@@ -7,14 +7,20 @@ jobs:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        os: [ubuntu-latest, ubuntu-24.04-arm, macos-13, macos-latest, windows-latest]
+        os: [ubuntu-24.04, ubuntu-24.04-arm, macos-13, macos-latest, windows-latest]
         bin: [peergos, peergos.exe]
         exclude:
           - os: windows-latest
             bin: peergos
           - os: ubuntu-latest
             bin: peergos.exe
+          - os: ubuntu-22.04
+            bin: peergos.exe
+          - os: ubuntu-24.04
+            bin: peergos.exe
           - os: ubuntu-24.04-arm
+            bin: peergos.exe
+          - os: ubuntu-22.04-arm
             bin: peergos.exe
           - os: macos-latest
             bin: peergos.exe
@@ -28,7 +34,7 @@ jobs:
       uses: actions/setup-java@v4
       with:
         distribution: temurin
-        java-version: 23
+        java-version: 25
     - name: Install the Apple certificate and provisioning profile
       if: runner.os == 'macos'
       env:
@@ -61,6 +67,12 @@ jobs:
         cp $PP_PATH ~/Library/MobileDevice/Provisioning\ Profiles
     - name: Build with Ant
       run: ant -noinput -buildfile build.xml peergos_submodule_sync dist
+    - name: Install GraalVM and native-image
+      shell: bash
+      run: cd native-build && java InstallNativeImage.java
+    - name: Build native image of Peergos
+      shell: bash
+      run: cd native-build && java BuildNativeImage.java
     - name: Package for host OS
       shell: bash
       run: cd packager && java PackagePeergos.java

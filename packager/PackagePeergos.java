@@ -1,7 +1,9 @@
 import java.io.*;
 import java.net.*;
 import java.nio.file.*;
+import java.nio.file.attribute.*;
 import java.util.*;
+import java.util.stream.*;
 import java.util.zip.*;
 
 /** Package Peergos.jar into a self contained installer
@@ -26,6 +28,60 @@ public class PackagePeergos {
             linuxType = "deb";
         String type = isWin ? "msi" : isMac ? "pkg": linuxType;
         String resourceDir = "includes/" + type;
+        boolean isDeb = type.equals("deb");
+        // For debian we build using teh static image compiled from native-image
+        if (isDeb) {
+            if (ARCH.equals("aarch64"))
+                ARCH = "arm64";
+            new File("peergos/opt/peergos/bin").mkdirs();
+            Files.copy(Paths.get("../native-build/peergos"), Paths.get("peergos/opt/peergos/bin/peergos"), StandardCopyOption.REPLACE_EXISTING);
+            List<Path> sharedLibraries = Files.walk(Paths.get("../native-build"), 1)
+                .filter(p -> !p.toFile().isDirectory())
+                .filter(p -> p.getFileName().toString().endsWith(".so"))
+                .toList();
+            for (Path sharedLib : sharedLibraries) {
+                Files.copy(sharedLib, Paths.get("peergos/opt/peergos/bin/" + sharedLib.getFileName()), StandardCopyOption.REPLACE_EXISTING);
+            }
+            new File("peergos/DEBIAN").mkdirs();
+            long sizeKiB = Files.walk(Paths.get("peergos"))
+                                   .filter(p -> p.toFile().isFile())
+                                   .mapToLong(p -> p.toFile().length())
+                                   .sum()/1024;
+            Files.writeString(Paths.get("peergos/DEBIAN/control"),
+                              Stream.of("Package: peergos",
+                                        "Version: " + VERSION,
+                                        "Maintainer: Peergos <peergos@peergos.org>",
+                                        "Description: The Peergos server and web interface.",
+                                        "Architecture: " + ARCH,
+                                        "Installed-Size: " + sizeKiB,
+                                        "Provides: peergos",
+                                        "Section: utils",
+                                        "Homepage: https://peergos.org",
+                                        "Priority: optional")
+                              .collect(Collectors.joining("\n")) + "\n");
+            Files.copy(Paths.get("includes/deb/postinst"), Paths.get("peergos/DEBIAN/postinst"), StandardCopyOption.REPLACE_EXISTING);
+            Files.setPosixFilePermissions(Paths.get("peergos/DEBIAN/postinst"), PosixFilePermissions.fromString("r-xr-xr-x"));
+            new File("peergos/opt/peergos/lib").mkdirs();
+            Files.writeString(Paths.get("peergos/opt/peergos/lib/peergos-peergos.desktop"),
+                              Stream.of("[Desktop Entry]",
+                                        "Name=peergos",
+                                        "Comment=The Peergos server and web interface.",
+                                        "Exec=/opt/peergos/bin/peergos",
+                                        "Icon=/opt/peergos/lib/peergos.png",
+                                        "Terminal=false",
+                                        "Type=Application",
+                                        "Categories=Peergos",
+                                        "MimeType=")
+                              .collect(Collectors.joining("\n")));
+            Files.setPosixFilePermissions(Paths.get("peergos/opt/peergos/lib/peergos-peergos.desktop"), PosixFilePermissions.fromString("r-xr-xr-x"));
+            Files.copy(Paths.get("../assets/images/logo.png"), Paths.get("peergos/opt/peergos/lib/peergos.png"), StandardCopyOption.REPLACE_EXISTING);
+            new File("peergos/usr/share/doc/peergos").mkdirs();
+            Files.writeString(Paths.get("peergos/usr/share/doc/peergos/copyright"), "Copyright: 2025 Peergos <peergos@peergos.org>\n" +
+                              "The entire code base may be distributed under the terms of the GNU General\n" +
+                              "Public License (GPL-3), which appears immediately below.\n\n"+
+                              "See /usr/share/common-licenses/GPL-3");
+        }
+        
         if (isWin)
             runCommand("jpackage", "-i", "../server", "-n", "peergos-app",
                        "--main-class", "peergos.server.Main", "--main-jar",
@@ -67,6 +123,21 @@ public class PackagePeergos {
                        "--mac-package-name", "Peergos",
                        "--mac-signing-key-user-name", "Peergos LTD (XUVT52ZN3F)"
                        );
+        } else if (isDeb) {
+            runCommand("dpkg-deb", "--root-owner-group", "--build", "peergos");
+            /*runCommand("jpackage", "-n", "peergos",
+                       "--vendor", "Peergos Ltd.",
+                       "--description", "The Peergos server and web interface.",
+                       "--copyright", "AGPL",
+                       "--linux-rpm-license-type", "AGPL",
+                       "--about-url", "https://peergos.org",
+                       "--type", type,
+                       "--runtime-image", "peergos",
+                       "--icon", icon,
+                       "--linux-menu-group", "Peergos",
+                       "--linux-shortcut",
+                       "--resource-dir", resourceDir,
+                       "--app-version", VERSION);*/
         } else
             runCommand("jpackage", "-i", "../server", "-n", "peergos",
                        "--main-class", "peergos.server.Main", "--main-jar",
