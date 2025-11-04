@@ -20,7 +20,7 @@
                         />
 		</section>
 
-		<section class="login-register" v-if="!isLoggedIn && !isSecretLink && !mirror">
+		<section class="login-register" v-if="!isLoggedIn && !isSecretLink">
 			<AppIcon icon="logo-full" class="sprite-test" />
 
 			<AppTabs ref="tabs">
