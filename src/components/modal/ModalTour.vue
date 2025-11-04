@@ -25,6 +25,11 @@ data() {
 	return {
 	    slides: [
 			{
+				title: this.translate("TOUR.SYNC"),
+				description: this.translate("TOUR.SYNC.DESC"),
+				image: "images/tour/sync.png"
+			},
+			{
 				title: this.translate("TOUR.STORAGE"),
 				description: this.translate("TOUR.STORAGE.DESC"),
 				image: "images/tour/drive.png"

@@ -28,6 +28,8 @@ module.exports = {
     "PASSWORD.SHORT":"passwords less than $SIZE characters are considered unsafe",
     "PASSWORD.GOOD":"That's a better password",
     "TOUR.TITLE":"Welcome to Peergos!",
+    "TOUR.SYNC":"Sync your local files",
+    "TOUR.SYNC.DESC":"Synchronise your local files to Peergos automatically on desktop and mobile apps",
     "TOUR.STORAGE":"Encrypted storage",
     "TOUR.STORAGE.DESC":"Store your files and arrange them in folders.",
     "TOUR.SHARE":"Secure sharing",
