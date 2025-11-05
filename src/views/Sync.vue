@@ -224,7 +224,7 @@ module.exports = {
 
         getHostDirTree(prefix) {
             let future = peergos.shared.util.Futures.incomplete();
-            prefix = prefix != null ? prefix : "%2F";
+            prefix = prefix != null ? encodeURIComponent(prefix) : "%2F";
             this.localPost("/peergos/v0/sync/get-host-paths?prefix=" + prefix).then(function(result, err) {
                future.complete(result);
             });
@@ -405,6 +405,8 @@ module.exports = {
                  existing.children.push(updated.children[i]);
               }
            }
+           if (updated.loadChildren)
+              existing.loadChildren = true;
 
            for (var i=0; i < updated.children.length; i++) {
               var updatedChild = updated.children[i];
