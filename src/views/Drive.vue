@@ -1383,6 +1383,42 @@ module.exports = {
 		    });
 		},
 
+                buildCapWrapper(cap) {
+                    var name = cap.name();
+                    
+                    return {
+                        getFileProperties: function() {
+                            return this.props;
+                        },
+                        isDirectory: function() {
+                            return false;
+                        },
+                        getBase64Thumbnail: function() {
+                            return "";
+                        },
+                        getName: function() {
+                            return name;
+                        },
+                        props: {
+                            name: name,
+                            modified: null,
+                            created: null,
+                            thumbnail: {ref:null},
+                            mimetype: "application/octet-stream",
+                            getType: function() {
+                                return "file"; // TODO expand this from Java
+                            },
+                            sizeLow() {
+                                return 0;
+                            },
+                            sizeHigh() {
+                                return 0;
+                            }
+                        },
+                        name: name,
+                    }
+                },
+
 		updateFiles(selectedFilename, callback) {
 			var current = this.currentDir;
 			if (current == null)
@@ -1392,33 +1428,58 @@ module.exports = {
 			let path = that.path.length == 0 ? ["/"] : that.path;
 			let directoryPath = peergos.client.PathUtils.directoryToPath(path);
 			this.context.getDirectorySharingState(directoryPath).thenApply(function (updatedSharedWithState) {
-				current.getChildren(that.context.crypto.hasher, that.context.network).thenApply(function (children) {
-					that.sharedWithState = updatedSharedWithState;
-					var arr = children.toArray();
-					that.showSpinner = false;
-					let notHiddenFiles = arr.filter(function (f) {
-                        return !f.getFileProperties().isHidden;
-                    });
-                    let allowedFiles = notHiddenFiles.filter(function (f) {
-                        return that.disallowedFilenames.get(f.getName()) == null
-                            && !f.getName().includes("/");
-                    });
-                    if (notHiddenFiles.length != allowedFiles.length) {
-                        console.log('Folder contains files with disallowed filenames!');
-                    }
-					that.files = allowedFiles;
-                    if (selectedFilename != null) {
-                        that.selectedFiles = that.files.filter(f => f.getName() == selectedFilename);
-                        that.openFile();
-                    } else {
-                        that.selectedFiles = [];
-                    }
-                    if (callback != null) {
-                        callback();
-                    }
-				}).exceptionally(function (throwable) {
-					console.log(throwable.getMessage());
-				});
+                                current.getChildrenCapabilities(that.context.crypto.hasher, that.context.network).thenApply(function(childCaps) {
+                                    that.sharedWithState = updatedSharedWithState;
+                                    that.showSpinner = false;
+                                    var arr = childCaps.toArray();
+                                    for (idx in arr) {
+                                        arr[idx].name = function(){return this.name_0.name_0}
+                                    }
+                                    let allowedFiles = arr.filter(function (f) {
+                                        return that.disallowedFilenames.get(f.name()) == null
+                                            && !f.name().includes("/") && (that.path.length != 1 || [".keystore", ".apps", ".capabilitycache", ".transactions", "shared"].indexOf(f.name()) == -1);
+                                    });
+                                    if (arr.length != allowedFiles.length && that.path.length != 1) {
+                                        console.log('Folder contains files with disallowed filenames!');
+                                    }
+                                    that.files = [];
+                                    const byName = {};
+                                    for (idx in allowedFiles) {
+                                        var cap = allowedFiles[idx];
+                                        var wrap = that.buildCapWrapper(cap);
+                                        that.files.push(wrap);
+                                        byName[cap.name()] = wrap;
+                                    }
+                                    const remaining = {"count":allowedFiles.length}
+
+                                    current.getChildrenFromCaps(peergos.client.JsUtil.asSet(allowedFiles), {accept:function(results) {
+                                        var arr = results.toArray();
+                                        let notHiddenFiles = arr.filter(function (f) {
+                                            return !f.getFileProperties().isHidden;
+                                        });
+                                        for (var idx=0; idx < arr.length; idx++) {
+                                            var wrapper = byName[arr[idx].getName()];
+                                            var file = arr[idx];
+                                            for (field in file) {
+                                               wrapper[field] = file[field];
+                                            }
+                                            wrapper.thumbnail = null; // Remove cached empty thumbnails
+                                        }
+                                        remaining.count -= arr.length;
+                                        if (remaining.count == 0) {
+                                            if (selectedFilename != null) {
+                                                that.selectedFiles = that.files.filter(f => f.getName() == selectedFilename);
+                                                that.openFile();
+                                            } else {
+                                                that.selectedFiles = [];
+                                            }
+                                            if (callback != null) {
+                                                callback();
+                                            }
+                                        }
+                                           
+                                    }}, that.context.crypto.hasher, that.context.network);
+                                });
 			}).exceptionally(function (throwable) {
 				console.log(throwable.getMessage());
 			});
