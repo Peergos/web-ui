@@ -1384,14 +1384,21 @@ module.exports = {
 		},
 
                 buildCapWrapper(cap) {
-                    var name = cap.name();
+                const that = this;
+                    const name = cap.name();
+                    const isDir = cap.isDir();
+                    const mimeType = cap.mimeType();
+                    const created = cap.created();
+                    const writable = cap.isWritable();
+                    const type = peergos.shared.user.fs.FileProperties.getType(mimeType, isDir);
                     
                     return {
+                        cap: cap,
                         getFileProperties: function() {
                             return this.props;
                         },
                         isDirectory: function() {
-                            return false;
+                            return isDir;
                         },
                         getBase64Thumbnail: function() {
                             return "";
@@ -1401,12 +1408,12 @@ module.exports = {
                         },
                         props: {
                             name: name,
-                            modified: java.time.LocalDateTime.of(2000, 1, 1, 0, 0, 0),
-                            created: java.time.LocalDateTime.of(2000, 1, 1, 0, 0, 0),
+                            modified: created,
+                            created: created,
                             thumbnail: {ref:null},
-                            mimetype: "application/octet-stream",
+                            mimeType: mimeType,
                             getType: function() {
-                                return "file"; // TODO expand this from Java
+                                return type;
                             },
                             sizeLow() {
                                 return 0;
@@ -1414,6 +1421,15 @@ module.exports = {
                             sizeHigh() {
                                 return 0;
                             }
+                        },
+                        getInputStream: function(net, crypto, sizeHigh, sizeLow, progress) {
+                            return that.context.getByPath(that.getPath + "/" + name).thenCompose(function(file){return file.get().getInputStream(net, crypto, sizeHigh, sizeLow, progress);});
+                        },
+                        isWritable: function() {
+                            return writable;
+                        },
+                        samePointer: function(file) {
+                            return cap.equals(file.cap);
                         },
                         name: name,
                     }
