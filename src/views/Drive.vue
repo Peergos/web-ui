@@ -1393,6 +1393,7 @@ module.exports = {
                     const type = peergos.shared.user.fs.FileProperties.getType(mimeType, isDir);
                     
                     return {
+                        isWrapper: true,
                         cap: cap,
                         getFileProperties: function() {
                             return this.props;
@@ -1423,7 +1424,13 @@ module.exports = {
                             }
                         },
                         getInputStream: function(net, crypto, sizeHigh, sizeLow, progress) {
-                            return that.context.getByPath(that.getPath + "/" + name).thenCompose(function(file){return file.get().getInputStream(net, crypto, sizeHigh, sizeLow, progress);});
+                            return that.context.getByPath(that.getPath + "/" + name).thenCompose(function(file){return file.get().getInputStream(net, crypto, file.get().getFileProperties().sizeHigh(), file.get().getFileProperties().sizeLow(), progress);});
+                        },
+                        getBufferedInputStream: function(net, crypto, sizeHigh, sizeLow, nChunks, progress) {
+                            return that.context.getByPath(that.getPath + "/" + name).thenCompose(function(file){return file.get().getBufferedInputStream(net, crypto, file.get().getFileProperties().sizeHigh(), file.get().getFileProperties().sizeLow(), nChunks, progress);});
+                        },
+                        getFile: function() {
+                            return that.context.getByPath(that.getPath + "/" + name).thenApply(function(file){return file.get();});
                         },
                         isWritable: function() {
                             return writable;
@@ -1467,7 +1474,7 @@ module.exports = {
                                         byName[cap.name()] = wrap;
                                     }
                                     const remaining = {"count":allowedFiles.length}
-
+if (true)return;
                                     current.getChildrenFromCaps(peergos.client.JsUtil.asSet(allowedFiles), {accept:function(results) {
                                         var arr = results.toArray();
                                         let notHiddenFiles = arr.filter(function (f) {
@@ -2839,9 +2846,16 @@ module.exports = {
                 future.complete(true);
             } else {
                 let file = files[index];
-                that.downloadFile(file).thenApply(res => {
-                    setTimeout(() => that.reduceDownload(index + 1, files, future), 10);//browser download may fail on tiny files if timeout not used
-                });
+                if (file.isWrapper)
+                   file.getFile().thenApply(fullfile => {
+                       that.downloadFile(fullfile).thenApply(res => {
+                        setTimeout(() => that.reduceDownload(index + 1, files, future), 10);//browser download may fail on tiny files if timeout not used
+                    });
+                   });
+                else
+                    that.downloadFile(file).thenApply(res => {
+                        setTimeout(() => that.reduceDownload(index + 1, files, future), 10);//browser download may fail on tiny files if timeout not used
+                    });
             }
         },
         createThumbnailMultiSelect() {
@@ -3001,7 +3015,12 @@ module.exports = {
 				this.navigateToSubdir(file.getFileProperties().name);
 			} else {
 				var that = this;
-				this.confirmDownload(file, () => { that.downloadFile(file); });
+				this.confirmDownload(file, () => {
+                                    if (file.isWrapper)
+                                        file.getFile().thenApply(fullfile => {that.downloadFile(fullfile);});
+                                    else
+                                        that.downloadFile(file);
+                                });
 			}
 		},
 
