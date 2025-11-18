@@ -1485,7 +1485,7 @@ module.exports = {
                                         byName[cap.name()] = wrap;
                                     }
                                     const remaining = {"count":allowedFiles.length}
-if (true)return;
+
                                     current.getChildrenFromCaps(peergos.client.JsUtil.asSet(allowedFiles), {accept:function(results) {
                                         var arr = results.toArray();
                                         let notHiddenFiles = arr.filter(function (f) {
