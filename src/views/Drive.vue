@@ -1430,7 +1430,18 @@ module.exports = {
                             return that.context.getByPath(that.getPath + "/" + name).thenCompose(function(file){return file.get().getBufferedInputStream(net, crypto, file.get().getFileProperties().sizeHigh(), file.get().getFileProperties().sizeLow(), nChunks, progress);});
                         },
                         getFile: function() {
-                            return that.context.getByPath(that.getPath + "/" + name).thenApply(function(file){return file.get();});
+                            const wrapper = this;
+                            return that.context.getByPath(that.getPath + "/" + name).thenApply(function(file){
+                                for (field in file.get()) {
+                                    wrapper[field] = file.get()[field];
+                                }
+                                wrapper.thumbnail = null;
+                                wrapper.isWrapper = false;
+                                return file.get();
+                            });
+                        },
+                        rename: function(newName, parent, ourPath, context) {
+                            return that.context.getByPath(that.getPath + "/" + name).thenCompose(function(file){return file.get().rename(newName, parent, ourPath, context);});
                         },
                         isWritable: function() {
                             return writable;
@@ -2948,6 +2959,9 @@ if (true)return;
             let that = this;
 		    var file = this.selectedFiles[0];
 		    var filename = file.getName();
+
+                    if (file.isWrapper)
+                        return file.getFile().thenApply(f => {that.openFile(writable)});
 
             var app = this.getApp(file, this.getPath, writable);
             if (app != "hex" && app != "editor") {
