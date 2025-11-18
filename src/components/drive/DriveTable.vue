@@ -33,7 +33,8 @@
                 <!-- :class="{ shared: isShared(file) }"-->
 					{{ file.getFileProperties().name }}
 				</td>
-				<td class="size">{{ convertBytesToHumanReadable(getFileSize(file.getFileProperties())) }}</td>
+				<td class="size" v-if="!file.isWrapper">{{ convertBytesToHumanReadable(getFileSize(file.getFileProperties())) }}</td>
+				<td class="size" v-if="file.isWrapper">Loading...</td>
 				<td class="type">{{ file.getFileProperties().getType() }}</td>
 				<td class="date">{{ formatDateTime(file.getFileProperties().modified) }}</td>
 				<td class="date">{{ formatDateTime(file.getFileProperties().created) }}</td>
