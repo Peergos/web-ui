@@ -1401,8 +1401,8 @@ module.exports = {
                         },
                         props: {
                             name: name,
-                            modified: null,
-                            created: null,
+                            modified: java.time.LocalDateTime.of(2000, 1, 1, 0, 0, 0),
+                            created: java.time.LocalDateTime.of(2000, 1, 1, 0, 0, 0),
                             thumbnail: {ref:null},
                             mimetype: "application/octet-stream",
                             getType: function() {
