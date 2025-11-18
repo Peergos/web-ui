@@ -1484,7 +1484,7 @@ module.exports = {
                                 byName[cap.name()] = wrap;
                             }
                             const remaining = {"count":allowedFiles.length}
-                            this.context.getDirectorySharingState(directoryPath).thenApply(function (updatedSharedWithState) {
+                            that.context.getDirectorySharingState(directoryPath).thenApply(function (updatedSharedWithState) {
                                 that.sharedWithState = updatedSharedWithState;
                                     
                                 current.getChildrenFromCaps(peergos.client.JsUtil.asSet(allowedFiles), {accept:function(results) {
