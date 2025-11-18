@@ -1471,7 +1471,7 @@ module.exports = {
                                     }
                                     let allowedFiles = arr.filter(function (f) {
                                         return that.disallowedFilenames.get(f.name()) == null
-                                            && !f.name().includes("/") && (that.path.length != 1 || [".keystore", ".apps", ".capabilitycache", ".from-friends.cborstream", ".groups-from-friends.cborstream", ".feed", ".posts", ".profile", ".social-state.cbor", ".transactions", "shared"].indexOf(f.name()) == -1);
+                                            && !f.name().includes("/") && (that.path.length != 1 || [".keystore", ".apps", ".capabilitycache", ".from-friends.cborstream", ".groups-from-friends.cborstream", ".feed", ".posts", ".profile", ".messaging", ".social-state.cbor", ".transactions", "shared"].indexOf(f.name()) == -1);
                                     });
                                     if (arr.length != allowedFiles.length && that.path.length != 1) {
                                         console.log('Folder contains files with disallowed filenames!');
