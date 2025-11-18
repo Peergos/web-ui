@@ -1383,6 +1383,76 @@ module.exports = {
 		    });
 		},
 
+                buildCapWrapper(cap) {
+                const that = this;
+                    const name = cap.name();
+                    const isDir = cap.isDir();
+                    const mimeType = cap.mimeType();
+                    const created = cap.created();
+                    const writable = cap.isWritable();
+                    const type = peergos.shared.user.fs.FileProperties.getType(mimeType, isDir);
+                    
+                    return {
+                        isWrapper: true,
+                        cap: cap,
+                        getFileProperties: function() {
+                            return this.props;
+                        },
+                        isDirectory: function() {
+                            return isDir;
+                        },
+                        getBase64Thumbnail: function() {
+                            return "";
+                        },
+                        getName: function() {
+                            return name;
+                        },
+                        props: {
+                            name: name,
+                            modified: created,
+                            created: created,
+                            thumbnail: {ref:null},
+                            mimeType: mimeType,
+                            getType: function() {
+                                return type;
+                            },
+                            sizeLow() {
+                                return 0;
+                            },
+                            sizeHigh() {
+                                return 0;
+                            }
+                        },
+                        getInputStream: function(net, crypto, sizeHigh, sizeLow, progress) {
+                            return that.context.getByPath(that.getPath + "/" + name).thenCompose(function(file){return file.get().getInputStream(net, crypto, file.get().getFileProperties().sizeHigh(), file.get().getFileProperties().sizeLow(), progress);});
+                        },
+                        getBufferedInputStream: function(net, crypto, sizeHigh, sizeLow, nChunks, progress) {
+                            return that.context.getByPath(that.getPath + "/" + name).thenCompose(function(file){return file.get().getBufferedInputStream(net, crypto, file.get().getFileProperties().sizeHigh(), file.get().getFileProperties().sizeLow(), nChunks, progress);});
+                        },
+                        getFile: function() {
+                            const wrapper = this;
+                            return that.context.getByPath(that.getPath + "/" + name).thenApply(function(file){
+                                for (field in file.get()) {
+                                    wrapper[field] = file.get()[field];
+                                }
+                                wrapper.thumbnail = null;
+                                wrapper.isWrapper = false;
+                                return file.get();
+                            });
+                        },
+                        rename: function(newName, parent, ourPath, context) {
+                            return that.context.getByPath(that.getPath + "/" + name).thenCompose(function(file){return file.get().rename(newName, parent, ourPath, context);});
+                        },
+                        isWritable: function() {
+                            return writable;
+                        },
+                        samePointer: function(file) {
+                            return cap.equals(file.cap);
+                        },
+                        name: name,
+                    }
+                },
+
 		updateFiles(selectedFilename, callback) {
 			var current = this.currentDir;
 			if (current == null)
@@ -1392,33 +1462,59 @@ module.exports = {
 			let path = that.path.length == 0 ? ["/"] : that.path;
 			let directoryPath = peergos.client.PathUtils.directoryToPath(path);
 			this.context.getDirectorySharingState(directoryPath).thenApply(function (updatedSharedWithState) {
-				current.getChildren(that.context.crypto.hasher, that.context.network).thenApply(function (children) {
-					that.sharedWithState = updatedSharedWithState;
-					var arr = children.toArray();
-					that.showSpinner = false;
-					let notHiddenFiles = arr.filter(function (f) {
-                        return !f.getFileProperties().isHidden;
-                    });
-                    let allowedFiles = notHiddenFiles.filter(function (f) {
-                        return that.disallowedFilenames.get(f.getName()) == null
-                            && !f.getName().includes("/");
-                    });
-                    if (notHiddenFiles.length != allowedFiles.length) {
-                        console.log('Folder contains files with disallowed filenames!');
-                    }
-					that.files = allowedFiles;
-                    if (selectedFilename != null) {
-                        that.selectedFiles = that.files.filter(f => f.getName() == selectedFilename);
-                        that.openFile();
-                    } else {
-                        that.selectedFiles = [];
-                    }
-                    if (callback != null) {
-                        callback();
-                    }
-				}).exceptionally(function (throwable) {
-					console.log(throwable.getMessage());
-				});
+                                current.getChildrenCapabilities(that.context.crypto.hasher, that.context.network).thenApply(function(childCaps) {
+                                    that.sharedWithState = updatedSharedWithState;
+                                    that.showSpinner = false;
+                                    var arr = childCaps.toArray();
+                                    for (idx in arr) {
+                                        arr[idx].name = function(){return this.name_0.name_0}
+                                    }
+                                    let allowedFiles = arr.filter(function (f) {
+                                        return that.disallowedFilenames.get(f.name()) == null
+                                            && !f.name().includes("/") && (that.path.length != 1 || [".keystore", ".apps", ".capabilitycache", ".from-friends.cborstream", ".groups-from-friends.cborstream", ".feed", ".posts", ".profile", ".messaging", ".social-state.cbor", ".transactions", "shared"].indexOf(f.name()) == -1);
+                                    });
+                                    if (arr.length != allowedFiles.length && that.path.length != 1) {
+                                        console.log('Folder contains files with disallowed filenames!');
+                                    }
+                                    that.files = [];
+                                    const byName = {};
+                                    for (idx in allowedFiles) {
+                                        var cap = allowedFiles[idx];
+                                        var wrap = that.buildCapWrapper(cap);
+                                        that.files.push(wrap);
+                                        byName[cap.name()] = wrap;
+                                    }
+                                    const remaining = {"count":allowedFiles.length}
+
+                                    current.getChildrenFromCaps(peergos.client.JsUtil.asSet(allowedFiles), {accept:function(results) {
+                                        var arr = results.toArray();
+                                        let notHiddenFiles = arr.filter(function (f) {
+                                            return !f.getFileProperties().isHidden;
+                                        });
+                                        for (var idx=0; idx < arr.length; idx++) {
+                                            var wrapper = byName[arr[idx].getName()];
+                                            var file = arr[idx];
+                                            for (field in file) {
+                                               wrapper[field] = file[field];
+                                            }
+                                            wrapper.thumbnail = null; // Remove cached empty thumbnails
+                                            wrapper.isWrapper = false;
+                                        }
+                                        remaining.count -= arr.length;
+                                        if (remaining.count == 0) {
+                                            if (selectedFilename != null) {
+                                                that.selectedFiles = that.files.filter(f => f.getName() == selectedFilename);
+                                                that.openFile();
+                                            } else {
+                                                that.selectedFiles = [];
+                                            }
+                                            if (callback != null) {
+                                                callback();
+                                            }
+                                        }
+                                           
+                                    }}, that.context.crypto.hasher, that.context.network);
+                                });
 			}).exceptionally(function (throwable) {
 				console.log(throwable.getMessage());
 			});
@@ -2762,9 +2858,16 @@ module.exports = {
                 future.complete(true);
             } else {
                 let file = files[index];
-                that.downloadFile(file).thenApply(res => {
-                    setTimeout(() => that.reduceDownload(index + 1, files, future), 10);//browser download may fail on tiny files if timeout not used
-                });
+                if (file.isWrapper)
+                   file.getFile().thenApply(fullfile => {
+                       that.downloadFile(fullfile).thenApply(res => {
+                        setTimeout(() => that.reduceDownload(index + 1, files, future), 10);//browser download may fail on tiny files if timeout not used
+                    });
+                   });
+                else
+                    that.downloadFile(file).thenApply(res => {
+                        setTimeout(() => that.reduceDownload(index + 1, files, future), 10);//browser download may fail on tiny files if timeout not used
+                    });
             }
         },
         createThumbnailMultiSelect() {
@@ -2858,6 +2961,9 @@ module.exports = {
 		    var file = this.selectedFiles[0];
 		    var filename = file.getName();
 
+                    if (file.isWrapper)
+                        return file.getFile().thenApply(f => {that.openFile(writable)});
+
             var app = this.getApp(file, this.getPath, writable);
             if (app != "hex" && app != "editor") {
                 var args = {filename:filename}
@@ -2924,7 +3030,12 @@ module.exports = {
 				this.navigateToSubdir(file.getFileProperties().name);
 			} else {
 				var that = this;
-				this.confirmDownload(file, () => { that.downloadFile(file); });
+				this.confirmDownload(file, () => {
+                                    if (file.isWrapper)
+                                        file.getFile().thenApply(fullfile => {that.downloadFile(fullfile);});
+                                    else
+                                        that.downloadFile(file);
+                                });
 			}
 		},
 
