@@ -1498,6 +1498,7 @@ module.exports = {
                                                wrapper[field] = file[field];
                                             }
                                             wrapper.thumbnail = null; // Remove cached empty thumbnails
+                                            wrapper.isWrapper = false;
                                         }
                                         remaining.count -= arr.length;
                                         if (remaining.count == 0) {
