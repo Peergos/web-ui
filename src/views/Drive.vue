@@ -1395,6 +1395,7 @@ module.exports = {
                     return {
                         isWrapper: true,
                         cap: cap,
+                        directChildrenCount: "Loading..",
                         getFileProperties: function() {
                             return this.props;
                         },
@@ -1437,6 +1438,10 @@ module.exports = {
                                 }
                                 wrapper.thumbnail = null;
                                 wrapper.isWrapper = false;
+                                if (file.get().isDirectory())
+                                    file.get().getDirectChildrenCount(that.context.network).thenApply(count => {
+                                        wrapper.directChildrenCount = count;
+                                    });
                                 return file.get();
                             });
                         },
@@ -1500,6 +1505,13 @@ module.exports = {
                                         }
                                         wrapper.thumbnail = null; // Remove cached empty thumbnails
                                         wrapper.isWrapper = false;
+                                        if (file.isDirectory())
+                                            file.getDirectChildrenCount(that.context.network).thenApply(count => {
+                                                if (count >= 500)
+                                                    wrapper.directChildrenCount = "> 500";
+                                                else
+                                                    wrapper.directChildrenCount = count;    
+                                            });
                                     }
                                     remaining.count -= arr.length;
                                     if (remaining.count == 0) {
