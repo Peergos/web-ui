@@ -1476,6 +1476,36 @@ module.exports = {
 			// let context = this.getContext();
 			let path = that.path.length == 0 ? ["/"] : that.path;
 			let directoryPath = peergos.client.PathUtils.directoryToPath(path);
+                        if (current.capTrie.isPresent())
+                            return that.context.getDirectorySharingState(directoryPath).thenApply(function (updatedSharedWithState) {
+                                return current.getChildren(that.context.crypto.hasher, that.context.network).thenApply(function (children) {
+					that.sharedWithState = updatedSharedWithState;
+					var arr = children.toArray();
+					that.showSpinner = false;
+					let notHiddenFiles = arr.filter(function (f) {
+                                            return !f.getFileProperties().isHidden;
+                                        });
+                                        let allowedFiles = notHiddenFiles.filter(function (f) {
+                                            return that.disallowedFilenames.get(f.getName()) == null
+                                                && !f.getName().includes("/");
+                                        });
+                                        if (notHiddenFiles.length != allowedFiles.length) {
+                                            console.log('Folder contains files with disallowed filenames!');
+                                        }
+					that.files = allowedFiles;
+                                        if (selectedFilename != null) {
+                                            that.selectedFiles = that.files.filter(f => f.getName() == selectedFilename);
+                                            that.openFile();
+                                        } else {
+                                            that.selectedFiles = [];
+                                        }
+                                        if (callback != null) {
+                                            callback();
+                                       }
+			    }).exceptionally(function (throwable) {
+				console.log(throwable.getMessage());
+			    });
+                        });
 			
                         current.getChildrenCapabilities(that.context.crypto.hasher, that.context.network).thenApply(function(childCaps) {
                             that.showSpinner = false;
