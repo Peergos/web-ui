@@ -1458,6 +1458,16 @@ module.exports = {
                     }
                 },
 
+                setChildCount(byName, name, file) {
+                    file.getDirectChildrenCount(this.context.network).thenApply(count => {
+                        const wrapper = byName[name];
+                        if (count.value_0 >= 500)
+                            wrapper.directChildrenCount = "> 500";
+                        else
+                            wrapper.directChildrenCount = count.value_0;    
+                    });
+                },
+
 		updateFiles(selectedFilename, callback) {
 			var current = this.currentDir;
 			if (current == null)
@@ -1506,12 +1516,7 @@ module.exports = {
                                         wrapper.thumbnail = null; // Remove cached empty thumbnails
                                         wrapper.isWrapper = false;
                                         if (file.isDirectory())
-                                            file.getDirectChildrenCount(that.context.network).thenApply(count => {
-                                                if (count >= 500)
-                                                    wrapper.directChildrenCount = "> 500";
-                                                else
-                                                    wrapper.directChildrenCount = count;    
-                                            });
+                                            that.setChildCount(byName, arr[idx].getName(), file);
                                     }
                                     remaining.count -= arr.length;
                                     if (remaining.count == 0) {
