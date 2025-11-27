@@ -625,6 +625,7 @@ var accountStoreCache;
 var pkiStoreCache;
 var rootKeyCache;
 let SAFARI_CACHE_SIZE = 1024 * 1024 * 700;
+let DEFAULT_CACHE_SIZE = 200 * 1024 * 1024;
 
 function bindCacheStore(storeCache) {
     blockStoreCache = storeCache;
@@ -642,7 +643,7 @@ function getDesiredCacheSize() {
     let future = peergos.shared.util.Futures.incomplete();
     getIDBKV("desiredSize", blockStoreCache.cacheDesiredSizeStore).then((val) => {
         if (val == null || val == -1) {
-            future.complete(-1);
+            future.complete(DEFAULT_CACHE_SIZE);
         } else if(val == 0 && isSafariTest()) {
             future.complete(SAFARI_CACHE_SIZE);
         } else {
