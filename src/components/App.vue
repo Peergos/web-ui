@@ -183,7 +183,7 @@ module.exports = {
 		var fragment = window.location.hash.substring(1);
 		var props = this.getSecretLinkProps();
 		if (href.includes("?signup=true")) {
-		    this.$refs.tabs.selectTab(1);
+		    this.$refs.tabs.selectTab(2);
 
 		    if (href.includes("token=")) {
 			var urlParams = new URLSearchParams(window.location.search);
