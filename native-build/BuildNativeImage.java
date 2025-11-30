@@ -32,7 +32,6 @@ public class BuildNativeImage {
                    "-march=compatibility " +
                    "-H:ConfigurationFileDirectories=META-INF/native-image " +
                    "--initialize-at-build-time=org.sqlite.util.ProcessRunner " +
-                   "--trace-object-instantiation=jdk.internal.foreign.NativeMemorySegmentImpl " +
                    "--initialize-at-run-time=io.netty.handler.codec.http.HttpObjectAggregator " +
                    "--initialize-at-run-time=io.netty.buffer.UnpooledByteBufAllocator " +
                    "--initialize-at-run-time=io.netty.buffer.Unpooled " +
