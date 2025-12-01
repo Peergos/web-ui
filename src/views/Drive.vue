@@ -565,7 +565,15 @@ module.exports = {
 	},
 	mixins:[downloaderMixins, router, zipMixin, launcherMixin, i18n, sandboxMixin],
         mounted: function() {
-
+                        let grid = localStorage.getItem("isGrid");
+                        if (grid != null)
+                            this.isGrid = "true" === grid;
+                        let sort = localStorage.getItem("sortBy");
+                        if (sort != null)
+                            this.sortBy = sort;
+                        let order = localStorage.getItem("normalSortOrder");
+                        if (order != null)
+                            this.normalSortOrder = "true" === order;
         },
 	computed: {
 		...Vuex.mapState([
@@ -1135,6 +1143,8 @@ module.exports = {
 			if (this.sortBy == prop)
 				this.normalSortOrder = !this.normalSortOrder;
 			this.sortBy = prop;
+                        localStorage.setItem("sortBy", prop);
+                        localStorage.setItem("normalSortOrder", this.normalSortOrder);
 		},
 
 		onResize() {
@@ -1648,6 +1658,7 @@ module.exports = {
 
 		switchView() {
 			this.isGrid = !this.isGrid;
+                        localStorage.setItem("isGrid", this.isGrid);
 		},
 
 		currentDirChanged() {
