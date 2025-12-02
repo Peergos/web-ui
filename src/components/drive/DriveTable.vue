@@ -26,6 +26,14 @@
                         <span class="checkmark"></span>
                     </label>            
                 </td>
+                <td class="">
+                    <img
+				class="tablethumb"
+				v-if="getThumbnailURL(file)"
+				:src="getThumbnailURL(file)"
+				:alt="alt"
+		    />
+                </td>
 				<td class="file"
 					:id="file.getFileProperties().name"
 					@click="$emit('navigateDrive', file)"
@@ -110,6 +118,15 @@ module.exports = {
             this.isShiftModifierOn = true;
         },
 
+		getThumbnailURL(file) {
+			// cache thumbnail to avoid recalculating it
+			if (file.thumbnail != null)
+				return file.thumbnail;
+			var thumb = file.getBase64Thumbnail();
+			file.thumbnail = thumb;
+			return thumb;
+		},
+
 		showMenu(e, file){
 			// https://stackoverflow.com/questions/53738919/emit-event-with-parameters-in-vue/53739018
 			this.$store.commit('SET_DRIVE_MENU_TARGET', e.currentTarget)
@@ -186,6 +203,16 @@ module.exports = {
 .drive-table tbody tr:hover,
 .drive-table tbody tr:focus{
 	background-color: var(--bg-2);
+}
+
+.tablethumb {
+
+	width:50px;
+	height:50px;
+	object-fit: cover;
+	object-position: center center;
+	transform: scale(1);
+	transition: transform 0.2s;
 }
 
 .drive-table .menu{
