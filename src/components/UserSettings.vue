@@ -79,6 +79,9 @@
                 >
                     {{ translate("SETTINGS.CACHE") }}
                 </li>
+				<li v-on:keyup.enter="showVersion()" @click="showVersion()">
+					{{ translate("SETTINGS.VERSION") }}
+				</li>
 				<li
 					v-on:keyup.enter="showMigrate()"
 					@click="showMigrate()"
@@ -284,6 +287,9 @@ module.exports = {
 	    },
 		showProfile() {
 			this.$store.commit("CURRENT_MODAL", "ModalProfile");
+		},
+		showVersion() {
+			this.$store.commit("CURRENT_MODAL", "ModalVersion");
 		},
 		launchHelp() {
 			this.$store.commit("CURRENT_MODAL", "ModalHelp");

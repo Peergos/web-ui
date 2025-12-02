@@ -163,6 +163,7 @@ module.exports = {
     "SETTINGS.CACHE.INVALID":"Cache size value not valid",
     "SETTINGS.CACHE.LARGE":"Invalid Cache size. Maximum Cache Size: $SIZE MiB",
     "SETTINGS.CACHE.UPDATED":"Cache Size Updated",
+    "SETTINGS.VERSION":"Version",
     "SETTINGS.MIGRATE":"Migration",
     "PASSWORD.CHANGE":"Change password",
     "PASSWORD.EXISTING":"Existing password",
@@ -531,4 +532,6 @@ module.exports = {
     "MIRROR.TITLE":"Mirror",
     "MIRROR.MIRRORPAID":"Add payment card and mirror your data",
     "MIRROR.MIRRORFREE":"Request mirroring your data",
+    "VERSION.TITLE":"Version",
+    "VERSION.CLOSE":"Close",
 }
