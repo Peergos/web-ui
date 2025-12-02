@@ -107,6 +107,7 @@ module.exports = {
 	margin:  0;
 	padding: 0 16px;
 	cursor: pointer;
+	flex-shrink: 0;
 }
 
 .app-navigation .nav-list {
