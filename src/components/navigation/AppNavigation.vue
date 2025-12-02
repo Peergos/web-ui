@@ -51,6 +51,11 @@ module.exports = {
 		NavigationStorage,
 	},
         mixins:[i18n],
+        mounted: function() {
+                let open = localStorage.getItem("side-bar-open");
+                if (open != null)
+                    this.$store.commit("SET_SIDEBAR", "true" === open);
+        },
 	computed: {
 		isOpen() {
 			return this.$store.state.isSidebarOpen;
@@ -68,6 +73,7 @@ module.exports = {
 	methods: {
 		toggleSidebar() {
 			this.$store.commit("TOGGLE_SIDEBAR");
+                        localStorage.setItem("side-bar-open", this.isOpen ? "true" : "false");
 		},
 		toggleTheme() {
 			this.$store.commit("TOGGLE_THEME");
