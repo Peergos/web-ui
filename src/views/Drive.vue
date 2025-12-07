@@ -2501,6 +2501,7 @@ module.exports = {
                 op: "copy",
                 path: this.getPath
             };
+            this.selectedFiles=[];
             this.closeMenu();
         },
 
