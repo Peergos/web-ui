@@ -214,6 +214,7 @@ module.exports = {
                     }
                 });
             }
+            context.ensureCurrentHost();
 		},
 		appFromUrl(){
 			const props = this.getPropsFromUrl();
