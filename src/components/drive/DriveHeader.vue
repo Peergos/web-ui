@@ -122,6 +122,9 @@ module.exports = {
 		},
 
 		askForDirectories() {
+                        if (Android !== undefined)
+                            Android.notifyDirectoryRequest();
+                        
 			document.getElementById('uploadDirectoriesInput').click();
 		},
 	},
