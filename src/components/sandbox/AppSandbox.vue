@@ -501,8 +501,8 @@ module.exports = {
             return this.supportsStreaming();
         },
         appSandboxIsCrossOriginIsolated() {
-            if (Android !== undefined)
-               return true; // support Android webview
+            //if (Android !== undefined)
+            //   return true; // support Android webview
             return window.crossOriginIsolated;
         },
         getMirrorBatId(file) {
