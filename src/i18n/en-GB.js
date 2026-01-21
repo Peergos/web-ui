@@ -312,7 +312,7 @@ module.exports = {
     "PAID.PRO":"Select Pro (opens new tab)",
     "PAID.VISIONARY":"Select Visionary (opens new tab)",
     "PAID.PIONEER":"Select Pioneer (opens new tab)",
-    "PAID.SORRY":"Sorry to see you go. You have until the end of the billing month to download your data, after which it will be deleted.",
+    "PAID.SORRY":"Sorry to see you go. You can continue using Peergos until the end of your subscription period, and then you will have one month to download your data, after which it will be deleted.",
     "PAID.THANKYOU":"Thank you for signing up to a paid Peergos account!",
     "PAID.CARD.NEEDED":"Card details required. Add a payment card to complete your upgrade.",
     "PAID.ERROR.CANCEL":"Error cancelling account",

@@ -298,7 +298,7 @@ module.exports = {
     "PAID.PRO":"选择 Pro 计划（将打开新选项卡）",
     "PAID.VISIONARY":"选择 Visionary 计划（将打开新选项卡）",
     "PAID.PIONEER":"选择 Pioneer 计划（将打开新选项卡）",
-    "PAID.SORRY":"很遗憾看到你离开。我们很想知道有什么可以做得更好。请确保删除足够的数据，使其不超出基本配额。您将在计费月结束时恢复基本配额。",
+    "PAID.SORRY":"很遗憾您要离开。您可以继续使用 Peergos 直至订阅期结束，之后您将有一个月的时间下载您的数据，之后数据将被删除。",
     "PAID.THANKYOU":"感谢您注册付费 Peergos 账户！",
     "PAID.CARD.NEEDED":"需要卡的详细信息。添加支付卡以完成升级。",
     "PAID.ERROR.STORAGE":"请求更多存储空间时出错",

@@ -309,7 +309,7 @@ module.exports = {
     "PAID.PRO":"Wybierz Pro (otwiera się w nowej karcie)",
     "PAID.VISIONARY":"Wybierz Visionary (otwiera się w nowej karcie)",
     "PAID.PIONEER":"Wybierz Pioneer (otwiera się w nowej karcie)",
-    "PAID.SORRY":"Przykro nam, że odchodzisz. Do końca miesiąca rozliczeniowego masz czas na pobranie swoich danych, potem zostaną one usunięte.",
+    "PAID.SORRY":"Przykro nam, że odchodzisz. Możesz nadal korzystać z Peergos do końca okresu subskrypcji. Następnie będziesz mieć miesiąc na pobranie danych, po czym zostaną one usunięte.",
     "PAID.THANKYOU":"Dziękujemy za założenie płatnego konta Peergos!",
     "PAID.CARD.NEEDED":"Wymagane są dane karty. Dodaj kartę płatniczą, aby dokończyć subskrypcję.",
     "PAID.ERROR.CANCEL":"Błąd anulowania konta",
