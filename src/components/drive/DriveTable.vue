@@ -3,6 +3,7 @@
 		<thead>
 			<tr>
                 <th class="select"></th>
+                                <th></th>
 				<th class="file" @click="$emit('sortBy', 'name')">{{ translate("DRIVE.NAME") }}</th>  <!-- <span v-if="sortBy=='size'" :class="['fas', normalSortOrder ? 'fa-angle-down' : 'fa-angle-up']"/> -->
 				<th class="size" @click="$emit('sortBy', 'size')">{{ translate("DRIVE.SIZE") }}</th>
 				<th class="type" @click="$emit('sortBy', 'type')">{{ translate("DRIVE.TYPE") }}</th>
