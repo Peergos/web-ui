@@ -114,6 +114,7 @@ module.exports = {
             multipleFolderSelection: false,
             initiallySelectedPaths: [],
             hostFolderTree: {},
+            useHostDirChooser: false,
             pickerTitle: "Remote Folder (create in Drive first)",
             simplePickerTitle: "Local Folder",
             showSpinner: false,
@@ -147,6 +148,7 @@ module.exports = {
     },
 	created() {
         this.getSyncState();
+        this.getWhichChooser();
         var that = this;
         this.updateStatusIntervalID = setInterval(() => {
             that.updateStatus();
@@ -194,6 +196,13 @@ module.exports = {
                 };
             
 	            req.send(body != null ? body : new Int8Array(0));
+            })
+        },
+
+        getWhichChooser() {
+            let that = this;
+            this.localPost("/peergos/v0/sync/use-host-dir-chooser").then(function(result, err) {
+               that.useHostDirChooser = result;
             })
         },
 
@@ -250,7 +259,7 @@ module.exports = {
 
         getHostDir() {
             let isAndroid = navigator.userAgent.indexOf("android") > -1;
-            if (isAndroid)
+            if (isAndroid || this.useHostDirChooser)
                return this.openNativeHostDirChooser();
             return this.openHostFolderPicker();
         },
