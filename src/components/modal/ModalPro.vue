@@ -80,7 +80,7 @@ module.exports = {
                         paymentUrl:null,
 			showCard:false,
                         currentAnnual: false,
-                        annual: true,
+                        annual: false,
                         currentFocusFunction:null,
 		};
 	},

@@ -154,7 +154,7 @@ module.exports = {
 	    password: '',
 	    password2: '',
 	    email: '',
-            annual: true,
+            annual: false,
             desiredQuota: 0,
             showPasswords: false,
 	    acceptingFreeSignups: true,
