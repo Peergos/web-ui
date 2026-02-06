@@ -29,7 +29,7 @@ module.exports = {
     "PASSWORD.GOOD": "Das ist ein besseres Passwort",
     "TOUR.TITLE": "Willkommen bei Peergos!",
     "TOUR.SYNC": "Synchronisieren Sie Ihre lokalen Dateien",
-    "TOUR.SYNC.DESC": "Synchronisieren Sie Ihre lokalen Dateien automatisch mit Peergos über Desktop- und Mobil-Apps."
+    "TOUR.SYNC.DESC": "Synchronisieren Sie Ihre lokalen Dateien automatisch mit Peergos über Desktop- und Mobil-Apps.",
     "TOUR.STORAGE": "Verschlüsselter Speicher",
     "TOUR.STORAGE.DESC": "Speichern und organisieren Sie Ihre Dateien in Ordnern.",
     "TOUR.SHARE": "Sicheres Teilen",
@@ -59,7 +59,7 @@ module.exports = {
     "DRIVE.SELECTED": "Ausgewählt",
     "DRIVE.NAME": "Name",
     "DRIVE.SIZE": "Größe",
-    "DRIVE.TYPE": "Typ"
+    "DRIVE.TYPE": "Typ",
     "DRIVE.MODIFIED": "Geändert",
     "DRIVE.CREATED": "Erstellt",
     "DRIVE.COPY": "Kopieren",
@@ -192,8 +192,8 @@ module.exports = {
     "HELP.SPACE.TEXT": "Oben links sehen Sie das Peergos-Logo mit einem Turm. Klicken Sie darauf, um das linke Bedienfeld zu erweitern. Unten im erweiterten Bedienfeld wird 99,9 KiB / 999,9 MiB angezeigt. Die erste Zahl gibt Ihren belegten Speicherplatz an, die zweite Ihren verfügbaren.",
     "HELP.FOLLOW": "Eine Folgeanfrage senden?",
     "HELP.FOLLOW.TEXT": "Die Social-Media-Ansicht wird durch Auswahl des Symbols mit den drei verbundenen Punkten im Menü auf der linken Seite angezeigt.Auf dieser Seite können Sie eine Folgeanfrage senden und alle ausstehenden Anfragen einsehen.",
-    "HELP.FRIENDS": "Meine Freunde und Follower ansehen?“
-„HELP.FRIENDS.TEXT1": "Das Social-Media-Fenster wird durch Auswahl des Symbols mit den drei verbundenen Punkten im Menü auf der linken Seite angezeigt. Ihre sozialen Kontakte werden unter „Freunde“, „Follower“ und „Gefolgt“ aufgelistet.",
+    "HELP.FRIENDS": "Meine Freunde und Follower ansehen?",
+    "HELP.FRIENDS.TEXT1": "Das Social-Media-Fenster wird durch Auswahl des Symbols mit den drei verbundenen Punkten im Menü auf der linken Seite angezeigt. Ihre sozialen Kontakte werden unter „Freunde“, „Follower“ und „Gefolgt“ aufgelistet.",
     "HELP.FRIENDS.TEXT2": "Wenn Sie eine Folgeanfrage gesendet haben und der Empfänger auf „Zulassen und zurückfolgen“ geklickt hat, sind Sie befreundet.",
     "HELP.PROFILE": "Profil erstellen und teilen?",
     "HELP.PROFILE.TEXT1": "Wählen Sie den Menüpunkt „Profil“, nachdem Sie auf das Menü „Benutzereinstellungen“ (das Personensymbol oben rechts) geklickt haben. Geben Sie die gewünschten Details ein und klicken Sie auf „Speichern“. Das Profilbild wird nach dem Hochladen in der Vorschau angezeigt. Klicken Sie neben jedem ausgefüllten Feld auf die Schaltfläche „Teilen“, um die sichtbare Zielgruppe festzulegen.",
@@ -355,7 +355,7 @@ module.exports = {
     "DRIVE.LINK.LIMIT.RETRIEVALS": "Anzahl der Linknutzungen begrenzen",
     "DRIVE.LINK.PASSWORD": "Passwort für den Zugriff erforderlich",
     "DRIVE.LINK.ERROR.CREATE": "Fehler beim Erstellen des geheimen Links",
-    "DRIVE.LINK.ERROR.UPDATE: Fehler beim Aktualisieren des geheimen Links",
+    "DRIVE.LINK.ERROR.UPDATE": "Fehler beim Aktualisieren des geheimen Links",
     "VERIFY.TITLE": "Verifiziere Freund",
     "VERIFY.SCAN": "Scanne den QR-Code deines Freundes",
     "VERIFY.NUMBERS": "Alternativ könnt ihr euch diese Nummern gegenseitig vorlesen (sie sollten übereinstimmen)",
@@ -471,10 +471,10 @@ module.exports = {
     "CALENDAR.IMPORT.MSG": "Importiere $ITEMS Kalenderereignisse",
     "CALENDAR.IMPORT.COMPLETE": "Import der Ereignisse abgeschlossen",
     "CALENDAR.ERROR.IMPORT.EVENT": "Ereignis(se) konnten nicht importiert werden",
-    "CALENDAR.IMPORT.EVENT": "Möchten Sie das Ereignis importieren:"
-    "CALENDAR.IMPORT.CALENDAR": "Möchten Sie den Kalender importieren:"
-    "CALENDAR.LABEL": "Kalender"
-    "CALENDAR.EVENT.LINK": "Link zum Ereignis"
+    "CALENDAR.IMPORT.EVENT": "Möchten Sie das Ereignis importieren:",
+    "CALENDAR.IMPORT.CALENDAR": "Möchten Sie den Kalender importieren:",
+    "CALENDAR.LABEL": "Kalender",
+    "CALENDAR.EVENT.LINK": "Link zum Ereignis",
     "SANDBOX.APP.DATA": "Kann Dateien in einem privaten Ordner speichern und lesen zur App hinzufügen",
     "SANDBOX.EDIT.FILE": "Kann die vom Benutzer ausgewählte Datei bearbeiten",
     "SANDBOX.READ.FOLDER": "Kann ausgewählte Dateien der zugehörigen Typen aus dem vom Benutzer ausgewählten Ordner lesen",
@@ -524,9 +524,9 @@ module.exports = {
     "MIGRATE.ACCOUNT.YES": "Ja, Konto migrieren.",
     "MIGRATE.ACCOUNT.CONFIRM": "Möchten Sie wirklich auf diesen Server migrieren?",
     "MIGRATE.ACCOUNT.PASS": "Passwort erforderlich!",
-    "MIGRATE.ID.COPY": "In die Zwischenablage kopieren.",
-    "MIGRATE.MIRROR": "Daten auf diesen Server spiegeln.",
-    "MIGRATE.MIRROR"."LOGIN: Anmeldedaten auf diesen Server spiegeln.“ Server",
+    "MIGRATE.ID.COPY": "In die Zwischenablage kopieren",
+    "MIGRATE.MIRROR": "Daten auf diesen Server spiegeln",
+    "MIGRATE.MIRROR.LOGIN": "Anmeldedaten auf diesen Server spiegeln",
     "MIGRATE.MIRROR.DONE": "Spiegelung gestartet",
     "MIGRATE.MIRROR.LOGIN.DONE": "Anmeldedaten gespiegelt",
     "MIRROR.TITLE": "Spiegeln",
