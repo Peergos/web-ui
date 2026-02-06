@@ -62,7 +62,9 @@ function defaultGetStore() {
 
 
 function getIDBKV(key) {
-  var customStore = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : defaultGetStore();
+    var customStore = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : defaultGetStore();
+    if (customStore == null) // Handle places with no indexeddb
+        return Promise.resolve(null);
   return customStore('readonly', function (store) {
     return promisifyRequest(store.get(key));
   });
@@ -77,7 +79,9 @@ function getIDBKV(key) {
 
 
 function setIDBKV(key, value) {
-  var customStore = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : defaultGetStore();
+    var customStore = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : defaultGetStore();
+    if (customStore == null) // Handle places with no indexeddb
+        return Promise.resolve(null);
   return customStore('readwrite', function (store) {
     store.put(value, key);
     return promisifyRequest(store.transaction);
