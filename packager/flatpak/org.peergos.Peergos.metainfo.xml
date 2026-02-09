@@ -31,7 +31,7 @@
   </releases>
 
   <requires>
-    <id>cmo.google.Chrome</id>
+    <id>com.google.Chrome</id>
   </requires>
   
   <supports>
