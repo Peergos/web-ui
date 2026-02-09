@@ -31,8 +31,7 @@
   </releases>
 
   <requires>
-    <id>org.chromium.Chromium</id>
-    <id>org.freedesktop.Platform.ffmpeg-full</id>
+    <id>cmo.google.Chrome</id>
   </requires>
   
   <supports>
