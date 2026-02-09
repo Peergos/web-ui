@@ -30,6 +30,10 @@
     </release>
   </releases>
 
+  <requires>
+    <id>org.chromium.Chromium</id>
+  </requires>
+  
   <supports>
     <control>pointing</control>
     <control>keyboard</control>
