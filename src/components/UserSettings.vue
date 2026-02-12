@@ -74,6 +74,12 @@
                     {{ translate("SETTINGS.CLEANUP") }}
                 </li>
                 <li
+                    v-on:keyup.enter="setLanguage()"
+                    @click="setLanguage()"
+                >
+                    {{ translate("SETTINGS.LANGUAGE") }}
+                </li>
+                <li
                     v-on:keyup.enter="modifyCacheSize()"
                     @click="modifyCacheSize()"
                 >
@@ -171,6 +177,9 @@ module.exports = {
         this.displayProfile();
     },
 	methods: {
+        setLanguage() {
+            this.$store.commit("CURRENT_MODAL", "ModalLanguage");
+        },
         cleanupFailedUploads() {
             this.showSettingsSpinner = true;
             let that = this;

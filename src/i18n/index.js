@@ -8,10 +8,23 @@ const zhCN = require("zh-CN.js")
 
 const supported = ["en-GB", "zh-CN"]
 const supported_prefixes = ["de", "es", "fr", "it", "pl"]
+const supportedLanguages = ["English", "中国人", "Française", "Deutsch", "Italiana", "Polski", "Español"];
+const locales = {"English":"en-GB", "中国人":"zh-CN", "Française":"fr", "Deutsch": "de", "Italiana":"it", "Polski":"pl", "Español":"es"}
 module.exports = {
 
     methods: {
+        getLanguages() {
+            return supportedLanguages;
+        },
+        getLocale(lang) {
+            return locales[lang];
+        },
+        setLanguage(locale) {
+            localStorage.setItem("Language", locale);
+            this.$toast("Log in again to reflect language change")
+        },
         translate(label, locale) {
+            locale = localStorage.getItem("Language");
             if (locale == null)
                 locale = navigator.language;
             if (! supported.includes(locale)) {

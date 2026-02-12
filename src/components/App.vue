@@ -73,6 +73,7 @@ const ModalCancel = require("./modal/ModalCancel.vue");
 const ModalPassword = require("./modal/ModalPassword.vue");
 const ModalAccount = require("./modal/ModalAccount.vue");
 const ModalProfile = require("./modal/ModalProfile.vue");
+const ModalLanguage = require("./modal/ModalLanguage.vue");
 const ModalVersion = require("./modal/ModalVersion.vue");
 const ModalFeedback = require("./modal/ModalFeedback.vue");
 const ModalMigrate = require("./modal/ModalMigrate.vue");
@@ -116,6 +117,7 @@ module.exports = {
 		ModalAccount,
 		ModalMigrate,
 		ModalProfile,
+		ModalLanguage,
 		ModalVersion,
                 ModalFeedback,
 		ServerMessages,
