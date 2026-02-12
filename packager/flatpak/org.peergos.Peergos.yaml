@@ -1,0 +1,88 @@
+app-id: org.peergos.Peergos
+runtime: org.freedesktop.Platform
+runtime-version: "25.08"
+
+base: org.chromium.Chromium
+base-version: stable
+
+sdk: org.freedesktop.Sdk
+
+sdk-extensions:
+  - org.freedesktop.Sdk.Extension.openjdk21
+
+command: peergos
+
+finish-args:
+  - --share=network
+  - --share=ipc
+
+  - --device=dri
+  - --socket=pulseaudio
+  - --socket=fallback-x11
+  - --socket=wayland
+  - --env=LD_LIBRARY_PATH=/app/chromium/nonfree-codecs/lib
+  - --env=PATH=/app/jre/bin:/app/bin:/usr/bin
+
+inherit-extensions:
+  - org.chromium.Chromium.Codecs
+
+build-options:
+  append-path: /usr/lib/sdk/openjdk21/bin
+  env:
+    JAVA_HOME: /usr/lib/sdk/openjdk21
+
+cleanup:
+  - "/app/ant"
+  - "/app/bin/ant"
+
+modules:
+  - name: chromium-codecs-dir
+    buildsystem: simple
+    build-commands:
+      - mkdir -p /app/chromium/nonfree-codecs/lib
+
+  - name: openjdk
+    buildsystem: simple
+    build-commands:
+      - /usr/lib/sdk/openjdk21/install.sh
+
+  - name: ant
+    buildsystem: simple
+    build-commands:
+      - ./build.sh
+      - mkdir -p /app/ant
+      - mkdir -p /app/bin
+      - cp -r dist /app/ant
+      - ln -s /app/ant/bin/ant /app/bin/ant
+    sources:
+      - type: archive
+        url: https://downloads.apache.org/ant/source/apache-ant-1.10.14-src.tar.gz
+        sha256: 9a5fe31f44d1eb62590cbe38e4fab25b25e2f68643b38a54b66498e0bf621b54
+
+  - name: peergos
+    buildsystem: simple
+    build-commands:
+      - export JAVA_HOME=/app/jdk
+      - export PATH=$JAVA_HOME/bin:$PATH/app/jdk
+
+      - ant dist
+
+      - install -Dm644 server/Peergos.jar /app/share/peergos/Peergos.jar
+
+      - install -Dm755 peergos.sh /app/bin/peergos
+
+      - install -Dm755 packager/flatpak/flatpak.sh /app/bin/flatpak.sh
+
+      - install -Dm644 packager/flatpak/org.peergos.Peergos.desktop /app/share/applications/org.peergos.Peergos.desktop
+
+      - install -Dm644 packager/flatpak/peergos.svg /app/share/icons/hicolor/scalable/apps/org.peergos.Peergos.svg
+
+      - install -Dm644 packager/flatpak/org.peergos.Peergos.metainfo.xml /app/share/metainfo/org.peergos.Peergos.metainfo.xml
+
+    sources:
+      - type: git
+        url: http://github.com/peergos/web-ui.git
+        commit: a6526c84e12d77638cd2a069fdaa579084663936
+
+      - type: file
+        path: peergos.sh
