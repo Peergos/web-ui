@@ -22,13 +22,8 @@ jobs:
       - uses: actions/checkout@v4
       - uses: flatpak/flatpak-github-actions/flatpak-builder@v6
         with:
-          bundle: palette.flatpak
+          bundle: peergos.flatpak
           manifest-path: packager/flatpak/org.peergos.Peergos.yaml
           cache-key: flatpak-builder-${{ github.sha }}
           arch: ${{ matrix.variant.arch }}
           verbose: true
-      - name: Upload static binary artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: peergos-flatpak-${{ matrix.arch }}.flatpak
-          path: "peergos.flatpak"
