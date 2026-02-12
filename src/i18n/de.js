@@ -165,6 +165,7 @@ module.exports = {
     "SETTINGS.CACHE.UPDATED": "Cache-Größe aktualisiert",
     "SETTINGS.VERSION": "Version",
     "SETTINGS.MIGRATE": "Migration",
+    "SETTINGS.LANGUAGE":"Sprache",
     "PASSWORD.CHANGE": "Passwort ändern",
     "PASSWORD.EXISTING": "Vorhandenes Passwort",
     "PASSWORD.GENERATE": "Passwort generieren",
@@ -534,4 +535,5 @@ module.exports = {
     "MIRROR.MIRRORFREE": "Datenspiegelung anfordern",
     "VERSION.TITLE": "Version",
     "VERSION.CLOSE": "Schließen",
+    "LANGUAGE.CHOOSE":"Sprache"
 }
