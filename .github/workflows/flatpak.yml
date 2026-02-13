@@ -21,11 +21,8 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - name: Update manifest with current commit
-        run: |
-        packager/flatpak/update-manifest-commit.sh packager/flatpak/org.peergos.Peergos.yaml ${{ github.sha }}        
-        git diff packager/flatpak/org.peergos.Peergos.yaml
-    
-    - uses: flatpak/flatpak-github-actions/flatpak-builder@v6
+        run: packager/flatpak/update-manifest-commit.sh packager/flatpak/org.peergos.Peergos.yaml ${{ github.sha }}  
+      - uses: flatpak/flatpak-github-actions/flatpak-builder@v6
         with:
           bundle: peergos.flatpak
           manifest-path: packager/flatpak/org.peergos.Peergos.yaml

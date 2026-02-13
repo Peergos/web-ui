@@ -30,3 +30,4 @@ echo "New commit hash: $NEW_COMMIT"
 echo ""
 echo "Updated sources section:"
 grep -A 2 "type: git" "$MANIFEST_FILE" || true
+git diff $1
