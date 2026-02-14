@@ -17,6 +17,7 @@ finish-args:
   - --share=ipc
 
   - --device=dri
+  - --device=usb
   - --socket=pulseaudio
   - --socket=cups
   - --socket=fallback-x11
