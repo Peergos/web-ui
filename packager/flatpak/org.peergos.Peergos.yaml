@@ -18,8 +18,10 @@ finish-args:
 
   - --device=dri
   - --socket=pulseaudio
+  - --socket=cups
   - --socket=fallback-x11
   - --socket=wayland
+  - --filesystem=xdg-run/pipewire-0:ro
   - --env=LD_LIBRARY_PATH=/app/chromium/nonfree-codecs/lib
   - --env=PATH=/app/jre/bin:/app/bin:/usr/bin
 
