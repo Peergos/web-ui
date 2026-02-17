@@ -102,6 +102,7 @@ public class PackagePeergos {
                        "--add-launcher", "peergos=windows-cli.properties"
                        );
         else if (isMac) {
+            runCommand("swiftc -o PeergosWebView MacWebview.swift -framework Cocoa -framework WebKit");
             runCommand("security", "find-identity", "-v", "-p", "codesigning", System.getenv("RUNNER_TEMP") + "/app-signing.keychain-db");
             runCommand("java", "SignLibraries.java");
             Files.copy(Paths.get("Peergos.jar"), Paths.get("../server/Peergos.jar"), StandardCopyOption.REPLACE_EXISTING);
