@@ -19,7 +19,7 @@
   <url type="vcs-browser">https://github.com/peergos/web-ui</url>
   
   <releases>
-    <release version="1.18.0" date="2026-02-04">
+    <release version="1.18.1" date="2026-02-17">
       <url type="details">https://github.com/Peergos/web-ui/releases/tag/v1.18.0</url>
       <description>
         <p>Initial Flatpak release</p>
