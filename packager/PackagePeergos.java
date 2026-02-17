@@ -102,8 +102,14 @@ public class PackagePeergos {
                        "--add-launcher", "peergos=windows-cli.properties"
                        );
         else if (isMac) {
-            runCommand("swiftc -o PeergosWebView MacWebview.swift -framework Cocoa -framework WebKit");
+            runCommand("swiftc", "-o", "PeergosWebView", "MacWebview.swift", "-framework", "Cocoa", "-framework", "WebKit");
             runCommand("security", "find-identity", "-v", "-p", "codesigning", System.getenv("RUNNER_TEMP") + "/app-signing.keychain-db");
+            runCommand("codesign", "--force", "--options", "runtime", "--timestamp",
+                       "--keychain", System.getenv("RUNNER_TEMP") + "/app-signing.keychain-db",
+                       "--sign", "Peergos LTD (XUVT52ZN3F)", "PeergosWebView");
+            Path webviewDst = Paths.get("../server/PeergosWebView");
+            Files.copy(Paths.get("PeergosWebView"), webviewDst, StandardCopyOption.REPLACE_EXISTING);
+            webviewDst.toFile().setExecutable(true, false);
             runCommand("java", "SignLibraries.java");
             Files.copy(Paths.get("Peergos.jar"), Paths.get("../server/Peergos.jar"), StandardCopyOption.REPLACE_EXISTING);
             runCommand("jpackage", "-i", "../server", "-n", "peergos",
