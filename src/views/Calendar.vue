@@ -111,6 +111,7 @@ module.exports = {
             importCalendarPath: null,
             owner: null,
             loadCalendarAsGuest: false,
+            isCalendarReadOnly: false,
             hasEmail: false
         }
     },
@@ -148,6 +149,7 @@ module.exports = {
                     that.owner = loadedParameters.owner;
                     that.hasEmail = loadedParameters.hasEmail;
                     that.loadCalendarAsGuest = that.isSecretLink;
+                    that.isCalendarReadOnly = that.isSecretLink && !loadedParameters.isWritable;
                     peergos.shared.user.App.init(that.context, "calendar").thenApply(calendar => {
                         if (that.loadCalendarAsGuest) {
                             that.startListener(calendar);
@@ -195,7 +197,7 @@ module.exports = {
       if (filename == null) {
             if (path == that.context.username) {
                 future.complete({importFile: null, importCalendarPath: null,
-                    owner: that.context.username, hasEmail: hasEmail});
+                    owner: that.context.username, hasEmail: hasEmail, isWritable: true});
             } else {
                 that.context.getByPath(path).thenApply(dirOpt => {
                     if (! dirOpt.isPresent()) {
@@ -205,7 +207,7 @@ module.exports = {
                         let dir = dirOpt.get();
                         let dirParts = path.split('/').filter(s => s.length > 0);
                         future.complete({importFile: null, importCalendarPath: path,
-                            owner: dirParts[0], hasEmail: hasEmail});
+                            owner: dirParts[0], hasEmail: hasEmail, isWritable: dir.isWritable()});
                     }
                 });
             }
@@ -622,9 +624,11 @@ module.exports = {
             calendars.push({name: calendar.name, color: calendar.color, owner: calendar.owner, shareable: calendar.shareable});
         }
         Vue.nextTick(function() {
+            let username = (that.loadCalendarAsGuest && !that.isCalendarReadOnly) ? that.owner : that.context.username;
             that.postMessage({type: 'load', previousMonth: eventsPreviousMonth,
                 currentMonth: eventsThisMonth, nextMonth: eventsNextMonth, recurringEvents: recurringEvents,
-                yearMonth: yearMonth, username: that.context.username, calendars: calendars, importCalendarEventParams: importCalendarEventParams});
+                yearMonth: yearMonth, username: username, calendars: calendars,
+                importCalendarEventParams: importCalendarEventParams, isReadOnly: that.isCalendarReadOnly});
         });
     },
     postDeleteCalendar: function(calendar, data) {
@@ -798,7 +802,8 @@ module.exports = {
                     that.removeSpinner();
                 }).exceptionally(function(throwable) {
                     that.showMessage(true, that.translate('CALENDAR.ERROR.SAVE.EVENT'));
-                    console.log(throwable.getMessage());
+                    let jsErr = throwable.backingJsObject || throwable;
+                    console.log("Save event error:", jsErr.message, jsErr.stack);
                     that.removeSpinner();
                 });
             } else {

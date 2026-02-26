@@ -19,7 +19,7 @@ let handler = function (e) {
           hasEmail = false; //e.data.hasEmail;
           mainWindow.postMessage({type:'pong'}, e.origin);
       } else if (e.data.type == "load") {
-          initialiseCalendar(e.data.username == null ? true : false, e.data.calendars);
+          initialiseCalendar(e.data.isReadOnly != null ? e.data.isReadOnly : (e.data.username == null), e.data.calendars);
           load(e.data.previousMonth, e.data.currentMonth, e.data.nextMonth, e.data.recurringEvents, e.data.yearMonth, e.data.username);
           let importCalendarEventParams = e.data.importCalendarEventParams;
           if (importCalendarEventParams != null) {
