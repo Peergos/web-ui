@@ -1,13 +1,21 @@
 <template>
   <ul style="list-style-type: none;padding-inline-start: 20px;">
+    <AppPrompt
+      v-if="showMkdirPrompt"
+      @hide-prompt="showMkdirPrompt = false"
+      message="New folder name"
+      placeholder="folder name"
+      action="Create"
+      :consumer_func="onMkdirPrompt"
+    />
       <label class="checkbox__group">
           <input v-if="!model.isRoot" v-bind:id="model.path" type="checkbox" v-bind:value="model.path" @click="addChild">
           <span v-if="!model.isRoot" class="checkmark"></span>
-            <div :class="{ bold: isFolder }" @click="toggle">
+            <span :class="{ bold: isFolder }" @click="toggle">
               {{ displayFolderName(model.path) }}
               <span v-if="isFolder">[{{ model.isOpen ? '-' : '+' }}]</span>
-            </div>
-            <button v-if="!model.isLeaf && mkdir_func" @click.stop="createSubfolder" class="mkdir-btn" title="New folder">+</button>
+            </span>
+            <button v-if="!model.isLeaf && mkdir_func" @click.stop="createSubfolder" class="mkdir-btn" title="New folder">+<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="margin-left:2px;vertical-align:middle"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg></button>
     </label>
     <li v-show="model.isOpen" v-if="isFolder" style="list-style-type: none">
       <TreeItem
@@ -26,8 +34,11 @@
 </template>
 
 <script>
+const AppPrompt = require("../prompt/AppPrompt.vue");
+
 module.exports = {
   name: 'TreeItem', // necessary for self-reference
+  components: { AppPrompt },
   props: {
     model: Object,
     selectFolder_func: Function,
@@ -39,6 +50,7 @@ module.exports = {
   },
   data() {
     return {
+      showMkdirPrompt: false,
     }
   },
   computed: {
@@ -116,7 +128,9 @@ module.exports = {
         this.load_func(this.model.path + "/", callback);
     },
     createSubfolder() {
-        let name = window.prompt("New folder name:");
+        this.showMkdirPrompt = true;
+    },
+    onMkdirPrompt(name) {
         if (!name || !name.trim()) return;
         let that = this;
         this.spinnerEnable_func();
