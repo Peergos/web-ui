@@ -8,7 +8,7 @@
 			<h2 class="card__meta"> {{ translate("SPACE.CURRENT") }}: {{ quota }}</h2>
 
                         <p v-if="!isPaid">{{ translate("PAID.AGREE") }} <a href="/terms.html" target="_blank" rel="noopener noreferrer">Terms of Service</a>.</p>
-                        <div v-if="willcharge()" class="card__meta">
+                        <div v-if="willCharge()" class="card__meta">
                             Next charge: &#x00A3;{{ nextCharge() }} on {{ getExpiry() }}
                         </div>
                         <center><div v-if="!showCard" class="button-group-container">
