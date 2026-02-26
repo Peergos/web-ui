@@ -7,6 +7,7 @@
               {{ displayFolderName(model.path) }}
               <span v-if="isFolder">[{{ model.isOpen ? '-' : '+' }}]</span>
             </div>
+            <button v-if="!model.isLeaf && mkdir_func" @click.stop="createSubfolder" class="mkdir-btn" title="New folder">+</button>
     </label>
     <li v-show="model.isOpen" v-if="isFolder" style="list-style-type: none">
       <TreeItem
@@ -15,6 +16,7 @@
         :model="model"
         :selectFolder_func="selectFolder_func"
         :load_func="load_func"
+        :mkdir_func="mkdir_func"
         :spinnerEnable_func="spinnerEnable_func"
         :spinnerDisable_func="spinnerDisable_func"
         :initiallySelectedPaths="initiallySelectedPaths">
@@ -30,6 +32,7 @@ module.exports = {
     model: Object,
     selectFolder_func: Function,
     load_func: Function,
+    mkdir_func: Function,
     spinnerEnable_func: Function,
     spinnerDisable_func: Function,
     initiallySelectedPaths: Array,
@@ -99,6 +102,28 @@ module.exports = {
         };
         this.load_func(this.model.path + "/", callback);
     },
+    reloadSubFolders() {
+        let that = this;
+        this.spinnerEnable_func();
+        let callback = (baseOfSubFolderTree) => {
+            that.model.children = [];
+            for(var i=0; i < baseOfSubFolderTree.children.length; i++) {
+                that.model.children.push(baseOfSubFolderTree.children[i]);
+            }
+            that.spinnerDisable_func();
+            that.model.isOpen = true;
+        };
+        this.load_func(this.model.path + "/", callback);
+    },
+    createSubfolder() {
+        let name = window.prompt("New folder name:");
+        if (!name || !name.trim()) return;
+        let that = this;
+        this.spinnerEnable_func();
+        this.mkdir_func(this.model.path, name.trim(), () => {
+            that.reloadSubFolders();
+        });
+    },
     addChild(selectedFolder) {
         let ok = this.selectFolder_func(selectedFolder.currentTarget.value, selectedFolder.currentTarget.checked);
         if (!ok) {
@@ -110,4 +135,20 @@ module.exports = {
 </script>
 
 <style>
+.mkdir-btn {
+    background: none;
+    border: 1px solid var(--green-500, #22c55e);
+    border-radius: 3px;
+    color: var(--green-500, #22c55e);
+    cursor: pointer;
+    font-size: 0.75em;
+    line-height: 1;
+    margin-left: 6px;
+    padding: 1px 5px;
+    vertical-align: middle;
+}
+.mkdir-btn:hover {
+    background-color: var(--green-500, #22c55e);
+    color: var(--bg, white);
+}
 </style>

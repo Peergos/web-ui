@@ -20,6 +20,7 @@
                 :model="treeData"
                 :selectFolder_func="selectFolder"
                 :load_func="loadFolderLazily"
+                :mkdir_func="mkdirAtPath"
                 :spinnerEnable_func="spinnerEnable"
                 :spinnerDisable_func="spinnerDisable"
                 :initiallySelectedPaths="selectedPaths">
@@ -82,6 +83,7 @@ module.exports = {
         ...Vuex.mapState([
             'context',
             'socialData',
+            'mirrorBatId',
         ]),
         friendnames: function() {
             return this.socialData.friends;
@@ -166,6 +168,21 @@ module.exports = {
                 }
             }
             return true;
+        },
+        mkdirAtPath: function(parentPath, newDirName, callback) {
+            let that = this;
+            this.showSpinner = true;
+            this.context.getByPath(parentPath).thenCompose(function(opt) {
+                let dir = opt.get();
+                let batId = dir.getOwnerName() == that.context.username ? that.mirrorBatId : java.util.Optional.empty();
+                return dir.mkdir(newDirName, that.context.network, false, batId, that.context.crypto);
+            }).thenApply(function(updatedDir) {
+                that.showSpinner = false;
+                callback();
+            }).exceptionally(function(throwable) {
+                that.showSpinner = false;
+                that.$toast.error(throwable.getMessage ? throwable.getMessage() : throwable.toString(), {timeout: false});
+            });
         },
         foldersSelected: function() {
             let selectedFolders = this.selectedFoldersList;
