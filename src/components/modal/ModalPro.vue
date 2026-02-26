@@ -8,6 +8,9 @@
 			<h2 class="card__meta"> {{ translate("SPACE.CURRENT") }}: {{ quota }}</h2>
 
                         <p v-if="!isPaid">{{ translate("PAID.AGREE") }} <a href="/terms.html" target="_blank" rel="noopener noreferrer">Terms of Service</a>.</p>
+                        <div v-if="hasExpiry()" class="card__meta">
+                            Next charge: &#x00A3;{{ nextCharge() }} on {{ getExpiry() }}
+                        </div>
                         <center><div v-if="!showCard" class="button-group-container">
                             <div class="priceslider" data-select="billing"> 
                                 <label class="entry" @click="setMonthly()">Monthly<input type="radio" name="billing" value="monthly" v-bind:checked="!annual"></label>
@@ -182,6 +185,18 @@ module.exports = {
 		]),
             setMonthly() {
             this.annual = false;
+        },
+
+        hasExpiry() {
+            return this.paymentProperties.getExpiry().isPresent();
+        },
+
+        getExpiry() {
+            return this.paymentProperties.getExpiry().get();
+        },
+
+        nextCharge() {
+            return this.paymentProperties.getNextCharge();
         },
         setAnnual() {
             this.annual = true;
