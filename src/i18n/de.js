@@ -503,7 +503,6 @@ module.exports = {
     "NEW.TEMPLATE.APP.NAME.MESSAGE": "Titel der App:",
     "SYNC.TITLE": "Synchronisieren",
     "SYNC.ADDPAIR": "Hinzufügen Ordner zum Synchronisieren",
-    "SYNC.FOLDER": "Erstellen Sie zuerst einen Ordner in Peergos, mit dem Sie synchronisieren möchten. Klicken Sie dann oben auf „Ordner zum Synchronisieren hinzufügen",
     "SYNC.STOPPAIR": "Ordnersynchronisierung stoppen",
     "SYNC.NOW": "Jetzt synchronisieren",
     "SYNC.LOCAL": "Lokaler Pfad",

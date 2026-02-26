@@ -25,9 +25,6 @@
                       <button class="btn btn-success" @click="syncNow(pair.label)" style="flex-grow:1;margin:10px;">{{ translate("SYNC.NOW") }}</button>
                       <button class="btn btn-warning" @click="removeSyncPair(pair.label)" style="flex-grow:1;margin:10px;">{{ translate("SYNC.STOPPAIR") }}</button>
                    </div>
-                   <div v-if="syncPairs.length==0">
-                   {{ translate("SYNC.FOLDER") }}
-                   </div>
                 </div>
             </div>
             <div v-if="!enabled" style="width:100%;">

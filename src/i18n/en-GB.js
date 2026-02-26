@@ -503,7 +503,6 @@ module.exports = {
     "NEW.TEMPLATE.APP.NAME.MESSAGE":"Title for App:",
     "SYNC.TITLE":"Sync",
     "SYNC.ADDPAIR":"Add folder to sync",
-    "SYNC.FOLDER":"First create a folder in Peergos that you will sync to, then click 'Add folder to sync' above.",
     "SYNC.STOPPAIR":"Stop syncing folder",
     "SYNC.NOW":"Sync now",
     "SYNC.LOCAL":"Local path",
