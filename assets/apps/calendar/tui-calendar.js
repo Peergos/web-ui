@@ -20121,6 +20121,30 @@ ScheduleCreationPopup.prototype._setPopupPositionAndArrowDirection = function(gu
     var pos = this._calcRenderingData(layerSize, containerBound, guideBound);
 
     this.layer.setPosition(pos.x, pos.y);
+
+    var self = this;
+    function clampToViewport() {
+        var rect = layer.getBoundingClientRect();
+        var vw = window.innerWidth || document.documentElement.clientWidth;
+        var vh = window.innerHeight || document.documentElement.clientHeight;
+        var cx = parseFloat(self.layer.container.style.left) || 0;
+        var cy = parseFloat(self.layer.container.style.top) || 0;
+        var nx = cx, ny = cy;
+        if (Math.ceil(rect.right) > vw) {
+            nx = cx - (rect.right - vw);
+            if (nx < 0) { nx = 0; }
+        }
+        if (Math.ceil(rect.bottom) > vh) {
+            ny = cy - (rect.bottom - vh);
+            if (ny < 0) { ny = 0; }
+        }
+        if (nx !== cx || ny !== cy) {
+            self.layer.setPosition(nx, ny);
+        }
+    }
+    clampToViewport();
+    setTimeout(clampToViewport, 0);
+
     this._setArrowDirection(pos.arrow);
 };
 
@@ -20245,6 +20269,11 @@ ScheduleCreationPopup.prototype._getXAndArrowLeft = function(
         arrowLeft = guideHorizontalCenter - containerLeft - ARROW_WIDTH_HALF;
     } else {
         x = x - containerLeft - ARROW_WIDTH_HALF;
+    }
+
+    var maxX = containerRight - containerLeft - layerWidth;
+    if (x > maxX) {
+        x = maxX;
     }
 
     /**
@@ -20686,6 +20715,30 @@ ScheduleDetailPopup.prototype._setPopupPositionAndArrowDirection = function(even
 
     pos = this._calcRenderingData(layerSize, containerBound, scheduleBound);
     this.layer.setPosition(pos.x, pos.y);
+
+    var self = this;
+    function clampToViewport() {
+        var rect = layer.getBoundingClientRect();
+        var vw = window.innerWidth || document.documentElement.clientWidth;
+        var vh = window.innerHeight || document.documentElement.clientHeight;
+        var cx = parseFloat(self.layer.container.style.left) || 0;
+        var cy = parseFloat(self.layer.container.style.top) || 0;
+        var nx = cx, ny = cy;
+        if (Math.ceil(rect.right) > vw) {
+            nx = cx - (rect.right - vw);
+            if (nx < 0) { nx = 0; }
+        }
+        if (Math.ceil(rect.bottom) > vh) {
+            ny = cy - (rect.bottom - vh);
+            if (ny < 0) { ny = 0; }
+        }
+        if (nx !== cx || ny !== cy) {
+            self.layer.setPosition(nx, ny);
+        }
+    }
+    clampToViewport();
+    setTimeout(clampToViewport, 0);
+
     this._setArrowDirection(pos.arrow);
 };
 
