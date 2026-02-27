@@ -93,6 +93,14 @@ var darkModeCSS = `
   .tui-timepicker { background: #2c3e50 !important; border-color: #566571 !important; color: #fff !important; }
   .tui-timepicker-btn-area .tui-timepicker-spinbox-input { background-color: #283744 !important; color: #fff !important; border-color: #566571 !important; }
   .memo-field-view { background-color: #283744 !important; color: #fff !important; }
+  .tui-full-calendar-weekday-schedule-title { color: #fff !important; }
+  #calendar-list li { background: #283744 !important; color: #fff !important; }
+  #calendar-list li:nth-child(odd) { background: #283744 !important; }
+  #calendar-list li:hover { background: #2c3e50 !important; }
+  #calendar-list li button { background: #283744 !important; color: #b6bcc1 !important; border: 1px solid #566571 !important; }
+  #calendar-list li button:hover { background: #2c3e50 !important; color: #fff !important; }
+  #add-calendar-button { background: #283744 !important; color: #b6bcc1 !important; border: 1px solid #566571 !important; }
+  #add-calendar-button:hover { background: #2c3e50 !important; color: #fff !important; }
 `;
 function applyTheme(newTheme) {
     theme = newTheme;
@@ -104,6 +112,12 @@ function applyTheme(newTheme) {
             document.head.appendChild(styleEl);
         }
         styleEl.textContent = darkModeCSS;
+        var addCalBtn = document.getElementById('add-calendar-button');
+        if (addCalBtn) {
+            addCalBtn.style.backgroundColor = '#283744';
+            addCalBtn.style.color = '#b6bcc1';
+            addCalBtn.style.border = '1px solid #566571';
+        }
         if (cal) {
             cal.setTheme(Object.assign({}, darkTheme));
             var layoutEl = document.querySelector('.tui-full-calendar-layout');
@@ -111,6 +125,12 @@ function applyTheme(newTheme) {
         }
     } else {
         if (styleEl) styleEl.remove();
+        var addCalBtn = document.getElementById('add-calendar-button');
+        if (addCalBtn) {
+            addCalBtn.style.backgroundColor = '';
+            addCalBtn.style.color = '';
+            addCalBtn.style.border = '';
+        }
         if (cal) {
             cal.setTheme({'common.backgroundColor': 'white', 'common.border': '1px solid #e5e5e5'});
             var layoutEl = document.querySelector('.tui-full-calendar-layout');
