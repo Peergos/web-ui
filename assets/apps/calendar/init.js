@@ -2,6 +2,122 @@ var mainWindow;
 var origin;
 var theme;
 var hasEmail;
+var darkTheme = {
+    'common.border': '1px solid #566571',
+    'common.backgroundColor': '#2c3e50',
+    'common.holiday.color': '#f86b6b',
+    'common.saturday.color': '#8fd2e8',
+    'common.dayname.color': '#b6bcc1',
+    'common.today.color': '#ffffff',
+    'common.creationGuide.backgroundColor': 'rgba(52,149,245,0.1)',
+    'common.creationGuide.border': '1px solid #3495f5',
+    'month.dayname.borderLeft': '1px solid #566571',
+    'month.dayname.backgroundColor': 'inherit',
+    'month.holidayExceptThisMonth.color': 'rgba(248,107,107,0.4)',
+    'month.dayExceptThisMonth.color': 'rgba(255,255,255,0.4)',
+    'month.weekend.backgroundColor': 'inherit',
+    'month.moreView.border': '1px solid #566571',
+    'month.moreView.backgroundColor': '#2c3e50',
+    'month.moreViewTitle.backgroundColor': 'inherit',
+    'month.moreViewTitle.borderBottom': 'none',
+    'week.dayname.borderTop': '1px solid #566571',
+    'week.dayname.borderBottom': '1px solid #566571',
+    'week.dayname.backgroundColor': 'inherit',
+    'week.today.color': '#ffffff',
+    'week.pastDay.color': '#566571',
+    'week.vpanelSplitter.border': '1px solid #566571',
+    'week.daygrid.borderRight': '1px solid #566571',
+    'week.daygrid.backgroundColor': 'inherit',
+    'week.daygridLeft.backgroundColor': 'inherit',
+    'week.daygridLeft.borderRight': '1px solid #566571',
+    'week.today.backgroundColor': 'rgba(52,149,245,0.1)',
+    'week.weekend.backgroundColor': 'inherit',
+    'week.timegridLeft.backgroundColor': '#2c3e50',
+    'week.timegridLeft.borderRight': '1px solid #566571',
+    'week.timegridLeftAdditionalTimezone.backgroundColor': '#2c3e50',
+    'week.timegridHorizontalLine.borderBottom': '1px solid #566571',
+    'week.timegrid.borderRight': '1px solid #566571',
+    'week.currentTime.color': '#3495f5',
+    'week.currentTimeLinePast.border': '1px dashed #3495f5',
+    'week.currentTimeLineBullet.backgroundColor': '#3495f5',
+    'week.currentTimeLineToday.border': '1px solid #3495f5',
+    'week.pastTime.color': '#566571',
+    'week.futureTime.color': '#b6bcc1',
+};
+var darkModeCSS = `
+  body, #ui, #right, #calendar, .tui-full-calendar-layout { background-color: #2c3e50 !important; color: #fff !important; }
+  .tui-full-calendar-timegrid-left > div { background-color: #2c3e50 !important; }
+  #lnb { background: #283744 !important; border-right-color: #566571 !important; }
+  .lnb-calendars > div { border-bottom-color: #566571 !important; }
+  .lnb-footer { color: #b6bcc1 !important; }
+  #renderRange { color: #fff !important; }
+  .btn { background-color: #2c3e50 !important; color: #fff !important; border-color: #566571 !important; }
+  .btn:hover, .btn:active { background-color: #283744 !important; border-color: #b6bcc1 !important; }
+  .btn:disabled { background-color: #283744 !important; color: #566571 !important; }
+  .open > .dropdown-toggle.btn-default { background-color: #283744 !important; }
+  .dropdown-menu { background-color: #2c3e50 !important; border-color: #566571 !important; }
+  .dropdown-menu > li > a { color: #fff !important; }
+  .dropdown-menu > li > a:hover { background-color: #283744 !important; }
+  input, select, textarea { background-color: #283744 !important; color: #fff !important; border-color: #566571 !important; }
+  .calendar-modal-content, .calendar-message-modal-content { background-color: #2c3e50 !important; color: #fff !important; border-color: #566571 !important; }
+  .calendar-modal-close, .calendar-message-modal-close { color: #b6bcc1 !important; }
+  .weekday-grid-more-schedules, .tui-full-calendar-weekday-exceed-in-week, .tui-full-calendar-weekday-collapse-btn { background-color: #283744 !important; color: #b6bcc1 !important; border-color: #566571 !important; }
+  .tui-full-calendar-weekday-exceed-in-month:hover { background-color: #283744 !important; }
+  .tui-full-calendar-weekday-border { border-top-color: #566571 !important; }
+  .tui-full-calendar-timegrid-gridline { border-bottom-color: #566571 !important; }
+  .tui-full-calendar-timegrid-hour { color: #b6bcc1 !important; }
+  .tui-full-calendar-timegrid-timezone-close-btn { background-color: #2c3e50 !important; }
+  .tui-full-calendar-weekday-filled { background-color: #283744 !important; }
+  .tui-full-calendar-today { background: rgba(52,149,245,0.15) !important; }
+  .tui-full-calendar-popup-container { background-color: #2c3e50 !important; border-color: #566571 !important; color: #fff !important; }
+  .tui-full-calendar-popup-section-item { border-color: #566571 !important; background-color: #283744 !important; color: #fff !important; }
+  .tui-full-calendar-section-date-dash { color: #566571 !important; }
+  .tui-full-calendar-popup-button { background-color: #283744 !important; color: #fff !important; border-color: #566571 !important; }
+  .tui-full-calendar-popup-detail-date, .tui-full-calendar-popup-detail-title, .tui-full-calendar-popup-detail-location, .tui-full-calendar-content { color: #fff !important; }
+  .tui-full-calendar-button.tui-full-calendar-popup-close { background-color: #2c3e50 !important; }
+  .tui-full-calendar-dropdown-menu { background-color: #2c3e50 !important; border-color: #566571 !important; }
+  .tui-full-calendar-dropdown-menu-item:hover { background-color: #283744 !important; }
+  .tui-full-calendar-month-more-title-day, .tui-full-calendar-month-more-title-day-label, .tui-full-calendar-month-more-close { color: #fff !important; }
+  .tui-full-calendar-weekday-grid-line .tui-full-calendar-weekday-grid-more-schedules { color: #b6bcc1 !important; }
+  .tui-full-calendar-holiday { color: #f86b6b !important; }
+  .tui-datepicker, .tui-calendar { background-color: #2c3e50 !important; border-color: #566571 !important; color: #fff !important; }
+  .tui-calendar .tui-calendar-header { border-bottom-color: #566571 !important; }
+  .tui-calendar .tui-calendar-title { color: #fff !important; }
+  .tui-calendar .tui-calendar-title-today { background-color: #283744 !important; color: #b6bcc1 !important; }
+  .tui-calendar-btn { background-color: #2c3e50 !important; }
+  .tui-datepicker-selector { border-bottom-color: #566571 !important; }
+  .tui-datepicker-selector-button { background-color: #283744 !important; color: #b6bcc1 !important; border-color: #566571 !important; }
+  .tui-datepicker-selector-button.tui-is-checked { background-color: #2c3e50 !important; color: #fff !important; }
+  .tui-datepicker-dropdown .tui-menu-item, .tui-datepicker-dropdown .tui-menu-item-btn { background-color: #2c3e50 !important; color: #fff !important; }
+  .tui-datepicker-dropdown .tui-menu-item-btn:hover { background-color: #283744 !important; }
+  .tui-timepicker { background: #2c3e50 !important; border-color: #566571 !important; color: #fff !important; }
+  .tui-timepicker-btn-area .tui-timepicker-spinbox-input { background-color: #283744 !important; color: #fff !important; border-color: #566571 !important; }
+  .memo-field-view { background-color: #283744 !important; color: #fff !important; }
+`;
+function applyTheme(newTheme) {
+    theme = newTheme;
+    var styleEl = document.getElementById('peergos-dark-mode');
+    if (theme === 'dark-mode') {
+        if (!styleEl) {
+            styleEl = document.createElement('style');
+            styleEl.id = 'peergos-dark-mode';
+            document.head.appendChild(styleEl);
+        }
+        styleEl.textContent = darkModeCSS;
+        if (cal) {
+            cal.setTheme(Object.assign({}, darkTheme));
+            var layoutEl = document.querySelector('.tui-full-calendar-layout');
+            if (layoutEl) layoutEl.style.backgroundColor = '#2c3e50';
+        }
+    } else {
+        if (styleEl) styleEl.remove();
+        if (cal) {
+            cal.setTheme({'common.backgroundColor': 'white', 'common.border': '1px solid #e5e5e5'});
+            var layoutEl = document.querySelector('.tui-full-calendar-layout');
+            if (layoutEl) layoutEl.style.backgroundColor = 'white';
+        }
+    }
+}
 let handler = function (e) {
       // You must verify that the origin of the message's sender matches your
       // expectations. In this case, we're only planning on accepting messages
@@ -15,9 +131,11 @@ let handler = function (e) {
       mainWindow = e.source;
       origin = e.origin;
       if (e.data.type == "ping") {
-          theme = e.data.currentTheme;
+          applyTheme(e.data.currentTheme);
           hasEmail = false; //e.data.hasEmail;
           mainWindow.postMessage({type:'pong'}, e.origin);
+      } else if (e.data.type == "setTheme") {
+          applyTheme(e.data.currentTheme);
       } else if (e.data.type == "load") {
           initialiseCalendar(e.data.isReadOnly != null ? e.data.isReadOnly : (e.data.username == null), e.data.calendars);
           load(e.data.previousMonth, e.data.currentMonth, e.data.nextMonth, e.data.recurringEvents, e.data.yearMonth, e.data.username);
@@ -194,6 +312,7 @@ function buildUI(isCalendarReadonly) {
         useDetailPopup: useDetailPopup,
         calendars: CalendarList,
         isReadOnly: isCalendarReadonly,
+        theme: theme === 'dark-mode' ? Object.assign({}, darkTheme) : {},
         template: {
             allday: function(schedule) {
                 return getTimeTemplate(schedule, true);
@@ -203,6 +322,12 @@ function buildUI(isCalendarReadonly) {
             }
         }
     });
+    // Layout.applyTheme() is only called in the TUI Calendar constructor, not after render/setTheme.
+    // Directly set the layout background to ensure it matches the current theme.
+    if (theme === 'dark-mode') {
+        var layoutEl = document.querySelector('.tui-full-calendar-layout');
+        if (layoutEl) layoutEl.style.backgroundColor = '#2c3e50';
+    }
 
     cal.on({
         'clickMore': function(e) {

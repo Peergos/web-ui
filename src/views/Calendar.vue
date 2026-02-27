@@ -121,11 +121,13 @@ module.exports = {
 			'context',
 			'socialData',
 			'mirrorBatId',
+			'isDark',
 		]),
 		...Vuex.mapGetters([
 			'isSecretLink',
 			'getPath',
-			'currentFilename'
+			'currentFilename',
+			'currentTheme',
 		]),
         friendnames: function() {
             return this.socialData.friends;
@@ -136,6 +138,11 @@ module.exports = {
         groups: function() {
 		    return {groupsNameToUid: this.socialData.groupsNameToUid, groupsUidToName: this.socialData.groupsUidToName};
 	    },
+	},
+	watch: {
+		isDark() {
+			this.postMessage({type: 'setTheme', currentTheme: this.currentTheme});
+		}
 	},
 	mixins:[routerMixins, i18n],
     created() {

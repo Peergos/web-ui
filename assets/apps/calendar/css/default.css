@@ -2545,3 +2545,201 @@ ul li:hover {
 .all-calendar {
   min-height: 600px;
 }
+
+/* ===================== Dark mode ===================== */
+html[data-theme="dark-mode"],
+html[data-theme="dark-mode"] body,
+html[data-theme="dark-mode"] #ui,
+html[data-theme="dark-mode"] #right,
+html[data-theme="dark-mode"] #calendar {
+  background-color: #2c3e50;
+  color: #ffffff;
+}
+
+/* Sidebar */
+html[data-theme="dark-mode"] #lnb {
+  background: #283744;
+  border-right-color: #566571;
+}
+html[data-theme="dark-mode"] .lnb-calendars > div {
+  border-bottom-color: #566571;
+}
+html[data-theme="dark-mode"] .lnb-footer {
+  color: #b6bcc1;
+}
+
+/* Toolbar */
+html[data-theme="dark-mode"] #top { border-bottom-color: #566571; }
+html[data-theme="dark-mode"] #renderRange { color: #ffffff; }
+
+/* Buttons */
+html[data-theme="dark-mode"] .btn {
+  background-color: #2c3e50;
+  color: #ffffff;
+  border-color: #566571;
+}
+html[data-theme="dark-mode"] .btn:hover,
+html[data-theme="dark-mode"] .btn:active {
+  background-color: #283744;
+  border-color: #b6bcc1;
+  color: #ffffff;
+}
+html[data-theme="dark-mode"] .btn:disabled {
+  background-color: #283744;
+  color: #566571;
+  border-color: #566571;
+}
+html[data-theme="dark-mode"] .open > .dropdown-toggle.btn-default {
+  background-color: #283744;
+}
+
+/* Bootstrap dropdowns */
+html[data-theme="dark-mode"] .dropdown-menu {
+  background-color: #2c3e50;
+  border-color: #566571;
+}
+html[data-theme="dark-mode"] .dropdown-menu > li > a { color: #ffffff; }
+html[data-theme="dark-mode"] .dropdown-menu > li > a:hover {
+  background-color: #283744;
+  color: #ffffff;
+}
+
+/* Modals */
+html[data-theme="dark-mode"] .calendar-modal-content,
+html[data-theme="dark-mode"] .calendar-message-modal-content {
+  background-color: #2c3e50;
+  color: #ffffff;
+  border-color: #566571;
+}
+html[data-theme="dark-mode"] .calendar-modal-close,
+html[data-theme="dark-mode"] .calendar-message-modal-close { color: #b6bcc1; }
+html[data-theme="dark-mode"] .calendar-modal-close:hover,
+html[data-theme="dark-mode"] .calendar-message-modal-close:hover { color: #ffffff; }
+
+/* All inputs, selects, textareas */
+html[data-theme="dark-mode"] input,
+html[data-theme="dark-mode"] select,
+html[data-theme="dark-mode"] textarea {
+  background-color: #283744;
+  color: #ffffff;
+  border-color: #566571;
+}
+
+/* "Overflow" show-more button in month view */
+html[data-theme="dark-mode"] .weekday-grid-more-schedules,
+html[data-theme="dark-mode"] .tui-full-calendar-weekday-exceed-in-week,
+html[data-theme="dark-mode"] .tui-full-calendar-weekday-collapse-btn {
+  background-color: #283744;
+  color: #b6bcc1;
+  border-color: #566571;
+}
+html[data-theme="dark-mode"] .tui-full-calendar-weekday-exceed-in-month:hover {
+  background-color: #283744;
+}
+
+/* TUI Calendar: grid borders */
+html[data-theme="dark-mode"] .tui-full-calendar-weekday-border { border-top-color: #566571; }
+html[data-theme="dark-mode"] .tui-full-calendar-timegrid-gridline { border-bottom-color: #566571; }
+html[data-theme="dark-mode"] .tui-full-calendar-timegrid-hour { color: #b6bcc1; }
+html[data-theme="dark-mode"] .tui-full-calendar-timegrid-timezone-close-btn { background-color: #2c3e50; }
+html[data-theme="dark-mode"] .tui-full-calendar-weekday-schedule-bullet-focused { background: #283744; }
+
+/* TUI Calendar: "show more" popup */
+html[data-theme="dark-mode"] .tui-full-calendar-month-more-title-day,
+html[data-theme="dark-mode"] .tui-full-calendar-month-more-title-day-label,
+html[data-theme="dark-mode"] .tui-full-calendar-month-more-close { color: #ffffff; }
+html[data-theme="dark-mode"] .tui-full-calendar-weekday-grid-line .tui-full-calendar-weekday-grid-more-schedules { color: #b6bcc1; }
+
+/* TUI Calendar: filled/weekend */
+html[data-theme="dark-mode"] .tui-full-calendar-weekday-filled { background-color: #283744 !important; }
+html[data-theme="dark-mode"] .tui-full-calendar-today { background: rgba(52,149,245,0.15); }
+
+/* TUI Calendar: event creation/detail popup */
+html[data-theme="dark-mode"] .tui-full-calendar-popup-container {
+  background-color: #2c3e50;
+  border-color: #566571;
+  color: #ffffff;
+}
+html[data-theme="dark-mode"] .tui-full-calendar-popup-section-item {
+  border-color: #566571;
+  background-color: #283744;
+  color: #ffffff;
+}
+html[data-theme="dark-mode"] .tui-full-calendar-section-date-dash { color: #566571; }
+html[data-theme="dark-mode"] .tui-full-calendar-popup-button {
+  background-color: #283744;
+  color: #ffffff;
+  border-color: #566571;
+}
+html[data-theme="dark-mode"] .tui-full-calendar-popup-button:hover { background-color: #2c3e50; }
+html[data-theme="dark-mode"] .tui-full-calendar-popup-detail-item-separate { border-top-color: #566571; }
+html[data-theme="dark-mode"] .tui-full-calendar-popup-detail-date,
+html[data-theme="dark-mode"] .tui-full-calendar-popup-detail-title,
+html[data-theme="dark-mode"] .tui-full-calendar-popup-detail-location,
+html[data-theme="dark-mode"] .tui-full-calendar-content { color: #ffffff; }
+html[data-theme="dark-mode"] .tui-full-calendar-button.tui-full-calendar-popup-close {
+  background-color: #2c3e50;
+  color: #ffffff;
+}
+
+/* TUI Calendar: calendar-selector dropdown in popup */
+html[data-theme="dark-mode"] .tui-full-calendar-dropdown-menu {
+  background-color: #2c3e50;
+  border-color: #566571;
+}
+html[data-theme="dark-mode"] .tui-full-calendar-dropdown-menu-item:hover { background-color: #283744; }
+html[data-theme="dark-mode"] .tui-full-calendar-dropdown-menu-item .tui-full-calendar-content { color: #ffffff; }
+
+/* TUI Datepicker (date picker in popup) */
+html[data-theme="dark-mode"] .tui-datepicker,
+html[data-theme="dark-mode"] .tui-calendar {
+  background-color: #2c3e50;
+  border-color: #566571;
+  color: #ffffff;
+}
+html[data-theme="dark-mode"] .tui-calendar .tui-calendar-header { border-bottom-color: #566571; }
+html[data-theme="dark-mode"] .tui-calendar .tui-calendar-title { color: #ffffff; }
+html[data-theme="dark-mode"] .tui-calendar .tui-calendar-title-today {
+  background-color: #283744;
+  color: #b6bcc1;
+}
+html[data-theme="dark-mode"] .tui-calendar-btn { background-color: #2c3e50; }
+html[data-theme="dark-mode"] .tui-datepicker-selector { border-bottom-color: #566571; }
+html[data-theme="dark-mode"] .tui-datepicker-selector-button {
+  background-color: #283744;
+  color: #b6bcc1;
+  border-color: #566571;
+}
+html[data-theme="dark-mode"] .tui-datepicker-selector-button.tui-is-checked {
+  background-color: #2c3e50;
+  color: #ffffff;
+}
+html[data-theme="dark-mode"] .tui-datepicker-footer { border-top-color: #566571; }
+html[data-theme="dark-mode"] .tui-datepicker-dropdown .tui-menu-item,
+html[data-theme="dark-mode"] .tui-datepicker-dropdown .tui-menu-item-btn {
+  background-color: #2c3e50;
+  color: #ffffff;
+}
+html[data-theme="dark-mode"] .tui-datepicker-dropdown .tui-menu-item-btn:hover { background-color: #283744; }
+
+/* TUI Timepicker */
+html[data-theme="dark-mode"] .tui-timepicker {
+  background: #2c3e50;
+  border-color: #566571;
+  color: #ffffff;
+}
+html[data-theme="dark-mode"] .tui-timepicker-btn-area .tui-timepicker-spinbox-input {
+  background-color: #283744;
+  color: #ffffff;
+  border-color: #566571;
+}
+html[data-theme="dark-mode"] .tui-timepicker-btn {
+  background-color: #283744;
+  border-color: #566571;
+}
+
+/* Memo field */
+html[data-theme="dark-mode"] .memo-field-view { background-color: #283744; color: #ffffff; }
+
+/* Holiday */
+html[data-theme="dark-mode"] .tui-full-calendar-holiday { color: #f86b6b; }

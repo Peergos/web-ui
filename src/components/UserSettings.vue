@@ -358,6 +358,10 @@ module.exports = {
 	display: flex;
 	align-items: center;
 }
+.user-settings .dropdown__content {
+	right: 0;
+	left: auto;
+}
 .drive-user .cover {
 	display: inline-block;
 	height: 42px;
