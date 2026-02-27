@@ -8,7 +8,7 @@
 		<main>
             <Spinner v-if="showSpinner" :message="spinnerMessage"></Spinner>
             <a id="downloadEventAnchor" style="display:none"></a>
-	    <iframe id="calendar-iframe" :src="frameUrl()" style="width:100%; min-height:100vh" frameBorder="0"></iframe>
+	    <iframe id="calendar-iframe" :src="frameUrl()" style="width:100%; flex:1; min-height:0" frameBorder="0"></iframe>
             <Choice
                 v-if="showChoice"
                 v-on:hide-choice="showChoice = false"
@@ -172,7 +172,11 @@ module.exports = {
         });
     },
 	mounted(){
-	},
+        document.body.style.overflow = 'hidden';
+    },
+    beforeDestroy(){
+        document.body.style.overflow = '';
+    },
     methods: {
     getInputParameters: function() {
         let that = this;
@@ -1205,11 +1209,17 @@ module.exports = {
 </script>
 
 <style>
+.calendar-view {
+	display: grid;
+	grid-template-rows: auto 1fr;
+	height: 100vh;
+	overflow: hidden;
+}
 .calendar-view main{
+	overflow: hidden;
+	min-height: 0;
 	display: flex;
-	align-items: center;
-	justify-content: center;
-	min-height: 100vh;
+	flex-direction: column;
 }
 
 </style>

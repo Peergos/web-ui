@@ -1,6 +1,16 @@
 
+html, body {
+  height: 100%;
+}
+
 body {
   font-size: 12px;
+}
+
+#ui {
+  position: relative;
+  height: 100%;
+  overflow: hidden;
 }
 
 /**  custom bootstrap - start */
@@ -85,6 +95,7 @@ body {
   top: 0px;
   right: 0;
   bottom: 0;
+  overflow: hidden;
 }
 
 #lnb label {
@@ -213,11 +224,7 @@ body {
 }
 
 #calendar {
-    position: absolute;
-    left: 0;
-    right: 0;
-    bottom: 5px;
-    top: 64px;
+    overflow: hidden;
 }
 
 /** custom fontawesome */
@@ -571,7 +578,7 @@ body {
   height: inherit;
   display: inline-block;
   font-size: 10px;
-  min-height: 600px;
+  min-height: 200px;
 }
 .tui-full-calendar-week-container .tui-full-calendar-today {
   background: none;
@@ -813,7 +820,7 @@ body {
 }
 .tui-full-calendar-month {
   height: 100%;
-  min-height: 600px;
+  min-height: 200px;
 }
 .tui-full-calendar-month-dayname {
   width: 100%;
@@ -2543,7 +2550,7 @@ ul li:hover {
   margin-top: 10px;
 }
 .all-calendar {
-  min-height: 600px;
+  min-height: 200px;
 }
 
 /* ===================== Dark mode ===================== */

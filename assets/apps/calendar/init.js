@@ -55,9 +55,11 @@ var darkModeCSS = `
   .btn:hover, .btn:active { background-color: #283744 !important; border-color: #b6bcc1 !important; }
   .btn:disabled { background-color: #283744 !important; color: #566571 !important; }
   .open > .dropdown-toggle.btn-default { background-color: #283744 !important; }
-  .dropdown-menu { background-color: #2c3e50 !important; border-color: #566571 !important; }
-  .dropdown-menu > li > a { color: #fff !important; }
-  .dropdown-menu > li > a:hover { background-color: #283744 !important; }
+  .dropdown-menu { background-color: #2c3e50 !important; border-color: #566571 !important; color: #fff !important; }
+  #menu .dropdown-menu { background-color: #2c3e50 !important; border-color: #566571 !important; }
+  #menu .dropdown-menu > li { background-color: #2c3e50 !important; }
+  #menu .dropdown-menu > li > a { color: #fff !important; background-color: #2c3e50 !important; }
+  #menu .dropdown-menu > li > a:hover, #menu .dropdown-menu > li > a:focus { background-color: #283744 !important; color: #fff !important; }
   input, select, textarea { background-color: #283744 !important; color: #fff !important; border-color: #566571 !important; }
   .calendar-modal-content, .calendar-message-modal-content { background-color: #2c3e50 !important; color: #fff !important; border-color: #566571 !important; }
   .calendar-modal-close, .calendar-message-modal-close { color: #b6bcc1 !important; }
@@ -101,6 +103,7 @@ var darkModeCSS = `
   #calendar-list li button:hover { background: #2c3e50 !important; color: #fff !important; }
   #add-calendar-button { background: #283744 !important; color: #b6bcc1 !important; border: 1px solid #566571 !important; }
   #add-calendar-button:hover { background: #2c3e50 !important; color: #fff !important; }
+  .calendar-icon { filter: invert(1) !important; }
 `;
 function applyTheme(newTheme) {
     theme = newTheme;
@@ -112,11 +115,20 @@ function applyTheme(newTheme) {
             document.head.appendChild(styleEl);
         }
         styleEl.textContent = darkModeCSS;
+        document.documentElement.setAttribute('data-theme', 'dark-mode');
         var addCalBtn = document.getElementById('add-calendar-button');
         if (addCalBtn) {
             addCalBtn.style.backgroundColor = '#283744';
             addCalBtn.style.color = '#b6bcc1';
             addCalBtn.style.border = '1px solid #566571';
+        }
+        var dropMenu = document.querySelector('#menu .dropdown-menu');
+        if (dropMenu) {
+            dropMenu.style.backgroundColor = '#2c3e50';
+            dropMenu.style.borderColor = '#566571';
+            dropMenu.querySelectorAll('li > a').forEach(function(a) {
+                a.style.color = '#fff';
+            });
         }
         if (cal) {
             cal.setTheme(Object.assign({}, darkTheme));
@@ -125,11 +137,20 @@ function applyTheme(newTheme) {
         }
     } else {
         if (styleEl) styleEl.remove();
+        document.documentElement.removeAttribute('data-theme');
         var addCalBtn = document.getElementById('add-calendar-button');
         if (addCalBtn) {
             addCalBtn.style.backgroundColor = '';
             addCalBtn.style.color = '';
             addCalBtn.style.border = '';
+        }
+        var dropMenu = document.querySelector('#menu .dropdown-menu');
+        if (dropMenu) {
+            dropMenu.style.backgroundColor = '';
+            dropMenu.style.borderColor = '';
+            dropMenu.querySelectorAll('li > a').forEach(function(a) {
+                a.style.color = '';
+            });
         }
         if (cal) {
             cal.setTheme({'common.backgroundColor': 'white', 'common.border': '1px solid #e5e5e5'});
@@ -318,6 +339,11 @@ function buildUI(isCalendarReadonly) {
         let settingsBtn = document.getElementById("calendar-settings");
         settingsBtn.style.display = 'none';
     }
+    var rightEl = document.getElementById('right');
+    var menuEl = document.getElementById('menu');
+    var calEl = document.getElementById('calendar');
+    calEl.style.height = (rightEl.offsetHeight - menuEl.offsetHeight) + 'px';
+
     cal = new tui.Calendar('#calendar', {
         usageStatistics: false,
         defaultView: 'month',
@@ -2138,6 +2164,12 @@ function shareCalendarEvent(schedule) {
    mainWindow.postMessage({calendarName: calendarName, id: scheduleId, year: year, month: month, isRecurring: isRecurring, type: 'shareCalendarEvent'}, origin);
 }
 resizeThrottled = tui.util.throttle(function() {
+  var rightEl = document.getElementById('right');
+  var menuEl = document.getElementById('menu');
+  var calEl = document.getElementById('calendar');
+  if (rightEl && menuEl && calEl) {
+    calEl.style.height = (rightEl.offsetHeight - menuEl.offsetHeight) + 'px';
+  }
   cal.render();
 }, 50);
 
