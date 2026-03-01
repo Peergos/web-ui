@@ -15,6 +15,7 @@ command: peergos
 finish-args:
   - --share=network
   - --share=ipc
+  - --filesystem=~/.peergos:create
 
   - --device=dri
   - --device=usb
