@@ -765,7 +765,7 @@ module.exports = {
             iframe.style.height = '100%';
             iframe.frameBorder="0";
             iframe.scrolling="no";
-            iframe.allow="cross-origin-isolated";
+            iframe.allow="cross-origin-isolated; clipboard-read; clipboard-write";
             iframeContainer.appendChild(iframe);
             Vue.nextTick(function() {
                 iframe.src = that.frameUrl();
