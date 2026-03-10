@@ -50,6 +50,7 @@ self.onmessage = event => {
 function StreamingEntry(fileSize) {
     this.fileSize = fileSize;
     this.mimeType = '';
+    this.etag = null;
     this.bytes = new Uint8Array(0);
     this.skip = false;
     this.firstRun = true;
@@ -64,6 +65,9 @@ function StreamingEntry(fileSize) {
     }
     this.getMimeType = function() {
         return this.mimeType;
+    }
+    this.getEtag = function() {
+        return this.etag;
     }
     this.setSkip = function() {
         if(this.firstRun) {
@@ -96,6 +100,10 @@ function StreamingEntry(fileSize) {
         let mimeTypeBytes = data.subarray(offset, mimeTypeSize + offset);
         let mimeType = new TextDecoder().decode(mimeTypeBytes);
         offset =  offset + mimeTypeSize;
+        let seEtagSize = data[offset];
+        offset = offset + 1;
+        let seEtag = seEtagSize > 0 ? new TextDecoder().decode(data.subarray(offset, offset + seEtagSize)) : null;
+        offset = offset + seEtagSize;
 
         let sizeHigh = readUnsignedLeb128(data.subarray(offset, offset + 4));
         offset += unsignedLeb128Size(sizeHigh);
@@ -106,6 +114,7 @@ function StreamingEntry(fileSize) {
         let fileSize = low + (sizeHigh * Math.pow(2, 32));
         streamingAppEntry.setFileSize(fileSize);
         streamingAppEntry.setMimeType(mimeType);
+        if (seEtag) streamingAppEntry.etag = seEtag;
 
         let moreData = data.subarray(offset)
         const currentBytes = this.bytes;
@@ -121,6 +130,7 @@ function AppData() {
     this.resultMap = new Map();
     this.fileMap = new Map();
     this.mimeTypeMap = new Map();
+    this.etagMap = new Map();
     this.fileStatusMap = new Map();
     this.isReady = function(fullPath) {
         var status = this.fileStatusMap.get(fullPath)
@@ -130,12 +140,14 @@ function AppData() {
         let fileData = this.fileMap.get(fullPath);
         let mimeType = this.mimeTypeMap.get(fullPath);
         let result = this.resultMap.get(fullPath);
+        let etag = this.etagMap.get(fullPath);
 
         this.resultMap.delete(fullPath);
         this.fileMap.delete(fullPath);
         this.mimeTypeMap.delete(fullPath);
+        this.etagMap.delete(fullPath);
         this.fileStatusMap.delete(fullPath);
-        return {file: fileData, mimeType: mimeType, statusCode: result};
+        return {file: fileData, mimeType: mimeType, statusCode: result, etag: etag};
     }
     this.convertStatusCode = function(code) {
         if (code == '0') {        //              APP_FILE_MODE = 0
@@ -178,6 +190,10 @@ function AppData() {
         let mimeTypeBytes = moreData.subarray(offset, mimeTypeSize + offset);
         let mimeType = new TextDecoder().decode(mimeTypeBytes);
         offset =  offset + mimeTypeSize;
+        let etagSize = moreData[offset];
+        offset = offset + 1;
+        let etag = etagSize > 0 ? new TextDecoder().decode(moreData.subarray(offset, offset + etagSize)) : null;
+        offset = offset + etagSize;
         var fileSize = -1;
         if (mode == 11) {
             let sizeHigh = readUnsignedLeb128(moreData.subarray(offset, offset + 4));
@@ -191,6 +207,7 @@ function AppData() {
 
         this.mimeTypeMap.set(filePath, mimeType);
         this.resultMap.set(filePath, this.convertStatusCode(mode));
+        if (etag) this.etagMap.set(filePath, etag);
 
         var file = this.fileMap.get(filePath)
         if(file == null) {
@@ -553,6 +570,7 @@ function returnAppData(method, filePath, uniqueId, ignoreBody) {
         } else {
             respHeaders.push(['Content-Type', fileData.mimeType]);
             respHeaders.push(['Content-Length', fileData.file.byteLength]);
+            if (fileData.etag) respHeaders.push(['ETag', fileData.etag]);
             return new Response(fileData.file.byteLength == 0 || ignoreBody ? null : fileData.file, {
                 status: fileData.statusCode,
                 headers: respHeaders
@@ -639,6 +657,8 @@ function returnRangeRequest(start, end, streamingEntry) {
             respHeaders.push(['accept-ranges', 'bytes']);
             respHeaders.push(['Content-Range', `bytes ${start}-${bytesProvided}/${fileSize}`]);
             respHeaders.push(['content-length', arrayBuffer.byteLength]);
+            let streamEtag = streamingEntry.getEtag();
+            if (streamEtag) respHeaders.push(['ETag', streamEtag]);
 
             return new Response(arrayBuffer, {
               status: 206,

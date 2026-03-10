@@ -846,11 +846,12 @@ module.exports = {
             }
             return mimeType;
         },
-        buildHeader: function(filePath, mimeTypeInput, requestId, streamingInfo) {
+        buildHeader: function(filePath, mimeTypeInput, requestId, streamingInfo, etag = null) {
             var mimeType = this.fixMimeType(filePath, mimeTypeInput);
             let encoder = new TextEncoder();
             let filePathBytes = encoder.encode(filePath + requestId);
             let mimeTypeBytes = encoder.encode(mimeType);
+            let etagBytes = etag ? encoder.encode(etag) : new Uint8Array(0);
             let pathSize = filePathBytes.byteLength;
             if (pathSize >= 255) {
                 throw new Error("Path too long!");
@@ -859,7 +860,8 @@ module.exports = {
             if (mimeTypeSize >= 255) {
                 throw new Error("MimeType too long!");
             }
-            var headerSize = 1 + 1 + pathSize + 1 + mimeTypeSize;
+            let etagSize = etagBytes.byteLength;
+            var headerSize = 1 + 1 + pathSize + 1 + mimeTypeSize + 1 + etagSize;
             let sizeHighBytes = 0;
             let sizeLowBytes = 0;
             if (streamingInfo != null) {
@@ -886,8 +888,14 @@ module.exports = {
             data.set([mimeTypeSize], offset);
             offset = offset + 1;
             data.set(mimeTypeBytes, offset);
+            offset = offset + mimeTypeSize;
+            data.set([etagSize], offset);
+            offset = offset + 1;
+            if (etagSize > 0) {
+                data.set(etagBytes, offset);
+                offset = offset + etagSize;
+            }
             if (streamingInfo != null) {
-                offset = offset + mimeTypeSize;
                 data.set(sizeHighBytes, offset);
                 offset = offset + sizeHighBytes.byteLength;
                 data.set(sizeLowBytes, offset);
@@ -911,7 +919,7 @@ module.exports = {
         },
         actionRequest: function(path, requestId, api, apiMethod, data, hasFormData, params, isFromRedirect, isNavigate) {
             let that = this;
-            let headerFunc = (mimeType, streamingInfo) => that.buildHeader(path, mimeType, requestId, streamingInfo);
+            let headerFunc = (mimeType, streamingInfo, etag = null) => that.buildHeader(path, mimeType, requestId, streamingInfo, etag);
             if (this.browserMode) {
                 if (this.isAppGalleryMode) {
                     if (!(apiMethod == 'GET' || apiMethod == 'POST' )) {
@@ -3854,9 +3862,11 @@ module.exports = {
             let that = this;
             let props = file.getFileProperties();
             let size = props.sizeLow();
+            let treeHash = props.treeHash;
+            let etag = treeHash.isPresent() ? '"' + treeHash.get().toString() + '"' : null;
             let maxChunkSize = 1024 * 1024 * 10;
             if (size < maxChunkSize) {
-                let header = headerFunc(props.mimeType);
+                let header = headerFunc(props.mimeType, null, etag);
                 file.getLatest(this.context.network).thenApply(updatedFile => {
                     updatedFile.getInputStream(that.context.network, that.context.crypto, props.sizeHigh(), props.sizeLow(), read => {}).thenApply(reader => {
                         var bytes = new Uint8Array(size + header.byteLength);
@@ -3874,7 +3884,7 @@ module.exports = {
                 that.buildResponse(header, null, that.ACTION_FAILED);
             } else {
                 let streamingInfo = {sizeHigh: props.sizeHigh(), sizeLow: props.sizeLow(), appFileStreaming: true};
-                let header = headerFunc(props.mimeType, streamingInfo);
+                let header = headerFunc(props.mimeType, streamingInfo, etag);
                 file.getLatest(this.context.network).thenApply(updatedFile => {
                     updatedFile.getBufferedInputStream(that.context.network, that.context.crypto, props.sizeHigh(), props.sizeLow(), 10, read => {}).thenApply(reader => {
                         var currentSize = props.sizeLow();
