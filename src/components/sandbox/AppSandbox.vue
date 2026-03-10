@@ -1098,7 +1098,41 @@ module.exports = {
                     that.buildResponse(headerFunc(), null, that.ACTION_FAILED);
                 }
             } else {
-                that.buildResponse(headerFunc(), null, that.ACTION_FAILED);
+                // Launchable app with no file context — save to user's home folder
+                if (apiMethod == 'POST' || apiMethod == 'PUT') {
+                    let folderPath = '/' + this.context.username + '/';
+                    this.prompt_placeholder = 'Save File';
+                    this.prompt_message = 'Folder: ' + folderPath;
+                    this.prompt_value = path;
+                    this.prompt_consumer_func = function (prompt_result) {
+                        this.showPrompt = false;
+                        if (prompt_result === null) {
+                            that.buildResponse(headerFunc(), null, that.ACTION_FAILED);
+                            return;
+                        }
+                        let filename = prompt_result.trim();
+                        if (filename === '' || filename.startsWith('.') || filename.includes('/') || filename.includes('\\')) {
+                            that.buildResponse(headerFunc(), null, that.ACTION_FAILED);
+                            return;
+                        }
+                        var bytes = convertToByteArray(new Int8Array(data));
+                        let fullPathToNewFile = folderPath + filename;
+                        that.findFile(fullPathToNewFile, false).thenApply(file => {
+                            if (file != null) {
+                                that.overwriteFile(headerFunc(), fullPathToNewFile, bytes, file, false);
+                            } else {
+                                let filePath = peergos.client.PathUtils.directoryToPath(fullPathToNewFile.split('/').filter(n => n.length > 0));
+                                that.writeNewFile(filePath, bytes).thenApply(res => {
+                                    that.buildResponse(headerFunc(), null, that.UPDATE_SUCCESS);
+                                });
+                            }
+                        });
+                    }.bind(this);
+                    this.showPrompt = true;
+                } else {
+                    that.showError("App attempted unexpected action: " + apiMethod);
+                    that.buildResponse(headerFunc(), null, that.ACTION_FAILED);
+                }
             }
         },
         closePrompt() {
