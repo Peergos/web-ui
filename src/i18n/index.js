@@ -3,13 +3,14 @@ const de = require("de.js")
 const es = require("es.js")
 const fr = require("fr.js")
 const it = require("it.js")
+const ko = require("ko.js")
 const pl = require("pl.js")
 const zhCN = require("zh-CN.js")
 
 const supported = ["en-GB", "zh-CN"]
-const supported_prefixes = ["de", "es", "fr", "it", "pl"]
-const supportedLanguages = ["English", "中国人", "Française", "Deutsch", "Italiana", "Polski", "Español"];
-const locales = {"English":"en-GB", "中国人":"zh-CN", "Française":"fr", "Deutsch": "de", "Italiana":"it", "Polski":"pl", "Español":"es"}
+const supported_prefixes = ["de", "es", "fr", "it", "ko", "pl"]
+const supportedLanguages = ["English", "中国人", "Française", "Deutsch", "Italiana", "한국인", "Polski", "Español"];
+const locales = {"English":"en-GB", "中国人":"zh-CN", "Française":"fr", "Deutsch": "de", "Italiana":"it", "한국인":"ko", "Polski":"pl", "Español":"es"}
 module.exports = {
 
     methods: {
@@ -59,6 +60,11 @@ module.exports = {
             }
             if (locale== "it") {
                 const res = it[label];
+                if (res != null)
+                    return res;
+            }
+            if (locale== "ko") {
+                const res = ko[label];
                 if (res != null)
                     return res;
             }
