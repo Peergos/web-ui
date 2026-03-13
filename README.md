@@ -9,6 +9,16 @@ The Web interface for Peergos
 
 ![Social Feed](/assets/images/tour/social-feed.jpg)
 
+## Android APK release verification
+Android releases can be verified with this sha256 of the signing certificate:
+2c5b6153 7d0b18c8 e858ccf3 f485a8b0 fa3450b6 17c6211d 18507778 1f26f030
+
+Use this command
+```bash
+apksigner verify --print-certs <path_to_apk>
+```
+
+## Building
 
 We avoid JS based build tools and managers like npm, webpack etc. to maintain greater control over the build process. This allows us to achieve cross-platform reproducible builds and future proof our build system (we should be able to build any commit any number of years into the future with only a JVM). The one exception to this is precompiling vue.js templates, which is done using vue-template-compiler run in a vendored copy of [GraalJS](https://www.graalvm.org/reference-manual/js/).
 
