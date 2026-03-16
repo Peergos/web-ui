@@ -50,10 +50,13 @@ class AppDelegate: NSObject, NSApplicationDelegate, WKNavigationDelegate, WKDown
         decisionHandler(.allow)
     }
 
-    // Handle responses with non-displayable MIME types (e.g. application/octet-stream)
+    // Handle responses that should be downloaded rather than rendered
     func webView(_ webView: WKWebView, decidePolicyFor navigationResponse: WKNavigationResponse, decisionHandler: @escaping (WKNavigationResponsePolicy) -> Void) {
         if #available(macOS 11.3, *) {
-            if !navigationResponse.canShowMIMEType {
+            let isAttachment = (navigationResponse.response as? HTTPURLResponse)
+                .flatMap { $0.value(forHTTPHeaderField: "Content-Disposition") }
+                .map { $0.lowercased().hasPrefix("attachment") } ?? false
+            if isAttachment || !navigationResponse.canShowMIMEType {
                 decisionHandler(.download)
                 return
             }
