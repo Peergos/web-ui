@@ -12,7 +12,6 @@
 		    <button class="btn btn-success" @click="addSyncPair()">{{ translate("SYNC.ADDPAIR") }}</button>
                 </div>
                 <div style="padding:1em">Status: {{ status }}</div>
-                <div v-if="hasError" style="padding:1em">Previous error: {{ error }}</div>
                 </center>
                 <div style="display:flex; flex-direction:column">
                    <div v-for="pair in syncPairs" style="display:flex; flex-direction:row; flex-wrap:wrap; padding:1em; margin:.5em; border:solid #16a98a;">
