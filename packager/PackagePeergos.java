@@ -102,7 +102,7 @@ public class PackagePeergos {
                        "--add-launcher", "peergos=windows-cli.properties"
                        );
         else if (isMac) {
-            runCommand("swiftc", "-o", "PeergosWebView", "MacWebview.swift", "-framework", "Cocoa", "-framework", "WebKit");
+            runCommand("swiftc", "-parse-as-library", "-o", "PeergosWebView", "MacWebview.swift", "-framework", "Cocoa", "-framework", "WebKit");
             runCommand("security", "find-identity", "-v", "-p", "codesigning", System.getenv("RUNNER_TEMP") + "/app-signing.keychain-db");
             runCommand("codesign", "--force", "--options", "runtime", "--timestamp",
                        "--keychain", System.getenv("RUNNER_TEMP") + "/app-signing.keychain-db",
