@@ -25,8 +25,20 @@ function fragmentToProps(fragment) {
 function getProm(url) {
     return getWithHeadersProm(url, []);
 }
-
+function cloneHeaders(headers) {
+    var index = 0;
+    let plainArray = [];
+    while (index < headers.length){
+        plainArray.push(headers[index++]);
+    }
+    return plainArray;
+}
 function getWithHeadersProm(url, headers) {
+    return this.isDirectS3 && this.isRobotReady ? this.sendRequest({type: 'getWithHeadersProm', url: url, headers: cloneHeaders(headers)})
+        : getWithHeadersPromDirect(url, headers);
+}
+
+function getWithHeadersPromDirect(url, headers) {
     var future = peergos.shared.util.Futures.incomplete();
     var req = new XMLHttpRequest();
     req.open('GET', url);
@@ -62,6 +74,11 @@ function getWithHeadersProm(url, headers) {
 }
 
 function postProm(url, data, timeout) {
+    return this.isDirectS3 && this.isRobotReady ? this.sendRequest({type: 'postProm', url: url, data: data, timeout: timeout})
+        : postPromDirect(url, data, timeout);
+}
+
+function postPromDirect(url, data, timeout) {
     var future = peergos.shared.util.Futures.incomplete();
     new Promise(function(resolve, reject) {
 	var req = new XMLHttpRequest();
@@ -179,6 +196,11 @@ function postMultipartProm(url, dataArrays, timeout) {
 }
 
 function putProm(url, data, headers) {
+    return this.isDirectS3 && this.isRobotReady ? this.sendRequest({type: 'putProm', url: url, data: data, headers: cloneHeaders(headers)})
+        : putPromDirect(url, data, headers);
+}
+
+function putPromDirect(url, data, headers) {
     var future = peergos.shared.util.Futures.incomplete();
     new Promise(function(resolve, reject) {
 	var req = new XMLHttpRequest();
@@ -236,11 +258,102 @@ var callback = {
 
 var http = {
     NativeJSHttp: function() {
-	this.get = getProm;
-	this.getWithHeaders = getWithHeadersProm;
-	this.post = postProm;
-	this.postMultipart = postMultipartProm;
-	this.put = putProm;
+        this.isDirectS3 = false;
+        this.robotIframeId = 'robot-proxy';
+        this.isRobotInitialised= false;
+        this.isRobotReady= false;
+        this.currentRequests = new Map();
+        this.init = function init(directS3) {
+            this.isDirectS3 = directS3;
+            if (this.isDirectS3) {
+                this.startRobot('https://peergos-test.us-east-1.linodeobjects.com/robot-proxy.html');
+                //this.startRobot('robot-proxy.html');
+            }
+        };
+        this.startRobot = function(url) {
+            let that = this;
+            var iframe = document.createElement('iframe');
+            iframe.id = this.robotIframeId;
+            document.body.appendChild(iframe);
+            window.setTimeout(function(){
+                iframe.src = url;
+                window.addEventListener('message', function(e) {
+                    let win = iframe.contentWindow;
+                    if (win != null ) {
+                        if (e.source === iframe.contentWindow) {
+                            if (e.data.action == 'pong') {
+                                that.isRobotInitialised = true;
+                            } else {
+                                let future = that.currentRequests.get(e.data.id);
+                                that.currentRequests.delete(e.data.id);
+                                if (e.data.status == 200) {
+                                    future.complete(convertToByteArray(new Int8Array(e.data.response)));
+                                } else if (e.data.action == 'getWithHeadersProm') {
+                                    if (e.data.status == 404) {
+                                        future.completeExceptionally(new peergos.shared.storage.HttpFileNotFoundException());
+                                    } else if (e.data.status == 429) {
+                                        future.completeExceptionally(new peergos.shared.storage.RateLimitException());
+                                    } else {
+                                        future.completeExceptionally(java.lang.Throwable.of(Error(e.data.errMsg)));
+                                    }
+                                } else if (e.data.action == 'postProm') {
+                                    if (e.data.errMsg.startsWith('Storage+quota+reached')) {
+                                        future.completeExceptionally(new peergos.shared.storage.StorageQuotaExceededException(e.data.errMsg));
+                                    } else {
+                                        that.handleError(future, e.data.wrapInError, e.data.errMsg);
+                                    }
+                                } else if (e.data.action == 'putProm') {
+                                    that.handleError(future, e.data.wrapInError, e.data.errMsg);
+                                }
+                            }
+                        }
+                    }
+                });
+                that.isRobotReady = true;
+            });
+        };
+        this.handleError = function(future, wrapInError, errMsg) {
+            if (e.data.wrapInError) {
+                future.completeExceptionally(java.lang.Throwable.of(Error(e.data.errMsg)));
+            } else {
+                future.completeExceptionally(java.lang.Throwable.of(e.data.errMsg));
+            }
+        };
+        this.postMessage = function(obj) {
+            let iframe = document.getElementById(this.robotIframeId);
+            iframe.contentWindow.postMessage(obj, '*');
+        };
+        this.sendRobotMessage = function(func) {
+            if (this.isRobotInitialised) {
+                func();
+            } else {
+                let iframe = document.getElementById(this.robotIframeId);
+                iframe.contentWindow.postMessage({type: 'ping'}, '*');
+                let that = this;
+                window.setTimeout(function() {that.sendRobotMessage(func);}, 3000);
+            }
+        }
+        this.sendRequest = function(obj, fut) {
+            var that = this;
+            obj.id = this.generateUUID();
+            let future = peergos.shared.util.Futures.incomplete();
+            this.currentRequests.set(obj.id, future);
+            let func = function() {
+                that.postMessage(obj);
+            };
+            this.sendRobotMessage(func);
+            return future;
+        }
+        this.generateUUID = function() {
+          return ([1e7]+-1e3+-4e3+-8e3+-1e11).replace(/[018]/g, c =>
+            (c ^ crypto.getRandomValues(new Uint8Array(1))[0] & 15 >> c / 4).toString(16)
+          );
+        };
+        this.get = getProm;
+        this.getWithHeaders = getWithHeadersProm;
+        this.post = postProm;
+        this.postMultipart = postMultipartProm;
+        this.put = putProm;
     }
 };
 
