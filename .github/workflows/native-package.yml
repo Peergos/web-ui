@@ -99,7 +99,8 @@ jobs:
       if: runner.os == 'Windows'
       run: type packager\artifact | Out-File -FilePath $env:GITHUB_ENV -Append
     - name: Upload package artifact
-      uses: actions/upload-artifact@v4
+      uses: actions/upload-artifact@v7
+      archive: false
       with:
         name: ${{ env.artifact }}
         path: "./packager/${{ env.artifact }}"
