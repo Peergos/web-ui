@@ -34,6 +34,10 @@
                     :src="fileThumbnail"
                 />
             </div>
+            <div v-if="pickerAllowWriteMode && selectedFile" style="margin: 8px 0; display: flex; gap: 8px;">
+                <AppButton type="primary" :accent="!openForEditing" :outline="openForEditing" @click.native="openForEditing = false">Read-only</AppButton>
+                <AppButton type="primary" :accent="openForEditing" :outline="!openForEditing" @click.native="openForEditing = true">Open for editing</AppButton>
+            </div>
             <div class="flex-line-item">
                 <div>
                     <button class="btn btn-success" style = "width:80%" @click="fileSelected()">Done</button>
@@ -46,12 +50,14 @@
 </template>
 
 <script>
+const AppButton = require("../AppButton.vue");
 const Spinner = require("../spinner/Spinner.vue");
 const SelectableTreeItem = require("SelectableTreeItem.vue");
 const folderTreeMixin = require("../../mixins/tree-walker/index.js");
 
 module.exports = {
     components: {
+        AppButton,
         Spinner,
         SelectableTreeItem
     },
@@ -67,9 +73,10 @@ module.exports = {
             driveOptions: [],
             displayDriveSelection: false,
             disableDriveSelection: false,
+            openForEditing: this.pickerDefaultWriteMode === true,
         }
     },
-    props: ['baseFolder', 'selectedFile_func', 'pickerFileExtension', 'pickerFilterMedia', 'pickerShowThumbnail', 'pickerFilters', 'noDriveSelection'],
+    props: ['baseFolder', 'selectedFile_func', 'pickerFileExtension', 'pickerFilterMedia', 'pickerShowThumbnail', 'pickerFilters', 'noDriveSelection', 'pickerAllowWriteMode', 'pickerDefaultWriteMode'],
     mixins:[folderTreeMixin],
     computed: {
         ...Vuex.mapState([
@@ -145,7 +152,7 @@ module.exports = {
             this.loadSubFoldersAndFiles(path, this.pickerFileExtension, this.pickerFilterMedia, this.pickerFilters, callback);
         },
         fileSelected: function() {
-            this.selectedFile_func(this.selectedFile);
+            this.selectedFile_func(this.selectedFile, this.openForEditing);
         }
     }
 }

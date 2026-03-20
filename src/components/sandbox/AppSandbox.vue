@@ -37,6 +37,8 @@
             :pickerShowThumbnail="pickerShowThumbnail"
             :selectedFile_func="selectedFileFromPicker"
             :noDriveSelection="noDriveSelection"
+            :pickerAllowWriteMode="pickerAllowWriteMode"
+            :pickerDefaultWriteMode="pickerDefaultWriteMode"
         />
         <FolderPicker
             v-if="showFolderPicker"
@@ -243,6 +245,9 @@ module.exports = {
             selectedFolderStems: [],
             showFilePicker: false,
             selectedFileFromPicker: null,
+            pickerAllowWriteMode: false,
+            pickerDefaultWriteMode: false,
+            pickerWritableFileRefs: new Map(),
             pickerFileExtension: "",
             pickerFilterMedia: false,
             pickerFilters: null,
@@ -988,7 +993,7 @@ module.exports = {
                                 && !(this.appPath.length > 0 && !this.isAppPathAFolder && path.startsWith(that.getPath))
                                 && !path.startsWith(that.apiRequest + '/data')
                                 && !(this.isSelectedFolder(path))
-                                && !(path == this.pickerSelectedFile)
+                                && !(path == this.pickerSelectedFile || this.pickerWritableFileRefs.has(path))
                                 ? '/assets' : '';
                             if (this.browserMode) {
                                 that.handleBrowserRequest(headerFunc, path, params, isFromRedirect, isNavigate);
@@ -1017,6 +1022,13 @@ module.exports = {
                                     that.showError("App attempted unexpected action: " + apiMethod);
                                     that.buildResponse(headerFunc(), null, that.ACTION_FAILED);
                                 }
+                            }
+                        } else if (that.pickerWritableFileRefs.has(path)) {
+                            if (apiMethod == 'POST' || apiMethod == 'PUT') {
+                                that.overwriteFile(headerFunc(), path, bytes, that.pickerWritableFileRefs.get(path), false);
+                            } else {
+                                that.showError("App attempted unexpected action: " + apiMethod);
+                                that.buildResponse(headerFunc(), null, that.ACTION_FAILED);
                             }
                         } else {
                             if (!that.permissionsMap.get(that.PERMISSION_STORE_APP_DATA)) {
@@ -1161,16 +1173,37 @@ module.exports = {
                 this.pickerFilterMedia = fileMediaFilter == null ? false : fileMediaFilter.toLowerCase() == 'true';
                 let thumbnail = params.get('thumbnail');
                 this.pickerShowThumbnail = thumbnail == null ? false : thumbnail.toLowerCase() == 'true';
-                this.selectedFileFromPicker = function (chosenFile) {
+                this.pickerAllowWriteMode = this.permissionsMap.get(this.PERMISSION_EDIT_CHOSEN_FILE) != null;
+                let writableParam = params.get('writable');
+                this.pickerDefaultWriteMode = this.pickerAllowWriteMode && writableParam != null && writableParam.toLowerCase() == 'true';
+                this.selectedFileFromPicker = function (chosenFile, openForEditing) {
                     var selectedFile = chosenFile == null ? "" : chosenFile;
+                    let absPath = chosenFile == null ? "" : chosenFile;
                     if (baseCurrentFolder) {
                         selectedFile = selectedFile.substring(currentPathExtract.length);
                     }
                     that.showFilePicker = false;
                     let encoder = new TextEncoder();
                     that.pickerSelectedFile = selectedFile;
-                    let data = encoder.encode(JSON.stringify([selectedFile]));
-                    that.buildResponse(headerFunc(), data, that.UPDATE_SUCCESS);
+                    let isWritable = openForEditing === true && that.permissionsMap.get(that.PERMISSION_EDIT_CHOSEN_FILE) != null;
+                    let sendResponse = function() {
+                        let data = encoder.encode(JSON.stringify([selectedFile, isWritable]));
+                        that.buildResponse(headerFunc(), data, that.UPDATE_SUCCESS);
+                    };
+                    if (isWritable && absPath.length > 0) {
+                        that.context.getByPath(absPath).thenApply(optFile => {
+                            if (optFile.ref != null) {
+                                that.pickerWritableFileRefs.set(selectedFile, optFile.ref);
+                                that.fullPathForDisplay = selectedFile;
+                            }
+                            sendResponse();
+                        });
+                    } else {
+                        if (selectedFile.length > 0) {
+                            that.fullPathForDisplay = selectedFile + ' (Read-only)';
+                        }
+                        sendResponse();
+                    }
                 }.bind(this);
                 this.showFilePicker = true;
             } else {
@@ -3827,7 +3860,7 @@ module.exports = {
                 return this.workspaceName + filePath;
             } else if ( (this.appPath.length > 0 && filePath.startsWith(this.getPath)) || this.isSelectedFolder(filePath)) {
                 return filePath;
-            } else if (this.appPath.length > 0 && filePath === this.pickerSelectedFile) {
+            } else if (this.appPath.length > 0 && (filePath === this.pickerSelectedFile || this.pickerWritableFileRefs.has(filePath))) {
                 return filePath;
             } else if (this.currentProps != null) { //running in-place
                 let filePathWithoutSlash = filePath.startsWith('/') ? filePath.substring(1) : filePath;
