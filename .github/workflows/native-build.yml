@@ -36,7 +36,7 @@ jobs:
     - name: Upload static binary artifact
       uses: actions/upload-artifact@v7
       with:
-        name: ${{ matrix.os }}-peergos
+        name: ${{ matrix.os }}-peergos-static
         path: "./native-build/${{ matrix.bin }}"
         archive: false
 #    - name: Build Peergos installer
