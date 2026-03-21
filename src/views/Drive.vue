@@ -65,6 +65,11 @@
       :folder_properties="folder_properties"
     >
     </FolderProperties>
+    <FileDetails
+      v-if="showFileDetails && selectedFiles.length == 1"
+      :file="selectedFiles[0]"
+      v-on:hide-file-details="showFileDetails = false"
+    />
 
     <transition name="fade" mode="out-in" appear>
     <DriveSelected v-if="selectedFiles.length > 1" :totalFiles="files.length" :selectedFiles="selectedFiles" @selectAllOrNone="selectAllOrNone()">
@@ -233,6 +238,14 @@
           @click="viewFolderProperties"
         >
           {{ translate("DRIVE.PROPS") }}
+        </li>
+        <li
+          id="file-details"
+          v-if="allowViewFileDetails"
+          @keyup.enter="viewFileDetails"
+          @click="viewFileDetails"
+        >
+          {{ translate("DRIVE.DETAILS") }}
         </li>
         <li
           id="add-to-launcher"
@@ -414,6 +427,7 @@ const AppPrompt = require("../components/prompt/AppPrompt.vue");
 const NewImageFilePrompt = require("../components/NewImageFilePrompt.vue");
 const NewAppPrompt = require("../components/sandbox/new-app/NewAppPrompt.vue");
 const FolderProperties = require("../components/FolderProperties.vue");
+const FileDetails = require("../components/FileDetails.vue");
 const Pdf = require("../components/pdf/PDF.vue");
 const Replace = require("../components/replace/Replace.vue");
 const Spinner = require("../components/spinner/Spinner.vue");
@@ -447,6 +461,7 @@ module.exports = {
 		NewImageFilePrompt,
 		NewAppPrompt,
 		FolderProperties,
+		FileDetails,
 		ProgressBar,
 		Gallery,
 		Identity,
@@ -521,6 +536,7 @@ module.exports = {
 			showNewImageFilePrompt: false,
 			showNewAppPrompt: false,
             showFolderProperties: false,
+            showFileDetails: false,
             showAppInstallation: false,
             showAppRunner: false,
             showAppSandbox: false,
@@ -787,6 +803,15 @@ module.exports = {
 			} catch (err) {
 				return false;
 			}
+        },
+        allowViewFileDetails() {
+            try {
+                if (this.selectedFiles.length != 1)
+                    return false;
+                return !this.selectedFiles[0].isDirectory();
+            } catch (err) {
+                return false;
+            }
         },
         allowCopy() {
             return this.isLoggedIn && this.path.length > 0;
@@ -1708,6 +1733,12 @@ module.exports = {
                 that.showFolderProperties = true;
                 that.folder_properties = statistics;
             });
+        },
+        viewFileDetails() {
+            if (this.selectedFiles.length != 1)
+                return;
+            this.closeMenu();
+            this.showFileDetails = true;
         },
 	showToastError: function(message) {
             this.$toast.error(message, {timeout:false});

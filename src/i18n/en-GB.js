@@ -75,6 +75,7 @@ module.exports = {
     "DRIVE.DOWNLOAD.ZIP":"Download as Zip",
     "DRIVE.THUMB":"Create Thumbnail",
     "DRIVE.PROPS":"Properties",
+    "DRIVE.DETAILS":"Details",
     "DRIVE.ADD.LAUNCH":"Add to Launcher",
     "DRIVE.RUN":"Run App",
     "DRIVE.INSTALL":"Install App",
