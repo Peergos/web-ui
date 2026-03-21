@@ -337,7 +337,7 @@ function appFetch(event) {
         }));
     }
     let filePath = decodeURI(requestedResource.pathname);
-    if (filePath.startsWith('/peergos/') && !filePath.startsWith('/peergos/recommended-apps/')) {
+    if (event.request.mode === 'navigate' && event.request.method == 'GET' && filePath.startsWith('/peergos/') && !filePath.startsWith('/peergos/recommended-apps/')) {
         respHeaders.push(['Content-type', 'text/html']);
         respHeaders.push(['content-security-policy', csp]);
         let redirectHTML= '<html><body><script>'

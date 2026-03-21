@@ -1025,7 +1025,13 @@ module.exports = {
                             }
                         } else if (that.pickerWritableFileRefs.has(path)) {
                             if (apiMethod == 'POST' || apiMethod == 'PUT') {
-                                that.overwriteFile(headerFunc(), path, bytes, that.pickerWritableFileRefs.get(path), false);
+                                that.findFile(path, false).thenApply(file => {
+                                    if (file != null) {
+                                        that.overwriteFile(headerFunc(), path, bytes, file, false);
+                                    } else {
+                                        that.buildResponse(headerFunc(), null, that.ACTION_FAILED);
+                                    }
+                                });
                             } else {
                                 that.showError("App attempted unexpected action: " + apiMethod);
                                 that.buildResponse(headerFunc(), null, that.ACTION_FAILED);
@@ -1195,6 +1201,8 @@ module.exports = {
                             if (optFile.ref != null) {
                                 that.pickerWritableFileRefs.set(selectedFile, optFile.ref);
                                 that.fullPathForDisplay = selectedFile;
+                            } else {
+                                console.log('[picker] getByPath returned null for absPath=' + absPath);
                             }
                             sendResponse();
                         });
@@ -3860,7 +3868,7 @@ module.exports = {
                 return this.workspaceName + filePath;
             } else if ( (this.appPath.length > 0 && filePath.startsWith(this.getPath)) || this.isSelectedFolder(filePath)) {
                 return filePath;
-            } else if (this.appPath.length > 0 && (filePath === this.pickerSelectedFile || this.pickerWritableFileRefs.has(filePath))) {
+            } else if (filePath === this.pickerSelectedFile || this.pickerWritableFileRefs.has(filePath)) {
                 return filePath;
             } else if (this.currentProps != null) { //running in-place
                 let filePathWithoutSlash = filePath.startsWith('/') ? filePath.substring(1) : filePath;
