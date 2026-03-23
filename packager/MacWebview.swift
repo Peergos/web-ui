@@ -29,7 +29,13 @@ struct PeergosWebView: NSViewRepresentable {
     }
 
     func makeNSView(context: Context) -> WKWebView  {
-        let webView = WKWebView()
+        let config = WKWebViewConfiguration()
+        let script = WKUserScript(
+            source: "window.__IS_MACOS_WEBVIEW__ = true;",
+            injectionTime: .atDocumentStart,
+            forMainFrameOnly: false)
+        config.userContentController.addUserScript(script)
+        let webView = WKWebView(frame: .zero, configuration: config)
         webView.navigationDelegate = context.coordinator
         webView.uiDelegate = context.coordinator
         webView.load(URLRequest(url: URL(string: "http://localhost:\(PeergosApp.port)")!))
