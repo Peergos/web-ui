@@ -508,8 +508,6 @@ module.exports = {
         appSandboxIsCrossOriginIsolated() {
             if (typeof Android !== 'undefined')
                return true; // support Android webview
-            if (typeof window.__IS_MACOS_WEBVIEW__ !== 'undefined')
-               return true; // support macOS WKWebView
             return window.crossOriginIsolated;
         },
         getMirrorBatId(file) {
