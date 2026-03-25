@@ -11,7 +11,7 @@ jobs:
       uses: actions/setup-java@v5
       with:
         distribution: temurin
-        java-version: 17
+        java-version: 21
     - uses: actions/setup-python@v4
       with:
         python-version: '3.11.0'

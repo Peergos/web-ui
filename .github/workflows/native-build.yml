@@ -24,7 +24,7 @@ jobs:
       uses: actions/setup-java@v5
       with:
         distribution: temurin
-        java-version: 17
+        java-version: 21
     - name: Build with Ant
       run: ant -noinput -buildfile build.xml peergos_submodule_sync dist 
     - name: Install GraalVM and native-image
