@@ -46,7 +46,7 @@ function getWithHeadersProm(url, headers) {
 	    future.complete(convertToByteArray(new Int8Array(req.response)));
         } else if (req.status == 404) {
 	    future.completeExceptionally(new peergos.shared.storage.HttpFileNotFoundException());
-        } else if (req.status == 429 || req.status == 503) {
+        } else if (req.status == 429 || req.status == 503 || req.status == 504) {
 	    future.completeExceptionally(new peergos.shared.storage.RateLimitException());
         } else {
 	        future.completeExceptionally(java.lang.Throwable.of(Error(req.getResponseHeader("Trailer"))));
