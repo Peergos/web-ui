@@ -19,6 +19,15 @@
   <url type="vcs-browser">https://github.com/peergos/web-ui</url>
   
   <releases>
+    <release version="1.22.0" date="2026-03-28">
+      <url type="details">https://github.com/Peergos/web-ui/releases/tag/v1.22.0</url>
+      <description>
+        <p>Much faster sync and uploads of small files</p>
+          <ul>
+            <li>100x faster sync of many small files</li>
+          </ul>
+      </description>
+    </release>
     <release version="1.18.1" date="2026-02-17">
       <url type="details">https://github.com/Peergos/web-ui/releases/tag/v1.18.0</url>
       <description>
