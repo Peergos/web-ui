@@ -8,7 +8,7 @@ base-version: stable
 sdk: org.freedesktop.Sdk
 
 sdk-extensions:
-  - org.freedesktop.Sdk.Extension.openjdk21
+  - org.freedesktop.Sdk.Extension.openjdk25
 
 command: peergos
 
@@ -31,9 +31,9 @@ inherit-extensions:
   - org.chromium.Chromium.Codecs
 
 build-options:
-  append-path: /usr/lib/sdk/openjdk21/bin
+  append-path: /usr/lib/sdk/openjdk25/bin
   env:
-    JAVA_HOME: /usr/lib/sdk/openjdk21
+    JAVA_HOME: /usr/lib/sdk/openjdk25
 
 cleanup:
   - "/app/ant"
@@ -48,7 +48,7 @@ modules:
   - name: openjdk
     buildsystem: simple
     build-commands:
-      - /usr/lib/sdk/openjdk21/install.sh
+      - /usr/lib/sdk/openjdk25/install.sh
 
   - name: ant
     buildsystem: simple

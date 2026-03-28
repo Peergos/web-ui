@@ -1,3 +1,3 @@
 #!/bin/sh
 export flatpak=true
-java -jar /app/share/peergos/Peergos.jar "$@"
+java --enable-native-access=ALL-UNNAMED -jar /app/share/peergos/Peergos.jar "$@"

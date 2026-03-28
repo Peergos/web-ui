@@ -1,4 +1,4 @@
-FROM eclipse-temurin:17-jdk as build
+FROM eclipse-temurin:25-jdk as build
 
 RUN apt-get update && apt-get install --assume-yes ant git
 
@@ -8,7 +8,7 @@ WORKDIR /opt/peergos
 RUN ant dist
 
 
-FROM eclipse-temurin:17-jre
+FROM eclipse-temurin:25-jre
 
 LABEL org.opencontainers.image.title="Peergos"
 LABEL org.opencontainers.image.description="Peergos is a peer-to-peer encrypted global filesystem with fine-grained access control designed to be resistant to surveillance of data content or friendship graphs"
@@ -21,6 +21,6 @@ WORKDIR /opt/peergos
 RUN mkdir -p /opt/peergos/data
 COPY --from=build /opt/peergos/server /opt/peergos/server
 
-ENTRYPOINT ["java", "-jar", "/opt/peergos/server/Peergos.jar"]
+ENTRYPOINT ["java", "--enable-native-access=ALL-UNNAMED", "-jar", "/opt/peergos/server/Peergos.jar"]
 
 EXPOSE 4001 8000
