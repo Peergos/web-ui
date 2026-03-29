@@ -9,8 +9,8 @@ const zhCN = require("zh-CN.js")
 
 const supported = ["en-GB", "zh-CN"]
 const supported_prefixes = ["de", "es", "fr", "it", "ko", "pl"]
-const supportedLanguages = ["English", "中国人", "Française", "Deutsch", "Italiana", "한국인", "Polski", "Español"];
-const locales = {"English":"en-GB", "中国人":"zh-CN", "Française":"fr", "Deutsch": "de", "Italiana":"it", "한국인":"ko", "Polski":"pl", "Español":"es"}
+const supportedLanguages = ["English", "中文", "Française", "Deutsch", "Italiana", "한국인", "Polski", "Español"];
+const locales = {"English":"en-GB", "中文":"zh-CN", "Française":"fr", "Deutsch": "de", "Italiana":"it", "한국인":"ko", "Polski":"pl", "Español":"es"}
 module.exports = {
 
     methods: {
