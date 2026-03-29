@@ -258,7 +258,7 @@ Javac-Version: ${javac.version}</echo>
       <arg value="pki.keyfile.password"/>
       <arg value="testpkifilepassword"/>
       <arg value="default-quota"/>
-      <arg value="157286400"/>
+      <arg value="1572864000"/>
       <arg value="PEERGOS_PATH"/>
       <arg value="${server}/.peergos"/>
       <arg value="-admin-usernames"/>
@@ -312,7 +312,7 @@ Javac-Version: ${javac.version}</echo>
       <arg value="pki.keyfile.password"/>
       <arg value="testpkifilepassword"/>
       <arg value="default-quota"/>
-      <arg value="157286400"/>
+      <arg value="1572864000"/>
       <arg value="PEERGOS_PATH"/>
       <arg value="${server}/.peergos"/>
       <arg value="-admin-usernames"/>
