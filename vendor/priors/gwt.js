@@ -1831,6 +1831,30 @@ var tryProofOfWork = function(counter, difficulty, combined, future) {
     });
 }
 
+// SHA-256 web worker pool — dispatches calls round-robin across N workers.
+var sha256WorkerCount = Math.max(1, Math.min(navigator.hardwareConcurrency || 4, 8));
+var sha256Workers = [];
+var sha256Callbacks = new Map();
+var sha256NextId = 0;
+var sha256NextWorker = 0;
+
+(function() {
+    for (var i = 0; i < sha256WorkerCount; i++) {
+        var w = new Worker('/js/sha256-worker.js');
+        w.onmessage = function(e) {
+            var pending = sha256Callbacks.get(e.data.id);
+            if (pending) {
+                sha256Callbacks.delete(e.data.id);
+                if (e.data.error)
+                    pending.reject(e.data.error);
+                else
+                    pending.resolve(e.data.result);
+            }
+        };
+        sha256Workers.push(w);
+    }
+})();
+
 var scryptJS = {
     NativeScryptJS: function() {
         this.hashToKeyBytes = hashToKeyBytesProm;
@@ -1847,19 +1871,16 @@ var scryptJS = {
 	
 	this.sha256 = function(input) {
 	    var future = peergos.shared.util.Futures.incomplete();
-	    window.crypto.subtle.digest(
-		{
-		    name: "SHA-256",
+	    var id = sha256NextId++;
+	    sha256Callbacks.set(id, {
+		resolve: function(data) {
+		    future.complete(convertToByteArray(data.slice(0, 32)));
 		},
-		input
-	    ).then(function(hash){
-		//returns the hash as an ArrayBuffer
-		var data = new Int8Array(hash);
-		var res = convertToByteArray(data.slice(0, 32));
-		future.complete(res);
-	    }).catch(function(err){
-		future.completeExceptionally(java.lang.Throwable.of(err));
+		reject: function(err) {
+		    future.completeExceptionally(java.lang.Throwable.of(new Error(err)));
+		}
 	    });
+	    sha256Workers[sha256NextWorker++ % sha256WorkerCount].postMessage({id: id, data: input});
 	    return future;
 	}
 
