@@ -19,6 +19,16 @@
   <url type="vcs-browser">https://github.com/peergos/web-ui</url>
   
   <releases>
+    <release version="1.23.0" date="2026-04-09">
+      <url type="details">https://github.com/Peergos/web-ui/releases/tag/v1.23.0</url>
+      <description>
+        <p>Fix large file upload regression</p>
+          <ul>
+            <li>Parallel treehashing in browser</li>
+            <li>Auto resume failed uploads</li>
+          </ul>
+      </description>
+    </release>
     <release version="1.22.0" date="2026-03-28">
       <url type="details">https://github.com/Peergos/web-ui/releases/tag/v1.22.0</url>
       <description>
