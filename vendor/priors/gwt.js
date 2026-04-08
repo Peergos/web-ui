@@ -1880,7 +1880,8 @@ var scryptJS = {
 		    future.completeExceptionally(java.lang.Throwable.of(new Error(err)));
 		}
 	    });
-	    sha256Workers[sha256NextWorker++ % sha256WorkerCount].postMessage({id: id, data: input});
+            var buf = input.buffer.slice(input.byteOffset || 0, (input.byteOffset || 0) + input.length);
+            sha256Workers[sha256NextWorker++ % sha256WorkerCount].postMessage({id: id, data: buf}, [buf]);
 	    return future;
 	}
 
@@ -2036,22 +2037,18 @@ var browserio = {
 	    return fut;
 	}
 
-	this.readIntoArray = function(res, offset, length) {
-	    var future = peergos.shared.util.Futures.incomplete();
-
-	    var filereader = new FileReader();
-	    filereader.file_name = file.name;
-	    filereader.onload = function(){
-		const data = new Uint8Array(this.result);
-		for (var i=0; i < length; i++)
-		    res[offset + i] = data[i];
-		future.complete({value_0:length});
-	    };
-	    
-	    filereader.readAsArrayBuffer(file.slice(this.offset, this.offset + length));
-	    this.offset += length;
-	    return future;
-	}
+        this.readIntoArray = function(res, offset, length) {                                                                                                                                              
+           var future = peergos.shared.util.Futures.incomplete();
+           var sliceStart = this.offset;
+           this.offset += length;
+           file.slice(sliceStart, sliceStart + length).arrayBuffer().then(function(buf) {
+               new Int8Array(res.buffer, (res.byteOffset || 0) + offset, length).set(new Uint8Array(buf));
+               future.complete({value_0: length});
+           }).catch(function(err) {
+               future.completeExceptionally(java.lang.Throwable.of(err));
+           });
+           return future;
+        }
 
 	this.reset = function() {
 	    this.offset = 0;
