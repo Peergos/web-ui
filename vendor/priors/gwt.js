@@ -1855,6 +1855,30 @@ var sha256NextWorker = 0;
     }
 })();
 
+// SHA-256 file worker pool — workers read file slices and hash them directly.
+var sha256FileWorkerCount = Math.max(1, Math.min(navigator.hardwareConcurrency || 4, 8));
+var sha256FileWorkers = [];
+var sha256FileCallbacks = new Map();
+var sha256FileNextId = 0;
+var sha256FileNextWorker = 0;
+
+(function() {
+    for (var i = 0; i < sha256FileWorkerCount; i++) {
+        var w = new Worker('/js/sha256-file-worker.js');
+        w.onmessage = function(e) {
+            var pending = sha256FileCallbacks.get(e.data.id);
+            if (pending) {
+                sha256FileCallbacks.delete(e.data.id);
+                if (e.data.error)
+                    pending.reject(e.data.error);
+                else
+                    pending.resolve(e.data.result);
+            }
+        };
+        sha256FileWorkers.push(w);
+    }
+})();
+
 var scryptJS = {
     NativeScryptJS: function() {
         this.hashToKeyBytes = hashToKeyBytesProm;
@@ -1933,6 +1957,20 @@ var scryptJS = {
 	    var res = convertToByteArray(data.slice(0, outputLength));
 	    return res;
 	}
+
+        this.sha256FileSection = function(reader, startHi, startLo, endHi, endLo) {
+            var future = peergos.shared.util.Futures.incomplete();
+            var start = startHi * 4294967296 + (startLo >>> 0);
+            var end = endHi * 4294967296 + (endLo >>> 0);
+            var id = sha256FileNextId++;
+            sha256FileCallbacks.set(id, {
+                resolve: function(data) { future.complete(convertToByteArray(data.slice(0, 32))); },
+                reject: function(err) { future.completeExceptionally(java.lang.Throwable.of(new Error(err))); }
+            });
+            sha256FileWorkers[sha256FileNextWorker++ % sha256FileWorkerCount]
+                .postMessage({id: id, file: reader.file, start: start, end: end});
+            return future;
+        }
 
         this.hmacSha256 = function(secretKey, message) {
             var future = peergos.shared.util.Futures.incomplete();
