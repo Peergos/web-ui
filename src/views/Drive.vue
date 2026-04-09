@@ -2205,28 +2205,36 @@ module.exports = {
                 };
 
                 let folderStream = peergos.client.JsUtil.asList(folderUPList).stream();
-                let resumeFileUpload = function(f) {
+                let resumeFileUpload = f => peergos.shared.util.Futures.of(false);
+                let replaceFileUpload = function(path) {
                     let future = peergos.shared.util.Futures.incomplete();
-                    let path = f.getPath();
                     let lastSlashIdx = path.lastIndexOf('/');
                     let filename = path.substring(lastSlashIdx + 1);
-                    let folderPath = path.substring(0, lastSlashIdx);
-                    that.confirmResumeFileUpload(filename, folderPath,
-                        () => {
-                            that.showConfirm = false;
-                            future.complete(true);
-                        },
-                        () => {
-                            that.showConfirm = false;
-                            future.complete(false);
-                        }
-                    );
+                    if (uploadParams.applyReplaceToAll) {
+                        future.complete(uploadParams.replaceFile);
+                    } else {
+                        that.confirmReplaceFile({name: filename},
+                            (applyToAll) => {
+                                uploadParams.applyReplaceToAll = applyToAll;
+                                uploadParams.replaceFile = false;
+                                that.showReplace = false;
+                                future.complete(false);
+                            },
+                            (applyToAll) => {
+                                uploadParams.applyReplaceToAll = applyToAll;
+                                uploadParams.replaceFile = true;
+                                that.showReplace = false;
+                                future.complete(true);
+                            }
+                        );
+                    }
                     return future;
                 }
                 this.context.getByPath(uploadParams.directoryPath).thenApply(uploadDir => {
                     uploadDir.ref.uploadSubtree(folderStream, that.getMirrorBatId(uploadDir.ref), that.context.network,
                         that.context.crypto, that.context.getTransactionService(),
                         f => resumeFileUpload(f),
+                        f => replaceFileUpload(f),
                         commitWatcher).thenApply(res => {
                             uploadFuture.complete(true);
                     }).exceptionally(function (throwable) {
@@ -2293,40 +2301,7 @@ module.exports = {
             let that = this;
             let future = peergos.shared.util.Futures.incomplete();
             this.getUploadDirectory(previousDirectoryHolder, uploadParams.directoryPath, file).thenApply(function (updatedDir) {
-                if (updatedDir == null) {
-                    that.uploadFileJS(file, false, future, uploadParams);
-                } else {
-                    updatedDir.hasChild(file.name, that.context.crypto.hasher, that.context.network).thenApply(function (alreadyExists) {
-                        if (alreadyExists) {
-                            if (uploadParams.applyReplaceToAll) {
-                                if (uploadParams.replaceFile) {
-                                    that.uploadFileJS(file, true, future, uploadParams)
-                                } else {
-                                    uploadParams.progress.total = uploadParams.progress.total - 1;
-                                    uploadParams.progress.max = uploadParams.progress.max - (file.size * 2);
-                                    future.complete(true);
-                                }
-                            } else {
-                                that.confirmReplaceFile(file,
-                                    (applyToAll) => {
-                                        uploadParams.applyReplaceToAll = applyToAll;
-                                        uploadParams.replaceFile = false;
-                                        uploadParams.progress.total = uploadParams.progress.total - 1;
-                                        uploadParams.progress.max = uploadParams.progress.max - (file.size * 2);
-                                        future.complete(true);
-                                    },
-                                    (applyToAll) => {
-                                        uploadParams.applyReplaceToAll = applyToAll;
-                                        uploadParams.replaceFile = true;
-                                        that.uploadFileJS(file, true, future, uploadParams)
-                                    }
-                                );
-                            }
-                        } else {
-                            that.uploadFileJS(file, false, future, uploadParams);
-                        }
-                    });
-                }
+                that.uploadFileJS(file, false, future, uploadParams);
             });
             return future;
         },
@@ -3366,7 +3341,9 @@ module.exports = {
             };
             this.currentDir.uploadSubtree(folderStream, this.getMirrorBatId(this.currentDir), this.context.network,
                 this.context.crypto, this.context.getTransactionService(),
-                f => alwaysResumeFileUpload(f), commitWatcher).thenApply(res => {
+                f => alwaysResumeFileUpload(f),
+                f => peergos.shared.util.Futures.of(true),
+                commitWatcher).thenApply(res => {
                     that.showSpinner = false;
                     that.updateCurrentDir();
                     that.updateFiles();
