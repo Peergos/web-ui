@@ -211,6 +211,8 @@ module.exports = {
 
         updateStatus() {
             let that = this;
+            if (window.location.hostname != "localhost")
+                return;
             this.localPost("/peergos/v0/sync/status").then(function(result, err) {
                 if (result != null) {
                     that.status = result.msg;
