@@ -16,6 +16,7 @@ finish-args:
   - --share=network
   - --share=ipc
   - --filesystem=~/.peergos:create
+  - --talk-name=org.freedesktop.Flatpak
 
   - --device=dri
   - --device=usb
