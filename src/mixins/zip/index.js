@@ -1,4 +1,5 @@
 const ProgressBar = require("../../components/drive/ProgressBar.vue");
+const loopback = require("../loopback/index.js");
 module.exports = {
 	data() {
 		return {
@@ -37,7 +38,7 @@ module.exports = {
               return crc;
           },
         isLocalhostAndroid() {
-            return window.location.hostname == "localhost" && navigator.userAgent.toLowerCase().indexOf("android") > -1;
+            return loopback.isLoopbackHost(window.location.hostname) && navigator.userAgent.toLowerCase().indexOf("android") > -1;
         },
         reflectZipFiles(files) {
             let mimeType = "application/zip";

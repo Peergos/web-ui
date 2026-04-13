@@ -87,7 +87,7 @@ const SimpleFolderPicker = require('../components/picker/SimpleFolderPicker.vue'
 const Spinner = require("../components/spinner/Spinner.vue");
 
 const i18n = require("../i18n/index.js");
-
+const loopback = require("../mixins/loopback/index.js");
 const routerMixins = require("../mixins/router/index.js");
 
 module.exports = {
@@ -139,7 +139,7 @@ module.exports = {
                    return this.error != null;
                 },
                 enabled() {
-                   return window.location.hostname == "localhost";
+                   return loopback.isLoopbackHost(window.location.hostname);
                 },
     },
 	created() {
@@ -211,7 +211,7 @@ module.exports = {
 
         updateStatus() {
             let that = this;
-            if (window.location.hostname != "localhost")
+            if (! loopback.isLoopbackHost(window.location.hostname))
                 return;
             this.localPost("/peergos/v0/sync/status").then(function(result, err) {
                 if (result != null) {

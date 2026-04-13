@@ -76,8 +76,9 @@
 
                 <template v-else-if="showSignupWarning">
                     <h2>This server is currently not accepting mirrors</h2>
-		    <strong>Please sign up here first: <br/>
-                    <a class="line" href="https://peergos.net?signup=true">https://peergos.net?signup=true</a>.</strong>
+                    <p>If this is your self-hosted server, ask the administrator to enable mirrors or choose a plan on that same instance.</p>
+                    <p>The desktop app can be pointed at a self-hosted server with <code>peergos -server-url https://YOUR_SERVER</code> or by setting <code>server-url = https://YOUR_SERVER</code> in <code>~/.peergos/config</code>.</p>
+                    <p>For security, prefer <code>https</code>; use plain <code>http</code> only for loopback addresses such as <code>http://localhost:8000</code>.</p>
 	        </template>
                 
 		<template v-else>
@@ -101,6 +102,7 @@ const Bip39 = require('../mixins/password/bip-0039-english.json');
 const BannedUsernames = require('../mixins/password/bannedUsernames.json');
 const FormPassword = require("./form/FormPassword.vue");
 const UriDecoder = require('../mixins/uridecoder/index.js');
+const loopback = require("../mixins/loopback/index.js");
 const sandboxMixin = require("../mixins/sandbox/index.js");
 const i18n = require("../i18n/index.js");
 const Continue = require("Continue.vue");
@@ -154,17 +156,16 @@ module.exports = {
             return this.desiredQuota > 0 ? this.translate("MIRROR.MIRRORPAID") : this.translate("MIRROR.MIRRORFREE");
         },
     },
+    watch: {
+        network(newNetwork) {
+            if (newNetwork != null) {
+                this.loadSignupAvailability();
+            }
+        },
+    },
     mounted() {
 	this.$refs.username.focus()
-	let that = this;
-	this.network.instanceAdmin.acceptingSignups().thenApply(function(res) {
-	    if (that.token.length > 0) return;
-	    that.acceptingFreeSignups = res.free;
-            that.acceptingPaidSignups = res.paid;
-            if (!res.free && window.location.hostname == "localhost")
-               that.showSignupWarning = true;
-	    console.log("accepting signups - free: " + res.free + ", paid: " + res.paid);
-	});
+	this.loadSignupAvailability();
     },
 
     methods: {
@@ -173,6 +174,20 @@ module.exports = {
 	    'updateUsage',
 	    'updatePayment'
 	]),
+        loadSignupAvailability() {
+            if (this.network == null) {
+                return;
+            }
+            let that = this;
+            this.network.instanceAdmin.acceptingSignups().thenApply(function(res) {
+                if (that.token.length > 0) return;
+                that.acceptingFreeSignups = res.free;
+                that.acceptingPaidSignups = res.paid;
+                if (!res.free && loopback.isLoopbackHost(window.location.hostname))
+                   that.showSignupWarning = true;
+                console.log("accepting signups - free: " + res.free + ", paid: " + res.paid);
+            });
+        },
         setMonthly() {
             this.annual = false;
         },
@@ -202,6 +217,10 @@ module.exports = {
 	},
 	addToWaitList() {
 	    var that = this;
+	    if (this.network == null) {
+		that.$toast.error(this.translate("LOGIN.SERVER.NETWORK"), {timeout:false})
+                return
+	    }
 	    let emailRegEx = /^(([^<>()\[\]\\.,;:\s@"]+(\.[^<>()\[\]\\.,;:\s@"]+)*)|(".+"))@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}])|(([a-zA-Z\-0-9]+\.)+[a-zA-Z]{2,24}))$/ ;
 	    if(!emailRegEx.test(that.email)) {
 		that.$toast.error('Invalid email.',{timeout:false})
@@ -246,7 +265,9 @@ module.exports = {
             const creationStart = Date.now();
             const that = this;
 
-            if (!that.tosAccepted) {
+            if (this.network == null) {
+		this.$toast.error(this.translate("LOGIN.SERVER.NETWORK"), {id:'signup', timeout:false})
+            } else if (!that.tosAccepted) {
 		this.$toast.error('You must accept the Terms of Service',{id:'signup'})
             } else {
                 let usernameRegEx = /^[a-z0-9](?:[a-z0-9]|[-](?=[a-z0-9])){0,31}$/;
