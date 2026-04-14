@@ -22,46 +22,60 @@
 
 		<section class="login-register" v-if="!isLoggedIn && !isSecretLink">
 			<AppIcon icon="logo-full" class="sprite-test" />
+
+			<!-- Desktop server bar (shown above tabs on localhost) -->
+			<div class="desktop-server-bar" v-if="isLocalhost">
+				<span class="desktop-server-bar__url">{{ desktopServerDisplayUrl }}</span>
+				<button class="desktop-server-bar__gear" @click="showServerModal = true" :title="translate('LOGIN.SERVER.TITLE')">
+					<AppIcon icon="gear" />
+				</button>
+			</div>
+
+			<!-- Server config modal -->
+			<div v-if="showServerModal" class="desktop-server-modal__overlay" @click="showServerModal = false">
+				<div class="desktop-server-modal__container" @click.stop>
+					<button class="desktop-server-modal__close" @click="showServerModal = false">&times;</button>
+					<p class="desktop-server__title">{{ translate("LOGIN.SERVER.TITLE") }}</p>
+					<p class="desktop-server__meta">
+						{{ translate("LOGIN.SERVER.ACTIVE") }}:
+						<span class="desktop-server__value">{{ activeDesktopServerUrl }}</span>
+					</p>
+					<div class="desktop-server__controls">
+						<input
+							id="desktop-server-url"
+							type="url"
+							v-model="desktopServerUrl"
+							:placeholder="translate('SETTINGS.SERVER.PLACEHOLDER')"
+						/>
+						<AppButton
+							:disabled="desktopServerBusy || desktopServerUrl.trim().length === 0"
+							type="primary"
+							accent
+							@click.native="saveDesktopServer()"
+						>
+							{{ translate("LOGIN.SERVER.SAVE") }}
+						</AppButton>
+					</div>
+					<p class="desktop-server__hint">
+						{{ translate("LOGIN.SERVER.RESTART") }}
+					</p>
+					<p class="desktop-server__error" v-if="desktopServerConnectionError.length > 0">
+						{{ desktopServerConnectionError }}
+					</p>
+					<p class="desktop-server__success" v-if="desktopServerSaved">
+						{{ translate("SETTINGS.SERVER.UPDATED") }}
+					</p>
+				</div>
+			</div>
+
 			<AppTabs ref="tabs">
 				<p class="demo--warning" v-if="isDemo">
 				    <strong>WARNING:</strong> This is a demo server and all data
 				    will be cleared periodically. If you want to create a
-				    <i>permanent</i> account, please go 
+				    <i>permanent</i> account, please go
 				    <a class="line" href="https://peergos.net?signup=true">here</a>.
 			        </p>
                                 <AppTab :title="translate('APP.LOGIN')">
-					<div class="desktop-server" v-if="isLocalhost">
-						<p class="desktop-server__title">{{ translate("LOGIN.SERVER.TITLE") }}</p>
-						<p class="desktop-server__meta">
-							{{ translate("LOGIN.SERVER.ACTIVE") }}:
-							<span class="desktop-server__value">{{ activeDesktopServerUrl }}</span>
-						</p>
-						<div class="desktop-server__controls">
-							<input
-								id="desktop-server-url"
-								type="url"
-								v-model="desktopServerUrl"
-								:placeholder="translate('SETTINGS.SERVER.PLACEHOLDER')"
-							/>
-							<AppButton
-								:disabled="desktopServerBusy || desktopServerUrl.trim().length === 0"
-								type="primary"
-								accent
-								@click.native="saveDesktopServer()"
-							>
-								{{ translate("LOGIN.SERVER.SAVE") }}
-							</AppButton>
-						</div>
-						<p class="desktop-server__hint">
-							{{ translate("LOGIN.SERVER.RESTART") }}
-						</p>
-						<p class="desktop-server__error" v-if="desktopServerConnectionError.length > 0">
-							{{ desktopServerConnectionError }}
-						</p>
-						<p class="desktop-server__success" v-if="desktopServerSaved">
-							{{ translate("SETTINGS.SERVER.UPDATED") }}
-						</p>
-					</div>
 					<Login @initApp="init()" />
 				</AppTab>
                                 <AppTab :title="translate('MIRROR.TITLE')">
@@ -180,7 +194,8 @@ module.exports = {
                     savedDesktopServerUrl: "",
                     desktopServerBusy: false,
                     desktopServerSaved: false,
-                    desktopServerConnectionError: ""
+                    desktopServerConnectionError: "",
+                    showServerModal: false
 		};
 	},
 
@@ -211,6 +226,9 @@ module.exports = {
             },
             desktopServerChanged() {
                 return this.desktopServerUrl.trim() !== this.savedDesktopServerUrl;
+            },
+            desktopServerDisplayUrl() {
+                return (this.activeDesktopServerUrl || 'https://peergos.net').replace(/^https?:\/\//, '');
             },
 	},
 
@@ -569,12 +587,87 @@ module.exports = {
 	margin: var(--app-margin) auto;
 }
 
-.desktop-server {
-	margin-bottom: 18px;
-	padding: 12px 14px;
+/* ── desktop server compact bar ── */
+.desktop-server-bar {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	gap: 6px;
+	max-width: 500px;
+	margin: 0 auto 12px;
+	padding: 6px 10px;
 	background-color: rgba(53, 190, 163, 0.05);
 	border: 1px solid rgba(53, 190, 163, 0.16);
 	border-radius: 4px;
+	font-size: var(--text-small);
+}
+
+.desktop-server-bar__url {
+	font-family: monospace;
+	word-break: break-all;
+	flex: 1;
+	text-align: center;
+	color: var(--color);
+}
+
+.desktop-server-bar__gear {
+	flex-shrink: 0;
+	background: none;
+	border: none;
+	padding: 2px;
+	cursor: pointer;
+	color: var(--color);
+	line-height: 0;
+	border-radius: 2px;
+}
+
+.desktop-server-bar__gear:hover {
+	color: var(--color-hover);
+}
+
+.desktop-server-bar__gear svg {
+	width: 18px;
+	height: 18px;
+}
+
+/* ── desktop server modal ── */
+.desktop-server-modal__overlay {
+	position: fixed;
+	z-index: 500;
+	top: 0;
+	left: 0;
+	width: 100%;
+	height: 100%;
+	background-color: rgba(0, 0, 0, 0.4);
+	display: flex;
+	align-items: center;
+	justify-content: center;
+}
+
+.desktop-server-modal__container {
+	position: relative;
+	background-color: var(--bg);
+	color: var(--color);
+	border-radius: 4px;
+	padding: 24px 20px 20px;
+	width: 420px;
+	max-width: calc(100vw - 32px);
+}
+
+.desktop-server-modal__close {
+	position: absolute;
+	top: 8px;
+	right: 12px;
+	background: none;
+	border: none;
+	font-size: 20px;
+	cursor: pointer;
+	color: var(--color);
+	line-height: 1;
+}
+
+.desktop-server-modal__close:hover {
+	color: var(--color-hover);
 }
 
 .desktop-server__toggle {
