@@ -273,6 +273,10 @@ module.exports = {
 
     mounted() {
 	let localTheme = localStorage.getItem("theme");
+        const darkModeMql = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)');
+        let prefersDark = darkModeMql && darkModeMql.matches;
+        if (localTheme == null && prefersDark)
+           localTheme = "dark-mode";
 	document.documentElement.setAttribute("data-theme", localTheme);
 	this.$store.commit("SET_THEME", localTheme == "dark-mode");
         this.loadDesktopServerSettings();
