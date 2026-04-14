@@ -24,7 +24,7 @@
 			<AppIcon icon="logo-full" class="sprite-test" />
 
 			<!-- Desktop server bar (shown above tabs on localhost) -->
-			<div class="desktop-server-bar" v-if="isLocalhost">
+			<div class="desktop-server-bar" v-if="isDesktopProxy">
 				<span class="desktop-server-bar__url">{{ desktopServerDisplayUrl }}</span>
 				<button class="desktop-server-bar__gear" @click="showServerModal = true" :title="translate('LOGIN.SERVER.TITLE')">
 					<AppIcon icon="gear" />
@@ -195,7 +195,8 @@ module.exports = {
                     desktopServerBusy: false,
                     desktopServerSaved: false,
                     desktopServerConnectionError: "",
-                    showServerModal: false
+                    showServerModal: false,
+                    isDesktopProxy: false
 		};
 	},
 
@@ -338,12 +339,13 @@ module.exports = {
             }
             let that = this;
             this.localPost("/peergos/v0/config/server-url/get").then(function(result) {
+                that.isDesktopProxy = true;
                 let savedUrl = result.configured && result.configured.length > 0 ? result.configured : "";
                 that.activeDesktopServerUrl = result.current;
                 that.savedDesktopServerUrl = savedUrl;
                 that.desktopServerUrl = savedUrl;
             }).catch(function(err) {
-                // Config endpoint not available - ignore silently on first load
+                // Config endpoint not available - this is a real Peergos server, not a desktop proxy
             });
         },
         saveDesktopServer() {
