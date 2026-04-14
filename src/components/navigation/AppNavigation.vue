@@ -41,6 +41,7 @@ const AppButton = require("../AppButton.vue");
 const AppIcon = require("../AppIcon.vue");
 const MenuItem = require('./NavigationMenuItem.vue');
 const NavigationStorage = require('./NavigationStorage.vue');
+const loopback = require("../../mixins/loopback/index.js");
 const i18n = require("../../i18n/index.js");
 
 module.exports = {
@@ -67,7 +68,7 @@ module.exports = {
 			return this.$store.state.isDark;
 		},
 		isLocalHost() {
-		    return window.location.hostname == "localhost";
+		    return loopback.isLoopbackHost(window.location.hostname);
 		},
 	},
 	methods: {

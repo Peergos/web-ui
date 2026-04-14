@@ -1,5 +1,5 @@
 <template>
-	<div class="app-login" v-if="!autoLoggingIn">
+		<div class="app-login" v-if="!autoLoggingIn || network == null">
 		<input
 			type="text"
 			autofocus
@@ -29,7 +29,10 @@
             <span class="checkmark"></span>
         </label>
 
-		<AppButton :disabled="isLoggingIn" class="login" @click.native="login()" type="primary" block accent  icon="arrow-right">
+		<p class="login__server-hint" v-if="network == null && isLocalhost">
+			{{ translate('LOGIN.SERVER.CONFIGURE_FIRST') }}
+		</p>
+		<AppButton :disabled="isLoggingIn || network == null" class="login" @click.native="login()" type="primary" block accent  icon="arrow-right">
 			{{ translate('LOGIN.BUTTON') }}
 		</AppButton>
 	</div>
@@ -41,6 +44,7 @@ const FormPassword = require("./form/FormPassword.vue");
 const MultiFactorAuth = require("./auth/MultiFactorAuth.vue");
 const routerMixins = require("../mixins/router/index.js");
 const UriDecoder = require('../mixins/uridecoder/index.js');
+const loopback = require("../mixins/loopback/index.js");
 const i18n = require("../i18n/index.js");
 
 module.exports = {
@@ -70,11 +74,22 @@ module.exports = {
 		...Vuex.mapGetters([
 			'isSecretLink',
 		]),
+		isLocalhost() {
+			return loopback.isLoopbackHost(window.location.hostname);
+		},
+	},
+	watch: {
+		network(newNetwork) {
+			if (newNetwork != null && this.autoLoggingIn) {
+				setTimeout(() => this.autoLogin(), 0);
+			}
+		},
 	},
 	mixins:[routerMixins, UriDecoder, i18n],
 
 	mounted() {
-                setTimeout(() => this.autoLogin(), 0);
+                if (this.network != null)
+                    setTimeout(() => this.autoLogin(), 0);
                 if (this.$refs.username != null)
                     this.$refs.username.focus()
 	},
@@ -85,11 +100,10 @@ module.exports = {
 		autoLogin() {
 		    // bypass login on DEV
 			if (this.network == null) {
-				setTimeout(() => this.autoLogin(), 100);
 				return;
 			}
 			let devLogin = false;
-		    if( window.location.hostname == "localhost"){
+		    if (loopback.isLoopbackHost(window.location.hostname)) {
 				var query = new URLSearchParams(window.location.search)
 				this.username = query.get("username")
 				if (this.username != null) {
@@ -134,6 +148,10 @@ module.exports = {
 		},
 		login() {
 		    if (this.isLoggingIn) {
+		        return;
+		    }
+		    if (this.network == null) {
+		        this.$toast.error(this.translate("LOGIN.SERVER.NETWORK"), {timeout:false, id: 'login'});
 		        return;
 		    }
 			const creationStart = Date.now();
@@ -246,5 +264,12 @@ module.exports = {
 .app-login .demo--warning{
 	text-align: left;
 	margin-top: var(--app-margin);
+}
+
+.login__server-hint {
+	color: #c0392b;
+	font-size: var(--text-small);
+	margin: 8px 0 0;
+	text-align: center;
 }
 </style>

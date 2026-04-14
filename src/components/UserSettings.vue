@@ -80,6 +80,13 @@
                     {{ translate("SETTINGS.LANGUAGE") }}
                 </li>
                 <li
+                    v-if="isLocalhost"
+                    v-on:keyup.enter="modifyServerUrl()"
+                    @click="modifyServerUrl()"
+                >
+                    {{ translate("SETTINGS.SERVER") }}
+                </li>
+                <li
                     v-on:keyup.enter="modifyCacheSize()"
                     @click="modifyCacheSize()"
                 >
@@ -140,6 +147,7 @@ const AppDropdown = require("./AppDropdown.vue");
 const AppIcon = require("AppIcon.vue");
 const AppPrompt = require("./prompt/AppPrompt.vue");
 const Spinner = require("./spinner/Spinner.vue");
+const loopback = require("../mixins/loopback/index.js");
 const i18n = require("../i18n/index.js");
 
 module.exports = {
@@ -170,15 +178,90 @@ module.exports = {
 	},
 	computed: {
 		...Vuex.mapState(['isLoggedIn', 'isAdmin', 'context', 'isDark']),
-		...Vuex.mapGetters(['currentTheme', 'isPaid'])
+		...Vuex.mapGetters(['currentTheme', 'isPaid']),
+        isLocalhost() {
+            return loopback.isLoopbackHost(window.location.hostname);
+        }
 	},
     created() {
         this.prompt_action = this.translate("PROMPT.SET");
         this.displayProfile();
     },
 	methods: {
+        localPost(url, body) {
+            return new Promise(function(resolve, reject) {
+                var req = new XMLHttpRequest();
+                req.open('POST', url);
+                req.responseType = 'json';
+
+                req.onload = function() {
+                    if (req.status == 200) {
+                        resolve(req.response);
+                    } else {
+                        try {
+                            let trailer = req.getResponseHeader("Trailer");
+                            if (trailer == null) {
+                                reject('Unexpected error from server');
+                            } else {
+                                reject(decodeURIComponent(trailer));
+                            }
+                        } catch (e) {
+                            reject(e);
+                        }
+                    }
+                };
+
+                req.onerror = function() {
+                    reject(Error("Unable to connect"));
+                };
+
+                req.ontimeout = function() {
+                    reject(Error("Network timeout"));
+                };
+
+                req.send(body != null ? body : new Int8Array(0));
+            });
+        },
         setLanguage() {
             this.$store.commit("CURRENT_MODAL", "ModalLanguage");
+        },
+        modifyServerUrl() {
+            if (! this.isLocalhost) {
+                return;
+            }
+            let that = this;
+            this.showSettingsSpinner = true;
+            this.localPost("/peergos/v0/config/server-url/get").then(function(result) {
+                that.showSettingsSpinner = false;
+                let activeServerUrl = result.configured && result.configured.length > 0 ? result.configured : result.current;
+                that.prompt_message = that.translate("SETTINGS.SERVER.PROMPT");
+                that.prompt_value = activeServerUrl;
+                that.prompt_placeholder = that.translate("SETTINGS.SERVER.PLACEHOLDER");
+                that.prompt_consumer_func = function(prompt_result) {
+                    that.showPrompt = false;
+                    if (prompt_result == null) {
+                        return;
+                    }
+                    let newServerUrl = prompt_result.trim();
+                    if (newServerUrl == activeServerUrl) {
+                        return;
+                    }
+                    that.showSettingsSpinner = true;
+                    that.localPost("/peergos/v0/config/server-url/set?url=" + encodeURIComponent(newServerUrl)).then(function() {
+                        that.showSettingsSpinner = false;
+                        that.$toast(that.translate("SETTINGS.SERVER.UPDATED"));
+                    }).catch(function(err) {
+                        that.showSettingsSpinner = false;
+                        let error = err.message != null ? err.message : err;
+                        that.$toast.error(that.translate("SETTINGS.SERVER.ERROR") + " " + error, {timeout:false});
+                    });
+                };
+                that.showPrompt = true;
+            }).catch(function(err) {
+                that.showSettingsSpinner = false;
+                let error = err.message != null ? err.message : err;
+                that.$toast.error(that.translate("SETTINGS.SERVER.ERROR") + " " + error, {timeout:false});
+            });
         },
         cleanupFailedUploads() {
             this.showSettingsSpinner = true;
@@ -197,15 +280,14 @@ module.exports = {
         },
         modifyCacheSize: function() {
             let that = this;
-            const isLocalhost = window.location.hostname == "localhost";
-            if (!isLocalhost && !isCachingAvailable()) {
+            if (!this.isLocalhost && !isCachingAvailable()) {
                 that.$toast('Cache not available');
                 return;
             }
             getBrowserStorageQuota().then(maxStorage => {
                 let maxStorageMiB = Math.floor(maxStorage /1024 /1024);
                 this.prompt_message = this.translate("SETTINGS.CACHE") + ' (MiB)';
-                let roundedCurrentCacheSize = Math.floor(isLocalhost ? maxStorageMiB : getCurrentDesiredCacheSize());
+                let roundedCurrentCacheSize = Math.floor(this.isLocalhost ? maxStorageMiB : getCurrentDesiredCacheSize());
                 this.prompt_value = '' + roundedCurrentCacheSize;
                 this.prompt_placeholder = " ";
                 this.prompt_consumer_func = function (prompt_result) {
@@ -219,7 +301,7 @@ module.exports = {
                         return;
                     }
                     let validNewCacheSize = Number(newCacheSizeMiB);
-                    if (validNewCacheSize > maxStorageMiB && ! isLocalhost) {
+                    if (validNewCacheSize > maxStorageMiB && ! that.isLocalhost) {
                         that.$toast.error(that.translate("SETTINGS.CACHE.LARGE")
                                           .replace("$SIZE", maxStorageMiB), {timeout:false});
                     } else {

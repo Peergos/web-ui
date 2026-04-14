@@ -23,11 +23,56 @@
 		<section class="login-register" v-if="!isLoggedIn && !isSecretLink">
 			<AppIcon icon="logo-full" class="sprite-test" />
 
+			<!-- Desktop server bar (shown above tabs on localhost) -->
+			<div class="desktop-server-bar" v-if="isDesktopProxy">
+				<span class="desktop-server-bar__url">{{ desktopServerDisplayUrl }}</span>
+				<button class="desktop-server-bar__gear" @click="showServerModal = true" :title="translate('LOGIN.SERVER.TITLE')">
+					<AppIcon icon="gear" />
+				</button>
+			</div>
+
+			<!-- Server config modal -->
+			<div v-if="showServerModal" class="desktop-server-modal__overlay" @click="showServerModal = false">
+				<div class="desktop-server-modal__container" @click.stop>
+					<button class="desktop-server-modal__close" @click="showServerModal = false">&times;</button>
+					<p class="desktop-server__title">{{ translate("LOGIN.SERVER.TITLE") }}</p>
+					<p class="desktop-server__meta">
+						{{ translate("LOGIN.SERVER.ACTIVE") }}:
+						<span class="desktop-server__value">{{ activeDesktopServerUrl }}</span>
+					</p>
+					<div class="desktop-server__controls">
+						<input
+							id="desktop-server-url"
+							type="url"
+							v-model="desktopServerUrl"
+							:placeholder="translate('SETTINGS.SERVER.PLACEHOLDER')"
+						/>
+						<AppButton
+							:disabled="desktopServerBusy || desktopServerUrl.trim().length === 0"
+							type="primary"
+							accent
+							@click.native="saveDesktopServer()"
+						>
+							{{ translate("LOGIN.SERVER.SAVE") }}
+						</AppButton>
+					</div>
+					<p class="desktop-server__hint">
+						{{ translate("LOGIN.SERVER.RESTART") }}
+					</p>
+					<p class="desktop-server__error" v-if="desktopServerConnectionError.length > 0">
+						{{ desktopServerConnectionError }}
+					</p>
+					<p class="desktop-server__success" v-if="desktopServerSaved">
+						{{ translate("SETTINGS.SERVER.UPDATED") }}
+					</p>
+				</div>
+			</div>
+
 			<AppTabs ref="tabs">
 				<p class="demo--warning" v-if="isDemo">
 				    <strong>WARNING:</strong> This is a demo server and all data
 				    will be cleared periodically. If you want to create a
-				    <i>permanent</i> account, please go 
+				    <i>permanent</i> account, please go
 				    <a class="line" href="https://peergos.net?signup=true">here</a>.
 			        </p>
                                 <AppTab :title="translate('APP.LOGIN')">
@@ -63,6 +108,7 @@
 
 <script>
 const AppIcon = require("AppIcon.vue");
+const AppButton = require("AppButton.vue");
 const AppNavigation = require("./navigation/AppNavigation.vue");
 const ModalAuthSettings = require("./modal/ModalAuthSettings.vue");
 const ModalTour = require("./modal/ModalTour.vue");
@@ -99,11 +145,13 @@ const ServerMessages = require("./ServerMessages.vue");
 const routerMixins = require("../mixins/router/index.js");
 const launcherMixin = require("../mixins/launcher/index.js");
 const sandboxAppMixins = require("../mixins/sandbox/index.js");
+const loopback = require("../mixins/loopback/index.js");
 const i18n = require("../i18n/index.js");
 
 module.exports = {
 	components: {
 	    AppIcon,
+		AppButton,
 		AppNavigation,
 		ModalAuthSettings,
 		ModalTour,
@@ -140,7 +188,15 @@ module.exports = {
 		return {
 		    token: "",
                     showLinkPassword: false,
-                    future:null
+                    future:null,
+                    desktopServerUrl: "",
+                    activeDesktopServerUrl: "",
+                    savedDesktopServerUrl: "",
+                    desktopServerBusy: false,
+                    desktopServerSaved: false,
+                    desktopServerConnectionError: "",
+                    showServerModal: false,
+                    isDesktopProxy: false
 		};
 	},
 
@@ -164,11 +220,17 @@ module.exports = {
 		);
 	    },
 	    isLocalhost() {
-		return window.location.hostname == "localhost";
+		return loopback.isLoopbackHost(window.location.hostname);
 	    },
             isSecretLink() {
                 return this.getSecretLinkProps().secretLink == true;
-            }
+            },
+            desktopServerChanged() {
+                return this.desktopServerUrl.trim() !== this.savedDesktopServerUrl;
+            },
+            desktopServerDisplayUrl() {
+                return (this.activeDesktopServerUrl || 'https://peergos.net').replace(/^https?:\/\//, '');
+            },
 	},
 
 	mixins: [routerMixins, sandboxAppMixins, launcherMixin, i18n],
@@ -213,14 +275,98 @@ module.exports = {
 	let localTheme = localStorage.getItem("theme");
 	document.documentElement.setAttribute("data-theme", localTheme);
 	this.$store.commit("SET_THEME", localTheme == "dark-mode");
+        this.loadDesktopServerSettings();
     },
 
-    methods: {
+	methods: {
         ...Vuex.mapActions([
 	    'updateQuota',
 	    'updateUsage',
 	    'updatePayment'
 	]),
+        formatNetworkError(throwable) {
+            let message = "";
+            try {
+                message = throwable != null && throwable.getMessage != null ? throwable.getMessage() : "" + throwable;
+            } catch (e) {
+                message = "" + throwable;
+            }
+            if (message == null)
+                message = "";
+            if (message.indexOf("PKIX path building failed") >= 0 ||
+                message.indexOf("certificate_unknown") >= 0 ||
+                message.indexOf("unable to find valid certification path") >= 0)
+                return this.translate("LOGIN.SERVER.CERTIFICATE");
+            return this.translate("LOGIN.SERVER.NETWORK") + (message.length > 0 ? " " + message : "");
+        },
+        localPost(url, body) {
+            return new Promise(function(resolve, reject) {
+                var req = new XMLHttpRequest();
+                req.open('POST', url);
+                req.responseType = 'json';
+
+                req.onload = function() {
+                    if (req.status == 200) {
+                        resolve(req.response);
+                    } else {
+                        try {
+                            let trailer = req.getResponseHeader("Trailer");
+                            if (trailer == null) {
+                                reject('Unexpected error from server');
+                            } else {
+                                reject(decodeURIComponent(trailer));
+                            }
+                        } catch (e) {
+                            reject(e);
+                        }
+                    }
+                };
+
+                req.onerror = function() {
+                    reject(Error("Unable to connect"));
+                };
+
+                req.ontimeout = function() {
+                    reject(Error("Network timeout"));
+                };
+
+                req.send(body != null ? body : new Int8Array(0));
+            });
+        },
+        loadDesktopServerSettings() {
+            if (! this.isLocalhost || this.isLoggedIn || this.isSecretLink) {
+                return;
+            }
+            let that = this;
+            this.localPost("/peergos/v0/config/server-url/get").then(function(result) {
+                that.isDesktopProxy = true;
+                let savedUrl = result.configured && result.configured.length > 0 ? result.configured : "";
+                that.activeDesktopServerUrl = result.current;
+                that.savedDesktopServerUrl = savedUrl;
+                that.desktopServerUrl = savedUrl;
+            }).catch(function(err) {
+                // Config endpoint not available - this is a real Peergos server, not a desktop proxy
+            });
+        },
+        saveDesktopServer() {
+            if (! this.isLocalhost || this.desktopServerBusy) {
+                return;
+            }
+            let that = this;
+            this.desktopServerBusy = true;
+            this.desktopServerSaved = false;
+            let newServerUrl = this.desktopServerUrl.trim();
+            this.localPost("/peergos/v0/config/server-url/set?url=" + encodeURIComponent(newServerUrl)).then(function(result) {
+                that.desktopServerBusy = false;
+                that.savedDesktopServerUrl = result.serverUrl != null ? result.serverUrl : "";
+                that.desktopServerUrl = that.savedDesktopServerUrl;
+                that.desktopServerSaved = true;
+            }).catch(function(err) {
+                that.desktopServerBusy = false;
+                let error = err.message != null ? err.message : err;
+                that.$toast.error(that.translate("LOGIN.SERVER.ERROR") + " " + error, {timeout:false});
+            });
+        },
 
 	init() {
 	    const that = this;
@@ -349,11 +495,12 @@ module.exports = {
 		!that.isLocalhost,
 		0, true
 	    ).thenApply(function (network) {
+		that.desktopServerConnectionError = "";
 		that.$store.commit("SET_NETWORK", network);
 	    }).exceptionally(function (throwable) {
-		    that.$toast.error(
-			"Error connecting to network: " + throwable.getMessage()
-		    );
+		    let errorMessage = that.formatNetworkError(throwable);
+		    that.desktopServerConnectionError = errorMessage;
+		    that.$toast.error(errorMessage, {timeout:false});
 		});
 	},
 
@@ -442,6 +589,143 @@ module.exports = {
 	margin: var(--app-margin) auto;
 }
 
+/* ── desktop server compact bar ── */
+.desktop-server-bar {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	gap: 6px;
+	max-width: 500px;
+	margin: 0 auto 12px;
+	padding: 6px 10px;
+	background-color: rgba(53, 190, 163, 0.05);
+	border: 1px solid rgba(53, 190, 163, 0.16);
+	border-radius: 4px;
+	font-size: var(--text-small);
+}
+
+.desktop-server-bar__url {
+	font-family: monospace;
+	word-break: break-all;
+	flex: 1;
+	text-align: center;
+	color: var(--color);
+}
+
+.desktop-server-bar__gear {
+	flex-shrink: 0;
+	background: none;
+	border: none;
+	padding: 2px;
+	cursor: pointer;
+	color: var(--color);
+	line-height: 0;
+	border-radius: 2px;
+}
+
+.desktop-server-bar__gear:hover {
+	color: var(--color-hover);
+}
+
+.desktop-server-bar__gear svg {
+	width: 18px;
+	height: 18px;
+}
+
+/* ── desktop server modal ── */
+.desktop-server-modal__overlay {
+	position: fixed;
+	z-index: 500;
+	top: 0;
+	left: 0;
+	width: 100%;
+	height: 100%;
+	background-color: rgba(0, 0, 0, 0.4);
+	display: flex;
+	align-items: center;
+	justify-content: center;
+}
+
+.desktop-server-modal__container {
+	position: relative;
+	background-color: var(--bg);
+	color: var(--color);
+	border-radius: 4px;
+	padding: 24px 20px 20px;
+	width: 420px;
+	max-width: calc(100vw - 32px);
+}
+
+.desktop-server-modal__close {
+	position: absolute;
+	top: 8px;
+	right: 12px;
+	background: none;
+	border: none;
+	font-size: 20px;
+	cursor: pointer;
+	color: var(--color);
+	line-height: 1;
+}
+
+.desktop-server-modal__close:hover {
+	color: var(--color-hover);
+}
+
+.desktop-server__toggle {
+	margin: 0;
+}
+
+.desktop-server__meta,
+.desktop-server__error {
+	margin: 8px 0 0;
+	font-size: var(--text-small);
+}
+
+.desktop-server__value {
+	font-family: monospace;
+	word-break: break-all;
+}
+
+.desktop-server__controls {
+	display: grid;
+	grid-template-columns: minmax(0, 1fr) auto;
+	gap: 12px;
+	align-items: center;
+	margin-top: 10px;
+}
+
+.desktop-server__controls input {
+	min-width: 0;
+}
+
+.desktop-server__reset {
+	margin-top: 10px;
+}
+
+.desktop-server__title {
+	font-weight: 600;
+	margin: 0 0 4px;
+	font-size: var(--text-small);
+}
+
+.desktop-server__hint {
+	margin: 8px 0 0;
+	font-size: var(--text-small);
+	color: #666;
+}
+
+.desktop-server__error {
+	color: #c0392b;
+}
+
+.desktop-server__success {
+	margin: 8px 0 0;
+	font-size: var(--text-small);
+	color: #27ae60;
+	font-weight: 600;
+}
+
 /*
 .toggle-button--mobile {
 	background-color: var(--bg-2) !important;
@@ -491,6 +775,14 @@ section.content.sidebar-margin {
 @media screen and (max-width: 1024px) {
 	section.content {
 		padding-left: 0;
+	}
+
+	.desktop-server {
+		padding: 12px;
+	}
+
+	.desktop-server__controls {
+		grid-template-columns: 1fr;
 	}
 }
 </style>

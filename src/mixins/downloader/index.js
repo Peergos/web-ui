@@ -1,4 +1,5 @@
 const ProgressBar = require("../../components/drive/ProgressBar.vue");
+const loopback = require("../loopback/index.js");
 module.exports = {
 
   methods: {
@@ -105,7 +106,7 @@ module.exports = {
       var props = file.getFileProperties()
 
       // if android localhost use app to stream data rather than a serviceworker, which the download manager can't talk to
-      if (window.location.hostname == "localhost" && navigator.userAgent.toLowerCase().indexOf("android") > -1) {
+      if (loopback.isLoopbackHost(window.location.hostname) && navigator.userAgent.toLowerCase().indexOf("android") > -1) {
           console.log("Downloading " + file.getName() + " through localhost reflector");
           const cap = file.toLink().substring(1); // without #
           let link = document.createElement('a')
