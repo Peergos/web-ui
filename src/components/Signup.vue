@@ -48,7 +48,7 @@
                         <div class="options_container">
                             <div class="button-group-container">
                                 <div class="priceslider" data-select="billing"> 
-                                     <label class="entry" @click="setMonthly()">Monthly<input type="radio" name="billing" value="monthly"></label>
+                                     <label class="entry" @click="setMonthly()">Monthly<input type="radio" name="billing" value="monthly" v-bind:checked="!annual"></label>
                                      <label class="entry" @click="setAnnual()">Yearly<input type="radio" name="billing" value="yearly" v-bind:checked="annual"></label>
                                 </div>
                             </div>
