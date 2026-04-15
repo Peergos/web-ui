@@ -3,6 +3,7 @@
 		<input
 			class="password"
 		        name="password"
+			autocomplete="current-password"
                         :placeholder="placeholder"
 			:type="passwordIsVisible ? 'text' : 'password'"
 			:value="value"

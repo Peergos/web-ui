@@ -1,9 +1,10 @@
 <template>
-		<div class="app-login" v-if="!autoLoggingIn || network == null">
+		<div class="app-login" v-if="!autoLoggingIn">
 		<input
 			type="text"
 			autofocus
 			name="username"
+			autocomplete="username"
 			v-model="username"
 			:placeholder="translate('LOGIN.USERNAME')"
 			ref="username"
@@ -80,7 +81,7 @@ module.exports = {
 	},
 	watch: {
 		network(newNetwork) {
-			if (newNetwork != null && this.autoLoggingIn) {
+			if (newNetwork != null) {
 				setTimeout(() => this.autoLogin(), 0);
 			}
 		},
@@ -88,8 +89,7 @@ module.exports = {
 	mixins:[routerMixins, UriDecoder, i18n],
 
 	mounted() {
-                if (this.network != null)
-                    setTimeout(() => this.autoLogin(), 0);
+                setTimeout(() => this.autoLogin(), 0);
                 if (this.$refs.username != null)
                     this.$refs.username.focus()
 	},
@@ -100,6 +100,7 @@ module.exports = {
 		autoLogin() {
 		    // bypass login on DEV
 			if (this.network == null) {
+				this.autoLoggingIn = false;
 				return;
 			}
 			let devLogin = false;

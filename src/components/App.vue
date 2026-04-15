@@ -44,6 +44,7 @@
 						<input
 							id="desktop-server-url"
 							type="url"
+							autocomplete="off"
 							v-model="desktopServerUrl"
 							:placeholder="translate('SETTINGS.SERVER.PLACEHOLDER')"
 						/>
