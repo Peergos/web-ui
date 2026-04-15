@@ -19,6 +19,17 @@
   <url type="vcs-browser">https://github.com/peergos/web-ui</url>
   
   <releases>
+    <release version="1.24.0" date="2026-04-17">
+      <url type="details">https://github.com/Peergos/web-ui/releases/tag/v1.24.0</url>
+      <description>
+        <p>Huge speedups</p>
+          <ul>
+            <li>1000x faster resumption of large folder upload</li>
+            <li>5000x faster resumption of large file upload</li>
+            <li>10x faster large folder deletes</li>
+          </ul>
+      </description>
+    </release>
     <release version="1.23.0" date="2026-04-09">
       <url type="details">https://github.com/Peergos/web-ui/releases/tag/v1.23.0</url>
       <description>
