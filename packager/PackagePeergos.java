@@ -7,11 +7,11 @@ import java.util.stream.*;
 import java.util.zip.*;
 
 /** Package Peergos.jar into a self contained installer
- *  Requires at least Java 23
+ *  Requires at least Java 25
  *  For building rpms on ubuntu install the rpm package
  */
 public class PackagePeergos {
-    public static final String VERSION = "1.24.0";
+    public static final String VERSION = "1.25.0";
 
     public static void main(String[] a) throws Exception {
         String OS = canonicaliseOS(System.getProperty("os.name").toLowerCase());
