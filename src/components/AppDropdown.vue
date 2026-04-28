@@ -3,6 +3,7 @@
 	<div class="app-dropdown"
 		@focusin="expanded(true)"
     	@focusout="expanded(false)"
+        tabindex="-1"
 	>
 		<AppButton
 			:type="type"
