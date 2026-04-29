@@ -35,7 +35,7 @@ NB: all other dependencies are checked into the repo, or into the submodule peer
 ### Debian/Ubuntu/Mint
 
 ```
-sudo apt install openjdk-21-jdk ant
+sudo apt install openjdk-25-jdk ant
 ```
 ### MacOS
 ```shell
