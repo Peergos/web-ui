@@ -17,6 +17,8 @@
 		<transition name="drop">
 			<div v-if="isActive"
 				class="dropdown__content"
+                                @mousedown.prevent
+                                @click="closeMenu"
 			>
 				<slot />
 			</div>
@@ -55,7 +57,11 @@ module.exports = {
 			// close on focus-out
 			// https://codepen.io/autumnwoodberry/pen/NvjJWm
 			this.isActive = value
-		}
+	        },        
+                closeMenu(){
+                    this.isActive = false;
+                    this.$el.blur();
+                }, 
 
 	},
 };

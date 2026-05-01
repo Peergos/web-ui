@@ -118,10 +118,12 @@ module.exports = {
             this.showAppSandbox = false;
         },
 		askForFiles() {
+                        if (document.activeElement) document.activeElement.blur();
 			document.getElementById('uploadFileInput').click();
 		},
 
 		askForDirectories() {
+                        if (document.activeElement) document.activeElement.blur();
                         if (typeof Android !== 'undefined') {
                             Android.notifyDirectoryRequest();
                             document.getElementById('uploadFileInput').click();
