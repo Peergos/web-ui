@@ -89,6 +89,7 @@ function initialiseMarkdownEditor(theme, subPathInput, text) {
         theme: theme,
         subPath: subPath
     });
+    div.innerHTML = '';
     let xss = rewriteImages(DOMPurify.sanitize(markdownContent));
     let element = document.getElementById('sanitized');
     let body = document.getElementById('body-element');
@@ -168,30 +169,6 @@ function updateResources() {
     }, 100);
 }
 function updateResourcesInDoc() {
-        let anchors = document.getElementsByTagName("a");
-        for(var i=0; i < anchors.length;i++) {
-            let anchor = anchors[i];
-            anchor.addEventListener("click", function(e){
-                e.preventDefault();
-                let url = e.target.href;
-                if (url == null) {
-                    let media = e.target.parentElement;
-                    mainWindow.postMessage({action:'showMedia', path: media.pathname}, origin);
-                } else {
-                    const requestedResource = new URL(url);
-                    if (window.location.host == requestedResource.host) {
-                        mainWindow.postMessage({action:'navigateTo', path: requestedResource.pathname}, origin);
-                    } else {
-                        if(requestedResource.protocol == 'https:' || requestedResource.protocol == 'http:') {
-                            mainWindow.postMessage({action:'externalLink', url: url}, origin);
-                        } else {
-                            console.log('invalid link: ' + url);
-                        }
-                    }
-                }
-            });
-        }
-
 }
 function setMarkdownContent(content) {
     markdownContent = content;
@@ -217,14 +194,15 @@ function rewriteImages(html) {
                         //console.log('image src=' + src);
                         let generatedId = 'image-' + uuid();
                         html = html.substring(0, imgStartIndex + sourceAttrIndex) + ' id="' + generatedId + '" src="#' + html.substring(imgEndIndex);
-                        let tmpImg = new Image();
-                        tmpImg.src = src;
-                        tmpImg.loading="lazy";
-                        const requestedResource = new URL(tmpImg.src);
-                        if (window.location.host == requestedResource.host) {
-                            mainWindow.postMessage({action:'loadImage', src: requestedResource.pathname, id: generatedId}, origin);
-                        } else {
-                            console.log('invalid link: ' + tmpImg.src);
+                        try {
+                            const requestedResource = new URL(src, window.location.href);
+                            if (window.location.host == requestedResource.host) {
+                                mainWindow.postMessage({action:'loadImage', src: requestedResource.pathname, id: generatedId}, origin);
+                            } else {
+                                console.log('invalid link: ' + src);
+                            }
+                        } catch (err) {
+                            console.log('invalid image src: ' + src);
                         }
                     }
                 }
@@ -392,3 +370,28 @@ navigator.serviceWorker.getRegistration('./').then(swReg => {
     let parentHost = window.location.protocol + "//" + window.location.host.substring(window.location.host.indexOf(".")+1)
     window.parent.postMessage("sw-registration-failure", parentHost)
 })
+
+document.addEventListener('click', function(e) {
+    if (!mainWindow) return;
+    let anchor = e.target;
+    while (anchor && anchor.tagName !== 'A') {
+        anchor = anchor.parentElement;
+    }
+    if (!anchor) return;
+    e.preventDefault();
+    // If the clicked element itself has no href (e.g. an <img> inside a link),
+    // use showMedia so the embedded gallery opens — matches original per-link handler behaviour
+    const url = e.target.href;
+    if (url == null) {
+        if (anchor.pathname) mainWindow.postMessage({action:'showMedia', path: anchor.pathname}, origin);
+        return;
+    }
+    try {
+        const requestedResource = new URL(url);
+        if (window.location.host === requestedResource.host) {
+            mainWindow.postMessage({action:'navigateTo', path: requestedResource.pathname}, origin);
+        } else if (requestedResource.protocol === 'https:' || requestedResource.protocol === 'http:') {
+            mainWindow.postMessage({action:'externalLink', url: url}, origin);
+        }
+    } catch (err) {}
+});

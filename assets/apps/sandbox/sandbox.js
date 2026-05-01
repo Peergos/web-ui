@@ -1,6 +1,9 @@
 var mainWindow;
 var origin;
 var streamWriter;
+var lastLoadParams = null;
+var reinitializingPort = false;
+var portReinitPending = false;
 let msgHandler = function (e) {
       // You must verify that the origin of the message's sender matches your
       // expectations. In this case, we're only planning on accepting messages
@@ -31,6 +34,15 @@ function resizeHandler() {
 }
 window.addEventListener('message', msgHandler);
 window.addEventListener("resize", resizeHandler);
+if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.addEventListener('message', evt => {
+        if (evt.data && evt.data.type === 'need-port' && lastLoadParams && !portReinitPending) {
+            portReinitPending = true;
+            reinitializingPort = true;
+            load(...lastLoadParams);
+        }
+    });
+}
 
 function streamFile(seekHi, seekLo, seekLength, streamFilePath) {
     mainWindow.postMessage({action:'streamFile', seekHi: seekHi, seekLo: seekLo, seekLength: seekLength
@@ -41,6 +53,9 @@ function actionRequest(filePath, requestId, api, apiMethod, bytes, hasFormData, 
     bytes: bytes, hasFormData: hasFormData, params: params, isFromRedirect: isFromRedirect, isNavigate: isNavigate}, origin);
 }
 function load(appName, appPath, allowBrowsing, theme, chatId, username, props) {
+    lastLoadParams = [appName, appPath, allowBrowsing, theme, chatId, username, props];
+    var reinit = reinitializingPort;
+    reinitializingPort = false;
     let that = this;
     let iframe = document.getElementById("appSandboxId");
     iframe.style.width = '100%';
@@ -49,17 +64,20 @@ function load(appName, appPath, allowBrowsing, theme, chatId, username, props) {
     appNameInSW = props.allowUnsafeEvalInCSP != null && props.allowUnsafeEvalInCSP == true ? appNameInSW + '@CSP_UNSAFE_EVAL' : appNameInSW;
 
     let fileStream = streamSaver.createWriteStream(appNameInSW, "text/html", url => {
-            var path = appPath.length > 0 ? "?path=" + appPath : '';
-            path = path.length > 0 ? path + '&theme=' + theme : '?theme=' + theme;
-            path = chatId.length > 0 ? path + '&chatId=' + chatId : path;
-            path = path + '&username=' + username;
-            if (props.isPathWritable == true) {
-                path = path + '&isPathWritable=' + props.isPathWritable;
+            portReinitPending = false;
+            if (!reinit) {
+                var path = appPath.length > 0 ? "?path=" + appPath : '';
+                path = path.length > 0 ? path + '&theme=' + theme : '?theme=' + theme;
+                path = chatId.length > 0 ? path + '&chatId=' + chatId : path;
+                path = path + '&username=' + username;
+                if (props.isPathWritable == true) {
+                    path = path + '&isPathWritable=' + props.isPathWritable;
+                }
+                let anchor = props.htmlAnchor.length > 0 ? '#' + props.htmlAnchor : "";
+                let src = allowBrowsing ? appPath.substring(1) + anchor : "index.html" + path;
+                iframe.src= src;
+                iframe.contentWindow.focus();
             }
-            let anchor = props.htmlAnchor.length > 0 ? '#' + props.htmlAnchor : "";
-            let src = allowBrowsing ? appPath.substring(1) + anchor : "index.html" + path;
-            iframe.src= src;
-            iframe.contentWindow.focus();
             that.startPing(url + "/ping");
         }, function(seekHi, seekLo, seekLength, streamFilePath){
             that.streamFile(seekHi, seekLo, seekLength, streamFilePath);

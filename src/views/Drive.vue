@@ -278,24 +278,24 @@
     </Gallery>
 
     <Hex
-      v-if="showHexViewer"
+      v-if="showHexViewer && viewerFile"
       v-on:hide-hex-viewer="back()"
-      :file="selectedFiles[0]"
+      :file="viewerFile"
       :context="context"
     >
     </Hex>
     <Pdf
-      v-if="showPdfViewer"
+      v-if="showPdfViewer && viewerFile"
       v-on:hide-pdf-viewer="back()"
-      :file="selectedFiles[0]"
+      :file="viewerFile"
       :context="context"
     >
     </Pdf>
     <CodeEditor
-      v-if="showCodeEditor"
+      v-if="showCodeEditor && viewerFile"
       v-on:hide-code-editor="back()"
       v-on:update-refresh="forceUpdate++"
-      :file="selectedFiles[0]"
+      :file="viewerFile"
       :context="context"
     >
     </CodeEditor>
@@ -306,9 +306,9 @@
     >
     </Markup>
     <Identity
-      v-if="showIdentityProof"
+      v-if="showIdentityProof && viewerFile"
       v-on:hide-identity-proof="back()"
-      :file="selectedFiles[0]"
+      :file="viewerFile"
       :context="context"
     >
     </Identity>
@@ -485,6 +485,7 @@ module.exports = {
 			normalSortOrder: true,
 			clipboard: {},
 			selectedFiles: [],
+			viewerFile: null,
 			url: null,
 			viewMenu: false,
 			viewPasteMenu: false,
@@ -1269,6 +1270,7 @@ module.exports = {
 		    this.showTextViewer = false;
 		    this.showHexViewer = false;
 		    this.showSearch = false;
+		    this.viewerFile = null;
 		},
 
 		navigateToAction(directory) {
@@ -1327,6 +1329,7 @@ module.exports = {
 		        this.selectedFiles = this.files.filter(f => f.getName() == args.filename);
                 let that = this;
                 this.closeApps();
+                this.viewerFile = this.selectedFiles[0] || null;
                 if (app == "Gallery")
                     that.showGallery = true;
                 else if (app == "pdf")

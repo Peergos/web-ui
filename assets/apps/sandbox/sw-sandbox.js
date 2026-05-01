@@ -305,6 +305,8 @@ function appFetch(event) {
       }));
     }
     if (appPort == null) {
+        self.clients.matchAll().then(clients => clients.forEach(c => c.postMessage({type: 'need-port'})));
+        event.respondWith(new Response('', {status: 503}));
         return;
     }
     let csp = appName.includes('@CSP_UNSAFE_EVAL') ? cspWithUnsafeEval : defaultCSP;

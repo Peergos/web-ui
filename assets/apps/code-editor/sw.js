@@ -270,20 +270,24 @@ self.addEventListener('activate', event => {
 });
 
 self.onfetch = event => {
-    const url = event.request.url
-    console.log(url)
-
+    const url = event.request.url;
     let requestURL = new URL(url);
-    if ((event.request.mode === 'navigate' || event.request.mode === 'no-cors') && !requestURL.pathname.startsWith('/api')) {
-        event.respondWith(caches.open(cacheName).then((cache) => {
-            return fetch(event.request.url).then((fetchedResponse) => {
-                cache.put(event.request, fetchedResponse.clone());
-                
-                return fetchedResponse;
-            }).catch(() => {
-                return cache.match(event.request.url);
-            });
+    if (requestURL.pathname.startsWith('/api')) return;
+    if (event.request.mode === 'navigate') {
+        event.respondWith(caches.open(cacheName).then(async cache => {
+            const cached = await cache.match(event.request.url);
+            if (cached) return cached;
+            const index = await cache.match('index.html');
+            if (index) return index;
+            return fetch(event.request.url);
         }));
-    }    
+    } else if (event.request.mode === 'no-cors') {
+        event.respondWith(caches.open(cacheName).then(cache => {
+            return fetch(event.request.url).then(fetchedResponse => {
+                cache.put(event.request, fetchedResponse.clone());
+                return fetchedResponse;
+            }).catch(() => cache.match(event.request.url));
+        }));
+    }
 }
 
