@@ -220,6 +220,7 @@ module.exports = {
                 }
                 let wrapper = document.getElementById("slideshow-wrapper-id");
                 wrapper.innerText = '';
+                wrapper.style.overflow = '';
                 if(that.isVideo(file)) {
                     wrapper.style.backgroundImage = '';
                     let vid = document.createElement('video');
@@ -243,6 +244,56 @@ module.exports = {
                     let img = new Image();
                     img.src = url;
                     img.classList.add("image-display");
+                    let isZoomed = false;
+                    function updateZoomCursor() {
+                        if (!img.naturalWidth) return;
+                        let scale = Math.min(wrapper.clientWidth / img.naturalWidth, wrapper.clientHeight / img.naturalHeight);
+                        img.style.cursor = scale < 1 ? 'zoom-in' : '';
+                    }
+                    img.addEventListener('load', updateZoomCursor);
+                    updateZoomCursor();
+                    img.addEventListener('click', function(e) {
+                        let cW = wrapper.clientWidth;
+                        let cH = wrapper.clientHeight;
+                        let iW = img.naturalWidth;
+                        let iH = img.naturalHeight;
+                        if (!isZoomed) {
+                            let scale = Math.min(cW / iW, cH / iH);
+                            if (scale >= 1) return;
+                            let rect = wrapper.getBoundingClientRect();
+                            let cx = e.clientX - rect.left;
+                            let cy = e.clientY - rect.top;
+                            let paddingLeft = (cW - iW * scale) / 2;
+                            let paddingTop = (cH - iH * scale) / 2;
+                            let natX = Math.max(0, Math.min(iW, (cx - paddingLeft) / scale));
+                            let natY = Math.max(0, Math.min(iH, (cy - paddingTop) / scale));
+                            isZoomed = true;
+                            img.classList.remove('image-display');
+                            img.classList.add('image-display-zoomed');
+                            wrapper.style.overflow = 'auto';
+                            img.style.cursor = 'zoom-out';
+                            // Force layout so image is at natural size before reading offsetWidth
+                            void img.offsetWidth;
+                            // If the image is narrower/shorter than the viewport, center it
+                            // with margins so it doesn't sit at the top-left corner
+                            let marginLeft = Math.max(0, (cW - iW) / 2);
+                            let marginTop  = Math.max(0, (cH - iH) / 2);
+                            img.style.marginLeft = marginLeft + 'px';
+                            img.style.marginTop  = marginTop  + 'px';
+                            // When margin > 0 the image fits in that axis so scroll
+                            // clamps to 0 anyway; margin handles centering in that case.
+                            wrapper.scrollLeft = marginLeft + natX - cW / 2;
+                            wrapper.scrollTop  = marginTop  + natY - cH / 2;
+                        } else {
+                            isZoomed = false;
+                            img.classList.remove('image-display-zoomed');
+                            img.classList.add('image-display');
+                            img.style.marginLeft = '';
+                            img.style.marginTop  = '';
+                            wrapper.style.overflow = '';
+                            updateZoomCursor();
+                        }
+                    });
                     wrapper.appendChild(img);
                 }
             });
@@ -475,6 +526,14 @@ module.exports = {
   object-fit: contain;
   width:100%;
   height:100%;
+  z-index: 20;
+}
+.image-display-zoomed {
+  display: block;
+  width: auto;
+  height: auto;
+  max-width: none;
+  max-height: none;
   z-index: 20;
 }
 #slideshow-next {
