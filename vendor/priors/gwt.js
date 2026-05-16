@@ -1999,13 +1999,22 @@ var scryptJS = {
     }
 };
 
-var ForkJoinJS = {
-    JSForkJoinPool: function() {
-	this.execute = function(task) {
-            setTimeout(() => task.run(), 0)
-	}
-    }
-}
+var ForkJoinJS = (function() {
+    var queue = [];
+    var channel = new MessageChannel();
+    channel.port1.onmessage = function() {
+        var task = queue.shift();
+        if (task) task.run();
+    };
+    return {
+        JSForkJoinPool: function() {
+            this.execute = function(task) {
+                queue.push(task);
+                channel.port2.postMessage(null);
+            };
+        }
+    };
+}());
 
 var thumbnail = {
     NativeJSThumbnail: function() {
