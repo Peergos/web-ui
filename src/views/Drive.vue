@@ -2156,8 +2156,25 @@ module.exports = {
                             triggerRefresh: false,
                             progress: progress,
                             name: name,
-                            title: title
+                            title: title,
+                            lastTitle: title,
+                            lastSubtitle: '',
                         }
+                        uploadParams.progressInterval = setInterval(() => {
+                            const stats = helpers.formatTransferStats(uploadParams.progress.done, uploadParams.progress.max, uploadParams.progress.startTime);
+                            that.$toast.update(name, {
+                                content: {
+                                    component: ProgressBar,
+                                    props: {
+                                        title: uploadParams.lastTitle,
+                                        subtitle: uploadParams.lastSubtitle,
+                                        stats: stats,
+                                        done: uploadParams.progress.done,
+                                        max: uploadParams.progress.max
+                                    }
+                                }
+                            });
+                        }, 1000);
                         let prepareFuture = peergos.shared.util.Futures.incomplete();
                         let previousDirectoryHolder = {
                             fileWrapper: null,
@@ -2352,6 +2369,8 @@ module.exports = {
                         updater.lastUpdate = true;
                     }
                     const stats = helpers.formatTransferStats(uploadParams.progress.done, uploadParams.progress.max, uploadParams.progress.startTime);
+                    uploadParams.lastTitle = title;
+                    uploadParams.lastSubtitle = that.formatTitle(file.name);
                     that.addUploadProgressMessage(uploadParams, title, that.formatTitle(file.name), stats, file.directory, false);
                 }
             };
@@ -2424,6 +2443,7 @@ module.exports = {
             let command = queueCopy.shift();
             if (command == null) {
                 if (finalCall) {
+                    clearInterval(uploadParams.progressInterval);
                     setTimeout(() => that.$toast.dismiss(uploadParams.progress.name), 1000);
                 }
                 future.complete(true);
