@@ -1856,7 +1856,8 @@ module.exports = {
                     show: true,
                     title: that.translate("DRIVE.DOWNLOAD.FOLDERS"),
                     done: 0,
-                    max: actualSize
+                    max: actualSize,
+                    startTime: Date.now(),
                 }
                 let zipFilename = 'archive-' + that.zipAndDownloadFoldersCount + '.zip';
                 that.zipAndDownloadFoldersCount = that.zipAndDownloadFoldersCount + 1;
@@ -1911,7 +1912,8 @@ module.exports = {
                                 show: true,
                                 title: that.translate("DRIVE.DOWNLOAD.FOLDER").replace("$NAME", filename),
                                 done: 0,
-                                max: statistics.actualSize
+                                max: statistics.actualSize,
+                                startTime: Date.now(),
                             }
                             let zipFilename = filename + '.zip';
                             let accumulator = {directoryMap: new Map(), files: []};
@@ -2139,6 +2141,7 @@ module.exports = {
                             name:name,
                             current: 0,
                             total: files.length,
+                            startTime: Date.now(),
                         };
                         that.$toast(
                             {component: ProgressBar,props:  progress} ,
@@ -2201,7 +2204,7 @@ module.exports = {
                         if (!commitContext.completed && uploadParams.progress.current >= uploadParams.progress.total) {
                             commitContext.completed = true;
                             let title = that.translate("DRIVE.UPLOAD.COMPLETE");
-                            that.addUploadProgressMessage(uploadParams, title, '', '', true);
+                            that.addUploadProgressMessage(uploadParams, title, '', '', '', true);
                         }
                         return true;
                     }
@@ -2276,7 +2279,7 @@ module.exports = {
             let that = this;
             if (index == files.length) {
                 if (uploadParams.progress.total == 0) {
-                    that.addUploadProgressMessage(uploadParams, that.translate("DRIVE.UPLOAD.EMPTY"), '', '', true);
+                    that.addUploadProgressMessage(uploadParams, that.translate("DRIVE.UPLOAD.EMPTY"), '', '', '', true);
                 }
                 future.complete(true);
             } else {
@@ -2348,7 +2351,8 @@ module.exports = {
                     if (updater.finished) {
                         updater.lastUpdate = true;
                     }
-                    that.addUploadProgressMessage(uploadParams, title, that.formatTitle(file.name), file.directory, false);
+                    const stats = helpers.formatTransferStats(uploadParams.progress.done, uploadParams.progress.max, uploadParams.progress.startTime);
+                    that.addUploadProgressMessage(uploadParams, title, that.formatTitle(file.name), stats, file.directory, false);
                 }
             };
             var foundDirectoryIndex = -1;
@@ -2386,7 +2390,7 @@ module.exports = {
                 });
             }).exceptionally(function(t){future.completeExceptionally(t)})
 		},
-        addUploadProgressMessage: function(uploadParams, title, subtitle, directory, finalCall) {
+        addUploadProgressMessage: function(uploadParams, title, subtitle, stats, directory, finalCall) {
             let that = this;
             function update(message, conversationId) {
                 let future = peergos.shared.util.Futures.incomplete();
@@ -2398,6 +2402,7 @@ module.exports = {
                             props:  {
                             title: title,
                             subtitle: subtitle,
+                            stats: stats,
                             done: uploadParams.progress.done,
                             max: uploadParams.progress.max
                             },
@@ -2545,7 +2550,7 @@ module.exports = {
             let that = this;
             if (index == fileTreeNodes.length) {
                 let title = that.translate("DRIVE.MOVING.COMPLETE");
-                that.addUploadProgressMessage(multiSelectParams, title, '', '', true);
+                that.addUploadProgressMessage(multiSelectParams, title, '', '', '', true);
                 future.complete(true);
             } else {
                 let fileTreeNode = fileTreeNodes[index];
@@ -2558,7 +2563,7 @@ module.exports = {
                             multiSelectParams.progress.done += 1;
                             let title = '[' + multiSelectParams.progress.done + '/' + multiSelectParams.progress.max + '] '
                                 + multiSelectParams.title;
-                            that.addUploadProgressMessage(multiSelectParams, title, '', '', false);
+                            that.addUploadProgressMessage(multiSelectParams, title, '', '', '', false);
                             that.updateCurrentDirectory(null , () => {
                                 that.showSpinner = true;
                                 that.reduceMove(index + 1, path, updatedParent, updatedTarget, fileTreeNodes, multiSelectParams, future);
@@ -2579,7 +2584,7 @@ module.exports = {
             let that = this;
             if (index == fileTreeNodes.length) {
                 let title = that.translate("DRIVE.COPYING.COMPLETE");
-                that.addUploadProgressMessage(multiSelectParams, title, '', '', true);
+                that.addUploadProgressMessage(multiSelectParams, title, '', '', '', true);
                 future.complete(true);
             } else {
                 let fileTreeNode = fileTreeNodes[index];
@@ -2588,7 +2593,7 @@ module.exports = {
                         multiSelectParams.progress.done += 1;
                         let title = '[' + multiSelectParams.progress.done + '/' + multiSelectParams.progress.max + '] '
                             + multiSelectParams.title;
-                        that.addUploadProgressMessage(multiSelectParams, title, '', '', false);
+                        that.addUploadProgressMessage(multiSelectParams, title, '', '', '', false);
                         that.updateUsage(usageBytes => {
                             that.updateCurrentDirectory(null , () => {
                                 that.showSpinner = true;

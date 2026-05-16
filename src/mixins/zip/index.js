@@ -1,5 +1,6 @@
 const ProgressBar = require("../../components/drive/ProgressBar.vue");
 const loopback = require("../loopback/index.js");
+const storage = require("../storage/index.js");
 module.exports = {
 	data() {
 		return {
@@ -162,6 +163,22 @@ module.exports = {
             file.getInputStream(this.context.network, this.context.crypto, props.sizeHigh(), props.sizeLow(),
                 function (read) {
                     progress.done += read.value_0;
+                    const now = Date.now();
+                    if (now - (progress.lastUpdateTime || 0) > 500) {
+                        progress.lastUpdateTime = now;
+                        const stats = storage.formatTransferStats(progress.done, progress.max, progress.startTime);
+                        that.$toast.update(zipFilename, {
+                            content: {
+                                component: ProgressBar,
+                                props: {
+                                    title: progress.title,
+                                    stats: stats,
+                                    done: progress.done,
+                                    max: progress.max
+                                }
+                            }
+                        });
+                    }
                     if (progress.done >= progress.max) {
                         setTimeout(function () {
                             that.$toast.dismiss(zipFilename);

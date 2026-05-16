@@ -3,6 +3,7 @@
 	<div class="app-progressbar">
 		<p>{{ title }}</p>
 		<p v-if="subtitle.length > 0">{{ subtitle }}</p>
+		<p v-if="stats.length > 0" class="app-progressbar__stats">{{ stats }}</p>
 		<div role="progressbar" class="progress__bar">
 			<div :style="{width: progress + '%'}"></div>
 		</div>
@@ -18,6 +19,10 @@ module.exports = {
 			default: ''
 		},
         subtitle: {
+            type: String,
+            default: ''
+        },
+        stats: {
             type: String,
             default: ''
         },
@@ -48,6 +53,14 @@ module.exports = {
 <style>
 .app-progressbar{
 	color: var(--color);
+}
+
+.app-progressbar__stats {
+	width: 18em;
+	overflow: hidden;
+	white-space: nowrap;
+	font-size: 0.9em;
+	opacity: 0.85;
 }
 
 .app-progressbar .progress__bar{
