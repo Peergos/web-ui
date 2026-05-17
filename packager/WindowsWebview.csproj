@@ -1,0 +1,13 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net48</TargetFramework>
+    <AssemblyName>PeergosWebView</AssemblyName>
+    <UseWindowsForms>true</UseWindowsForms>
+    <ApplicationIcon>winicon.ico</ApplicationIcon>
+    <Nullable>enable</Nullable>
+  </PropertyGroup>
+  <ItemGroup>
+    <PackageReference Include="Microsoft.Web.WebView2" Version="1.0.2651.64" />
+  </ItemGroup>
+</Project>

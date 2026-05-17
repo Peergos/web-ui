@@ -82,7 +82,18 @@ public class PackagePeergos {
                               "See /usr/share/common-licenses/GPL-3");
         }
         
-        if (isWin)
+        if (isWin) {
+            // Build the WebView2 native wrapper and copy it alongside Peergos.jar
+            // so jpackage bundles everything into the MSI.
+            runCommand("dotnet", "build", "WindowsWebview.csproj", "-c", "Release");
+            Path buildOutput = Paths.get("bin", "Release", "net48");
+            File[] outputFiles = buildOutput.toFile().listFiles();
+            if (outputFiles != null) {
+                for (File f : outputFiles) {
+                    if (f.isFile() && !f.getName().endsWith(".pdb"))
+                        Files.copy(f.toPath(), Paths.get("../server/" + f.getName()), StandardCopyOption.REPLACE_EXISTING);
+                }
+            }
             runCommand("jpackage", "-i", "../server", "-n", "peergos-app",
                        "--main-class", "peergos.server.Main", "--main-jar",
                        "Peergos.jar", "--vendor", "Peergos Ltd.",
@@ -101,7 +112,7 @@ public class PackagePeergos {
                        "--win-upgrade-uuid", "bea010b4-07e7-46af-b870-2d3d3be4d4dd",
                        "--add-launcher", "peergos=windows-cli.properties"
                        );
-        else if (isMac) {
+        } else if (isMac) {
             runCommand("swiftc", "-parse-as-library", "-o", "PeergosWebView", "MacWebview.swift", "-framework", "Cocoa", "-framework", "WebKit");
             runCommand("security", "find-identity", "-v", "-p", "codesigning", System.getenv("RUNNER_TEMP") + "/app-signing.keychain-db");
             runCommand("codesign", "--force", "--options", "runtime", "--timestamp",
