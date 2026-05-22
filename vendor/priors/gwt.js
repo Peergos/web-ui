@@ -56,6 +56,10 @@ function getWithHeadersProm(url, headers) {
     req.onerror = function(e) {
         future.completeExceptionally(new peergos.shared.storage.RateLimitException());
     };
+
+    req.onabort = function(e) {
+        future.completeExceptionally(new peergos.shared.storage.RateLimitException());
+    };
     
     req.send();
     return future;
@@ -103,6 +107,10 @@ function postProm(url, data, timeout) {
 	req.onerror = function(e) {
             future.completeExceptionally(new java.net.ConnectException("Unable to connect"));
 	};
+
+        req.onabort = function(e) {
+            future.completeExceptionally(new java.net.ConnectException("Connection aborted"));
+        };
 
         req.ontimeout = function() {
             reject(Error("Network timeout"));
@@ -158,6 +166,11 @@ function postMultipartProm(url, dataArrays, timeout) {
 	req.onerror = function(e) {
             future.completeExceptionally(new java.net.ConnectException("Unable to connect"));
 	};
+
+        req.onabort = function(e) {
+            future.completeExceptionally(new java.net.ConnectException("Connection aborted"));
+        };
+        
 	req.ontimeout = function(e) {
             future.completeExceptionally(new peergos.shared.storage.RateLimitException());
 	};
