@@ -21,6 +21,6 @@ WORKDIR /opt/peergos
 RUN mkdir -p /opt/peergos/data
 COPY --from=build /opt/peergos/server /opt/peergos/server
 
-ENTRYPOINT ["java", "--enable-native-access=ALL-UNNAMED", "-jar", "/opt/peergos/server/Peergos.jar"]
+ENTRYPOINT ["java", "--enable-native-access=ALL-UNNAMED", "-Djava.library.path=native-lib", "-jar", "/opt/peergos/server/Peergos.jar"]
 
 EXPOSE 4001 8000
