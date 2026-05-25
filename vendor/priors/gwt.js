@@ -22,6 +22,27 @@ function fragmentToProps(fragment) {
     return JSON.parse(decoded);
 }
 
+var MAX_CONCURRENT_REQUESTS = 50;
+var activeRequests = 0;
+var requestQueue = [];
+
+function acquireRequestSlot(cb) {
+    if (activeRequests < MAX_CONCURRENT_REQUESTS) {
+        activeRequests++;
+        cb();
+    } else {
+        requestQueue.push(cb);
+    }
+}
+
+function releaseRequestSlot() {
+    if (requestQueue.length > 0) {
+        requestQueue.shift()();
+    } else {
+        activeRequests--;
+    }
+}
+
 function getProm(url) {
     return getWithHeadersProm(url, []);
 }
@@ -40,6 +61,7 @@ function getWithHeadersProm(url, headers) {
     }
     
     req.onload = function() {
+        releaseRequestSlot();
         // This is called even on 404 etc
         // so check the status
         if (req.status == 200) {
@@ -54,14 +76,16 @@ function getWithHeadersProm(url, headers) {
     };
     
     req.onerror = function(e) {
+        releaseRequestSlot();
         future.completeExceptionally(new peergos.shared.storage.RateLimitException());
     };
 
     req.onabort = function(e) {
+        releaseRequestSlot();
         future.completeExceptionally(new peergos.shared.storage.RateLimitException());
     };
-    
-    req.send();
+
+    acquireRequestSlot(() => req.send());
     return future;
 }
 
@@ -73,8 +97,9 @@ function postProm(url, data, timeout) {
         if (timeout >= 0)
             req.timeout = timeout;
 	req.responseType = 'arraybuffer';
-	
+
 	req.onload = function() {
+            releaseRequestSlot();
             // This is called even on 404 etc
             // so check the status
             if (req.status == 200) {
@@ -105,18 +130,21 @@ function postProm(url, data, timeout) {
 	};
 	
 	req.onerror = function(e) {
+            releaseRequestSlot();
             future.completeExceptionally(new java.net.ConnectException("Unable to connect"));
 	};
 
         req.onabort = function(e) {
+            releaseRequestSlot();
             future.completeExceptionally(new java.net.ConnectException("Connection aborted"));
         };
 
         req.ontimeout = function() {
+            releaseRequestSlot();
             reject(Error("Network timeout"));
         };
 
-	req.send(data);
+	acquireRequestSlot(() => req.send(data));
     }).then(function(result, err) {
         if (err != null)
             future.completeExceptionally(java.lang.Throwable.of(err));
