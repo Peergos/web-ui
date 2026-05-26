@@ -543,6 +543,7 @@ module.exports = {
     "MOUNT.AUTH_TYPE":"Auth type",
     "MOUNT.DISABLED.TITLE":"Drive mounting is available in the Desktop app",
     "MOUNT.DISABLED":"Download the app here: ",
+    "MOUNT.AUTO_MOUNT":"Automatically mount when Peergos starts",
     "MIGRATE.TITLE":"Migrate to a different server",
     "MIGRATE.ACCOUNT.TEXT1":"To migrate to another server, first request or pay for mirroring your data there. Then login there and click 'migrate here' in the migration page.",
     "MIGRATE.HOME":"This is your home server.",

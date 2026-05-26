@@ -21,6 +21,12 @@
                         <label>{{ translate("MOUNT.PEERGOS_PASSWORD") }}</label>
                         <input class="form-control" type="password" v-model="form.peergosPassword" @keyup.enter="enable()" />
                     </div>
+                    <div style="margin-bottom:1em;">
+                        <label>
+                            <input type="checkbox" v-model="form.autoMount" />
+                            {{ translate("MOUNT.AUTO_MOUNT") }}
+                        </label>
+                    </div>
                     <button class="btn btn-success" @click="enable()">{{ translate("MOUNT.ENABLE") }}</button>
                     <p v-if="error" style="color:red;">{{ error }}</p>
                 </div>
@@ -51,7 +57,7 @@ module.exports = {
     data() {
         return {
             config: { enabled: false, mountPoint: "", webdavPort: 8090, authType: "digest" },
-            form: { peergosPassword: "" },
+            form: { peergosPassword: "", autoMount: true },
             showSpinner: false,
             spinnerMessage: "",
             error: null,
@@ -98,6 +104,7 @@ module.exports = {
             let body = JSON.stringify({
                 peergosUsername: this.context.username,
                 peergosPassword: this.form.peergosPassword,
+                autoMount: this.form.autoMount,
             });
             this.localPost("/peergos/v0/mount/enable", body).then(function() {
                 that.pollForMount();
