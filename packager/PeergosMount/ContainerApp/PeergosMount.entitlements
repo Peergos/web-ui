@@ -6,7 +6,5 @@
     <array>
         <string>group.org.peergos.PeergosMount</string>
     </array>
-    <key>com.apple.developer.file-provider.access-to-extension-storage</key>
-    <true/>
 </dict>
 </plist>
