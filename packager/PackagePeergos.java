@@ -113,14 +113,23 @@ public class PackagePeergos {
                        "--add-launcher", "peergos=windows-cli.properties"
                        );
         } else if (isMac) {
-            runCommand("swiftc", "-parse-as-library", "-o", "PeergosWebView", "MacWebview.swift", "-framework", "Cocoa", "-framework", "WebKit");
-            runCommand("security", "find-identity", "-v", "-p", "codesigning", System.getenv("RUNNER_TEMP") + "/app-signing.keychain-db");
-            runCommand("codesign", "--force", "--options", "runtime", "--timestamp",
-                       "--keychain", System.getenv("RUNNER_TEMP") + "/app-signing.keychain-db",
-                       "--sign", "Peergos LTD (XUVT52ZN3F)", "PeergosWebView");
-            Path webviewDst = Paths.get("../server/PeergosWebView");
-            Files.copy(Paths.get("PeergosWebView"), webviewDst, StandardCopyOption.REPLACE_EXISTING);
-            webviewDst.toFile().setExecutable(true, false);
+            String derivedData = "/tmp/peergos-xcodebuild";
+            String profileUuidApp = System.getenv("MACOS_PROFILE_UUID_APP");
+            String profileUuidExt = System.getenv("MACOS_PROFILE_UUID_EXT");
+            runCommand("xcodebuild",
+                       "-project", "PeergosMount/PeergosMount.xcodeproj",
+                       "-scheme", "PeergosMount",
+                       "-configuration", "Release",
+                       "-derivedDataPath", derivedData,
+                       "DEVELOPMENT_TEAM=XUVT52ZN3F",
+                       "CODE_SIGN_STYLE=Manual",
+                       "CODE_SIGN_IDENTITY=Developer ID Application: Peergos LTD (XUVT52ZN3F)",
+                       "PROVISIONING_PROFILE[org.peergos.PeergosMount]=" + profileUuidApp,
+                       "PROVISIONING_PROFILE[org.peergos.PeergosMount.FileProvider]=" + profileUuidExt,
+                       "OTHER_CODE_SIGN_FLAGS=--keychain " + System.getenv("RUNNER_TEMP") + "/app-signing.keychain-db");
+            Path appSrc = Paths.get(derivedData, "Build/Products/Release/PeergosMount.app");
+            Path appDst = Paths.get("../server/PeergosMount.app");
+            copyDirectory(appSrc, appDst);
             runCommand("java", "SignLibraries.java");
             Files.copy(Paths.get("Peergos.jar"), Paths.get("../server/Peergos.jar"), StandardCopyOption.REPLACE_EXISTING);
             runCommand("jpackage", "-i", "../server", "-n", "peergos",
@@ -230,5 +239,19 @@ public class PackagePeergos {
         if (os.startsWith("windows"))
             return "windows";
         return os;
+    }
+
+    private static void copyDirectory(Path src, Path dst) throws Exception {
+        Files.walk(src).forEach(source -> {
+            try {
+                Path target = dst.resolve(src.relativize(source));
+                if (Files.isDirectory(source))
+                    Files.createDirectories(target);
+                else
+                    Files.copy(source, target, StandardCopyOption.REPLACE_EXISTING);
+            } catch (IOException e) {
+                throw new RuntimeException(e);
+            }
+        });
     }
 }
