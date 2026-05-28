@@ -114,8 +114,6 @@ public class PackagePeergos {
                        );
         } else if (isMac) {
             String derivedData = "/tmp/peergos-xcodebuild";
-            String profileUuidApp = System.getenv("MACOS_PROFILE_UUID_APP");
-            String profileUuidExt = System.getenv("MACOS_PROFILE_UUID_EXT");
             runCommand("xcodebuild",
                        "-project", "PeergosMount/PeergosMount.xcodeproj",
                        "-scheme", "PeergosMount",
@@ -124,8 +122,6 @@ public class PackagePeergos {
                        "DEVELOPMENT_TEAM=XUVT52ZN3F",
                        "CODE_SIGN_STYLE=Manual",
                        "CODE_SIGN_IDENTITY=Developer ID Application: Peergos LTD (XUVT52ZN3F)",
-                       "PROVISIONING_PROFILE[org.peergos.PeergosMount]=" + profileUuidApp,
-                       "PROVISIONING_PROFILE[org.peergos.PeergosMount.FileProvider]=" + profileUuidExt,
                        "OTHER_CODE_SIGN_FLAGS=--keychain " + System.getenv("RUNNER_TEMP") + "/app-signing.keychain-db");
             Path appSrc = Paths.get(derivedData, "Build/Products/Release/PeergosMount.app");
             Path appDst = Paths.get("../server/PeergosMount.app");

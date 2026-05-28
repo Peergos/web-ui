@@ -318,7 +318,7 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				CODE_SIGN_ENTITLEMENTS = ContainerApp/PeergosMount.entitlements;
-				CODE_SIGN_STYLE = Automatic;
+				CODE_SIGN_STYLE = Manual;
 				DEVELOPMENT_TEAM = XUVT52ZN3F;
 				INFOPLIST_FILE = ContainerApp/Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = (
@@ -327,6 +327,7 @@
 				);
 				PRODUCT_BUNDLE_IDENTIFIER = "org.peergos.PeergosMount";
 				PRODUCT_NAME = PeergosMount;
+				PROVISIONING_PROFILE_SPECIFIER = "Peergos Mount";
 				SWIFT_VERSION = 5.9;
 			};
 			name = Release;
@@ -356,7 +357,7 @@
 			buildSettings = {
 				APPLICATION_EXTENSION_API_ONLY = YES;
 				CODE_SIGN_ENTITLEMENTS = FileProviderExtension/FileProvider.entitlements;
-				CODE_SIGN_STYLE = Automatic;
+				CODE_SIGN_STYLE = Manual;
 				DEVELOPMENT_TEAM = XUVT52ZN3F;
 				INFOPLIST_FILE = FileProviderExtension/Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = (
@@ -366,6 +367,7 @@
 				);
 				PRODUCT_BUNDLE_IDENTIFIER = "org.peergos.PeergosMount.FileProvider";
 				PRODUCT_NAME = PeergosFileProvider;
+				PROVISIONING_PROFILE_SPECIFIER = "Peergos File Provider";
 				SKIP_INSTALL = YES;
 				SWIFT_VERSION = 5.9;
 			};
