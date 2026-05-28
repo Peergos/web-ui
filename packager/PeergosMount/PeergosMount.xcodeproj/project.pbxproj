@@ -132,9 +132,9 @@
 /* End PBXGroup section */
 
 /* Begin PBXNativeTarget section */
-		AA0000000000000000000700 /* PeergosMount */ = {
+		AA0000000000000000000710 /* PeergosMount */ = {
 			isa = PBXNativeTarget;
-			buildConfigurationList = AA0000000000000000000A01 /* Build configuration list for PBXNativeTarget "PeergosMount" */;
+			buildConfigurationList = AA0000000000000000000A01 /* Build configuration list for PBXNativeTarget "PeergosMount (App)" */;
 			buildPhases = (
 				AA0000000000000000000601 /* Frameworks (App) */,
 				AA0000000000000000000B01 /* Sources (App) */,
@@ -175,7 +175,7 @@
 				LastSwiftUpdateCheck = 1500;
 				LastUpgradeCheck = 1500;
 				TargetAttributes = {
-					AA0000000000000000000700 = {
+					AA0000000000000000000710 = {
 						CreatedOnToolsVersion = 15.0;
 					};
 					AA0000000000000000000800 = {
@@ -196,7 +196,7 @@
 			projectDirPath = "";
 			projectRoot = "";
 			targets = (
-				AA0000000000000000000700 /* PeergosMount */,
+				AA0000000000000000000710 /* PeergosMount */,
 				AA0000000000000000000800 /* PeergosFileProvider */,
 			);
 		};
@@ -383,7 +383,7 @@
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
 		};
-		AA0000000000000000000A01 /* Build configuration list for PBXNativeTarget "PeergosMount" */ = {
+		AA0000000000000000000A01 /* Build configuration list for PBXNativeTarget "PeergosMount (App)" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
 				AA0000000000000000000D03 /* Debug */,
