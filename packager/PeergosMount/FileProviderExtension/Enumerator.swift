@@ -144,7 +144,8 @@ class PeergosEnumerator: NSObject, NSFileProviderEnumerator {
             contentHash:      dav.contentHash,
             writerKey:        dav.writerKey,
             size:             dav.size,
-            modificationDate: dav.modificationDate
+            modificationDate: dav.modificationDate,
+            chunkHashes:      dav.chunkHashes
         ))
 
         return PeergosItem(identifier: identifier, parentIdentifier: parentIdentifier,

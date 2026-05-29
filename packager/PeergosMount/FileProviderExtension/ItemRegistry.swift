@@ -11,6 +11,7 @@ struct RegistryItem {
     let writerKey: String?
     let size: Int64
     let modificationDate: Date?
+    let chunkHashes: Data?  // raw level1 ChunkHashList bytes (32 bytes per 5 MiB chunk)
 }
 
 // Thread-safe SQLite-backed store.
@@ -45,9 +46,11 @@ class ItemRegistry {
                 content_hash    BLOB,
                 writer_key      TEXT,
                 size            INTEGER NOT NULL DEFAULT 0,
-                mod_date        REAL
+                mod_date        REAL,
+                chunk_hashes    BLOB
             )
             """,
+            "ALTER TABLE items ADD COLUMN chunk_hashes BLOB",
             "CREATE INDEX IF NOT EXISTS idx_items_path ON items(path)",
             "CREATE INDEX IF NOT EXISTS idx_items_parent ON items(parent_id)",
             """
@@ -70,8 +73,8 @@ class ItemRegistry {
         queue.sync {
             let sql = """
                 INSERT OR REPLACE INTO items
-                  (identifier, path, parent_id, filename, is_directory, content_hash, writer_key, size, mod_date)
-                VALUES (?,?,?,?,?,?,?,?,?)
+                  (identifier, path, parent_id, filename, is_directory, content_hash, writer_key, size, mod_date, chunk_hashes)
+                VALUES (?,?,?,?,?,?,?,?,?,?)
             """
             withStatement(sql) { stmt in
                 sqlite3_bind_text(stmt, 1, item.identifier, -1, SQLITE_TRANSIENT)
@@ -87,6 +90,9 @@ class ItemRegistry {
                 sqlite3_bind_int64(stmt, 8, item.size)
                 if let d = item.modificationDate { sqlite3_bind_double(stmt, 9, d.timeIntervalSince1970) }
                 else { sqlite3_bind_null(stmt, 9) }
+                if let ch = item.chunkHashes { ch.withUnsafeBytes { ptr in
+                    sqlite3_bind_blob(stmt, 10, ptr.baseAddress, Int32(ch.count), SQLITE_TRANSIENT)
+                }} else { sqlite3_bind_null(stmt, 10) }
                 sqlite3_step(stmt)
             }
         }
@@ -202,8 +208,10 @@ class ItemRegistry {
 
     private func rowToItem(_ stmt: OpaquePointer?) -> RegistryItem {
         func str(_ col: Int32) -> String { String(cString: sqlite3_column_text(stmt, col)) }
-        let hashLen = Int(sqlite3_column_bytes(stmt, 5))
-        let hash = sqlite3_column_blob(stmt, 5).map { Data(bytes: $0, count: hashLen) } ?? Data()
+        func blob(_ col: Int32) -> Data? {
+            let len = Int(sqlite3_column_bytes(stmt, col))
+            return sqlite3_column_blob(stmt, col).map { Data(bytes: $0, count: len) }
+        }
         let wk = sqlite3_column_type(stmt, 6) != SQLITE_NULL
             ? String(cString: sqlite3_column_text(stmt, 6)) : nil
         let modTs = sqlite3_column_double(stmt, 8)
@@ -213,10 +221,11 @@ class ItemRegistry {
             parentIdentifier: str(2),
             filename:         str(3),
             isDirectory:      sqlite3_column_int(stmt, 4) != 0,
-            contentHash:      hash,
+            contentHash:      blob(5) ?? Data(),
             writerKey:        wk,
             size:             sqlite3_column_int64(stmt, 7),
-            modificationDate: modTs > 0 ? Date(timeIntervalSince1970: modTs) : nil
+            modificationDate: modTs > 0 ? Date(timeIntervalSince1970: modTs) : nil,
+            chunkHashes:      blob(9)
         )
     }
 

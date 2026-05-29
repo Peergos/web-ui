@@ -1,3 +1,4 @@
+import CryptoKit
 import FileProvider
 import Foundation
 import UniformTypeIdentifiers
@@ -138,7 +139,8 @@ class PeergosFileProviderExtension: NSObject, NSFileProviderReplicatedExtension 
                 }
 
                 if changedFields.contains(.contents), let contentsURL = newContents {
-                    try await client.put(path: path, fileURL: contentsURL)
+                    try await uploadChangedChunks(path: path, fileURL: contentsURL,
+                                                  storedChunks: stored.chunkHashes)
                 }
                 progress.completedUnitCount = 100
 
@@ -180,6 +182,62 @@ class PeergosFileProviderExtension: NSObject, NSFileProviderReplicatedExtension 
     }
 
     // MARK: - Helpers
+
+    private static let chunkSize = 5 * 1024 * 1024  // 5 MiB — must match Peergos server chunk size
+
+    private func uploadChangedChunks(path: String, fileURL: URL, storedChunks: Data?) async throws {
+        let attrs = try FileManager.default.attributesOfItem(atPath: fileURL.path)
+        let totalSize = (attrs[.size] as? Int) ?? 0
+
+        guard let stored = storedChunks, stored.count % 32 == 0, !stored.isEmpty, totalSize > 0 else {
+            try await client.put(path: path, fileURL: fileURL)
+            return
+        }
+
+        let chunkSize = Self.chunkSize
+        let nChunks = (totalSize + chunkSize - 1) / chunkSize
+        let existingNChunks = stored.count / 32
+        let fh = try FileHandle(forReadingFrom: fileURL)
+        defer { try? fh.close() }
+
+        var changedRanges: [(start: Int64, end: Int64)] = []  // [start, end) exclusive
+        var rangeStart: Int? = nil
+
+        for i in 0..<nChunks {
+            let offset = i * chunkSize
+            let len = min(chunkSize, totalSize - offset)
+            try fh.seek(toOffset: UInt64(offset))
+            let chunkData = try fh.read(upToCount: len)
+            let newHash = Data(SHA256.hash(data: chunkData))
+
+            let existingHash = i < existingNChunks
+                ? stored.subdata(in: i * 32 ..< (i + 1) * 32)
+                : Data()
+            let changed = newHash != existingHash
+
+            if changed && rangeStart == nil {
+                rangeStart = i
+            } else if !changed, let rs = rangeStart {
+                changedRanges.append((Int64(rs * chunkSize), Int64(i * chunkSize)))
+                rangeStart = nil
+            }
+        }
+        if let rs = rangeStart {
+            changedRanges.append((Int64(rs * chunkSize), Int64(totalSize)))
+        }
+
+        guard !changedRanges.isEmpty else { return }
+
+        for range in changedRanges {
+            let start = range.start
+            let end = range.end   // exclusive byte offset
+            try fh.seek(toOffset: UInt64(start))
+            let data = try fh.read(upToCount: Int(end - start))
+            // Content-Range end is inclusive
+            try await client.putRange(path: path, data: data, start: start,
+                                      end: end - 1, totalSize: Int64(totalSize))
+        }
+    }
 
     private func resolvedPath(for identifier: NSFileProviderItemIdentifier) throws -> String {
         if identifier == .rootContainer { return "/\(peergosUsername)" }

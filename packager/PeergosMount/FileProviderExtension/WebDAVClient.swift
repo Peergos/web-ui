@@ -8,6 +8,7 @@ struct WebDAVItem {
     let modificationDate: Date?
     let contentHash: Data   // decoded treehash bytes, or etag bytes as fallback
     let writerKey: String?
+    let chunkHashes: Data?  // raw level1 ChunkHashList bytes (32 bytes per 5 MiB chunk)
 }
 
 enum WebDAVError: Error {
@@ -54,6 +55,17 @@ class WebDAVClient: NSObject {
         req.httpBody = try Data(contentsOf: fileURL)
         let (_, response) = try await session.data(for: req)
         try check(response, expected: 201, also: 204)
+    }
+
+    // Partial PUT — only uploads bytes [start, end] (inclusive) of the file.
+    // Content-Range: bytes start-end/totalSize
+    func putRange(path: String, data: Data, start: Int64, end: Int64, totalSize: Int64) async throws {
+        var req = request(path: path, method: "PUT")
+        req.httpBody = data
+        req.setValue("\(data.count)", forHTTPHeaderField: "Content-Length")
+        req.setValue("bytes \(start)-\(end)/\(totalSize)", forHTTPHeaderField: "Content-Range")
+        let (_, response) = try await session.data(for: req)
+        try check(response, expected: 204, also: 200)
     }
 
     func mkcol(path: String) async throws {
@@ -110,6 +122,7 @@ class WebDAVClient: NSObject {
             <D:getlastmodified/>
             <D:getetag/>
             <P:treehash/>
+            <P:treehash-chunks/>
             <P:writerKey/>
           </D:prop>
         </D:propfind>
@@ -149,6 +162,7 @@ private class PropfindParser: NSObject, XMLParserDelegate {
     private var lastModified: Date? = nil
     private var etag = ""
     private var treehash = ""
+    private var treehashChunks = ""
     private var writerKey = ""
     private var statusOK = false
 
@@ -176,7 +190,7 @@ private class PropfindParser: NSObject, XMLParserDelegate {
         if elementName == "response" {
             inResponse = true
             isDirectory = false; contentLength = 0; lastModified = nil
-            etag = ""; treehash = ""; writerKey = ""; statusOK = false
+            etag = ""; treehash = ""; treehashChunks = ""; writerKey = ""; statusOK = false
         } else if elementName == "propstat" {
             inPropstat = true
         }
@@ -202,6 +216,8 @@ private class PropfindParser: NSObject, XMLParserDelegate {
             etag = text
         case "treehash":
             treehash = text
+        case "treehash-chunks":
+            treehashChunks = text
         case "writerKey":
             writerKey = text
         case "status":
@@ -214,11 +230,13 @@ private class PropfindParser: NSObject, XMLParserDelegate {
                     skippedFirst = true
                 } else {
                     let hash = Data(hexString: treehash) ?? Data((etag).utf8)
+                    let chunks = treehashChunks.isEmpty ? nil : Data(hexString: treehashChunks)
                     let name = currentPath.split(separator: "/").last.map(String.init) ?? currentPath
                     items.append(WebDAVItem(path: currentPath, filename: name,
                                            isDirectory: isDirectory, size: contentLength,
                                            modificationDate: lastModified, contentHash: hash,
-                                           writerKey: writerKey.isEmpty ? nil : writerKey))
+                                           writerKey: writerKey.isEmpty ? nil : writerKey,
+                                           chunkHashes: chunks))
                 }
             }
             inResponse = false
