@@ -30,7 +30,7 @@
             <span class="checkmark"></span>
         </label>
 
-		<p class="login__server-hint" v-if="network == null && isLocalhost">
+		<p class="login__server-hint" v-if="network == null && !networkLoading && isLocalhost">
 			{{ translate('LOGIN.SERVER.CONFIGURE_FIRST') }}
 		</p>
 		<AppButton :disabled="isLoggingIn || network == null" class="login" @click.native="login()" type="primary" block accent  icon="arrow-right">
@@ -70,6 +70,7 @@ module.exports = {
 		...Vuex.mapState([
 			'crypto',
 			'network',
+			'networkLoading',
 			'context'
 		]),
 		...Vuex.mapGetters([

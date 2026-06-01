@@ -23,6 +23,7 @@ module.exports = new Vuex.Store({
 
 		crypto: null,
 		network: null,
+		networkLoading: true,
         context: null,
         mirrorBatId: null,
 		download: null,
@@ -140,6 +141,9 @@ module.exports = new Vuex.Store({
 		},
 		SET_NETWORK(state, payload) {
 		    state.network = shallow(payload);
+		},
+		SET_NETWORK_LOADING(state, payload) {
+		    state.networkLoading = payload;
 		},
 		SET_CONTEXT(state, payload) {
 		    state.context = shallow(payload);

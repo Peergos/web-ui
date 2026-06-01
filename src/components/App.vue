@@ -501,10 +501,12 @@ module.exports = {
 		0, true
 	    ).thenApply(function (network) {
 		that.desktopServerConnectionError = "";
+		that.$store.commit("SET_NETWORK_LOADING", false);
 		that.$store.commit("SET_NETWORK", network);
 	    }).exceptionally(function (throwable) {
 		    let errorMessage = that.formatNetworkError(throwable);
 		    that.desktopServerConnectionError = errorMessage;
+		    that.$store.commit("SET_NETWORK_LOADING", false);
 		    that.$toast.error(errorMessage, {timeout:false});
 		});
 	},
