@@ -18,6 +18,7 @@ finish-args:
   - --filesystem=~/.peergos:create
   - --filesystem=home
   - --talk-name=org.freedesktop.Flatpak
+  - --talk-name=org.freedesktop.secrets
 
   - --device=dri
   - --device=usb
