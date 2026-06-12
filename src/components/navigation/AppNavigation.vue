@@ -24,7 +24,7 @@
 			<MenuItem :label="translate('APPNAV.DRIVE')" icon="folder" view="Drive" />
             <MenuItem :label="translate('APPNAV.SHAREDWITH')" icon="shared" view="SharedWith" />
             <MenuItem :label="translate('APPNAV.SYNC')" icon="sync" view="Sync"/>
-            <MenuItem v-if="!isAndroid" :label="translate('APPNAV.MOUNT')" icon="drive" view="Mount"/>
+            <MenuItem :label="translate('APPNAV.MOUNT')" icon="drive" view="Mount"/>
 			<MenuItem :label="translate('APPNAV.NEWSFEED')" icon="news" view="NewsFeed" />
 			<MenuItem :label="translate('APPNAV.SOCIAL')" icon="social" view="Social" />
 			<MenuItem :label="translate('APPNAV.CAL')" icon="calendar" view="Calendar" />
@@ -70,9 +70,6 @@ module.exports = {
 		},
 		isLocalHost() {
 		    return loopback.isLoopbackHost(window.location.hostname);
-		},
-		isAndroid() {
-		    return navigator.userAgent.toLowerCase().indexOf("android") > -1;
 		},
 	},
 	methods: {

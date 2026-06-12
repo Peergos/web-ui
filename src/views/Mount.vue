@@ -126,6 +126,7 @@ async function generateTotpCode(keyBytes) {
 
 function detectOs() {
     const ua = navigator.userAgent || "";
+    if (/Android/i.test(ua))                          return "Android";
     if (/Windows/i.test(ua))                          return "Windows";
     if (/Mac OS X|Macintosh|Mac_PowerPC/i.test(ua))   return "macOS";
     return "Linux";
