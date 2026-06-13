@@ -21,11 +21,16 @@ module.exports = {
     data: function() {
         return {
             showSpinner: false,
-            isIframeInitialised: false
+            isIframeInitialised: false,
+            saving: false,
+            currentFile: null,
+            isFileWritable: false
         }
     },
     props: ['context', 'file'],
     created: function() {
+        this.currentFile = this.file;
+        this.isFileWritable = this.file.isWritable();
         this.startListener();
     },
     methods: {
@@ -56,7 +61,9 @@ module.exports = {
                 that.isIframeInitialised = true;
             } else if (e.data == "sw-registration-failure" ) {
                 console.log("failed to register service worker for PDF viewer")
-                } else {
+            } else if (e.data.action == 'save') {
+                that.saveToFile(e.data.bytes);
+            } else {
     		    console.log('Message from Iframe: ' + e.data);
             }
 		}
@@ -65,15 +72,16 @@ module.exports = {
             // origin. Sandboxed iframes which lack the 'allow-same-origin' header
             // don't have an origin which you can target: you'll have to send to any
             // origin, which might alow some esoteric attacks. Validate your output!
-	    const props = this.file.getFileProperties();
-	    const name = this.file.getName();
-	    this.file.getInputStream(this.context.network, this.context.crypto, props.sizeHigh(), props.sizeLow(), function(read){}).thenCompose(function(reader) {
+	    const props = this.currentFile.getFileProperties();
+	    const name = this.currentFile.getName();
+	    const writable = this.isFileWritable;
+	    this.currentFile.getInputStream(this.context.network, this.context.crypto, props.sizeHigh(), props.sizeLow(), function(read){}).thenCompose(function(reader) {
 		var size = that.getFileSize(props);
 		var data = convertToByteArray(new Int8Array(size));
 		return reader.readIntoArray(data, 0, data.length)
 		    .thenApply(function(read){
                 let func = function() {
-    			    iframe.contentWindow.postMessage({name:name,bytes:data}, '*');
+    			    iframe.contentWindow.postMessage({name:name,bytes:data,writable:writable}, '*');
                 };
                 that.setupIFrameMessaging(iframe, func);
 		    });
@@ -96,6 +104,34 @@ module.exports = {
                 let that = this;
                 window.setTimeout(function() {that.setupIFrameMessaging(iframe, func);}, 20);
             }
+        },
+        saveToFile: function(uint8Bytes) {
+            if (this.saving) return;
+            if (!this.currentFile.isWritable()) {
+                this.$toast.error("You don't have write access to this file");
+                return;
+            }
+            this.saving = true;
+            this.showSpinner = true;
+            const that = this;
+            const context = this.context;
+            const bytes = convertToByteArray(uint8Bytes);
+            const java_reader = peergos.shared.user.fs.AsyncReader.build(bytes);
+            const sizeHi = (bytes.length - (bytes.length % Math.pow(2, 32))) / Math.pow(2, 32);
+            this.currentFile.overwriteFileJS(java_reader, sizeHi, bytes.length,
+                context.network, context.crypto, len => {})
+                .thenApply(function(updatedFile) {
+                    that.currentFile = updatedFile;
+                    that.saving = false;
+                    that.showSpinner = false;
+                    that.$emit("update-refresh");
+                    that.$toast.success("PDF saved");
+                }).exceptionally(function(throwable) {
+                    that.saving = false;
+                    that.showSpinner = false;
+                    that.$toast.error("Save failed: " + throwable.detailMessage);
+                    return null;
+                });
         },
         close: function () {
             this.$emit("hide-pdf-viewer");

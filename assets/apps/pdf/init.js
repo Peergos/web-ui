@@ -1,3 +1,7 @@
+let parentWindow = null;
+let parentOrigin = null;
+let saveHookInstalled = false;
+
 window.addEventListener('message', function (e) {
     // You must verify that the origin of the message's sender matches your
     // expectations. In this case, we're only planning on accepting messages
@@ -7,23 +11,45 @@ window.addEventListener('message', function (e) {
     let parentDomain = window.location.host.substring(window.location.host.indexOf(".")+1)
     if (e.origin !== (window.location.protocol + "//" + parentDomain))
         return;
-    
-    var mainWindow = e.source;
+
+    parentWindow = e.source;
+    parentOrigin = e.origin;
+
     var loadFile = (ev) => {
         try {
             PDFViewerApplication.setTitle(ev.data.name);
             PDFViewerApplication.open({data:new Uint8Array(ev.data.bytes)});
-        } catch(ex) { 
+            if (ev.data.writable) {
+                installSaveHook();
+            }
+        } catch(ex) {
             setTimeout(() => loadFile(ev), 200)
         }
     }
 
     if (e.data.type == "ping") {
-	    mainWindow.postMessage({action:'pong'}, e.origin);
+	    parentWindow.postMessage({action:'pong'}, e.origin);
     } else {
         loadFile(e);
     }
 });
+
+// Redirect the pdf.js viewer's Save button so it writes back to Peergos
+// instead of triggering a browser download.
+function installSaveHook() {
+    if (saveHookInstalled) return;
+    if (!window.PDFViewerApplication || !PDFViewerApplication.downloadManager) {
+        setTimeout(installSaveHook, 100);
+        return;
+    }
+    saveHookInstalled = true;
+    const dm = PDFViewerApplication.downloadManager;
+    dm.download = function(data, url, filename) {
+        if (parentWindow && data) {
+            parentWindow.postMessage({action:'save', bytes:data, filename:filename}, parentOrigin);
+        }
+    };
+}
 
 navigator.serviceWorker.getRegistration('./').then(swReg => {
     return swReg || navigator.serviceWorker.register('sw.js', {scope: './'})

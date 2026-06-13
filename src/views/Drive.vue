@@ -287,6 +287,7 @@
     <Pdf
       v-if="showPdfViewer && viewerFile"
       v-on:hide-pdf-viewer="back()"
+      v-on:update-refresh="forceUpdate++"
       :file="viewerFile"
       :context="context"
     >
