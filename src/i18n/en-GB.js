@@ -541,7 +541,7 @@ module.exports = {
     "MOUNT.WEBDAV_PASSWORD":"Drive password",
     "MOUNT.PORT":"Port",
     "MOUNT.AUTH_TYPE":"Auth type",
-    "MOUNT.DISABLED.TITLE":"Drive mounting is available in the Desktop app",
+    "MOUNT.DISABLED.TITLE":"Drive mounting is available in the desktop and mobile apps",
     "MOUNT.DISABLED":"Download the app here: ",
     "MOUNT.AUTO_MOUNT":"Automatically mount when Peergos starts",
     "MOUNT.CHECKING_MFA":"Checking your 2FA settings...",
