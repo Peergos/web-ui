@@ -330,6 +330,10 @@ module.exports = {
                 await this.localPost("/peergos/v0/mount/disable");
                 this.config = { enabled: false, mountPoint: "" };
                 this.showSpinner = false;
+                const os = detectOs();
+                if (os === "Windows" || os === "macOS") {
+                    this.$toast.info(this.translate("MOUNT.UNMOUNTED.LOCAL_FILES"), {timeout: false});
+                }
             } catch (err) {
                 this.showSpinner = false;
                 this.error = err && err.message ? err.message : String(err);

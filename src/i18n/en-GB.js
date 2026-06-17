@@ -554,6 +554,7 @@ module.exports = {
     "MOUNT.TOTP.CONFIRM":"Continue and add 2FA method",
     "MOUNT.TOTP.ENABLE_FAILED":"Server refused to enable the new 2FA method.",
     "MOUNT.TOTP.CANCEL":"Cancel",
+    "MOUNT.UNMOUNTED.LOCAL_FILES":"Any files downloaded will remain in the local folder after unmount.",
     "MIGRATE.TITLE":"Migrate to a different server",
     "MIGRATE.ACCOUNT.TEXT1":"To migrate to another server, first request or pay for mirroring your data there. Then login there and click 'migrate here' in the migration page.",
     "MIGRATE.HOME":"This is your home server.",
