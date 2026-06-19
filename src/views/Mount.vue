@@ -10,7 +10,8 @@
                 <div v-if="config.enabled" style="padding:1em;">
                     <p><label>{{ translate("MOUNT.PEERGOS_USER") }}</label> <strong>{{ config.peergosUsername }}</strong></p>
                     <p><label>{{ translate("MOUNT.MOUNT_PATH") }}</label> <strong>{{ config.mountPoint }}</strong></p>
-                    <button class="btn btn-warning" @click="disable()">{{ translate("MOUNT.DISABLE") }}</button>
+                    <button class="btn btn-primary" style="margin-right:0.5em; font-size:2em;" @click="openInExplorer()">{{ translate("MOUNT.OPEN") }}</button>
+                    <button class="btn btn-warning" style="font-size:2em;" @click="disable()">{{ translate("MOUNT.DISABLE") }}</button>
                 </div>
                 <div v-if="!config.enabled" style="max-width:480px; padding:1em;">
                     <div style="margin-bottom:1em;">
@@ -303,6 +304,12 @@ module.exports = {
                 }
             }).catch(function() {
                 setTimeout(() => that.pollForMount(), 1000);
+            });
+        },
+        openInExplorer() {
+            let that = this;
+            this.localPost("/peergos/v0/mount/open").catch(function(err) {
+                that.$toast.error(that.translate("MOUNT.OPEN.FAILED") + ": " + err);
             });
         },
         async disable() {
