@@ -40,6 +40,8 @@ module.exports = {
     "TOUR.TITLE":"Welcome to Peergos!",
     "TOUR.SYNC":"Sync your local files",
     "TOUR.SYNC.DESC":"Synchronise your local files to Peergos automatically on desktop and mobile apps",
+    "TOUR.MOUNT":"Mount your Peergos drive",
+    "TOUR.MOUNT.DESC":"Use native apps on your Peergos drive",
     "TOUR.STORAGE":"Encrypted storage",
     "TOUR.STORAGE.DESC":"Store your files and arrange them in folders.",
     "TOUR.SHARE":"Secure sharing",

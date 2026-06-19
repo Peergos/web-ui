@@ -30,6 +30,11 @@ data() {
 				image: "images/tour/sync.png"
 			},
 			{
+				title: this.translate("TOUR.MOUNT"),
+				description: this.translate("TOUR.MOUNT.DESC"),
+				image: "images/tour/mount.png"
+			},
+			{
 				title: this.translate("TOUR.STORAGE"),
 				description: this.translate("TOUR.STORAGE.DESC"),
 				image: "images/tour/drive.png"
