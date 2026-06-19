@@ -307,6 +307,14 @@ module.exports = {
             });
         },
         openInExplorer() {
+            // On Android there's no filesystem mount path, and the server-side JVM has
+            // no Context to fire an Intent. The host app exposes a JS bridge that opens
+            // the SAF root in the system Files app — use that when present.
+            if (typeof window.Android !== "undefined"
+                    && typeof window.Android.openMountInFiles === "function") {
+                window.Android.openMountInFiles();
+                return;
+            }
             let that = this;
             this.localPost("/peergos/v0/mount/open").catch(function(err) {
                 that.$toast.error(that.translate("MOUNT.OPEN.FAILED") + ": " + err);
