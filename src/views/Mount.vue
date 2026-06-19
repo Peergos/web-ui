@@ -10,8 +10,10 @@
                 <div v-if="config.enabled" style="padding:1em;">
                     <p><label>{{ translate("MOUNT.PEERGOS_USER") }}</label> <strong>{{ config.peergosUsername }}</strong></p>
                     <p><label>{{ translate("MOUNT.MOUNT_PATH") }}</label> <strong>{{ config.mountPoint }}</strong></p>
-                    <button class="btn btn-primary" style="margin-right:0.5em; font-size:2em;" @click="openInExplorer()">{{ translate("MOUNT.OPEN") }}</button>
-                    <button class="btn btn-warning" style="font-size:2em;" @click="disable()">{{ translate("MOUNT.DISABLE") }}</button>
+                    <div class="mount-action-row">
+                        <button class="btn btn-success mount-action-btn" @click="openInExplorer()">{{ translate("MOUNT.OPEN") }}</button>
+                        <button class="btn mount-action-btn mount-disable-btn" @click="disable()">{{ translate("MOUNT.DISABLE") }}</button>
+                    </div>
                 </div>
                 <div v-if="!config.enabled" style="max-width:480px; padding:1em;">
                     <div style="margin-bottom:1em;">
@@ -365,5 +367,35 @@ module.exports = {
     align-items: flex-start;
     min-height: 100vh;
     padding: var(--app-margin);
+}
+
+.mount-action-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 1.5em;
+    width: 100%;
+    max-width: 720px;
+}
+
+.mount-action-btn {
+    flex: 1 1 240px;
+    font-size: 2em;
+}
+
+.mount-disable-btn {
+    background-color: var(--alert) !important;
+    border-color: var(--alert) !important;
+    color: var(--white) !important;
+}
+
+.mount-disable-btn:hover {
+    background-color: var(--alert-hover) !important;
+    border-color: var(--alert-hover) !important;
+}
+
+@media (max-width: 600px) {
+    .mount-action-row {
+        flex-direction: column;
+    }
 }
 </style>
