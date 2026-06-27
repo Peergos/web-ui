@@ -21,6 +21,11 @@
                       <a v-on:click="navigateTo(pair.remotepath)" style="cursor:pointer; padding:1em; flex-grow:1; text-align:center;">{{ pair.remotepath }}</a>
                       <label style="padding:1em; flex-grow:1; text-align:center;"> Syncing local deletes: {{ pair.syncLocalDeletes }}</label>
                       <label style="padding:1em; flex-grow:1; text-align:center;"> Syncing remote deletes: {{ pair.syncRemoteDeletes }}</label>
+                      <label v-if="isAndroid" class="checkbox__group" style="padding:1em; flex-grow:1; text-align:center;">
+                          Allow on mobile data
+                          <input type="checkbox" :checked="pair.allowOnMobile" @change="setAllowOnMobile(pair, $event.target.checked)" />
+                          <span class="checkmark"></span>
+                      </label>
                       <button class="btn btn-success" @click="syncNow(pair.label)" style="flex-grow:1;margin:10px;">{{ translate("SYNC.NOW") }}</button>
                       <button class="btn btn-warning" @click="removeSyncPair(pair.label)" style="flex-grow:1;margin:10px;">{{ translate("SYNC.STOPPAIR") }}</button>
                    </div>
@@ -140,6 +145,9 @@ module.exports = {
                 },
                 enabled() {
                    return loopback.isLoopbackHost(window.location.hostname);
+                },
+                isAndroid() {
+                   return navigator.userAgent.toLowerCase().indexOf("android") > -1;
                 },
     },
 	created() {
@@ -316,6 +324,17 @@ module.exports = {
                     });
                 });
             });
+        },
+
+        setAllowOnMobile(pair, allow) {
+            const previous = pair.allowOnMobile;
+            // Optimistic update — revert on failure so the checkbox tracks server state.
+            pair.allowOnMobile = allow;
+            this.localPost("/peergos/v0/sync/set-allow-mobile?label=" + pair.label + "&allow=" + allow)
+                .catch((err) => {
+                    pair.allowOnMobile = previous;
+                    this.$toast.error("Failed to update sync setting: " + (err && err.message ? err.message : err), {timeout:false});
+                });
         },
 
         syncNow(label) {
