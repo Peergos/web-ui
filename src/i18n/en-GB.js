@@ -177,6 +177,7 @@ module.exports = {
     "SETTINGS.SERVER.ERROR":"Unable to update Peergos server.",
     "SETTINGS.CACHE":"Set Cache Size",
     "SETTINGS.DELETE":"Delete Account",
+    "SETTINGS.LOGS":"Download logs",
     "SETTINGS.LOGOUT":"Log out",
     "SETTINGS.CACHE.INVALID":"Cache size value not valid",
     "SETTINGS.CACHE.LARGE":"Invalid Cache size. Maximum Cache Size: $SIZE MiB",

@@ -107,6 +107,13 @@
 				>
 					{{ translate("SETTINGS.DELETE") }}
 				</li>
+				<li
+					v-if="isAndroid"
+					v-on:keyup.enter="downloadLogs()"
+					@click="downloadLogs()"
+				>
+					{{ translate("SETTINGS.LOGS") }}
+				</li>
 				<li class="divider"></li>
 				<li v-on:keyup.enter="logout()" @click="logout()">{{ translate("SETTINGS.LOGOUT") }}</li>
 			</ul>
@@ -181,6 +188,10 @@ module.exports = {
 		...Vuex.mapGetters(['currentTheme', 'isPaid']),
         isLocalhost() {
             return loopback.isLoopbackHost(window.location.hostname);
+        },
+        isAndroid() {
+            return typeof window.Android !== "undefined"
+                && typeof window.Android.downloadLogs === "function";
         }
 	},
     created() {
@@ -402,6 +413,17 @@ module.exports = {
 		},
 		showViewAccount() {
 			this.$store.commit("CURRENT_MODAL", "ModalAccount");
+		},
+		downloadLogs() {
+		    if (typeof window.Android === "undefined"
+		            || typeof window.Android.downloadLogs !== "function") {
+		        return;
+		    }
+		    try {
+		        window.Android.downloadLogs();
+		    } catch (e) {
+		        this.$toast.error("Unable to download logs: " + (e && e.message ? e.message : e), {timeout:false});
+		    }
 		},
 		logout() {
 		    let that = this;
