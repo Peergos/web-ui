@@ -29,7 +29,13 @@
                           </label>
                       </div>
                       <div style="flex-basis:100%; height:0;"></div>
+                      <div style="flex-basis:100%; padding:0 1em; overflow-wrap:anywhere; word-break:break-word;">
+                          <div>Status: {{ pair.status || '—' }}</div>
+                          <div v-if="pair.error" style="color:#c0392b;">Error: {{ pair.error }}</div>
+                      </div>
+                      <div style="flex-basis:100%; height:0;"></div>
                       <button class="btn btn-success" @click="syncNow(pair.label)" style="flex-grow:1;margin:10px;">{{ translate("SYNC.NOW") }}</button>
+                      <button class="btn btn-info" @click="downloadLog(pair.label)" style="flex-grow:1;margin:10px;">Download log</button>
                       <button class="btn btn-warning" @click="removeSyncPair(pair.label)" style="flex-grow:1;margin:10px;">{{ translate("SYNC.STOPPAIR") }}</button>
                    </div>
                 </div>
@@ -225,9 +231,20 @@ module.exports = {
             if (! loopback.isLoopbackHost(window.location.hostname))
                 return;
             this.localPost("/peergos/v0/sync/status").then(function(result, err) {
-                if (result != null) {
-                    that.status = result.msg;
-                    that.error = result.error;
+                if (result == null)
+                    return;
+                that.status = result.msg;
+                that.error = result.error;
+                let perPair = {};
+                if (result.pairs) {
+                    for (let p of result.pairs)
+                        perPair[p.label] = p;
+                }
+                for (let i = 0; i < that.syncPairs.length; i++) {
+                    let p = that.syncPairs[i];
+                    let s = perPair[p.label];
+                    Vue.set(p, 'status', s ? s.msg : '');
+                    Vue.set(p, 'error', s ? s.error : null);
                 }
             })
         },
@@ -344,6 +361,20 @@ module.exports = {
             var that = this;
             this.localPost("/peergos/v0/sync/sync-now?label="+label).then(function(result, err) {
             })
+        },
+
+        downloadLog(label) {
+            if (typeof Android !== 'undefined' && Android && typeof Android.downloadSyncLog === 'function') {
+                Android.downloadSyncLog(label);
+                return;
+            }
+            let url = "/peergos/v0/sync/get-log?label=" + encodeURIComponent(label);
+            let a = document.createElement('a');
+            a.href = url;
+            a.download = "sync-" + label + ".log";
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
         },
 
         removeSyncPair(label) {
