@@ -15,7 +15,7 @@
               {{ displayFolderName(model.path) }}
               <span v-if="isFolder">[{{ model.isOpen ? '-' : '+' }}]</span>
             </span>
-            <button v-if="!model.isLeaf && mkdir_func" @click.stop="createSubfolder" class="mkdir-btn" title="New folder">+<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="margin-left:2px;vertical-align:middle"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg></button>
+            <button v-if="!model.isLeaf && mkdir_func" @click.stop="createSubfolder" class="mkdir-btn" title="New folder">+<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="margin-left:2px;vertical-align:middle"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg></button>
     </label>
     <li v-show="model.isOpen" v-if="isFolder" style="list-style-type: none">
       <TreeItem
@@ -155,10 +155,10 @@ module.exports = {
     border-radius: 3px;
     color: var(--green-500, #22c55e);
     cursor: pointer;
-    font-size: 0.75em;
+    font-size: 1.5em;
     line-height: 1;
     margin-left: 6px;
-    padding: 1px 5px;
+    padding: 2px 10px;
     vertical-align: middle;
 }
 .mkdir-btn:hover {

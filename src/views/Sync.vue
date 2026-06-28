@@ -11,7 +11,7 @@
                 <center><div class="hspace-5">
 		    <button class="btn btn-success" @click="addSyncPair()">{{ translate("SYNC.ADDPAIR") }}</button>
                 </div>
-                <div style="padding:1em">Status: {{ status }}</div>
+                <div style="padding:1em; overflow-wrap:anywhere; word-break:break-word;">Status: {{ status }}</div>
                 </center>
                 <div style="display:flex; flex-direction:column">
                    <div v-for="pair in syncPairs" style="display:flex; flex-direction:row; flex-wrap:wrap; padding:1em; margin:.5em; border:solid #16a98a;">
@@ -21,11 +21,14 @@
                       <a v-on:click="navigateTo(pair.remotepath)" style="cursor:pointer; padding:1em; flex-grow:1; text-align:center;">{{ pair.remotepath }}</a>
                       <label style="padding:1em; flex-grow:1; text-align:center;"> Syncing local deletes: {{ pair.syncLocalDeletes }}</label>
                       <label style="padding:1em; flex-grow:1; text-align:center;"> Syncing remote deletes: {{ pair.syncRemoteDeletes }}</label>
-                      <label v-if="isAndroid" class="checkbox__group" style="padding:1em; flex-grow:1; text-align:center;">
-                          Allow on mobile data
-                          <input type="checkbox" :checked="pair.allowOnMobile" @change="setAllowOnMobile(pair, $event.target.checked)" />
-                          <span class="checkmark"></span>
-                      </label>
+                      <div v-if="isAndroid" style="padding:1em; flex-grow:1; text-align:center;">
+                          <label class="checkbox__group" style="display:inline-block;">
+                              Allow on mobile data
+                              <input type="checkbox" :checked="pair.allowOnMobile" @change="setAllowOnMobile(pair, $event.target.checked)" />
+                              <span class="checkmark"></span>
+                          </label>
+                      </div>
+                      <div style="flex-basis:100%; height:0;"></div>
                       <button class="btn btn-success" @click="syncNow(pair.label)" style="flex-grow:1;margin:10px;">{{ translate("SYNC.NOW") }}</button>
                       <button class="btn btn-warning" @click="removeSyncPair(pair.label)" style="flex-grow:1;margin:10px;">{{ translate("SYNC.STOPPAIR") }}</button>
                    </div>
