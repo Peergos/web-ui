@@ -13749,6 +13749,10 @@ MonthCreationGuide.prototype._createGuideElement = function(dragStartEvent) {
         top: 0
     };
 
+    if (this.guide) {
+        this.guide.destroy();
+    }
+
     this.guide = new MonthGuide(options, this.monthCreation.monthView);
     this.guide.start(dragStartEvent);
 };
