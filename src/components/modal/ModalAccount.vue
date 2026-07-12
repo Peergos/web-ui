@@ -16,6 +16,14 @@
             <p>{{ translate("DELETE.ACCOUNT.TEXT2") }}</p>
             <p>{{ translate("DELETE.ACCOUNT.TEXT3") }}</p>
 
+                    <label>{{ translate("DELETE.ACCOUNT.WHY") }}</label>
+                    <textarea v-model="feedback" style="height:200px;" :placeholder="translate('FEEDBACK.BETTER')"></textarea>
+
+                    <label style="display:flex; align-items:center; gap:8px; margin-top:8px;">
+                        <input type="checkbox" v-model="allowEmailFollowup" style="width:auto;"/>
+                        {{ translate("PAID.CANCEL.FOLLOWUP") }}
+                    </label>
+
 			<FormPassword v-model="password" />
 
 			<div class="modal__warning account" v-if="warning">
@@ -40,6 +48,7 @@ const AppIcon = require("../AppIcon.vue");
 const FormPassword = require("../form/FormPassword.vue");
 const MultiFactorAuth = require("../auth/MultiFactorAuth.vue");
 const UriDecoder = require('../../mixins/uridecoder/index.js');
+const Feedback = require("../../mixins/feedback/index.js");
 const i18n = require("../../i18n/index.js");
 
 module.exports = {
@@ -50,12 +59,14 @@ module.exports = {
 		FormPassword,
 		MultiFactorAuth,
 	},
-        mixins:[UriDecoder, i18n],
+        mixins:[UriDecoder, Feedback, i18n],
 	data() {
 		return {
 			password: "",
 			warning: false,
             showMultiFactorAuth: false,
+            feedback: "",
+            allowEmailFollowup: false,
 		};
 	},
 	computed: {
@@ -75,6 +86,8 @@ module.exports = {
 
 		deleteAccount() {
             var that = this;
+            if (this.feedback.length > 0 || this.allowEmailFollowup)
+                this.sendUserFeedback(this.context, this.feedback, this.allowEmailFollowup);
             let handleMfa = function(mfaReq) {
                     let future = peergos.shared.util.Futures.incomplete();
                     let mfaMethods = mfaReq.methods.toArray([]);
