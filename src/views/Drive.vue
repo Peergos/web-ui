@@ -35,6 +35,7 @@
       @newApp="createNewApp()"
       @search="openSearch(false)"
       @paste="pasteToFolder($event)"
+      @filesToUpload="processFileUpload($event.files, undefined, $event.directories)"
     />
 
     <AppPrompt
@@ -1986,14 +1987,17 @@ module.exports = {
 				}
 			}
 			let allFiles = [];
+			let allDirectories = [];
 			if (allItems.length > 0) {
-				this.getEntries(allItems, 0, this, allFiles);
+				this.getEntries(allItems, 0, this, allFiles, allDirectories);
 			}
 		},
-		getEntries(items, itemIndex, that, allFiles) {
+		getEntries(items, itemIndex, that, allFiles, allDirectories) {
 			if (itemIndex < items.length) {
 				let item = items[itemIndex];
 				if (item.isDirectory) {
+					// record the directory even if it turns out to have no files, so it still gets created
+					allDirectories.push(item.fullPath);
 					let reader = item.createReader();
 					let doBatch = function () {
 						reader.readEntries(function (entries) {
@@ -2003,7 +2007,7 @@ module.exports = {
 								}
 								doBatch();
 							} else {
-								that.getEntries(items, ++itemIndex, that, allFiles);
+								that.getEntries(items, ++itemIndex, that, allFiles, allDirectories);
 							}
 						});
 					};
@@ -2014,11 +2018,11 @@ module.exports = {
                             fileEntry.directory = that.extractDirectory(item);
                             allFiles.push(fileEntry);
                         }
-                        that.getEntries(items, ++itemIndex, that, allFiles);
+                        that.getEntries(items, ++itemIndex, that, allFiles, allDirectories);
                     });
 				}
 			} else {
-				this.processFileUpload(allFiles);
+				this.processFileUpload(allFiles, undefined, allDirectories);
 			}
 		},
         extractDirectory(file) {
@@ -2095,8 +2099,9 @@ module.exports = {
             (c ^ crypto.getRandomValues(new Uint8Array(1))[0] & 15 >> c / 4).toString(16)
           );
         },
-	processFileUpload(files, retrying) {
+	processFileUpload(files, retrying, extraDirectories) {
             let that = this;
+            extraDirectories = extraDirectories || [];
             if (this.isSecretLink && !this.currentDir.isWritable()) {
                 return;
             }
@@ -2105,10 +2110,10 @@ module.exports = {
                     this.updateQuota(quotaBytes => {
                         if (quotaBytes != null) {
                             that.updateUsage(usageBytes => {
-                                that.processFileUpload(files, true);
+                                that.processFileUpload(files, true, extraDirectories);
                             });
                         } else {
-                            that.processFileUpload(files, true);
+                            that.processFileUpload(files, true, extraDirectories);
                         }
                     });
                 } else {
@@ -2160,6 +2165,16 @@ module.exports = {
                             title: title,
                             lastTitle: title,
                             lastSubtitle: '',
+                        }
+                        // pre-seed folders with no files of their own (e.g. empty dirs) so they still get created
+                        for (var d = 0; d < extraDirectories.length; d++) {
+                            let dirPath = extraDirectories[d];
+                            let fullDirPath = dirPath.length == 0 ? uploadParams.directoryPath
+                                : uploadParams.directoryPath.substring(0, uploadParams.directoryPath.length - 1) + dirPath;
+                            if (uploadParams.uploadPaths.indexOf(fullDirPath) == -1) {
+                                uploadParams.uploadPaths.push(fullDirPath);
+                                uploadParams.fileUploadProperties.push([]);
+                            }
                         }
                         uploadParams.progressInterval = setInterval(() => {
                             const stats = helpers.formatTransferStats(uploadParams.progress.done, uploadParams.progress.max, uploadParams.progress.startTime);
@@ -2296,7 +2311,7 @@ module.exports = {
         reduceAllUploads: function(index, files, future, uploadParams, previousDirectoryHolder) {
             let that = this;
             if (index == files.length) {
-                if (uploadParams.progress.total == 0) {
+                if (uploadParams.progress.total == 0 && uploadParams.uploadPaths.length == 0) {
                     that.addUploadProgressMessage(uploadParams, that.translate("DRIVE.UPLOAD.EMPTY"), '', '', '', true);
                 }
                 future.complete(true);

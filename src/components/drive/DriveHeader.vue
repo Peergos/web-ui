@@ -127,9 +127,44 @@ module.exports = {
                         if (typeof Android !== 'undefined') {
                             Android.notifyDirectoryRequest();
                             document.getElementById('uploadFileInput').click();
+                        } else if (typeof window.showDirectoryPicker === 'function') {
+                            // Unlike <input webkitdirectory>, this can see empty folders too.
+                            let that = this;
+                            window.showDirectoryPicker().then(function(dirHandle) {
+                                let files = [], directories = [];
+                                that.walkDirectoryHandle(dirHandle, '/' + dirHandle.name, files, directories).then(function() {
+                                    that.$emit('filesToUpload', {files: files, directories: directories});
+                                });
+                            }).catch(function(e) {
+                                if (e && e.name !== 'AbortError') console.log(e);
+                            });
                         } else {
                             document.getElementById('uploadDirectoriesInput').click();
                         }
+		},
+
+		// Walks a FileSystemDirectoryHandle, collecting files (tagged with their folder's
+		// path) and every directory path seen, including empty ones.
+		walkDirectoryHandle(dirHandle, path, files, directories) {
+			let that = this;
+			directories.push(path);
+			let iterator = dirHandle.entries();
+			function readNext() {
+				return iterator.next().then(function(result) {
+					if (result.done) return true;
+					let [name, handle] = result.value;
+					if (handle.kind !== 'file') {
+						return that.walkDirectoryHandle(handle, path + '/' + name, files, directories).then(readNext);
+					}
+					if (name == '.DS_Store') return readNext();
+					return handle.getFile().then(function(file) {
+						file.directory = path;
+						files.push(file);
+						return readNext();
+					});
+				});
+			}
+			return readNext();
 		},
 	},
 }
