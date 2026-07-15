@@ -49,6 +49,7 @@ module.exports = {
     "DRIVE.DROP":"Upuść pliki tutaj",
     "DRIVE.UPLOAD.FILES":"Prześlij pliki",
     "DRIVE.UPLOAD.FOLDER":"Prześlij folder",
+    "DRIVE.UPLOAD.FOLDER.EMPTY.WARNING":"Ta przeglądarka nie może w ten sposób przesłać pustych podfolderów - użyj metody przeciągnij i upuść, aby je uwzględnić.",
     "DRIVE.NEW.FOLDER":"Nowy folder",
     "DRIVE.NEW.FILE":"Nowy plik",
     "DRIVE.NEW.APP":"Nowa aplikacja",

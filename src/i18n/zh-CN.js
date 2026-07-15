@@ -46,6 +46,7 @@ module.exports = {
     "DRIVE.DROP":"将文件拖放到此处",
     "DRIVE.UPLOAD.FILES":"上传文件",
     "DRIVE.UPLOAD.FOLDER":"上传文件夹",
+    "DRIVE.UPLOAD.FOLDER.EMPTY.WARNING":"此浏览器无法以这种方式上传空的子文件夹 - 请改用拖放操作以包含它们。",
     "DRIVE.NEW.FOLDER":"新文件夹",
     "DRIVE.NEW.FILE":"新文件",
     "DRIVE.NEW.APP":"新应用",

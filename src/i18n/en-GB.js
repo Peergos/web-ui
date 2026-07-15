@@ -61,6 +61,7 @@ module.exports = {
     "DRIVE.DROP":"Drop files here",
     "DRIVE.UPLOAD.FILES":"Upload files",
     "DRIVE.UPLOAD.FOLDER":"Upload folder",
+    "DRIVE.UPLOAD.FOLDER.EMPTY.WARNING":"This browser cannot upload empty subfolders in this way - please use drag and drop to include them instead.",
     "DRIVE.NEW.FOLDER":"New folder",
     "DRIVE.NEW.FILE":"New file",
     "DRIVE.NEW.APP":"New App",

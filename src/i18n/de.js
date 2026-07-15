@@ -51,6 +51,7 @@ module.exports = {
     "DRIVE.DROP": "Dateien hier ablegen",
     "DRIVE.UPLOAD.FILES": "Dateien hochladen",
     "DRIVE.UPLOAD.FOLDER": "Ordner hochladen",
+    "DRIVE.UPLOAD.FOLDER.EMPTY.WARNING": "Dieser Browser kann leere Unterordner auf diese Weise nicht hochladen - bitte verwenden Sie stattdessen Drag & Drop, um sie einzuschließen.",
     "DRIVE.NEW.FOLDER": "Neuer Ordner",
     "DRIVE.NEW.FILE": "Neue Datei",
     "DRIVE.NEW.APP": "Neue App",

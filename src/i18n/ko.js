@@ -51,6 +51,7 @@ module.exports = {
     "DRIVE.DROP":"파일을 여기에 끌어다 놓으세요",
     "DRIVE.UPLOAD.FILES":"파일 업로드",
     "DRIVE.UPLOAD.FOLDER":"폴더 업로드",
+    "DRIVE.UPLOAD.FOLDER.EMPTY.WARNING":"이 브라우저에서는 이 방식으로 빈 하위 폴더를 업로드할 수 없습니다. 대신 끌어다 놓기(드래그 앤 드롭)를 사용해 포함하세요.",
     "DRIVE.NEW.FOLDER":"새 폴더",
     "DRIVE.NEW.FILE":"새 파일",
     "DRIVE.NEW.APP":"새 앱",

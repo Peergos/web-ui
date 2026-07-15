@@ -49,6 +49,7 @@ module.exports = {
     "DRIVE.DROP": "Déposez des fichiers ici",
     "DRIVE.UPLOAD.FILES": "Téléverser des fichiers",
     "DRIVE.UPLOAD.FOLDER": "Téléverser un dossier",
+    "DRIVE.UPLOAD.FOLDER.EMPTY.WARNING": "Ce navigateur ne peut pas téléverser les sous-dossiers vides de cette façon - veuillez utiliser le glisser-déposer pour les inclure.",
     "DRIVE.NEW.FOLDER": "Nouveau dossier",
     "DRIVE.NEW.FILE": "Nouveau fichier",
     "DRIVE.NEW.APP": "Nouvelle application",

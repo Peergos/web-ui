@@ -139,6 +139,7 @@ module.exports = {
                                 if (e && e.name !== 'AbortError') console.log(e);
                             });
                         } else {
+                            this.$toast.info(this.translate("DRIVE.UPLOAD.FOLDER.EMPTY.WARNING"), {id: 'upload-folder-limitation'});
                             document.getElementById('uploadDirectoriesInput').click();
                         }
 		},

@@ -61,6 +61,7 @@ module.exports = {
     "DRIVE.DROP":"Sleep je bestanden hier",
     "DRIVE.UPLOAD.FILES":"Beestanden uploaden",
     "DRIVE.UPLOAD.FOLDER":"Folders uploaden",
+    "DRIVE.UPLOAD.FOLDER.EMPTY.WARNING":"Deze browser kan lege submappen op deze manier niet uploaden - gebruik in plaats daarvan slepen en neerzetten om ze toe te voegen.",
     "DRIVE.NEW.FOLDER":"Nieuwe folder",
     "DRIVE.NEW.FILE":"Nieuw bestand",
     "DRIVE.NEW.APP":"Nieuwe App",

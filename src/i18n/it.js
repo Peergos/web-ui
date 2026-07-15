@@ -49,6 +49,7 @@ module.exports = {
     "DRIVE.DROP":"Trascina i file qui",
     "DRIVE.UPLOAD.FILES":"Carica file",
     "DRIVE.UPLOAD.FOLDER":"Carica cartella",
+    "DRIVE.UPLOAD.FOLDER.EMPTY.WARNING":"Questo browser non può caricare le sottocartelle vuote in questo modo: utilizza il trascinamento (drag and drop) per includerle.",
     "DRIVE.NEW.FOLDER":"Nuova cartella",
     "DRIVE.NEW.FILE":"Nuovo file",
     "DRIVE.NEW.APP":"Nuova app",

@@ -49,6 +49,7 @@ module.exports = {
     "DRIVE.DROP": "Suelta archivos aquí",
     "DRIVE.UPLOAD.FILES": "Subir archivos",
     "DRIVE.UPLOAD.FOLDER": "Subir carpeta",
+    "DRIVE.UPLOAD.FOLDER.EMPTY.WARNING": "Este navegador no puede subir subcarpetas vacías de esta forma; utiliza arrastrar y soltar para incluirlas.",
     "DRIVE.NEW.FOLDER": "Nueva carpeta",
     "DRIVE.NEW.FILE": "Nuevo archivo",
     "DRIVE.NEW.APP": "Nueva aplicación",
