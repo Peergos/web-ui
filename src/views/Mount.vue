@@ -6,7 +6,14 @@
             </template>
         </AppHeader>
         <main>
-            <div v-if="enabled" style="width:100%;">
+            <div v-if="isMac" style="width:100%;">
+                <center>
+                <div class="hspace-5" style="max-width:600px;">
+                    <h1>Coming soon to MacOS!</h1>
+                </div>
+                </center>
+            </div>
+            <div v-if="!isMac && enabled" style="width:100%;">
                 <div v-if="config.enabled" style="padding:1em;">
                     <p><label>{{ translate("MOUNT.PEERGOS_USER") }}</label> <strong>{{ config.peergosUsername }}</strong></p>
                     <p><label>{{ translate("MOUNT.MOUNT_PATH") }}</label> <strong>{{ config.mountPoint }}</strong></p>
@@ -34,7 +41,7 @@
                     <p v-if="error" style="color:red;">{{ error }}</p>
                 </div>
             </div>
-            <div v-if="!enabled" style="width:100%;">
+            <div v-if="!isMac && !enabled" style="width:100%;">
                 <center>
                 <div class="hspace-5" style="max-width:600px;">
                     <h1>{{ translate("MOUNT.DISABLED.TITLE") }}</h1>
@@ -171,6 +178,9 @@ module.exports = {
         ...Vuex.mapState(['context']),
         enabled() {
             return loopback.isLoopbackHost(window.location.hostname);
+        },
+        isMac() {
+            return detectOs() === "macOS";
         },
     },
     created() {
