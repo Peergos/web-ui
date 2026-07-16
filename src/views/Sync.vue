@@ -11,7 +11,7 @@
                 <center><div class="hspace-5">
 		    <button class="btn btn-success" @click="addSyncPair()">{{ translate("SYNC.ADDPAIR") }}</button>
                 </div>
-                <div style="padding:1em">Status: {{ status }}</div>
+                <div style="padding:1em; overflow-wrap:anywhere; word-break:break-word;">Status: {{ status }}</div>
                 </center>
                 <div style="display:flex; flex-direction:column">
                    <div v-for="pair in syncPairs" style="display:flex; flex-direction:row; flex-wrap:wrap; padding:1em; margin:.5em; border:solid #16a98a;">
@@ -21,7 +21,21 @@
                       <a v-on:click="navigateTo(pair.remotepath)" style="cursor:pointer; padding:1em; flex-grow:1; text-align:center;">{{ pair.remotepath }}</a>
                       <label style="padding:1em; flex-grow:1; text-align:center;"> Syncing local deletes: {{ pair.syncLocalDeletes }}</label>
                       <label style="padding:1em; flex-grow:1; text-align:center;"> Syncing remote deletes: {{ pair.syncRemoteDeletes }}</label>
+                      <div v-if="isAndroid" style="padding:1em; flex-grow:1; text-align:center;">
+                          <label class="checkbox__group" style="display:inline-block;">
+                              Allow on mobile data
+                              <input type="checkbox" :checked="pair.allowOnMobile" @change="setAllowOnMobile(pair, $event.target.checked)" />
+                              <span class="checkmark"></span>
+                          </label>
+                      </div>
+                      <div style="flex-basis:100%; height:0;"></div>
+                      <div style="flex-basis:100%; padding:0 1em; overflow-wrap:anywhere; word-break:break-word;">
+                          <div>Status: {{ pair.status || '—' }}</div>
+                          <div v-if="pair.error" style="color:#c0392b;">Error: {{ pair.error }}</div>
+                      </div>
+                      <div style="flex-basis:100%; height:0;"></div>
                       <button class="btn btn-success" @click="syncNow(pair.label)" style="flex-grow:1;margin:10px;">{{ translate("SYNC.NOW") }}</button>
+                      <button class="btn btn-info" @click="downloadLog(pair.label)" style="flex-grow:1;margin:10px;">Download log</button>
                       <button class="btn btn-warning" @click="removeSyncPair(pair.label)" style="flex-grow:1;margin:10px;">{{ translate("SYNC.STOPPAIR") }}</button>
                    </div>
                 </div>
@@ -141,6 +155,9 @@ module.exports = {
                 enabled() {
                    return loopback.isLoopbackHost(window.location.hostname);
                 },
+                isAndroid() {
+                   return navigator.userAgent.toLowerCase().indexOf("android") > -1;
+                },
     },
 	created() {
         this.getSyncState();
@@ -214,9 +231,20 @@ module.exports = {
             if (! loopback.isLoopbackHost(window.location.hostname))
                 return;
             this.localPost("/peergos/v0/sync/status").then(function(result, err) {
-                if (result != null) {
-                    that.status = result.msg;
-                    that.error = result.error;
+                if (result == null)
+                    return;
+                that.status = result.msg;
+                that.error = result.error;
+                let perPair = {};
+                if (result.pairs) {
+                    for (let p of result.pairs)
+                        perPair[p.label] = p;
+                }
+                for (let i = 0; i < that.syncPairs.length; i++) {
+                    let p = that.syncPairs[i];
+                    let s = perPair[p.label];
+                    Vue.set(p, 'status', s ? s.msg : '');
+                    Vue.set(p, 'error', s ? s.error : null);
                 }
             })
         },
@@ -318,10 +346,35 @@ module.exports = {
             });
         },
 
+        setAllowOnMobile(pair, allow) {
+            const previous = pair.allowOnMobile;
+            // Optimistic update — revert on failure so the checkbox tracks server state.
+            pair.allowOnMobile = allow;
+            this.localPost("/peergos/v0/sync/set-allow-mobile?label=" + pair.label + "&allow=" + allow)
+                .catch((err) => {
+                    pair.allowOnMobile = previous;
+                    this.$toast.error("Failed to update sync setting: " + (err && err.message ? err.message : err), {timeout:false});
+                });
+        },
+
         syncNow(label) {
             var that = this;
             this.localPost("/peergos/v0/sync/sync-now?label="+label).then(function(result, err) {
             })
+        },
+
+        downloadLog(label) {
+            if (typeof Android !== 'undefined' && Android && typeof Android.downloadSyncLog === 'function') {
+                Android.downloadSyncLog(label);
+                return;
+            }
+            let url = "/peergos/v0/sync/get-log?label=" + encodeURIComponent(label);
+            let a = document.createElement('a');
+            a.href = url;
+            a.download = "sync-" + label + ".log";
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
         },
 
         removeSyncPair(label) {

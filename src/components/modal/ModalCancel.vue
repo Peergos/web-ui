@@ -5,8 +5,13 @@
 		</template>
 		<template #body>
 
-                    <label>Why are you cancelling?</label>		
-                    <textarea v-model="feedback" style="height:200px;" placeholder="What can we do better?"></textarea>
+                    <label>{{ translate("PAID.CANCEL.WHY") }}</label>
+                    <textarea v-model="feedback" style="height:200px;" :placeholder="translate('FEEDBACK.BETTER')"></textarea>
+
+                    <label style="display:flex; align-items:center; gap:8px; margin-top:8px;">
+                        <input type="checkbox" v-model="allowEmailFollowup" style="width:auto;"/>
+                        {{ translate("PAID.CANCEL.FOLLOWUP") }}
+                    </label>
 
 		</template>
 		<template #footer>
@@ -20,16 +25,18 @@
 const AppButton = require("../AppButton.vue");
 const AppModal = require("AppModal.vue");
 const i18n = require("../../i18n/index.js");
+const Feedback = require("../../mixins/feedback/index.js");
 
 module.exports = {
 	components: {
 	    AppButton,
 	    AppModal,
 	},
-        mixins:[i18n],
+        mixins:[i18n, Feedback],
 	data() {
 		return {
-		    feedback: ""
+		    feedback: "",
+		    allowEmailFollowup: false
 		};
 	},
 	computed: {
@@ -49,9 +56,7 @@ module.exports = {
 		]),
             requestStorage(bytes) {
 		var that = this;
-                var maxContextSize = peergos.shared.user.ServerMessage.MAX_CONTENT_SIZE;
-                var trimmedContents = this.feedback.length > maxContextSize ? this.feedback.substring(0, maxContextSize) : this.feedback;
-                this.context.sendFeedback(trimmedContents);
+                this.sendUserFeedback(this.context, this.feedback, this.allowEmailFollowup);
                 this.context.requestSpace(0)
 		    .thenApply(x => that.updateQuota(quotaBytes => {
 			that.$store.commit("SET_MODAL", false)

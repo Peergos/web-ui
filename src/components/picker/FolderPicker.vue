@@ -172,12 +172,25 @@ module.exports = {
         mkdirAtPath: function(parentPath, newDirName, callback) {
             let that = this;
             this.showSpinner = true;
+            let newPath = parentPath + "/" + newDirName;
             this.context.getByPath(parentPath).thenCompose(function(opt) {
                 let dir = opt.get();
                 let batId = dir.getOwnerName() == that.context.username ? that.mirrorBatId : java.util.Optional.empty();
                 return dir.mkdir(newDirName, that.context.network, false, batId, that.context.crypto);
             }).thenApply(function(updatedDir) {
                 that.showSpinner = false;
+                if (!that.multipleFolderSelection) {
+                    that.selectedFoldersList.forEach(p => {
+                        let el = document.getElementById(p);
+                        if (el != null) el.checked = false;
+                    });
+                    that.selectedFoldersList = [newPath];
+                } else {
+                    that.selectedFoldersList.push(newPath);
+                }
+                if (!that.selectedPaths.includes(newPath)) {
+                    that.selectedPaths.push(newPath);
+                }
                 callback();
             }).exceptionally(function(throwable) {
                 that.showSpinner = false;
