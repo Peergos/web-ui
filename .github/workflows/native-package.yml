@@ -41,22 +41,16 @@ jobs:
         BUILD_CERTIFICATE_BASE64: ${{ secrets.BUILD_CERTIFICATE_BASE64 }}
         P12_PASSWORD: ${{ secrets.P12_PASSWORD }}
         BUILD_PROVISION_PROFILE_BASE64: ${{ secrets.BUILD_PROVISION_PROFILE_BASE64 }}
-        MACOS_PROVISIONING_PROFILE_APP: ${{ secrets.MACOS_PROVISIONING_PROFILE_APP }}
-        MACOS_PROVISIONING_PROFILE_EXT: ${{ secrets.MACOS_PROVISIONING_PROFILE_EXT }}
         KEYCHAIN_PASSWORD: ${{ secrets.KEYCHAIN_PASSWORD }}
       run: |
         # create variables
         CERTIFICATE_PATH=$RUNNER_TEMP/build_certificate.p12
         PP_PATH=$RUNNER_TEMP/build_pp.mobileprovision
-        PP_APP_PATH=$RUNNER_TEMP/peergos_mount_app.provisionprofile
-        PP_EXT_PATH=$RUNNER_TEMP/peergos_mount_ext.provisionprofile
         KEYCHAIN_PATH=$RUNNER_TEMP/app-signing.keychain-db
 
-        # import certificate and provisioning profiles from secrets
+        # import certificate and provisioning profile from secrets
         echo -n "$BUILD_CERTIFICATE_BASE64" | base64 --decode -o $CERTIFICATE_PATH
         echo -n "$BUILD_PROVISION_PROFILE_BASE64" | base64 --decode -o $PP_PATH
-        echo -n "$MACOS_PROVISIONING_PROFILE_APP" | base64 --decode -o $PP_APP_PATH
-        echo -n "$MACOS_PROVISIONING_PROFILE_EXT" | base64 --decode -o $PP_EXT_PATH
 
         # create temporary keychain
         security create-keychain -p "$KEYCHAIN_PASSWORD" $KEYCHAIN_PATH
@@ -68,11 +62,9 @@ jobs:
         security set-key-partition-list -S apple-tool:,apple: -k "$KEYCHAIN_PASSWORD" $KEYCHAIN_PATH
         security list-keychain -d user -s $KEYCHAIN_PATH
 
-        # install provisioning profiles
+        # apply provisioning profile
         mkdir -p ~/Library/MobileDevice/Provisioning\ Profiles
         cp $PP_PATH ~/Library/MobileDevice/Provisioning\ Profiles
-        cp $PP_APP_PATH ~/Library/MobileDevice/Provisioning\ Profiles
-        cp $PP_EXT_PATH ~/Library/MobileDevice/Provisioning\ Profiles
     - name: Build with Ant
       run: ant -noinput -buildfile build.xml peergos_submodule_sync dist
     - name: Install GraalVM and native-image
@@ -85,9 +77,6 @@ jobs:
       run: cd native-build && java BuildNativeImage.java
     - name: Package for host OS
       shell: bash
-      env:
-        MACOS_PROFILE_UUID_APP: ${{ secrets.MACOS_PROFILE_UUID_APP }}
-        MACOS_PROFILE_UUID_EXT: ${{ secrets.MACOS_PROFILE_UUID_EXT }}
       run: cd packager && java PackagePeergos.java
     - name: Package RPM
       if: runner.os == 'Linux'
