@@ -41,8 +41,28 @@ build-options:
 cleanup:
   - "/app/ant"
   - "/app/bin/ant"
+  - "/app/include"
+  - "/app/lib/pkgconfig"
+  - "*.la"
+  - "*.a"
 
 modules:
+  # secret-tool, used by FlatpakSecretToolStore to keep the mount password in the
+  # user's keyring rather than in mount-config.json. The runtime ships libsecret
+  # but not its CLI, so we build it here (library + tool, nothing else).
+  - name: libsecret
+    buildsystem: meson
+    config-opts:
+      - -Dmanpage=false
+      - -Dvapi=false
+      - -Dgtk_doc=false
+      - -Dintrospection=false
+      - -Dbash_completion=disabled
+    sources:
+      - type: archive
+        url: https://download.gnome.org/sources/libsecret/0.21/libsecret-0.21.7.tar.xz
+        sha256: 6b452e4750590a2b5617adc40026f28d2f4903de15f1250e1d1c40bfd68ed55e
+
   - name: chromium-codecs-dir
     buildsystem: simple
     build-commands:
