@@ -19,6 +19,12 @@
   <url type="vcs-browser">https://github.com/peergos/web-ui</url>
   
   <releases>
+    <release version="1.30.4" date="2026-07-19">
+      <url type="details">https://github.com/Peergos/web-ui/releases/tag/v1.30.0</url>
+      <description>
+        <p>Fix mounting of drive</p>
+      </description>
+    </release>
     <release version="1.30.3" date="2026-07-19">
       <url type="details">https://github.com/Peergos/web-ui/releases/tag/v1.30.0</url>
       <description>
