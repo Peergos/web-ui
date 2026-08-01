@@ -10,12 +10,16 @@ public class CompileSubmodule {
 
     public static void main(String[] a) throws Exception {
         String dir = a[0];
+        if (!new File(dir).isDirectory()) {
+            throw new IllegalArgumentException("Not a valid directory: " + dir);
+        }
+        File workDir = new File(dir).getCanonicalFile();
         if (isWindows()) {
-            runCommand(dir, "cmd", "/c", "ant", "dist");
-            runCommand(dir, "cmd", "/c", "ant", "gwtc");
+            new ProcessBuilder("cmd", "/c", "ant", "dist").directory(workDir).inheritIO().start().waitFor();
+            new ProcessBuilder("cmd", "/c", "ant", "gwtc").directory(workDir).inheritIO().start().waitFor();
         } else {
-            runCommand(dir, "ant", "dist");
-            runCommand(dir, "ant", "gwtc");
+            new ProcessBuilder("ant", "dist").directory(workDir).inheritIO().start().waitFor();
+            new ProcessBuilder("ant", "gwtc").directory(workDir).inheritIO().start().waitFor();
         }
         replaceUserAgentCheck(dir);
     }
@@ -24,14 +28,6 @@ public class CompileSubmodule {
         Path peergosLib = Paths.get(dir + "/war/peergoslib/peergoslib.nocache.js");
         String updated = Files.readString(peergosLib).replaceAll("var ua = navigator.userAgent.toLowerCase\\(\\);", "var ua = \"webkit\";");
         Files.writeString(peergosLib, updated, StandardOpenOption.TRUNCATE_EXISTING);
-    }
-
-    public static int runCommand(String dir, String... command) throws Exception {
-        System.out.println(Arrays.asList(command));
-        ProcessBuilder pb = new ProcessBuilder(command).directory(new File(dir));
-        pb.redirectError(ProcessBuilder.Redirect.INHERIT);
-        pb.redirectOutput(ProcessBuilder.Redirect.INHERIT);
-        return pb.start().waitFor();
     }
 
     public static boolean isWindows() {
