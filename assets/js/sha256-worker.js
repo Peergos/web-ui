@@ -20,7 +20,8 @@ self.onmessage = function(e) {
             });
     } else {
         try {
-            self.postMessage({id: id, result: new Int8Array(sha256(data))});
+            // the polyfill needs a typed array - an ArrayBuffer has no length and hashes as empty
+            self.postMessage({id: id, result: new Int8Array(sha256(new Uint8Array(data)))});
         } catch(err) {
             self.postMessage({id: id, error: err.toString()});
         }
