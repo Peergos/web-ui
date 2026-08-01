@@ -192,7 +192,8 @@ module.exports = {
                             if (trailer == null) {
                                 reject('Unexpected error from server');
                             } else {
-                                reject(trailer);
+                                // the server form encodes the message, so spaces arrive as +
+                                reject(decodeURIComponent(trailer.replace(/\+/g, ' ')));
                             }
                         } catch (e) {
                             reject(e);
@@ -277,8 +278,13 @@ module.exports = {
 
         openNativeHostDirChooser() {
             let future = peergos.shared.util.Futures.incomplete();
-            this.localPost("/peergos/v0/sync/get-host-dir").then(function(result, err) {
-               future.complete(result.root);
+            let that = this;
+            this.localPost("/peergos/v0/sync/get-host-dir").then(function(result) {
+               // an empty root means the picker was closed without choosing a folder
+               future.complete(result.root == null || result.root.length == 0 ? null : result.root);
+            }).catch(function(err) {
+               that.$toast.error(err && err.message ? err.message : err, {timeout:false});
+               future.complete(null);
             })
             return future;
         },
