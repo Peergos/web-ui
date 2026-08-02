@@ -5,8 +5,8 @@ using System.Drawing.Drawing2D;
 using System.IO;
 using System.Net;
 using System.Runtime.InteropServices;
+using System.Text;
 using System.Threading;
-using System.Web.Script.Serialization;
 using System.Windows.Forms;
 using Microsoft.Web.WebView2.Core;
 using Microsoft.Web.WebView2.WinForms;
@@ -142,12 +142,12 @@ class PeergosWindow : Form
                 using (var response = request.GetResponse())
                 using (var reader = new StreamReader(response.GetResponseStream()))
                 {
-                    var json = (Dictionary<string, object>) new JavaScriptSerializer().DeserializeObject(reader.ReadToEnd());
-                    object value;
-                    state = json.TryGetValue("state", out value) && value != null ? value.ToString() : "NONE";
-                    msg = json.TryGetValue("msg", out value) && value != null ? value.ToString() : "";
-                    if (json.TryGetValue("error", out value) && value != null && value.ToString().Length > 0)
-                        msg = value.ToString();
+                    Dictionary<string, string> json = ParseTopLevelStrings(reader.ReadToEnd());
+                    string value;
+                    state = json.TryGetValue("state", out value) && value.Length > 0 ? value : "NONE";
+                    msg = json.TryGetValue("msg", out value) ? value : "";
+                    if (json.TryGetValue("error", out value) && value.Length > 0)
+                        msg = value;
                 }
             }
             catch { }
@@ -172,6 +172,76 @@ class PeergosWindow : Form
     private static string Truncate(string s, int max)
     {
         return s.Length <= max ? s : s.Substring(0, max - 1) + "…";
+    }
+
+    // Just the top level string fields of the status reply, so that reading three
+    // strings doesn't cost a framework reference. Nested objects are skipped, so a
+    // pair's "state" can't be mistaken for the global one.
+    private static Dictionary<string, string> ParseTopLevelStrings(string json)
+    {
+        var fields = new Dictionary<string, string>();
+        string key = null;
+        int depth = 0;
+        for (int i = 0; i < json.Length; i++)
+        {
+            char c = json[i];
+            if (c == '{' || c == '[')
+                depth++;
+            else if (c == '}' || c == ']')
+            {
+                depth--;
+                key = null;
+            }
+            else if (c == '"')
+            {
+                // always consume the whole string, so braces inside one don't count
+                string text = ReadString(json, ref i);
+                if (depth != 1)
+                    continue;
+                int next = i + 1;
+                while (next < json.Length && char.IsWhiteSpace(json[next]))
+                    next++;
+                if (next < json.Length && json[next] == ':')
+                    key = text;
+                else if (key != null)
+                {
+                    fields[key] = text;
+                    key = null;
+                }
+            }
+        }
+        return fields;
+    }
+
+    // Reads the string starting at the quote json[i], leaving i on the closing quote.
+    private static string ReadString(string json, ref int i)
+    {
+        var text = new StringBuilder();
+        for (i++; i < json.Length && json[i] != '"'; i++)
+        {
+            if (json[i] != '\\' || i + 1 >= json.Length)
+            {
+                text.Append(json[i]);
+                continue;
+            }
+            switch (json[++i])
+            {
+                case 'n': text.Append('\n'); break;
+                case 't': text.Append('\t'); break;
+                case 'r': text.Append('\r'); break;
+                case 'b': text.Append('\b'); break;
+                case 'f': text.Append('\f'); break;
+                case 'u':
+                    if (i + 4 < json.Length)
+                    {
+                        text.Append((char) Convert.ToInt32(json.Substring(i + 1, 4), 16));
+                        i += 4;
+                    }
+                    break;
+                default: text.Append(json[i]); break; // \" \\ \/
+            }
+        }
+        return text.ToString();
     }
 
     private Icon IconFor(string state)
