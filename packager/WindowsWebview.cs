@@ -133,8 +133,12 @@ class PeergosWindow : Form
             try
             {
                 var request = (HttpWebRequest) WebRequest.Create("http://localhost:" + port + "/peergos/v0/sync/status");
+                // the localhost API only answers POST - a GET is a 405
+                request.Method = "POST";
+                request.ContentLength = 0;
                 request.Timeout = 5_000;
                 request.ReadWriteTimeout = 5_000;
+                using (request.GetRequestStream()) { }
                 using (var response = request.GetResponse())
                 using (var reader = new StreamReader(response.GetResponseStream()))
                 {

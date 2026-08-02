@@ -445,7 +445,9 @@ class StatusPoller:
         # An unreachable server is red: it should be there and isn't.
         state, message = "ERROR", "Cannot reach Peergos"
         try:
-            with urllib.request.urlopen(self.url, timeout=STATUS_TIMEOUT_S) as response:
+            # the localhost API only answers POST - a GET is a 405
+            request = urllib.request.Request(self.url, method="POST")
+            with urllib.request.urlopen(request, timeout=STATUS_TIMEOUT_S) as response:
                 status = json.loads(response.read().decode("utf-8"))
             state = status.get("state") or "NONE"
             message = status.get("error") or status.get("msg") or "Peergos"
