@@ -85,15 +85,21 @@ public class PackagePeergos {
         if (isWin) {
             // Build the WebView2 native wrapper and copy it alongside Peergos.jar
             // so jpackage bundles everything into the MSI.
-            runCommand("dotnet", "build", "WindowsWebview.csproj", "-c", "Release");
+            // Fail loudly: without these files the app silently falls back to
+            // msedge --app, which has no tray icon.
+            int dotnetExit = runCommand("dotnet", "build", "WindowsWebview.csproj", "-c", "Release");
+            if (dotnetExit != 0)
+                throw new IllegalStateException("dotnet build failed with exit code " + dotnetExit);
             Path buildOutput = Paths.get("bin", "Release", "net48");
             File[] outputFiles = buildOutput.toFile().listFiles();
-            if (outputFiles != null) {
-                for (File f : outputFiles) {
-                    if (f.isFile() && !f.getName().endsWith(".pdb"))
-                        Files.copy(f.toPath(), Paths.get("../server/" + f.getName()), StandardCopyOption.REPLACE_EXISTING);
-                }
+            if (outputFiles == null)
+                throw new IllegalStateException("No dotnet build output in " + buildOutput.toAbsolutePath());
+            for (File f : outputFiles) {
+                if (f.isFile() && !f.getName().endsWith(".pdb"))
+                    Files.copy(f.toPath(), Paths.get("../server/" + f.getName()), StandardCopyOption.REPLACE_EXISTING);
             }
+            if (! Paths.get("../server/PeergosWebView.exe").toFile().exists())
+                throw new IllegalStateException("PeergosWebView.exe missing from ../server");
             runCommand("jpackage", "-i", "../server", "-n", "peergos-app",
                        "--main-class", "peergos.server.Main", "--main-jar",
                        "Peergos.jar", "--vendor", "Peergos Ltd.",
