@@ -11,9 +11,11 @@ using System.Windows.Forms;
 using Microsoft.Web.WebView2.Core;
 using Microsoft.Web.WebView2.WinForms;
 
-[STAThread]
 static class Program
 {
+    // WinForms and WebView2 both need a single threaded apartment. This belongs on
+    // Main: on the class it is a compile error, not a no-op.
+    [STAThread]
     static void Main()
     {
         // Check WebView2 availability before showing any UI.
@@ -171,7 +173,7 @@ class PeergosWindow : Form
 
     private static string Truncate(string s, int max)
     {
-        return s.Length <= max ? s : s.Substring(0, max - 1) + "…";
+        return s.Length <= max ? s : s.Substring(0, max - 3) + "...";
     }
 
     // Just the top level string fields of the status reply, so that reading three
@@ -255,11 +257,13 @@ class PeergosWindow : Form
         return cached;
     }
 
+    // Fully qualified: Form.Icon is an inherited instance property of the same name,
+    // and these are static methods.
     // Not disposed: the fallback is a shared static that must outlive us, and this is
     // called a handful of times at most.
     private static Icon AppIcon()
     {
-        return Icon.ExtractAssociatedIcon(Application.ExecutablePath) ?? SystemIcons.Application;
+        return System.Drawing.Icon.ExtractAssociatedIcon(Application.ExecutablePath) ?? SystemIcons.Application;
     }
 
     // The status dot is a badge on the constant Peergos icon, so the icon is always present -
@@ -291,7 +295,7 @@ class PeergosWindow : Form
                 }
 
                 IntPtr handle = bitmap.GetHicon();
-                try { return (Icon) Icon.FromHandle(handle).Clone(); }
+                try { return (Icon) System.Drawing.Icon.FromHandle(handle).Clone(); }
                 finally { DestroyIcon(handle); }
             }
         }
