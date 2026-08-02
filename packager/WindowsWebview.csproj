@@ -9,5 +9,7 @@
   </PropertyGroup>
   <ItemGroup>
     <PackageReference Include="Microsoft.Web.WebView2" Version="1.0.2651.64" />
+    <!-- JavaScriptSerializer, for parsing the sync status the tray polls -->
+    <Reference Include="System.Web.Extensions" />
   </ItemGroup>
 </Project>
