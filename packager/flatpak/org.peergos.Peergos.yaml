@@ -80,8 +80,11 @@ modules:
       - cp -r dist /app/ant
       - ln -s /app/ant/bin/ant /app/bin/ant
     sources:
+      # vendored: downloads.apache.org times out often enough to fail the build,
+      # and only carries current releases. archive.apache.org keeps this version
+      # if it ever needs refetching.
       - type: archive
-        url: https://downloads.apache.org/ant/source/apache-ant-1.10.17-src.tar.gz
+        path: apache-ant-1.10.17-src.tar.gz
         sha256: f0390a5cee1076077f9adb8feddd99331feba4a9887f3379992b8b6b27be645c
 
   - name: peergos
