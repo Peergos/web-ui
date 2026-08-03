@@ -47,8 +47,15 @@ function CacheEntry(fileSize) {
     this.fileSize = fileSize;
     this.firstRun = true;
     this.fileMap = new Map();
+    // reads we have skipped past. The page can't be told to stop mid chunk, so
+    // its remaining writes are dropped rather than left to pile up in fileMap.
+    this.abandoned = new Set();
     this.getFileSize = function() {
         return this.fileSize;
+    }
+    this.abandon = function(uuid) {
+        this.abandoned.add(uuid);
+        this.fileMap.delete(uuid);
     }
     this.enqueue = function(moreData) {
         var offset = 0;
@@ -59,6 +66,8 @@ function CacheEntry(fileSize) {
 
         offset =  offset + uuidSize;
 
+        if (this.abandoned.has(uuid))
+            return;
         var file = this.fileMap.get(uuid)
         if(file == null) {
             file = new Uint8Array(0);
@@ -156,11 +165,26 @@ self.onfetch = event => {
         headers: { 'Access-Control-Allow-Origin': '*' }
       }))
     }
-    // WebKit's media loader can issue the first media request without a Range
-    // header, where chromium always sends bytes=0-. Treat a known streaming url
-    // as an open ended range, or the whole streaming path never engages.
     const streamingEntry = streamingMap ? streamingMap.get(url) : null
-    const rangeHeader = event.request.headers.get('range') || (streamingEntry ? 'bytes=0-' : null)
+    const rangeHeader = event.request.headers.get('range')
+    if (streamingEntry) {
+        const asked = rangeHeader ? /^bytes\=(\d+)\-(\d+)?$/g.exec(rangeHeader) : null
+        // WebKit's media loader sends no Range header at all, and takes a truncated
+        // 206 as the end of the media - it plays that block then fires ended without
+        // ever asking for more. So an open ended request (or one with no Range) is
+        // served as a stream running to the end of the file, pulling a chunk at a
+        // time as it is read. Seeking cancels it and starts a new one at the offset,
+        // so we still only fetch what is played.
+        if (!rangeHeader) {
+            return event.respondWith(streamToEndOfFile(streamingEntry, 0, false))
+        }
+        if (asked && asked[2] === undefined) {
+            return event.respondWith(streamToEndOfFile(streamingEntry, Number(asked[1]), true))
+        }
+        if (!asked) {
+            return event.respondWith(new Response(null, { status: 416 }))
+        }
+    }
     if (rangeHeader) {
         if (!streamingEntry) {
             console.log("Ignoring service worker request for " + url);
@@ -177,7 +201,11 @@ self.onfetch = event => {
         if (desiredEnd == 1) {
             firstBlockSize = 1;
         }
-        var end = cacheEntry.firstRun ? firstBlockSize : alignToChunkBoundary(start, Number(bytes[2]));
+        // the first block is only a short one when it really is the start of the
+        // file - otherwise end lands before start and the length goes negative
+        var end = cacheEntry.firstRun && start == 0 ?
+            firstBlockSize :
+            alignToChunkBoundary(start, Number(bytes[2]));
         if(end > cacheEntry.fileSize - 1) {
             end = cacheEntry.fileSize - 1;
         }
@@ -230,6 +258,101 @@ function alignToChunkBoundary(start, end) {
         return endOfRange;
     }
 }
+// Everything from start to the end of the file, as one response, pulling a chunk
+// at a time from the page as the consumer reads it.
+function streamToEndOfFile(streamingEntry, start, isRangeRequest) {
+    const cacheEntry = streamingEntry.entry;
+    const port = streamingEntry.port;
+    const fileSize = cacheEntry.getFileSize();
+    // the opening short block only makes sense at the start of the file
+    cacheEntry.firstRun = false;
+    var position = start;
+    var inFlight = null;
+    var cancelled = false;
+    const stream = new ReadableStream({
+        pull(controller) {
+            if (position >= fileSize) {
+                controller.close();
+                return;
+            }
+            var end = alignToChunkBoundary(position);
+            if (end > fileSize - 1) {
+                end = fileSize - 1;
+            }
+            const length = end - position + 1;
+            const id = uuid();
+            inFlight = id;
+            port.postMessage({
+                seekHi: (position - (position % Math.pow(2, 32))) / Math.pow(2, 32),
+                seekLo: position,
+                seekLength: length,
+                uuid: id
+            });
+            return awaitBlock(cacheEntry, id, length).then(block => {
+                inFlight = null;
+                cacheEntry.fileMap.delete(id);
+                if (cancelled)
+                    return;
+                if (block == null) {
+                    controller.error('Timed out waiting for ' + length + ' bytes at ' + position);
+                    return;
+                }
+                position = position + block.byteLength;
+                controller.enqueue(block);
+            });
+        },
+        // a skip abandons this response and starts a new one
+        cancel() {
+            cancelled = true;
+            if (inFlight != null) {
+                cacheEntry.abandon(inFlight);
+                // tell the page to stop reading, and drop whatever still arrives
+                port.postMessage({ cancel: inFlight });
+            }
+        }
+    });
+    if (!isRangeRequest) {
+        return new Response(stream, {
+            status: 200,
+            headers: [
+                ['Content-Type', streamingEntry.mimeType],
+                ['accept-ranges', 'bytes'],
+                ['content-length', fileSize]
+            ]
+        });
+    }
+    return new Response(stream, {
+        status: 206,
+        statusText: 'Partial Content',
+        headers: [
+            ['Content-Type', streamingEntry.mimeType],
+            ['accept-ranges', 'bytes'],
+            ['Content-Range', `bytes ${start}-${fileSize - 1}/${fileSize}`],
+            ['content-length', fileSize - start]
+        ]
+    });
+}
+
+// Resolves with the block once the page has written all of it, or null if it never does.
+function awaitBlock(cacheEntry, uuid, length) {
+    return new Promise(resolve => {
+        var attempts = 0;
+        const check = () => {
+            const store = cacheEntry.fileMap.get(uuid);
+            if (cacheEntry.abandoned.has(uuid)) {
+                resolve(null);
+            } else if (store != null && store.byteLength == length) {
+                resolve(store);
+            } else if (attempts++ > 30) {
+                resolve(null);
+            } else {
+                setTimeout(check, 1000);
+            }
+        };
+        check();
+    });
+}
+
 function returnRangeRequest(start, end, cacheEntry, mimeType, uuid) {
     return new Promise(function(resolve, reject) {
         let pump = (currentCount) => {

@@ -326,11 +326,22 @@ module.exports = {
 					this.crypto = crypto;
 					(this.sizeHigh = sizeHigh), (this.sizeLow = sizeLow);
 					this.readerFuture = null;
+					// reads the viewer skipped past, so we stop filling them
+					this.cancelled = new Set();
+					this.cancel = function (uuid) {
+						this.cancelled.add(uuid);
+					};
 					this.stream = function (seekHi, seekLo, length, uuid) {
 						let work = function (thatRef, header) {
 							var currentSize = length;
 							var blockSize = currentSize > this.maxBlockSize ? this.maxBlockSize: currentSize;
 							let pump = function (reader) {
+								if (thatRef.cancelled.has(uuid)) {
+									thatRef.cancelled.delete(uuid);
+									var cancelled = peergos.shared.util.Futures.incomplete();
+									cancelled.complete(true);
+									return cancelled;
+								}
 								if (blockSize > 0) {
                                     let bytes = new Uint8Array(blockSize + header.byteLength);
                                     for(var i=0;i < header.byteLength;i++){
