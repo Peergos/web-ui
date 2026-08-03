@@ -382,6 +382,8 @@ class PeergosWindow(Gtk.ApplicationWindow):
         self.webview.get_settings().set_enable_developer_extras(True)
         self.set_child(self.webview)
         self.webview.connect("decide-policy", self._on_decide_policy)
+        self.webview.connect("create", self._on_create)
+        self.webview.connect("permission-request", self._on_permission)
         self.webview.connect("run-file-chooser", self._on_file_chooser)
         self.webview.get_network_session().connect("download-started", self._on_download_started)
         self.webview.load_uri("http://localhost:" + port)
@@ -391,6 +393,40 @@ class PeergosWindow(Gtk.ApplicationWindow):
             decision.download()
             return True
         return False
+
+    def _on_create(self, webview, navigation_action):
+        # A link that wants a new window - anything target=_blank. There is no
+        # default for this, so without it such links silently do nothing. We don't
+        # want a second webview, so hand the address to the user's browser.
+        uri = navigation_action.get_request().get_uri()
+        Gtk.UriLauncher(uri=uri).launch(self, None, None, None)
+        return None
+
+    def _on_permission(self, webview, request):
+        # WebKit refuses every permission unless we answer. The camera is the one
+        # the UI needs, for scanning QR codes, and it is worth asking about.
+        if not isinstance(request, WebKit.UserMediaPermissionRequest) \
+                or not request.get_property("is-for-video-device"):
+            request.deny()
+            return True
+        dialog = Gtk.AlertDialog(message="Allow Peergos to use the camera?",
+                                 detail="Peergos uses the camera to scan QR codes.",
+                                 buttons=["Deny", "Allow"],
+                                 cancel_button=0,
+                                 default_button=1)
+        dialog.choose(self, None, self._on_camera_answer, request)
+        return True
+
+    def _on_camera_answer(self, dialog, result, request):
+        allowed = False
+        try:
+            allowed = dialog.choose_finish(result) == 1
+        except GLib.Error:
+            pass  # dismissed
+        if allowed:
+            request.allow()
+        else:
+            request.deny()
 
     def _on_file_chooser(self, webview, request):
         webview.evaluate_javascript("!!window.__peergosDirectoryUpload", -1, None, None, None,
