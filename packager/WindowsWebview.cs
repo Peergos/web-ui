@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Drawing;
 using System.Drawing.Drawing2D;
 using System.IO;
@@ -67,6 +68,7 @@ class PeergosWindow : Form
                 await webView.EnsureCoreWebView2Async(environment);
                 webView.CoreWebView2.Settings.AreDefaultContextMenusEnabled = false;
                 webView.CoreWebView2.Settings.IsStatusBarEnabled = false;
+                webView.CoreWebView2.NewWindowRequested += OnNewWindowRequested;
                 webView.CoreWebView2.Navigate("http://localhost:" + port);
             }
             catch (Exception e)
@@ -112,6 +114,26 @@ class PeergosWindow : Form
         statusTimer.Tick += (_, __) => PollStatus();
         statusTimer.Start();
         PollStatus();
+    }
+
+    // target=_blank links: send them to the user's browser rather than a second,
+    // chromeless WebView2 window with no way back.
+    private static void OnNewWindowRequested(object sender, CoreWebView2NewWindowRequestedEventArgs e)
+    {
+        e.Handled = true;
+        Uri uri;
+        if (! Uri.TryCreate(e.Uri, UriKind.Absolute, out uri))
+            return;
+        if (uri.Scheme != Uri.UriSchemeHttp && uri.Scheme != Uri.UriSchemeHttps)
+            return;
+        try
+        {
+            Process.Start(new ProcessStartInfo(uri.AbsoluteUri) { UseShellExecute = true });
+        }
+        catch (Exception ex)
+        {
+            Console.Error.WriteLine("Could not open " + uri + ": " + ex.Message);
+        }
     }
 
     // WebView2 defaults this to the directory holding the .exe, which under
