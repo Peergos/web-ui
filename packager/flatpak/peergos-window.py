@@ -360,6 +360,9 @@ class PeergosWindow(Gtk.ApplicationWindow):
         # installs and puts on XDG_DATA_DIRS.
         self.set_icon_name(APP_ID)
         self.webview = WebKit.WebView()
+        # the web inspector: right click > Inspect Element, or Ctrl+Shift+I.
+        # chromium --app had one, and it is off by default here.
+        self.webview.get_settings().set_enable_developer_extras(True)
         self.set_child(self.webview)
         self.webview.connect("decide-policy", self._on_decide_policy)
         self.webview.connect("run-file-chooser", self._on_file_chooser)
