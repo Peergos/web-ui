@@ -156,8 +156,12 @@ self.onfetch = event => {
         headers: { 'Access-Control-Allow-Origin': '*' }
       }))
     }
-    if (event.request.headers.get('range')) {
-        const streamingEntry = streamingMap.get(url)
+    // WebKit's media loader can issue the first media request without a Range
+    // header, where chromium always sends bytes=0-. Treat a known streaming url
+    // as an open ended range, or the whole streaming path never engages.
+    const streamingEntry = streamingMap ? streamingMap.get(url) : null
+    const rangeHeader = event.request.headers.get('range') || (streamingEntry ? 'bytes=0-' : null)
+    if (rangeHeader) {
         if (!streamingEntry) {
             console.log("Ignoring service worker request for " + url);
             return;
@@ -166,9 +170,7 @@ self.onfetch = event => {
         const port = streamingEntry.port;
         const mimeType = streamingEntry.mimeType;
 
-        const bytes = /^bytes\=(\d+)\-(\d+)?$/g.exec(
-            event.request.headers.get('range')
-        );
+        const bytes = /^bytes\=(\d+)\-(\d+)?$/g.exec(rangeHeader);
         const start = Number(bytes[1]);
         const desiredEnd = Number(bytes[2]);
         var firstBlockSize = oneMegBlockSize - 1;
