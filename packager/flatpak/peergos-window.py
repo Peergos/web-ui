@@ -70,6 +70,19 @@ LOGO = (
     "4uGiUsusbMnJPZIfnxzdaV7FKZ+O+91hs4/Y8ITgDdtZp3KY7qnb4Sdb8JD4cCpMmDBh/4f9BlC43ow="
 )
 
+# Nothing on a WebKitFileChooserRequest says whether the page wants a directory,
+# so note which kind of input was clicked and ask the page when the request comes.
+FILE_INPUT_KIND = """
+(function () {
+  document.addEventListener('click', event => {
+    const target = event.target;
+    if (target && target.tagName === 'INPUT' && target.type === 'file')
+      window.__peergosDirectoryUpload = target.hasAttribute('webkitdirectory')
+          || target.hasAttribute('directory') || !!target.webkitdirectory;
+  }, true);
+})();
+"""
+
 WATCHER_NAME = "org.kde.StatusNotifierWatcher"
 WATCHER_PATH = "/StatusNotifierWatcher"
 SNI_IFACE = "org.kde.StatusNotifierItem"
@@ -359,7 +372,11 @@ class PeergosWindow(Gtk.ApplicationWindow):
         # theme - /app/share/icons/.../org.peergos.Peergos.svg, which the flatpak
         # installs and puts on XDG_DATA_DIRS.
         self.set_icon_name(APP_ID)
-        self.webview = WebKit.WebView()
+        content = WebKit.UserContentManager()
+        content.add_script(WebKit.UserScript.new(FILE_INPUT_KIND,
+                                                 WebKit.UserContentInjectedFrames.ALL_FRAMES,
+                                                 WebKit.UserScriptInjectionTime.START, None, None))
+        self.webview = WebKit.WebView(user_content_manager=content)
         # the web inspector: right click > Inspect Element, or Ctrl+Shift+I.
         # chromium --app had one, and it is off by default here.
         self.webview.get_settings().set_enable_developer_extras(True)
@@ -376,12 +393,30 @@ class PeergosWindow(Gtk.ApplicationWindow):
         return False
 
     def _on_file_chooser(self, webview, request):
+        webview.evaluate_javascript("!!window.__peergosDirectoryUpload", -1, None, None, None,
+                                    self._on_upload_kind, request)
+        return True
+
+    def _on_upload_kind(self, webview, result, request):
+        directory = False
+        try:
+            directory = webview.evaluate_javascript_finish(result).to_boolean()
+        except GLib.Error:
+            pass
         dialog = Gtk.FileDialog()
-        if request.get_select_multiple():
+        if directory:
+            dialog.select_folder(self, None, self._on_folder_chosen, request)
+        elif request.get_select_multiple():
             dialog.open_multiple(self, None, self._on_files_chosen, request)
         else:
             dialog.open(self, None, self._on_file_chosen, request)
-        return True
+
+    def _on_folder_chosen(self, dialog, result, request):
+        try:
+            # webkit expands the directory itself, filling in webkitRelativePath
+            request.select_files([dialog.select_folder_finish(result).get_path()])
+        except GLib.Error:
+            request.cancel()
 
     def _on_file_chosen(self, dialog, result, request):
         try:
