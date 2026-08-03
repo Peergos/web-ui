@@ -43,6 +43,7 @@ class PeergosWindow : Form
     private readonly Dictionary<string, Icon> icons = new Dictionary<string, Icon>();
     // Closing the window hides it to the tray; only "Close Peergos" really quits.
     private bool quitting;
+    private bool trayHidden;
     private string currentState = "";
 
     public PeergosWindow(string port)
@@ -60,10 +61,22 @@ class PeergosWindow : Form
 
         Load += async (_, __) =>
         {
-            await webView.EnsureCoreWebView2Async();
-            webView.CoreWebView2.Settings.AreDefaultContextMenusEnabled = false;
-            webView.CoreWebView2.Settings.IsStatusBarEnabled = false;
-            webView.CoreWebView2.Navigate("http://localhost:" + port);
+            try
+            {
+                var environment = await CoreWebView2Environment.CreateAsync(null, UserDataFolder(), null);
+                await webView.EnsureCoreWebView2Async(environment);
+                webView.CoreWebView2.Settings.AreDefaultContextMenusEnabled = false;
+                webView.CoreWebView2.Settings.IsStatusBarEnabled = false;
+                webView.CoreWebView2.Navigate("http://localhost:" + port);
+            }
+            catch (Exception e)
+            {
+                // Exit 1 so the launcher falls back to Edge, rather than leaving
+                // the user with a crash dialog and a dead window.
+                Console.Error.WriteLine("WebView2 failed to start: " + e.Message);
+                HideTray();
+                Environment.Exit(1);
+            }
         };
 
         statusItem = new ToolStripMenuItem("Peergos") { Enabled = false };
@@ -101,6 +114,16 @@ class PeergosWindow : Form
         PollStatus();
     }
 
+    // WebView2 defaults this to the directory holding the .exe, which under
+    // C:\Program Files is not writable - CreateAsync then fails with E_ACCESSDENIED.
+    private static string UserDataFolder()
+    {
+        string folder = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
+                                     "Peergos", "WebView2");
+        Directory.CreateDirectory(folder);
+        return folder;
+    }
+
     private void ShowWindow()
     {
         Show();
@@ -119,8 +142,13 @@ class PeergosWindow : Form
         Application.Exit();
     }
 
+    // Called from Quit, from the WebView2 failure path, and again on ApplicationExit.
+    // Touching a disposed NotifyIcon throws, which would be another crash dialog.
     private void HideTray()
     {
+        if (trayHidden)
+            return;
+        trayHidden = true;
         tray.Visible = false;
         tray.Dispose();
     }
