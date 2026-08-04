@@ -596,6 +596,9 @@ class PeergosWindow(Gtk.ApplicationWindow):
             # the page is http://localhost, so this is cross origin and needs saying so
             headers = Soup.MessageHeaders.new(Soup.MessageHeadersType.RESPONSE)
             headers.append("Access-Control-Allow-Origin", "*")
+            # the page sets Cross-Origin-Embedder-Policy: require-corp, so every
+            # cross origin resource it loads has to opt in explicitly
+            headers.append("Cross-Origin-Resource-Policy", "cross-origin")
             response.set_http_headers(headers)
             request.finish_with_response(response)
         except Exception as e:
