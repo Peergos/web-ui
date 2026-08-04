@@ -532,13 +532,9 @@ class PeergosWindow(Gtk.ApplicationWindow):
         return False
 
     def _take_over_drops(self):
-        # webkit's own drop handling swallows the drop and gives the page nothing
-        # useful, so replace it with ours
-        controllers = self.webview.observe_controllers()
-        theirs = [controllers.get_item(i) for i in range(controllers.get_n_items())]
-        for controller in theirs:
-            if isinstance(controller, (Gtk.DropTarget, Gtk.DropTargetAsync)):
-                self.webview.remove_controller(controller)
+        # Ours only claims a list of files, so gtk hands it the drops from the
+        # desktop and leaves everything else - notably dragging within the page -
+        # to webkit's own target, which stays where it is.
         drops = Gtk.DropTarget.new(Gdk.FileList, Gdk.DragAction.COPY)
         drops.connect("motion", self._on_drop_motion)
         drops.connect("leave", self._on_drop_leave)
