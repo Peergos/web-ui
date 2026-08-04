@@ -26,6 +26,7 @@ import base64
 import json
 import math
 import os
+import subprocess
 import sys
 import threading
 import time
@@ -557,16 +558,48 @@ class PeergosWindow(Gtk.ApplicationWindow):
         self._run_js("window.__peergosDrop.leave(0, 0)")
 
     def _on_drop(self, target, files, x, y):
+        return self._deliver_paths([f.get_path() for f in files.get_files()], x, y)
+
+    def _deliver_paths(self, paths, x, y):
         self.dropped = {}
-        try:
-            entries = [self._describe(Path(f.get_path()), "")
-                       for f in files.get_files() if f.get_path() is not None]
-        except OSError as e:
-            print("Peergos: could not read the dropped files: " + str(e), file=sys.stderr)
+        entries = []
+        for path in paths:
+            if path is None:
+                continue
+            try:
+                entries.append(self._describe(Path(self._reachable(path)), ""))
+            except OSError as e:
+                # one unreadable item should not take the rest of the drop with it
+                print("Peergos: could not read " + path + ": " + str(e), file=sys.stderr)
+        if not entries:
             return False
         self._run_js("window.__peergosDrop.deliver(%s)"
                      % json.dumps({"x": x, "y": y, "entries": entries}))
         return True
+
+    def _reachable(self, path):
+        """A drag hands over a host path, which inside the sandbox may be one we
+        hold no permission for - another drive - or one that is not even the same
+        directory, /tmp being the app's own. Neither can be opened from in here,
+        and the drag carries no portal key to redeem, since only a sandboxed
+        sender registers one. The host can export it to the document portal on
+        our behalf though, which grants this app read access to that one item for
+        the session, and hands back a path that resolves in here."""
+        if os.path.exists(path) or not os.environ.get("FLATPAK_ID"):
+            return path
+        try:
+            export = subprocess.run(
+                ["flatpak-spawn", "--host", "flatpak", "document-export", "--transient",
+                 "--allow-read", "--app=" + os.environ["FLATPAK_ID"], path],
+                capture_output=True, text=True, timeout=20)
+        except (OSError, subprocess.SubprocessError) as e:
+            print("Peergos: could not export " + path + ": " + str(e), file=sys.stderr)
+            return path
+        if export.returncode != 0:
+            print("Peergos: could not export " + path + ": " + export.stderr.strip(),
+                  file=sys.stderr)
+            return path
+        return export.stdout.strip() or path
 
     def _describe(self, path, parent):
         """What the page needs to build a file, or a directory of them."""
@@ -610,7 +643,13 @@ class PeergosWindow(Gtk.ApplicationWindow):
             request.finish_error(GLib.Error(str(e)))
 
     def _run_js(self, script):
-        self.webview.evaluate_javascript(script, -1, None, None, None, None, None)
+        self.webview.evaluate_javascript(script, -1, None, None, None, self._ran_js, None)
+
+    def _ran_js(self, webview, result, user_data=None):
+        try:
+            webview.evaluate_javascript_finish(result)
+        except GLib.Error as e:
+            print("Peergos: script failed: " + e.message, file=sys.stderr)
 
     def _show_inspector(self, inspector):
         view = inspector.get_web_view()
