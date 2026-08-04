@@ -16,11 +16,11 @@ function digest(buf) {
 
 self.onmessage = function(e) {
     var id = e.data.id;
-    var file = e.data.file;
-    var start = e.data.start;
-    var end = e.data.end;
-    file.slice(start, end).arrayBuffer()
-        .then(digest)
+    // either a real file to slice, or the bytes already read for us
+    var slice = e.data.buffer !== undefined
+        ? Promise.resolve(e.data.buffer)
+        : e.data.file.slice(e.data.start, e.data.end).arrayBuffer();
+    slice.then(digest)
         .then(function(hash) { self.postMessage({id: id, result: new Int8Array(hash)}); })
         .catch(function(err) { self.postMessage({id: id, error: err.toString()}); });
 };

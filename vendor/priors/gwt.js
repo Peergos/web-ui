@@ -2008,8 +2008,24 @@ var scryptJS = {
                 resolve: function(data) { future.complete(convertToByteArray(data.slice(0, 32))); },
                 reject: function(err) { future.completeExceptionally(java.lang.Throwable.of(new Error(err))); }
             });
-            sha256FileWorkers[sha256FileNextWorker++ % sha256FileWorkerCount]
-                .postMessage({id: id, file: reader.file, start: start, end: end});
+            var worker = sha256FileWorkers[sha256FileNextWorker++ % sha256FileWorkerCount];
+            var file = reader.file;
+            if (typeof Blob !== 'undefined' && file instanceof Blob) {
+                worker.postMessage({id: id, file: file, start: start, end: end});
+            } else {
+                // A file handed to us by the desktop app holds no bytes of its own,
+                // so it cannot be cloned into a worker. Read the slice here instead
+                // and hand over the bytes.
+                file.slice(start, end).arrayBuffer().then(function(buf) {
+                    worker.postMessage({id: id, buffer: buf}, [buf]);
+                }).catch(function(err) {
+                    var pending = sha256FileCallbacks.get(id);
+                    if (pending) {
+                        sha256FileCallbacks.delete(id);
+                        pending.reject('' + err);
+                    }
+                });
+            }
             return future;
         }
 
