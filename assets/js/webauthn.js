@@ -1,15 +1,18 @@
 /* Security keys in the desktop app.
  *
- * The webview it runs in has no WebAuthn of its own, so navigator.credentials is
- * routed to the local Peergos server, which drives the key over CTAP2 and signs
- * for the relying party the account lives on. That is also why a key registered
- * in a browser for peergos.net works here, which the browser would refuse to do
- * from a localhost page.
+ * navigator.credentials is routed to the local Peergos server, which drives the
+ * key over CTAP2 and signs for the relying party the account lives on. That is
+ * also why a key registered in a browser for peergos.net works here, which the
+ * browser would refuse to do from a localhost page.
  *
  * In a real browser this file does nothing at all.
  */
 (function () {
-    if (navigator.credentials && window.PublicKeyCredential)
+    // Not a feature test: a webview with WebAuthn of its own - webkitgtk has it
+    // now - would pass one, and then scope the credential to rpId 'localhost',
+    // where a key registered in a browser for peergos.net cannot be offered.
+    // Only the desktop app sets this, so a browser here is left alone.
+    if (! window.__peergosDesktop)
         return;
 
     function serialise(options) {
@@ -88,11 +91,13 @@
     }
 
     // enough of PublicKeyCredential for the ui to see that security keys work
-    if (! window.PublicKeyCredential) {
+    if (! window.PublicKeyCredential)
         window.PublicKeyCredential = function PublicKeyCredential() {};
-        window.PublicKeyCredential.isUserVerifyingPlatformAuthenticatorAvailable =
-            function () { return Promise.resolve(false); };
-        window.PublicKeyCredential.isConditionalMediationAvailable =
-            function () { return Promise.resolve(false); };
-    }
+    // whatever the webview's own answers would be, what we drive is a key on the
+    // usb port: there is no platform authenticator here, and nothing to fill in
+    // a login form with before the user asks
+    window.PublicKeyCredential.isUserVerifyingPlatformAuthenticatorAvailable =
+        function () { return Promise.resolve(false); };
+    window.PublicKeyCredential.isConditionalMediationAvailable =
+        function () { return Promise.resolve(false); };
 })();

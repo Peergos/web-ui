@@ -75,6 +75,15 @@ LOGO = (
     "4uGiUsusbMnJPZIfnxzdaV7FKZ+O+91hs4/Y8ITgDdtZp3KY7qnb4Sdb8JD4cCpMmDBh/4f9BlC43ow="
 )
 
+# Webkitgtk now has WebAuthn of its own, and the page would use it in preference.
+# From a page served here it scopes credentials to rpId 'localhost', so a key
+# registered in a browser for peergos.net cannot be offered, and one registered
+# in the app is no use in a browser. This flag tells the page it is in the
+# desktop app, so it routes security keys through the local server, which drives
+# the key for the relying party the account actually lives on. A browser at the
+# same address is left alone: it is a real one, and never sees this set.
+DESKTOP_APP = "window.__peergosDesktop = true;\n"
+
 # Nothing on a WebKitFileChooserRequest says whether the page wants a directory,
 # so note which kind of input was clicked and ask the page when the request comes.
 FILE_INPUT_KIND = """
@@ -504,6 +513,9 @@ class PeergosWindow(Gtk.ApplicationWindow):
         self.last_hover = 0.0
 
         content = WebKit.UserContentManager()
+        content.add_script(WebKit.UserScript.new(DESKTOP_APP,
+                                                 WebKit.UserContentInjectedFrames.ALL_FRAMES,
+                                                 WebKit.UserScriptInjectionTime.START, None, None))
         content.add_script(WebKit.UserScript.new(FILE_INPUT_KIND,
                                                  WebKit.UserContentInjectedFrames.ALL_FRAMES,
                                                  WebKit.UserScriptInjectionTime.START, None, None))
