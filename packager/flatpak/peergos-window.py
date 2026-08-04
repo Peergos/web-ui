@@ -28,15 +28,19 @@ import math
 import os
 import sys
 import threading
+import time
 import urllib.request
 import zlib
+from pathlib import Path
 
 import gi
 
+gi.require_version("Gdk", "4.0")
 gi.require_version("Gtk", "4.0")
+gi.require_version("Soup", "3.0")
 gi.require_version("WebKit", "6.0")
 
-from gi.repository import Gio, GLib, Gtk, WebKit
+from gi.repository import Gdk, Gio, GLib, Gtk, Soup, WebKit
 
 APP_ID = "org.peergos.Peergos"
 POLL_SECONDS = 10
@@ -82,6 +86,129 @@ FILE_INPUT_KIND = """
   }, true);
 })();
 """
+
+# WebKitGTK stopped handing dropped files to web content in 2.50.3, as the fix for
+# CVE-2025-13947: a page now gets the file names but never the contents. So the host
+# takes the drop itself and hands the page file shaped objects that read through us.
+# They are lazy - each slice is fetched when read - so dropping a huge file is fine.
+DROP_SHIM = """
+window.__peergosDrop = (function () {
+  function read(id, from, to) {
+    // an in process scheme served by the host: a script message reply cannot
+    // carry an ArrayBuffer into the page, and this needs no copying
+    return fetch('peergos-drop:/' + id + '/' + from + '-' + to)
+        .then(function (response) { return response.arrayBuffer(); });
+  }
+
+  // a Blob shaped view of part of a file, which is all the uploader needs
+  function part(spec, from, to) {
+    var length = to - from;
+    return {
+      size: length,
+      type: spec.type,
+      slice: function (start, end) {
+        start = start === undefined ? 0 : (start < 0 ? Math.max(0, length + start) : Math.min(start, length));
+        end = end === undefined ? length : (end < 0 ? Math.max(0, length + end) : Math.min(end, length));
+        return part(spec, from + start, from + Math.max(start, end));
+      },
+      arrayBuffer: function () { return read(spec.id, from, to); },
+      text: function () {
+        return this.arrayBuffer().then(function (b) { return new TextDecoder().decode(b); });
+      }
+    };
+  }
+
+  function fileFor(spec) {
+    var file = part(spec, 0, spec.size);
+    file.name = spec.name;
+    file.lastModified = spec.lastModified || Date.now();
+    file.webkitRelativePath = '';
+    return file;
+  }
+
+  // the entries api, which is what the drive's drop handler walks
+  function entryFor(spec) {
+    if (spec.kind === 'file') {
+      var file = fileFor(spec);
+      return {isFile: true, isDirectory: false, name: spec.name, fullPath: spec.fullPath,
+              file: function (callback) { callback(file); }, _file: file};
+    }
+    var children = spec.children.map(entryFor);
+    return {isFile: false, isDirectory: true, name: spec.name, fullPath: spec.fullPath,
+            _children: children,
+            createReader: function () {
+              var served = false;
+              return {readEntries: function (callback) {
+                var batch = served ? [] : children;   // an empty batch ends the walk
+                served = true;
+                callback(batch);
+              }};
+            }};
+  }
+
+  function filesIn(entries, found) {
+    entries.forEach(function (entry) {
+      if (entry.isFile) found.push(entry._file);
+      else filesIn(entry._children, found);
+    });
+    return found;
+  }
+
+  function transferFor(entries) {
+    return {
+      types: ['Files'],
+      files: filesIn(entries, []),
+      items: entries.map(function (entry) {
+        return {kind: 'file', type: entry._file ? entry._file.type : '',
+                getAsFile: function () { return entry._file || null; },
+                webkitGetAsEntry: function () { return entry; }};
+      }),
+      dropEffect: 'copy',
+      effectAllowed: 'all',
+      getData: function () { return ''; }
+    };
+  }
+
+  // A real DragEvent only accepts a real DataTransfer, which cannot hold our lazy
+  // files, so carry ours on a plain event instead. Handlers read it just the same.
+  function dispatch(type, x, y, transfer) {
+    var target = document.elementFromPoint(x, y) || document.body;
+    var event = new Event(type, {bubbles: true, cancelable: true});
+    Object.defineProperty(event, 'dataTransfer', {value: transfer});
+    Object.defineProperty(event, 'clientX', {value: x});
+    Object.defineProperty(event, 'clientY', {value: y});
+    target.dispatchEvent(event);
+    return target;
+  }
+
+  var empty = {types: ['Files'], files: [], items: [], dropEffect: 'copy',
+               effectAllowed: 'all', getData: function () { return ''; }};
+  var over = null;
+
+  return {
+    // the page sees no real drag, so keep its highlighting alive by hand
+    hover: function (x, y) {
+      var target = dispatch('dragover', x, y, empty);
+      if (over && over !== target)
+        dispatch('dragleave', x, y, empty);
+      over = target;
+    },
+    leave: function (x, y) {
+      dispatch('dragleave', x, y, empty);
+      over = null;
+    },
+    deliver: function (payload) {
+      var entries = payload.entries.map(entryFor);
+      var transfer = transferFor(entries);
+      dispatch('dragover', payload.x, payload.y, transfer);
+      dispatch('drop', payload.x, payload.y, transfer);
+      over = null;
+    }
+  };
+})();
+"""
+
+DROP_SCHEME = "peergos-drop"
 
 WATCHER_NAME = "org.kde.StatusNotifierWatcher"
 WATCHER_PATH = "/StatusNotifierWatcher"
@@ -372,11 +499,21 @@ class PeergosWindow(Gtk.ApplicationWindow):
         # theme - /app/share/icons/.../org.peergos.Peergos.svg, which the flatpak
         # installs and puts on XDG_DATA_DIRS.
         self.set_icon_name(APP_ID)
+        self.dropped = {}          # id -> path, for the files of the current drop
+        self.last_hover = 0.0
+
         content = WebKit.UserContentManager()
         content.add_script(WebKit.UserScript.new(FILE_INPUT_KIND,
                                                  WebKit.UserContentInjectedFrames.ALL_FRAMES,
                                                  WebKit.UserScriptInjectionTime.START, None, None))
+        content.add_script(WebKit.UserScript.new(DROP_SHIM,
+                                                 WebKit.UserContentInjectedFrames.TOP_FRAME,
+                                                 WebKit.UserScriptInjectionTime.START, None, None))
+        context = WebKit.WebContext.get_default()
+        context.register_uri_scheme(DROP_SCHEME, self._serve_drop_range)
+        context.get_security_manager().register_uri_scheme_as_cors_enabled(DROP_SCHEME)
         self.webview = WebKit.WebView(user_content_manager=content)
+        self._take_over_drops()
         # the web inspector: right click > Inspect Element, or Ctrl+Shift+I.
         # chromium --app had one, and it is off by default here.
         self.webview.get_settings().set_enable_developer_extras(True)
@@ -393,6 +530,83 @@ class PeergosWindow(Gtk.ApplicationWindow):
             decision.download()
             return True
         return False
+
+    def _take_over_drops(self):
+        # webkit's own drop handling swallows the drop and gives the page nothing
+        # useful, so replace it with ours
+        controllers = self.webview.observe_controllers()
+        theirs = [controllers.get_item(i) for i in range(controllers.get_n_items())]
+        for controller in theirs:
+            if isinstance(controller, (Gtk.DropTarget, Gtk.DropTargetAsync)):
+                self.webview.remove_controller(controller)
+        drops = Gtk.DropTarget.new(Gdk.FileList, Gdk.DragAction.COPY)
+        drops.connect("motion", self._on_drop_motion)
+        drops.connect("leave", self._on_drop_leave)
+        drops.connect("drop", self._on_drop)
+        self.webview.add_controller(drops)
+
+    def _on_drop_motion(self, target, x, y):
+        now = time.monotonic()
+        if now - self.last_hover > 0.1:   # the page only needs enough to highlight
+            self.last_hover = now
+            self._run_js("window.__peergosDrop.hover(%d, %d)" % (x, y))
+        return Gdk.DragAction.COPY
+
+    def _on_drop_leave(self, target):
+        self._run_js("window.__peergosDrop.leave(0, 0)")
+
+    def _on_drop(self, target, files, x, y):
+        self.dropped = {}
+        try:
+            entries = [self._describe(Path(f.get_path()), "")
+                       for f in files.get_files() if f.get_path() is not None]
+        except OSError as e:
+            print("Peergos: could not read the dropped files: " + str(e), file=sys.stderr)
+            return False
+        self._run_js("window.__peergosDrop.deliver(%s)"
+                     % json.dumps({"x": x, "y": y, "entries": entries}))
+        return True
+
+    def _describe(self, path, parent):
+        """What the page needs to build a file, or a directory of them."""
+        full = parent + "/" + path.name
+        if path.is_dir():
+            children = []
+            for child in sorted(path.iterdir(), key=lambda p: p.name):
+                try:
+                    children.append(self._describe(child, full))
+                except OSError:
+                    pass  # unreadable child, skip it rather than lose the drop
+            return {"kind": "directory", "name": path.name, "fullPath": full, "children": children}
+        identifier = str(len(self.dropped))
+        self.dropped[identifier] = str(path)
+        info = path.stat()
+        return {"kind": "file", "id": identifier, "name": path.name, "fullPath": full,
+                "size": info.st_size, "type": Gio.content_type_guess(str(path), None)[0],
+                "lastModified": int(info.st_mtime * 1000)}
+
+    def _serve_drop_range(self, request):
+        """One slice of a dropped file. Nothing else can ask: the ids only exist
+        for the current drop, and the scheme is only served inside this window."""
+        try:
+            path, span = request.get_uri().split(":", 1)[1].lstrip("/").split("/", 1)
+            start, end = (int(value) for value in span.split("-"))
+            with open(self.dropped[path], "rb") as source:
+                source.seek(start)
+                data = source.read(max(0, end - start))
+            response = WebKit.URISchemeResponse.new(
+                Gio.MemoryInputStream.new_from_bytes(GLib.Bytes.new(data)), len(data))
+            response.set_content_type("application/octet-stream")
+            # the page is http://localhost, so this is cross origin and needs saying so
+            headers = Soup.MessageHeaders.new(Soup.MessageHeadersType.RESPONSE)
+            headers.append("Access-Control-Allow-Origin", "*")
+            response.set_http_headers(headers)
+            request.finish_with_response(response)
+        except Exception as e:
+            request.finish_error(GLib.Error(str(e)))
+
+    def _run_js(self, script):
+        self.webview.evaluate_javascript(script, -1, None, None, None, None, None)
 
     def _on_create(self, webview, navigation_action):
         # A link that wants a new window - anything target=_blank. There is no
