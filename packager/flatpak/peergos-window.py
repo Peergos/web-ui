@@ -517,6 +517,11 @@ class PeergosWindow(Gtk.ApplicationWindow):
         # the web inspector: right click > Inspect Element, or Ctrl+Shift+I.
         # chromium --app had one, and it is off by default here.
         self.webview.get_settings().set_enable_developer_extras(True)
+        # It cannot dock into this window - the webview is the whole of it - and
+        # webkit docks it regardless, leaving a blank window. Give it its own.
+        inspector = self.webview.get_inspector()
+        inspector.connect("attach", self._show_inspector)
+        inspector.connect("open-window", self._show_inspector)
         self.set_child(self.webview)
         self.webview.connect("decide-policy", self._on_decide_policy)
         self.webview.connect("create", self._on_create)
@@ -606,6 +611,14 @@ class PeergosWindow(Gtk.ApplicationWindow):
 
     def _run_js(self, script):
         self.webview.evaluate_javascript(script, -1, None, None, None, None, None)
+
+    def _show_inspector(self, inspector):
+        view = inspector.get_web_view()
+        if view.get_parent() is None:
+            window = Gtk.Window(title="Web Inspector", default_width=1100, default_height=750)
+            window.set_child(view)
+            window.present()
+        return True
 
     def _on_create(self, webview, navigation_action):
         # A link that wants a new window - anything target=_blank. There is no
