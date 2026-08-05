@@ -24,8 +24,9 @@ finish-args:
   # bus name instead.
   - --talk-name=org.kde.StatusNotifierWatcher
 
-  - --device=dri
-  - --device=usb
+  # all, not dri and usb: a security key is spoken to over /dev/hidraw, which no
+  # narrower permission reaches
+  - --device=all
   - --socket=pulseaudio
   - --socket=cups
   - --socket=fallback-x11
