@@ -42,7 +42,7 @@
     // Was first enabled in chrome v73
   }*/
 
-  function createWriteStream (filename, mimeType, urlCallback, seekCallback, queuingStrategy, size) {
+  function createWriteStream (filename, mimeType, urlCallback, seekCallback, queuingStrategy, size, cancelCallback) {
     // normalize arguments
     if (Number.isFinite(queuingStrategy)) {
       [size, queuingStrategy] = [queuingStrategy, size]
@@ -79,6 +79,9 @@
           */
         } else if (evt.data.seekLength) {
             seekCallback(evt.data.seekHi, evt.data.seekLo, evt.data.seekLength, evt.data.uuid)
+        } else if (evt.data.cancel) {
+            // the reader skipped past this read, stop filling it
+            if (cancelCallback) cancelCallback(evt.data.cancel)
         }
       }
 

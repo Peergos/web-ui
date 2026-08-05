@@ -1975,7 +1975,9 @@ module.exports = {
 				}
 			});
 		},
-		dndDrop(evt) {
+		// intoFolder names a folder in this directory to upload into, when the
+		// files were dropped onto it rather than onto empty space
+		dndDrop(evt, intoFolder) {
 			evt.preventDefault();
 			let entries = evt.dataTransfer.items;
 			let allItems = [];
@@ -1987,10 +1989,10 @@ module.exports = {
 			}
 			let allFiles = [];
 			if (allItems.length > 0) {
-				this.getEntries(allItems, 0, this, allFiles);
+				this.getEntries(allItems, 0, this, allFiles, intoFolder);
 			}
 		},
-		getEntries(items, itemIndex, that, allFiles) {
+		getEntries(items, itemIndex, that, allFiles, intoFolder) {
 			if (itemIndex < items.length) {
 				let item = items[itemIndex];
 				if (item.isDirectory) {
@@ -2003,7 +2005,7 @@ module.exports = {
 								}
 								doBatch();
 							} else {
-								that.getEntries(items, ++itemIndex, that, allFiles);
+								that.getEntries(items, ++itemIndex, that, allFiles, intoFolder);
 							}
 						});
 					};
@@ -2011,10 +2013,11 @@ module.exports = {
 				} else {
                     item.file(function (fileEntry) {
                         if (fileEntry.name != '.DS_Store') {
-                            fileEntry.directory = that.extractDirectory(item);
+                            fileEntry.directory = (intoFolder == null ? '' : '/' + intoFolder)
+                                + that.extractDirectory(item);
                             allFiles.push(fileEntry);
                         }
-                        that.getEntries(items, ++itemIndex, that, allFiles);
+                        that.getEntries(items, ++itemIndex, that, allFiles, intoFolder);
                     });
 				}
 			} else {
@@ -3207,6 +3210,16 @@ module.exports = {
         drop: function(ev, target) {
             console.log("drop");
             ev.preventDefault();
+            // the drop zone around the cards handles this event too as it bubbles,
+            // and would upload a second copy, into the folder being looked at
+            // rather than the one aimed at
+            ev.stopPropagation();
+            // files dragged in from outside land here when aimed at a card rather
+            // than at empty space: upload them, into this folder if it is one
+            if (ev.dataTransfer.files != null && ev.dataTransfer.files.length > 0) {
+                this.dndDrop(ev, target.isDirectory() ? target.getFileProperties().name : null);
+                return;
+            }
             var moveId = ev.dataTransfer.getData("text");
             var id = ev.currentTarget.id;
             var that = this;

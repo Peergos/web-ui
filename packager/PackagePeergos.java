@@ -83,17 +83,33 @@ public class PackagePeergos {
         }
         
         if (isWin) {
-            // Build the WebView2 native wrapper and copy it alongside Peergos.jar
-            // so jpackage bundles everything into the MSI.
-            runCommand("dotnet", "build", "WindowsWebview.csproj", "-c", "Release");
-            Path buildOutput = Paths.get("bin", "Release", "net48");
-            File[] outputFiles = buildOutput.toFile().listFiles();
-            if (outputFiles != null) {
-                for (File f : outputFiles) {
-                    if (f.isFile() && !f.getName().endsWith(".pdb"))
-                        Files.copy(f.toPath(), Paths.get("../server/" + f.getName()), StandardCopyOption.REPLACE_EXISTING);
+            // Build the WebView2 native wrapper and copy it alongside Peergos.jar so
+            // jpackage bundles everything into the MSI. Without it the app falls back
+            // to msedge --app, which has no tray icon, so fail rather than ship that.
+            // -o pins the output dir: otherwise it picks up the platform the WebView2
+            // package selects, e.g. bin/x64/Release/net48.
+            Path buildOutput = Paths.get("bin", "webview");
+            int dotnetExit = runCommand("dotnet", "build", "WindowsWebview.csproj", "-c", "Release",
+                                        "-o", buildOutput.toString());
+            if (dotnetExit != 0)
+                throw new IllegalStateException("dotnet build failed with exit code " + dotnetExit);
+            if (! Files.isDirectory(buildOutput))
+                throw new IllegalStateException("No dotnet build output in " + buildOutput.toAbsolutePath());
+            Path serverDir = Paths.get("../server");
+            // recursive: WebView2Loader.dll can sit under runtimes/<rid>/native/
+            try (Stream<Path> built = Files.walk(buildOutput)) {
+                for (Path source : built.filter(Files::isRegularFile).collect(Collectors.toList())) {
+                    if (source.getFileName().toString().endsWith(".pdb"))
+                        continue;
+                    Path relative = buildOutput.relativize(source);
+                    Path target = serverDir.resolve(relative);
+                    Files.createDirectories(target.getParent());
+                    Files.copy(source, target, StandardCopyOption.REPLACE_EXISTING);
+                    System.out.println("webview: " + relative);
                 }
             }
+            if (! Files.exists(serverDir.resolve("PeergosWebView.exe")))
+                throw new IllegalStateException("PeergosWebView.exe missing from " + serverDir.toAbsolutePath());
             runCommand("jpackage", "-i", "../server", "-n", "peergos-app",
                        "--main-class", "peergos.server.Main", "--main-jar",
                        "Peergos.jar", "--vendor", "Peergos Ltd.",

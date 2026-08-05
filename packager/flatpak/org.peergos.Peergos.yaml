@@ -1,11 +1,11 @@
 app-id: org.peergos.Peergos
-runtime: org.freedesktop.Platform
-runtime-version: "25.08"
+# WebKitGTK, GTK4 and the python bindings the window needs all live in the GNOME
+# runtime, so the browser engine is patched by a user's flatpak update rather
+# than by us rebuilding. This used to bundle the Chromium base app instead.
+runtime: org.gnome.Platform
+runtime-version: "49"
 
-base: org.chromium.Chromium
-base-version: stable
-
-sdk: org.freedesktop.Sdk
+sdk: org.gnome.Sdk
 
 sdk-extensions:
   - org.freedesktop.Sdk.Extension.openjdk25
@@ -19,19 +19,19 @@ finish-args:
   - --filesystem=home
   - --talk-name=org.freedesktop.Flatpak
   - --talk-name=org.freedesktop.secrets
+  # register the tray icon. Owning org.kde.StatusNotifierItem-$PID-$ITEM_ID is
+  # not needed, and is unreliable in a sandbox: we register under our unique
+  # bus name instead.
+  - --talk-name=org.kde.StatusNotifierWatcher
 
-  - --device=dri
-  - --device=usb
+  # all, not dri and usb: a security key is spoken to over /dev/hidraw, which no
+  # narrower permission reaches
+  - --device=all
   - --socket=pulseaudio
   - --socket=cups
   - --socket=fallback-x11
   - --socket=wayland
-  - --filesystem=xdg-run/pipewire-0:ro
-  - --env=LD_LIBRARY_PATH=/app/chromium/nonfree-codecs/lib
   - --env=PATH=/app/jre/bin:/app/bin:/usr/bin
-
-inherit-extensions:
-  - org.chromium.Chromium.Codecs
 
 build-options:
   append-path: /usr/lib/sdk/openjdk25/bin
@@ -54,8 +54,8 @@ modules:
   - name: libsecret
     buildsystem: meson
     config-opts:
-      # /app/share/locale is a dangling symlink in the Chromium base, so installing
-      # libsecret's .mo files there fails. We don't ship them — park them out of the way.
+      # we don't ship libsecret's translations — park the .mo files out of the
+      # way of the runtime's own locale dir, and drop them in cleanup.
       - -Dlocaledir=/app/lib/libsecret/locale
       - -Dmanpage=false
       - -Dvapi=false
@@ -66,11 +66,6 @@ modules:
       - type: archive
         url: https://download.gnome.org/sources/libsecret/0.21/libsecret-0.21.7.tar.xz
         sha256: 6b452e4750590a2b5617adc40026f28d2f4903de15f1250e1d1c40bfd68ed55e
-
-  - name: chromium-codecs-dir
-    buildsystem: simple
-    build-commands:
-      - mkdir -p /app/chromium/nonfree-codecs/lib
 
   - name: openjdk
     buildsystem: simple
@@ -86,8 +81,11 @@ modules:
       - cp -r dist /app/ant
       - ln -s /app/ant/bin/ant /app/bin/ant
     sources:
+      # vendored: downloads.apache.org times out often enough to fail the build,
+      # and only carries current releases. archive.apache.org keeps this version
+      # if it ever needs refetching.
       - type: archive
-        url: https://downloads.apache.org/ant/source/apache-ant-1.10.17-src.tar.gz
+        path: apache-ant-1.10.17-src.tar.gz
         sha256: f0390a5cee1076077f9adb8feddd99331feba4a9887f3379992b8b6b27be645c
 
   - name: peergos
@@ -102,7 +100,7 @@ modules:
 
       - install -Dm755 peergos.sh /app/bin/peergos
 
-      - install -Dm755 packager/flatpak/flatpak.sh /app/bin/flatpak.sh
+      - install -Dm755 packager/flatpak/peergos-window.py /app/bin/peergos-window
 
       - install -Dm644 packager/flatpak/org.peergos.Peergos.desktop /app/share/applications/org.peergos.Peergos.desktop
 
