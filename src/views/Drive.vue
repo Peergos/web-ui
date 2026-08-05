@@ -3210,6 +3210,10 @@ module.exports = {
         drop: function(ev, target) {
             console.log("drop");
             ev.preventDefault();
+            // the drop zone around the cards handles this event too as it bubbles,
+            // and would upload a second copy, into the folder being looked at
+            // rather than the one aimed at
+            ev.stopPropagation();
             // files dragged in from outside land here when aimed at a card rather
             // than at empty space: upload them, into this folder if it is one
             if (ev.dataTransfer.files != null && ev.dataTransfer.files.length > 0) {
