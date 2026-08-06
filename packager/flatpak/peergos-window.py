@@ -17,6 +17,12 @@ extension) there is no tray to reopen from, so closing the window quits as it
 did before - otherwise the user is left with an invisible server they can't get
 back to.
 
+"Start on boot" in the same menu writes a login item into ~/.config/autostart,
+which runs us again with -minimised true and so with PEERGOS_MINIMISED set: the
+server starts, the tray icon appears, and no window does. The same rule applies
+as for closing - with no tray, minimised is ignored and the window is shown,
+since an app nobody can see or quit is worse than an unwanted window.
+
 Downloads save straight to the XDG download directory rather than prompting, as
 chromium --app did here before. GTK4's file dialogs are async only, and
 WebKitDownload needs its destination synchronously.
@@ -46,6 +52,10 @@ from gi.repository import Gdk, Gio, GLib, Gtk, Soup, WebKit
 APP_ID = "org.peergos.Peergos"
 POLL_SECONDS = 10
 STATUS_TIMEOUT_S = 5
+# How long a minimised start waits for a tray to take it before giving up and
+# showing the window. Registering takes a bus round trip, and at login we may
+# well be up before the shell extension that hosts us is.
+TRAY_WAIT_S = 10
 
 ICON_SIZE = 44
 DOT_RADIUS = 10.0
@@ -230,7 +240,19 @@ MENU_PATH = "/MenuBar"
 # Menu item ids. 0 is the root the layout hangs off.
 ITEM_STATUS = 1
 ITEM_SEPARATOR = 2
-ITEM_QUIT = 3
+ITEM_AUTOSTART = 3
+ITEM_QUIT = 4
+MENU_ITEMS = (ITEM_STATUS, ITEM_SEPARATOR, ITEM_AUTOSTART, ITEM_QUIT)
+
+AUTOSTART_ENTRY = """[Desktop Entry]
+Type=Application
+Name=Peergos
+Comment=Private, secure peer-to-peer storage
+Exec=flatpak run org.peergos.Peergos -minimised true
+Icon=org.peergos.Peergos
+Terminal=false
+X-Flatpak=org.peergos.Peergos
+"""
 
 SNI_XML = """
 <node>
@@ -358,11 +380,55 @@ def _draw_dot(pixels, colour):
             pixels[i + 3] = int(pixels[i + 3] * (1.0 - outer) + 0xFF * outer)
 
 
+def _autostart_path():
+    """Where the session manager looks for login items.
+
+    Deliberately not GLib.get_user_config_dir(): inside the flatpak that is the
+    app's private ~/.var/app/org.peergos.Peergos/config, which nothing outside
+    the sandbox ever reads. The real ~/.config is reachable only because the
+    manifest grants --filesystem=home, so this one line is what a narrower
+    permission would break; the sanctioned alternative is then the Background
+    portal (org.freedesktop.portal.Background.RequestBackground with
+    autostart: true), which writes the same file from outside the sandbox but
+    can be refused. Kept in one place so it can be swapped for that.
+
+    The entry launches `flatpak run` on the host, not the sandboxed command:
+    the file is read by the host's session manager, which knows nothing of us.
+    """
+    return Path(GLib.get_home_dir()) / ".config" / "autostart" / (APP_ID + ".desktop")
+
+
+def autostart_enabled():
+    """Whether we start at login, read from disk each time it is asked. The user
+    can remove the entry behind our back - GNOME's Background Apps list has a
+    switch for exactly that - and the menu has to show that as off."""
+    try:
+        return _autostart_path().is_file()
+    except OSError:
+        return False
+
+
+def set_autostart(enabled):
+    """Write or remove the login item. Reports nothing back on purpose: the
+    caller reads the state from disk afterwards rather than trusting this, so a
+    write that failed leaves the check where it was instead of claiming a state
+    we did not reach."""
+    path = _autostart_path()
+    try:
+        if enabled:
+            path.parent.mkdir(parents=True, exist_ok=True)
+            path.write_text(AUTOSTART_ENTRY)
+        else:
+            path.unlink(missing_ok=True)
+    except OSError as e:
+        print("Peergos: could not update " + str(path) + ": " + str(e), file=sys.stderr)
+
+
 class Tray:
     """A StatusNotifierItem showing the global sync state, with a menu of the
-    status line and Close Peergos. `available` is false until a watcher has
-    accepted our registration - the window uses it to decide whether hiding on
-    close is safe."""
+    status line, Start on boot and Close Peergos. `available` is false until a
+    watcher has accepted our registration - the window uses it to decide whether
+    hiding on close, or never showing at all, is safe."""
 
     def __init__(self, connection, on_activate, on_quit):
         self.connection = connection
@@ -371,6 +437,7 @@ class Tray:
         self.available = False
         self.state = "NONE"
         self.message = "Peergos"
+        self.autostart = autostart_enabled()
         self.revision = 1
         self._icon = render_icon(self.state)
 
@@ -450,6 +517,10 @@ class Tray:
             return self._status_props()
         if item_id == ITEM_SEPARATOR:
             return {"type": GLib.Variant("s", "separator")}
+        if item_id == ITEM_AUTOSTART:
+            return {"label": GLib.Variant("s", "Start on boot"),
+                    "toggle-type": GLib.Variant("s", "checkmark"),
+                    "toggle-state": GLib.Variant("i", 1 if self.autostart else 0)}
         if item_id == ITEM_QUIT:
             return {"label": GLib.Variant("s", "Close Peergos")}
         return {}
@@ -457,8 +528,28 @@ class Tray:
     def _layout(self, item_id, depth):
         children = []
         if item_id == 0 and depth != 0:
-            children = [self._layout(child, 0) for child in (ITEM_STATUS, ITEM_SEPARATOR, ITEM_QUIT)]
+            children = [self._layout(child, 0) for child in MENU_ITEMS]
         return GLib.Variant("(ia{sv}av)", (item_id, self._props(item_id), children))
+
+    def _refresh_autostart(self):
+        """Take the check from the file on disk rather than from what we last did
+        to it, and say whether it moved - which is the answer AboutToShow owes the
+        host just before it draws the menu."""
+        enabled = autostart_enabled()
+        if enabled == self.autostart:
+            return False
+        self.autostart = enabled
+        self.revision += 1
+        return True
+
+    def _clicked(self, item_id):
+        if item_id == ITEM_QUIT:
+            self.on_quit()
+        elif item_id == ITEM_AUTOSTART:
+            set_autostart(not self.autostart)
+            if self._refresh_autostart():
+                self._emit(MENU_IFACE, "LayoutUpdated",
+                           GLib.Variant("(ui)", (self.revision, 0)))
 
     def _on_menu_call(self, connection, sender, path, interface, method, params, invocation):
         if method == "GetLayout":
@@ -466,22 +557,24 @@ class Tray:
             invocation.return_value(GLib.Variant.new_tuple(GLib.Variant("u", self.revision),
                                                            self._layout(parent, depth)))
         elif method == "GetGroupProperties":
-            ids = params[0] or [ITEM_STATUS, ITEM_SEPARATOR, ITEM_QUIT]
+            ids = params[0] or list(MENU_ITEMS)
             invocation.return_value(GLib.Variant("(a(ia{sv}))", ([(i, self._props(i)) for i in ids],)))
         elif method == "GetProperty":
             value = self._props(params[0]).get(params[1], GLib.Variant("s", ""))
             invocation.return_value(GLib.Variant.new_tuple(GLib.Variant("v", value)))
         elif method == "Event":
-            if params[0] == ITEM_QUIT and params[1] == "clicked":
-                self.on_quit()
+            if params[1] == "clicked":
+                self._clicked(params[0])
             invocation.return_value(None)
         elif method == "EventGroup":
             for item_id, event, _data, _time in params[0]:
-                if item_id == ITEM_QUIT and event == "clicked":
-                    self.on_quit()
+                if event == "clicked":
+                    self._clicked(item_id)
             invocation.return_value(GLib.Variant("(ai)", ([],)))
         elif method == "AboutToShow":
-            invocation.return_value(GLib.Variant("(b)", (False,)))
+            # the login item may have been removed behind our back since the menu
+            # was last drawn, so re-read it before the host draws the check
+            invocation.return_value(GLib.Variant("(b)", (self._refresh_autostart(),)))
         else:
             invocation.return_value(None)
 
@@ -809,9 +902,10 @@ class StatusPoller:
 
 class PeergosApp(Gtk.Application):
 
-    def __init__(self, port):
+    def __init__(self, port, minimised):
         super().__init__(application_id=APP_ID, flags=Gio.ApplicationFlags.NON_UNIQUE)
         self.port = port
+        self.minimised = minimised
         self.tray = None
         self.window = None
 
@@ -819,6 +913,8 @@ class PeergosApp(Gtk.Application):
         if self.window is not None:
             self._present()
             return
+        # The window is built either way: it keeps the application alive whether
+        # or not it is ever shown, and leaves the webview warm for the first click.
         self.window = PeergosWindow(self, self.port)
         self.window.connect("close-request", self._on_close_request)
         try:
@@ -826,7 +922,21 @@ class PeergosApp(Gtk.Application):
             StatusPoller(self.port, self.tray).start()
         except GLib.Error as e:
             print("Peergos: no tray icon: " + e.message, file=sys.stderr)
-        self.window.present()
+        if self.minimised:
+            GLib.timeout_add_seconds(TRAY_WAIT_S, self._show_without_tray)
+        else:
+            self.window.present()
+
+    def _show_without_tray(self):
+        # Registering with the watcher is a bus round trip, so a minimised start
+        # cannot know yet whether it has anywhere to hide. Once it is clear that
+        # nothing took the icon, show the window: there would otherwise be no way
+        # to reach or quit the server at all.
+        if self.tray is None or not self.tray.available:
+            print("Peergos: no tray to start minimised into, showing the window",
+                  file=sys.stderr)
+            self._present()
+        return GLib.SOURCE_REMOVE
 
     def _present(self):
         self.window.set_visible(True)
@@ -875,7 +985,10 @@ def main():
     GLib.set_prgname(APP_ID)
     GLib.set_application_name("Peergos")
     port = sys.argv[1] if len(sys.argv) > 1 else os.environ.get("PEERGOS_PORT", "7777")
-    return PeergosApp(port).run([])
+    # set by the server when it was itself started with -minimised true, which is
+    # what the login item we write in ~/.config/autostart does
+    minimised = bool(os.environ.get("PEERGOS_MINIMISED"))
+    return PeergosApp(port, minimised).run([])
 
 
 if __name__ == "__main__":
