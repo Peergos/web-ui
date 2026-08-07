@@ -4,7 +4,7 @@
 A GTK4 window holding a WebKitGTK view of the local Peergos server, plus a tray
 icon showing the global sync status. Both the browser engine and the GTK/Python
 bindings come from org.gnome.Platform, so the engine is patched by flatpak
-update rather than by us shipping a new build.
+update rather than by us shipping a new build. 
 
 The tray speaks the StatusNotifierItem D-Bus protocol directly instead of using
 libayatana-appindicator: that library is GTK3 only, and GTK3 and GTK4 cannot be
