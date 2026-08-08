@@ -233,6 +233,14 @@ function showWindow() {
     win.focus();
 }
 
+function openInspector() {
+    if (win === null)
+        return;
+    showWindow();
+    if (!win.webContents.isDevToolsOpened())
+        win.webContents.openDevTools({mode: 'detach'});
+}
+
 function createWindow() {
     win = new BrowserWindow({
         width: 1280,
@@ -263,14 +271,39 @@ function createWindow() {
         return {action: 'deny'};
     });
 
-    // the web inspector, as the GTK host had on Ctrl+Shift+I. It cannot dock
+    // The web inspector. Electron has no default context menu and no built-in
+    // shortcut for it, so both ways in are ours to provide: the keys the GTK
+    // host had, and right click > Inspect element as it also had. It cannot dock
     // usefully into a window that is nothing but the page, so give it its own.
     win.webContents.on('before-input-event', (event, input) => {
-        if (input.control && input.shift && input.key.toLowerCase() === 'i') {
-            win.webContents.openDevTools({mode: 'detach'});
+        const key = (input.key || '').toLowerCase();
+        if (input.type === 'keyDown' && (key === 'f12' || (input.control && input.shift && key === 'i'))) {
+            openInspector();
             event.preventDefault();
         }
     });
+
+    // params are in the coordinates of the top level page, and inspectElement
+    // resolves them into whichever frame is actually under the pointer - so
+    // this reaches into a sandboxed app frame as well as the Peergos UI.
+    win.webContents.on('context-menu', (event, params) => {
+        Menu.buildFromTemplate([
+            {label: 'Inspect element', click: () => {
+                openInspector();
+                win.webContents.inspectElement(params.x, params.y);
+            }}
+        ]).popup({window: win});
+    });
+
+    // Renderer console straight to our stdout, for when the window is in a state
+    // where opening the inspector is not practical. Off unless asked for, since
+    // the page is chatty.
+    if (process.env.PEERGOS_DEBUG) {
+        win.webContents.on('console-message', event => {
+            console.log('[page] ' + event.message
+                        + ' (' + event.sourceId + ':' + event.lineNumber + ')');
+        });
+    }
 
     win.loadURL('http://localhost:' + PORT);
 }
