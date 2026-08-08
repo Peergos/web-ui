@@ -1,0 +1,9 @@
+{
+  "name": "peergos-window",
+  "productName": "Peergos",
+  "version": "1.0.0",
+  "description": "Peergos desktop window",
+  "main": "main.js",
+  "license": "AGPL-3.0",
+  "private": true
+}
