@@ -239,15 +239,13 @@ window.__peergosDrop = (function () {
 
 DROP_SCHEME = "peergos-drop"
 
-# WebKit settings this runtime ships turned off that apps need on. An unknown
-# name is skipped rather than fatal, so this survives a runtime that renames or
-# graduates one.
-WEBKIT_FEATURES = (
-    # Without it OffscreenCanvas().getContext('webgl') returns null - on the main
-    # thread as much as in a worker - and canvas libraries read that as "WebGL is
-    # not available" even though a plain <canvas> would have given them a context.
-    "AllowWebGLInWorkers",
-)
+# Do not turn on webkit's AllowWebGLInWorkers here. It does make
+# OffscreenCanvas().getContext('webgl') return a context rather than null, which
+# is what has apps reporting "WebGL is not available" - but a worker that then
+# renders into a transferred OffscreenCanvas deadlocks the whole web process,
+# window and all, in 2.52.5. vlc.js and weboffice both take that path as soon as
+# it is offered. The flag is marked development for a reason; a page that says
+# it cannot do WebGL beats a window that stops responding.
 
 WATCHER_NAME = "org.kde.StatusNotifierWatcher"
 WATCHER_PATH = "/StatusNotifierWatcher"
@@ -613,20 +611,6 @@ def _iface(xml):
     return Gio.DBusNodeInfo.new_for_xml(xml).interfaces[0]
 
 
-def _enable_features(settings, wanted):
-    """Turn on WebKit features by identifier. They are only reachable through the
-    full list, which is why this walks it rather than setting a property."""
-    features = WebKit.Settings.get_all_features()
-    found = set()
-    for i in range(features.get_length()):
-        feature = features.get(i)
-        if feature.get_identifier() in wanted:
-            settings.set_feature_enabled(feature, True)
-            found.add(feature.get_identifier())
-    for missing in set(wanted) - found:
-        print("Peergos: no such webkit feature: " + missing, file=sys.stderr)
-
-
 class PeergosWindow(Gtk.ApplicationWindow):
 
     def __init__(self, app, port):
@@ -656,7 +640,6 @@ class PeergosWindow(Gtk.ApplicationWindow):
         # the web inspector: right click > Inspect Element, or Ctrl+Shift+I.
         # chromium --app had one, and it is off by default here.
         self.webview.get_settings().set_enable_developer_extras(True)
-        _enable_features(self.webview.get_settings(), WEBKIT_FEATURES)
         # It cannot dock into this window - the webview is the whole of it - and
         # webkit docks it regardless, leaving a blank window. Give it its own.
         inspector = self.webview.get_inspector()
