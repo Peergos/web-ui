@@ -1,11 +1,20 @@
 app-id: org.peergos.Peergos
-# WebKitGTK, GTK4 and the python bindings the window needs all live in the GNOME
-# runtime, so the browser engine is patched by a user's flatpak update rather
-# than by us rebuilding. This used to bundle the Chromium base app instead.
-runtime: org.gnome.Platform
-runtime-version: "49"
+# The window is Electron, and the engine is bundled: a Chromium security fix
+# reaches users when we ship, not when they run flatpak update. That is the deal
+# we took to get an engine the apps can run on - WebKitGTK, which the GNOME
+# runtime provides, cannot render WebGL from a worker without deadlocking the
+# whole web process, which hangs vlc.js and weboffice. See electron.md.
+#
+# The base app is only zypak and libappindicator; Electron itself comes from the
+# archive below. Nothing here needs npm, so the build stays offline without a
+# vendored node tree.
+runtime: org.freedesktop.Platform
+runtime-version: "25.08"
 
-sdk: org.gnome.Sdk
+sdk: org.freedesktop.Sdk
+
+base: org.electronjs.Electron2.BaseApp
+base-version: "25.08"
 
 sdk-extensions:
   - org.freedesktop.Sdk.Extension.openjdk25
@@ -88,6 +97,24 @@ modules:
         path: apache-ant-1.10.17-src.tar.gz
         sha256: f0390a5cee1076077f9adb8feddd99331feba4a9887f3379992b8b6b27be645c
 
+  # The browser engine. A prebuilt release rather than an npm install: nothing
+  # in the window host has a dependency, so this is the only thing to fetch, and
+  # flatpak-node-generator never has to enter the picture. Bumping it is the
+  # security update path now that the runtime no longer provides the engine -
+  # track electron stable and rebuild for its security releases, not only for
+  # ours.
+  - name: electron
+    buildsystem: simple
+    build-commands:
+      - mkdir -p /app/electron
+      - cp -r ./* /app/electron/
+      - chmod +x /app/electron/electron
+    sources:
+      - type: archive
+        url: https://github.com/electron/electron/releases/download/v43.3.0/electron-v43.3.0-linux-x64.zip
+        sha256: f4987e9f045e46b117f0805d6ba4dc524e2abb2c2e33660f175bb39564bd3dae
+        strip-components: 0
+
   - name: peergos
     buildsystem: simple
     build-commands:
@@ -100,7 +127,16 @@ modules:
 
       - install -Dm755 peergos.sh /app/bin/peergos
 
-      - install -Dm755 packager/flatpak/peergos-window.py /app/bin/peergos-window
+      - install -Dm644 packager/electron/main.js /app/peergos-window/main.js
+      - install -Dm644 packager/electron/preload.js /app/peergos-window/preload.js
+      - install -Dm644 packager/electron/package.json /app/peergos-window/package.json
+      - install -Dm644 -t /app/peergos-window/icons packager/electron/icons/*.png
+
+      # DesktopApp.java spawns `peergos-window <port>` and shuts the server down
+      # when it exits, so the name and the argument stay as they were. Chromium's
+      # sandbox cannot set itself up inside a flatpak, so everything goes through
+      # zypak, which redirects it to the portal.
+      - install -Dm755 packager/flatpak/peergos-window.sh /app/bin/peergos-window
 
       - install -Dm644 packager/flatpak/org.peergos.Peergos.desktop /app/share/applications/org.peergos.Peergos.desktop
 
