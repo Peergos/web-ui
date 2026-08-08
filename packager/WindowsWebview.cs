@@ -9,6 +9,7 @@ using System.Runtime.InteropServices;
 using System.Text;
 using System.Threading;
 using System.Windows.Forms;
+using Microsoft.Win32;
 using Microsoft.Web.WebView2.Core;
 using Microsoft.Web.WebView2.WinForms;
 
@@ -27,7 +28,10 @@ static class Program
         Application.EnableVisualStyles();
         Application.SetCompatibleTextRenderingDefault(false);
         string port = Environment.GetEnvironmentVariable("PEERGOS_PORT") ?? "7777";
-        Application.Run(new PeergosWindow(port));
+        // Set by the server when it was started with -minimised true, which is what the
+        // login item written by "Start on boot" does: come up as a tray icon, no window.
+        bool minimised = ! string.IsNullOrEmpty(Environment.GetEnvironmentVariable("PEERGOS_MINIMISED"));
+        Application.Run(new PeergosWindow(port, minimised));
     }
 }
 
@@ -37,19 +41,42 @@ class PeergosWindow : Form
     private const int MAX_TOOLTIP = 63;
     private const int POLL_INTERVAL_MS = 10_000;
 
+    // HKCU, so no elevation and no effect on other users of a machine-wide install.
+    // Written by the app rather than the installer, so the toggle is the only thing
+    // that ever touches it. An uninstall therefore leaves it: MSI can only remove a
+    // value it created itself, so the entry stays, naming an .exe that has gone,
+    // which Windows skips silently at login.
+    private const string RUN_KEY = @"Software\Microsoft\Windows\CurrentVersion\Run";
+    // Task Manager's Startup tab disables an entry by writing here rather than by
+    // deleting it from Run, so the Run key alone does not answer "is this on?".
+    private const string APPROVED_KEY = @"Software\Microsoft\Windows\CurrentVersion\Explorer\StartupApproved\Run";
+    private const string RUN_VALUE = "Peergos";
+    // jpackage -n peergos-app, so <install>\peergos-app.exe next to the app directory
+    // this .exe lives in. Not our own ExecutablePath: that is the webview host, which
+    // on its own would open a window onto a server nobody started.
+    private const string LAUNCHER = "peergos-app.exe";
+
     private readonly string port;
+    private readonly WebView2 webView;
     private readonly NotifyIcon tray;
     private readonly ToolStripMenuItem statusItem;
+    private readonly ToolStripMenuItem autostartItem;
     private readonly System.Windows.Forms.Timer statusTimer;
     private readonly Dictionary<string, Icon> icons = new Dictionary<string, Icon>();
     // Closing the window hides it to the tray; only "Close Peergos" really quits.
     private bool quitting;
     private bool trayHidden;
+    private bool webViewStarted;
+    // Swallows the one show Application.Run does, so a minimised start never draws a window.
+    private bool startHidden;
     private string currentState = "";
 
-    public PeergosWindow(string port)
+    public PeergosWindow(string port, bool minimised)
     {
         this.port = port;
+        // A window that never appears is only safe because the tray icon below always
+        // does - it is created here, whether or not the form is ever shown.
+        startHidden = minimised;
         Text = "Peergos";
         ClientSize = new Size(1280, 900);
         StartPosition = FormStartPosition.CenterScreen;
@@ -57,29 +84,11 @@ class PeergosWindow : Form
         // otherwise - ApplicationIcon only covers the .exe in Explorer.
         Icon = AppIcon();
 
-        var webView = new WebView2 { Dock = DockStyle.Fill };
+        webView = new WebView2 { Dock = DockStyle.Fill };
         Controls.Add(webView);
-
-        Load += async (_, __) =>
-        {
-            try
-            {
-                var environment = await CoreWebView2Environment.CreateAsync(null, UserDataFolder(), null);
-                await webView.EnsureCoreWebView2Async(environment);
-                webView.CoreWebView2.Settings.AreDefaultContextMenusEnabled = false;
-                webView.CoreWebView2.Settings.IsStatusBarEnabled = false;
-                webView.CoreWebView2.NewWindowRequested += OnNewWindowRequested;
-                webView.CoreWebView2.Navigate("http://localhost:" + port);
-            }
-            catch (Exception e)
-            {
-                // Exit 1 so the launcher falls back to Edge, rather than leaving
-                // the user with a crash dialog and a dead window.
-                Console.Error.WriteLine("WebView2 failed to start: " + e.Message);
-                HideTray();
-                Environment.Exit(1);
-            }
-        };
+        // Load only fires when the window is shown, and a minimised start may never
+        // show it, so SetVisibleCore starts the browser in that case instead.
+        Load += (_, __) => StartWebView();
 
         statusItem = new ToolStripMenuItem("Peergos") { Enabled = false };
         var closeItem = new ToolStripMenuItem("Close Peergos");
@@ -87,7 +96,19 @@ class PeergosWindow : Form
         var menu = new ContextMenuStrip();
         menu.Items.Add(statusItem);
         menu.Items.Add(new ToolStripSeparator());
+        if (LauncherPath() != null)
+        {
+            // CheckOnClick would tick the box whether or not the login item was
+            // written, so the check is taken from the registry instead, both when
+            // the menu opens and after a click.
+            autostartItem = new ToolStripMenuItem("Start on boot") { CheckOnClick = false };
+            autostartItem.Click += (_, __) => ToggleAutostart();
+            menu.Items.Add(autostartItem);
+        }
         menu.Items.Add(closeItem);
+        // The user may have turned the login item off in Task Manager's Startup tab,
+        // so read it back every time rather than trusting what we last wrote.
+        menu.Opening += (_, __) => RefreshAutostart();
 
         tray = new NotifyIcon
         {
@@ -114,6 +135,139 @@ class PeergosWindow : Form
         statusTimer.Tick += (_, __) => PollStatus();
         statusTimer.Start();
         PollStatus();
+    }
+
+    // Application.Run shows the main form once, before anything of ours can hide it
+    // again. Swallowing that first show is what keeps a minimised start from drawing
+    // a window at all: hiding it from Load instead flashes one up on a slow login.
+    protected override void SetVisibleCore(bool visible)
+    {
+        if (startHidden)
+        {
+            startHidden = false;
+            // With no window at all there is nothing for the message loop to pump and
+            // Application.Run returns immediately, taking the tray icon with it.
+            if (! IsHandleCreated)
+                CreateHandle();
+            StartWebView();
+            visible = false;
+        }
+        base.SetVisibleCore(visible);
+    }
+
+    // Idempotent: whichever of Load and a hidden start comes first wins.
+    private async void StartWebView()
+    {
+        if (webViewStarted)
+            return;
+        webViewStarted = true;
+        try
+        {
+            var environment = await CoreWebView2Environment.CreateAsync(null, UserDataFolder(), null);
+            await webView.EnsureCoreWebView2Async(environment);
+            webView.CoreWebView2.Settings.AreDefaultContextMenusEnabled = false;
+            webView.CoreWebView2.Settings.IsStatusBarEnabled = false;
+            webView.CoreWebView2.NewWindowRequested += OnNewWindowRequested;
+            webView.CoreWebView2.Navigate("http://localhost:" + port);
+        }
+        catch (Exception e)
+        {
+            // Exit 1 so the launcher falls back to Edge, rather than leaving
+            // the user with a crash dialog and a dead window.
+            Console.Error.WriteLine("WebView2 failed to start: " + e.Message);
+            HideTray();
+            Environment.Exit(1);
+        }
+    }
+
+    // <install>\peergos-app.exe, the launcher that starts the server and then us.
+    // Null if it isn't there - an unpackaged run, say - in which case there is no
+    // login item worth writing and the menu leaves the toggle out.
+    private static string LauncherPath()
+    {
+        try
+        {
+            string appDir = Path.GetDirectoryName(Application.ExecutablePath);
+            string installDir = Path.GetDirectoryName(appDir);
+            if (installDir == null)
+                return null;
+            string launcher = Path.Combine(installDir, LAUNCHER);
+            return File.Exists(launcher) ? launcher : null;
+        }
+        catch (Exception e)
+        {
+            Console.Error.WriteLine("Could not locate the launcher: " + e.Message);
+            return null;
+        }
+    }
+
+    // Whether we are started at login, read from the registry every time it is asked.
+    private static bool AutostartEnabled()
+    {
+        try
+        {
+            using (RegistryKey run = Registry.CurrentUser.OpenSubKey(RUN_KEY))
+            {
+                if (run == null || run.GetValue(RUN_VALUE) == null)
+                    return false;
+            }
+            using (RegistryKey approved = Registry.CurrentUser.OpenSubKey(APPROVED_KEY))
+            {
+                var flags = approved == null ? null : approved.GetValue(RUN_VALUE) as byte[];
+                // An odd first byte is Explorer's "the user turned this off"; no entry
+                // at all means it was never touched, which counts as on.
+                return flags == null || flags.Length == 0 || (flags[0] & 1) == 0;
+            }
+        }
+        catch (Exception e)
+        {
+            Console.Error.WriteLine("Could not read the Run key: " + e.Message);
+            return false;
+        }
+    }
+
+    private static void SetAutostart(bool enabled)
+    {
+        string launcher = LauncherPath();
+        if (launcher == null)
+            return;
+        try
+        {
+            using (RegistryKey run = Registry.CurrentUser.CreateSubKey(RUN_KEY))
+            {
+                if (enabled)
+                    run.SetValue(RUN_VALUE, "\"" + launcher + "\" -minimised true");
+                else
+                    run.DeleteValue(RUN_VALUE, false);
+            }
+            if (! enabled)
+                return;
+            // Turning it back on has to clear a disable done in Task Manager too,
+            // otherwise the value is there and Windows still ignores it.
+            using (RegistryKey approved = Registry.CurrentUser.OpenSubKey(APPROVED_KEY, true))
+            {
+                if (approved != null)
+                    approved.DeleteValue(RUN_VALUE, false);
+            }
+        }
+        catch (Exception e)
+        {
+            Console.Error.WriteLine("Could not update the Run key: " + e.Message);
+        }
+    }
+
+    private void ToggleAutostart()
+    {
+        SetAutostart(! AutostartEnabled());
+        // Read back rather than assume: a write that failed leaves the check where it
+        // was, instead of reporting a state we did not reach.
+        RefreshAutostart();
+    }
+
+    private void RefreshAutostart()
+    {
+        if (autostartItem != null)
+            autostartItem.Checked = AutostartEnabled();
     }
 
     // target=_blank links: send them to the user's browser rather than a second,
