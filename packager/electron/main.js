@@ -16,6 +16,9 @@
 // instead - otherwise the user is left with an invisible server they can't get
 // back to. The same rule applies to starting minimised.
 //
+// Only one copy of the window runs: launching Peergos while it is already up
+// presents the window that is there rather than opening a second one.
+//
 // Deliberately dependency free: the only thing here that is not Electron or the
 // node standard library is the icons, which are files. That is what lets the
 // flatpak build stay offline without vendoring an npm tree.
@@ -357,7 +360,7 @@ app.on('before-quit', () => { app.quitting = true; });
 // down when it ends. Hiding the window must never reach here.
 app.on('window-all-closed', () => app.quit());
 
-app.whenReady().then(async () => {
+async function start() {
     wireSession();
     // The window is built either way: it keeps the app alive whether or not it
     // is ever shown, and leaves the page warm for the first click.
@@ -385,4 +388,39 @@ app.whenReady().then(async () => {
             showWindow();
         }
     }, TRAY_WAIT_MS);
-});
+}
+
+// One window per user, not one per launch. Launching Peergos again - from the
+// icon, or a second `flatpak run` - brings the window we already have to the
+// front instead of opening another onto the same server.
+//
+// The lock is a socket in the app's config directory, which every flatpak
+// instance of the app shares, so it holds across sandboxes: each instance has
+// its own pid namespace, and both processes think they are pid 2, but the
+// newcomer still finds the socket and is answered over it.
+//
+// Whoever is already running wins, rather than the newcomer taking over: the
+// running window is the one whose Java parent owns the server, and a window that
+// outlived its server would have nothing to show. The newcomer's own Java parent
+// watches it and exits when it does, so losing the race leaves nothing behind.
+// It had not started a second server: the server reuses one already listening.
+//
+// A minimised start is a launch that wants no window - the login item runs us
+// that way - so it says so, and the running instance stays as it is. It still
+// has to take the lock or give it up like any other launch, or two invisible
+// copies could sit in the tray.
+if (!app.requestSingleInstanceLock({show: !MINIMISED})) {
+    console.log('Peergos: already running, showing that window instead');
+    app.quit();
+} else {
+    // argv and the working directory are the newcomer's, and we want neither:
+    // the port it was given is its Java parent's business, and we are already
+    // pointed at the server. Only the intent matters. An older host with no
+    // additionalData to send means an ordinary launch, so show.
+    app.on('second-instance', (event, argv, workingDirectory, data) => {
+        if (!data || data.show !== false)
+            showWindow();
+    });
+
+    app.whenReady().then(start);
+}
