@@ -33,6 +33,10 @@ const path = require('path');
 const APP_ID = 'org.peergos.Peergos';
 const POLL_SECONDS = 10;
 const STATUS_TIMEOUT_MS = 5000;
+// Oftener than the status poll: a launch that replaces the server is right behind
+// the one that stopped it, and until we have noticed we hold both the profile and
+// the single instance lock against it.
+const SERVER_GONE_MS = 500;
 // How long a minimised start waits for a tray to take it before giving up and
 // showing the window. At login we may well be up before the shell extension
 // that hosts us is.
@@ -44,6 +48,12 @@ const WATCHER_NAME = 'org.kde.StatusNotifierWatcher';
 // what the login item we write in ~/.config/autostart does
 const MINIMISED = !!process.env.PEERGOS_MINIMISED;
 const PORT = process.argv[2] || process.env.PEERGOS_PORT || '7777';
+
+// The server that spawned us. It exits when we do, and nothing carried the
+// reverse: a server stopped from under us - by the launch that replaces it, or by
+// a crash - left this window up on nothing, holding the lock against every launch
+// after it, so the app could not be started again at all.
+const SERVER_PID = process.ppid;
 
 const AUTOSTART_ENTRY = `[Desktop Entry]
 Type=Application
@@ -193,6 +203,17 @@ function pollStatus() {
     request.end();
 }
 
+// A child outliving its parent is reparented, so a ppid that has moved means the
+// server is gone. Not the status poll for this: an unreachable server is drawn red
+// because it may yet answer, and closing the window over a stall would be worse
+// than showing one.
+function quitIfServerGone() {
+    if (process.ppid === SERVER_PID)
+        return;
+    console.error('Peergos: server exited, closing the window');
+    app.quit();
+}
+
 // ------------------------------------------------------------------ downloads
 
 // Where downloads go. Not app.getPath('downloads') alone: that reads
@@ -229,8 +250,10 @@ function unusedPath(directory, name) {
 
 // -------------------------------------------------------------------- window
 
+// Destroyed as well as null: a launch can reach us over the lock while we are
+// already on our way out, and presenting a torn down window throws.
 function showWindow() {
-    if (win === null)
+    if (win === null || win.isDestroyed())
         return;
     win.show();
     win.focus();
@@ -368,6 +391,7 @@ async function start() {
     await refreshTrayAvailable();
     createTray();
     pollStatus();
+    setInterval(quitIfServerGone, SERVER_GONE_MS);
     setInterval(() => {
         pollStatus();
         // picks up a shell restart, or an AppIndicator extension being enabled
