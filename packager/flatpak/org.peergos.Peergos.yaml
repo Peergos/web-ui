@@ -28,10 +28,13 @@ finish-args:
   - --filesystem=home
   - --talk-name=org.freedesktop.Flatpak
   - --talk-name=org.freedesktop.secrets
-  # register the tray icon. Owning org.kde.StatusNotifierItem-$PID-$ITEM_ID is
-  # not needed, and is unreliable in a sandbox: we register under our unique
-  # bus name instead.
+  # register the tray icon, and own the name it is registered under: chromium
+  # takes org.freedesktop.StatusNotifierItem-$PID-$ITEM_ID and, refused it,
+  # falls back to a unique name the watcher does not pick up - leaving no icon,
+  # and a window that hides into a tray which cannot show it. Wider than that
+  # one name because flatpak matches whole segments, and the pid is not known.
   - --talk-name=org.kde.StatusNotifierWatcher
+  - --own-name=org.freedesktop.*
 
   # all, not dri and usb: a security key is spoken to over /dev/hidraw, which no
   # narrower permission reaches

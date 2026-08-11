@@ -377,7 +377,15 @@ function wireSession() {
 app.setName('Peergos');
 app.commandLine.appendSwitch('class', APP_ID);
 
-app.on('before-quit', () => { app.quitting = true; });
+app.on('before-quit', () => {
+    app.quitting = true;
+    // Taken down rather than left to go with the process: handed no removal, a
+    // panel can keep the dead icon and start us again when it is clicked.
+    if (tray !== null) {
+        tray.destroy();
+        tray = null;
+    }
+});
 
 // Quitting has to exit 0: the Java server watches this process and shuts itself
 // down when it ends. Hiding the window must never reach here.
