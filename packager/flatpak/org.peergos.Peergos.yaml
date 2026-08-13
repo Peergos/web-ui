@@ -122,7 +122,11 @@ modules:
   - name: jeepney
     buildsystem: simple
     build-commands:
+      # the window host's directory is the peergos module's to fill, and that
+      # module is built after this one
+      - mkdir -p /app/peergos-window
       - cp -r jeepney /app/peergos-window/jeepney
+      - rm -rf /app/peergos-window/jeepney/tests
       - install -Dm644 LICENSE /app/share/licenses/jeepney/LICENSE
     sources:
       - type: archive
