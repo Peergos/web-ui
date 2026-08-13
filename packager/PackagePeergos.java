@@ -112,7 +112,11 @@ public class PackagePeergos {
                 throw new IllegalStateException("PeergosWebView.exe missing from " + serverDir.toAbsolutePath());
             runCommand("jpackage", "-i", "../server", "-n", "peergos-app",
                        "--main-class", "peergos.server.Main", "--main-jar",
-                       "Peergos.jar", "--vendor", "Peergos Ltd.",
+                       // security keys are driven through webauthn.dll over FFM, which
+                       // warns on every call without this and is set to fail outright in
+                       // a later jdk. peergos.sh and build.xml pass it already.
+                       "Peergos.jar", "--java-options", "--enable-native-access=ALL-UNNAMED",
+                       "--vendor", "Peergos Ltd.",
                        "--description", "The Peergos server and web interface.",
                        "--copyright", "AGPL",
                        "--about-url", "https://peergos.org",
