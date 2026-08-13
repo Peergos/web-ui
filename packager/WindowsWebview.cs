@@ -67,6 +67,8 @@ class PeergosWindow : Form
     private bool quitting;
     private bool trayHidden;
     private bool webViewStarted;
+    // The server has our window handle, for the webauthn prompt to be modal to.
+    private bool windowHandlePosted;
     // Swallows the one show Application.Run does, so a minimised start never draws a window.
     private bool startHidden;
     private string currentState = "";
@@ -168,6 +170,14 @@ class PeergosWindow : Form
             webView.CoreWebView2.Settings.AreDefaultContextMenusEnabled = false;
             webView.CoreWebView2.Settings.IsStatusBarEnabled = false;
             webView.CoreWebView2.NewWindowRequested += OnNewWindowRequested;
+            // Read by assets/js/webauthn.js, which then routes security keys through the
+            // local server. WebView2 has WebAuthn of its own, and that is precisely the
+            // problem: from a localhost page it can only ever mint credentials for rpId
+            // localhost, so a key registered in a browser for peergos.net could never be
+            // offered here. A browser at the same address never sees this set, and is
+            // left alone. Before Navigate, or the first page misses it.
+            await webView.CoreWebView2.AddScriptToExecuteOnDocumentCreatedAsync(
+                "window.__peergosDesktop = true;");
             webView.CoreWebView2.Navigate("http://localhost:" + port);
         }
         catch (Exception e)
@@ -331,8 +341,14 @@ class PeergosWindow : Form
 
     private void PollStatus()
     {
+        // Handle is only legible from the ui thread, and only once there is one: a
+        // minimised start creates it before any window is shown, and until then there is
+        // nothing to be modal to anyway, so we let the next poll carry it.
+        long window = IsHandleCreated && ! windowHandlePosted ? (long) Handle : 0;
         ThreadPool.QueueUserWorkItem(_ =>
         {
+            if (window != 0)
+                PostWindowHandle(window);
             // An unreachable or failed poll is red: the server should be there and isn't.
             string state = "ERROR";
             string msg = "Cannot reach Peergos";
@@ -360,6 +376,33 @@ class PeergosWindow : Form
             try { BeginInvoke((Action) (() => ApplyStatus(state, msg))); }
             catch (InvalidOperationException) { } // window gone, we are shutting down
         });
+    }
+
+    // webauthn.dll parents its prompt to a window, and the java server has none: it is a
+    // different process, and headless. Ours is the only window there is, so the server is
+    // told about it. Without a handle the prompt can come up behind the app, which looks
+    // exactly like a hang.
+    //
+    // Sent from the status poll rather than once at startup so it survives the server not
+    // being up yet, and comes back after a server restart. The flag is written here on a
+    // pool thread and read on the ui thread; the worst a lost write costs is one more post.
+    private void PostWindowHandle(long window)
+    {
+        try
+        {
+            var request = (HttpWebRequest) WebRequest.Create("http://localhost:" + port + "/peergos/v0/webauthn/host");
+            request.Method = "POST";
+            request.ContentType = "application/json";
+            request.Timeout = 5_000;
+            request.ReadWriteTimeout = 5_000;
+            byte[] body = Encoding.UTF8.GetBytes("{\"window\":" + window + "}");
+            request.ContentLength = body.Length;
+            using (var stream = request.GetRequestStream())
+                stream.Write(body, 0, body.Length);
+            using (request.GetResponse()) { }
+            windowHandlePosted = true;
+        }
+        catch { } // the next poll tries again
     }
 
     private void ApplyStatus(string state, string msg)
