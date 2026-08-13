@@ -28,13 +28,10 @@ finish-args:
   - --filesystem=home
   - --talk-name=org.freedesktop.Flatpak
   - --talk-name=org.freedesktop.secrets
-  # register the tray icon, and own the name it is registered under: chromium
-  # takes org.freedesktop.StatusNotifierItem-$PID-$ITEM_ID and, refused it,
-  # falls back to a unique name the watcher does not pick up - leaving no icon,
-  # and a window that hides into a tray which cannot show it. Wider than that
-  # one name because flatpak matches whole segments, and the pid is not known.
+  # register the tray icon. No --own-name to go with it: tray.py registers under
+  # the connection's unique name, as the SNI spec allows and as every host we
+  # have met accepts, so it owns no well-known name at all.
   - --talk-name=org.kde.StatusNotifierWatcher
-  - --own-name=org.freedesktop.*
 
   # all, not dri and usb: a security key is spoken to over /dev/hidraw, which no
   # narrower permission reaches
@@ -114,9 +111,23 @@ modules:
       - chmod +x /app/electron/electron
     sources:
       - type: archive
-        url: https://github.com/electron/electron/releases/download/v43.3.0/electron-v43.3.0-linux-x64.zip
-        sha256: f4987e9f045e46b117f0805d6ba4dc524e2abb2c2e33660f175bb39564bd3dae
+        url: https://github.com/electron/electron/releases/download/v43.4.0/electron-v43.4.0-linux-x64.zip
+        sha256: 7c5f7918bcae74a05a814543940eb28469c055edaa3cfcf41d0ff1787b314c52
         strip-components: 0
+
+  # D-Bus for the tray process. Pure python and dependency free, which is the
+  # whole reason it is this library and not pygobject: nothing to compile, and
+  # the runtime's python3 is all it needs. Vendored like the ant tarball so the
+  # build stays offline.
+  - name: jeepney
+    buildsystem: simple
+    build-commands:
+      - cp -r jeepney /app/peergos-window/jeepney
+      - install -Dm644 LICENSE /app/share/licenses/jeepney/LICENSE
+    sources:
+      - type: archive
+        path: jeepney-0.9.0.tar.gz
+        sha256: cf0e9e845622b81e4a28df94c40345400256ec608d0e55bb8a3feaa9163f5732
 
   - name: peergos
     buildsystem: simple
@@ -134,6 +145,11 @@ modules:
       - install -Dm644 packager/electron/preload.js /app/peergos-window/preload.js
       - install -Dm644 packager/electron/package.json /app/peergos-window/package.json
       - install -Dm644 -t /app/peergos-window/icons packager/electron/icons/*.png
+
+      # The tray, which main.js spawns as `python3 tray.py` from its own
+      # directory - so it sits beside the icons it reads and the vendored
+      # jeepney it imports. See tray.py for why the tray is not Electron's.
+      - install -Dm644 packager/flatpak/peergos-tray.py /app/peergos-window/tray.py
 
       # DesktopApp.java spawns `peergos-window <port>` and shuts the server down
       # when it exits, so the name and the argument stay as they were. Chromium's

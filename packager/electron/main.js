@@ -19,12 +19,17 @@
 // Only one copy of the window runs: launching Peergos while it is already up
 // presents the window that is there rather than opening a second one.
 //
-// Deliberately dependency free: the only thing here that is not Electron or the
-// node standard library is the icons, which are files. That is what lets the
-// flatpak build stay offline without vendoring an npm tree.
+// The tray itself is not ours: tray.py draws it, for the reasons set out at the
+// top of that file, and this process tells it what to show and hears back what
+// the user clicked.
+//
+// Deliberately dependency free: nothing here is outside Electron and the node
+// standard library, and tray.py needs only python and the vendored jeepney,
+// which is pure python. That is what lets the flatpak build stay offline without
+// vendoring an npm tree or compiling anything.
 
-const {app, BrowserWindow, Menu, Tray, dialog, nativeImage, session, shell} = require('electron');
-const {execFile} = require('child_process');
+const {app, BrowserWindow, Menu, dialog, session, shell} = require('electron');
+const {spawn} = require('child_process');
 const fs = require('fs');
 const http = require('http');
 const os = require('os');
@@ -42,7 +47,12 @@ const SERVER_GONE_MS = 500;
 // that hosts us is.
 const TRAY_WAIT_MS = 10000;
 
-const WATCHER_NAME = 'org.kde.StatusNotifierWatcher';
+// Menu item ids, shared with tray.py: it draws the menu we send and tells us
+// which id the user picked.
+const MENU_STATUS = 1;
+const MENU_SEPARATOR = 2;
+const MENU_AUTOSTART = 3;
+const MENU_QUIT = 4;
 
 // set by the server when it was itself started with -minimised true, which is
 // what the login item we write in ~/.config/autostart does
@@ -113,68 +123,97 @@ function setAutostart(enabled) {
 
 // --------------------------------------------------------------------- tray
 
-// Whether anything on the bus is hosting tray icons. Electron's Tray says
-// nothing about this - it succeeds either way - but two decisions depend on the
-// answer: whether closing the window hides or quits, and whether a minimised
-// start ever shows the window. Ask the bus directly, the way the GTK host did by
-// watching the name. gdbus comes from glib in the runtime, so this needs no
-// dependency; if it is somehow missing we report no tray, which is the safe way
-// to be wrong - a visible window beats an unreachable one.
-function refreshTrayAvailable() {
-    return new Promise(resolve => {
-        execFile('gdbus', ['call', '--session', '--dest', 'org.freedesktop.DBus',
-                           '--object-path', '/org/freedesktop/DBus',
-                           '--method', 'org.freedesktop.DBus.NameHasOwner', WATCHER_NAME],
-                 {timeout: 5000}, (err, stdout) => {
-            trayAvailable = !err && /true/.test(stdout);
-            resolve(trayAvailable);
-        });
-    });
+// The tray is a process of its own - see tray.py for why Electron's own Tray
+// cannot be used on this Chromium. It draws what we send it and reports what the
+// user did; every decision stays here.
+function sendTray(command) {
+    if (tray === null)
+        return;
+    tray.stdin.write(JSON.stringify(command) + '\n');
 }
 
-function iconFor(state) {
-    const name = {SYNCED: 'synced', SYNCING: 'syncing', ERROR: 'error'}[state] || 'idle';
-    return nativeImage.createFromPath(path.join(__dirname, 'icons', 'tray-' + name + '.png'));
-}
-
-function buildMenu() {
-    return Menu.buildFromTemplate([
+function menuItems() {
+    return [
         // informational only, so it is shown disabled
-        {label: status.message, enabled: false},
-        {type: 'separator'},
-        {
-            label: 'Start on boot',
-            type: 'checkbox',
-            // taken from the file on disk rather than from what we last did to it
-            checked: autostartEnabled(),
-            click: item => {
-                setAutostart(!autostartEnabled());
-                item.checked = autostartEnabled();
-                tray.setContextMenu(buildMenu());
-            }
-        },
-        {label: 'Close Peergos', click: () => app.quit()}
-    ]);
+        {id: MENU_STATUS, label: status.message, enabled: false},
+        {id: MENU_SEPARATOR, type: 'separator'},
+        // taken from the file on disk rather than from what we last did to it
+        {id: MENU_AUTOSTART, label: 'Start on boot', checked: autostartEnabled()},
+        {id: MENU_QUIT, label: 'Close Peergos'}
+    ];
 }
 
 function createTray() {
-    tray = new Tray(iconFor(status.state));
-    tray.setToolTip('Peergos');
-    tray.setContextMenu(buildMenu());
-    tray.on('click', showWindow);
+    // Not through zypak: that is chromium's sandbox launcher, and its LD_PRELOAD
+    // has no business in a python process we start ourselves.
+    const environment = Object.assign({}, process.env, {PYTHONPATH: __dirname});
+    delete environment.LD_PRELOAD;
+    tray = spawn('python3', [path.join(__dirname, 'tray.py')],
+                 {env: environment, stdio: ['pipe', 'pipe', 'inherit']});
+
+    // No tray process is no tray: closing the window must quit rather than hide
+    // it somewhere the user cannot reach.
+    tray.on('error', error => {
+        console.error('Peergos: could not start the tray: ' + error.message);
+        tray = null;
+        trayAvailable = false;
+    });
+    tray.on('exit', code => {
+        if (!app.quitting)
+            console.error('Peergos: the tray exited (' + code + ')');
+        tray = null;
+        trayAvailable = false;
+    });
+
+    let pending = '';
+    tray.stdout.on('data', chunk => {
+        pending += chunk;
+        const lines = pending.split('\n');
+        pending = lines.pop();
+        for (const line of lines) {
+            if (line.trim() === '')
+                continue;
+            try {
+                onTrayEvent(JSON.parse(line));
+            } catch (e) {
+                console.error('Peergos: unreadable tray event: ' + line);
+            }
+        }
+    });
+
+    sendTray({cmd: 'icon', state: status.state});
+    sendTray({cmd: 'tooltip', text: status.message});
+    sendTray({cmd: 'menu', items: menuItems()});
+}
+
+function onTrayEvent(event) {
+    if (event.event === 'registered') {
+        // A truthful answer to a question Electron's Tray could not answer at
+        // all: not whether a host exists, but whether one took our icon. Closing
+        // the window hides it only when it did.
+        trayAvailable = event.ok;
+    } else if (event.event === 'activate') {
+        showWindow();
+    } else if (event.event === 'clicked') {
+        if (event.id === MENU_AUTOSTART) {
+            setAutostart(!autostartEnabled());
+            sendTray({cmd: 'menu', items: menuItems()});
+        } else if (event.id === MENU_QUIT) {
+            app.quit();
+        }
+    }
 }
 
 function applyStatus(next) {
     const changed = next.state !== status.state;
     const said = next.message !== status.message;
     status = next;
-    if (!tray)
-        return;
     if (changed)
-        tray.setImage(iconFor(status.state));
+        sendTray({cmd: 'icon', state: status.state});
     if (said) {
-        tray.setToolTip(status.message);
-        tray.setContextMenu(buildMenu());
+        sendTray({cmd: 'tooltip', text: status.message});
+        // the status line is the first item, so the menu goes with it
+        sendTray({cmd: 'menu', items: menuItems()});
     }
 }
 
@@ -379,12 +418,10 @@ app.commandLine.appendSwitch('class', APP_ID);
 
 app.on('before-quit', () => {
     app.quitting = true;
-    // Taken down rather than left to go with the process: handed no removal, a
+    // Asked to go rather than killed: it closes its bus connection on the way
+    // out, which is what takes the icon off the panel. Handed no removal, a
     // panel can keep the dead icon and start us again when it is clicked.
-    if (tray !== null) {
-        tray.destroy();
-        tray = null;
-    }
+    sendTray({cmd: 'quit'});
 });
 
 // Quitting has to exit 0: the Java server watches this process and shuts itself
@@ -396,15 +433,10 @@ async function start() {
     // The window is built either way: it keeps the app alive whether or not it
     // is ever shown, and leaves the page warm for the first click.
     createWindow();
-    await refreshTrayAvailable();
     createTray();
     pollStatus();
     setInterval(quitIfServerGone, SERVER_GONE_MS);
-    setInterval(() => {
-        pollStatus();
-        // picks up a shell restart, or an AppIndicator extension being enabled
-        refreshTrayAvailable();
-    }, POLL_SECONDS * 1000);
+    setInterval(pollStatus, POLL_SECONDS * 1000);
 
     if (!MINIMISED) {
         showWindow();
@@ -413,9 +445,10 @@ async function start() {
     // Registering is a bus round trip, so a minimised start cannot know yet
     // whether it has anywhere to hide. Once it is clear that nothing took the
     // icon, show the window: there would otherwise be no way to reach or quit
-    // the server at all.
-    setTimeout(async () => {
-        if (!await refreshTrayAvailable()) {
+    // the server at all. The tray keeps watching the name after that, so a shell
+    // restart or an AppIndicator extension being switched on still reaches us.
+    setTimeout(() => {
+        if (!trayAvailable) {
             console.error('Peergos: no tray to start minimised into, showing the window');
             showWindow();
         }
