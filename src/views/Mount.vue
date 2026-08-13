@@ -275,6 +275,7 @@ module.exports = {
                 if (enabled !== true && enabled !== "true") {
                     throw new Error(that.translate("MOUNT.TOTP.ENABLE_FAILED"));
                 }
+                clearRootKeyCacheFully(() => {});
 
                 // 4) Hand the credential to the mount handler so subsequent mount
                 //    logins use the dedicated TOTP non-interactively.

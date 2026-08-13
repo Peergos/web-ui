@@ -111,6 +111,8 @@ module.exports = {
                 this.showSpinner = true;
                 let clientCode = this.totp.trim();
                 that.context.network.account.enableTotpFactor(this.context.username, this.credentialId, clientCode, this.context.signer).thenApply(res => {
+                    if (res === true || res === "true")
+                        clearRootKeyCacheFully(() => {});
                     this.$toast('Authenticator App has been enabled');
                     that.showSpinner = false;
                     that.close(true);

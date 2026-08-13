@@ -122,7 +122,7 @@ module.exports = {
                         let loginRoot = peergos.shared.crypto.symmetric.SymmetricKey.fromByteArray(rootKeyPair.rootKey);
                         directGetEntryDataFromCacheProm(rootKeyPair.username).thenApply(function (entryPoints) {
                             if (entryPoints == null) {
-                                that.$toast.error("Legacy accounts can't stay logged in. Please change your password to upgrade your account", {timeout:false, id: 'login'});
+                                that.$toast.error("Couldn't stay logged in - please sign in again", {timeout:false, id: 'login'});
                                 that.autoLoggingIn = false;
                             } else {
                                 that.isLoggingIn = true;

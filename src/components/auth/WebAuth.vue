@@ -112,6 +112,7 @@ module.exports = {
                     let rawId = convertToByteArray(new Int8Array(credential.rawId));
                     let resp = peergos.client.JsUtil.generateWebAuthnResponse(rawId, rawAttestation, clientDataJson, signature);
                     that.context.network.account.registerSecurityKeyComplete(that.context.username, that.webAuthName, resp, that.context.signer).thenApply(done => {
+                        clearRootKeyCacheFully(() => {});
                         that.$toast('Security Key has been enabled');
                         that.showSpinner = false;
                         that.close(true);
