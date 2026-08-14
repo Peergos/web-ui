@@ -8,9 +8,10 @@
 					<h3>Multi Factor Authentication</h3>
 				</header>
 				<div v-if="isReady">
-    				<div v-if="hasTotp && hasWebauthn && !showTotp">
+    				<div v-if="showChooser">
                                     <div class="mfa_buttons">
                                         <AppButton
+					    v-if="hasTotp"
 					    id='prompt-totpbutton-id'
 					    type="primary"
 					    accent
@@ -21,6 +22,7 @@
 					    Use authenticator app
 					</AppButton>
                                         <AppButton
+					    v-if="hasWebauthn"
 					    id='prompt-webauthn-button-id'
 					    type="primary"
 					    accent
@@ -30,29 +32,40 @@
 					    >
 					    Use security key
 					</AppButton>
+                                        <AppButton
+					    v-if="hasBackupCodes"
+					    id='prompt-backupcodes-button-id'
+					    type="primary"
+					    accent
+					    @click.native="useBackupCode()"
+					    class="mfa_button"
+					    style="margin:10px;"
+					    >
+					    Use a backup code
+					</AppButton>
                                     </div>
                                 </div>
                     <div>
-                        <center v-if="showTotp">
-                            Verification code from app:&nbsp;<input
+                        <center v-if="showCodeEntry">
+                            {{ codeLabel }}&nbsp;<input
                                 type="text"
                                 autofocus
                                 name="mfaCode"
                                 v-model="mfaCode"
                                 placeholder=""
                                 style="width:200px"
-                                v-on:keyup.enter="confirmTotp"
+                                v-on:keyup.enter="confirmCode"
                             />
                         </center>
                     </div>
                 </div>
 				<footer class="mfa_login">
 				    <AppButton
-                                        v-if="showTotp"
+                                        v-if="showCodeEntry"
 					id='prompt-button-id'
 					type="primary"
 					accent
-					@click.native="confirmTotp()"
+					@click.native="confirmCode()"
 					>
 					Confirm
 				    </AppButton>
@@ -74,8 +87,13 @@ module.exports = {
             webauthnMethods: [],
             hasTotp: false,
             hasWebauthn: false,
-            showTotp: false,
-            totpIndex: 0,
+            hasBackupCodes: false,
+            showChooser: false,
+            showCodeEntry: false,
+            codeLabel: '',
+            codeCredentialId: null,
+            totpCredentialId: null,
+            backupCredentialId: null,
             isReady: false,
         }
     },
@@ -89,11 +107,16 @@ module.exports = {
         let that = this;
         for (var i=0; i < this.mfaMethods.length;i++) {
             let method = this.mfaMethods[i];
-            if (method.type.toString() == peergos.shared.login.mfa.MultiFactorAuthMethod.Type.TOTP.toString()) {
+            let type = method.type == null ? '' : method.type.toString();
+            if (type == peergos.shared.login.mfa.MultiFactorAuthMethod.Type.TOTP.toString()) {
                 that.mfaOptions.push({type:'Authenticator App', credentialId: method.credentialId});
                 this.hasTotp = true;
-                this.totpIndex = i;
-            } else {
+                this.totpCredentialId = method.credentialId;
+            } else if (type == peergos.shared.login.mfa.MultiFactorAuthMethod.Type.BACKUP_CODES.toString()) {
+                that.mfaOptions.push({type:'Backup Code', credentialId: method.credentialId});
+                this.hasBackupCodes = true;
+                this.backupCredentialId = method.credentialId;
+            } else if (type == peergos.shared.login.mfa.MultiFactorAuthMethod.Type.WEBAUTHN.toString()) {
                 that.mfaOptions.push({type:'WebKey', credentialId: new Uint8Array(method.credentialId), name: method.name});
                 this.hasWebauthn = true;
                 that.webauthnMethods.push({
@@ -103,22 +126,35 @@ module.exports = {
             }
         }
         this.isReady = true;
-        if (this.hasWebauthn && ! this.hasTotp) {
+        let optionCount = (this.hasTotp ? 1 : 0) + (this.hasWebauthn ? 1 : 0) + (this.hasBackupCodes ? 1 : 0);
+        if (optionCount > 1)
+            this.showChooser = true;
+        else if (this.hasWebauthn)
             this.confirmWebauthn();
-        }
-        if (! this.hasWebauthn && this.hasTotp)
-            this.showTotp= true;
+        else if (this.hasTotp)
+            this.useTotp();
+        else if (this.hasBackupCodes)
+            this.useBackupCode();
     },
     methods: {
         close: function() {
-            let credentialId = this.mfaOptions[this.totpIndex].credentialId;
+            let credentialId = this.codeCredentialId != null ? this.codeCredentialId : this.mfaOptions[0].credentialId;
             this.consumer_cancel_func(credentialId);
         },
         useTotp: function() {
-            this.showTotp = true;
+            this.codeCredentialId = this.totpCredentialId;
+            this.codeLabel = 'Verification code from app:';
+            this.showChooser = false;
+            this.showCodeEntry = true;
         },
-        confirmTotp: function() {
-            let credentialId = this.mfaOptions[this.totpIndex].credentialId;
+        useBackupCode: function() {
+            this.codeCredentialId = this.backupCredentialId;
+            this.codeLabel = 'Backup code:';
+            this.showChooser = false;
+            this.showCodeEntry = true;
+        },
+        confirmCode: function() {
+            let credentialId = this.codeCredentialId;
             let resp = peergos.client.JsUtil.generateAuthResponse(credentialId, this.mfaCode);
             this.consumer_func(credentialId, resp);
         },
