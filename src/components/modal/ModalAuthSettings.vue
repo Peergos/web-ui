@@ -23,6 +23,11 @@
                     v-on:hide-webauth="showWebAuthSetup = false"
                     :consumer_func="webauth_confirmed_func">
             </WebAuth>
+            <BackupCodes
+                    v-if="showBackupCodes"
+                    v-on:hide-backup-codes="showBackupCodes = false"
+                    :consumer_func="backup_codes_generated_func">
+            </BackupCodes>
             <div class="table-responsive">
                 <table class="table">
                     <thead>
@@ -53,6 +58,18 @@
                         <td> <button class="btn btn-danger" @click="removeWebAuthKey(webAuthKey)">{{ translate("MFA.REMOVE") }}</button>
                         </td>
                     </tr>
+                    <tr>
+                        <td>{{ translate("MFA.BACKUP") }}</td>
+                        <td v-if="backupCodes.length == 0">{{ translate("MFA.BACKUP.NONE") }}</td>
+                        <td v-if="backupCodes.length == 1">{{ backupCodes[0].remaining }}&nbsp;{{ translate("MFA.BACKUP.REMAINING") }}</td>
+                        <td>
+                            <button class="btn btn-success" v-if="backupCodes.length == 0" :disabled="! hasOtherFactor()" @click="generateBackupCodes()">{{ translate("MFA.BACKUP.GENERATE") }}</button>
+                            <button class="btn btn-info" v-if="backupCodes.length == 1" @click="regenerateBackupCodes()">{{ translate("MFA.BACKUP.REGENERATE") }}</button>
+                        </td>
+                        <td>
+                            <button class="btn btn-danger" v-if="backupCodes.length == 1" @click="removeBackupCodes()">{{ translate("MFA.REMOVE") }}</button>
+                        </td>
+                    </tr>
                     </tbody>
                 </table>
                 <button class="btn btn-success" @click="addWebAuthKey()">{{ translate("MFA.ADD.KEY") }}</button>
@@ -68,6 +85,7 @@ const Confirm = require("../confirm/Confirm.vue");
 const Spinner = require("../spinner/Spinner.vue");
 const Totp = require("../auth/Totp.vue");
 const WebAuth = require("../auth/WebAuth.vue");
+const BackupCodes = require("../auth/BackupCodes.vue");
 const i18n = require("../../i18n/index.js");
 
 module.exports = {
@@ -78,12 +96,14 @@ module.exports = {
         Spinner,
         Totp,
         WebAuth,
+        BackupCodes,
     },
     data() {
         return {
             showSpinner: false,
             totpKey: [],
             webAuthKeys: [],
+            backupCodes: [],
             showConfirm: false,
             confirm_message: "",
             confirm_body: "",
@@ -91,6 +111,7 @@ module.exports = {
             confirm_consumer_func: () => {},
             showTOTPSetup: false,
             showWebAuthSetup: false,
+            showBackupCodes: false,
         };
     },
     
@@ -107,9 +128,13 @@ module.exports = {
             let methods = mfaMethods.toArray([]);
             for(var i=0; i < methods.length;i++) {
                 let method = methods[i];
-                if (method.type.toString() == peergos.shared.login.mfa.MultiFactorAuthMethod.Type.TOTP.toString()) {
+                let type = method.type == null ? '' : method.type.toString();
+                if (type == peergos.shared.login.mfa.MultiFactorAuthMethod.Type.TOTP.toString()) {
                     that.totpKey.push({credentialId: method.credentialId});
-                } else {
+                } else if (type == peergos.shared.login.mfa.MultiFactorAuthMethod.Type.BACKUP_CODES.toString()) {
+                    // backup codes carry their remaining count in the name
+                    that.backupCodes.push({credentialId: method.credentialId, remaining: method.name});
+                } else if (type == peergos.shared.login.mfa.MultiFactorAuthMethod.Type.WEBAUTHN.toString()) {
                     that.webAuthKeys.push({credentialId: method.credentialId, name: method.name});
                 }
             }
@@ -147,6 +172,7 @@ module.exports = {
             this.context.network.account.deleteSecondFactor(this.context.username, credentialId, this.context.signer).thenApply(res => {
                 if (res) {
                     that.totpKey = [];
+                    that.clearBackupCodesIfLastFactorGone();
                 }
                 that.showSpinner = false;
             }).exceptionally(function(throwable) {
@@ -184,6 +210,7 @@ module.exports = {
                 if (index > -1) {
                     that.webAuthKeys.splice(index, 1);
                 }
+                that.clearBackupCodesIfLastFactorGone();
                 that.showSpinner = false;
             }).exceptionally(function(throwable) {
                 that.$toast.error(that.translate("MFA.ERROR.DELETE"), {timeout:false});
@@ -204,6 +231,68 @@ module.exports = {
             this.confirm_consumer_cancel_func = cancelFunction;
             this.confirm_consumer_func = replaceFunction;
             this.showConfirm = true;
+        },
+        hasOtherFactor() {
+            return this.totpKey.length + this.webAuthKeys.length > 0;
+        },
+        clearBackupCodesIfLastFactorGone() {
+            // the server deletes backup codes along with the last factor they were backing up
+            if (! this.hasOtherFactor())
+                this.backupCodes = [];
+        },
+        generateBackupCodes() {
+            if (! this.hasOtherFactor()) {
+                this.$toast.error(this.translate("MFA.BACKUP.REQUIRES.FACTOR"), {timeout:false});
+                return;
+            }
+            this.showBackupCodes = true;
+        },
+        regenerateBackupCodes() {
+            let that = this;
+            this.confirm_message = this.translate("MFA.BACKUP.REGENERATE") + " " + this.translate("MFA.BACKUP");
+            this.confirm_body = this.translate("MFA.CONFIRM.REGENERATE.BACKUP");
+            this.confirm_consumer_cancel_func = () => {
+                that.showConfirm = false;
+            };
+            this.confirm_consumer_func = () => {
+                that.showConfirm = false;
+                that.generateBackupCodes();
+            };
+            this.showConfirm = true;
+        },
+        removeBackupCodes() {
+            let that = this;
+            this.confirm_message = this.translate("MFA.REMOVE") + " " + this.translate("MFA.BACKUP");
+            this.confirm_body = this.translate("MFA.CONFIRM.REMOVE.BACKUP");
+            this.confirm_consumer_cancel_func = () => {
+                that.showConfirm = false;
+                that.showSpinner = false;
+            };
+            this.confirm_consumer_func = () => {
+                that.showConfirm = false;
+                that.deleteBackupCodes();
+            };
+            this.showConfirm = true;
+        },
+        deleteBackupCodes() {
+            let that = this;
+            this.showSpinner = true;
+            let credentialId = this.backupCodes[0].credentialId;
+            this.context.network.account.deleteSecondFactor(this.context.username, credentialId, this.context.signer).thenApply(res => {
+                if (res) {
+                    that.backupCodes = [];
+                }
+                that.showSpinner = false;
+            }).exceptionally(function(throwable) {
+                that.$toast.error(that.translate("MFA.ERROR.DELETE"), {timeout:false});
+                console.log('Unable to delete backup codes: ' + throwable);
+                that.showSpinner = false;
+            });
+        },
+        backup_codes_generated_func(credentialId, count) {
+            if (count > 0) {
+                this.backupCodes = [{credentialId: credentialId, remaining: count.toString()}];
+            }
         },
         totp_confirmed_func(credentialId, success) {
             if (success && this.totpKey.length == 0) {
