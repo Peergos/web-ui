@@ -185,6 +185,7 @@ module.exports = {
                 let click = new MouseEvent('click')
                 link.type = props.mimeType
                 link.href = url
+                link.download = filename
                 link.dispatchEvent(click)
               },
               function (seekHi, seekLo, seekLength, uuid) {},
