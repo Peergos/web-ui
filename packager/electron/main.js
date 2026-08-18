@@ -376,9 +376,18 @@ function createWindow() {
 function wireSession() {
     const peergos = session.defaultSession;
 
-    // The camera is the one permission the UI needs, for scanning QR codes, and
-    // it is worth asking about. Everything else is refused.
+    // The camera is the one permission worth asking about, for scanning QR
+    // codes. Everything else is refused, bar the clipboard write behind every
+    // Copy button.
     peergos.setPermissionRequestHandler((contents, permission, callback, details) => {
+        // Chromium only asks for the sanitized write off a real user
+        // activation - without one it asks for clipboard-read, the read-write
+        // permission, which stays refused. So granting this cannot become a way
+        // for a page to read the clipboard or to overwrite it unprompted.
+        if (permission === 'clipboard-sanitized-write') {
+            callback(true);
+            return;
+        }
         const wantsCamera = permission === 'media'
             && (details.mediaTypes || []).includes('video');
         if (!wantsCamera) {
