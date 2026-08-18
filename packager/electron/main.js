@@ -47,6 +47,10 @@ const SERVER_GONE_MS = 500;
 // that hosts us is.
 const TRAY_WAIT_MS = 10000;
 
+// Schemes the page addresses itself with, which are never the desktop's - a
+// download's blob:, an about:blank frame. See isOurs.
+const IN_PAGE_SCHEMES = ['blob:', 'data:', 'about:'];
+
 // Menu item ids, shared with tray.py: it draws the menu we send and tells us
 // which id the user picked.
 const MENU_STATUS = 1;
@@ -306,6 +310,23 @@ function openInspector() {
         win.webContents.openDevTools({mode: 'detach'});
 }
 
+// The window is the local server's and nothing else. Sandboxed apps are served
+// from a subdomain of it - <app>.localhost:PORT - so they count too, but a link
+// out of one, example.com in a markdown or html viewer, does not.
+function isOurs(url) {
+    let target;
+    try {
+        target = new URL(url);
+    } catch (e) {
+        return true;   // nothing we can judge, so nothing we should redirect
+    }
+    if (IN_PAGE_SCHEMES.includes(target.protocol))
+        return true;
+    return (target.protocol === 'http:' || target.protocol === 'https:')
+        && (target.hostname === 'localhost' || target.hostname.endsWith('.localhost'))
+        && target.port === PORT;
+}
+
 function createWindow() {
     win = new BrowserWindow({
         width: 1280,
@@ -334,6 +355,21 @@ function createWindow() {
     win.webContents.setWindowOpenHandler(({url}) => {
         shell.openExternal(url);
         return {action: 'deny'};
+    });
+
+    // A link that navigates in place, rather than asking for a window: example.com
+    // clicked in a viewer app's frame, or mailto: from the share dialog and the
+    // calendar. Electron does nothing at all with a mailto:, and an address
+    // elsewhere on the web has no business replacing the app, so both go to the
+    // desktop. Frames as well as the top - will-frame-navigate is the one that
+    // hears an app's sandboxed frame, and it hears the top too, so this is the
+    // only handler. A download does not arrive here: a blob: click goes straight
+    // to will-download.
+    win.webContents.on('will-frame-navigate', event => {
+        if (isOurs(event.url))
+            return;
+        event.preventDefault();
+        shell.openExternal(event.url);
     });
 
     // The web inspector. Electron has no default context menu and no built-in
