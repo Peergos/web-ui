@@ -170,6 +170,10 @@ class PeergosWindow : Form
             webView.CoreWebView2.Settings.AreDefaultContextMenusEnabled = false;
             webView.CoreWebView2.Settings.IsStatusBarEnabled = false;
             webView.CoreWebView2.NewWindowRequested += OnNewWindowRequested;
+            // The top frame and every iframe, nested ones included: both raise the same
+            // args, so one handler covers the lot.
+            webView.CoreWebView2.NavigationStarting += OnNavigationStarting;
+            webView.CoreWebView2.FrameNavigationStarting += OnNavigationStarting;
             // Read by assets/js/webauthn.js, which then routes security keys through the
             // local server. WebView2 has WebAuthn of its own, and that is precisely the
             // problem: from a localhost page it can only ever mint credentials for rpId
@@ -278,6 +282,59 @@ class PeergosWindow : Form
     {
         if (autostartItem != null)
             autostartItem.Checked = AutostartEnabled();
+    }
+
+    // The window is the local server's and nothing else. Sandboxed apps are served
+    // from a subdomain of it - <app>.localhost:port - so they count too, but a link
+    // out of one, example.com in a markdown or html viewer, does not. The schemes the
+    // page addresses itself with are never the desktop's: a download rides on a blob:
+    // navigation, and cancelling that would take downloads with it.
+    private bool IsOurs(string url)
+    {
+        Uri uri;
+        if (! Uri.TryCreate(url, UriKind.Absolute, out uri))
+            return true;   // nothing we can judge, so nothing we should redirect
+        if (uri.Scheme == "blob" || uri.Scheme == "data" || uri.Scheme == "about")
+            return true;
+        if (uri.Scheme != Uri.UriSchemeHttp && uri.Scheme != Uri.UriSchemeHttps)
+            return false;
+        return (uri.Host == "localhost" || uri.Host.EndsWith(".localhost"))
+            && uri.Port.ToString() == port;
+    }
+
+    // A link that navigates in place rather than asking for a window: example.com
+    // clicked in a viewer app's frame, or mailto: from the share dialog and the
+    // calendar. Nothing else in the host sees these - NewWindowRequested is only for
+    // target=_blank - so without this an address elsewhere on the web replaces the
+    // app, in a window with no back button to return by.
+    //
+    // Only the web and mail reach the shell. A viewer app frame is rendering someone
+    // else's document, and handing whatever scheme it names to ShellExecute is how a
+    // file you were sent gets to run something. The rest are simply refused.
+    private void OnNavigationStarting(object sender, CoreWebView2NavigationStartingEventArgs e)
+    {
+        if (IsOurs(e.Uri))
+            return;
+        e.Cancel = true;
+        Uri uri;
+        if (! Uri.TryCreate(e.Uri, UriKind.Absolute, out uri))
+            return;
+        if (uri.Scheme != Uri.UriSchemeHttp && uri.Scheme != Uri.UriSchemeHttps
+            && uri.Scheme != Uri.UriSchemeMailto)
+            return;
+        Launch(uri);
+    }
+
+    private static void Launch(Uri uri)
+    {
+        try
+        {
+            Process.Start(new ProcessStartInfo(uri.AbsoluteUri) { UseShellExecute = true });
+        }
+        catch (Exception ex)
+        {
+            Console.Error.WriteLine("Could not open " + uri + ": " + ex.Message);
+        }
     }
 
     // target=_blank links: send them to the user's browser rather than a second,

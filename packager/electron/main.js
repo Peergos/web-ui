@@ -51,6 +51,11 @@ const TRAY_WAIT_MS = 10000;
 // download's blob:, an about:blank frame. See isOurs.
 const IN_PAGE_SCHEMES = ['blob:', 'data:', 'about:'];
 
+// All the desktop is ever asked to open. A viewer app's frame is rendering
+// someone else's document, and handing whatever scheme a link in it names to the
+// desktop is how a file you were sent gets to run something. See launch.
+const LAUNCHABLE_SCHEMES = ['http:', 'https:', 'mailto:'];
+
 // Menu item ids, shared with tray.py: it draws the menu we send and tells us
 // which id the user picked.
 const MENU_STATUS = 1;
@@ -327,6 +332,21 @@ function isOurs(url) {
         && target.port === PORT;
 }
 
+// Out to the browser, or the mail client. Anything else is dropped rather than
+// opened: the navigation that asked for it has already been stopped by then, so
+// dropping it leaves the link doing nothing at all, which is what a link to a
+// scheme we do not trust should do.
+function launch(url) {
+    let target;
+    try {
+        target = new URL(url);
+    } catch (e) {
+        return;
+    }
+    if (LAUNCHABLE_SCHEMES.includes(target.protocol))
+        shell.openExternal(url);
+}
+
 function createWindow() {
     win = new BrowserWindow({
         width: 1280,
@@ -353,7 +373,7 @@ function createWindow() {
     // A link that wants a new window - anything target=_blank. We don't want a
     // second window, so hand the address to the user's browser.
     win.webContents.setWindowOpenHandler(({url}) => {
-        shell.openExternal(url);
+        launch(url);
         return {action: 'deny'};
     });
 
@@ -369,7 +389,7 @@ function createWindow() {
         if (isOurs(event.url))
             return;
         event.preventDefault();
-        shell.openExternal(event.url);
+        launch(event.url);
     });
 
     // The web inspector. Electron has no default context menu and no built-in
