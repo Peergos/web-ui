@@ -524,11 +524,11 @@ module.exports = {
 
 		/* ---------- server calls ---------- */
 
-		localPost(url, body) {
+		localPost(url, body, responseType) {
 			return new Promise(function(resolve, reject) {
 				var req = new XMLHttpRequest();
 				req.open('POST', url);
-				req.responseType = 'json';
+				req.responseType = responseType != null ? responseType : 'json';
 
 				req.onload = function() {
 					// This is called even on 404 etc so check the status
@@ -832,13 +832,22 @@ module.exports = {
 				Android.downloadSyncLog(label);
 				return;
 			}
-			let url = "/peergos/v0/sync/get-log?label=" + encodeURIComponent(label);
-			let a = document.createElement('a');
-			a.href = url;
-			a.download = "sync-" + label + ".log";
-			document.body.appendChild(a);
-			a.click();
-			document.body.removeChild(a);
+			let that = this;
+			// the sync api is POST only, so fetch the log and save the response: navigating
+			// to it is a GET, which the server refuses
+			this.localPost("/peergos/v0/sync/get-log?label=" + encodeURIComponent(label), null, 'blob')
+				.then(function(blob) {
+					let url = window.URL.createObjectURL(blob);
+					let a = document.createElement('a');
+					a.href = url;
+					a.download = "sync-" + label + ".log";
+					document.body.appendChild(a);
+					a.click();
+					document.body.removeChild(a);
+					setTimeout(() => window.URL.revokeObjectURL(url), 0);
+				}).catch(function(err) {
+					that.$toast.error(that.errText(err), {});
+				});
 		},
 
 		confirmRemove(pair) {
