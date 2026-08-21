@@ -219,6 +219,47 @@ const i18n = require("../i18n/index.js");
 const loopback = require("../mixins/loopback/index.js");
 const routerMixins = require("../mixins/router/index.js");
 
+// Every line the server logs about a file is "<action> <path>[ <trailer>]", and the
+// action also says which side the path is on.
+const SYNC_ACTIONS = [
+	"Sync Local: Copying changes to ",
+	"Sync Local: Copying ",
+	"Sync Local: Moving ",
+	"Sync Local: Set mod time ",
+	"Sync Local: deleted, copying changed remote ",
+	"Sync Local: delete ",
+	"Sync local: delete dir ",
+	"Sync Local: mkdir ",
+	"Sync Remote: Concurrent change: ",
+	"Sync Remote: Concurrent file addition: ",
+	"Sync Remote: Copying changes to ",
+	"Sync Remote: Copying ",
+	"Sync Remote: Moving ",
+	"Sync Remote: Set mod time ",
+	"Sync Remote: deleted, copying changed local ",
+	"Sync Remote: delete dir ",
+	"Sync Remote: delete ",
+	"Sync Remote: mkdir ",
+	"Sync Concurrent delete on ",
+	"Sync ignore local delete ",
+	"Sync ignore remote delete ",
+	"Skipping identical remote file in initial sync: ",
+	"REMOTE: Uploading ",
+	"REMOTE: Updating ",
+	"REMOTE: deleted ",
+	"Remote: Set mod time ",
+	" MiB of ",
+];
+// longest action first, so "Copying changes to" is not read as "Copying" plus a path;
+// the trailer is progress, a second path, or the reason for a rename
+const ACTION_PATH = new RegExp("^([\\s\\S]*?(?:"
+	+ SYNC_ACTIONS.slice()
+		.sort((a, b) => b.length - a.length)
+		.map(a => a.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"))
+		.join("|")
+	+ "))([\\s\\S]+?)"
+	+ "((?: renaming[\\s\\S]*)?(?:, Synced:[\\s\\S]*)?(?: \\(\\d+/\\d+\\) files synced)?)$");
+
 module.exports = {
 	components: {
 		AppHeader,
@@ -474,13 +515,21 @@ module.exports = {
 			let m = /^([\s\S]*) at \d{4}-\d{2}-\d{2} \d{2}:\d{2}(?::\d{2})?$/.exec(msg);
 			return m == null ? msg : m[1];
 		},
-		// the server names the transferred file by its path within the synced folder.
-		// The line shows the leaf; absolute gives the whole local path, for the title
-		// and for the opened form.
+		// the server names files by their path within the synced folder, which is the same
+		// on both sides. The line shows the leaf; absolute gives the whole path, on the side
+		// the action names, for the title and the opened form.
 		activityOf(pair, absolute) {
-			return this.withoutTime(pair.msg).replace(/( MiB of )(.+)$/, (all, prefix, path) => prefix +
-				(absolute ? this.prettifyHostFolder(pair.localpath) + "/" + path
-					: path.substring(path.lastIndexOf('/') + 1)));
+			return this.withoutTime(pair.msg).replace(ACTION_PATH, (all, action, path, trailer) => {
+				// the first side word names where the path is: "Sync Local: deleted,
+				// copying changed remote x" writes x on this device
+				let side = /local|remote/i.exec(action);
+				let root = side != null && side[0].toLowerCase() === "remote" ?
+					pair.remotepath :
+					this.prettifyHostFolder(pair.localpath);
+				return action + path.split(" ==> ")
+					.map(p => absolute ? root + "/" + p : p.substring(p.lastIndexOf('/') + 1))
+					.join(" ==> ") + trailer;
+			});
 		},
 
 		/* ---------- server calls ---------- */
