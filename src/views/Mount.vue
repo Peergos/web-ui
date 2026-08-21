@@ -83,6 +83,7 @@
 
 <script>
 const AppHeader = require("../components/AppHeader.vue");
+const localServer = require("../mixins/localserver/index.js");
 const Spinner = require("../components/spinner/Spinner.vue");
 const i18n = require("../i18n/index.js");
 const loopback = require("../mixins/loopback/index.js");
@@ -173,7 +174,7 @@ module.exports = {
             proposedTotpName: "",
         };
     },
-    mixins: [i18n],
+    mixins: [i18n, localServer],
     computed: {
         ...Vuex.mapState(['context']),
         enabled() {
@@ -191,22 +192,6 @@ module.exports = {
         if (this.enabled) this.getConfig();
     },
     methods: {
-        localPost(url, body) {
-            return new Promise(function(resolve, reject) {
-                var req = new XMLHttpRequest();
-                req.open('POST', url);
-                req.responseType = 'json';
-                req.onload = function() {
-                    if (req.status == 200) resolve(req.response);
-                    else {
-                        let trailer = req.getResponseHeader("Trailer");
-                        reject(trailer || 'Unexpected error from server');
-                    }
-                };
-                req.onerror = function() { reject(Error("Unable to connect")); };
-                req.send(body != null ? body : new Int8Array(0));
-            });
-        },
         getConfig() {
             let that = this;
             this.localPost("/peergos/v0/mount/get-config").then(function(result) {
