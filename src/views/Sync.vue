@@ -26,7 +26,6 @@
 					</span>
 					<div class="sync-summary__text">
 						<h2>{{ summaryHeadline }}</h2>
-						<p>{{ summaryDetail }}</p>
 					</div>
 					<div class="sync-summary__actions">
 						<button v-if="paused" type="button" class="sync-btn sync-btn--resume" @click="syncNow()">
@@ -265,7 +264,6 @@ module.exports = {
 			fastPollTimeoutID: null,
 			updateStatusIntervalID: "",
 			error: null,
-			now: Date.now(),
 		}
 	},
 	props: [],
@@ -334,13 +332,6 @@ module.exports = {
 					this.fmt2("SYNC.SUMMARY.SYNCING", Math.max(this.syncingIndex + 1, 1), this.syncPairs.length);
 			return this.translate("SYNC.SUMMARY.OK");
 		},
-		summaryDetail() {
-			let when = this.lastChecked;
-			return when ? this.fmt("SYNC.SUMMARY.CHECKED", when) : '';
-		},
-		lastChecked() {
-			return this.staleTime(this.splitStatus(this.status).time);
-		},
 		// disabled from the click until the run we asked for has finished
 		syncing() {
 			return this.globalState === "SYNCING" || this.counts.SYNCING > 0;
@@ -355,7 +346,6 @@ module.exports = {
 		this.updateStatus();
 		let that = this;
 		this.updateStatusIntervalID = setInterval(() => {
-			that.now = Date.now();
 			that.updateStatus();
 		}, 1000);
 	},
@@ -476,50 +466,21 @@ module.exports = {
 			if (state === "PENDING") return this.translate("SYNC.STATE.PENDING");
 			return this.translate("SYNC.STATE.SYNCED");
 		},
-		splitStatus(msg) {
+		/** The server appends " at <date> <time>", which the folder line does not show.
+		 *  LocalTime.toString() drops ":ss" when seconds are zero, hence the optional group. */
+		withoutTime(msg) {
 			if (msg == null || msg.length === 0)
-				return { text: '', time: null };
-			// the server appends " at <date> <time>"; LocalTime.toString() drops ":ss"
-			// when seconds are zero, hence the optional group
-			let m = /^([\s\S]*) at (\d{4}-\d{2}-\d{2}) (\d{2}:\d{2}(?::\d{2})?)$/.exec(msg);
-			if (m == null)
-				return { text: msg, time: null };
-			let parsed = new Date(m[2] + "T" + m[3]);
-			return { text: m[1], time: isNaN(parsed.getTime()) ? null : parsed };
+				return '';
+			let m = /^([\s\S]*) at \d{4}-\d{2}-\d{2} \d{2}:\d{2}(?::\d{2})?$/.exec(msg);
+			return m == null ? msg : m[1];
 		},
 		// the server names the transferred file by its path within the synced folder.
 		// The line shows the leaf; absolute gives the whole local path, for the title
 		// and for the opened form.
 		activityOf(pair, absolute) {
-			let split = this.splitStatus(pair.msg);
-			let text = split.text.replace(/( MiB of )(.+)$/, (all, prefix, path) => prefix +
+			return this.withoutTime(pair.msg).replace(/( MiB of )(.+)$/, (all, prefix, path) => prefix +
 				(absolute ? this.prettifyHostFolder(pair.localpath) + "/" + path
 					: path.substring(path.lastIndexOf('/') + 1)));
-			let when = this.staleTime(split.time);
-			return text && when ? text + " · " + when : (text || when || '');
-		},
-		// blank while the cycle is healthy; a value means checks have stalled
-		staleTime(date) {
-			if (date == null)
-				return '';
-			if (this.now - date.getTime() < 60000)
-				return '';
-			return this.relativeTime(date);
-		},
-
-		relativeTime(date) {
-			if (date == null)
-				return '';
-			// only ever reached through staleTime, which stays blank for the first minute
-			let secs = Math.round((this.now - date.getTime()) / 1000);
-			if (secs < 0) secs = 0;
-			let mins = Math.max(Math.round(secs / 60), 1);
-			if (mins < 60)
-				return this.fmt("SYNC.TIME.MINS", mins);
-			let hours = Math.round(mins / 60);
-			if (hours < 24)
-				return this.fmt("SYNC.TIME.HOURS", hours);
-			return this.fmt("SYNC.TIME.DAYS", Math.round(hours / 24));
 		},
 
 		/* ---------- server calls ---------- */
@@ -814,7 +775,6 @@ module.exports = {
 			let that = this;
 			this.stopFastPoll();
 			this.fastPollIntervalID = setInterval(() => {
-				that.now = Date.now();
 				that.updateStatus();
 			}, 250);
 			this.fastPollTimeoutID = setTimeout(() => { that.stopFastPoll(); }, durationMs);
