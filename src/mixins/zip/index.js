@@ -68,7 +68,6 @@ module.exports = {
                     let click = new MouseEvent('click')
                     link.type = mimeType
                     link.href = url
-                    link.download = zipFilename
                     link.dispatchEvent(click)
                     that.startZipDownload(zipFilename, allFiles, progress, zipFuture, writerContainer);
                 },function (seekHi, seekLo, seekLength, uuid) {},undefined, progress.max);
