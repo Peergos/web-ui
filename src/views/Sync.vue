@@ -26,7 +26,6 @@
 					</span>
 					<div class="sync-summary__text">
 						<h2>{{ summaryHeadline }}</h2>
-						<p>{{ summaryDetail }}</p>
 					</div>
 					<div class="sync-summary__actions">
 						<button v-if="paused" type="button" class="sync-btn sync-btn--resume" @click="syncNow()">
@@ -220,6 +219,47 @@ const i18n = require("../i18n/index.js");
 const loopback = require("../mixins/loopback/index.js");
 const routerMixins = require("../mixins/router/index.js");
 
+// Every line the server logs about a file is "<action> <path>[ <trailer>]", and the
+// action also says which side the path is on.
+const SYNC_ACTIONS = [
+	"Sync Local: Copying changes to ",
+	"Sync Local: Copying ",
+	"Sync Local: Moving ",
+	"Sync Local: Set mod time ",
+	"Sync Local: deleted, copying changed remote ",
+	"Sync Local: delete ",
+	"Sync local: delete dir ",
+	"Sync Local: mkdir ",
+	"Sync Remote: Concurrent change: ",
+	"Sync Remote: Concurrent file addition: ",
+	"Sync Remote: Copying changes to ",
+	"Sync Remote: Copying ",
+	"Sync Remote: Moving ",
+	"Sync Remote: Set mod time ",
+	"Sync Remote: deleted, copying changed local ",
+	"Sync Remote: delete dir ",
+	"Sync Remote: delete ",
+	"Sync Remote: mkdir ",
+	"Sync Concurrent delete on ",
+	"Sync ignore local delete ",
+	"Sync ignore remote delete ",
+	"Skipping identical remote file in initial sync: ",
+	"REMOTE: Uploading ",
+	"REMOTE: Updating ",
+	"REMOTE: deleted ",
+	"Remote: Set mod time ",
+	" MiB of ",
+];
+// longest action first, so "Copying changes to" is not read as "Copying" plus a path;
+// the trailer is progress, a second path, or the reason for a rename
+const ACTION_PATH = new RegExp("^([\\s\\S]*?(?:"
+	+ SYNC_ACTIONS.slice()
+		.sort((a, b) => b.length - a.length)
+		.map(a => a.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"))
+		.join("|")
+	+ "))([\\s\\S]+?)"
+	+ "((?: renaming[\\s\\S]*)?(?:, Synced:[\\s\\S]*)?(?: \\(\\d+/\\d+\\) files synced)?)$");
+
 module.exports = {
 	components: {
 		AppHeader,
@@ -265,7 +305,6 @@ module.exports = {
 			fastPollTimeoutID: null,
 			updateStatusIntervalID: "",
 			error: null,
-			now: Date.now(),
 		}
 	},
 	props: [],
@@ -334,13 +373,6 @@ module.exports = {
 					this.fmt2("SYNC.SUMMARY.SYNCING", Math.max(this.syncingIndex + 1, 1), this.syncPairs.length);
 			return this.translate("SYNC.SUMMARY.OK");
 		},
-		summaryDetail() {
-			let when = this.lastChecked;
-			return when ? this.fmt("SYNC.SUMMARY.CHECKED", when) : '';
-		},
-		lastChecked() {
-			return this.staleTime(this.splitStatus(this.status).time);
-		},
 		// disabled from the click until the run we asked for has finished
 		syncing() {
 			return this.globalState === "SYNCING" || this.counts.SYNCING > 0;
@@ -355,7 +387,6 @@ module.exports = {
 		this.updateStatus();
 		let that = this;
 		this.updateStatusIntervalID = setInterval(() => {
-			that.now = Date.now();
 			that.updateStatus();
 		}, 1000);
 	},
@@ -429,14 +460,19 @@ module.exports = {
 			return this.translate(key).replace("{n}", n).replace("{m}", m);
 		},
 		// the leaf identifies the folder, so keep it and let the parents truncate
+		/** windows paths arrive with backslashes, so the leaf is after whichever comes last */
+		lastSeparator(path) {
+			let p = ("" + path).replace(/[\\/]+$/, '');
+			return Math.max(p.lastIndexOf('/'), p.lastIndexOf('\\'));
+		},
 		pathHead(path) {
-			let p = ("" + path).replace(/\/+$/, '');
-			let cut = p.lastIndexOf('/');
+			let p = ("" + path).replace(/[\\/]+$/, '');
+			let cut = this.lastSeparator(p);
 			return cut <= 0 ? p : p.substring(0, cut);
 		},
 		pathTail(path) {
-			let p = ("" + path).replace(/\/+$/, '');
-			let cut = p.lastIndexOf('/');
+			let p = ("" + path).replace(/[\\/]+$/, '');
+			let cut = this.lastSeparator(p);
 			return cut <= 0 ? '' : p.substring(cut);
 		},
 		// title tooltips never fire on touch, so the full value needs a tap as well
@@ -476,50 +512,36 @@ module.exports = {
 			if (state === "PENDING") return this.translate("SYNC.STATE.PENDING");
 			return this.translate("SYNC.STATE.SYNCED");
 		},
-		splitStatus(msg) {
+		/** The server appends " at <date> <time>", which the folder line does not show.
+		 *  LocalTime.toString() drops ":ss" when seconds are zero, hence the optional group. */
+		withoutTime(msg) {
 			if (msg == null || msg.length === 0)
-				return { text: '', time: null };
-			// the server appends " at <date> <time>"; LocalTime.toString() drops ":ss"
-			// when seconds are zero, hence the optional group
-			let m = /^([\s\S]*) at (\d{4}-\d{2}-\d{2}) (\d{2}:\d{2}(?::\d{2})?)$/.exec(msg);
-			if (m == null)
-				return { text: msg, time: null };
-			let parsed = new Date(m[2] + "T" + m[3]);
-			return { text: m[1], time: isNaN(parsed.getTime()) ? null : parsed };
-		},
-		// the server names the transferred file by its path within the synced folder.
-		// The line shows the leaf; absolute gives the whole local path, for the title
-		// and for the opened form.
-		activityOf(pair, absolute) {
-			let split = this.splitStatus(pair.msg);
-			let text = split.text.replace(/( MiB of )(.+)$/, (all, prefix, path) => prefix +
-				(absolute ? this.prettifyHostFolder(pair.localpath) + "/" + path
-					: path.substring(path.lastIndexOf('/') + 1)));
-			let when = this.staleTime(split.time);
-			return text && when ? text + " · " + when : (text || when || '');
-		},
-		// blank while the cycle is healthy; a value means checks have stalled
-		staleTime(date) {
-			if (date == null)
 				return '';
-			if (this.now - date.getTime() < 60000)
-				return '';
-			return this.relativeTime(date);
+			let m = /^([\s\S]*) at \d{4}-\d{2}-\d{2} \d{2}:\d{2}(?::\d{2})?$/.exec(msg);
+			return m == null ? msg : m[1];
+		},
+		// the server names files by their path within the synced folder, which is the same
+		// on both sides. The line shows the leaf; absolute gives the whole path, on the side
+		// the action names, for the title and the opened form.
+		/** The server canonicalises relative paths to "/" even on windows, but the local root
+		 *  keeps the platform's own separator, so joining the two blindly mixes them. */
+		joinPath(root, rel) {
+			let sep = root.includes("\\") && ! root.includes("/") ? "\\" : "/";
+			return root.replace(/[\\/]+$/, '') + sep + (sep === "/" ? rel : rel.replace(/\//g, sep));
 		},
 
-		relativeTime(date) {
-			if (date == null)
-				return '';
-			// only ever reached through staleTime, which stays blank for the first minute
-			let secs = Math.round((this.now - date.getTime()) / 1000);
-			if (secs < 0) secs = 0;
-			let mins = Math.max(Math.round(secs / 60), 1);
-			if (mins < 60)
-				return this.fmt("SYNC.TIME.MINS", mins);
-			let hours = Math.round(mins / 60);
-			if (hours < 24)
-				return this.fmt("SYNC.TIME.HOURS", hours);
-			return this.fmt("SYNC.TIME.DAYS", Math.round(hours / 24));
+		activityOf(pair, absolute) {
+			return this.withoutTime(pair.msg).replace(ACTION_PATH, (all, action, path, trailer) => {
+				// the first side word names where the path is: "Sync Local: deleted,
+				// copying changed remote x" writes x on this device
+				let side = /local|remote/i.exec(action);
+				let root = side != null && side[0].toLowerCase() === "remote" ?
+					pair.remotepath :
+					this.prettifyHostFolder(pair.localpath);
+				return action + path.split(" ==> ")
+					.map(p => absolute ? this.joinPath(root, p) : p.substring(p.lastIndexOf('/') + 1))
+					.join(" ==> ") + trailer;
+			});
 		},
 
 		/* ---------- server calls ---------- */
@@ -814,7 +836,6 @@ module.exports = {
 			let that = this;
 			this.stopFastPoll();
 			this.fastPollIntervalID = setInterval(() => {
-				that.now = Date.now();
 				that.updateStatus();
 			}, 250);
 			this.fastPollTimeoutID = setTimeout(() => { that.stopFastPoll(); }, durationMs);
@@ -1358,7 +1379,9 @@ module.exports = {
 	align-items: center;
 	gap: 10px;
 	min-width: 0;
-	flex: 1 1 0;
+	/* basis from content, so a long path takes the room a short one on the other
+	   side of the arrow doesn't need, instead of both being locked to half a row */
+	flex: 1 1 auto;
 }
 
 .sync-endpoint__icon {
