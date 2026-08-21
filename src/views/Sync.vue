@@ -460,14 +460,19 @@ module.exports = {
 			return this.translate(key).replace("{n}", n).replace("{m}", m);
 		},
 		// the leaf identifies the folder, so keep it and let the parents truncate
+		/** windows paths arrive with backslashes, so the leaf is after whichever comes last */
+		lastSeparator(path) {
+			let p = ("" + path).replace(/[\\/]+$/, '');
+			return Math.max(p.lastIndexOf('/'), p.lastIndexOf('\\'));
+		},
 		pathHead(path) {
-			let p = ("" + path).replace(/\/+$/, '');
-			let cut = p.lastIndexOf('/');
+			let p = ("" + path).replace(/[\\/]+$/, '');
+			let cut = this.lastSeparator(p);
 			return cut <= 0 ? p : p.substring(0, cut);
 		},
 		pathTail(path) {
-			let p = ("" + path).replace(/\/+$/, '');
-			let cut = p.lastIndexOf('/');
+			let p = ("" + path).replace(/[\\/]+$/, '');
+			let cut = this.lastSeparator(p);
 			return cut <= 0 ? '' : p.substring(cut);
 		},
 		// title tooltips never fire on touch, so the full value needs a tap as well
@@ -518,6 +523,13 @@ module.exports = {
 		// the server names files by their path within the synced folder, which is the same
 		// on both sides. The line shows the leaf; absolute gives the whole path, on the side
 		// the action names, for the title and the opened form.
+		/** The server canonicalises relative paths to "/" even on windows, but the local root
+		 *  keeps the platform's own separator, so joining the two blindly mixes them. */
+		joinPath(root, rel) {
+			let sep = root.includes("\\") && ! root.includes("/") ? "\\" : "/";
+			return root.replace(/[\\/]+$/, '') + sep + (sep === "/" ? rel : rel.replace(/\//g, sep));
+		},
+
 		activityOf(pair, absolute) {
 			return this.withoutTime(pair.msg).replace(ACTION_PATH, (all, action, path, trailer) => {
 				// the first side word names where the path is: "Sync Local: deleted,
@@ -527,7 +539,7 @@ module.exports = {
 					pair.remotepath :
 					this.prettifyHostFolder(pair.localpath);
 				return action + path.split(" ==> ")
-					.map(p => absolute ? root + "/" + p : p.substring(p.lastIndexOf('/') + 1))
+					.map(p => absolute ? this.joinPath(root, p) : p.substring(p.lastIndexOf('/') + 1))
 					.join(" ==> ") + trailer;
 			});
 		},
