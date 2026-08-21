@@ -1,94 +1,167 @@
+
 <template>
-    <article class="app-view mount-view">
-        <AppHeader>
-            <template #primary>
-                <h1>{{ translate("MOUNT.TITLE") }}</h1>
-            </template>
-        </AppHeader>
-        <main>
-            <div v-if="isMac" style="width:100%;">
-                <center>
-                <div class="hspace-5" style="max-width:600px;">
-                    <h1>Coming soon to MacOS!</h1>
-                </div>
-                </center>
-            </div>
-            <div v-if="!isMac && enabled" style="width:100%;">
-                <div v-if="config.enabled" style="padding:1em;">
-                    <p><label>{{ translate("MOUNT.PEERGOS_USER") }}</label> <strong>{{ config.peergosUsername }}</strong></p>
-                    <p><label>{{ translate("MOUNT.MOUNT_PATH") }}</label> <strong>{{ config.mountPoint }}</strong></p>
-                    <div class="mount-action-row">
-                        <button class="btn btn-success mount-action-btn" @click="openInExplorer()">{{ translate("MOUNT.OPEN") }}</button>
-                        <button class="btn mount-action-btn mount-disable-btn" @click="disable()">{{ translate("MOUNT.DISABLE") }}</button>
-                    </div>
-                </div>
-                <div v-if="!config.enabled" style="max-width:480px; padding:1em;">
-                    <div style="margin-bottom:1em;">
-                        <label>{{ translate("MOUNT.PEERGOS_USER") }}</label>
-                        <input class="form-control" type="text" :value="context.username" readonly />
-                    </div>
-                    <div style="margin-bottom:1em;">
-                        <label>{{ translate("MOUNT.PEERGOS_PASSWORD") }}</label>
-                        <input class="form-control" type="password" v-model="form.peergosPassword" @keyup.enter="onAddMount()" />
-                    </div>
-                    <div style="margin-bottom:1em;">
-                        <label>
-                            <input type="checkbox" v-model="form.autoMount" />
-                            {{ translate("MOUNT.AUTO_MOUNT") }}
-                        </label>
-                    </div>
-                    <button class="btn btn-success" @click="onAddMount()">{{ translate("MOUNT.ENABLE") }}</button>
-                    <p v-if="error" style="color:red;">{{ error }}</p>
-                </div>
-            </div>
-            <div v-if="!isMac && !enabled" style="width:100%;">
-                <center>
-                <div class="hspace-5" style="max-width:600px;">
-                    <h1>{{ translate("MOUNT.DISABLED.TITLE") }}</h1>
-                    {{ translate("MOUNT.DISABLED") }}
-                    <br/>
-                    <a href="https://peergos.org/download" target="_blank">https://peergos.org/download</a>
-                </div>
-                </center>
-            </div>
+	<article class="app-view pg-view mount-view">
+		<AppHeader>
+			<template #primary>
+				<h1>{{ translate("MOUNT.TITLE") }}</h1>
+			</template>
+		</AppHeader>
+		<main>
 
-            <!-- Confirmation modal: shown only when the user has existing 2FA and we
-                 need to provision a dedicated TOTP for the mount. -->
-            <div v-if="showTotpConfirm" class="modal" style="display:block; background:rgba(0,0,0,0.4);">
-                <div class="modal-dialog" role="document">
-                    <div class="modal-content">
-                        <div class="modal-header">
-                            <h5 class="modal-title">{{ translate("MOUNT.TOTP.TITLE") }}</h5>
-                        </div>
-                        <div class="modal-body">
-                            <p>{{ translate("MOUNT.TOTP.EXPLAIN") }}</p>
-                            <p>
-                                <strong>{{ translate("MOUNT.TOTP.NAME_LABEL") }}:</strong>
-                                <code>{{ proposedTotpName }}</code>
-                            </p>
-                            <p>{{ translate("MOUNT.TOTP.CLEANUP") }}</p>
-                        </div>
-                        <div class="modal-footer">
-                            <button class="btn btn-secondary" @click="cancelTotpConfirm()">{{ translate("MOUNT.TOTP.CANCEL") }}</button>
-                            <button class="btn btn-primary" @click="confirmTotpAndEnable()">{{ translate("MOUNT.TOTP.CONFIRM") }}</button>
-                        </div>
-                    </div>
-                </div>
-            </div>
+			<section v-if="isMac" class="pg-empty">
+				<h2>{{ translate("MOUNT.TITLE") }}</h2>
+				<p>Coming soon to macOS.</p>
+			</section>
 
-            <Spinner v-if="showSpinner" :message="spinnerMessage"></Spinner>
-        </main>
-    </article>
+			<section v-else-if="! enabled" class="pg-empty">
+				<h2>{{ translate("MOUNT.DISABLED.TITLE") }}</h2>
+				<p>{{ translate("MOUNT.DISABLED") }}
+					<a href="https://peergos.org/download" target="_blank" rel="noopener">https://peergos.org/download</a></p>
+			</section>
+
+			<template v-else>
+				<!-- The state you came to find out, and the action that changes it -->
+				<section class="pg-summary" :class="'pg-tone--' + (config.enabled ? 'ok' : 'pending')">
+					<span class="pg-summary__icon" aria-hidden="true">
+						<svg v-if="config.enabled" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>
+						<svg v-else viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2Z"/></svg>
+					</span>
+					<div class="pg-summary__text">
+						<h2>{{ config.enabled ? translate("MOUNT.SUMMARY.MOUNTED") : translate("MOUNT.SUMMARY.NOTMOUNTED") }}</h2>
+					</div>
+					<div class="pg-summary__actions">
+						<template v-if="config.enabled">
+							<button type="button" class="pg-btn pg-btn--onTone" @click="openInExplorer()">
+								<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2Z"/></svg>
+								{{ translate("MOUNT.OPEN") }}
+							</button>
+							<button type="button" class="pg-btn pg-btn--pause" @click="disable()">
+								<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><path d="m6 6 12 12M18 6 6 18"/></svg>
+								{{ translate("MOUNT.UNMOUNT") }}
+							</button>
+						</template>
+					</div>
+				</section>
+
+				<!-- Mounted: the same endpoint pair the sync page uses -->
+				<template v-if="config.enabled">
+					<ul class="pg-cards">
+						<li class="pg-card">
+							<div class="pg-card__head">
+								<div class="pg-route">
+									<div class="pg-endpoint">
+										<span class="pg-endpoint__icon" aria-hidden="true">
+											<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2Z"/></svg>
+										</span>
+										<span class="pg-endpoint__text">
+											<span class="pg-endpoint__label">{{ translate("SYNC.THISDEVICE") }}</span>
+											<span class="pg-endpoint__value" :class="{ 'pg-endpoint__value--open': showFullPath }"
+													:title="config.mountPoint" @click="showFullPath = ! showFullPath">
+												<span class="pg-path__head">{{ pathHead(config.mountPoint) }}</span
+												><span class="pg-path__tail">{{ pathTail(config.mountPoint) }}</span>
+											</span>
+										</span>
+									</div>
+									<span class="pg-route__arrow" aria-hidden="true">
+										<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M7 4 3 8l4 4"/><path d="M3 8h13"/><path d="m17 20 4-4-4-4"/><path d="M21 16H8"/></svg>
+									</span>
+									<div class="pg-endpoint">
+										<span class="pg-endpoint__icon" aria-hidden="true">
+											<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M17.5 19a4.5 4.5 0 0 0 .5-8.97A6 6 0 0 0 6.1 11.1 3.5 3.5 0 0 0 6.5 19Z"/></svg>
+										</span>
+										<span class="pg-endpoint__text">
+											<span class="pg-endpoint__label">{{ translate("SYNC.DRIVE") }}</span>
+											<span class="pg-endpoint__value">{{ config.peergosUsername }}</span>
+										</span>
+									</div>
+								</div>
+								<span class="pg-pill pg-tone--ok">
+									<span class="pg-pill__dot" aria-hidden="true"></span>{{ translate("MOUNT.STATE.MOUNTED") }}
+								</span>
+							</div>
+
+							<p v-if="error" class="pg-errorbox">
+								<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7v6"/><path d="M12 16.5v.01"/></svg>
+								<span>{{ error }}</span>
+							</p>
+
+							<div class="pg-card__foot">
+								<div class="pg-chips">
+									<span class="pg-chip">{{ translate("MOUNT.PORT") }} {{ config.webdavPort }}</span>
+									<span class="pg-chip">{{ translate("MOUNT.AUTH_TYPE") }} {{ config.authType }}</span>
+								</div>
+							</div>
+						</li>
+					</ul>
+					<p class="pg-note">{{ translate("MOUNT.UNMOUNTED.LOCAL_FILES") }}</p>
+				</template>
+
+				<!-- Not mounted: say what it costs before they commit, not after -->
+				<section v-else class="pg-card mount-setup">
+					<p class="pg-note">{{ translate("MOUNT.BODY") }}</p>
+
+					<div class="mount-field">
+						<label for="mount-user">{{ translate("MOUNT.PEERGOS_USER") }}</label>
+						<input id="mount-user" class="pg-input" type="text" autocomplete="username"
+								:value="context.username" readonly />
+					</div>
+					<div class="mount-field">
+						<label for="mount-pass">{{ translate("MOUNT.PEERGOS_PASSWORD") }}</label>
+						<input id="mount-pass" class="pg-input" type="password" autocomplete="current-password"
+								v-model="form.peergosPassword" @keyup.enter="onAddMount()" />
+					</div>
+
+					<label class="mount-check">
+						<input type="checkbox" v-model="form.autoMount" />
+						<span>{{ translate("MOUNT.AUTO_MOUNT") }}</span>
+					</label>
+
+					<div class="pg-callout">
+						<strong>{{ translate("MOUNT.TWOFA.HEADING") }}</strong>
+						<span>{{ translate("MOUNT.TWOFA.BODY") }}</span>
+					</div>
+
+					<p v-if="error" class="pg-errorbox">
+						<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7v6"/><path d="M12 16.5v.01"/></svg>
+						<span>{{ error }}</span>
+					</p>
+
+					<button type="button" class="pg-btn pg-btn--primary" :disabled="showSpinner"
+							@click="onAddMount()">
+						{{ translate("MOUNT.ENABLE") }}
+					</button>
+				</section>
+			</template>
+
+			<!-- Shown only when the account already has 2FA and the mount needs its own TOTP -->
+			<div v-if="showTotpConfirm" class="mount-modal" role="dialog" aria-modal="true"
+					tabindex="-1" ref="totpDialog" @keydown.esc="cancelTotpConfirm()">
+				<div class="pg-card mount-modal__panel">
+					<h2>{{ translate("MOUNT.TOTP.TITLE") }}</h2>
+					<p class="pg-note">{{ translate("MOUNT.TOTP.EXPLAIN") }}</p>
+					<p class="pg-note"><strong>{{ translate("MOUNT.TOTP.NAME_LABEL") }}:</strong> <code>{{ proposedTotpName }}</code></p>
+					<div class="pg-callout">{{ translate("MOUNT.TOTP.CLEANUP") }}</div>
+					<div class="mount-modal__actions">
+						<button type="button" class="pg-btn" @click="cancelTotpConfirm()">{{ translate("MOUNT.TOTP.CANCEL") }}</button>
+						<button type="button" class="pg-btn pg-btn--primary" @click="confirmTotpAndEnable()">{{ translate("MOUNT.TOTP.CONFIRM") }}</button>
+					</div>
+				</div>
+			</div>
+
+			<Spinner v-if="showSpinner" :message="spinnerMessage"></Spinner>
+		</main>
+	</article>
 </template>
-
 <script>
 const AppHeader = require("../components/AppHeader.vue");
 const localServer = require("../mixins/localserver/index.js");
+const paths = require("../mixins/paths/index.js");
 const Spinner = require("../components/spinner/Spinner.vue");
 const i18n = require("../i18n/index.js");
 const loopback = require("../mixins/loopback/index.js");
 
-// ---------- helpers (TOTP code generation, byte/hex, OS detection) ----------
+// a mount that has not appeared in a minute is not going to
+const MOUNT_POLL_LIMIT = 60;
 
 function bytesToHex(bytes) {
     // Accepts ArrayBuffer, TypedArray or a plain array; emits lowercase hex.
@@ -113,8 +186,7 @@ function toUint8(maybeSigned) {
     return Uint8Array.from(maybeSigned);
 }
 
-// RFC 6238 TOTP, 30 s step, 6 digits, HMAC-SHA1 — same parameters Peergos
-// enforces server-side (see TotpKey.ALGORITHM and JdbcAccount line ~307).
+// RFC 6238 TOTP: 30s step, 6 digits, HMAC-SHA1, matching what the server enforces.
 async function generateTotpCode(keyBytes) {
     const u8 = toUint8(keyBytes);
     const epoch = Math.floor(Date.now() / 1000 / 30);
@@ -143,8 +215,8 @@ function detectOs() {
     return "Linux";
 }
 
-// Lowest free integer N >= 1 such that "Drive mount - <os> N" is not already
-// in `existingNames`. Matches the user spec: deleting a mount frees N for reuse.
+// Lowest free N such that "Drive mount - <os> N" is unused, so removing a mount frees
+// its number for the next one.
 function nextFreeMountIndex(existingNames, os) {
     const prefix = "Drive mount - " + os + " ";
     const taken = new Set();
@@ -172,9 +244,14 @@ module.exports = {
             // Modal state for the TOTP confirmation prompt.
             showTotpConfirm: false,
             proposedTotpName: "",
+            showFullPath: false,
+            pollTimeoutId: null,
         };
     },
-    mixins: [i18n, localServer],
+    mixins: [i18n, localServer, paths],
+    destroyed() {
+        clearTimeout(this.pollTimeoutId);
+    },
     computed: {
         ...Vuex.mapState(['context']),
         enabled() {
@@ -185,21 +262,28 @@ module.exports = {
         },
     },
     created() {
-        // NOTE: we intentionally do NOT query 2FA methods here. Per design, the
-        // 2FA lookup runs only after the user clicks "Add Mount" — keeps the
-        // page load cheap and matches user expectation that nothing security-
-        // sensitive happens until they ask for it.
+        // the 2FA lookup waits for the user to ask to mount: nothing security sensitive
+        // should happen just because the page was opened
         if (this.enabled) this.getConfig();
     },
     methods: {
+        /** rejections arrive as a string, an Error, or the server's own object */
+        problem(err) {
+            if (err == null)
+                return null;
+            return err.detailMessage || err.message || String(err);
+        },
+
+
         getConfig() {
             let that = this;
             this.localPost("/peergos/v0/mount/get-config").then(function(result) {
                 that.config = result;
+            }).catch(function(err) {
+                that.error = that.problem(err);
             });
         },
-        // Entry point for the "Add Mount" button. Decides whether to detour
-        // through the TOTP-provisioning modal based on the user's current 2FA.
+        /** Detours through the TOTP modal when the account already has 2FA. */
         onAddMount() {
             let that = this;
             this.error = null;
@@ -223,9 +307,7 @@ module.exports = {
                 that.showTotpConfirm = true;
             }).exceptionally(function(err) {
                 that.showSpinner = false;
-                that.error = err && err.detailMessage
-                        ? err.detailMessage
-                        : ("Unable to query 2FA methods: " + err);
+                that.error = that.problem(err);
             });
         },
         cancelTotpConfirm() {
@@ -267,7 +349,7 @@ module.exports = {
                 that.enableInternal(bytesToHex(credentialId), bytesToHex(secret));
             } catch (err) {
                 that.showSpinner = false;
-                that.error = err && err.message ? err.message : String(err);
+                that.error = that.problem(err);
             }
         },
         enableInternal(totpCredentialIdHex, totpSecretHex) {
@@ -285,11 +367,22 @@ module.exports = {
                 that.pollForMount();
             }).catch(function(err) {
                 that.showSpinner = false;
-                that.error = err;
+                that.error = that.problem(err);
             });
         },
-        pollForMount() {
+        /** @param attempt counts up so a mount that never arrives stops asking rather than
+         *  polling for as long as the tab is open */
+        pollForMount(attempt) {
             let that = this;
+            let next = (attempt == null ? 0 : attempt) + 1;
+            let again = () => {
+                if (next > MOUNT_POLL_LIMIT) {
+                    that.showSpinner = false;
+                    that.error = that.translate("MOUNT.TIMEOUT");
+                    return;
+                }
+                that.pollTimeoutId = setTimeout(() => that.pollForMount(next), 1000);
+            };
             this.localPost("/peergos/v0/mount/get-config").then(function(result) {
                 if (result.error) {
                     that.showSpinner = false;
@@ -297,12 +390,11 @@ module.exports = {
                 } else if (result.enabled && result.mountPoint) {
                     that.showSpinner = false;
                     that.config = result;
+                    that.form.peergosPassword = "";
                 } else {
-                    setTimeout(() => that.pollForMount(), 1000);
+                    again();
                 }
-            }).catch(function() {
-                setTimeout(() => that.pollForMount(), 1000);
-            });
+            }).catch(again);
         },
         openInExplorer() {
             // On Android there's no filesystem mount path, and the server-side JVM has
@@ -327,12 +419,10 @@ module.exports = {
                 // user's second-factor set so we don't leave it orphaned.
                 const credentialHex = this.config && this.config.totpCredentialId;
                 if (credentialHex && credentialHex.length > 0) {
+                    // Int8Array so the bytes arrive signed, as java stored them
                     const credBytes = new Int8Array(credentialHex.length / 2);
                     for (let i = 0; i < credBytes.length; i++) {
-                        credBytes[i] = parseInt(credentialHex.substr(i * 2, 2), 16) | 0;
-                        // Map 0..255 → signed -128..127 so the byte[] matches what
-                        // the server stored when addTotpFactor returned it.
-                        if (credBytes[i] > 127) credBytes[i] -= 256;
+                        credBytes[i] = parseInt(credentialHex.substr(i * 2, 2), 16);
                     }
                     await new Promise((resolve, reject) => {
                         that.context.network.account.deleteSecondFactor(
@@ -349,7 +439,7 @@ module.exports = {
                 }
             } catch (err) {
                 this.showSpinner = false;
-                this.error = err && err.message ? err.message : String(err);
+                this.error = this.problem(err);
             }
         },
     },
@@ -358,40 +448,57 @@ module.exports = {
 
 <style>
 .mount-view main {
-    display: flex;
-    flex-direction: column;
-    align-items: flex-start;
-    min-height: 100vh;
-    padding: var(--app-margin);
+	display: flex;
+	flex-direction: column;
+	gap: 18px;
+	max-width: 900px;
+	padding: 20px;
 }
 
-.mount-action-row {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 1.5em;
-    width: 100%;
-    max-width: 720px;
+.mount-setup {
+	max-width: 520px;
 }
 
-.mount-action-btn {
-    flex: 1 1 240px;
-    font-size: 2em;
+.mount-field {
+	display: flex;
+	flex-direction: column;
+	gap: 6px;
 }
 
-.mount-disable-btn {
-    background-color: var(--alert) !important;
-    border-color: var(--alert) !important;
-    color: var(--white) !important;
+.mount-field label {
+	margin: 0;
+	font-size: 10px;
+	text-transform: uppercase;
+	letter-spacing: .07em;
+	color: var(--pg-muted);
 }
 
-.mount-disable-btn:hover {
-    background-color: var(--alert-hover) !important;
-    border-color: var(--alert-hover) !important;
+.mount-check {
+	display: flex;
+	align-items: center;
+	gap: 9px;
+	margin: 0;
+	font-weight: normal;
 }
 
-@media (max-width: 600px) {
-    .mount-action-row {
-        flex-direction: column;
-    }
+.mount-modal {
+	position: fixed;
+	inset: 0;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	padding: 20px;
+	background-color: rgba(0, 0, 0, .45);
+	z-index: 1050;
+}
+
+.mount-modal__panel {
+	max-width: 520px;
+}
+
+.mount-modal__actions {
+	display: flex;
+	justify-content: flex-end;
+	gap: 10px;
 }
 </style>
