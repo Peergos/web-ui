@@ -1358,7 +1358,9 @@ module.exports = {
 	align-items: center;
 	gap: 10px;
 	min-width: 0;
-	flex: 1 1 0;
+	/* basis from content, so a long path takes the room a short one on the other
+	   side of the arrow doesn't need, instead of both being locked to half a row */
+	flex: 1 1 auto;
 }
 
 .sync-endpoint__icon {
