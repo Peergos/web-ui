@@ -7,6 +7,10 @@
 			</template>
 		</AppHeader>
 		<main>
+			<!-- first, not last: the spinner is fixed with no offset, so it covers the
+			     viewport only from where it flows -->
+			<Spinner v-if="showSpinner"></Spinner>
+
 
 			<section v-if="isMac" class="pg-empty">
 				<h2>{{ translate("MOUNT.TITLE") }}</h2>
@@ -21,16 +25,16 @@
 
 			<template v-else>
 				<!-- The state you came to find out, and the action that changes it -->
-				<section class="pg-summary" :class="'pg-tone--' + (config.enabled ? 'ok' : 'pending')">
+				<section class="pg-summary" :class="'pg-tone--' + (isMounted ? 'ok' : 'pending')">
 					<span class="pg-summary__icon" aria-hidden="true">
-						<svg v-if="config.enabled" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>
+						<svg v-if="isMounted" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>
 						<svg v-else viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2Z"/></svg>
 					</span>
 					<div class="pg-summary__text">
-						<h2>{{ config.enabled ? translate("MOUNT.SUMMARY.MOUNTED") : translate("MOUNT.SUMMARY.NOTMOUNTED") }}</h2>
+						<h2>{{ isMounted ? translate("MOUNT.SUMMARY.MOUNTED") : translate("MOUNT.SUMMARY.NOTMOUNTED") }}</h2>
 					</div>
 					<div class="pg-summary__actions">
-						<template v-if="config.enabled">
+						<template v-if="isMounted">
 							<button type="button" class="pg-btn pg-btn--onTone" @click="openInExplorer()">
 								<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2Z"/></svg>
 								{{ translate("MOUNT.OPEN") }}
@@ -44,7 +48,7 @@
 				</section>
 
 				<!-- Mounted: the same endpoint pair the sync page uses -->
-				<template v-if="config.enabled">
+				<template v-if="isMounted">
 					<ul class="pg-cards">
 						<li class="pg-card">
 							<div class="pg-card__head">
@@ -71,7 +75,9 @@
 										</span>
 										<span class="pg-endpoint__text">
 											<span class="pg-endpoint__label">{{ translate("SYNC.DRIVE") }}</span>
-											<span class="pg-endpoint__value">{{ config.peergosUsername }}</span>
+											<a class="pg-endpoint__value pg-endpoint__value--link" href="#"
+													:title="driveRoot" @click.prevent="navigateTo(driveRoot)"
+													>{{ config.peergosUsername }}</a>
 										</span>
 									</div>
 								</div>
@@ -80,20 +86,16 @@
 								</span>
 							</div>
 
-							<p v-if="error" class="pg-errorbox">
+							<p v-if="offline" class="pg-callout">{{ translate("MOUNT.OFFLINE") }}</p>
+
+				<p v-if="error" class="pg-errorbox">
 								<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7v6"/><path d="M12 16.5v.01"/></svg>
 								<span>{{ error }}</span>
 							</p>
 
-							<div class="pg-card__foot">
-								<div class="pg-chips">
-									<span class="pg-chip">{{ translate("MOUNT.PORT") }} {{ config.webdavPort }}</span>
-									<span class="pg-chip">{{ translate("MOUNT.AUTH_TYPE") }} {{ config.authType }}</span>
-								</div>
-							</div>
 						</li>
 					</ul>
-					<p class="pg-note">{{ translate("MOUNT.UNMOUNTED.LOCAL_FILES") }}</p>
+				<p class="pg-note">{{ translate("MOUNT.UNMOUNTED.LOCAL_FILES") }}</p>
 				</template>
 
 				<!-- Not mounted: say what it costs before they commit, not after -->
@@ -108,25 +110,21 @@
 					<div class="mount-field">
 						<label for="mount-pass">{{ translate("MOUNT.PEERGOS_PASSWORD") }}</label>
 						<input id="mount-pass" class="pg-input" type="password" autocomplete="current-password"
-								v-model="form.peergosPassword" @keyup.enter="onAddMount()" />
+								v-model="form.peergosPassword" @keyup.enter="onAddMount()" v-focus />
 					</div>
 
-					<label class="mount-check">
+					<label class="pg-switch">
 						<input type="checkbox" v-model="form.autoMount" />
+						<span class="pg-switch__track" aria-hidden="true"></span>
 						<span>{{ translate("MOUNT.AUTO_MOUNT") }}</span>
 					</label>
-
-					<div class="pg-callout">
-						<strong>{{ translate("MOUNT.TWOFA.HEADING") }}</strong>
-						<span>{{ translate("MOUNT.TWOFA.BODY") }}</span>
-					</div>
 
 					<p v-if="error" class="pg-errorbox">
 						<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7v6"/><path d="M12 16.5v.01"/></svg>
 						<span>{{ error }}</span>
 					</p>
 
-					<button type="button" class="pg-btn pg-btn--primary" :disabled="showSpinner"
+					<button type="button" class="pg-btn pg-btn--primary" :disabled="showSpinner || ! form.peergosPassword"
 							@click="onAddMount()">
 						{{ translate("MOUNT.ENABLE") }}
 					</button>
@@ -148,7 +146,6 @@
 				</div>
 			</div>
 
-			<Spinner v-if="showSpinner" :message="spinnerMessage"></Spinner>
 		</main>
 	</article>
 </template>
@@ -156,6 +153,9 @@
 const AppHeader = require("../components/AppHeader.vue");
 const localServer = require("../mixins/localserver/index.js");
 const paths = require("../mixins/paths/index.js");
+const routerMixins = require("../mixins/router/index.js");
+const network = require("../mixins/network/index.js");
+const errors = require("../mixins/errors/index.js");
 const Spinner = require("../components/spinner/Spinner.vue");
 const i18n = require("../i18n/index.js");
 const loopback = require("../mixins/loopback/index.js");
@@ -236,10 +236,10 @@ module.exports = {
     components: { AppHeader, Spinner },
     data() {
         return {
-            config: { enabled: false, mountPoint: "", webdavPort: 8090, authType: "digest" },
+            config: { enabled: false, mountPoint: "" },
             form: { peergosPassword: "", autoMount: true },
             showSpinner: false,
-            spinnerMessage: "",
+            progressToastId: null,
             error: null,
             // Modal state for the TOTP confirmation prompt.
             showTotpConfirm: false,
@@ -248,12 +248,22 @@ module.exports = {
             pollTimeoutId: null,
         };
     },
-    mixins: [i18n, localServer, paths],
+    mixins: [routerMixins, i18n, localServer, paths, errors, network],
     destroyed() {
         clearTimeout(this.pollTimeoutId);
+        this.stopWorking();
     },
     computed: {
         ...Vuex.mapState(['context']),
+        /** enabled says a mount was asked for; without a mount point there is no mount,
+         *  which is what a restore that failed on startup leaves behind */
+        /** The drive's own root, which is what the mounted folder is a window onto. */
+        driveRoot() {
+            return "/" + this.config.peergosUsername;
+        },
+        isMounted() {
+            return this.config.enabled === true && !! this.config.mountPoint;
+        },
         enabled() {
             return loopback.isLoopbackHost(window.location.hostname);
         },
@@ -271,14 +281,42 @@ module.exports = {
         problem(err) {
             if (err == null)
                 return null;
-            return err.detailMessage || err.message || String(err);
+            return this.cleanError(this.errText(err));
         },
 
-
+        /** The spinner blocks the form while a step runs; the step itself says what it
+         *  is doing in a toast, so only one of them is ever on screen per step. */
+        startWorking(key) {
+            this.showSpinner = true;
+            this.stopWorking(true);
+            this.progressToastId = this.$toast.info(this.translate(key), { timeout: false });
+        },
+        /** @param keepSpinner while one step hands over to the next */
+        stopWorking(keepSpinner) {
+            if (keepSpinner !== true) this.showSpinner = false;
+            if (this.progressToastId != null) {
+                this.$toast.dismiss(this.progressToastId);
+                this.progressToastId = null;
+            }
+        },
+        navigateTo(path) {
+            this.openFileOrDir("Drive", path, { filename: "" });
+        },
         getConfig() {
             let that = this;
             this.localPost("/peergos/v0/mount/get-config").then(function(result) {
                 that.config = result;
+                // the server reports a failed restore here and nowhere else, so a
+                // dropped error leaves the page claiming a mount that is not there
+                if (result != null && result.error)
+                    that.error = that.cleanError(result.error);
+                // a saved mount is restored in the background as the app starts: enabled
+                // with no mount point yet means that is still running, so wait for it
+                // rather than offering the form as though nothing were mounted
+                else if (that.config.enabled === true && ! that.config.mountPoint) {
+                    that.startWorking("MOUNT.ENABLING");
+                    that.pollForMount();
+                }
             }).catch(function(err) {
                 that.error = that.problem(err);
             });
@@ -287,12 +325,11 @@ module.exports = {
         onAddMount() {
             let that = this;
             this.error = null;
-            this.showSpinner = true;
-            this.spinnerMessage = this.translate("MOUNT.CHECKING_MFA");
+            this.startWorking("MOUNT.CHECKING_MFA");
             this.context.network.account.getSecondAuthMethods(
                 this.context.username, this.context.signer
             ).thenApply(mfaMethods => {
-                that.showSpinner = false;
+                that.stopWorking();
                 const methods = mfaMethods.toArray([]);
                 if (methods.length === 0) {
                     // No existing 2FA → password-only mount, as today.
@@ -306,7 +343,7 @@ module.exports = {
                 that.proposedTotpName = "Drive mount - " + os + " " + n;
                 that.showTotpConfirm = true;
             }).exceptionally(function(err) {
-                that.showSpinner = false;
+                that.stopWorking();
                 that.error = that.problem(err);
             });
         },
@@ -317,8 +354,7 @@ module.exports = {
         async confirmTotpAndEnable() {
             let that = this;
             this.showTotpConfirm = false;
-            this.showSpinner = true;
-            this.spinnerMessage = this.translate("MOUNT.PROVISIONING_TOTP");
+            this.startWorking("MOUNT.PROVISIONING_TOTP");
             try {
                 // 1) Ask the server to mint a new TOTP credential.
                 const totpKey = await new Promise((resolve, reject) => {
@@ -348,14 +384,13 @@ module.exports = {
                 //    logins use the dedicated TOTP non-interactively.
                 that.enableInternal(bytesToHex(credentialId), bytesToHex(secret));
             } catch (err) {
-                that.showSpinner = false;
+                that.stopWorking();
                 that.error = that.problem(err);
             }
         },
         enableInternal(totpCredentialIdHex, totpSecretHex) {
             let that = this;
-            this.showSpinner = true;
-            this.spinnerMessage = this.translate("MOUNT.ENABLING");
+            this.startWorking("MOUNT.ENABLING");
             let body = JSON.stringify({
                 peergosUsername: this.context.username,
                 peergosPassword: this.form.peergosPassword,
@@ -366,7 +401,7 @@ module.exports = {
             this.localPost("/peergos/v0/mount/enable", body).then(function() {
                 that.pollForMount();
             }).catch(function(err) {
-                that.showSpinner = false;
+                that.stopWorking();
                 that.error = that.problem(err);
             });
         },
@@ -377,7 +412,7 @@ module.exports = {
             let next = (attempt == null ? 0 : attempt) + 1;
             let again = () => {
                 if (next > MOUNT_POLL_LIMIT) {
-                    that.showSpinner = false;
+                    that.stopWorking();
                     that.error = that.translate("MOUNT.TIMEOUT");
                     return;
                 }
@@ -385,10 +420,10 @@ module.exports = {
             };
             this.localPost("/peergos/v0/mount/get-config").then(function(result) {
                 if (result.error) {
-                    that.showSpinner = false;
-                    that.error = result.error;
+                    that.stopWorking();
+                    that.error = that.cleanError(result.error);
                 } else if (result.enabled && result.mountPoint) {
-                    that.showSpinner = false;
+                    that.stopWorking();
                     that.config = result;
                     that.form.peergosPassword = "";
                 } else {
@@ -412,8 +447,7 @@ module.exports = {
         },
         async disable() {
             let that = this;
-            this.showSpinner = true;
-            this.spinnerMessage = this.translate("MOUNT.DISABLING");
+            this.startWorking("MOUNT.DISABLING");
             try {
                 // If the mount has a dedicated TOTP credential, remove it from the
                 // user's second-factor set so we don't leave it orphaned.
@@ -432,13 +466,13 @@ module.exports = {
                 }
                 await this.localPost("/peergos/v0/mount/disable");
                 this.config = { enabled: false, mountPoint: "" };
-                this.showSpinner = false;
+                this.stopWorking();
                 const os = detectOs();
                 if (os === "Windows" || os === "macOS") {
                     this.$toast.info(this.translate("MOUNT.UNMOUNTED.LOCAL_FILES"), {timeout: false});
                 }
             } catch (err) {
-                this.showSpinner = false;
+                this.stopWorking();
                 this.error = this.problem(err);
             }
         },
@@ -459,6 +493,11 @@ module.exports = {
 	max-width: 520px;
 }
 
+.mount-setup .pg-switch {
+	/* hugs its label, rather than stretching to the width of the card */
+	align-self: flex-start;
+}
+
 .mount-field {
 	display: flex;
 	flex-direction: column;
@@ -471,14 +510,6 @@ module.exports = {
 	text-transform: uppercase;
 	letter-spacing: .07em;
 	color: var(--pg-muted);
-}
-
-.mount-check {
-	display: flex;
-	align-items: center;
-	gap: 9px;
-	margin: 0;
-	font-weight: normal;
 }
 
 .mount-modal {
