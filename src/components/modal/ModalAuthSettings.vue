@@ -58,6 +58,12 @@
                         <td> <button class="btn btn-danger" @click="removeWebAuthKey(webAuthKey)">{{ translate("MFA.REMOVE") }}</button>
                         </td>
                     </tr>
+                    <tr v-for="mountFactor in mountFactors">
+                        <td :title="translate('MFA.MOUNT.BLURB')">{{ translate("MFA.MOUNT") }}:&nbsp;{{ mountFactor.name }}</td>
+                        <td></td>
+                        <td> <button class="btn btn-danger" @click="removeMountFactor(mountFactor)">{{ translate("MFA.REMOVE") }}</button>
+                        </td>
+                    </tr>
                     <tr>
                         <td>{{ translate("MFA.BACKUP") }}</td>
                         <td v-if="backupCodes.length == 0">{{ translate("MFA.BACKUP.NONE") }}</td>
@@ -103,6 +109,7 @@ module.exports = {
             showSpinner: false,
             totpKey: [],
             webAuthKeys: [],
+            mountFactors: [],
             backupCodes: [],
             showConfirm: false,
             confirm_message: "",
@@ -136,6 +143,8 @@ module.exports = {
                     that.backupCodes.push({credentialId: method.credentialId, remaining: method.name});
                 } else if (type == peergos.shared.login.mfa.MultiFactorAuthMethod.Type.WEBAUTHN.toString()) {
                     that.webAuthKeys.push({credentialId: method.credentialId, name: method.name});
+                } else if (type == peergos.shared.login.mfa.MultiFactorAuthMethod.Type.MOUNT.toString()) {
+                    that.mountFactors.push({credentialId: method.credentialId, name: method.name});
                 }
             }
             that.showSpinner = false;
@@ -182,8 +191,10 @@ module.exports = {
             });
         },
 	    addWebAuthKey() {
-	        if (this.webAuthKeys.length + this.totpKey.length >= 10) {
-                that.$toast.error(that.translate("MFA.MAX.KEYS"), {timeout:false});
+	        // the server counts every second factor against its limit, mounts and backup codes included
+	        if (this.webAuthKeys.length + this.totpKey.length
+                    + this.mountFactors.length + this.backupCodes.length >= 10) {
+                this.$toast.error(this.translate("MFA.MAX.KEYS"), {timeout:false});
 	        } else {
                 this.showWebAuthSetup = true;
             }
@@ -215,6 +226,36 @@ module.exports = {
             }).exceptionally(function(throwable) {
                 that.$toast.error(that.translate("MFA.ERROR.DELETE"), {timeout:false});
                 console.log('Unable to delete web authentication method: ' + throwable);
+                that.showSpinner = false;
+            });
+        },
+        removeMountFactor(mountFactor) {
+            let that = this;
+            this.confirm_message = this.translate("MFA.REMOVE") + " " + this.translate("MFA.MOUNT") + ': ' + mountFactor.name;
+            this.confirm_body = this.translate("MFA.CONFIRM.REMOVE.MOUNT");
+            this.confirm_consumer_cancel_func = () => {
+                that.showConfirm = false;
+                that.showSpinner = false;
+            };
+            this.confirm_consumer_func = () => {
+                that.showConfirm = false;
+                that.deleteMountFactor(mountFactor);
+            };
+            this.showConfirm = true;
+        },
+        deleteMountFactor(mountFactor) {
+            let that = this;
+            this.showSpinner = true;
+            this.context.network.account.deleteSecondFactor(this.context.username, mountFactor.credentialId, this.context.signer).thenApply(res => {
+                let index = that.mountFactors.findIndex((v) => v.credentialId === mountFactor.credentialId);
+                if (index > -1) {
+                    that.mountFactors.splice(index, 1);
+                }
+                // a mount factor is never what backup codes are backing up, so they are unaffected
+                that.showSpinner = false;
+            }).exceptionally(function(throwable) {
+                that.$toast.error(that.translate("MFA.ERROR.DELETE"), {timeout:false});
+                console.log('Unable to delete mount authentication method: ' + throwable);
                 that.showSpinner = false;
             });
         },
