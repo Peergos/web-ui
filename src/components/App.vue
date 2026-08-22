@@ -109,6 +109,7 @@
 
 <script>
 const AppIcon = require("AppIcon.vue");
+const localServer = require("../mixins/localserver/index.js");
 const AppButton = require("AppButton.vue");
 const AppNavigation = require("./navigation/AppNavigation.vue");
 const ModalAuthSettings = require("./modal/ModalAuthSettings.vue");
@@ -236,7 +237,7 @@ module.exports = {
             },
 	},
 
-	mixins: [routerMixins, sandboxAppMixins, launcherMixin, i18n],
+	mixins: [routerMixins, sandboxAppMixins, launcherMixin, i18n, localServer],
 
 	watch: {
 	    network(newNetwork) {
@@ -305,40 +306,6 @@ module.exports = {
                 message.indexOf("unable to find valid certification path") >= 0)
                 return this.translate("LOGIN.SERVER.CERTIFICATE");
             return this.translate("LOGIN.SERVER.NETWORK") + (message.length > 0 ? " " + message : "");
-        },
-        localPost(url, body) {
-            return new Promise(function(resolve, reject) {
-                var req = new XMLHttpRequest();
-                req.open('POST', url);
-                req.responseType = 'json';
-
-                req.onload = function() {
-                    if (req.status == 200) {
-                        resolve(req.response);
-                    } else {
-                        try {
-                            let trailer = req.getResponseHeader("Trailer");
-                            if (trailer == null) {
-                                reject('Unexpected error from server');
-                            } else {
-                                reject(decodeURIComponent(trailer));
-                            }
-                        } catch (e) {
-                            reject(e);
-                        }
-                    }
-                };
-
-                req.onerror = function() {
-                    reject(Error("Unable to connect"));
-                };
-
-                req.ontimeout = function() {
-                    reject(Error("Network timeout"));
-                };
-
-                req.send(body != null ? body : new Int8Array(0));
-            });
         },
         loadDesktopServerSettings() {
             if (! this.isLocalhost || this.isLoggedIn || this.isSecretLink) {

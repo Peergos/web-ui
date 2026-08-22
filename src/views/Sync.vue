@@ -1,5 +1,5 @@
 <template>
-	<article class="app-view sync-view">
+	<article class="app-view pg-view">
 		<AppHeader>
 			<template #primary>
 				<h1>{{ translate("SYNC.TITLE") }}</h1>
@@ -7,7 +7,7 @@
 		</AppHeader>
 		<main>
 
-			<section v-if="! enabled" class="sync-unavailable">
+			<section v-if="! enabled" class="pg-unavailable">
 				<h2>{{ translate("SYNC.DISABLED.TITLE") }}</h2>
 				<p>{{ translate("SYNC.DISABLED") }}</p>
 				<p><a href="https://peergos.org/download" target="_blank" rel="noopener">https://peergos.org/download</a></p>
@@ -17,145 +17,152 @@
 			<template v-else>
 
 				<!-- Aggregate state: the single thing you came to find out -->
-				<section class="sync-summary" :class="'sync-tone--' + tone">
-					<span class="sync-summary__icon" aria-hidden="true">
+
+		<section class="pg-summary" :class="'pg-tone--' + tone">
+					<span class="pg-summary__icon" aria-hidden="true">
 						<svg v-if="tone === 'ok'" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>
 						<svg v-else-if="tone === 'busy'" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 1 1-3-6.7"/><path d="M21 4v5h-5"/></svg>
 						<svg v-else-if="tone === 'paused'" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><path d="M9 5v14M15 5v14"/></svg>
 						<svg v-else viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v6"/><path d="M12 16.5v.01"/></svg>
 					</span>
-					<div class="sync-summary__text">
+					<div class="pg-summary__text">
 						<h2>{{ summaryHeadline }}</h2>
 					</div>
-					<div class="sync-summary__actions">
-						<button v-if="paused" type="button" class="sync-btn sync-btn--resume" @click="syncNow()">
+					<div class="pg-summary__actions">
+						<button v-if="paused" type="button" class="pg-btn pg-btn--resume" @click="syncNow()">
 							<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 4.5v15l12-7.5z"/></svg>
 							{{ translate("SYNC.RESUME") }}
 						</button>
 						<template v-else-if="syncPairs.length > 0">
-							<button type="button" class="sync-btn sync-btn--onTone" :disabled="syncBusy"
+							<button type="button" class="pg-btn pg-btn--onTone" :disabled="syncBusy"
 									:title="syncBusy ? translate('SYNC.NOW.BUSY') : ''" @click="syncNow()">
 								<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 12a9 9 0 1 1-3-6.7"/><path d="M21 4v5h-5"/></svg>
 								{{ translate("SYNC.NOW") }}
 							</button>
-							<button type="button" class="sync-btn sync-btn--pause" @click="pauseSync()">
+							<button type="button" class="pg-btn pg-btn--pause" @click="pauseSync()">
 								<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><path d="M9 5v14M15 5v14"/></svg>
 								{{ translate("SYNC.PAUSE") }}
 							</button>
 						</template>
-						<button type="button" class="sync-btn sync-btn--primary" @click="addSyncPair()">
+						<button type="button" class="pg-btn pg-btn--primary" @click="addSyncPair()">
 							<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>
 							{{ translate("SYNC.ADDPAIR") }}
 						</button>
 					</div>
 				</section>
 
+				<!-- the banner turns red on a problem no folder owns, so say what it was -->
+				<p v-if="globalError" class="pg-errorbox">
+					<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 8v5"/><path d="M12 16h.01"/></svg>
+					<span>{{ globalError }}</span>
+				</p>
+
 				<!-- First run -->
-				<section v-if="syncPairs.length === 0" class="sync-empty">
-					<span class="sync-empty__mark" aria-hidden="true">
+				<section v-if="syncPairs.length === 0" class="pg-empty">
+					<span class="pg-empty__mark" aria-hidden="true">
 						<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M7 4 3 8l4 4"/><path d="M3 8h13"/><path d="m17 20 4-4-4-4"/><path d="M21 16H8"/></svg>
 					</span>
 					<h2>{{ translate("SYNC.EMPTY.TITLE") }}</h2>
 					<p>{{ translate("SYNC.EMPTY.BODY") }}</p>
-					<button type="button" class="sync-btn sync-btn--primary" @click="addSyncPair()">
+					<button type="button" class="pg-btn pg-btn--primary" @click="addSyncPair()">
 						{{ translate("SYNC.ADDPAIR") }}
 					</button>
 				</section>
 
 				<template v-else>
-					<div class="sync-sectionhead">
+					<div class="pg-sectionhead">
 						<h2>{{ translate("SYNC.FOLDERS") }}</h2>
 						<span>{{ syncPairs.length }}</span>
 					</div>
 
-					<ul class="sync-cards">
+					<ul class="pg-cards">
 						<li v-for="pair in syncPairs" :key="pair.label"
-							class="sync-card" :class="{ 'sync-card--error': stateOf(pair) === 'ERROR' }">
+							class="pg-card" :class="{ 'pg-card--error': stateOf(pair) === 'ERROR' }">
 
-							<div class="sync-card__head">
-								<div class="sync-route">
-									<div class="sync-endpoint">
-										<span class="sync-endpoint__icon" aria-hidden="true">
+							<div class="pg-card__head">
+								<div class="pg-route">
+									<div class="pg-endpoint">
+										<span class="pg-endpoint__icon" aria-hidden="true">
 											<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2Z"/></svg>
 										</span>
-										<span class="sync-endpoint__text">
-											<span class="sync-endpoint__label">{{ translate("SYNC.THISDEVICE") }}</span>
-											<span class="sync-endpoint__value" :class="{ 'sync-endpoint__value--open': expanded[pair.label + ':local'] }"
+										<span class="pg-endpoint__text">
+											<span class="pg-endpoint__label">{{ translate("SYNC.THISDEVICE") }}</span>
+											<span class="pg-endpoint__value" :class="{ 'pg-endpoint__value--open': expanded[pair.label + ':local'] }"
 												:title="prettifyHostFolder(pair.localpath)" @click="toggleExpand(pair.label + ':local')">
-												<span class="sync-path__head">{{ pathHead(prettifyHostFolder(pair.localpath)) }}</span
-												><span class="sync-path__tail">{{ pathTail(prettifyHostFolder(pair.localpath)) }}</span>
+												<span class="pg-path__head">{{ pathHead(prettifyHostFolder(pair.localpath)) }}</span
+												><span class="pg-path__tail">{{ pathTail(prettifyHostFolder(pair.localpath)) }}</span>
 											</span>
 										</span>
 									</div>
-									<span class="sync-route__arrow" aria-hidden="true">
+									<span class="pg-route__arrow" aria-hidden="true">
 										<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M7 4 3 8l4 4"/><path d="M3 8h13"/><path d="m17 20 4-4-4-4"/><path d="M21 16H8"/></svg>
 									</span>
-									<div class="sync-endpoint">
-										<span class="sync-endpoint__icon" aria-hidden="true">
+									<div class="pg-endpoint">
+										<span class="pg-endpoint__icon" aria-hidden="true">
 											<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M17.5 19a4.5 4.5 0 0 0 .5-8.97A6 6 0 0 0 6.1 11.1 3.5 3.5 0 0 0 6.5 19Z"/></svg>
 										</span>
-										<span class="sync-endpoint__text">
-											<span class="sync-endpoint__label">{{ translate("SYNC.DRIVE") }}</span>
-											<a class="sync-endpoint__value sync-endpoint__value--link" :title="pair.remotepath"
+										<span class="pg-endpoint__text">
+											<span class="pg-endpoint__label">{{ translate("SYNC.DRIVE") }}</span>
+											<a class="pg-endpoint__value pg-endpoint__value--link" :title="pair.remotepath"
 												href="#" @click.prevent="navigateTo(pair.remotepath)"
-												><span class="sync-path__head">{{ pathHead(pair.remotepath) }}</span
-												><span class="sync-path__tail">{{ pathTail(pair.remotepath) }}</span></a>
+												><span class="pg-path__head">{{ pathHead(pair.remotepath) }}</span
+												><span class="pg-path__tail">{{ pathTail(pair.remotepath) }}</span></a>
 										</span>
 									</div>
 								</div>
 
-								<span class="sync-pill" :class="'sync-tone--' + toneOf(pair)">
-									<span class="sync-pill__dot" aria-hidden="true"></span>{{ stateLabel(stateOf(pair)) }}
+								<span class="pg-pill" :class="'pg-tone--' + toneOf(pair)">
+									<span class="pg-pill__dot" aria-hidden="true"></span>{{ stateLabel(stateOf(pair)) }}
 								</span>
 							</div>
 
-							<p v-if="pair.error && ! wasStopped(pair.error)" class="sync-errorbox">
+							<p v-if="pair.error && ! wasStopped(pair.error)" class="pg-errorbox">
 								<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7v6"/><path d="M12 16.5v.01"/></svg>
-								<span class="sync-clamp" :class="{ 'sync-clamp--open': expanded[pair.label + ':err'] }"
+								<span class="pg-clamp" :class="{ 'pg-clamp--open': expanded[pair.label + ':err'] }"
 									@click="toggleExpand(pair.label + ':err')">{{ cleanError(pair.error) }}</span>
 							</p>
-							<div v-else-if="activityOf(pair)" class="sync-activityrow">
-								<p class="sync-activity sync-clamp" :class="{ 'sync-clamp--open': expanded[pair.label + ':act'] }"
+							<div v-else-if="activityOf(pair)" class="pg-activityrow">
+								<p class="pg-activity pg-clamp" :class="{ 'pg-clamp--open': expanded[pair.label + ':act'] }"
 									:title="activityOf(pair, true)" @click="toggleExpand(pair.label + ':act')">{{ activityOf(pair, expanded[pair.label + ':act']) }}</p>
-								<span v-if="progressOf(pair)" class="sync-pct">{{ progressOf(pair).pct }}%</span>
+								<span v-if="progressOf(pair)" class="pg-pct">{{ progressOf(pair).pct }}%</span>
 							</div>
 
 							<template v-if="stateOf(pair) === 'SYNCING'">
 								<!-- determinate only when the status message reports totals -->
-								<div v-if="progressOf(pair)" class="sync-bar sync-bar--determinate" role="progressbar"
+								<div v-if="progressOf(pair)" class="pg-bar pg-bar--determinate" role="progressbar"
 									:aria-valuenow="progressOf(pair).pct" aria-valuemin="0" aria-valuemax="100"
 									:aria-label="translate('SYNC.STATE.SYNCING')">
 									<span :style="{ width: progressOf(pair).pct + '%' }"></span>
 								</div>
-								<div v-else class="sync-bar" role="progressbar" :aria-label="translate('SYNC.STATE.SYNCING')"><span></span></div>
+								<div v-else class="pg-bar" role="progressbar" :aria-label="translate('SYNC.STATE.SYNCING')"><span></span></div>
 							</template>
 
-							<div class="sync-card__foot">
-								<div class="sync-chips">
-									<span class="sync-chip" :class="{ 'sync-chip--on': pair.syncLocalDeletes }">
+							<div class="pg-card__foot">
+								<div class="pg-chips">
+									<span class="pg-chip" :class="{ 'pg-chip--on': pair.syncLocalDeletes }">
 										<svg v-if="pair.syncLocalDeletes" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg>
 										<svg v-else viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="m6 6 12 12M18 6 6 18"/></svg>
 										{{ pair.syncLocalDeletes ? translate("SYNC.DELETES.LOCAL.ON") : translate("SYNC.DELETES.LOCAL.OFF") }}
 									</span>
-									<span class="sync-chip" :class="{ 'sync-chip--on': pair.syncRemoteDeletes }">
+									<span class="pg-chip" :class="{ 'pg-chip--on': pair.syncRemoteDeletes }">
 										<svg v-if="pair.syncRemoteDeletes" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg>
 										<svg v-else viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="m6 6 12 12M18 6 6 18"/></svg>
 										{{ pair.syncRemoteDeletes ? translate("SYNC.DELETES.REMOTE.ON") : translate("SYNC.DELETES.REMOTE.OFF") }}
 									</span>
-									<label v-if="isAndroid" class="sync-switch">
+									<label v-if="isAndroid" class="pg-switch">
 										<input type="checkbox" :checked="pair.allowOnMobile"
 											@change="setAllowOnMobile(pair, $event.target.checked)" />
-										<span class="sync-switch__track" aria-hidden="true"></span>
+										<span class="pg-switch__track" aria-hidden="true"></span>
 										<span>{{ translate("SYNC.MOBILEDATA") }}</span>
 									</label>
 								</div>
 
-								<div class="sync-card__actions">
-									<button type="button" class="sync-btn sync-btn--quiet" @click="downloadLog(pair.label)">
+								<div class="pg-card__actions">
+									<button type="button" class="pg-btn pg-btn--quiet" @click="downloadLog(pair.label)">
 										<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 4v11"/><path d="m8 11 4 4 4-4"/><path d="M4 19h16"/></svg>
 										{{ translate("SYNC.LOG") }}
 									</button>
-									<button type="button" class="sync-btn sync-btn--danger" @click="confirmRemove(pair)">
+									<button type="button" class="pg-btn pg-btn--danger" @click="confirmRemove(pair)">
 										{{ translate("SYNC.STOPPAIR") }}
 									</button>
 								</div>
@@ -208,6 +215,9 @@
 
 <script>
 const AppHeader = require("../components/AppHeader.vue");
+const paths = require("../mixins/paths/index.js");
+const errors = require("../mixins/errors/index.js");
+const localServer = require("../mixins/localserver/index.js");
 const FolderPicker = require('../components/picker/FolderPicker.vue');
 const Select = require('../components/choice/Select.vue');
 const Confirm = require('../components/confirm/Confirm.vue');
@@ -218,6 +228,7 @@ const Spinner = require("../components/spinner/Spinner.vue");
 const i18n = require("../i18n/index.js");
 const loopback = require("../mixins/loopback/index.js");
 const routerMixins = require("../mixins/router/index.js");
+const network = require("../mixins/network/index.js");
 
 // Every line the server logs about a file is "<action> <path>[ <trailer>]", and the
 // action also says which side the path is on.
@@ -301,6 +312,13 @@ module.exports = {
 			expanded: {},
 			syncPending: false,
 			syncPendingTimeoutID: null,
+			// when a poll last succeeded, to tell a resume this view watched happen
+			// from one it only learned about afterwards
+			lastStatusAt: 0,
+			// after a reconnection, until a pass reports something new: the last result was
+			// reached from cache while offline, so it cannot be shown as up to date
+			awaitingPass: false,
+			statusAtReconnect: null,
 			fastPollIntervalID: null,
 			fastPollTimeoutID: null,
 			updateStatusIntervalID: "",
@@ -308,7 +326,7 @@ module.exports = {
 		}
 	},
 	props: [],
-	mixins: [routerMixins, i18n],
+	mixins: [routerMixins, i18n, localServer, paths, errors, network],
 
 	computed: {
 		...Vuex.mapState([
@@ -341,18 +359,38 @@ module.exports = {
 			return res;
 		},
 		// the server aggregates, but fall back to pair states if it is silent
+		/** The failure no folder owns. Hidden only when a folder is already showing the
+		 *  same text, so the cause is always stated somewhere, and never twice. */
+		globalError() {
+			// offline, a failure is the missing connection restated in java's words
+			if (this.offline || ! this.error || this.wasStopped(this.error))
+				return null;
+			let text = this.cleanError(this.error);
+			for (let pair of this.syncPairs) {
+				if (pair.error && ! this.wasStopped(pair.error) && this.cleanError(pair.error) === text)
+					return null;
+			}
+			return text;
+		},
 		tone() {
+			// an error outlives a pause, as SyncStatus.aggregate decides on the server: it is
+			// something the user has to act on, and the pause is already shown by the button
+			if (this.counts.ERROR > 0)
+				return "error";
 			if (this.paused)
 				return "paused";
+			// nothing was checked against the server, so this is not a settled state
+			if (this.offline || this.awaitingPass)
+				return "pending";
 			// a folder yet to be reached is work outstanding, so the banner stays
 			// busy rather than claiming everything is settled
-			if (this.counts.ERROR === 0 && (this.syncPending || this.counts.PENDING > 0))
+			if (this.syncPending || this.counts.PENDING > 0)
 				return "busy";
-			if (this.error && this.wasStopped(this.error) && this.counts.ERROR === 0)
+			if (this.error && this.wasStopped(this.error))
 				return this.counts.SYNCING > 0 ? "busy" : "ok";
 			let state = this.globalState;
 			if (state == null || state === "NONE")
-				state = this.counts.ERROR > 0 ? "ERROR" : (this.counts.SYNCING > 0 ? "SYNCING" : "SYNCED");
+				state = this.counts.SYNCING > 0 ? "SYNCING" : "SYNCED";
 			return this.toneOfState(state);
 		},
 		summaryHeadline() {
@@ -366,6 +404,10 @@ module.exports = {
 				return this.counts.ERROR === 1 ? this.translate("SYNC.SUMMARY.ERROR.ONE")
 					: this.fmt("SYNC.SUMMARY.ERROR.MANY", this.counts.ERROR);
 			}
+			if (this.offline)
+				return this.translate("SYNC.SUMMARY.OFFLINE");
+			if (this.awaitingPass)
+				return this.translate("SYNC.STATE.PENDING");
 			if (this.tone === 'busy')
 				return this.syncPairs.length === 1 ?
 					this.translate("SYNC.SUMMARY.SYNCING.ONE") :
@@ -379,6 +421,16 @@ module.exports = {
 		},
 		syncBusy() {
 			return this.syncPending || this.syncing;
+		},
+	},
+	watch: {
+		// the scheduler owns when a pass runs; this only holds the display back until
+		// one has reported since the connection returned
+		offline(now, before) {
+			if (before && ! now && this.syncPairs.length > 0) {
+				this.awaitingPass = true;
+				this.statusAtReconnect = this.status;
+			}
 		},
 	},
 	created() {
@@ -408,18 +460,6 @@ module.exports = {
 			return future;
 		},
 		// server errors arrive as raw java throwable strings; show the message only
-		cleanError(msg) {
-			if (msg == null)
-				return '';
-			let out = ("" + msg).trim();
-			let previous = null;
-			while (out !== previous) {
-				previous = out;
-				out = out.replace(/^(?:[\w$]+\.)+[\w$]*(?:Exception|Error|Throwable):\s*/, '');
-			}
-			return out;
-		},
-
 		// a run the user stopped is not a failure, so it is not shown as an error
 		wasStopped(msg) {
 			if (msg == null)
@@ -443,16 +483,6 @@ module.exports = {
 			return null;
 		},
 
-		errText(e) {
-			if (e == null)
-				return "Unknown error";
-			// transpiled java throwables carry their text on detailMessage
-			if (e.detailMessage != null && e.detailMessage.length > 0)
-				return e.detailMessage;
-			if (e.message != null && e.message.length > 0)
-				return e.message;
-			return "" + e;
-		},
 		fmt(key, n) {
 			return this.translate(key).replace("{n}", n);
 		},
@@ -461,20 +491,6 @@ module.exports = {
 		},
 		// the leaf identifies the folder, so keep it and let the parents truncate
 		/** windows paths arrive with backslashes, so the leaf is after whichever comes last */
-		lastSeparator(path) {
-			let p = ("" + path).replace(/[\\/]+$/, '');
-			return Math.max(p.lastIndexOf('/'), p.lastIndexOf('\\'));
-		},
-		pathHead(path) {
-			let p = ("" + path).replace(/[\\/]+$/, '');
-			let cut = this.lastSeparator(p);
-			return cut <= 0 ? p : p.substring(0, cut);
-		},
-		pathTail(path) {
-			let p = ("" + path).replace(/[\\/]+$/, '');
-			let cut = this.lastSeparator(p);
-			return cut <= 0 ? '' : p.substring(cut);
-		},
 		// title tooltips never fire on touch, so the full value needs a tap as well
 		toggleExpand(key) {
 			Vue.set(this.expanded, key, ! this.expanded[key]);
@@ -484,6 +500,10 @@ module.exports = {
 				return "ERROR";
 			if (this.paused)
 				return "PAUSED";
+			// offline: this folder was not checked against the Drive, so it is queued,
+			// not settled. The cause is the device, so the banner names it once
+			if (this.offline || this.awaitingPass)
+				return "PENDING";
 			if (this.syncPending)
 				return "PENDING";
 			if (pair.state === "SYNCING")
@@ -525,10 +545,6 @@ module.exports = {
 		// the action names, for the title and the opened form.
 		/** The server canonicalises relative paths to "/" even on windows, but the local root
 		 *  keeps the platform's own separator, so joining the two blindly mixes them. */
-		joinPath(root, rel) {
-			let sep = root.includes("\\") && ! root.includes("/") ? "\\" : "/";
-			return root.replace(/[\\/]+$/, '') + sep + (sep === "/" ? rel : rel.replace(/\//g, sep));
-		},
 
 		activityOf(pair, absolute) {
 			return this.withoutTime(pair.msg).replace(ACTION_PATH, (all, action, path, trailer) => {
@@ -546,42 +562,6 @@ module.exports = {
 
 		/* ---------- server calls ---------- */
 
-		localPost(url, body, responseType) {
-			return new Promise(function(resolve, reject) {
-				var req = new XMLHttpRequest();
-				req.open('POST', url);
-				req.responseType = responseType != null ? responseType : 'json';
-
-				req.onload = function() {
-					// This is called even on 404 etc so check the status
-					if (req.status == 200) {
-						resolve(req.response);
-					} else {
-						try {
-							let trailer = req.getResponseHeader("Trailer");
-							if (trailer == null) {
-								reject('Unexpected error from server');
-							} else {
-								// the server form encodes the message, so spaces arrive as +
-								reject(decodeURIComponent(trailer.replace(/\+/g, ' ')));
-							}
-						} catch (e) {
-							reject(e);
-						}
-					}
-				};
-
-				req.onerror = function(e) {
-					reject(Error("Unable to connect"));
-				};
-
-				req.ontimeout = function() {
-					reject(Error("Network timeout"));
-				};
-
-				req.send(body != null ? body : new Int8Array(0));
-			})
-		},
 
 		getWhichChooser() {
 			let that = this;
@@ -624,15 +604,25 @@ module.exports = {
 			this.localPost("/peergos/v0/sync/status").then(function(result, err) {
 				if (result == null)
 					return;
+				// any new report means a pass has run; one that started just before the
+				// reconnection clears it a pass early, which is a second either way
+				if (that.awaitingPass && result.msg !== that.statusAtReconnect) {
+					that.awaitingPass = false;
+					that.statusAtReconnect = null;
+				}
 				that.status = result.msg;
 				that.error = result.error;
 				that.globalState = result.state != null ? result.state : "NONE";
 				let wasPaused = that.paused;
+				// polling stops while the window is hidden, so a stale reading means the resume
+				// happened out of sight and the pass it starts has already run: standing in for
+				// it would sit on "waiting" until the next pass, half a minute away
+				let watched = Date.now() - that.lastStatusAt < 3000;
 				that.paused = result.paused === true;
 				// a resume from anywhere - this tab, another client, the phone - leaves the
 				// pair reporting its pre pause state until the pass starts a moment later
-				if (wasPaused && ! that.paused)
-					that.syncPending = true;
+				if (wasPaused && ! that.paused && watched)
+					that.standInForPass();
 				// stand in until the server itself reports the pass. Must read the reply,
 				// not this.syncing: syncPending makes stateOf report SYNCING, so it would
 				// clear itself on the first poll.
@@ -657,6 +647,7 @@ module.exports = {
 					Vue.set(p, 'state', s.state ? s.state : 'SYNCED');
 					Vue.set(p, 'error', s.error);
 				}
+				that.lastStatusAt = Date.now();
 			}).catch(function(e) {
 				// the local server going away is expected on shutdown; don't spam toasts
 			})
@@ -804,11 +795,7 @@ module.exports = {
 			if (this.syncBusy && ! this.paused)
 				return;
 			let that = this;
-			this.syncPending = true;
-			// backstop only: the poll clears this once the server reports the pass. Kept
-			// short because syncBusy gates the button, so a long window swallows clicks.
-			clearTimeout(this.syncPendingTimeoutID);
-			this.syncPendingTimeoutID = setTimeout(() => { that.syncPending = false; }, 3000);
+			this.standInForPass();
 			this.pollFaster(6000);
 			this.localPost("/peergos/v0/sync/sync-now").then(function(result, err) {
 				that.$toast(that.translate("SYNC.STARTED"));
@@ -816,6 +803,16 @@ module.exports = {
 				that.syncPending = false;
 				that.$toast.error(that.errText(err), {});
 			})
+		},
+
+		/** Reports the pass we asked for until the server does, then gives up: a pass can
+		 *  finish inside the gap between two polls, so seeing it reported is not something
+		 *  the view can wait on. Kept short because syncBusy gates the button. */
+		standInForPass() {
+			let that = this;
+			this.syncPending = true;
+			clearTimeout(this.syncPendingTimeoutID);
+			this.syncPendingTimeoutID = setTimeout(() => { that.syncPending = false; }, 3000);
 		},
 
 		pauseSync() {
@@ -1032,811 +1029,3 @@ module.exports = {
 	},
 }
 </script>
-
-<style>
-/* ------------------------------------------------------------------
-   Sync — Option A: status cards
-   Only CSS features already used elsewhere in this codebase.
-   No color-mix(), no :has(), no container queries.
-   ------------------------------------------------------------------ */
-
-.sync-view {
-	display: flex;
-	flex-direction: column;
-	min-height: 100vh;
-
-	--sync-muted: #566571;
-	--sync-on-ok: #146b57;
-	--sync-on-busy: #1c5f9e;
-	--sync-on-error: #b3261e;
-	--sync-link: #3b73ab;
-	/* amber, distinct from the red used for removing a pair: pausing is reversible */
-	--sync-pause: #b45309;
-	--sync-pause-hover: #92400e;
-	--sync-on-pause: #ffffff;
-	--sync-tint-pause: #fdf1e0;
-	--sync-on-pause-tint: #92400e;
-	--sync-surface-2: #f1f4f7;
-	--sync-tint-ok: #e8f8f3;
-	--sync-tint-busy: #eaf3fd;
-	--sync-tint-error: #fdecec;
-	--sync-border-error: #f0b4b4;
-	--sync-track: #e6ebef;
-	--sync-shadow: 0 1px 2px rgba(44, 62, 80, .07);
-	--sync-gap: 16px;
-}
-
-[data-theme="dark-mode"] .sync-view {
-	--sync-muted: #a7b6c2;
-	--sync-on-ok: #63e3bd;
-	--sync-on-busy: #8fd2e8;
-	--sync-on-error: #ffa1a1;
-	--sync-link: #7fbcf7;
-	--sync-pause: #fbbf24;
-	--sync-pause-hover: #f59e0b;
-	--sync-on-pause: #1f1300;
-	--sync-tint-pause: #4a3a1d;
-	--sync-on-pause-tint: #fbbf24;
-	--sync-surface-2: #22303c;
-	--sync-tint-ok: #1d4a41;
-	--sync-tint-busy: #22405c;
-	--sync-tint-error: #4d2b2e;
-	--sync-border-error: #7c4348;
-	--sync-track: #1f2c37;
-	--sync-shadow: 0 1px 2px rgba(0, 0, 0, .25);
-}
-
-.sync-view main {
-	display: flex;
-	flex-direction: column;
-	align-items: stretch;
-	flex: 1 1 auto;
-	width: 100%;
-	max-width: 1040px;
-	padding: var(--app-margin);
-	margin: 0 auto;
-	gap: var(--sync-gap);
-}
-
-.sync-view h2 {
-	font-size: 18px;
-	margin: 0;
-}
-
-/* ---------- buttons ---------- */
-
-.sync-btn {
-	display: inline-flex;
-	align-items: center;
-	justify-content: center;
-	gap: 8px;
-	min-height: 40px;
-	padding: 9px 16px;
-
-	font-family: inherit;
-	font-size: var(--text-small);
-	font-weight: var(--bold);
-	line-height: 1.2;
-
-	color: var(--color);
-	background-color: transparent;
-	border: 1px solid var(--border-color);
-	border-radius: 8px;
-	cursor: pointer;
-}
-
-.sync-btn svg {
-	width: 16px;
-	height: 16px;
-	flex: none;
-}
-
-.sync-btn:not(:disabled):hover {
-	background-color: var(--bg-2);
-}
-
-.sync-btn:disabled {
-	opacity: .55;
-	cursor: default;
-}
-
-.sync-btn:focus-visible {
-	outline: 2px solid var(--green-500);
-	outline-offset: 2px;
-}
-
-.sync-btn--primary {
-	color: #ffffff;
-	background-color: var(--green-500);
-	border-color: var(--green-500);
-}
-
-.sync-btn--primary:not(:disabled):hover {
-	background-color: var(--green-200);
-	border-color: var(--green-200);
-}
-
-.sync-btn--quiet {
-	border-color: transparent;
-	color: var(--sync-muted);
-}
-
-.sync-btn--danger {
-	color: var(--alert);
-	border-color: transparent;
-}
-
-.sync-btn--danger:not(:disabled):hover {
-	background-color: var(--sync-tint-error);
-}
-
-.sync-btn--onTone {
-	border-color: currentColor;
-	background-color: transparent;
-}
-
-/* Amber rather than the alert colour: removing a pair is permanent, pausing is
-   undone by the same control. Pause is outlined so it stays below the primary
-   action, and so both themes read the same - a solid fill has to invert to a
-   bright yellow in dark mode, which then outshouts everything else. */
-.sync-btn--pause {
-	color: var(--sync-on-pause-tint);
-	background-color: transparent;
-	border-color: var(--sync-on-pause-tint);
-}
-
-.sync-btn--pause:not(:disabled):hover {
-	color: var(--sync-on-pause);
-	background-color: var(--sync-pause);
-	border-color: var(--sync-pause);
-}
-
-/* while paused, resuming is the primary action, so it takes the solid fill */
-.sync-btn--resume {
-	color: var(--sync-on-pause);
-	background-color: var(--sync-pause);
-	border-color: var(--sync-pause);
-}
-
-.sync-btn--resume:not(:disabled):hover {
-	background-color: var(--sync-pause-hover);
-	border-color: var(--sync-pause-hover);
-}
-
-/* ---------- unavailable / empty ---------- */
-
-.sync-unavailable,
-.sync-empty {
-	display: flex;
-	flex-direction: column;
-	align-items: center;
-	gap: 12px;
-	max-width: 560px;
-	margin: 32px auto;
-	padding: 32px 24px;
-	text-align: center;
-}
-
-.sync-empty {
-	border: 1px dashed var(--border-color);
-	border-radius: 14px;
-}
-
-.sync-unavailable p,
-.sync-empty p {
-	margin: 0;
-	color: var(--sync-muted);
-	font-size: var(--text-small);
-	line-height: 1.55;
-	overflow-wrap: anywhere;
-}
-
-.sync-unavailable a {
-	color: var(--blue-accent);
-	text-decoration: underline;
-}
-
-.sync-empty__mark {
-	display: flex;
-	align-items: center;
-	justify-content: center;
-	width: 52px;
-	height: 52px;
-	border-radius: 50%;
-	color: var(--green-500);
-	background-color: var(--sync-tint-ok);
-}
-
-.sync-empty__mark svg {
-	width: 24px;
-	height: 24px;
-}
-
-/* ---------- summary ---------- */
-
-.sync-summary {
-	display: flex;
-	align-items: center;
-	gap: 16px;
-	padding: 18px 20px;
-	border-radius: 14px;
-}
-
-.sync-summary__icon {
-	display: flex;
-	align-items: center;
-	justify-content: center;
-	width: 42px;
-	height: 42px;
-	flex: none;
-	border-radius: 50%;
-	color: #ffffff;
-}
-
-.sync-summary__icon svg {
-	width: 22px;
-	height: 22px;
-}
-
-.sync-summary__text {
-	min-width: 0;
-}
-
-.sync-summary__text p {
-	margin: 4px 0 0;
-	font-size: var(--text-small);
-	opacity: .78;
-	overflow-wrap: anywhere;
-}
-
-.sync-summary__actions {
-	display: flex;
-	gap: 10px;
-	margin-left: auto;
-	flex: none;
-}
-
-.sync-tone--ok.sync-summary { background-color: var(--sync-tint-ok); }
-.sync-tone--ok .sync-summary__icon,
-.sync-tone--ok.sync-summary .sync-summary__icon { background-color: var(--green-500); }
-
-.sync-tone--busy.sync-summary { background-color: var(--sync-tint-busy); }
-.sync-tone--busy.sync-summary .sync-summary__icon { background-color: var(--blue-accent); }
-
-.sync-tone--paused.sync-summary { background-color: var(--sync-tint-pause); }
-.sync-tone--paused.sync-summary .sync-summary__icon { background-color: var(--sync-pause); color: var(--sync-on-pause); }
-
-.sync-tone--error.sync-summary { background-color: var(--sync-tint-error); }
-.sync-tone--error.sync-summary .sync-summary__icon { background-color: var(--alert); }
-
-/* ---------- section head ---------- */
-
-.sync-sectionhead {
-	display: flex;
-	align-items: baseline;
-	gap: 10px;
-	margin-top: 8px;
-}
-
-.sync-sectionhead h2 {
-	font-size: 15px;
-}
-
-.sync-sectionhead span {
-	font-size: var(--text-small);
-	color: var(--sync-muted);
-}
-
-/* ---------- cards ---------- */
-
-.sync-cards {
-	display: flex;
-	flex-direction: column;
-	gap: 14px;
-	margin: 0;
-	padding: 0;
-	list-style: none;
-}
-
-.sync-card {
-	display: flex;
-	flex-direction: column;
-	gap: 12px;
-	padding: 18px 20px;
-	background-color: var(--bg);
-	border: 1px solid var(--border-color);
-	border-radius: 14px;
-	box-shadow: var(--sync-shadow);
-}
-
-.sync-card--error {
-	border-color: var(--sync-border-error);
-}
-
-/* a fixed column for the status keeps the remote paths aligned down the list:
-   otherwise a wide pill on one card shifts that card's arrow and remote path */
-.sync-card__head {
-	display: grid;
-	grid-template-columns: minmax(0, 1fr) 150px;
-	align-items: center;
-	gap: 16px;
-}
-
-.sync-card__head .sync-pill {
-	justify-self: end;
-}
-
-.sync-route {
-	display: flex;
-	align-items: center;
-	gap: 12px;
-	min-width: 0;
-	flex: 1 1 320px;
-}
-
-.sync-endpoint {
-	display: flex;
-	align-items: center;
-	gap: 10px;
-	min-width: 0;
-	/* basis from content, so a long path takes the room a short one on the other
-	   side of the arrow doesn't need, instead of both being locked to half a row */
-	flex: 1 1 auto;
-}
-
-.sync-endpoint__icon {
-	display: flex;
-	align-items: center;
-	justify-content: center;
-	width: 34px;
-	height: 34px;
-	flex: none;
-	border-radius: 9px;
-	color: var(--sync-muted);
-	background-color: var(--sync-surface-2);
-}
-
-.sync-endpoint__icon svg {
-	width: 18px;
-	height: 18px;
-}
-
-.sync-endpoint__text {
-	display: flex;
-	flex-direction: column;
-	min-width: 0;
-}
-
-.sync-endpoint__label {
-	font-size: 10px;
-	text-transform: uppercase;
-	letter-spacing: .07em;
-	color: var(--sync-muted);
-}
-
-.sync-endpoint__value {
-	display: flex;
-	margin-top: 2px;
-	min-width: 0;
-	font-size: 15px;
-	font-weight: var(--bold);
-	white-space: nowrap;
-	cursor: pointer;
-}
-
-.sync-path__head {
-	flex: 0 999 auto;
-	min-width: 0;
-	overflow: hidden;
-	text-overflow: ellipsis;
-}
-
-.sync-path__tail {
-	/* never shrinks; the cap only bites if the leaf alone is longer than the row */
-	flex: 0 0 auto;
-	max-width: 65%;
-	overflow: hidden;
-	text-overflow: ellipsis;
-}
-
-/* tapped open: the whole path wraps, since a tooltip is desktop only */
-.sync-endpoint__value--open {
-	white-space: normal;
-	overflow-wrap: anywhere;
-}
-
-.sync-endpoint__value--open .sync-path__head,
-.sync-endpoint__value--open .sync-path__tail {
-	overflow: visible;
-	text-overflow: clip;
-	white-space: normal;
-}
-
-
-
-.sync-endpoint__value--link {
-	color: var(--sync-link);
-	text-decoration: none;
-}
-
-.sync-endpoint__value--link:hover {
-	text-decoration: underline;
-}
-
-.sync-route__arrow {
-	/* flex, not inline: an inline svg sits on the text baseline, which leaves
-	   descender space below it and lifts the glyph off the icons' centre line */
-	display: flex;
-	align-items: center;
-	flex: none;
-	color: var(--color-2);
-}
-
-.sync-route__arrow svg {
-	width: 20px;
-	height: 20px;
-}
-
-/* ---------- state pill ---------- */
-
-.sync-pill {
-	display: inline-flex;
-	align-items: center;
-	gap: 7px;
-	flex: none;
-	padding: 6px 12px;
-	font-size: var(--text-small);
-	font-weight: var(--bold);
-	border-radius: 999px;
-}
-
-.sync-pill__dot {
-	width: 7px;
-	height: 7px;
-	border-radius: 50%;
-	background-color: currentColor;
-}
-
-@keyframes sync-pulse {
-	0%, 100% { transform: scale(1); opacity: 1; }
-	50% { transform: scale(1.7); opacity: .4; }
-}
-
-/* only while syncing: a still dot for the settled states keeps the motion meaningful */
-.sync-tone--busy .sync-pill__dot {
-	animation: sync-pulse 1.4s ease-in-out infinite;
-}
-
-.sync-tone--ok.sync-pill { color: var(--sync-on-ok); background-color: var(--sync-tint-ok); }
-.sync-tone--busy.sync-pill { color: var(--sync-on-busy); background-color: var(--sync-tint-busy); }
-.sync-tone--error.sync-pill { color: var(--sync-on-error); background-color: var(--sync-tint-error); }
-.sync-tone--paused.sync-pill { color: var(--sync-on-pause-tint); background-color: var(--sync-tint-pause); }
-.sync-tone--pending.sync-pill { color: var(--sync-muted); background-color: var(--sync-surface-2); }
-
-/* ---------- activity ---------- */
-
-.sync-activity {
-	margin: 0;
-	font-size: var(--text-small);
-	line-height: 1.4;
-	color: var(--sync-muted);
-	overflow-wrap: anywhere;
-}
-
-/* clamped rather than scrolled: the ellipsis is the only visible cue text was cut */
-.sync-clamp {
-	display: -webkit-box;
-	-webkit-box-orient: vertical;
-	-webkit-line-clamp: 3;
-	overflow: hidden;
-	cursor: pointer;
-}
-
-.sync-clamp--open {
-	-webkit-line-clamp: unset;
-	overflow: visible;
-}
-
-.sync-endpoint__value::-webkit-scrollbar,
-.sync-activity::-webkit-scrollbar {
-	width: 5px;
-	height: 5px;
-}
-
-.sync-endpoint__value::-webkit-scrollbar-thumb,
-.sync-activity::-webkit-scrollbar-thumb {
-	border-radius: 999px;
-	background-color: var(--sync-track);
-}
-
-.sync-errorbox {
-	display: flex;
-	align-items: flex-start;
-	gap: 10px;
-	margin: 0;
-	padding: 10px 12px;
-	font-size: var(--text-small);
-	color: var(--sync-on-error);
-	background-color: var(--sync-tint-error);
-	border-radius: 9px;
-	overflow-wrap: anywhere;
-}
-
-.sync-errorbox svg {
-	width: 16px;
-	height: 16px;
-	flex: none;
-	margin-top: 2px;
-}
-
-/* Indeterminate: the API reports no total, so never fake a percentage */
-.sync-bar {
-	position: relative;
-	height: 4px;
-	border-radius: 999px;
-	background-color: var(--sync-track);
-	overflow: hidden;
-}
-
-.sync-bar > span {
-	position: absolute;
-	top: 0;
-	left: 0;
-	width: 34%;
-	height: 100%;
-	border-radius: 999px;
-	background-color: var(--blue-accent);
-	animation: sync-slide 1.6s ease-in-out infinite;
-}
-
-.sync-bar--determinate > span {
-	animation: none;
-	transition: width .3s ease;
-}
-
-/* the percentage sits beside the activity text, which names what is progressing.
-   min-width:0 lets a long path shrink rather than push the number off a phone screen */
-.sync-activityrow {
-	display: flex;
-	align-items: flex-start;
-	gap: 10px;
-}
-
-.sync-activityrow .sync-activity {
-	flex: 1;
-	min-width: 0;
-}
-
-.sync-pct {
-	flex: none;
-	font-size: 13px;
-	line-height: 1.4;
-	color: var(--sync-muted);
-	font-variant-numeric: tabular-nums;
-	white-space: nowrap;
-}
-
-@keyframes sync-slide {
-	0% { left: -34%; }
-	100% { left: 100%; }
-}
-
-@media (prefers-reduced-motion: reduce) {
-	.sync-tone--busy .sync-pill__dot {
-		animation: none;
-	}
-
-	.sync-bar > span {
-		animation: none;
-		left: 0;
-		width: 100%;
-		opacity: .45;
-	}
-}
-
-/* ---------- card footer ---------- */
-
-.sync-card__foot {
-	display: flex;
-	align-items: center;
-	justify-content: space-between;
-	gap: 14px;
-	flex-wrap: wrap;
-	padding-top: 14px;
-	border-top: 1px solid var(--border-color);
-}
-
-.sync-chips {
-	display: flex;
-	flex-wrap: wrap;
-	gap: 8px;
-	min-width: 0;
-}
-
-.sync-chip {
-	display: inline-flex;
-	align-items: center;
-	gap: 7px;
-	padding: 5px 11px;
-	font-size: 13px;
-	color: var(--sync-muted);
-	background-color: var(--sync-surface-2);
-	border-radius: 999px;
-}
-
-.sync-chip svg {
-	width: 13px;
-	height: 13px;
-	flex: none;
-}
-
-.sync-chip--on {
-	color: var(--sync-on-ok);
-}
-
-.sync-card__actions {
-	display: flex;
-	gap: 8px;
-	margin-left: auto;
-	flex: none;
-}
-
-/* ---------- switch ---------- */
-
-.sync-switch {
-	position: relative;
-	display: inline-flex;
-	align-items: center;
-	gap: 9px;
-	padding: 4px 11px 4px 8px;
-	font-size: 13px;
-	border: 1px solid var(--border-color);
-	border-radius: 999px;
-	cursor: pointer;
-	margin: 0;
-	font-weight: var(--regular);
-}
-
-.sync-switch input {
-	position: absolute;
-	opacity: 0;
-	width: 0;
-	height: 0;
-}
-
-/* extends the tap target to ~44px without growing the visible control */
-.sync-switch:after {
-	content: "";
-	position: absolute;
-	top: -8px;
-	right: -8px;
-	bottom: -8px;
-	left: -8px;
-}
-
-.sync-switch__track {
-	position: relative;
-	width: 30px;
-	height: 18px;
-	flex: none;
-	border-radius: 999px;
-	background-color: var(--gray-3);
-	transition: background-color .2s;
-}
-
-.sync-switch__track:after {
-	content: "";
-	position: absolute;
-	top: 3px;
-	left: 3px;
-	width: 12px;
-	height: 12px;
-	border-radius: 50%;
-	background-color: #ffffff;
-	transition: left .2s;
-}
-
-.sync-switch input:checked + .sync-switch__track {
-	background-color: var(--green-500);
-}
-
-.sync-switch input:checked + .sync-switch__track:after {
-	left: 15px;
-}
-
-.sync-switch input:focus-visible + .sync-switch__track {
-	outline: 2px solid var(--green-500);
-	outline-offset: 2px;
-}
-
-/* ---------- narrow screens (Android webview, small windows) ---------- */
-
-@media (max-width: 700px) {
-	.sync-view main {
-		gap: 14px;
-	}
-
-
-
-	.sync-summary {
-		flex-wrap: wrap;
-		gap: 12px;
-	}
-
-	.sync-summary__text {
-		flex: 1 1 200px;
-	}
-
-	.sync-summary__actions {
-		margin-left: 0;
-		width: 100%;
-		flex: 1 1 100%;
-	}
-
-	.sync-summary__actions .sync-btn {
-		flex: 1 1 0;
-	}
-
-	.sync-card__head {
-		display: flex;
-		flex-wrap: wrap;
-		justify-content: space-between;
-		align-items: flex-start;
-	}
-
-	/* stack the two endpoints and turn the arrow upright. The route shrinks rather
-	   than claiming the full row, so the status stays top right beside it */
-	.sync-route {
-		flex-direction: column;
-		align-items: stretch;
-		gap: 8px;
-		/* basis 0, not auto: the head wraps, and wrapping is decided on the hypothetical
-		   size, so a long nowrap path would push the status onto its own line first */
-		flex: 1 1 0;
-		min-width: 0;
-	}
-
-	.sync-endpoint {
-		flex: 0 0 auto;
-		min-width: 0;
-	}
-
-	/* Material's minimum touch target; 40px is comfortable with a mouse, not a thumb */
-	.sync-btn {
-		min-height: 48px;
-	}
-
-	/* the arrow links the two endpoint icons, so it lines up with them rather than
-	   with the card. Matching the icon width centres it without a magic offset. */
-	.sync-route__arrow {
-		width: 34px;
-		justify-content: center;
-		transform: rotate(90deg);
-	}
-
-	.sync-card__foot {
-		align-items: stretch;
-		flex-direction: column;
-	}
-
-	.sync-card__actions {
-		margin-left: 0;
-		width: 100%;
-	}
-
-	.sync-card__actions .sync-btn {
-		flex: 1 1 0;
-		border-color: var(--border-color);
-	}
-}
-
-@media (max-width: 380px) {
-	.sync-summary__actions {
-		flex-direction: column;
-	}
-
-	.sync-card__actions {
-		flex-direction: column;
-	}
-}
-</style>

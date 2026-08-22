@@ -68,7 +68,12 @@ module.exports = {
   height:100%;
   position:absolute;
 }
+/* anchored, not just fixed: a fixed box with no offset starts at wherever it
+   flowed, so the spinner drew below the middle of the page - or off it */
 .spinner-fixed-position {
+    top:0;
+    left:0;
+    width:100%;
     height:100vh;
     position:fixed;
 }

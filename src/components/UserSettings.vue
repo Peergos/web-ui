@@ -149,6 +149,7 @@
 
 <script>
 const Admin = require("./admin/Admin.vue")
+const localServer = require("../mixins/localserver/index.js");
 const AppButton = require("AppButton.vue");
 const AppDropdown = require("./AppDropdown.vue");
 const AppIcon = require("AppIcon.vue");
@@ -158,6 +159,7 @@ const loopback = require("../mixins/loopback/index.js");
 const i18n = require("../i18n/index.js");
 
 module.exports = {
+    mixins: [localServer],
     components: {
         Admin,
         AppButton,
@@ -199,40 +201,6 @@ module.exports = {
         this.displayProfile();
     },
 	methods: {
-        localPost(url, body) {
-            return new Promise(function(resolve, reject) {
-                var req = new XMLHttpRequest();
-                req.open('POST', url);
-                req.responseType = 'json';
-
-                req.onload = function() {
-                    if (req.status == 200) {
-                        resolve(req.response);
-                    } else {
-                        try {
-                            let trailer = req.getResponseHeader("Trailer");
-                            if (trailer == null) {
-                                reject('Unexpected error from server');
-                            } else {
-                                reject(decodeURIComponent(trailer));
-                            }
-                        } catch (e) {
-                            reject(e);
-                        }
-                    }
-                };
-
-                req.onerror = function() {
-                    reject(Error("Unable to connect"));
-                };
-
-                req.ontimeout = function() {
-                    reject(Error("Network timeout"));
-                };
-
-                req.send(body != null ? body : new Int8Array(0));
-            });
-        },
         setLanguage() {
             this.$store.commit("CURRENT_MODAL", "ModalLanguage");
         },

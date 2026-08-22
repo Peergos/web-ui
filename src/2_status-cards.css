@@ -1,0 +1,877 @@
+/* Status cards: summary banner, endpoint pairs, state pills, chips, callouts and the progress
+   bar, for any view that reports on a background job. The tokens live on .pg-view, so a page
+   opts in by carrying that class. */
+
+/* ------------------------------------------------------------------
+   Status cards
+   Only CSS features already used elsewhere in this codebase.
+   No color-mix(), no :has(), no container queries.
+   ------------------------------------------------------------------ */
+
+.pg-view {
+	display: flex;
+	flex-direction: column;
+	min-height: 100vh;
+
+	--pg-muted: #566571;
+	/* the summary disc keeps one value in both themes: its glyph is always white, so a
+	   token that flipped would leave white on a pale disc */
+	--pg-disc-ok: #146b57;
+	--pg-on-ok: #146b57;
+	--pg-on-busy: #1c5f9e;
+	--pg-on-error: #b3261e;
+	--pg-link: #3b73ab;
+	/* amber, distinct from the red used for removing a pair: pausing is reversible */
+	--pg-pause: #b45309;
+	--pg-pause-hover: #92400e;
+	--pg-on-pause: #ffffff;
+	--pg-tint-pause: #fdf1e0;
+	--pg-on-pause-tint: #92400e;
+	--pg-surface-2: #f1f4f7;
+	--pg-tint-ok: #e8f8f3;
+	--pg-tint-busy: #eaf3fd;
+	--pg-tint-error: #fdecec;
+	--pg-border-error: #f0b4b4;
+	--pg-track: #e6ebef;
+	--pg-shadow: 0 1px 2px rgba(44, 62, 80, .07);
+	--pg-gap: 16px;
+}
+
+[data-theme="dark-mode"] .pg-view {
+	--pg-muted: #a7b6c2;
+	--pg-on-ok: #63e3bd;
+	--pg-on-busy: #8fd2e8;
+	--pg-on-error: #ffa1a1;
+	--pg-link: #7fbcf7;
+	--pg-pause: #fbbf24;
+	--pg-pause-hover: #f59e0b;
+	--pg-on-pause: #1f1300;
+	--pg-tint-pause: #4a3a1d;
+	--pg-on-pause-tint: #fbbf24;
+	--pg-surface-2: #22303c;
+	--pg-tint-ok: #1d4a41;
+	--pg-tint-busy: #22405c;
+	--pg-tint-error: #4d2b2e;
+	--pg-border-error: #7c4348;
+	--pg-track: #1f2c37;
+	--pg-shadow: 0 1px 2px rgba(0, 0, 0, .25);
+}
+
+.pg-view main {
+	display: flex;
+	flex-direction: column;
+	align-items: stretch;
+	flex: 1 1 auto;
+	width: 100%;
+	max-width: 1040px;
+	padding: var(--app-margin);
+	margin: 0 auto;
+	gap: var(--pg-gap);
+}
+
+.pg-view h2 {
+	font-size: 18px;
+	margin: 0;
+}
+
+/* ---------- buttons ---------- */
+
+.pg-btn {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	gap: 8px;
+	min-height: 40px;
+	padding: 9px 16px;
+
+	font-family: inherit;
+	font-size: var(--text-small);
+	font-weight: var(--bold);
+	line-height: 1.2;
+
+	color: var(--color);
+	background-color: transparent;
+	border: 1px solid var(--border-color);
+	border-radius: 8px;
+	cursor: pointer;
+}
+
+.pg-btn svg {
+	width: 16px;
+	height: 16px;
+	flex: none;
+}
+
+.pg-btn:not(:disabled):hover {
+	background-color: var(--bg-2);
+}
+
+.pg-btn:disabled {
+	opacity: .55;
+	cursor: default;
+}
+
+.pg-btn:focus-visible {
+	outline: 2px solid var(--green-500);
+	outline-offset: 2px;
+}
+
+.pg-btn--primary {
+	color: #ffffff;
+	background-color: var(--green-500);
+	border-color: var(--green-500);
+}
+
+.pg-btn--primary:not(:disabled):hover {
+	background-color: var(--green-200);
+	border-color: var(--green-200);
+}
+
+.pg-btn--quiet {
+	border-color: transparent;
+	color: var(--pg-muted);
+}
+
+.pg-btn--danger {
+	color: var(--alert);
+	border-color: transparent;
+}
+
+.pg-btn--danger:not(:disabled):hover {
+	background-color: var(--pg-tint-error);
+}
+
+.pg-btn--onTone {
+	border-color: currentColor;
+	background-color: transparent;
+}
+
+/* Amber rather than the alert colour: removing a pair is permanent, pausing is
+   undone by the same control. Pause is outlined so it stays below the primary
+   action, and so both themes read the same - a solid fill has to invert to a
+   bright yellow in dark mode, which then outshouts everything else. */
+.pg-btn--pause {
+	color: var(--pg-on-pause-tint);
+	background-color: transparent;
+	border-color: var(--pg-on-pause-tint);
+}
+
+.pg-btn--pause:not(:disabled):hover {
+	color: var(--pg-on-pause);
+	background-color: var(--pg-pause);
+	border-color: var(--pg-pause);
+}
+
+/* while paused, resuming is the primary action, so it takes the solid fill */
+.pg-btn--resume {
+	color: var(--pg-on-pause);
+	background-color: var(--pg-pause);
+	border-color: var(--pg-pause);
+}
+
+.pg-btn--resume:not(:disabled):hover {
+	background-color: var(--pg-pause-hover);
+	border-color: var(--pg-pause-hover);
+}
+
+/* ---------- unavailable / empty ---------- */
+
+.pg-unavailable,
+.pg-empty {
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	gap: 12px;
+	max-width: 560px;
+	margin: 32px auto;
+	padding: 32px 24px;
+	text-align: center;
+}
+
+.pg-empty {
+	border: 1px dashed var(--border-color);
+	border-radius: 14px;
+}
+
+.pg-unavailable p,
+.pg-empty p {
+	margin: 0;
+	color: var(--pg-muted);
+	font-size: var(--text-small);
+	line-height: 1.55;
+	overflow-wrap: anywhere;
+}
+
+.pg-unavailable a {
+	color: var(--blue-accent);
+	text-decoration: underline;
+}
+
+.pg-empty__mark {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	width: 52px;
+	height: 52px;
+	border-radius: 50%;
+	color: var(--green-500);
+	background-color: var(--pg-tint-ok);
+}
+
+.pg-empty__mark svg {
+	width: 24px;
+	height: 24px;
+}
+
+/* ---------- summary ---------- */
+
+.pg-summary {
+	display: flex;
+	align-items: center;
+	gap: 16px;
+	padding: 18px 20px;
+	border-radius: 14px;
+}
+
+.pg-summary__icon {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	width: 42px;
+	height: 42px;
+	flex: none;
+	border-radius: 50%;
+	color: #ffffff;
+}
+
+.pg-summary__icon svg {
+	width: 22px;
+	height: 22px;
+}
+
+.pg-summary__text {
+	min-width: 0;
+}
+
+.pg-summary__text p {
+	margin: 4px 0 0;
+	font-size: var(--text-small);
+	opacity: .78;
+	overflow-wrap: anywhere;
+}
+
+.pg-summary__actions {
+	display: flex;
+	gap: 10px;
+	margin-left: auto;
+	flex: none;
+}
+
+.pg-tone--ok.pg-summary { background-color: var(--pg-tint-ok); }
+.pg-tone--ok .pg-summary__icon,
+.pg-tone--ok.pg-summary .pg-summary__icon {
+	/* the mid green reads as 2.5:1 against a white glyph, under the 3:1 a graphic needs */
+	background-color: var(--pg-disc-ok);
+}
+
+.pg-tone--busy.pg-summary { background-color: var(--pg-tint-busy); }
+.pg-tone--busy.pg-summary .pg-summary__icon { background-color: var(--blue-accent); }
+
+.pg-tone--paused.pg-summary { background-color: var(--pg-tint-pause); }
+.pg-tone--paused.pg-summary .pg-summary__icon { background-color: var(--pg-pause); color: var(--pg-on-pause); }
+
+.pg-tone--error.pg-summary { background-color: var(--pg-tint-error); }
+.pg-tone--error.pg-summary .pg-summary__icon { background-color: var(--alert); }
+
+.pg-tone--pending .pg-summary__icon,
+.pg-tone--pending.pg-summary .pg-summary__icon {
+	/* the only tone with no colour of its own: a plain surface and the muted ink, both of
+	   which flip with the theme, so the glyph stays legible either way */
+	background-color: var(--pg-surface-2);
+	color: var(--pg-muted);
+}
+
+/* ---------- section head ---------- */
+
+.pg-sectionhead {
+	display: flex;
+	align-items: baseline;
+	gap: 10px;
+	margin-top: 8px;
+}
+
+.pg-sectionhead h2 {
+	font-size: 15px;
+}
+
+.pg-sectionhead span {
+	font-size: var(--text-small);
+	color: var(--pg-muted);
+}
+
+/* ---------- cards ---------- */
+
+.pg-cards {
+	display: flex;
+	flex-direction: column;
+	gap: 14px;
+	margin: 0;
+	padding: 0;
+	list-style: none;
+}
+
+.pg-card {
+	display: flex;
+	flex-direction: column;
+	gap: 12px;
+	padding: 18px 20px;
+	background-color: var(--bg);
+	border: 1px solid var(--border-color);
+	border-radius: 14px;
+	box-shadow: var(--pg-shadow);
+}
+
+.pg-card--error {
+	border-color: var(--pg-border-error);
+}
+
+/* a fixed column for the status keeps the remote paths aligned down the list:
+   otherwise a wide pill on one card shifts that card's arrow and remote path */
+.pg-card__head {
+	display: grid;
+	grid-template-columns: minmax(0, 1fr) 150px;
+	/* start, not centre: a path opened to full length grows the row, and centred
+	   content would rise by half of that growth every time it is tapped */
+	align-items: start;
+	gap: 16px;
+}
+
+.pg-card__head .pg-pill {
+	justify-self: end;
+	/* half the difference between the pill and the icon box beside it, so the two
+	   sit on one line while both stay anchored to the top of the row */
+	margin-top: 3px;
+}
+
+.pg-route {
+	display: flex;
+	align-items: flex-start;
+	gap: 12px;
+	min-width: 0;
+	flex: 1 1 320px;
+}
+
+.pg-endpoint {
+	display: flex;
+	align-items: flex-start;
+	gap: 10px;
+	/* a floor wide enough for the icon and a label: flex shrinks the two sides in
+	   proportion to their content, so a long path opposite a short name would
+	   otherwise squeeze the short side until its own label no longer fits */
+	min-width: 140px;
+	/* basis from content, so a long path takes the room a short one on the other
+	   side of the arrow doesn't need, instead of both being locked to half a row */
+	flex: 1 1 auto;
+}
+
+.pg-endpoint__icon {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	width: 34px;
+	height: 34px;
+	flex: none;
+	border-radius: 9px;
+	color: var(--pg-muted);
+	background-color: var(--pg-surface-2);
+}
+
+.pg-endpoint__icon svg {
+	width: 18px;
+	height: 18px;
+}
+
+.pg-endpoint__text {
+	display: flex;
+	flex-direction: column;
+	min-width: 0;
+}
+
+.pg-endpoint__label {
+	font-size: 10px;
+	text-transform: uppercase;
+	letter-spacing: .07em;
+	color: var(--pg-muted);
+	/* a label that wraps to two lines drops its value out of line with the one
+	   opposite it, so it clips instead; the row stacks below 700px anyway */
+	white-space: nowrap;
+	overflow: hidden;
+	text-overflow: ellipsis;
+}
+
+.pg-endpoint__value {
+	display: flex;
+	margin-top: 2px;
+	min-width: 0;
+	font-size: 15px;
+	font-weight: var(--bold);
+	white-space: nowrap;
+	cursor: pointer;
+}
+
+.pg-path__head {
+	flex: 0 999 auto;
+	min-width: 0;
+	overflow: hidden;
+	text-overflow: ellipsis;
+}
+
+.pg-path__tail {
+	/* never shrinks; the cap only bites if the leaf alone is longer than the row */
+	flex: 0 0 auto;
+	max-width: 65%;
+	overflow: hidden;
+	text-overflow: ellipsis;
+}
+
+/* tapped open: the whole path wraps, since a tooltip is desktop only. Dropping the
+   flex is what lets it wrap: as flex items the two halves are laid out side by side,
+   so each one wraps in its own column instead of the path reading as one run. */
+.pg-endpoint__value--open {
+	display: block;
+	white-space: normal;
+	overflow-wrap: anywhere;
+}
+
+.pg-endpoint__value--open .pg-path__head,
+.pg-endpoint__value--open .pg-path__tail {
+	overflow: visible;
+	text-overflow: clip;
+	white-space: normal;
+}
+
+
+
+.pg-endpoint__value--link {
+	color: var(--pg-link);
+	text-decoration: none;
+}
+
+.pg-endpoint__value--link:hover {
+	text-decoration: underline;
+}
+
+.pg-route__arrow {
+	/* flex, not inline: an inline svg sits on the text baseline, which leaves
+	   descender space below it and lifts the glyph off the icons' centre line */
+	display: flex;
+	align-items: center;
+	flex: none;
+	/* the height of an endpoint icon, so the glyph centres on them and stays put
+	   when the row grows underneath it */
+	align-self: flex-start;
+	height: 34px;
+	color: var(--color-2);
+}
+
+.pg-route__arrow svg {
+	width: 20px;
+	height: 20px;
+}
+
+/* ---------- state pill ---------- */
+
+.pg-pill {
+	display: inline-flex;
+	align-items: center;
+	gap: 7px;
+	flex: none;
+	padding: 6px 12px;
+	font-size: var(--text-small);
+	font-weight: var(--bold);
+	border-radius: 999px;
+}
+
+.pg-pill__dot {
+	width: 7px;
+	height: 7px;
+	border-radius: 50%;
+	background-color: currentColor;
+}
+
+@keyframes pg-pulse {
+	0%, 100% { transform: scale(1); opacity: 1; }
+	50% { transform: scale(1.7); opacity: .4; }
+}
+
+/* only while syncing: a still dot for the settled states keeps the motion meaningful */
+.pg-tone--busy .pg-pill__dot {
+	animation: pg-pulse 1.4s ease-in-out infinite;
+}
+
+.pg-tone--ok.pg-pill { color: var(--pg-on-ok); background-color: var(--pg-tint-ok); }
+.pg-tone--busy.pg-pill { color: var(--pg-on-busy); background-color: var(--pg-tint-busy); }
+.pg-tone--error.pg-pill { color: var(--pg-on-error); background-color: var(--pg-tint-error); }
+.pg-tone--paused.pg-pill { color: var(--pg-on-pause-tint); background-color: var(--pg-tint-pause); }
+.pg-tone--pending.pg-pill { color: var(--pg-muted); background-color: var(--pg-surface-2); }
+
+/* ---------- activity ---------- */
+
+.pg-activity {
+	margin: 0;
+	font-size: var(--text-small);
+	line-height: 1.4;
+	color: var(--pg-muted);
+	overflow-wrap: anywhere;
+}
+
+/* clamped rather than scrolled: the ellipsis is the only visible cue text was cut */
+.pg-clamp {
+	display: -webkit-box;
+	-webkit-box-orient: vertical;
+	-webkit-line-clamp: 3;
+	overflow: hidden;
+	cursor: pointer;
+}
+
+.pg-clamp--open {
+	-webkit-line-clamp: unset;
+	overflow: visible;
+}
+
+.pg-endpoint__value::-webkit-scrollbar,
+.pg-activity::-webkit-scrollbar {
+	width: 5px;
+	height: 5px;
+}
+
+.pg-endpoint__value::-webkit-scrollbar-thumb,
+.pg-activity::-webkit-scrollbar-thumb {
+	border-radius: 999px;
+	background-color: var(--pg-track);
+}
+
+.pg-errorbox {
+	display: flex;
+	align-items: flex-start;
+	gap: 10px;
+	margin: 0;
+	padding: 10px 12px;
+	font-size: var(--text-small);
+	color: var(--pg-on-error);
+	background-color: var(--pg-tint-error);
+	border-radius: 9px;
+	overflow-wrap: anywhere;
+}
+
+.pg-errorbox svg {
+	width: 16px;
+	height: 16px;
+	flex: none;
+	margin-top: 2px;
+}
+
+/* Indeterminate: the API reports no total, so never fake a percentage */
+.pg-bar {
+	position: relative;
+	height: 4px;
+	border-radius: 999px;
+	background-color: var(--pg-track);
+	overflow: hidden;
+}
+
+.pg-bar > span {
+	position: absolute;
+	top: 0;
+	left: 0;
+	width: 34%;
+	height: 100%;
+	border-radius: 999px;
+	background-color: var(--blue-accent);
+	animation: pg-slide 1.6s ease-in-out infinite;
+}
+
+.pg-bar--determinate > span {
+	animation: none;
+	transition: width .3s ease;
+}
+
+/* the percentage sits beside the activity text, which names what is progressing.
+   min-width:0 lets a long path shrink rather than push the number off a phone screen */
+.pg-activityrow {
+	display: flex;
+	align-items: flex-start;
+	gap: 10px;
+}
+
+.pg-activityrow .pg-activity {
+	flex: 1;
+	min-width: 0;
+}
+
+.pg-pct {
+	flex: none;
+	font-size: 13px;
+	line-height: 1.4;
+	color: var(--pg-muted);
+	font-variant-numeric: tabular-nums;
+	white-space: nowrap;
+}
+
+@keyframes pg-slide {
+	0% { left: -34%; }
+	100% { left: 100%; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+	.pg-tone--busy .pg-pill__dot {
+		animation: none;
+	}
+
+	.pg-bar > span {
+		animation: none;
+		left: 0;
+		width: 100%;
+		opacity: .45;
+	}
+}
+
+/* ---------- card footer ---------- */
+
+.pg-card__foot {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	gap: 14px;
+	flex-wrap: wrap;
+	padding-top: 14px;
+	border-top: 1px solid var(--border-color);
+}
+
+.pg-chips {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 8px;
+	min-width: 0;
+}
+
+.pg-chip {
+	display: inline-flex;
+	align-items: center;
+	gap: 7px;
+	padding: 5px 11px;
+	font-size: 13px;
+	color: var(--pg-muted);
+	background-color: var(--pg-surface-2);
+	border-radius: 999px;
+}
+
+.pg-chip svg {
+	width: 13px;
+	height: 13px;
+	flex: none;
+}
+
+.pg-chip--on {
+	color: var(--pg-on-ok);
+}
+
+.pg-card__actions {
+	display: flex;
+	gap: 8px;
+	margin-left: auto;
+	flex: none;
+}
+
+/* ---------- switch ---------- */
+
+.pg-switch {
+	position: relative;
+	display: inline-flex;
+	align-items: center;
+	gap: 9px;
+	padding: 4px 11px 4px 8px;
+	font-size: 13px;
+	border: 1px solid var(--border-color);
+	border-radius: 999px;
+	cursor: pointer;
+	margin: 0;
+	font-weight: var(--regular);
+}
+
+.pg-switch input {
+	position: absolute;
+	opacity: 0;
+	width: 0;
+	height: 0;
+}
+
+/* extends the tap target to ~44px without growing the visible control */
+.pg-switch:after {
+	content: "";
+	position: absolute;
+	top: -8px;
+	right: -8px;
+	bottom: -8px;
+	left: -8px;
+}
+
+.pg-switch__track {
+	position: relative;
+	width: 30px;
+	height: 18px;
+	flex: none;
+	border-radius: 999px;
+	background-color: var(--gray-3);
+	transition: background-color .2s;
+}
+
+.pg-switch__track:after {
+	content: "";
+	position: absolute;
+	top: 3px;
+	left: 3px;
+	width: 12px;
+	height: 12px;
+	border-radius: 50%;
+	background-color: #ffffff;
+	transition: left .2s;
+}
+
+.pg-switch input:checked + .pg-switch__track {
+	background-color: var(--green-500);
+}
+
+.pg-switch input:checked + .pg-switch__track:after {
+	left: 15px;
+}
+
+.pg-switch input:focus-visible + .pg-switch__track {
+	outline: 2px solid var(--green-500);
+	outline-offset: 2px;
+}
+
+/* ---------- narrow screens (Android webview, small windows) ---------- */
+
+@media (max-width: 700px) {
+	.pg-view main {
+		gap: 14px;
+	}
+
+
+
+	.pg-summary {
+		flex-wrap: wrap;
+		gap: 12px;
+	}
+
+	.pg-summary__text {
+		flex: 1 1 200px;
+	}
+
+	.pg-summary__actions {
+		margin-left: 0;
+		width: 100%;
+		flex: 1 1 100%;
+	}
+
+	.pg-summary__actions .pg-btn {
+		flex: 1 1 0;
+	}
+
+	.pg-card__head {
+		display: flex;
+		flex-wrap: wrap;
+		justify-content: space-between;
+		align-items: flex-start;
+	}
+
+	/* stack the two endpoints and turn the arrow upright. The route shrinks rather
+	   than claiming the full row, so the status stays top right beside it */
+	.pg-route {
+		flex-direction: column;
+		align-items: stretch;
+		gap: 8px;
+		/* basis 0, not auto: the head wraps, and wrapping is decided on the hypothetical
+		   size, so a long nowrap path would push the status onto its own line first */
+		flex: 1 1 0;
+		min-width: 0;
+	}
+
+	.pg-endpoint {
+		flex: 0 0 auto;
+		min-width: 0;
+	}
+
+	/* Material's minimum touch target; 40px is comfortable with a mouse, not a thumb */
+	.pg-btn {
+		min-height: 48px;
+	}
+
+	/* the arrow links the two endpoint icons, so it lines up with them rather than
+	   with the card. Matching the icon width centres it without a magic offset. */
+	.pg-route__arrow {
+		width: 34px;
+		justify-content: center;
+		transform: rotate(90deg);
+	}
+
+	.pg-card__foot {
+		align-items: stretch;
+		flex-direction: column;
+	}
+
+	.pg-card__actions {
+		margin-left: 0;
+		width: 100%;
+	}
+
+	.pg-card__actions .pg-btn {
+		flex: 1 1 0;
+		border-color: var(--border-color);
+	}
+}
+
+@media (max-width: 380px) {
+	.pg-summary__actions {
+		flex-direction: column;
+	}
+
+	.pg-card__actions {
+		flex-direction: column;
+	}
+}
+
+.pg-note {
+	margin: 0;
+	color: var(--pg-muted);
+	font-size: var(--text-small);
+}
+
+/* a consequence worth reading before committing to it, not a failure */
+.pg-callout {
+	display: flex;
+	flex-direction: column;
+	gap: 4px;
+	padding: 12px 14px;
+	font-size: var(--text-small);
+	color: var(--pg-on-pause-tint);
+	background-color: var(--pg-tint-pause);
+	border-radius: 12px;
+}
+
+.pg-input {
+	width: 100%;
+	min-height: 40px;
+	padding: 9px 12px;
+	font: inherit;
+	color: inherit;
+	background-color: var(--bg);
+	border: 1px solid var(--border-color);
+	border-radius: 10px;
+}
+
+.pg-input[readonly] {
+	color: var(--pg-muted);
+	background-color: var(--pg-surface-2);
+}
