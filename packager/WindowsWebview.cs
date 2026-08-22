@@ -60,6 +60,7 @@ class PeergosWindow : Form
     private readonly WebView2 webView;
     private readonly NotifyIcon tray;
     private readonly ToolStripMenuItem statusItem;
+    private readonly ToolStripMenuItem pauseItem;
     private readonly ToolStripMenuItem autostartItem;
     private readonly System.Windows.Forms.Timer statusTimer;
     private readonly Dictionary<string, Icon> icons = new Dictionary<string, Icon>();
@@ -72,6 +73,9 @@ class PeergosWindow : Form
     // Swallows the one show Application.Run does, so a minimised start never draws a window.
     private bool startHidden;
     private string currentState = "";
+    // Kept apart from the state rather than read off it: an error while paused is
+    // reported as ERROR, and the menu still has to offer resume.
+    private bool paused;
 
     public PeergosWindow(string port, bool minimised)
     {
@@ -93,11 +97,15 @@ class PeergosWindow : Form
         Load += (_, __) => StartWebView();
 
         statusItem = new ToolStripMenuItem("Peergos") { Enabled = false };
+        // Hidden until there is a sync pair to pause, and relabelled by the poll.
+        pauseItem = new ToolStripMenuItem("Pause sync") { Visible = false };
+        pauseItem.Click += (_, __) => TogglePause();
         var closeItem = new ToolStripMenuItem("Close Peergos");
         closeItem.Click += (_, __) => Quit();
         var menu = new ContextMenuStrip();
         menu.Items.Add(statusItem);
         menu.Items.Add(new ToolStripSeparator());
+        menu.Items.Add(pauseItem);
         if (LauncherPath() != null)
         {
             // CheckOnClick would tick the box whether or not the login item was
@@ -409,28 +417,21 @@ class PeergosWindow : Form
             // An unreachable or failed poll is red: the server should be there and isn't.
             string state = "ERROR";
             string msg = "Cannot reach Peergos";
-            try
+            // an unreachable server has not told us it resumed, so the pause is left
+            // as we last heard it: the menu has to say something
+            bool nowPaused = paused;
+            string body = LocalPost("status");
+            if (body != null)
             {
-                var request = (HttpWebRequest) WebRequest.Create("http://localhost:" + port + "/peergos/v0/sync/status");
-                // the localhost API only answers POST - a GET is a 405
-                request.Method = "POST";
-                request.ContentLength = 0;
-                request.Timeout = 5_000;
-                request.ReadWriteTimeout = 5_000;
-                using (request.GetRequestStream()) { }
-                using (var response = request.GetResponse())
-                using (var reader = new StreamReader(response.GetResponseStream()))
-                {
-                    Dictionary<string, string> json = ParseTopLevelStrings(reader.ReadToEnd());
-                    string value;
-                    state = json.TryGetValue("state", out value) && value.Length > 0 ? value : "NONE";
-                    msg = json.TryGetValue("msg", out value) ? value : "";
-                    if (json.TryGetValue("error", out value) && value.Length > 0)
-                        msg = value;
-                }
+                Dictionary<string, string> json = ParseTopLevelFields(body);
+                string value;
+                state = json.TryGetValue("state", out value) && value.Length > 0 ? value : "NONE";
+                msg = json.TryGetValue("msg", out value) ? value : "";
+                if (json.TryGetValue("error", out value) && value.Length > 0)
+                    msg = value;
+                nowPaused = json.TryGetValue("paused", out value) && value == "true";
             }
-            catch { }
-            try { BeginInvoke((Action) (() => ApplyStatus(state, msg))); }
+            try { BeginInvoke((Action) (() => ApplyStatus(state, msg, nowPaused))); }
             catch (InvalidOperationException) { } // window gone, we are shutting down
         });
     }
@@ -462,7 +463,7 @@ class PeergosWindow : Form
         catch { } // the next poll tries again
     }
 
-    private void ApplyStatus(string state, string msg)
+    private void ApplyStatus(string state, string msg, bool nowPaused)
     {
         if (state != currentState)
         {
@@ -470,9 +471,51 @@ class PeergosWindow : Form
             // Adding the first sync pair makes the dot appear, removing the last makes it vanish.
             tray.Icon = IconFor(state);
         }
+        paused = nowPaused;
+        // NONE is no sync pairs configured, and nothing to pause
+        pauseItem.Visible = state != "NONE";
+        pauseItem.Text = paused ? "Resume sync" : "Pause sync";
         string line = string.IsNullOrEmpty(msg) ? "Peergos" : msg;
         statusItem.Text = line;
         tray.Text = Truncate(line, MAX_TOOLTIP);
+    }
+
+    // Resuming runs a pass at once, as the web ui's resume button does. Nothing is
+    // assumed of the reply: the poll behind it is what moves the icon and the label,
+    // so a request that failed leaves both where they were rather than reporting a
+    // state we did not reach.
+    private void TogglePause()
+    {
+        string api = paused ? "sync-now" : "pause";
+        ThreadPool.QueueUserWorkItem(_ =>
+        {
+            LocalPost(api);
+            try { BeginInvoke((Action) (() => PollStatus())); }
+            catch (InvalidOperationException) { } // window gone, we are shutting down
+        });
+    }
+
+    // One local api call, as the sync apis all are: a POST with no body, answered only
+    // over loopback. The reply is the body, or null if the server could not be reached.
+    private string LocalPost(string api)
+    {
+        try
+        {
+            var request = (HttpWebRequest) WebRequest.Create("http://localhost:" + port + "/peergos/v0/sync/" + api);
+            // the localhost API only answers POST - a GET is a 405
+            request.Method = "POST";
+            request.ContentLength = 0;
+            request.Timeout = 5_000;
+            request.ReadWriteTimeout = 5_000;
+            using (request.GetRequestStream()) { }
+            using (var response = request.GetResponse())
+            using (var reader = new StreamReader(response.GetResponseStream()))
+                return reader.ReadToEnd();
+        }
+        catch
+        {
+            return null;
+        }
     }
 
     private static string Truncate(string s, int max)
@@ -480,10 +523,11 @@ class PeergosWindow : Form
         return s.Length <= max ? s : s.Substring(0, max - 3) + "...";
     }
 
-    // Just the top level string fields of the status reply, so that reading three
-    // strings doesn't cost a framework reference. Nested objects are skipped, so a
-    // pair's "state" can't be mistaken for the global one.
-    private static Dictionary<string, string> ParseTopLevelStrings(string json)
+    // The top level fields of the status reply, so that reading a handful of them
+    // doesn't cost a framework reference. Strings arrive unquoted and anything else -
+    // true, false, a number - as the text it was written as. Nested objects are
+    // skipped, so a pair's "state" can't be mistaken for the global one.
+    private static Dictionary<string, string> ParseTopLevelFields(string json)
     {
         var fields = new Dictionary<string, string>();
         string key = null;
@@ -514,6 +558,15 @@ class PeergosWindow : Form
                     fields[key] = text;
                     key = null;
                 }
+            }
+            else if (depth == 1 && key != null && c != ':' && c != ',' && ! char.IsWhiteSpace(c))
+            {
+                // an unquoted value: true, false, null or a number, taken as written
+                int start = i;
+                while (i + 1 < json.Length && ",}] \t\r\n".IndexOf(json[i + 1]) < 0)
+                    i++;
+                fields[key] = json.Substring(start, i - start + 1);
+                key = null;
             }
         }
         return fields;

@@ -10,11 +10,12 @@
 // get an engine the apps can run on.
 //
 // Closing the window hides it to the tray, leaving the server running and
-// syncing; "Close Peergos" in the tray menu quits, exiting 0 so the Java server
-// shuts down. If nothing on the bus is hosting tray icons (stock GNOME without
-// the AppIndicator extension) there is nowhere to hide, so closing quits
-// instead - otherwise the user is left with an invisible server they can't get
-// back to. The same rule applies to starting minimised.
+// syncing; the tray menu pauses and resumes that syncing, and "Close Peergos"
+// in it quits, exiting 0 so the Java server shuts down. If nothing on the bus is
+// hosting tray icons (stock GNOME without the AppIndicator extension) there is
+// nowhere to hide, so closing quits instead - otherwise the user is left with an
+// invisible server they can't get back to. The same rule applies to starting
+// minimised.
 //
 // Only one copy of the window runs: launching Peergos while it is already up
 // presents the window that is there rather than opening a second one.
@@ -62,6 +63,7 @@ const MENU_STATUS = 1;
 const MENU_SEPARATOR = 2;
 const MENU_AUTOSTART = 3;
 const MENU_QUIT = 4;
+const MENU_PAUSE = 5;
 
 // set by the server when it was itself started with -minimised true, which is
 // what the login item we write in ~/.config/autostart does
@@ -87,7 +89,9 @@ X-Flatpak=org.peergos.Peergos
 let win = null;
 let tray = null;
 let trayAvailable = false;
-let status = {state: 'NONE', message: 'Peergos'};
+// paused is kept apart from the state rather than read off it: an error while
+// paused is reported as ERROR, and the menu still has to offer resume.
+let status = {state: 'NONE', message: 'Peergos', paused: false};
 
 // ---------------------------------------------------------------- autostart
 
@@ -142,14 +146,18 @@ function sendTray(command) {
 }
 
 function menuItems() {
-    return [
+    const items = [
         // informational only, so it is shown disabled
         {id: MENU_STATUS, label: status.message, enabled: false},
-        {id: MENU_SEPARATOR, type: 'separator'},
-        // taken from the file on disk rather than from what we last did to it
-        {id: MENU_AUTOSTART, label: 'Start on boot', checked: autostartEnabled()},
-        {id: MENU_QUIT, label: 'Close Peergos'}
+        {id: MENU_SEPARATOR, type: 'separator'}
     ];
+    // NONE is no sync pairs configured, and nothing to pause
+    if (status.state !== 'NONE')
+        items.push({id: MENU_PAUSE, label: status.paused ? 'Resume sync' : 'Pause sync'});
+    // taken from the file on disk rather than from what we last did to it
+    items.push({id: MENU_AUTOSTART, label: 'Start on boot', checked: autostartEnabled()});
+    items.push({id: MENU_QUIT, label: 'Close Peergos'});
+    return items;
 }
 
 function createTray() {
@@ -207,6 +215,12 @@ function onTrayEvent(event) {
         if (event.id === MENU_AUTOSTART) {
             setAutostart(!autostartEnabled());
             sendTray({cmd: 'menu', items: menuItems()});
+        } else if (event.id === MENU_PAUSE) {
+            // resuming runs a pass at once, as the web ui's resume button does.
+            // Nothing is assumed of the reply: the poll behind it is what moves
+            // the icon and the label, so a request that failed leaves both where
+            // they were rather than claiming a state we did not reach.
+            localPost(status.paused ? 'sync-now' : 'pause', () => pollStatus());
         } else if (event.id === MENU_QUIT) {
             app.quit();
         }
@@ -216,39 +230,56 @@ function onTrayEvent(event) {
 function applyStatus(next) {
     const changed = next.state !== status.state;
     const said = next.message !== status.message;
+    // the status line is the first item, and the pause item comes and goes with
+    // the pairs and reads back what the sync is doing, so any of the three
+    // means the menu is out of date
+    const redraw = changed || said || next.paused !== status.paused;
     status = next;
     if (changed)
         sendTray({cmd: 'icon', state: status.state});
-    if (said) {
+    if (said)
         sendTray({cmd: 'tooltip', text: status.message});
-        // the status line is the first item, so the menu goes with it
+    if (redraw)
         sendTray({cmd: 'menu', items: menuItems()});
-    }
+}
+
+// One local api call, as the sync apis all are: a POST with no body, answered
+// only over loopback and only when the Host header is the server's own, which is
+// what node sends by default. The reply is handed over as text, or null if the
+// server could not be reached.
+function localPost(api, onReply) {
+    // the localhost API only answers POST - a GET is a 405
+    const request = http.request(
+        {host: 'localhost', port: PORT, path: '/peergos/v0/sync/' + api, method: 'POST',
+         timeout: STATUS_TIMEOUT_MS},
+        response => {
+            let body = '';
+            response.on('data', chunk => body += chunk);
+            response.on('end', () => onReply(response.statusCode === 200 ? body : null));
+        });
+    request.on('timeout', () => request.destroy());
+    request.on('error', () => onReply(null));
+    request.end();
 }
 
 // The sync loop only runs every 30s, so a ~10s poll is plenty. An unreachable
 // server is red: it should be there and isn't.
 function pollStatus() {
-    // the localhost API only answers POST - a GET is a 405
-    const request = http.request(
-        {host: 'localhost', port: PORT, path: '/peergos/v0/sync/status', method: 'POST',
-         timeout: STATUS_TIMEOUT_MS},
-        response => {
-            let body = '';
-            response.on('data', chunk => body += chunk);
-            response.on('end', () => {
-                try {
-                    const parsed = JSON.parse(body);
-                    applyStatus({state: parsed.state || 'NONE',
-                                 message: parsed.error || parsed.msg || 'Peergos'});
-                } catch (e) {
-                    applyStatus({state: 'ERROR', message: 'Cannot reach Peergos'});
-                }
-            });
-        });
-    request.on('timeout', () => request.destroy());
-    request.on('error', () => applyStatus({state: 'ERROR', message: 'Cannot reach Peergos'}));
-    request.end();
+    localPost('status', body => {
+        let parsed = null;
+        try {
+            parsed = body === null ? null : JSON.parse(body);
+        } catch (e) { /* not a reply we can read, so treat it as no reply */ }
+        if (parsed === null) {
+            // the pause is left as we last heard it: an unreachable server has
+            // not told us it resumed, and the menu has to say something
+            applyStatus({state: 'ERROR', message: 'Cannot reach Peergos', paused: status.paused});
+            return;
+        }
+        applyStatus({state: parsed.state || 'NONE',
+                     message: parsed.error || parsed.msg || 'Peergos',
+                     paused: parsed.paused === true});
+    });
 }
 
 // A child outliving its parent is reparented, so a ppid that has moved means the

@@ -217,9 +217,10 @@ class Tray:
         self.emit(SNI_PATH, SNI_IFACE, 'NewToolTip')
 
     def set_menu(self, items):
-        """A whole new menu each time, rather than diffing it: the menu is four
-        items long and only changes when the status line or the checkbox does, so
-        a layout bump costs a round trip nobody notices."""
+        """A whole new menu each time, rather than diffing it: the menu is a
+        handful of items long and only changes when the status line, the pause
+        item or the checkbox does, so a layout bump costs a round trip nobody
+        notices."""
         self.items = items
         self.revision += 1
         self.emit(MENU_PATH, MENU_IFACE, 'LayoutUpdated', 'ui', (self.revision, 0))
