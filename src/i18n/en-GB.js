@@ -206,7 +206,7 @@ module.exports = {
     "MFA.CONFIRM.REMOVE.APP":"Are you sure you want to remove Authenticator App?",
     "MFA.MOUNT":"Drive Mount",
     "MFA.MOUNT.BLURB":"These are created when you mount Peergos as a drive, and used only by that mount. You are never asked for a code from one.",
-    "MFA.CONFIRM.REMOVE.MOUNT":"This mount will stop working and will need setting up again from the device it runs on. Are you sure?",
+    "MFA.CONFIRM.REMOVE.MOUNT":"This mount will stop working within the hour, and will need setting up again from the device it runs on. Are you sure?",
     "MFA.BACKUP":"Backup Codes",
     "MFA.BACKUP.NONE":"None",
     "MFA.BACKUP.REMAINING":"remaining",
