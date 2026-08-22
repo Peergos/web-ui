@@ -37,6 +37,9 @@ SUPERSAMPLE = 4
 DOT_COLOURS = {
     "synced": (0x2E, 0xA0, 0x43),
     "syncing": (0xDB, 0x8A, 0x0F),
+    # grey rather than the web ui's amber: at this size the dot is only its colour,
+    # and an amber one is already taken by syncing
+    "paused": (0x6E, 0x77, 0x81),
     "error": (0xDA, 0x36, 0x33),
     "idle": None,
 }

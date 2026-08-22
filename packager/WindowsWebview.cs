@@ -611,6 +611,9 @@ class PeergosWindow : Form
         {
             case "SYNCED":  colour = Color.FromArgb(46, 160, 67);  return true;
             case "SYNCING": colour = Color.FromArgb(219, 138, 15); return true;
+            // grey rather than the web ui's amber: at this size the dot is only its colour,
+            // and an amber one is already taken by syncing
+            case "PAUSED":  colour = Color.FromArgb(110, 119, 129); return true;
             case "ERROR":   colour = Color.FromArgb(218, 54, 51);  return true;
             default:        colour = Color.Empty;                  return false; // NONE: nothing to report
         }

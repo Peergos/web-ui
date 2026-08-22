@@ -59,7 +59,7 @@ PROPERTIES_IFACE = 'org.freedesktop.DBus.Properties'
 # where the icons live with the Electron host rather than with the packaging
 ICON_DIR = os.environ.get('PEERGOS_TRAY_ICONS',
                           os.path.join(os.path.dirname(os.path.abspath(__file__)), 'icons'))
-ICON_STATES = {'SYNCED': 'synced', 'SYNCING': 'syncing', 'ERROR': 'error'}
+ICON_STATES = {'SYNCED': 'synced', 'SYNCING': 'syncing', 'PAUSED': 'paused', 'ERROR': 'error'}
 
 
 # ---------------------------------------------------------------------- icons
