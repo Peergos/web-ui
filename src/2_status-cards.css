@@ -340,17 +340,22 @@
 .pg-card__head {
 	display: grid;
 	grid-template-columns: minmax(0, 1fr) 150px;
-	align-items: center;
+	/* start, not centre: a path opened to full length grows the row, and centred
+	   content would rise by half of that growth every time it is tapped */
+	align-items: start;
 	gap: 16px;
 }
 
 .pg-card__head .pg-pill {
 	justify-self: end;
+	/* half the difference between the pill and the icon box beside it, so the two
+	   sit on one line while both stay anchored to the top of the row */
+	margin-top: 3px;
 }
 
 .pg-route {
 	display: flex;
-	align-items: center;
+	align-items: flex-start;
 	gap: 12px;
 	min-width: 0;
 	flex: 1 1 320px;
@@ -358,9 +363,12 @@
 
 .pg-endpoint {
 	display: flex;
-	align-items: center;
+	align-items: flex-start;
 	gap: 10px;
-	min-width: 0;
+	/* a floor wide enough for the icon and a label: flex shrinks the two sides in
+	   proportion to their content, so a long path opposite a short name would
+	   otherwise squeeze the short side until its own label no longer fits */
+	min-width: 140px;
 	/* basis from content, so a long path takes the room a short one on the other
 	   side of the arrow doesn't need, instead of both being locked to half a row */
 	flex: 1 1 auto;
@@ -394,6 +402,11 @@
 	text-transform: uppercase;
 	letter-spacing: .07em;
 	color: var(--pg-muted);
+	/* a label that wraps to two lines drops its value out of line with the one
+	   opposite it, so it clips instead; the row stacks below 700px anyway */
+	white-space: nowrap;
+	overflow: hidden;
+	text-overflow: ellipsis;
 }
 
 .pg-endpoint__value {
@@ -421,8 +434,11 @@
 	text-overflow: ellipsis;
 }
 
-/* tapped open: the whole path wraps, since a tooltip is desktop only */
+/* tapped open: the whole path wraps, since a tooltip is desktop only. Dropping the
+   flex is what lets it wrap: as flex items the two halves are laid out side by side,
+   so each one wraps in its own column instead of the path reading as one run. */
 .pg-endpoint__value--open {
+	display: block;
 	white-space: normal;
 	overflow-wrap: anywhere;
 }
@@ -451,6 +467,10 @@
 	display: flex;
 	align-items: center;
 	flex: none;
+	/* the height of an endpoint icon, so the glyph centres on them and stays put
+	   when the row grows underneath it */
+	align-self: flex-start;
+	height: 34px;
 	color: var(--color-2);
 }
 
