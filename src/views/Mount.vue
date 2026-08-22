@@ -131,7 +131,7 @@
 				</section>
 			</template>
 
-			<!-- Shown only when the account already has 2FA and the mount needs its own TOTP -->
+			<!-- The mount signs in on its own, so it gets its own second factor on the account -->
 			<div v-if="showTotpConfirm" class="mount-modal" role="dialog" aria-modal="true"
 					tabindex="-1" ref="totpDialog" @keydown.esc="cancelTotpConfirm()">
 				<div class="pg-card mount-modal__panel">
@@ -216,7 +216,7 @@ function detectOs() {
 }
 
 // Lowest free N such that "Drive mount - <os> N" is unused, so removing a mount frees
-// its number for the next one.
+// its number for the next one. This is the name the user sees in their 2FA settings.
 function nextFreeMountIndex(existingNames, os) {
     const prefix = "Drive mount - " + os + " ";
     const taken = new Set();
@@ -321,7 +321,8 @@ module.exports = {
                 that.error = that.problem(err);
             });
         },
-        /** Detours through the TOTP modal when the account already has 2FA. */
+        /** Every mount gets its own second factor, whether or not the account has 2FA today:
+         *  that way turning 2FA on later doesn't break a mount that is already running. */
         onAddMount() {
             let that = this;
             this.error = null;
@@ -330,17 +331,10 @@ module.exports = {
                 this.context.username, this.context.signer
             ).thenApply(mfaMethods => {
                 that.stopWorking();
-                const methods = mfaMethods.toArray([]);
-                if (methods.length === 0) {
-                    // No existing 2FA → password-only mount, as today.
-                    that.enableInternal("", "");
-                    return;
-                }
-                // 2FA present → propose a name, show the confirmation modal.
+                // only other mounts' names matter - the number distinguishes them from each other
+                const existingNames = mfaMethods.toArray([]).map(m => m.name);
                 const os = detectOs();
-                const existingNames = methods.map(m => m.name);
-                const n = nextFreeMountIndex(existingNames, os);
-                that.proposedTotpName = "Drive mount - " + os + " " + n;
+                that.proposedTotpName = "Drive mount - " + os + " " + nextFreeMountIndex(existingNames, os);
                 that.showTotpConfirm = true;
             }).exceptionally(function(err) {
                 that.stopWorking();
@@ -356,32 +350,32 @@ module.exports = {
             this.showTotpConfirm = false;
             this.startWorking("MOUNT.PROVISIONING_TOTP");
             try {
-                // 1) Ask the server to mint a new TOTP credential.
-                const totpKey = await new Promise((resolve, reject) => {
-                    that.context.network.account.addTotpFactor(
-                        that.context.username, that.context.signer
+                // 1) Ask the server to mint this mount a credential of its own. This is a
+                //    MOUNT factor, not a TOTP, so it never replaces the user's authenticator.
+                const mountKey = await new Promise((resolve, reject) => {
+                    that.context.network.account.addMountFactor(
+                        that.context.username, that.proposedTotpName, that.context.signer
                     ).thenApply(resolve).exceptionally(reject);
                 });
-                const credentialId = totpKey.credentialId;
-                const secret       = totpKey.key;
+                const credentialId = mountKey.credentialId;
+                const secret       = mountKey.key;
 
                 // 2) Generate the current code from the freshly-issued secret so we
-                //    can prove possession to enableTotpFactor.
+                //    can prove possession to enableMountFactor.
                 const code = await generateTotpCode(secret);
 
                 // 3) Activate the new factor server-side.
                 const enabled = await new Promise((resolve, reject) => {
-                    that.context.network.account.enableTotpFactor(
+                    that.context.network.account.enableMountFactor(
                         that.context.username, credentialId, code, that.context.signer
                     ).thenApply(resolve).exceptionally(reject);
                 });
                 if (enabled !== true && enabled !== "true") {
                     throw new Error(that.translate("MOUNT.TOTP.ENABLE_FAILED"));
                 }
-                clearRootKeyCacheFully(() => {});
 
                 // 4) Hand the credential to the mount handler so subsequent mount
-                //    logins use the dedicated TOTP non-interactively.
+                //    logins answer the 2FA challenge non-interactively.
                 that.enableInternal(bytesToHex(credentialId), bytesToHex(secret));
             } catch (err) {
                 that.stopWorking();
@@ -446,24 +440,10 @@ module.exports = {
             });
         },
         async disable() {
-            let that = this;
             this.startWorking("MOUNT.DISABLING");
             try {
-                // If the mount has a dedicated TOTP credential, remove it from the
-                // user's second-factor set so we don't leave it orphaned.
-                const credentialHex = this.config && this.config.totpCredentialId;
-                if (credentialHex && credentialHex.length > 0) {
-                    // Int8Array so the bytes arrive signed, as java stored them
-                    const credBytes = new Int8Array(credentialHex.length / 2);
-                    for (let i = 0; i < credBytes.length; i++) {
-                        credBytes[i] = parseInt(credentialHex.substr(i * 2, 2), 16);
-                    }
-                    await new Promise((resolve, reject) => {
-                        that.context.network.account.deleteSecondFactor(
-                            that.context.username, credBytes, that.context.signer
-                        ).thenApply(resolve).exceptionally(reject);
-                    });
-                }
+                // the mount revokes its own second factor as it tears down - it still holds the
+                // credentials to do so, and it works even if this tab goes away mid-unmount
                 await this.localPost("/peergos/v0/mount/disable");
                 this.config = { enabled: false, mountPoint: "" };
                 this.stopWorking();
