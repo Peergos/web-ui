@@ -560,6 +560,7 @@ module.exports = {
     "SYNC.DRIVE":"Peergos Drive",
     "SYNC.LOG":"Download log",
     "SYNC.STATE.PAUSED":"Paused",
+    "SYNC.SUMMARY.OFFLINE":"Waiting for a connection",
     "SYNC.STATE.PENDING":"Waiting to sync",
     "SYNC.STATE.SYNCED":"Up to date",
     "SYNC.STATE.SYNCING":"Syncing",

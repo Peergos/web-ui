@@ -17,7 +17,8 @@
 			<template v-else>
 
 				<!-- Aggregate state: the single thing you came to find out -->
-				<section class="pg-summary" :class="'pg-tone--' + tone">
+
+		<section class="pg-summary" :class="'pg-tone--' + tone">
 					<span class="pg-summary__icon" aria-hidden="true">
 						<svg v-if="tone === 'ok'" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>
 						<svg v-else-if="tone === 'busy'" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 1 1-3-6.7"/><path d="M21 4v5h-5"/></svg>
@@ -49,6 +50,12 @@
 						</button>
 					</div>
 				</section>
+
+				<!-- the banner turns red on a problem no folder owns, so say what it was -->
+				<p v-if="globalError" class="pg-errorbox">
+					<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 8v5"/><path d="M12 16h.01"/></svg>
+					<span>{{ globalError }}</span>
+				</p>
 
 				<!-- First run -->
 				<section v-if="syncPairs.length === 0" class="pg-empty">
@@ -209,6 +216,7 @@
 <script>
 const AppHeader = require("../components/AppHeader.vue");
 const paths = require("../mixins/paths/index.js");
+const errors = require("../mixins/errors/index.js");
 const localServer = require("../mixins/localserver/index.js");
 const FolderPicker = require('../components/picker/FolderPicker.vue');
 const Select = require('../components/choice/Select.vue');
@@ -220,6 +228,7 @@ const Spinner = require("../components/spinner/Spinner.vue");
 const i18n = require("../i18n/index.js");
 const loopback = require("../mixins/loopback/index.js");
 const routerMixins = require("../mixins/router/index.js");
+const network = require("../mixins/network/index.js");
 
 // Every line the server logs about a file is "<action> <path>[ <trailer>]", and the
 // action also says which side the path is on.
@@ -303,6 +312,13 @@ module.exports = {
 			expanded: {},
 			syncPending: false,
 			syncPendingTimeoutID: null,
+			// when a poll last succeeded, to tell a resume this view watched happen
+			// from one it only learned about afterwards
+			lastStatusAt: 0,
+			// after a reconnection, until a pass reports something new: the last result was
+			// reached from cache while offline, so it cannot be shown as up to date
+			awaitingPass: false,
+			statusAtReconnect: null,
 			fastPollIntervalID: null,
 			fastPollTimeoutID: null,
 			updateStatusIntervalID: "",
@@ -310,7 +326,7 @@ module.exports = {
 		}
 	},
 	props: [],
-	mixins: [routerMixins, i18n, localServer, paths],
+	mixins: [routerMixins, i18n, localServer, paths, errors, network],
 
 	computed: {
 		...Vuex.mapState([
@@ -343,18 +359,38 @@ module.exports = {
 			return res;
 		},
 		// the server aggregates, but fall back to pair states if it is silent
+		/** The failure no folder owns. Hidden only when a folder is already showing the
+		 *  same text, so the cause is always stated somewhere, and never twice. */
+		globalError() {
+			// offline, a failure is the missing connection restated in java's words
+			if (this.offline || ! this.error || this.wasStopped(this.error))
+				return null;
+			let text = this.cleanError(this.error);
+			for (let pair of this.syncPairs) {
+				if (pair.error && ! this.wasStopped(pair.error) && this.cleanError(pair.error) === text)
+					return null;
+			}
+			return text;
+		},
 		tone() {
+			// an error outlives a pause, as SyncStatus.aggregate decides on the server: it is
+			// something the user has to act on, and the pause is already shown by the button
+			if (this.counts.ERROR > 0)
+				return "error";
 			if (this.paused)
 				return "paused";
+			// nothing was checked against the server, so this is not a settled state
+			if (this.offline || this.awaitingPass)
+				return "pending";
 			// a folder yet to be reached is work outstanding, so the banner stays
 			// busy rather than claiming everything is settled
-			if (this.counts.ERROR === 0 && (this.syncPending || this.counts.PENDING > 0))
+			if (this.syncPending || this.counts.PENDING > 0)
 				return "busy";
-			if (this.error && this.wasStopped(this.error) && this.counts.ERROR === 0)
+			if (this.error && this.wasStopped(this.error))
 				return this.counts.SYNCING > 0 ? "busy" : "ok";
 			let state = this.globalState;
 			if (state == null || state === "NONE")
-				state = this.counts.ERROR > 0 ? "ERROR" : (this.counts.SYNCING > 0 ? "SYNCING" : "SYNCED");
+				state = this.counts.SYNCING > 0 ? "SYNCING" : "SYNCED";
 			return this.toneOfState(state);
 		},
 		summaryHeadline() {
@@ -368,6 +404,10 @@ module.exports = {
 				return this.counts.ERROR === 1 ? this.translate("SYNC.SUMMARY.ERROR.ONE")
 					: this.fmt("SYNC.SUMMARY.ERROR.MANY", this.counts.ERROR);
 			}
+			if (this.offline)
+				return this.translate("SYNC.SUMMARY.OFFLINE");
+			if (this.awaitingPass)
+				return this.translate("SYNC.STATE.PENDING");
 			if (this.tone === 'busy')
 				return this.syncPairs.length === 1 ?
 					this.translate("SYNC.SUMMARY.SYNCING.ONE") :
@@ -381,6 +421,16 @@ module.exports = {
 		},
 		syncBusy() {
 			return this.syncPending || this.syncing;
+		},
+	},
+	watch: {
+		// the scheduler owns when a pass runs; this only holds the display back until
+		// one has reported since the connection returned
+		offline(now, before) {
+			if (before && ! now && this.syncPairs.length > 0) {
+				this.awaitingPass = true;
+				this.statusAtReconnect = this.status;
+			}
 		},
 	},
 	created() {
@@ -410,18 +460,6 @@ module.exports = {
 			return future;
 		},
 		// server errors arrive as raw java throwable strings; show the message only
-		cleanError(msg) {
-			if (msg == null)
-				return '';
-			let out = ("" + msg).trim();
-			let previous = null;
-			while (out !== previous) {
-				previous = out;
-				out = out.replace(/^(?:[\w$]+\.)+[\w$]*(?:Exception|Error|Throwable):\s*/, '');
-			}
-			return out;
-		},
-
 		// a run the user stopped is not a failure, so it is not shown as an error
 		wasStopped(msg) {
 			if (msg == null)
@@ -445,16 +483,6 @@ module.exports = {
 			return null;
 		},
 
-		errText(e) {
-			if (e == null)
-				return "Unknown error";
-			// transpiled java throwables carry their text on detailMessage
-			if (e.detailMessage != null && e.detailMessage.length > 0)
-				return e.detailMessage;
-			if (e.message != null && e.message.length > 0)
-				return e.message;
-			return "" + e;
-		},
 		fmt(key, n) {
 			return this.translate(key).replace("{n}", n);
 		},
@@ -472,6 +500,10 @@ module.exports = {
 				return "ERROR";
 			if (this.paused)
 				return "PAUSED";
+			// offline: this folder was not checked against the Drive, so it is queued,
+			// not settled. The cause is the device, so the banner names it once
+			if (this.offline || this.awaitingPass)
+				return "PENDING";
 			if (this.syncPending)
 				return "PENDING";
 			if (pair.state === "SYNCING")
@@ -572,15 +604,25 @@ module.exports = {
 			this.localPost("/peergos/v0/sync/status").then(function(result, err) {
 				if (result == null)
 					return;
+				// any new report means a pass has run; one that started just before the
+				// reconnection clears it a pass early, which is a second either way
+				if (that.awaitingPass && result.msg !== that.statusAtReconnect) {
+					that.awaitingPass = false;
+					that.statusAtReconnect = null;
+				}
 				that.status = result.msg;
 				that.error = result.error;
 				that.globalState = result.state != null ? result.state : "NONE";
 				let wasPaused = that.paused;
+				// polling stops while the window is hidden, so a stale reading means the resume
+				// happened out of sight and the pass it starts has already run: standing in for
+				// it would sit on "waiting" until the next pass, half a minute away
+				let watched = Date.now() - that.lastStatusAt < 3000;
 				that.paused = result.paused === true;
 				// a resume from anywhere - this tab, another client, the phone - leaves the
 				// pair reporting its pre pause state until the pass starts a moment later
-				if (wasPaused && ! that.paused)
-					that.syncPending = true;
+				if (wasPaused && ! that.paused && watched)
+					that.standInForPass();
 				// stand in until the server itself reports the pass. Must read the reply,
 				// not this.syncing: syncPending makes stateOf report SYNCING, so it would
 				// clear itself on the first poll.
@@ -605,6 +647,7 @@ module.exports = {
 					Vue.set(p, 'state', s.state ? s.state : 'SYNCED');
 					Vue.set(p, 'error', s.error);
 				}
+				that.lastStatusAt = Date.now();
 			}).catch(function(e) {
 				// the local server going away is expected on shutdown; don't spam toasts
 			})
@@ -752,11 +795,7 @@ module.exports = {
 			if (this.syncBusy && ! this.paused)
 				return;
 			let that = this;
-			this.syncPending = true;
-			// backstop only: the poll clears this once the server reports the pass. Kept
-			// short because syncBusy gates the button, so a long window swallows clicks.
-			clearTimeout(this.syncPendingTimeoutID);
-			this.syncPendingTimeoutID = setTimeout(() => { that.syncPending = false; }, 3000);
+			this.standInForPass();
 			this.pollFaster(6000);
 			this.localPost("/peergos/v0/sync/sync-now").then(function(result, err) {
 				that.$toast(that.translate("SYNC.STARTED"));
@@ -764,6 +803,16 @@ module.exports = {
 				that.syncPending = false;
 				that.$toast.error(that.errText(err), {});
 			})
+		},
+
+		/** Reports the pass we asked for until the server does, then gives up: a pass can
+		 *  finish inside the gap between two polls, so seeing it reported is not something
+		 *  the view can wait on. Kept short because syncBusy gates the button. */
+		standInForPass() {
+			let that = this;
+			this.syncPending = true;
+			clearTimeout(this.syncPendingTimeoutID);
+			this.syncPendingTimeoutID = setTimeout(() => { that.syncPending = false; }, 3000);
 		},
 
 		pauseSync() {
