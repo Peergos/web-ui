@@ -359,26 +359,29 @@ module.exports = {
 			return res;
 		},
 		// the server aggregates, but fall back to pair states if it is silent
-		/** The failure no folder owns. Hidden only when a folder is already showing the
-		 *  same text, so the cause is always stated somewhere, and never twice. */
+		/** The failure no folder owns. Hidden as soon as any folder is reporting one of its
+		 *  own, so the cause is always stated somewhere, and never twice. */
 		globalError() {
 			// offline, a failure is the missing connection restated in java's words
 			if (this.offline || ! this.error || this.wasStopped(this.error))
 				return null;
-			let text = this.cleanError(this.error);
+			// a folder reporting a failure of its own says it on its own card, so the
+			// banner stays out of the way rather than repeating it
 			for (let pair of this.syncPairs) {
-				if (pair.error && ! this.wasStopped(pair.error) && this.cleanError(pair.error) === text)
+				if (pair.error && ! this.wasStopped(pair.error))
 					return null;
 			}
-			return text;
+			return this.cleanError(this.error);
 		},
 		tone() {
-			// an error outlives a pause, as SyncStatus.aggregate decides on the server: it is
-			// something the user has to act on, and the pause is already shown by the button
-			if (this.counts.ERROR > 0)
-				return "error";
+			// nothing runs while the user has it paused, so that is what the view reports
+			// first: a failure underneath it is still shown on the folder it belongs to
 			if (this.paused)
 				return "paused";
+			// a failure needs the user whether a folder owns it or not, so it outranks
+			// the queued states below, which would show it as work in progress
+			if (this.counts.ERROR > 0 || this.globalError != null)
+				return "error";
 			// nothing was checked against the server, so this is not a settled state
 			if (this.offline || this.awaitingPass)
 				return "pending";
@@ -496,10 +499,10 @@ module.exports = {
 			Vue.set(this.expanded, key, ! this.expanded[key]);
 		},
 		stateOf(pair) {
-			if (pair.error && ! this.wasStopped(pair.error))
-				return "ERROR";
 			if (this.paused)
 				return "PAUSED";
+			if (pair.error && ! this.wasStopped(pair.error))
+				return "ERROR";
 			// offline: this folder was not checked against the Drive, so it is queued,
 			// not settled. The cause is the device, so the banner names it once
 			if (this.offline || this.awaitingPass)
@@ -611,7 +614,13 @@ module.exports = {
 					that.statusAtReconnect = null;
 				}
 				that.status = result.msg;
-				that.error = result.error;
+				// a pass that could not run reports itself through the state and the message,
+				// with no error of its own: on android that is a pass held back on mobile data.
+				// The trailing timestamp belongs to a status line rather than to a failure.
+				that.error = result.error != null ? result.error
+					: (result.state === "ERROR"
+						? String(result.msg || "").replace(/ at \d{4}-\d\d-\d\d \d\d:\d\d(:\d\d)?$/, "")
+						: null);
 				that.globalState = result.state != null ? result.state : "NONE";
 				let wasPaused = that.paused;
 				// polling stops while the window is hidden, so a stale reading means the resume
