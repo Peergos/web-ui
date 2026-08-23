@@ -374,13 +374,14 @@ module.exports = {
 			return this.cleanError(this.error);
 		},
 		tone() {
-			// an error outlives a pause, as SyncStatus.aggregate decides on the server: it is
-			// something the user has to act on, and the pause is already shown by the button.
-			// It outranks the queued states below whether or not a folder owns it.
-			if (this.counts.ERROR > 0 || this.globalError != null)
-				return "error";
+			// nothing runs while the user has it paused, so that is what the view reports
+			// first: a failure underneath it is still shown on the folder it belongs to
 			if (this.paused)
 				return "paused";
+			// a failure needs the user whether a folder owns it or not, so it outranks
+			// the queued states below, which would show it as work in progress
+			if (this.counts.ERROR > 0 || this.globalError != null)
+				return "error";
 			// nothing was checked against the server, so this is not a settled state
 			if (this.offline || this.awaitingPass)
 				return "pending";
@@ -498,10 +499,10 @@ module.exports = {
 			Vue.set(this.expanded, key, ! this.expanded[key]);
 		},
 		stateOf(pair) {
-			if (pair.error && ! this.wasStopped(pair.error))
-				return "ERROR";
 			if (this.paused)
 				return "PAUSED";
+			if (pair.error && ! this.wasStopped(pair.error))
+				return "ERROR";
 			// offline: this folder was not checked against the Drive, so it is queued,
 			// not settled. The cause is the device, so the banner names it once
 			if (this.offline || this.awaitingPass)
