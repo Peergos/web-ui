@@ -107,7 +107,7 @@ module.exports = {
       var props = file.getFileProperties()
 
       // if android localhost use app to stream data rather than a serviceworker, which the download manager can't talk to
-      if (loopback.isLoopbackHost(window.location.hostname) && navigator.userAgent.toLowerCase().indexOf("android") > -1) {
+      if (! file.isArchiveEntry && loopback.isLoopbackHost(window.location.hostname) && navigator.userAgent.toLowerCase().indexOf("android") > -1) {
           console.log("Downloading " + file.getName() + " through localhost reflector");
           const cap = file.toLink().substring(1); // without #
           let link = document.createElement('a')

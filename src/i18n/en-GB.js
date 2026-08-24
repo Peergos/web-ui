@@ -136,6 +136,8 @@ module.exports = {
     "DRIVE.DELETE.FILE.ERROR":"Error deleting file: $NAME: $MESSAGE",
     "DRIVE.INSTALL_DEDICATED_APP":"There is no app installed for this kind of file, please install an app to open",
     "DRIVE.MISSING.FOLDER":"Folder not found!",
+    "DRIVE.ARCHIVE.UNREADABLE":"Couldn't read this zip archive:",
+    "DRIVE.ARCHIVE.READONLY":"Zip archives are read only for now",
     "APPNAV.LAUNCHER":"Launcher",
     "APPNAV.DRIVE":"Drive",
     "APPNAV.SHAREDWITH":"Shared",

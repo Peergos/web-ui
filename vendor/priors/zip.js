@@ -34,13 +34,10 @@ var zipInflate = {
                         controller.close();
                         return;
                     }
-                    // nothing to give it: let any waiting read return empty so the caller asks
-                    // needsInput() again and feeds us
-                    var waiting = self.waiting;
-                    self.waiting = null;
-                    if (waiting != null)
-                        waiting.future.complete({value_0: 0});
-                    return new Promise(function(resolve) {
+                    // nothing to give it. Arm the callback that feeds it BEFORE letting any waiting
+                    // read return empty: completing that read runs the caller's continuation
+                    // synchronously, and the input it hands us in there has to find a way in.
+                    var promise = new Promise(function(resolve) {
                         self.pullResolve = function() {
                             self.pullResolve = null;
                             if (self.queue.length > 0)
@@ -50,6 +47,11 @@ var zipInflate = {
                             resolve();
                         };
                     });
+                    var waiting = self.waiting;
+                    self.waiting = null;
+                    if (waiting != null)
+                        waiting.future.complete({value_0: 0});
+                    return promise;
                 }
             });
             self.reader = source.pipeThrough(new DecompressionStream('deflate-raw')).getReader();

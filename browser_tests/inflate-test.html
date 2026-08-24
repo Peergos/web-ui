@@ -14,7 +14,9 @@ needed. The result also lands in <code>window.RESULT</code> for scripted runs.</
 <div id="out">running...</div>
 <script src="../vendor/priors/zip.js"></script>
 <script>
-// Minimal stand-ins for the GWT runtime the shim talks to
+// Stand-ins for the GWT runtime the shim talks to. A GWT CompletableFuture runs its continuation
+// synchronously on complete, which is exactly the timing that makes this interface delicate, so
+// the stub does too and the driving loop is written in the same continuation style as the Java.
 var peergos = {shared: {util: {Futures: {
     incomplete: function() {
         var f = {done: false, value: null, err: null, cbs: []};
@@ -28,55 +30,69 @@ var peergos = {shared: {util: {Futures: {
             f.done = true; f.err = e;
             f.cbs.forEach(function(cb) { cb(); });
         };
-        f.await = function() {
-            return new Promise(function(res, rej) {
-                var deliver = function() { f.err != null ? rej(f.err) : res(f.value); };
-                f.done ? deliver() : f.cbs.push(deliver);
-            });
+        f.then = function(onValue, onError) {
+            var deliver = function() { f.err != null ? onError(f.err) : onValue(f.value); };
+            f.done ? deliver() : f.cbs.push(deliver);
         };
         return f;
     }
 }}}};
 var java = {lang: {Throwable: {of: function(e) { return e; }}}};
 
-// The loop from InflatingReader.readIntoArray, written the same way
-async function inflateAll(compressed, uncompressedSize, outChunkSize, session) {
-    var input = new Int8Array(16 * 1024);
-    var inPos = 0, inputEnded = false, position = 0;
-    var res = new Uint8Array(uncompressedSize);
-    var buf = new Int8Array(outChunkSize);
-    var guard = 0;
-    while (position < uncompressedSize) {
-        if (++guard > 10000000)
-            throw new Error("loop did not terminate");
-        if (session.needsInput()) {
-            if (session.finished())
-                break;
-            if (inputEnded)
-                throw new Error("Truncated deflate stream in zip entry");
-            var read = Math.min(input.length, compressed.length - inPos);
-            if (read <= 0) {
-                inputEnded = true;
-                session.finish();
-            } else {
-                input.set(compressed.subarray(inPos, inPos + read));
-                inPos += read;
-                session.setInput(input, 0, read);
+// The loop from InflatingReader, written the same way: one read fills the whole buffer
+function inflateAll(compressed, uncompressedSize, outChunkSize, session) {
+    return new Promise(function(resolve, reject) {
+        var input = new Int8Array(16 * 1024);
+        var inPos = 0, inputEnded = false, position = 0, guard = 0;
+        var res = new Uint8Array(uncompressedSize);
+        var buf = new Int8Array(outChunkSize);
+
+        function fill(length, alreadyRead, done) {
+            if (++guard > 10000000)
+                return reject(new Error("loop did not terminate"));
+            if (alreadyRead == length)
+                return done(alreadyRead);
+            if (session.needsInput()) {
+                if (session.finished())
+                    return done(alreadyRead);
+                if (inputEnded)
+                    return reject(new Error("Truncated deflate stream in zip entry"));
+                var read = Math.min(input.length, compressed.length - inPos);
+                if (read <= 0) {
+                    inputEnded = true;
+                    session.finish();
+                } else {
+                    input.set(compressed.subarray(inPos, inPos + read));
+                    inPos += read;
+                    session.setInput(input, 0, read);
+                }
+                return fill(length, alreadyRead, done);
             }
-            continue;
+            session.inflate(buf, alreadyRead, length - alreadyRead).then(function(v) {
+                var written = v.value_0;
+                if (written == 0 && session.finished())
+                    return done(alreadyRead);
+                position += written;
+                fill(length, alreadyRead + written, done);
+            }, reject);
         }
-        var toRead = Math.min(buf.length, uncompressedSize - position);
-        var n = await session.inflate(buf, 0, toRead).await();
-        n = n.value_0;
-        if (n === 0) {
-            if (session.finished())
-                break;
-            continue;
+
+        function readLoop() {
+            if (position >= uncompressedSize)
+                return resolve({bytes: res, length: position});
+            var toRead = Math.min(buf.length, uncompressedSize - position);
+            var before = position;
+            fill(toRead, 0, function(got) {
+                if (got == 0)
+                    return resolve({bytes: res, length: position});
+                if (got != toRead)
+                    return reject(new Error("short read: asked for " + toRead + ", got " + got));
+                res.set(new Uint8Array(buf.buffer, 0, got), before);
+                readLoop();
+            });
         }
-        res.set(new Uint8Array(buf.buffer, 0, n), position);
-        position += n;
-    }
-    return {bytes: res, length: position};
+        readLoop();
+    });
 }
 
 async function deflateRaw(bytes) {
@@ -146,7 +162,9 @@ async function runTests() {
     passed.push(await check("text in 7 byte reads", textBytes("hello archive, again and again"), 7));
     passed.push(await check("2 MiB compressible", compressible(2 * 1024 * 1024, 1), 4096));
     passed.push(await check("1 MiB incompressible", pseudoRandom(1024 * 1024, 2), 65536));
-    passed.push(await check("1 KiB incompressible in 1 byte reads", pseudoRandom(1024, 3), 1));
+    // one read of the whole entry, which is what the download path asks for
+    passed.push(await check("200 KiB incompressible in one read", pseudoRandom(200000, 3), 200000));
+    passed.push(await check("1 KiB incompressible in 1 byte reads", pseudoRandom(1024, 4), 1));
     passed.push(await check("empty entry", new Uint8Array(0), 4096));
 
     // reset() and read the same stream again
@@ -200,7 +218,11 @@ function report(html, colour) {
         out.style.color = colour;
     }
 }
-runTests().then(function(passed) {
+// a shim that stops asking for input, or stops producing it, hangs rather than failing
+var timeout = new Promise(function(resolve, reject) {
+    setTimeout(function() { reject(new Error("timed out: the shim stopped making progress")); }, 120000);
+});
+Promise.race([runTests(), timeout]).then(function(passed) {
     window.RESULT = {ok: true, passed: passed};
     report("PASSED<ul><li>" + passed.join("</li><li>") + "</li></ul>", "green");
 }).catch(function(e) {

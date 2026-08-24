@@ -437,6 +437,7 @@ const Warning = require('../components/Warning.vue');
 const helpers = require("../mixins/storage/index.js");
 const downloaderMixins = require("../mixins/downloader/index.js");
 const zipMixin = require("../mixins/zip/index.js");
+const archiveMixin = require("../mixins/archive/index.js");
 const i18n = require("../i18n/index.js");
 
 const router = require("../mixins/router/index.js");
@@ -581,7 +582,7 @@ module.exports = {
             disallowedFilenames: new Map(),
 		};
 	},
-	mixins:[downloaderMixins, router, zipMixin, launcherMixin, i18n, sandboxMixin],
+	mixins:[downloaderMixins, router, zipMixin, archiveMixin, launcherMixin, i18n, sandboxMixin],
         mounted: function() {
                         let grid = localStorage.getItem("isGrid");
                         if (grid != null)
@@ -671,6 +672,8 @@ module.exports = {
 		},
 
         isInstallable: function() {
+           if (this.archive != null)
+               return false;
            try {
                if (this.selectedFiles.length != 1)
                    return false;
@@ -683,7 +686,7 @@ module.exports = {
            }
         },
         availableApps: function() {
-            if (this.currentDir == null)
+            if (this.currentDir == null || this.archive != null)
                 return [];
             if (this.selectedFiles.length != 1)
                 return [];
@@ -691,7 +694,7 @@ module.exports = {
         },
 		isSearchable() {
 			try {
-				if (this.currentDir == null)
+				if (this.currentDir == null || this.archive != null)
 					return false;
 				if (this.selectedFiles.length != 1)
 					return false;
@@ -780,7 +783,7 @@ module.exports = {
         },
 		allowDownloadFolder() {
 			try {
-				if (this.currentDir == null)
+				if (this.currentDir == null || this.archive != null)
 					return false;
 				if (this.selectedFiles.length != 1)
 					return false;
@@ -794,7 +797,7 @@ module.exports = {
 		},
         allowViewFolderProperties() {
 			try {
-                if (!(this.path.length > 0)) {
+                if (!(this.path.length > 0) || this.archive != null) {
                     return false;
                 }
 				if (this.currentDir == null)
@@ -808,7 +811,7 @@ module.exports = {
         },
         allowViewFileDetails() {
             try {
-                if (this.selectedFiles.length != 1)
+                if (this.selectedFiles.length != 1 || this.archive != null)
                     return false;
                 return !this.selectedFiles[0].isDirectory();
             } catch (err) {
@@ -816,14 +819,15 @@ module.exports = {
             }
         },
         allowCopy() {
-            return this.isLoggedIn && this.path.length > 0;
+            return this.isLoggedIn && this.path.length > 0 && this.archive == null;
         },
 		allowShare() {
-			return this.isLoggedIn && this.path.length > 0;
+			// there is no capability to an entry inside an archive: copy it out first
+			return this.isLoggedIn && this.path.length > 0 && this.archive == null;
 		},
 		allowAddingToLauncher() {
             try {
-                if (this.currentDir == null)
+                if (this.currentDir == null || this.archive != null)
                     return false;
                 if (this.selectedFiles.length != 1)
                     return false;
@@ -852,7 +856,7 @@ module.exports = {
 		},
 		isWritable() {
 			try {
-				if (this.currentDir == null)
+				if (this.currentDir == null || this.archive != null)
 					return false;
 				return this.currentDir.isWritable();
 			} catch (err) {
@@ -880,7 +884,7 @@ module.exports = {
 		    return singlePasteOption || multiPasteOption;
 		},
 		isPasteAvailable() {
-			return this.isPasteToFolderAvailable();
+			return this.archive == null && this.isPasteToFolderAvailable();
 		},
 	},
 
@@ -1382,11 +1386,22 @@ module.exports = {
 			return Promise.resolve(null);
 		    var path = this.getPath;
 		    var that = this;
+		    var trimmed = path.endsWith("/") ? path.substring(0, path.length - 1) : path;
+		    // moving around inside the archive we are already reading
+		    if (this.archive != null && trimmed.startsWith(this.archive.path + "/")) {
+		        this.openArchiveAt(this.archive.file, this.archive.path,
+		                           trimmed.substring(this.archive.path.length + 1), selectedFilename, callback);
+		        return Promise.resolve(null);
+		    }
 		    this.context.getByPath(path).thenApply(function (fileOpt) {
 		        if (fileOpt.isPresent()) {
                     let file = fileOpt.get();
                     file.getLatest(that.context.network).thenApply(updated => {
                         if (! updated.isDirectory()) {
+                            if (that.isArchiveFile(updated.getFileProperties())) {
+                                that.openArchiveAt(updated, trimmed, "", selectedFilename, callback);
+                                return;
+                            }
                             // go to parent if we tried to navigate to file
                             if (path.endsWith("/"))
                                 path = path.substring(0, path.length-1)
@@ -1395,6 +1410,7 @@ module.exports = {
                             that.updateCurrentDirectory(selectedFilename, callback);
                             return;
                         }
+                        that.leaveArchive();
                         that.currentDir = updated;
                         that.updateFiles(selectedFilename, callback);
                     }).exceptionally(function (throwable) {
@@ -1408,14 +1424,19 @@ module.exports = {
                         }
                     });
                 } else {
-                    that.$toast.error(that.translate("DRIVE.MISSING.FOLDER"));
-                    if (!that.isSecretLink && path.startsWith("/" + that.context.username)) {
-                        if (path.endsWith("/"))
-                            path = path.substring(0, path.length-1)
-                        let index = path.lastIndexOf("/");
-                        that.changePath(path.substring(0, index));
-                        that.updateCurrentDirectory(selectedFilename, callback);
-                    }
+                    // the path may descend into a zip archive rather than not exist
+                    that.findArchive(trimmed, "", function(archiveFile, archivePath, entryPath) {
+                        that.openArchiveAt(archiveFile, archivePath, entryPath, selectedFilename, callback);
+                    }, function() {
+                        that.$toast.error(that.translate("DRIVE.MISSING.FOLDER"));
+                        if (!that.isSecretLink && path.startsWith("/" + that.context.username)) {
+                            if (path.endsWith("/"))
+                                path = path.substring(0, path.length-1)
+                            let index = path.lastIndexOf("/");
+                            that.changePath(path.substring(0, index));
+                            that.updateCurrentDirectory(selectedFilename, callback);
+                        }
+                    });
                 }
 		    }).exceptionally(function (throwable) {
 			    console.log(throwable.getMessage());
@@ -1979,6 +2000,10 @@ module.exports = {
 		// files were dropped onto it rather than onto empty space
 		dndDrop(evt, intoFolder) {
 			evt.preventDefault();
+			if (this.archive != null) { // an archive can be browsed, but not yet written to
+				this.$toast.error(this.translate("DRIVE.ARCHIVE.READONLY"));
+				return;
+			}
 			let entries = evt.dataTransfer.items;
 			let allItems = [];
 			for (i = 0; i < entries.length; i++) {
@@ -3074,6 +3099,12 @@ module.exports = {
 		    var file = this.selectedFiles[0];
 		    var filename = file.getName();
 
+		    if (file.isArchiveEntry) {
+		        // no viewer or app can take a path inside an archive yet, so download it
+		        this.confirmDownload(file, () => that.downloadFile(file));
+		        return;
+		    }
+
                     if (file.isWrapper)
                         return file.getFile().thenApply(f => {that.openFile(writable)});
 
@@ -3155,7 +3186,8 @@ module.exports = {
 		navigateDrive(file) {
 			this.closeMenu();
             // console.log(file, 'navigateDrive' )
-			if (file.isDirectory()) {
+			if (file.isDirectory() || this.isArchiveFile(file.getFileProperties())) {
+				// a zip is browsed into, like a directory, rather than opened
 				this.navigateToSubdir(file.getFileProperties().name);
 			} else {
 			    let newClickedFilename = file.getFileProperties().name;
@@ -3603,7 +3635,7 @@ module.exports = {
 
 
 		isShared(file) {
-			if (this.currentDir == null)
+			if (this.currentDir == null || this.archive != null)
 				return false;
 			if (this.sharedWithState == null)
 				return false;
