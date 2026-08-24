@@ -142,7 +142,7 @@
       <DriveMenu ref="driveMenu" v-if="viewMenu" @closeMenu="closeMenu()">
         <li
           id="gallery"
-          v-if="canOpen && !isMarkup && !isHTML && !hexViewerAlternativeAvailable"
+          v-if="canOpen && !isMarkup && !isHTML && !hexViewerAlternativeAvailable && archive == null"
           @keyup.enter="viewFile()"
           @click="viewFile()"
         >
@@ -783,10 +783,12 @@ module.exports = {
         },
 		allowDownloadFolder() {
 			try {
-				if (this.currentDir == null || this.archive != null)
+				if (this.currentDir == null)
 					return false;
 				if (this.selectedFiles.length != 1)
 					return false;
+				if (this.archive != null)
+					return this.selectedFiles[0].isDirectory();
                         if (this.path.length == 0 && this.selectedFiles[0].getName() != this.context.username) {
                             return false;
                         }
@@ -1772,6 +1774,8 @@ module.exports = {
         if (this.currentDir == null)
             return false;
         if (this.isStreamingAvailable) {
+            if (this.archive != null)
+                return this.downloadArchiveSelection();
             this.zipAndDownloadFolders();
         } else {
             this.showToastError(this.translate("DRIVE.ZIP.ERROR"));
@@ -1904,6 +1908,8 @@ module.exports = {
     },
 	zipAndDownload() {
         if (this.isStreamingAvailable) {
+            if (this.archive != null)
+                return this.downloadArchiveFolder();
             this.zipAndDownloadFolder();
         } else {
             this.showToastError(this.translate("DRIVE.ZIP.ERROR"));

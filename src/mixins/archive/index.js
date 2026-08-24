@@ -9,6 +9,8 @@
 // Listing an archive of any size costs a read of its tail; opening one entry costs a seek and a
 // read of only that entry. See peergos.shared.user.fs.archive.ZipReader.
 
+const ProgressBar = require("../../components/drive/ProgressBar.vue");
+
 const ZIP_MIMETYPE = "application/zip";
 
 // An archive records no mime type for its entries, and reading the first bytes of each one to
@@ -210,6 +212,78 @@ module.exports = {
                 },
                 name: name
             };
+        },
+
+        /** Download a directory inside an archive as a new zip, which is the only way to get a
+         *  whole folder out: there is no capability to it to share or copy.
+         */
+        downloadArchiveFolder() {
+            if (this.selectedFiles.length != 1)
+                return;
+            this.closeMenu();
+            const folder = this.selectedFiles[0];
+            this.downloadArchiveAsZip(this.collectArchiveFiles(folder.entry.path, folder.getName()),
+                    folder.getName() + ".zip",
+                    this.translate("DRIVE.DOWNLOAD.FOLDER").replace("$NAME", folder.getName()));
+        },
+
+        /** The same for a selection, which may mix entries and directories.
+         */
+        downloadArchiveSelection() {
+            const that = this;
+            const files = [];
+            this.selectedFiles.forEach(function(selected) {
+                if (selected.isDirectory())
+                    files.push.apply(files, that.collectArchiveFiles(selected.entry.path, selected.getName()));
+                else
+                    files.push({path: "", file: selected});
+            });
+            const name = this.archive.file.getName().replace(/\.zip$/i, "") + "-selection.zip";
+            this.downloadArchiveAsZip(files, name, this.translate("DRIVE.DOWNLOAD.FOLDERS"));
+        },
+
+        downloadArchiveAsZip(files, zipFilename, title) {
+            const that = this;
+            if (files.length == 0) {
+                this.$toast(this.translate("DRIVE.EMPTY.FOLDER").replace("$NAME", zipFilename));
+                return;
+            }
+            let total = 0;
+            files.forEach(function(f) {
+                total += that.getFileSize(f.file.getFileProperties());
+            });
+            const progress = {
+                show: true,
+                title: title,
+                done: 0,
+                max: total,
+                startTime: Date.now()
+            };
+            this.$toast({component: ProgressBar, props: progress}, {icon: false, timeout: false, id: zipFilename});
+            this.zipFiles(zipFilename, files, progress).thenApply(function(res) {
+                that.selectedFiles = [];
+                return res;
+            }).exceptionally(function(throwable) {
+                that.$toast.error(throwable.getMessage());
+                return null;
+            });
+        },
+
+        /** Every file under a directory in the archive, each with its path relative to that
+         *  directory's parent, which is the shape the zip writer wants.
+         */
+        collectArchiveFiles(entryPath, relativePath) {
+            const archive = this.archive;
+            const res = [];
+            const children = archive.reader.listDirectoryJS(entryPath);
+            for (let i = 0; i < children.length; i++) {
+                const child = children[i];
+                if (child.isDirectory)
+                    res.push.apply(res, this.collectArchiveFiles(child.path, relativePath + "/" + child.getName()));
+                else
+                    res.push({path: relativePath, file: this.buildArchiveEntry(archive, child)});
+            }
+            return res;
         },
 
         /** A reader over one entry's decompressed bytes, reporting progress as they are read.
