@@ -270,6 +270,7 @@ module.exports = {
 
     created() {
 	this.$store.commit("SET_CRYPTO", peergos.shared.Crypto.initJS());
+	peergos.shared.user.fs.archive.Inflate.initJS();
 	this.updateNetwork();
 
 	window.addEventListener("hashchange", this.onUrlChange, false);

@@ -1,0 +1,214 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>Raw deflate shim tests</title>
+</head>
+<body>
+<h1>Raw deflate shim tests</h1>
+<p>Open this file in a browser. It exercises <code>vendor/priors/zip.js</code>, the
+DecompressionStream implementation of <code>Inflate.Session</code> that shared code uses to read
+deflated zip entries, driving it exactly the way
+<code>peergos.shared.user.fs.archive.InflatingReader</code> does. No server or Peergos account
+needed. The result also lands in <code>window.RESULT</code> for scripted runs.</p>
+<div id="out">running...</div>
+<script src="../vendor/priors/zip.js"></script>
+<script>
+// Minimal stand-ins for the GWT runtime the shim talks to
+var peergos = {shared: {util: {Futures: {
+    incomplete: function() {
+        var f = {done: false, value: null, err: null, cbs: []};
+        f.complete = function(v) {
+            if (f.done) throw new Error("future completed twice");
+            f.done = true; f.value = v;
+            f.cbs.forEach(function(cb) { cb(); });
+        };
+        f.completeExceptionally = function(e) {
+            if (f.done) throw new Error("future completed twice");
+            f.done = true; f.err = e;
+            f.cbs.forEach(function(cb) { cb(); });
+        };
+        f.await = function() {
+            return new Promise(function(res, rej) {
+                var deliver = function() { f.err != null ? rej(f.err) : res(f.value); };
+                f.done ? deliver() : f.cbs.push(deliver);
+            });
+        };
+        return f;
+    }
+}}}};
+var java = {lang: {Throwable: {of: function(e) { return e; }}}};
+
+// The loop from InflatingReader.readIntoArray, written the same way
+async function inflateAll(compressed, uncompressedSize, outChunkSize, session) {
+    var input = new Int8Array(16 * 1024);
+    var inPos = 0, inputEnded = false, position = 0;
+    var res = new Uint8Array(uncompressedSize);
+    var buf = new Int8Array(outChunkSize);
+    var guard = 0;
+    while (position < uncompressedSize) {
+        if (++guard > 10000000)
+            throw new Error("loop did not terminate");
+        if (session.needsInput()) {
+            if (session.finished())
+                break;
+            if (inputEnded)
+                throw new Error("Truncated deflate stream in zip entry");
+            var read = Math.min(input.length, compressed.length - inPos);
+            if (read <= 0) {
+                inputEnded = true;
+                session.finish();
+            } else {
+                input.set(compressed.subarray(inPos, inPos + read));
+                inPos += read;
+                session.setInput(input, 0, read);
+            }
+            continue;
+        }
+        var toRead = Math.min(buf.length, uncompressedSize - position);
+        var n = await session.inflate(buf, 0, toRead).await();
+        n = n.value_0;
+        if (n === 0) {
+            if (session.finished())
+                break;
+            continue;
+        }
+        res.set(new Uint8Array(buf.buffer, 0, n), position);
+        position += n;
+    }
+    return {bytes: res, length: position};
+}
+
+async function deflateRaw(bytes) {
+    var cs = new CompressionStream('deflate-raw');
+    var writer = cs.writable.getWriter();
+    writer.write(bytes);
+    writer.close();
+    var out = [], total = 0;
+    var reader = cs.readable.getReader();
+    for (;;) {
+        var r = await reader.read();
+        if (r.done) break;
+        out.push(r.value); total += r.value.length;
+    }
+    var res = new Uint8Array(total), at = 0;
+    out.forEach(function(c) { res.set(c, at); at += c.length; });
+    return res;
+}
+
+function sameBytes(a, b, length) {
+    if (a.length < length || b.length < length) return false;
+    for (var i = 0; i < length; i++)
+        if (a[i] !== b[i]) return false;
+    return true;
+}
+
+function textBytes(s) {
+    return new TextEncoder().encode(s);
+}
+
+function pseudoRandom(size, seed) {
+    var res = new Uint8Array(size), x = seed | 1;
+    for (var i = 0; i < size; i++) {
+        x ^= x << 13; x >>>= 0;
+        x ^= x >> 17;
+        x ^= x << 5; x >>>= 0;
+        res[i] = x & 0xFF;
+    }
+    return res;
+}
+
+function compressible(size, seed) {
+    var res = new Uint8Array(size), x = seed;
+    for (var i = 0; i < size; i++) {
+        x = (x * 1103515245 + 12345) & 0x7FFFFFFF;
+        res[i] = 97 + ((x >> 16) & 3);
+    }
+    return res;
+}
+
+async function check(name, original, outChunkSize) {
+    var compressed = await deflateRaw(original);
+    var session = new zipInflate.NativeJSInflate();
+    var result = await inflateAll(compressed, original.length, outChunkSize, session);
+    session.close();
+    if (result.length !== original.length)
+        throw new Error(name + ": got " + result.length + " bytes, expected " + original.length);
+    if (! sameBytes(result.bytes, original, original.length))
+        throw new Error(name + ": bytes differ");
+    return name + " (" + original.length + " bytes, " + compressed.length + " compressed, "
+        + outChunkSize + " byte reads)";
+}
+
+async function runTests() {
+    var passed = [];
+    passed.push(await check("short text", textBytes("hello archive"), 16384));
+    passed.push(await check("text in 7 byte reads", textBytes("hello archive, again and again"), 7));
+    passed.push(await check("2 MiB compressible", compressible(2 * 1024 * 1024, 1), 4096));
+    passed.push(await check("1 MiB incompressible", pseudoRandom(1024 * 1024, 2), 65536));
+    passed.push(await check("1 KiB incompressible in 1 byte reads", pseudoRandom(1024, 3), 1));
+    passed.push(await check("empty entry", new Uint8Array(0), 4096));
+
+    // reset() and read the same stream again
+    var original = compressible(300000, 5);
+    var compressed = await deflateRaw(original);
+    var session = new zipInflate.NativeJSInflate();
+    var first = await inflateAll(compressed, original.length, 8192, session);
+    session.reset();
+    var second = await inflateAll(compressed, original.length, 8192, session);
+    session.close();
+    if (! sameBytes(second.bytes, original, original.length) || second.length !== original.length)
+        throw new Error("reset: re-read differs");
+    if (! sameBytes(first.bytes, original, original.length))
+        throw new Error("reset: first read differs");
+    passed.push("reset then re-read (300000 bytes)");
+
+    // a truncated stream must fail rather than hang
+    var truncated = compressed.subarray(0, compressed.length - 20);
+    var failed = false;
+    try {
+        await inflateAll(truncated, original.length, 8192, new zipInflate.NativeJSInflate());
+    } catch (e) {
+        failed = true;
+    }
+    if (! failed)
+        throw new Error("truncated stream did not fail");
+    passed.push("truncated stream fails");
+
+    // corrupt data must surface as an error, not as silence
+    var corrupt = compressed.slice();
+    for (var i = 100; i < 200; i++)
+        corrupt[i] ^= 0xFF;
+    var errored = false;
+    try {
+        await inflateAll(corrupt, original.length, 8192, new zipInflate.NativeJSInflate());
+    } catch (e) {
+        errored = true;
+    }
+    if (! errored)
+        throw new Error("corrupt stream did not fail");
+    passed.push("corrupt stream fails");
+
+    return passed;
+}
+
+window.RESULT = null;
+function report(html, colour) {
+    var out = document.getElementById("out");
+    if (out != null) {
+        out.innerHTML = html;
+        out.style.color = colour;
+    }
+}
+runTests().then(function(passed) {
+    window.RESULT = {ok: true, passed: passed};
+    report("PASSED<ul><li>" + passed.join("</li><li>") + "</li></ul>", "green");
+}).catch(function(e) {
+    var message = "" + (e && e.message ? e.message : e);
+    window.RESULT = {ok: false, error: message};
+    report("FAILED: " + message, "red");
+});
+
+</script>
+</body>
+</html>
