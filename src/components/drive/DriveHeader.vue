@@ -44,11 +44,11 @@
 				>
 					<ul>
 						<li @click="askForFiles()">{{ translate("DRIVE.UPLOAD.FILES") }}</li>
-						<li @click="askForDirectories()">{{ translate("DRIVE.UPLOAD.FOLDER") }}</li>
-						<li @click="$emit('createFile')">{{ translate("DRIVE.NEW.FILE") }}</li>
-						<li @click="$emit('askMkdir')">{{ translate("DRIVE.NEW.FOLDER") }}</li>
-						<li @click="$emit('newApp')">{{ translate("DRIVE.NEW.APP") }}</li>
-                        <li v-if="canPaste" @click="$emit('paste')">{{ translate("DRIVE.PASTE") }}</li>
+						<li v-if="!isArchive" @click="askForDirectories()">{{ translate("DRIVE.UPLOAD.FOLDER") }}</li>
+						<li v-if="!isArchive" @click="$emit('createFile')">{{ translate("DRIVE.NEW.FILE") }}</li>
+						<li v-if="!isArchive" @click="$emit('askMkdir')">{{ translate("DRIVE.NEW.FOLDER") }}</li>
+						<li v-if="!isArchive" @click="$emit('newApp')">{{ translate("DRIVE.NEW.APP") }}</li>
+                        <li v-if="canPaste && !isArchive" @click="$emit('paste')">{{ translate("DRIVE.PASTE") }}</li>
 					</ul>
 				</AppDropdown>
 			</div>
@@ -90,6 +90,10 @@ module.exports = {
 		gridView: {
 			type: Boolean,
 			default: true
+		},
+		isArchive: {
+			type: Boolean,
+			default: false
 		},
 		isWritable: {
 			type: Boolean,

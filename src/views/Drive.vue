@@ -24,7 +24,8 @@
 
     <DriveHeader
       :gridView="isGrid"
-      :isWritable="isWritable"
+      :isWritable="isWritable || canEditArchive"
+      :isArchive="archive != null"
       :canPaste="isPasteOptionAvailable"
       :path="path"
       @switchView="switchView()"
@@ -191,12 +192,12 @@
         >
           {{ translate("DRIVE.DOWNLOAD") }}
         </li>
-        <li id="rename-file" v-if="isWritable" @keyup.enter="rename" @click="rename">
+        <li id="rename-file" v-if="isWritable || canEditArchive" @keyup.enter="rename" @click="rename">
           {{ translate("DRIVE.RENAME") }}
         </li>
         <li
           id="delete-file"
-          v-if="isWritable"
+          v-if="isWritable || canEditArchive"
           @keyup.enter="deleteFile"
           @click="deleteFile"
         >
@@ -725,6 +726,10 @@ module.exports = {
                 return false;
             }
 		},
+        // an archive that can be written to gets the actions that only rewrite its tail
+        canEditArchive() {
+            return this.archive != null && this.canWriteToArchive();
+        },
         canViewArchiveEntry() {
             try {
                 if (this.archive == null || this.selectedFiles.length != 1)
@@ -2020,8 +2025,11 @@ module.exports = {
 		// files were dropped onto it rather than onto empty space
 		dndDrop(evt, intoFolder) {
 			evt.preventDefault();
-			if (this.archive != null) { // an archive can be browsed, but not yet written to
-				this.$toast.error(this.translate("DRIVE.ARCHIVE.READONLY"));
+			if (this.archive != null) {
+				if (evt.dataTransfer.files != null && evt.dataTransfer.files.length > 0)
+					this.uploadIntoArchive(evt.dataTransfer.files);
+				else
+					this.$toast.error(this.translate("DRIVE.ARCHIVE.READONLY"));
 				return;
 			}
 			let entries = evt.dataTransfer.items;
@@ -2086,6 +2094,11 @@ module.exports = {
         uploadFiles(evt) {
             var files = evt.target.files || evt.dataTransfer.files;
             let that = this;
+            if (this.archive != null) {
+                this.uploadIntoArchive(files);
+                evt.target.value = "";
+                return;
+            }
             let accumulatedFiles = [];
             let isAndroidDirUpload = this.isLocalhostAndroid()
                 && files.length > 0 && files[0].name.indexOf('/') >= 0;
@@ -3570,6 +3583,10 @@ module.exports = {
 					return;
 				that.showSpinner = true;
 				console.log("Renaming " + old_name + "to " + newName);
+				if (file.isArchiveEntry) {
+					that.renameInArchive(file, newName);
+					return;
+				}
 				Vue.nextTick(function () {
 					let filePath = peergos.client.PathUtils.toPath(that.path, old_name);
 					file.rename(newName, that.currentDir, filePath, that.context)
@@ -3650,6 +3667,10 @@ module.exports = {
 		},
 
 		deleteOne(file, parent, context) {
+			if (file.isArchiveEntry) {
+				this.deleteFromArchive([file]);
+				return;
+			}
 			let name = file.getFileProperties().name;
 			console.log("deleting: " + name);
 			this.showSpinner = true;

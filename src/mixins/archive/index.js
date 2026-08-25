@@ -450,6 +450,154 @@ module.exports = {
             return res;
         },
 
+        // changing an archive
+
+        /** An archive can be written to if the file itself can be.
+         */
+        canWriteToArchive() {
+            return this.archive != null && this.archive.file.isWritable();
+        },
+
+        /** The archive as it stands now. Every write replaces the file, so the one we opened with
+         *  is stale as soon as anything has been written.
+         */
+        currentArchiveFile() {
+            return this.context.getByPath(this.archive.path).thenApply(function(opt) {
+                return opt.get();
+            });
+        },
+
+        /** A write moves the archive's size and modification time, so everything cached about it,
+         *  including its index, has to be read again.
+         */
+        archiveChanged() {
+            this.archive = null;
+            this.showSpinner = false;
+            this.updateCurrentDir();
+        },
+
+        archiveWriteFailed(throwable, title) {
+            this.showSpinner = false;
+            this.errorTitle = title;
+            this.errorBody = throwable.getMessage();
+            this.showError = true;
+            this.archiveChanged();
+        },
+
+        /** Add files to the directory of the archive that is being looked at.
+         */
+        uploadIntoArchive(browserFiles) {
+            const that = this;
+            const files = [];
+            for (let i = 0; i < browserFiles.length; i++)
+                files.push(browserFiles[i]);
+            if (files.length == 0)
+                return;
+            let total = 0;
+            files.forEach(function(file) {
+                total += file.size;
+            });
+            const toastId = 'archive-add-' + this.archive.path;
+            const progress = {
+                show: true,
+                title: this.translate("DRIVE.ARCHIVE.ADDING"),
+                stats: '',
+                done: 0,
+                max: total * 2, // read once to compress, once to write
+                startTime: Date.now(),
+                lastUpdateTime: 0
+            };
+            this.showSpinner = true;
+            this.$toast({component: ProgressBar, props: progress}, {icon: false, timeout: false, id: toastId});
+            const future = peergos.shared.util.Futures.incomplete();
+            this.addNextToArchive(files, 0, progress, toastId, future);
+            future.thenApply(function(res) {
+                that.$toast.dismiss(toastId);
+                that.updateUsage();
+                that.archiveChanged();
+                return res;
+            }).exceptionally(function(throwable) {
+                that.$toast.dismiss(toastId);
+                that.archiveWriteFailed(throwable, that.translate("DRIVE.ARCHIVE.ADD.ERROR"));
+                return null;
+            });
+        },
+
+        addNextToArchive(files, index, progress, toastId, future) {
+            const that = this;
+            if (index == files.length) {
+                future.complete(true);
+                return;
+            }
+            const file = files[index];
+            const entryPath = (this.archive.entry == "" ? "" : this.archive.entry + "/") + file.name;
+            this.currentArchiveFile().thenCompose(function(archiveFile) {
+                const reader = new peergos.shared.user.fs.BrowserFileReader(new browserio.JSFileReader(file));
+                const size = file.size;
+                return peergos.shared.user.fs.archive.ZipWriter.addFileJS(archiveFile, entryPath, reader,
+                    Math.floor(size / 4294967296), size % 4294967296, file.lastModified,
+                    that.context.network, that.context.crypto, function(read) {
+                        progress.done += read.value_0;
+                        const now = Date.now();
+                        if (now - progress.lastUpdateTime > 500) {
+                            progress.lastUpdateTime = now;
+                            progress.stats = storage.formatTransferStats(progress.done, progress.max, progress.startTime);
+                            that.$toast.update(toastId, {content: {component: ProgressBar, props: {
+                                title: progress.title,
+                                stats: progress.stats,
+                                done: progress.done,
+                                max: progress.max
+                            }}});
+                        }
+                    });
+            }).thenApply(function(updated) {
+                that.addNextToArchive(files, index + 1, progress, toastId, future);
+                return updated;
+            }).exceptionally(function(throwable) {
+                future.completeExceptionally(throwable);
+                return null;
+            });
+        },
+
+        /** Remove entries, overwriting the bytes they leave behind rather than only unlisting them.
+         */
+        deleteFromArchive(entries) {
+            const that = this;
+            const paths = entries.map(function(entry) {
+                return entry.entry.path;
+            });
+            this.showSpinner = true;
+            this.currentArchiveFile().thenCompose(function(archiveFile) {
+                return peergos.shared.user.fs.archive.ZipWriter.removeJS(archiveFile, paths, true,
+                    that.context.network, that.context.crypto, function(read) {});
+            }).thenApply(function(updated) {
+                that.selectedFiles = [];
+                that.updateUsage();
+                that.archiveChanged();
+                return updated;
+            }).exceptionally(function(throwable) {
+                that.archiveWriteFailed(throwable, that.translate("DRIVE.ARCHIVE.DELETE.ERROR"));
+                return null;
+            });
+        },
+
+        renameInArchive(entry, newName) {
+            const that = this;
+            this.showSpinner = true;
+            this.currentArchiveFile().thenCompose(function(archiveFile) {
+                return peergos.shared.user.fs.archive.ZipWriter.renameJS(archiveFile, entry.entry.path, newName,
+                    that.context.network, that.context.crypto, function(read) {});
+            }).thenApply(function(updated) {
+                that.selectedFiles = [];
+                that.updateUsage();
+                that.archiveChanged();
+                return updated;
+            }).exceptionally(function(throwable) {
+                that.archiveWriteFailed(throwable, that.translate("DRIVE.ARCHIVE.RENAME.ERROR"));
+                return null;
+            });
+        },
+
         /** A reader over one entry's decompressed bytes, reporting progress as they are read.
          */
         readArchiveEntry(archive, entry, progress) {
