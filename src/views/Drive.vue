@@ -1794,7 +1794,8 @@ module.exports = {
     zipAndDownloadMultiSelect() {
         if (this.currentDir == null)
             return false;
-        if (this.isStreamingAvailable) {
+        // on android the download manager does the streaming, so no service worker is needed
+        if (this.isStreamingAvailable || this.isLocalhostAndroid()) {
             if (this.archive != null)
                 return this.downloadArchiveSelection();
             this.zipAndDownloadFolders();
@@ -1928,7 +1929,8 @@ module.exports = {
         });
     },
 	zipAndDownload() {
-        if (this.isStreamingAvailable) {
+        // on android the download manager does the streaming, so no service worker is needed
+        if (this.isStreamingAvailable || this.isLocalhostAndroid()) {
             if (this.archive != null)
                 return this.downloadArchiveFolder();
             this.zipAndDownloadFolder();

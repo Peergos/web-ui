@@ -107,13 +107,25 @@ module.exports = {
       var props = file.getFileProperties()
 
       // if android localhost use app to stream data rather than a serviceworker, which the download manager can't talk to
-      if (! file.isArchiveEntry && loopback.isLoopbackHost(window.location.hostname) && navigator.userAgent.toLowerCase().indexOf("android") > -1) {
+      if (loopback.isLoopbackHost(window.location.hostname) && navigator.userAgent.toLowerCase().indexOf("android") > -1) {
           console.log("Downloading " + file.getName() + " through localhost reflector");
-          const cap = file.toLink().substring(1); // without #
+          const reflector = "http://localhost:" + window.location.port + "/peergos/v0/reflector/";
+          let href;
+          if (file.isArchiveEntry) {
+              // an entry has no capability of its own: the archive's says where to look, and the
+              // path within it says what to take out
+              const name = fileLabel != null ? fileLabel : props.name;
+              href = reflector + "entry/" + file.archiveFile.toLink().substring(1)
+                  + "?path=" + encodeURIComponent(file.entry.path)
+                  + "&name=" + encodeURIComponent(name)
+                  + "&mime=" + encodeURIComponent(props.mimeType);
+          } else {
+              href = reflector + "file/" + file.toLink().substring(1); // without #
+          }
           let link = document.createElement('a')
           let click = new MouseEvent('click')
           link.type = props.mimeType;
-          link.href = "http://localhost:" + window.location.port + "/peergos/v0/reflector/file/" + cap;
+          link.href = href;
           link.dispatchEvent(click);
           result.complete(true);
           return result;

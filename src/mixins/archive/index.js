@@ -167,6 +167,8 @@ module.exports = {
                 isWrapper: false,
                 isArchiveEntry: true,
                 entry: entry,
+                // an entry has no capability of its own, so a download names the archive's
+                archiveFile: archive.file,
                 thumbnail: null,
                 directChildrenCount: childCount,
                 props: {
@@ -223,6 +225,8 @@ module.exports = {
                 return;
             this.closeMenu();
             const folder = this.selectedFiles[0];
+            if (this.reflectArchiveZip([folder.entry.path], folder.getName() + ".zip"))
+                return;
             this.downloadArchiveAsZip(this.collectArchiveFiles(folder.entry.path, folder.getName()),
                     folder.getName() + ".zip",
                     this.translate("DRIVE.DOWNLOAD.FOLDER").replace("$NAME", folder.getName()));
@@ -232,6 +236,9 @@ module.exports = {
          */
         downloadArchiveSelection() {
             const that = this;
+            const selectionName = this.archive.file.getName().replace(/\.zip$/i, "") + "-selection.zip";
+            if (this.reflectArchiveZip(this.selectedFiles.map(function(f) { return f.entry.path; }), selectionName))
+                return;
             const files = [];
             this.selectedFiles.forEach(function(selected) {
                 if (selected.isDirectory())
@@ -239,8 +246,27 @@ module.exports = {
                 else
                     files.push({path: "", file: selected});
             });
-            const name = this.archive.file.getName().replace(/\.zip$/i, "") + "-selection.zip";
-            this.downloadArchiveAsZip(files, name, this.translate("DRIVE.DOWNLOAD.FOLDERS"));
+            this.downloadArchiveAsZip(files, selectionName, this.translate("DRIVE.DOWNLOAD.FOLDERS"));
+        },
+
+        /** On android the download manager fetches the zip from the local server itself, so the
+         *  server builds it from the archive: a download written by a service worker never reaches
+         *  the download manager, which is a separate process.
+         */
+        reflectArchiveZip(entryPaths, zipFilename) {
+            if (! this.isLocalhostAndroid())
+                return false;
+            const cap = this.archive.file.toLink().substring(1); // without the #
+            const paths = entryPaths.map(function(path) {
+                return "path=" + encodeURIComponent(path);
+            }).join("&");
+            const link = document.createElement('a');
+            link.type = "application/zip";
+            link.href = "http://localhost:" + window.location.port + "/peergos/v0/reflector/entry-zip/" + cap
+                    + "?" + paths + "&name=" + encodeURIComponent(zipFilename);
+            link.dispatchEvent(new MouseEvent('click'));
+            this.selectedFiles = [];
+            return true;
         },
 
         downloadArchiveAsZip(files, zipFilename, title) {
