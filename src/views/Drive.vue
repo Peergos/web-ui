@@ -24,7 +24,8 @@
 
     <DriveHeader
       :gridView="isGrid"
-      :isWritable="isWritable"
+      :isWritable="isWritable || canEditArchive"
+      :isArchive="archive != null"
       :canPaste="isPasteOptionAvailable"
       :path="path"
       @switchView="switchView()"
@@ -75,7 +76,7 @@
     <DriveSelected v-if="selectedFiles.length > 1" :totalFiles="files.length" :selectedFiles="selectedFiles" @selectAllOrNone="selectAllOrNone()">
       <li id="copy" v-if="allowCopy" @keyup.enter="copyMultiSelect()" @click="copyMultiSelect()">{{ translate("DRIVE.COPY") }}</li>
       <li id="cut" v-if="isWritable" @keyup.enter="cutMultiSelect()" @click="cutMultiSelect()">{{ translate("DRIVE.CUT") }}</li>
-      <li id="delete" v-if="isWritable" @keyup.enter="deleteFilesMultiSelect()" @click="deleteFilesMultiSelect()">{{ translate("DRIVE.DELETE") }}</li>
+      <li id="delete" v-if="isWritable || canEditArchive" @keyup.enter="deleteFilesMultiSelect()" @click="deleteFilesMultiSelect()">{{ translate("DRIVE.DELETE") }}</li>
       <li id="download" @keyup.enter="downloadAllMultiSelect()" @click="downloadAllMultiSelect()">{{ translate("DRIVE.DOWNLOAD") }}</li>
       <li id="zip" @keyup.enter="zipAndDownloadMultiSelect()" @click="zipAndDownloadMultiSelect()">{{ translate("DRIVE.ZIP") }}</li>
       <li id="create-thumbnail" v-if="isWritable" @keyup.enter="createThumbnailMultiSelect()" @click="createThumbnailMultiSelect()">{{ translate("DRIVE.THUMB") }}</li>
@@ -142,7 +143,7 @@
       <DriveMenu ref="driveMenu" v-if="viewMenu" @closeMenu="closeMenu()">
         <li
           id="gallery"
-          v-if="canOpen && !isMarkup && !isHTML && !hexViewerAlternativeAvailable"
+          v-if="canOpen && !isMarkup && !isHTML && !hexViewerAlternativeAvailable && (archive == null || canViewArchiveEntry)"
           @keyup.enter="viewFile()"
           @click="viewFile()"
         >
@@ -191,12 +192,12 @@
         >
           {{ translate("DRIVE.DOWNLOAD") }}
         </li>
-        <li id="rename-file" v-if="isWritable" @keyup.enter="rename" @click="rename">
+        <li id="rename-file" v-if="isWritable || canEditArchive" @keyup.enter="rename" @click="rename">
           {{ translate("DRIVE.RENAME") }}
         </li>
         <li
           id="delete-file"
-          v-if="isWritable"
+          v-if="isWritable || canEditArchive"
           @keyup.enter="deleteFile"
           @click="deleteFile"
         >
@@ -437,6 +438,7 @@ const Warning = require('../components/Warning.vue');
 const helpers = require("../mixins/storage/index.js");
 const downloaderMixins = require("../mixins/downloader/index.js");
 const zipMixin = require("../mixins/zip/index.js");
+const archiveMixin = require("../mixins/archive/index.js");
 const i18n = require("../i18n/index.js");
 
 const router = require("../mixins/router/index.js");
@@ -570,7 +572,6 @@ module.exports = {
             clicks: 0,
             clickTimer: null,
             clickedFilename: null,
-            isStreamingAvailable: false,
             launcherApp: null,
             uploadProgressQueue: { entries:[]},
             executingUploadProgressCommands: false,
@@ -581,7 +582,7 @@ module.exports = {
             disallowedFilenames: new Map(),
 		};
 	},
-	mixins:[downloaderMixins, router, zipMixin, launcherMixin, i18n, sandboxMixin],
+	mixins:[downloaderMixins, router, zipMixin, archiveMixin, launcherMixin, i18n, sandboxMixin],
         mounted: function() {
                         let grid = localStorage.getItem("isGrid");
                         if (grid != null)
@@ -671,6 +672,8 @@ module.exports = {
 		},
 
         isInstallable: function() {
+           if (this.archive != null)
+               return false;
            try {
                if (this.selectedFiles.length != 1)
                    return false;
@@ -683,7 +686,7 @@ module.exports = {
            }
         },
         availableApps: function() {
-            if (this.currentDir == null)
+            if (this.currentDir == null || this.archive != null)
                 return [];
             if (this.selectedFiles.length != 1)
                 return [];
@@ -691,7 +694,7 @@ module.exports = {
         },
 		isSearchable() {
 			try {
-				if (this.currentDir == null)
+				if (this.currentDir == null || this.archive != null)
 					return false;
 				if (this.selectedFiles.length != 1)
 					return false;
@@ -723,6 +726,24 @@ module.exports = {
                 return false;
             }
 		},
+        // an archive that can be written to gets the actions that only rewrite its tail
+        canEditArchive() {
+            return this.archive != null && this.canWriteToArchive();
+        },
+        canViewArchiveEntry() {
+            try {
+                if (this.archive == null || this.selectedFiles.length != 1)
+                    return false;
+                return this.archiveViewer(this.selectedFiles[0]) != null;
+            } catch (err) {
+                return false;
+            }
+        },
+        // whether the browser can stream is a property of the browser, so ask it rather than
+        // caching an answer from whenever the drive last initialised
+        isStreamingAvailable() {
+            return this.supportsStreaming();
+        },
         canOpen() {
             try {
                 if (this.currentDir == null)
@@ -744,7 +765,7 @@ module.exports = {
         },
         isMarkup() {
             try {
-                if (this.currentDir == null)
+                if (this.currentDir == null || this.archive != null)
                     return false;
                 if (this.selectedFiles.length != 1)
                     return false;
@@ -764,7 +785,7 @@ module.exports = {
         },
         isHTML() {
             try {
-                if (this.currentDir == null)
+                if (this.currentDir == null || this.archive != null)
                     return false;
                 if (this.selectedFiles.length != 1)
                     return false;
@@ -784,6 +805,8 @@ module.exports = {
 					return false;
 				if (this.selectedFiles.length != 1)
 					return false;
+				if (this.archive != null)
+					return this.selectedFiles[0].isDirectory();
                         if (this.path.length == 0 && this.selectedFiles[0].getName() != this.context.username) {
                             return false;
                         }
@@ -794,7 +817,7 @@ module.exports = {
 		},
         allowViewFolderProperties() {
 			try {
-                if (!(this.path.length > 0)) {
+                if (!(this.path.length > 0) || this.archive != null) {
                     return false;
                 }
 				if (this.currentDir == null)
@@ -808,7 +831,7 @@ module.exports = {
         },
         allowViewFileDetails() {
             try {
-                if (this.selectedFiles.length != 1)
+                if (this.selectedFiles.length != 1 || this.archive != null)
                     return false;
                 return !this.selectedFiles[0].isDirectory();
             } catch (err) {
@@ -816,14 +839,17 @@ module.exports = {
             }
         },
         allowCopy() {
+            if (this.archive != null)
+                return this.isLoggedIn && this.selectedFiles.length == 1;
             return this.isLoggedIn && this.path.length > 0;
         },
 		allowShare() {
-			return this.isLoggedIn && this.path.length > 0;
+			// there is no capability to an entry inside an archive: copy it out first
+			return this.isLoggedIn && this.path.length > 0 && this.archive == null;
 		},
 		allowAddingToLauncher() {
             try {
-                if (this.currentDir == null)
+                if (this.currentDir == null || this.archive != null)
                     return false;
                 if (this.selectedFiles.length != 1)
                     return false;
@@ -852,7 +878,7 @@ module.exports = {
 		},
 		isWritable() {
 			try {
-				if (this.currentDir == null)
+				if (this.currentDir == null || this.archive != null)
 					return false;
 				return this.currentDir.isWritable();
 			} catch (err) {
@@ -872,6 +898,8 @@ module.exports = {
 			return true;
 		},
 		isPasteOptionAvailable() {
+		    if (this.archive != null)
+		        return this.isPasteToArchiveAvailable();
 		    let singlePasteOption = this.isPasteToFolderAvailable();
 		    let multiPasteOption = this.isPasteToFolderMultiSelectAvailable(this.currentDir);
 		    if (multiPasteOption) {
@@ -880,7 +908,7 @@ module.exports = {
 		    return singlePasteOption || multiPasteOption;
 		},
 		isPasteAvailable() {
-			return this.isPasteToFolderAvailable();
+			return this.archive != null ? this.isPasteToArchiveAvailable() : this.isPasteToFolderAvailable();
 		},
 	},
 
@@ -978,7 +1006,6 @@ module.exports = {
 		]),
 
 		init() {
-		    this.isStreamingAvailable = this.supportsStreaming();
 		    let that = this;
             streamSaver.createWriteStream("init-sw", null,
                 function (url) {
@@ -1382,11 +1409,22 @@ module.exports = {
 			return Promise.resolve(null);
 		    var path = this.getPath;
 		    var that = this;
+		    var trimmed = path.endsWith("/") ? path.substring(0, path.length - 1) : path;
+		    // moving around inside the archive we are already reading
+		    if (this.archive != null && trimmed.startsWith(this.archive.path + "/")) {
+		        this.openArchiveAt(this.archive.file, this.archive.path,
+		                           trimmed.substring(this.archive.path.length + 1), selectedFilename, callback);
+		        return Promise.resolve(null);
+		    }
 		    this.context.getByPath(path).thenApply(function (fileOpt) {
 		        if (fileOpt.isPresent()) {
                     let file = fileOpt.get();
                     file.getLatest(that.context.network).thenApply(updated => {
                         if (! updated.isDirectory()) {
+                            if (that.isArchiveFile(updated.getFileProperties())) {
+                                that.openArchiveAt(updated, trimmed, "", selectedFilename, callback);
+                                return;
+                            }
                             // go to parent if we tried to navigate to file
                             if (path.endsWith("/"))
                                 path = path.substring(0, path.length-1)
@@ -1395,6 +1433,7 @@ module.exports = {
                             that.updateCurrentDirectory(selectedFilename, callback);
                             return;
                         }
+                        that.leaveArchive();
                         that.currentDir = updated;
                         that.updateFiles(selectedFilename, callback);
                     }).exceptionally(function (throwable) {
@@ -1408,14 +1447,19 @@ module.exports = {
                         }
                     });
                 } else {
-                    that.$toast.error(that.translate("DRIVE.MISSING.FOLDER"));
-                    if (!that.isSecretLink && path.startsWith("/" + that.context.username)) {
-                        if (path.endsWith("/"))
-                            path = path.substring(0, path.length-1)
-                        let index = path.lastIndexOf("/");
-                        that.changePath(path.substring(0, index));
-                        that.updateCurrentDirectory(selectedFilename, callback);
-                    }
+                    // the path may descend into a zip archive rather than not exist
+                    that.findArchive(trimmed, "", function(archiveFile, archivePath, entryPath) {
+                        that.openArchiveAt(archiveFile, archivePath, entryPath, selectedFilename, callback);
+                    }, function() {
+                        that.$toast.error(that.translate("DRIVE.MISSING.FOLDER"));
+                        if (!that.isSecretLink && path.startsWith("/" + that.context.username)) {
+                            if (path.endsWith("/"))
+                                path = path.substring(0, path.length-1)
+                            let index = path.lastIndexOf("/");
+                            that.changePath(path.substring(0, index));
+                            that.updateCurrentDirectory(selectedFilename, callback);
+                        }
+                    });
                 }
 		    }).exceptionally(function (throwable) {
 			    console.log(throwable.getMessage());
@@ -1750,7 +1794,10 @@ module.exports = {
     zipAndDownloadMultiSelect() {
         if (this.currentDir == null)
             return false;
-        if (this.isStreamingAvailable) {
+        // on android the download manager does the streaming, so no service worker is needed
+        if (this.isStreamingAvailable || this.isLocalhostAndroid()) {
+            if (this.archive != null)
+                return this.downloadArchiveSelection();
             this.zipAndDownloadFolders();
         } else {
             this.showToastError(this.translate("DRIVE.ZIP.ERROR"));
@@ -1882,7 +1929,10 @@ module.exports = {
         });
     },
 	zipAndDownload() {
-        if (this.isStreamingAvailable) {
+        // on android the download manager does the streaming, so no service worker is needed
+        if (this.isStreamingAvailable || this.isLocalhostAndroid()) {
+            if (this.archive != null)
+                return this.downloadArchiveFolder();
             this.zipAndDownloadFolder();
         } else {
             this.showToastError(this.translate("DRIVE.ZIP.ERROR"));
@@ -1979,6 +2029,17 @@ module.exports = {
 		// files were dropped onto it rather than onto empty space
 		dndDrop(evt, intoFolder) {
 			evt.preventDefault();
+			if (this.archive != null) {
+				if (!this.canWriteToArchive()) {
+					this.$toast.error(this.translate("DRIVE.ARCHIVE.READONLY"));
+					return;
+				}
+				// dragging something out of the drive and into an archive has nothing to upload
+				if (evt.dataTransfer.files == null || evt.dataTransfer.files.length == 0) {
+					this.$toast.error(this.translate("DRIVE.ARCHIVE.DROP.FILES"));
+					return;
+				}
+			}
 			let entries = evt.dataTransfer.items;
 			let allItems = [];
 			for (i = 0; i < entries.length; i++) {
@@ -1990,6 +2051,9 @@ module.exports = {
 			let allFiles = [];
 			if (allItems.length > 0) {
 				this.getEntries(allItems, 0, this, allFiles, intoFolder);
+			} else if (this.archive != null) {
+				// a browser that cannot walk a dropped folder can still hand over plain files
+				this.uploadIntoArchive(evt.dataTransfer.files);
 			}
 		},
 		getEntries(items, itemIndex, that, allFiles, intoFolder) {
@@ -2020,6 +2084,8 @@ module.exports = {
                         that.getEntries(items, ++itemIndex, that, allFiles, intoFolder);
                     });
 				}
+			} else if (this.archive != null) {
+				this.uploadIntoArchive(allFiles);
 			} else {
 				this.processFileUpload(allFiles);
 			}
@@ -2041,6 +2107,11 @@ module.exports = {
         uploadFiles(evt) {
             var files = evt.target.files || evt.dataTransfer.files;
             let that = this;
+            if (this.archive != null) {
+                this.uploadIntoArchive(files);
+                evt.target.value = "";
+                return;
+            }
             let accumulatedFiles = [];
             let isAndroidDirUpload = this.isLocalhostAndroid()
                 && files.length > 0 && files[0].name.indexOf('/') >= 0;
@@ -2550,10 +2621,13 @@ module.exports = {
             this.clipboard = {
                 fileTreeNode: file,
                 op: "copy",
-                path: this.getPath
+                path: this.getPath,
+                archiveCopy: file.isArchiveEntry ? {archive: this.archive, entry: file.entry} : null
             };
             this.selectedFiles=[];
             this.closeMenu();
+            if (file.isArchiveEntry)
+                this.$toast(this.translate("DRIVE.ARCHIVE.COPIED").replace("$NAME", file.getName()));
         },
 
         cut() {
@@ -2684,6 +2758,10 @@ module.exports = {
             return target.isWritable() && target.isDirectory();
         },
         pasteToFolder(e) {
+            if (this.archive != null) {
+                this.pasteIntoArchive();
+                return;
+            }
             var target = this.multiSelectTargetFolder;
             if (target == null) {
                 this.paste(e);
@@ -2775,6 +2853,10 @@ module.exports = {
             }
 		},
 		paste(e, retrying) {
+			if (this.archive != null) {
+				this.pasteIntoArchive();
+				return;
+			}
 			if (this.selectedFiles.length > 1)
 				return;
 			var target = this.selectedFiles.length == 1 ? this.selectedFiles[0] : this.currentDir;
@@ -2784,6 +2866,11 @@ module.exports = {
 				let clipboard = this.clipboard;
 				if (typeof (clipboard) == undefined || typeof (clipboard.op) == "undefined")
 					return;
+
+				if (clipboard.archiveCopy != null) {
+					this.pasteFromArchive(target, clipboard);
+					return;
+				}
 
 				if (clipboard.fileTreeNode.samePointer(target)) {
 					return;
@@ -3074,6 +3161,17 @@ module.exports = {
 		    var file = this.selectedFiles[0];
 		    var filename = file.getName();
 
+		    if (file.isArchiveEntry) {
+		        let archiveApp = this.archiveViewer(file);
+		        if (archiveApp == null) { // nothing can show it, so hand it over
+		            this.confirmDownload(file, () => that.downloadFile(file));
+		            return;
+		        }
+		        this.appArgs = {filename: filename};
+		        this.openFileOrDir(archiveApp, this.getPath, this.appArgs, false);
+		        return;
+		    }
+
                     if (file.isWrapper)
                         return file.getFile().thenApply(f => {that.openFile(writable)});
 
@@ -3155,7 +3253,8 @@ module.exports = {
 		navigateDrive(file) {
 			this.closeMenu();
             // console.log(file, 'navigateDrive' )
-			if (file.isDirectory()) {
+			if (file.isDirectory() || this.isArchiveFile(file.getFileProperties())) {
+				// a zip is browsed into, like a directory, rather than opened
 				this.navigateToSubdir(file.getFileProperties().name);
 			} else {
 			    let newClickedFilename = file.getFileProperties().name;
@@ -3505,6 +3604,10 @@ module.exports = {
 					return;
 				that.showSpinner = true;
 				console.log("Renaming " + old_name + "to " + newName);
+				if (file.isArchiveEntry) {
+					that.renameInArchive(file, newName);
+					return;
+				}
 				Vue.nextTick(function () {
 					let filePath = peergos.client.PathUtils.toPath(that.path, old_name);
 					file.rename(newName, that.currentDir, filePath, that.context)
@@ -3535,6 +3638,10 @@ module.exports = {
             this.confirmDeleteMultiSelect(selectedCount, (prompt_result) => {
                 that.showPrompt = false;
                 if (prompt_result != null) {
+                    if (that.archive != null) {
+                        that.deleteFromArchive(that.selectedFiles.slice());
+                        return;
+                    }
                     that.showSpinner = true;
                     let parent = that.currentDir;
                     let filesToDelete = peergos.client.JsUtil.asList(that.selectedFiles.slice());
@@ -3585,6 +3692,10 @@ module.exports = {
 		},
 
 		deleteOne(file, parent, context) {
+			if (file.isArchiveEntry) {
+				this.deleteFromArchive([file]);
+				return;
+			}
 			let name = file.getFileProperties().name;
 			console.log("deleting: " + name);
 			this.showSpinner = true;
@@ -3603,7 +3714,7 @@ module.exports = {
 
 
 		isShared(file) {
-			if (this.currentDir == null)
+			if (this.currentDir == null || this.archive != null)
 				return false;
 			if (this.sharedWithState == null)
 				return false;
