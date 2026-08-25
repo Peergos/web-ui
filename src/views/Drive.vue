@@ -571,7 +571,6 @@ module.exports = {
             clicks: 0,
             clickTimer: null,
             clickedFilename: null,
-            isStreamingAvailable: false,
             launcherApp: null,
             uploadProgressQueue: { entries:[]},
             executingUploadProgressCommands: false,
@@ -734,6 +733,11 @@ module.exports = {
             } catch (err) {
                 return false;
             }
+        },
+        // whether the browser can stream is a property of the browser, so ask it rather than
+        // caching an answer from whenever the drive last initialised
+        isStreamingAvailable() {
+            return this.supportsStreaming();
         },
         canOpen() {
             try {
@@ -995,7 +999,6 @@ module.exports = {
 		]),
 
 		init() {
-		    this.isStreamingAvailable = this.supportsStreaming();
 		    let that = this;
             streamSaver.createWriteStream("init-sw", null,
                 function (url) {
