@@ -137,6 +137,8 @@ module.exports = {
     "DRIVE.INSTALL_DEDICATED_APP":"There is no app installed for this kind of file, please install an app to open",
     "DRIVE.MISSING.FOLDER":"Folder not found!",
     "DRIVE.ARCHIVE.UNREADABLE":"Couldn't read this zip archive:",
+    "DRIVE.ARCHIVE.READONLY":"This zip archive is read only",
+    "DRIVE.ARCHIVE.DROP.FILES":"Only files from your computer can be added to a zip archive",
     "DRIVE.ARCHIVE.ADDING":"Adding to the zip archive",
     "DRIVE.ARCHIVE.ADD.ERROR":"Couldn't add to the zip archive",
     "DRIVE.ARCHIVE.DELETE.ERROR":"Couldn't delete from the zip archive",

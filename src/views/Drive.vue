@@ -2026,11 +2026,15 @@ module.exports = {
 		dndDrop(evt, intoFolder) {
 			evt.preventDefault();
 			if (this.archive != null) {
-				if (evt.dataTransfer.files != null && evt.dataTransfer.files.length > 0)
-					this.uploadIntoArchive(evt.dataTransfer.files);
-				else
+				if (!this.canWriteToArchive()) {
 					this.$toast.error(this.translate("DRIVE.ARCHIVE.READONLY"));
-				return;
+					return;
+				}
+				// dragging something out of the drive and into an archive has nothing to upload
+				if (evt.dataTransfer.files == null || evt.dataTransfer.files.length == 0) {
+					this.$toast.error(this.translate("DRIVE.ARCHIVE.DROP.FILES"));
+					return;
+				}
 			}
 			let entries = evt.dataTransfer.items;
 			let allItems = [];
@@ -2043,6 +2047,9 @@ module.exports = {
 			let allFiles = [];
 			if (allItems.length > 0) {
 				this.getEntries(allItems, 0, this, allFiles, intoFolder);
+			} else if (this.archive != null) {
+				// a browser that cannot walk a dropped folder can still hand over plain files
+				this.uploadIntoArchive(evt.dataTransfer.files);
 			}
 		},
 		getEntries(items, itemIndex, that, allFiles, intoFolder) {
@@ -2073,6 +2080,8 @@ module.exports = {
                         that.getEntries(items, ++itemIndex, that, allFiles, intoFolder);
                     });
 				}
+			} else if (this.archive != null) {
+				this.uploadIntoArchive(allFiles);
 			} else {
 				this.processFileUpload(allFiles);
 			}

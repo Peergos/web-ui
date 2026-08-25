@@ -44,7 +44,7 @@
 				>
 					<ul>
 						<li @click="askForFiles()">{{ translate("DRIVE.UPLOAD.FILES") }}</li>
-						<li v-if="!isArchive" @click="askForDirectories()">{{ translate("DRIVE.UPLOAD.FOLDER") }}</li>
+						<li @click="askForDirectories()">{{ translate("DRIVE.UPLOAD.FOLDER") }}</li>
 						<li v-if="!isArchive" @click="$emit('createFile')">{{ translate("DRIVE.NEW.FILE") }}</li>
 						<li v-if="!isArchive" @click="$emit('askMkdir')">{{ translate("DRIVE.NEW.FOLDER") }}</li>
 						<li v-if="!isArchive" @click="$emit('newApp')">{{ translate("DRIVE.NEW.APP") }}</li>

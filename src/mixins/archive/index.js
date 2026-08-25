@@ -485,6 +485,10 @@ module.exports = {
         },
 
         /** Add files to the directory of the archive that is being looked at.
+         *
+         *  A dropped folder arrives as the files inside it, each carrying the path it came from,
+         *  which becomes its path in the archive. They all go in with one write: a write per file
+         *  would rewrite the archive's tail once per file, and leave every earlier tail behind.
          */
         uploadIntoArchive(browserFiles) {
             const that = this;
@@ -509,33 +513,14 @@ module.exports = {
             };
             this.showSpinner = true;
             this.$toast({component: ProgressBar, props: progress}, {icon: false, timeout: false, id: toastId});
-            const future = peergos.shared.util.Futures.incomplete();
-            this.addNextToArchive(files, 0, progress, toastId, future);
-            future.thenApply(function(res) {
-                that.$toast.dismiss(toastId);
-                that.updateUsage();
-                that.archiveChanged();
-                return res;
-            }).exceptionally(function(throwable) {
-                that.$toast.dismiss(toastId);
-                that.archiveWriteFailed(throwable, that.translate("DRIVE.ARCHIVE.ADD.ERROR"));
-                return null;
-            });
-        },
-
-        addNextToArchive(files, index, progress, toastId, future) {
-            const that = this;
-            if (index == files.length) {
-                future.complete(true);
-                return;
-            }
-            const file = files[index];
-            const entryPath = (this.archive.entry == "" ? "" : this.archive.entry + "/") + file.name;
-            this.currentArchiveFile().thenCompose(function(archiveFile) {
+            const base = this.archive.entry == "" ? "" : this.archive.entry + "/";
+            const entries = files.map(function(file) {
                 const reader = new peergos.shared.user.fs.BrowserFileReader(new browserio.JSFileReader(file));
-                const size = file.size;
-                return peergos.shared.user.fs.archive.ZipWriter.addFileJS(archiveFile, entryPath, reader,
-                    Math.floor(size / 4294967296), size % 4294967296, file.lastModified,
+                return peergos.shared.user.fs.archive.ZipWriter.newEntryJS(base + that.archiveEntryPath(file),
+                    reader, file.size, file.lastModified);
+            });
+            this.currentArchiveFile().thenCompose(function(archiveFile) {
+                return peergos.shared.user.fs.archive.ZipWriter.addFilesJS(archiveFile, entries,
                     that.context.network, that.context.crypto, function(read) {
                         progress.done += read.value_0;
                         const now = Date.now();
@@ -550,13 +535,25 @@ module.exports = {
                             }}});
                         }
                     });
-            }).thenApply(function(updated) {
-                that.addNextToArchive(files, index + 1, progress, toastId, future);
-                return updated;
+            }).thenApply(function(res) {
+                that.$toast.dismiss(toastId);
+                that.updateUsage();
+                that.archiveChanged();
+                return res;
             }).exceptionally(function(throwable) {
-                future.completeExceptionally(throwable);
+                that.$toast.dismiss(toastId);
+                that.archiveWriteFailed(throwable, that.translate("DRIVE.ARCHIVE.ADD.ERROR"));
                 return null;
             });
+        },
+
+        /** Where a file being uploaded belongs, relative to the directory being looked at: the
+         *  folder walk stamps the path onto each file, and a folder input has it as its own field.
+         */
+        archiveEntryPath(file) {
+            const directory = file.directory != null ? file.directory : this.extractDirectory(file);
+            const within = directory.replace(/^\/+/, '');
+            return (within.length == 0 ? '' : within + '/') + file.name;
         },
 
         /** Remove entries, overwriting the bytes they leave behind rather than only unlisting them.
