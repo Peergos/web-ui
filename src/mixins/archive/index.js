@@ -456,24 +456,45 @@ module.exports = {
             return archive.reader.readJS(entry).thenApply(function(reader) {
                 if (progress == null)
                     return reader;
-                return {
+                const wrapper = {
                     readIntoArray: function(res, offset, length) {
                         return reader.readIntoArray(res, offset, length).thenApply(function(read) {
                             progress(read);
                             return read;
                         });
                     },
-                    seek: function(high32, low32) {
-                        return reader.seekJS(high32, low32);
+                    seekJS: function(high32, low32) {
+                        return reader.seekJS(high32, low32).thenApply(function(sought) {
+                            return wrapper;
+                        });
                     },
                     reset: function() {
-                        return reader.reset();
+                        return reader.reset().thenApply(function(reset) {
+                            return wrapper;
+                        });
                     },
                     close: function() {
                         reader.close();
                     }
                 };
+                wrapper.seek = wrapper.seekJS;
+                return wrapper;
             });
+        },
+
+        /** The viewer that can open an entry, or null if none can.
+         *
+         *  A viewer qualifies by taking the file object it is handed: the markdown and html viewers
+         *  look their file up by path instead, which no entry inside an archive has, so text opens
+         *  in the editor, read only, rather than not at all.
+         */
+        archiveViewer(file) {
+            if (file.isDirectory())
+                return null;
+            const app = this.getApp(file, this.getPath, false);
+            if (app == "markup" || app == "htmlviewer")
+                return "editor";
+            return ["Gallery", "pdf", "editor", "hex"].indexOf(app) >= 0 ? app : null;
         }
     }
 };

@@ -142,7 +142,7 @@
       <DriveMenu ref="driveMenu" v-if="viewMenu" @closeMenu="closeMenu()">
         <li
           id="gallery"
-          v-if="canOpen && !isMarkup && !isHTML && !hexViewerAlternativeAvailable && archive == null"
+          v-if="canOpen && !isMarkup && !isHTML && !hexViewerAlternativeAvailable && (archive == null || canViewArchiveEntry)"
           @keyup.enter="viewFile()"
           @click="viewFile()"
         >
@@ -726,6 +726,15 @@ module.exports = {
                 return false;
             }
 		},
+        canViewArchiveEntry() {
+            try {
+                if (this.archive == null || this.selectedFiles.length != 1)
+                    return false;
+                return this.archiveViewer(this.selectedFiles[0]) != null;
+            } catch (err) {
+                return false;
+            }
+        },
         canOpen() {
             try {
                 if (this.currentDir == null)
@@ -747,7 +756,7 @@ module.exports = {
         },
         isMarkup() {
             try {
-                if (this.currentDir == null)
+                if (this.currentDir == null || this.archive != null)
                     return false;
                 if (this.selectedFiles.length != 1)
                     return false;
@@ -767,7 +776,7 @@ module.exports = {
         },
         isHTML() {
             try {
-                if (this.currentDir == null)
+                if (this.currentDir == null || this.archive != null)
                     return false;
                 if (this.selectedFiles.length != 1)
                     return false;
@@ -3116,8 +3125,13 @@ module.exports = {
 		    var filename = file.getName();
 
 		    if (file.isArchiveEntry) {
-		        // no viewer or app can take a path inside an archive yet, so download it
-		        this.confirmDownload(file, () => that.downloadFile(file));
+		        let archiveApp = this.archiveViewer(file);
+		        if (archiveApp == null) { // nothing can show it, so hand it over
+		            this.confirmDownload(file, () => that.downloadFile(file));
+		            return;
+		        }
+		        this.appArgs = {filename: filename};
+		        this.openFileOrDir(archiveApp, this.getPath, this.appArgs, false);
 		        return;
 		    }
 
