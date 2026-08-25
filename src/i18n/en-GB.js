@@ -139,6 +139,7 @@ module.exports = {
     "DRIVE.ARCHIVE.UNREADABLE":"Couldn't read this zip archive:",
     "DRIVE.ARCHIVE.READONLY":"This zip archive is read only",
     "DRIVE.ARCHIVE.DROP.FILES":"Only files from your computer can be added to a zip archive",
+    "DRIVE.ARCHIVE.PASTE.CUT":"Copy it instead: a file can't be moved out of your drive and into a zip archive in one step",
     "DRIVE.ARCHIVE.ADDING":"Adding to the zip archive",
     "DRIVE.ARCHIVE.ADD.ERROR":"Couldn't add to the zip archive",
     "DRIVE.ARCHIVE.DELETE.ERROR":"Couldn't delete from the zip archive",

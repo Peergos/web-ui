@@ -898,6 +898,8 @@ module.exports = {
 			return true;
 		},
 		isPasteOptionAvailable() {
+		    if (this.archive != null)
+		        return this.isPasteToArchiveAvailable();
 		    let singlePasteOption = this.isPasteToFolderAvailable();
 		    let multiPasteOption = this.isPasteToFolderMultiSelectAvailable(this.currentDir);
 		    if (multiPasteOption) {
@@ -906,7 +908,7 @@ module.exports = {
 		    return singlePasteOption || multiPasteOption;
 		},
 		isPasteAvailable() {
-			return this.archive == null && this.isPasteToFolderAvailable();
+			return this.archive != null ? this.isPasteToArchiveAvailable() : this.isPasteToFolderAvailable();
 		},
 	},
 
@@ -2754,6 +2756,10 @@ module.exports = {
             return target.isWritable() && target.isDirectory();
         },
         pasteToFolder(e) {
+            if (this.archive != null) {
+                this.pasteIntoArchive();
+                return;
+            }
             var target = this.multiSelectTargetFolder;
             if (target == null) {
                 this.paste(e);
@@ -2845,6 +2851,10 @@ module.exports = {
             }
 		},
 		paste(e, retrying) {
+			if (this.archive != null) {
+				this.pasteIntoArchive();
+				return;
+			}
 			if (this.selectedFiles.length > 1)
 				return;
 			var target = this.selectedFiles.length == 1 ? this.selectedFiles[0] : this.currentDir;

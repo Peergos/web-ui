@@ -487,8 +487,7 @@ module.exports = {
         /** Add files to the directory of the archive that is being looked at.
          *
          *  A dropped folder arrives as the files inside it, each carrying the path it came from,
-         *  which becomes its path in the archive. They all go in with one write: a write per file
-         *  would rewrite the archive's tail once per file, and leave every earlier tail behind.
+         *  which becomes its path in the archive.
          */
         uploadIntoArchive(browserFiles) {
             const that = this;
@@ -501,6 +500,32 @@ module.exports = {
             files.forEach(function(file) {
                 total += file.size;
             });
+            const base = this.archive.entry == "" ? "" : this.archive.entry + "/";
+            const entries = files.map(function(file) {
+                const reader = new peergos.shared.user.fs.BrowserFileReader(new browserio.JSFileReader(file));
+                return peergos.shared.user.fs.archive.ZipWriter.newEntryJS(base + that.archiveEntryPath(file),
+                    reader, file.size, file.lastModified);
+            });
+            this.addEntriesToArchive(entries, total);
+        },
+
+        /** Where a file being uploaded belongs, relative to the directory being looked at: the
+         *  folder walk stamps the path onto each file, and a folder input has it as its own field.
+         */
+        archiveEntryPath(file) {
+            const directory = file.directory != null ? file.directory : this.extractDirectory(file);
+            const within = directory.replace(/^\/+/, '');
+            return (within.length == 0 ? '' : within + '/') + file.name;
+        },
+
+        /** Write entries into the archive, all of them in one rewrite of its tail: a write per file
+         *  would rewrite that tail once per file, and leave every earlier tail behind as dead
+         *  weight in the archive.
+         */
+        addEntriesToArchive(entries, total) {
+            const that = this;
+            if (entries.length == 0)
+                return;
             const toastId = 'archive-add-' + this.archive.path;
             const progress = {
                 show: true,
@@ -513,12 +538,6 @@ module.exports = {
             };
             this.showSpinner = true;
             this.$toast({component: ProgressBar, props: progress}, {icon: false, timeout: false, id: toastId});
-            const base = this.archive.entry == "" ? "" : this.archive.entry + "/";
-            const entries = files.map(function(file) {
-                const reader = new peergos.shared.user.fs.BrowserFileReader(new browserio.JSFileReader(file));
-                return peergos.shared.user.fs.archive.ZipWriter.newEntryJS(base + that.archiveEntryPath(file),
-                    reader, file.size, file.lastModified);
-            });
             this.currentArchiveFile().thenCompose(function(archiveFile) {
                 return peergos.shared.user.fs.archive.ZipWriter.addFilesJS(archiveFile, entries,
                     that.context.network, that.context.crypto, function(read) {
@@ -547,13 +566,115 @@ module.exports = {
             });
         },
 
-        /** Where a file being uploaded belongs, relative to the directory being looked at: the
-         *  folder walk stamps the path onto each file, and a folder input has it as its own field.
+        /** The drive files on the clipboard, which are what a paste into the archive would add.
+         *  An entry copied out of an archive is not one of them: it has no capability to copy.
          */
-        archiveEntryPath(file) {
-            const directory = file.directory != null ? file.directory : this.extractDirectory(file);
-            const within = directory.replace(/^\/+/, '');
-            return (within.length == 0 ? '' : within + '/') + file.name;
+        archiveClipboard() {
+            const multi = this.clipboardMultiSelect;
+            if (multi != null && multi.op != null && multi.fileTreeNodes != null && multi.fileTreeNodes.length > 0)
+                return multi.fileTreeNodes.some(function(f) { return f.isArchiveEntry === true; }) ?
+                        null : {op: multi.op, files: multi.fileTreeNodes};
+            const single = this.clipboard;
+            if (single != null && single.op != null && single.archiveCopy == null && single.fileTreeNode != null)
+                return {op: single.op, files: [single.fileTreeNode]};
+            return null;
+        },
+
+        isPasteToArchiveAvailable() {
+            if (this.archive == null || ! this.canWriteToArchive())
+                return false;
+            if (this.selectedFiles.length > 1)
+                return false;
+            // a paste lands in the directory being looked at, or in a directory selected in it
+            if (this.selectedFiles.length == 1 && ! this.selectedFiles[0].isDirectory())
+                return false;
+            return this.archiveClipboard() != null;
+        },
+
+        /** Paste files copied elsewhere in the drive into the archive.
+         *
+         *  Like copying out of an archive, this is not a copy in the Peergos sense: every byte is
+         *  read, compressed and written into the archive, so a folder of any size goes through the
+         *  browser. Nothing is held while it happens, since each file is read as it is reached.
+         */
+        pasteIntoArchive() {
+            const that = this;
+            const clipboard = this.archiveClipboard();
+            if (clipboard == null)
+                return;
+            if (clipboard.op == "cut") {
+                this.$toast.error(this.translate("DRIVE.ARCHIVE.PASTE.CUT"));
+                return;
+            }
+            const target = this.selectedFiles.length == 1 ? this.selectedFiles[0] : null;
+            const base = target != null ?
+                    target.entry.path + "/" :
+                    (this.archive.entry == "" ? "" : this.archive.entry + "/");
+            this.selectedFiles = [];
+            const accumulator = {entries: [], pending: new Map()};
+            clipboard.files.forEach(function(file) {
+                const name = file.getFileProperties().name;
+                if (file.isDirectory())
+                    accumulator.pending.set(name, '');
+                else
+                    accumulator.entries.push({path: name, file: file});
+            });
+            if (accumulator.pending.size == 0) {
+                this.addDriveEntriesToArchive(base, accumulator.entries);
+                return;
+            }
+            const future = peergos.shared.util.Futures.incomplete();
+            future.thenApply(function(res) {
+                that.addDriveEntriesToArchive(base, accumulator.entries);
+                return res;
+            });
+            this.showSpinner = true;
+            clipboard.files.forEach(function(file) {
+                if (file.isDirectory())
+                    that.collectDriveEntries(file, file.getFileProperties().name, accumulator, future);
+            });
+        },
+
+        /** Walk a folder in the drive for the path every file in it will have in the archive. An
+         *  empty folder is kept as a directory of its own, since no file's path implies it.
+         */
+        collectDriveEntries(file, prefix, accumulator, future) {
+            const that = this;
+            file.getChildren(this.context.crypto.hasher, this.context.network).thenApply(function(children) {
+                const arr = children.toArray();
+                if (arr.length == 0)
+                    accumulator.entries.push({path: prefix, file: file});
+                for (let i = 0; i < arr.length; i++) {
+                    const child = arr[i];
+                    const props = child.getFileProperties();
+                    const path = prefix + "/" + props.name;
+                    if (props.isDirectory) {
+                        accumulator.pending.set(path, '');
+                        that.collectDriveEntries(child, path, accumulator, future);
+                    } else {
+                        accumulator.entries.push({path: path, file: child});
+                    }
+                }
+                accumulator.pending.delete(prefix);
+                if (accumulator.pending.size == 0)
+                    future.complete(true);
+                return true;
+            });
+        },
+
+        addDriveEntriesToArchive(base, items) {
+            const that = this;
+            let total = 0;
+            items.forEach(function(item) {
+                const props = item.file.getFileProperties();
+                if (! props.isDirectory)
+                    total += props.sizeHigh() * 4294967296 + (props.sizeLow() >>> 0);
+            });
+            const entries = items.map(function(item) {
+                return peergos.shared.user.fs.archive.ZipWriter.entryFromFileJS(base + item.path, item.file,
+                    that.context.network, that.context.crypto);
+            });
+            this.addEntriesToArchive(entries, total);
         },
 
         /** Remove entries, overwriting the bytes they leave behind rather than only unlisting them.

@@ -48,7 +48,7 @@
 						<li v-if="!isArchive" @click="$emit('createFile')">{{ translate("DRIVE.NEW.FILE") }}</li>
 						<li v-if="!isArchive" @click="$emit('askMkdir')">{{ translate("DRIVE.NEW.FOLDER") }}</li>
 						<li v-if="!isArchive" @click="$emit('newApp')">{{ translate("DRIVE.NEW.APP") }}</li>
-                        <li v-if="canPaste && !isArchive" @click="$emit('paste')">{{ translate("DRIVE.PASTE") }}</li>
+                        <li v-if="canPaste" @click="$emit('paste')">{{ translate("DRIVE.PASTE") }}</li>
 					</ul>
 				</AppDropdown>
 			</div>
