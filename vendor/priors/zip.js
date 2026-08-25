@@ -14,6 +14,9 @@ var zipInflate = {
         var self = this;
 
         var open = function() {
+            // a reset abandons the current stream, but its pull may already be scheduled: without
+            // this, that pull wakes up after the new stream is in place and swallows its input
+            const generation = self.generation = (self.generation || 0) + 1;
             self.queue = [];          // compressed chunks not yet taken by the stream
             self.pullResolve = null;  // set while the stream is waiting for input
             self.closedInput = false; // finish() has been called
@@ -26,6 +29,10 @@ var zipInflate = {
 
             var source = new ReadableStream({
                 pull: function(controller) {
+                    if (generation != self.generation) { // abandoned by a reset
+                        controller.close();
+                        return;
+                    }
                     if (self.queue.length > 0) {
                         controller.enqueue(self.queue.shift());
                         return;
@@ -40,6 +47,8 @@ var zipInflate = {
                     var promise = new Promise(function(resolve) {
                         self.pullResolve = function() {
                             self.pullResolve = null;
+                            if (generation != self.generation)
+                                return;
                             if (self.queue.length > 0)
                                 controller.enqueue(self.queue.shift());
                             else

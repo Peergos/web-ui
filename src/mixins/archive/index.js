@@ -10,6 +10,7 @@
 // read of only that entry. See peergos.shared.user.fs.archive.ZipReader.
 
 const ProgressBar = require("../../components/drive/ProgressBar.vue");
+const storage = require("../storage/index.js");
 
 const ZIP_MIMETYPE = "application/zip";
 
@@ -267,6 +268,169 @@ module.exports = {
                 that.$toast.error(throwable.getMessage());
                 return null;
             });
+        },
+
+        /** Copy an entry, or a whole directory of them, out of the archive into a Peergos folder.
+         *
+         *  There is no capability to an entry inside an archive, so this is not a copy in the
+         *  Peergos sense: every byte is read, decompressed and uploaded again, client side.
+         */
+        pasteFromArchive(target, clipboard) {
+            const that = this;
+            const archive = clipboard.archiveCopy.archive;
+            const entry = clipboard.archiveCopy.entry;
+            const targetPath = target === this.currentDir ?
+                    this.getPath :
+                    this.getPath + target.getFileProperties().name;
+
+            const files = entry.isDirectory ?
+                    this.collectArchiveEntries(archive, entry.path, entry.getName()) :
+                    [{path: "", entry: entry}];
+            if (files.length == 0) {
+                this.$toast(this.translate("DRIVE.EMPTY.FOLDER").replace("$NAME", entry.getName()));
+                return;
+            }
+            let total = 0;
+            files.forEach(function(f) {
+                total += f.entry.getSize();
+            });
+            const spaceAfter = this.checkAvailableSpace(total);
+            if (spaceAfter < 0) {
+                this.$toast.error(this.translate("DRIVE.COPY.SPACE.ERROR")
+                        .replace("$SPACE", storage.convertBytesToHumanReadable('' + -spaceAfter)),
+                    {timeout: false, id: 'upload'});
+                return;
+            }
+
+            const toastId = 'archive-copy-' + entry.getName();
+            const progress = {
+                show: true,
+                title: this.translate("DRIVE.COPYING.TITLE"),
+                stats: '',
+                done: 0,
+                max: total,
+                startTime: Date.now(),
+                lastUpdateTime: 0
+            };
+            this.$toast({component: ProgressBar, props: progress}, {icon: false, timeout: false, id: toastId});
+            const future = peergos.shared.util.Futures.incomplete();
+            this.copyNextArchiveFile(archive, targetPath, files, 0, progress, toastId, future);
+            future.thenApply(function(res) {
+                that.$toast.dismiss(toastId);
+                that.selectedFiles = [];
+                that.updateUsage();
+                that.updateCurrentDir();
+                return res;
+            }).exceptionally(function(throwable) {
+                that.$toast.dismiss(toastId);
+                that.$toast.error(throwable.getMessage(), {timeout: false});
+                that.updateCurrentDir();
+                return null;
+            });
+        },
+
+        copyNextArchiveFile(archive, targetPath, files, index, progress, toastId, future) {
+            const that = this;
+            if (index == files.length) {
+                future.complete(true);
+                return;
+            }
+            const item = files[index];
+            const directory = item.path == "" ? targetPath : targetPath + "/" + item.path;
+            this.ensureDirectory(directory).thenCompose(function(dir) {
+                return that.uploadArchiveFile(archive, dir, item.entry, progress, toastId);
+            }).thenApply(function(res) {
+                that.copyNextArchiveFile(archive, targetPath, files, index + 1, progress, toastId, future);
+                return res;
+            }).exceptionally(function(throwable) {
+                future.completeExceptionally(throwable);
+                return null;
+            });
+        },
+
+        uploadArchiveFile(archive, dir, entry, progress, toastId) {
+            const that = this;
+            const size = entry.getSize();
+            let low = size % 4294967296;
+            if (low > 2147483647)
+                low -= 4294967296;
+            const high = Math.floor(size / 4294967296);
+            return archive.reader.readJS(entry).thenCompose(function(reader) {
+                return dir.uploadFileJS(entry.getName(), reader, high, low, true,
+                    that.getMirrorBatId(dir), that.context.network, that.context.crypto,
+                    function(read) {
+                        progress.done += read.value_0;
+                        const now = Date.now();
+                        if (now - progress.lastUpdateTime > 500) {
+                            progress.lastUpdateTime = now;
+                            progress.stats = storage.formatTransferStats(progress.done, progress.max, progress.startTime);
+                            that.$toast.update(toastId, {content: {component: ProgressBar, props: {
+                                title: progress.title,
+                                stats: progress.stats,
+                                done: progress.done,
+                                max: progress.max
+                            }}});
+                        }
+                    },
+                    that.context.getTransactionService(),
+                    function(f) {
+                        return peergos.shared.util.Futures.of(false);
+                    });
+            });
+        },
+
+        /** The directory at a path, creating it and any missing parent if it isn't there yet.
+         */
+        ensureDirectory(path) {
+            const that = this;
+            const trimmed = path.endsWith("/") ? path.substring(0, path.length - 1) : path;
+            const future = peergos.shared.util.Futures.incomplete();
+            this.context.getByPath(trimmed).thenApply(function(existing) {
+                if (existing.isPresent()) {
+                    future.complete(existing.get());
+                    return null;
+                }
+                const index = trimmed.lastIndexOf("/");
+                const name = trimmed.substring(index + 1);
+                that.ensureDirectory(trimmed.substring(0, index))
+                    .thenCompose(function(parent) {
+                        return parent.mkdir(name, that.context.network, false,
+                                that.getMirrorBatId(parent), that.context.crypto);
+                    })
+                    .thenCompose(function(updated) {
+                        return that.context.getByPath(trimmed);
+                    })
+                    .thenApply(function(created) {
+                        future.complete(created.get());
+                        return created;
+                    })
+                    .exceptionally(function(throwable) {
+                        future.completeExceptionally(throwable);
+                        return null;
+                    });
+                return null;
+            }).exceptionally(function(throwable) {
+                future.completeExceptionally(throwable);
+                return null;
+            });
+            return future;
+        },
+
+        /** Every file entry under a directory in the archive, with its path relative to that
+         *  directory's parent.
+         */
+        collectArchiveEntries(archive, entryPath, relativePath) {
+            const res = [];
+            const children = archive.reader.listDirectoryJS(entryPath);
+            for (let i = 0; i < children.length; i++) {
+                const child = children[i];
+                if (child.isDirectory)
+                    res.push.apply(res, this.collectArchiveEntries(archive, child.path,
+                            relativePath + "/" + child.getName()));
+                else
+                    res.push({path: relativePath, entry: child});
+            }
+            return res;
         },
 
         /** Every file under a directory in the archive, each with its path relative to that

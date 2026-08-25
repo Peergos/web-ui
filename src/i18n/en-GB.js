@@ -138,6 +138,7 @@ module.exports = {
     "DRIVE.MISSING.FOLDER":"Folder not found!",
     "DRIVE.ARCHIVE.UNREADABLE":"Couldn't read this zip archive:",
     "DRIVE.ARCHIVE.READONLY":"Zip archives are read only for now",
+    "DRIVE.ARCHIVE.COPIED":"Copied $NAME. Go to a folder in your drive and paste to copy it out of the archive",
     "APPNAV.LAUNCHER":"Launcher",
     "APPNAV.DRIVE":"Drive",
     "APPNAV.SHAREDWITH":"Shared",

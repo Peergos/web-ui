@@ -167,6 +167,19 @@ async function runTests() {
     passed.push(await check("1 KiB incompressible in 1 byte reads", pseudoRandom(1024, 4), 1));
     passed.push(await check("empty entry", new Uint8Array(0), 4096));
 
+    // the upload path resets a reader before it has read anything, by which time the stream it
+    // starts with has already asked for input
+    var fresh = new zipInflate.NativeJSInflate();
+    await new Promise(function(resolve) { setTimeout(resolve, 0); });
+    fresh.reset();
+    var small = textBytes("a small entry that gets copied out of an archive");
+    var smallCompressed = await deflateRaw(small);
+    var afterReset = await inflateAll(smallCompressed, small.length, 16384, fresh);
+    fresh.close();
+    if (! sameBytes(afterReset.bytes, small, small.length) || afterReset.length !== small.length)
+        throw new Error("reset before first use: got " + afterReset.length + " of " + small.length + " bytes");
+    passed.push("reset before the first read");
+
     // reset() and read the same stream again
     var original = compressible(300000, 5);
     var compressed = await deflateRaw(original);
@@ -230,7 +243,6 @@ Promise.race([runTests(), timeout]).then(function(passed) {
     window.RESULT = {ok: false, error: message};
     report("FAILED: " + message, "red");
 });
-
 </script>
 </body>
 </html>

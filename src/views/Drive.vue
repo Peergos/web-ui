@@ -821,7 +821,9 @@ module.exports = {
             }
         },
         allowCopy() {
-            return this.isLoggedIn && this.path.length > 0 && this.archive == null;
+            if (this.archive != null)
+                return this.isLoggedIn && this.selectedFiles.length == 1;
+            return this.isLoggedIn && this.path.length > 0;
         },
 		allowShare() {
 			// there is no capability to an entry inside an archive: copy it out first
@@ -2581,10 +2583,13 @@ module.exports = {
             this.clipboard = {
                 fileTreeNode: file,
                 op: "copy",
-                path: this.getPath
+                path: this.getPath,
+                archiveCopy: file.isArchiveEntry ? {archive: this.archive, entry: file.entry} : null
             };
             this.selectedFiles=[];
             this.closeMenu();
+            if (file.isArchiveEntry)
+                this.$toast(this.translate("DRIVE.ARCHIVE.COPIED").replace("$NAME", file.getName()));
         },
 
         cut() {
@@ -2815,6 +2820,11 @@ module.exports = {
 				let clipboard = this.clipboard;
 				if (typeof (clipboard) == undefined || typeof (clipboard.op) == "undefined")
 					return;
+
+				if (clipboard.archiveCopy != null) {
+					this.pasteFromArchive(target, clipboard);
+					return;
+				}
 
 				if (clipboard.fileTreeNode.samePointer(target)) {
 					return;
