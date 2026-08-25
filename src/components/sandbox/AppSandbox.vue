@@ -335,7 +335,8 @@ module.exports = {
             return this.socialData.friends;
         }
     },
-    props: ['sandboxAppName', 'currentFile', 'currentPath', 'currentProps', 'sandboxAppChatId', 'htmlAnchor'],
+    props: ['sandboxAppName', 'currentFile', 'currentPath', 'currentProps', 'sandboxAppChatId', 'htmlAnchor',
+            'archiveResolver'],
     created: function() {
         let that = this;
         this.messenger = new peergos.shared.messaging.Messenger(this.context);
@@ -3283,6 +3284,19 @@ module.exports = {
                 that.showError('Path not accessible: ' + expandedFilePath);
                 that.buildResponse(headerFunc(), null, that.ACTION_FAILED);
             } else {
+                // a path inside a zip the drive is looking at, which getByPath cannot resolve
+                let entry = this.archiveResolver == null ? null : this.archiveResolver(expandedFilePath);
+                if (entry != null) {
+                    if (entry.getFileProperties().isDirectory) {
+                        that.buildResponse(headerFunc(), null, that.ACTION_FAILED);
+                        return;
+                    }
+                    if (updateTargetFile) {
+                        that.targetFile = entry;
+                    }
+                    that.readInFile(headerFunc, entry);
+                    return;
+                }
                 this.context.getByPath(expandedFilePath).thenApply(function(respOpt){
                     if (respOpt.ref == null) {
                         console.log('Path not found: ' + expandedFilePath);
@@ -3881,6 +3895,11 @@ module.exports = {
             var future = peergos.shared.util.Futures.incomplete();
             let that = this;
             let expandedFilePath = this.expandFilePath(filePath, isFromRedirect);
+            let entry = this.archiveResolver == null ? null : this.archiveResolver(expandedFilePath);
+            if (entry != null) {
+                future.complete(entry);
+                return future;
+            }
             this.context.getByPath(expandedFilePath).thenApply(function(fileOpt){
                 if (fileOpt.ref == null) {
                     console.log('file not found: ' + filePath);

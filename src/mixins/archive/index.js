@@ -179,6 +179,8 @@ module.exports = {
                     created: entry.modified,
                     thumbnail: {ref: null},
                     mimeType: mimeType,
+                    // an entry is not a peergos file, so it has no hash of its own to be an etag
+                    treeHash: {isPresent: function() { return false; }},
                     getType: function() {
                         return type;
                     },
@@ -191,6 +193,12 @@ module.exports = {
                 },
                 getFileProperties: function() {
                     return this.props;
+                },
+                getLatest: function(network) {
+                    // an entry only exists in the version of the archive we opened
+                    const future = peergos.shared.util.Futures.incomplete();
+                    future.complete(this);
+                    return future;
                 },
                 isDirectory: function() {
                     return isDir;
@@ -825,17 +833,36 @@ module.exports = {
 
         /** The viewer that can open an entry, or null if none can.
          *
-         *  A viewer qualifies by taking the file object it is handed: the markdown and html viewers
-         *  look their file up by path instead, which no entry inside an archive has, so text opens
-         *  in the editor, read only, rather than not at all.
+         *  A viewer qualifies by taking the file object it is handed. The html viewer runs in the
+         *  app sandbox, which asks for what it needs by path, so it takes [archiveFileAt] to answer
+         *  those out of the archive. The markdown viewer looks its own file up by path with nowhere
+         *  to hand it a resolver, so a .md entry opens in the editor, read only, rather than not at
+         *  all.
          */
         archiveViewer(file) {
             if (file.isDirectory())
                 return null;
             const app = this.getApp(file, this.getPath, false);
-            if (app == "markup" || app == "htmlviewer")
+            // the markdown viewer looks its file up by path, which an entry does not have
+            if (app == "markup")
                 return "editor";
-            return ["Gallery", "pdf", "editor", "hex"].indexOf(app) >= 0 ? app : null;
+            return ["Gallery", "pdf", "editor", "hex", "htmlviewer"].indexOf(app) >= 0 ? app : null;
+        },
+
+        /** The entry at a drive path that points inside the archive being looked at, wrapped so
+         *  that an app sandbox can read it without knowing it came out of a zip. This is what lets
+         *  a page in an archive load the images, styles and pages next to it.
+         */
+        archiveFileAt(path) {
+            if (this.archive == null || path == null)
+                return null;
+            const prefix = this.archive.path + "/";
+            if (! path.startsWith(prefix))
+                return null;
+            const within = path.substring(prefix.length);
+            const entry = this.archive.reader.getEntryJS(
+                    within.endsWith("/") ? within.substring(0, within.length - 1) : within);
+            return entry == null ? null : this.buildArchiveEntry(this.archive, entry);
         }
     }
 };

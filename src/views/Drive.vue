@@ -362,6 +362,7 @@
       :currentPath="currentPath"
       :currentProps="appSandboxProps"
       :htmlAnchor="htmlAnchor"
+      :archiveResolver="archiveFileAt"
     >
     </AppSandbox>
     <Replace
