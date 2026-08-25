@@ -76,7 +76,7 @@
     <DriveSelected v-if="selectedFiles.length > 1" :totalFiles="files.length" :selectedFiles="selectedFiles" @selectAllOrNone="selectAllOrNone()">
       <li id="copy" v-if="allowCopy" @keyup.enter="copyMultiSelect()" @click="copyMultiSelect()">{{ translate("DRIVE.COPY") }}</li>
       <li id="cut" v-if="isWritable" @keyup.enter="cutMultiSelect()" @click="cutMultiSelect()">{{ translate("DRIVE.CUT") }}</li>
-      <li id="delete" v-if="isWritable" @keyup.enter="deleteFilesMultiSelect()" @click="deleteFilesMultiSelect()">{{ translate("DRIVE.DELETE") }}</li>
+      <li id="delete" v-if="isWritable || canEditArchive" @keyup.enter="deleteFilesMultiSelect()" @click="deleteFilesMultiSelect()">{{ translate("DRIVE.DELETE") }}</li>
       <li id="download" @keyup.enter="downloadAllMultiSelect()" @click="downloadAllMultiSelect()">{{ translate("DRIVE.DOWNLOAD") }}</li>
       <li id="zip" @keyup.enter="zipAndDownloadMultiSelect()" @click="zipAndDownloadMultiSelect()">{{ translate("DRIVE.ZIP") }}</li>
       <li id="create-thumbnail" v-if="isWritable" @keyup.enter="createThumbnailMultiSelect()" @click="createThumbnailMultiSelect()">{{ translate("DRIVE.THUMB") }}</li>
@@ -3636,6 +3636,10 @@ module.exports = {
             this.confirmDeleteMultiSelect(selectedCount, (prompt_result) => {
                 that.showPrompt = false;
                 if (prompt_result != null) {
+                    if (that.archive != null) {
+                        that.deleteFromArchive(that.selectedFiles.slice());
+                        return;
+                    }
                     that.showSpinner = true;
                     let parent = that.currentDir;
                     let filesToDelete = peergos.client.JsUtil.asList(that.selectedFiles.slice());

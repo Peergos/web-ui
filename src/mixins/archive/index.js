@@ -566,8 +566,8 @@ module.exports = {
             });
         },
 
-        /** The drive files on the clipboard, which are what a paste into the archive would add.
-         *  An entry copied out of an archive is not one of them: it has no capability to copy.
+        /** What a paste into the archive would add: files copied elsewhere in the drive, or an
+         *  entry copied out of an archive, this one included.
          */
         archiveClipboard() {
             const multi = this.clipboardMultiSelect;
@@ -575,9 +575,11 @@ module.exports = {
                 return multi.fileTreeNodes.some(function(f) { return f.isArchiveEntry === true; }) ?
                         null : {op: multi.op, files: multi.fileTreeNodes};
             const single = this.clipboard;
-            if (single != null && single.op != null && single.archiveCopy == null && single.fileTreeNode != null)
-                return {op: single.op, files: [single.fileTreeNode]};
-            return null;
+            if (single == null || single.op == null || single.fileTreeNode == null)
+                return null;
+            if (single.archiveCopy != null)
+                return {op: single.op, source: single.archiveCopy.archive, entry: single.archiveCopy.entry};
+            return {op: single.op, files: [single.fileTreeNode]};
         },
 
         isPasteToArchiveAvailable() {
@@ -611,6 +613,10 @@ module.exports = {
                     target.entry.path + "/" :
                     (this.archive.entry == "" ? "" : this.archive.entry + "/");
             this.selectedFiles = [];
+            if (clipboard.entry != null) {
+                this.pasteEntryIntoArchive(clipboard.source, clipboard.entry, base);
+                return;
+            }
             const accumulator = {entries: [], pending: new Map()};
             clipboard.files.forEach(function(file) {
                 const name = file.getFileProperties().name;
@@ -660,6 +666,49 @@ module.exports = {
                     future.complete(true);
                 return true;
             });
+        },
+
+        /** Paste an entry copied out of an archive into this one, which may be the same archive.
+         */
+        pasteEntryIntoArchive(source, entry, base) {
+            const that = this;
+            const destination = base + entry.getName();
+            if (source.path == this.archive.path
+                    && (destination == entry.path || destination.startsWith(entry.path + "/"))) {
+                this.$toast.error(this.translate("DRIVE.ARCHIVE.PASTE.SELF"));
+                return;
+            }
+            const items = entry.isDirectory ?
+                    this.collectArchiveSubtree(source, entry.path, entry.getName()) :
+                    [{path: entry.getName(), entry: entry}];
+            let total = 0;
+            items.forEach(function(item) {
+                total += item.entry.getSize();
+            });
+            const entries = items.map(function(item) {
+                return peergos.shared.user.fs.archive.ZipWriter.entryFromArchiveJS(base + item.path,
+                    source.reader, item.entry);
+            });
+            this.addEntriesToArchive(entries, total);
+        },
+
+        /** Every entry under a directory in an archive, with the path it will have once pasted. An
+         *  empty directory is one of them, since no file's path implies it.
+         */
+        collectArchiveSubtree(source, entryPath, relativePath) {
+            const children = source.reader.listDirectoryJS(entryPath);
+            if (children.length == 0)
+                return [{path: relativePath, entry: source.reader.getEntryJS(entryPath)}];
+            const res = [];
+            for (let i = 0; i < children.length; i++) {
+                const child = children[i];
+                const path = relativePath + "/" + child.getName();
+                if (child.isDirectory)
+                    res.push.apply(res, this.collectArchiveSubtree(source, child.path, path));
+                else
+                    res.push({path: path, entry: child});
+            }
+            return res;
         },
 
         addDriveEntriesToArchive(base, items) {
