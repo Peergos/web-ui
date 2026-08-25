@@ -305,6 +305,7 @@
       v-if="showMarkupViewer"
       v-on:hide-markup-viewer="showDrive()"
       :propAppArgs="appArgs"
+      :archiveResolver="archiveFileAt"
     >
     </Markup>
     <Identity

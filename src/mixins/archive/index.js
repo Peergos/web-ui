@@ -833,20 +833,15 @@ module.exports = {
 
         /** The viewer that can open an entry, or null if none can.
          *
-         *  A viewer qualifies by taking the file object it is handed. The html viewer runs in the
-         *  app sandbox, which asks for what it needs by path, so it takes [archiveFileAt] to answer
-         *  those out of the archive. The markdown viewer looks its own file up by path with nowhere
-         *  to hand it a resolver, so a .md entry opens in the editor, read only, rather than not at
-         *  all.
+         *  A viewer qualifies by taking the file object it is handed, or by asking for what it
+         *  wants by path: the html and markdown viewers do the latter, and both take
+         *  [archiveFileAt] so that those paths are answered out of the archive.
          */
         archiveViewer(file) {
             if (file.isDirectory())
                 return null;
             const app = this.getApp(file, this.getPath, false);
-            // the markdown viewer looks its file up by path, which an entry does not have
-            if (app == "markup")
-                return "editor";
-            return ["Gallery", "pdf", "editor", "hex", "htmlviewer"].indexOf(app) >= 0 ? app : null;
+            return ["Gallery", "pdf", "editor", "hex", "htmlviewer", "markup"].indexOf(app) >= 0 ? app : null;
         },
 
         /** The entry at a drive path that points inside the archive being looked at, wrapped so
@@ -856,10 +851,12 @@ module.exports = {
         archiveFileAt(path) {
             if (this.archive == null || path == null)
                 return null;
+            // not every caller has a leading slash on the path it asks about
+            const absolute = path.startsWith("/") ? path : "/" + path;
             const prefix = this.archive.path + "/";
-            if (! path.startsWith(prefix))
+            if (! absolute.startsWith(prefix))
                 return null;
-            const within = path.substring(prefix.length);
+            const within = absolute.substring(prefix.length);
             const entry = this.archive.reader.getEntryJS(
                     within.endsWith("/") ? within.substring(0, within.length - 1) : within);
             return entry == null ? null : this.buildArchiveEntry(this.archive, entry);

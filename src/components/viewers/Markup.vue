@@ -5,7 +5,7 @@
         <div class="modal-header" style="padding:0">
             <center>
                 <h2>
-                    <span v-if="!isSecretLink && fullPathForDisplay.length > 0" style="z-index:9999">
+                    <span v-if="!isSecretLink && !isArchiveEntry && fullPathForDisplay.length > 0" style="z-index:9999">
                           <img v-if="displayToBookmark" src="/images/bookmark-o.svg" @click="toggleBookmark(false)" style="height:24px;width:24px;cursor:pointer;">
                           <img v-if="!displayToBookmark" src="/images/bookmark.svg" @click="toggleBookmark(true)" style="height:24px;width:24px;cursor:pointer;">
                     </span>
@@ -83,10 +83,12 @@ module.exports = {
             confirm_consumer_func: () => {},
             launcherApp: null,
             displayToBookmark: true,
+            // a bookmark is a path, and a page inside an archive has one only while it is open
+            isArchiveEntry: false,
             targetFile: null,
         }
     },
-    props: ['propAppArgs'],
+    props: ['propAppArgs', 'archiveResolver'],
     mixins:[mixins, routerMixins, launcherMixin],
     computed: {
         ...Vuex.mapState([
@@ -122,6 +124,7 @@ module.exports = {
         this.findFile(completePath, false).thenApply(file => {
             if (file != null) {
                 that.isFileWritable = file.isWritable();
+                that.isArchiveEntry = file.isArchiveEntry === true;
                 that.readInFile(file).thenApply(data => {
                     that.setFullPathForDisplay();
                     that.targetFile = file;
@@ -163,6 +166,7 @@ module.exports = {
             let theme = this.$store.getters.currentTheme;
             this.findFile(completePath, false).thenApply(file => {
                 if (file != null) {
+                    that.isArchiveEntry = file.isArchiveEntry === true;
                     that.readInFile(file).thenApply(data => {
                         that.setFullPathForDisplay();
                         that.targetFile = file;
@@ -429,6 +433,17 @@ module.exports = {
     findFile: function(filePath, allowFolder) {
         let that = this;
         var future = peergos.shared.util.Futures.incomplete();
+        // a path inside a zip the drive is looking at, which getByPath cannot resolve
+        let entry = this.archiveResolver == null ? null : this.archiveResolver(filePath);
+        if (entry != null) {
+            if (allowFolder != true && entry.getFileProperties().isDirectory) {
+                this.showErrorMessage("folder not accessible: " + filePath);
+                future.complete(null);
+            } else {
+                future.complete(entry);
+            }
+            return future;
+        }
         this.context.getByPath(filePath).thenApply(function(fileOpt){
             if (fileOpt.ref == null) {
                 //that.showErrorMessage("path not found!: " + filePath);
