@@ -178,6 +178,8 @@
 				:multipleFolderSelection="multipleFolderSelection"
 				:initiallySelectedPaths="initiallySelectedPaths"
 				:noDriveSelection="true"
+				:pickerChoices="pickerChoices"
+				:pickerChoicesTitle="pickerChoicesTitle"
 				:pickerTitle="pickerTitle">
 			</FolderPicker>
 
@@ -192,14 +194,6 @@
 
 			<Spinner v-if="showSpinner" :message="spinnerMessage"></Spinner>
 
-			<Select
-				v-if="showSelect"
-				v-on:hide-select="showSelect = false"
-				:select_message="select_message"
-				:select_body="select_body"
-				:select_consumer_func="select_consumer_func"
-				:select_options="select_options">
-			</Select>
 
 			<Confirm
 				v-if="showConfirm"
@@ -219,7 +213,6 @@ const paths = require("../mixins/paths/index.js");
 const errors = require("../mixins/errors/index.js");
 const localServer = require("../mixins/localserver/index.js");
 const FolderPicker = require('../components/picker/FolderPicker.vue');
-const Select = require('../components/choice/Select.vue');
 const Confirm = require('../components/confirm/Confirm.vue');
 
 const SimpleFolderPicker = require('../components/picker/SimpleFolderPicker.vue');
@@ -275,7 +268,6 @@ module.exports = {
 	components: {
 		AppHeader,
 		FolderPicker,
-		Select,
 		Confirm,
 		SimpleFolderPicker,
 		Spinner,
@@ -292,15 +284,12 @@ module.exports = {
 			initiallySelectedPaths: [],
 			hostFolderTree: {},
 			useHostDirChooser: false,
-			pickerTitle: "Remote Folder (create in Drive first)",
-			simplePickerTitle: "Local Folder",
+			pickerTitle: "",
+			pickerChoices: [],
+			pickerChoicesTitle: "",
+			simplePickerTitle: "",
 			showSpinner: false,
 			spinnerMessage: '',
-			showSelect: false,
-			select_message: '',
-			select_body: '',
-			select_consumer_func: () => {},
-			select_options: [],
 			showConfirm: false,
 			confirm_message: '',
 			confirm_body: '',
@@ -437,6 +426,8 @@ module.exports = {
 		},
 	},
 	created() {
+		this.pickerTitle = this.translate("SYNC.REMOTE.PICK");
+		this.simplePickerTitle = this.translate("SYNC.LOCAL.PICK");
 		this.getSyncState();
 		this.getWhichChooser();
 		this.updateStatus();
@@ -712,67 +703,50 @@ module.exports = {
 			return this.openPeergosFolderPicker();
 		},
 
-		getDeleteBehaviour() {
-			let future = peergos.shared.util.Futures.incomplete();
-			let that = this;
-			this.select_message = this.translate("SYNC.SELECT.DELETION.BEHAVIOUR");
-			this.select_body = '';
-			let syncLocalDeletesLabel = this.translate("SYNC.SELECT.DELETION.LOCAL");
-			let syncRemoteDeletesLabel = this.translate("SYNC.SELECT.DELETION.REMOTE");
-			this.select_consumer_func = (picked) => {
-				let syncLocalDeletes = picked.indexOf(syncLocalDeletesLabel) > -1;
-				let syncRemoteDeletes = picked.indexOf(syncRemoteDeletesLabel) > -1;
-				future.complete({ syncLocalDeletes: syncLocalDeletes, syncRemoteDeletes: syncRemoteDeletes });
-			};
-			this.select_options = [syncLocalDeletesLabel, syncRemoteDeletesLabel];
-			this.showSelect = true;
-			return future;
-		},
 
 		addSyncPair() {
 			const that = this;
 			this.getHostDir().thenCompose(hostDir => {
 				if (hostDir == null)
 					return that.completed(null);
-				return that.getPeergosDir().thenCompose(peergosDir => {
-					if (peergosDir == null)
+				return that.getPeergosDir().thenCompose(chosen => {
+					if (chosen == null)
 						return that.completed(null);
+					const peergosDir = chosen.path;
 					if (peergosDir.substring(1).split("/").length < 2) {
 						// reporting beats throwing across the java boundary
 						that.$toast.error(that.translate("SYNC.ERROR.HOMEDIR"), {});
 						return that.completed(null);
 					}
-					return that.getDeleteBehaviour().thenCompose(deleteSelection => {
-						const syncLocalDeletes = deleteSelection.syncLocalDeletes;
-						const syncRemoteDeletes = deleteSelection.syncRemoteDeletes;
-						that.$toast(that.translate("SYNC.ADDING"), { id: "syncadd" });
-						const peergosPath = peergos.client.PathUtils.directoryToPath(peergosDir.substring(1).split("/"));
-						return that.context.shareWriteAccessWith(peergosPath, peergos.client.JsUtil.asSet([])).thenCompose(done => {
-							return that.context.createSecretLink(peergosDir, true, java.util.Optional.empty(), "", "", false);
-						}).thenCompose(link => {
-							const cap = link.toLinkString(that.context.signer.publicKeyHash)
-							const label = cap.substring(cap.lastIndexOf("/", cap.indexOf("#")) + 1, cap.indexOf("#"))
-							// localPost returns a native Promise; thenCompose requires the java
-							// future type, so bridge rather than returning the Promise
-							let added = peergos.shared.util.Futures.incomplete();
-							that.localPost("/peergos/v0/sync/add-pair?label=" + label,
-								JSON.stringify({ link: cap, dir: hostDir, syncLocalDeletes: syncLocalDeletes, syncRemoteDeletes: syncRemoteDeletes }))
-								.then(function(result) {
-									that.syncPairs.push({
-										localpath: hostDir, remotepath: peergosDir.toString(), label: label,
-										syncLocalDeletes: syncLocalDeletes, syncRemoteDeletes: syncRemoteDeletes,
-										allowOnMobile: false, state: 'SYNCING', msg: '', error: null
-									});
-									// pick up the authoritative remote path the server resolved
-									that.getSyncState();
-									added.complete(true);
-								})
-								.catch(function(err) {
-									that.$toast.error(that.errText(err), {});
-									added.complete(false);
+					const syncLocalDeletes = chosen.deletes.syncLocalDeletes === true;
+					const syncRemoteDeletes = chosen.deletes.syncRemoteDeletes === true;
+					that.$toast(that.translate("SYNC.ADDING"), { id: "syncadd" });
+					const peergosPath = peergos.client.PathUtils.directoryToPath(peergosDir.substring(1).split("/"));
+					return that.context.shareWriteAccessWith(peergosPath, peergos.client.JsUtil.asSet([])).thenCompose(done => {
+						return that.context.createSecretLink(peergosDir, true, java.util.Optional.empty(), "", "", false);
+					}).thenCompose(link => {
+						const cap = link.toLinkString(that.context.signer.publicKeyHash)
+						const label = cap.substring(cap.lastIndexOf("/", cap.indexOf("#")) + 1, cap.indexOf("#"))
+						// localPost returns a native Promise; thenCompose requires the java
+						// future type, so bridge rather than returning the Promise
+						let added = peergos.shared.util.Futures.incomplete();
+						that.localPost("/peergos/v0/sync/add-pair?label=" + label,
+							JSON.stringify({ link: cap, dir: hostDir, syncLocalDeletes: syncLocalDeletes, syncRemoteDeletes: syncRemoteDeletes }))
+							.then(function(result) {
+								that.syncPairs.push({
+									localpath: hostDir, remotepath: peergosDir.toString(), label: label,
+									syncLocalDeletes: syncLocalDeletes, syncRemoteDeletes: syncRemoteDeletes,
+									allowOnMobile: false, state: 'SYNCING', msg: '', error: null
 								});
-							return added;
-						});
+								// pick up the authoritative remote path the server resolved
+								that.getSyncState();
+								added.complete(true);
+							})
+							.catch(function(err) {
+								that.$toast.error(that.errText(err), {});
+								added.complete(false);
+							});
+						return added;
 					});
 				});
 			}).exceptionally(t => {
@@ -899,12 +873,16 @@ module.exports = {
 			let future = peergos.shared.util.Futures.incomplete();
 			let that = this;
 			this.folderPickerBaseFolder = "/" + this.context.username;
-			this.selectedFoldersFromPicker = function (chosenFolders) {
+			this.pickerChoicesTitle = this.translate("SYNC.SELECT.DELETION.BEHAVIOUR");
+			this.pickerChoices = [
+				{ key: "syncLocalDeletes", label: this.translate("SYNC.SELECT.DELETION.LOCAL") },
+				{ key: "syncRemoteDeletes", label: this.translate("SYNC.SELECT.DELETION.REMOTE") },
+			];
+			this.selectedFoldersFromPicker = function (chosenFolders, chosenOptions) {
 				if (chosenFolders.length == 0) {
 					future.complete(null);
 				} else {
-					let selectedFolder = chosenFolders[0];
-					future.complete(selectedFolder);
+					future.complete({ path: chosenFolders[0], deletes: chosenOptions });
 				}
 				that.showFolderPicker = false;
 			};

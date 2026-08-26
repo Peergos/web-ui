@@ -28,6 +28,11 @@
 	--gray-3: #b6bcc1;
 
 	--green-accent: #3fdb9c;
+	--radius-control: 8px;
+	--radius-field: 10px;
+	--radius-container: 14px;
+	--radius-pill: 999px;
+
 	--green-200: #63e3bd;
 	--green-500: #26b99a;
 	--green-900: #0a4533;

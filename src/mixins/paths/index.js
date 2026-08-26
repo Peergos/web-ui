@@ -21,6 +21,14 @@ module.exports = {
             return cut <= 0 ? '' : p.substring(cut);
         },
 
+        /** the leaf on its own, for a row that shows just the folder's name */
+        pathLeaf(path) {
+            if (path == null)
+                return "";
+            let p = ("" + path).replace(/[\\/]+$/, '');
+            return p.substring(this.lastSeparator(p) + 1);
+        },
+
         joinPath(root, rel) {
             let sep = root.includes("\\") && ! root.includes("/") ? "\\" : "/";
             return root.replace(/[\\/]+$/, '') + sep + (sep === "/" ? rel : rel.replace(/\//g, sep));
