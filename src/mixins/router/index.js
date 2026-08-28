@@ -46,11 +46,10 @@ module.exports = {
                 rawProps = fragmentToProps(hash.substring(1))
 		return this.decryptProps(rawProps);
 	    } catch (e) {
-                try {
-		    return rawProps;
-                } catch (f) {
+                // an encrypted fragment we can't read belongs to a different user's session, so ignore it
+                if (rawProps == null || rawProps.ciphertext != null)
                     return null;
-                }
+                return rawProps;
 	    }
 	},
 	decryptProps(props) {

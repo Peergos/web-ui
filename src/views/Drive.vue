@@ -1148,7 +1148,7 @@ module.exports = {
 
 				const apps = ['Calendar', 'NewsFeed', 'Social', 'Launcher', 'SharedWith']
 
-				if (pathFromUrl !== null && !apps.includes(appFromUrl) ) {
+				if (pathFromUrl != null && !apps.includes(appFromUrl) ) {
 
 					this.showSpinner = true;
 
