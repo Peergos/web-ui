@@ -724,17 +724,73 @@ module.exports = {
     getPropertiesFile: function(calendar) {
         let that = this;
         let filePath = peergos.client.PathUtils.directoryToPath([this.CONFIG_FILENAME]);
-        return calendar.readInternal(filePath).thenApply(data => {
-            return JSON.parse(new TextDecoder().decode(data));
+        let future = peergos.shared.util.Futures.incomplete();
+        calendar.readInternal(filePath).thenApply(data => {
+            that.includeUnlistedCalendars(calendar, JSON.parse(new TextDecoder().decode(data)), future);
+            return null;
         }).exceptionally(function(throwable) {//File not found
             if (throwable.detailMessage.startsWith("File not found")) {
                 let props = new Object();
                 props.calendars = [];
                 props.calendars.push({name: 'My Calendar', directory: 'default', color: '#00a9ff'});
-                return props;
+                that.includeUnlistedCalendars(calendar, props, future);
             } else {
                 that.showMessage(true, that.translate('CALENDAR.ERROR.LOAD.FILE'));
+                let empty = new Object();
+                empty.calendars = [];
+                future.complete(empty);
             }
+            return null;
+        });
+        return future;
+    },
+    // A calendar directory can exist without an App.config entry. The CalDAV bridge creates
+    // them that way on purpose: this file is read once when the app opens and written back
+    // whole on every edit, so a second writer would have its entry dropped by the next edit
+    // in an open tab. Adopting the directories found on disk is what makes a calendar made
+    // over CalDAV visible here, without either side having to write the other's file.
+    includeUnlistedCalendars: function(calendar, props, future) {
+        let that = this;
+        if (props.calendars == null)
+            props.calendars = [];
+        calendar.dirInternal(null, null).thenApply(function(filenames) {
+            let listed = props.calendars.map(c => c.directory);
+            let unlisted = filenames.toArray([]).filter(name =>
+                name != that.CONFIG_FILENAME && listed.indexOf(name) < 0);
+            if (unlisted.length == 0) {
+                future.complete(props);
+                return null;
+            }
+            let outstanding = unlisted.length;
+            unlisted.forEach(directory => {
+                that.readCalendarInfo(calendar, directory, function(info) {
+                    if (info != null && info.name != null)
+                        props.calendars.push({name: info.name, directory: directory,
+                            color: info.color == null ? '#00a9ff' : info.color, shareable: true});
+                    if (--outstanding == 0)
+                        future.complete(props);
+                });
+            });
+            return null;
+        }).exceptionally(function(throwable) {
+            future.complete(props);
+            return null;
+        });
+    },
+    // Always calls back, with null for anything that is not a readable calendar.inf, so one
+    // stray file in the data directory cannot leave the app waiting forever.
+    readCalendarInfo: function(calendar, directory, consumer) {
+        let filePath = peergos.client.PathUtils.directoryToPath([directory, this.NEW_CALENDAR_FILENAME]);
+        calendar.readInternal(filePath).thenApply(data => {
+            try {
+                consumer(JSON.parse(new TextDecoder().decode(data)));
+            } catch (e) {
+                consumer(null);
+            }
+            return null;
+        }).exceptionally(function(throwable) {
+            consumer(null);
+            return null;
         });
     },
     updatePropertiesFile: function(calendar, json) {
