@@ -88,7 +88,7 @@
 
 							<!-- A CalDAV or CardDAV client cannot discover any of this, so it has to be
 							     copied by hand. Only shown when one of them is actually being served. -->
-							<div v-if="(config.syncCalendar || config.syncContacts) && ! isAndroid" class="mount-dav">
+							<div v-if="config.davClients && (config.syncCalendar || config.syncContacts)" class="mount-dav">
 								<p class="pg-note">{{ translate("MOUNT.DAV.EXPLAIN") }}</p>
 								<div class="mount-field">
 									<label for="dav-url">{{ translate("MOUNT.DAV.URL") }}</label>
@@ -152,19 +152,21 @@
 
 					<!-- One login, three things it can be used for: a calendar can be synced
 					     without a drive, and none of them needs a second password. -->
-					<label class="pg-switch">
+					<!-- with nothing else on offer the drive is the whole point of the page, so a
+					     switch for it could only turn the one useful thing off -->
+					<label v-if="config.canSyncCalendar || config.canSyncContacts" class="pg-switch">
 						<input type="checkbox" v-model="form.mountDrive" />
 						<span class="pg-switch__track" aria-hidden="true"></span>
 						<span>{{ translate("MOUNT.USE.DRIVE") }}</span>
 					</label>
 
-					<label class="pg-switch">
+					<label v-if="config.canSyncCalendar" class="pg-switch">
 						<input type="checkbox" v-model="form.syncCalendar" />
 						<span class="pg-switch__track" aria-hidden="true"></span>
 						<span>{{ translate("MOUNT.USE.CALENDAR") }}</span>
 					</label>
 
-					<label class="pg-switch">
+					<label v-if="config.canSyncContacts" class="pg-switch">
 						<input type="checkbox" v-model="form.syncContacts" />
 						<span class="pg-switch__track" aria-hidden="true"></span>
 						<span>{{ translate("MOUNT.USE.CONTACTS") }}</span>
@@ -294,7 +296,9 @@ module.exports = {
     components: { AppHeader, Spinner },
     data() {
         return {
-            config: { enabled: false, mountPoint: "", mountDrive: false, syncCalendar: false, syncContacts: false },
+            // the can* flags come from the server, which knows what this platform's backend does
+            config: { enabled: false, mountPoint: "", mountDrive: false, syncCalendar: false, syncContacts: false,
+                    canSyncCalendar: false, canSyncContacts: false, davClients: false },
             form: { peergosPassword: "", autoMount: true, mountDrive: true, syncCalendar: false, syncContacts: false },
             showSpinner: false,
             progressToastId: null,
@@ -336,11 +340,6 @@ module.exports = {
             if (this.config.syncContacts)
                 parts.push(this.translate("MOUNT.SUMMARY.CONTACTS"));
             return parts.length === 0 ? this.translate("MOUNT.SUMMARY.MOUNTED") : parts.join(", ");
-        },
-        /** Android syncs through the platform's own calendar account, with no bridge listening,
-         *  so there is no address for a client to point at there. */
-        isAndroid() {
-            return typeof window.Android !== "undefined";
         },
         anythingChosen() {
             return this.form.mountDrive || this.form.syncCalendar || this.form.syncContacts;
