@@ -86,6 +86,43 @@
 								</span>
 							</div>
 
+							<!-- A CalDAV or CardDAV client cannot discover any of this, so it has to be
+							     copied by hand. Only shown when one of them is actually being served. -->
+							<div v-if="(config.syncCalendar || config.syncContacts) && ! isAndroid" class="mount-dav">
+								<p class="pg-note">{{ translate("MOUNT.DAV.EXPLAIN") }}</p>
+								<div class="mount-field">
+									<label for="dav-url">{{ translate("MOUNT.DAV.URL") }}</label>
+									<div class="mount-copy">
+										<input id="dav-url" class="pg-input" type="text" readonly :value="config.davUrl" />
+										<button type="button" class="pg-btn" @click="copyField($event)">
+											{{ translate("MOUNT.DAV.COPY") }}
+										</button>
+									</div>
+								</div>
+								<div class="mount-field">
+									<label for="dav-user">{{ translate("MOUNT.DAV.USERNAME") }}</label>
+									<div class="mount-copy">
+										<input id="dav-user" class="pg-input" type="text" readonly :value="config.webdavUsername" />
+										<button type="button" class="pg-btn" @click="copyField($event)">
+											{{ translate("MOUNT.DAV.COPY") }}
+										</button>
+									</div>
+								</div>
+								<div class="mount-field">
+									<label for="dav-pass">{{ translate("MOUNT.DAV.PASSWORD") }}</label>
+									<div class="mount-copy">
+										<input id="dav-pass" class="pg-input" :type="showDavPassword ? 'text' : 'password'"
+												readonly :value="config.webdavPassword" />
+										<button type="button" class="pg-btn" @click="showDavPassword = ! showDavPassword">
+											{{ showDavPassword ? translate("MOUNT.DAV.HIDE") : translate("MOUNT.DAV.SHOW") }}
+										</button>
+										<button type="button" class="pg-btn" @click="copyField($event)">
+											{{ translate("MOUNT.DAV.COPY") }}
+										</button>
+									</div>
+								</div>
+							</div>
+
 							<p v-if="offline" class="pg-callout">{{ translate("MOUNT.OFFLINE") }}</p>
 
 				<p v-if="error" class="pg-errorbox">
@@ -266,6 +303,7 @@ module.exports = {
             showTotpConfirm: false,
             proposedTotpName: "",
             showFullPath: false,
+            showDavPassword: false,
             pollTimeoutId: null,
         };
     },
@@ -298,6 +336,11 @@ module.exports = {
             if (this.config.syncContacts)
                 parts.push(this.translate("MOUNT.SUMMARY.CONTACTS"));
             return parts.length === 0 ? this.translate("MOUNT.SUMMARY.MOUNTED") : parts.join(", ");
+        },
+        /** Android syncs through the platform's own calendar account, with no bridge listening,
+         *  so there is no address for a client to point at there. */
+        isAndroid() {
+            return typeof window.Android !== "undefined";
         },
         anythingChosen() {
             return this.form.mountDrive || this.form.syncCalendar || this.form.syncContacts;
@@ -339,6 +382,17 @@ module.exports = {
         },
         navigateTo(path) {
             this.openFileOrDir("Drive", path, { filename: "" });
+        },
+        /** Copy the field this button sits beside, so a masked password can be copied
+         *  without being revealed first. */
+        copyField(event) {
+            let field = event.currentTarget.parentElement.querySelector("input");
+            let that = this;
+            navigator.clipboard.writeText(field.value).then(function() {
+                that.$toast.success(that.translate("MOUNT.DAV.COPIED"));
+            }, function() {
+                that.$toast.error(that.translate("MOUNT.DAV.COPY_FAILED"));
+            });
         },
         getConfig() {
             let that = this;
@@ -531,6 +585,30 @@ module.exports = {
 	text-transform: uppercase;
 	letter-spacing: .07em;
 	color: var(--pg-muted);
+}
+
+/* the credentials a caldav client needs, each on its own row with its copy button */
+.mount-dav {
+	display: flex;
+	flex-direction: column;
+	gap: 12px;
+	margin-top: 12px;
+}
+
+.mount-copy {
+	display: flex;
+	align-items: center;
+	gap: 8px;
+}
+
+.mount-copy input {
+	/* the value is the point, so it takes the room and the buttons keep their size */
+	flex: 1 1 auto;
+	min-width: 0;
+}
+
+.mount-copy .pg-btn {
+	flex: 0 0 auto;
 }
 
 .mount-modal {
