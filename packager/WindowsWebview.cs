@@ -4,6 +4,7 @@ using System.Diagnostics;
 using System.Drawing;
 using System.Drawing.Drawing2D;
 using System.IO;
+using System.IO.Pipes;
 using System.Net;
 using System.Runtime.InteropServices;
 using System.Text;
@@ -15,6 +16,15 @@ using Microsoft.Web.WebView2.WinForms;
 
 static class Program
 {
+    // One host per server. The launcher spawns us on every launch, because it cannot know
+    // whether a window exists - the server runs on with the window closed to the tray - so
+    // deduplicating is our job, the way the electron host does it with its single instance
+    // lock. The port is in the name, so two servers on different ports keep a window each.
+    private static string InstanceKey(string port)
+    {
+        return "peergos-webview-" + port;
+    }
+
     // WinForms and WebView2 both need a single threaded apartment. This belongs on
     // Main: on the class it is a compile error, not a no-op.
     [STAThread]
@@ -31,7 +41,75 @@ static class Program
         // Set by the server when it was started with -minimised true, which is what the
         // login item written by "Start on boot" does: come up as a tray icon, no window.
         bool minimised = ! string.IsNullOrEmpty(Environment.GetEnvironmentVariable("PEERGOS_MINIMISED"));
-        Application.Run(new PeergosWindow(port, minimised));
+
+        bool ours;
+        // Local\ scopes it to this login session, which is as far as a tray icon reaches.
+        using (new Mutex(true, @"Local\" + InstanceKey(port), out ours))
+        {
+            if (! ours)
+            {
+                ShowRunningInstance(port, ! minimised);
+                // Falling out of Main exits 0. Anything else and the launcher reads it as
+                // "no WebView2 runtime" and opens the app in Edge beside the running window.
+                return;
+            }
+            PeergosWindow window = new PeergosWindow(port, minimised);
+            ListenForLaunches(port, window);
+            Application.Run(window);
+        }
+    }
+
+    // Hand this launch's intent to the host that holds the mutex, and let it do the showing.
+    private static void ShowRunningInstance(string port, bool show)
+    {
+        try
+        {
+            using (var pipe = new NamedPipeClientStream(".", InstanceKey(port), PipeDirection.Out))
+            {
+                pipe.Connect(2_000);
+                byte[] message = Encoding.UTF8.GetBytes(show ? "show" : "stay");
+                pipe.Write(message, 0, message.Length);
+            }
+        }
+        catch (Exception e)
+        {
+            // The holder may be on its way out, in which case there is no window to show
+            // and nothing useful to do about it from here either.
+            Console.Error.WriteLine("Peergos: could not reach the running window: " + e.Message);
+        }
+    }
+
+    // Answer those requests for as long as we are the one running instance.
+    private static void ListenForLaunches(string port, PeergosWindow window)
+    {
+        Thread listener = new Thread(() =>
+        {
+            while (! window.IsDisposed)
+            {
+                try
+                {
+                    using (var pipe = new NamedPipeServerStream(InstanceKey(port), PipeDirection.In))
+                    {
+                        pipe.WaitForConnection();
+                        byte[] buffer = new byte[16];
+                        int read = pipe.Read(buffer, 0, buffer.Length);
+                        if (Encoding.UTF8.GetString(buffer, 0, read).StartsWith("show"))
+                            window.ShowFromLaunch();
+                    }
+                }
+                catch (Exception e)
+                {
+                    // A failed connection must not cost us every later launch, but it must
+                    // not spin either while the window is on its way down.
+                    if (window.IsDisposed)
+                        return;
+                    Console.Error.WriteLine("Peergos: instance listener failed: " + e.Message);
+                    Thread.Sleep(500);
+                }
+            }
+        });
+        listener.IsBackground = true;
+        listener.Start();
     }
 }
 
@@ -72,6 +150,7 @@ class PeergosWindow : Form
     private bool windowHandlePosted;
     // Swallows the one show Application.Run does, so a minimised start never draws a window.
     private bool startHidden;
+    private bool serverGone;
     private string currentState = "";
     // Kept apart from the state rather than read off it: an error while paused is
     // reported as ERROR, and the menu still has to offer resume.
@@ -145,6 +224,63 @@ class PeergosWindow : Form
         statusTimer.Tick += (_, __) => PollStatus();
         statusTimer.Start();
         PollStatus();
+        WatchServer();
+    }
+
+    // Another launch asked for the window. Called from the pipe thread, so hop to the ui one.
+    public void ShowFromLaunch()
+    {
+        try { BeginInvoke((Action) ShowWindow); }
+        catch (InvalidOperationException) { } // no handle yet, or window gone
+    }
+
+    // The launcher that spawned us is the server, and nothing else tells us when it goes. A
+    // window onto a server that has exited is the orphan that wedged the flatpak: it holds a
+    // tray icon and the instance lock, so every later launch defers to a window that can do
+    // nothing. Deliberately not the status poll: an unreachable server is drawn red because it
+    // may yet answer, and closing the window over a stall would be worse than showing one.
+    private void WatchServer()
+    {
+        string value = Environment.GetEnvironmentVariable("PEERGOS_SERVER_PID");
+        int serverPid;
+        if (string.IsNullOrEmpty(value) || ! int.TryParse(value, out serverPid))
+            return; // an older launcher that does not say, so there is nothing to watch
+        try
+        {
+            // Taken now, while it is certainly alive: holding the handle is what stops a
+            // recycled pid being mistaken for the server later on.
+            Process server = Process.GetProcessById(serverPid);
+            server.EnableRaisingEvents = true;
+            server.Exited += (_, __) => ServerGone();
+            if (server.HasExited)
+                ServerGone();
+        }
+        catch (ArgumentException)
+        {
+            ServerGone(); // already gone before we could look
+        }
+    }
+
+    private void ServerGone()
+    {
+        // Reachable twice: from HasExited just after subscribing, and from the event itself.
+        if (serverGone)
+            return;
+        serverGone = true;
+        Console.Error.WriteLine("Peergos: server exited, closing the window");
+        if (IsHandleCreated)
+        {
+            try
+            {
+                BeginInvoke((Action) Quit);
+                return;
+            }
+            catch (InvalidOperationException) { }
+        }
+        // No window to close, but the tray icon exists from the constructor on and would
+        // otherwise linger in the notification area until someone hovered over it.
+        HideTray();
+        Environment.Exit(0);
     }
 
     // Application.Run shows the main form once, before anything of ours can hide it
