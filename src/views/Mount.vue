@@ -539,7 +539,11 @@ module.exports = {
                 // the mount revokes its own second factor as it tears down - it still holds the
                 // credentials to do so, and it works even if this tab goes away mid-unmount
                 await this.localPost("/peergos/v0/mount/disable");
-                this.config = { enabled: false, mountPoint: "" };
+                // only the live mount state changes here: the can* flags are platform facts,
+                // and dropping them hides every switch on the form this leaves behind
+                this.config = Object.assign({}, this.config, {
+                        enabled: false, mountPoint: "", mountDrive: false,
+                        syncCalendar: false, syncContacts: false });
                 this.stopWorking();
                 const os = detectOs();
                 if (os === "Windows" || os === "macOS") {
