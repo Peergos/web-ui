@@ -31,11 +31,11 @@
 						<svg v-else viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2Z"/></svg>
 					</span>
 					<div class="pg-summary__text">
-						<h2>{{ isMounted ? translate("MOUNT.SUMMARY.MOUNTED") : translate("MOUNT.SUMMARY.NOTMOUNTED") }}</h2>
+						<h2>{{ isMounted ? summary : translate("MOUNT.SUMMARY.NOTMOUNTED") }}</h2>
 					</div>
 					<div class="pg-summary__actions">
 						<template v-if="isMounted">
-							<button type="button" class="pg-btn pg-btn--onTone" @click="openInExplorer()">
+							<button v-if="config.mountPoint" type="button" class="pg-btn pg-btn--onTone" @click="openInExplorer()">
 								<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2Z"/></svg>
 								{{ translate("MOUNT.OPEN") }}
 							</button>
@@ -52,7 +52,7 @@
 					<ul class="pg-cards">
 						<li class="pg-card">
 							<div class="pg-card__head">
-								<div class="pg-route">
+								<div class="pg-route" v-if="config.mountPoint">
 									<div class="pg-endpoint">
 										<span class="pg-endpoint__icon" aria-hidden="true">
 											<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2Z"/></svg>
@@ -86,6 +86,43 @@
 								</span>
 							</div>
 
+							<!-- A CalDAV or CardDAV client cannot discover any of this, so it has to be
+							     copied by hand. Only shown when one of them is actually being served. -->
+							<div v-if="config.davClients && (config.syncCalendar || config.syncContacts)" class="mount-dav">
+								<p class="pg-note">{{ translate("MOUNT.DAV.EXPLAIN") }}</p>
+								<div class="mount-field">
+									<label for="dav-url">{{ translate("MOUNT.DAV.URL") }}</label>
+									<div class="mount-copy">
+										<input id="dav-url" class="pg-input" type="text" readonly :value="config.davUrl" />
+										<button type="button" class="pg-btn" @click="copyField($event)">
+											{{ translate("MOUNT.DAV.COPY") }}
+										</button>
+									</div>
+								</div>
+								<div class="mount-field">
+									<label for="dav-user">{{ translate("MOUNT.DAV.USERNAME") }}</label>
+									<div class="mount-copy">
+										<input id="dav-user" class="pg-input" type="text" readonly :value="config.webdavUsername" />
+										<button type="button" class="pg-btn" @click="copyField($event)">
+											{{ translate("MOUNT.DAV.COPY") }}
+										</button>
+									</div>
+								</div>
+								<div class="mount-field">
+									<label for="dav-pass">{{ translate("MOUNT.DAV.PASSWORD") }}</label>
+									<div class="mount-copy">
+										<input id="dav-pass" class="pg-input" :type="showDavPassword ? 'text' : 'password'"
+												readonly :value="config.webdavPassword" />
+										<button type="button" class="pg-btn" @click="showDavPassword = ! showDavPassword">
+											{{ showDavPassword ? translate("MOUNT.DAV.HIDE") : translate("MOUNT.DAV.SHOW") }}
+										</button>
+										<button type="button" class="pg-btn" @click="copyField($event)">
+											{{ translate("MOUNT.DAV.COPY") }}
+										</button>
+									</div>
+								</div>
+							</div>
+
 							<p v-if="offline" class="pg-callout">{{ translate("MOUNT.OFFLINE") }}</p>
 
 				<p v-if="error" class="pg-errorbox">
@@ -113,6 +150,28 @@
 								v-model="form.peergosPassword" @keyup.enter="onAddMount()" v-focus />
 					</div>
 
+					<!-- One login, three things it can be used for: a calendar can be synced
+					     without a drive, and none of them needs a second password. -->
+					<!-- with nothing else on offer the drive is the whole point of the page, so a
+					     switch for it could only turn the one useful thing off -->
+					<label v-if="config.canSyncCalendar || config.canSyncContacts" class="pg-switch">
+						<input type="checkbox" v-model="form.mountDrive" />
+						<span class="pg-switch__track" aria-hidden="true"></span>
+						<span>{{ translate("MOUNT.USE.DRIVE") }}</span>
+					</label>
+
+					<label v-if="config.canSyncCalendar" class="pg-switch">
+						<input type="checkbox" v-model="form.syncCalendar" />
+						<span class="pg-switch__track" aria-hidden="true"></span>
+						<span>{{ translate("MOUNT.USE.CALENDAR") }}</span>
+					</label>
+
+					<label v-if="config.canSyncContacts" class="pg-switch">
+						<input type="checkbox" v-model="form.syncContacts" />
+						<span class="pg-switch__track" aria-hidden="true"></span>
+						<span>{{ translate("MOUNT.USE.CONTACTS") }}</span>
+					</label>
+
 					<label class="pg-switch">
 						<input type="checkbox" v-model="form.autoMount" />
 						<span class="pg-switch__track" aria-hidden="true"></span>
@@ -124,7 +183,8 @@
 						<span>{{ error }}</span>
 					</p>
 
-					<button type="button" class="pg-btn pg-btn--primary" :disabled="showSpinner || ! form.peergosPassword"
+					<button type="button" class="pg-btn pg-btn--primary"
+							:disabled="showSpinner || ! form.peergosPassword || ! anythingChosen"
 							@click="onAddMount()">
 						{{ translate("MOUNT.ENABLE") }}
 					</button>
@@ -236,8 +296,10 @@ module.exports = {
     components: { AppHeader, Spinner },
     data() {
         return {
-            config: { enabled: false, mountPoint: "" },
-            form: { peergosPassword: "", autoMount: true },
+            // the can* flags come from the server, which knows what this platform's backend does
+            config: { enabled: false, mountPoint: "", mountDrive: false, syncCalendar: false, syncContacts: false,
+                    canSyncCalendar: false, canSyncContacts: false, davClients: false },
+            form: { peergosPassword: "", autoMount: true, mountDrive: true, syncCalendar: false, syncContacts: false },
             showSpinner: false,
             progressToastId: null,
             error: null,
@@ -245,6 +307,7 @@ module.exports = {
             showTotpConfirm: false,
             proposedTotpName: "",
             showFullPath: false,
+            showDavPassword: false,
             pollTimeoutId: null,
         };
     },
@@ -261,8 +324,25 @@ module.exports = {
         driveRoot() {
             return "/" + this.config.peergosUsername;
         },
+        /** Active, whether or not a drive came with it: a calendar only login has no mount
+         *  point, and showing the setup form again would ask for a password it already has. */
         isMounted() {
-            return this.config.enabled === true && !! this.config.mountPoint;
+            return this.config.enabled === true
+                    && (!! this.config.mountPoint || ! this.config.mountDrive);
+        },
+        /** What this login is actually doing, so a calendar only one does not claim a drive. */
+        summary() {
+            let parts = [];
+            if (this.config.mountDrive)
+                parts.push(this.translate("MOUNT.SUMMARY.DRIVE"));
+            if (this.config.syncCalendar)
+                parts.push(this.translate("MOUNT.SUMMARY.CALENDAR"));
+            if (this.config.syncContacts)
+                parts.push(this.translate("MOUNT.SUMMARY.CONTACTS"));
+            return parts.length === 0 ? this.translate("MOUNT.SUMMARY.MOUNTED") : parts.join(", ");
+        },
+        anythingChosen() {
+            return this.form.mountDrive || this.form.syncCalendar || this.form.syncContacts;
         },
         enabled() {
             return loopback.isLoopbackHost(window.location.hostname);
@@ -302,6 +382,17 @@ module.exports = {
         navigateTo(path) {
             this.openFileOrDir("Drive", path, { filename: "" });
         },
+        /** Copy the field this button sits beside, so a masked password can be copied
+         *  without being revealed first. */
+        copyField(event) {
+            let field = event.currentTarget.parentElement.querySelector("input");
+            let that = this;
+            navigator.clipboard.writeText(field.value).then(function() {
+                that.$toast.success(that.translate("MOUNT.DAV.COPIED"));
+            }, function() {
+                that.$toast.error(that.translate("MOUNT.DAV.COPY_FAILED"));
+            });
+        },
         getConfig() {
             let that = this;
             this.localPost("/peergos/v0/mount/get-config").then(function(result) {
@@ -313,7 +404,7 @@ module.exports = {
                 // a saved mount is restored in the background as the app starts: enabled
                 // with no mount point yet means that is still running, so wait for it
                 // rather than offering the form as though nothing were mounted
-                else if (that.config.enabled === true && ! that.config.mountPoint) {
+                else if (that.config.enabled === true && that.config.mountDrive && ! that.config.mountPoint) {
                     that.startWorking("MOUNT.ENABLING");
                     that.pollForMount();
                 }
@@ -389,6 +480,9 @@ module.exports = {
                 peergosUsername: this.context.username,
                 peergosPassword: this.form.peergosPassword,
                 autoMount: this.form.autoMount,
+                mountDrive: this.form.mountDrive,
+                syncCalendar: this.form.syncCalendar,
+                syncContacts: this.form.syncContacts,
                 totpCredentialId: totpCredentialIdHex,
                 totpSecret: totpSecretHex,
             });
@@ -416,7 +510,7 @@ module.exports = {
                 if (result.error) {
                     that.stopWorking();
                     that.error = that.cleanError(result.error);
-                } else if (result.enabled && result.mountPoint) {
+                } else if (result.enabled && (result.mountPoint || ! result.mountDrive)) {
                     that.stopWorking();
                     that.config = result;
                     that.form.peergosPassword = "";
@@ -490,6 +584,30 @@ module.exports = {
 	text-transform: uppercase;
 	letter-spacing: .07em;
 	color: var(--pg-muted);
+}
+
+/* the credentials a caldav client needs, each on its own row with its copy button */
+.mount-dav {
+	display: flex;
+	flex-direction: column;
+	gap: 12px;
+	margin-top: 12px;
+}
+
+.mount-copy {
+	display: flex;
+	align-items: center;
+	gap: 8px;
+}
+
+.mount-copy input {
+	/* the value is the point, so it takes the room and the buttons keep their size */
+	flex: 1 1 auto;
+	min-width: 0;
+}
+
+.mount-copy .pg-btn {
+	flex: 0 0 auto;
 }
 
 .mount-modal {
