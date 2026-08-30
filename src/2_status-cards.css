@@ -8,11 +8,10 @@
    No color-mix(), no :has(), no container queries.
    ------------------------------------------------------------------ */
 
-.pg-view {
-	display: flex;
-	flex-direction: column;
-	min-height: 100vh;
-
+/* Design tokens. They live on :root so every component can use them: dialogs and
+   prompts render outside .pg-view, and an unresolved var() silently drops the whole
+   declaration. */
+:root {
 	--pg-muted: #566571;
 	/* the summary disc keeps one value in both themes: its glyph is always white, so a
 	   token that flipped would leave white on a pale disc */
@@ -34,10 +33,20 @@
 	--pg-border-error: #f0b4b4;
 	--pg-track: #e6ebef;
 	--pg-shadow: 0 1px 2px rgba(44, 62, 80, .07);
+	/* a dialog sits above the cards, so it casts further; on a dark page a black shadow
+	   fades out, so that one is deeper rather than the same value reused */
+	--pg-shadow-dialog: 0 18px 48px rgba(0, 0, 0, .4);
+	--pg-scrim: rgba(8, 15, 20, .55);
 	--pg-gap: 16px;
 }
 
-[data-theme="dark-mode"] .pg-view {
+.pg-view {
+	display: flex;
+	flex-direction: column;
+	min-height: 100vh;
+}
+
+[data-theme="dark-mode"] {
 	--pg-muted: #a7b6c2;
 	--pg-on-ok: #63e3bd;
 	--pg-on-busy: #8fd2e8;
@@ -55,6 +64,8 @@
 	--pg-border-error: #7c4348;
 	--pg-track: #1f2c37;
 	--pg-shadow: 0 1px 2px rgba(0, 0, 0, .25);
+	--pg-shadow-dialog: 0 18px 48px rgba(0, 0, 0, .55);
+	--pg-scrim: rgba(0, 0, 0, .65);
 }
 
 .pg-view main {
@@ -92,10 +103,13 @@
 	color: var(--color);
 	background-color: transparent;
 	border: 1px solid var(--border-color);
-	border-radius: 8px;
+	border-radius: var(--radius-control);
 	cursor: pointer;
 }
 
+a.pg-btn {
+	text-decoration: none;
+}
 .pg-btn svg {
 	width: 16px;
 	height: 16px;
@@ -109,6 +123,17 @@
 .pg-btn:disabled {
 	opacity: .55;
 	cursor: default;
+}
+
+/* a filled button keeps reading as clickable when it is only faded, so an unavailable
+   one gives up the accent entirely */
+.pg-btn--primary:disabled,
+.pg-btn--danger:disabled,
+.pg-btn--onTone:disabled {
+	opacity: 1;
+	color: var(--pg-muted);
+	background-color: var(--pg-track);
+	border-color: var(--pg-track);
 }
 
 .pg-btn:focus-visible {
@@ -186,11 +211,8 @@
 	margin: 32px auto;
 	padding: 32px 24px;
 	text-align: center;
-}
-
-.pg-empty {
 	border: 1px dashed var(--border-color);
-	border-radius: 14px;
+	border-radius: var(--radius-container);
 }
 
 .pg-unavailable p,
@@ -230,7 +252,7 @@
 	align-items: center;
 	gap: 16px;
 	padding: 18px 20px;
-	border-radius: 14px;
+	border-radius: var(--radius-container);
 }
 
 .pg-summary__icon {
@@ -265,6 +287,7 @@
 	gap: 10px;
 	margin-left: auto;
 	flex: none;
+	flex-wrap: wrap;
 }
 
 .pg-tone--ok.pg-summary { background-color: var(--pg-tint-ok); }
@@ -327,7 +350,7 @@
 	padding: 18px 20px;
 	background-color: var(--bg);
 	border: 1px solid var(--border-color);
-	border-radius: 14px;
+	border-radius: var(--radius-container);
 	box-shadow: var(--pg-shadow);
 }
 
@@ -489,7 +512,7 @@
 	padding: 6px 12px;
 	font-size: var(--text-small);
 	font-weight: var(--bold);
-	border-radius: 999px;
+	border-radius: var(--radius-pill);
 }
 
 .pg-pill__dot {
@@ -547,7 +570,7 @@
 
 .pg-endpoint__value::-webkit-scrollbar-thumb,
 .pg-activity::-webkit-scrollbar-thumb {
-	border-radius: 999px;
+	border-radius: var(--radius-pill);
 	background-color: var(--pg-track);
 }
 
@@ -575,7 +598,7 @@
 .pg-bar {
 	position: relative;
 	height: 4px;
-	border-radius: 999px;
+	border-radius: var(--radius-pill);
 	background-color: var(--pg-track);
 	overflow: hidden;
 }
@@ -586,7 +609,7 @@
 	left: 0;
 	width: 34%;
 	height: 100%;
-	border-radius: 999px;
+	border-radius: var(--radius-pill);
 	background-color: var(--blue-accent);
 	animation: pg-slide 1.6s ease-in-out infinite;
 }
@@ -663,7 +686,7 @@
 	font-size: 13px;
 	color: var(--pg-muted);
 	background-color: var(--pg-surface-2);
-	border-radius: 999px;
+	border-radius: var(--radius-pill);
 }
 
 .pg-chip svg {
@@ -681,6 +704,7 @@
 	gap: 8px;
 	margin-left: auto;
 	flex: none;
+	flex-wrap: wrap;
 }
 
 /* ---------- switch ---------- */
@@ -693,7 +717,7 @@
 	padding: 4px 11px 4px 8px;
 	font-size: 13px;
 	border: 1px solid var(--border-color);
-	border-radius: 999px;
+	border-radius: var(--radius-pill);
 	cursor: pointer;
 	margin: 0;
 	font-weight: var(--regular);
@@ -721,7 +745,7 @@
 	width: 30px;
 	height: 18px;
 	flex: none;
-	border-radius: 999px;
+	border-radius: var(--radius-pill);
 	background-color: var(--gray-3);
 	transition: background-color .2s;
 }
@@ -868,10 +892,208 @@
 	color: inherit;
 	background-color: var(--bg);
 	border: 1px solid var(--border-color);
-	border-radius: 10px;
+	border-radius: var(--radius-field);
 }
 
 .pg-input[readonly] {
 	color: var(--pg-muted);
 	background-color: var(--pg-surface-2);
+}
+
+/* Dialogs. A card centred on both axes at every width, sharing the surface of the
+   status cards. Used by every modal in the app so they all have the same shape. */
+/* while a dialog is up, the page behind it stays put */
+body.pg-dialog-open {
+	overflow: hidden;
+}
+
+.pg-dialog__mask {
+	position: fixed;
+	overscroll-behavior: contain;
+	top: 0;
+	left: 0;
+	width: 100%;
+	height: 100%;
+	z-index: 1000;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	padding: 16px;
+	background-color: var(--pg-scrim);
+}
+.pg-dialog {
+	display: flex;
+	flex-direction: column;
+	max-width: 100%;
+	max-height: 92vh;
+	background-color: var(--bg);
+	color: var(--color);
+	border: 1px solid var(--border-color);
+	border-radius: var(--radius-container);
+	box-shadow: var(--pg-shadow-dialog);
+	overflow: hidden;
+}
+.pg-dialog:focus {
+	outline: none;
+}
+/* over the dialog rather than inside its scrolling body, so it stays put while the tree
+   loads; clicks fall through to whatever is underneath */
+.pg-dialog__loading {
+	position: absolute;
+	inset: 0;
+	z-index: 1;
+	pointer-events: none;
+}
+.pg-dialog__head {
+	display: flex;
+	align-items: start;
+	gap: 12px;
+	flex: 0 0 auto;
+	padding: 18px 16px 14px 20px;
+}
+.pg-dialog__title {
+	flex: 1 1 auto;
+	min-width: 0;
+	margin: 0;
+	border: 0;
+	/* a name with no spaces has nowhere to break, and a title is the one place a dialog
+	   cannot scroll */
+	overflow-wrap: anywhere;
+	font-size: 18px;
+	font-weight: 600;
+	line-height: 1.3;
+}
+/* one line, whatever the name is: the fixed words keep their width and the name takes
+   what is left */
+.pg-dialog__title--inline {
+	display: flex;
+	align-items: baseline;
+	white-space: nowrap;
+}
+.pg-dialog__title-name {
+	min-width: 0;
+	overflow: hidden;
+	text-overflow: ellipsis;
+}
+
+.pg-dialog__close {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	flex: 0 0 auto;
+	width: 36px;
+	height: 36px;
+	/* the head aligns to the first line of the title, and this control is taller than that
+	   line: lift it so it reads as centred on the words rather than hanging below them */
+	margin-top: -6px;
+	padding: 0;
+	border: 0;
+	border-radius: 50%;
+	background-color: transparent;
+	color: var(--pg-muted);
+	cursor: pointer;
+}
+
+/* a finger needs more than a mouse: 44px is the smallest target apple and material
+   both accept, and these are the same controls the phone shows */
+@media (pointer: coarse) {
+	.pg-btn {
+		min-height: 44px;
+	}
+
+	.pg-dialog__close {
+		width: 44px;
+		height: 44px;
+	}
+}
+
+.pg-dialog__close:focus-visible {
+	outline: 2px solid var(--green-500);
+	outline-offset: 2px;
+}
+.pg-dialog__close:hover {
+	background-color: var(--pg-surface-2);
+	color: var(--color);
+}
+.pg-dialog__close svg {
+	width: 18px;
+	height: 18px;
+}
+.pg-dialog__body {
+	flex: 1 1 auto;
+	overflow-y: auto;
+	overscroll-behavior: contain;
+	padding: 8px 20px;
+}
+.pg-dialog__foot {
+	display: flex;
+	flex-direction: column;
+	gap: 12px;
+	flex: 0 0 auto;
+	padding: 14px 20px 16px;
+}
+.pg-dialog__actions {
+	display: flex;
+	align-items: center;
+	gap: 10px;
+}
+.pg-dialog__spacer {
+	flex: 1 1 auto;
+}
+/* matches input[type=text] in 1_styles.css, and wins on file order */
+input.pg-input {
+	width: 100%;
+	min-width: 0;
+	height: 44px;
+	margin: 0;
+	padding: 0 12px;
+	border: 1px solid var(--pg-track);
+	border-radius: var(--radius-field);
+	background-color: var(--pg-surface-2);
+	color: var(--color);
+	font-family: inherit;
+	font-size: 15px;
+}
+input.pg-input:focus {
+	outline: none;
+	border-color: var(--green-500);
+	box-shadow: 0 0 0 3px var(--pg-tint-ok);
+}
+.pg-dialog--prompt {
+	width: 420px;
+}
+.pg-dialog__body p {
+	margin: 0 0 4px;
+	overflow-wrap: anywhere;
+}
+
+/* shaded while there is more tree beyond that edge: a deep tree pans sideways, and
+   without this nothing says so */
+.fp-scroll--left {
+	box-shadow: inset 14px 0 10px -12px var(--pg-muted);
+}
+.fp-scroll--right {
+	box-shadow: inset -14px 0 10px -12px var(--pg-muted);
+}
+.fp-scroll--left.fp-scroll--right {
+	box-shadow: inset 14px 0 10px -12px var(--pg-muted), inset -14px 0 10px -12px var(--pg-muted);
+}
+
+@media (max-width: 600px) {
+	/* still centred, just narrower: a sheet stuck to one edge reads differently per platform */
+	.pg-dialog {
+		width: 100%;
+		max-height: 88vh;
+	}
+}
+@media (max-width: 420px) {
+	.pg-dialog__actions {
+		flex-wrap: wrap;
+	}
+	.pg-dialog__spacer {
+		display: none;
+	}
+	.pg-dialog__actions .pg-btn {
+		flex: 1 1 0;
+	}
 }

@@ -1,30 +1,29 @@
 <template>
 <transition name="modal">
-<div class="modal-mask" @click="close">
-  <div style="height:30%"></div>
-  <div class="confirm-modal-container" @click.stop>
-
-    <div class="modal-header">
-      <h3 id="confirm-header-id">{{confirm_message}}</h3>
+<div class="pg-dialog__mask" @click="close">
+  <div class="pg-dialog pg-dialog--prompt" role="dialog" aria-modal="true" :aria-label="confirm_message" @click.stop>
+    <header class="pg-dialog__head">
+      <h3 class="pg-dialog__title" id="confirm-header-id">{{confirm_message}}</h3>
+      <DialogClose @close="close"/>
+    </header>
+    <div class="pg-dialog__body">
+      <p id='confirm-body-id'>{{confirm_body}}</p>
     </div>
-
-    <div class="modal-body">
-      <div class="container" style="word-wrap:break-word;width:auto">
-        <p id='confirm-body-id' >{{confirm_body}}</p>
+    <footer class="pg-dialog__foot">
+      <div class="pg-dialog__actions">
+        <span class="pg-dialog__spacer"></span>
+        <button type="button" class="pg-btn" @click="no()">No</button>
+        <button type="button" class="pg-btn pg-btn--primary" @click="yes()">Yes</button>
       </div>
-      <button class="btn btn-success btn-lg" @click="no()" style="margin:10%;">
-        No
-      </button>
-      <button class="btn btn-success btn-lg" @click="yes()" style="margin:10%">
-        Yes
-      </button>
-    </div>
+    </footer>
   </div>
 </div>
 </transition>
 </template>
 <script>
+const DialogClose = require("../dialog/DialogClose.vue");
 module.exports = {
+    components: { DialogClose },
     data: function() {
         return {
         }
@@ -47,16 +46,3 @@ module.exports = {
     }
 }
 </script>
-<style>
-.confirm-modal-container {
-    width: 40%;
-    margin: 0px auto;
-    padding: 20px 30px;
-	color: var(--color);
-    background-color: var(--bg);
-    border-radius: 2px;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, .33);
-    transition: all .3s ease;
-    min-width: 350px;
-}
-</style>

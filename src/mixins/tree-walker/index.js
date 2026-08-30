@@ -1,5 +1,12 @@
 module.exports = {
     methods: {
+        /** Whatever the java side threw, in a form a toast can show. */
+        errorText: function(throwable) {
+            if (throwable == null)
+                return "Unable to load folders";
+            return throwable.getMessage != null ? throwable.getMessage() : "" + throwable;
+        },
+
         loadSubFoldersAndFiles: function(path, fileExtension, filterMedia, fileFilters, callback) {
             this.loadSubFoldersNotRecursive(path, callback, true, fileExtension, filterMedia, fileFilters);
         },
@@ -16,13 +23,23 @@ module.exports = {
                 if (folderProperties.isDirectory && !folderProperties.isHidden) {
                     that.walkNotRecursive(dir, path, folderTree, includeFiles, fileExtension, filterMedia, fileFilters).thenApply( () => {
                         callback(folderTree);
+                    }).exceptionally(throwable => {
+                        // listing the children can fail on its own, and this one is not
+                        // joined to the chain below, so it has to answer the caller itself
+                        that.$toast.error(that.errorText(throwable), {});
+                        callback(folderTree);
+                        return null;
                     });
                 } else {
                     callback(folderTree);
                 }
-            }).exceptionally(function(throwable) {
-                this.spinnerMessage = 'Unable to load sub folders...';
-                throwable.printStackTrace();
+            }).exceptionally(throwable => {
+                // this ran as a plain function, so `this` was not the component and the
+                // assignment threw: the failure was swallowed and the caller never heard
+                // back, leaving whatever it showed while loading up for good
+                that.$toast.error(that.errorText(throwable), {});
+                callback(folderTree);
+                return null;
             });
         },
 
@@ -86,6 +103,9 @@ module.exports = {
                     }
                 });
                 future.complete(true);
+            }).exceptionally(throwable => {
+                future.completeExceptionally(throwable);
+                return null;
             });
             return future;
         },
